@@ -39,17 +39,17 @@ export namespace Alias {
         // @ts-ignore (spurious initialization error)
         private next: Common.Parser.Node
 
-        constructor(
-            def: string,
-            ctx: Common.Parser.Context,
-            private nextDef?: unknown
-        ) {
-            if (def in ctx.resolutions) {
-                return ctx.resolutions[def]
+        constructor(def: string, ctx: Common.Parser.Context) {
+            // If we've already seen this alias, the resolution will be an Alias node, so just return that
+            if (ctx.resolutions[def] instanceof Node) {
+                return ctx.resolutions[def] as Node
             }
             super(def, ctx)
+            // Otherwise, ctx.resolutions[def] will be a definition from space, so use it to parse the next node
+            const unresolvedDefinition = ctx.resolutions[def]
+            // Before parsing the definition, we update the resolution to be this Node so we don't try and parse it again
             ctx.resolutions[def] = this
-            this.next = Root.parse(this.nextDef, this.ctx)
+            this.next = Root.parse(unresolvedDefinition, this.ctx)
         }
 
         allows(args: Common.Allows.Args) {

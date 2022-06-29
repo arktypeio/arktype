@@ -8,37 +8,74 @@ import {
     cyclic500
 } from "./generated/cyclic.js"
 
+const eagerConfig = { parse: { eager: true } }
+
 bench("cyclic(10)", () => {
     const cyclic10Space = space(cyclic10)
 })
-    .median("2.16ms")
+    .median(`1.99us`)
     .type()
-    .median("68.03ms")
+    .median(`151.66ms`)
+
+bench("cyclic eager(10)", () => {
+    const cyclic10Space = space(cyclic10, eagerConfig)
+})
+    .median(`31.26us`)
+    .type()
+    .median(`148.33ms`)
 
 bench("cyclic(50)", () => {
     const cyclic50Space = space(cyclic50)
 })
-    .median("41.50ms")
+    .median(`12.58us`)
     .type()
-    .median("72.89ms")
+    .median(`155.25ms`)
+
+bench("cyclic eager(50)", () => {
+    const cyclic50Space = space(cyclic50, eagerConfig)
+})
+    .median(`172.69us`)
+    .type()
+    .median(`176.25ms`)
 
 bench("cyclic(100)", () => {
     const cyclic100Space = space(cyclic100)
 })
-    .median("150.84ms")
+    .median(`32.41us`)
     .type()
-    .median("165.87ms")
+    .median(`178.53ms`)
+
+bench("cyclic eager(100)", () => {
+    const cyclic100Space = space(cyclic100, eagerConfig)
+})
+    .median(`361.61us`)
+    .type()
+    .median(`188.44ms`)
 
 bench("cyclic(250)", () => {
     const cyclic250Space = space(cyclic250)
 })
-    .median("10.48s")
+    .median(`135.87us`)
     .type()
-    .median("172.91ms")
+    .median(`256.90ms`)
+
+bench("cyclic eager(250)", () => {
+    const cyclic250Space = space(cyclic250, eagerConfig)
+})
+    .median(`1.05ms`)
+    .type()
+    .median(`268.42ms`)
 
 bench("cyclic(500)", () => {
     const cyclic500Space = space(cyclic500)
 })
-    .median("45.25s")
+    .median(`354.97us`)
     .type()
-    .median("442.49ms")
+    .median(`549.15ms`)
+
+bench("cyclic eager(500)", () => {
+    const cyclic500Space = space(cyclic500, eagerConfig)
+})
+    .median(`2.72ms`)
+    .type()
+    .median(`589.40ms`)

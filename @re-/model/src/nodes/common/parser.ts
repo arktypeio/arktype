@@ -1,4 +1,3 @@
-import { Alias } from "../str/alias.js"
 import { Base } from "./kinds/base.js"
 import { ModelOptions, stringifyDef, stringifyPathContext } from "./utils.js"
 
@@ -10,7 +9,8 @@ export namespace Parser {
         ctx: Parser.Context
     ) => Node
 
-    export type ResolutionMap = Record<string, Alias.Node>
+    /** Maps aliases to their definitions or to nodes parsed from their definitions */
+    export type ResolutionMap = Record<string, unknown>
 
     export type Options = {
         eager?: boolean

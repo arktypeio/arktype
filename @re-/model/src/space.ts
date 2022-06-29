@@ -22,24 +22,18 @@ export class Space implements SpaceFrom<any> {
     inputs: SpaceFrom<any>["inputs"]
     models: Record<string, Model>
     config: SpaceConfig
-    resolutions: Common.Parser.ResolutionMap
 
     constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
         this.inputs = { dictionary, options }
         this.config = configureSpace(dictionary, options)
-        this.resolutions = {}
         this.models = {}
         checkForShallowCycle(dictionary)
-        for (const [alias, resolution] of Object.entries(
-            this.config.definitions
-        )) {
+        for (const alias of Object.keys(this.config.resolutions)) {
             const ctx = Common.Parser.createContext(
                 deepMerge(this.config, this.config.models[alias]),
-                this.resolutions
+                this.config.resolutions
             )
-            this.models[alias] = new Model(
-                new Alias.Node(alias, ctx, resolution)
-            )
+            this.models[alias] = new Model(new Alias.Node(alias, ctx))
         }
     }
 
@@ -48,7 +42,7 @@ export class Space implements SpaceFrom<any> {
             def,
             Common.Parser.createContext(
                 deepMerge(this.config, options),
-                this.resolutions
+                this.config.resolutions
             )
         )
         return new Model(root, deepMerge(this.config, options)) as any
@@ -81,7 +75,7 @@ export type SpaceOptions<ModelName extends string> = Common.ModelOptions & {
 
 export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models"> & {
     meta: MetaDefinitions
-    definitions: SpaceDictionary
+    resolutions: Common.Parser.ResolutionMap
 }
 
 export type SpaceDictionary = Record<string, unknown>
@@ -142,12 +136,12 @@ const configureSpace = (
     dictionary: SpaceDictionary,
     options: SpaceOptions<string> = {}
 ): SpaceConfig => {
-    const { __meta__ = {}, ...definitions } = dictionary
+    const { __meta__ = {}, ...resolutions } = dictionary
     const { models = {}, ...config } = options
     return {
         ...config,
         meta: __meta__ as MetaDefinitions,
-        definitions,
+        resolutions,
         models
     }
 }
