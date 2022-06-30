@@ -1,5 +1,5 @@
 import { IsAny, IsAnyOrUnknown } from "@re-/tools"
-import { Base } from "./base.js"
+import { Base } from "./base/index.js"
 import { Literal } from "./literal/index.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"

@@ -1,6 +1,5 @@
-import { Base } from "../base.js"
 import { Alias } from "./alias.js"
-import { StrBase } from "./base.js"
+import { Base, StrBase } from "./base.js"
 import { Constraint } from "./constraint.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"

@@ -1,5 +1,5 @@
 import { Entry } from "@re-/tools"
-import { Base } from "../base.js"
+import { Base } from "../base/index.js"
 export { Base }
 
 export namespace ObjBase {
