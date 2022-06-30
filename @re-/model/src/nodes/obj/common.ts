@@ -1,7 +1,7 @@
 import { Entry } from "@re-/tools"
 import { Common } from "../common.js"
 
-export abstract class ObjNode<
+export abstract class Branch<
     DefType extends object,
     Next extends Entry<string | number, Common.Parser.Node>[]
 > extends Common.Branch<DefType, Next> {

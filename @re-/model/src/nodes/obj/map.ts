@@ -2,7 +2,7 @@ import { Entry, Evaluate } from "@re-/tools"
 import { Common } from "../common.js"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { ObjNode } from "./node.js"
+import { Branch } from "./common.js"
 
 export namespace Map {
     export type Definition = Record<string, unknown>
@@ -30,7 +30,7 @@ export namespace Map {
     ): value is Record<string, unknown> =>
         typeof value === "object" && value !== null && !Array.isArray(value)
 
-    export class Node extends ObjNode<Definition, ParseResult> {
+    export class Node extends Branch<Definition, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,

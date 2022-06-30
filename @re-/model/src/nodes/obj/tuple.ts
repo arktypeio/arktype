@@ -1,8 +1,7 @@
 import { Entry } from "@re-/tools"
 import { Common } from "../common.js"
 import { Root } from "../root.js"
-import { ObjNode } from "./node.js"
-import { Obj } from "./obj.js"
+import { Branch } from "./common.js"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -15,7 +14,7 @@ export namespace Tuple {
 
     type ParseResult = Entry<number, Common.Parser.Node>[]
 
-    export class Node extends ObjNode<Definition, ParseResult> {
+    export class Node extends Branch<Definition, ParseResult> {
         parse() {
             return this.def.map((elementDef, elementIndex) => [
                 elementIndex,
