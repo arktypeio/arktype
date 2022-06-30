@@ -1,13 +1,13 @@
-import { Parser } from "../parser.js"
-import { Base } from "./base.js"
+import { Parsing } from "../features/parsing.js"
+import { Node } from "./base.js"
 
 export abstract class Branch<
     DefType,
-    Next = Base<unknown>
-> extends Base<DefType> {
+    Next = Node<unknown>
+> extends Node<DefType> {
     private cache?: Next
 
-    constructor(def: DefType, ctx: Parser.Context) {
+    constructor(def: DefType, ctx: Parsing.Context) {
         super(def, ctx)
         if (ctx.cfg.parse?.eager) {
             this.cache = this.parse()

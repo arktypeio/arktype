@@ -1,5 +1,5 @@
 import { IsAny, IsAnyOrUnknown } from "@re-/tools"
-import { Common } from "./common.js"
+import { Base } from "./base.js"
 import { Literal } from "./literal/index.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
@@ -17,12 +17,12 @@ export namespace Root {
         ? Obj.Validate<Def, Dict>
         : Def extends Literal.Definition
         ? Def
-        : Common.Parser.ParseErrorMessage<Common.Parser.UnknownTypeErrorMessage>
+        : Base.Parsing.ParseErrorMessage<Base.Parsing.UnknownTypeErrorMessage>
 
     export type Parse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
         ? Def
         : Def extends string
-        ? Def extends Common.Parser.ParseErrorMessage
+        ? Def extends Base.Parsing.ParseErrorMessage
             ? unknown
             : Str.Parse<Def, Dict, Seen>
         : Def extends BadDefinitionType
@@ -36,23 +36,23 @@ export namespace Root {
         : unknown
 
     export type References<Def, Filter> = Def extends string
-        ? Def extends Common.Parser.ParseErrorMessage
+        ? Def extends Base.Parsing.ParseErrorMessage
             ? unknown
             : Str.References<Def, Filter>
         : Def extends object
         ? Obj.References<Def, Filter>
         : Def extends Literal.Definition
-        ? Common.FilterToTuple<Def, Filter>
+        ? Base.FilterToTuple<Def, Filter>
         : []
 
     export type BadDefinitionType = Function | symbol
 
     type BadDefinitionTypeMessage<Def extends BadDefinitionType> =
-        Common.Parser.ParseErrorMessage<`Values of type ${Def extends Function
+        Base.Parsing.ParseErrorMessage<`Values of type ${Def extends Function
             ? "function"
             : "symbol"} are not valid definitions.`>
 
-    export const parse: Common.Parser.Parser<unknown> = (def, ctx) => {
+    export const parse: Base.Parsing.Parser<unknown> = (def, ctx) => {
         if (Str.matches(def)) {
             ctx.stringRoot = def
             return Str.parse(def, ctx)
@@ -63,7 +63,7 @@ export namespace Root {
         if (Literal.matches(def)) {
             return new Literal.Node(def, ctx)
         }
-        throw new Common.Parser.ParseError(
+        throw new Base.Parsing.ParseError(
             `${
                 ctx.path ? `At path ${ctx.path}, values` : "Values"
             } of type ${typeof def} are not valid definitions.`

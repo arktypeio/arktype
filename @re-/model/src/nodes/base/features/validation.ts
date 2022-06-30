@@ -1,11 +1,11 @@
 import { isDigits, uncapitalize } from "@re-/tools"
-import { Parser } from "../parser.js"
 import { stringifyDef, stringifyValue } from "../utils.js"
-import { Traverse } from "./traverse.js"
+import { Parsing } from "./parsing.js"
+import { Traversal } from "./traversal.js"
 
-export type CustomValidator = Allows.CustomValidator
+export type CustomValidator = Validation.CustomValidator
 
-export namespace Allows {
+export namespace Validation {
     export type Options = {
         ignoreExtraneousKeys?: boolean
         validator?: CustomValidator | "default"
@@ -23,7 +23,7 @@ export namespace Allows {
         path: string
     }
 
-    export type Context = Traverse.Context<Config> & {
+    export type Context = Traversal.Context<Config> & {
         checkedValuesByAlias: Record<string, object[]>
     }
 
@@ -49,7 +49,7 @@ export namespace Allows {
 
     export const customValidatorAllows = (
         validator: CustomValidator,
-        node: Parser.Node,
+        node: Parsing.Node,
         args: Args
     ) => {
         const customErrors = validator({
@@ -172,11 +172,11 @@ export namespace Allows {
         value: unknown,
         options: Options = {},
         modelOptions: Options = {}
-    ): Allows.Args => {
+    ): Validation.Args => {
         const args = {
             value,
             errors: new ErrorTree(),
-            ctx: Traverse.createContext(modelOptions) as Context,
+            ctx: Traversal.createContext(modelOptions) as Context,
             cfg: options
         }
         args.ctx.checkedValuesByAlias = {}

@@ -1,12 +1,12 @@
-import { Base } from "./kinds/base.js"
-import { ModelOptions, stringifyDef, stringifyPathContext } from "./utils.js"
+import { Node } from "../kinds/base.js"
+import { ModelOptions, stringifyDef, stringifyPathContext } from "../utils.js"
 
-export namespace Parser {
-    export type Node<DefType = unknown> = Base<DefType>
+export namespace Parsing {
+    export type Node<DefType = unknown> = Node<DefType>
 
     export type Parser<DefType = unknown> = (
         def: DefType,
-        ctx: Parser.Context
+        ctx: Parsing.Context
     ) => Node
 
     /** Maps aliases to their definitions or to nodes parsed from their definitions */

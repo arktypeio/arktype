@@ -1,6 +1,5 @@
 import { Spliterate } from "@re-/tools"
-import { Common } from "../common.js"
-import { StrBranch } from "./common.js"
+import { Base, StrBase } from "./base.js"
 import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
@@ -13,13 +12,13 @@ type InvalidBoundError<Bound extends string> =
     `Bound '${Bound}' must be a number literal.`
 
 const invalidBoundError = (bound: string) =>
-    `Bound '${Common.stringifyDef(bound)}' must be a number literal.`
+    `Bound '${Base.stringifyDef(bound)}' must be a number literal.`
 
 type UnboundableError<Bounded extends string> =
     `Bounded definition '${Bounded}' must be a number or string keyword.`
 
 const unboundableError = (inner: string) =>
-    `Bounded definition '${Common.stringifyDef(
+    `Bounded definition '${Base.stringifyDef(
         inner
     )}' must be a number or string keyword.`
 
@@ -33,7 +32,7 @@ const buildComparatorErrorMessage = (
     value: string | number,
     bound: number
 ) => {
-    return `${Common.stringifyValue(value)} is ${comparatorError} ${bound}${
+    return `${Base.stringifyValue(value)} is ${comparatorError} ${bound}${
         typeof value === "string" ? " characters" : ""
     }.`
 }
@@ -85,7 +84,7 @@ export namespace Constraint {
         Dict,
         Ctx,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Common.Parser.ParseErrorMessage
+    > = Bounded extends Base.Parsing.ParseErrorMessage
         ? Bounded
         : Str.Parse<Bounded, Dict, Ctx>
 
@@ -94,7 +93,7 @@ export namespace Constraint {
         Dict,
         Root,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Common.Parser.ParseErrorMessage
+    > = Bounded extends Base.Parsing.ParseErrorMessage
         ? Bounded
         : Str.Validate<Bounded, Dict, Root>
 
@@ -131,9 +130,9 @@ export namespace Constraint {
             ? Left extends EmbeddedNumber.Definition
                 ? Right extends EmbeddedNumber.Definition
                     ? Middle
-                    : Common.Parser.ParseErrorMessage<InvalidBoundError<Right>>
-                : Common.Parser.ParseErrorMessage<InvalidBoundError<Left>>
-            : Common.Parser.ParseErrorMessage<UnboundableError<Middle>>
+                    : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
+                : Base.Parsing.ParseErrorMessage<InvalidBoundError<Left>>
+            : Base.Parsing.ParseErrorMessage<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
               ComparatorToken,
@@ -142,9 +141,9 @@ export namespace Constraint {
         ? Left extends BoundableKeyword
             ? Right extends EmbeddedNumber.Definition
                 ? Left
-                : Common.Parser.ParseErrorMessage<InvalidBoundError<Right>>
-            : Common.Parser.ParseErrorMessage<UnboundableError<Left>>
-        : Common.Parser.ParseErrorMessage<ConstraintError>
+                : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
+            : Base.Parsing.ParseErrorMessage<UnboundableError<Left>>
+        : Base.Parsing.ParseErrorMessage<ConstraintError>
 
     const matcher = /(<=|>=|<|>)/
 
@@ -191,7 +190,7 @@ export namespace Constraint {
         }
     }
 
-    export class Node extends StrBranch<Definition, ParseResult> {
+    export class Node extends StrBase.Branch<Definition, ParseResult> {
         parse() {
             // Odd-indexed parts will always be comparators (<=, >=, < or >)
             // We still need to validate even-indexed parts as boundable keywords or number literals
@@ -225,14 +224,14 @@ export namespace Constraint {
             throw new Error(constraintErrorTemplate)
         }
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             const { bounded, ...bounds } = this.next()
             if (!bounded.handler.validate(args.value, this.ctx)) {
                 args.errors.add(
                     args.ctx.path,
-                    `${Common.stringifyValue(
-                        args.value
-                    )} is not assignable to ${bounded.keyword}.`
+                    `${Base.stringifyValue(args.value)} is not assignable to ${
+                        bounded.keyword
+                    }.`
                 )
                 return
             }
@@ -256,7 +255,7 @@ export namespace Constraint {
         }
 
         generate() {
-            throw new Common.Generate.UngeneratableError(
+            throw new Base.Generation.UngeneratableError(
                 this.def,
                 "Constraint generation is unsupported."
             )

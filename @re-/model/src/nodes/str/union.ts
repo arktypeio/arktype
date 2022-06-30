@@ -1,6 +1,5 @@
 import { TypeOfResult } from "@re-/tools"
-import { Common } from "../common.js"
-import { createSplittableMatcher } from "./common.js"
+import { Base, StrBase } from "./base.js"
 import { Str } from "./str.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
@@ -26,21 +25,21 @@ export namespace Union {
 
     export const matches = (def: string): def is Definition => def.includes("|")
 
-    const matcher = createSplittableMatcher("|")
+    const matcher = StrBase.createSplittableMatcher("|")
 
     export const getMembers = (def: Definition) => def.match(matcher)!
 
-    export class Node extends Common.Branch<Definition, Common.Parser.Node[]> {
+    export class Node extends StrBase.Branch<Definition, Base.Parsing.Node[]> {
         parse() {
             return getMembers(this.def).map((member) => {
                 if (member === "||") {
-                    throw new Common.Parser.UnknownTypeError("")
+                    throw new Base.Parsing.UnknownTypeError("")
                 }
                 return Str.parse(member, this.ctx)
             })
         }
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             const unionErrors = args.errors.split(args.ctx.path)
             for (const branch of this.next()) {
                 const branchErrors = unionErrors.branch(branch.stringifyDef())
@@ -52,7 +51,7 @@ export namespace Union {
                 }
             }
             // If we haven't returned, all branches are invalid, so add an error
-            const summaryErrorMessage = `${Common.stringifyValue(
+            const summaryErrorMessage = `${Base.stringifyValue(
                 args.value
             )} is not assignable to any of ${this.stringifyDef()}.`
             if (args.cfg.verbose) {
@@ -62,14 +61,14 @@ export namespace Union {
             }
         }
 
-        generate(args: Common.Generate.Args) {
+        generate(args: Base.Generation.Args) {
             const possibleValues: unknown[] = []
             const generationErrors: string[] = []
             for (const node of this.next()) {
                 try {
                     possibleValues.push(node.generate(args))
                 } catch (error) {
-                    if (error instanceof Common.Generate.UngeneratableError) {
+                    if (error instanceof Base.Generation.UngeneratableError) {
                         generationErrors.push(error.message)
                     } else {
                         throw error
@@ -77,7 +76,7 @@ export namespace Union {
                 }
             }
             if (!possibleValues.length) {
-                throw new Common.Generate.UngeneratableError(
+                throw new Base.Generation.UngeneratableError(
                     this.def,
                     "None of the definitions can be generated" +
                         (args.cfg.verbose

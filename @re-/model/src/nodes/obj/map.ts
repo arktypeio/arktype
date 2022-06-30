@@ -1,8 +1,7 @@
 import { Entry, Evaluate } from "@re-/tools"
-import { Common } from "../common.js"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { Branch } from "./common.js"
+import { Base, ObjBase } from "./base.js"
 
 export namespace Map {
     export type Definition = Record<string, unknown>
@@ -23,32 +22,32 @@ export namespace Map {
         }
     >
 
-    type ParseResult = Entry<string, Common.Parser.Node>[]
+    type ParseResult = Entry<string, Base.Parsing.Node>[]
 
     export const isMapLike = (
         value: unknown
     ): value is Record<string, unknown> =>
         typeof value === "object" && value !== null && !Array.isArray(value)
 
-    export class Node extends Branch<Definition, ParseResult> {
+    export class Node extends ObjBase.Branch<Definition, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
                 Root.parse(propDef, {
                     ...this.ctx,
-                    path: Common.pathAdd(this.ctx.path, prop)
+                    path: Base.pathAdd(this.ctx.path, prop)
                 })
             ]) as ParseResult
         }
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             if (!isMapLike(args.value)) {
                 this.addUnassignable(args)
                 return
             }
             const valueKeysLeftToCheck = new Set(Object.keys(args.value))
             for (const [prop, node] of this.next()) {
-                const pathWithProp = Common.pathAdd(args.ctx.path, prop)
+                const pathWithProp = Base.pathAdd(args.ctx.path, prop)
                 if (prop in args.value) {
                     node.allows({
                         ...args,
@@ -80,7 +79,7 @@ export namespace Map {
             }
         }
 
-        generate(args: Common.Generate.Args) {
+        generate(args: Base.Generation.Args) {
             const result: Definition = {}
             for (const [prop, node] of this.next()) {
                 // Don't include optional keys by default in generated values
@@ -91,7 +90,7 @@ export namespace Map {
                     ...args,
                     ctx: {
                         ...args.ctx,
-                        path: Common.pathAdd(args.ctx.path, prop)
+                        path: Base.pathAdd(args.ctx.path, prop)
                     }
                 })
             }

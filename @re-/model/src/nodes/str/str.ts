@@ -1,6 +1,6 @@
-import { Common } from "../common.js"
+import { Base } from "../base.js"
 import { Alias } from "./alias.js"
-import { createSplittableMatcher } from "./common.js"
+import { StrBase } from "./base.js"
 import { Constraint } from "./constraint.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"
@@ -11,9 +11,9 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 type BinaryValidationResult<Left, Right> =
-    Left extends Common.Parser.ParseErrorMessage
+    Left extends Base.Parsing.ParseErrorMessage
         ? Left
-        : Right extends Common.Parser.ParseErrorMessage
+        : Right extends Base.Parsing.ParseErrorMessage
         ? Right
         : Left
 
@@ -51,8 +51,8 @@ export namespace Str {
         ? Validate<Next, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.Validate<Def, Dict, Root>
-        : Common.Parser.ParseErrorMessage<
-              Common.Parser.UnknownTypeErrorMessage<Def>
+        : Base.Parsing.ParseErrorMessage<
+              Base.Parsing.UnknownTypeErrorMessage<Def>
           >
 
     export type References<
@@ -66,7 +66,7 @@ export namespace Str {
         | StringLiteral.Definition<infer Text>
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         | EmbeddedRegex.Definition<infer Expression>
-        ? Common.FilterToTuple<Def, Filter>
+        ? Base.FilterToTuple<Def, Filter>
         : Def extends Intersection.Definition<infer Left, infer Right>
         ? [
               ...RecursiveReferences<Left, Filter>,
@@ -81,9 +81,9 @@ export namespace Str {
         ? RecursiveReferences<Next, Filter>
         : Def extends Constraint.Definition
         ? Constraint.References<Def, Filter>
-        : Common.FilterToTuple<Def, Filter>
+        : Base.FilterToTuple<Def, Filter>
 
-    const splittableMatcher = createSplittableMatcher("|&")
+    const splittableMatcher = StrBase.createSplittableMatcher("|&")
 
     export const references = (def: string): string[] => {
         const result = []
@@ -137,7 +137,7 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
-    export const parse: Common.Parser.Parser<string> = (def, ctx) => {
+    export const parse: Base.Parsing.Parser<string> = (def, ctx) => {
         if (Optional.matches(def)) {
             return new Optional.Node(def, ctx)
         } else if (Keyword.matches(def)) {
@@ -161,10 +161,10 @@ export namespace Str {
         } else if (Constraint.matches(def)) {
             return new Constraint.Node(def, ctx)
         }
-        throw new Common.Parser.ParseError(
-            `Unable to determine the type of '${Common.stringifyDef(
+        throw new Base.Parsing.ParseError(
+            `Unable to determine the type of '${Base.stringifyDef(
                 def
-            )}'${Common.stringifyPathContext(ctx.path)}.`
+            )}'${Base.stringifyPathContext(ctx.path)}.`
         )
     }
 }

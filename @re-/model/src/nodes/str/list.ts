@@ -1,4 +1,4 @@
-import { Common } from "../common.js"
+import { Base, StrBase } from "./base.js"
 import { Str } from "./str.js"
 
 export namespace List {
@@ -7,12 +7,12 @@ export namespace List {
     export const matches = (def: string): def is Definition =>
         def.endsWith("[]")
 
-    export class Node extends Common.Branch<Definition> {
+    export class Node extends StrBase.Branch<Definition> {
         parse() {
             return Str.parse(this.def.slice(0, -2), this.ctx)
         }
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             if (!Array.isArray(args.value)) {
                 this.addUnassignable(args)
                 return
@@ -24,7 +24,7 @@ export namespace List {
                     value: element,
                     ctx: {
                         ...args.ctx,
-                        path: Common.pathAdd(args.ctx.path, i)
+                        path: Base.pathAdd(args.ctx.path, i)
                     }
                 })
             }

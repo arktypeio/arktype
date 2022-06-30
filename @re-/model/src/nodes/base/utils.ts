@@ -1,6 +1,6 @@
 import { toString } from "@re-/tools"
-import { Parser } from "./parser.js"
-import { Allows, Generate } from "./traverse/index.js"
+import { Generation, Validation } from "./features/index.js"
+import { Parsing } from "./features/parsing.js"
 
 export const pathAdd = (...subpaths: (string | number)[]) =>
     subpaths.filter((_) => _ !== "").join("/")
@@ -17,9 +17,9 @@ export const stringifyPathContext = (path: string) =>
     path ? ` at path ${path}` : ""
 
 export type ModelOptions = {
-    parse?: Parser.Options
-    validate?: Allows.Options
-    generate?: Generate.Options
+    parse?: Parsing.Options
+    validate?: Validation.Options
+    generate?: Generation.Options
 }
 
 export type FilterToTuple<Value, Filter> = Value extends Filter ? [Value] : []

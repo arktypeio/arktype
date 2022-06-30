@@ -1,6 +1,6 @@
-import { Traverse } from "./traverse.js"
+import { Traversal } from "./traversal.js"
 
-export namespace Generate {
+export namespace Generation {
     export type Options = {
         /*
          * By default, generate will throw if it encounters a cyclic required type
@@ -14,7 +14,7 @@ export namespace Generate {
 
     export type Args = {
         cfg: Config
-        ctx: Traverse.Context<Config>
+        ctx: Traversal.Context<Config>
     }
 
     export class UngeneratableError extends Error {
@@ -42,8 +42,8 @@ export namespace Generate {
     export const createArgs = (
         options: Options = {},
         modelOptions: Options = {}
-    ): Generate.Args => ({
-        ctx: Traverse.createContext(modelOptions),
+    ): Generation.Args => ({
+        ctx: Traversal.createContext(modelOptions),
         cfg: options
     })
 }

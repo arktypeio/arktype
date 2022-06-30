@@ -1,10 +1,10 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
-import { Common } from "./nodes/common.js"
+import { Base } from "./nodes/base.js"
 import { Root, Str } from "./nodes/index.js"
 import { AliasIn, SpaceDictionary } from "./space.js"
 
 export type ShallowCycleError<Seen extends string[]> =
-    Common.Parser.ParseErrorMessage<`${Seen[0]} references a shallow cycle: ${Join<
+    Base.Parsing.ParseErrorMessage<`${Seen[0]} references a shallow cycle: ${Join<
         Seen,
         "=>"
     >}.`>
@@ -107,7 +107,7 @@ const checkRecursiveShallowReferences = (directReferenceMap: ReferenceMap) => {
     const checked: Record<string, boolean> = {}
     const checkShallowReferencePath = (alias: string, path: string[]) => {
         if (path.includes(alias)) {
-            throw new Common.Parser.ParseError(
+            throw new Base.Parsing.ParseError(
                 shallowCycleError([...path, alias])
             )
         }

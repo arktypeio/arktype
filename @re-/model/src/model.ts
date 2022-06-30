@@ -3,8 +3,8 @@ import {
     Evaluate,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { Common } from "./nodes/common.js"
-import { ModelOptions } from "./nodes/common/utils.js"
+import { Base } from "./nodes/base.js"
+import { ModelOptions } from "./nodes/base/utils.js"
 import { Root } from "./nodes/index.js"
 
 /**
@@ -14,7 +14,7 @@ import { Root } from "./nodes/index.js"
  * @returns {@as any} The result.
  */
 export const model: ModelFunction = (definition, options) => {
-    const root = Root.parse(definition, Common.Parser.createContext(options))
+    const root = Root.parse(definition, Base.Parsing.createContext(options))
     return new Model(root, options) as any
 }
 
@@ -40,7 +40,7 @@ export class Model implements ModelFrom<any, any> {
     definition: unknown
 
     constructor(
-        public root: Common.Parser.Node,
+        public root: Base.Parsing.Node,
         public config: ModelOptions = {}
     ) {
         this.definition = root.def
@@ -50,8 +50,8 @@ export class Model implements ModelFrom<any, any> {
         return chainableNoOpProxy
     }
 
-    validate(value: unknown, options?: Common.Allows.Options) {
-        const args = Common.Allows.createArgs(
+    validate(value: unknown, options?: Base.Validation.Options) {
+        const args = Base.Validation.createArgs(
             value,
             options,
             this.config.validate
@@ -59,7 +59,7 @@ export class Model implements ModelFrom<any, any> {
         const customValidator =
             args.cfg.validator ?? args.ctx.modelCfg.validator ?? "default"
         if (customValidator !== "default") {
-            Common.Allows.customValidatorAllows(
+            Base.Validation.customValidatorAllows(
                 customValidator,
                 this.root,
                 args
@@ -70,11 +70,11 @@ export class Model implements ModelFrom<any, any> {
         return args.errors.isEmpty()
             ? { data: value }
             : {
-                  error: new Common.Allows.ValidationError(args.errors)
+                  error: new Base.Validation.ValidationError(args.errors)
               }
     }
 
-    assert(value: unknown, options?: Common.Allows.Options) {
+    assert(value: unknown, options?: Base.Validation.Options) {
         const validationResult = this.validate(value, options)
         if (validationResult.error) {
             throw validationResult.error
@@ -82,34 +82,34 @@ export class Model implements ModelFrom<any, any> {
         return validationResult.data
     }
 
-    generate(options?: Common.Generate.Options) {
+    generate(options?: Base.Generation.Options) {
         return this.root.generate(
-            Common.Generate.createArgs(options, this.config.generate)
+            Base.Generation.createArgs(options, this.config.generate)
         )
     }
 }
 
-export type AssertOptions = Common.Allows.Options
+export type AssertOptions = Base.Validation.Options
 
 export type ValidateFunction<ModeledType> = (
     value: unknown,
-    options?: Common.Allows.Options
+    options?: Base.Validation.Options
 ) => ValidationResult<ModeledType>
 
 export type ValidationResult<ModeledType> = MutuallyExclusiveProps<
     { data: ModeledType },
     {
-        error: Common.Allows.ValidationError
+        error: Base.Validation.ValidationError
     }
 >
 
 export type AssertFunction<ModeledType> = (
     value: unknown,
-    options?: Common.Allows.Options
+    options?: Base.Validation.Options
 ) => ModeledType
 
 export type GenerateFunction<ModeledType> = (
-    options?: Common.Generate.Options
+    options?: Base.Generation.Options
 ) => ModeledType
 
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>

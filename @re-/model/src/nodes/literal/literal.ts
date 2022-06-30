@@ -1,4 +1,4 @@
-import { Common } from "../common.js"
+import { Base } from "../base.js"
 
 export namespace Literal {
     export type Definition = number | bigint | boolean | undefined | null
@@ -10,12 +10,12 @@ export namespace Literal {
         typeof def === "number" ||
         typeof def === "bigint"
 
-    export class Node extends Common.Leaf<Definition> {
+    export class Node extends Base.Leaf<Definition> {
         defToString() {
             return this.stringifyDef()
         }
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             if (args.value !== this.def) {
                 this.addUnassignable(args)
             }

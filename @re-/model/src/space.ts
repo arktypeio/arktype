@@ -6,7 +6,7 @@ import {
     RequireKeys
 } from "@re-/tools"
 import { Model, ModelFrom, ModelFunction } from "./model.js"
-import { Common } from "./nodes/common.js"
+import { Base } from "./nodes/base.js"
 import { Root } from "./nodes/index.js"
 import { Alias } from "./nodes/str/alias.js"
 import {
@@ -29,7 +29,7 @@ export class Space implements SpaceFrom<any> {
         this.models = {}
         checkForShallowCycle(dictionary)
         for (const alias of Object.keys(this.config.resolutions)) {
-            const ctx = Common.Parser.createContext(
+            const ctx = Base.Parsing.createContext(
                 deepMerge(this.config, this.config.models[alias]),
                 this.config.resolutions
             )
@@ -37,10 +37,10 @@ export class Space implements SpaceFrom<any> {
         }
     }
 
-    create(def: unknown, options?: Common.ModelOptions) {
+    create(def: unknown, options?: Base.ModelOptions) {
         const root = Root.parse(
             def,
-            Common.Parser.createContext(
+            Base.Parsing.createContext(
                 deepMerge(this.config, options),
                 this.config.resolutions
             )
@@ -69,13 +69,13 @@ export type ValidateDictionary<Dict> = {
     [TypeName in keyof Dict]: ValidateResolution<TypeName, Dict>
 }
 
-export type SpaceOptions<ModelName extends string> = Common.ModelOptions & {
-    models?: { [K in ModelName]?: Common.ModelOptions }
+export type SpaceOptions<ModelName extends string> = Base.ModelOptions & {
+    models?: { [K in ModelName]?: Base.ModelOptions }
 }
 
 export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models"> & {
     meta: MetaDefinitions
-    resolutions: Common.Parser.ResolutionMap
+    resolutions: Base.Parsing.ResolutionMap
 }
 
 export type SpaceDictionary = Record<string, unknown>
@@ -119,9 +119,9 @@ export type ExtendFunction<BaseDict> = <ExtensionDict>(
 export type SpaceExtensionOptions<
     BaseModelName extends string,
     ExtensionModelName extends string
-> = Common.ModelOptions & {
+> = Base.ModelOptions & {
     models?: {
-        [ModelName in BaseModelName | ExtensionModelName]?: Common.ModelOptions
+        [ModelName in BaseModelName | ExtensionModelName]?: Base.ModelOptions
     }
 }
 

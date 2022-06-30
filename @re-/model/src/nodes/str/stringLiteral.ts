@@ -1,4 +1,4 @@
-import { Common } from "../common.js"
+import { Base, StrBase } from "./base.js"
 
 export namespace StringLiteral {
     export type SingleQuoted<Text extends string> =
@@ -29,10 +29,10 @@ export namespace StringLiteral {
     export const matches = (def: string): def is Definition<string> =>
         matcher.test(def)
 
-    export class Node extends Common.Leaf<Definition<string>> {
+    export class Node extends StrBase.Leaf<Definition<string>> {
         quotedText = this.def.slice(1, -1)
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             if (this.quotedText !== args.value) {
                 this.addUnassignable(args)
             }

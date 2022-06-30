@@ -1,6 +1,6 @@
 import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
-import { Common } from "../common.js"
 import { Root } from "../root.js"
+import { Base } from "./base.js"
 import { Map } from "./map.js"
 import { Regex } from "./regex.js"
 import { Tuple } from "./tuple.js"
@@ -42,7 +42,7 @@ export namespace Obj {
     export const matches = (def: unknown): def is object =>
         typeof def === "object" && def !== null
 
-    export const parse: Common.Parser.Parser<object> = (def, ctx) => {
+    export const parse: Base.Parsing.Parser<object> = (def, ctx) => {
         if (Regex.matches(def)) {
             return new Regex.Node(def, ctx)
         }

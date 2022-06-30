@@ -1,7 +1,7 @@
 import { And, Get, WithPropValue } from "@re-/tools"
 import type { MetaKey } from "../../space.js"
-import { Common } from "../common.js"
 import { Root } from "../root.js"
+import { Base, StrBase } from "./base.js"
 
 type GetMetaDefinitions<Dict> = MetaKey extends keyof Dict ? Dict[MetaKey] : {}
 
@@ -10,7 +10,7 @@ export namespace Alias {
         Def extends keyof Dict,
         Dict,
         Seen
-    > = Dict[Def] extends Common.Parser.ParseErrorMessage
+    > = Dict[Def] extends Base.Parsing.ParseErrorMessage
         ? unknown
         : And<
               "onResolve" extends keyof GetMetaDefinitions<Dict> ? true : false,
@@ -32,14 +32,14 @@ export namespace Alias {
           >
         : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
-    export const matches = (def: string, ctx: Common.Parser.Context) =>
+    export const matches = (def: string, ctx: Base.Parsing.Context) =>
         def in ctx.resolutions
 
-    export class Node extends Common.Leaf<string> {
+    export class Node extends StrBase.Leaf<string> {
         // @ts-ignore (spurious initialization error)
-        private next: Common.Parser.Node
+        private next: Base.Parsing.Node
 
-        constructor(def: string, ctx: Common.Parser.Context) {
+        constructor(def: string, ctx: Base.Parsing.Context) {
             // If we've already seen this alias, the resolution will be an Alias node, so just return that
             if (ctx.resolutions[def] instanceof Node) {
                 return ctx.resolutions[def] as Node
@@ -52,7 +52,7 @@ export namespace Alias {
             this.next = Root.parse(unresolvedDefinition, this.ctx)
         }
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             const nextArgs = this.nextArgs(args, this.ctx.cfg.validate)
             if (typeof args.value === "object" && args.value !== null) {
                 if (
@@ -77,7 +77,7 @@ export namespace Alias {
                 nextArgs.ctx.modelCfg.validator ??
                 "default"
             if (customValidator !== "default") {
-                Common.Allows.customValidatorAllows(
+                Base.Validation.customValidatorAllows(
                     customValidator,
                     this,
                     nextArgs
@@ -87,7 +87,7 @@ export namespace Alias {
             }
         }
 
-        generate(args: Common.Generate.Args) {
+        generate(args: Base.Generation.Args) {
             const nextArgs = this.nextArgs(args, this.ctx.cfg.generate)
             if (args.ctx.seen.includes(this.def)) {
                 const onRequiredCycle =
@@ -96,7 +96,7 @@ export namespace Alias {
                 if (onRequiredCycle) {
                     return onRequiredCycle
                 }
-                throw new Common.Generate.RequiredCycleError(
+                throw new Base.Generation.RequiredCycleError(
                     this.def,
                     args.ctx.seen
                 )
@@ -106,7 +106,7 @@ export namespace Alias {
 
         private nextArgs<
             Args extends {
-                ctx: Common.Traverse.Context<any>
+                ctx: Base.Traversal.Context<any>
                 cfg: any
             }
         >(args: Args, aliasCfg: any): Args {

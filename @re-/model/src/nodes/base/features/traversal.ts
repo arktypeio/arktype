@@ -1,4 +1,4 @@
-export namespace Traverse {
+export namespace Traversal {
     export type Context<Cfg> = {
         path: string
         seen: string[]
@@ -15,7 +15,6 @@ export namespace Traverse {
 
     // export abstract class Traversal<Cfg> {
     //     private ctxStack: Context[]
-
     //     constructor(public readonly cfg: Cfg) {
     //         this.ctxStack = [
     //             {
