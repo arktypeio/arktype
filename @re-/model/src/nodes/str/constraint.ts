@@ -1,5 +1,5 @@
 import { Spliterate } from "@re-/tools"
-import { Base, StrBase } from "./base.js"
+import { Base } from "./base.js"
 import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
@@ -12,13 +12,13 @@ type InvalidBoundError<Bound extends string> =
     `Bound '${Bound}' must be a number literal.`
 
 const invalidBoundError = (bound: string) =>
-    `Bound '${Base.stringifyDef(bound)}' must be a number literal.`
+    `Bound '${Base.defToString(bound)}' must be a number literal.`
 
 type UnboundableError<Bounded extends string> =
     `Bounded definition '${Bounded}' must be a number or string keyword.`
 
 const unboundableError = (inner: string) =>
-    `Bounded definition '${Base.stringifyDef(
+    `Bounded definition '${Base.defToString(
         inner
     )}' must be a number or string keyword.`
 
@@ -190,7 +190,7 @@ export namespace Constraint {
         }
     }
 
-    export class Node extends StrBase.Branch<Definition, ParseResult> {
+    export class Node extends Base.Branch<Definition> {
         parse() {
             // Odd-indexed parts will always be comparators (<=, >=, < or >)
             // We still need to validate even-indexed parts as boundable keywords or number literals
@@ -225,7 +225,7 @@ export namespace Constraint {
         }
 
         allows(args: Base.Validation.Args) {
-            const { bounded, ...bounds } = this.next()
+            const { bounded, ...bounds } = this.children()
             if (!bounded.handler.validate(args.value, this.ctx)) {
                 args.errors.add(
                     args.ctx.path,

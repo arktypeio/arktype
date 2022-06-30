@@ -1,8 +1,8 @@
-import { Node } from "../kinds/base.js"
-import { ModelOptions, stringifyDef, stringifyPathContext } from "../utils.js"
+import { Node as AbstractNode } from "../kinds/node.js"
+import { defToString, ModelOptions, stringifyPathContext } from "../utils.js"
 
 export namespace Parsing {
-    export type Node<DefType = unknown> = Node<DefType>
+    export type Node<DefType = unknown> = AbstractNode<DefType>
 
     export type Parser<DefType = unknown> = (
         def: DefType,
@@ -49,7 +49,7 @@ export namespace Parsing {
         path: string,
         description: string
     ) =>
-        `Definition ${stringifyDef(definition)}${stringifyPathContext(
+        `Definition ${defToString(definition)}${stringifyPathContext(
             path
         )} ${description}`
 

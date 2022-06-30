@@ -1,5 +1,5 @@
 import { Alias } from "./alias.js"
-import { Base, StrBase } from "./base.js"
+import { Base, createSplittableMatcher } from "./base.js"
 import { Constraint } from "./constraint.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"
@@ -82,7 +82,7 @@ export namespace Str {
         ? Constraint.References<Def, Filter>
         : Base.FilterToTuple<Def, Filter>
 
-    const splittableMatcher = StrBase.createSplittableMatcher("|&")
+    const splittableMatcher = createSplittableMatcher("|&")
 
     export const references = (def: string): string[] => {
         const result = []
@@ -161,7 +161,7 @@ export namespace Str {
             return new Constraint.Node(def, ctx)
         }
         throw new Base.Parsing.ParseError(
-            `Unable to determine the type of '${Base.stringifyDef(
+            `Unable to determine the type of '${Base.defToString(
                 def
             )}'${Base.stringifyPathContext(ctx.path)}.`
         )

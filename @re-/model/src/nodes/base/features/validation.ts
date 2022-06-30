@@ -1,5 +1,5 @@
 import { isDigits, uncapitalize } from "@re-/tools"
-import { stringifyDef, stringifyValue } from "../utils.js"
+import { defToString, stringifyValue } from "../utils.js"
 import { Parsing } from "./parsing.js"
 import { Traversal } from "./traversal.js"
 
@@ -45,7 +45,7 @@ export namespace Validation {
     export const buildUnassignableErrorMessage = (
         def: unknown,
         value: unknown
-    ) => `${stringifyValue(value)} is not assignable to ${stringifyDef(def)}.`
+    ) => `${stringifyValue(value)} is not assignable to ${defToString(def)}.`
 
     export const customValidatorAllows = (
         validator: CustomValidator,

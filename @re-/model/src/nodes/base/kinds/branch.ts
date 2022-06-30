@@ -1,11 +1,11 @@
 import { Parsing } from "../features/parsing.js"
-import { Node } from "./base.js"
+import { References } from "../features/references.js"
+import { Node } from "./node.js"
 
-export abstract class Branch<
-    DefType,
-    Next = Node<unknown>
-> extends Node<DefType> {
-    private cache?: Next
+export type ChildList = Parsing.Node[]
+
+export abstract class Branch<DefType> extends Node<DefType> {
+    private cache?: ChildList
 
     constructor(def: DefType, ctx: Parsing.Context) {
         super(def, ctx)
@@ -14,12 +14,24 @@ export abstract class Branch<
         }
     }
 
-    next() {
+    children() {
         if (!this.cache) {
             this.cache = this.parse()
         }
         return this.cache
     }
 
-    abstract parse(): Next
+    firstChild() {
+        return this.children()[0]
+    }
+
+    references(args: References.Options) {
+        const result: string[] = []
+        for (const valueNode of Object.values(this.children())) {
+            result.push(...valueNode.references(args))
+        }
+        return result
+    }
+
+    abstract parse(): ChildList
 }

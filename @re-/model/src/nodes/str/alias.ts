@@ -1,7 +1,7 @@
 import { And, Get, WithPropValue } from "@re-/tools"
 import type { MetaKey } from "../../space.js"
 import { Root } from "../root.js"
-import { Base, StrBase } from "./base.js"
+import { Base } from "./base.js"
 
 type GetMetaDefinitions<Dict> = MetaKey extends keyof Dict ? Dict[MetaKey] : {}
 
@@ -35,7 +35,7 @@ export namespace Alias {
     export const matches = (def: string, ctx: Base.Parsing.Context) =>
         def in ctx.resolutions
 
-    export class Node extends StrBase.Leaf<string> {
+    export class Node extends Base.Leaf<string> {
         // @ts-ignore (spurious initialization error)
         private next: Base.Parsing.Node
 

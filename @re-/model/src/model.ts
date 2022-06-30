@@ -3,9 +3,7 @@ import {
     Evaluate,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { Base } from "./nodes/base.js"
-import { ModelOptions } from "./nodes/base/utils.js"
-import { Root } from "./nodes/index.js"
+import { Base, Root } from "./nodes/index.js"
 
 /**
  * Create a model.
@@ -25,7 +23,7 @@ export const eager: ModelFunction = (definition, options = {}) => {
 
 export type ModelFunction<Dict = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
-    options?: ModelOptions
+    options?: Base.ModelOptions
 ) => ModelFrom<Def, Parse<Root.Validate<Def, Dict>, Dict>>
 
 export type ModelFrom<Def, ModeledType> = Evaluate<{
@@ -41,7 +39,7 @@ export class Model implements ModelFrom<any, any> {
 
     constructor(
         public root: Base.Parsing.Node,
-        public config: ModelOptions = {}
+        public config: Base.ModelOptions = {}
     ) {
         this.definition = root.def
     }

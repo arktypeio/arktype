@@ -1,5 +1,5 @@
 import { TypeOfResult } from "@re-/tools"
-import { Base, StrBase } from "./base.js"
+import { Base, createSplittableMatcher } from "./base.js"
 import { Str } from "./str.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
@@ -25,11 +25,11 @@ export namespace Union {
 
     export const matches = (def: string): def is Definition => def.includes("|")
 
-    const matcher = StrBase.createSplittableMatcher("|")
+    const matcher = createSplittableMatcher("|")
 
     export const getMembers = (def: Definition) => def.match(matcher)!
 
-    export class Node extends StrBase.Branch<Definition, Base.Parsing.Node[]> {
+    export class Node extends Base.Branch<Definition> {
         parse() {
             return getMembers(this.def).map((member) => {
                 if (member === "||") {
@@ -41,8 +41,8 @@ export namespace Union {
 
         allows(args: Base.Validation.Args) {
             const unionErrors = args.errors.split(args.ctx.path)
-            for (const branch of this.next()) {
-                const branchErrors = unionErrors.branch(branch.stringifyDef())
+            for (const branch of this.children()) {
+                const branchErrors = unionErrors.branch(branch.defToString())
                 branch.allows({ ...args, errors: branchErrors })
                 if (branchErrors.count === 0) {
                     // If any branch of a Union does not have errors,
@@ -53,7 +53,7 @@ export namespace Union {
             // If we haven't returned, all branches are invalid, so add an error
             const summaryErrorMessage = `${Base.stringifyValue(
                 args.value
-            )} is not assignable to any of ${this.stringifyDef()}.`
+            )} is not assignable to any of ${this.defToString()}.`
             if (args.cfg.verbose) {
                 unionErrors.mergeAll(summaryErrorMessage)
             } else {
@@ -64,7 +64,7 @@ export namespace Union {
         generate(args: Base.Generation.Args) {
             const possibleValues: unknown[] = []
             const generationErrors: string[] = []
-            for (const node of this.next()) {
+            for (const node of this.children()) {
                 try {
                     possibleValues.push(node.generate(args))
                 } catch (error) {

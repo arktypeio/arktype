@@ -1,5 +1,5 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { Base, StrBase } from "./base.js"
+import { Base } from "./base.js"
 
 type KeywordHandlerMap = Record<string, Keyword.Handler>
 
@@ -178,7 +178,7 @@ export namespace Keyword {
 
     export const matches = (def: string): def is Definition => def in handlers
 
-    export class Node extends StrBase.Leaf<Definition> {
+    export class Node extends Base.Leaf<Definition> {
         allows(args: Base.Validation.Args) {
             if (!handlers[this.def].validate(args.value)) {
                 this.addUnassignable(args)

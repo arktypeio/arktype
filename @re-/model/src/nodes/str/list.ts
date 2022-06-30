@@ -1,4 +1,4 @@
-import { Base, StrBase } from "./base.js"
+import { Base } from "./base.js"
 import { Str } from "./str.js"
 
 export namespace List {
@@ -7,9 +7,9 @@ export namespace List {
     export const matches = (def: string): def is Definition =>
         def.endsWith("[]")
 
-    export class Node extends StrBase.Branch<Definition> {
+    export class Node extends Base.Branch<Definition> {
         parse() {
-            return Str.parse(this.def.slice(0, -2), this.ctx)
+            return [Str.parse(this.def.slice(0, -2), this.ctx)]
         }
 
         allows(args: Base.Validation.Args) {
@@ -17,16 +17,18 @@ export namespace List {
                 this.addUnassignable(args)
                 return
             }
-            const nextNode = this.next()
-            for (const [i, element] of Object.entries(args.value)) {
-                nextNode.allows({
+            const itemNode = this.children()[0]
+            let itemIndex = 0
+            for (const itemValue of args.value) {
+                itemNode.allows({
                     ...args,
-                    value: element,
+                    value: itemValue,
                     ctx: {
                         ...args.ctx,
-                        path: Base.pathAdd(args.ctx.path, i)
+                        path: Base.pathAdd(args.ctx.path, itemIndex)
                     }
                 })
+                itemIndex++
             }
         }
 

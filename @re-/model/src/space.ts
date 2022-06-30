@@ -6,9 +6,7 @@ import {
     RequireKeys
 } from "@re-/tools"
 import { Model, ModelFrom, ModelFunction } from "./model.js"
-import { Base } from "./nodes/base.js"
-import { Root } from "./nodes/index.js"
-import { Alias } from "./nodes/str/alias.js"
+import { Alias, Base, Root } from "./nodes/index.js"
 import {
     checkForShallowCycle,
     ParseResolution,

@@ -1,6 +1,5 @@
-import { Entry } from "@re-/tools"
 import { Root } from "../root.js"
-import { Base, ObjBase } from "./base.js"
+import { Base } from "./base.js"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -11,17 +10,14 @@ export namespace Tuple {
     export const matches = (def: object): def is Definition =>
         Array.isArray(def)
 
-    type ParseResult = Entry<number, Base.Parsing.Node>[]
-
-    export class Node extends ObjBase.Branch<Definition, ParseResult> {
+    export class Node extends Base.Branch<Definition> {
         parse() {
-            return this.def.map((elementDef, elementIndex) => [
-                elementIndex,
+            return this.def.map((elementDef, elementIndex) =>
                 Root.parse(elementDef, {
                     ...this.ctx,
                     path: Base.pathAdd(this.ctx.path, elementIndex)
                 })
-            ]) as ParseResult
+            )
         }
 
         allows(args: Base.Validation.Args) {
@@ -36,13 +32,14 @@ export namespace Tuple {
                 )
                 return
             }
-            for (const [i, node] of this.next()) {
-                node.allows({
+            for (const itemNode of this.children()) {
+                const itemIndex = itemNode.keyOf()
+                itemNode.allows({
                     ...args,
-                    value: args.value[i],
+                    value: args.value[itemIndex as `${number}`],
                     ctx: {
                         ...args.ctx,
-                        path: Base.pathAdd(args.ctx.path, i)
+                        path: Base.pathAdd(args.ctx.path, itemIndex)
                     }
                 })
             }
@@ -50,13 +47,13 @@ export namespace Tuple {
 
         generate(args: Base.Generation.Args) {
             const result: unknown[] = []
-            for (const [i, node] of this.next()) {
+            for (const itemNode of this.children()) {
                 result.push(
-                    node.generate({
+                    itemNode.generate({
                         ...args,
                         ctx: {
                             ...args.ctx,
-                            path: Base.pathAdd(args.ctx.path, i)
+                            path: Base.pathAdd(args.ctx.path, itemNode.keyOf())
                         }
                     })
                 )

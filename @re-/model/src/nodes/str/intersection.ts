@@ -1,4 +1,4 @@
-import { Base, StrBase } from "./base.js"
+import { Base, createSplittableMatcher } from "./base.js"
 import { Str } from "./str.js"
 
 export namespace Intersection {
@@ -9,11 +9,11 @@ export namespace Intersection {
 
     export const matches = (def: string): def is Definition => def.includes("&")
 
-    const matcher = StrBase.createSplittableMatcher("&")
+    const matcher = createSplittableMatcher("&")
 
     export const getMembers = (def: Definition) => def.match(matcher)!
 
-    export class Node extends StrBase.Branch<Definition, Base.Parsing.Node[]> {
+    export class Node extends Base.Branch<Definition> {
         parse() {
             return getMembers(this.def).map((member) => {
                 if (member === "&&") {
@@ -24,7 +24,7 @@ export namespace Intersection {
         }
 
         allows(args: Base.Validation.Args) {
-            for (const branch of this.next()) {
+            for (const branch of this.children()) {
                 branch.allows(args)
                 if (args.errors.has(args.ctx.path)) {
                     return

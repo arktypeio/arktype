@@ -1,4 +1,4 @@
-import { Base, StrBase } from "./base.js"
+import { Base } from "./base.js"
 
 export namespace StringLiteral {
     export type SingleQuoted<Text extends string> =
@@ -29,7 +29,7 @@ export namespace StringLiteral {
     export const matches = (def: string): def is Definition<string> =>
         matcher.test(def)
 
-    export class Node extends StrBase.Leaf<Definition<string>> {
+    export class Node extends Base.Leaf<Definition<string>> {
         quotedText = this.def.slice(1, -1)
 
         allows(args: Base.Validation.Args) {

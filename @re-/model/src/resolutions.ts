@@ -1,6 +1,5 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
-import { Base } from "./nodes/base.js"
-import { Root, Str } from "./nodes/index.js"
+import { Base, Root, Str } from "./nodes/index.js"
 import { AliasIn, SpaceDictionary } from "./space.js"
 
 export type ShallowCycleError<Seen extends string[]> =

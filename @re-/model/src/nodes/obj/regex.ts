@@ -7,10 +7,6 @@ export namespace Regex {
         def instanceof RegExp
 
     export class Node extends Base.Leaf<Definition> {
-        defToString() {
-            return `/${this.def.source}/`
-        }
-
         allows(args: Base.Validation.Args) {
             if (typeof args.value !== "string") {
                 args.errors.add(
