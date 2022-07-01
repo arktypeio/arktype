@@ -39,7 +39,9 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Setup .npmrc
-              run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
+              run: |
+                  echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
+                  echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> configs/package.npmrc
 
             - name: Create and publish versions
               uses: changesets/action@v1
