@@ -1,0 +1,47 @@
+---
+id: intro
+hide_table_of_contents: true
+---
+
+# Model
+
+<h4>
+    <i>Type-first validation from editor to runtime🧬</i>
+</h4>
+
+## What's a model? 🤷
+
+A model is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of [TypeScript](https://github.com/microsoft/TypeScript) in your editor and build and a validator like [Yup](https://github.com/jquense/yup) or [JOI](https://github.com/sideway/joi) at runtime.
+
+## Installation 📦
+
+`npm install @re-/model`
+
+(feel free to substitute `yarn`, `pnpm`, et al.)
+
+If you're using TypeScript, you'll need at least `4.4`.
+
+## Start quick ⏱️
+
+This snippet will give you an idea of `@re-/model` syntax. Try messing around with the `user` definition below and see how the type hints help guide you in the right direction.
+
+<div
+    style={{
+        width: "100%",
+        height: "660px",
+        border: 0,
+        marginLeft: -8,
+        marginRight: -8,
+        padding: 16,
+        overflow: "hidden",
+        borderRadius: 8
+    }}
+>
+    <iframe
+        id="demo"
+        src="https://stackblitz.com/edit/re-model?embed=1&file=model.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark"
+        style={{ height: "100%", width: "100%", borderRadius: 8 }}
+        title="@re-/model"
+        sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+    />
+</div>

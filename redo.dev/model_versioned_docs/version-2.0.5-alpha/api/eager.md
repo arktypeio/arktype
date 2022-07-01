@@ -1,4 +1,4 @@
-# declare
+# eager
 
 ## tags
 
@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-declare: DeclareFn
+eager: ModelFunction
 ```

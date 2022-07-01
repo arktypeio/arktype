@@ -1,5 +1,11 @@
 # @re-/model
 
+## 2.0.5-alpha
+
+### Patch Changes
+
+-   f7a8211: Update validation API, detect shallow cycles, improve bound error messages.
+
 ## 2.0.4-alpha
 
 ### Patch Changes

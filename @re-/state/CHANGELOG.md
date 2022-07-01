@@ -1,5 +1,12 @@
 # @re-/state
 
+## 0.0.6
+
+### Patch Changes
+
+-   Updated dependencies [f7a8211]
+    -   @re-/model@2.0.5
+
 ## 0.0.5
 
 ### Patch Changes

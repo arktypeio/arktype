@@ -1,4 +1,4 @@
-# declare
+# space
 
 ## tags
 
@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-declare: DeclareFn
+space: CreateSpaceFn
 ```
