@@ -1,10 +1,20 @@
 import { Base } from "../base.js"
 
-const BaseTypeKeyword = Base.Leaf<string>
+abstract class BaseTypeKeyword extends Base.Leaf<string> {
+    allows(args: Base.Validation.Args) {
+        if (this.allowsValue(args.value)) {
+            return true
+        }
+        this.addUnassignable(args)
+        return false
+    }
+
+    abstract allowsValue(value: unknown): boolean
+}
 
 export class SymbolKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return typeof args.value === "symbol"
+    allowsValue(value: unknown) {
+        return typeof value === "symbol"
     }
 
     generate(): symbol {
@@ -13,8 +23,8 @@ export class SymbolKeyword extends BaseTypeKeyword {
 }
 
 export class FunctionKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return typeof args.value === "function"
+    allowsValue(value: unknown) {
+        return typeof value === "function"
     }
 
     generate(): Function {
@@ -23,8 +33,8 @@ export class FunctionKeyword extends BaseTypeKeyword {
 }
 
 export class TrueKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return args.value === true
+    allowsValue(value: unknown) {
+        return value === true
     }
 
     generate(): true {
@@ -33,8 +43,8 @@ export class TrueKeyword extends BaseTypeKeyword {
 }
 
 export class FalseKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return args.value === false
+    allowsValue(value: unknown) {
+        return value === false
     }
 
     generate(): false {
@@ -43,8 +53,8 @@ export class FalseKeyword extends BaseTypeKeyword {
 }
 
 export class UndefinedKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return args.value === undefined
+    allowsValue(value: unknown) {
+        return value === undefined
     }
 
     generate(): undefined {
@@ -53,8 +63,8 @@ export class UndefinedKeyword extends BaseTypeKeyword {
 }
 
 export class NullKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return args.value === null
+    allowsValue(value: unknown) {
+        return value === null
     }
 
     generate(): null {
@@ -63,7 +73,7 @@ export class NullKeyword extends BaseTypeKeyword {
 }
 
 export class AnyKeyword extends BaseTypeKeyword {
-    allows() {
+    allowsValue() {
         return true
     }
 
@@ -73,7 +83,7 @@ export class AnyKeyword extends BaseTypeKeyword {
 }
 
 export class UnknownKeyword extends BaseTypeKeyword {
-    allows() {
+    allowsValue() {
         return true
     }
 
@@ -83,8 +93,8 @@ export class UnknownKeyword extends BaseTypeKeyword {
 }
 
 export class VoidKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return args.value === undefined
+    allowsValue(value: unknown) {
+        return value === undefined
     }
 
     generate(): void {
@@ -93,7 +103,7 @@ export class VoidKeyword extends BaseTypeKeyword {
 }
 
 export class NeverKeyword extends BaseTypeKeyword {
-    allows() {
+    allowsValue() {
         return false
     }
 
@@ -106,8 +116,8 @@ export class NeverKeyword extends BaseTypeKeyword {
 }
 
 export class ObjectKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return typeof args.value === "object" && args.value !== null
+    allowsValue(value: unknown) {
+        return typeof value === "object" && value !== null
     }
 
     generate(): object {
@@ -116,8 +126,8 @@ export class ObjectKeyword extends BaseTypeKeyword {
 }
 
 export class BooleanKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return typeof args.value === "boolean"
+    allowsValue(value: unknown) {
+        return typeof value === "boolean"
     }
 
     generate(): boolean {
@@ -126,8 +136,8 @@ export class BooleanKeyword extends BaseTypeKeyword {
 }
 
 export class BigintKeyword extends BaseTypeKeyword {
-    allows(args: Base.Validation.Args) {
-        return typeof args.value === "bigint"
+    allowsValue(value: unknown) {
+        return typeof value === "bigint"
     }
 
     generate(): bigint {

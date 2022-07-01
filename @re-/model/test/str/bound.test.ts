@@ -13,19 +13,19 @@ describe("bound", () => {
             it("invalid single bound", () => {
                 // @ts-expect-error
                 assert(() => eager("number<integer")).throwsAndHasTypeError(
-                    "Bound 'integer' must be a number literal."
+                    "Bounding value 'integer' must be a number literal."
                 )
             })
             it("invalid left bound", () => {
                 // @ts-expect-error
                 assert(() => eager("null<number<5")).throwsAndHasTypeError(
-                    "Bound 'null' must be a number literal."
+                    "Bounding value 'null' must be a number literal."
                 )
             })
             it("invalid right bound", () => {
                 // @ts-expect-error
                 assert(() => eager("1<number<string")).throwsAndHasTypeError(
-                    "Bound 'string' must be a number literal."
+                    "Bounding value 'string' must be a number literal."
                 )
             })
             it("two invalid bounds", () => {
@@ -33,31 +33,25 @@ describe("bound", () => {
                     // @ts-expect-error
                     eager("number<number<number")
                 ).throwsAndHasTypeError(
-                    "Bound 'number' must be a number literal."
+                    "Bounding value 'number' must be a number literal."
                 )
             })
             it("single-bounded unboundable", () => {
                 // @ts-expect-error
                 assert(() => eager("object<999")).throwsAndHasTypeError(
-                    "Bounded definition 'object' must be a number or string keyword."
+                    "Definition 'object' is not boundable."
                 )
             })
             it("double-bounded unboundable", () => {
                 // @ts-expect-error
-                assert(() => eager("1<object<999")).throwsAndHasTypeError(
-                    "Bounded definition 'object' must be a number or string keyword."
-                )
-            })
-            it("doubly invalid bounded unboundable", () => {
-                // @ts-expect-error
-                assert(() => eager("null<object<true")).throwsAndHasTypeError(
-                    "Bounded definition 'object' must be a number or string keyword."
+                assert(() => eager("1<5<999")).throwsAndHasTypeError(
+                    "Definition '5' is not boundable."
                 )
             })
             it("too many values", () => {
                 // @ts-expect-error
                 assert(() => eager("1<2<number<4")).throwsAndHasTypeError(
-                    "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
+                    "Bounds must be either of the form D<N or N<D<N, where 'D' is a boundable definition, 'N' is a number literal, and '<' is a comparison token."
                 )
             })
         })
@@ -96,78 +90,74 @@ describe("bound", () => {
         describe("errors", () => {
             it("invalid string length", () => {
                 assert(model("string>4").validate("four").error?.message).snap(
-                    `"four" is less than or equal to 4 characters.`
+                    `Must be greater than 4 characters (got 4).`
                 )
                 assert(model("string>4").validate("4").error?.message).snap(
-                    `"4" is less than or equal to 4 characters.`
+                    `Must be greater than 4 characters (got 1).`
                 )
                 assert(model("string<4").validate("four").error?.message).snap(
-                    `"four" is greater than or equal to 4 characters.`
+                    `Must be less than 4 characters (got 4).`
                 )
                 assert(
                     model("string<4").validate("longerThanFourCharacters").error
                         ?.message
-                ).snap(
-                    `"longerThanFourCharacters" is greater than or equal to 4 characters.`
-                )
+                ).snap(`Must be less than 4 characters (got 24).`)
                 assert(model("string>=4").validate("4").error?.message).snap(
-                    `"4" is less than 4 characters.`
+                    `Must be greater than or equal to 4 characters (got 1).`
                 )
                 assert(
                     model("string<=4").validate("longerThanFourCharacters")
                         .error?.message
-                ).snap(
-                    `"longerThanFourCharacters" is greater than 4 characters.`
-                )
+                ).snap(`Must be less than or equal to 4 characters (got 24).`)
             })
             it("single-bounded invalid", () => {
                 assert(model("number<=5").validate(7).error?.message).snap(
-                    `7 is greater than 5.`
+                    `Must be less than or equal to 5 (got 7).`
                 )
                 assert(
                     model("number>=-999").validate(-1000).error?.message
-                ).snap(`-1000 is less than -999.`)
+                ).snap(`Must be greater than or equal to -999 (got -1000).`)
                 assert(model("number<5").validate(5).error?.message).snap(
-                    `5 is greater than or equal to 5.`
+                    `Must be less than 5 (got 5).`
                 )
                 assert(model("number<5").validate(9999).error?.message).snap(
-                    `9999 is greater than or equal to 5.`
+                    `Must be less than 5 (got 9999).`
                 )
                 assert(model("number>-5").validate(-5).error?.message).snap(
-                    `-5 is less than or equal to -5.`
+                    `Must be greater than -5 (got -5).`
                 )
                 assert(model("number>-5").validate(-1000).error?.message).snap(
-                    `-1000 is less than or equal to -5.`
+                    `Must be greater than -5 (got -1000).`
                 )
             })
             it("double-bounded invalid", () => {
                 assert(model("5<number<10").validate(-9).error?.message).snap(
-                    `-9 is less than or equal to 5.`
+                    `Must be greater than 5 (got -9).`
                 )
                 assert(model("5<number<10").validate(99).error?.message).snap(
-                    `99 is greater than or equal to 10.`
+                    `Must be less than 10 (got 99).`
                 )
                 assert(
                     model("7>number>-2000").validate(-3000).error?.message
-                ).snap(`-3000 is less than or equal to -2000.`)
+                ).snap(`Must be greater than -2000 (got -3000).`)
                 assert(
                     model("7>number>-2000").validate(3000).error?.message
-                ).snap(`3000 is greater than or equal to 7.`)
+                ).snap(`Must be less than 7 (got 3000).`)
                 assert(
                     model("5<=number<9999").validate(9999).error?.message
-                ).snap(`9999 is greater than or equal to 9999.`)
+                ).snap(`Must be less than 9999 (got 9999).`)
                 assert(
                     model("5<=number<9999").validate(10_000).error?.message
-                ).snap(`10000 is greater than or equal to 9999.`)
+                ).snap(`Must be less than 9999 (got 10000).`)
                 assert(model("5<=number<9999").validate(4).error?.message).snap(
-                    `4 is less than 5.`
+                    `Must be greater than or equal to 5 (got 4).`
                 )
                 assert(
                     model("-5>=number>=-1000").validate(0).error?.message
-                ).snap(`0 is greater than -5.`)
+                ).snap(`Must be less than or equal to -5 (got 0).`)
                 assert(
                     model("-5>=number>=-1000").validate(-1001).error?.message
-                ).snap(`-1001 is less than -1000.`)
+                ).snap(`Must be greater than or equal to -1000 (got -1001).`)
             })
         })
     })

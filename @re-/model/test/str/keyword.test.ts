@@ -112,7 +112,7 @@ describe("keyword", () => {
     describe("function", () => {
         const f = model("function")
         it("type", () => {
-            assert(f.type).typed as (...args: any[]) => any
+            assert(f.type).typed as Function
         })
         it("generation", () => {
             assert(typeof f.generate()).equals("function")

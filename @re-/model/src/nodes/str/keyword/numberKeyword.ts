@@ -6,7 +6,11 @@ abstract class BaseNumberKeyword
     implements Bound.Boundable
 {
     allows(args: Base.Validation.Args) {
-        return typeof args.value === "number" && this.allowsNumber(args.value)
+        if (typeof args.value === "number" && this.allowsNumber(args.value)) {
+            return true
+        }
+        this.addUnassignable(args)
+        return false
     }
 
     abstract allowsNumber(value: number): boolean

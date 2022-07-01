@@ -7,7 +7,11 @@ abstract class BaseStringKeyword
     implements Bound.Boundable
 {
     allows(args: Base.Validation.Args) {
-        return typeof args.value === "string" && this.allowsString(args.value)
+        if (typeof args.value === "string" && this.allowsString(args.value)) {
+            return true
+        }
+        this.addUnassignable(args)
+        return false
     }
 
     abstract allowsString(value: string): boolean

@@ -13,23 +13,21 @@ type BoundableKeyword =
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
 
 type InvalidBoundError<Bound extends string> =
-    `Bound '${Bound}' must be a number literal.`
+    `Bounding value '${Bound}' must be a number literal.`
 
 const invalidBoundError = (bound: string) =>
-    `Bound '${Base.defToString(bound)}' must be a number literal.`
+    `Bounding value '${Base.defToString(bound)}' must be a number literal.`
 
 type UnboundableError<Bounded extends string> =
-    `Bounded definition '${Bounded}' must be a number or string keyword.`
+    `Definition '${Bounded}' is not boundable.`
 
 const unboundableError = (inner: string) =>
-    `Bounded definition '${Base.defToString(
-        inner
-    )}' must be a number or string keyword.`
+    `Definition '${Base.defToString(inner)}' is not boundable.`
 
-const constraintErrorTemplate =
-    "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
+const boundPartsErrorTemplate =
+    "Bounds must be either of the form D<N or N<D<N, where 'D' is a boundable definition, 'N' is a number literal, and '<' is a comparison token."
 
-type ConstraintError = typeof constraintErrorTemplate
+type BoundPartsError = typeof boundPartsErrorTemplate
 
 const invertComparator = (token: ComparatorToken): ComparatorToken => {
     switch (token) {
@@ -118,7 +116,7 @@ export namespace Bound {
                 ? Left
                 : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
             : Base.Parsing.ParseErrorMessage<UnboundableError<Left>>
-        : Base.Parsing.ParseErrorMessage<ConstraintError>
+        : Base.Parsing.ParseErrorMessage<BoundPartsError>
 
     const matcher = /(<=|>=|<|>|==)/
 
@@ -137,7 +135,7 @@ export namespace Bound {
     type RangeParts = [string, ComparatorToken, string, ComparatorToken, string]
 
     export class Node extends Base.Branch<Definition, Boundable[]> {
-        private bounds: BoundEntry[] = []
+        private bounds: BoundEntry[] | undefined
 
         parse() {
             // The regex guarantees odd-indexed parts are comparators (<=, >=, < or >)
@@ -149,7 +147,7 @@ export namespace Bound {
             } else if (parts.length === 5) {
                 child = this.parseRange(parts as RangeParts)
             } else {
-                throw new Error(constraintErrorTemplate)
+                throw new Error(boundPartsErrorTemplate)
             }
             this.assertBoundable(child)
             return [child]
@@ -157,7 +155,7 @@ export namespace Bound {
 
         // E.g. ["number", ">=", "5"]
         private parseBound(parts: BoundParts) {
-            this.bounds.push([parts[1], valueFromBoundPart(parts[2])])
+            this.bounds = [[parts[1], valueFromBoundPart(parts[2])]]
             return Str.parse(parts[0], this.ctx)
         }
 
@@ -169,10 +167,10 @@ export namespace Bound {
              * number>=5
              * number<10
              */
-            this.bounds.push(
+            this.bounds = [
                 [invertComparator(parts[1]), valueFromBoundPart(parts[0])],
                 [parts[3], valueFromBoundPart(parts[4])]
-            )
+            ]
             return Str.parse(parts[2], this.ctx)
         }
 
@@ -187,14 +185,13 @@ export namespace Bound {
 
         private addBoundErrorAndReturnFalse(
             comparatorName: string,
+            boundedValue: number,
             boundDescription: string,
             args: Base.Validation.Args
         ) {
             args.errors.add(
                 args.ctx.path,
-                `${Base.stringifyValue(
-                    args.value
-                )} must be ${comparatorName} ${boundDescription}.`
+                `Must be ${comparatorName} ${boundDescription} (got ${boundedValue}).`
             )
             return false
         }
@@ -205,38 +202,43 @@ export namespace Bound {
                 return false
             }
             const boundedValue = boundedNode.toBound(args.value)
-            const boundDescription = `${boundedValue}${
-                boundedNode.boundBy ? " " + boundedNode.boundBy : ""
-            }`
-            for (const [comparator, bound] of this.bounds) {
+            for (const [comparator, bound] of this.bounds!) {
+                const boundDescription = `${bound}${
+                    boundedNode.boundBy ? " " + boundedNode.boundBy : ""
+                }`
                 if (comparator === "<=" && boundedValue > bound) {
                     return this.addBoundErrorAndReturnFalse(
                         "less than or equal to",
+                        boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === ">=" && boundedValue < bound) {
                     return this.addBoundErrorAndReturnFalse(
                         "greater than or equal to",
+                        boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === "<" && boundedValue >= bound) {
                     return this.addBoundErrorAndReturnFalse(
                         "less than",
+                        boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === ">" && boundedValue <= bound) {
                     return this.addBoundErrorAndReturnFalse(
                         "greater than",
+                        boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === "==" && boundedValue !== bound) {
                     return this.addBoundErrorAndReturnFalse(
-                        // Error message is clear without token name for equality check
+                        // Error message is cleaner without token name for equality check
                         "",
+                        boundedValue,
                         boundDescription,
                         args
                     )

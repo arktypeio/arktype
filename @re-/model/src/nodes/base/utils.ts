@@ -13,18 +13,18 @@ export const defToString = (def: unknown, indentation = ""): string => {
     } else if (typeof def === "object" && def !== null) {
         const isArray = Array.isArray(def)
         const nextIndentation = indentation + "    "
-        let objDefToString = isArray ? "[\n" : "{\n"
+        let objDefToString = isArray ? "[" : "{"
         const defEntries = Object.entries(def)
         for (let i = 0; i < defEntries.length; i++) {
-            objDefToString += nextIndentation
+            objDefToString += "\n" + nextIndentation
             if (!isArray) {
                 objDefToString += defEntries[i][0] + ": "
             }
             objDefToString += defToString(defEntries[i][1], nextIndentation)
-            if (i === defEntries.length - 1) {
-                objDefToString += "\n"
+            if (i !== defEntries.length - 1) {
+                objDefToString += ","
             } else {
-                objDefToString += ",\n"
+                objDefToString += "\n"
             }
         }
         return objDefToString + indentation + (isArray ? "]" : "}")
