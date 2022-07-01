@@ -21,7 +21,8 @@
     "scripts": {
         "build": "pnpm ts-node ../../scripts/build.ts",
         "test": "pnpm ts-node ./src/cli.ts mocha",
-        "test-bench": "pnpm ts-node ./test/bench/test.bench.ts"
+        "test-bench": "pnpm ts-node ./test/bench/test.bench.ts",
+        "g": "pnpm ts-node ./test/templates.ts"
     },
     "bin": {
         "reassert": "./cli.cjs"
