@@ -25,49 +25,66 @@ A model is a way to create universal types for your JS/TS values. From one defin
 
 If you're using TypeScript, you'll need at least `4.4`.
 
-## Start quick ⏱️
+## Getting Started
 
-This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
+Modify any of these examples in our live editor to see the types and validation results change in realtime.
 
-```ts @snipFrom:snippets/model.ts
+### Your first model (⏱️30s)
+
+[Try it out.](https://redo.dev/model/intro#start-quick-%EF%B8%8F)
+
+```ts @snipFrom:docs/snippets/model.ts
 import { model } from "@re-/model"
 
-// Most common TypeScript expressions just work...
-export const userModel = model({
+// Models look just like types...
+export const user = model({
+    age: "number",
+    browser: "'chrome'|'firefox'|'other'|null",
     name: {
         first: "string",
         middle: "string?",
         last: "string"
-    },
-    age: "number",
-    browser: "'chrome'|'firefox'|'other'|null"
+    }
 })
 
-// Mouse over "User" to see the inferred type...
-export type User = typeof userModel.type
-
-// But a model can also validate your data at runtime...
-export const userData = {
+// And can be used just like types...
+export type User = typeof user.type
+export type EquivalentType = {
+    age: number
+    browser: "chrome" | "firefox" | "other" | null
     name: {
-        first: "Reed",
-        last: "Doe"
-    },
-    age: 28,
-    browser: "Internet Explorer" // :(
+        first: string
+        middle?: string
+        last: string
+    }
 }
 
-export const userValidationResult = userModel.validate(userData)
+// But while types are confined to your IDE...
+export const fetchUser = () => {
+    return {
+        name: {
+            first: "Dan",
+            last: "Ambramov"
+        },
+        age: 29,
+        browser: "Internet Explorer" // R.I.P.
+    }
+}
 
-// Try changing "userModel" or "userData" and see what happens!
+// Models can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+export const { error, data } = user.validate(fetchUser())
+
+if (error) {
+    // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+    console.log(error.message)
+}
 ```
 
-## Types that clique 🔗
+### Spaces
 
-Working with types that refer to one another or themselves? So can your models!
+[Try it out.](https://redo.dev/model/spaces)
 
-[Just compile a **space**.](https://redo.dev/model/spaces)
-
-```ts @snipFrom:snippets/space.ts
+```ts @snipFrom:docs/snippets/space.ts
 import { compile } from "@re-/model"
 
 const space = compile({
@@ -98,15 +115,15 @@ const data = {
 space.models.user.assert(data)
 ```
 
-## Definitions that split ✂️
+### Definitions that split ✂️
 
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
-[Try a **declaration**.](https://redo.dev/model/declarations)
+[Try it out.](https://redo.dev/model/declarations)
 
 `index.ts`
 
-```ts @snipFrom:snippets/declaration/declaration.ts
+```ts @snipFrom:docs/snippets/declaration/declaration.ts
 import { declare } from "@re-/model"
 
 // Declare the models you will define
@@ -121,7 +138,7 @@ export const space = compile({ ...userDef, ...groupDef })
 
 `user.ts`
 
-```ts @snipFrom:snippets/declaration/user.ts
+```ts @snipFrom:docs/snippets/declaration/user.ts
 import { define } from "./declaration.js"
 
 export const userDef = define.user({
@@ -133,7 +150,7 @@ export const userDef = define.user({
 
 `group.ts`
 
-```ts @snipFrom:snippets/declaration/group.ts
+```ts @snipFrom:docs/snippets/declaration/group.ts
 import { define } from "./declaration.js"
 
 export const groupDef = define.group({
@@ -142,13 +159,13 @@ export const groupDef = define.group({
 })
 ```
 
-## Validation that fits 🧩
+### Validation that fits 🧩
 
 TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
 
 [**Constraints** have you covered.](https://redo.dev/model/constraints)
 
-```ts @snipFrom:snippets/constraints.ts
+```ts @snipFrom:docs/snippets/constraints.ts
 import { model } from "@re-/model"
 
 const employee = model({

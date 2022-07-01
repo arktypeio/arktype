@@ -122,8 +122,8 @@ const ToolSummary = ({
 export const ToolSummaries = () => {
     const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
     return (
-        <Container>
-            <Grid container maxWidth="lg" direction="row">
+        <Container maxWidth="xl">
+            <Grid container direction="row">
                 {toolSummaries.map((props, index) => (
                     <Grid item key={index} xs={12} md={4}>
                         <ToolSummary

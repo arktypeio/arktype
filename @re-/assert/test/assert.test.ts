@@ -1,4 +1,4 @@
-import { strict } from "node:assert"
+import { AssertionError, strict, throws } from "node:assert"
 import { join } from "node:path"
 import { dirName, readJson, writeJson } from "@re-/node"
 import { assert } from "../src/index.js"
@@ -405,5 +405,17 @@ secondLine`)
             b: boolean
             a: boolean
         }
+    })
+    it("nonexistent types always fail", () => {
+        // @ts-expect-error
+        const nonexistent: NonExistent = {}
+        throws(
+            () =>
+                assert(nonexistent).typed as {
+                    something: "specific"
+                },
+            AssertionError,
+            "specific"
+        )
     })
 })

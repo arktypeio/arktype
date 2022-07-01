@@ -4,24 +4,21 @@ import { o } from "./common.js"
 
 it("default", () => {
     assert(toString(o)).snap(
-        `{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}`
+        `{a: {a: "", b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: "initial", e: [{a: ["old"]}, {a: ["old"]}]}`
     )
 })
 it("quotes", () => {
-    assert(toString({ a: "quoteless" }, { quotes: "none" })).equals(
+    assert(toString({ a: "quoteless" }, { quote: "none" })).equals(
         `{a: quoteless}`
     )
-    assert(toString({ a: "single" }, { quotes: "single" })).equals(
+    assert(toString({ a: "single" }, { quote: "single" })).equals(
         `{a: 'single'}`
     )
-    assert(toString({ a: "double" }, { quotes: "double" })).equals(
+    assert(toString({ a: "double" }, { quote: "double" })).equals(
         `{a: "double"}`
     )
-    assert(toString({ a: "backtick" }, { quotes: "backtick" })).equals(
+    assert(toString({ a: "backtick" }, { quote: "backtick" })).equals(
         "{a: `backtick`}"
-    )
-    assert(toString({ a: "quoteKeys" }, { quoteKeys: true })).equals(
-        "{'a': 'quoteKeys'}"
     )
 })
 it("truncate", () => {
@@ -30,15 +27,15 @@ it("truncate", () => {
             { a: "include this but not that" },
             { maxNestedStringLength: 17 }
         )
-    ).snap(`{a: 'include this but...'}`)
+    ).snap(`{a: "include this but..."}`)
     assert(toString({ a: "include this" }, { maxNestedStringLength: 17 })).snap(
-        `{a: 'include this'}`
+        `{a: "include this"}`
     )
 })
 it("indent", () => {
     assert(toString(o, { indent: 2 })).snap(`{
   a: {
-    a: '',
+    a: "",
     b: [
       0
     ],
@@ -54,23 +51,23 @@ it("indent", () => {
     }
   },
   c: null,
-  d: 'initial',
+  d: "initial",
   e: [
     {
       a: [
-        'old'
+        "old"
       ]
     },
     {
       a: [
-        'old'
+        "old"
       ]
     }
   ]
 }`)
     assert(toString(o, { indent: 4 })).snap(`{
     a: {
-        a: '',
+        a: "",
         b: [
             0
         ],
@@ -86,16 +83,16 @@ it("indent", () => {
         }
     },
     c: null,
-    d: 'initial',
+    d: "initial",
     e: [
         {
             a: [
-                'old'
+                "old"
             ]
         },
         {
             a: [
-                'old'
+                "old"
             ]
         }
     ]
@@ -108,4 +105,19 @@ it("symbol keys", () => {
             [symbolKey]: true
         })
     ).snap(`{Symbol(example): true}`)
+})
+it("key quotes", () => {
+    assert(toString({ a: "quoteKeys" }, { keyQuote: "single" })).equals(
+        `{'a': "quoteKeys"}`
+    )
+})
+it("non-alphanumeric key quotes", () => {
+    assert(
+        toString(
+            {
+                "path/to/something": "something"
+            },
+            { nonAlphaNumKeyQuote: "double" }
+        )
+    ).snap(`{"path/to/something": "something"}`)
 })

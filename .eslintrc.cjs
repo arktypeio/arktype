@@ -7,7 +7,6 @@ module.exports = defineConfig({
     extends: [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/recommended-requiring-type-checking",
         "plugin:import/typescript",
         "prettier"
     ],
@@ -33,23 +32,7 @@ module.exports = defineConfig({
         /**
          * Conventions
          */
-        "@typescript-eslint/consistent-type-assertions": [
-            "error",
-            { assertionStyle: "as" }
-        ],
-        "@typescript-eslint/naming-convention": [
-            "error",
-            { selector: "objectLiteralProperty", format: null },
-            {
-                selector: "variable",
-                modifiers: ["destructured"],
-                format: null
-            }
-        ],
-        "@typescript-eslint/prefer-nullish-coalescing": "error",
-        "@typescript-eslint/prefer-optional-chain": "error",
         "import/no-default-export": "error",
-
         /**
          * Require the use of arrow functions where possible
          */
@@ -66,7 +49,7 @@ module.exports = defineConfig({
         /**
          * Organize imports
          */
-        "@typescript-eslint/no-duplicate-imports": "error",
+        "import/no-duplicates": "error",
         // Sort import statements
         "import/order": [
             "error",
@@ -90,14 +73,7 @@ module.exports = defineConfig({
         "@typescript-eslint/ban-ts-comment": "off",
         "@typescript-eslint/ban-types": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-unsafe-assignment": "off",
-        "@typescript-eslint/no-unsafe-return": "off",
-        "@typescript-eslint/no-unsafe-call": "off",
-        "@typescript-eslint/no-unsafe-member-access": "off",
-        "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
-        "@typescript-eslint/restrict-template-expressions": "off",
-        "@typescript-eslint/restrict-plus-operands": "off",
         /**
          * ESM support, clarity
          */
@@ -106,11 +82,7 @@ module.exports = defineConfig({
         /**
          * Namespaces are useful for grouping generic types with related functionality
          */
-        "@typescript-eslint/no-namespace": "off",
-        /**
-         * This rule is buggy and often leads to cases where "autofix" introduces type errors
-         */
-        "@typescript-eslint/no-unnecessary-type-assertion": "off"
+        "@typescript-eslint/no-namespace": "off"
     },
     overrides: [
         /**

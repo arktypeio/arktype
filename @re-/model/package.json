@@ -1,8 +1,12 @@
 {
     "name": "@re-/model",
     "version": "2.0.4-alpha",
-    "author": "redo.dev",
     "description": "One definition from editor to runtime🧬",
+    "author": {
+        "name": "David Blass",
+        "email": "david@redo.dev",
+        "url": "https://redo.dev"
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
@@ -25,8 +29,7 @@
         "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
         "benchCore": "pnpm ts-node ./test/bench/parser.bench.ts",
-        "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt",
-        "updateReadme": "pnpm ts-node ./scripts/updateReadme.ts"
+        "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

@@ -83,7 +83,7 @@ try {
     const runnerStart = Date.now()
     shell(runTestsCmd, {
         stdio: "inherit",
-        env: { RE_ASSERT_CMD: runTestsCmd }
+        env: { ...process.env, RE_ASSERT_CMD: runTestsCmd }
     })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(

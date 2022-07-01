@@ -1,7 +1,7 @@
-import { diffSets, Entry, Evaluate } from "@re-/tools"
-import { Common } from "../common.js"
+import { Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
+import { Base } from "./base.js"
 
 export namespace Map {
     export type Definition = Record<string, unknown>
@@ -22,98 +22,95 @@ export namespace Map {
         }
     >
 
-    type ParseResult = Entry<string, Common.Parser.Node>[]
+    export const isMapLike = (
+        value: unknown
+    ): value is Record<string, unknown> =>
+        typeof value === "object" && value !== null && !Array.isArray(value)
 
-    export class Node extends Common.Branch<Definition, ParseResult> {
+    export class Node extends Base.Branch<Definition> {
+        private childIndicesToPropNames: Record<number, string> | undefined
+
         parse() {
-            return Object.entries(this.def).map(([prop, propDef]) => [
-                prop,
-                Root.parse(propDef, {
-                    ...this.ctx,
-                    path: Common.pathAdd(this.ctx.path, prop)
-                })
-            ]) as ParseResult
-        }
-
-        allows(args: Common.Allows.Args) {
-            if (
-                typeof args.value !== "object" ||
-                args.value === null ||
-                Array.isArray(args.value)
-            ) {
-                this.addUnassignable(args)
-                return
-            }
-            const keyErrors = this.checkKeyErrors(args)
-            if (keyErrors) {
-                args.errors.add(args.ctx.path, keyErrors)
-                return
-            }
-            for (const [prop, node] of this.next()) {
-                node.allows({
-                    ...args,
-                    value: (args.value as any)[prop],
-                    ctx: {
-                        ...args.ctx,
-                        path: Common.pathAdd(args.ctx.path, prop)
-                    }
-                })
-            }
-        }
-
-        generate(args: Common.Generate.Args) {
-            const result: Definition = {}
-            for (const [prop, node] of this.next()) {
-                // Don't include optional keys by default in generated values
-                if (node instanceof Optional.Node) {
-                    continue
+            this.childIndicesToPropNames = {}
+            return Object.entries(this.def).map(
+                ([propName, propDef], childIndex) => {
+                    this.childIndicesToPropNames![childIndex] = propName
+                    return Root.parse(propDef, {
+                        ...this.ctx,
+                        path: Base.pathAdd(this.ctx.path, propName)
+                    })
                 }
-                result[prop] = node.generate({
-                    ...args,
-                    ctx: {
-                        ...args.ctx,
-                        path: Common.pathAdd(args.ctx.path, prop)
-                    }
-                })
-            }
-            return result
-        }
-
-        private checkKeyErrors = (args: Common.Allows.Args) => {
-            let message = ""
-            const keyDiff = diffSets(
-                Object.keys(this.def),
-                Object.keys(args.value as any)
             )
-            if (!keyDiff) {
-                return message
+        }
+
+        allows(args: Base.Validation.Args) {
+            if (!isMapLike(args.value)) {
+                this.addUnassignable(args)
+                return false
             }
-            if (keyDiff.removed) {
-                // Ignore missing keys that are optional
-                const missingRequiredKeys = keyDiff.removed.filter(
-                    (k) =>
-                        !(
-                            typeof this.def[k] === "string" &&
-                            Optional.matches(this.def[k] as string)
-                        )
-                )
-                if (missingRequiredKeys.length) {
-                    message += `Required keys '${missingRequiredKeys.join(
-                        ", "
-                    )}' were missing.`
+            const valueKeysLeftToCheck = new Set(Object.keys(args.value))
+            let allPropsAllowed = true
+            let childIndex = 0
+            for (const propNode of this.children()) {
+                const propName = this.childIndicesToPropNames![childIndex]
+                const pathWithProp = Base.pathAdd(args.ctx.path, propName)
+                if (propName in args.value) {
+                    const propIsAllowed = propNode.allows({
+                        ...args,
+                        value: args.value[propName],
+                        ctx: {
+                            ...args.ctx,
+                            path: pathWithProp
+                        }
+                    })
+                    if (!propIsAllowed) {
+                        allPropsAllowed = false
+                    }
+                } else if (!(propNode instanceof Optional.Node)) {
+                    args.errors.add(
+                        pathWithProp,
+                        `Required value of type ${propNode.defToString()} was missing.`
+                    )
+                    allPropsAllowed = false
                 }
+                valueKeysLeftToCheck.delete(propName)
+                childIndex++
             }
             if (
-                keyDiff.added &&
+                valueKeysLeftToCheck.size &&
                 !args.cfg.ignoreExtraneousKeys &&
                 !args.ctx.modelCfg.ignoreExtraneousKeys
             ) {
-                // Add a leading space if we also had missing keys
-                message += `${message ? " " : ""}Keys '${keyDiff.added.join(
-                    ", "
-                )}' were unexpected.`
+                args.errors.add(
+                    args.ctx.path,
+                    `Keys ${[...valueKeysLeftToCheck]
+                        .map((k) => `'${k}'`)
+                        .join(", ")} were unexpected.`
+                )
+                return false
             }
-            return message
+            return allPropsAllowed
+        }
+
+        generate(args: Base.Generation.Args) {
+            const result: Record<string, unknown> = {}
+            let childIndex = 0
+            for (const propNode of this.children()) {
+                const propName = this.childIndicesToPropNames![childIndex]
+                // Don't include optional keys by default in generated values
+                if (propNode instanceof Optional.Node) {
+                    continue
+                }
+                result[propName] = propNode.generate({
+                    ...args,
+                    ctx: {
+                        ...args.ctx,
+                        path: Base.pathAdd(args.ctx.path, propName)
+                    }
+                })
+                childIndex++
+            }
+            return result
         }
     }
 }

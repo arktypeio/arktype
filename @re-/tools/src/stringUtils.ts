@@ -201,7 +201,7 @@ export type RemoveSpaces<FromString extends string> = StringReplace<
     ""
 >
 
-export type StringifyPossibleTypes<U extends Stringifiable> = Join<
-    ListPossibleTypes<U>,
-    ", "
->
+export type StringifyPossibleTypes<
+    U extends Stringifiable,
+    Delimiter extends string = ", "
+> = Join<ListPossibleTypes<U>, Delimiter>
