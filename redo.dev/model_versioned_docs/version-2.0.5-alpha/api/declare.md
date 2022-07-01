@@ -1,4 +1,4 @@
-# compile
+# declare
 
 ## tags
 
@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-compile: CompileFunction
+declare: DeclareFn
 ```
