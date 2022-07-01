@@ -12,11 +12,11 @@ export namespace Literal {
 
     export class Node extends Base.Leaf<Definition> {
         allows(args: Base.Validation.Args) {
-            if (args.value !== this.def) {
-                this.addUnassignable(args)
-                return false
+            if (args.value === this.def) {
+                return true
             }
-            return true
+            this.addUnassignable(args)
+            return false
         }
 
         generate() {

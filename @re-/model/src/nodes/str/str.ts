@@ -3,7 +3,7 @@ import { Base, createSplittableMatcher } from "./base.js"
 import { Bound } from "./bound.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"
-import { Keyword } from "./keyword.js"
+import { Keyword } from "./keyword/keyword.js"
 import { List } from "./list.js"
 import { Optional } from "./optional.js"
 import { StringLiteral } from "./stringLiteral.js"
@@ -140,7 +140,7 @@ export namespace Str {
         if (Optional.matches(def)) {
             return new Optional.Node(def, ctx)
         } else if (Keyword.matches(def)) {
-            return new Keyword.Node(def, ctx)
+            return Keyword.parse(def, ctx)
         } else if (Alias.matches(def, ctx)) {
             return new Alias.Node(def, ctx)
         } else if (StringLiteral.matches(def)) {

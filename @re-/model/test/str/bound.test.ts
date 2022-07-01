@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { eager, model } from "../../src/index.js"
 
-describe("constraint", () => {
+describe("bound", () => {
     describe("type", () => {
         it("single-bounded", () => {
             assert(model("string>5").type).typed as string

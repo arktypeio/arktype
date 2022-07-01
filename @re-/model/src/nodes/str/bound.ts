@@ -1,10 +1,14 @@
 import { Entry, Spliterate } from "@re-/tools"
 import { Base } from "./base.js"
 import { EmbeddedNumber } from "./embedded.js"
-import { Keyword } from "./keyword.js"
+import { Keyword } from "./keyword/index.js"
+import { List } from "./list.js"
 import { Str } from "./str.js"
 
-type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
+type BoundableKeyword =
+    | Keyword.OfTypeNumber
+    | Keyword.OfTypeString
+    | List.Definition
 
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
 

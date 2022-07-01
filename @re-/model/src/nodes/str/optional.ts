@@ -27,10 +27,10 @@ export namespace Optional {
         }
 
         allows(args: Base.Validation.Args) {
-            if (args.value !== undefined) {
-                return this.firstChild().allows(args)
+            if (args.value === undefined) {
+                return true
             }
-            return true
+            return this.firstChild().allows(args)
         }
 
         generate() {

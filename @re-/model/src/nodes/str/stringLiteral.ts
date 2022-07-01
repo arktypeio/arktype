@@ -35,9 +35,9 @@ export namespace StringLiteral {
         allows(args: Base.Validation.Args) {
             if (this.quotedText !== args.value) {
                 this.addUnassignable(args)
-                return true
+                return false
             }
-            return false
+            return true
         }
 
         generate() {
