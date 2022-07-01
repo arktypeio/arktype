@@ -1,4 +1,4 @@
-import { IsAny, IsAnyOrUnknown } from "@re-/tools"
+import { ElementOf, IsAny, IsAnyOrUnknown } from "@re-/tools"
 import { Base } from "./base/index.js"
 import { Literal } from "./literal/index.js"
 import { Obj } from "./obj/index.js"
@@ -35,14 +35,21 @@ export namespace Root {
         ? any
         : unknown
 
-    export type References<Def, Filter> = Def extends string
+    export type References<
+        Def,
+        Filter,
+        PreserveStructure extends boolean,
+        PreserveOrder extends boolean
+    > = Def extends string
         ? Def extends Base.Parsing.ParseErrorMessage
-            ? unknown
-            : Str.References<Def, Filter>
+            ? []
+            : PreserveOrder extends true
+            ? Str.References<Def, Filter>
+            : ElementOf<Str.References<Def, Filter>>[]
         : Def extends object
-        ? Obj.References<Def, Filter>
+        ? Obj.References<Def, Filter, PreserveStructure, PreserveOrder>
         : Def extends Literal.Definition
-        ? Base.FilterToTuple<Def, Filter>
+        ? Literal.References<Def, Filter>
         : []
 
     export type BadDefinitionType = Function | symbol

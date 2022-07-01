@@ -16,7 +16,7 @@ import {
 export const space: CreateSpaceFn = (dictionary, options) =>
     new Space(dictionary, options) as any
 
-export class Space implements SpaceFrom<any> {
+export class Space implements SpaceFrom<unknown> {
     inputs: SpaceFrom<any>["inputs"]
     models: Record<string, Model>
     config: SpaceConfig

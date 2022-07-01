@@ -18,7 +18,7 @@ export const model: ModelFunction = (definition, options) => {
 
 export const eager: ModelFunction = (definition, options = {}) => {
     options.parse = { eager: true }
-    return model(definition, options)
+    return model(definition, options) as any
 }
 
 export type ModelFunction<Dict = {}> = <Def>(
@@ -32,9 +32,10 @@ export type ModelFrom<Def, ModeledType> = Evaluate<{
     validate: ValidateFunction<ModeledType>
     assert: AssertFunction<ModeledType>
     generate: GenerateFunction<ModeledType>
+    references: ReferencesFunction<Def>
 }>
 
-export class Model implements ModelFrom<any, any> {
+export class Model implements ModelFrom<unknown, unknown> {
     definition: unknown
 
     constructor(
@@ -85,6 +86,10 @@ export class Model implements ModelFrom<any, any> {
             Base.Generation.createArgs(options, this.config.generate)
         )
     }
+
+    references(options?: Base.References.Options) {
+        return this.root.references(options ?? {}) as any
+    }
 }
 
 export type AssertOptions = Base.Validation.Options
@@ -110,6 +115,20 @@ export type GenerateFunction<ModeledType> = (
     options?: Base.Generation.Options
 ) => ModeledType
 
+export type ReferencesFunction<Def> = <Options extends Base.References.Options>(
+    options?: Options
+) => Options extends Base.References.Options<
+    infer Filter,
+    infer PreserveStructure
+>
+    ? References<Def, Filter, PreserveStructure>
+    : []
+
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
 
-export type References<Def, Filter = unknown> = Root.References<Def, Filter>
+export type References<
+    Def,
+    Filter = unknown,
+    PreserveStructure extends boolean = false,
+    PreserveOrder extends boolean = false
+> = Root.References<Def, Filter, PreserveStructure, PreserveOrder>

@@ -21,23 +21,44 @@ export namespace Obj {
           }>
         : Map.Parse<Def, Dict, Seen>
 
-    export type References<Def extends object, Filter> = ReferencesRecurse<
-        ListPossibleTypes<ValueOf<Def>>,
-        [],
-        Filter
-    >
+    export type References<
+        Def extends object,
+        Filter,
+        PreserveStructure extends boolean,
+        PreserveOrder extends boolean
+    > = PreserveStructure extends true
+        ? StructuredReferences<Def, Filter, PreserveOrder>
+        : UnstructuredReferences<
+              ListPossibleTypes<ValueOf<Def>>,
+              [],
+              Filter,
+              PreserveOrder
+          >
 
-    type ReferencesRecurse<
+    type UnstructuredReferences<
         Values extends unknown[],
         Result extends unknown[],
-        Filter
+        Filter,
+        PreserveOrder extends boolean
     > = Values extends Iteration<unknown, infer Current, infer Remaining>
-        ? ReferencesRecurse<
+        ? UnstructuredReferences<
               Remaining,
-              [...Result, ...Root.References<Current, Filter>],
-              Filter
+              [
+                  ...Result,
+                  ...Root.References<Current, Filter, false, PreserveOrder>
+              ],
+              Filter,
+              PreserveOrder
           >
         : Result
+
+    type StructuredReferences<
+        Def extends object,
+        Filter,
+        PreserveOrder extends boolean
+    > = Evaluate<{
+        [K in keyof Def]: Root.References<Def[K], Filter, true, PreserveOrder>
+    }>
 
     export const matches = (def: unknown): def is object =>
         typeof def === "object" && def !== null

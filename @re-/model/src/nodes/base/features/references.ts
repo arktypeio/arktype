@@ -1,5 +1,11 @@
 export namespace References {
-    export type Options = {}
+    export type Options<
+        Filter = unknown,
+        PreserveStructure extends boolean = boolean
+    > = {
+        filter?: (value: unknown) => value is Filter
+        preserveStructure?: PreserveStructure
+    }
 
     export type Config = Options
 

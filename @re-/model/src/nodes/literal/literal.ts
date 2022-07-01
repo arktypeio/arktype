@@ -10,6 +10,15 @@ export namespace Literal {
         typeof def === "number" ||
         typeof def === "bigint"
 
+    export type DefToString<Def extends Definition> = Def extends bigint
+        ? `${Def}n`
+        : `${Def}`
+
+    export type References<Def extends Definition, Filter> = Base.FilterToTuple<
+        DefToString<Def>,
+        Filter
+    >
+
     export class Node extends Base.Leaf<Definition> {
         allows(args: Base.Validation.Args) {
             if (args.value === this.def) {
