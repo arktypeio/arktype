@@ -88,7 +88,7 @@ export namespace Str {
         const result = []
         // Union and intersection are the only types of string definitions that contain multiple references
         const parts = def.match(splittableMatcher)!
-        for (let part of parts) {
+        for (const part of parts) {
             if (StringLiteral.matches(part) || EmbeddedRegex.matches(part)) {
                 // These are the only two types that can contain non-alphanumeric characters within a reference
                 result.push(part)

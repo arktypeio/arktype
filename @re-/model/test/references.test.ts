@@ -1,6 +1,8 @@
-import { assert } from "@re-/assert"
-import { diffSets } from "@re-/tools"
-import { model, References, space } from "../src/index.js"
+// import { assert } from "@re-/assert"
+// import { diffSets } from "@re-/tools"
+// import { model, References, space } from "../src/index.js"
+
+export {}
 
 describe("references", () => {
     // describe("type", () => {

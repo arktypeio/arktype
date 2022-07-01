@@ -28,12 +28,18 @@ export namespace Map {
         typeof value === "object" && value !== null && !Array.isArray(value)
 
     export class Node extends Base.Branch<Definition> {
+        private childIndicesToPropNames: Record<number, string> | undefined
+
         parse() {
-            return Object.entries(this.def).map(([prop, propDef]) =>
-                Root.parse(propDef, {
-                    ...this.ctx,
-                    path: Base.pathAdd(this.ctx.path, prop)
-                })
+            this.childIndicesToPropNames = {}
+            return Object.entries(this.def).map(
+                ([propName, propDef], childIndex) => {
+                    this.childIndicesToPropNames![childIndex] = propName
+                    return Root.parse(propDef, {
+                        ...this.ctx,
+                        path: Base.pathAdd(this.ctx.path, propName)
+                    })
+                }
             )
         }
 
@@ -44,8 +50,9 @@ export namespace Map {
             }
             const valueKeysLeftToCheck = new Set(Object.keys(args.value))
             let allPropsAllowed = true
+            let childIndex = 0
             for (const propNode of this.children()) {
-                const propName = propNode.keyOf()
+                const propName = this.childIndicesToPropNames![childIndex]
                 const pathWithProp = Base.pathAdd(args.ctx.path, propName)
                 if (propName in args.value) {
                     const propIsAllowed = propNode.allows({
@@ -67,6 +74,7 @@ export namespace Map {
                     allPropsAllowed = false
                 }
                 valueKeysLeftToCheck.delete(propName)
+                childIndex++
             }
             if (
                 valueKeysLeftToCheck.size &&
@@ -85,9 +93,10 @@ export namespace Map {
         }
 
         generate(args: Base.Generation.Args) {
-            const result: Definition = {}
+            const result: Record<string, unknown> = {}
+            let childIndex = 0
             for (const propNode of this.children()) {
-                const propName = propNode.keyOf()
+                const propName = this.childIndicesToPropNames![childIndex]
                 // Don't include optional keys by default in generated values
                 if (propNode instanceof Optional.Node) {
                     continue
@@ -99,6 +108,7 @@ export namespace Map {
                         path: Base.pathAdd(args.ctx.path, propName)
                     }
                 })
+                childIndex++
             }
             return result
         }

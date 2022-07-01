@@ -33,11 +33,11 @@ export namespace Tuple {
                 return false
             }
             let allItemsAllowed = true
+            let itemIndex = 0
             for (const itemNode of this.children()) {
-                const itemIndex = itemNode.keyOf()
                 const itemIsAllowed = itemNode.allows({
                     ...args,
-                    value: args.value[itemIndex as `${number}`],
+                    value: args.value[itemIndex],
                     ctx: {
                         ...args.ctx,
                         path: Base.pathAdd(args.ctx.path, itemIndex)
@@ -46,22 +46,25 @@ export namespace Tuple {
                 if (!itemIsAllowed) {
                     allItemsAllowed = false
                 }
+                itemIndex++
             }
             return allItemsAllowed
         }
 
         generate(args: Base.Generation.Args) {
             const result: unknown[] = []
+            let itemIndex = 0
             for (const itemNode of this.children()) {
                 result.push(
                     itemNode.generate({
                         ...args,
                         ctx: {
                             ...args.ctx,
-                            path: Base.pathAdd(args.ctx.path, itemNode.keyOf())
+                            path: Base.pathAdd(args.ctx.path, itemIndex)
                         }
                     })
                 )
+                itemIndex++
             }
             return result
         }
