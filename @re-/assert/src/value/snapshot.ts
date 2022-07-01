@@ -125,7 +125,8 @@ process.on("exit", () => {
             snapCall.removeArgument(originalArg)
         }
         const updatedSnapArgText = toString(serializedValue, {
-            quotes: "backtick"
+            quote: "backtick",
+            nonAlphaNumKeyQuote: "double"
         }).replace(`\\`, `\\\\`)
         snapCall.addArgument(updatedSnapArgText)
         file.saveSync()

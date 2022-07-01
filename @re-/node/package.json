@@ -1,8 +1,12 @@
 {
     "name": "@re-/node",
     "version": "2.2.0",
-    "author": "redo.dev",
     "description": "Node-based utilities, scripts, and configs for Redo packages ⚙️",
+    "author": {
+        "name": "David Blass",
+        "email": "david@redo.dev",
+        "url": "https://redo.dev"
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",

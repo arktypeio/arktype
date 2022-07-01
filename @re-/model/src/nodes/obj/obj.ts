@@ -1,5 +1,6 @@
-import { Common } from "../common.js"
+import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
 import { Root } from "../root.js"
+import { Base } from "./base.js"
 import { Map } from "./map.js"
 import { Regex } from "./regex.js"
 import { Tuple } from "./tuple.js"
@@ -15,13 +16,33 @@ export namespace Obj {
     export type Parse<Def extends object, Dict, Seen> = Def extends RegExp
         ? string
         : Def extends unknown[] | readonly unknown[]
-        ? { -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen> }
+        ? Evaluate<{
+              -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen>
+          }>
         : Map.Parse<Def, Dict, Seen>
+
+    export type References<Def extends object, Filter> = ReferencesRecurse<
+        ListPossibleTypes<ValueOf<Def>>,
+        [],
+        Filter
+    >
+
+    type ReferencesRecurse<
+        Values extends unknown[],
+        Result extends unknown[],
+        Filter
+    > = Values extends Iteration<unknown, infer Current, infer Remaining>
+        ? ReferencesRecurse<
+              Remaining,
+              [...Result, ...Root.References<Current, Filter>],
+              Filter
+          >
+        : Result
 
     export const matches = (def: unknown): def is object =>
         typeof def === "object" && def !== null
 
-    export const parse: Common.Parser.Parser<object> = (def, ctx) => {
+    export const parse: Base.Parsing.Parser<object> = (def, ctx) => {
         if (Regex.matches(def)) {
             return new Regex.Node(def, ctx)
         }

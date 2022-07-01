@@ -1,10 +1,6 @@
 import { caller } from "@re-/node"
-import {
-    chainableNoOpProxy,
-    getReAssertConfig,
-    ReAssertConfig,
-    SourcePosition
-} from "../common.js"
+import { chainableNoOpProxy } from "@re-/tools"
+import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
 import { AssertionName, BenchAssertions } from "./call.js"
 import { BenchTypeAssertions, createBenchTypeAssertions } from "./type.js"
 

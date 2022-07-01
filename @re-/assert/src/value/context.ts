@@ -95,7 +95,9 @@ export type ComparableValueAssertion<
     is: (
         value: ElementOf<PossibleValues>
     ) => NextAssertions<AllowTypeAssertions>
-    snap: ((value?: unknown) => NextAssertions<AllowTypeAssertions>) & {
+    snap: ((
+        value?: ElementOf<PossibleValues>
+    ) => NextAssertions<AllowTypeAssertions>) & {
         toFile: (
             name: string,
             options?: ExternalSnapshotOptions
@@ -104,10 +106,10 @@ export type ComparableValueAssertion<
     equals: (
         value: ElementOf<PossibleValues>
     ) => NextAssertions<AllowTypeAssertions>
-    value: {
-        is: (value: unknown) => NextAssertions<AllowTypeAssertions>
-        equals: (value: unknown) => NextAssertions<AllowTypeAssertions>
-    }
+    value: Omit<
+        ComparableValueAssertion<[unknown], AllowTypeAssertions>,
+        "value"
+    >
 } & (AllowTypeAssertions extends true
     ? { typedValue: (expected: unknown) => undefined }
     : {})
@@ -300,7 +302,7 @@ export const valueAssertions = <T>(
     }
     const serialize = (value: unknown) =>
         ctx.config.stringifySnapshots
-            ? `${toString(value, { quotes: "double" })}`
+            ? `${toString(value, { quote: "double" })}`
             : literalSerialize(value)
     const actualSerialized = serialize(actual)
     const inlineSnap = (...args: [unknown]) => {

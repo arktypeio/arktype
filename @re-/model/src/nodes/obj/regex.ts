@@ -1,4 +1,4 @@
-import { Common } from "../common.js"
+import { Base } from "./base.js"
 
 export namespace Regex {
     export type Definition = RegExp
@@ -6,30 +6,31 @@ export namespace Regex {
     export const matches = (def: object): def is Definition =>
         def instanceof RegExp
 
-    export class Node extends Common.Leaf<Definition> {
-        allows(args: Common.Allows.Args) {
+    export class Node extends Base.Leaf<Definition> {
+        allows(args: Base.Validation.Args) {
             if (typeof args.value !== "string") {
                 args.errors.add(
                     this.ctx.path,
-                    `Non-string value ${Common.stringifyValue(
+                    `Non-string value ${Base.stringifyValue(
                         args.value
                     )} cannot satisfy regex definitions.`
                 )
-                return
+                return false
             }
             if (!this.def.test(args.value)) {
                 args.errors.add(
                     this.ctx.path,
-                    `${Common.stringifyValue(
+                    `${Base.stringifyValue(
                         args.value
-                    )} does not match expression /${this.def.source}/.`
+                    )} does not match expression ${this.defToString()}.`
                 )
-                return
+                return false
             }
+            return true
         }
 
         generate() {
-            throw new Common.Generate.UngeneratableError(
+            throw new Base.Generation.UngeneratableError(
                 `/${this.def.source}/`,
                 "Regex generation is unsupported."
             )

@@ -17,7 +17,7 @@ export const config: DocGenConfig = {
             snippets: {
                 sources: [
                     {
-                        fileGlob: "snippets/**"
+                        fileGlob: "docs/snippets/**"
                     }
                 ],
                 targets: ["README.md"]

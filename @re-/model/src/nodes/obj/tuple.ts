@@ -1,6 +1,5 @@
-import { Entry } from "@re-/tools"
-import { Common } from "../common.js"
 import { Root } from "../root.js"
+import { Base } from "./base.js"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -11,55 +10,61 @@ export namespace Tuple {
     export const matches = (def: object): def is Definition =>
         Array.isArray(def)
 
-    type ParseResult = Entry<number, Common.Parser.Node>[]
-
-    export class Node extends Common.Branch<Definition, ParseResult> {
+    export class Node extends Base.Branch<Definition> {
         parse() {
-            return this.def.map((elementDef, elementIndex) => [
-                elementIndex,
+            return this.def.map((elementDef, elementIndex) =>
                 Root.parse(elementDef, {
                     ...this.ctx,
-                    path: Common.pathAdd(this.ctx.path, elementIndex)
+                    path: Base.pathAdd(this.ctx.path, elementIndex)
                 })
-            ]) as ParseResult
+            )
         }
 
-        allows(args: Common.Allows.Args) {
+        allows(args: Base.Validation.Args) {
             if (!Array.isArray(args.value)) {
                 this.addUnassignable(args)
-                return
+                return false
             }
             if (this.def.length !== args.value.length) {
                 args.errors.add(
                     args.ctx.path,
                     lengthError(this.def, args.value)
                 )
-                return
+                return false
             }
-            for (const [i, node] of this.next()) {
-                node.allows({
+            let allItemsAllowed = true
+            let itemIndex = 0
+            for (const itemNode of this.children()) {
+                const itemIsAllowed = itemNode.allows({
                     ...args,
-                    value: args.value[i],
+                    value: args.value[itemIndex],
                     ctx: {
                         ...args.ctx,
-                        path: Common.pathAdd(args.ctx.path, i)
+                        path: Base.pathAdd(args.ctx.path, itemIndex)
                     }
                 })
+                if (!itemIsAllowed) {
+                    allItemsAllowed = false
+                }
+                itemIndex++
             }
+            return allItemsAllowed
         }
 
-        generate(args: Common.Generate.Args) {
+        generate(args: Base.Generation.Args) {
             const result: unknown[] = []
-            for (const [i, node] of this.next()) {
+            let itemIndex = 0
+            for (const itemNode of this.children()) {
                 result.push(
-                    node.generate({
+                    itemNode.generate({
                         ...args,
                         ctx: {
                             ...args.ctx,
-                            path: Common.pathAdd(args.ctx.path, i)
+                            path: Base.pathAdd(args.ctx.path, itemIndex)
                         }
                     })
                 )
+                itemIndex++
             }
             return result
         }

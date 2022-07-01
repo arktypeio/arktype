@@ -1,8 +1,12 @@
 {
     "name": "@re-/tools",
     "version": "2.2.0",
-    "author": "redo.dev",
     "description": "Lightweight utilities and types shared across Redo packages 🧰",
+    "author": {
+        "name": "David Blass",
+        "email": "david@redo.dev",
+        "url": "https://redo.dev"
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
