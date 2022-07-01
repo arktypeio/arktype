@@ -3,7 +3,7 @@
   <h1>Packages</h1>
 </div>
 
+-   [@re-/model](@re-/model): Type-first validation from editor to runtime 🧬
 -   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
 -   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
 -   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
--   [@re-/doc](@re-/doc): Documentation generation for Redo packages 📚

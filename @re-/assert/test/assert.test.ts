@@ -1,4 +1,4 @@
-import { strict } from "node:assert"
+import { AssertionError, strict, throws } from "node:assert"
 import { join } from "node:path"
 import { dirName, fromHere, readJson, shell, writeJson } from "@re-/node"
 import { assert } from "../src/index.js"
@@ -406,6 +406,18 @@ describe("Snapshots Using Files", () => {
                 toCustomFileNew: null
             }
         })
+    })
+    it("nonexistent types always fail", () => {
+        // @ts-expect-error
+        const nonexistent: NonExistent = {}
+        throws(
+            () =>
+                assert(nonexistent).typed as {
+                    something: "specific"
+                },
+            AssertionError,
+            "specific"
+        )
     })
 })
 type TestData = {

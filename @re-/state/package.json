@@ -1,9 +1,13 @@
 {
     "name": "@re-/state",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "private": true,
-    "author": "redo.dev",
     "description": "Self-validating states from simple shapes 🧮",
+    "author": {
+        "name": "David Blass",
+        "email": "david@redo.dev",
+        "url": "https://redo.dev"
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",

@@ -59,11 +59,7 @@ export type TypeOfResult = typeof typeOfResult
 
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends List> = T[number]
-export type ValueOf<T> = T extends NonRecursible
-    ? never
-    : T extends any[]
-    ? T[number]
-    : T[keyof T]
+export type ValueOf<T> = T extends any[] ? T[number] : T[keyof T]
 
 export type Entry<K extends Key = Key, V = unknown> = [K, V]
 
@@ -96,6 +92,15 @@ export const isEmpty = (value: object) => {
     }
     return isRecursible(value) ? !Object.keys(value).length : false
 }
+
+/** Either:
+ * First, with all properties of Second as undefined
+ * OR
+ * Second, with all properties of First as undefined
+ **/
+export type MutuallyExclusiveProps<First, Second> =
+    | (First & { [K in keyof Second]: undefined })
+    | (Second & { [K in keyof First]: undefined })
 
 export type PathMap = { [key: string]: PathMap }
 

@@ -1,9 +1,13 @@
 import { isRecursible } from "./common.js"
+import { isAlphaNumeric } from "./stringUtils.js"
+
+export type QuoteType = keyof typeof quoteTypes
 
 export type ToStringOptions = {
     indent?: number
-    quotes?: keyof typeof quoteTypes
-    quoteKeys?: boolean
+    quote?: QuoteType
+    keyQuote?: QuoteType
+    nonAlphaNumKeyQuote?: QuoteType
     maxNestedStringLength?: number
 }
 
@@ -19,8 +23,10 @@ export const print = (value: any, options: ToStringOptions = {}) => {
 }
 
 export const toString = (value: any, options: ToStringOptions = {}) => {
-    const quote = quoteTypes[options.quotes ?? "single"]
-    const keyQuote = options.quoteKeys ? quote : ""
+    const quote = quoteTypes[options.quote ?? "double"]
+    const alphaNumKeyQuote = quoteTypes[options.keyQuote ?? "none"]
+    const nonAlphaNumKeyQuote =
+        quoteTypes[options.nonAlphaNumKeyQuote ?? options.keyQuote ?? "none"]
     const valueSeperator = options.indent ? ",\n" : ", "
     const recurse = (
         value: unknown,
@@ -33,6 +39,9 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
         const afterRecurse = options.indent ? `\n${indent}` : ""
         let result = ""
         if (key) {
+            const keyQuote = isAlphaNumeric(key)
+                ? alphaNumKeyQuote
+                : nonAlphaNumKeyQuote
             result += `${keyQuote}${key}${keyQuote}: `
         }
         if (!isRecursible(value)) {

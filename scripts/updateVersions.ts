@@ -81,10 +81,6 @@ const docusaurusVersionedPackages = [
     }
 ]
 
-shell("pnpm in", {
-    cwd: REDO_DEV_DIR
-})
-
 for (const { packageRoot, docsName } of docusaurusVersionedPackages) {
     const packageJson = readPackageJson(packageRoot)
     const existingVersions: string[] = readJson(

@@ -1,6 +1,9 @@
-import { Common } from "./nodes/common.js"
-import { ModelOptions } from "./nodes/common/utils.js"
-import { Root } from "./nodes/index.js"
+import {
+    chainableNoOpProxy,
+    Evaluate,
+    MutuallyExclusiveProps
+} from "@re-/tools"
+import { Base, Root } from "./nodes/index.js"
 
 /**
  * Create a model.
@@ -9,7 +12,7 @@ import { Root } from "./nodes/index.js"
  * @returns {@as any} The result.
  */
 export const model: ModelFunction = (definition, options) => {
-    const root = Root.parse(definition, Common.Parser.createContext(options))
+    const root = Root.parse(definition, Base.Parsing.createContext(options))
     return new Model(root, options) as any
 }
 
@@ -18,22 +21,35 @@ export const eager: ModelFunction = (definition, options = {}) => {
     return model(definition, options)
 }
 
-export class Model implements AnyModel {
+export type ModelFunction<Dict = {}> = <Def>(
+    definition: Root.Validate<Def, Dict>,
+    options?: Base.ModelOptions
+) => ModelFrom<Def, Parse<Root.Validate<Def, Dict>, Dict>>
+
+export type ModelFrom<Def, ModeledType> = Evaluate<{
+    definition: Def
+    type: ModeledType
+    validate: ValidateFunction<ModeledType>
+    assert: AssertFunction<ModeledType>
+    generate: GenerateFunction<ModeledType>
+}>
+
+export class Model implements ModelFrom<any, any> {
     definition: unknown
 
     constructor(
-        public root: Common.Parser.Node,
-        public config: ModelOptions = {}
+        public root: Base.Parsing.Node,
+        public config: Base.ModelOptions = {}
     ) {
         this.definition = root.def
     }
 
     get type() {
-        return Common.chainableNoOpProxy
+        return chainableNoOpProxy
     }
 
-    validate(value: unknown, options?: Common.Allows.Options) {
-        const args = Common.Allows.createArgs(
+    validate(value: unknown, options?: Base.Validation.Options) {
+        const args = Base.Validation.createArgs(
             value,
             options,
             this.config.validate
@@ -41,7 +57,7 @@ export class Model implements AnyModel {
         const customValidator =
             args.cfg.validator ?? args.ctx.modelCfg.validator ?? "default"
         if (customValidator !== "default") {
-            Common.Allows.customValidatorAllows(
+            Base.Validation.customValidatorAllows(
                 customValidator,
                 this.root,
                 args
@@ -51,71 +67,49 @@ export class Model implements AnyModel {
         }
         return args.errors.isEmpty()
             ? { data: value }
-            : { error: args.errors.toString(), errorsByPath: args.errors.all() }
+            : {
+                  error: new Base.Validation.ValidationError(args.errors)
+              }
     }
 
-    assert(value: unknown, options?: Common.Allows.Options) {
+    assert(value: unknown, options?: Base.Validation.Options) {
         const validationResult = this.validate(value, options)
         if (validationResult.error) {
-            throw new Common.Allows.ValidationError(validationResult.error)
+            throw validationResult.error
         }
         return validationResult.data
     }
 
-    generate(options?: Common.Generate.Options) {
+    generate(options?: Base.Generation.Options) {
         return this.root.generate(
-            Common.Generate.createArgs(options, this.config.generate)
+            Base.Generation.createArgs(options, this.config.generate)
         )
     }
 }
 
-/*
- * Just use unknown for now since we don't have all the definitions yet
- * but we still want to allow references to other declared types
- */
-export type CheckReferences<
-    Def,
-    DeclaredTypeName extends string
-> = Root.Validate<
-    Def,
-    {
-        [TypeName in DeclaredTypeName]: "unknown"
-    }
->
-
-export type AssertOptions = Common.Allows.Options
+export type AssertOptions = Base.Validation.Options
 
 export type ValidateFunction<ModeledType> = (
     value: unknown,
-    options?: Common.Allows.Options
-) => {
-    data?: ModeledType
-    error?: string
-    errorsByPath?: Common.Allows.ErrorsByPath
-}
+    options?: Base.Validation.Options
+) => ValidationResult<ModeledType>
+
+export type ValidationResult<ModeledType> = MutuallyExclusiveProps<
+    { data: ModeledType },
+    {
+        error: Base.Validation.ValidationError
+    }
+>
 
 export type AssertFunction<ModeledType> = (
     value: unknown,
-    options?: Common.Allows.Options
+    options?: Base.Validation.Options
 ) => ModeledType
 
 export type GenerateFunction<ModeledType> = (
-    options?: Common.Generate.Options
+    options?: Base.Generation.Options
 ) => ModeledType
-
-export type ModelFunction<Dict = {}> = <Def>(
-    definition: Root.Validate<Def, Dict>,
-    options?: ModelOptions
-) => ModelFrom<Def, Parse<Def, Dict>>
-
-export type ModelFrom<Def, ModeledType> = {
-    definition: Def
-    type: ModeledType
-    validate: ValidateFunction<ModeledType>
-    assert: AssertFunction<ModeledType>
-    generate: GenerateFunction<ModeledType>
-}
 
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
 
-type AnyModel = ModelFrom<any, any>
+export type References<Def, Filter = unknown> = Root.References<Def, Filter>

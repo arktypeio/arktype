@@ -1,5 +1,13 @@
 # @re-/assert
 
+## 0.4.1
+
+### Patch Changes
+
+-   f7a8211: Fix a bug that caused unresolvable types to be treated as "any".
+-   Updated dependencies [f7a8211]
+    -   @re-/node@2.2.1
+
 ## 0.4.0
 
 ### Minor Changes

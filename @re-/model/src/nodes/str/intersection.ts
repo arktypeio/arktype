@@ -1,5 +1,4 @@
-import { Common } from "../common.js"
-import { createSplittableMatcher } from "./common.js"
+import { Base, createSplittableMatcher } from "./base.js"
 import { Str } from "./str.js"
 
 export namespace Intersection {
@@ -12,27 +11,29 @@ export namespace Intersection {
 
     const matcher = createSplittableMatcher("&")
 
-    export class Node extends Common.Branch<Definition, Common.Parser.Node[]> {
+    export const getMembers = (def: Definition) => def.match(matcher)!
+
+    export class Node extends Base.Branch<Definition> {
         parse() {
-            return this.def.match(matcher)!.map((member) => {
+            return getMembers(this.def).map((member) => {
                 if (member === "&&") {
-                    throw new Common.Parser.UnknownTypeError("")
+                    throw new Base.Parsing.UnknownTypeError("")
                 }
                 return Str.parse(member, this.ctx)
             })
         }
 
-        allows(args: Common.Allows.Args) {
-            for (const branch of this.next()) {
-                branch.allows(args)
-                if (args.errors.has(args.ctx.path)) {
-                    return
+        allows(args: Base.Validation.Args) {
+            for (const branch of this.children()) {
+                if (!branch.allows(args)) {
+                    return false
                 }
             }
+            return true
         }
 
         generate() {
-            throw new Common.Generate.UngeneratableError(
+            throw new Base.Generation.UngeneratableError(
                 this.def,
                 "Intersection generation is unsupported."
             )

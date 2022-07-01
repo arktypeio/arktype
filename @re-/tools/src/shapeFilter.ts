@@ -35,8 +35,8 @@ export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
             )}' were of types ${typeof o} and ${typeof shape}.`
         )
     }
-    const recurse = (o: O, shape: S): ShapeFilter<O, S> =>
-        (isRecursible(shape)
+    const recurse = (o: {}, shape: unknown): any =>
+        isRecursible(shape)
             ? Array.isArray(o)
                 ? o.map((value) => recurse(value, shape))
                 : fromEntries(
@@ -48,6 +48,6 @@ export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
                                   : [key, value]
                           )
                   )
-            : o) as ShapeFilter<O, S>
+            : o
     return recurse(o, shape)
 }

@@ -125,11 +125,6 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
 
 export const getFileKey = (path: string) => relative(".", path)
 
-/** This tries to chain arbitrary prop access and function calls without doing anything*/
-export const chainableNoOpProxy: any = new Proxy(() => chainableNoOpProxy, {
-    get: () => chainableNoOpProxy
-})
-
 export const getCmdFromPid = (pid: number) =>
     platform() === "win32" ? getCmdFromWindowsPid(pid) : getCmdFromPosixPid(pid)
 
