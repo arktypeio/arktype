@@ -28,8 +28,9 @@ export namespace Optional {
 
         allows(args: Base.Validation.Args) {
             if (args.value !== undefined) {
-                this.firstChild().allows(args)
+                return this.firstChild().allows(args)
             }
+            return true
         }
 
         generate() {

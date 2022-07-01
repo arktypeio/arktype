@@ -1,4 +1,5 @@
 import { Base } from "./base.js"
+import { Bound } from "./bound.js"
 import { Str } from "./str.js"
 
 export namespace List {
@@ -7,7 +8,10 @@ export namespace List {
     export const matches = (def: string): def is Definition =>
         def.endsWith("[]")
 
-    export class Node extends Base.Branch<Definition> {
+    export class Node
+        extends Base.Branch<Definition>
+        implements Bound.Boundable
+    {
         parse() {
             return [Str.parse(this.def.slice(0, -2), this.ctx)]
         }
@@ -15,12 +19,13 @@ export namespace List {
         allows(args: Base.Validation.Args) {
             if (!Array.isArray(args.value)) {
                 this.addUnassignable(args)
-                return
+                return false
             }
             const itemNode = this.children()[0]
+            let allItemsAllowed = true
             let itemIndex = 0
             for (const itemValue of args.value) {
-                itemNode.allows({
+                const itemIsAllowed = itemNode.allows({
                     ...args,
                     value: itemValue,
                     ctx: {
@@ -28,12 +33,22 @@ export namespace List {
                         path: Base.pathAdd(args.ctx.path, itemIndex)
                     }
                 })
+                if (!itemIsAllowed) {
+                    allItemsAllowed = false
+                }
                 itemIndex++
             }
+            return allItemsAllowed
         }
 
         generate() {
             return []
+        }
+
+        boundBy = "items"
+
+        toBound(value: unknown[]) {
+            return value.length
         }
     }
 }

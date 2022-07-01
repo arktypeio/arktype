@@ -182,7 +182,9 @@ export namespace Keyword {
         allows(args: Base.Validation.Args) {
             if (!handlers[this.def].validate(args.value)) {
                 this.addUnassignable(args)
+                return false
             }
+            return true
         }
 
         generate() {

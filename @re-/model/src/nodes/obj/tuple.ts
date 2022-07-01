@@ -23,18 +23,19 @@ export namespace Tuple {
         allows(args: Base.Validation.Args) {
             if (!Array.isArray(args.value)) {
                 this.addUnassignable(args)
-                return
+                return false
             }
             if (this.def.length !== args.value.length) {
                 args.errors.add(
                     args.ctx.path,
                     lengthError(this.def, args.value)
                 )
-                return
+                return false
             }
+            let allItemsAllowed = true
             for (const itemNode of this.children()) {
                 const itemIndex = itemNode.keyOf()
-                itemNode.allows({
+                const itemIsAllowed = itemNode.allows({
                     ...args,
                     value: args.value[itemIndex as `${number}`],
                     ctx: {
@@ -42,7 +43,11 @@ export namespace Tuple {
                         path: Base.pathAdd(args.ctx.path, itemIndex)
                     }
                 })
+                if (!itemIsAllowed) {
+                    allItemsAllowed = false
+                }
             }
+            return allItemsAllowed
         }
 
         generate(args: Base.Generation.Args) {

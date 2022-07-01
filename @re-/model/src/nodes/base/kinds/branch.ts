@@ -1,11 +1,15 @@
+import { ElementOf } from "@re-/tools"
 import { Parsing } from "../features/parsing.js"
 import { References } from "../features/references.js"
 import { Node } from "./node.js"
 
 export type ChildList = Parsing.Node[]
 
-export abstract class Branch<DefType> extends Node<DefType> {
-    private cache?: ChildList
+export abstract class Branch<
+    DefType,
+    Children extends ChildList = ChildList
+> extends Node<DefType> {
+    private cache?: Children
 
     constructor(def: DefType, ctx: Parsing.Context) {
         super(def, ctx)
@@ -21,7 +25,7 @@ export abstract class Branch<DefType> extends Node<DefType> {
         return this.cache
     }
 
-    firstChild() {
+    firstChild(): ElementOf<Children> {
         return this.children()[0]
     }
 
@@ -33,5 +37,5 @@ export abstract class Branch<DefType> extends Node<DefType> {
         return result
     }
 
-    abstract parse(): ChildList
+    abstract parse(): Children
 }

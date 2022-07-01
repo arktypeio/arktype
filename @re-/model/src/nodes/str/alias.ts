@@ -52,7 +52,7 @@ export namespace Alias {
             this.next = Root.parse(unresolvedDefinition, this.ctx)
         }
 
-        allows(args: Base.Validation.Args) {
+        allows(args: Base.Validation.Args): boolean {
             const nextArgs = this.nextArgs(args, this.ctx.cfg.validate)
             if (typeof args.value === "object" && args.value !== null) {
                 if (
@@ -61,15 +61,12 @@ export namespace Alias {
                     )
                 ) {
                     // If we've already seen this value, it must not have any errors or else we wouldn't be here
-                    return
+                    return true
                 }
                 if (!args.ctx.checkedValuesByAlias[this.def]) {
                     nextArgs.ctx.checkedValuesByAlias[this.def] = [args.value]
                 } else {
-                    nextArgs.ctx.checkedValuesByAlias[this.def] = [
-                        ...args.ctx.checkedValuesByAlias[this.def],
-                        args.value
-                    ]
+                    nextArgs.ctx.checkedValuesByAlias[this.def].push(args.value)
                 }
             }
             const customValidator =
@@ -77,14 +74,13 @@ export namespace Alias {
                 nextArgs.ctx.modelCfg.validator ??
                 "default"
             if (customValidator !== "default") {
-                Base.Validation.customValidatorAllows(
+                return Base.Validation.customValidatorAllows(
                     customValidator,
                     this,
                     nextArgs
                 )
-            } else {
-                this.next.allows(nextArgs)
             }
+            return this.next.allows(nextArgs)
         }
 
         generate(args: Base.Generation.Args) {

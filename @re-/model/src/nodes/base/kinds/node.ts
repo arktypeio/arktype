@@ -6,7 +6,7 @@ import { defToString, stringifyValue } from "../utils.js"
 export abstract class Node<DefType> {
     constructor(public def: DefType, public ctx: Parsing.Context) {}
 
-    abstract allows(args: Validation.Args): void
+    abstract allows(args: Validation.Args): boolean
     abstract generate(args: Generation.Args): unknown
     abstract references(args: References.Args): string[]
 

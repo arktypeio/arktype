@@ -1,6 +1,6 @@
 import { Alias } from "./alias.js"
 import { Base, createSplittableMatcher } from "./base.js"
-import { Constraint } from "./constraint.js"
+import { Bound } from "./bound.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"
 import { Keyword } from "./keyword.js"
@@ -48,8 +48,8 @@ export namespace Str {
         ? BinaryValidate<Left, Right, Dict, Root>
         : Def extends List.Definition<infer Next>
         ? Validate<Next, Dict, Root>
-        : Def extends Constraint.Definition
-        ? Constraint.Validate<Def, Dict, Root>
+        : Def extends Bound.Definition
+        ? Bound.Validate<Def, Dict, Root>
         : Base.Parsing.ParseErrorMessage<
               Base.Parsing.UnknownTypeErrorMessage<Def>
           >
@@ -78,8 +78,8 @@ export namespace Str {
           ]
         : Def extends List.Definition<infer Next>
         ? RecursiveReferences<Next, Filter>
-        : Def extends Constraint.Definition
-        ? Constraint.References<Def, Filter>
+        : Def extends Bound.Definition
+        ? Bound.References<Def, Filter>
         : Base.FilterToTuple<Def, Filter>
 
     const splittableMatcher = createSplittableMatcher("|&")
@@ -93,9 +93,9 @@ export namespace Str {
                 // These are the only two types that can contain non-alphanumeric characters within a reference
                 result.push(part)
             } else {
-                if (Constraint.matches(part)) {
+                if (Bound.matches(part)) {
                     // If the part is a constraint, extract the bounded reference before parsing any further
-                    part = Constraint.getReference(part)
+                    // part = Bound.getReference(part)
                 }
                 // At this point, removing all non-alphanumeric characters should yield remaining references to builtins or aliases
                 result.push(part.replace(/[^a-z0-9]/gi, ""))
@@ -129,8 +129,8 @@ export namespace Str {
         ? Str.Parse<Left, Dict, Seen> | Str.Parse<Right, Dict, Seen>
         : Def extends List.Definition<infer Next>
         ? Parse<Next, Dict, Seen>[]
-        : Def extends Constraint.Definition
-        ? Constraint.Parse<Def, Dict, Seen>
+        : Def extends Bound.Definition
+        ? Bound.Parse<Def, Dict, Seen>
         : unknown
 
     export const matches = (def: unknown): def is string =>
@@ -157,8 +157,8 @@ export namespace Str {
             return new Union.Node(def, ctx)
         } else if (List.matches(def)) {
             return new List.Node(def, ctx)
-        } else if (Constraint.matches(def)) {
-            return new Constraint.Node(def, ctx)
+        } else if (Bound.matches(def)) {
+            return new Bound.Node(def, ctx)
         }
         throw new Base.Parsing.ParseError(
             `Unable to determine the type of '${Base.defToString(

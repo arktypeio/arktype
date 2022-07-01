@@ -15,7 +15,7 @@ export namespace Regex {
                         args.value
                     )} cannot satisfy regex definitions.`
                 )
-                return
+                return false
             }
             if (!this.def.test(args.value)) {
                 args.errors.add(
@@ -24,8 +24,9 @@ export namespace Regex {
                         args.value
                     )} does not match expression ${this.defToString()}.`
                 )
-                return
+                return false
             }
+            return true
         }
 
         generate() {

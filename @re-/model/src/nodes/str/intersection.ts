@@ -25,11 +25,11 @@ export namespace Intersection {
 
         allows(args: Base.Validation.Args) {
             for (const branch of this.children()) {
-                branch.allows(args)
-                if (args.errors.has(args.ctx.path)) {
-                    return
+                if (!branch.allows(args)) {
+                    return false
                 }
             }
+            return true
         }
 
         generate() {

@@ -40,14 +40,15 @@ export namespace Map {
         allows(args: Base.Validation.Args) {
             if (!isMapLike(args.value)) {
                 this.addUnassignable(args)
-                return
+                return false
             }
             const valueKeysLeftToCheck = new Set(Object.keys(args.value))
+            let allPropsAllowed = true
             for (const propNode of this.children()) {
                 const propName = propNode.keyOf()
                 const pathWithProp = Base.pathAdd(args.ctx.path, propName)
                 if (propName in args.value) {
-                    propNode.allows({
+                    const propIsAllowed = propNode.allows({
                         ...args,
                         value: args.value[propName],
                         ctx: {
@@ -55,11 +56,15 @@ export namespace Map {
                             path: pathWithProp
                         }
                     })
+                    if (!propIsAllowed) {
+                        allPropsAllowed = false
+                    }
                 } else if (!(propNode instanceof Optional.Node)) {
                     args.errors.add(
                         pathWithProp,
                         `Required value of type ${propNode.defToString()} was missing.`
                     )
+                    allPropsAllowed = false
                 }
                 valueKeysLeftToCheck.delete(propName)
             }
@@ -74,7 +79,9 @@ export namespace Map {
                         .map((k) => `'${k}'`)
                         .join(", ")} were unexpected.`
                 )
+                return false
             }
+            return allPropsAllowed
         }
 
         generate(args: Base.Generation.Args) {

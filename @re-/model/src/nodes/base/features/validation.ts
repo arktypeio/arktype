@@ -51,7 +51,7 @@ export namespace Validation {
         validator: CustomValidator,
         node: Parsing.Node,
         args: Args
-    ) => {
+    ): boolean => {
         const customErrors = validator({
             value: args.value,
             path: args.ctx.path,
@@ -69,10 +69,13 @@ export namespace Validation {
         })
         if (typeof customErrors === "string") {
             args.errors.add(args.ctx.path, customErrors)
+            return false
         }
         if (typeof customErrors === "object") {
             args.errors.assign(customErrors)
+            return false
         }
+        return true
     }
 
     export type ErrorsByPath = Record<string, string>

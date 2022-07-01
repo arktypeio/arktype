@@ -14,7 +14,9 @@ export namespace Literal {
         allows(args: Base.Validation.Args) {
             if (args.value !== this.def) {
                 this.addUnassignable(args)
+                return false
             }
+            return true
         }
 
         generate() {

@@ -43,11 +43,10 @@ export namespace Union {
             const unionErrors = args.errors.split(args.ctx.path)
             for (const branch of this.children()) {
                 const branchErrors = unionErrors.branch(branch.defToString())
-                branch.allows({ ...args, errors: branchErrors })
-                if (branchErrors.count === 0) {
+                if (branch.allows({ ...args, errors: branchErrors })) {
                     // If any branch of a Union does not have errors,
                     // we can return right away since the whole definition is valid
-                    return
+                    return true
                 }
             }
             // If we haven't returned, all branches are invalid, so add an error
@@ -59,6 +58,7 @@ export namespace Union {
             } else {
                 args.errors.add(args.ctx.path, summaryErrorMessage)
             }
+            return false
         }
 
         generate(args: Base.Generation.Args) {

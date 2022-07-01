@@ -4,10 +4,7 @@ import { defToString, ModelOptions, stringifyPathContext } from "../utils.js"
 export namespace Parsing {
     export type Node<DefType = unknown> = AbstractNode<DefType>
 
-    export type Parser<DefType = unknown> = (
-        def: DefType,
-        ctx: Parsing.Context
-    ) => Node
+    export type Parser<DefType = unknown> = (def: DefType, ctx: Context) => Node
 
     /** Maps aliases to their definitions or to nodes parsed from their definitions */
     export type ResolutionMap = Record<string, unknown>
@@ -17,6 +14,8 @@ export namespace Parsing {
     }
 
     export type Config = Options
+
+    export type ConstraintValidator = (value: unknown) => string | undefined
 
     export type Context = {
         resolutions: ResolutionMap
