@@ -1,5 +1,11 @@
 # @re-/node
 
+## 2.2.1
+
+### Patch Changes
+
+-   f7a8211: Update shell to extend env by default.
+
 ## 2.2.0
 
 ### Minor Changes
