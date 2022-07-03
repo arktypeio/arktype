@@ -91,6 +91,156 @@ it("diff sets", () => {
     })
 })
 
+it("diff nested sets", () => {
+    assert(
+        diff(
+            { a: ["a", "b", "a"], b: { nested: ["a", "b"] } },
+            { a: ["b", "a", "a", "a"], b: { nested: ["b", "a", "b"] } },
+            { listComparison: "set" }
+        )
+    ).equals(undefined)
+    assert(
+        diff(
+            { a: ["a", "a", "c"], b: { nested: ["a", "a", "c", "c"] } },
+            { a: ["c", "b", "b"], b: { nested: ["c", "b", "b"] } },
+            { listComparison: "set" }
+        )
+    ).equals({
+        changed: {
+            a: { added: ["b"], removed: ["a"] },
+            b: {
+                changed: {
+                    nested: {
+                        added: ["b"],
+                        removed: ["a"]
+                    }
+                }
+            }
+        }
+    })
+})
+
+it("diff deepSets", () => {
+    assert(
+        diff(
+            {
+                a: [
+                    ["a", "c"],
+                    ["a", "a", "c"],
+                    ["b", "b", "c"]
+                ]
+            },
+            {
+                a: [
+                    ["b", "c"],
+                    ["b", "c", "c"],
+                    ["a", "c", "c"]
+                ]
+            },
+            { listComparison: "deepSets" }
+        )
+    ).equals(undefined)
+    assert(
+        diff(
+            {
+                a: [
+                    ["a", "a", "c"],
+                    ["b", "b", "c"],
+                    ["d", "f"]
+                ]
+            },
+            {
+                a: [
+                    ["b", "c", "c"],
+                    ["a", "c", "c"],
+                    ["d", "g"]
+                ]
+            },
+            { listComparison: "deepSets" }
+        )
+    ).snap({ changed: { a: { added: [[`d`, `g`]], removed: [[`d`, `f`]] } } })
+})
+
+it("diff unordered", () => {
+    assert(
+        diff(
+            { a: ["a", "b", "c"], b: { nested: ["a", "b"] } },
+            { a: ["c", "b", "a"], b: { nested: ["b", "a"] } },
+            { listComparison: "unordered" }
+        )
+    ).equals(undefined)
+    assert(
+        diff(
+            { a: ["a", "a", "c"], b: { nested: ["a", "a", "c", "c"] } },
+            { a: ["c", "b", "b"], b: { nested: ["c", "b", "b"] } },
+            { listComparison: "unordered" }
+        )
+    ).snap({
+        changed: {
+            a: { added: [`b`, `b`], removed: [`a`, `a`] },
+            b: {
+                changed: {
+                    nested: { added: [`b`, `b`], removed: [`a`, `a`, `c`] }
+                }
+            }
+        }
+    })
+})
+
+it("diff deepUnordered", () => {
+    assert(
+        diff(
+            {
+                a: [
+                    ["a", "b", "c"],
+                    ["d", "e", "f"],
+                    ["g", "h", "i"]
+                ]
+            },
+            {
+                a: [
+                    ["i", "h", "g"],
+                    ["c", "b", "a"],
+                    ["f", "e", "d"]
+                ]
+            },
+            { listComparison: "deepUnordered" }
+        )
+    ).equals(undefined)
+    assert(
+        diff(
+            {
+                a: [
+                    ["a", "b", "c"],
+                    ["d", "e", "f", "d"],
+                    ["g", "h", "i", "removed"],
+                    []
+                ]
+            },
+            {
+                a: [
+                    ["added", "i", "h", "g"],
+                    ["c", "b", "a"],
+                    ["f", "e", "d", "f"],
+                    ["notEmpty"]
+                ]
+            },
+            { listComparison: "deepUnordered" }
+        )
+    ).snap({
+        changed: {
+            a: {
+                added: [
+                    [`added`, `i`, `h`, `g`],
+                    [`f`, `e`, `d`, `f`],
+                    [`notEmpty`]
+                ],
+                removed: [[`d`, `e`, `f`, `d`], [`g`, `h`, `i`, `removed`], []]
+            }
+        }
+    })
+})
+
 it("deepEquals", () => {
     assert(deepEquals(o, { ...o })).equals(true)
     assert(

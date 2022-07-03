@@ -1,10 +1,12 @@
-import { strict } from "node:assert"
+import { AssertionError, strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
 import {
+    diff,
     ElementOf,
     Func,
     IsAnyOrUnknown,
+    ListComparisonMode,
     ListPossibleTypes,
     toString
 } from "@re-/tools"
@@ -88,6 +90,10 @@ export type ExternalSnapshotOptions = {
     path?: string
 }
 
+export type EqualsOptions = {
+    listComparison?: ListComparisonMode
+}
+
 export type ComparableValueAssertion<
     PossibleValues extends any[],
     AllowTypeAssertions extends boolean
@@ -104,7 +110,8 @@ export type ComparableValueAssertion<
         ) => NextAssertions<AllowTypeAssertions>
     }
     equals: (
-        value: ElementOf<PossibleValues>
+        value: ElementOf<PossibleValues>,
+        options?: EqualsOptions
     ) => NextAssertions<AllowTypeAssertions>
     value: Omit<
         ComparableValueAssertion<[unknown], AllowTypeAssertions>,
@@ -328,8 +335,15 @@ export const valueAssertions = <T>(
             strict.equal(actual, expected)
             return nextAssertions
         },
-        equals: (expected: unknown) => {
-            strict.deepEqual(actual, expected)
+        equals: (expected: unknown, { listComparison }: EqualsOptions = {}) => {
+            if (listComparison !== undefined && listComparison !== "ordered") {
+                const diffResult = diff(expected, actual, { listComparison })
+                if (diffResult) {
+                    throw new AssertionError({ message: toString(diffResult) })
+                }
+            } else {
+                strict.deepEqual(actual, expected)
+            }
             return nextAssertions
         }
     }

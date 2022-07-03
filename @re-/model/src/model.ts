@@ -1,6 +1,7 @@
 import {
     chainableNoOpProxy,
     Evaluate,
+    Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
 import { Base, Root } from "./nodes/index.js"
@@ -115,20 +116,32 @@ export type GenerateFunction<ModeledType> = (
     options?: Base.Generation.Options
 ) => ModeledType
 
-export type ReferencesFunction<Def> = <Options extends Base.References.Options>(
+export type ReferencesFunction<Def> = <
+    Options extends Base.References.Options = {}
+>(
     options?: Options
-) => Options extends Base.References.Options<
-    infer Filter,
-    infer PreserveStructure
->
-    ? References<Def, Filter, PreserveStructure>
+) => Merge<
+    {
+        filter: Base.References.FilterFunction<string>
+        preserveStructure: false
+    },
+    Options
+> extends Base.References.Options<infer Filter, infer PreserveStructure>
+    ? Root.References<Def, Filter, PreserveStructure, "list">
     : []
 
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
 
 export type References<
     Def,
-    Filter = unknown,
-    PreserveStructure extends boolean = false,
-    Format extends Base.References.TypeFormat = "list"
-> = Root.References<Def, Filter, PreserveStructure, Format>
+    Options extends Base.References.TypeOptions = {}
+> = Merge<
+    { filter: string; preserveStructure: false; format: "list" },
+    Options
+> extends Base.References.TypeOptions<
+    infer Filter,
+    infer PreserveStructure,
+    infer Format
+>
+    ? Root.References<Def, Filter, PreserveStructure, Format>
+    : {}

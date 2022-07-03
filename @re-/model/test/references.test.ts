@@ -3,6 +3,51 @@ import { diffSets } from "@re-/tools"
 import { model, References, space } from "../src/index.js"
 
 describe("references", () => {
+    describe("function", () => {
+        it("from string", () => {
+            const references = space({ user: "unknown", group: "unknown" })
+                .create(
+                    "user[]|group[]|boolean&true|number&integer&positive|null"
+                )
+                .references()
+            assert(references).equals([
+                "user",
+                "group",
+                "boolean",
+                "true",
+                "number",
+                "integer",
+                "positive",
+                "null"
+            ]).typed as (
+                | "user"
+                | "group"
+                | "boolean"
+                | "true"
+                | "number"
+                | "integer"
+                | "positive"
+                | "null"
+            )[]
+        })
+        it("from object", () => {
+            const objectModel = model({
+                primitives: {
+                    undefined: undefined,
+                    null: null,
+                    true: true,
+                    false: false,
+                    5: 5,
+                    bigint: 7n
+                },
+                strings: {
+                    keyword: "boolean",
+                    expression: "string[]|integer&positive|null"
+                },
+                listed: [-1n, "null", "string|boolean"]
+            }).references()
+        })
+    })
     describe("type", () => {
         it("primitive", () => {
             let placeholder: any

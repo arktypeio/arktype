@@ -1,13 +1,27 @@
 export namespace References {
     export type Options<
-        Filter = unknown,
+        Filter extends string = string,
         PreserveStructure extends boolean = boolean
     > = {
-        filter?: (value: unknown) => value is Filter
+        filter?: FilterFunction<Filter>
         preserveStructure?: PreserveStructure
     }
 
+    export type FilterFunction<Filter extends string> = (
+        reference: string
+    ) => reference is Filter
+
     export type TypeFormat = "list" | "tuple" | "union"
+
+    export type TypeOptions<
+        Filter extends string = string,
+        PreserveStructure extends boolean = boolean,
+        Format extends TypeFormat = TypeFormat
+    > = {
+        filter?: Filter
+        preserveStructure?: PreserveStructure
+        format?: Format
+    }
 
     export type Config = Options
 
