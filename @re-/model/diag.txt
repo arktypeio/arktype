@@ -1,15 +1,15 @@
-Files:              216
-Lines:            83161
-Nodes:           279518
-Identifiers:     101270
-Symbols:         522056
-Types:           276471
-Instantiations: 1321302
-Memory used:    580990K
+Files:              222
+Lines:            83685
+Nodes:           281214
+Identifiers:     101784
+Symbols:         611371
+Types:           324421
+Instantiations: 1575168
+Memory used:    672527K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.57s
-Bind time:        0.23s
-Check time:       6.37s
+Parse time:       0.52s
+Bind time:        0.20s
+Check time:       6.66s
 Emit time:        0.00s
-Total time:       7.16s
+Total time:       7.37s

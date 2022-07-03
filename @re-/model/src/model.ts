@@ -130,5 +130,5 @@ export type References<
     Def,
     Filter = unknown,
     PreserveStructure extends boolean = false,
-    PreserveOrder extends boolean = false
-> = Root.References<Def, Filter, PreserveStructure, PreserveOrder>
+    Format extends Base.References.TypeFormat = "list"
+> = Root.References<Def, Filter, PreserveStructure, Format>

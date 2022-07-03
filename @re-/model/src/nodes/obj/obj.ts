@@ -25,39 +25,36 @@ export namespace Obj {
         Def extends object,
         Filter,
         PreserveStructure extends boolean,
-        PreserveOrder extends boolean
+        Format extends Base.References.TypeFormat
     > = PreserveStructure extends true
-        ? StructuredReferences<Def, Filter, PreserveOrder>
+        ? StructuredReferences<Def, Filter, Format>
         : UnstructuredReferences<
               ListPossibleTypes<ValueOf<Def>>,
               [],
               Filter,
-              PreserveOrder
+              Format
           >
 
     type UnstructuredReferences<
         Values extends unknown[],
         Result extends unknown[],
         Filter,
-        PreserveOrder extends boolean
+        Format extends Base.References.TypeFormat
     > = Values extends Iteration<unknown, infer Current, infer Remaining>
         ? UnstructuredReferences<
               Remaining,
-              [
-                  ...Result,
-                  ...Root.References<Current, Filter, false, PreserveOrder>
-              ],
+              [...Result, ...Root.References<Current, Filter, false, Format>],
               Filter,
-              PreserveOrder
+              Format
           >
         : Result
 
     type StructuredReferences<
         Def extends object,
         Filter,
-        PreserveOrder extends boolean
+        Format extends Base.References.TypeFormat
     > = Evaluate<{
-        [K in keyof Def]: Root.References<Def[K], Filter, true, PreserveOrder>
+        [K in keyof Def]: Root.References<Def[K], Filter, true, Format>
     }>
 
     export const matches = (def: unknown): def is object =>

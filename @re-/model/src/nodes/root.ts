@@ -39,15 +39,17 @@ export namespace Root {
         Def,
         Filter,
         PreserveStructure extends boolean,
-        PreserveOrder extends boolean
+        Format extends Base.References.TypeFormat
     > = Def extends string
         ? Def extends Base.Parsing.ParseErrorMessage
             ? []
-            : PreserveOrder extends true
+            : Format extends "tuple"
             ? Str.References<Def, Filter>
+            : Format extends "union"
+            ? ElementOf<Str.References<Def, Filter>>
             : ElementOf<Str.References<Def, Filter>>[]
         : Def extends object
-        ? Obj.References<Def, Filter, PreserveStructure, PreserveOrder>
+        ? Obj.References<Def, Filter, PreserveStructure, Format>
         : Def extends Literal.Definition
         ? Literal.References<Def, Filter>
         : []
