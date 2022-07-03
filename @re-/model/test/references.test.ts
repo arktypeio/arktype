@@ -10,16 +10,19 @@ describe("references", () => {
                     "user[]|group[]|boolean&true|number&integer&positive|null"
                 )
                 .references()
-            assert(references).equals([
-                "user",
-                "group",
-                "boolean",
-                "true",
-                "number",
-                "integer",
-                "positive",
-                "null"
-            ]).typed as (
+            assert(references).equals(
+                [
+                    "user",
+                    "group",
+                    "boolean",
+                    "true",
+                    "number",
+                    "integer",
+                    "positive",
+                    "null"
+                ],
+                { listComparison: "unordered" }
+            ).typed as (
                 | "user"
                 | "group"
                 | "boolean"
@@ -30,22 +33,23 @@ describe("references", () => {
                 | "null"
             )[]
         })
+        const objectDef = {
+            primitives: {
+                undefined: undefined,
+                null: null,
+                true: true,
+                false: false,
+                5: 5,
+                bigint: 7n
+            },
+            strings: {
+                keyword: "boolean",
+                expression: "string[]|integer&positive|null"
+            },
+            listed: [-1n, "null", "string|boolean"]
+        } as const
         it("from object", () => {
-            const objectModel = model({
-                primitives: {
-                    undefined: undefined,
-                    null: null,
-                    true: true,
-                    false: false,
-                    5: 5,
-                    bigint: 7n
-                },
-                strings: {
-                    keyword: "boolean",
-                    expression: "string[]|integer&positive|null"
-                },
-                listed: [-1n, "null", "string|boolean"]
-            }).references()
+            const objectModel = model(objectDef).references()
         })
     })
     describe("type", () => {
