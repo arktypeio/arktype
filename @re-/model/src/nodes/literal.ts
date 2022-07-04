@@ -1,4 +1,4 @@
-import { Base } from "../base/index.js"
+import { Base } from "./base/index.js"
 
 export namespace Literal {
     export type Definition = number | bigint | boolean | undefined | null
@@ -13,11 +13,6 @@ export namespace Literal {
     export type DefToString<Def extends Definition> = Def extends bigint
         ? `${Def}n`
         : `${Def}`
-
-    export type References<Def extends Definition, Filter> = Base.FilterToTuple<
-        DefToString<Def>,
-        Filter
-    >
 
     export class Node extends Base.Leaf<Definition> {
         allows(args: Base.Validation.Args) {

@@ -37,7 +37,7 @@ export namespace Alias {
 
     export class Node extends Base.Leaf<string> {
         // @ts-ignore (spurious initialization error)
-        private next: Base.Parsing.Node
+        resolution: Base.Parsing.Node
 
         constructor(def: string, ctx: Base.Parsing.Context) {
             // If we've already seen this alias, the resolution will be an Alias node, so just return that
@@ -49,7 +49,7 @@ export namespace Alias {
             const unresolvedDefinition = ctx.resolutions[def]
             // Before parsing the definition, we update the resolution to be this Node so we don't try and parse it again
             ctx.resolutions[def] = this
-            this.next = Root.parse(unresolvedDefinition, this.ctx)
+            this.resolution = Root.parse(unresolvedDefinition, this.ctx)
         }
 
         allows(args: Base.Validation.Args): boolean {
@@ -80,7 +80,7 @@ export namespace Alias {
                     nextArgs
                 )
             }
-            return this.next.allows(nextArgs)
+            return this.resolution.allows(nextArgs)
         }
 
         generate(args: Base.Generation.Args) {
@@ -97,7 +97,7 @@ export namespace Alias {
                     args.ctx.seen
                 )
             }
-            return this.next.generate(nextArgs)
+            return this.resolution.generate(nextArgs)
         }
 
         private nextArgs<

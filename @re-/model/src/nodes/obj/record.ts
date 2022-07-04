@@ -3,7 +3,7 @@ import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
 import { Base } from "./base.js"
 
-export namespace Map {
+export namespace Record {
     export type Definition = Record<string, unknown>
 
     export type Parse<
@@ -22,7 +22,7 @@ export namespace Map {
         }
     >
 
-    export const isMapLike = (
+    export const valueIsRecordLike = (
         value: unknown
     ): value is Record<string, unknown> =>
         typeof value === "object" && value !== null && !Array.isArray(value)
@@ -44,7 +44,7 @@ export namespace Map {
         }
 
         allows(args: Base.Validation.Args) {
-            if (!isMapLike(args.value)) {
+            if (!valueIsRecordLike(args.value)) {
                 this.addUnassignable(args)
                 return false
             }

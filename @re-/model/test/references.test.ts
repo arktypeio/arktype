@@ -1,72 +1,65 @@
 import { assert } from "@re-/assert"
-import { diffSets } from "@re-/tools"
+import { ElementOf, Evaluate, narrow } from "@re-/tools"
 import { model, References, space } from "../src/index.js"
 
 describe("references", () => {
-    describe("function", () => {
+    const objectDef = {
+        primitives: {
+            undefined: undefined,
+            null: null,
+            true: true,
+            false: false,
+            5: 5,
+            bigint: 7n
+        },
+        strings: {
+            keyword: "boolean",
+            expression: "string[]|integer&positive|null"
+        },
+        listed: [-1n, "null", "string|boolean"],
+        regex: /.*/
+    } as const
+
+    type ObjectDef = typeof objectDef
+
+    const expectedObjectDefReferences = narrow([
+        "<regex>",
+        "-1n",
+        "null",
+        "string",
+        "boolean",
+        "3",
+        "undefined",
+        "null",
+        "false",
+        "true",
+        "5",
+        "7n",
+        "boolean",
+        "string",
+        "integer",
+        "positive",
+        "null"
+    ])
+
+    type ExpectedObjectDefReferences = typeof expectedObjectDefReferences
+
+    describe("model", () => {
+        it("from literal", () => {
+            assert(model(undefined).references()).equals(["undefined"])
+                .typed as "undefined"[]
+            assert(model(null).references()).equals(["null"]).typed as "null"[]
+            assert(model(true).references()).equals(["true"]).typed as "true"[]
+            assert(model(5).references()).equals(["5"]).typed as "5"[]
+            assert(model(0n).references()).equals(["0n"]).typed as "0n"[]
+        })
         it("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
                 .create(
                     "user[]|group[]|boolean&true|number&integer&positive|null"
                 )
                 .references()
-            assert(references).equals(
-                [
-                    "user",
-                    "group",
-                    "boolean",
-                    "true",
-                    "number",
-                    "integer",
-                    "positive",
-                    "null"
-                ],
-                { listComparison: "unordered" }
-            ).typed as (
-                | "user"
-                | "group"
-                | "boolean"
-                | "true"
-                | "number"
-                | "integer"
-                | "positive"
-                | "null"
-            )[]
-        })
-        const objectDef = {
-            primitives: {
-                undefined: undefined,
-                null: null,
-                true: true,
-                false: false,
-                5: 5,
-                bigint: 7n
-            },
-            strings: {
-                keyword: "boolean",
-                expression: "string[]|integer&positive|null"
-            },
-            listed: [-1n, "null", "string|boolean"]
-        } as const
-        it("from object", () => {
-            const objectModel = model(objectDef).references()
-        })
-    })
-    describe("type", () => {
-        it("primitive", () => {
-            let placeholder: any
-            assert(placeholder as References<null>).typed as "null"
-            assert(placeholder as References<undefined>).typed as "undefined"
-            assert(placeholder as References<5>).typed as "5"
-            assert(placeholder as References<7n>).typed as "7n"
-            assert(placeholder as References<true>).typed as "true"
-            assert(placeholder as References<false>).typed as "false"
-        })
-        it("string", () => {
-            type ComplexStringType =
-                "user[]|group[]|boolean&true|number&integer&positive|null"
-            const references = {} as References<ComplexStringType>
-            assert(references).typed as [
+            const expectedReferenceSet = narrow([
                 "user",
                 "group",
                 "boolean",
@@ -75,81 +68,24 @@ describe("references", () => {
                 "integer",
                 "positive",
                 "null"
-            ]
-            const listedFilteredReferences = {} as References<
-                ComplexStringType,
-                `${string}o${string}`
-            >
-            assert(listedFilteredReferences).typed as [
-                "group",
-                "boolean",
-                "positive"
-            ]
+            ])
+            type ExpectedReferences = ElementOf<typeof expectedReferenceSet>[]
+            assert(references).equals(expectedReferenceSet, {
+                listComparison: "unordered"
+            }).typed as ExpectedReferences
         })
-        it("object", () => {
-            const refs = {} as References<{
-                listed: ["group|null", "user|null"]
-                a: { b: { c: "user[]?" } }
-            }>
-            assert(refs).typed as {
-                listed: ["group" | "null", "null" | "user"]
-                a: {
-                    b: {
-                        c: "user"
-                    }
-                }
-            }
+        it("from object", () => {
+            const references = model(objectDef).references()
+            type ExpectedReferences = ElementOf<ExpectedObjectDefReferences>[]
+            assert(references).equals(expectedObjectDefReferences, {
+                listComparison: "unordered"
+            }).typed as ExpectedReferences
         })
-    })
-    describe("value", () => {
-        it("shallow", () => {
-            assert(model(5).references()).equals(["5"]).typed as "5"[]
-            assert(model(null).references()).equals(["null"]).typed as "null"[]
-            assert(model(0n).references()).equals(["0n"]).typed as "0n"[]
-            assert(model("string").references()).equals(["string"])
-                .typed as "string"[]
-            const expressionReferences = model(
-                "string|number[]|null|true?"
-            ).references()
-            assert(
-                diffSets(expressionReferences, [
-                    "string",
-                    "number",
-                    "true",
-                    "null"
-                ]) as any
-            ).is(undefined)
-            assert(expressionReferences).typed as (
-                | "string"
-                | "number"
-                | "true"
-                | "null"
-            )[]
-            const aliasReferences = space({ user: "any" })
-                .create("user|string")
-                .references()
-            assert(diffSets(["string", "user"], aliasReferences) as any).is(
-                undefined
-            )
-            assert(aliasReferences).typed as ("string" | "user")[]
-        })
-        it("object", () => {
-            const objectReferences = model({
-                primitives: {
-                    undefined: undefined,
-                    null: null,
-                    true: true,
-                    false: false,
-                    5: 5,
-                    bigint: 7n
-                },
-                strings: {
-                    keyword: "boolean",
-                    expression: "string[]|integer&positive|null"
-                },
-                listed: [-1n, "null", "string|boolean"]
-            }).references({ preserveStructure: true })
-            assert(objectReferences).equals({
+        it("from object with preserveStructure", () => {
+            const references = model(objectDef).references({
+                preserveStructure: true
+            })
+            const expectedReferenceSets = narrow({
                 primitives: {
                     undefined: ["undefined"],
                     null: ["null"],
@@ -162,9 +98,42 @@ describe("references", () => {
                     keyword: ["boolean"],
                     expression: ["string", "integer", "positive", "null"]
                 },
-                listed: [["-1n"], ["null"], ["string", "boolean"]]
+                listed: [["-1n"], ["null"], ["string", "boolean"]],
+                regex: ["<regex>"]
             })
-            assert(objectReferences).type.toString.snap()
+            type ExtractExpectedReferences<T> = Evaluate<{
+                [K in keyof T]: T[K] extends string[]
+                    ? ElementOf<T[K]>[]
+                    : ExtractExpectedReferences<T[K]>
+            }>
+            type ExpectedReferences = ExtractExpectedReferences<
+                typeof expectedReferenceSets
+            >
+            assert(references).equals(expectedReferenceSets, {
+                listComparison: "deepUnordered"
+            }).typed as ExpectedReferences
+        })
+    })
+    describe("type", () => {
+        describe("format", () => {
+            it("default (list)", () => {
+                const actual = {} as References<ObjectDef>
+                type ExpectedReferences =
+                    ElementOf<ExpectedObjectDefReferences>[]
+                assert(actual).typed as ExpectedReferences
+            })
+            it("tuple", () => {
+                const actual = {} as References<
+                    "string|number[]|boolean&true?",
+                    { format: "tuple" }
+                >
+                assert(actual).typed as ["string", "number", "boolean", "true"]
+            })
+            it("union", () => {
+                const actual = {} as References<ObjectDef, { format: "union" }>
+                type ExpectedReferences = ElementOf<ExpectedObjectDefReferences>
+                assert(actual).typed as ExpectedReferences
+            })
         })
     })
 })

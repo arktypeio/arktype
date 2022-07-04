@@ -7,9 +7,9 @@ export namespace References {
         preserveStructure?: PreserveStructure
     }
 
-    export type FilterFunction<Filter extends string> = (
-        reference: string
-    ) => reference is Filter
+    export type FilterFunction<Filter extends string> =
+        | ((reference: string) => reference is Filter)
+        | ((reference: string) => boolean)
 
     export type TypeFormat = "list" | "tuple" | "union"
 

@@ -1,5 +1,5 @@
 import { Alias } from "./alias.js"
-import { Base, createSplittableMatcher } from "./base.js"
+import { Base } from "./base.js"
 import { Bound } from "./bound.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"
@@ -54,55 +54,22 @@ export namespace Str {
               Base.Parsing.UnknownTypeErrorMessage<Def>
           >
 
-    export type References<
-        Def extends string,
-        Filter
-    > = Def extends Optional.Definition<infer Next>
-        ? RecursiveReferences<Next, Filter>
-        : RecursiveReferences<Def, Filter>
-
-    export type RecursiveReferences<Def extends string, Filter> = Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    export type References<Def extends string> = Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
         | StringLiteral.Definition<infer Text>
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         | EmbeddedRegex.Definition<infer Expression>
-        ? Base.FilterToTuple<Def, Filter>
+        ? [Def]
+        : Def extends Optional.Definition<infer Next>
+        ? References<Next>
         : Def extends Intersection.Definition<infer Left, infer Right>
-        ? [
-              ...RecursiveReferences<Left, Filter>,
-              ...RecursiveReferences<Right, Filter>
-          ]
+        ? [...References<Left>, ...References<Right>]
         : Def extends Union.Definition<infer Left, infer Right>
-        ? [
-              ...RecursiveReferences<Left, Filter>,
-              ...RecursiveReferences<Right, Filter>
-          ]
+        ? [...References<Left>, ...References<Right>]
         : Def extends List.Definition<infer Next>
-        ? RecursiveReferences<Next, Filter>
+        ? References<Next>
         : Def extends Bound.Definition
-        ? Bound.References<Def, Filter>
-        : Base.FilterToTuple<Def, Filter>
-
-    const splittableMatcher = createSplittableMatcher("|&")
-
-    export const references = (def: string): string[] => {
-        const result = []
-        // Union and intersection are the only types of string definitions that contain multiple references
-        const parts = def.match(splittableMatcher)!
-        for (const part of parts) {
-            if (StringLiteral.matches(part) || EmbeddedRegex.matches(part)) {
-                // These are the only two types that can contain non-alphanumeric characters within a reference
-                result.push(part)
-            } else {
-                if (Bound.matches(part)) {
-                    // If the part is a constraint, extract the bounded reference before parsing any further
-                    // part = Bound.getReference(part)
-                }
-                // At this point, removing all non-alphanumeric characters should yield remaining references to builtins or aliases
-                result.push(part.replace(/[^a-z0-9]/gi, ""))
-            }
-        }
-        return result
-    }
+        ? Bound.References<Def>
+        : [Def]
 
     export type Parse<
         Def extends string,

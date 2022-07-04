@@ -70,10 +70,9 @@ export namespace Bound {
         ? Bounded
         : Str.Validate<Bounded, Dict, Root>
 
-    export type References<
-        Def extends string,
-        Filter
-    > = Str.RecursiveReferences<ExtractBounded<Def>, Filter>
+    export type References<Def extends string> = Str.References<
+        ExtractBounded<Def>
+    >
 
     type SingleBoundedParts<
         Left extends string = string,

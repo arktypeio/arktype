@@ -48,5 +48,3 @@ export type ModelOptions = {
     validate?: Validation.Options
     generate?: Generation.Options
 }
-
-export type FilterToTuple<Value, Filter> = Value extends Filter ? [Value] : []

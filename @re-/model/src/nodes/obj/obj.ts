@@ -1,13 +1,13 @@
 import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
 import { Root } from "../root.js"
 import { Base } from "./base.js"
-import { Map } from "./map.js"
+import { Record } from "./record.js"
 import { Regex } from "./regex.js"
 import { Tuple } from "./tuple.js"
 
 export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
-    export type Leaves = RegExp
+    export type Unmapped = Regex.Definition
 
     export type Validate<Def extends object, Dict> = {
         [K in keyof Def]: Root.Validate<Def[K], Dict>
@@ -19,42 +19,29 @@ export namespace Obj {
         ? Evaluate<{
               -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen>
           }>
-        : Map.Parse<Def, Dict, Seen>
+        : Record.Parse<Def, Dict, Seen>
 
     export type References<
         Def extends object,
-        Filter,
-        PreserveStructure extends boolean,
-        Format extends Base.References.TypeFormat
-    > = PreserveStructure extends true
-        ? StructuredReferences<Def, Filter, Format>
-        : UnstructuredReferences<
-              ListPossibleTypes<ValueOf<Def>>,
-              [],
-              Filter,
-              Format
-          >
+        PreserveStructure extends boolean
+    > = Def extends Regex.Definition
+        ? ["<regex>"]
+        : PreserveStructure extends true
+        ? StructuredReferences<Def>
+        : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, []>
 
     type UnstructuredReferences<
         Values extends unknown[],
-        Result extends unknown[],
-        Filter,
-        Format extends Base.References.TypeFormat
+        Result extends unknown[]
     > = Values extends Iteration<unknown, infer Current, infer Remaining>
         ? UnstructuredReferences<
               Remaining,
-              [...Result, ...Root.References<Current, Filter, false, Format>],
-              Filter,
-              Format
+              [...Result, ...Root.References<Current, false>]
           >
         : Result
 
-    type StructuredReferences<
-        Def extends object,
-        Filter,
-        Format extends Base.References.TypeFormat
-    > = Evaluate<{
-        [K in keyof Def]: Root.References<Def[K], Filter, true, Format>
+    type StructuredReferences<Def extends object> = Evaluate<{
+        [K in keyof Def]: Root.References<Def[K], true>
     }>
 
     export const matches = (def: unknown): def is object =>
@@ -67,6 +54,6 @@ export namespace Obj {
         if (Tuple.matches(def)) {
             return new Tuple.Node(def, ctx)
         }
-        return new Map.Node(def as Map.Definition, ctx)
+        return new Record.Node(def as Record.Definition, ctx)
     }
 }

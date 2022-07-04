@@ -25,7 +25,6 @@ export class Space implements SpaceFrom<unknown> {
         this.inputs = { dictionary, options }
         this.config = configureSpace(dictionary, options)
         this.models = {}
-        checkForShallowCycle(dictionary)
         for (const alias of Object.keys(this.config.resolutions)) {
             const ctx = Base.Parsing.createContext(
                 deepMerge(this.config, this.config.models[alias]),
@@ -33,6 +32,7 @@ export class Space implements SpaceFrom<unknown> {
             )
             this.models[alias] = new Model(new Alias.Node(alias, ctx))
         }
+        checkForShallowCycle(this.config.resolutions as any)
     }
 
     create(def: unknown, options?: Base.ModelOptions) {

@@ -1,6 +1,6 @@
-import { ElementOf, IsAny, IsAnyOrUnknown } from "@re-/tools"
+import { IsAny, IsAnyOrUnknown } from "@re-/tools"
 import { Base } from "./base/index.js"
-import { Literal } from "./literal/index.js"
+import { Literal } from "./literal.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 
@@ -11,7 +11,7 @@ export namespace Root {
         ? Str.Validate<Def, Dict, Def>
         : Def extends BadDefinitionType
         ? BadDefinitionTypeMessage<Def>
-        : Def extends Obj.Leaves
+        : Def extends Obj.Unmapped
         ? Def
         : Def extends object
         ? Obj.Validate<Def, Dict>
@@ -37,21 +37,15 @@ export namespace Root {
 
     export type References<
         Def,
-        Filter,
-        PreserveStructure extends boolean,
-        Format extends Base.References.TypeFormat
+        PreserveStructure extends boolean
     > = Def extends string
         ? Def extends Base.Parsing.ParseErrorMessage
             ? []
-            : Format extends "tuple"
-            ? Str.References<Def, Filter>
-            : Format extends "union"
-            ? ElementOf<Str.References<Def, Filter>>
-            : ElementOf<Str.References<Def, Filter>>[]
-        : Def extends object
-        ? Obj.References<Def, Filter, PreserveStructure, Format>
+            : Str.References<Def>
         : Def extends Literal.Definition
-        ? Literal.References<Def, Filter>
+        ? [Literal.DefToString<Def>]
+        : Def extends object
+        ? Obj.References<Def, PreserveStructure>
         : []
 
     export type BadDefinitionType = Function | symbol

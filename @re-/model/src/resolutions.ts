@@ -1,6 +1,6 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
-import { Base, Root, Str } from "./nodes/index.js"
-import { AliasIn, SpaceDictionary } from "./space.js"
+import { Alias, Base, Root, Str } from "./nodes/index.js"
+import { AliasIn } from "./space.js"
 
 export type ShallowCycleError<Seen extends string[]> =
     Base.Parsing.ParseErrorMessage<`${Seen[0]} references a shallow cycle: ${Join<
@@ -27,16 +27,18 @@ type IterateReferencesForShallowCycle<
     Dict,
     Seen extends string[]
 > = References extends Iteration<string, infer Current, infer Remaining>
-    ? Current extends ElementOf<Seen>
-        ? [...Seen, Current]
-        : IfShallowCycleElse<
-              CheckResolutionForShallowCycleRecurse<
-                  KeyValuate<Dict, Current>,
-                  Dict,
-                  [...Seen, Current]
-              >,
-              IterateReferencesForShallowCycle<Remaining, Dict, Seen>
-          >
+    ? Current extends keyof Dict
+        ? Current extends ElementOf<Seen>
+            ? [...Seen, Current]
+            : IfShallowCycleElse<
+                  CheckResolutionForShallowCycleRecurse<
+                      KeyValuate<Dict, Current>,
+                      Dict,
+                      [...Seen, Current]
+                  >,
+                  IterateReferencesForShallowCycle<Remaining, Dict, Seen>
+              >
+        : IterateReferencesForShallowCycle<Remaining, Dict, Seen>
     : []
 
 /** For a given resolution, check it's shallow references to other aliases for cycles */
@@ -45,11 +47,7 @@ type CheckResolutionForShallowCycleRecurse<
     Dict,
     Seen extends string[]
 > = Resolution extends string
-    ? IterateReferencesForShallowCycle<
-          Str.RecursiveReferences<Resolution, keyof Dict>,
-          Dict,
-          Seen
-      >
+    ? IterateReferencesForShallowCycle<Str.References<Resolution>, Dict, Seen>
     : []
 
 type CheckResolutionForShallowCycle<
@@ -87,15 +85,17 @@ export type ValidateResolution<
 
 type ReferenceMap = Record<string, string[]>
 
-export const checkForShallowCycle = (dictionary: SpaceDictionary) => {
+export const checkForShallowCycle = (
+    resolutions: Record<string, Alias.Node>
+) => {
     const directShallowReferences: ReferenceMap = {}
-    for (const [alias, resolution] of Object.entries(dictionary)) {
-        if (typeof resolution === "string") {
-            const aliasReferences = Str.references(resolution).filter(
-                (_) => _ in dictionary
-            )
-            if (aliasReferences.length) {
-                directShallowReferences[alias] = aliasReferences
+    for (const [alias, node] of Object.entries(resolutions)) {
+        if (typeof node.resolution.def === "string") {
+            const shallowAliasReferences = node.resolution.references({
+                filter: (reference) => reference in resolutions
+            })
+            if (shallowAliasReferences.length) {
+                directShallowReferences[alias] = shallowAliasReferences
             }
         }
     }

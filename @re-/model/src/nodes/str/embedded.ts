@@ -1,5 +1,5 @@
 import { asNumber } from "@re-/tools"
-import { Literal } from "../literal/literal.js"
+import { Literal } from "../literal.js"
 import { Regex } from "../obj/regex.js"
 import { Base } from "./base.js"
 

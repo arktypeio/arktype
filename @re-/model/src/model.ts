@@ -1,6 +1,8 @@
 import {
     chainableNoOpProxy,
+    ElementOf,
     Evaluate,
+    Iteration,
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
@@ -127,7 +129,11 @@ export type ReferencesFunction<Def> = <
     },
     Options
 > extends Base.References.Options<infer Filter, infer PreserveStructure>
-    ? Root.References<Def, Filter, PreserveStructure, "list">
+    ? TransformReferences<
+          Root.References<Def, PreserveStructure>,
+          Filter,
+          "list"
+      >
     : []
 
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
@@ -143,5 +149,44 @@ export type References<
     infer PreserveStructure,
     infer Format
 >
-    ? Root.References<Def, Filter, PreserveStructure, Format>
+    ? TransformReferences<
+          Root.References<Def, PreserveStructure>,
+          Filter,
+          Format
+      >
     : {}
+
+type TransformReferences<
+    References,
+    Filter extends string,
+    Format extends Base.References.TypeFormat
+> = References extends string[]
+    ? FormatReferenceList<FilterReferenceList<References, Filter, []>, Format>
+    : {
+          [K in keyof References]: TransformReferences<
+              References[K],
+              Filter,
+              Format
+          >
+      }
+
+type FilterReferenceList<
+    References extends string[],
+    Filter extends string,
+    Result extends string[]
+> = References extends Iteration<string, infer Current, infer Remaining>
+    ? FilterReferenceList<
+          Remaining,
+          Filter,
+          Current extends Filter ? [...Result, Current] : Result
+      >
+    : Result
+
+type FormatReferenceList<
+    References extends string[],
+    Format extends Base.References.TypeFormat
+> = Format extends "tuple"
+    ? References
+    : Format extends "list"
+    ? ElementOf<References>[]
+    : ElementOf<References>
