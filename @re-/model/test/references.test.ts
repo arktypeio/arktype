@@ -23,12 +23,11 @@ describe("references", () => {
     type ObjectDef = typeof objectDef
 
     const expectedObjectDefReferences = narrow([
-        "<regex>",
+        "/.*/" as `/${string}/`,
         "-1n",
         "null",
         "string",
         "boolean",
-        "3",
         "undefined",
         "null",
         "false",
@@ -56,7 +55,7 @@ describe("references", () => {
         it("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
                 .create(
-                    "user[]|group[]|boolean&true|number&integer&positive|null"
+                    "user[]|group[]|boolean&true|integer&positive|null|1<number<2"
                 )
                 .references()
             const expectedReferenceSet = narrow([
@@ -99,7 +98,7 @@ describe("references", () => {
                     expression: ["string", "integer", "positive", "null"]
                 },
                 listed: [["-1n"], ["null"], ["string", "boolean"]],
-                regex: ["<regex>"]
+                regex: ["/.*/" as `/${string}/`]
             })
             type ExtractExpectedReferences<T> = Evaluate<{
                 [K in keyof T]: T[K] extends string[]

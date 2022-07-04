@@ -25,8 +25,8 @@ export abstract class Branch<
         return this.cache
     }
 
-    firstChild(): ElementOf<Children> {
-        return this.children()[0]
+    firstChild() {
+        return this.children()[0] as ElementOf<Children>
     }
 
     references(args: References.Options) {

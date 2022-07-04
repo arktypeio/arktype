@@ -58,8 +58,11 @@ const typeOfResult = typeof ({} as unknown)
 export type TypeOfResult = typeof typeOfResult
 
 export type PropertyOf<T> = T[keyof T]
-export type ElementOf<T extends List> = T[number]
-export type ValueOf<T> = T extends any[] ? T[number] : T[keyof T]
+export type ElementOf<T extends List> = T extends List<infer Item>
+    ? Item
+    : never
+
+export type ValueOf<T> = T extends List<infer Item> ? Item : T[keyof T]
 
 export type Entry<K extends Key = Key, V = unknown> = [K, V]
 

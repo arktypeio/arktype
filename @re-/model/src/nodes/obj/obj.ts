@@ -25,7 +25,7 @@ export namespace Obj {
         Def extends object,
         PreserveStructure extends boolean
     > = Def extends Regex.Definition
-        ? ["<regex>"]
+        ? [`/${Def["source"]}/`]
         : PreserveStructure extends true
         ? StructuredReferences<Def>
         : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, []>
@@ -41,7 +41,7 @@ export namespace Obj {
         : Result
 
     type StructuredReferences<Def extends object> = Evaluate<{
-        [K in keyof Def]: Root.References<Def[K], true>
+        -readonly [K in keyof Def]: Root.References<Def[K], true>
     }>
 
     export const matches = (def: unknown): def is object =>

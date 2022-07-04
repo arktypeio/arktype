@@ -43,6 +43,10 @@ export namespace Record {
             )
         }
 
+        propNameAtIndex(childIndex: number) {
+            return this.childIndicesToPropNames![childIndex]
+        }
+
         allows(args: Base.Validation.Args) {
             if (!valueIsRecordLike(args.value)) {
                 this.addUnassignable(args)
@@ -52,7 +56,7 @@ export namespace Record {
             let allPropsAllowed = true
             let childIndex = 0
             for (const propNode of this.children()) {
-                const propName = this.childIndicesToPropNames![childIndex]
+                const propName = this.propNameAtIndex(childIndex)
                 const pathWithProp = Base.pathAdd(args.ctx.path, propName)
                 if (propName in args.value) {
                     const propIsAllowed = propNode.allows({
@@ -96,7 +100,7 @@ export namespace Record {
             const result: Record<string, unknown> = {}
             let childIndex = 0
             for (const propNode of this.children()) {
-                const propName = this.childIndicesToPropNames![childIndex]
+                const propName = this.propNameAtIndex(childIndex)
                 // Don't include optional keys by default in generated values
                 if (propNode instanceof Optional.Node) {
                     continue

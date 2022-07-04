@@ -39,9 +39,7 @@ export namespace Root {
         Def,
         PreserveStructure extends boolean
     > = Def extends string
-        ? Def extends Base.Parsing.ParseErrorMessage
-            ? []
-            : Str.References<Def>
+        ? Str.References<Def>
         : Def extends Literal.Definition
         ? [Literal.DefToString<Def>]
         : Def extends object

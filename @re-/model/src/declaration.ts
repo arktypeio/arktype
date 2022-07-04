@@ -33,7 +33,7 @@ const createDeclaredDefineFunctionMap = <DeclaredTypeNames extends string[]>(
 ): DeclaredDefineFunctionMap<DeclaredTypeNames> =>
     transform(typeNames, ([, typeName]) => [
         typeName as string,
-        createDeclaredDefineFunction(typeNames, typeName)
+        createDeclaredDefineFunction(typeNames, typeName as any)
     ])
 
 type DeclaredDefineFunctionMap<DeclaredTypeNames extends string[]> = {
