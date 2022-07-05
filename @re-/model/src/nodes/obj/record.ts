@@ -28,23 +28,13 @@ export namespace Record {
         typeof value === "object" && value !== null && !Array.isArray(value)
 
     export class Node extends Base.Branch<Definition> {
-        private childIndicesToPropNames: Record<number, string> | undefined
-
         parse() {
-            this.childIndicesToPropNames = {}
-            return Object.entries(this.def).map(
-                ([propName, propDef], childIndex) => {
-                    this.childIndicesToPropNames![childIndex] = propName
-                    return Root.parse(propDef, {
-                        ...this.ctx,
-                        path: Base.pathAdd(this.ctx.path, propName)
-                    })
-                }
-            )
-        }
-
-        propNameAtIndex(childIndex: number) {
-            return this.childIndicesToPropNames![childIndex]
+            return Object.entries(this.def).map(([propName, propDef]) => {
+                return Root.parse(propDef, {
+                    ...this.ctx,
+                    path: Base.pathAdd(this.ctx.path, propName)
+                })
+            })
         }
 
         allows(args: Base.Validation.Args) {
@@ -54,9 +44,8 @@ export namespace Record {
             }
             const valueKeysLeftToCheck = new Set(Object.keys(args.value))
             let allPropsAllowed = true
-            let childIndex = 0
             for (const propNode of this.children()) {
-                const propName = this.propNameAtIndex(childIndex)
+                const propName = propNode.lastPathKey()
                 const pathWithProp = Base.pathAdd(args.ctx.path, propName)
                 if (propName in args.value) {
                     const propIsAllowed = propNode.allows({
@@ -78,7 +67,6 @@ export namespace Record {
                     allPropsAllowed = false
                 }
                 valueKeysLeftToCheck.delete(propName)
-                childIndex++
             }
             if (
                 valueKeysLeftToCheck.size &&
@@ -98,9 +86,8 @@ export namespace Record {
 
         generate(args: Base.Generation.Args) {
             const result: Record<string, unknown> = {}
-            let childIndex = 0
             for (const propNode of this.children()) {
-                const propName = this.propNameAtIndex(childIndex)
+                const propName = propNode.lastPathKey()
                 // Don't include optional keys by default in generated values
                 if (propNode instanceof Optional.Node) {
                     continue
@@ -112,9 +99,20 @@ export namespace Record {
                         path: Base.pathAdd(args.ctx.path, propName)
                     }
                 })
-                childIndex++
             }
             return result
+        }
+
+        structuredReferences(args: Base.References.Args) {
+            if (args.preserveStructure) {
+                const structuredReferences: Record<string, unknown> = {}
+                for (const propNode of this.children()) {
+                    structuredReferences[propNode.lastPathKey()] =
+                        propNode.references(args)
+                }
+                return structuredReferences
+            }
+            return super.references(args)
         }
     }
 }

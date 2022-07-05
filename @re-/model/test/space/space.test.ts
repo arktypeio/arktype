@@ -134,7 +134,7 @@ describe("space", () => {
                 }[]
             }
         }
-        assert(extended.inputs.dictionary).snap({
+        assert(extended.dictionary).snap({
             __meta__: {
                 onCycle: `boolean`
             },
@@ -142,7 +142,7 @@ describe("space", () => {
             group: { members: `user[]` },
             other: { users: `user[]`, groups: `group[]` }
         })
-        assert(extended.inputs.options).snap({
+        assert(extended.options).snap({
             validate: { ignoreExtraneousKeys: true },
             models: {
                 user: { validate: { ignoreExtraneousKeys: false } },

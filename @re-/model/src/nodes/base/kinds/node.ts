@@ -1,3 +1,4 @@
+import { basename } from "node:path"
 import { Generation, Parsing, Validation } from "../features/index.js"
 import { References } from "../features/references.js"
 import { defToString, stringifyValue } from "../utils.js"
@@ -11,6 +12,10 @@ export abstract class Node<DefType> {
 
     defToString() {
         return defToString(this.def)
+    }
+
+    lastPathKey() {
+        return basename(this.ctx.path)
     }
 
     addUnassignable(args: Validation.Args) {

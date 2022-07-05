@@ -34,22 +34,10 @@ export namespace Alias {
         : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
     export const matches = (def: string, ctx: Base.Parsing.Context) =>
-        def in ctx.dictionary
+        !!ctx.space && def in ctx.space.dictionary
 
     export class Node extends Base.Leaf<string> {
         resolution = new Resolution.Node(this.def, this.ctx)
-
-        // resolve() {
-        //     if (!(this.ctx.resolutions[this.def] instanceof Resolution.Node)) {
-        //         // If this is the first time we've seen the alias, ctx.resolutions[def] will be a definition from space.
-        //         // Parse it to create a Node that will be used for future resolutions of the alias.
-        //         this.ctx.resolutions[this.def] = new Resolution.Node(
-        //             this.def,
-        //             this.ctx
-        //         )
-        //     }
-        //     return this.ctx.resolutions[this.def] as Base.Parsing.Node
-        // }
 
         allows(args: Base.Validation.Args) {
             return this.resolution.allows(args)

@@ -8,50 +8,44 @@ import {
 import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
-import {
-    checkForShallowCycle,
-    ParseResolution,
-    ValidateResolution
-} from "./resolutions.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
     new Space(dictionary, options) as any
 
 export class Space implements SpaceFrom<unknown> {
-    inputs: SpaceFrom<any>["inputs"]
+    resolutions: Record<string, Resolution.Node>
     models: Record<string, Model>
-    config: SpaceConfig
 
-    constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
-        this.inputs = { dictionary, options }
-        this.config = configureSpace(dictionary, options)
+    constructor(
+        public dictionary: SpaceDictionary,
+        public options: SpaceOptions<string> = {}
+    ) {
         this.models = {}
-        for (const alias of Object.keys(this.config.definitions)) {
+        this.resolutions = {}
+        for (const alias of Object.keys(dictionary)) {
+            if (alias === "__meta__") {
+                continue
+            }
             const ctx = Base.Parsing.createContext(
-                deepMerge(this.config, this.config.models[alias]),
-                this.config.definitions,
-                this.config.resolutions
+                deepMerge(this.options, this.options.models?.[alias]),
+                this
             )
             this.models[alias] = new Model(new Resolution.Node(alias, ctx))
         }
-        checkForShallowCycle(this.config.resolutions)
     }
 
     create(def: unknown, options?: Base.ModelOptions) {
         const root = Root.parse(
             def,
-            Base.Parsing.createContext(
-                deepMerge(this.config, options),
-                this.config.definitions
-            )
+            Base.Parsing.createContext(deepMerge(this.options, options), this)
         )
-        return new Model(root, deepMerge(this.config, options)) as any
+        return new Model(root, deepMerge(this.options, options)) as any
     }
 
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
         return new Space(
-            { ...this.inputs.dictionary, ...extensions },
-            deepMerge(this.inputs.options, overrides)
+            { ...this.dictionary, ...extensions },
+            deepMerge(this.options, overrides)
         ) as any
     }
 
@@ -66,18 +60,14 @@ export type CreateSpaceFn = <Dict>(
 ) => SpaceFrom<ValidateDictionary<Dict>>
 
 export type ValidateDictionary<Dict> = {
-    [TypeName in keyof Dict]: ValidateResolution<TypeName, Dict>
+    [Alias in keyof Dict]: Resolution.Validate<Alias, Dict>
 }
 
 export type SpaceOptions<ModelName extends string> = Base.ModelOptions & {
     models?: { [K in ModelName]?: Base.ModelOptions }
 }
 
-export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models"> & {
-    meta: MetaDefinitions
-    definitions: SpaceDictionary
-    resolutions: Record<string, Resolution.Node>
-}
+export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models">
 
 export type SpaceDictionary = Record<string, unknown>
 
@@ -86,21 +76,19 @@ export type SpaceFrom<Dict> = Evaluate<{
     types: DictToTypes<Dict>
     create: ModelFunction<Dict>
     extend: ExtendFunction<Dict>
-    inputs: {
-        dictionary: Dict
-        options: SpaceOptions<AliasIn<Dict>> | undefined
-    }
+    dictionary: Dict
+    options: SpaceOptions<AliasIn<Dict>> | undefined
 }>
 
 export type DictionaryToModels<Dict> = Evaluate<{
-    [TypeName in AliasIn<Dict>]: ModelFrom<
-        Dict[TypeName],
-        ParseResolution<TypeName, Dict>
+    [Alias in AliasIn<Dict>]: ModelFrom<
+        Dict[Alias],
+        Resolution.Parse<Alias, Dict>
     >
 }>
 
 export type DictToTypes<Dict> = Evaluate<{
-    [TypeName in AliasIn<Dict>]: ParseResolution<TypeName, Dict>
+    [Alias in AliasIn<Dict>]: Resolution.Parse<Alias, Dict>
 }>
 
 export type MetaDefinitions = {
@@ -131,19 +119,4 @@ export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
         ExtensionDict[TypeName],
         Merge<BaseDict, ExtensionDict>
     >
-}
-
-const configureSpace = (
-    dictionary: SpaceDictionary,
-    options: SpaceOptions<string> = {}
-): SpaceConfig => {
-    const { __meta__ = {}, ...definitions } = dictionary
-    const { models = {}, ...config } = options
-    return {
-        ...config,
-        meta: __meta__ as MetaDefinitions,
-        definitions,
-        models,
-        resolutions: {}
-    }
 }

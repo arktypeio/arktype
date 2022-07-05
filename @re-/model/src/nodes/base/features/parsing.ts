@@ -1,5 +1,5 @@
-import { SpaceDictionary } from "../../../space.js"
-import { Node as AbstractNode } from "../kinds/node.js"
+import type { Space } from "../../../space.js"
+import type { Node as AbstractNode } from "../kinds/node.js"
 import { defToString, ModelOptions, stringifyPathContext } from "../utils.js"
 
 export namespace Parsing {
@@ -19,24 +19,23 @@ export namespace Parsing {
     export type ConstraintValidator = (value: unknown) => string | undefined
 
     export type Context = {
-        dictionary: SpaceDictionary
-        resolutions: ResolutionMap
         path: string
         stringRoot: string | null
         cfg: ModelOptions
+        space: Space | undefined
+        shallowSeen: string[]
     }
 
     export const createContext = (
         cfg: ModelOptions = {},
-        dictionary: SpaceDictionary = {},
-        resolutions: ResolutionMap = {}
+        space?: Space
     ): Context => {
         return {
             path: "",
             stringRoot: null,
+            shallowSeen: [],
             cfg,
-            dictionary,
-            resolutions
+            space
         }
     }
 

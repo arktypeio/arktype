@@ -32,7 +32,8 @@ export abstract class Branch<
     references(args: References.Options) {
         const result: string[] = []
         for (const valueNode of Object.values(this.children())) {
-            result.push(...valueNode.references(args))
+            // References will always be a string[] here, since it is overridden in Tuple and Record
+            result.push(...(valueNode.references(args) as string[]))
         }
         return result
     }
