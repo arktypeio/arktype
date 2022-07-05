@@ -23,14 +23,11 @@ export namespace References {
         format?: Format
     }
 
-    export type Config = Options
-
-    export type Args = Config
+    // Whether to preserveStructure is determined by whether
+    // Node.references() or Node.structuredRefrences() is being called.
+    export type Args = Omit<Options, "preserveStructure">
 
     export const createArgs = (options: Options = {}): Args => {
-        const args = {
-            ...options
-        }
-        return args
+        return options
     }
 }

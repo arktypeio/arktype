@@ -20,6 +20,7 @@ export namespace Parsing {
 
     export type Context = {
         path: string
+        key: string
         stringRoot: string | null
         cfg: ModelOptions
         space: Space | undefined
@@ -32,6 +33,7 @@ export namespace Parsing {
     ): Context => {
         return {
             path: "",
+            key: "",
             stringRoot: null,
             shallowSeen: [],
             cfg,

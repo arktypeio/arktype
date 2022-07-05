@@ -90,8 +90,12 @@ export class Model implements ModelFrom<unknown, unknown> {
         )
     }
 
-    references(options?: Base.References.Options) {
-        return this.root.references(options ?? {}) as any
+    references(options: Base.References.Options = {}) {
+        return (
+            options.preserveStructure
+                ? this.root.structuredReferences(options)
+                : this.root.references(options)
+        ) as any
     }
 }
 

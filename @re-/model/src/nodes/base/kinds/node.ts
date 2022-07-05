@@ -1,4 +1,4 @@
-import { basename } from "node:path"
+import { TreeOf } from "@re-/tools"
 import { Generation, Parsing, Validation } from "../features/index.js"
 import { References } from "../features/references.js"
 import { defToString, stringifyValue } from "../utils.js"
@@ -10,12 +10,16 @@ export abstract class Node<DefType> {
     abstract generate(args: Generation.Args): unknown
     abstract references(args: References.Args): string[]
 
-    defToString() {
-        return defToString(this.def)
+    /**
+     * Get definition references organized according to the structure of the original definition.
+     * Structured nodes like Record and Tuple should override this method.
+     */
+    structuredReferences(args: References.Args): TreeOf<string[]> {
+        return this.references(args)
     }
 
-    lastPathKey() {
-        return basename(this.ctx.path)
+    defToString() {
+        return defToString(this.def)
     }
 
     addUnassignable(args: Validation.Args) {

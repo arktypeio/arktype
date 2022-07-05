@@ -18,7 +18,7 @@ describe("number", () => {
             const eight = model(8)
             assert(eight.validate(8).error).is(undefined)
             assert(eight.validate(8).error).is(undefined)
-            assert(eight.validate(8.000_001).error?.message).snap(
+            assert(eight.validate(8.000001).error?.message).snap(
                 "8.000001 is not assignable to 8."
             )
             assert(eight.validate("8").error?.message).snap(

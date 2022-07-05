@@ -117,6 +117,14 @@ export namespace Resolution {
             return this.root.generate(nextArgs)
         }
 
+        references(args: Base.References.Args) {
+            return this.root.references(args)
+        }
+
+        structuredReferences(args: Base.References.Args) {
+            return this.root.structuredReferences(args)
+        }
+
         private nextArgs<
             Args extends {
                 ctx: Base.Traversal.Context<any>

@@ -3,11 +3,9 @@ import { Parsing } from "../features/parsing.js"
 import { References } from "../features/references.js"
 import { Node } from "./node.js"
 
-export type ChildList = Parsing.Node[]
-
 export abstract class Branch<
     DefType,
-    Children extends ChildList = ChildList
+    Children extends Parsing.Node[] = Parsing.Node[]
 > extends Node<DefType> {
     private cache?: Children
 
@@ -29,11 +27,14 @@ export abstract class Branch<
         return this.children()[0] as ElementOf<Children>
     }
 
-    references(args: References.Options) {
+    references(args: References.Args): string[] {
         const result: string[] = []
-        for (const valueNode of Object.values(this.children())) {
-            // References will always be a string[] here, since it is overridden in Tuple and Record
-            result.push(...(valueNode.references(args) as string[]))
+        for (const childNode of this.children()) {
+            for (const reference of childNode.references(args)) {
+                if (!result.includes(reference)) {
+                    result.push(reference)
+                }
+            }
         }
         return result
     }

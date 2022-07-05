@@ -1,4 +1,4 @@
-import { Evaluate } from "@re-/tools"
+import { Evaluate, TreeOf } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
 import { Base } from "./base.js"
@@ -29,10 +29,11 @@ export namespace Record {
 
     export class Node extends Base.Branch<Definition> {
         parse() {
-            return Object.entries(this.def).map(([propName, propDef]) => {
+            return Object.entries(this.def).map(([key, propDef]) => {
                 return Root.parse(propDef, {
                     ...this.ctx,
-                    path: Base.pathAdd(this.ctx.path, propName)
+                    key,
+                    path: Base.pathAdd(this.ctx.path, key)
                 })
             })
         }
@@ -45,7 +46,7 @@ export namespace Record {
             const valueKeysLeftToCheck = new Set(Object.keys(args.value))
             let allPropsAllowed = true
             for (const propNode of this.children()) {
-                const propName = propNode.lastPathKey()
+                const propName = propNode.ctx.key
                 const pathWithProp = Base.pathAdd(args.ctx.path, propName)
                 if (propName in args.value) {
                     const propIsAllowed = propNode.allows({
@@ -87,32 +88,28 @@ export namespace Record {
         generate(args: Base.Generation.Args) {
             const result: Record<string, unknown> = {}
             for (const propNode of this.children()) {
-                const propName = propNode.lastPathKey()
                 // Don't include optional keys by default in generated values
                 if (propNode instanceof Optional.Node) {
                     continue
                 }
-                result[propName] = propNode.generate({
+                result[propNode.ctx.key] = propNode.generate({
                     ...args,
                     ctx: {
                         ...args.ctx,
-                        path: Base.pathAdd(args.ctx.path, propName)
+                        path: Base.pathAdd(args.ctx.path, propNode.ctx.key)
                     }
                 })
             }
             return result
         }
 
-        structuredReferences(args: Base.References.Args) {
-            if (args.preserveStructure) {
-                const structuredReferences: Record<string, unknown> = {}
-                for (const propNode of this.children()) {
-                    structuredReferences[propNode.lastPathKey()] =
-                        propNode.references(args)
-                }
-                return structuredReferences
+        override structuredReferences(args: Base.References.Args) {
+            const structuredReferences: Record<string, TreeOf<string[]>> = {}
+            for (const propNode of this.children()) {
+                structuredReferences[propNode.ctx.key] =
+                    propNode.structuredReferences(args)
             }
-            return super.references(args)
+            return structuredReferences
         }
     }
 }

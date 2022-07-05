@@ -9,9 +9,9 @@ export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
     export type Unmapped = Regex.Definition
 
-    export type Validate<Def extends object, Dict> = {
+    export type Validate<Def extends object, Dict> = Evaluate<{
         [K in keyof Def]: Root.Validate<Def[K], Dict>
-    }
+    }>
 
     export type Parse<Def extends object, Dict, Seen> = Def extends RegExp
         ? string

@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { ElementOf, Evaluate, narrow } from "@re-/tools"
+import { ElementOf, Evaluate, isNumeric, narrow } from "@re-/tools"
 import { model, References, space } from "../src/index.js"
 
 describe("references", () => {
@@ -29,19 +29,20 @@ describe("references", () => {
         "string",
         "boolean",
         "undefined",
-        "null",
         "false",
         "true",
         "5",
         "7n",
-        "boolean",
-        "string",
         "integer",
-        "positive",
-        "null"
+        "positive"
     ])
 
-    type ExpectedObjectDefReferences = typeof expectedObjectDefReferences
+    type ExpectedObjectDefReferenceTuple = typeof expectedObjectDefReferences
+
+    type ExpectedObjectDefReferenceUnion =
+        ElementOf<ExpectedObjectDefReferenceTuple>
+
+    type ExpectedObjectDefReferenceList = ExpectedObjectDefReferenceUnion[]
 
     describe("model", () => {
         it("from literal", () => {
@@ -73,12 +74,15 @@ describe("references", () => {
                 listComparison: "unordered"
             }).typed as ExpectedReferences
         })
+        it("from string with duplicates", () => {
+            const zeroAndOne = model("0|1|0[]|1[]|0[][]|1[][]?").references()
+            assert(zeroAndOne).equals(["0", "1"]).typed as ("0" | "1")[]
+        })
         it("from object", () => {
             const references = model(objectDef).references()
-            type ExpectedReferences = ElementOf<ExpectedObjectDefReferences>[]
             assert(references).equals(expectedObjectDefReferences, {
                 listComparison: "unordered"
-            }).typed as ExpectedReferences
+            }).typed as ExpectedObjectDefReferenceList
         })
         it("from object with preserveStructure", () => {
             const references = model(objectDef).references({
@@ -112,14 +116,57 @@ describe("references", () => {
                 listComparison: "deepUnordered"
             }).typed as ExpectedReferences
         })
+        it("filter", () => {
+            const referencesEndingWithE = model(objectDef).references({
+                filter: (reference) => reference.endsWith("e")
+            })
+            assert(referencesEndingWithE).equals(
+                ["true", "false", "positive"],
+                { listComparison: "unordered" }
+            ).typed as ExpectedObjectDefReferenceList
+        })
+        it("typed filter", () => {
+            const bigintLiteralReferences = model(objectDef).references({
+                filter: (reference): reference is `${number}n` =>
+                    isNumeric(reference.slice(0, -1)) &&
+                    reference.at(-1) === "n"
+            })
+            assert(bigintLiteralReferences).equals(["-1n", "7n"], {
+                listComparison: "unordered"
+            }).typed as ("-1n" | "7n")[]
+        })
+        it("filtered structured", () => {
+            const mySpace = space({
+                a: "any",
+                b: "boolean",
+                c: {
+                    its: "'as'",
+                    easyAs: ["a|string", "a|b|boolean", "a|b|c|never"]
+                }
+            })
+            type Dictionary = typeof mySpace.dictionary
+            const references = mySpace.models.c.references({
+                preserveStructure: true,
+                filter: (reference): reference is keyof Dictionary =>
+                    reference in mySpace.dictionary
+            })
+            assert(references).equals(
+                {
+                    its: [],
+                    easyAs: [["a"], ["a", "b"], ["a", "b", "c"]]
+                },
+                { listComparison: "deepUnordered" }
+            ).typed as {
+                its: never[]
+                easyAs: ["a"[], ("a" | "b")[], ("a" | "b" | "c")[]]
+            }
+        })
     })
     describe("type", () => {
         describe("format", () => {
             it("default (list)", () => {
                 const actual = {} as References<ObjectDef>
-                type ExpectedReferences =
-                    ElementOf<ExpectedObjectDefReferences>[]
-                assert(actual).typed as ExpectedReferences
+                assert(actual).typed as ExpectedObjectDefReferenceList
             })
             it("tuple", () => {
                 const actual = {} as References<
@@ -130,9 +177,19 @@ describe("references", () => {
             })
             it("union", () => {
                 const actual = {} as References<ObjectDef, { format: "union" }>
-                type ExpectedReferences = ElementOf<ExpectedObjectDefReferences>
-                assert(actual).typed as ExpectedReferences
+                assert(actual).typed as ExpectedObjectDefReferenceUnion
             })
+        })
+        it("filters", () => {
+            const referencesContainingI = {} as References<
+                ObjectDef,
+                { filter: `${string}i${string}`; format: "union" }
+            >
+            assert(referencesContainingI).typed as
+                | "string"
+                | "undefined"
+                | "integer"
+                | "positive"
         })
     })
 })

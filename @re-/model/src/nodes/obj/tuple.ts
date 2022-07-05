@@ -1,3 +1,4 @@
+import { TreeOf } from "@re-/tools"
 import { Root } from "../root.js"
 import { Base } from "./base.js"
 
@@ -65,6 +66,14 @@ export namespace Tuple {
                     })
                 )
                 itemIndex++
+            }
+            return result
+        }
+
+        override structuredReferences(args: Base.References.Args) {
+            const result: TreeOf<string[]>[] = []
+            for (const itemNode of this.children()) {
+                result.push(itemNode.structuredReferences(args))
             }
             return result
         }
