@@ -6,7 +6,8 @@ import {
     RequireKeys
 } from "@re-/tools"
 import { Model, ModelFrom, ModelFunction } from "./model.js"
-import { Alias, Base, Root } from "./nodes/index.js"
+import { Base, Root } from "./nodes/index.js"
+import { Resolution } from "./nodes/resolution.js"
 import {
     checkForShallowCycle,
     ParseResolution,
@@ -25,14 +26,15 @@ export class Space implements SpaceFrom<unknown> {
         this.inputs = { dictionary, options }
         this.config = configureSpace(dictionary, options)
         this.models = {}
-        for (const alias of Object.keys(this.config.resolutions)) {
+        for (const alias of Object.keys(this.config.definitions)) {
             const ctx = Base.Parsing.createContext(
                 deepMerge(this.config, this.config.models[alias]),
+                this.config.definitions,
                 this.config.resolutions
             )
-            this.models[alias] = new Model(new Alias.Node(alias, ctx))
+            this.models[alias] = new Model(new Resolution.Node(alias, ctx))
         }
-        checkForShallowCycle(this.config.resolutions as any)
+        checkForShallowCycle(this.config.resolutions)
     }
 
     create(def: unknown, options?: Base.ModelOptions) {
@@ -40,7 +42,7 @@ export class Space implements SpaceFrom<unknown> {
             def,
             Base.Parsing.createContext(
                 deepMerge(this.config, options),
-                this.config.resolutions
+                this.config.definitions
             )
         )
         return new Model(root, deepMerge(this.config, options)) as any
@@ -73,7 +75,8 @@ export type SpaceOptions<ModelName extends string> = Base.ModelOptions & {
 
 export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models"> & {
     meta: MetaDefinitions
-    resolutions: Base.Parsing.ResolutionMap
+    definitions: SpaceDictionary
+    resolutions: Record<string, Resolution.Node>
 }
 
 export type SpaceDictionary = Record<string, unknown>
@@ -134,12 +137,13 @@ const configureSpace = (
     dictionary: SpaceDictionary,
     options: SpaceOptions<string> = {}
 ): SpaceConfig => {
-    const { __meta__ = {}, ...resolutions } = dictionary
+    const { __meta__ = {}, ...definitions } = dictionary
     const { models = {}, ...config } = options
     return {
         ...config,
         meta: __meta__ as MetaDefinitions,
-        resolutions,
-        models
+        definitions,
+        models,
+        resolutions: {}
     }
 }

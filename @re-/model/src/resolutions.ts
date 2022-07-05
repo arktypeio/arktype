@@ -1,5 +1,6 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
 import { Alias, Base, Root, Str } from "./nodes/index.js"
+import { Resolution } from "./nodes/resolution.js"
 import { AliasIn } from "./space.js"
 
 export type ShallowCycleError<Seen extends string[]> =
@@ -86,12 +87,12 @@ export type ValidateResolution<
 type ReferenceMap = Record<string, string[]>
 
 export const checkForShallowCycle = (
-    resolutions: Record<string, Alias.Node>
+    resolutions: Record<string, Resolution.Node>
 ) => {
     const directShallowReferences: ReferenceMap = {}
     for (const [alias, node] of Object.entries(resolutions)) {
-        if (typeof node.resolution.def === "string") {
-            const shallowAliasReferences = node.resolution.references({
+        if (typeof node.firstChild() === "string") {
+            const shallowAliasReferences = node.firstChild().references({
                 filter: (reference) => reference in resolutions
             })
             if (shallowAliasReferences.length) {
