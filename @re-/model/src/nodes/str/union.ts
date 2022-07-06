@@ -41,7 +41,7 @@ export namespace Union {
 
         allows(args: Base.Validation.Args) {
             const unionErrors = args.errors.split(args.ctx.path)
-            for (const branch of this.children()) {
+            for (const branch of this.children) {
                 const branchErrors = unionErrors.branch(branch.defToString())
                 if (branch.allows({ ...args, errors: branchErrors })) {
                     // If any branch of a Union does not have errors,
@@ -64,7 +64,7 @@ export namespace Union {
         generate(args: Base.Generation.Args) {
             const possibleValues: unknown[] = []
             const generationErrors: string[] = []
-            for (const node of this.children()) {
+            for (const node of this.children) {
                 try {
                     possibleValues.push(node.generate(args))
                 } catch (error) {

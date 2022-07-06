@@ -11,13 +11,16 @@ export namespace Tuple {
     export const matches = (def: object): def is Definition =>
         Array.isArray(def)
 
-    export class Node extends Base.Branch<Definition> {
+    export class Node extends Base.Shape<Definition> {
         parse() {
-            return this.def.map((elementDef, elementIndex) =>
-                Root.parse(elementDef, {
-                    ...this.ctx,
-                    path: Base.pathAdd(this.ctx.path, elementIndex)
-                })
+            return this.def.map(
+                (elementDef, elementIndex): [number, Base.Parsing.Node] => [
+                    elementIndex,
+                    Root.parse(elementDef, {
+                        ...this.ctx,
+                        path: Base.pathAdd(this.ctx.path, elementIndex)
+                    })
+                ]
             )
         }
 
@@ -34,8 +37,7 @@ export namespace Tuple {
                 return false
             }
             let allItemsAllowed = true
-            let itemIndex = 0
-            for (const itemNode of this.children()) {
+            for (const [itemIndex, itemNode] of this.entries) {
                 const itemIsAllowed = itemNode.allows({
                     ...args,
                     value: args.value[itemIndex],
@@ -47,15 +49,13 @@ export namespace Tuple {
                 if (!itemIsAllowed) {
                     allItemsAllowed = false
                 }
-                itemIndex++
             }
             return allItemsAllowed
         }
 
         generate(args: Base.Generation.Args) {
             const result: unknown[] = []
-            let itemIndex = 0
-            for (const itemNode of this.children()) {
+            for (const [itemIndex, itemNode] of this.entries) {
                 result.push(
                     itemNode.generate({
                         ...args,
@@ -65,15 +65,14 @@ export namespace Tuple {
                         }
                     })
                 )
-                itemIndex++
             }
             return result
         }
 
-        override structuredReferences(args: Base.References.Args) {
+        override structureReferences(args: Base.References.Args) {
             const result: TreeOf<string[]>[] = []
-            for (const itemNode of this.children()) {
-                result.push(itemNode.structuredReferences(args))
+            for (const [, itemNode] of this.entries) {
+                result.push(itemNode.structureReferences(args))
             }
             return result
         }

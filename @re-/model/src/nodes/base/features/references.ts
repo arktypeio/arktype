@@ -23,11 +23,8 @@ export namespace References {
         format?: Format
     }
 
-    // Whether to preserveStructure is determined by whether
-    // Node.references() or Node.structuredRefrences() is being called.
+    // The preserveStructure option is reflected by whether collectReferences() or structureRefrences() is called
     export type Args = Omit<Options, "preserveStructure">
 
-    export const createArgs = (options: Options = {}): Args => {
-        return options
-    }
+    export type Collection = Set<string>
 }

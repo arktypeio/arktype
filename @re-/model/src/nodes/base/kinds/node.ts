@@ -8,14 +8,19 @@ export abstract class Node<DefType> {
 
     abstract allows(args: Validation.Args): boolean
     abstract generate(args: Generation.Args): unknown
-    abstract references(args: References.Args): string[]
+    abstract collectReferences(
+        args: References.Args,
+        collected: Set<string>
+    ): void
 
     /**
      * Get definition references organized according to the structure of the original definition.
      * Structured nodes like Record and Tuple should override this method.
      */
-    structuredReferences(args: References.Args): TreeOf<string[]> {
-        return this.references(args)
+    structureReferences(args: References.Args): TreeOf<string[]> {
+        const refs = new Set<string>()
+        this.collectReferences(args, refs)
+        return [...refs]
     }
 
     defToString() {

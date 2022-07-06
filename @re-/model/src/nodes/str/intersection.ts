@@ -24,7 +24,7 @@ export namespace Intersection {
         }
 
         allows(args: Base.Validation.Args) {
-            for (const branch of this.children()) {
+            for (const branch of this.children) {
                 if (!branch.allows(args)) {
                     return false
                 }

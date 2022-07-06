@@ -133,7 +133,7 @@ export namespace Bound {
     type BoundParts = [string, ComparatorToken, string]
     type RangeParts = [string, ComparatorToken, string, ComparatorToken, string]
 
-    export class Node extends Base.Branch<Definition, Boundable[]> {
+    export class Node extends Base.Link<Definition, Boundable> {
         private bounds: BoundEntry[] | undefined
 
         parse() {
@@ -149,7 +149,7 @@ export namespace Bound {
                 throw new Error(boundPartsErrorTemplate)
             }
             this.assertBoundable(child)
-            return [child]
+            return child
         }
 
         // E.g. ["number", ">=", "5"]
@@ -196,7 +196,7 @@ export namespace Bound {
         }
 
         allows(args: Base.Validation.Args) {
-            const boundedNode = this.firstChild()
+            const boundedNode = this.child
             if (!boundedNode.allows(args)) {
                 return false
             }

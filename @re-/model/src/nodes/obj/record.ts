@@ -27,15 +27,19 @@ export namespace Record {
     ): value is Record<string, unknown> =>
         typeof value === "object" && value !== null && !Array.isArray(value)
 
-    export class Node extends Base.Branch<Definition> {
+    export class Node extends Base.Shape<Definition> {
         parse() {
-            return Object.entries(this.def).map(([key, propDef]) => {
-                return Root.parse(propDef, {
-                    ...this.ctx,
-                    key,
-                    path: Base.pathAdd(this.ctx.path, key)
-                })
-            })
+            return Object.entries(this.def).map(
+                ([key, propDef]): [string, Base.Parsing.Node] => {
+                    return [
+                        key,
+                        Root.parse(propDef, {
+                            ...this.ctx,
+                            path: Base.pathAdd(this.ctx.path, key)
+                        })
+                    ]
+                }
+            )
         }
 
         allows(args: Base.Validation.Args) {
@@ -45,13 +49,12 @@ export namespace Record {
             }
             const valueKeysLeftToCheck = new Set(Object.keys(args.value))
             let allPropsAllowed = true
-            for (const propNode of this.children()) {
-                const propName = propNode.ctx.key
-                const pathWithProp = Base.pathAdd(args.ctx.path, propName)
-                if (propName in args.value) {
+            for (const [propKey, propNode] of this.entries) {
+                const pathWithProp = Base.pathAdd(args.ctx.path, propKey)
+                if (propKey in args.value) {
                     const propIsAllowed = propNode.allows({
                         ...args,
-                        value: args.value[propName],
+                        value: args.value[propKey],
                         ctx: {
                             ...args.ctx,
                             path: pathWithProp
@@ -67,7 +70,7 @@ export namespace Record {
                     )
                     allPropsAllowed = false
                 }
-                valueKeysLeftToCheck.delete(propName)
+                valueKeysLeftToCheck.delete(propKey)
             }
             if (
                 valueKeysLeftToCheck.size &&
@@ -87,27 +90,27 @@ export namespace Record {
 
         generate(args: Base.Generation.Args) {
             const result: Record<string, unknown> = {}
-            for (const propNode of this.children()) {
+            for (const [propKey, propNode] of this.entries) {
                 // Don't include optional keys by default in generated values
                 if (propNode instanceof Optional.Node) {
                     continue
                 }
-                result[propNode.ctx.key] = propNode.generate({
+                result[propKey] = propNode.generate({
                     ...args,
                     ctx: {
                         ...args.ctx,
-                        path: Base.pathAdd(args.ctx.path, propNode.ctx.key)
+                        path: Base.pathAdd(args.ctx.path, propKey)
                     }
                 })
             }
             return result
         }
 
-        override structuredReferences(args: Base.References.Args) {
+        override structureReferences(args: Base.References.Args) {
             const structuredReferences: Record<string, TreeOf<string[]>> = {}
-            for (const propNode of this.children()) {
-                structuredReferences[propNode.ctx.key] =
-                    propNode.structuredReferences(args)
+            for (const [propKey, propNode] of this.entries) {
+                structuredReferences[propKey] =
+                    propNode.structureReferences(args)
             }
             return structuredReferences
         }

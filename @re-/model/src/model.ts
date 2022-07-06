@@ -91,11 +91,12 @@ export class Model implements ModelFrom<unknown, unknown> {
     }
 
     references(options: Base.References.Options = {}) {
-        return (
-            options.preserveStructure
-                ? this.root.structuredReferences(options)
-                : this.root.references(options)
-        ) as any
+        if (options.preserveStructure) {
+            return this.root.structureReferences(options) as any
+        }
+        const collected = new Set<string>()
+        this.root.collectReferences(options, collected)
+        return [...collected]
     }
 }
 

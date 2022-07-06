@@ -25,48 +25,49 @@ export namespace Resolution {
         { [K in Alias]: true }
     >
 
-    export class Node extends Base.Leaf<string> {
-        // @ts-ignore Spurious initialization error
-        root: Base.Parsing.Node
-
+    export class Node extends Base.Link<string> {
         constructor(def: string, ctx: Base.Parsing.Context) {
             if (!ctx.space!.resolutions[def]) {
                 // If this is the first time we've seen the alias, create a Node that will be used for future resolutions of the alias.
                 super(def, ctx)
-                const rootDef = ctx.space!.dictionary[def]
-                if (Str.matches(rootDef)) {
-                    /**
-                     *  If the resolved def is a string, check if the alias completes a shallow cycle.
-                     *  If not, append the alias to shallowSeen and parse resolved def to continue checking for shallow cycles.
-                     */
-                    const nextShallowSeen = [...ctx.shallowSeen, def]
-                    if (ctx.shallowSeen.includes(def)) {
-                        throw new Base.Parsing.ParseError(
-                            shallowCycleError(nextShallowSeen)
-                        )
-                    }
-                    this.root = Str.parse(rootDef, {
-                        ...ctx,
-                        cfg: {
-                            ...ctx.cfg,
-                            parse: {
-                                ...ctx.cfg.parse,
-                                // We need to parse all resolved string defs eagerly to detect shallow cycles
-                                eager: true
-                            }
-                        },
-                        shallowSeen: nextShallowSeen
-                    })
-                } else {
-                    // Non-string defs can never participate in shallow cycles, so reset shallowSeen
-                    this.root = Root.parse(ctx.space!.dictionary[def], {
-                        ...ctx,
-                        shallowSeen: []
-                    })
-                }
+                this.next()
                 ctx.space!.resolutions[def] = this
             }
             return ctx.space!.resolutions[def]
+        }
+
+        parse() {
+            const rootDef = this.ctx.space!.dictionary[this.def]
+            if (Str.matches(rootDef)) {
+                /**
+                 *  If the resolved this.def is a string, check if the alias completes a shallow cycle.
+                 *  If not, append the alias to shallowSeen and parse resolved this.def to continue checking for shallow cycles.
+                 */
+                const nextShallowSeen = [...this.ctx.shallowSeen, this.def]
+                if (this.ctx.shallowSeen.includes(this.def)) {
+                    throw new Base.Parsing.ParseError(
+                        shallowCycleError(nextShallowSeen)
+                    )
+                }
+                return Str.parse(rootDef, {
+                    ...this.ctx,
+                    cfg: {
+                        ...this.ctx.cfg,
+                        parse: {
+                            ...this.ctx.cfg.parse,
+                            // We need to parse all resolved string this.defs eagerly to detect shallow cycles
+                            eager: true
+                        }
+                    },
+                    shallowSeen: nextShallowSeen
+                })
+            } else {
+                // Non-string this.defs can never participate in shallow cycles, so reset shallowSeen
+                return Root.parse(rootDef, {
+                    ...this.ctx,
+                    shallowSeen: []
+                })
+            }
         }
 
         allows(args: Base.Validation.Args): boolean {
@@ -97,7 +98,7 @@ export namespace Resolution {
                     nextArgs
                 )
             }
-            return this.root.allows(nextArgs)
+            return this.child.allows(nextArgs)
         }
 
         generate(args: Base.Generation.Args) {
@@ -114,15 +115,18 @@ export namespace Resolution {
                     args.ctx.seen
                 )
             }
-            return this.root.generate(nextArgs)
+            return this.child.generate(nextArgs)
         }
 
-        references(args: Base.References.Args) {
-            return this.root.references(args)
+        collectReferences(
+            args: Base.References.Args,
+            collected: Base.References.Collection
+        ) {
+            return this.child.collectReferences(args, collected)
         }
 
-        structuredReferences(args: Base.References.Args) {
-            return this.root.structuredReferences(args)
+        structureReferences(args: Base.References.Args) {
+            return this.child.structureReferences(args)
         }
 
         private nextArgs<

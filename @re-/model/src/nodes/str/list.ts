@@ -8,12 +8,9 @@ export namespace List {
     export const matches = (def: string): def is Definition =>
         def.endsWith("[]")
 
-    export class Node
-        extends Base.Branch<Definition>
-        implements Bound.Boundable
-    {
+    export class Node extends Base.Link<Definition> implements Bound.Boundable {
         parse() {
-            return [Str.parse(this.def.slice(0, -2), this.ctx)]
+            return Str.parse(this.def.slice(0, -2), this.ctx)
         }
 
         allows(args: Base.Validation.Args) {
@@ -21,11 +18,10 @@ export namespace List {
                 this.addUnassignable(args)
                 return false
             }
-            const itemNode = this.children()[0]
             let allItemsAllowed = true
             let itemIndex = 0
             for (const itemValue of args.value) {
-                const itemIsAllowed = itemNode.allows({
+                const itemIsAllowed = this.child.allows({
                     ...args,
                     value: itemValue,
                     ctx: {
