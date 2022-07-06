@@ -2,37 +2,6 @@ import { assert } from "@re-/assert"
 import { model } from "../../src/index.js"
 
 describe("keyword", () => {
-    describe("string", () => {
-        const s = model("string")
-        it("type", () => {
-            assert(s.type).typed as string
-        })
-        it("generation", () => {
-            assert(s.generate()).is("")
-        })
-        it("validation", () => {
-            assert(s.validate("KEKW").error).is(undefined)
-            assert(s.validate(["whoops"]).error?.message).snap(
-                `["whoops"] is not assignable to string.`
-            )
-        })
-    })
-    describe("number", () => {
-        const n = model("number")
-        it("type", () => {
-            assert(n.type).typed as number
-        })
-        it("generation", () => {
-            assert(n.generate()).is(0)
-        })
-        it("validation", () => {
-            assert(n.validate(-83).error).is(undefined)
-            assert(n.validate(0.999).error).is(undefined)
-            assert(n.validate("42").error?.message).snap(
-                `"42" is not assignable to number.`
-            )
-        })
-    })
     describe("boolean", () => {
         const b = model("boolean")
         it("type", () => {
@@ -235,6 +204,21 @@ describe("keyword", () => {
         })
     })
     describe("string subtypes", () => {
+        describe("string", () => {
+            const s = model("string")
+            it("type", () => {
+                assert(s.type).typed as string
+            })
+            it("generation", () => {
+                assert(s.generate()).is("")
+            })
+            it("validation", () => {
+                assert(s.validate("KEKW").error).is(undefined)
+                assert(s.validate(["whoops"]).error?.message).snap(
+                    `["whoops"] is not assignable to string.`
+                )
+            })
+        })
         it("email", () => {
             const email = model("email")
             assert(email.type).typed as string
@@ -288,30 +272,68 @@ describe("keyword", () => {
             )
         })
     })
-    describe("number subtypes", () => {
-        it("integer", () => {
-            const integer = model("integer")
-            assert(integer.type).typed as number
-            assert(integer.validate(5).error).is(undefined)
-            assert(integer.validate(5.0001).error?.message).snap(
-                `5.0001 is not assignable to integer.`
-            )
+    describe("number", () => {
+        describe("number", () => {
+            const n = model("number")
+            it("type", () => {
+                assert(n.type).typed as number
+            })
+            it("generation", () => {
+                assert(n.generate()).is(0)
+            })
+            it("validation", () => {
+                assert(n.validate(-83).error).is(undefined)
+                assert(n.validate(0.999).error).is(undefined)
+                assert(n.validate("42").error?.message).snap(
+                    `"42" is not assignable to number.`
+                )
+                assert(n.validate(Infinity).error).is(undefined)
+                assert(n.validate(NaN).error).is(undefined)
+            })
         })
-        it("positive", () => {
-            const positive = model("positive")
-            assert(positive.type).typed as number
-            assert(positive.validate(0.0001).error).is(undefined)
-            assert(positive.validate(-0.0001).error?.message).snap(
-                `-0.0001 is not assignable to positive.`
-            )
-        })
-        it("nonNegative", () => {
-            const nonNegative = model("nonnegative")
-            assert(nonNegative.type).typed as number
-            assert(nonNegative.validate(0).error).is(undefined)
-            assert(nonNegative.validate(-999).error?.message).snap(
-                `-999 is not assignable to nonnegative.`
-            )
+        describe("subtypes", () => {
+            it("integer", () => {
+                const integer = model("integer")
+                assert(integer.type).typed as number
+                assert(integer.validate(5).error).is(undefined)
+                assert(integer.validate(5.0001).error?.message).snap(
+                    `5.0001 is not assignable to integer.`
+                )
+                assert(integer.validate(Infinity).error?.message).snap(
+                    `Infinity is not assignable to integer.`
+                )
+                assert(integer.validate(NaN).error?.message).snap(
+                    `NaN is not assignable to integer.`
+                )
+            })
+            it("positive", () => {
+                const positive = model("positive")
+                assert(positive.type).typed as number
+                assert(positive.validate(0.0001).error).is(undefined)
+                assert(positive.validate(-0.0001).error?.message).snap(
+                    `-0.0001 is not assignable to positive.`
+                )
+                assert(positive.validate(Infinity).error?.message).snap(
+                    undefined
+                )
+                assert(positive.validate(NaN).error?.message).snap(
+                    `NaN is not assignable to positive.`
+                )
+            })
+            it("nonNegative", () => {
+                const nonNegative = model("nonnegative")
+                assert(nonNegative.type).typed as number
+                assert(nonNegative.validate(0).error).is(undefined)
+                assert(nonNegative.validate(-999).error?.message).snap(
+                    `-999 is not assignable to nonnegative.`
+                )
+                assert(nonNegative.validate(Infinity).error?.message).snap(
+                    undefined
+                )
+                assert(nonNegative.validate(NaN).error?.message).snap(
+                    `NaN is not assignable to nonnegative.`
+                )
+            })
         })
     })
 })
