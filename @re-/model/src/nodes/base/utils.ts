@@ -1,5 +1,5 @@
 import { toString } from "@re-/tools"
-import { Generation, Validation } from "./features/index.js"
+import { Create, Validation } from "./features/index.js"
 import { Parsing } from "./features/parsing.js"
 
 export const pathAdd = (...subpaths: (string | number)[]) =>
@@ -46,5 +46,5 @@ export const stringifyPathContext = (path: string) =>
 export type ModelOptions = {
     parse?: Parsing.Options
     validate?: Validation.Options
-    generate?: Generation.Options
+    generate?: Create.Options
 }

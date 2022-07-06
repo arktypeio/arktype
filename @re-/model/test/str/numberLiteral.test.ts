@@ -68,13 +68,13 @@ describe("numberLiteral", () => {
     })
     describe("generation", () => {
         it("whole", () => {
-            assert(model("31").generate()).is(31)
+            assert(model("31").create()).is(31)
         })
         it("decimal", () => {
-            assert(model("31.31").generate()).is(31.31)
+            assert(model("31.31").create()).is(31.31)
         })
         it("negative", () => {
-            assert(model("-31.31").generate()).is(-31.31)
+            assert(model("-31.31").create()).is(-31.31)
         })
     })
 })

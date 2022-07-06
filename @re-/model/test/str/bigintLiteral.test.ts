@@ -51,10 +51,10 @@ describe("bigintLiteral", () => {
     })
     describe("generation", () => {
         it("positive", () => {
-            assert(model("1n").generate()).is(1n)
+            assert(model("1n").create()).is(1n)
         })
         it("negative", () => {
-            assert(model("-1n").generate()).is(-1n)
+            assert(model("-1n").create()).is(-1n)
         })
     })
 })

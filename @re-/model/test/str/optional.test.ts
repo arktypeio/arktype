@@ -76,11 +76,11 @@ describe("optional", () => {
     })
     describe("generation", () => {
         it("standalone is undefined by default", () => {
-            assert(model("null?").generate()).is(undefined)
+            assert(model("null?").create()).is(undefined)
         })
         it("optional key is omitted by default", () => {
             assert(
-                model({ required: "string", optional: "string?" }).generate()
+                model({ required: "string", optional: "string?" }).create()
             ).equals({ required: "" })
         })
     })

@@ -7,7 +7,7 @@ describe("regex", () => {
         assert(regex.type).typed as string
     })
     it("generation", () => {
-        assert(() => regex.generate()).throws.snap(
+        assert(() => regex.create()).throws.snap(
             `Error: Unable to generate a value for '/.*@redo\\.dev/': Regex generation is unsupported.`
         )
     })

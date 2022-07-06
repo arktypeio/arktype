@@ -163,7 +163,7 @@ describe("bound", () => {
     })
     describe("generation", () => {
         it("unsupported", () => {
-            assert(() => model("1<number<5").generate()).throws.snap(
+            assert(() => model("1<number<5").create()).throws.snap(
                 `Error: Unable to generate a value for '1<number<5': Constraint generation is unsupported.`
             )
         })

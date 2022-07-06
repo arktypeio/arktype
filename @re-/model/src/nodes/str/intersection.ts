@@ -33,7 +33,7 @@ export namespace Intersection {
         }
 
         generate() {
-            throw new Base.Generation.UngeneratableError(
+            throw new Base.Create.UngeneratableError(
                 this.def,
                 "Intersection generation is unsupported."
             )

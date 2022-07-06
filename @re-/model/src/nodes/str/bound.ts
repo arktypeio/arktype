@@ -247,7 +247,7 @@ export namespace Bound {
         }
 
         generate() {
-            throw new Base.Generation.UngeneratableError(
+            throw new Base.Create.UngeneratableError(
                 this.def,
                 "Constraint generation is unsupported."
             )

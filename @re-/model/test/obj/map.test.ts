@@ -14,7 +14,7 @@ describe("map", () => {
             )
         })
         it("generation", () => {
-            assert(empty.generate()).equals({})
+            assert(empty.create()).equals({})
         })
     })
     describe("shallow", () => {
@@ -104,7 +104,7 @@ describe("map", () => {
             })
         })
         it("generation", () => {
-            assert(shallow.generate()).equals({ a: "", b: 0, c: 67 })
+            assert(shallow.create()).equals({ a: "", b: 0, c: 67 })
         })
     })
     describe("nested", () => {
@@ -181,7 +181,7 @@ describe("map", () => {
             })
         })
         it("generation", () => {
-            assert(nested.generate()).equals({ nested: { russian: "doll" } })
+            assert(nested.create()).equals({ nested: { russian: "doll" } })
         })
     })
 })

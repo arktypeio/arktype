@@ -58,7 +58,7 @@ describe("list", () => {
     })
     describe("generation", () => {
         it("empty by default", () => {
-            assert(model("number[]").generate()).equals([])
+            assert(model("number[]").create()).equals([])
         })
     })
 })

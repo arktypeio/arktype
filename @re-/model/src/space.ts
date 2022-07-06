@@ -80,6 +80,18 @@ export type SpaceFrom<Dict> = Evaluate<{
     options: SpaceOptions<AliasIn<Dict>> | undefined
 }>
 
+export type SpaceFrom2<Dict> = Evaluate<
+    DictionaryToModels<Dict> & {
+        meta: {
+            types: DictToTypes<Dict>
+            create: ModelFunction<Dict>
+            extend: ExtendFunction<Dict>
+            dictionary: Dict
+            options: SpaceOptions<AliasIn<Dict>> | undefined
+        }
+    }
+>
+
 export type DictionaryToModels<Dict> = Evaluate<{
     [Alias in AliasIn<Dict>]: ModelFrom<
         Dict[Alias],

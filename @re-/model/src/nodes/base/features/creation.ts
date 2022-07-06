@@ -1,6 +1,6 @@
 import { Traversal } from "./traversal.js"
 
-export namespace Generation {
+export namespace Create {
     export type Options = {
         /*
          * By default, generate will throw if it encounters a cyclic required type
@@ -42,7 +42,7 @@ export namespace Generation {
     export const createArgs = (
         options: Options = {},
         modelOptions: Options = {}
-    ): Generation.Args => ({
+    ): Create.Args => ({
         ctx: Traversal.createContext(modelOptions),
         cfg: options
     })

@@ -73,13 +73,13 @@ g: 4 is not assignable to 3.`)
     })
     describe("generation", () => {
         it("prefers simple values", () => {
-            assert(model("undefined|string").generate()).is(undefined)
-            assert(model("number|false|bigint").generate() as any).is(false)
-            assert(model("symbol|object").generate()).equals({})
+            assert(model("undefined|string").create()).is(undefined)
+            assert(model("number|false|bigint").create() as any).is(false)
+            assert(model("symbol|object").create()).equals({})
         })
         it("avoids ungeneratable", () => {
-            assert(model("object|function").generate()).equals({})
-            assert(model("never|number|boolean").generate()).equals(false)
+            assert(model("object|function").create()).equals({})
+            assert(model("never|number|boolean").create()).equals(false)
         })
         it("prefers simple aliases", () => {
             const mySpace = space({
@@ -87,8 +87,8 @@ g: 4 is not assignable to 3.`)
                 duck: "'duck'",
                 nested: {}
             })
-            assert(mySpace.create("nested|five|duck").generate()).is(5)
-            assert(mySpace.create("duck|nested").generate()).is("duck")
+            assert(mySpace.create("nested|five|duck").create()).is(5)
+            assert(mySpace.create("duck|nested").create()).is("duck")
         })
         it("generates onCycle values if needed", () => {
             // assert(

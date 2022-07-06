@@ -213,15 +213,13 @@ describe("alias", () => {
                         type: "string"
                     },
                     fruit: "banana|apple"
-                })
-                    .create({
-                        fruits: "fruit[]",
-                        bestBanana: "banana",
-                        bestApple: "apple",
-                        bestFruit: "fruit",
-                        optionalFruit: "fruit?"
-                    })
-                    .generate()
+                }).create({
+                    fruits: "fruit[]",
+                    bestBanana: "banana",
+                    bestApple: "apple",
+                    bestFruit: "fruit",
+                    optionalFruit: "fruit?"
+                }).default
             ).equals({
                 fruits: [],
                 bestBanana: { length: 0 },
@@ -238,7 +236,7 @@ describe("alias", () => {
                     c: "a|b"
                 })
                     .create("a")
-                    .generate()
+                    .create()
             ).equals({ b: {} })
         })
         it("required cycle", () => {
@@ -247,10 +245,10 @@ describe("alias", () => {
                 b: { c: "c" },
                 c: "a|b"
             })
-            assert(() => cyclicSpace.create("a").generate()).throws.snap(
+            assert(() => cyclicSpace.create("a").create()).throws.snap(
                 `Error: Unable to generate a value for 'a|b': None of the definitions can be generated.`
             )
-            assert(() => cyclicSpace.create("a").generate({ verbose: true }))
+            assert(() => cyclicSpace.create("a").create({ verbose: true }))
                 .throws
                 .snap(`Error: Unable to generate a value for 'a|b': None of the definitions can be generated:
 Unable to generate a value for 'a': Definition includes a required cycle:
@@ -268,7 +266,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                     c: "a|b"
                 })
                     .create("a")
-                    .generate({ onRequiredCycle: { whoops: ["cycle"] } })
+                    .create({ onRequiredCycle: { whoops: ["cycle"] } })
             ).value.equals({
                 b: { c: { whoops: ["cycle"] } }
             })
@@ -280,7 +278,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                     b: { a: "a" }
                 })
                     .create("a|b")
-                    .generate({ onRequiredCycle: "cycle" })
+                    .create({ onRequiredCycle: "cycle" })
             ).value.equals({ b: { a: "cycle" } })
         })
         it("from parsed", () => {
@@ -293,7 +291,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                     optionalGroup: "group?",
                     optionalGroups: "group[]?"
                 })
-                .generate()
+                .create()
             assert(defaultValue).equals({
                 requiredGroup: { name: "" },
                 requiredGroups: []

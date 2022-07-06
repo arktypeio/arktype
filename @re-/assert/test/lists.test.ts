@@ -1,4 +1,4 @@
-import { AssertionError, strict } from "node:assert"
+import { strict } from "node:assert"
 import { assert } from "../src/index.js"
 
 it("handles listComparison options", () => {

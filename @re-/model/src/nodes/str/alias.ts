@@ -43,7 +43,7 @@ export namespace Alias {
             return this.resolution.allows(args)
         }
 
-        generate(args: Base.Generation.Args) {
+        generate(args: Base.Create.Args) {
             return this.resolution.generate(args)
         }
     }

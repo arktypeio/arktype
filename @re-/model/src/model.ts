@@ -34,7 +34,8 @@ export type ModelFrom<Def, ModeledType> = Evaluate<{
     type: ModeledType
     validate: ValidateFunction<ModeledType>
     assert: AssertFunction<ModeledType>
-    generate: GenerateFunction<ModeledType>
+    default: ModeledType
+    create: CreateFunction<ModeledType>
     references: ReferencesFunction<Def>
 }>
 
@@ -50,6 +51,10 @@ export class Model implements ModelFrom<unknown, unknown> {
 
     get type() {
         return chainableNoOpProxy
+    }
+
+    get default() {
+        return this.create()
     }
 
     validate(value: unknown, options?: Base.Validation.Options) {
@@ -84,9 +89,9 @@ export class Model implements ModelFrom<unknown, unknown> {
         return validationResult.data
     }
 
-    generate(options?: Base.Generation.Options) {
+    create(options?: Base.Create.Options) {
         return this.root.generate(
-            Base.Generation.createArgs(options, this.config.generate)
+            Base.Create.createArgs(options, this.config.generate)
         )
     }
 
@@ -119,8 +124,8 @@ export type AssertFunction<ModeledType> = (
     options?: Base.Validation.Options
 ) => ModeledType
 
-export type GenerateFunction<ModeledType> = (
-    options?: Base.Generation.Options
+export type CreateFunction<ModeledType> = (
+    options?: Base.Create.Options
 ) => ModeledType
 
 export type ReferencesFunction<Def> = <

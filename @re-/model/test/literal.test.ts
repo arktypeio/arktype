@@ -48,13 +48,13 @@ describe("number", () => {
     })
     describe("generation", () => {
         it("whole", () => {
-            assert(model(31).generate()).is(31)
+            assert(model(31).create()).is(31)
         })
         it("decimal", () => {
-            assert(model(31.31).generate()).is(31.31)
+            assert(model(31.31).create()).is(31.31)
         })
         it("negative", () => {
-            assert(model(-31.31).generate()).is(-31.31)
+            assert(model(-31.31).create()).is(-31.31)
         })
     })
 })
@@ -98,10 +98,10 @@ describe("bigint", () => {
     })
     describe("generation", () => {
         it("positive", () => {
-            assert(model(1n).generate()).is(1n)
+            assert(model(1n).create()).is(1n)
         })
         it("negative", () => {
-            assert(model(-1n).generate()).is(-1n)
+            assert(model(-1n).create()).is(-1n)
         })
     })
 })
@@ -112,7 +112,7 @@ describe("boolean", () => {
             assert(t.type).typed as true
         })
         it("generation", () => {
-            assert(t.generate()).is(true)
+            assert(t.create()).is(true)
         })
         it("validation", () => {
             assert(t.validate(true).error).is(undefined)
@@ -127,7 +127,7 @@ describe("boolean", () => {
             assert(f.type).typed as false
         })
         it("generation", () => {
-            assert(f.generate()).is(false)
+            assert(f.create()).is(false)
         })
         it("validation", () => {
             assert(f.validate(false).error).is(undefined)
@@ -143,7 +143,7 @@ describe("undefined", () => {
         assert(u.type).typed as undefined
     })
     it("generation", () => {
-        assert(u.generate()).is(undefined)
+        assert(u.create()).is(undefined)
     })
     it("validation", () => {
         assert(u.validate(undefined).error).is(undefined)
@@ -158,7 +158,7 @@ describe("null", () => {
         assert(n.type).typed as null
     })
     it("generation", () => {
-        assert(n.generate()).is(null)
+        assert(n.create()).is(null)
     })
     it("validation", () => {
         assert(n.validate(null).error).is(undefined)

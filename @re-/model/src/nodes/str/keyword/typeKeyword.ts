@@ -108,7 +108,7 @@ export class NeverKeyword extends BaseTypeKeyword {
     }
 
     generate(): never {
-        throw new Base.Generation.UngeneratableError(
+        throw new Base.Create.UngeneratableError(
             "never",
             "never is ungeneratable by definition."
         )

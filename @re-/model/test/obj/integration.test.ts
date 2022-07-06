@@ -41,6 +41,6 @@ describe("integration", () => {
         })
     })
     it("generation", () => {
-        assert(mixed.generate()).equals([true, { a: ["", [0]] }])
+        assert(mixed.create()).equals([true, { a: ["", [0]] }])
     })
 })

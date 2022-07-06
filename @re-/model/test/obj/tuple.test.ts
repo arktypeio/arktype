@@ -14,7 +14,7 @@ describe("tuple", () => {
             )
         })
         it("generation", () => {
-            assert(empty.generate()).equals([])
+            assert(empty.create()).equals([])
         })
     })
     describe("shallow", () => {
@@ -63,7 +63,7 @@ describe("tuple", () => {
             })
         })
         it("generation", () => {
-            assert(shallow.generate()).equals(["", 0, 6])
+            assert(shallow.create()).equals(["", 0, 6])
         })
     })
     describe("nested", () => {
@@ -126,7 +126,7 @@ describe("tuple", () => {
             })
         })
         it("generation", () => {
-            assert(nested.generate()).equals([
+            assert(nested.create()).equals([
                 "Cuckoo",
                 ["Swallow", "Oriole", "Condor"],
                 []

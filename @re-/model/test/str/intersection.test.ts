@@ -67,7 +67,7 @@ describe("intersection", () => {
     })
     describe("generation", () => {
         it("unsupported", () => {
-            assert(() => model("boolean&true").generate()).throws.snap(
+            assert(() => model("boolean&true").create()).throws.snap(
                 `Error: Unable to generate a value for 'boolean&true': Intersection generation is unsupported.`
             )
         })

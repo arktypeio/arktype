@@ -63,7 +63,7 @@ describe("stringLiteral", () => {
     })
     describe("generation", () => {
         it("matching literal", () => {
-            assert(model("'generated'").generate()).is("generated")
+            assert(model("'generated'").create()).is("generated")
         })
     })
 })

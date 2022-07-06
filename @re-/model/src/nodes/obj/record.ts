@@ -88,7 +88,7 @@ export namespace Record {
             return allPropsAllowed
         }
 
-        generate(args: Base.Generation.Args) {
+        generate(args: Base.Create.Args) {
             const result: Record<string, unknown> = {}
             for (const [propKey, propNode] of this.entries) {
                 // Don't include optional keys by default in generated values

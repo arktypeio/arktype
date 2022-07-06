@@ -8,7 +8,7 @@ describe("keyword", () => {
             assert(b.type).typed as boolean
         })
         it("generation", () => {
-            assert(b.generate()).is(false)
+            assert(b.create()).is(false)
         })
         it("validation", () => {
             assert(b.validate(true).error).is(undefined)
@@ -24,7 +24,7 @@ describe("keyword", () => {
             assert(t.type).typed as true
         })
         it("generation", () => {
-            assert(t.generate()).is(true)
+            assert(t.create()).is(true)
         })
         it("validation", () => {
             assert(t.validate(true).error).is(undefined)
@@ -39,7 +39,7 @@ describe("keyword", () => {
             assert(f.type).typed as false
         })
         it("generation", () => {
-            assert(f.generate()).is(false)
+            assert(f.create()).is(false)
         })
         it("validation", () => {
             assert(f.validate(false).error).is(undefined)
@@ -54,7 +54,7 @@ describe("keyword", () => {
             assert(b.type).typed as bigint
         })
         it("generation", () => {
-            assert(b.generate()).is(0n)
+            assert(b.create()).is(0n)
         })
         it("validation", () => {
             assert(b.validate(999n).error).is(undefined)
@@ -69,7 +69,7 @@ describe("keyword", () => {
             assert(s.type).typed as symbol
         })
         it("generation", () => {
-            assert(typeof s.generate()).is("symbol")
+            assert(typeof s.create()).is("symbol")
         })
         it("validation", () => {
             assert(s.validate(Symbol("")).error).is(undefined)
@@ -84,7 +84,7 @@ describe("keyword", () => {
             assert(f.type).typed as Function
         })
         it("generation", () => {
-            assert(typeof f.generate()).equals("function")
+            assert(typeof f.create()).equals("function")
         })
         it("validation", () => {
             assert(f.validate(() => ({})).error).is(undefined)
@@ -99,7 +99,7 @@ describe("keyword", () => {
             assert(o.type).typed as object
         })
         it("generation", () => {
-            assert(o.generate()).equals({})
+            assert(o.create()).equals({})
         })
         it("validation", () => {
             assert(o.validate([]).error).is(undefined)
@@ -115,7 +115,7 @@ describe("keyword", () => {
             assert(u.type).typed as undefined
         })
         it("generation", () => {
-            assert(u.generate()).is(undefined)
+            assert(u.create()).is(undefined)
         })
         it("validation", () => {
             assert(u.validate(undefined).error).is(undefined)
@@ -130,7 +130,7 @@ describe("keyword", () => {
             assert(n.type).typed as null
         })
         it("generation", () => {
-            assert(n.generate()).is(null)
+            assert(n.create()).is(null)
         })
         it("validation", () => {
             assert(n.validate(null).error).is(undefined)
@@ -145,7 +145,7 @@ describe("keyword", () => {
             assert(v.type).typed as void
         })
         it("generation", () => {
-            assert(v.generate()).is(undefined)
+            assert(v.create()).is(undefined)
         })
         it("validation", () => {
             assert(v.validate(undefined).error).is(undefined)
@@ -160,7 +160,7 @@ describe("keyword", () => {
             assert(a.type).typed as any
         })
         it("generation", () => {
-            assert(a.generate()).is(undefined)
+            assert(a.create()).is(undefined)
         })
         it("validation", () => {
             assert(a.validate(-34_324n).error).is(undefined)
@@ -175,7 +175,7 @@ describe("keyword", () => {
             assert(u.type).typed as unknown
         })
         it("generation", () => {
-            assert(u.generate()).is(undefined)
+            assert(u.create()).is(undefined)
         })
         it("validation", () => {
             assert(u.validate(34_324n).error).is(undefined)
@@ -190,7 +190,7 @@ describe("keyword", () => {
             assert(n.type).typed as never
         })
         it("generation", () => {
-            assert(() => n.generate()).throws.snap(
+            assert(() => n.create()).throws.snap(
                 `Error: Unable to generate a value for 'never': never is ungeneratable by definition.`
             )
         })
@@ -210,7 +210,7 @@ describe("keyword", () => {
                 assert(s.type).typed as string
             })
             it("generation", () => {
-                assert(s.generate()).is("")
+                assert(s.create()).is("")
             })
             it("validation", () => {
                 assert(s.validate("KEKW").error).is(undefined)
@@ -279,7 +279,7 @@ describe("keyword", () => {
                 assert(n.type).typed as number
             })
             it("generation", () => {
-                assert(n.generate()).is(0)
+                assert(n.create()).is(0)
             })
             it("validation", () => {
                 assert(n.validate(-83).error).is(undefined)

@@ -101,7 +101,7 @@ export namespace Resolution {
             return this.child.allows(nextArgs)
         }
 
-        generate(args: Base.Generation.Args) {
+        generate(args: Base.Create.Args) {
             const nextArgs = this.nextArgs(args, this.ctx.cfg.generate)
             if (args.ctx.seen.includes(this.def)) {
                 const onRequiredCycle =
@@ -110,7 +110,7 @@ export namespace Resolution {
                 if (onRequiredCycle) {
                     return onRequiredCycle
                 }
-                throw new Base.Generation.RequiredCycleError(
+                throw new Base.Create.RequiredCycleError(
                     this.def,
                     args.ctx.seen
                 )

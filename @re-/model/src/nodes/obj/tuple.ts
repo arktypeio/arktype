@@ -53,7 +53,7 @@ export namespace Tuple {
             return allItemsAllowed
         }
 
-        generate(args: Base.Generation.Args) {
+        generate(args: Base.Create.Args) {
             const result: unknown[] = []
             for (const [itemIndex, itemNode] of this.entries) {
                 result.push(

@@ -30,7 +30,7 @@ export namespace Regex {
         }
 
         generate() {
-            throw new Base.Generation.UngeneratableError(
+            throw new Base.Create.UngeneratableError(
                 `/${this.def.source}/`,
                 "Regex generation is unsupported."
             )

@@ -61,14 +61,14 @@ export namespace Union {
             return false
         }
 
-        generate(args: Base.Generation.Args) {
+        generate(args: Base.Create.Args) {
             const possibleValues: unknown[] = []
             const generationErrors: string[] = []
             for (const node of this.children) {
                 try {
                     possibleValues.push(node.generate(args))
                 } catch (error) {
-                    if (error instanceof Base.Generation.UngeneratableError) {
+                    if (error instanceof Base.Create.UngeneratableError) {
                         generationErrors.push(error.message)
                     } else {
                         throw error
@@ -76,7 +76,7 @@ export namespace Union {
                 }
             }
             if (!possibleValues.length) {
-                throw new Base.Generation.UngeneratableError(
+                throw new Base.Create.UngeneratableError(
                     this.def,
                     "None of the definitions can be generated" +
                         (args.cfg.verbose
