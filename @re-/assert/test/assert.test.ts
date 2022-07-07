@@ -6,6 +6,7 @@ import { assert } from "../src/index.js"
 import {
     checkIfTestsContainErrors,
     checkThatBenchSnapGetsPopulated,
+    cleanUpSourceFile,
     getTestFileData
 } from "./metaTests/testHelpers.js"
 
@@ -439,12 +440,18 @@ describe("Snapshots Using Files", () => {
 })
 describe("inline meta tests", () => {
     //sourceFile is cleanedup before every test when "getTemplateFileData" is called
+    let source: SourceFile
+    let templateText: string
+    after(async () => {
+        await cleanUpSourceFile(source, templateText)
+    })
     it("Checks snap gets populated - precache: true", async () => {
         const testData: TestData = await getTestFileData(
             snapShotMetaFile,
             snapshotTemplate
         )
-
+        source = testData.sourceFile
+        templateText = testData.initialText
         const errors = checkIfTestsContainErrors(
             testData.statements,
             testData.expected,
@@ -468,12 +475,19 @@ describe("inline meta tests", () => {
     }).timeout(9999)
 })
 describe("bench", () => {
+    let source: SourceFile
+    let templateText: string
+    after(async () => {
+        await cleanUpSourceFile(source, templateText)
+    })
     it("checks that bench set some kind of value", async () => {
         const testData: TestData = await getTestFileData(
             benchMetaFile,
             benchTemplate,
             false
         )
+        source = testData.sourceFile
+        templateText = testData.initialText
         const errors = checkThatBenchSnapGetsPopulated(testData.statements)
         strict.deepEqual(errors, false)
     }).timeout(19999)

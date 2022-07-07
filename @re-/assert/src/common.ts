@@ -52,7 +52,7 @@ const checkArgsForParam = (args: string[], param: string) => {
     if (filterFlagIndex === -1) {
         return undefined
     }
-    return args.at(filterFlagIndex + 1)
+    return args[filterFlagIndex + 1]
 }
 
 export const literalSerialize = (value: any): any => {

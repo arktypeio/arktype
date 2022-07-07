@@ -6,21 +6,21 @@ const isPrecached = process.argv.includes("--reassertTestPreCached")
 // prettier-ignore
 const metaSnapshotTests = () => {
     // type
-    assert({ re: "do" }).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
+    assert({ re: "do" }).equals({ re: "do" }).type.toString.snap()
 
     //5
-    assert(5).snap(5)
+    assert(5).snap()
 
     // object
-    assert({ re: `do` }).snap({re: `do`})
+    assert({ re: `do` }).snap()
 
     //inlineUpdate
     // @ts-ignore (using internal updateSnapshots hook)
-    assert({ re: "dew" }, { updateSnapshots: true }).snap({re: `dew`})
+    assert({ re: "dew" }, { updateSnapshots: true }).snap()
 
     //update6To5
     // @ts-ignore (using internal updateSnapshots hook)
-    assert(5, { updateSnapshots: true }).snap(5)
+    assert(5, { updateSnapshots: true }).snap(6)
 
     //undefined
     // assert(undefined).snap()
