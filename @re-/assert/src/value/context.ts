@@ -1,15 +1,7 @@
 import { AssertionError, strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
-import {
-    diff,
-    ElementOf,
-    Func,
-    IsAnyOrUnknown,
-    ListComparisonMode,
-    ListPossibleTypes,
-    toString
-} from "@re-/tools"
+import { diff, Fn, ListComparisonMode, toString } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { literalSerialize, SourcePosition } from "../common.js"
 import { getAssertionData, TypeAssertions } from "../type/index.js"
@@ -26,10 +18,7 @@ export type ChainableValueAssertion<
     AllowTypeAssertions extends boolean,
     Chained = ArgsType[0],
     IsReturn extends boolean = false,
-    ImmediateAssertions = ValueAssertion<
-        ListPossibleTypes<Chained>,
-        AllowTypeAssertions
-    > &
+    ImmediateAssertions = ValueAssertion<Chained, AllowTypeAssertions> &
         (IsReturn extends true ? NextAssertions<AllowTypeAssertions> : {})
 > = (<Args extends ArgsType | [] = []>(
     ...args: Args
@@ -94,29 +83,19 @@ export type EqualsOptions = {
     listComparison?: ListComparisonMode
 }
 
-export type ComparableValueAssertion<
-    PossibleValues extends any[],
-    AllowTypeAssertions extends boolean
-> = {
-    is: (
-        value: ElementOf<PossibleValues>
-    ) => NextAssertions<AllowTypeAssertions>
-    snap: ((
-        value?: ElementOf<PossibleValues>
-    ) => NextAssertions<AllowTypeAssertions>) & {
+export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
+    is: (value: T) => NextAssertions<AllowTypeAssertions>
+    snap: ((value?: T) => NextAssertions<AllowTypeAssertions>) & {
         toFile: (
             name: string,
             options?: ExternalSnapshotOptions
         ) => NextAssertions<AllowTypeAssertions>
     }
     equals: (
-        value: ElementOf<PossibleValues>,
+        value: T,
         options?: EqualsOptions
     ) => NextAssertions<AllowTypeAssertions>
-    value: Omit<
-        ComparableValueAssertion<[unknown], AllowTypeAssertions>,
-        "value"
-    >
+    value: Omit<ComparableValueAssertion<unknown, AllowTypeAssertions>, "value">
 } & (AllowTypeAssertions extends true
     ? { typedValue: (expected: unknown) => undefined }
     : {})
@@ -144,16 +123,17 @@ export type CallableFunctionAssertion<
     : {})
 
 export type FunctionalValueAssertion<
-    Args extends any[],
-    Return,
+    T,
     AllowTypeAssertions extends boolean
-> = FunctionAssertionWithArgsIfNeeded<
-    Args,
-    CallableFunctionAssertion<Return, AllowTypeAssertions>
->
+> = Extract<T, Fn> extends Fn<infer Args, infer Return>
+    ? FunctionAssertionWithArgsIfNeeded<
+          Args,
+          CallableFunctionAssertion<Return, AllowTypeAssertions>
+      >
+    : {}
 
 export type FunctionAssertionWithArgsIfNeeded<
-    Args extends any[],
+    Args extends unknown[],
     AssertionsOnceCallable
 > = ([] extends Args ? AssertionsOnceCallable : {}) &
     (Args extends []
@@ -165,26 +145,11 @@ export type FunctionAssertionWithArgsIfNeeded<
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertions : {}
 
-/**
- *  If we don't pass the possible values as a list, TS
- *  takes a union of the whole assertion object instead
- *  of a function that accepts one of a union type
- */
 export type ValueAssertion<
-    PossibleValues extends any[],
-    AllowTypeAssertions extends boolean,
-    T = ElementOf<PossibleValues>
-> = IsAnyOrUnknown<T> extends true
-    ? FunctionalValueAssertion<T[], T, AllowTypeAssertions> &
-          ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
-    : PossibleValues extends Func[]
-    ? T extends Func<infer Args, infer Return>
-        ? FunctionalValueAssertion<Args, Return, AllowTypeAssertions>
-        : {}
-    : ComparableValueAssertion<
-          ListPossibleTypes<Exclude<T, Func>>,
-          AllowTypeAssertions
-      >
+    T,
+    AllowTypeAssertions extends boolean
+> = FunctionalValueAssertion<T, AllowTypeAssertions> &
+    ComparableValueAssertion<Exclude<T, Fn>, AllowTypeAssertions>
 
 const defaultAssert = (
     actual: unknown,
@@ -253,66 +218,15 @@ export const valueAssertions = <T>(
     position: SourcePosition,
     actual: T,
     ctx: AssertionContext
-): ValueAssertion<ListPossibleTypes<T>, boolean, boolean> => {
+): ValueAssertion<T, boolean> => {
     const nextAssertions = getNextAssertions(position, ctx)
-    if (typeof actual === "function") {
-        const functionAssertions = {
-            args: (...args: any[]) =>
-                valueAssertions(position, actual, {
-                    ...ctx,
-                    args
-                }),
-            returns: chainableAssertion(
-                position,
-                () => {
-                    const result = runAssertionFunction(actual, ctx)
-                    if (!("returned" in result)) {
-                        throw new strict.AssertionError({
-                            message: result.threw
-                        })
-                    }
-                    return result.returned
-                },
-                {
-                    ...ctx,
-                    returnsCount: ctx.returnsCount + 1
-                },
-                { isReturn: true }
-            ),
-            throws: chainableAssertion(
-                position,
-                () => getThrownMessage(runAssertionFunction(actual, ctx)),
-                ctx,
-                { allowRegex: true, defaultExpected: "" }
-            )
-        }
-        if (ctx.allowTypeAssertions) {
-            // @ts-ignore
-            functionAssertions.throwsAndHasTypeError = (
-                matchValue: string | RegExp
-            ) => {
-                defaultAssert(
-                    getThrownMessage(runAssertionFunction(actual, ctx)),
-                    matchValue,
-                    true
-                )
-                if (!ctx.config.skipTypes) {
-                    defaultAssert(
-                        getAssertionData(position).errors,
-                        matchValue,
-                        true
-                    )
-                }
-            }
-        }
-        return functionAssertions
-    }
     const serialize = (value: unknown) =>
         ctx.config.stringifySnapshots
             ? `${toString(value, { quote: "double" })}`
             : literalSerialize(value)
-    const actualSerialized = serialize(actual)
+
     const inlineSnap = (...args: [unknown]) => {
+        const actualSerialized = serialize(actual)
         if (!args.length || ctx.config.updateSnapshots) {
             if (!isDeepStrictEqual(actualSerialized, serialize(args[0]))) {
                 const snapshotArgs: SnapshotArgs = {
@@ -330,7 +244,50 @@ export const valueAssertions = <T>(
         }
         return nextAssertions
     }
-    const baseValueAssertions = {
+    let currentAssertions: any
+    currentAssertions = {
+        args: (...args: any[]) =>
+            valueAssertions(position, actual, {
+                ...ctx,
+                args
+            }),
+        returns: chainableAssertion(
+            position,
+            () => {
+                const result = runAssertionFunction(actual as Fn, ctx)
+                if (!("returned" in result)) {
+                    throw new strict.AssertionError({
+                        message: result.threw
+                    })
+                }
+                return result.returned
+            },
+            {
+                ...ctx,
+                returnsCount: ctx.returnsCount + 1
+            },
+            { isReturn: true }
+        ),
+        throws: chainableAssertion(
+            position,
+            () => getThrownMessage(runAssertionFunction(actual as Fn, ctx)),
+            ctx,
+            { allowRegex: true, defaultExpected: "" }
+        ),
+        throwsAndHasTypeError: (matchValue: string | RegExp) => {
+            defaultAssert(
+                getThrownMessage(runAssertionFunction(actual as Fn, ctx)),
+                matchValue,
+                true
+            )
+            if (!ctx.config.skipTypes) {
+                defaultAssert(
+                    getAssertionData(position).errors,
+                    matchValue,
+                    true
+                )
+            }
+        },
         is: (expected: unknown) => {
             strict.equal(actual, expected)
             return nextAssertions
@@ -345,13 +302,10 @@ export const valueAssertions = <T>(
                 strict.deepEqual(actual, expected)
             }
             return nextAssertions
-        }
-    }
-    const baseAssertions = {
-        ...baseValueAssertions,
-        value: baseValueAssertions,
+        },
         snap: Object.assign(inlineSnap, {
             toFile: (name: string, options: ExternalSnapshotOptions = {}) => {
+                const actualSerialized = serialize(actual)
                 const expectedSnapshot = getSnapshotByName(
                     position.file,
                     name,
@@ -373,25 +327,21 @@ export const valueAssertions = <T>(
                 }
                 return nextAssertions
             }
-        })
-    } as any
-    if (ctx.allowTypeAssertions) {
-        return {
-            ...baseAssertions,
-            typedValue: (expectedValue: unknown) => {
-                defaultAssert(actual, expectedValue)
-                if (!ctx.config.skipTypes) {
-                    const typeData = getAssertionData(position)
-                    if (!typeData.type.expected) {
-                        throw new Error(
-                            `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
-                                `line ${position.line} of ${position.file}.`
-                        )
-                    }
-                    defaultAssert(typeData.type.actual, typeData.type.expected)
+        }),
+        typedValue: (expectedValue: unknown) => {
+            defaultAssert(actual, expectedValue)
+            if (!ctx.config.skipTypes) {
+                const typeData = getAssertionData(position)
+                if (!typeData.type.expected) {
+                    throw new Error(
+                        `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
+                            `line ${position.line} of ${position.file}.`
+                    )
                 }
+                defaultAssert(typeData.type.actual, typeData.type.expected)
             }
         }
     }
-    return baseAssertions
+    currentAssertions.value = currentAssertions
+    return currentAssertions
 }

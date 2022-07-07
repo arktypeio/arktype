@@ -11,7 +11,7 @@ export type ShallowUpdate<T> = T | UpdateFunction<T>
 
 // TODO: Expand to be able to update each item in an array
 export type DeepUpdate<T> = {
-    [P in keyof T]?: T[P] extends NonRecursible | any[]
+    [P in keyof T]?: T[P] extends NonRecursible | unknown[]
         ? ShallowUpdate<T[P]>
         : DeepUpdate<T[P]>
 }

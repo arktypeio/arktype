@@ -3,14 +3,15 @@ import { space } from "../../src/index.js"
 
 describe("space", () => {
     it("single", () => {
-        assert(space({ a: "string" }).types.a).typed as string
+        assert(space({ a: "string" }).meta.types.a).typed as string
         assert(() =>
             // @ts-expect-error
             space({ a: "strig" }, { parse: { eager: true } })
         ).throwsAndHasTypeError("Unable to determine the type of 'strig'.")
     })
     it("independent", () => {
-        assert(space({ a: "string", b: { c: "boolean" } }).types.b).typed as {
+        assert(space({ a: "string", b: { c: "boolean" } }).meta.types.b)
+            .typed as {
             c: boolean
         }
         assert(() =>
@@ -22,7 +23,8 @@ describe("space", () => {
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
     it("interdependent", () => {
-        assert(space({ a: "string", b: { c: "a" } }).types.b.c).typed as string
+        assert(space({ a: "string", b: { c: "a" } }).meta.types.b.c)
+            .typed as string
         assert(() =>
             // @ts-expect-error
             space({ a: "yikes", b: { c: "a" } }, { parse: { eager: true } })
@@ -31,7 +33,7 @@ describe("space", () => {
     it("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         // Type hint displays as any on hitting cycle
-        assert(cyclicSpace.types.a).typed as {
+        assert(cyclicSpace.meta.types.a).typed as {
             b: {
                 a: {
                     b: {
@@ -41,18 +43,18 @@ describe("space", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        assert(cyclicSpace.types.b.a.b.a.b.a.b.a).typed as {
+        assert(cyclicSpace.meta.types.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        assert(cyclicSpace.types.a.b.a.b.c).type.errors.snap(
+        assert(cyclicSpace.meta.types.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
     it("object list", () => {
-        assert(space({ a: "string", b: [{ c: "a" }] }).types.b).typed as [
+        assert(space({ a: "string", b: [{ c: "a" }] }).meta.types.b).typed as [
             {
                 c: string
             }
@@ -60,11 +62,13 @@ describe("space", () => {
     })
     it("create from space", () => {
         const anotherCyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
-        assert(anotherCyclicSpace.create("a|b|null").type).type.toString.snap(
+        assert(
+            anotherCyclicSpace.meta.model("a|b|null").type
+        ).type.toString.snap(
             "{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"
         )
         assert(() =>
-            anotherCyclicSpace.create(
+            anotherCyclicSpace.meta.model(
                 // @ts-expect-error
                 { nested: { a: "a", b: "b", c: "c" } },
                 { parse: { eager: true } }
@@ -91,7 +95,7 @@ describe("space", () => {
                 }
             }
         )
-        const extended = mySpace.extend(
+        const extended = mySpace.meta.extend(
             {
                 __meta__: {
                     onCycle: "boolean"
@@ -114,7 +118,7 @@ describe("space", () => {
                 }
             }
         )
-        assert(extended.types).typed as {
+        assert(extended.meta.types).typed as {
             user: {
                 age: number
             }
@@ -134,7 +138,7 @@ describe("space", () => {
                 }[]
             }
         }
-        assert(extended.dictionary).snap({
+        assert(extended.meta.dictionary).snap({
             __meta__: {
                 onCycle: `boolean`
             },
@@ -142,7 +146,7 @@ describe("space", () => {
             group: { members: `user[]` },
             other: { users: `user[]`, groups: `group[]` }
         })
-        assert(extended.options).snap({
+        assert(extended.meta.options).snap({
             validate: { ignoreExtraneousKeys: true },
             models: {
                 user: { validate: { ignoreExtraneousKeys: false } },

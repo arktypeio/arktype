@@ -78,7 +78,9 @@ export namespace Str {
         Def extends string,
         Dict,
         Seen
-    > = Def extends Keyword.Definition
+    > = Def extends Base.Parsing.ParseErrorMessage
+        ? unknown
+        : Def extends Keyword.Definition
         ? Keyword.Types[Def]
         : Def extends keyof Dict
         ? Alias.Parse<Def, Dict, Seen>

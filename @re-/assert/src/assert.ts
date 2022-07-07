@@ -1,15 +1,10 @@
 import { fileURLToPath } from "node:url"
 import { caller } from "@re-/node"
-import { ListPossibleTypes } from "@re-/tools"
 import { getReAssertConfig, ReAssertConfig } from "./common.js"
 import { TypeAssertions } from "./type/index.js"
 import { ValueAssertion, valueAssertions } from "./value/index.js"
 
-export type AvailableAssertions<T> = ValueAssertion<
-    ListPossibleTypes<T>,
-    true
-> &
-    TypeAssertions
+export type AvailableAssertions<T> = ValueAssertion<T, true> & TypeAssertions
 
 export type AssertionResult<T> = AvailableAssertions<T>
 

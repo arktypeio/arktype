@@ -74,13 +74,13 @@ export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends unknown[]
 
 export type EntriesOf<T> = EntryOf<T>[]
 
-export type Func<Parameters extends any[] = any[], ReturnType = any> = (
+export type Fn<Parameters extends any[] = any[], ReturnType = unknown> = (
     ...args: Parameters
 ) => ReturnType
 
 export type Primitive = string | number | boolean | symbol | bigint
 export type NonObject = Primitive | null | undefined | void
-export type NonRecursible = NonObject | Func
+export type NonRecursible = NonObject | Fn
 
 export const isRecursible = <O>(
     o: O
@@ -235,7 +235,7 @@ export type Get<T, K> = T[K]
 // @ts-ignore
 export type GetAs<T, K, Cast> = T[K] & Cast
 
-export type List<T = any> = T[] | readonly T[]
+export type List<T = unknown> = T[] | readonly T[]
 
 export type Recursible<T> = T extends NonRecursible ? never : T
 
@@ -266,7 +266,7 @@ type GetLastUnionMember<T> = IntersectOf<
 
 export type ListPossibleTypesRecurse<
     Union,
-    Result extends any[] = [],
+    Result extends unknown[] = [],
     Current = GetLastUnionMember<Union>
 > = {
     0: ListPossibleTypesRecurse<Exclude<Union, Current>, [Current, ...Result]>
@@ -274,7 +274,7 @@ export type ListPossibleTypesRecurse<
 }[[Union] extends [never] ? 1 : 0]
 
 export type ListPossibleTypes<Union> =
-    ListPossibleTypesRecurse<Union> extends infer X ? Cast<X, any[]> : never
+    ListPossibleTypesRecurse<Union> extends infer X ? Cast<X, Union[]> : never
 
 export type Stringifiable =
     | string

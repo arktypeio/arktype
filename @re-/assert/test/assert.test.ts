@@ -392,8 +392,9 @@ secondLine`)
 secondLine`)
     })
     it("union of function chainable", () => {
-        const t = {} as object | ((...args: any[]) => any)
-        assert(t).equals({})
+        const t: object | ((n: number) => number) = (n: number) => n
+        assert(t).is(t)
+        assert(t).args(5).returns(5)
     })
     it("default serializer doesn't are about prop order", () => {
         const actual = { a: true, b: false }

@@ -5,7 +5,8 @@ describe("recursive models", () => {
     const definitions = { dejaVu: { dejaVu: "dejaVu?" } } as const
     it("type", () => {
         // Recursive type displays any but calculates just-in-time for each property access
-        assert(space(definitions).types.dejaVu.dejaVu?.dejaVu?.dejaVu).typed as
+        assert(space(definitions).meta.types.dejaVu.dejaVu?.dejaVu?.dejaVu)
+            .typed as
             | {
                   dejaVu?: any
               }
@@ -13,20 +14,20 @@ describe("recursive models", () => {
     })
     it("validates shallow", () => {
         const recursive = space(definitions)
-        assert(recursive.models.dejaVu.validate({ dejaVu: {} }).error).equals(
+        assert(recursive.dejaVu.validate({ dejaVu: {} }).error).equals(
             undefined
         )
         assert(
-            recursive.models.dejaVu.validate({
+            recursive.dejaVu.validate({
                 dejaVu: { dejaVu: { jamaisVu: {} } }
             }).error?.paths
         ).snap({ "dejaVu/dejaVu": `Keys 'jamaisVu' were unexpected.` })
     })
     it("validates recursive", () => {
         const recursive = space(definitions)
-        type DejaVu = typeof recursive.types.dejaVu
+        type DejaVu = typeof recursive.meta.types.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
-        assert(recursive.models.dejaVu.validate(dejaVu).error).equals(undefined)
+        assert(recursive.dejaVu.validate(dejaVu).error).equals(undefined)
     })
 })

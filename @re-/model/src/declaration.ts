@@ -65,7 +65,7 @@ const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
             Object.fromEntries(
                 declaredTypeNames.map((typeName) => [typeName, "unknown"])
             )
-        ).create(definition)
+        ).meta.model(definition)
         return { [definedTypeName]: definition } as any
     }
 

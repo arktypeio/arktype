@@ -11,7 +11,7 @@ describe("custom validators", () => {
         }
     }
     it("inline", () => {
-        const palindrome = space({ palindrome: "string" }).create(
+        const palindrome = space({ palindrome: "string" }).meta.model(
             "palindrome",
             {
                 validate: { validator }
@@ -27,12 +27,10 @@ describe("custom validators", () => {
             { palindrome: "string" },
             { models: { palindrome: { validate: { validator } } } }
         )
-        assert(mySpace.models.palindrome.validate("redivider").error).is(
-            undefined
+        assert(mySpace.palindrome.validate("redivider").error).is(undefined)
+        assert(mySpace.palindrome.validate("predivider").error?.message).is(
+            `predivider is not a palindrome!`
         )
-        assert(
-            mySpace.models.palindrome.validate("predivider").error?.message
-        ).is(`predivider is not a palindrome!`)
     })
     it("model nested", () => {
         const mySpace = space(
@@ -45,12 +43,10 @@ describe("custom validators", () => {
                 }
             }
         )
-        assert(mySpace.models.yourPal.validate({ name: "bob" }).error).is(
-            undefined
+        assert(mySpace.yourPal.validate({ name: "bob" }).error).is(undefined)
+        assert(mySpace.yourPal.validate({ name: "rob" }).error?.message).snap(
+            `At path name, rob is not a palindrome!`
         )
-        assert(
-            mySpace.models.yourPal.validate({ name: "rob" }).error?.message
-        ).snap(`At path name, rob is not a palindrome!`)
     })
     it("space", () => {
         const mySpace = space(
@@ -73,11 +69,11 @@ describe("custom validators", () => {
                 }
             }
         )
-        assert(mySpace.models.first.validate(1).error).is(undefined)
-        assert(() => mySpace.models.first.assert(2)).throws.snap(
+        assert(mySpace.first.validate(1).error).is(undefined)
+        assert(() => mySpace.first.assert(2)).throws.snap(
             `Error: At path from/first, 2 FAILED TO BE 1.`
         )
-        assert(mySpace.create("second").validate(1).error?.message).snap(
+        assert(mySpace.meta.model("second").validate(1).error?.message).snap(
             `1 is not assignable to 2.`
         )
     })

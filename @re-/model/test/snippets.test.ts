@@ -12,7 +12,7 @@ describe("snippets", () => {
         )
     })
     it("space", () => {
-        assert(redo.types.package).type.toString.snap(
+        assert(redo.meta.types.package).type.toString.snap(
             `{ name: string; version: string; dependencies: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: any[]; }[]; }[]; }[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: any[]; }[]; }[]; }[]; }`
         )
         assert(() => getValidatedPackageData()).throws

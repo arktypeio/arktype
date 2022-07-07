@@ -16,7 +16,7 @@ export const redo = space({
 })
 
 // Recursive and cyclic types are inferred to arbitrary depth.
-export type Package = typeof redo.types.package
+export type Package = typeof redo.meta.types.package
 
 export const readPackageData = () => {
     return {
@@ -41,6 +41,6 @@ export const readPackageData = () => {
 export const getValidatedPackageData = () => {
     const packageDataFromFile = readPackageData()
     // Throws:
-    const validatedPackageData = redo.models.package.assert(packageDataFromFile)
+    const validatedPackageData = redo.package.assert(packageDataFromFile)
     return validatedPackageData
 }

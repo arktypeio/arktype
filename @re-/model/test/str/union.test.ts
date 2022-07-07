@@ -49,7 +49,7 @@ describe("union", () => {
                     e: 1,
                     f: 2,
                     g: 3
-                }).models.a.validate(4, { verbose: true }).error?.message
+                }).a.validate(4, { verbose: true }).error?.message
             ).snap(`4 is not assignable to any of b|c.
 b: 4 is not assignable to any of d|e.
 d: 4 is not assignable to 0.
@@ -87,8 +87,8 @@ g: 4 is not assignable to 3.`)
                 duck: "'duck'",
                 nested: {}
             })
-            assert(mySpace.create("nested|five|duck").create()).is(5)
-            assert(mySpace.create("duck|nested").create()).is("duck")
+            assert(mySpace.meta.model("nested|five|duck").create()).is(5)
+            assert(mySpace.meta.model("duck|nested").create()).is("duck")
         })
         it("generates onCycle values if needed", () => {
             // assert(

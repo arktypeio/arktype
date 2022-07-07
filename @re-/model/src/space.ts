@@ -13,28 +13,37 @@ export const space: CreateSpaceFn = (dictionary, options) =>
     new Space(dictionary, options) as any
 
 export class Space implements SpaceFrom<unknown> {
-    resolutions: Record<string, Resolution.Node>
-    models: Record<string, Model>
+    meta: SpaceMeta
 
     constructor(
-        public dictionary: SpaceDictionary,
-        public options: SpaceOptions<string> = {}
+        dictionary: SpaceDictionary,
+        options: SpaceOptions<string> = {}
     ) {
-        this.models = {}
-        this.resolutions = {}
+        this.meta = new SpaceMeta(dictionary, options)
         for (const alias of Object.keys(dictionary)) {
             if (alias === "__meta__") {
                 continue
             }
             const ctx = Base.Parsing.createContext(
-                deepMerge(this.options, this.options.models?.[alias]),
-                this
+                deepMerge(options, options.models?.[alias]),
+                this.meta
             )
-            this.models[alias] = new Model(new Resolution.Node(alias, ctx))
+            ;(this as any)[alias] = new Model(new Resolution.Node(alias, ctx))
         }
     }
+}
 
-    create(def: unknown, options?: Base.ModelOptions) {
+export class SpaceMeta implements SpaceMetaFrom<unknown> {
+    resolutions: Record<string, Resolution.Node>
+
+    constructor(
+        public dictionary: SpaceDictionary,
+        public options: SpaceOptions<string> = {}
+    ) {
+        this.resolutions = {}
+    }
+
+    model(def: unknown, options?: Base.ModelOptions) {
         const root = Root.parse(
             def,
             Base.Parsing.createContext(deepMerge(this.options, options), this)
@@ -71,26 +80,19 @@ export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models">
 
 export type SpaceDictionary = Record<string, unknown>
 
-export type SpaceFrom<Dict> = Evaluate<{
-    models: DictionaryToModels<Dict>
+export type SpaceFrom<Dict> = Evaluate<
+    DictionaryToModels<Dict> & {
+        meta: SpaceMetaFrom<Dict>
+    }
+>
+
+export type SpaceMetaFrom<Dict> = {
     types: DictToTypes<Dict>
-    create: ModelFunction<Dict>
+    model: ModelFunction<Dict>
     extend: ExtendFunction<Dict>
     dictionary: Dict
     options: SpaceOptions<AliasIn<Dict>> | undefined
-}>
-
-export type SpaceFrom2<Dict> = Evaluate<
-    DictionaryToModels<Dict> & {
-        meta: {
-            types: DictToTypes<Dict>
-            create: ModelFunction<Dict>
-            extend: ExtendFunction<Dict>
-            dictionary: Dict
-            options: SpaceOptions<AliasIn<Dict>> | undefined
-        }
-    }
->
+}
 
 export type DictionaryToModels<Dict> = Evaluate<{
     [Alias in AliasIn<Dict>]: ModelFrom<

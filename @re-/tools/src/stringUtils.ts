@@ -176,7 +176,7 @@ type SpliterateRecurse<
 
 type UnpackNestedTuples<
     T extends List,
-    Result extends any[] = []
+    Result extends unknown[] = []
 > = T extends Iteration<unknown, infer Current, infer Remaining>
     ? Current extends List
         ? [...UnpackNestedTuples<Current>, ...UnpackNestedTuples<Remaining>]

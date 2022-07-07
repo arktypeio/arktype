@@ -4,11 +4,11 @@ import { model, space } from "../../src/index.js"
 describe("alias", () => {
     describe("type", () => {
         it("with space", () => {
-            assert(space({ borf: true }).create("borf").type).typed as true
+            assert(space({ borf: true }).meta.model("borf").type).typed as true
             assert(
                 space({
                     borf: { f: false, u: undefined }
-                }).create({ snorf: "borf[]" }).type
+                }).meta.model({ snorf: "borf[]" }).type
             ).typed as { snorf: { f: false; u: undefined }[] }
         })
         it("with onCycle option", () => {
@@ -20,7 +20,7 @@ describe("alias", () => {
                 },
                 a: { b: "b", isA: "true", isB: "false" },
                 b: { a: "a", isA: "false", isB: "true" }
-            }).create({
+            }).meta.model({
                 a: "a",
                 b: "b"
             })
@@ -44,7 +44,7 @@ describe("alias", () => {
                 },
                 a: { b: "b", isA: "true", isB: "false" },
                 b: { a: "a", isA: "false", isB: "true" }
-            }).create({
+            }).meta.model({
                 referencesA: "a",
                 noReferences: {
                     favoriteSoup: "'borscht'"
@@ -68,7 +68,7 @@ describe("alias", () => {
                 },
                 apple: { circumference: "number", type: "string" },
                 fruit: "banana|apple"
-            }).create({ fruits: "fruit[]" })
+            }).meta.model({ fruits: "fruit[]" })
             assert(
                 groceries.validate({
                     fruits: [
@@ -109,7 +109,7 @@ describe("alias", () => {
                 a: { a: "a?", b: "b?", isA: "true" },
                 b: { a: "a?", b: "b?", isA: "false" },
                 either: "a|b"
-            }).create({ a: "a", b: "b", c: "either[]" })
+            }).meta.model({ a: "a", b: "b", c: "either[]" })
             assert(
                 bicycle.validate({
                     a: {
@@ -180,7 +180,7 @@ describe("alias", () => {
             assert(model({} as any).type).typed as any
         })
         it("doesn't try to validate any as a dictionary", () => {
-            const parseWithAnySpace = space({} as any).create({
+            const parseWithAnySpace = space({} as any).meta.model({
                 literal: "string",
                 // @ts-ignore
                 alias: "myType"
@@ -196,7 +196,7 @@ describe("alias", () => {
             )
         })
         it("doesn't try to validate any as a dictionary member", () => {
-            assert(space({ a: {} as any }).create(["number", "a"]).type)
+            assert(space({ a: {} as any }).meta.model(["number", "a"]).type)
                 .typed as [number, any]
         })
     })
@@ -213,7 +213,7 @@ describe("alias", () => {
                         type: "string"
                     },
                     fruit: "banana|apple"
-                }).create({
+                }).meta.model({
                     fruits: "fruit[]",
                     bestBanana: "banana",
                     bestApple: "apple",
@@ -235,7 +235,7 @@ describe("alias", () => {
                     b: { c: "c?" },
                     c: "a|b"
                 })
-                    .create("a")
+                    .meta.model("a")
                     .create()
             ).equals({ b: {} })
         })
@@ -245,10 +245,10 @@ describe("alias", () => {
                 b: { c: "c" },
                 c: "a|b"
             })
-            assert(() => cyclicSpace.create("a").create()).throws.snap(
+            assert(() => cyclicSpace.meta.model("a").create()).throws.snap(
                 `Error: Unable to generate a value for 'a|b': None of the definitions can be generated.`
             )
-            assert(() => cyclicSpace.create("a").create({ verbose: true }))
+            assert(() => cyclicSpace.meta.model("a").create({ verbose: true }))
                 .throws
                 .snap(`Error: Unable to generate a value for 'a|b': None of the definitions can be generated:
 Unable to generate a value for 'a': Definition includes a required cycle:
@@ -265,7 +265,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                     b: { c: "c" },
                     c: "a|b"
                 })
-                    .create("a")
+                    .meta.model("a")
                     .create({ onRequiredCycle: { whoops: ["cycle"] } })
             ).value.equals({
                 b: { c: { whoops: ["cycle"] } }
@@ -277,7 +277,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                     a: { b: "b" },
                     b: { a: "a" }
                 })
-                    .create("a|b")
+                    .meta.model("a|b")
                     .create({ onRequiredCycle: "cycle" })
             ).value.equals({ b: { a: "cycle" } })
         })
@@ -285,7 +285,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
             const defaultValue = space({
                 group: { name: "string", description: "string?" }
             })
-                .create({
+                .meta.model({
                     requiredGroup: "group",
                     requiredGroups: "group[]",
                     optionalGroup: "group?",

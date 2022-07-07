@@ -1,4 +1,4 @@
-import type { Space } from "../../../space.js"
+import type { SpaceMeta } from "../../../space.js"
 import type { Node as AbstractNode } from "../kinds/node.js"
 import { defToString, ModelOptions, stringifyPathContext } from "../utils.js"
 
@@ -22,13 +22,13 @@ export namespace Parsing {
         path: string
         stringRoot: string | null
         cfg: ModelOptions
-        space: Space | undefined
+        space: SpaceMeta | undefined
         shallowSeen: string[]
     }
 
     export const createContext = (
         cfg: ModelOptions = {},
-        space?: Space
+        space?: SpaceMeta
     ): Context => {
         return {
             path: "",

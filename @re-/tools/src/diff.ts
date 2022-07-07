@@ -12,7 +12,10 @@ import {
 } from "./common.js"
 import { transform } from "./transform.js"
 
-export type UnionDiffResult<Added extends any[], Removed extends any[]> = {
+export type UnionDiffResult<
+    Added extends unknown[],
+    Removed extends unknown[]
+> = {
     added: Added
     removed: Removed
 }
@@ -161,7 +164,7 @@ export const diff = <Base, Compare, Options extends DiffOptions>(
     return isEmpty(result) ? undefined : result
 }
 
-export type DiffSetsResult<T = any> =
+export type DiffSetsResult<T = unknown> =
     | undefined
     | {
           added?: T[]

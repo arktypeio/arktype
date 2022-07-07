@@ -55,7 +55,7 @@ describe("references", () => {
         })
         it("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
-                .create(
+                .meta.model(
                     "user[]|group[]|boolean&true|integer&positive|null|1<number<2"
                 )
                 .references()
@@ -144,11 +144,11 @@ describe("references", () => {
                     easyAs: ["a|string", "a|b|boolean", "a|b|c|never"]
                 }
             })
-            type Dictionary = typeof mySpace.dictionary
-            const references = mySpace.models.c.references({
+            type Dictionary = typeof mySpace.meta.dictionary
+            const references = mySpace.c.references({
                 preserveStructure: true,
                 filter: (reference): reference is keyof Dictionary =>
-                    reference in mySpace.dictionary
+                    reference in mySpace.meta.dictionary
             })
             assert(references).equals(
                 {

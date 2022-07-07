@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs"
 import { readJson, writeJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"
-import { Project, SyntaxKind, ts, Type } from "ts-morph"
+import { Project, Signature, SyntaxKind, ts, Type } from "ts-morph"
 import {
     getFileKey,
     getReAssertConfig,
@@ -188,7 +188,17 @@ const analyzeTypeAssertions = memoize(
                     if (kind === SyntaxKind.PropertyAccessExpression) {
                         const propName = ancestor.getLastChild()?.getText()
                         if (propName === "returns") {
-                            const signatures = typeToCheck.getCallSignatures()
+                            const signatureSources = typeToCheck.isUnion()
+                                ? typeToCheck.getUnionTypes()
+                                : typeToCheck.isIntersection()
+                                ? typeToCheck.getIntersectionTypes()
+                                : [typeToCheck]
+                            const signatures: Signature[] = []
+                            for (const signatureSource of signatureSources) {
+                                signatures.push(
+                                    ...signatureSource.getCallSignatures()
+                                )
+                            }
                             if (!signatures.length) {
                                 throw new Error(
                                     `Unable to extract the return type.`

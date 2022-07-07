@@ -34,7 +34,7 @@ export const transform = <
     >,
     InferredAsArray extends boolean = MapReturnType extends Entry
         ? MapReturnType[0] extends number
-            ? From extends any[]
+            ? From extends unknown[]
                 ? true
                 : false
             : false
