@@ -1,13 +1,29 @@
 import { AssertionError, strict, throws } from "node:assert"
 import { join } from "node:path"
-import { dirName, fromHere, readJson, shell, writeJson } from "@re-/node"
+import { dirName, readJson, writeJson } from "@re-/node"
+import { ExpressionStatement, SourceFile } from "ts-morph"
 import { assert } from "../src/index.js"
-import { getStuff } from "./templates.js"
-import { SyntaxKind, ExpressionStatement } from "ts-morph"
+import {
+    checkIfTestsContainErrors,
+    checkThatBenchSnapGetsPopulated,
+    getTestFileData
+} from "./metaTests/testHelpers.js"
 
 const n = 5
 const o = { re: "do" }
 const testDir = dirName()
+
+type TestData = {
+    statements: ExpressionStatement[]
+    expected: Record<number | string, string>
+    sourceFile: SourceFile
+    fullText: string
+    initialText: string
+}
+const snapShotMetaFile = "snapshotTests"
+const snapshotTemplate = "templateForSnapshots.ts"
+const benchMetaFile = "benchTests"
+const benchTemplate = "templateForBenches.ts"
 
 const shouldThrow = (a: false) => {
     if (a) {
@@ -18,6 +34,7 @@ const shouldThrow = (a: false) => {
 const throwError = () => {
     throw new Error("Test error.")
 }
+
 describe("Assertions", () => {
     it("type toString", () => {
         assert(o).type.toString("{ re: string; }")
@@ -420,31 +437,44 @@ describe("Snapshots Using Files", () => {
         )
     })
 })
-type TestData = {
-    statements: ExpressionStatement[]
-    expected: Record<number | string, string>
-    fullText: string
-}
-const testData: TestData = getStuff("emptySnaps")
 describe("inline meta tests", () => {
-    for (const s of testData.statements) {
-        it(`${s.getText()}`, () => {
-            let splitStatementArray = s.getText().split(".")
-            let snapArg = splitStatementArray[splitStatementArray.length - 1]
-                .replace("snap", "")
-                .slice(1, -1)
+    //sourceFile is cleanedup before every test when "getTemplateFileData" is called
+    it("Checks snap gets populated - precache: true", async () => {
+        const testData: TestData = await getTestFileData(
+            snapShotMetaFile,
+            snapshotTemplate
+        )
 
-            const range = s.getLeadingCommentRanges()
-            const comment = testData.fullText
-                .slice(range[0].getPos(), range[0].getEnd())
-                .replace("//", "")
-                .trim()
+        const errors = checkIfTestsContainErrors(
+            testData.statements,
+            testData.expected,
+            testData.fullText
+        )
+        strict.deepEqual(errors, false)
+    }).timeout(9999)
 
-            const expected = testData.expected[comment]
-            if (snapArg.at(0) === "`") {
-                snapArg = snapArg.slice(1, snapArg.length - 1)
-            }
-            strict.deepEqual(expected, snapArg)
-        })
-    }
+    it("Checks snap gets populated - precache: false", async () => {
+        const testData = await getTestFileData(
+            snapShotMetaFile,
+            snapshotTemplate,
+            false
+        )
+        const errors = checkIfTestsContainErrors(
+            testData.statements,
+            testData.expected,
+            testData.fullText
+        )
+        strict.deepEqual(errors, false)
+    }).timeout(9999)
+})
+describe("bench", () => {
+    it("checks that bench set some kind of value", async () => {
+        const testData: TestData = await getTestFileData(
+            benchMetaFile,
+            benchTemplate,
+            false
+        )
+        const errors = checkThatBenchSnapGetsPopulated(testData.statements)
+        strict.deepEqual(errors, false)
+    }).timeout(19999)
 })
