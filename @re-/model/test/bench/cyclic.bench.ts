@@ -19,10 +19,7 @@ bench("cyclic(10)", () => {
 
 bench("cyclic eager(10)", () => {
     const cyclic10Space = space(cyclic10, eagerConfig)
-})
-    .median(`31.26us`)
-    .type()
-    .median(`148.33ms`)
+}).median(`31.26us`)
 
 bench("cyclic(50)", () => {
     const cyclic50Space = space(cyclic50)
@@ -33,10 +30,7 @@ bench("cyclic(50)", () => {
 
 bench("cyclic eager(50)", () => {
     const cyclic50Space = space(cyclic50, eagerConfig)
-})
-    .median(`172.69us`)
-    .type()
-    .median(`176.25ms`)
+}).median(`172.69us`)
 
 bench("cyclic(100)", () => {
     const cyclic100Space = space(cyclic100)
@@ -47,10 +41,7 @@ bench("cyclic(100)", () => {
 
 bench("cyclic eager(100)", () => {
     const cyclic100Space = space(cyclic100, eagerConfig)
-})
-    .median(`361.61us`)
-    .type()
-    .median(`188.44ms`)
+}).median(`361.61us`)
 
 bench("cyclic(250)", () => {
     const cyclic250Space = space(cyclic250)
@@ -61,10 +52,7 @@ bench("cyclic(250)", () => {
 
 bench("cyclic eager(250)", () => {
     const cyclic250Space = space(cyclic250, eagerConfig)
-})
-    .median(`1.05ms`)
-    .type()
-    .median(`268.42ms`)
+}).median(`1.05ms`)
 
 bench("cyclic(500)", () => {
     const cyclic500Space = space(cyclic500)
@@ -75,7 +63,4 @@ bench("cyclic(500)", () => {
 
 bench("cyclic eager(500)", () => {
     const cyclic500Space = space(cyclic500, eagerConfig)
-})
-    .median(`2.72ms`)
-    .type()
-    .median(`589.40ms`)
+}).median(`2.72ms`)
