@@ -53,6 +53,22 @@ describe("space", () => {
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
+    it("cyclic eager", () => {
+        const cyclicEagerSpace = space(
+            { a: { b: "b" }, b: { a: "a" } },
+            { parse: { eager: true } }
+        )
+        assert(cyclicEagerSpace.meta.types.a).typed as {
+            b: {
+                a: {
+                    b: {
+                        a: any
+                    }
+                }
+            }
+        }
+        assert(cyclicEagerSpace.a.validate({ b: {} }).error)
+    })
     it("object list", () => {
         assert(space({ a: "string", b: [{ c: "a" }] }).meta.types.b).typed as [
             {

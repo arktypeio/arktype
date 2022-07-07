@@ -1,7 +1,14 @@
 import { AssertionError, strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
-import { diff, Fn, ListComparisonMode, toString } from "@re-/tools"
+import {
+    diff,
+    Fn,
+    IsAnyOrUnknown,
+    ListComparisonMode,
+    Or,
+    toString
+} from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { literalSerialize, SourcePosition } from "../common.js"
 import { getAssertionData, TypeAssertions } from "../type/index.js"
@@ -100,7 +107,7 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
     ? { typedValue: (expected: unknown) => undefined }
     : {})
 
-export type CallableFunctionAssertion<
+export type CallableFunctionAssertions<
     Return,
     AllowTypeAssertions extends boolean
 > = {
@@ -122,34 +129,42 @@ export type CallableFunctionAssertion<
       }
     : {})
 
-export type FunctionalValueAssertion<
-    T,
+export type FunctionAssertions<
+    Args extends any[],
+    Return,
     AllowTypeAssertions extends boolean
-> = Extract<T, Fn> extends Fn<infer Args, infer Return>
-    ? FunctionAssertionWithArgsIfNeeded<
-          Args,
-          CallableFunctionAssertion<Return, AllowTypeAssertions>
-      >
-    : {}
-
-export type FunctionAssertionWithArgsIfNeeded<
-    Args extends unknown[],
-    AssertionsOnceCallable
-> = ([] extends Args ? AssertionsOnceCallable : {}) &
+> = ([] extends Args
+    ? CallableFunctionAssertions<Return, AllowTypeAssertions>
+    : {}) &
     (Args extends []
         ? {}
         : {
-              args: (...args: Args) => AssertionsOnceCallable
+              args: (
+                  ...args: Args
+              ) => CallableFunctionAssertions<Return, AllowTypeAssertions>
           })
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertions : {}
 
+export type AnyOrUnknownValueAssertion<
+    T,
+    AllowTypeAssertions extends boolean
+> = FunctionAssertions<T[], T, AllowTypeAssertions> &
+    ComparableValueAssertion<T, AllowTypeAssertions>
+
+export type TypedValueAssertions<T, AllowTypeAssertions extends boolean> = [
+    T
+] extends [Fn<infer Args, infer Return>]
+    ? FunctionAssertions<Args, Return, AllowTypeAssertions>
+    : ComparableValueAssertion<T, AllowTypeAssertions>
+
 export type ValueAssertion<
     T,
     AllowTypeAssertions extends boolean
-> = FunctionalValueAssertion<T, AllowTypeAssertions> &
-    ComparableValueAssertion<Exclude<T, Fn>, AllowTypeAssertions>
+> = IsAnyOrUnknown<T> extends true
+    ? AnyOrUnknownValueAssertion<T, AllowTypeAssertions>
+    : TypedValueAssertions<T, AllowTypeAssertions>
 
 const defaultAssert = (
     actual: unknown,

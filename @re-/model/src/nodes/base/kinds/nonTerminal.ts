@@ -4,9 +4,9 @@ import { Node } from "./node.js"
 export abstract class NonTerminal<DefType, ParseResult> extends Node<DefType> {
     private cache?: ParseResult
 
-    constructor(def: DefType, ctx: Parsing.Context) {
+    constructor(def: DefType, ctx: Parsing.Context, neverEager?: boolean) {
         super(def, ctx)
-        if (ctx.cfg.parse?.eager) {
+        if (ctx.cfg.parse?.eager && !neverEager) {
             this.cache = this.parse()
         }
     }

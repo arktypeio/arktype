@@ -112,7 +112,7 @@ bench("list type", () => {
 }).median(`6.46us`)
 
 const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })
-const dejaVu: typeof recursive.types.dejaVu = {}
+const dejaVu: typeof recursive.meta.types.dejaVu = {}
 let i = 0
 let current = dejaVu
 while (i < 50) {
@@ -121,5 +121,5 @@ while (i < 50) {
     i++
 }
 bench("validate recursive", () => {
-    recursive.models.dejaVu.validate(dejaVu)
+    recursive.dejaVu.validate(dejaVu)
 }).median(`90.19us`)

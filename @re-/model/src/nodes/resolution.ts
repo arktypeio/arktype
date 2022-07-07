@@ -28,10 +28,17 @@ export namespace Resolution {
     export class Node extends Base.Link<string> {
         constructor(def: string, ctx: Base.Parsing.Context) {
             if (!ctx.space!.resolutions[def]) {
-                // If this is the first time we've seen the alias, create a Node that will be used for future resolutions of the alias.
-                super(def, ctx)
-                this.next()
+                // If this is the first time we've seen the alias,
+                // create a Node that will be used for future resolutions of the alias.
+                // Pass the neverEager flag so that we can wait to call next() until after
+                // Adding this node to space.resolutions
+                super(def, ctx, true)
                 ctx.space!.resolutions[def] = this
+                this.next()
+            } else if (ctx.shallowSeen.includes(def)) {
+                throw new Base.Parsing.ParseError(
+                    shallowCycleError([...ctx.shallowSeen, def])
+                )
             }
             return ctx.space!.resolutions[def]
         }
@@ -39,27 +46,17 @@ export namespace Resolution {
         parse() {
             const rootDef = this.ctx.space!.dictionary[this.def]
             if (Str.matches(rootDef)) {
-                /**
-                 *  If the resolved this.def is a string, check if the alias completes a shallow cycle.
-                 *  If not, append the alias to shallowSeen and parse resolved this.def to continue checking for shallow cycles.
-                 */
-                const nextShallowSeen = [...this.ctx.shallowSeen, this.def]
-                if (this.ctx.shallowSeen.includes(this.def)) {
-                    throw new Base.Parsing.ParseError(
-                        shallowCycleError(nextShallowSeen)
-                    )
-                }
                 return Str.parse(rootDef, {
                     ...this.ctx,
                     cfg: {
                         ...this.ctx.cfg,
                         parse: {
                             ...this.ctx.cfg.parse,
-                            // We need to parse all resolved string this.defs eagerly to detect shallow cycles
+                            // We need to parse all resolved string defs eagerly to detect shallow cycles
                             eager: true
                         }
                     },
-                    shallowSeen: nextShallowSeen
+                    shallowSeen: [...this.ctx.shallowSeen, this.def]
                 })
             } else {
                 // Non-string this.defs can never participate in shallow cycles, so reset shallowSeen
