@@ -10,27 +10,25 @@ import { Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
-    new Space(dictionary, options) as any
+    makeSpace(dictionary, options) as any
 
-export class Space implements SpaceFrom<unknown> {
-    meta: SpaceMeta
-
-    constructor(
-        dictionary: SpaceDictionary,
-        options: SpaceOptions<string> = {}
-    ) {
-        this.meta = new SpaceMeta(dictionary, options)
-        for (const alias of Object.keys(dictionary)) {
-            if (alias === "__meta__") {
-                continue
-            }
-            const ctx = Base.Parsing.createContext(
-                deepMerge(options, options.models?.[alias]),
-                this.meta
-            )
-            ;(this as any)[alias] = new Model(new Resolution.Node(alias, ctx))
+export const makeSpace = (
+    dictionary: SpaceDictionary,
+    options: SpaceOptions<string> = {}
+) => {
+    const meta = new SpaceMeta(dictionary, options)
+    const compiled: Record<string, any> = { meta }
+    for (const alias of Object.keys(dictionary)) {
+        if (alias === "__meta__") {
+            continue
         }
+        const ctx = Base.Parsing.createContext(
+            deepMerge(options, options?.models?.[alias]),
+            meta
+        )
+        compiled[alias] = new Model(new Resolution.Node(alias, ctx))
     }
+    return compiled
 }
 
 export class SpaceMeta implements SpaceMetaFrom<unknown> {
@@ -52,7 +50,7 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
     }
 
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
-        return new Space(
+        return makeSpace(
             { ...this.dictionary, ...extensions },
             deepMerge(this.options, overrides)
         ) as any
@@ -72,7 +70,9 @@ export type ValidateDictionary<Dict> = {
     [Alias in keyof Dict]: Resolution.Validate<Alias, Dict>
 }
 
-export type SpaceOptions<ModelName extends string> = Base.ModelOptions & {
+export type SpaceLevelOptions = Base.ModelOptions
+
+export type SpaceOptions<ModelName extends string> = SpaceLevelOptions & {
     models?: { [K in ModelName]?: Base.ModelOptions }
 }
 
@@ -122,7 +122,7 @@ export type ExtendFunction<BaseDict> = <ExtensionDict>(
 export type SpaceExtensionOptions<
     BaseModelName extends string,
     ExtensionModelName extends string
-> = Base.ModelOptions & {
+> = SpaceLevelOptions & {
     models?: {
         [ModelName in BaseModelName | ExtensionModelName]?: Base.ModelOptions
     }
