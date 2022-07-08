@@ -4,7 +4,7 @@ import { space } from "../../src/index.js"
 describe("extend space", () => {
     it("type", () => {
         const extended = getExtendedSpace()
-        assert(extended.meta.types).typed as {
+        assert(extended.$meta.types).typed as {
             user: {
                 age: number
             }
@@ -27,7 +27,7 @@ describe("extend space", () => {
     })
     it("dictionary", () => {
         const extended = getExtendedSpace()
-        assert(extended.meta.dictionary).snap({
+        assert(extended.$meta.dictionary).snap({
             __meta__: {
                 onCycle: `boolean`
             },
@@ -38,7 +38,7 @@ describe("extend space", () => {
     })
     it("options", () => {
         const extended = getExtendedSpace()
-        assert(extended.meta.options).snap({
+        assert(extended.$meta.options).snap({
             validate: { ignoreExtraneousKeys: true },
             models: {
                 user: { validate: { ignoreExtraneousKeys: false } },
@@ -69,7 +69,7 @@ const getExtendedSpace = () => {
             }
         }
     )
-    const extended = mySpace.meta.extend(
+    const extended = mySpace.$meta.extend(
         {
             __meta__: {
                 onCycle: "boolean"

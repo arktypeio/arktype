@@ -87,8 +87,8 @@ g: 4 is not assignable to 3.`)
                 duck: "'duck'",
                 nested: {}
             })
-            assert(mySpace.meta.model("nested|five|duck").create()).is(5)
-            assert(mySpace.meta.model("duck|nested").create()).is("duck")
+            assert(mySpace.$meta.model("nested|five|duck").create()).is(5)
+            assert(mySpace.$meta.model("duck|nested").create()).is("duck")
         })
         it("generates onCycle values if needed", () => {
             // assert(

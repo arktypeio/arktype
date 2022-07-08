@@ -8,9 +8,9 @@ import {
     transform
 } from "@re-/tools"
 import {
-    makeSpace,
     SpaceFrom,
     SpaceOptions,
+    spaceRaw,
     ValidateDictionary
 } from "./space.js"
 import { Root } from "./index.js"
@@ -22,7 +22,7 @@ export const declare: DeclareFn = (...names) => ({
         if (discrepancies) {
             throw new DeclarationError(discrepancies)
         }
-        return makeSpace(dict, options) as any
+        return spaceRaw(dict, options) as any
     }
 })
 
@@ -66,11 +66,11 @@ type CreateDeclaredDefineFunction = <
 const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
     (declaredTypeNames, definedTypeName) => (definition) => {
         // Dummy create for validation
-        makeSpace(
+        spaceRaw(
             Object.fromEntries(
                 declaredTypeNames.map((typeName) => [typeName, "unknown"])
             )
-        ).meta.model(definition)
+        ).$meta.model(definition)
         return { [definedTypeName]: definition } as any
     }
 
@@ -96,7 +96,7 @@ export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
     Dict
 >(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
-    config?: SpaceOptions<keyof Dict & string>
+    options?: SpaceOptions<keyof Dict & string>
 ) => SpaceFrom<Dict>
 
 export class DeclarationError extends Error {

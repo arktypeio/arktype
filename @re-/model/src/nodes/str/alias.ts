@@ -1,10 +1,9 @@
 import { And, Get, WithPropValue } from "@re-/tools"
-import type { MetaKey } from "../../space.js"
 import { Resolution } from "../resolution.js"
 import { Root } from "../root.js"
 import { Base } from "./base.js"
 
-type GetMetaDefinitions<Dict> = MetaKey extends keyof Dict ? Dict[MetaKey] : {}
+type GetMetaDefinitions<Dict> = "$meta" extends keyof Dict ? Dict["$meta"] : {}
 
 export namespace Alias {
     export type Parse<

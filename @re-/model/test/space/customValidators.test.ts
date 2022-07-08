@@ -11,7 +11,7 @@ describe("custom validators", () => {
         }
     }
     it("inline", () => {
-        const palindrome = space({ palindrome: "string" }).meta.model(
+        const palindrome = space({ palindrome: "string" }).$meta.model(
             "palindrome",
             {
                 validate: { validator }
@@ -73,7 +73,7 @@ describe("custom validators", () => {
         assert(() => mySpace.first.assert(2)).throws.snap(
             `Error: At path from/first, 2 FAILED TO BE 1.`
         )
-        assert(mySpace.meta.model("second").validate(1).error?.message).snap(
+        assert(mySpace.$meta.model("second").validate(1).error?.message).snap(
             `1 is not assignable to 2.`
         )
     })

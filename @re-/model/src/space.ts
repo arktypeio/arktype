@@ -10,16 +10,16 @@ import { Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
-    makeSpace(dictionary, options) as any
+    spaceRaw(dictionary, options) as any
 
-export const makeSpace = (
+export const spaceRaw = (
     dictionary: SpaceDictionary,
     options: SpaceOptions<string> = {}
 ) => {
     const meta = new SpaceMeta(dictionary, options)
-    const compiled: Record<string, any> = { meta }
+    const compiled: Record<string, any> = { $meta: meta }
     for (const alias of Object.keys(dictionary)) {
-        if (alias === "__meta__") {
+        if (alias === "$meta") {
             continue
         }
         const ctx = Base.Parsing.createContext(
@@ -50,7 +50,7 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
     }
 
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
-        return makeSpace(
+        return spaceRaw(
             { ...this.dictionary, ...extensions },
             deepMerge(this.options, overrides)
         ) as any
@@ -82,7 +82,7 @@ export type SpaceDictionary = Record<string, unknown>
 
 export type SpaceFrom<Dict> = Evaluate<
     DictionaryToModels<Dict> & {
-        meta: SpaceMetaFrom<Dict>
+        $meta: SpaceMetaFrom<Dict>
     }
 >
 
@@ -110,13 +110,11 @@ export type MetaDefinitions = {
     onResolve?: unknown
 }
 
-export type MetaKey = "__meta__"
-
-export type AliasIn<Dict> = Extract<Exclude<keyof Dict, MetaKey>, string>
+export type AliasIn<Dict> = Extract<Exclude<keyof Dict, "$meta">, string>
 
 export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
-    config?: SpaceExtensionOptions<AliasIn<BaseDict>, AliasIn<ExtensionDict>>
+    options?: SpaceExtensionOptions<AliasIn<BaseDict>, AliasIn<ExtensionDict>>
 ) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
 
 export type SpaceExtensionOptions<
