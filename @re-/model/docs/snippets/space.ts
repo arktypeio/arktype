@@ -40,7 +40,10 @@ export const readPackageData = () => {
 
 export const getValidatedPackageData = () => {
     const packageDataFromFile = readPackageData()
-    // Throws:
+    // Throws: `Error: Encountered errors at the following paths:
+    //    dependencies/0/version: 2.2 is not assignable to string.
+    //    dependencies/0/contributors: Required value of type contributor[] was missing.
+    //    contributors/0/packages: Required value of type package[] was missing.`
     const validatedPackageData = redo.package.assert(packageDataFromFile)
     return validatedPackageData
 }
