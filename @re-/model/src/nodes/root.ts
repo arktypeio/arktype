@@ -24,7 +24,7 @@ export namespace Root {
         : Def extends string
         ? Def extends Base.Parsing.ParseErrorMessage
             ? unknown
-            : Str.Parse<Def, Dict, Seen>
+            : Str.Parse2<Def, Dict, Seen>
         : Def extends BadDefinitionType
         ? unknown
         : Def extends object

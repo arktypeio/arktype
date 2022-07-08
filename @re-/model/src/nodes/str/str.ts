@@ -1,3 +1,4 @@
+import { Iteration, Split } from "@re-/tools"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"
@@ -54,6 +55,23 @@ export namespace Str {
               Base.Parsing.UnknownTypeErrorMessage<Def>
           >
 
+    type BinaryValidationStackResult<Left, Right> =
+        Left extends Base.Parsing.ParseErrorMessage
+            ? Left
+            : Right extends Base.Parsing.ParseErrorMessage
+            ? Right
+            : Left
+
+    type BinaryValidateStack<
+        Left extends string,
+        Right extends string,
+        Dict,
+        Root
+    > = BinaryValidationResult<
+        Str.Validate<Left, Dict, Root>,
+        Str.Validate<Right, Dict, Root>
+    >
+
     export type References<Def extends string> =
         Def extends Base.Parsing.ParseErrorMessage
             ? []
@@ -73,6 +91,70 @@ export namespace Str {
             : Def extends Bound.Definition
             ? Bound.References<Def>
             : [Def]
+
+    type ListChars<
+        S extends string,
+        Result extends string[]
+    > = S extends `${infer Char}${infer Rest}`
+        ? ListChars<Rest, [...Result, Char]>
+        : Result
+
+    type Tokens = Lex<"", ListChars<"'yes|no'|'true|false'", []>, []>
+
+    type Z = ParseTokens<Tokens, never, {}, {}>
+
+    export type LexLiteral<
+        Literal extends string,
+        Chars extends string[],
+        Stack extends string[],
+        Enclosing extends string
+    > = Chars extends Iteration<string, infer Char, infer Remaining>
+        ? Char extends Enclosing
+            ? Lex<
+                  "",
+                  Remaining,
+                  [...Stack, `${Enclosing}${Literal}${Enclosing}`]
+              >
+            : LexLiteral<`${Literal}${Char}`, Remaining, Stack, Enclosing>
+        : [...Stack, Literal]
+
+    export type Lex<
+        Fragment extends string,
+        Chars extends string[],
+        Stack extends string[]
+    > = Chars extends Iteration<string, infer Char, infer Remaining>
+        ? Fragment extends Keyword.Definition
+            ? Lex<"", Remaining, [...Stack, Fragment]>
+            : Char extends "'"
+            ? LexLiteral<"", Remaining, Stack, "'">
+            : Char extends "|" | "&"
+            ? Lex<"", Remaining, [...Stack, Char]>
+            : Lex<`${Fragment}${Char}`, Remaining, Stack>
+        : Stack
+
+    export type ParseTokens<
+        Tokens extends string[],
+        Type,
+        Dict,
+        Seen
+    > = Tokens extends Iteration<string, infer Token, infer Remaining>
+        ? Token extends "|"
+            ? Type | ParseTokens<Remaining, never, Dict, Seen>
+            : Token extends "&"
+            ? Type & ParseTokens<Remaining, never, Dict, Seen>
+            : Token extends Keyword.Definition
+            ? ParseTokens<Remaining, Keyword.Types[Token], Dict, Seen>
+            : Token extends `'${infer Value}'`
+            ? ParseTokens<Remaining, Value, Dict, Seen>
+            : unknown
+        : Type
+
+    export type Parse2<Def extends string, Dict, Seen> = ParseTokens<
+        Lex<"", ListChars<Def, []>, []>,
+        never,
+        Dict,
+        Seen
+    >
 
     export type Parse<
         Def extends string,
