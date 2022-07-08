@@ -31,7 +31,7 @@ export namespace Resolution {
                 // If this is the first time we've seen the alias,
                 // create a Node that will be used for future resolutions of the alias.
                 // Pass the neverEager flag so that we can wait to call next() until after
-                // Adding this node to space.resolutions
+                // adding this node to space.resolutions.
                 super(def, ctx, true)
                 ctx.space!.resolutions[def] = this
                 this.next()

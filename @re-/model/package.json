@@ -36,7 +36,6 @@
     },
     "devDependencies": {
         "@re-/node": "workspace:*",
-        "@re-/assert": "workspace:*",
-        "zod": "3.17.3"
+        "@re-/assert": "workspace:*"
     }
 }
