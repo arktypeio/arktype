@@ -6,7 +6,6 @@ export type TestData = {
     statements: ExpressionStatement[]
     expected: Record<number | string, string>
     sourceFile: SourceFile
-    fullText: string
     initialText: string
 }
 const snapMatch = /\.snap\((.+)?\)/
