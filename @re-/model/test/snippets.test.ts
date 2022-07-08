@@ -1,25 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
-import { EquivalentType, error, user } from "../docs/snippets/model.js"
-import { getValidatedPackageData, redo } from "../docs/snippets/space.js"
+import * as modelSnippet from "../docs/snippets/model.js"
+import * as spaceSnippet from "../docs/snippets/space.js"
 import { model } from "../src/index.js"
 
 describe("snippets", () => {
     it("model", () => {
-        assert(user.type).typed as EquivalentType
-        assert(error?.message).snap(
-            `At path browser, "Internet Explorer" is not assignable to any of 'chrome'|'firefox'|'other'|null.`
+        assert(modelSnippet.user.type).typed as {
+            name: string
+            browser: {
+                kind: "chrome" | "firefox" | "safari"
+                version?: number | undefined
+            }
+        }
+        assert(modelSnippet.error?.message).snap(
+            `At path browser/kind, "Internet Explorer" is not assignable to any of 'chrome'|'firefox'|'safari'.`
         )
     })
     it("space", () => {
-        assert(redo.$meta.types.package).type.toString.snap(
+        assert(spaceSnippet.models.$meta.types.package).type.toString.snap(
             `{ name: string; version: string; dependencies: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: any[]; }[]; }[]; }[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: any[]; }[]; }[]; }[]; }`
         )
-        assert(() => getValidatedPackageData()).throws
-            .snap(`Error: Encountered errors at the following paths:
-  dependencies/0/version: 2.2 is not assignable to string.
+        assert(spaceSnippet.error?.message)
+            .snap(`Encountered errors at the following paths:
   dependencies/0/contributors: Required value of type contributor[] was missing.
-  contributors/0/packages: Required value of type package[] was missing.
+  contributors/0/email: "david@redodev" is not assignable to email.
 `)
     })
     // See multifile.assert.ts for declaration demo
