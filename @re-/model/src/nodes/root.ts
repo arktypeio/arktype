@@ -8,7 +8,7 @@ export namespace Root {
     export type Validate<Def, Dict> = Def extends []
         ? Def
         : Def extends string
-        ? Str.Validate<Def, Dict, Def>
+        ? Str.Validate<Def, Dict>
         : Def extends BadDefinitionType
         ? BadDefinitionTypeMessage<Def>
         : Def extends Obj.Unmapped
@@ -22,9 +22,7 @@ export namespace Root {
     export type Parse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
         ? Def
         : Def extends string
-        ? Def extends Base.Parsing.ParseErrorMessage
-            ? unknown
-            : Str.Parse2<Def, Dict, Seen>
+        ? Str.Parse<Def, Dict, Seen>
         : Def extends BadDefinitionType
         ? unknown
         : Def extends object

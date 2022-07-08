@@ -139,10 +139,7 @@ g: 4 is not assignable to 3.`)
                 `[true, false] is not assignable to any of boolean|number[].`
             )
         })
-        // Currently skipped as the type can't be parsed without fundamental changes to our parser
-        // https://github.com/re-do/re-po/issues/399
-        it.skip("union of literals of unions", () => {
-            // @ts-expect-error
+        it("union of literals of unions", () => {
             const unionOfLiteralsOfUnions = model("'yes|no'|'true|false'")
             assert(unionOfLiteralsOfUnions.type).typed as
                 | "yes|no"

@@ -1,72 +1,45 @@
-test/bench/parser.bench.ts(119,5): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type 'undefined'.
-test/bench/parser.bench.ts(120,5): error TS2322: Type 'undefined' is not assignable to type '{ dejaVu?: undefined; }'.
-test/obj/integration.test.ts(44,40): error TS2322: Type 'boolean' is not assignable to type 'never'.
-test/obj/integration.test.ts(44,52): error TS2322: Type 'string' is not assignable to type 'never'.
-test/obj/integration.test.ts(44,57): error TS2322: Type 'number' is not assignable to type 'boolean'.
-test/obj/map.test.ts(107,47): error TS2322: Type 'string' is not assignable to type 'never'.
-test/obj/map.test.ts(107,54): error TS2322: Type 'number' is not assignable to type 'never'.
-test/obj/tuple.test.ts(66,46): error TS2322: Type 'string' is not assignable to type 'never'.
-test/obj/tuple.test.ts(66,50): error TS2322: Type 'number' is not assignable to type 'never'.
-test/space/creation.test.ts(25,13): error TS2322: Type 'never[]' is not assignable to type 'never'.
-test/space/creation.test.ts(26,27): error TS2322: Type 'number' is not assignable to type 'never'.
-test/space/creation.test.ts(27,26): error TS2322: Type 'number' is not assignable to type 'never'.
-test/space/creation.test.ts(27,44): error TS2322: Type 'string' is not assignable to type 'never'.
-test/space/creation.test.ts(28,26): error TS2322: Type 'number' is not assignable to type 'never'.
-test/space/creation.test.ts(41,11): error TS2339: Property 'equals' does not exist on type 'AssertionResult<never>'.
-test/space/creation.test.ts(71,11): error TS2339: Property 'value' does not exist on type 'AssertionResult<never>'.
-test/space/creation.test.ts(83,11): error TS2339: Property 'value' does not exist on type 'AssertionResult<never>'.
-test/space/creation.test.ts(97,30): error TS2322: Type 'string' is not assignable to type 'never'.
-test/space/creation.test.ts(98,13): error TS2322: Type 'never[]' is not assignable to type 'never'.
-test/space/inheritableConfigs.test.ts(77,62): error TS2339: Property 'contents' does not exist on type 'never'.
-test/space/inheritableConfigs.test.ts(80,57): error TS2339: Property 'contents' does not exist on type 'never'.
-test/space/inheritableConfigs.test.ts(96,31): error TS2339: Property 'contents' does not exist on type 'never'.
-test/space/type.test.ts(46,44): error TS2339: Property 'b' does not exist on type 'never'.
-test/space/type.test.ts(126,30): error TS2339: Property 'b' does not exist on type 'never'.
-test/space/type.test.ts(129,30): error TS2339: Property 'a' does not exist on type 'never'.
-test/space/type.test.ts(132,30): error TS2339: Property 'b' does not exist on type 'never'.
-test/space/type.test.ts(152,47): error TS2339: Property 'wasResolved' does not exist on type 'never'.
-test/space/type.test.ts(153,47): error TS2339: Property 'resolvedType' does not exist on type 'never'.
-test/space/validation.test.ts(126,9): error TS2322: Type '{ dejaVu?: undefined; }' is not assignable to type 'undefined'.
-test/space/validation.test.ts(135,13): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type 'undefined'.
-test/space/validation.test.ts(136,13): error TS2322: Type 'undefined' is not assignable to type '{ dejaVu?: undefined; }'.
-test/str/bigintLiteral.test.ts(54,42): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/bigintLiteral.test.ts(57,43): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(11,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(27,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(42,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(57,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(102,32): error TS2339: Property 'equals' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(118,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(133,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(148,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(163,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(178,32): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(213,36): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/keyword.test.ts(282,36): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/list.test.ts(61,55): error TS2345: Argument of type 'never[]' is not assignable to parameter of type 'number'.
-test/str/numberLiteral.test.ts(71,42): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/numberLiteral.test.ts(74,45): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/numberLiteral.test.ts(77,46): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/optional.test.ts(79,48): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'null'.
-test/str/optional.test.ts(84,24): error TS2322: Type 'string' is not assignable to type 'never'.
-test/str/union.test.ts(78,60): error TS2345: Argument of type '{}' is not assignable to parameter of type 'symbol'.
-test/str/union.test.ts(82,67): error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'number'.
-test/str/union.test.ts(90,70): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/union.test.ts(91,65): error TS2339: Property 'is' does not exist on type 'AssertionResult<never>'.
-test/str/union.test.ts(97,29): error TS2339: Property 'value' does not exist on type 'AssertionResult<never>'.
-test/str/union.test.ts(109,29): error TS2339: Property 'value' does not exist on type 'AssertionResult<never>'.
+src/nodes/resolution.ts(18,15): error TS2314: Generic type 'Validate' requires 2 type argument(s).
+src/nodes/str/bound.ts(71,11): error TS2314: Generic type 'Validate' requires 2 type argument(s).
+src/nodes/str/optional.ts(16,11): error TS2314: Generic type 'Validate' requires 2 type argument(s).
+test/obj/map.test.ts(140,21): error TS2578: Unused '@ts-expect-error' directive.
+test/obj/tuple.test.ts(29,25): error TS2578: Unused '@ts-expect-error' directive.
+test/space/declare.test.ts(36,9): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(8,13): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(29,13): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(107,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bigintLiteral.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(33,21): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(40,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(46,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(52,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/intersection.test.ts(18,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/intersection.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/list.test.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/numberLiteral.test.ts(23,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/numberLiteral.test.ts(29,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(22,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(28,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(37,25): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(46,21): error TS2578: Unused '@ts-expect-error' directive.
+test/str/stringLiteral.test.ts(44,21): error TS2578: Unused '@ts-expect-error' directive.
+test/str/union.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/union.test.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              224
-Lines:            84048
-Nodes:           283031
-Identifiers:     102405
-Symbols:         692125
-Types:           330436
-Instantiations: 1554925
-Memory used:    690084K
+Lines:            84019
+Nodes:           282790
+Identifiers:     102287
+Symbols:         381152
+Types:            92831
+Instantiations:  591471
+Memory used:    261662K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.57s
-Bind time:        0.22s
-Check time:       6.88s
+Parse time:       0.56s
+Bind time:        0.21s
+Check time:       2.15s
 Emit time:        0.00s
-Total time:       7.66s
+Total time:       2.92s
