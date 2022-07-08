@@ -28,7 +28,7 @@ describe("extend space", () => {
     it("dictionary", () => {
         const extended = getExtendedSpace()
         assert(extended.$meta.dictionary).snap({
-            __meta__: {
+            $meta: {
                 onCycle: `boolean`
             },
             user: { age: `number` },
@@ -52,7 +52,7 @@ describe("extend space", () => {
 const getExtendedSpace = () => {
     const mySpace = space(
         {
-            __meta__: {
+            $meta: {
                 onCycle: "number"
             },
             user: { name: "string" },
@@ -71,7 +71,7 @@ const getExtendedSpace = () => {
     )
     const extended = mySpace.$meta.extend(
         {
-            __meta__: {
+            $meta: {
                 onCycle: "boolean"
             },
             user: { age: "number" },

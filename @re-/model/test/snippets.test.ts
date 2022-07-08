@@ -19,7 +19,7 @@ describe("snippets", () => {
     })
     it("space", () => {
         assert(spaceSnippet.models.$meta.types.package).type.toString.snap(
-            `{ name: string; version: string; dependencies: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: any[]; }[]; }[]; }[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: any[]; }[]; }[]; }[]; }`
+            `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
         assert(spaceSnippet.error?.message)
             .snap(`Encountered errors at the following paths:

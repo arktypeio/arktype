@@ -71,7 +71,7 @@ g: 4 is not assignable to 3.`)
             })
         })
     })
-    describe("generation", () => {
+    describe("creation", () => {
         it("prefers simple values", () => {
             assert(model("undefined|string").create()).is(undefined)
             assert(model("number|false|bigint").create() as any).is(false)
@@ -90,36 +90,70 @@ g: 4 is not assignable to 3.`)
             assert(mySpace.$meta.model("nested|five|duck").create()).is(5)
             assert(mySpace.$meta.model("duck|nested").create()).is("duck")
         })
-        it("generates onCycle values if needed", () => {
-            // assert(
-            //     model(
-            //         "a|b",
-            //         narrow({
-            //             space: {
-            //                 dictionary: {
-            //                     a: { b: "b" },
-            //                     b: { a: "a" }
-            //                 }
-            //             }
-            //         })
-            //     ).generate({ onRequiredCycle: "cycle" }) as any
-            // ).equals({ b: { a: "cycle" } })
+        it("creates onCycle values if needed", () => {
+            const models = space({ a: { b: "b" }, b: { a: "a" } })
+            const aOrB = models.$meta.model("a|b")
+            const created = aOrB.create({ onRequiredCycle: "cycle" })
+            assert(created).value.equals({
+                b: { a: "cycle" }
+            })
         })
-        // it("avoids required cycles if possible", () => {
-        //     assert(
-        //         model(
-        //             "a|b|safe",
-        //             narrow({
-        //                 space: {
-        //                     dictionary: {
-        //                         a: { b: "b" },
-        //                         b: { a: "a" },
-        //                         safe: "false"
-        //                     }
-        //                 }
-        //             })
-        //         ).generate()
-        //     ).is(false)
-        // })
+        it("avoids required cycles if possible", () => {
+            const models = space({
+                a: { b: "b" },
+                b: { a: "a" },
+                safe: "false"
+            })
+            const aOrBOrSafe = models.$meta.model("a|b|safe")
+            const created = aOrBOrSafe.create()
+            assert(created).value.equals(false)
+        })
+    })
+    describe("integration", () => {
+        it("union of literals", () => {
+            const unionOfLiterals = model("'yes'|'no'|'maybe'")
+            assert(unionOfLiterals.type).typed as "yes" | "no" | "maybe"
+            assert(unionOfLiterals.validate("no").error).equals(undefined)
+            assert(
+                unionOfLiterals.validate("yes|no|maybe").error?.message
+            ).snap(
+                `"yes|no|maybe" is not assignable to any of 'yes'|'no'|'maybe'.`
+            )
+        })
+        it("literal of union", () => {
+            const literalOfUnion = model('"yes|no|maybe"')
+            assert(literalOfUnion.type).typed as "yes|no|maybe"
+            assert(literalOfUnion.validate("yes|no|maybe").error).equals(
+                undefined
+            )
+            assert(literalOfUnion.validate("yes").error?.message).snap(
+                `"yes" is not assignable to "yes|no|maybe".`
+            )
+        })
+        it("union with list", () => {
+            const unionOfLists = model("boolean|number[]")
+            assert(unionOfLists.type).typed as boolean | number[]
+            assert(unionOfLists.validate(true).error).equals(undefined)
+            assert(unionOfLists.validate([1, 2, 3]).error).equals(undefined)
+            assert(unionOfLists.validate([true, false]).error?.message).snap(
+                `[true, false] is not assignable to any of boolean|number[].`
+            )
+        })
+        // Currently skipped as the type can't be parsed without fundamental changes to our parser
+        // https://github.com/re-do/re-po/issues/399
+        it.skip("union of literals of unions", () => {
+            // @ts-expect-error
+            const unionOfLiteralsOfUnions = model("'yes|no'|'true|false'")
+            assert(unionOfLiteralsOfUnions.type).typed as
+                | "yes|no"
+                | "true|false"
+            assert(unionOfLiteralsOfUnions.validate("true|false").error).equals(
+                undefined
+            )
+            assert(
+                unionOfLiteralsOfUnions.validate("yes|no'|'true|false'").error
+                    ?.message
+            ).snap()
+        })
     })
 })
