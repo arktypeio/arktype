@@ -61,19 +61,6 @@ export namespace Bound {
         ? Bounded
         : Str.Parse<Bounded, Dict, Ctx>
 
-    export type Validate<
-        Def extends string,
-        Dict,
-        Root,
-        Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Base.Parsing.ParseErrorMessage
-        ? Bounded
-        : Str.Validate<Bounded, Dict, Root>
-
-    export type References<Def extends string> = Str.References<
-        ExtractBounded<Def>
-    >
-
     type SingleBoundedParts<
         Left extends string = string,
         Comparator extends ComparatorToken = ComparatorToken,
@@ -249,7 +236,7 @@ export namespace Bound {
         generate() {
             throw new Base.Create.UngeneratableError(
                 this.def,
-                "Constraint generation is unsupported."
+                "Bounded generation is unsupported."
             )
         }
     }

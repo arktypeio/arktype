@@ -97,6 +97,7 @@ export type SpaceMetaFrom<Dict> = {
 export type DictionaryToModels<Dict> = Evaluate<{
     [Alias in AliasIn<Dict>]: ModelFrom<
         Dict[Alias],
+        Dict,
         Resolution.Parse<Alias, Dict>
     >
 }>

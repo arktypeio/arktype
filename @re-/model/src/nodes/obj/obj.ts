@@ -23,25 +23,28 @@ export namespace Obj {
 
     export type References<
         Def extends object,
+        Dict,
         PreserveStructure extends boolean
     > = Def extends Regex.Definition
         ? [`/${Def["source"]}/`]
         : PreserveStructure extends true
-        ? StructuredReferences<Def>
-        : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, []>
+        ? StructuredReferences<Def, Dict>
+        : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, [], Dict>
 
     type UnstructuredReferences<
         Values extends unknown[],
-        Result extends unknown[]
+        Result extends unknown[],
+        Dict
     > = Values extends Iteration<unknown, infer Current, infer Remaining>
         ? UnstructuredReferences<
               Remaining,
-              [...Result, ...Root.References<Current, false>]
+              [...Result, ...Root.References<Current, Dict, false>],
+              Dict
           >
         : Result
 
-    type StructuredReferences<Def extends object> = Evaluate<{
-        -readonly [K in keyof Def]: Root.References<Def[K], true>
+    type StructuredReferences<Def extends object, Dict> = Evaluate<{
+        -readonly [K in keyof Def]: Root.References<Def[K], Dict, true>
     }>
 
     export const matches = (def: unknown): def is object =>

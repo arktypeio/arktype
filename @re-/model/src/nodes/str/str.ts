@@ -1,4 +1,4 @@
-import { ElementOf, Iteration } from "@re-/tools"
+import { Iteration } from "@re-/tools"
 import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
@@ -28,7 +28,25 @@ export namespace Str {
     // ? ParseFragment<Next, Dict, Seen> | undefined
     // :
 
-    export type References<Def extends string> = []
+    export type References<Def extends string, Dict> = TokensToReferences<
+        LexRoot<Def, Dict>
+    >
+
+    type TokensToReferences<Tokens extends string[]> =
+        Tokens extends ErrorToken<Base.Parsing.ParseErrorMessage>
+            ? []
+            : ExtractReferences<Tokens, []>
+
+    type ExtractReferences<
+        Tokens extends string[],
+        Refs extends string[]
+    > = Tokens extends Iteration<string, infer Token, infer Remaining>
+        ? ExtractReferences<
+              Remaining,
+              Token extends SeparatorToken ? Refs : [...Refs, Token]
+          >
+        : Refs
+
     // Def extends Base.Parsing.ParseErrorMessage
     //     ? []
     //     : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -50,6 +68,19 @@ export namespace Str {
 
     type LexRoot<Def extends string, Dict> = Lex<"", [], ToScannable<Def>, Dict>
 
+    /** In this context, a Separator is any token that does not refer to a value */
+    type SeparatorToken =
+        | "[]"
+        | "?"
+        | "END"
+        | "|"
+        | "&"
+        | "<"
+        | ">"
+        | "<="
+        | ">="
+        | "=="
+
     type Lex<
         Fragment extends string,
         Tokens extends string[],
@@ -60,20 +91,56 @@ export namespace Str {
             ? LexList<Fragment, Tokens, NextUnscanned, Dict>
             : NextChar extends "?"
             ? NextUnscanned extends ["END"]
-                ? LexSeperator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
+                ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
                 : [
                       Base.Parsing.ParseErrorMessage<`Modifier '?' is only valid at the end of a type definition.`>
                   ]
             : NextChar extends "|" | "&" | "END"
-            ? LexSeperator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
+            ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
             : NextChar extends `'` | `"` | `/`
-            ? LexLiteral<"", Tokens, NextUnscanned, NextChar, Dict>
+            ? LexLiteral<NextChar, "", Tokens, NextUnscanned, Dict>
+            : NextChar extends ">" | "<" | "="
+            ? LexBound<NextChar, Fragment, Tokens, NextUnscanned, Dict>
             : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned, Dict>
         : Tokens
 
-    /** In this context, a seperator is any token that is not a reference to a value */
-    type LexSeperator<
-        Seperator extends string,
+    type BoundStartChar = "<" | ">" | "="
+
+    type LexBound<
+        FirstChar extends BoundStartChar,
+        Fragment extends string,
+        Tokens extends string[],
+        Unscanned extends string[],
+        Dict
+    > = Unscanned extends [infer NextChar, ...infer NextUnscanned]
+        ? NextChar extends "="
+            ? LexSeparator<
+                  `${FirstChar}=`,
+                  Fragment,
+                  Tokens,
+                  // @ts-expect-error
+                  NextUnscanned,
+                  Dict
+              >
+            : FirstChar extends "="
+            ? [
+                  Base.Parsing.ParseErrorMessage<`= is not a valid comparator. Use == instead.`>
+              ]
+            : LexSeparator<
+                  // @ts-expect-error
+                  FirstChar,
+                  Fragment,
+                  Tokens,
+                  // Use Unscanned here instead of NextUnscanned since the comparator was only 1 character
+                  Unscanned,
+                  Dict
+              >
+        : [
+              Base.Parsing.ParseErrorMessage<`Expected a bound condition after ${FirstChar}.`>
+          ]
+
+    type LexSeparator<
+        Separator extends SeparatorToken,
         Fragment extends string,
         Tokens extends string[],
         Unscanned extends string[],
@@ -84,7 +151,7 @@ export namespace Str {
         | AliasIn<Dict>
         | EmbeddedNumber.Definition
         | EmbeddedBigInt.Definition
-        ? Lex<"", PushTokensFrom<Seperator, Fragment, Tokens>, Unscanned, Dict>
+        ? Lex<"", PushTokensFrom<Separator, Fragment, Tokens>, Unscanned, Dict>
         : [
               Base.Parsing.ParseErrorMessage<
                   Base.Parsing.UnknownTypeErrorMessage<Fragment>
@@ -92,16 +159,16 @@ export namespace Str {
           ]
 
     type PushTokensFrom<
-        Seperator extends string,
+        Separator extends SeparatorToken,
         Fragment extends string,
         Tokens extends string[]
-    > = Seperator extends "END"
+    > = Separator extends "END"
         ? Fragment extends ""
             ? Tokens
             : [...Tokens, Fragment]
         : Fragment extends ""
-        ? [...Tokens, Seperator]
-        : [...Tokens, Fragment, Seperator]
+        ? [...Tokens, Separator]
+        : [...Tokens, Fragment, Separator]
 
     type ToScannable<Def extends string> = [...ListChars<Def, []>, "END"]
 
@@ -119,7 +186,7 @@ export namespace Str {
         Dict
     > = UnscannedChars extends [infer NextChar, ...infer NextUnscanned]
         ? NextChar extends "]"
-            ? LexSeperator<
+            ? LexSeparator<
                   "[]",
                   Fragment,
                   Tokens,
@@ -131,10 +198,10 @@ export namespace Str {
         : never
 
     type LexLiteral<
+        Enclosing extends string,
         Literal extends string,
         Tokens extends string[],
         Unscanned extends string[],
-        Enclosing extends string,
         Dict
     > = Unscanned extends Iteration<string, infer NextChar, infer NextUnscanned>
         ? NextChar extends Enclosing
@@ -145,10 +212,10 @@ export namespace Str {
                   Dict
               >
             : LexLiteral<
+                  Enclosing,
                   `${Literal}${NextChar}`,
                   Tokens,
                   NextUnscanned,
-                  Enclosing,
                   Dict
               >
         : [

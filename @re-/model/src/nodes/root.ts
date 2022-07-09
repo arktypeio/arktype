@@ -35,13 +35,14 @@ export namespace Root {
 
     export type References<
         Def,
+        Dict,
         PreserveStructure extends boolean
     > = Def extends string
-        ? Str.References<Def>
+        ? Str.References<Def, Dict>
         : Def extends Literal.Definition
         ? [Literal.DefToString<Def>]
         : Def extends object
-        ? Obj.References<Def, PreserveStructure>
+        ? Obj.References<Def, Dict, PreserveStructure>
         : []
 
     export type BadDefinitionType = Function | symbol

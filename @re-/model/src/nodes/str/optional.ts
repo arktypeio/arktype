@@ -8,14 +8,6 @@ type InvalidModifierError = typeof invalidModifierErrorMessage
 export namespace Optional {
     export type Definition<Child extends string = string> = `${Child}?`
 
-    export type Validate<
-        Child extends string,
-        Dict,
-        Root
-    > = `${Child}?` extends Root
-        ? Str.Validate<Child, Dict, Root>
-        : Base.Parsing.ParseErrorMessage<InvalidModifierError>
-
     export const matches = (def: string): def is Definition => def.endsWith("?")
 
     export class Node extends Base.Link<Definition> {

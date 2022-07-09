@@ -165,24 +165,30 @@ describe("references", () => {
     describe("type", () => {
         describe("format", () => {
             it("default (list)", () => {
-                const actual = {} as References<ObjectDef>
+                const actual = {} as References<ObjectDef, {}>
                 assert(actual).typed as ExpectedObjectDefReferenceList
             })
             it("tuple", () => {
                 const actual = {} as References<
                     "string|number[]|boolean&true?",
+                    {},
                     { format: "tuple" }
                 >
                 assert(actual).typed as ["string", "number", "boolean", "true"]
             })
             it("union", () => {
-                const actual = {} as References<ObjectDef, { format: "union" }>
+                const actual = {} as References<
+                    ObjectDef,
+                    {},
+                    { format: "union" }
+                >
                 assert(actual).typed as ExpectedObjectDefReferenceUnion
             })
         })
         it("filters", () => {
             const referencesContainingI = {} as References<
                 ObjectDef,
+                {},
                 { filter: `${string}i${string}`; format: "union" }
             >
             assert(referencesContainingI).typed as

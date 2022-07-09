@@ -27,19 +27,19 @@ export const eager: ModelFunction = (definition, options = {}) => {
 export type ModelFunction<Dict = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
     options?: Base.ModelOptions
-) => ModelFrom<Def, Parse<Root.Validate<Def, Dict>, Dict>>
+) => ModelFrom<Def, Dict, Parse<Root.Validate<Def, Dict>, Dict>>
 
-export type ModelFrom<Def, ModeledType> = Evaluate<{
+export type ModelFrom<Def, Dict, ModeledType> = Evaluate<{
     definition: Def
     type: ModeledType
     validate: ValidateFunction<ModeledType>
     assert: AssertFunction<ModeledType>
     default: ModeledType
     create: CreateFunction<ModeledType>
-    references: ReferencesFunction<Def>
+    references: ReferencesFunction<Def, Dict>
 }>
 
-export class Model implements ModelFrom<unknown, unknown> {
+export class Model implements ModelFrom<unknown, unknown, unknown> {
     definition: unknown
 
     constructor(
@@ -128,7 +128,7 @@ export type CreateFunction<ModeledType> = (
     options?: Base.Create.Options
 ) => ModeledType
 
-export type ReferencesFunction<Def> = <
+export type ReferencesFunction<Def, Dict> = <
     Options extends Base.References.Options = {}
 >(
     options?: Options
@@ -140,7 +140,7 @@ export type ReferencesFunction<Def> = <
     Options
 > extends Base.References.Options<infer Filter, infer PreserveStructure>
     ? TransformReferences<
-          Root.References<Def, PreserveStructure>,
+          Root.References<Def, Dict, PreserveStructure>,
           Filter,
           "list"
       >
@@ -150,6 +150,7 @@ export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
 
 export type References<
     Def,
+    Dict,
     Options extends Base.References.TypeOptions = {}
 > = Merge<
     { filter: string; preserveStructure: false; format: "list" },
@@ -160,7 +161,7 @@ export type References<
     infer Format
 >
     ? TransformReferences<
-          Root.References<Def, PreserveStructure>,
+          Root.References<Def, Dict, PreserveStructure>,
           Filter,
           Format
       >

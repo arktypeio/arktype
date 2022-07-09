@@ -15,7 +15,7 @@ export namespace Resolution {
                   Dict,
                   [Extract<Alias, string>]
               >,
-              Str.Validate<Dict[Alias], Dict, Dict[Alias]>
+              Str.Validate<Dict[Alias], Dict>
           >
         : Root.Validate<Dict[Alias], Dict>
 
@@ -172,7 +172,11 @@ type CheckResolutionForShallowCycleRecurse<
     Dict,
     Seen extends string[]
 > = Resolution extends string
-    ? IterateReferencesForShallowCycle<Str.References<Resolution>, Dict, Seen>
+    ? IterateReferencesForShallowCycle<
+          Str.References<Resolution, Dict>,
+          Dict,
+          Seen
+      >
     : []
 
 /**  For a list of string references, if any is in Seen, return Seen plus that reference,
