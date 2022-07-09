@@ -1,45 +1,95 @@
 src/nodes/resolution.ts(18,15): error TS2314: Generic type 'Validate' requires 2 type argument(s).
 src/nodes/str/bound.ts(71,11): error TS2314: Generic type 'Validate' requires 2 type argument(s).
 src/nodes/str/optional.ts(16,11): error TS2314: Generic type 'Validate' requires 2 type argument(s).
-test/obj/map.test.ts(140,21): error TS2578: Unused '@ts-expect-error' directive.
-test/obj/tuple.test.ts(29,25): error TS2578: Unused '@ts-expect-error' directive.
-test/space/declare.test.ts(36,9): error TS2578: Unused '@ts-expect-error' directive.
+test/bench/parser.bench.ts(120,5): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu?: unknown; }'.
+test/references.test.ts(59,21): error TS2345: Argument of type '"user[]|group[]|boolean&true|integer&positive|null|1<number<2"' is not assignable to parameter of type '"Error: Unable to determine the type of '1<number<2'."'.
+test/references.test.ts(73,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "positive", "null"]' is not assignable to parameter of type 'never[]'.
+  Type 'string' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
+test/references.test.ts(79,40): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(79,45): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(83,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "undefined", "false", "true", "5", "7n", "integer", "positive"]' is not assignable to parameter of type '("undefined" | `/${string}/` | "true" | "false" | "null" | "5" | "-1n" | "7n")[]'.
+  Type '"undefined" | "boolean" | "string" | `/${string}/` | "null" | "true" | "false" | "positive" | "-1n" | "5" | "7n" | "integer"' is not assignable to type '"undefined" | `/${string}/` | "true" | "false" | "null" | "5" | "-1n" | "7n"'.
+    Type '"boolean"' is not assignable to type '"undefined" | `/${string}/` | "true" | "false" | "null" | "5" | "-1n" | "7n"'.
+test/references.test.ts(115,39): error TS2345: Argument of type '{ primitives: { undefined: ["undefined"]; null: ["null"]; true: ["true"]; false: ["false"]; 5: ["5"]; bigint: ["7n"]; }; strings: { keyword: ["boolean"]; expression: ["string", "integer", "positive", "null"]; }; listed: [...]; regex: [...]; }' is not assignable to parameter of type '{ primitives: { undefined: "undefined"[]; null: "null"[]; true: "true"[]; false: "false"[]; 5: "5"[]; bigint: "7n"[]; }; strings: { keyword: never[]; expression: never[]; }; listed: ["-1n"[], never[], never[]]; regex: `/${string}/`[]; }'.
+  The types of 'strings.keyword' are incompatible between these types.
+    Type '["boolean"]' is not assignable to type 'never[]'.
+      Type 'string' is not assignable to type 'never'.
+test/references.test.ts(124,35): error TS2322: Type '"positive"' is not assignable to type '"undefined" | `/${string}/` | "true" | "false" | "null" | "5" | "-1n" | "7n"'.
+test/references.test.ts(156,31): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(156,38): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(156,43): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(156,50): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(156,55): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(156,60): error TS2322: Type 'string' is not assignable to type 'never'.
+test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Error: Unable to determine the type of '18<=integer<125'."'.
+test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Error: Unable to determine the type of 'string<=160'."'.
 test/space/type.test.ts(8,13): error TS2578: Unused '@ts-expect-error' directive.
-test/space/type.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
 test/space/type.test.ts(29,13): error TS2578: Unused '@ts-expect-error' directive.
-test/space/type.test.ts(107,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bigintLiteral.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(33,21): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(40,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(46,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(52,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/intersection.test.ts(18,17): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(117,21): error TS2322: Type '"cyclic?"' is not assignable to type '"Error: Unable to determine the type of 'cyclic'."'.
+test/space/type.test.ts(132,42): error TS2339: Property 'b' does not exist on type '{}'.
+test/space/type.test.ts(141,21): error TS2322: Type '"resolution"' is not assignable to type '"Error: Unable to determine the type of 'resolution'."'.
+test/space/type.test.ts(153,16): error TS2571: Object is of type 'unknown'.
+test/space/validation.test.ts(40,9): error TS2578: Unused '@ts-expect-error' directive.
+test/space/validation.test.ts(45,13): error TS2578: Unused '@ts-expect-error' directive.
+test/space/validation.test.ts(136,13): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu?: unknown; }'.
+test/str/bound.test.ts(7,26): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string>5'."'.
+test/str/bound.test.ts(10,26): error TS2345: Argument of type '"-7<integer<99"' is not assignable to parameter of type '"Error: Unable to determine the type of '-7<integer<99'."'.
+test/str/bound.test.ts(62,23): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string>4'."'.
+test/str/bound.test.ts(64,26): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string<4'."'.
+test/str/bound.test.ts(65,26): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string<=4'."'.
+test/str/bound.test.ts(66,26): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string<=4'."'.
+test/str/bound.test.ts(67,26): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string>=4'."'.
+test/str/bound.test.ts(69,23): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string>=4'."'.
+test/str/bound.test.ts(73,26): error TS2345: Argument of type '"number>5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number>5'."'.
+test/str/bound.test.ts(74,26): error TS2345: Argument of type '"number<-999"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number<-999'."'.
+test/str/bound.test.ts(75,26): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number>=5'."'.
+test/str/bound.test.ts(76,26): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number>=5'."'.
+test/str/bound.test.ts(77,26): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number<=-5'."'.
+test/str/bound.test.ts(78,26): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number<=-5'."'.
+test/str/bound.test.ts(81,26): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<number<10'."'.
+test/str/bound.test.ts(82,26): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Error: Unable to determine the type of '7>number>-2000'."'.
+test/str/bound.test.ts(83,26): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<=number<9999'."'.
+test/str/bound.test.ts(84,26): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<=number<9999'."'.
+test/str/bound.test.ts(85,26): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Error: Unable to determine the type of '-5>=number>=-1000'."'.
+test/str/bound.test.ts(86,26): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Error: Unable to determine the type of '-5>=number>=-1000'."'.
+test/str/bound.test.ts(92,30): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string>4'."'.
+test/str/bound.test.ts(95,30): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string>4'."'.
+test/str/bound.test.ts(98,30): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string<4'."'.
+test/str/bound.test.ts(102,27): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string<4'."'.
+test/str/bound.test.ts(105,30): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string>=4'."'.
+test/str/bound.test.ts(109,27): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Error: Unable to determine the type of 'string<=4'."'.
+test/str/bound.test.ts(114,30): error TS2345: Argument of type '"number<=5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number<=5'."'.
+test/str/bound.test.ts(118,27): error TS2345: Argument of type '"number>=-999"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number>=-999'."'.
+test/str/bound.test.ts(120,30): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number<5'."'.
+test/str/bound.test.ts(123,30): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number<5'."'.
+test/str/bound.test.ts(126,30): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number>-5'."'.
+test/str/bound.test.ts(129,30): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"Error: Unable to determine the type of 'number>-5'."'.
+test/str/bound.test.ts(134,30): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<number<10'."'.
+test/str/bound.test.ts(137,30): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<number<10'."'.
+test/str/bound.test.ts(141,27): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Error: Unable to determine the type of '7>number>-2000'."'.
+test/str/bound.test.ts(144,27): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Error: Unable to determine the type of '7>number>-2000'."'.
+test/str/bound.test.ts(147,27): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<=number<9999'."'.
+test/str/bound.test.ts(150,27): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<=number<9999'."'.
+test/str/bound.test.ts(152,30): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Error: Unable to determine the type of '5<=number<9999'."'.
+test/str/bound.test.ts(156,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Error: Unable to determine the type of '-5>=number>=-1000'."'.
+test/str/bound.test.ts(159,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Error: Unable to determine the type of '-5>=number>=-1000'."'.
+test/str/bound.test.ts(166,32): error TS2345: Argument of type '"1<number<5"' is not assignable to parameter of type '"Error: Unable to determine the type of '1<number<5'."'.
 test/str/intersection.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/list.test.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/numberLiteral.test.ts(23,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/numberLiteral.test.ts(29,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/optional.test.ts(22,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/optional.test.ts(28,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/optional.test.ts(37,25): error TS2578: Unused '@ts-expect-error' directive.
-test/str/optional.test.ts(46,21): error TS2578: Unused '@ts-expect-error' directive.
 test/str/stringLiteral.test.ts(44,21): error TS2578: Unused '@ts-expect-error' directive.
-test/str/union.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/union.test.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              224
-Lines:            84019
-Nodes:           282790
-Identifiers:     102287
-Symbols:         381152
-Types:            92831
-Instantiations:  591471
-Memory used:    261662K
+Lines:            84102
+Nodes:           282751
+Identifiers:     102267
+Symbols:         420902
+Types:            90763
+Instantiations:  664859
+Memory used:    261774K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.56s
+Parse time:       0.51s
 Bind time:        0.21s
-Check time:       2.15s
+Check time:       2.92s
 Emit time:        0.00s
-Total time:       2.92s
+Total time:       3.63s

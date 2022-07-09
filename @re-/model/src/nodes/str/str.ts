@@ -1,4 +1,5 @@
-import { Iteration } from "@re-/tools"
+import { ElementOf, Iteration } from "@re-/tools"
+import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"
@@ -13,7 +14,7 @@ import { Union } from "./union.js"
 export namespace Str {
     export type Validate<Def extends string, Dict> = ValidateTokens<
         Def,
-        Lex<"", ListChars<Def, []>, [], Dict>
+        LexRoot<Def, Dict>
     >
 
     export type Parse<
@@ -22,7 +23,7 @@ export namespace Str {
         Seen
     > = Def extends Base.Parsing.ParseErrorMessage
         ? unknown
-        : ParseFragment<Def, Dict, Seen>
+        : ParseTokens<LexRoot<Def, Dict>, never, Dict, Seen>
     // Def extends Optional.Definition<infer Next>
     // ? ParseFragment<Next, Dict, Seen> | undefined
     // :
@@ -47,21 +48,62 @@ export namespace Str {
     //     ? Bound.References<Def>
     //     : [Def]
 
+    type LexRoot<Def extends string, Dict> = Lex<"", [], ToScannable<Def>, Dict>
+
     type Lex<
         Fragment extends string,
-        Chars extends string[],
         Tokens extends string[],
-        Dict,
-        IsReference extends boolean = false
-    > = Chars extends Iteration<string, infer Char, infer Remaining>
-        ? Char extends "["
-            ? LexList<Remaining, AddPossibleReference<Tokens, Fragment>, Dict>
-            : Char extends "|" | "&"
-            ? Lex<"", Remaining, [...Tokens, Fragment, Char], Dict>
-            : Char extends `'` | `"` | `/`
-            ? LexLiteral<"", Remaining, Tokens, Dict, Char>
-            : Lex<`${Fragment}${Char}`, Remaining, Tokens, Dict, true>
-        : AddPossibleReference<Tokens, Fragment>
+        Unscanned extends string[],
+        Dict
+    > = Unscanned extends Iteration<string, infer NextChar, infer NextUnscanned>
+        ? NextChar extends `[`
+            ? LexList<Fragment, Tokens, NextUnscanned, Dict>
+            : NextChar extends "?"
+            ? NextUnscanned extends ["END"]
+                ? LexSeperator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
+                : [
+                      Base.Parsing.ParseErrorMessage<`Modifier '?' is only valid at the end of a type definition.`>
+                  ]
+            : NextChar extends "|" | "&" | "END"
+            ? LexSeperator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
+            : NextChar extends `'` | `"` | `/`
+            ? LexLiteral<"", Tokens, NextUnscanned, NextChar, Dict>
+            : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned, Dict>
+        : Tokens
+
+    /** In this context, a seperator is any token that is not a reference to a value */
+    type LexSeperator<
+        Seperator extends string,
+        Fragment extends string,
+        Tokens extends string[],
+        Unscanned extends string[],
+        Dict
+    > = Fragment extends
+        | ""
+        | Keyword.Definition
+        | AliasIn<Dict>
+        | EmbeddedNumber.Definition
+        | EmbeddedBigInt.Definition
+        ? Lex<"", PushTokensFrom<Seperator, Fragment, Tokens>, Unscanned, Dict>
+        : [
+              Base.Parsing.ParseErrorMessage<
+                  Base.Parsing.UnknownTypeErrorMessage<Fragment>
+              >
+          ]
+
+    type PushTokensFrom<
+        Seperator extends string,
+        Fragment extends string,
+        Tokens extends string[]
+    > = Seperator extends "END"
+        ? Fragment extends ""
+            ? Tokens
+            : [...Tokens, Fragment]
+        : Fragment extends ""
+        ? [...Tokens, Seperator]
+        : [...Tokens, Fragment, Seperator]
+
+    type ToScannable<Def extends string> = [...ListChars<Def, []>, "END"]
 
     type ListChars<
         S extends string,
@@ -70,60 +112,55 @@ export namespace Str {
         ? ListChars<Rest, [...Result, Char]>
         : Result
 
-    type LexLiteral<
-        Literal extends string,
-        Chars extends string[],
-        Stack extends string[],
-        Dict,
-        Enclosing extends string
-    > = Chars extends Iteration<string, infer Char, infer Remaining>
-        ? Char extends Enclosing
-            ? Lex<`${Enclosing}${Literal}${Enclosing}`, Remaining, Stack, Dict>
-            : LexLiteral<`${Literal}${Char}`, Remaining, Stack, Dict, Enclosing>
-        : [
-              ...Stack,
-              Base.Parsing.ParseErrorMessage<`Expected a closing (${Enclosing}) token for literal expression ${Enclosing}${Literal}`>
-          ]
-
     type LexList<
-        Chars extends string[],
+        Fragment extends string,
         Tokens extends string[],
+        UnscannedChars extends string[],
         Dict
-    > = Chars extends [infer First, ...infer Remaining]
-        ? Lex<
-              "",
-              // @ts-expect-error TS can't infer that Remaining is a string[]?
-              Remaining,
-              [
-                  ...Tokens,
-                  First extends "]"
-                      ? "[]"
-                      : Base.Parsing.ParseErrorMessage<`Missing expected ']'.`>
-              ],
-              Dict
-          >
+    > = UnscannedChars extends [infer NextChar, ...infer NextUnscanned]
+        ? NextChar extends "]"
+            ? LexSeperator<
+                  "[]",
+                  Fragment,
+                  Tokens,
+                  // @ts-expect-error TS can't infer that NextUnscanned is a string[]
+                  NextUnscanned,
+                  Dict
+              >
+            : [Base.Parsing.ParseErrorMessage<`Missing expected ']'.`>]
         : never
 
-    type AddPossibleReference<
+    type LexLiteral<
+        Literal extends string,
         Tokens extends string[],
-        Fragment extends string
-    > = Fragment extends "" ? Tokens : [...Tokens, Fragment]
+        Unscanned extends string[],
+        Enclosing extends string,
+        Dict
+    > = Unscanned extends Iteration<string, infer NextChar, infer NextUnscanned>
+        ? NextChar extends Enclosing
+            ? Lex<
+                  "",
+                  [...Tokens, `${Enclosing}${Literal}${Enclosing}`],
+                  NextUnscanned,
+                  Dict
+              >
+            : LexLiteral<
+                  `${Literal}${NextChar}`,
+                  Tokens,
+                  NextUnscanned,
+                  Enclosing,
+                  Dict
+              >
+        : [
+              Base.Parsing.ParseErrorMessage<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Literal}`>
+          ]
+
+    type ErrorToken<Message extends Base.Parsing.ParseErrorMessage> = [Message]
 
     type ValidateTokens<
         Def extends string,
         Tokens extends string[]
-    > = Tokens extends Iteration<string, infer Token, infer Remaining>
-        ? Token extends Base.Parsing.ParseErrorMessage
-            ? Token
-            : ValidateTokens<Def, Remaining>
-        : Def
-
-    type ParseFragment<Def extends string, Dict, Seen> = ParseTokens<
-        Lex<"", ListChars<Def, []>, [], Dict>,
-        never,
-        Dict,
-        Seen
-    >
+    > = Tokens extends ErrorToken<infer Message> ? Message : Def
 
     type ParseTokens<
         Tokens extends string[],
@@ -145,6 +182,52 @@ export namespace Str {
               >
         : Type
 
+    // type Z = Split<["number", "[]", "|", "string", "[]"], "|", [], []>
+
+    // type Split<
+    //     Tokens extends string[],
+    //     Delimiter extends string,
+    //     Groups extends string[][],
+    //     CurrentGroup extends string[]
+    // > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
+    //     ? Token extends Delimiter
+    //         ? Split<RemainingTokens, Delimiter, [...Groups, CurrentGroup], []>
+    //         : Split<
+    //               RemainingTokens,
+    //               Delimiter,
+    //               Groups,
+    //               [...CurrentGroup, Token]
+    //           >
+    //     : [...Groups, CurrentGroup]
+
+    // type UnionOf<
+    //     TokenGroups extends string[][],
+    //     Dict,
+    //     Seen,
+    //     Type
+    // > = TokenGroups extends Iteration<
+    //     string[],
+    //     infer Group,
+    //     infer RemainingGroups
+    // >
+    //     ? UnionOf<RemainingGroups, Dict, Seen, Type | PT2<Group, Dict, Seen>>
+    //     : Type
+
+    // type ParseUnion<Tokens extends string[], Dict, Seen> = UnionOf<
+    //     Split<Tokens, "|", [], []>,
+    //     Dict,
+    //     Seen,
+    //     never
+    // >
+
+    // type PT2<
+    //     Tokens extends string[],
+    //     Dict,
+    //     Seen
+    // > = "|" extends ElementOf<Tokens>
+    //     ? ParseUnion<Tokens, Dict, Seen>
+    //     : ParseGroup<Tokens, Dict, Seen>
+
     type ParseReference<
         Token extends string,
         Dict,
@@ -157,9 +240,9 @@ export namespace Str {
         ? Value
         : Token extends `/${string}/`
         ? string
-        : Token extends EmbeddedNumber.Definition<infer Value extends number>
+        : Token extends EmbeddedNumber.Definition<infer Value>
         ? Value
-        : Token extends EmbeddedBigInt.Definition<infer Value extends bigint>
+        : Token extends EmbeddedBigInt.Definition<infer Value>
         ? Value
         : unknown
 
