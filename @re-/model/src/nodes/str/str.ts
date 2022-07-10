@@ -1,5 +1,4 @@
 import { Iteration } from "@re-/tools"
-import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"
@@ -24,20 +23,21 @@ export namespace Str {
         ? unknown
         : TypeOfParseTree<Parse<Def, Dict>>
 
-    export type Parse<Def extends string, Dict> = ParseExpression<
+    export type Parse<Def extends string, Dict> = ParseTokens<
         LexRoot<Def>,
-        [],
         Dict
     >
 
-    export type References<Def extends string> = TokensToReferences<
-        LexRoot<Def>
+    type ParseTokens<Tokens extends string[], Dict> = Tokens extends ErrorToken<
+        infer Message
     >
+        ? ErrorNode<Message>
+        : ParseExpression<Tokens, [], Dict>
 
-    type TokensToReferences<Tokens extends string[]> =
-        Tokens extends ErrorToken<Base.Parsing.ParseErrorMessage>
-            ? []
-            : ExtractReferences<Tokens, []>
+    export type References<Def extends string> = ExtractReferences<
+        LexRoot<Def>,
+        []
+    >
 
     type ExtractReferences<
         Tokens extends string[],
@@ -76,9 +76,7 @@ export namespace Str {
             : NextChar extends "?"
             ? NextUnscanned extends ["END"]
                 ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
-                : [
-                      Base.Parsing.ParseErrorMessage<`Modifier '?' is only valid at the end of a type definition.`>
-                  ]
+                : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
             : NextChar extends "|" | "&" | "END" | "(" | ")"
             ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
             : NextChar extends `'` | `"` | `/`
@@ -105,9 +103,7 @@ export namespace Str {
                   NextUnscanned
               >
             : FirstChar extends "="
-            ? [
-                  Base.Parsing.ParseErrorMessage<`= is not a valid comparator. Use == instead.`>
-              ]
+            ? ErrorToken<`= is not a valid comparator. Use == instead.`>
             : LexSeparator<
                   // @ts-expect-error
                   FirstChar,
@@ -116,9 +112,7 @@ export namespace Str {
                   // Use Unscanned here instead of NextUnscanned since the comparator was only 1 character
                   Unscanned
               >
-        : [
-              Base.Parsing.ParseErrorMessage<`Expected a bound condition after ${FirstChar}.`>
-          ]
+        : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
     type LexSeparator<
         Separator extends SeparatorToken,
@@ -161,7 +155,7 @@ export namespace Str {
                   // @ts-expect-error TS can't infer that NextUnscanned is a string[]
                   NextUnscanned
               >
-            : [Base.Parsing.ParseErrorMessage<`Missing expected ']'.`>]
+            : ErrorToken<`Missing expected ']'.`>
         : never
 
     type LexLiteral<
@@ -182,35 +176,33 @@ export namespace Str {
                   Tokens,
                   NextUnscanned
               >
-        : [
-              Base.Parsing.ParseErrorMessage<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Literal}`>
-          ]
+        : ErrorToken<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Literal}`>
 
-    type ErrorToken<Message extends Base.Parsing.ParseErrorMessage> = [Message]
-
-    //"((number||string)[]|boolean)[]"
-    type T = LexRoot<"((number|string[])|boolean)[]">
-    type ZZZ = ParseExpression<T, [], {}>
+    type ErrorToken<Message extends string> = ["ERROR", Message]
 
     type TypeOfParseTree<Tree> = Tree extends TerminalNode<string, infer Type>
         ? Type
+        : Tree extends [infer Next, "?"]
+        ? TypeOfParseTree<Next> | undefined
         : Tree extends [infer Next, "[]"]
         ? TypeOfParseTree<Next>[]
         : Tree extends [infer Left, "|", infer Right]
         ? TypeOfParseTree<Left> | TypeOfParseTree<Right>
+        : Tree extends [infer Left, "&", infer Right]
+        ? TypeOfParseTree<Left> & TypeOfParseTree<Right>
         : unknown
 
     type ValidateParseTree<
         RootDef extends string,
         Tree
-    > = Tree extends ErrorNode<infer Message>
-        ? Message
-        : Tree extends TerminalNode<string, unknown>
-        ? RootDef
+    > = Tree extends TerminalNode<string, unknown, infer Error>
+        ? Error extends undefined
+            ? RootDef
+            : Error
         : Tree extends Iteration<unknown, infer Branch, infer Remaining>
-        ? ValidateParseTree<RootDef, Branch> extends string
-            ? ValidateParseTree<RootDef, Branch>
-            : ValidateParseTree<RootDef, Remaining>
+        ? ValidateParseTree<RootDef, Branch> extends RootDef
+            ? ValidateParseTree<RootDef, Remaining>
+            : ValidateParseTree<RootDef, Branch>
         : RootDef
 
     type ParseExpression<
@@ -230,10 +222,10 @@ export namespace Str {
         Tree,
         Dict
     > = Tokens extends Iteration<string, infer Token, infer Remaining>
-        ? Token extends "[]"
-            ? ParseOperator<Remaining, [Tree, "[]"], Dict>
-            : Token extends "|"
-            ? [Tree, "|", ParseExpression<Remaining, [], Dict>]
+        ? Token extends "[]" | "?"
+            ? ParseOperator<Remaining, [Tree, Token], Dict>
+            : Token extends "|" | "&"
+            ? [Tree, Token, ParseExpression<Remaining, [], Dict>]
             : ErrorNode<`Expected an operator (got ${Token}).`>
         : Tree
 
@@ -279,11 +271,19 @@ export namespace Str {
                   >
                 : [BeforeMatch, Remaining]
             : SplitByMatchingParen<Remaining, [...BeforeMatch, Token], Depth>
-        : ["Missing )."]
+        : ErrorNode<"Missing ).">
 
-    type TerminalNode<Def extends string, Type> = [Def, Type]
+    type TerminalNode<
+        Def extends string,
+        Type,
+        Error extends string | undefined = undefined
+    > = {
+        def: Def
+        type: Type
+        error: Error
+    }
 
-    type ErrorNode<Message extends string> = [Message]
+    type ErrorNode<Message extends string> = TerminalNode<"", unknown, Message>
 
     type ParseTerminal<Token extends string, Dict> = TypeOfTerminal<
         Token,

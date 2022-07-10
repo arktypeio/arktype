@@ -36,16 +36,16 @@ describe("validation", () => {
   fruits/1: {type: "Fuji"} is not assignable to any of banana|apple.
 `)
     })
-    it("errors on shallow cycle", () => {
-        // @ts-expect-error
-        assert(() => space({ a: "a" })).throwsAndHasTypeError(
-            `Error: a references a shallow cycle: a=>a.`
-        )
-        assert(() =>
-            // @ts-expect-error
-            space({ a: "b", b: "c", c: "a|b|c" })
-        ).throwsAndHasTypeError(`a references a shallow cycle: a=>b=>c=>a`)
-    })
+    // it("errors on shallow cycle", () => {
+    //     // @ts-expect-error
+    //     assert(() => space({ a: "a" })).throwsAndHasTypeError(
+    //         `Error: a references a shallow cycle: a=>a.`
+    //     )
+    //     assert(() =>
+    //         // @ts-expect-error
+    //         space({ a: "b", b: "c", c: "a|b|c" })
+    //     ).throwsAndHasTypeError(`a references a shallow cycle: a=>b=>c=>a`)
+    // })
     it("cyclic space", () => {
         const bicycle = space({
             a: { a: "a?", b: "b?", isA: "true" },
