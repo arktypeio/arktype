@@ -56,25 +56,6 @@ export namespace Str {
           >
         : Refs
 
-    // Def extends Base.Parsing.ParseErrorMessage
-    //     ? []
-    //     : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //           | StringLiteral.Definition<infer Text>
-    //           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //           | EmbeddedRegex.Definition<infer Expression>
-    //     ? [Def]
-    //     : Def extends Optional.Definition<infer Next>
-    //     ? References<Next>
-    //     : Def extends Intersection.Definition<infer Left, infer Right>
-    //     ? [...References<Left>, ...References<Right>]
-    //     : Def extends Union.Definition<infer Left, infer Right>
-    //     ? [...References<Left>, ...References<Right>]
-    //     : Def extends List.Definition<infer Next>
-    //     ? References<Next>
-    //     : Def extends Bound.Definition
-    //     ? Bound.References<Def>
-    //     : [Def]
-
     type LexRoot<Def extends string> = Lex<"", [], ToScannable<Def>>
 
     /** In this context, a Separator is any token that does not refer to a value */
