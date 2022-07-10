@@ -61,17 +61,17 @@ test/str/stringLiteral.test.ts(10,26): error TS2345: Argument of type '"\"goodby
 test/str/stringLiteral.test.ts(13,26): error TS2345: Argument of type '"\"'single-quoted'\""' is not assignable to parameter of type '"Error: Unable to determine the type of '\"'single-quoted'\"'."'.
 test/str/union.test.ts(124,42): error TS2345: Argument of type '"\"yes|no|maybe\""' is not assignable to parameter of type '"Error: Unable to determine the type of '\"yes|no|maybe\"'."'.
 Files:              224
-Lines:            84174
-Nodes:           283203
-Identifiers:     102413
-Symbols:         549953
-Types:           121690
-Instantiations: 1215507
-Memory used:    307666K
+Lines:            84171
+Nodes:           283177
+Identifiers:     102407
+Symbols:         538734
+Types:           119777
+Instantiations: 1191827
+Memory used:    304479K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.57s
-Bind time:        0.23s
-Check time:       2.91s
+Parse time:       0.53s
+Bind time:        0.24s
+Check time:       2.66s
 Emit time:        0.00s
-Total time:       3.71s
+Total time:       3.43s

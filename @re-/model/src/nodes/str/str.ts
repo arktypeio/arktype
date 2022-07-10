@@ -49,13 +49,12 @@ export namespace Str {
           >
         : Refs
 
-    type LexRoot<Def extends string> = Lex<"", [], ToScannable<Def>>
+    type LexRoot<Def extends string> = Lex<"", [], ListChars<Def, []>>
 
     /** In this context, a Separator is any token that does not refer to a value */
     type SeparatorToken =
         | "[]"
         | "?"
-        | "END"
         | "|"
         | "&"
         | "<"
@@ -74,17 +73,19 @@ export namespace Str {
         ? NextChar extends `[`
             ? LexList<Fragment, Tokens, NextUnscanned>
             : NextChar extends "?"
-            ? NextUnscanned extends ["END"]
+            ? NextUnscanned extends []
                 ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
                 : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
-            : NextChar extends "|" | "&" | "END" | "(" | ")"
+            : NextChar extends "|" | "&" | "(" | ")"
             ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
             : NextChar extends `'` | `"` | `/`
             ? LexLiteral<NextChar, "", Tokens, NextUnscanned>
             : NextChar extends ">" | "<" | "="
             ? LexBound<NextChar, Fragment, Tokens, NextUnscanned>
             : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned>
-        : Tokens
+        : Fragment extends ""
+        ? Tokens
+        : [...Tokens, Fragment]
 
     type BoundStartChar = "<" | ">" | "="
 
@@ -125,21 +126,15 @@ export namespace Str {
         Separator extends SeparatorToken,
         Fragment extends string,
         Tokens extends string[]
-    > = Separator extends "END"
-        ? Fragment extends ""
-            ? Tokens
-            : [...Tokens, Fragment]
-        : Fragment extends ""
+    > = Fragment extends ""
         ? [...Tokens, Separator]
         : [...Tokens, Fragment, Separator]
-
-    type ToScannable<Def extends string> = [...ListChars<Def, []>, "END"]
 
     type ListChars<
         S extends string,
         Result extends string[]
-    > = S extends `${infer Char}${infer Rest}`
-        ? ListChars<Rest, [...Result, Char]>
+    > = S extends `${infer Char}${infer Remaining}`
+        ? ListChars<Remaining, [...Result, Char]>
         : Result
 
     type LexList<
