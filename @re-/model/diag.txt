@@ -1,9 +1,21 @@
-test/bench/parser.bench.ts(120,5): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu?: unknown; }'.
-test/space/type.test.ts(117,21): error TS2322: Type '"cyclic?"' is not assignable to type '"Error: Unable to determine the type of 'cyclic'."'.
-test/space/type.test.ts(132,42): error TS2339: Property 'b' does not exist on type '{}'.
-test/space/type.test.ts(141,21): error TS2322: Type '"resolution"' is not assignable to type '"Error: Unable to determine the type of 'resolution'."'.
-test/space/type.test.ts(153,16): error TS2571: Object is of type 'unknown'.
-test/space/validation.test.ts(136,13): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu?: unknown; }'.
+src/nodes/str/str.ts(27,11): error TS2304: Cannot find name 'P2'.
+test/obj/map.test.ts(140,21): error TS2578: Unused '@ts-expect-error' directive.
+test/obj/tuple.test.ts(29,25): error TS2578: Unused '@ts-expect-error' directive.
+test/references.test.ts(156,31): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
+test/references.test.ts(156,38): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
+test/references.test.ts(156,43): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
+test/references.test.ts(156,50): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
+test/references.test.ts(156,55): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
+test/references.test.ts(156,60): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
+test/space/declare.test.ts(36,9): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(8,13): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(29,13): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(51,9): error TS2578: Unused '@ts-expect-error' directive.
+test/space/type.test.ts(107,17): error TS2578: Unused '@ts-expect-error' directive.
+test/space/validation.test.ts(40,9): error TS2578: Unused '@ts-expect-error' directive.
+test/space/validation.test.ts(45,13): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bigintLiteral.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/bound.test.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/bound.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/bound.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
@@ -11,21 +23,28 @@ test/str/bound.test.ts(33,21): error TS2578: Unused '@ts-expect-error' directive
 test/str/bound.test.ts(40,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/bound.test.ts(46,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/bound.test.ts(52,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/intersection.test.ts(18,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/intersection.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/list.test.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/numberLiteral.test.ts(23,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/numberLiteral.test.ts(29,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(22,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(37,25): error TS2578: Unused '@ts-expect-error' directive.
 test/str/stringLiteral.test.ts(44,21): error TS2578: Unused '@ts-expect-error' directive.
+test/str/union.test.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/union.test.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              224
-Lines:            84164
-Nodes:           282918
-Identifiers:     102317
-Symbols:         430751
-Types:            90463
-Instantiations:  706772
-Memory used:    252623K
+Lines:            84174
+Nodes:           282958
+Identifiers:     102319
+Symbols:         396997
+Types:            78768
+Instantiations:  501633
+Memory used:    242534K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.52s
-Bind time:        0.21s
-Check time:       3.24s
+Parse time:       0.54s
+Bind time:        0.20s
+Check time:       1.76s
 Emit time:        0.00s
-Total time:       3.97s
+Total time:       2.50s

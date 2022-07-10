@@ -13,9 +13,18 @@ import { Union } from "./union.js"
 
 export namespace Str {
     export type Validate<Def extends string, Dict> = ValidateTokens<
+        LexRoot<Def>,
         Def,
-        LexRoot<Def, Dict>
+        Dict
     >
+
+    type ValidateTokens<
+        Tokens extends string[],
+        Def extends string,
+        Dict
+    > = Tokens extends ErrorToken<infer Message>
+        ? Message
+        : P2<Tokens, Def, Dict>
 
     export type Parse<
         Def extends string,
@@ -23,13 +32,13 @@ export namespace Str {
         Seen
     > = Def extends Base.Parsing.ParseErrorMessage
         ? unknown
-        : ParseTokens<LexRoot<Def, Dict>, never, Dict, Seen>
+        : ParseTokens<LexRoot<Def>, never, Dict, Seen>
     // Def extends Optional.Definition<infer Next>
     // ? ParseFragment<Next, Dict, Seen> | undefined
     // :
 
-    export type References<Def extends string, Dict> = TokensToReferences<
-        LexRoot<Def, Dict>
+    export type References<Def extends string> = TokensToReferences<
+        LexRoot<Def>
     >
 
     type TokensToReferences<Tokens extends string[]> =
@@ -66,7 +75,7 @@ export namespace Str {
     //     ? Bound.References<Def>
     //     : [Def]
 
-    type LexRoot<Def extends string, Dict> = Lex<"", [], ToScannable<Def>, Dict>
+    type LexRoot<Def extends string> = Lex<"", [], ToScannable<Def>>
 
     /** In this context, a Separator is any token that does not refer to a value */
     type SeparatorToken =
@@ -80,28 +89,29 @@ export namespace Str {
         | "<="
         | ">="
         | "=="
+        | "("
+        | ")"
 
     type Lex<
         Fragment extends string,
         Tokens extends string[],
-        Unscanned extends string[],
-        Dict
+        Unscanned extends string[]
     > = Unscanned extends Iteration<string, infer NextChar, infer NextUnscanned>
         ? NextChar extends `[`
-            ? LexList<Fragment, Tokens, NextUnscanned, Dict>
+            ? LexList<Fragment, Tokens, NextUnscanned>
             : NextChar extends "?"
             ? NextUnscanned extends ["END"]
-                ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
+                ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
                 : [
                       Base.Parsing.ParseErrorMessage<`Modifier '?' is only valid at the end of a type definition.`>
                   ]
-            : NextChar extends "|" | "&" | "END"
-            ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned, Dict>
+            : NextChar extends "|" | "&" | "END" | "(" | ")"
+            ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
             : NextChar extends `'` | `"` | `/`
-            ? LexLiteral<NextChar, "", Tokens, NextUnscanned, Dict>
+            ? LexLiteral<NextChar, "", Tokens, NextUnscanned>
             : NextChar extends ">" | "<" | "="
-            ? LexBound<NextChar, Fragment, Tokens, NextUnscanned, Dict>
-            : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned, Dict>
+            ? LexBound<NextChar, Fragment, Tokens, NextUnscanned>
+            : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned>
         : Tokens
 
     type BoundStartChar = "<" | ">" | "="
@@ -110,8 +120,7 @@ export namespace Str {
         FirstChar extends BoundStartChar,
         Fragment extends string,
         Tokens extends string[],
-        Unscanned extends string[],
-        Dict
+        Unscanned extends string[]
     > = Unscanned extends [infer NextChar, ...infer NextUnscanned]
         ? NextChar extends "="
             ? LexSeparator<
@@ -119,8 +128,7 @@ export namespace Str {
                   Fragment,
                   Tokens,
                   // @ts-expect-error
-                  NextUnscanned,
-                  Dict
+                  NextUnscanned
               >
             : FirstChar extends "="
             ? [
@@ -132,8 +140,7 @@ export namespace Str {
                   Fragment,
                   Tokens,
                   // Use Unscanned here instead of NextUnscanned since the comparator was only 1 character
-                  Unscanned,
-                  Dict
+                  Unscanned
               >
         : [
               Base.Parsing.ParseErrorMessage<`Expected a bound condition after ${FirstChar}.`>
@@ -143,20 +150,20 @@ export namespace Str {
         Separator extends SeparatorToken,
         Fragment extends string,
         Tokens extends string[],
-        Unscanned extends string[],
-        Dict
-    > = Fragment extends
-        | ""
-        | Keyword.Definition
-        | AliasIn<Dict>
-        | EmbeddedNumber.Definition
-        | EmbeddedBigInt.Definition
-        ? Lex<"", PushTokensFrom<Separator, Fragment, Tokens>, Unscanned, Dict>
-        : [
-              Base.Parsing.ParseErrorMessage<
-                  Base.Parsing.UnknownTypeErrorMessage<Fragment>
-              >
-          ]
+        Unscanned extends string[]
+    > = Lex<"", PushTokensFrom<Separator, Fragment, Tokens>, Unscanned>
+    // Fragment extends
+    //     | ""
+    // | Keyword.Definition
+    // | AliasIn<Dict>
+    // | EmbeddedNumber.Definition
+    // | EmbeddedBigInt.Definition
+    //     ? Lex<"", PushTokensFrom<Separator, Fragment, Tokens>, Unscanned, Dict>
+    //     : [
+    //           Base.Parsing.ParseErrorMessage<
+    //               Base.Parsing.UnknownTypeErrorMessage<Fragment>
+    //           >
+    //       ]
 
     type PushTokensFrom<
         Separator extends SeparatorToken,
@@ -182,8 +189,7 @@ export namespace Str {
     type LexList<
         Fragment extends string,
         Tokens extends string[],
-        UnscannedChars extends string[],
-        Dict
+        UnscannedChars extends string[]
     > = UnscannedChars extends [infer NextChar, ...infer NextUnscanned]
         ? NextChar extends "]"
             ? LexSeparator<
@@ -191,8 +197,7 @@ export namespace Str {
                   Fragment,
                   Tokens,
                   // @ts-expect-error TS can't infer that NextUnscanned is a string[]
-                  NextUnscanned,
-                  Dict
+                  NextUnscanned
               >
             : [Base.Parsing.ParseErrorMessage<`Missing expected ']'.`>]
         : never
@@ -201,22 +206,19 @@ export namespace Str {
         Enclosing extends string,
         Literal extends string,
         Tokens extends string[],
-        Unscanned extends string[],
-        Dict
+        Unscanned extends string[]
     > = Unscanned extends Iteration<string, infer NextChar, infer NextUnscanned>
         ? NextChar extends Enclosing
             ? Lex<
                   "",
                   [...Tokens, `${Enclosing}${Literal}${Enclosing}`],
-                  NextUnscanned,
-                  Dict
+                  NextUnscanned
               >
             : LexLiteral<
                   Enclosing,
                   `${Literal}${NextChar}`,
                   Tokens,
-                  NextUnscanned,
-                  Dict
+                  NextUnscanned
               >
         : [
               Base.Parsing.ParseErrorMessage<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Literal}`>
@@ -224,30 +226,60 @@ export namespace Str {
 
     type ErrorToken<Message extends Base.Parsing.ParseErrorMessage> = [Message]
 
-    type ValidateTokens<
-        Def extends string,
-        Tokens extends string[]
-    > = Tokens extends ErrorToken<infer Message> ? Message : Def
+    type T = LexRoot<"(number||string)">
+    type ZZZ = ParseTokens<T, [], {}, {}>
 
     type ParseTokens<
         Tokens extends string[],
-        Type,
+        Stack extends string[],
         Dict,
         Seen
     > = Tokens extends Iteration<string, infer Token, infer Remaining>
-        ? Token extends "|"
-            ? Type | ParseTokens<Remaining, never, Dict, Seen>
-            : Token extends "&"
-            ? Type & ParseTokens<Remaining, never, Dict, Seen>
-            : Token extends "[]"
-            ? ParseTokens<Remaining, Type[], Dict, Seen>
-            : ParseTokens<
-                  Remaining,
-                  ParseReference<Token, Dict, Seen>,
-                  Dict,
-                  Seen
-              >
-        : Type
+        ? Remaining extends []
+            ? [ParseReference<Token, Dict, Seen>]
+            : Token extends "("
+            ? [ParseGroup<Remaining, [], Dict, Seen>]
+            : Token extends "|"
+            ? [
+                  ParseTokens<Stack, [], Dict, Seen>,
+                  "|",
+                  ParseTokens<Remaining, [], Dict, Seen>
+              ]
+            : ParseTokens<Remaining, [...Stack, Token], Dict, Seen>
+        : "Error."
+
+    type ParseGroup<
+        Tokens extends string[],
+        Group extends string[],
+        Dict,
+        Seen
+    > = Tokens extends Iteration<string, infer Token, infer Remaining>
+        ? Token extends ")"
+            ? ParseTokens<Group, [], Dict, Seen>
+            : Token extends "("
+            ? [ParseGroup<Remaining, [], Dict, Seen>]
+            : ParseGroup<Remaining, [...Group, Token], Dict, Seen>
+        : Base.Parsing.ParseErrorMessage<`Missing ).`>
+
+    type ParseReference<
+        Token extends string,
+        Dict,
+        Seen
+    > = Token extends Keyword.Definition
+        ? Keyword.Types[Token]
+        : Token extends keyof Dict
+        ? Alias.Parse<Token, Dict, Seen>
+        : Token extends `'${infer Value}'`
+        ? Value
+        : Token extends `/${string}/`
+        ? string
+        : Token extends EmbeddedNumber.Definition<infer Value>
+        ? Value
+        : Token extends EmbeddedBigInt.Definition<infer Value>
+        ? Value
+        : Base.Parsing.ParseErrorMessage<
+              Base.Parsing.UnknownTypeErrorMessage<Token>
+          >
 
     // type Z = Split<["number", "[]", "|", "string", "[]"], "|", [], []>
 
@@ -294,24 +326,6 @@ export namespace Str {
     // > = "|" extends ElementOf<Tokens>
     //     ? ParseUnion<Tokens, Dict, Seen>
     //     : ParseGroup<Tokens, Dict, Seen>
-
-    type ParseReference<
-        Token extends string,
-        Dict,
-        Seen
-    > = Token extends Keyword.Definition
-        ? Keyword.Types[Token]
-        : Token extends keyof Dict
-        ? Alias.Parse<Token, Dict, Seen>
-        : Token extends `'${infer Value}'`
-        ? Value
-        : Token extends `/${string}/`
-        ? string
-        : Token extends EmbeddedNumber.Definition<infer Value>
-        ? Value
-        : Token extends EmbeddedBigInt.Definition<infer Value>
-        ? Value
-        : unknown
 
     export const matches = (def: unknown): def is string =>
         typeof def === "string"

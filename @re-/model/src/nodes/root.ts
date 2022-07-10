@@ -38,7 +38,7 @@ export namespace Root {
         Dict,
         PreserveStructure extends boolean
     > = Def extends string
-        ? Str.References<Def, Dict>
+        ? Str.References<Def>
         : Def extends Literal.Definition
         ? [Literal.DefToString<Def>]
         : Def extends object
