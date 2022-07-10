@@ -12,30 +12,23 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 export namespace Str {
-    export type Validate<Def extends string, Dict> = ValidateTokens<
-        LexRoot<Def>,
+    export type Validate<Def extends string, Dict> = ValidateParseTree<
         Def,
-        Dict
+        Parse<Def, Dict>
     >
 
-    type ValidateTokens<
-        Tokens extends string[],
+    export type TypeOf<
         Def extends string,
         Dict
-    > = Tokens extends ErrorToken<infer Message>
-        ? Message
-        : P2<Tokens, Def, Dict>
-
-    export type Parse<
-        Def extends string,
-        Dict,
-        Seen
     > = Def extends Base.Parsing.ParseErrorMessage
         ? unknown
-        : ParseTokens<LexRoot<Def>, never, Dict, Seen>
-    // Def extends Optional.Definition<infer Next>
-    // ? ParseFragment<Next, Dict, Seen> | undefined
-    // :
+        : TypeOfParseTree<Parse<Def, Dict>>
+
+    export type Parse<Def extends string, Dict> = ParseExpression<
+        LexRoot<Def>,
+        [],
+        Dict
+    >
 
     export type References<Def extends string> = TokensToReferences<
         LexRoot<Def>
@@ -133,18 +126,6 @@ export namespace Str {
         Tokens extends string[],
         Unscanned extends string[]
     > = Lex<"", PushTokensFrom<Separator, Fragment, Tokens>, Unscanned>
-    // Fragment extends
-    //     | ""
-    // | Keyword.Definition
-    // | AliasIn<Dict>
-    // | EmbeddedNumber.Definition
-    // | EmbeddedBigInt.Definition
-    //     ? Lex<"", PushTokensFrom<Separator, Fragment, Tokens>, Unscanned, Dict>
-    //     : [
-    //           Base.Parsing.ParseErrorMessage<
-    //               Base.Parsing.UnknownTypeErrorMessage<Fragment>
-    //           >
-    //       ]
 
     type PushTokensFrom<
         Separator extends SeparatorToken,
@@ -207,49 +188,117 @@ export namespace Str {
 
     type ErrorToken<Message extends Base.Parsing.ParseErrorMessage> = [Message]
 
-    type T = LexRoot<"(number||string)">
-    type ZZZ = ParseTokens<T, [], {}, {}>
+    //"((number||string)[]|boolean)[]"
+    type T = LexRoot<"((number|string[])|boolean)[]">
+    type ZZZ = ParseExpression<T, [], {}>
 
-    type ParseTokens<
+    type TypeOfParseTree<Tree> = Tree extends TerminalNode<string, infer Type>
+        ? Type
+        : Tree extends [infer Next, "[]"]
+        ? TypeOfParseTree<Next>[]
+        : Tree extends [infer Left, "|", infer Right]
+        ? TypeOfParseTree<Left> | TypeOfParseTree<Right>
+        : unknown
+
+    type ValidateParseTree<
+        RootDef extends string,
+        Tree
+    > = Tree extends ErrorNode<infer Message>
+        ? Message
+        : Tree extends TerminalNode<string, unknown>
+        ? RootDef
+        : Tree extends Iteration<unknown, infer Branch, infer Remaining>
+        ? ValidateParseTree<RootDef, Branch> extends string
+            ? ValidateParseTree<RootDef, Branch>
+            : ValidateParseTree<RootDef, Remaining>
+        : RootDef
+
+    type ParseExpression<
         Tokens extends string[],
-        Stack extends string[],
-        Dict,
-        Seen
+        Tree,
+        Dict
     > = Tokens extends Iteration<string, infer Token, infer Remaining>
-        ? Remaining extends []
-            ? [ParseReference<Token, Dict, Seen>]
-            : Token extends "("
-            ? [ParseGroup<Remaining, [], Dict, Seen>]
+        ? Token extends "("
+            ? ParseGroup<SplitByMatchingParen<Remaining, [], []>, Tree, Dict>
+            : Token extends ")"
+            ? ErrorNode<"Unexpected ).">
+            : ParseOperator<Remaining, PushTerminal<Tree, Token, Dict>, Dict>
+        : Tree
+
+    type ParseOperator<
+        Tokens extends string[],
+        Tree,
+        Dict
+    > = Tokens extends Iteration<string, infer Token, infer Remaining>
+        ? Token extends "[]"
+            ? ParseOperator<Remaining, [Tree, "[]"], Dict>
             : Token extends "|"
-            ? [
-                  ParseTokens<Stack, [], Dict, Seen>,
-                  "|",
-                  ParseTokens<Remaining, [], Dict, Seen>
-              ]
-            : ParseTokens<Remaining, [...Stack, Token], Dict, Seen>
-        : "Error."
+            ? [Tree, "|", ParseExpression<Remaining, [], Dict>]
+            : ErrorNode<`Expected an operator (got ${Token}).`>
+        : Tree
 
-    type ParseGroup<
+    type ParseGroup<Sliced, Tree, Dict> = Sliced extends [
+        infer Group,
+        infer Remaining
+    ]
+        ? ParseOperator<
+              // @ts-expect-error
+              Remaining,
+              // @ts-expect-error
+              PushExpression<Tree, ParseExpression<Group, [], Dict>>,
+              Dict
+          >
+        : Sliced
+
+    type PushExpression<Tree, Expression> = Tree extends []
+        ? Expression
+        : [Tree, Expression]
+
+    type PushTerminal<Tree, Token extends string, Dict> = PushExpression<
+        Tree,
+        ParseTerminal<Token, Dict>
+    >
+
+    type SplitByMatchingParen<
         Tokens extends string[],
-        Group extends string[],
-        Dict,
-        Seen
+        BeforeMatch extends string[],
+        Depth extends unknown[]
     > = Tokens extends Iteration<string, infer Token, infer Remaining>
-        ? Token extends ")"
-            ? ParseTokens<Group, [], Dict, Seen>
-            : Token extends "("
-            ? [ParseGroup<Remaining, [], Dict, Seen>]
-            : ParseGroup<Remaining, [...Group, Token], Dict, Seen>
-        : Base.Parsing.ParseErrorMessage<`Missing ).`>
+        ? Token extends "("
+            ? SplitByMatchingParen<
+                  Remaining,
+                  [...BeforeMatch, Token],
+                  [...Depth, 1]
+              >
+            : Token extends ")"
+            ? Depth extends [...infer DepthMinusOne, infer Pop]
+                ? SplitByMatchingParen<
+                      Remaining,
+                      [...BeforeMatch, Token],
+                      DepthMinusOne
+                  >
+                : [BeforeMatch, Remaining]
+            : SplitByMatchingParen<Remaining, [...BeforeMatch, Token], Depth>
+        : ["Missing )."]
 
-    type ParseReference<
+    type TerminalNode<Def extends string, Type> = [Def, Type]
+
+    type ErrorNode<Message extends string> = [Message]
+
+    type ParseTerminal<Token extends string, Dict> = TypeOfTerminal<
+        Token,
+        Dict
+    > extends Base.Parsing.ParseErrorMessage
+        ? ErrorNode<TypeOfTerminal<Token, Dict>>
+        : TerminalNode<Token, TypeOfTerminal<Token, Dict>>
+
+    type TypeOfTerminal<
         Token extends string,
-        Dict,
-        Seen
+        Dict
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
         : Token extends keyof Dict
-        ? Alias.Parse<Token, Dict, Seen>
+        ? Alias.Parse<Token, Dict, {}>
         : Token extends `'${infer Value}'`
         ? Value
         : Token extends `/${string}/`
@@ -261,8 +310,6 @@ export namespace Str {
         : Base.Parsing.ParseErrorMessage<
               Base.Parsing.UnknownTypeErrorMessage<Token>
           >
-
-    // type Z = Split<["number", "[]", "|", "string", "[]"], "|", [], []>
 
     // type Split<
     //     Tokens extends string[],
@@ -279,34 +326,6 @@ export namespace Str {
     //               [...CurrentGroup, Token]
     //           >
     //     : [...Groups, CurrentGroup]
-
-    // type UnionOf<
-    //     TokenGroups extends string[][],
-    //     Dict,
-    //     Seen,
-    //     Type
-    // > = TokenGroups extends Iteration<
-    //     string[],
-    //     infer Group,
-    //     infer RemainingGroups
-    // >
-    //     ? UnionOf<RemainingGroups, Dict, Seen, Type | PT2<Group, Dict, Seen>>
-    //     : Type
-
-    // type ParseUnion<Tokens extends string[], Dict, Seen> = UnionOf<
-    //     Split<Tokens, "|", [], []>,
-    //     Dict,
-    //     Seen,
-    //     never
-    // >
-
-    // type PT2<
-    //     Tokens extends string[],
-    //     Dict,
-    //     Seen
-    // > = "|" extends ElementOf<Tokens>
-    //     ? ParseUnion<Tokens, Dict, Seen>
-    //     : ParseGroup<Tokens, Dict, Seen>
 
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
