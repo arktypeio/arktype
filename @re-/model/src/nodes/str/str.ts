@@ -210,7 +210,11 @@ export namespace Str {
             ? Base.Parsing.Types.Error<"Unexpected ).">
             : Token extends OperatorToken
             ? Base.Parsing.Types.Error<`Expression expected (got ${Token}).`>
-            : ParseOperator<Remaining, PushTerminal<Tree, Token, Dict>, Dict>
+            : ParseOperator<
+                  Remaining,
+                  PushExpression<Tree, ParseTerminal<Token, Dict>>,
+                  Dict
+              >
         : Tree
 
     type ParseOperator<
@@ -248,7 +252,10 @@ export namespace Str {
               >
                 ? ParseExpression<RemainingTokens, PreviousTree, Dict>
                 : Base.Parsing.Types.Error<`One side of comparator ${Comparator} must be a number literal.`>
-            : Base.Parsing.Types.Error<`Left side of comparator ${Comparator} is missing.`>
+            : [
+                  Base.Parsing.Types.Error<`Left side of comparator ${Comparator} is missing.`>,
+                  Tree
+              ]
         : Base.Parsing.Types.Error<`Right side of comparator ${Comparator} is missing.`>
 
     type AssertBoundableThen<Node, Next> =
@@ -274,13 +281,10 @@ export namespace Str {
         : Sliced
 
     type PushExpression<Tree, Expression> = Tree extends []
-        ? [Expression]
+        ? Expression extends unknown[]
+            ? Expression
+            : [Expression]
         : [Tree, Expression]
-
-    type PushTerminal<Tree, Token extends string, Dict> = PushExpression<
-        Tree,
-        ParseTerminal<Token, Dict>
-    >
 
     type SplitByMatchingParen<
         Tokens,
