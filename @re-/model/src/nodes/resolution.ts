@@ -1,6 +1,6 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
 import { TypeOf as RootTypeOf, Validate as RootValidate } from "../model.js"
-import { AliasIn, space } from "../space.js"
+import { AliasIn } from "../space.js"
 import { Base } from "./base/index.js"
 import { Root } from "./root.js"
 import { Str } from "./str/str.js"
@@ -16,7 +16,7 @@ export namespace Resolution {
                   Dict,
                   [Extract<Alias, string>]
               >,
-              RootValidate<Dict[Alias], Dict>
+              Str.Validate<Dict[Alias], Dict>
           >
         : RootValidate<Dict[Alias], Dict>
 
@@ -24,8 +24,6 @@ export namespace Resolution {
         Dict[Alias],
         Dict
     >
-
-    const z = space({ a: "string" })
 
     export class Node extends Base.Link<string> {
         constructor(def: string, ctx: Base.Parsing.Context) {

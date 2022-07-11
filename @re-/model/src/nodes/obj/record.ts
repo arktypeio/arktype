@@ -1,26 +1,23 @@
 import { Evaluate, TreeOf } from "@re-/tools"
 import { Root } from "../root.js"
-import { Optional, Str } from "../str/index.js"
+import { Optional } from "../str/index.js"
 import { Base } from "./base.js"
 
 export namespace Record {
     export type Definition = Record<string, unknown>
 
     export type TypeOf<
-        Tree,
-        OptionalKey extends keyof Tree = {
-            [K in keyof Tree]: Tree[K] extends Str.Root<unknown, infer Def>
-                ? Def extends `${string}?`
-                    ? K
-                    : never
-                : never
-        }[keyof Tree],
-        RequiredKey extends keyof Tree = Exclude<keyof Tree, OptionalKey>
+        Def,
+        Dict,
+        OptionalKey extends keyof Def = {
+            [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
+        }[keyof Def],
+        RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            -readonly [K in RequiredKey]: Root.TypeOf<Tree[K]>
+            -readonly [K in RequiredKey]: Root.TypeOf<Def[K], Dict>
         } & {
-            -readonly [K in OptionalKey]?: Root.TypeOf<Tree[K]>
+            -readonly [K in OptionalKey]?: Root.TypeOf<Def[K], Dict>
         }
     >
 

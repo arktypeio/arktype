@@ -25,7 +25,7 @@ export const eager: ModelFunction = (definition, options = {}) => {
 }
 
 export type ModelFunction<Dict = {}> = <Def>(
-    definition: Validate<Def, Dict>,
+    definition: Root.Validate<Def, Dict>,
     options?: Base.ModelOptions
 ) => ModelFrom<Def, Dict, TypeOf<Def, Dict>>
 
@@ -146,11 +146,9 @@ export type ReferencesFunction<Def, Dict> = <
       >
     : []
 
-export type TypeOf<Def, Dict> = Root.TypeOf<Root.Parse<Def, Dict>>
+export type TypeOf<Def, Dict> = Root.TypeOf<Def, Dict>
 
-export type Validate<Def, Dict> = Def extends []
-    ? Def
-    : Root.Validate<Root.Parse<Def, Dict>>
+export type Validate<Def, Dict> = Root.Validate<Def, Dict>
 
 export type References<
     Def,

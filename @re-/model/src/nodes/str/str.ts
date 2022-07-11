@@ -11,26 +11,19 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 export namespace Str {
-    export type Root<Tree = unknown, Def extends string = string> = {
-        __STR_ROOT__: Tree
-        __DEF__: Def
-    }
-
-    export type Parse<Def extends string, Dict> = Root<
-        ParseTokens<LexRoot<Def>, Dict>,
-        Def
+    export type Parse<Def extends string, Dict> = ParseTokens<
+        LexRoot<Def>,
+        Dict
     >
 
-    export type Validate<Tree extends Root> = Tree extends Root<
-        infer Node,
-        infer Def
+    export type Validate<Def extends string, Dict> = ValidateParseTree<
+        Def,
+        Parse<Def, Dict>
     >
-        ? ValidateParseTree<Def, Node>
-        : never
 
-    export type TypeOf<Tree extends Root> = Tree extends Root<infer Node>
-        ? TypeOfParseTree<Node>
-        : never
+    export type TypeOf<Def extends string, Dict> = TypeOfParseTree<
+        Parse<Def, Dict>
+    >
 
     type ValidateParseTree<
         RootDef extends string,
