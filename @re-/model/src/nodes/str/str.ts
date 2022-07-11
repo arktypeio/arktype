@@ -1,4 +1,5 @@
 import { Iteration } from "@re-/tools"
+import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"
@@ -21,8 +22,10 @@ export namespace Str {
         Parse<Def, Dict>
     >
 
-    export type TypeOf<Def extends string, Dict> = TypeOfParseTree<
-        Parse<Def, Dict>
+    export type TypeOf<Def extends string, Dict, Seen> = TypeOfParseTree<
+        Parse<Def, Dict>,
+        Dict,
+        Seen
     >
 
     type ValidateParseTree<
@@ -185,20 +188,23 @@ export namespace Str {
 
     type ErrorToken<Message extends string> = ["ERROR", Message]
 
-    type TypeOfParseTree<Tree> = Tree extends Base.Parsing.Types.Terminal<
-        string,
-        infer Type
-    >
-        ? Type
-        : Tree extends [infer Next, "?"]
-        ? TypeOfParseTree<Next> | undefined
-        : Tree extends [infer Next, "[]"]
-        ? TypeOfParseTree<Next>[]
-        : Tree extends [infer Left, "|", infer Right]
-        ? TypeOfParseTree<Left> | TypeOfParseTree<Right>
-        : Tree extends [infer Left, "&", infer Right]
-        ? TypeOfParseTree<Left> & TypeOfParseTree<Right>
-        : unknown
+    type TypeOfParseTree<Tree, Dict, Seen> =
+        Tree extends Base.Parsing.Types.Terminal<infer Def, infer Type>
+            ? Def extends keyof Dict
+                ? Alias.TypeOf<Def, Dict, Seen>
+                : Type
+            : Tree extends [infer Next, "?"]
+            ? TypeOfParseTree<Next, Dict, Seen> | undefined
+            : Tree extends [infer Next, "[]"]
+            ? TypeOfParseTree<Next, Dict, Seen>[]
+            : Tree extends [infer Left, "|", infer Right]
+            ?
+                  | TypeOfParseTree<Left, Dict, Seen>
+                  | TypeOfParseTree<Right, Dict, Seen>
+            : Tree extends [infer Left, "&", infer Right]
+            ? TypeOfParseTree<Left, Dict, Seen> &
+                  TypeOfParseTree<Right, Dict, Seen>
+            : unknown
 
     type ParseExpression<
         Tokens extends string[],
@@ -247,7 +253,7 @@ export namespace Str {
     >
 
     type SplitByMatchingParen<
-        Tokens extends string[],
+        Tokens,
         BeforeMatch extends string[],
         Depth extends unknown[]
     > = Tokens extends Iteration<string, infer Token, infer Remaining>
@@ -258,7 +264,8 @@ export namespace Str {
                   [...Depth, 1]
               >
             : Token extends ")"
-            ? Depth extends [...infer DepthMinusOne, infer Pop]
+            ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              Depth extends [...infer DepthMinusOne, infer Pop]
                 ? SplitByMatchingParen<
                       Remaining,
                       [...BeforeMatch, Token],
@@ -268,23 +275,37 @@ export namespace Str {
             : SplitByMatchingParen<Remaining, [...BeforeMatch, Token], Depth>
         : Base.Parsing.Types.Error<"Missing ).">
 
-    type ParseTerminal<Token extends string, Dict> = TypeOfTerminal<
+    type ParseTerminal<Token extends string, Dict> = TerminalTypeToNode<
         Token,
-        Dict
-    > extends UNRESOLVABLE
-        ? Base.Parsing.Types.Error<`'${Token}' does not exist in your space.`>
-        : Base.Parsing.Types.Terminal<Token, TypeOfTerminal<Token, Dict>>
+        TypeOfTerminal<Token, Dict>
+    >
+
+    type TerminalTypeToNode<
+        Token extends string,
+        TerminalType
+    > = IsResolvable<TerminalType> extends true
+        ? Base.Parsing.Types.Terminal<Token, TerminalType>
+        : Base.Parsing.Types.Error<`'${Token}' does not exist in your space.`>
 
     type UNRESOLVABLE = "__UNRESOLVABLE__"
+
+    type IsResolvable<T> = T extends UNRESOLVABLE
+        ? unknown extends T
+            ? true
+            : false
+        : true
 
     type TypeOfTerminal<
         Token extends string,
         Dict
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
-        : Token extends keyof Dict
-        ? Alias.TypeOf<Token, Dict, {}>
+        : Token extends AliasIn<Dict> | "$cyclic" | "$resolution"
+        ? // Alias types are evaluated dynamically
+          unknown
         : Token extends `'${infer Value}'`
+        ? Value
+        : Token extends `"${infer Value}"`
         ? Value
         : Token extends `/${string}/`
         ? string

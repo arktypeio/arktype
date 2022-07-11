@@ -114,7 +114,7 @@ describe("space", () => {
         const cyclic = space({
             $meta: {
                 onCycle: {
-                    cyclic: "cyclic?"
+                    cyclic: "$cyclic?"
                 }
             },
             a: { b: "b", isA: "true", isB: "false" },
@@ -138,7 +138,7 @@ describe("space", () => {
             $meta: {
                 onResolve: {
                     wasResolved: "true",
-                    resolvedType: "resolution"
+                    resolvedType: "$resolution"
                 }
             },
             a: { b: "b", isA: "true", isB: "false" },

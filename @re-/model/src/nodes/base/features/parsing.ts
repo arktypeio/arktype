@@ -77,5 +77,8 @@ export namespace Parsing {
             unknown,
             Message
         >
+
+        export type ErrorMessage<Message extends string = string> =
+            `Error: ${Message}`
     }
 }

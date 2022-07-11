@@ -1,5 +1,4 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
-import { TypeOf as RootTypeOf, Validate as RootValidate } from "../model.js"
 import { AliasIn } from "../space.js"
 import { Base } from "./base/index.js"
 import { Root } from "./root.js"
@@ -18,12 +17,14 @@ export namespace Resolution {
               >,
               Str.Validate<Dict[Alias], Dict>
           >
-        : RootValidate<Dict[Alias], Dict>
+        : Root.Validate<Dict[Alias], Dict>
 
-    export type TypeOf<Alias extends AliasIn<Dict>, Dict> = RootTypeOf<
-        Dict[Alias],
+    export type TypeOf<
+        Alias extends AliasIn<Dict>,
         Dict
-    >
+    > = Dict[Alias] extends Base.Parsing.Types.ErrorMessage
+        ? unknown
+        : Root.TypeOf<Dict[Alias], Dict, { [K in Alias]: true }>
 
     export class Node extends Base.Link<string> {
         constructor(def: string, ctx: Base.Parsing.Context) {
@@ -148,12 +149,10 @@ const shallowCycleError = (shallowSeen: string[]) =>
     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
-    `${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`
-
-type IfShallowCycleErrorElse<
-    CheckResult extends string[],
-    Else
-> = [] extends CheckResult ? Else : ShallowCycleError<CheckResult>
+    Base.Parsing.Types.ErrorMessage<`${Seen[0]} references shallow cycle ${Join<
+        Seen,
+        "=>"
+    >}.`>
 
 type CheckResolutionForShallowCycle<
     Resolution,
@@ -182,7 +181,7 @@ type IterateReferencesForShallowCycle<
     ? Current extends keyof Dict
         ? Current extends ElementOf<Seen>
             ? [...Seen, Current]
-            : IfShallowCycleElse<
+            : IfShallowCycleTupleElse<
                   CheckResolutionForShallowCycleRecurse<
                       KeyValuate<Dict, Current>,
                       Dict,
@@ -197,7 +196,12 @@ type IterateReferencesForShallowCycle<
  *  Otherwise, we return an empty tuple if no tuple is detected.
  *  This generic simply returns cycle path if it is not an empty tuple, otherwise it will return Else.
  */
-type IfShallowCycleElse<
+type IfShallowCycleTupleElse<
     CheckResult extends string[],
     Else
 > = [] extends CheckResult ? Else : CheckResult
+
+type IfShallowCycleErrorElse<
+    CheckResult extends string[],
+    Else
+> = [] extends CheckResult ? Else : ShallowCycleError<CheckResult>

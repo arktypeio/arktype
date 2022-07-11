@@ -9,15 +9,16 @@ export namespace Record {
     export type TypeOf<
         Def,
         Dict,
+        Seen,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
         }[keyof Def],
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            -readonly [K in RequiredKey]: Root.TypeOf<Def[K], Dict>
+            -readonly [K in RequiredKey]: Root.TypeOf<Def[K], Dict, Seen>
         } & {
-            -readonly [K in OptionalKey]?: Root.TypeOf<Def[K], Dict>
+            -readonly [K in OptionalKey]?: Root.TypeOf<Def[K], Dict, Seen>
         }
     >
 
