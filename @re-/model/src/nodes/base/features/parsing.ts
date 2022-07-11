@@ -55,18 +55,27 @@ export namespace Parsing {
             path
         )} ${description}`
 
-    export type ParseErrorMessage<Message extends string = string> =
-        `Error: ${Message}`
-
     export class UnknownTypeError extends ParseError {
         constructor(def: string) {
             super(`Unable to determine the type of '${def}'.`)
         }
     }
 
-    export type UnknownTypeErrorMessage<
-        Definition extends string = "your definition"
-    > = `Unable to determine the type of ${Definition extends "your definition"
-        ? Definition
-        : `'${Definition}'`}.`
+    export namespace Types {
+        export type Terminal<
+            Def,
+            Type,
+            Error extends string | undefined = undefined
+        > = {
+            def: Def
+            type: Type
+            error: Error
+        }
+
+        export type Error<Message extends string> = Terminal<
+            "",
+            unknown,
+            Message
+        >
+    }
 }

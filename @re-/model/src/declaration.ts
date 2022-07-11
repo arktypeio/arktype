@@ -7,13 +7,13 @@ import {
     Narrow,
     transform
 } from "@re-/tools"
+import { Validate } from "./model.js"
 import {
     SpaceFrom,
     SpaceOptions,
     spaceRaw,
     ValidateDictionary
 } from "./space.js"
-import { Root } from "./index.js"
 
 export const declare: DeclareFn = (...names) => ({
     define: createDeclaredDefineFunctionMap(names) as any,
@@ -78,7 +78,7 @@ const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
  * Just use unknown for now since we don't have all the definitions yet
  * but we still want to allow references to other declared types
  */
-type CheckReferences<Def, DeclaredTypeName extends string> = Root.Validate<
+type CheckReferences<Def, DeclaredTypeName extends string> = Validate<
     Def,
     {
         [TypeName in DeclaredTypeName]: "unknown"

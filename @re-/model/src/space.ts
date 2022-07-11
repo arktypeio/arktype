@@ -5,7 +5,7 @@ import {
     Merge,
     RequireKeys
 } from "@re-/tools"
-import { Model, ModelFrom, ModelFunction } from "./model.js"
+import { Model, ModelFrom, ModelFunction, Validate } from "./model.js"
 import { Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
 
@@ -98,12 +98,12 @@ export type DictionaryToModels<Dict> = Evaluate<{
     [Alias in AliasIn<Dict>]: ModelFrom<
         Dict[Alias],
         Dict,
-        Resolution.Parse<Alias, Dict>
+        Resolution.TypeOf<Alias, Dict>
     >
 }>
 
 export type DictToTypes<Dict> = Evaluate<{
-    [Alias in AliasIn<Dict>]: Resolution.Parse<Alias, Dict>
+    [Alias in AliasIn<Dict>]: Resolution.TypeOf<Alias, Dict>
 }>
 
 export type MetaDefinitions = {
@@ -128,7 +128,7 @@ export type SpaceExtensionOptions<
 }
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
-    [TypeName in keyof ExtensionDict]: Root.Validate<
+    [TypeName in keyof ExtensionDict]: Validate<
         ExtensionDict[TypeName],
         Merge<BaseDict, ExtensionDict>
     >

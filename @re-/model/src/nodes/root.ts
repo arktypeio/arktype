@@ -1,37 +1,42 @@
-import { IsAny, IsAnyOrUnknown } from "@re-/tools"
+import { IsAnyOrUnknown } from "@re-/tools"
 import { Base } from "./base/index.js"
 import { Literal } from "./literal.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 
 export namespace Root {
-    export type Validate<Def, Dict> = Def extends []
-        ? Def
+    export type Parse<Def, Dict> = IsAnyOrUnknown<Def> extends true
+        ? Base.Parsing.Types.Terminal<Def, Def>
         : Def extends string
-        ? Str.Validate<Def, Dict>
+        ? Str.Parse<Def, Dict>
         : Def extends BadDefinitionType
-        ? BadDefinitionTypeMessage<Def>
-        : Def extends Obj.Unmapped
-        ? Def
+        ? Base.Parsing.Types.Error<BadDefinitionTypeMessage<Def>>
         : Def extends object
-        ? Obj.Validate<Def, Dict>
+        ? Obj.Parse<Def, Dict>
         : Def extends Literal.Definition
-        ? Def
-        : Base.Parsing.ParseErrorMessage<Base.Parsing.UnknownTypeErrorMessage>
+        ? Base.Parsing.Types.Terminal<Def, Def>
+        : Base.Parsing.Types.Error<"Unexpected definition type.">
 
-    export type Parse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
-        ? Def
-        : Def extends string
-        ? Str.TypeOf<Def, Dict>
-        : Def extends BadDefinitionType
-        ? unknown
-        : Def extends object
-        ? Obj.Parse<Def, Dict, Seen>
-        : Def extends Literal.Definition
-        ? Def
-        : IsAny<Dict> extends true
-        ? any
-        : unknown
+    export type Validate<Tree> = Tree extends Base.Parsing.Types.Terminal<
+        infer Def,
+        unknown,
+        infer Error
+    >
+        ? Error extends string
+            ? Error
+            : Def
+        : Tree extends Str.Root
+        ? Str.Validate<Tree>
+        : Obj.Validate<Tree>
+
+    export type TypeOf<Tree> = Tree extends Base.Parsing.Types.Terminal<
+        unknown,
+        infer Type
+    >
+        ? Type
+        : Tree extends Str.Root
+        ? Str.TypeOf<Tree>
+        : Obj.TypeOf<Tree>
 
     export type References<
         Def,
@@ -48,9 +53,9 @@ export namespace Root {
     export type BadDefinitionType = Function | symbol
 
     type BadDefinitionTypeMessage<Def extends BadDefinitionType> =
-        Base.Parsing.ParseErrorMessage<`Values of type ${Def extends Function
+        `Values of type ${Def extends Function
             ? "function"
-            : "symbol"} are not valid definitions.`>
+            : "symbol"} are not valid definitions.`
 
     export const parse: Base.Parsing.Parser<unknown> = (def, ctx) => {
         if (Str.matches(def)) {

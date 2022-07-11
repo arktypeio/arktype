@@ -1,5 +1,6 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
-import { AliasIn } from "../space.js"
+import { TypeOf as RootTypeOf, Validate as RootValidate } from "../model.js"
+import { AliasIn, space } from "../space.js"
 import { Base } from "./base/index.js"
 import { Root } from "./root.js"
 import { Str } from "./str/str.js"
@@ -15,15 +16,16 @@ export namespace Resolution {
                   Dict,
                   [Extract<Alias, string>]
               >,
-              Str.Validate<Dict[Alias], Dict>
+              RootValidate<Dict[Alias], Dict>
           >
-        : Root.Validate<Dict[Alias], Dict>
+        : RootValidate<Dict[Alias], Dict>
 
-    export type Parse<Alias extends AliasIn<Dict>, Dict> = Root.Parse<
+    export type TypeOf<Alias extends AliasIn<Dict>, Dict> = RootTypeOf<
         Dict[Alias],
-        Dict,
-        { [K in Alias]: true }
+        Dict
     >
+
+    const z = space({ a: "string" })
 
     export class Node extends Base.Link<string> {
         constructor(def: string, ctx: Base.Parsing.Context) {
@@ -148,10 +150,7 @@ const shallowCycleError = (shallowSeen: string[]) =>
     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
-    Base.Parsing.ParseErrorMessage<`${Seen[0]} references a shallow cycle: ${Join<
-        Seen,
-        "=>"
-    >}.`>
+    `${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`
 
 type IfShallowCycleErrorElse<
     CheckResult extends string[],

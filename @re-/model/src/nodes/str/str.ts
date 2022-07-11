@@ -11,27 +11,44 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 export namespace Str {
-    export type Validate<Def extends string, Dict> = ValidateParseTree<
-        Def,
-        Parse<Def, Dict>
+    export type Root<Tree = unknown, Def extends string = string> = {
+        __STR_ROOT__: Tree
+        __DEF__: Def
+    }
+
+    export type Parse<Def extends string, Dict> = Root<
+        ParseTokens<LexRoot<Def>, Dict>,
+        Def
     >
 
-    export type TypeOf<
-        Def extends string,
-        Dict
-    > = Def extends Base.Parsing.ParseErrorMessage
-        ? unknown
-        : TypeOfParseTree<Parse<Def, Dict>>
-
-    export type Parse<Def extends string, Dict> = ParseTokens<
-        LexRoot<Def>,
-        Dict
+    export type Validate<Tree extends Root> = Tree extends Root<
+        infer Node,
+        infer Def
     >
+        ? ValidateParseTree<Def, Node>
+        : never
+
+    export type TypeOf<Tree extends Root> = Tree extends Root<infer Node>
+        ? TypeOfParseTree<Node>
+        : never
+
+    type ValidateParseTree<
+        RootDef extends string,
+        Tree
+    > = Tree extends Base.Parsing.Types.Terminal<string, unknown, infer Error>
+        ? Error extends undefined
+            ? RootDef
+            : Error
+        : Tree extends Iteration<unknown, infer Branch, infer Remaining>
+        ? ValidateParseTree<RootDef, Branch> extends RootDef
+            ? ValidateParseTree<RootDef, Remaining>
+            : ValidateParseTree<RootDef, Branch>
+        : RootDef
 
     type ParseTokens<Tokens extends string[], Dict> = Tokens extends ErrorToken<
         infer Message
     >
-        ? ErrorNode<Message>
+        ? Base.Parsing.Types.Error<Message>
         : ParseExpression<Tokens, [], Dict>
 
     export type References<Def extends string> = ExtractReferences<
@@ -175,7 +192,10 @@ export namespace Str {
 
     type ErrorToken<Message extends string> = ["ERROR", Message]
 
-    type TypeOfParseTree<Tree> = Tree extends TerminalNode<string, infer Type>
+    type TypeOfParseTree<Tree> = Tree extends Base.Parsing.Types.Terminal<
+        string,
+        infer Type
+    >
         ? Type
         : Tree extends [infer Next, "?"]
         ? TypeOfParseTree<Next> | undefined
@@ -187,19 +207,6 @@ export namespace Str {
         ? TypeOfParseTree<Left> & TypeOfParseTree<Right>
         : unknown
 
-    type ValidateParseTree<
-        RootDef extends string,
-        Tree
-    > = Tree extends TerminalNode<string, unknown, infer Error>
-        ? Error extends undefined
-            ? RootDef
-            : Error
-        : Tree extends Iteration<unknown, infer Branch, infer Remaining>
-        ? ValidateParseTree<RootDef, Branch> extends RootDef
-            ? ValidateParseTree<RootDef, Remaining>
-            : ValidateParseTree<RootDef, Branch>
-        : RootDef
-
     type ParseExpression<
         Tokens extends string[],
         Tree,
@@ -208,7 +215,7 @@ export namespace Str {
         ? Token extends "("
             ? ParseGroup<SplitByMatchingParen<Remaining, [], []>, Tree, Dict>
             : Token extends ")"
-            ? ErrorNode<"Unexpected ).">
+            ? Base.Parsing.Types.Error<"Unexpected ).">
             : ParseOperator<Remaining, PushTerminal<Tree, Token, Dict>, Dict>
         : Tree
 
@@ -221,7 +228,7 @@ export namespace Str {
             ? ParseOperator<Remaining, [Tree, Token], Dict>
             : Token extends "|" | "&"
             ? [Tree, Token, ParseExpression<Remaining, [], Dict>]
-            : ErrorNode<`Expected an operator (got ${Token}).`>
+            : Base.Parsing.Types.Error<`Expected an operator (got ${Token}).`>
         : Tree
 
     type ParseGroup<Sliced, Tree, Dict> = Sliced extends [
@@ -266,26 +273,16 @@ export namespace Str {
                   >
                 : [BeforeMatch, Remaining]
             : SplitByMatchingParen<Remaining, [...BeforeMatch, Token], Depth>
-        : ErrorNode<"Missing ).">
-
-    type TerminalNode<
-        Def extends string,
-        Type,
-        Error extends string | undefined = undefined
-    > = {
-        def: Def
-        type: Type
-        error: Error
-    }
-
-    type ErrorNode<Message extends string> = TerminalNode<"", unknown, Message>
+        : Base.Parsing.Types.Error<"Missing ).">
 
     type ParseTerminal<Token extends string, Dict> = TypeOfTerminal<
         Token,
         Dict
-    > extends Base.Parsing.ParseErrorMessage
-        ? ErrorNode<TypeOfTerminal<Token, Dict>>
-        : TerminalNode<Token, TypeOfTerminal<Token, Dict>>
+    > extends UNRESOLVABLE
+        ? Base.Parsing.Types.Error<`'${Token}' does not exist in your space.`>
+        : Base.Parsing.Types.Terminal<Token, TypeOfTerminal<Token, Dict>>
+
+    type UNRESOLVABLE = "__UNRESOLVABLE__"
 
     type TypeOfTerminal<
         Token extends string,
@@ -293,7 +290,7 @@ export namespace Str {
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
         : Token extends keyof Dict
-        ? Alias.Parse<Token, Dict, {}>
+        ? Alias.TypeOf<Token, Dict, {}>
         : Token extends `'${infer Value}'`
         ? Value
         : Token extends `/${string}/`
@@ -302,25 +299,7 @@ export namespace Str {
         ? Value
         : Token extends EmbeddedBigInt.Definition<infer Value>
         ? Value
-        : Base.Parsing.ParseErrorMessage<
-              Base.Parsing.UnknownTypeErrorMessage<Token>
-          >
-
-    // type Split<
-    //     Tokens extends string[],
-    //     Delimiter extends string,
-    //     Groups extends string[][],
-    //     CurrentGroup extends string[]
-    // > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
-    //     ? Token extends Delimiter
-    //         ? Split<RemainingTokens, Delimiter, [...Groups, CurrentGroup], []>
-    //         : Split<
-    //               RemainingTokens,
-    //               Delimiter,
-    //               Groups,
-    //               [...CurrentGroup, Token]
-    //           >
-    //     : [...Groups, CurrentGroup]
+        : UNRESOLVABLE
 
     export const matches = (def: unknown): def is string =>
         typeof def === "string"

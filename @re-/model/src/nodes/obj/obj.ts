@@ -9,17 +9,23 @@ export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
     export type Unmapped = Regex.Definition
 
-    export type Validate<Def extends object, Dict> = Evaluate<{
-        [K in keyof Def]: Root.Validate<Def[K], Dict>
+    export type Parse<Def, Dict> = Def extends RegExp
+        ? Base.Parsing.Types.Terminal<Def, string>
+        : Def extends unknown[] | readonly unknown[]
+        ? {
+              -readonly [I in keyof Def]: Root.Parse<Def[I], Dict>
+          }
+        : { -readonly [K in keyof Def]: Root.Parse<Def[K], Dict> }
+
+    export type Validate<Tree> = Evaluate<{
+        [K in keyof Tree]: Root.Validate<Tree[K]>
     }>
 
-    export type Parse<Def extends object, Dict, Seen> = Def extends RegExp
-        ? string
-        : Def extends unknown[] | readonly unknown[]
+    export type TypeOf<Tree> = Tree extends unknown[] | readonly unknown[]
         ? Evaluate<{
-              -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen>
+              [I in keyof Tree]: Root.TypeOf<Tree[I]>
           }>
-        : Record.Parse<Def, Dict, Seen>
+        : Record.TypeOf<Tree>
 
     export type References<
         Def extends object,

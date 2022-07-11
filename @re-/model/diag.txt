@@ -1,18 +1,11 @@
-src/nodes/str/bound.ts(62,11): error TS2314: Generic type 'Parse' requires 2 type argument(s).
 test/references.test.ts(59,21): error TS2345: Argument of type '"user[]|group[]|boolean&true|integer&positive|null|1<number<2"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/references.test.ts(156,31): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
-test/references.test.ts(156,38): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
-test/references.test.ts(156,43): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
-test/references.test.ts(156,50): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
-test/references.test.ts(156,55): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
-test/references.test.ts(156,60): error TS2322: Type 'string' is not assignable to type 'never[] | { [x: string]: never[] | ...; }'.
 test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Expected an operator (got <=)."'.
 test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Expected an operator (got <=)."'.
-test/space/type.test.ts(117,21): error TS2322: Type '"cyclic?"' is not assignable to type '"Error: Unable to determine the type of 'cyclic'."'.
+test/space/type.test.ts(117,21): error TS2322: Type '"cyclic?"' is not assignable to type '"'cyclic' has not been defined."'.
 test/space/type.test.ts(126,34): error TS2339: Property 'cyclic' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
 test/space/type.test.ts(129,34): error TS2339: Property 'cyclic' does not exist on type '{ a: { b: ...; isA: true; isB: false; }; isA: false; isB: true; }'.
 test/space/type.test.ts(132,34): error TS2339: Property 'cyclic' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
-test/space/type.test.ts(141,21): error TS2322: Type '"resolution"' is not assignable to type '"Error: Unable to determine the type of 'resolution'."'.
+test/space/type.test.ts(141,21): error TS2322: Type '"resolution"' is not assignable to type '"'resolution' has not been defined."'.
 test/space/type.test.ts(153,16): error TS2571: Object is of type 'unknown'.
 test/str/bound.test.ts(7,26): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Expected an operator (got >)."'.
 test/str/bound.test.ts(10,26): error TS2345: Argument of type '"-7<integer<99"' is not assignable to parameter of type '"Expected an operator (got <)."'.
@@ -56,22 +49,23 @@ test/str/bound.test.ts(152,30): error TS2345: Argument of type '"5<=number<9999"
 test/str/bound.test.ts(156,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
 test/str/bound.test.ts(159,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
 test/str/bound.test.ts(166,32): error TS2345: Argument of type '"1<number<5"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/keyword.test.ts(187,25): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
-test/str/stringLiteral.test.ts(10,26): error TS2345: Argument of type '"\"goodbye\""' is not assignable to parameter of type '"Error: Unable to determine the type of '\"goodbye\"'."'.
-test/str/stringLiteral.test.ts(13,26): error TS2345: Argument of type '"\"'single-quoted'\""' is not assignable to parameter of type '"Error: Unable to determine the type of '\"'single-quoted'\"'."'.
-test/str/union.test.ts(124,42): error TS2345: Argument of type '"\"yes|no|maybe\""' is not assignable to parameter of type '"Error: Unable to determine the type of '\"yes|no|maybe\"'."'.
+test/str/keyword.test.ts(187,25): error TS2345: Argument of type '"never"' is not assignable to parameter of type '"'never' has not been defined."'.
+test/str/stringLiteral.test.ts(10,26): error TS2345: Argument of type '"\"goodbye\""' is not assignable to parameter of type '"'\"goodbye\"' has not been defined."'.
+test/str/stringLiteral.test.ts(13,26): error TS2345: Argument of type '"\"'single-quoted'\""' is not assignable to parameter of type '"'\"'single-quoted'\"' has not been defined."'.
+test/str/union.test.ts(82,26): error TS2345: Argument of type '"never|number|boolean"' is not assignable to parameter of type '"'never' has not been defined."'.
+test/str/union.test.ts(124,42): error TS2345: Argument of type '"\"yes|no|maybe\""' is not assignable to parameter of type '"'\"yes|no|maybe\"' has not been defined."'.
 Files:              224
-Lines:            84171
-Nodes:           283177
-Identifiers:     102407
-Symbols:         538734
-Types:           119777
-Instantiations: 1191827
-Memory used:    304479K
+Lines:            84138
+Nodes:           282864
+Identifiers:     102276
+Symbols:         546846
+Types:           119560
+Instantiations: 1202037
+Memory used:    299959K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.53s
-Bind time:        0.24s
-Check time:       2.66s
+Parse time:       0.57s
+Bind time:        0.25s
+Check time:       2.79s
 Emit time:        0.00s
-Total time:       3.43s
+Total time:       3.61s

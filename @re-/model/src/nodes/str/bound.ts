@@ -52,57 +52,57 @@ export namespace Bound {
         toBound(value: unknown): number
     }
 
-    export type Parse<
-        Def extends string,
-        Dict,
-        Ctx,
-        Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Base.Parsing.ParseErrorMessage
-        ? Bounded
-        : Str.Parse<Bounded, Dict, Ctx>
+    // export type TypeOf<
+    //     Def extends string,
+    //     Dict,
+    //     Ctx,
+    //     Bounded extends string = ExtractBounded<Def>
+    // > = Bounded extends Base.Parsing.ParseErrorMessage
+    //     ? Bounded
+    //     : Str.Parse<Bounded, Dict, Ctx>
 
-    type SingleBoundedParts<
-        Left extends string = string,
-        Comparator extends ComparatorToken = ComparatorToken,
-        Right extends string = string
-    > = [Left, Comparator, Right]
+    // type SingleBoundedParts<
+    //     Left extends string = string,
+    //     Comparator extends ComparatorToken = ComparatorToken,
+    //     Right extends string = string
+    // > = [Left, Comparator, Right]
 
-    type DoubleBoundedParts<
-        Left extends string = string,
-        FirstComparator extends ComparatorToken = ComparatorToken,
-        Middle extends string = string,
-        SecondComparator extends ComparatorToken = ComparatorToken,
-        Right extends string = string
-    > = [Left, FirstComparator, Middle, SecondComparator, Right]
+    // type DoubleBoundedParts<
+    //     Left extends string = string,
+    //     FirstComparator extends ComparatorToken = ComparatorToken,
+    //     Middle extends string = string,
+    //     SecondComparator extends ComparatorToken = ComparatorToken,
+    //     Right extends string = string
+    // > = [Left, FirstComparator, Middle, SecondComparator, Right]
 
-    type ExtractBounded<
-        Def extends string,
-        Parts = Spliterate<Def, ["<=", ">=", "<", ">", "=="], true>
-    > = Parts extends DoubleBoundedParts<
-        infer Left,
-        ComparatorToken,
-        infer Middle,
-        ComparatorToken,
-        infer Right
-    >
-        ? Middle extends BoundableKeyword
-            ? Left extends EmbeddedNumber.Definition
-                ? Right extends EmbeddedNumber.Definition
-                    ? Middle
-                    : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
-                : Base.Parsing.ParseErrorMessage<InvalidBoundError<Left>>
-            : Base.Parsing.ParseErrorMessage<UnboundableError<Middle>>
-        : Parts extends SingleBoundedParts<
-              infer Left,
-              ComparatorToken,
-              infer Right
-          >
-        ? Left extends BoundableKeyword
-            ? Right extends EmbeddedNumber.Definition
-                ? Left
-                : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
-            : Base.Parsing.ParseErrorMessage<UnboundableError<Left>>
-        : Base.Parsing.ParseErrorMessage<BoundPartsError>
+    // type ExtractBounded<
+    //     Def extends string,
+    //     Parts = Spliterate<Def, ["<=", ">=", "<", ">", "=="], true>
+    // > = Parts extends DoubleBoundedParts<
+    //     infer Left,
+    //     ComparatorToken,
+    //     infer Middle,
+    //     ComparatorToken,
+    //     infer Right
+    // >
+    //     ? Middle extends BoundableKeyword
+    //         ? Left extends EmbeddedNumber.Definition
+    //             ? Right extends EmbeddedNumber.Definition
+    //                 ? Middle
+    //                 : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
+    //             : Base.Parsing.ParseErrorMessage<InvalidBoundError<Left>>
+    //         : Base.Parsing.ParseErrorMessage<UnboundableError<Middle>>
+    //     : Parts extends SingleBoundedParts<
+    //           infer Left,
+    //           ComparatorToken,
+    //           infer Right
+    //       >
+    //     ? Left extends BoundableKeyword
+    //         ? Right extends EmbeddedNumber.Definition
+    //             ? Left
+    //             : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
+    //         : Base.Parsing.ParseErrorMessage<UnboundableError<Left>>
+    //     : Base.Parsing.ParseErrorMessage<BoundPartsError>
 
     const matcher = /(<=|>=|<|>|==)/
 
