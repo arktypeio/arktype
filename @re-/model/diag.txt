@@ -1,60 +1,15 @@
-test/references.test.ts(59,21): error TS2345: Argument of type '"user[]|group[]|boolean&true|integer&positive|null|1<number<2"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Expected an operator (got <=)."'.
-test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(7,26): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(10,26): error TS2345: Argument of type '"-7<integer<99"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(62,23): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(64,26): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(65,26): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(66,26): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(67,26): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(69,23): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(73,26): error TS2345: Argument of type '"number>5"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(74,26): error TS2345: Argument of type '"number<-999"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(75,26): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(76,26): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(77,26): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(78,26): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(81,26): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(82,26): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(83,26): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(84,26): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(85,26): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(86,26): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(92,30): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(95,30): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(98,30): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(102,27): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(105,30): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(109,27): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(114,30): error TS2345: Argument of type '"number<=5"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(118,27): error TS2345: Argument of type '"number>=-999"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(120,30): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(123,30): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(126,30): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(129,30): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(134,30): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(137,30): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-test/str/bound.test.ts(141,27): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(144,27): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-test/str/bound.test.ts(147,27): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(150,27): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(152,30): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-test/str/bound.test.ts(156,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(159,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Expected an operator (got >=)."'.
-test/str/bound.test.ts(166,32): error TS2345: Argument of type '"1<number<5"' is not assignable to parameter of type '"Expected an operator (got <)."'.
 Files:              224
-Lines:            84169
-Nodes:           283057
-Identifiers:     102352
-Symbols:         464848
-Types:            91371
-Instantiations:  718201
-Memory used:    263443K
+Lines:            84199
+Nodes:           283312
+Identifiers:     102449
+Symbols:         486595
+Types:            95069
+Instantiations:  761458
+Memory used:    279172K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.57s
-Bind time:        0.21s
-Check time:       2.18s
+Parse time:       0.52s
+Bind time:        0.20s
+Check time:       2.08s
 Emit time:        0.00s
-Total time:       2.97s
+Total time:       2.79s

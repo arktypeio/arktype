@@ -65,18 +65,11 @@ export namespace Str {
     type LexRoot<Def extends string> = Lex<"", [], ListChars<Def, []>>
 
     /** In this context, a Separator is any token that does not refer to a value */
-    type SeparatorToken =
-        | "[]"
-        | "?"
-        | "|"
-        | "&"
-        | "<"
-        | ">"
-        | "<="
-        | ">="
-        | "=="
-        | "("
-        | ")"
+    type SeparatorToken = "(" | ")" | OperatorToken
+
+    type OperatorToken = "[]" | "?" | "|" | "&" | ComparatorToken
+
+    type ComparatorToken = "<" | ">" | "<=" | ">=" | "=="
 
     type Lex<
         Fragment extends string,
@@ -100,10 +93,10 @@ export namespace Str {
         ? Tokens
         : [...Tokens, Fragment]
 
-    type BoundStartChar = "<" | ">" | "="
+    type ComparatorStartChar = "<" | ">" | "="
 
     type LexBound<
-        FirstChar extends BoundStartChar,
+        FirstChar extends ComparatorStartChar,
         Fragment extends string,
         Tokens extends string[],
         Unscanned extends string[]
@@ -188,23 +181,21 @@ export namespace Str {
 
     type ErrorToken<Message extends string> = ["ERROR", Message]
 
-    type TypeOfParseTree<Tree, Dict, Seen> =
-        Tree extends Base.Parsing.Types.Terminal<infer Def, infer Type>
-            ? Def extends keyof Dict
-                ? Alias.TypeOf<Def, Dict, Seen>
-                : Type
-            : Tree extends [infer Next, "?"]
-            ? TypeOfParseTree<Next, Dict, Seen> | undefined
-            : Tree extends [infer Next, "[]"]
-            ? TypeOfParseTree<Next, Dict, Seen>[]
-            : Tree extends [infer Left, "|", infer Right]
-            ?
-                  | TypeOfParseTree<Left, Dict, Seen>
-                  | TypeOfParseTree<Right, Dict, Seen>
-            : Tree extends [infer Left, "&", infer Right]
-            ? TypeOfParseTree<Left, Dict, Seen> &
-                  TypeOfParseTree<Right, Dict, Seen>
-            : unknown
+    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends [
+        Base.Parsing.Types.Terminal<infer Def, infer Type>
+    ]
+        ? Def extends keyof Dict
+            ? Alias.TypeOf<Def, Dict, Seen>
+            : Type
+        : Tree extends [infer Next, "?"]
+        ? TypeOfParseTree<Next, Dict, Seen> | undefined
+        : Tree extends [infer Next, "[]"]
+        ? TypeOfParseTree<Next, Dict, Seen>[]
+        : Tree extends [infer Left, "|", infer Right]
+        ? TypeOfParseTree<Left, Dict, Seen> | TypeOfParseTree<Right, Dict, Seen>
+        : Tree extends [infer Left, "&", infer Right]
+        ? TypeOfParseTree<Left, Dict, Seen> & TypeOfParseTree<Right, Dict, Seen>
+        : unknown
 
     type ParseExpression<
         Tokens extends string[],
@@ -215,6 +206,8 @@ export namespace Str {
             ? ParseGroup<SplitByMatchingParen<Remaining, [], []>, Tree, Dict>
             : Token extends ")"
             ? Base.Parsing.Types.Error<"Unexpected ).">
+            : Token extends OperatorToken
+            ? Base.Parsing.Types.Error<`Expression expected (got ${Token}).`>
             : ParseOperator<Remaining, PushTerminal<Tree, Token, Dict>, Dict>
         : Tree
 
@@ -227,8 +220,43 @@ export namespace Str {
             ? ParseOperator<Remaining, [Tree, Token], Dict>
             : Token extends "|" | "&"
             ? [Tree, Token, ParseExpression<Remaining, [], Dict>]
+            : Token extends ComparatorToken
+            ? ParseBound<Token, Remaining, Tree, Dict>
             : Base.Parsing.Types.Error<`Expected an operator (got ${Token}).`>
         : Tree
+
+    type ParseBound<
+        Comparator extends string,
+        RemainingTokens extends string[],
+        Tree,
+        Dict
+    > = RemainingTokens extends [infer LookaheadToken, ...infer NextRemaining]
+        ? LookaheadToken extends EmbeddedNumber.Definition
+            ? Tree extends [...infer PreviousTree, infer LookbehindNode]
+                ? AssertBoundableThen<
+                      LookbehindNode,
+                      // @ts-expect-error
+                      ParseOperator<NextRemaining, Tree, Dict>
+                  >
+                : Base.Parsing.Types.Error<`Unable to parse the left side of ${Comparator}.`>
+            : Tree extends [...infer PreviousTree, infer Lookbehind]
+            ? Lookbehind extends Base.Parsing.Types.Terminal<
+                  EmbeddedNumber.Definition,
+                  number
+              >
+                ? ParseExpression<RemainingTokens, PreviousTree, Dict>
+                : Base.Parsing.Types.Error<`One side of comparator ${Comparator} must be a number literal.`>
+            : Base.Parsing.Types.Error<`Left side of comparator ${Comparator} is missing.`>
+        : Base.Parsing.Types.Error<`Right side of comparator ${Comparator} is missing.`>
+
+    type AssertBoundableThen<Node, Next> =
+        Node extends Base.Parsing.Types.Terminal<infer Def, unknown>
+            ? Def extends Keyword.OfTypeNumber | Keyword.OfTypeString
+                ? Next
+                : Base.Parsing.Types.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
+            : Node extends [unknown, "[]"]
+            ? Next
+            : Base.Parsing.Types.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
 
     type ParseGroup<Sliced, Tree, Dict> = Sliced extends [
         infer Group,
@@ -244,7 +272,7 @@ export namespace Str {
         : Sliced
 
     type PushExpression<Tree, Expression> = Tree extends []
-        ? Expression
+        ? [Expression]
         : [Tree, Expression]
 
     type PushTerminal<Tree, Token extends string, Dict> = PushExpression<
