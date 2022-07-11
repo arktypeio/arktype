@@ -1,17 +1,16 @@
 import { AssertionError } from "node:assert"
 import { rmSync } from "node:fs"
 import {
+    benchMarkSnapCall,
     getTestComment,
     getTestFileData,
-    markMatch,
+    meanBenchRegex,
+    medianBenchRegex,
     TestData,
     testFileCopyPath
 } from "./metaTests/testHelpers.js"
 
 const benchTemplate = "templateForBenches.ts"
-
-const meanMatch = /\.mean\(`\d+\.\d+(ns|us|s|ms)`\)/
-const medianMatch = /\.median\(`\d+\.\d+(ns|us|s|ms)`\)/
 
 const throwAssertionError = (statementText: string) => {
     throw new AssertionError({
@@ -24,17 +23,17 @@ const checkBenchStatHasSomethingInIt = (
 ) => {
     switch (callType) {
         case "median":
-            if (!medianMatch.test(statementText)) {
+            if (!medianBenchRegex.test(statementText)) {
                 throwAssertionError(statementText)
             }
             break
         case "mean":
-            if (!meanMatch.test(statementText)) {
+            if (!meanBenchRegex.test(statementText)) {
                 throwAssertionError(statementText)
             }
             break
         case "mark":
-            if (!markMatch.test(statementText)) {
+            if (!benchMarkSnapCall.test(statementText)) {
                 throwAssertionError(statementText)
             }
             break
@@ -51,7 +50,7 @@ const checkThatBenchSnapGetsPopulated = (testData: TestData) => {
 }
 describe("bench", () => {
     after(() => {
-        rmSync(testFileCopyPath)
+        rmSync(testFileCopyPath, { force: true })
     })
     it("checks that bench set some kind of value", () => {
         const testData: TestData = getTestFileData(benchTemplate, false)

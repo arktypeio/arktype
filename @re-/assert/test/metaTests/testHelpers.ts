@@ -8,11 +8,25 @@ export type TestData = {
     sourceFile: SourceFile
     initialText: string
 }
-const snapMatch = /\.snap\((.+)?\)/
-const benchMeanMedianMatch = /\.(mean|median)\(`\d+\.\d+(ns|us|s|ms)`\)/
-export const markMatch =
-    /\.mark\(\{(mean|median): ?`\d+\.\d+(ns|us|ms|s)`, ?(mean|median): ?`\d+\.\d+(ns|us|ms|s)`\}\)/
+const snapRegex = /\.snap\((.+)?\)/
+const BENCH_STATS = ["mean", "median"]
+const TIME_UNITS = ["ns", "us", "ms", "s"]
 
+const createBenchStatExpression = (asMark: boolean, stat?: string) =>
+    `(${stat ? stat : BENCH_STATS.join("|")})${
+        asMark ? ": " : "("
+    }\`d+.d+(${TIME_UNITS.join("|")})\`${asMark ? "}" : ")"}`
+
+const benchStatSnapCall = new RegExp(createBenchStatExpression(false))
+export const benchMarkSnapCall = new RegExp(createBenchStatExpression(true))
+export const medianBenchRegex = new RegExp(
+    createBenchStatExpression(false, "median")
+)
+export const meanBenchRegex = new RegExp(
+    createBenchStatExpression(false, "mean")
+)
+console.log(medianBenchRegex)
+console.log(meanBenchRegex)
 const EXPECTED_RESULTS_JSON_PATH = fromHere("expectedResults.json")
 const PATH_TO_ASSERTIONS_DIR = fromHere(".reassert")
 const testFile = "copiedTestFile.ts"
@@ -21,9 +35,9 @@ export const testFileCopyPath = fromHere(testFile)
 const filterExpressionStatements = (statements: ExpressionStatement[]) =>
     statements.filter(
         (statement) =>
-            benchMeanMedianMatch.test(statement.getText()) ||
-            snapMatch.test(statement.getText()) ||
-            markMatch.test(statement.getText())
+            benchStatSnapCall.test(statement.getText()) ||
+            snapRegex.test(statement.getText()) ||
+            benchMarkSnapCall.test(statement.getText())
     )
 
 export const getTestComment = (

@@ -29,7 +29,7 @@ const testSnapPopulation = (precached: boolean) => {
 }
 describe("inline meta tests", () => {
     after(() => {
-        rmSync(testFileCopyPath)
+        rmSync(testFileCopyPath, { force: true })
     })
     it("Checks snap gets populated - precache: true", () => {
         testSnapPopulation(true)
