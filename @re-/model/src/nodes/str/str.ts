@@ -88,6 +88,8 @@ export namespace Str {
             ? LexLiteral<NextChar, "", Tokens, NextUnscanned>
             : NextChar extends ComparatorStartChar
             ? LexBound<NextChar, Fragment, Tokens, NextUnscanned>
+            : NextChar extends " "
+            ? Lex<Fragment, Tokens, NextUnscanned>
             : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned>
         : Fragment extends ""
         ? Tokens
@@ -238,7 +240,8 @@ export namespace Str {
         Dict
     > = RemainingTokens extends [infer LookaheadToken, ...infer NextRemaining]
         ? LookaheadToken extends EmbeddedNumber.Definition
-            ? Tree extends [...infer PreviousTree, infer LookbehindNode]
+            ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              Tree extends [...infer PreviousTree, infer LookbehindNode]
                 ? AssertBoundableThen<
                       LookbehindNode,
                       // @ts-expect-error

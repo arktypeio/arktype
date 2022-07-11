@@ -17,6 +17,7 @@ describe("optional", () => {
                 optional?: boolean | undefined
             }
         })
+
         describe("errors", () => {
             it("bad inner type", () => {
                 // @ts-expect-error
@@ -51,6 +52,7 @@ describe("optional", () => {
             })
         })
     })
+
     describe("validation", () => {
         it("preserves original type", () => {
             assert(model("false?").validate(false).error).is(undefined)
