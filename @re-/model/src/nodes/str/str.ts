@@ -64,7 +64,7 @@ export namespace Str {
 
     type LexRoot<Def extends string> = Lex<"", [], ListChars<Def, []>>
 
-    /** In this context, a Separator is any token that does not refer to a value */
+    /** In this context, a Separator is any token that does not refer to a type */
     type SeparatorToken = "(" | ")" | OperatorToken
 
     type OperatorToken = "[]" | "?" | "|" | "&" | ComparatorToken
@@ -84,9 +84,9 @@ export namespace Str {
                 : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
             : NextChar extends "|" | "&" | "(" | ")"
             ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
-            : NextChar extends `'` | `"` | `/`
+            : NextChar extends LiteralEnclosingChar
             ? LexLiteral<NextChar, "", Tokens, NextUnscanned>
-            : NextChar extends ">" | "<" | "="
+            : NextChar extends ComparatorStartChar
             ? LexBound<NextChar, Fragment, Tokens, NextUnscanned>
             : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned>
         : Fragment extends ""
@@ -94,6 +94,8 @@ export namespace Str {
         : [...Tokens, Fragment]
 
     type ComparatorStartChar = "<" | ">" | "="
+
+    type LiteralEnclosingChar = `'` | `"` | `/`
 
     type LexBound<
         FirstChar extends ComparatorStartChar,
@@ -160,7 +162,7 @@ export namespace Str {
         : never
 
     type LexLiteral<
-        Enclosing extends string,
+        Enclosing extends LiteralEnclosingChar,
         Literal extends string,
         Tokens extends string[],
         Unscanned extends string[]
