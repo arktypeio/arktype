@@ -20,7 +20,9 @@ type MakeComplexType<S extends string> = ListPossibleTypes<
 // Complex type returned directly
 bench("bench type", () => {
     return [] as any as MakeComplexType<"!">
-}).type.mean("177.46ms")
+})
+    .type()
+    .mean("177.46ms")
 
 // Complex type as an intermediate value (results should be similar to above)
 bench("bench unreturned type", () => {
