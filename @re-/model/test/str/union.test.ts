@@ -150,7 +150,9 @@ g: 4 is not assignable to 3.`)
             assert(
                 unionOfLiteralsOfUnions.validate("yes|no'|'true|false'").error
                     ?.message
-            ).snap()
+            ).snap(
+                `"yes|no'|'true|false'" is not assignable to any of 'yes|no'|'true|false'.`
+            )
         })
     })
 })

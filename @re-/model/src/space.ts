@@ -67,7 +67,17 @@ export type CreateSpaceFn = <Dict>(
 ) => SpaceFrom<ValidateDictionary<Dict>>
 
 export type ValidateDictionary<Dict> = {
-    [Alias in keyof Dict]: Resolution.Validate<Alias, Dict>
+    [Alias in keyof Dict]: Alias extends "$meta"
+        ? ValidateDictionaryMeta<Dict[Alias], Dict>
+        : Resolution.Validate<Alias, Dict>
+}
+
+type ValidateDictionaryMeta<Meta, Dict> = {
+    [K in keyof Meta]: K extends "onCycle"
+        ? Root.Validate<Meta[K], Dict & { $cyclic: "unknown" }>
+        : K extends "onResolve"
+        ? Root.Validate<Meta[K], Dict & { $resolution: "unknown" }>
+        : `Meta key '${K & string}' must be one of: ['onCycle', 'onResolve'].`
 }
 
 export type SpaceLevelOptions = Base.ModelOptions

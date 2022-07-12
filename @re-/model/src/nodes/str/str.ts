@@ -217,7 +217,7 @@ export namespace Str {
                   PushExpression<Tree, ParseTerminal<Token, Dict>>,
                   Dict
               >
-        : Tree
+        : Base.Parsing.Types.Error<`Expected an expression.`>
 
     type ParseOperator<
         Tokens extends string[],
@@ -337,7 +337,7 @@ export namespace Str {
         Dict
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
-        : Token extends AliasIn<Dict> | "$cyclic" | "$resolution"
+        : Token extends AliasIn<Dict>
         ? // Alias types are evaluated dynamically
           unknown
         : Token extends `'${infer Value}'`

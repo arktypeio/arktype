@@ -111,7 +111,7 @@ describe("space", () => {
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     it("with onCycle option", () => {
-        const cyclic = space({
+        const models = space({
             $meta: {
                 onCycle: {
                     cyclic: "$cyclic?"
@@ -119,22 +119,23 @@ describe("space", () => {
             },
             a: { b: "b", isA: "true", isB: "false" },
             b: { a: "a", isA: "false", isB: "true" }
-        }).$meta.model({
+        })
+        const cyclicModel = models.$meta.model({
             a: "a",
             b: "b"
         })
-        assert(cyclic.type.a.b.a.cyclic).type.toString.snap(
+        assert(cyclicModel.type.a.b.a.cyclic).type.toString.snap(
             `{ b: { a: { b: { cyclic?: { a: { b: { a: { cyclic?: { b: { a: { b: any; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined`
         )
-        assert(cyclic.type.b.a.b.cyclic).type.toString.snap(
+        assert(cyclicModel.type.b.a.b.cyclic).type.toString.snap(
             `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
         )
-        assert(cyclic.type.a.b.a.cyclic?.b.a.b.cyclic).type.toString.snap(
+        assert(cyclicModel.type.a.b.a.cyclic?.b.a.b.cyclic).type.toString.snap(
             `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
         )
     })
     it("with onResolve option", () => {
-        const withOnResolve = space({
+        const models = space({
             $meta: {
                 onResolve: {
                     wasResolved: "true",
@@ -143,7 +144,8 @@ describe("space", () => {
             },
             a: { b: "b", isA: "true", isB: "false" },
             b: { a: "a", isA: "false", isB: "true" }
-        }).$meta.model({
+        })
+        const withOnResolve = models.$meta.model({
             referencesA: "a",
             noReferences: {
                 favoriteSoup: "'borscht'"
@@ -155,6 +157,34 @@ describe("space", () => {
         // @ts-expect-error
         assert(withOnResolve.type.noReferences.wasResolved).type.errors(
             "Property 'wasResolved' does not exist on type '{ favoriteSoup: \"borscht\"; }'."
+        )
+    })
+    it("errors on bad meta key", () => {
+        // @ts-expect-error
+        assert(space({ $meta: { fake: "boolean" } })).type.errors.snap(
+            `Type '"boolean"' is not assignable to type '"Meta key 'fake' must be one of: ['onCycle', 'onResolve']."'.`
+        )
+    })
+    it("errors on bad meta def", () => {
+        // @ts-expect-error
+        assert(space({ $meta: { onCycle: "fake" } })).type.errors.snap(
+            `Type '"fake"' is not assignable to type '"'fake' does not exist in your space."'.`
+        )
+    })
+    it("doesn't allow meta-only defs outside meta", () => {
+        // @ts-expect-error
+        assert(space({ a: "$cyclic" })).type.errors.snap()
+    })
+    it("doesn't allow key-specific meta references in other meta keys", () => {
+        // @ts-expect-error
+        assert(space({ $meta: { onCycle: "$resolution" } })).type.errors.snap(
+            `Type '"$resolution"' is not assignable to type '"'$resolution' does not exist in your space."'.`
+        )
+    })
+    it("doesn't allow references to $meta", () => {
+        // @ts-expect-error
+        assert(space({ $meta: {}, a: "$meta" })).type.errors.snap(
+            `Type '"$meta"' is not assignable to type '"'$meta' does not exist in your space."'.`
         )
     })
 })
