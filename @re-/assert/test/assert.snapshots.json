@@ -1,5 +1,5 @@
 {
-    "assert.test.ts": {
+    "externalSnapshots.test.ts": {
         "toFile": {
             "re": "do"
         },
