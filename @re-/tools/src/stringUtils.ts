@@ -205,3 +205,10 @@ export type StringifyPossibleTypes<
     U extends Stringifiable,
     Delimiter extends string = ", "
 > = Join<ListPossibleTypes<U>, Delimiter>
+
+export type ListChars<
+    S extends string,
+    Result extends string[] = []
+> = S extends `${infer Char}${infer Remaining}`
+    ? ListChars<Remaining, [...Result, Char]>
+    : Result

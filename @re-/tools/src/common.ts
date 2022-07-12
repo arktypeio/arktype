@@ -310,3 +310,5 @@ export type IncludesSubstring<
     S extends string,
     Substring extends string
 > = S extends `${string}${Substring}${string}` ? true : false
+
+export type Conform<T, Template> = T extends Template ? T : Template

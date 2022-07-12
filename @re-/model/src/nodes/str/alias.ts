@@ -6,16 +6,10 @@ import { Base } from "./base.js"
 type GetMetaDefinitions<Dict> = "$meta" extends keyof Dict ? Dict["$meta"] : {}
 
 export namespace Alias {
-    export type TypeOf<
-        Def extends keyof Dict,
-        Dict,
-        Seen
-    > = Dict[Def] extends Base.Parsing.Types.Error<string>
-        ? unknown
-        : And<
-              "onResolve" extends keyof GetMetaDefinitions<Dict> ? true : false,
-              Def extends "$resolution" ? false : true
-          > extends true
+    export type TypeOf<Def extends keyof Dict, Dict, Seen> = And<
+        "onResolve" extends keyof GetMetaDefinitions<Dict> ? true : false,
+        Def extends "$resolution" ? false : true
+    > extends true
         ? Root.TypeOf<
               Get<GetMetaDefinitions<Dict>, "onResolve">,
               WithPropValue<Dict, "$resolution", Dict[Def]>,

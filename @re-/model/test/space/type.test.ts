@@ -159,6 +159,17 @@ describe("space", () => {
             "Property 'wasResolved' does not exist on type '{ favoriteSoup: \"borscht\"; }'."
         )
     })
+    it("allows non-meta references within meta", () => {
+        assert(
+            space({ $meta: { onCycle: "s" }, a: { a: "a" }, s: "string" }).$meta
+                .types
+        ).typed as {
+            a: {
+                a: string
+            }
+            s: string
+        }
+    })
     it("errors on bad meta key", () => {
         // @ts-expect-error
         assert(space({ $meta: { fake: "boolean" } })).type.errors.snap(

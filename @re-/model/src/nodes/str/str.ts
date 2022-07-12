@@ -1,4 +1,4 @@
-import { Iteration } from "@re-/tools"
+import { Iteration, ListChars } from "@re-/tools"
 import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
@@ -31,7 +31,7 @@ export namespace Str {
     type ValidateParseTree<
         RootDef extends string,
         Tree
-    > = Tree extends Base.Parsing.Types.Terminal<string, unknown, infer Error>
+    > = Tree extends Terminals.Base<unknown, string, infer Error>
         ? Error extends undefined
             ? RootDef
             : Error
@@ -41,10 +41,27 @@ export namespace Str {
             : ValidateParseTree<RootDef, Branch>
         : RootDef
 
+    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends [
+        Terminals.Base<infer Type, infer Def>
+    ]
+        ? // We don't have to use AliasIn here since if Def was a $meta key, this will be an Error Terminal
+          Def extends keyof Dict
+            ? Alias.TypeOf<Def, Dict, Seen>
+            : Type
+        : Tree extends [infer Next, "?"]
+        ? TypeOfParseTree<Next, Dict, Seen> | undefined
+        : Tree extends [infer Next, "[]"]
+        ? TypeOfParseTree<Next, Dict, Seen>[]
+        : Tree extends [infer Left, "|", infer Right]
+        ? TypeOfParseTree<Left, Dict, Seen> | TypeOfParseTree<Right, Dict, Seen>
+        : Tree extends [infer Left, "&", infer Right]
+        ? TypeOfParseTree<Left, Dict, Seen> & TypeOfParseTree<Right, Dict, Seen>
+        : unknown
+
     type ParseTokens<Tokens extends string[], Dict> = Tokens extends ErrorToken<
         infer Message
     >
-        ? Base.Parsing.Types.Error<Message>
+        ? Terminals.Error<Message>
         : ParseExpression<Tokens, [], Dict>
 
     export type References<Def extends string> = ExtractReferences<
@@ -140,13 +157,6 @@ export namespace Str {
         ? [...Tokens, Separator]
         : [...Tokens, Fragment, Separator]
 
-    type ListChars<
-        S extends string,
-        Result extends string[] = []
-    > = S extends `${infer Char}${infer Remaining}`
-        ? ListChars<Remaining, [...Result, Char]>
-        : Result
-
     type LexList<
         Fragment extends string,
         Tokens extends string[],
@@ -185,22 +195,6 @@ export namespace Str {
 
     type ErrorToken<Message extends string> = ["ERROR", Message]
 
-    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends [
-        Base.Parsing.Types.Terminal<infer Def, infer Type>
-    ]
-        ? Def extends keyof Dict
-            ? Alias.TypeOf<Def, Dict, Seen>
-            : Type
-        : Tree extends [infer Next, "?"]
-        ? TypeOfParseTree<Next, Dict, Seen> | undefined
-        : Tree extends [infer Next, "[]"]
-        ? TypeOfParseTree<Next, Dict, Seen>[]
-        : Tree extends [infer Left, "|", infer Right]
-        ? TypeOfParseTree<Left, Dict, Seen> | TypeOfParseTree<Right, Dict, Seen>
-        : Tree extends [infer Left, "&", infer Right]
-        ? TypeOfParseTree<Left, Dict, Seen> & TypeOfParseTree<Right, Dict, Seen>
-        : unknown
-
     type ParseExpression<
         Tokens extends string[],
         Tree,
@@ -209,15 +203,15 @@ export namespace Str {
         ? Token extends "("
             ? ParseGroup<SplitByMatchingParen<Remaining, [], []>, Tree, Dict>
             : Token extends ")"
-            ? Base.Parsing.Types.Error<"Unexpected ).">
+            ? Terminals.Error<"Unexpected ).">
             : Token extends OperatorToken
-            ? Base.Parsing.Types.Error<`Expression expected (got ${Token}).`>
+            ? Terminals.Error<`Expression expected (got ${Token}).`>
             : ParseOperator<
                   Remaining,
                   PushExpression<Tree, ParseTerminal<Token, Dict>>,
                   Dict
               >
-        : Base.Parsing.Types.Error<`Expected an expression.`>
+        : Terminals.Error<`Expected an expression.`>
 
     type ParseOperator<
         Tokens extends string[],
@@ -230,7 +224,7 @@ export namespace Str {
             ? [Tree, Token, ParseExpression<Remaining, [], Dict>]
             : Token extends ComparatorToken
             ? ParseBound<Token, Remaining, Tree, Dict>
-            : Base.Parsing.Types.Error<`Expected an operator (got ${Token}).`>
+            : Terminals.Error<`Expected an operator (got ${Token}).`>
         : Tree
 
     type ParseBound<
@@ -247,28 +241,21 @@ export namespace Str {
                       // @ts-expect-error
                       ParseOperator<NextRemaining, Tree, Dict>
                   >
-                : Base.Parsing.Types.Error<`Unable to parse the left side of ${Comparator}.`>
+                : Terminals.Error<`Unable to parse the left side of ${Comparator}.`>
             : Tree extends [...infer PreviousTree, infer Lookbehind]
-            ? Lookbehind extends Base.Parsing.Types.Terminal<
-                  EmbeddedNumber.Definition,
-                  number
-              >
+            ? Lookbehind extends Terminals.DefinedFrom<EmbeddedNumber.Definition>
                 ? ParseExpression<RemainingTokens, PreviousTree, Dict>
-                : Base.Parsing.Types.Error<`One side of comparator ${Comparator} must be a number literal.`>
-            : [
-                  Base.Parsing.Types.Error<`Left side of comparator ${Comparator} is missing.`>,
-                  Tree
-              ]
-        : Base.Parsing.Types.Error<`Right side of comparator ${Comparator} is missing.`>
+                : Terminals.Error<`One side of comparator ${Comparator} must be a number literal.`>
+            : Terminals.Error<`Left side of comparator ${Comparator} is missing.`>
+        : Terminals.Error<`Right side of comparator ${Comparator} is missing.`>
 
-    type AssertBoundableThen<Node, Next> =
-        Node extends Base.Parsing.Types.Terminal<infer Def, unknown>
-            ? Def extends Keyword.OfTypeNumber | Keyword.OfTypeString
-                ? Next
-                : Base.Parsing.Types.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
-            : Node extends [unknown, "[]"]
-            ? Next
-            : Base.Parsing.Types.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
+    type AssertBoundableThen<Node, Next> = Node extends Terminals.DefinedFrom<
+        Keyword.OfTypeNumber | Keyword.OfTypeString
+    >
+        ? Next
+        : Node extends [unknown, "[]"]
+        ? Next
+        : Terminals.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
 
     type ParseGroup<Sliced, Tree, Dict> = Sliced extends [
         infer Group,
@@ -310,7 +297,7 @@ export namespace Str {
                   >
                 : [BeforeMatch, Remaining]
             : SplitByMatchingParen<Remaining, [...BeforeMatch, Token], Depth>
-        : Base.Parsing.Types.Error<"Missing ).">
+        : Terminals.Error<"Missing ).">
 
     type ParseTerminal<Token extends string, Dict> = TerminalTypeToNode<
         Token,
@@ -321,8 +308,8 @@ export namespace Str {
         Token extends string,
         TerminalType
     > = IsResolvable<TerminalType> extends true
-        ? Base.Parsing.Types.Terminal<Token, TerminalType>
-        : Base.Parsing.Types.Error<`'${Token}' does not exist in your space.`>
+        ? Terminals.Base<TerminalType, Token>
+        : Terminals.Error<`'${Token}' does not exist in your space.`>
 
     type UNRESOLVABLE = "__UNRESOLVABLE__"
 
@@ -338,7 +325,7 @@ export namespace Str {
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
         : Token extends AliasIn<Dict>
-        ? // Alias types are evaluated dynamically
+        ? // Alias types are resolved dynamically
           unknown
         : Token extends `'${infer Value}'`
         ? Value
@@ -351,6 +338,30 @@ export namespace Str {
         : Token extends EmbeddedBigInt.Definition<infer Value>
         ? Value
         : UNRESOLVABLE
+
+    export namespace Terminals {
+        export type Base<
+            Type,
+            Def extends string,
+            Error extends string | undefined = undefined
+        > = {
+            type: Type
+            def: Def
+            error: Error
+        }
+
+        export type DefinedFrom<Def extends string> = Base<
+            unknown,
+            Def,
+            undefined
+        >
+
+        export type Error<Message extends string> = Base<
+            unknown,
+            string,
+            Message
+        >
+    }
 
     export const matches = (def: unknown): def is string =>
         typeof def === "string"

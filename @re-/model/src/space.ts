@@ -1,7 +1,9 @@
 import {
     chainableNoOpProxy,
+    Conform,
     deepMerge,
     Evaluate,
+    Get,
     Merge,
     RequireKeys
 } from "@re-/tools"
@@ -72,13 +74,19 @@ export type ValidateDictionary<Dict> = {
         : Resolution.Validate<Alias, Dict>
 }
 
-type ValidateDictionaryMeta<Meta, Dict> = {
-    [K in keyof Meta]: K extends "onCycle"
-        ? Root.Validate<Meta[K], Dict & { $cyclic: "unknown" }>
-        : K extends "onResolve"
-        ? Root.Validate<Meta[K], Dict & { $resolution: "unknown" }>
-        : `Meta key '${K & string}' must be one of: ['onCycle', 'onResolve'].`
-}
+type ValidateDictionaryMeta<Meta, Dict> = Conform<
+    Meta,
+    {
+        onCycle?: Root.Validate<
+            Get<Meta, "onCycle">,
+            Dict & { $cyclic: "unknown" }
+        >
+        onResolve?: Root.Validate<
+            Get<Meta, "onResolve">,
+            Dict & { $resolution: "unknown" }
+        >
+    }
+>
 
 export type SpaceLevelOptions = Base.ModelOptions
 

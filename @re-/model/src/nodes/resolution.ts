@@ -22,7 +22,7 @@ export namespace Resolution {
     export type TypeOf<
         Alias extends AliasIn<Dict>,
         Dict
-    > = Dict[Alias] extends Base.Parsing.Types.ErrorMessage
+    > = Dict[Alias] extends Base.Parsing.ErrorMessage
         ? unknown
         : Root.TypeOf<Dict[Alias], Dict, { [K in Alias]: true }>
 
@@ -149,7 +149,7 @@ const shallowCycleError = (shallowSeen: string[]) =>
     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
-    Base.Parsing.Types.ErrorMessage<`${Seen[0]} references shallow cycle ${Join<
+    Base.Parsing.ErrorMessage<`${Seen[0]} references shallow cycle ${Join<
         Seen,
         "=>"
     >}.`>

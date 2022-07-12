@@ -11,6 +11,7 @@ import {
     isInteger,
     isNumeric,
     lettersAfterFirstToLower,
+    ListChars,
     transformSubstring
 } from "../src/index.js"
 
@@ -84,6 +85,12 @@ describe("lettersAfterFirstToLower", () => {
     it("works", () => {
         assert(lettersAfterFirstToLower("HELLO")).equals("Hello")
     })
+})
+
+describe("ListChars", () => {
+    const actual = {} as ListChars<"ab c | e">
+    type Expected = ["a", "b", " ", "c", " ", "|", " ", "e"]
+    assert(actual).typed as Expected
 })
 
 describe("alphanumeric regex", () => {

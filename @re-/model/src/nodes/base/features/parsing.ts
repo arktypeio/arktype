@@ -61,25 +61,6 @@ export namespace Parsing {
         }
     }
 
-    export namespace Types {
-        export type Terminal<
-            Def,
-            Type,
-            Error extends string | undefined = undefined,
-            Suggestions extends string[] = []
-        > = {
-            def: Def
-            type: Type
-            error: Error
-            suggestions: Suggestions
-        }
-
-        export type Error<
-            Message extends string,
-            Suggestions extends string[] = []
-        > = Terminal<"", unknown, Message, Suggestions>
-
-        export type ErrorMessage<Message extends string = string> =
-            `Error: ${Message}`
-    }
+    export type ErrorMessage<Message extends string = string> =
+        `Error: ${Message}`
 }
