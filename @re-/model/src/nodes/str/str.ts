@@ -62,7 +62,7 @@ export namespace Str {
           >
         : Refs
 
-    type LexRoot<Def extends string> = Lex<"", [], ListChars<Def, []>>
+    type LexRoot<Def extends string> = Lex<"", [], ListChars<Def>>
 
     /** In this context, a Separator is any token that does not refer to a type */
     type SeparatorToken = "(" | ")" | OperatorToken
@@ -142,7 +142,7 @@ export namespace Str {
 
     type ListChars<
         S extends string,
-        Result extends string[]
+        Result extends string[] = []
     > = S extends `${infer Char}${infer Remaining}`
         ? ListChars<Remaining, [...Result, Char]>
         : Result

@@ -1,33 +1,18 @@
-import { Entry, Spliterate } from "@re-/tools"
+import { Entry } from "@re-/tools"
 import { Base } from "./base.js"
 import { EmbeddedNumber } from "./embedded.js"
-import { Keyword } from "./keyword/index.js"
-import { List } from "./list.js"
 import { Str } from "./str.js"
-
-type BoundableKeyword =
-    | Keyword.OfTypeNumber
-    | Keyword.OfTypeString
-    | List.Definition
 
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
 
-type InvalidBoundError<Bound extends string> =
-    `Bounding value '${Bound}' must be a number literal.`
-
 const invalidBoundError = (bound: string) =>
     `Bounding value '${Base.defToString(bound)}' must be a number literal.`
-
-type UnboundableError<Bounded extends string> =
-    `Definition '${Bounded}' is not boundable.`
 
 const unboundableError = (inner: string) =>
     `Definition '${Base.defToString(inner)}' is not boundable.`
 
 const boundPartsErrorTemplate =
     "Bounds must be either of the form D<N or N<D<N, where 'D' is a boundable definition, 'N' is a number literal, and '<' is a comparison token."
-
-type BoundPartsError = typeof boundPartsErrorTemplate
 
 const invertComparator = (token: ComparatorToken): ComparatorToken => {
     switch (token) {
@@ -51,58 +36,6 @@ export namespace Bound {
         boundBy?: string
         toBound(value: unknown): number
     }
-
-    // export type TypeOf<
-    //     Def extends string,
-    //     Dict,
-    //     Ctx,
-    //     Bounded extends string = ExtractBounded<Def>
-    // > = Bounded extends Base.Parsing.ParseErrorMessage
-    //     ? Bounded
-    //     : Str.Parse<Bounded, Dict, Ctx>
-
-    // type SingleBoundedParts<
-    //     Left extends string = string,
-    //     Comparator extends ComparatorToken = ComparatorToken,
-    //     Right extends string = string
-    // > = [Left, Comparator, Right]
-
-    // type DoubleBoundedParts<
-    //     Left extends string = string,
-    //     FirstComparator extends ComparatorToken = ComparatorToken,
-    //     Middle extends string = string,
-    //     SecondComparator extends ComparatorToken = ComparatorToken,
-    //     Right extends string = string
-    // > = [Left, FirstComparator, Middle, SecondComparator, Right]
-
-    // type ExtractBounded<
-    //     Def extends string,
-    //     Parts = Spliterate<Def, ["<=", ">=", "<", ">", "=="], true>
-    // > = Parts extends DoubleBoundedParts<
-    //     infer Left,
-    //     ComparatorToken,
-    //     infer Middle,
-    //     ComparatorToken,
-    //     infer Right
-    // >
-    //     ? Middle extends BoundableKeyword
-    //         ? Left extends EmbeddedNumber.Definition
-    //             ? Right extends EmbeddedNumber.Definition
-    //                 ? Middle
-    //                 : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
-    //             : Base.Parsing.ParseErrorMessage<InvalidBoundError<Left>>
-    //         : Base.Parsing.ParseErrorMessage<UnboundableError<Middle>>
-    //     : Parts extends SingleBoundedParts<
-    //           infer Left,
-    //           ComparatorToken,
-    //           infer Right
-    //       >
-    //     ? Left extends BoundableKeyword
-    //         ? Right extends EmbeddedNumber.Definition
-    //             ? Left
-    //             : Base.Parsing.ParseErrorMessage<InvalidBoundError<Right>>
-    //         : Base.Parsing.ParseErrorMessage<UnboundableError<Left>>
-    //     : Base.Parsing.ParseErrorMessage<BoundPartsError>
 
     const matcher = /(<=|>=|<|>|==)/
 
