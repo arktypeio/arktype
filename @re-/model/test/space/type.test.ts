@@ -172,9 +172,7 @@ describe("space", () => {
     })
     it("errors on bad meta key", () => {
         // @ts-expect-error
-        assert(space({ $meta: { fake: "boolean" } })).type.errors.snap(
-            `Type '"boolean"' is not assignable to type '"Meta key 'fake' must be one of: ['onCycle', 'onResolve']."'.`
-        )
+        assert(space({ $meta: { fake: "boolean" } })).type.errors.snap()
     })
     it("errors on bad meta def", () => {
         // @ts-expect-error
