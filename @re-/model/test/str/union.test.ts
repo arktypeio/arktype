@@ -27,6 +27,10 @@ describe("union", () => {
                     "Unable to determine the type of ''."
                 )
             })
+            it("ends with |", () => {
+                // @ts-expect-error
+                assert(() => eager("boolean|")).throwsAndHasTypeError()
+            })
         })
     })
     describe("validation", () => {
