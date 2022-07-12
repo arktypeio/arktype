@@ -31,19 +31,20 @@ export namespace Str {
     type ValidateParseTree<
         RootDef extends string,
         Tree
-    > = Tree extends Terminals.Base<unknown, string, infer Error>
+    > = Tree extends Terminal.Base<unknown, string, infer Error>
         ? Error extends undefined
             ? RootDef
             : Error
-        : Tree extends Iteration<unknown, infer Branch, infer Remaining>
+        : Tree extends Iteration<unknown, infer Branch, infer RemainingTokens>
         ? ValidateParseTree<RootDef, Branch> extends RootDef
-            ? ValidateParseTree<RootDef, Remaining>
+            ? ValidateParseTree<RootDef, RemainingTokens>
             : ValidateParseTree<RootDef, Branch>
         : RootDef
 
-    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends [
-        Terminals.Base<infer Type, infer Def>
-    ]
+    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends Terminal.Base<
+        infer Type,
+        infer Def
+    >
         ? // We don't have to use AliasIn here since if Def was a $meta key, this will be an Error Terminal
           Def extends keyof Dict
             ? Alias.TypeOf<Def, Dict, Seen>
@@ -61,8 +62,8 @@ export namespace Str {
     type ParseTokens<Tokens extends string[], Dict> = Tokens extends ErrorToken<
         infer Message
     >
-        ? Terminals.Error<Message>
-        : ParseExpression<Tokens, [], Dict>
+        ? Terminal.Error<Message>
+        : ParseExpression<Tokens, Dict>
 
     export type References<Def extends string> = ExtractReferences<
         LexRoot<Def>,
@@ -72,17 +73,16 @@ export namespace Str {
     type ExtractReferences<
         Tokens extends string[],
         Refs extends string[]
-    > = Tokens extends Iteration<string, infer Token, infer Remaining>
+    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
         ? ExtractReferences<
-              Remaining,
-              Token extends SeparatorToken ? Refs : [...Refs, Token]
+              RemainingTokens,
+              Token extends NonTerminalToken ? Refs : [...Refs, Token]
           >
         : Refs
 
     type LexRoot<Def extends string> = Lex<"", [], ListChars<Def>>
 
-    /** In this context, a Separator is any token that does not refer to a type */
-    type SeparatorToken = "(" | ")" | OperatorToken
+    type NonTerminalToken = "(" | ")" | OperatorToken
 
     type OperatorToken = "[]" | "?" | "|" | "&" | ComparatorToken
 
@@ -97,10 +97,10 @@ export namespace Str {
             ? LexList<Fragment, Tokens, NextUnscanned>
             : NextChar extends "?"
             ? NextUnscanned extends []
-                ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
+                ? LexNonTerminal<NextChar, Fragment, Tokens, NextUnscanned>
                 : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
             : NextChar extends "|" | "&" | "(" | ")"
-            ? LexSeparator<NextChar, Fragment, Tokens, NextUnscanned>
+            ? LexNonTerminal<NextChar, Fragment, Tokens, NextUnscanned>
             : NextChar extends LiteralEnclosingChar
             ? LexLiteral<NextChar, "", Tokens, NextUnscanned>
             : NextChar extends ComparatorStartChar
@@ -123,7 +123,7 @@ export namespace Str {
         Unscanned extends string[]
     > = Unscanned extends [infer NextChar, ...infer NextUnscanned]
         ? NextChar extends "="
-            ? LexSeparator<
+            ? LexNonTerminal<
                   `${FirstChar}=`,
                   Fragment,
                   Tokens,
@@ -132,7 +132,7 @@ export namespace Str {
               >
             : FirstChar extends "="
             ? ErrorToken<`= is not a valid comparator. Use == instead.`>
-            : LexSeparator<
+            : LexNonTerminal<
                   // @ts-expect-error
                   FirstChar,
                   Fragment,
@@ -142,20 +142,18 @@ export namespace Str {
               >
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
-    type LexSeparator<
-        Separator extends SeparatorToken,
+    type LexNonTerminal<
+        Token extends NonTerminalToken,
         Fragment extends string,
         Tokens extends string[],
         Unscanned extends string[]
-    > = Lex<"", PushTokensFrom<Separator, Fragment, Tokens>, Unscanned>
+    > = Lex<"", PushTokensFrom<Token, Fragment, Tokens>, Unscanned>
 
     type PushTokensFrom<
-        Separator extends SeparatorToken,
+        Token extends NonTerminalToken,
         Fragment extends string,
         Tokens extends string[]
-    > = Fragment extends ""
-        ? [...Tokens, Separator]
-        : [...Tokens, Fragment, Separator]
+    > = Fragment extends "" ? [...Tokens, Token] : [...Tokens, Fragment, Token]
 
     type LexList<
         Fragment extends string,
@@ -163,7 +161,7 @@ export namespace Str {
         UnscannedChars extends string[]
     > = UnscannedChars extends [infer NextChar, ...infer NextUnscanned]
         ? NextChar extends "]"
-            ? LexSeparator<
+            ? LexNonTerminal<
                   "[]",
                   Fragment,
                   Tokens,
@@ -195,95 +193,105 @@ export namespace Str {
 
     type ErrorToken<Message extends string> = ["ERROR", Message]
 
+    /** An Expression is a list of tokens that must form a completed type to be valid */
     type ParseExpression<
         Tokens extends string[],
-        Tree,
         Dict
-    > = Tokens extends Iteration<string, infer Token, infer Remaining>
+    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
         ? Token extends "("
-            ? ParseGroup<SplitByMatchingParen<Remaining, [], []>, Tree, Dict>
+            ? ParseGroup<SplitByMatchingParen<RemainingTokens, [], []>, Dict>
             : Token extends ")"
-            ? Terminals.Error<"Unexpected ).">
+            ? Terminal.Error<"Unexpected ).">
             : Token extends OperatorToken
-            ? Terminals.Error<`Expression expected (got ${Token}).`>
-            : ParseOperator<
-                  Remaining,
-                  PushExpression<Tree, ParseTerminal<Token, Dict>>,
-                  Dict
-              >
-        : Terminals.Error<`Expected an expression.`>
+            ? Terminal.Error<`Expression expected (got ${Token}).`>
+            : ParseFragment<RemainingTokens, ParseTerminal<Token, Dict>, Dict>
+        : Terminal.Error<`Expected an expression.`>
 
-    type ParseOperator<
+    /** A Fragment is a list of tokens that modify or branch Tree (a parsed Expression) */
+    type ParseFragment<
         Tokens extends string[],
         Tree,
         Dict
-    > = Tokens extends Iteration<string, infer Token, infer Remaining>
-        ? Token extends "[]" | "?"
-            ? ParseOperator<Remaining, [Tree, Token], Dict>
-            : Token extends "|" | "&"
-            ? [Tree, Token, ParseExpression<Remaining, [], Dict>]
+    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
+        ? Token extends ModifyingToken
+            ? ParseFragment<RemainingTokens, [Tree, Token], Dict>
+            : Token extends BranchingOperatorToken
+            ? [Tree, Token, ParseExpression<RemainingTokens, Dict>]
             : Token extends ComparatorToken
-            ? ParseBound<Token, Remaining, Tree, Dict>
-            : Terminals.Error<`Expected an operator (got ${Token}).`>
+            ? ParseBound<Token, RemainingTokens, Tree, Dict>
+            : Terminal.Error<`Expected an operator (got ${Token}).`>
         : Tree
 
+    /** These tokens modify the current expression */
+    type ModifyingToken = "[]" | "?"
+
+    /** These tokens complete the current expression and start parsing a new expression from RemainingTokens.
+     *
+     *  Instead of passing the updated tree to ParseExpression like a ModifyingToken
+     *  BranchingTokens return the left half of the expression and the token directly,
+     *  thus finalizing them, and then begin parsing the right half. This ensures
+     *  that, in absence of parentheses, an expression like "string|number[]" is parsed as:
+     *     string | (number[])
+     *  instead of:
+     *     (string | number)[]
+     **/
+    type BranchingOperatorToken = "|" | "&"
+
+    /**  */
     type ParseBound<
-        Comparator extends string,
+        Comparator extends ComparatorToken,
         RemainingTokens extends string[],
         Tree,
         Dict
-    > = RemainingTokens extends [infer LookaheadToken, ...infer NextRemaining]
-        ? LookaheadToken extends EmbeddedNumber.Definition
-            ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              Tree extends [...infer PreviousTree, infer LookbehindNode]
-                ? AssertBoundableThen<
-                      LookbehindNode,
-                      // @ts-expect-error
-                      ParseOperator<NextRemaining, Tree, Dict>
-                  >
-                : Terminals.Error<`Unable to parse the left side of ${Comparator}.`>
-            : Tree extends [...infer PreviousTree, infer Lookbehind]
-            ? Lookbehind extends Terminals.DefinedFrom<EmbeddedNumber.Definition>
-                ? ParseExpression<RemainingTokens, PreviousTree, Dict>
-                : Terminals.Error<`One side of comparator ${Comparator} must be a number literal.`>
-            : Terminals.Error<`Left side of comparator ${Comparator} is missing.`>
-        : Terminals.Error<`Right side of comparator ${Comparator} is missing.`>
-
-    type AssertBoundableThen<Node, Next> = Node extends Terminals.DefinedFrom<
-        Keyword.OfTypeNumber | Keyword.OfTypeString
-    >
-        ? Next
-        : Node extends [unknown, "[]"]
-        ? Next
-        : Terminals.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
-
-    type ParseGroup<Sliced, Tree, Dict> = Sliced extends [
-        infer Group,
-        infer Remaining
+    > = RemainingTokens extends [
+        infer LookaheadToken,
+        ...infer NextRemainingTokens
     ]
-        ? ParseOperator<
+        ? LookaheadToken extends EmbeddedNumber.Definition
+            ? AssertBoundableThen<
+                  Tree,
+                  // @ts-expect-error
+                  ParseFragment<NextRemainingTokens, Tree, Dict>
+              >
+            : Tree extends Terminal.DefinedFrom<EmbeddedNumber.Definition>
+            ? ParseExpression<RemainingTokens, Dict>
+            : Terminal.Error<`One side of comparator ${Comparator} must be a number literal.`>
+        : Terminal.Error<`Right side of comparator ${Comparator} is missing.`>
+
+    /** A BoundableNode must be either:
+     *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
+     *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100>alphanumeric")
+     *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
+     */
+    type BoundableNode =
+        | Terminal.DefinedFrom<Keyword.OfTypeNumber | Keyword.OfTypeString>
+        | [unknown, "[]"]
+
+    type AssertBoundableThen<Node, Next> = Node extends BoundableNode
+        ? Next
+        : Terminal.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
+
+    type ParseGroup<Sliced, Dict> = Sliced extends [
+        infer Group,
+        infer RemainingTokens
+    ]
+        ? ParseFragment<
               // @ts-expect-error
-              Remaining,
+              RemainingTokens,
               // @ts-expect-error
-              PushExpression<Tree, ParseExpression<Group, [], Dict>>,
+              ParseExpression<Group, Dict>,
               Dict
           >
         : Sliced
-
-    type PushExpression<Tree, Expression> = Tree extends []
-        ? Expression extends unknown[]
-            ? Expression
-            : [Expression]
-        : [Tree, Expression]
 
     type SplitByMatchingParen<
         Tokens,
         BeforeMatch extends string[],
         Depth extends unknown[]
-    > = Tokens extends Iteration<string, infer Token, infer Remaining>
+    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
         ? Token extends "("
             ? SplitByMatchingParen<
-                  Remaining,
+                  RemainingTokens,
                   [...BeforeMatch, Token],
                   [...Depth, 1]
               >
@@ -291,13 +299,17 @@ export namespace Str {
             ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
               Depth extends [...infer DepthMinusOne, infer Pop]
                 ? SplitByMatchingParen<
-                      Remaining,
+                      RemainingTokens,
                       [...BeforeMatch, Token],
                       DepthMinusOne
                   >
-                : [BeforeMatch, Remaining]
-            : SplitByMatchingParen<Remaining, [...BeforeMatch, Token], Depth>
-        : Terminals.Error<"Missing ).">
+                : [BeforeMatch, RemainingTokens]
+            : SplitByMatchingParen<
+                  RemainingTokens,
+                  [...BeforeMatch, Token],
+                  Depth
+              >
+        : Terminal.Error<"Missing ).">
 
     type ParseTerminal<Token extends string, Dict> = TerminalTypeToNode<
         Token,
@@ -308,8 +320,8 @@ export namespace Str {
         Token extends string,
         TerminalType
     > = IsResolvable<TerminalType> extends true
-        ? Terminals.Base<TerminalType, Token>
-        : Terminals.Error<`'${Token}' does not exist in your space.`>
+        ? Terminal.Base<TerminalType, Token>
+        : Terminal.Error<`'${Token}' does not exist in your space.`>
 
     type UNRESOLVABLE = "__UNRESOLVABLE__"
 
@@ -339,7 +351,7 @@ export namespace Str {
         ? Value
         : UNRESOLVABLE
 
-    export namespace Terminals {
+    export namespace Terminal {
         export type Base<
             Type,
             Def extends string,
