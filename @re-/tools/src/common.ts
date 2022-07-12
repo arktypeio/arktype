@@ -312,3 +312,14 @@ export type IncludesSubstring<
 > = S extends `${string}${Substring}${string}` ? true : false
 
 export type Conform<T, Template> = T extends Template ? T : Template
+
+/**
+ *  Check if T is exactly identical to U.
+ *  Can be used to distinguish any/unknown/never from more precise types,
+ *  but will return false when comparing any of those types to themselves.
+ */
+export type IsExactly<T, U> = T extends U
+    ? unknown extends T
+        ? false
+        : true
+    : false

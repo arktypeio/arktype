@@ -31,17 +31,17 @@ export namespace Str {
     type ValidateParseTree<
         RootDef extends string,
         Tree
-    > = Tree extends Terminal.Base<unknown, string, infer Error>
+    > = Tree extends Terminal.Typed<unknown, string, infer Error>
         ? Error extends undefined
             ? RootDef
             : Error
-        : Tree extends Iteration<unknown, infer Branch, infer RemainingTokens>
-        ? ValidateParseTree<RootDef, Branch> extends RootDef
-            ? ValidateParseTree<RootDef, RemainingTokens>
-            : ValidateParseTree<RootDef, Branch>
+        : Tree extends Iteration<unknown, infer Node, infer RemainingNodes>
+        ? ValidateParseTree<RootDef, Node> extends RootDef
+            ? ValidateParseTree<RootDef, RemainingNodes>
+            : ValidateParseTree<RootDef, Node>
         : RootDef
 
-    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends Terminal.Base<
+    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends Terminal.Typed<
         infer Type,
         infer Def
     >
@@ -237,7 +237,6 @@ export namespace Str {
      **/
     type BranchingOperatorToken = "|" | "&"
 
-    /**  */
     type ParseBound<
         Comparator extends ComparatorToken,
         RemainingTokens extends string[],
@@ -311,16 +310,16 @@ export namespace Str {
               >
         : Terminal.Error<"Missing ).">
 
-    type ParseTerminal<Token extends string, Dict> = TerminalTypeToNode<
+    type ParseTerminal<Token extends string, Dict> = TypeToTerminal<
         Token,
         TypeOfTerminal<Token, Dict>
     >
 
-    type TerminalTypeToNode<
+    type TypeToTerminal<
         Token extends string,
         TerminalType
     > = IsResolvable<TerminalType> extends true
-        ? Terminal.Base<TerminalType, Token>
+        ? Terminal.Typed<TerminalType, Token>
         : Terminal.Error<`'${Token}' does not exist in your space.`>
 
     type UNRESOLVABLE = "__UNRESOLVABLE__"
@@ -352,7 +351,9 @@ export namespace Str {
         : UNRESOLVABLE
 
     export namespace Terminal {
-        export type Base<
+        export type Any = Record<string, unknown>
+
+        export type Typed<
             Type,
             Def extends string,
             Error extends string | undefined = undefined
@@ -362,13 +363,17 @@ export namespace Str {
             error: Error
         }
 
-        export type DefinedFrom<Def extends string> = Base<
+        export type Alias<Name extends string> = {
+            alias: Name
+        }
+
+        export type DefinedFrom<Def extends string> = Typed<
             unknown,
             Def,
             undefined
         >
 
-        export type Error<Message extends string> = Base<
+        export type Error<Message extends string> = Typed<
             unknown,
             string,
             Message
