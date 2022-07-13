@@ -35,7 +35,8 @@ export namespace Str {
         ? Error extends undefined
             ? RootDef
             : Error
-        : Tree extends Iteration<unknown, infer Node, infer RemainingNodes>
+        : // Consider adding type for tree?
+        Tree extends Iteration<unknown, infer Node, infer RemainingNodes>
         ? ValidateParseTree<RootDef, Node> extends RootDef
             ? ValidateParseTree<RootDef, RemainingNodes>
             : ValidateParseTree<RootDef, Node>
@@ -73,7 +74,7 @@ export namespace Str {
     type ExtractReferences<
         Tokens extends string[],
         Refs extends string[]
-    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
+    > = Tokens extends Iterate<infer Token, infer RemainingTokens>
         ? ExtractReferences<
               RemainingTokens,
               Token extends NonTerminalToken ? Refs : [...Refs, Token]
@@ -88,26 +89,36 @@ export namespace Str {
 
     type ComparatorToken = "<" | ">" | "<=" | ">=" | "=="
 
+    type Scan<Char extends string, Unscanned extends string[]> = [
+        Char,
+        ...Unscanned
+    ]
+
+    type Iterate<Token extends string, Remaining extends string[]> = [
+        Token,
+        ...Remaining
+    ]
+
     type Lex<
         Fragment extends string,
         Tokens extends string[],
-        Unscanned extends string[]
-    > = Unscanned extends Iteration<string, infer NextChar, infer NextUnscanned>
-        ? NextChar extends `[`
-            ? LexList<Fragment, Tokens, NextUnscanned>
-            : NextChar extends "?"
-            ? NextUnscanned extends []
-                ? LexNonTerminal<NextChar, Fragment, Tokens, NextUnscanned>
+        Chars extends string[]
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends `[`
+            ? LexList<Fragment, Tokens, Unscanned>
+            : Char extends "?"
+            ? Unscanned extends []
+                ? LexNonTerminal<Char, Fragment, Tokens, Unscanned>
                 : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
-            : NextChar extends "|" | "&" | "(" | ")"
-            ? LexNonTerminal<NextChar, Fragment, Tokens, NextUnscanned>
-            : NextChar extends LiteralEnclosingChar
-            ? LexLiteral<NextChar, "", Tokens, NextUnscanned>
-            : NextChar extends ComparatorStartChar
-            ? LexBound<NextChar, Fragment, Tokens, NextUnscanned>
-            : NextChar extends " "
-            ? Lex<Fragment, Tokens, NextUnscanned>
-            : Lex<`${Fragment}${NextChar}`, Tokens, NextUnscanned>
+            : Char extends "|" | "&" | "(" | ")"
+            ? LexNonTerminal<Char, Fragment, Tokens, Unscanned>
+            : Char extends LiteralEnclosingChar
+            ? LexLiteral<Char, "", Tokens, Unscanned>
+            : Char extends ComparatorStartChar
+            ? LexBound<Char, Fragment, Tokens, Unscanned>
+            : Char extends " "
+            ? Lex<Fragment, Tokens, Unscanned>
+            : Lex<`${Fragment}${Char}`, Tokens, Unscanned>
         : Fragment extends ""
         ? Tokens
         : [...Tokens, Fragment]
@@ -120,16 +131,10 @@ export namespace Str {
         FirstChar extends ComparatorStartChar,
         Fragment extends string,
         Tokens extends string[],
-        Unscanned extends string[]
-    > = Unscanned extends [infer NextChar, ...infer NextUnscanned]
-        ? NextChar extends "="
-            ? LexNonTerminal<
-                  `${FirstChar}=`,
-                  Fragment,
-                  Tokens,
-                  // @ts-expect-error
-                  NextUnscanned
-              >
+        Chars extends string[]
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends "="
+            ? LexNonTerminal<`${FirstChar}=`, Fragment, Tokens, Unscanned>
             : FirstChar extends "="
             ? ErrorToken<`= is not a valid comparator. Use == instead.`>
             : LexNonTerminal<
@@ -137,8 +142,8 @@ export namespace Str {
                   FirstChar,
                   Fragment,
                   Tokens,
-                  // Use Unscanned here instead of NextUnscanned since the comparator was only 1 character
-                  Unscanned
+                  // Use Chars here instead of Unscanned since the comparator was only 1 character
+                  Chars
               >
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
@@ -158,38 +163,27 @@ export namespace Str {
     type LexList<
         Fragment extends string,
         Tokens extends string[],
-        UnscannedChars extends string[]
-    > = UnscannedChars extends [infer NextChar, ...infer NextUnscanned]
-        ? NextChar extends "]"
-            ? LexNonTerminal<
-                  "[]",
-                  Fragment,
-                  Tokens,
-                  // @ts-expect-error TS can't infer that NextUnscanned is a string[]
-                  NextUnscanned
-              >
+        Chars extends string[]
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends "]"
+            ? LexNonTerminal<"[]", Fragment, Tokens, Unscanned>
             : ErrorToken<`Missing expected ']'.`>
         : never
 
     type LexLiteral<
         Enclosing extends LiteralEnclosingChar,
-        Literal extends string,
+        Contents extends string,
         Tokens extends string[],
-        Unscanned extends string[]
-    > = Unscanned extends Iteration<string, infer NextChar, infer NextUnscanned>
-        ? NextChar extends Enclosing
+        Chars extends string[]
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends Enclosing
             ? Lex<
                   "",
-                  [...Tokens, `${Enclosing}${Literal}${Enclosing}`],
-                  NextUnscanned
+                  [...Tokens, `${Enclosing}${Contents}${Enclosing}`],
+                  Unscanned
               >
-            : LexLiteral<
-                  Enclosing,
-                  `${Literal}${NextChar}`,
-                  Tokens,
-                  NextUnscanned
-              >
-        : ErrorToken<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Literal}`>
+            : LexLiteral<Enclosing, `${Contents}${Char}`, Tokens, Unscanned>
+        : ErrorToken<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Contents}`>
 
     type ErrorToken<Message extends string> = ["ERROR", Message]
 
@@ -197,24 +191,24 @@ export namespace Str {
     type ParseExpression<
         Tokens extends string[],
         Dict
-    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
+    > = Tokens extends Iterate<infer Token, infer RemainingTokens>
         ? Token extends "("
             ? ParseGroup<SplitByMatchingParen<RemainingTokens, [], []>, Dict>
             : Token extends ")"
             ? Terminal.Error<"Unexpected ).">
             : Token extends OperatorToken
             ? Terminal.Error<`Expression expected (got ${Token}).`>
-            : ParseFragment<RemainingTokens, ParseTerminal<Token, Dict>, Dict>
+            : ParseOperators<RemainingTokens, ParseTerminal<Token, Dict>, Dict>
         : Terminal.Error<`Expected an expression.`>
 
-    /** A Fragment is a list of tokens that modify or branch Tree (a parsed Expression) */
-    type ParseFragment<
+    /** Operators are a list of zero or more tokens that modify or branch an Expression (Tree) */
+    type ParseOperators<
         Tokens extends string[],
         Tree,
         Dict
-    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
+    > = Tokens extends Iterate<infer Token, infer RemainingTokens>
         ? Token extends ModifyingToken
-            ? ParseFragment<RemainingTokens, [Tree, Token], Dict>
+            ? ParseOperators<RemainingTokens, [Tree, Token], Dict>
             : Token extends BranchingOperatorToken
             ? [Tree, Token, ParseExpression<RemainingTokens, Dict>]
             : Token extends ComparatorToken
@@ -239,21 +233,14 @@ export namespace Str {
 
     type ParseBound<
         Comparator extends ComparatorToken,
-        RemainingTokens extends string[],
+        Tokens extends string[],
         Tree,
         Dict
-    > = RemainingTokens extends [
-        infer LookaheadToken,
-        ...infer NextRemainingTokens
-    ]
-        ? LookaheadToken extends EmbeddedNumber.Definition
-            ? AssertBoundableThen<
-                  Tree,
-                  // @ts-expect-error
-                  ParseFragment<NextRemainingTokens, Tree, Dict>
-              >
+    > = Tokens extends Iterate<infer Token, infer Remaining>
+        ? Token extends EmbeddedNumber.Definition
+            ? AssertBoundableThen<Tree, ParseOperators<Remaining, Tree, Dict>>
             : Tree extends Terminal.DefinedFrom<EmbeddedNumber.Definition>
-            ? ParseExpression<RemainingTokens, Dict>
+            ? ParseExpression<Tokens, Dict>
             : Terminal.Error<`One side of comparator ${Comparator} must be a number literal.`>
         : Terminal.Error<`Right side of comparator ${Comparator} is missing.`>
 
@@ -274,7 +261,7 @@ export namespace Str {
         infer Group,
         infer RemainingTokens
     ]
-        ? ParseFragment<
+        ? ParseOperators<
               // @ts-expect-error
               RemainingTokens,
               // @ts-expect-error
@@ -287,7 +274,7 @@ export namespace Str {
         Tokens,
         BeforeMatch extends string[],
         Depth extends unknown[]
-    > = Tokens extends Iteration<string, infer Token, infer RemainingTokens>
+    > = Tokens extends Iterate<infer Token, infer RemainingTokens>
         ? Token extends "("
             ? SplitByMatchingParen<
                   RemainingTokens,
@@ -361,10 +348,6 @@ export namespace Str {
             type: Type
             def: Def
             error: Error
-        }
-
-        export type Alias<Name extends string> = {
-            alias: Name
         }
 
         export type DefinedFrom<Def extends string> = Typed<
