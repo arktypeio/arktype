@@ -104,8 +104,10 @@ export namespace Str {
         Tokens extends string[],
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
-        ? Char extends `[`
-            ? LexList<Fragment, Tokens, Unscanned>
+        ? Char extends "["
+            ? Unscanned extends Scan<"]", infer NextUnscanned>
+                ? LexNonTerminal<"[]", Fragment, Tokens, NextUnscanned>
+                : ErrorToken<`Missing expected ']'.`>
             : Char extends "?"
             ? Unscanned extends []
                 ? LexNonTerminal<Char, Fragment, Tokens, Unscanned>
@@ -159,16 +161,6 @@ export namespace Str {
         Fragment extends string,
         Tokens extends string[]
     > = Fragment extends "" ? [...Tokens, Token] : [...Tokens, Fragment, Token]
-
-    type LexList<
-        Fragment extends string,
-        Tokens extends string[],
-        Chars extends string[]
-    > = Chars extends Scan<infer Char, infer Unscanned>
-        ? Char extends "]"
-            ? LexNonTerminal<"[]", Fragment, Tokens, Unscanned>
-            : ErrorToken<`Missing expected ']'.`>
-        : never
 
     type LexLiteral<
         Enclosing extends LiteralEnclosingChar,
