@@ -99,8 +99,24 @@ export namespace Str {
             ? ParseGroup<SplitByMatchingParen<Unscanned, [], []>>
             : Char extends LiteralEnclosingChar
             ? ParseLiteral<Char, "", Unscanned>
+            : Char extends " "
+            ? ParseExpression<Unscanned>
             : ParseNonLiteralTerminal<Char, Unscanned>
         : ErrorToken<`Expected an expression.`>
+
+    // /** An Expression is a list of tokens that must form a completed type to be valid */
+    // type ShiftExpression<Chars extends string[]> = Chars extends Scan<
+    //     infer Char,
+    //     infer Unscanned
+    // >
+    //     ? Char extends "("
+    //         ? ParseGroup<SplitByMatchingParen<Unscanned, [], []>>
+    //         : Char extends LiteralEnclosingChar
+    //         ? ParseLiteral<Char, "", Unscanned>
+    //         : Char extends " "
+    //         ? ShiftExpression<Unscanned>
+    //         : ParseNonLiteralTerminal<Char, Unscanned>
+    //     : ErrorToken<`Expected an expression.`>
 
     type ParseGroup<SlicedChars extends [string[], string[]]> = ParseOperators<
         [ParseExpression<SlicedChars[0]>],
@@ -137,25 +153,25 @@ export namespace Str {
 
     /** Operators are a list of zero or more tokens that modify or branch an Expression (Tree) */
     type ParseOperators<
-        Tokens extends ParseTree,
+        Tree extends ParseTree,
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends "?"
             ? Unscanned extends []
-                ? [Tokens, "?"]
+                ? [Tree, "?"]
                 : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
             : Char extends "["
             ? Unscanned extends Scan<"]", infer NextUnscanned>
-                ? ParseOperators<[Tokens, "[]"], NextUnscanned>
+                ? ParseOperators<[Tree, "[]"], NextUnscanned>
                 : ErrorToken<`Missing expected ']'.`>
             : Char extends BranchingOperatorToken
-            ? [Tokens, Char, ParseExpression<Unscanned>]
+            ? [Tree, Char, ParseExpression<Unscanned>]
             : Char extends ComparatorStartChar
-            ? ShiftBound<Char, Unscanned, Tokens>
+            ? ShiftBound<Char, Unscanned, Tree>
             : Char extends " "
-            ? ParseOperators<Tokens, Unscanned>
+            ? ParseOperators<Tree, Unscanned>
             : ErrorToken<`Expected an operator (got ${Char}).`>
-        : Tokens
+        : Tree
 
     type ShiftBound<
         FirstChar extends ComparatorStartChar,
@@ -189,6 +205,7 @@ export namespace Str {
         | "?"
         | BranchingOperatorToken
         | ComparatorStartChar
+        | " "
 
     /** These tokens complete the current expression and start parsing a new expression from RemainingTokens.
      *
@@ -224,30 +241,26 @@ export namespace Str {
         : Terminal.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
 
     type SplitByMatchingParen<
-        Tokens,
+        Chars extends string[],
         BeforeMatch extends string[],
         Depth extends unknown[]
-    > = Tokens extends Iterate<infer Token, infer RemainingTokens>
-        ? Token extends "("
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends "("
             ? SplitByMatchingParen<
-                  RemainingTokens,
-                  [...BeforeMatch, Token],
+                  Unscanned,
+                  [...BeforeMatch, Char],
                   [...Depth, 1]
               >
-            : Token extends ")"
+            : Char extends ")"
             ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
               Depth extends [...infer DepthMinusOne, infer Pop]
                 ? SplitByMatchingParen<
-                      RemainingTokens,
-                      [...BeforeMatch, Token],
+                      Unscanned,
+                      [...BeforeMatch, Char],
                       DepthMinusOne
                   >
-                : [BeforeMatch, RemainingTokens]
-            : SplitByMatchingParen<
-                  RemainingTokens,
-                  [...BeforeMatch, Token],
-                  Depth
-              >
+                : [BeforeMatch, Unscanned]
+            : SplitByMatchingParen<Unscanned, [...BeforeMatch, Char], Depth>
         : [ErrorToken<"Missing ).">, []]
 
     type ValidateTerminal<Token extends string, Dict> = Token extends

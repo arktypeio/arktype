@@ -1,19 +1,15 @@
-src/nodes/str/str.ts(248,19): error TS2344: Type '[...BeforeMatch, Token]' does not satisfy the constraint 'string[]'.
-  Type 'Token | BeforeMatch[number]' is not assignable to type 'string'.
-    Type 'Token' is not assignable to type 'string'.
-test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'     string  ' does not exist in your space."'.
 Files:              224
-Lines:            84073
-Nodes:           282289
-Identifiers:     102137
-Symbols:         403322
-Types:            79854
-Instantiations:  506546
-Memory used:    241511K
+Lines:            84086
+Nodes:           282302
+Identifiers:     102140
+Symbols:         403289
+Types:            79832
+Instantiations:  507288
+Memory used:    240370K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.59s
-Bind time:        0.22s
-Check time:       2.36s
+Parse time:       0.64s
+Bind time:        0.24s
+Check time:       2.35s
 Emit time:        0.00s
-Total time:       3.18s
+Total time:       3.24s
