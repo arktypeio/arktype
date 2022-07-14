@@ -12,10 +12,7 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 export namespace Str {
-    export type Parse<Def extends string, Dict> = ParseTokens<
-        LexRoot<Def>,
-        Dict
-    >
+    export type Parse<Def extends string, Dict> = ParseTokens<Lex<Def>, Dict>
 
     export type Validate<Def extends string, Dict> = ValidateParseTree<
         Def,
@@ -66,10 +63,7 @@ export namespace Str {
         ? Terminal.Error<Message>
         : ParseExpression<Tokens, Dict>
 
-    export type References<Def extends string> = ExtractReferences<
-        LexRoot<Def>,
-        []
-    >
+    export type References<Def extends string> = ExtractReferences<Lex<Def>, []>
 
     type ExtractReferences<
         Tokens extends string[],
@@ -81,7 +75,7 @@ export namespace Str {
           >
         : Refs
 
-    type LexRoot<Def extends string> = Lex<"", [], ListChars<Def>>
+    type Lex<Def extends string> = LexExpression<[], ListChars<Def>>
 
     type NonTerminalToken = "(" | ")" | OperatorToken
 
@@ -99,68 +93,75 @@ export namespace Str {
         ...Remaining
     ]
 
-    type Lex<
+    type LexExpression<
+        Tokens extends string[],
+        Chars extends string[]
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends "("
+            ? LexExpression<[...Tokens, "("], Unscanned>
+            : Char extends LiteralEnclosingChar
+            ? LexLiteral<Char, "", Tokens, Unscanned>
+            : LexNonLiteralTerminal<Char, Tokens, Unscanned>
+        : ErrorToken<`Expected an expression.`>
+
+    type LexNonLiteralTerminal<
         Fragment extends string,
         Tokens extends string[],
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
-        ? Char extends "["
-            ? Unscanned extends Scan<"]", infer NextUnscanned>
-                ? LexNonTerminal<"[]", Fragment, Tokens, NextUnscanned>
-                : ErrorToken<`Missing expected ']'.`>
-            : Char extends "?"
-            ? Unscanned extends []
-                ? LexNonTerminal<Char, Fragment, Tokens, Unscanned>
-                : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
-            : Char extends "|" | "&" | "(" | ")"
-            ? LexNonTerminal<Char, Fragment, Tokens, Unscanned>
-            : Char extends LiteralEnclosingChar
-            ? LexLiteral<Char, "", Tokens, Unscanned>
-            : Char extends ComparatorStartChar
-            ? LexBound<Char, Fragment, Tokens, Unscanned>
-            : Char extends " "
-            ? Lex<Fragment, Tokens, Unscanned>
-            : Lex<`${Fragment}${Char}`, Tokens, Unscanned>
-        : Fragment extends ""
-        ? Tokens
+        ? Char extends OperatorStarChar
+            ? LexOperators<[...Tokens, Fragment], Chars>
+            : LexNonLiteralTerminal<`${Fragment}${Char}`, Tokens, Unscanned>
         : [...Tokens, Fragment]
 
-    type ComparatorStartChar = "<" | ">" | "="
-
-    type LiteralEnclosingChar = `'` | `"` | `/`
+    type LexOperators<
+        Tokens extends string[],
+        Chars extends string[]
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends "?"
+            ? Unscanned extends []
+                ? [...Tokens, "?"]
+                : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
+            : Char extends "["
+            ? Unscanned extends Scan<"]", infer NextUnscanned>
+                ? LexOperators<[...Tokens, "[]"], NextUnscanned>
+                : ErrorToken<`Missing expected ']'.`>
+            : Char extends BranchingOperatorToken
+            ? LexExpression<[...Tokens, Char], Unscanned>
+            : Char extends ComparatorStartChar
+            ? LexBound<Char, Tokens, Unscanned>
+            : Char extends ")"
+            ? LexOperators<[...Tokens, Char], Unscanned>
+            : Char extends " "
+            ? LexOperators<Tokens, Unscanned>
+            : Terminal.Error<`Expected an operator (got ${Char}).`>
+        : Tokens
 
     type LexBound<
         FirstChar extends ComparatorStartChar,
-        Fragment extends string,
         Tokens extends string[],
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends "="
-            ? LexNonTerminal<`${FirstChar}=`, Fragment, Tokens, Unscanned>
+            ? LexExpression<[...Tokens, `${FirstChar}=`], Unscanned>
             : FirstChar extends "="
             ? ErrorToken<`= is not a valid comparator. Use == instead.`>
-            : LexNonTerminal<
-                  // @ts-expect-error
-                  FirstChar,
-                  Fragment,
-                  Tokens,
+            : LexExpression<
+                  [...Tokens, FirstChar],
                   // Use Chars here instead of Unscanned since the comparator was only 1 character
                   Chars
               >
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
-    type LexNonTerminal<
-        Token extends NonTerminalToken,
-        Fragment extends string,
-        Tokens extends string[],
-        Unscanned extends string[]
-    > = Lex<"", PushTokensFrom<Token, Fragment, Tokens>, Unscanned>
+    type ComparatorStartChar = "<" | ">" | "="
 
-    type PushTokensFrom<
-        Token extends NonTerminalToken,
-        Fragment extends string,
-        Tokens extends string[]
-    > = Fragment extends "" ? [...Tokens, Token] : [...Tokens, Fragment, Token]
+    type OperatorStarChar =
+        | "["
+        | "?"
+        | BranchingOperatorToken
+        | ComparatorStartChar
+
+    type LiteralEnclosingChar = `'` | `"` | `/`
 
     type LexLiteral<
         Enclosing extends LiteralEnclosingChar,
@@ -169,8 +170,7 @@ export namespace Str {
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends Enclosing
-            ? Lex<
-                  "",
+            ? LexOperators<
                   [...Tokens, `${Enclosing}${Contents}${Enclosing}`],
                   Unscanned
               >
