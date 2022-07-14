@@ -48,12 +48,12 @@ const argsIncludeUpdateFlag = (args: string[]) =>
 const argsIncludeSkipTypesFlag = (args: string[]) =>
     args.includes("--skipTypes")
 
-const checkArgsForMatcher = (args: string[]) => {
-    const filterFlagIndex = args.indexOf("--only")
+const checkArgsForParam = (args: string[], param: string) => {
+    const filterFlagIndex = args.indexOf(`--${param}`)
     if (filterFlagIndex === -1) {
         return undefined
     }
-    return args.at(filterFlagIndex + 1)
+    return args[filterFlagIndex + 1]
 }
 
 export const literalSerialize = (value: any): any => {
@@ -105,7 +105,7 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         argsToCheck = process.argv
     }
     // This matcher can be used to filter processes we have control over like benches
-    const possibleMatcher = checkArgsForMatcher(argsToCheck)
+    const possibleMatcher = checkArgsForParam(argsToCheck, "only")
     let matcher: RegExp | undefined
     if (possibleMatcher) {
         console.log(
@@ -113,7 +113,8 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         )
         matcher = new RegExp(possibleMatcher)
     }
-    const cacheDir = resolve(".reassert")
+    const cacheDir =
+        checkArgsForParam(argsToCheck, "cacheDir") ?? resolve(".reassert")
     const snapCacheDir = join(cacheDir, "snaps")
     ensureDir(cacheDir)
     ensureDir(snapCacheDir)
