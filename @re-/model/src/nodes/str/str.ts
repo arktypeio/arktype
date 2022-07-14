@@ -121,10 +121,19 @@ export namespace Str {
         Fragment extends string,
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
-        ? Char extends OperatorStarChar
+        ? Char extends OperatorStartChar
             ? ParseOperators<Fragment, Chars>
             : ParseNonLiteralTerminal<`${Fragment}${Char}`, Unscanned>
         : Fragment
+
+    type Lex<
+        Fragment extends string,
+        Chars extends string[]
+    > = Chars extends Scan<infer Char, infer Unscanned>
+        ? Char extends OperatorStartChar
+            ? [Fragment, Chars]
+            : Lex<`${Fragment}${Char}`, Unscanned>
+        : [Fragment, Chars]
 
     /** Operators are a list of zero or more tokens that modify or branch an Expression (Tree) */
     type ParseOperators<
@@ -142,28 +151,40 @@ export namespace Str {
             : Char extends BranchingOperatorToken
             ? [Tokens, Char, ParseExpression<Unscanned>]
             : Char extends ComparatorStartChar
-            ? ParseBound<Char, Unscanned, Tokens>
+            ? ShiftBound<Char, Unscanned, Tokens>
             : Char extends " "
             ? ParseOperators<Tokens, Unscanned>
             : ErrorToken<`Expected an operator (got ${Char}).`>
         : Tokens
 
-    type ParseBound<
+    type ShiftBound<
         FirstChar extends ComparatorStartChar,
         Chars extends string[],
-        Tokens extends ParseTree
+        Tree extends ParseTree
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends "="
-            ? [Tokens, `${FirstChar}=`, ParseExpression<Unscanned>]
+            ? ReduceBound<Tree, `${FirstChar}=`, Unscanned>
             : FirstChar extends "="
             ? ErrorToken<`= is not a valid comparator. Use == instead.`>
             : // Use Chars here instead of Unscanned since the comparator was only 1 character
-              [Tokens, FirstChar, ParseExpression<Chars>]
+              // @ts-expect-error
+              ReduceBound<Tree, FirstChar, Chars>
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
+
+    type ReduceBound<
+        Tree extends ParseTree,
+        Comparator extends ComparatorToken,
+        Chars extends string[]
+    > = Lex<"", Chars> extends [EmbeddedNumber.Definition, infer Unscanned]
+        ? // @ts-expect-error
+          AssertBoundableThen<Tree, ParseOperators<Tree, Unscanned>>
+        : Tree extends EmbeddedNumber.Definition
+        ? AssertBoundableThen<ParseExpression<Chars>, ParseExpression<Chars>>
+        : Terminal.Error<`One side of comparator ${Comparator} must be a number literal.`>
 
     type ComparatorStartChar = "<" | ">" | "="
 
-    type OperatorStarChar =
+    type OperatorStartChar =
         | "["
         | "?"
         | BranchingOperatorToken
@@ -194,7 +215,8 @@ export namespace Str {
      *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
      */
     type BoundableNode =
-        | Terminal.DefinedFrom<Keyword.OfTypeNumber | Keyword.OfTypeString>
+        | Keyword.OfTypeNumber
+        | Keyword.OfTypeString
         | [unknown, "[]"]
 
     type AssertBoundableThen<Node, Next> = Node extends BoundableNode
