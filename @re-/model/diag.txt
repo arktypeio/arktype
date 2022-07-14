@@ -1,16 +1,69 @@
+src/nodes/str/str.ts(225,19): error TS2344: Type '[...BeforeMatch, Token]' does not satisfy the constraint 'string[]'.
+  Type 'Token | BeforeMatch[number]' is not assignable to type 'string'.
+    Type 'Token' is not assignable to type 'string'.
+test/bench/parser.bench.ts(119,5): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type 'undefined'.
+test/bench/parser.bench.ts(120,5): error TS2322: Type 'undefined' is not assignable to type '{ dejaVu?: undefined; }'.
+test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected validation result."'.
+test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected validation result."'.
+test/space/type.test.ts(133,47): error TS2339: Property 'b' does not exist on type 'never'.
+test/space/validation.test.ts(126,9): error TS2322: Type '{ dejaVu?: undefined; }' is not assignable to type 'undefined'.
+test/space/validation.test.ts(135,13): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type 'undefined'.
+test/space/validation.test.ts(136,13): error TS2322: Type 'undefined' is not assignable to type '{ dejaVu?: undefined; }'.
+test/str/bound.test.ts(9,26): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(12,26): error TS2345: Argument of type '"-7<integer<99"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(64,23): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(66,26): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(67,26): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(68,26): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(69,26): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(71,23): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(75,26): error TS2345: Argument of type '"number>5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(76,26): error TS2345: Argument of type '"number<-999"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(77,26): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(78,26): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(79,26): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(80,26): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(83,26): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(84,26): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(85,26): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(86,26): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(87,26): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(88,26): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(94,30): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(97,30): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(100,30): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(104,27): error TS2345: Argument of type '"string<4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(107,30): error TS2345: Argument of type '"string>=4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(111,27): error TS2345: Argument of type '"string<=4"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(116,30): error TS2345: Argument of type '"number<=5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(120,27): error TS2345: Argument of type '"number>=-999"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(122,30): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(125,30): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(128,30): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(131,30): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(136,30): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(139,30): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(143,27): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(146,27): error TS2345: Argument of type '"7>number>-2000"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(149,27): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(152,27): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(154,30): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(158,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(161,27): error TS2345: Argument of type '"-5>=number>=-1000"' is not assignable to parameter of type '"Unexpected validation result."'.
+test/str/bound.test.ts(168,32): error TS2345: Argument of type '"1<number<5"' is not assignable to parameter of type '"Unexpected validation result."'.
 test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'     string  ' does not exist in your space."'.
 Files:              224
-Lines:            84120
-Nodes:           283476
-Identifiers:     102482
-Symbols:         473495
-Types:            94967
-Instantiations:  710680
-Memory used:    271853K
+Lines:            84050
+Nodes:           282164
+Identifiers:     102087
+Symbols:         402780
+Types:            80740
+Instantiations:  517378
+Memory used:    248422K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.58s
+Parse time:       0.53s
 Bind time:        0.22s
-Check time:       2.11s
+Check time:       2.09s
 Emit time:        0.00s
-Total time:       2.91s
+Total time:       2.83s
