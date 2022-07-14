@@ -82,9 +82,7 @@ export type Primitive = string | number | boolean | symbol | bigint
 export type NonObject = Primitive | null | undefined | void
 export type NonRecursible = NonObject | Fn
 
-export const isRecursible = <O>(
-    o: O
-): o is Recursible<O> & (List | Record<Key, any>) =>
+export const isRecursible = <O>(o: O): o is Recursible<O> & Record<Key, any> =>
     !!o && typeof o === "object"
 
 export const isEmpty = (value: object) => {
@@ -102,8 +100,16 @@ export const isEmpty = (value: object) => {
  * Second, with all properties of First as undefined
  **/
 export type MutuallyExclusiveProps<First, Second> =
-    | (First & { [K in keyof Second]: undefined })
-    | (Second & { [K in keyof First]: undefined })
+    | Evaluate<First & { [K in keyof Second]?: undefined }>
+    | Evaluate<Second & { [K in keyof First]?: undefined }>
+
+export type OneOrMorePropsFrom<O> = {
+    [K in keyof O]: Evaluate<
+        { [RequiredProp in K]: O[K] } & {
+            [OptionalProps in Exclude<keyof O, K>]?: O[K]
+        }
+    >
+}[keyof O]
 
 export type PathMap = { [key: string]: PathMap }
 

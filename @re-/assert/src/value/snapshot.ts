@@ -142,7 +142,7 @@ process.on("exit", () => {
             ? `from ${previousValue} to `
             : `${baselineName ? "at" : "as"} `
 
-        updateSummary += `${serializedValue}.`
+        updateSummary += updatedSnapArgText
         console.log(updateSummary)
     }
 })

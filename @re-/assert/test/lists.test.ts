@@ -10,23 +10,18 @@ it("handles listComparison options", () => {
             ["b", "a"],
             ["a", "b"]
         ],
-        { listComparison: "deepUnordered" }
+        { listComparison: "permutable" }
     )
-    strict.throws(
-        () =>
-            assert([
-                ["a", "removed"],
-                ["b", "c"]
-            ]).equals(
-                [
-                    ["a", "added"],
-                    ["c", "b"]
-                ],
-                { listComparison: "deepSets" }
-            ),
-        {
-            name: "AssertionError",
-            message: `{added: [["a", "removed"]], removed: [["a", "added"]]}`
-        }
+    strict.throws(() =>
+        assert([
+            ["a", "removed"],
+            ["b", "c"]
+        ]).equals(
+            [
+                ["a", "added"],
+                ["c", "b"]
+            ],
+            { listComparison: "set" }
+        )
     )
 })

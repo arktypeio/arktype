@@ -2,8 +2,9 @@ import { existsSync } from "node:fs"
 import { platform } from "node:os"
 import { join, relative, resolve } from "node:path"
 import { ensureDir, readJson, shell } from "@re-/node"
-import { transform } from "@re-/tools"
+import { assertDeepEqual, transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
+import type { EqualsOptions } from "./value/context.js"
 
 export type LinePosition = {
     line: number
@@ -69,6 +70,17 @@ export const literalSerialize = (value: any): any => {
     }
     return value
 }
+
+export const assertEquals = (
+    expected: unknown,
+    actual: unknown,
+    options?: EqualsOptions
+) =>
+    assertDeepEqual(expected, actual, {
+        ...options,
+        baseKey: "expected",
+        compareKey: "actual"
+    })
 
 export const getReAssertConfig = memoize((): ReAssertConfig => {
     const reJson: ReJson = existsSync("re.json") ? readJson("re.json") : {}

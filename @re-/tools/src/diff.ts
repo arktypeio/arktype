@@ -1,175 +1,136 @@
 import {
-    And,
-    Cast,
-    DeepPartial,
-    Entry,
+    ElementOf,
     isEmpty,
     isRecursible,
-    ListPossibleTypes,
-    NonRecursible,
-    Or,
-    split
+    List,
+    MutuallyExclusiveProps
 } from "./common.js"
-import { transform } from "./transform.js"
+import { Merge } from "./merge.js"
+import { Narrow, narrow } from "./narrow.js"
+import { asNumber } from "./stringUtils.js"
+import { toString } from "./toString.js"
 
-export type UnionDiffResult<
-    Added extends unknown[],
-    Removed extends unknown[]
-> = {
-    added: Added
-    removed: Removed
-}
+export type ListComparisonMode = "ordered" | "permutable" | "set"
 
-export type DiffUnions<Base, Compare> = UnionDiffResult<
-    Cast<ListPossibleTypes<Compare extends Base ? never : Compare>, Compare[]>,
-    Cast<ListPossibleTypes<Base extends Compare ? never : Base>, Base[]>
->
-
-type IsList<T> = T extends T[] | readonly T[] ? true : false
-
-export type ChangeResult<Base, Compare, Unordered extends boolean = false> = {
-    [K in keyof Base & keyof Compare]?: Or<
-        Base[K] extends NonRecursible ? true : false,
-        Compare[K] extends NonRecursible ? true : false
-    > extends true
-        ? ShallowDiffResult<Base[K], Compare[K]>
-        : [Unordered, IsList<Base[K]>, IsList<Compare[K]>] extends [
-              true,
-              true,
-              true
-          ]
-        ? DiffSetsResult<Base[K][keyof Base[K]]>
-        : ObjectDiffResult<Base[K], Compare[K]>
-}
-
-export type ObjectDiffResult<Base, Compare> = {
-    added?: Partial<Compare>
-    removed?: Partial<Base>
-    changed?: ChangeResult<Base, Compare>
-}
-
-export type DeepDiffResult<Base, Compare, Unordered extends boolean = false> =
-    | ObjectDiffResult<Base, Compare>
-    | ShallowDiffResult<Base, Compare>
-
-export type ShallowDiffResult<Base, Compare> =
-    | undefined
-    | {
-          base: Base
-          compare: Compare
-      }
-
-export type ListComparisonMode =
-    | "ordered"
-    | "unordered"
-    | "deepUnordered"
-    | "set"
-    | "deepSets"
+export const defaultDiffOptions = narrow({
+    baseKey: "base",
+    compareKey: "compare",
+    listComparison: "ordered"
+})
 
 export type DiffOptions = {
-    excludeAdded?: boolean
-    excludeRemoved?: boolean
-    excludeChanged?: boolean
-    shallowListResults?: boolean
+    baseKey?: string
+    compareKey?: string
     listComparison?: ListComparisonMode
 }
 
-export type DeepEqualsOptions = Pick<DiffOptions, "listComparison">
+export const deepEquals = (base: any, compare: any, options?: DiffOptions) =>
+    diff(base, compare, options) === undefined
 
-export const deepEquals = (
-    base: any,
-    compare: any,
-    options: DeepEqualsOptions = {}
-) => !diff(base, compare, options)
+type DefaultDiffOptions = typeof defaultDiffOptions
 
-export const diff = <Base, Compare, Options extends DiffOptions>(
-    base: Base,
-    compare: Compare,
-    options?: Options
-): DeepDiffResult<
-    Base,
-    Compare,
-    Options["listComparison"] extends
-        | "unordered"
-        | "deepUnordered"
-        | "set"
-        | "deepSets"
-        ? true
-        : false
-> => {
-    const config: DiffOptions = options ?? {}
-    if (Array.isArray(base) && Array.isArray(compare)) {
-        if (config.shallowListResults) {
-            return deepEquals(base, compare, {
-                listComparison: config.listComparison ?? "ordered"
-            })
-                ? undefined
-                : { base, compare }
-        }
-        if (
-            config.listComparison === "unordered" ||
-            config.listComparison === "deepUnordered"
-        ) {
-            return diffUnordered(
-                base,
-                compare,
-                config.listComparison === "deepUnordered"
-            ) as any
-        } else if (
-            config.listComparison === "set" ||
-            config.listComparison === "deepSets"
-        ) {
-            return diffSets(
-                base,
-                compare,
-                config.listComparison === "deepSets"
-            ) as any
-        }
-    }
-    if (!isRecursible(base) || !isRecursible(compare)) {
-        return base === (compare as unknown) ? undefined : { base, compare }
-    }
-    const result: ObjectDiffResult<Base, Compare> = {}
-    const baseKeys = Object.keys(base) as (keyof Base)[]
-    const compareKeys = Object.keys(compare) as (keyof Compare)[]
-    const [addedKeys, preserved] = split(
-        compareKeys,
-        (compareKey) => !baseKeys.includes(compareKey as any)
-    )
-    if (addedKeys.length && !config.excludeAdded) {
-        result.added = Object.fromEntries(
-            addedKeys.map((k) => [k, compare[k]])
-        ) as any as Partial<Compare>
-    }
-    const removedKeys = baseKeys.filter(
-        (baseKey) => !compareKeys.includes(baseKey as any)
-    )
-    if (removedKeys.length && !config.excludeRemoved) {
-        result.removed = Object.fromEntries(
-            removedKeys.map((k) => [k, base[k]])
-        ) as any as Partial<Base>
-    }
-    const changedEntries = preserved
-        .map(
-            (k) =>
-                [
-                    k,
-                    diff((base as any)[k], (compare as any)[k], config)
-                ] as Entry
+export type Change<
+    Options extends DiffOptions,
+    Config extends DiffOptions = Merge<DefaultDiffOptions, Options>
+> = MutuallyExclusiveProps<
+    {
+        [K in Extract<
+            Config["baseKey"] | Config["compareKey"],
+            string
+        >]: unknown
+    },
+    SetChange<Config["listComparison"] extends "ordered" ? string : unknown>
+>
+
+export type ChangesByPath<Options extends DiffOptions> = Record<
+    string,
+    Change<Options>
+>
+
+export class DeepEqualAssertionError extends Error {}
+
+export const assertDeepEqual = (
+    base: unknown,
+    compare: unknown,
+    options?: DiffOptions
+) => {
+    const changes = diff(base, compare, options)
+    if (changes) {
+        throw new DeepEqualAssertionError(
+            `Values were not equal at the following paths:\n${toString(
+                changes,
+                { indent: 2 }
+            )}`
         )
-        .filter(([, changes]) => changes !== undefined)
-    if (changedEntries.length && !config.excludeChanged) {
-        result.changed = Object.fromEntries(changedEntries) as any
     }
-    return isEmpty(result) ? undefined : result
 }
 
-export type DiffSetsResult<T = unknown> =
-    | undefined
-    | {
-          added?: T[]
-          removed?: T[]
-      }
+export const diff = <Options extends DiffOptions = {}>(
+    base: unknown,
+    compare: unknown,
+    options?: Narrow<Options>
+): ChangesByPath<Options> | undefined => {
+    const changes: ChangesByPath<Options> = {}
+    collectChanges(base, compare, {
+        ...defaultDiffOptions,
+        ...options,
+        path: "/",
+        changes
+    } as any)
+    return isEmpty(changes) ? undefined : changes
+}
+
+type DiffRecurseContext = {
+    path: string
+    changes: ChangesByPath<DiffOptions>
+} & Required<DiffOptions>
+
+const nextPath = (path: string, key: string) =>
+    path === "/" ? key : `${path}/${key}`
+
+const collectChanges = (base: any, compare: any, ctx: DiffRecurseContext) => {
+    if (!isRecursible(base) || !isRecursible(compare)) {
+        if (base !== compare) {
+            ctx.changes[ctx.path] = {
+                [ctx.baseKey]: base,
+                [ctx.compareKey]: compare
+            }
+        }
+        return
+    }
+    if (
+        Array.isArray(base) &&
+        Array.isArray(compare) &&
+        ctx.listComparison !== "ordered"
+    ) {
+        const changes =
+            ctx.listComparison === "set"
+                ? diffSets(base, compare)
+                : diffPermutables(base, compare)
+        if (changes) {
+            ctx.changes[ctx.path] = changes as any
+        }
+        return
+    }
+    const removedKeys: string[] = []
+    const remainingCompareKeys = new Set(Object.keys(compare))
+    for (const [key, baseValue] of Object.entries(base)) {
+        if (key in compare) {
+            collectChanges(baseValue, compare[key], {
+                ...ctx,
+                path: nextPath(ctx.path, key)
+            })
+            remainingCompareKeys.delete(key)
+        } else {
+            removedKeys.push(key)
+        }
+    }
+    const addedKeys = remainingCompareKeys ? [...remainingCompareKeys] : []
+    const keyChanges = toDiffSetsResult(addedKeys, removedKeys)
+    if (keyChanges) {
+        ctx.changes[ctx.path] = keyChanges as any
+    }
+}
 
 const toDiffSetsResult = <T>(added: T[], removed: T[]) => {
     if (added.length) {
@@ -185,97 +146,130 @@ const toDiffSetsResult = <T>(added: T[], removed: T[]) => {
     }
 }
 
-export const diffUnordered = <T>(
-    base: T[],
-    compare: T[],
-    deepUnordered = false
-) => {
-    const added: T[] = []
-    const removed: T[] = []
-    const unusedCompareItems = [...compare]
-    for (let baseIndex = 0; baseIndex < base.length; baseIndex++) {
-        let matchingCompareIndex
-        for (let compareIndex in unusedCompareItems) {
-            if (
-                deepEquals(base[baseIndex], unusedCompareItems[compareIndex], {
-                    listComparison: deepUnordered ? "deepUnordered" : "ordered"
-                })
-            ) {
-                matchingCompareIndex = compareIndex
-                break
-            }
-        }
-        if (matchingCompareIndex === undefined) {
-            removed.push(base[baseIndex])
-        } else {
-            delete unusedCompareItems[matchingCompareIndex as any]
-        }
-    }
-    for (let unusedIndex in unusedCompareItems) {
-        added.push(unusedCompareItems[unusedIndex])
-    }
-    return toDiffSetsResult(added, removed)
-}
+export type SetChange<T> = ReturnType<typeof toDiffSetsResult<T>>
 
-export const includesDeepEqual = (
-    list: unknown[],
-    item: unknown,
-    options: DeepEqualsOptions
-) => list.some((listItem) => deepEquals(listItem, item, options))
-
-export const diffSets = <T>(base: T[], compare: T[], deepSets = false) => {
-    const options: DeepEqualsOptions = {
-        listComparison: deepSets ? "deepSets" : "ordered"
-    }
-    const added: T[] = []
-    const removed: T[] = []
-    for (const compareItem of compare) {
-        if (
-            !includesDeepEqual(base, compareItem, options) &&
-            !includesDeepEqual(added, compareItem, options)
-        ) {
-            added.push(compareItem)
-        }
-    }
-    for (const baseItem of base) {
-        if (
-            !includesDeepEqual(compare, baseItem, options) &&
-            !includesDeepEqual(removed, baseItem, options)
-        ) {
-            removed.push(baseItem)
-        }
-    }
-    return toDiffSetsResult(added, removed)
-}
-
-export const addedOrChanged = <Base, Compare>(
+export const diffPermutables = <Base extends List, Compare extends List>(
     base: Base,
     compare: Compare
-): DeepPartial<Compare> => {
-    const diffResult = diff(base, compare, {
-        excludeRemoved: true,
-        shallowListResults: true
-    })
-    if (!diffResult) {
-        return {}
+): SetChange<ElementOf<Base> | ElementOf<Compare>> | undefined => {
+    const added: any[] = []
+    const removed: any[] = []
+    const unseenCompareItems = [...compare]
+    for (let baseIndex = 0; baseIndex < base.length; baseIndex++) {
+        const matchingUnseenIndex = findFirstDeepEqualIndex(
+            unseenCompareItems,
+            base[baseIndex],
+            "permutable"
+        )
+        if (matchingUnseenIndex === -1) {
+            removed.push(base[baseIndex])
+        } else {
+            delete unseenCompareItems[matchingUnseenIndex]
+        }
     }
-    const extractAddedOrChanged = (result: DeepDiffResult<any, any>): any => {
-        if (result) {
-            if ("compare" in result) {
-                return result.compare
-            } else {
-                const extractedChanged = result.changed
-                    ? transform(result.changed, ([k, v]) => [
-                          k,
-                          extractAddedOrChanged(v)
-                      ])
-                    : {}
-                return {
-                    ...result.added,
-                    ...extractedChanged
+    for (let unseenIndex in unseenCompareItems) {
+        added.push(unseenCompareItems[unseenIndex])
+    }
+    return toDiffSetsResult(added, removed)
+}
+
+export const diffSets = <Base extends List, Compare extends List>(
+    base: Base,
+    compare: Compare
+): SetChange<ElementOf<Base> | ElementOf<Compare>> | undefined => {
+    const added: any[] = []
+    const removed: any[] = []
+    const removedDuplicateIndices = new Set<number>()
+    const unseenCompareItems = [...compare]
+    const seenCompareItems: any[] = []
+    for (let baseIndex = 0; baseIndex < base.length; baseIndex++) {
+        if (removedDuplicateIndices.has(baseIndex)) {
+            continue
+        }
+        const matchingUnseenIndices = findDeepEqualIndices(
+            unseenCompareItems,
+            base[baseIndex],
+            "set"
+        )
+        if (matchingUnseenIndices.length > 0) {
+            // Even if there was more than one match, we only need to push one copy to seen
+            seenCompareItems.push(unseenCompareItems[matchingUnseenIndices[0]])
+            for (const matchingIndex of matchingUnseenIndices) {
+                delete unseenCompareItems[matchingIndex]
+            }
+        } else {
+            // When there are no matching unseen indices, check for matches in seen
+            if (
+                findFirstDeepEqualIndex(
+                    seenCompareItems,
+                    base[baseIndex],
+                    "set"
+                ) === -1
+            ) {
+                // If there are no matches in unseen or seen, add it to removed
+                removed.push(base[baseIndex])
+                // Then, mark all the item's deep-equals from base so we don't check them multiple times
+                for (
+                    let possibleDuplicateIndex = baseIndex + 1;
+                    possibleDuplicateIndex < base.length;
+                    possibleDuplicateIndex++
+                ) {
+                    if (
+                        deepEquals(
+                            base[baseIndex],
+                            base[possibleDuplicateIndex],
+                            {
+                                listComparison: "set"
+                            }
+                        )
+                    ) {
+                        removedDuplicateIndices.add(
+                            asNumber(possibleDuplicateIndex, { assert: true })
+                        )
+                    }
                 }
             }
         }
     }
-    return extractAddedOrChanged(diffResult)
+    for (let unseenIndex in unseenCompareItems) {
+        added.push(unseenCompareItems[unseenIndex])
+    }
+    return toDiffSetsResult(added, removed)
+}
+
+type UnorderedDiffMode = Exclude<ListComparisonMode, "ordered">
+
+const findDeepEqualIndices = (
+    list: unknown[],
+    item: unknown,
+    mode: UnorderedDiffMode
+) => {
+    const matchingIndices = []
+    for (let i in list) {
+        if (
+            deepEquals(item, list[i], {
+                listComparison: mode
+            })
+        ) {
+            matchingIndices.push(asNumber(i, { assert: true }))
+        }
+    }
+    return matchingIndices
+}
+
+const findFirstDeepEqualIndex = (
+    list: unknown[],
+    item: unknown,
+    mode: UnorderedDiffMode
+) => {
+    for (let i in list) {
+        if (
+            deepEquals(item, list[i], {
+                listComparison: mode
+            })
+        ) {
+            return asNumber(i, { assert: true })
+        }
+    }
+    return -1
 }

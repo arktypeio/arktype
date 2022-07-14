@@ -6,11 +6,10 @@ import {
     Fn,
     IsAnyOrUnknown,
     ListComparisonMode,
-    Or,
     toString
 } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
-import { literalSerialize, SourcePosition } from "../common.js"
+import { assertEquals, literalSerialize, SourcePosition } from "../common.js"
 import { getAssertionData, TypeAssertions } from "../type/index.js"
 import {
     getSnapshotByName,
@@ -193,7 +192,7 @@ const defaultAssert = (
             })
         }
     } else {
-        strict.deepEqual(actual, expected)
+        assertEquals(actual, expected)
     }
 }
 
@@ -255,7 +254,7 @@ export const valueAssertions = <T>(
                 }
             }
         } else {
-            strict.deepEqual(actualSerialized, serialize(args[0]))
+            assertEquals(actualSerialized, serialize(args[0]))
         }
         return nextAssertions
     }
@@ -307,15 +306,8 @@ export const valueAssertions = <T>(
             strict.equal(actual, expected)
             return nextAssertions
         },
-        equals: (expected: unknown, { listComparison }: EqualsOptions = {}) => {
-            if (listComparison !== undefined && listComparison !== "ordered") {
-                const diffResult = diff(expected, actual, { listComparison })
-                if (diffResult) {
-                    throw new AssertionError({ message: toString(diffResult) })
-                }
-            } else {
-                strict.deepEqual(actual, expected)
-            }
+        equals: (expected: unknown, options?: EqualsOptions) => {
+            assertEquals(expected, actual, options)
             return nextAssertions
         },
         snap: Object.assign(inlineSnap, {
