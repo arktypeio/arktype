@@ -48,12 +48,12 @@ const checkThatBenchSnapGetsPopulated = (testData: TestData) => {
         checkBenchStatHasSomethingInIt(comment, statement.getText())
     }
 }
-describe("bench", () => {
-    after(() => {
-        rmSync(testFileCopyPath, { force: true })
-    })
-    it("checks that bench set some kind of value", () => {
-        const testData: TestData = getTestFileData(benchTemplate, false)
-        checkThatBenchSnapGetsPopulated(testData)
-    }).timeout(19999)
-})
+// describe("bench", () => {
+//     after(() => {
+//         rmSync(testFileCopyPath, { force: true })
+//     })
+//     it("checks that bench set some kind of value", () => {
+//         const testData: TestData = getTestFileData(benchTemplate, false)
+//         checkThatBenchSnapGetsPopulated(testData)
+//     }).timeout(19999)
+// })

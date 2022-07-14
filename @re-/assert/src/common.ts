@@ -1,8 +1,9 @@
+import { strict } from "node:assert"
 import { existsSync } from "node:fs"
 import { platform } from "node:os"
 import { join, relative, resolve } from "node:path"
 import { ensureDir, readJson, shell } from "@re-/node"
-import { assertDeepEqual, transform } from "@re-/tools"
+import { assertDeepEqual, isRecursible, transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
 import type { EqualsOptions } from "./value/context.js"
 
@@ -75,12 +76,17 @@ export const assertEquals = (
     expected: unknown,
     actual: unknown,
     options?: EqualsOptions
-) =>
-    assertDeepEqual(expected, actual, {
-        ...options,
-        baseKey: "expected",
-        compareKey: "actual"
-    })
+) => {
+    if (isRecursible(expected) && isRecursible(actual)) {
+        assertDeepEqual(expected, actual, {
+            ...options,
+            baseKey: "expected",
+            compareKey: "actual"
+        })
+    } else {
+        strict.equal(actual, expected)
+    }
+}
 
 export const getReAssertConfig = memoize((): ReAssertConfig => {
     const reJson: ReJson = existsSync("re.json") ? readJson("re.json") : {}

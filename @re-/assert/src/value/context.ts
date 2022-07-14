@@ -1,13 +1,7 @@
-import { AssertionError, strict } from "node:assert"
+import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
-import {
-    diff,
-    Fn,
-    IsAnyOrUnknown,
-    ListComparisonMode,
-    toString
-} from "@re-/tools"
+import { Fn, IsAnyOrUnknown, ListComparisonMode, toString } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { assertEquals, literalSerialize, SourcePosition } from "../common.js"
 import { getAssertionData, TypeAssertions } from "../type/index.js"
@@ -192,7 +186,7 @@ const defaultAssert = (
             })
         }
     } else {
-        assertEquals(actual, expected)
+        assertEquals(expected, actual)
     }
 }
 
@@ -254,7 +248,7 @@ export const valueAssertions = <T>(
                 }
             }
         } else {
-            assertEquals(actualSerialized, serialize(args[0]))
+            assertEquals(serialize(args[0]), actualSerialized)
         }
         return nextAssertions
     }
@@ -330,7 +324,7 @@ export const valueAssertions = <T>(
                         })
                     }
                 } else {
-                    strict.deepEqual(actualSerialized, expectedSnapshot)
+                    assertEquals(expectedSnapshot, actualSerialized)
                 }
                 return nextAssertions
             }

@@ -1,6 +1,7 @@
 import { AssertionError, strict, throws } from "node:assert"
 import { join } from "node:path"
 import { dirName, readJson, writeJson } from "@re-/node"
+import { DeepEqualAssertionError } from "@re-/tools"
 import { assert } from "../src/assert.js"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
@@ -26,7 +27,7 @@ describe("Snapshots Using Files", () => {
         // Check existing fail
         strict.throws(
             () => assert({ re: "kt" }).snap.toFile("toFile"),
-            strict.AssertionError,
+            DeepEqualAssertionError,
             "kt"
         )
         // Add new
@@ -75,7 +76,7 @@ describe("Snapshots Using Files", () => {
                 assert({ re: "kt" }).snap.toFile("toCustomFile", {
                     path: "custom.snapshots.json"
                 }),
-            strict.AssertionError,
+            DeepEqualAssertionError,
             "kt"
         )
         // Add new

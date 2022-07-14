@@ -1,4 +1,5 @@
 import { strict } from "node:assert"
+import { DeepEqualAssertionError } from "@re-/tools"
 import { assert } from "../src/assert.js"
 
 const o = { re: "do" }
@@ -20,7 +21,7 @@ describe("Assertions for Inline Snapshots", () => {
         assert(o).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
         strict.throws(
             () => assert(o).snap({ re: `dorf` }),
-            strict.AssertionError,
+            DeepEqualAssertionError,
             "dorf"
         )
     })

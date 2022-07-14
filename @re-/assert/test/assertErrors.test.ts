@@ -1,4 +1,5 @@
 import { strict } from "node:assert"
+import { DeepEqualAssertionError } from "@re-/tools"
 import { assert } from "../src/assert.js"
 
 const n = 5
@@ -11,15 +12,15 @@ const shouldThrow = (a: false) => {
 const throwError = () => {
     throw new Error("Test error.")
 }
-describe("Assertion Error Checking", () => {
-    it("Assertion Error - not equal", () => {
+describe("assertion errors", () => {
+    it("not equal", () => {
         strict.throws(
             () => assert(o).equals({ re: "doo" }),
-            strict.AssertionError,
+            DeepEqualAssertionError,
             "do !== doo"
         )
     })
-    it("Assertion Error - incorrect type", () => {
+    it("incorrect type", () => {
         strict.throws(
             () => assert(o).typed as { re: number },
             strict.AssertionError,
@@ -123,7 +124,7 @@ describe("Assertion Error Checking", () => {
         )
         strict.throws(
             () => assert(o).typedValue({ re: "don't" }),
-            strict.AssertionError,
+            DeepEqualAssertionError,
             "don't"
         )
     })
