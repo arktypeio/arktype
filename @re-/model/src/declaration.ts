@@ -1,10 +1,10 @@
 import {
     diffSets,
-    DiffSetsResult,
     ElementOf,
     Exact,
     Get,
     Narrow,
+    SetChange,
     transform
 } from "@re-/tools"
 import { Validate } from "./model.js"
@@ -100,7 +100,7 @@ export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
 ) => SpaceFrom<Dict>
 
 export class DeclarationError extends Error {
-    constructor(discrepancies: NonNullable<DiffSetsResult>) {
+    constructor(discrepancies: NonNullable<SetChange<string>>) {
         const errorParts = [] as string[]
         if (discrepancies.added) {
             errorParts.push(

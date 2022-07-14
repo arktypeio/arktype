@@ -71,7 +71,7 @@ describe("references", () => {
             ])
             type ExpectedReferences = ElementOf<typeof expectedReferenceSet>[]
             assert(references).equals(expectedReferenceSet, {
-                listComparison: "unordered"
+                listComparison: "permutable"
             }).typed as ExpectedReferences
         })
         it("from string with duplicates", () => {
@@ -81,7 +81,7 @@ describe("references", () => {
         it("from object", () => {
             const references = model(objectDef).references()
             assert(references).equals(expectedObjectDefReferences, {
-                listComparison: "unordered"
+                listComparison: "permutable"
             }).typed as ExpectedObjectDefReferenceList
         })
         it("from object with preserveStructure", () => {
@@ -113,7 +113,7 @@ describe("references", () => {
                 typeof expectedReferenceSets
             >
             assert(references).equals(expectedReferenceSets, {
-                listComparison: "deepUnordered"
+                listComparison: "permutable"
             }).typed as ExpectedReferences
         })
         it("filter", () => {
@@ -122,7 +122,7 @@ describe("references", () => {
             })
             assert(referencesEndingWithE).equals(
                 ["true", "false", "positive"],
-                { listComparison: "unordered" }
+                { listComparison: "permutable" }
             ).typed as ExpectedObjectDefReferenceList
         })
         it("typed filter", () => {
@@ -132,7 +132,7 @@ describe("references", () => {
                     reference.at(-1) === "n"
             })
             assert(bigintLiteralReferences).equals(["-1n", "7n"], {
-                listComparison: "unordered"
+                listComparison: "permutable"
             }).typed as ("-1n" | "7n")[]
         })
         it("filtered structured", () => {
@@ -155,7 +155,7 @@ describe("references", () => {
                     its: [],
                     easyAs: [["a"], ["a", "b"], ["a", "b", "c"]]
                 },
-                { listComparison: "deepUnordered" }
+                { listComparison: "permutable" }
             ).typed as {
                 its: never[]
                 easyAs: ["a"[], ("a" | "b")[], ("a" | "b" | "c")[]]
