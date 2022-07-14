@@ -1,14 +1,8 @@
 src/nodes/str/str.ts(225,19): error TS2344: Type '[...BeforeMatch, Token]' does not satisfy the constraint 'string[]'.
   Type 'Token | BeforeMatch[number]' is not assignable to type 'string'.
     Type 'Token' is not assignable to type 'string'.
-test/bench/parser.bench.ts(119,5): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type 'undefined'.
-test/bench/parser.bench.ts(120,5): error TS2322: Type 'undefined' is not assignable to type '{ dejaVu?: undefined; }'.
 test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected validation result."'.
 test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected validation result."'.
-test/space/type.test.ts(133,47): error TS2339: Property 'b' does not exist on type 'never'.
-test/space/validation.test.ts(126,9): error TS2322: Type '{ dejaVu?: undefined; }' is not assignable to type 'undefined'.
-test/space/validation.test.ts(135,13): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type 'undefined'.
-test/space/validation.test.ts(136,13): error TS2322: Type 'undefined' is not assignable to type '{ dejaVu?: undefined; }'.
 test/str/bound.test.ts(9,26): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Unexpected validation result."'.
 test/str/bound.test.ts(12,26): error TS2345: Argument of type '"-7<integer<99"' is not assignable to parameter of type '"Unexpected validation result."'.
 test/str/bound.test.ts(64,23): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"Unexpected validation result."'.
@@ -54,16 +48,16 @@ test/str/bound.test.ts(168,32): error TS2345: Argument of type '"1<number<5"' is
 test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'     string  ' does not exist in your space."'.
 Files:              224
 Lines:            84050
-Nodes:           282164
-Identifiers:     102087
-Symbols:         402780
-Types:            80740
-Instantiations:  517378
-Memory used:    248422K
+Nodes:           282168
+Identifiers:     102089
+Symbols:         403100
+Types:            80914
+Instantiations:  519334
+Memory used:    249466K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.53s
+Parse time:       0.54s
 Bind time:        0.22s
-Check time:       2.09s
+Check time:       2.10s
 Emit time:        0.00s
-Total time:       2.83s
+Total time:       2.86s

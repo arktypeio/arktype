@@ -14,9 +14,12 @@ import { Union } from "./union.js"
 export namespace Str {
     export type Parse<Def extends string> = ParseExpression<ListChars<Def>>
 
-    export type Validate<Def extends string, Dict> = Coalesce<
-        [ValidateParseTree<Parse<Def>, Dict>, Def]
+    export type Validate<Def extends string, Dict> = IfDefined<
+        ValidateParseTree<Parse<Def>, Dict>,
+        Def
     >
+
+    type IfDefined<T, Fallback> = T extends undefined ? Fallback : T
 
     type Coalesce<T extends unknown[]> = T extends Iterate<
         infer Current,
@@ -28,8 +31,6 @@ export namespace Str {
         : undefined
 
     type Iterate<Current, Remaining extends unknown[]> = [Current, ...Remaining]
-
-    // type Coalesce<T extends unknown[]> = T extends Iterate<
 
     export type TypeOf<Def extends string, Dict, Seen> = TypeOfParseTree<
         Parse<Def>,
@@ -60,9 +61,9 @@ export namespace Str {
     type TypeOfParseTree<Tree, Dict, Seen> = Tree extends string
         ? TypeOfTerminal<Tree, Dict, Seen>
         : Tree extends [infer Next, "?"]
-        ? ValidateParseTree<Next, Dict> | undefined
+        ? TypeOfParseTree<Next, Dict, Seen> | undefined
         : Tree extends [infer Next, "[]"]
-        ? ValidateParseTree<Next, Dict>[]
+        ? TypeOfParseTree<Next, Dict, Seen>[]
         : Tree extends [infer Left, "|", infer Right]
         ? TypeOfParseTree<Left, Dict, Seen> | TypeOfParseTree<Right, Dict, Seen>
         : Tree extends [infer Left, "&", infer Right]
