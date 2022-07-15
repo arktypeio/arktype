@@ -121,7 +121,7 @@ export namespace Str {
         : ErrorToken<`Expected an expression.`>
 
     type ParseGroup<SlicedChars extends [string[], string[]]> = ParseOperators<
-        [ParseExpression<SlicedChars[0]>],
+        ParseExpression<SlicedChars[0]>,
         SlicedChars[1]
     >
 
@@ -144,6 +144,19 @@ export namespace Str {
             : ParseFragment<`${Fragment}${Char}`, Unscanned>
         : Fragment
 
+    // type ValidateFragment<
+    //     Fragment extends string,
+    //     Dict
+    // > = Fragment extends Keyword.Definition
+    //     ? Fragment
+    //     : Fragment extends AliasIn<Dict>
+    //     ? Fragment
+    //     : Fragment extends EmbeddedNumber.Definition
+    //     ? Fragment
+    //     : Fragment extends EmbeddedBigInt.Definition
+    //     ? Fragment
+    //     : ErrorToken<`'${Fragment}' does not exist in your space.`>
+
     type Lex<
         Fragment extends string,
         Chars extends string[]
@@ -158,10 +171,7 @@ export namespace Str {
         Tree extends ParseTree,
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
-        ? //  Unscanned extends []
-          //     ? [Tree, "?"]
-          //     : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
-          Char extends "["
+        ? Char extends "["
             ? Unscanned extends Scan<"]", infer NextUnscanned>
                 ? ParseOperators<[Tree, "[]"], NextUnscanned>
                 : ErrorToken<`Missing expected ']'.`>
@@ -227,7 +237,7 @@ export namespace Str {
 
     type LiteralEnclosingChar = `'` | `"` | `/`
 
-    type ErrorToken<Message extends string> = ["ERROR", Message]
+    type ErrorToken<Message extends string> = `!${Message}`
 
     /** A BoundableNode must be either:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
@@ -264,7 +274,7 @@ export namespace Str {
                   >
                 : [BeforeMatch, Unscanned]
             : SplitByMatchingParen<Unscanned, [...BeforeMatch, Char], Depth>
-        : [ErrorToken<"Missing ).">, []]
+        : [[ErrorToken<"Missing ).">], []]
 
     type ValidateTerminal<
         Token extends string,
