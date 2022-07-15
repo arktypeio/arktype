@@ -101,22 +101,8 @@ export namespace Str {
             ? ParseLiteral<Char, "", Unscanned>
             : Char extends " "
             ? ParseExpression<Unscanned>
-            : ParseNonLiteralTerminal<Char, Unscanned>
+            : ParseFragment<Char, Unscanned>
         : ErrorToken<`Expected an expression.`>
-
-    // /** An Expression is a list of tokens that must form a completed type to be valid */
-    // type ShiftExpression<Chars extends string[]> = Chars extends Scan<
-    //     infer Char,
-    //     infer Unscanned
-    // >
-    //     ? Char extends "("
-    //         ? ParseGroup<SplitByMatchingParen<Unscanned, [], []>>
-    //         : Char extends LiteralEnclosingChar
-    //         ? ParseLiteral<Char, "", Unscanned>
-    //         : Char extends " "
-    //         ? ShiftExpression<Unscanned>
-    //         : ParseNonLiteralTerminal<Char, Unscanned>
-    //     : ErrorToken<`Expected an expression.`>
 
     type ParseGroup<SlicedChars extends [string[], string[]]> = ParseOperators<
         [ParseExpression<SlicedChars[0]>],
@@ -133,13 +119,13 @@ export namespace Str {
             : ParseLiteral<Enclosing, `${Contents}${Char}`, Unscanned>
         : ErrorToken<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Contents}`>
 
-    type ParseNonLiteralTerminal<
+    type ParseFragment<
         Fragment extends string,
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends OperatorStartChar
             ? ParseOperators<Fragment, Chars>
-            : ParseNonLiteralTerminal<`${Fragment}${Char}`, Unscanned>
+            : ParseFragment<`${Fragment}${Char}`, Unscanned>
         : Fragment
 
     type Lex<
@@ -263,14 +249,22 @@ export namespace Str {
             : SplitByMatchingParen<Unscanned, [...BeforeMatch, Char], Depth>
         : [ErrorToken<"Missing ).">, []]
 
-    type ValidateTerminal<Token extends string, Dict> = Token extends
-        | Keyword.Definition
-        | AliasIn<Dict>
-        | `'${string}'`
-        | `"${string}"`
-        | `/${string}/`
-        | EmbeddedNumber.Definition
-        | EmbeddedBigInt.Definition
+    type ValidateTerminal<
+        Token extends string,
+        Dict
+    > = Token extends Keyword.Definition
+        ? undefined
+        : Token extends AliasIn<Dict>
+        ? undefined
+        : Token extends `'${string}'`
+        ? undefined
+        : Token extends `"${string}"`
+        ? undefined
+        : Token extends `/${string}/`
+        ? undefined
+        : Token extends EmbeddedNumber.Definition
+        ? undefined
+        : Token extends EmbeddedBigInt.Definition
         ? undefined
         : `'${Token}' does not exist in your space.`
 
