@@ -19,6 +19,8 @@ export namespace Str {
     type IsNaiveTerminal<Def extends string, Dict> = Def extends
         | Keyword.Definition
         | AliasIn<Dict>
+        | EmbeddedNumber.Definition
+        | EmbeddedBigInt.Definition
         ? true
         : false
 
@@ -28,13 +30,13 @@ export namespace Str {
     > = Def extends `${infer Child}[]`
         ? IsNaiveTerminal<Child, Dict> extends true
             ? [Child, "[]"]
-            : ParseExpression<ListChars<Def>>
+            : ParseExpression<ListChars<Def>, Dict>
         : IsNaiveTerminal<Def, Dict> extends true
         ? Def
-        : ParseExpression<ListChars<Def>>
+        : ParseExpression<ListChars<Def>, Dict>
 
     export type Validate<Def extends string, Dict> = IfDefined<
-        ValidateParseTree<Parse<Def, Dict>, Dict>,
+        ValidateParseTree<Parse<Def, Dict>>,
         Def
     >
 
@@ -59,23 +61,13 @@ export namespace Str {
 
     // Consider adding type for tree?
 
-    type ValidateParseTree<Tree, Dict> = Tree extends string
-        ? ValidateTerminal<Tree, Dict>
-        : Tree extends [infer Next, "?"]
-        ? ValidateParseTree<Next, Dict>
-        : Tree extends [infer Next, "[]"]
-        ? ValidateParseTree<Next, Dict>
-        : Tree extends [infer Left, "|", infer Right]
-        ? Coalesce<
-              [ValidateParseTree<Left, Dict>, ValidateParseTree<Right, Dict>]
-          >
-        : Tree extends [infer Left, "&", infer Right]
-        ? Coalesce<
-              [ValidateParseTree<Left, Dict>, ValidateParseTree<Right, Dict>]
-          >
-        : Tree extends ErrorToken<infer Message>
-        ? Message
-        : `Unexpected validation result.`
+    type ValidateParseTree<Tree> = Tree extends string
+        ? Tree extends ErrorToken<infer Message>
+            ? Message
+            : undefined
+        : Tree extends Iterate<infer Node, infer Remaining>
+        ? IfDefined<ValidateParseTree<Node>, ValidateParseTree<Remaining>>
+        : undefined
 
     type TypeOfParseTree<Tree, Dict, Seen> = Tree extends string
         ? TypeOfTerminal<Tree, Dict, Seen>
@@ -107,55 +99,59 @@ export namespace Str {
     type ParseTree = string | ParseTree[]
 
     /** An Expression is a list of tokens that must form a completed type to be valid */
-    type ParseExpression<Chars extends string[]> = Chars extends Scan<
+    type ParseExpression<Chars extends string[], Dict> = Chars extends Scan<
         infer Char,
         infer Unscanned
     >
         ? Char extends "("
-            ? ParseGroup<SplitByMatchingParen<Unscanned, [], []>>
+            ? ParseGroup<SplitByMatchingParen<Unscanned, [], []>, Dict>
             : Char extends LiteralEnclosingChar
-            ? ParseLiteral<Char, "", Unscanned>
+            ? ParseLiteral<Char, "", Unscanned, Dict>
             : Char extends " "
-            ? ParseExpression<Unscanned>
-            : ParseFragment<Char, Unscanned>
+            ? ParseExpression<Unscanned, Dict>
+            : ParseFragment<Char, Unscanned, Dict>
         : ErrorToken<`Expected an expression.`>
 
-    type ParseGroup<SlicedChars extends [string[], string[]]> = ParseOperators<
-        ParseExpression<SlicedChars[0]>,
-        SlicedChars[1]
+    type ParseGroup<
+        SlicedChars extends [string[], string[]],
+        Dict
+    > = ParseOperators<
+        ParseExpression<SlicedChars[0], Dict>,
+        SlicedChars[1],
+        Dict
     >
 
     type ParseLiteral<
         Enclosing extends LiteralEnclosingChar,
         Contents extends string,
-        Chars extends string[]
+        Chars extends string[],
+        Dict
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends Enclosing
-            ? ParseOperators<`${Enclosing}${Contents}${Enclosing}`, Unscanned>
-            : ParseLiteral<Enclosing, `${Contents}${Char}`, Unscanned>
+            ? ParseOperators<
+                  `${Enclosing}${Contents}${Enclosing}`,
+                  Unscanned,
+                  Dict
+              >
+            : ParseLiteral<Enclosing, `${Contents}${Char}`, Unscanned, Dict>
         : ErrorToken<`Expected a closing ${Enclosing} token for literal expression ${Enclosing}${Contents}`>
 
     type ParseFragment<
         Fragment extends string,
-        Chars extends string[]
+        Chars extends string[],
+        Dict
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends OperatorStartChar
-            ? ParseOperators<Fragment, Chars>
-            : ParseFragment<`${Fragment}${Char}`, Unscanned>
-        : Fragment
+            ? ParseOperators<ValidateFragment<Fragment, Dict>, Chars, Dict>
+            : ParseFragment<`${Fragment}${Char}`, Unscanned, Dict>
+        : ValidateFragment<Fragment, Dict>
 
-    // type ValidateFragment<
-    //     Fragment extends string,
-    //     Dict
-    // > = Fragment extends Keyword.Definition
-    //     ? Fragment
-    //     : Fragment extends AliasIn<Dict>
-    //     ? Fragment
-    //     : Fragment extends EmbeddedNumber.Definition
-    //     ? Fragment
-    //     : Fragment extends EmbeddedBigInt.Definition
-    //     ? Fragment
-    //     : ErrorToken<`'${Fragment}' does not exist in your space.`>
+    type ValidateFragment<Fragment extends string, Dict> = IsNaiveTerminal<
+        Fragment,
+        Dict
+    > extends true
+        ? Fragment
+        : ErrorToken<`'${Fragment}' does not exist in your space.`>
 
     type Lex<
         Fragment extends string,
@@ -169,18 +165,19 @@ export namespace Str {
     /** Operators are a list of zero or more tokens that modify or branch an Expression (Tree) */
     type ParseOperators<
         Tree extends ParseTree,
-        Chars extends string[]
+        Chars extends string[],
+        Dict
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends "["
             ? Unscanned extends Scan<"]", infer NextUnscanned>
-                ? ParseOperators<[Tree, "[]"], NextUnscanned>
+                ? ParseOperators<[Tree, "[]"], NextUnscanned, Dict>
                 : ErrorToken<`Missing expected ']'.`>
             : Char extends BranchingOperatorToken
-            ? [Tree, Char, ParseExpression<Unscanned>]
+            ? [Tree, Char, ParseExpression<Unscanned, Dict>]
             : Char extends ComparatorStartChar
-            ? ShiftBound<Char, Unscanned, Tree>
+            ? ShiftBound<Char, Unscanned, Tree, Dict>
             : Char extends " "
-            ? ParseOperators<Tree, Unscanned>
+            ? ParseOperators<Tree, Unscanned, Dict>
             : Char extends "?"
             ? ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
             : ErrorToken<`Expected an operator (got ${Char}).`>
@@ -189,26 +186,31 @@ export namespace Str {
     type ShiftBound<
         FirstChar extends ComparatorStartChar,
         Chars extends string[],
-        Tree extends ParseTree
+        Tree extends ParseTree,
+        Dict
     > = Chars extends Scan<infer Char, infer Unscanned>
         ? Char extends "="
-            ? ReduceBound<Tree, `${FirstChar}=`, Unscanned>
+            ? ReduceBound<Tree, `${FirstChar}=`, Unscanned, Dict>
             : FirstChar extends "="
             ? ErrorToken<`= is not a valid comparator. Use == instead.`>
             : // Use Chars here instead of Unscanned since the comparator was only 1 character
               // @ts-expect-error
-              ReduceBound<Tree, FirstChar, Chars>
+              ReduceBound<Tree, FirstChar, Chars, Dict>
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
     type ReduceBound<
         Tree extends ParseTree,
         Comparator extends ComparatorToken,
-        Chars extends string[]
+        Chars extends string[],
+        Dict
     > = Lex<"", Chars> extends [EmbeddedNumber.Definition, infer Unscanned]
         ? // @ts-expect-error
-          AssertBoundableThen<Tree, ParseOperators<Tree, Unscanned>>
+          AssertBoundableThen<Tree, ParseOperators<Tree, Unscanned, Dict>>
         : Tree extends EmbeddedNumber.Definition
-        ? AssertBoundableThen<ParseExpression<Chars>, ParseExpression<Chars>>
+        ? AssertBoundableThen<
+              ParseExpression<Chars, Dict>,
+              ParseExpression<Chars, Dict>
+          >
         : Terminal.Error<`One side of comparator ${Comparator} must be a number literal.`>
 
     type ComparatorStartChar = "<" | ">" | "="
@@ -275,25 +277,6 @@ export namespace Str {
                 : [BeforeMatch, Unscanned]
             : SplitByMatchingParen<Unscanned, [...BeforeMatch, Char], Depth>
         : [[ErrorToken<"Missing ).">], []]
-
-    type ValidateTerminal<
-        Token extends string,
-        Dict
-    > = Token extends Keyword.Definition
-        ? undefined
-        : Token extends AliasIn<Dict>
-        ? undefined
-        : Token extends `'${string}'`
-        ? undefined
-        : Token extends `"${string}"`
-        ? undefined
-        : Token extends `/${string}/`
-        ? undefined
-        : Token extends EmbeddedNumber.Definition
-        ? undefined
-        : Token extends EmbeddedBigInt.Definition
-        ? undefined
-        : `'${Token}' does not exist in your space.`
 
     type TypeOfTerminal<
         Token extends string,
