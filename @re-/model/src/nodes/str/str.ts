@@ -16,7 +16,7 @@ export namespace Str {
         ? [TryNaiveParse<Child, Dict>, "?"]
         : TryNaiveParse<Def, Dict>
 
-    type IsNaiveTerminal<Def extends string, Dict> = Def extends
+    export type IsNaiveTerminal<Def extends string, Dict> = Def extends
         | Keyword.Definition
         | AliasIn<Dict>
         | EmbeddedNumber.Definition
@@ -41,15 +41,6 @@ export namespace Str {
     >
 
     type IfDefined<T, Fallback> = T extends undefined ? Fallback : T
-
-    type Coalesce<T extends unknown[]> = T extends Iterate<
-        infer Current,
-        infer Remaining
-    >
-        ? Current extends undefined
-            ? Coalesce<Remaining>
-            : Current
-        : undefined
 
     type Iterate<Current, Remaining extends unknown[]> = [Current, ...Remaining]
 
