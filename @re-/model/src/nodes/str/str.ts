@@ -16,7 +16,7 @@ export namespace Str {
         ? [TryNaiveParse<Child, Dict>, "?"]
         : TryNaiveParse<Def, Dict>
 
-    export type IsNaiveTerminal<Def extends string, Dict> = Def extends
+    export type IsTriviallyTerminal<Def extends string, Dict> = Def extends
         | Keyword.Definition
         | AliasIn<Dict>
         | EmbeddedNumber.Definition
@@ -28,10 +28,10 @@ export namespace Str {
         Def extends string,
         Dict
     > = Def extends `${infer Child}[]`
-        ? IsNaiveTerminal<Child, Dict> extends true
+        ? IsTriviallyTerminal<Child, Dict> extends true
             ? [Child, "[]"]
             : ParseExpression<ListChars<Def>, Dict>
-        : IsNaiveTerminal<Def, Dict> extends true
+        : IsTriviallyTerminal<Def, Dict> extends true
         ? Def
         : ParseExpression<ListChars<Def>, Dict>
 
@@ -51,6 +51,32 @@ export namespace Str {
     >
 
     // Consider adding type for tree?
+
+    // type TerminalNode = string
+    // type ListNode = [Tree3, "[]"]
+    // type OptionalNode = [Tree3, "?"]
+    // type UnionNode = [Tree3, "|", Tree3]
+    // type IntersectionNode = [Tree3, "&", Tree3]
+
+    // type Tree3 =
+    //     | ListNode
+    //     | OptionalNode
+    //     | UnionNode
+    //     | IntersectionNode
+    //     | TerminalNode
+
+    // type IterateSiblings<Node extends Tree3, Siblings extends Tree3[]> = [
+    //     Node,
+    //     ...Siblings
+    // ]
+
+    type TerminalsOf<Node> = Node extends string
+        ? [Node]
+        : Node extends [infer Child, string]
+        ? TerminalsOf<Child>
+        : Node extends [infer Left, string, infer Right]
+        ? [...TerminalsOf<Left>, ...TerminalsOf<Right>]
+        : []
 
     type ValidateParseTree<Tree> = Tree extends string
         ? Tree extends ErrorToken<infer Message>
@@ -72,7 +98,9 @@ export namespace Str {
         ? TypeOfParseTree<Left, Dict, Seen> & TypeOfParseTree<Right, Dict, Seen>
         : unknown
 
-    export type References<Def extends string> = []
+    export type References<Def extends string, Dict> = TerminalsOf<
+        Parse<Def, Dict>
+    >
 
     type ExtractReferences<Tree, Refs extends string[]> = []
 
@@ -137,7 +165,7 @@ export namespace Str {
             : ParseFragment<`${Fragment}${Char}`, Unscanned, Dict>
         : ValidateFragment<Fragment, Dict>
 
-    type ValidateFragment<Fragment extends string, Dict> = IsNaiveTerminal<
+    type ValidateFragment<Fragment extends string, Dict> = IsTriviallyTerminal<
         Fragment,
         Dict
     > extends true
