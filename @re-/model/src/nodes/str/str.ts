@@ -36,7 +36,7 @@ export namespace Str {
         : ParseExpression<ListChars<Def>, Dict>
 
     export type Validate<Def extends string, Dict> = IfDefined<
-        ValidateParseTree<Parse<Def, Dict>>,
+        ValidateParseNode<Parse<Def, Dict>>,
         Def
     >
 
@@ -50,42 +50,6 @@ export namespace Str {
         Seen
     >
 
-    // Consider adding type for tree?
-
-    // type TerminalNode = string
-    // type ListNode = [Tree3, "[]"]
-    // type OptionalNode = [Tree3, "?"]
-    // type UnionNode = [Tree3, "|", Tree3]
-    // type IntersectionNode = [Tree3, "&", Tree3]
-
-    // type Tree3 =
-    //     | ListNode
-    //     | OptionalNode
-    //     | UnionNode
-    //     | IntersectionNode
-    //     | TerminalNode
-
-    // type IterateSiblings<Node extends Tree3, Siblings extends Tree3[]> = [
-    //     Node,
-    //     ...Siblings
-    // ]
-
-    type TerminalsOf<Node> = Node extends string
-        ? [Node]
-        : Node extends [infer Child, string]
-        ? TerminalsOf<Child>
-        : Node extends [infer Left, string, infer Right]
-        ? [...TerminalsOf<Left>, ...TerminalsOf<Right>]
-        : []
-
-    type ValidateParseTree<Tree> = Tree extends string
-        ? Tree extends ErrorToken<infer Message>
-            ? Message
-            : undefined
-        : Tree extends Iterate<infer Node, infer Remaining>
-        ? IfDefined<ValidateParseTree<Node>, ValidateParseTree<Remaining>>
-        : undefined
-
     type TypeOfParseTree<Tree, Dict, Seen> = Tree extends string
         ? TypeOfTerminal<Tree, Dict, Seen>
         : Tree extends [infer Next, "?"]
@@ -98,15 +62,26 @@ export namespace Str {
         ? TypeOfParseTree<Left, Dict, Seen> & TypeOfParseTree<Right, Dict, Seen>
         : unknown
 
-    export type References<Def extends string, Dict> = TerminalsOf<
-        Parse<Def, Dict>
+    type ValidateParseNode<Node> = Node extends string
+        ? Node extends ErrorToken<infer Message>
+            ? Message
+            : undefined
+        : Node extends Iterate<infer Node, infer Remaining>
+        ? IfDefined<ValidateParseNode<Node>, ValidateParseNode<Remaining>>
+        : undefined
+
+    export type References<Def extends string, Dict> = LeavesOf<
+        Parse<Def, Dict>,
+        []
     >
 
-    type ExtractReferences<Tree, Refs extends string[]> = []
-
-    type NonTerminalToken = "(" | ")" | OperatorToken
-
-    type OperatorToken = "[]" | "?" | "|" | "&" | ComparatorToken
+    type LeavesOf<Tree, Leaves extends string[]> = Tree extends string
+        ? [...Leaves, Tree]
+        : Tree extends [infer Child, string]
+        ? LeavesOf<Child, Leaves>
+        : Tree extends [infer Left, string, infer Right]
+        ? LeavesOf<Right, LeavesOf<Left, Leaves>>
+        : Leaves
 
     type ComparatorToken = "<" | ">" | "<=" | ">=" | "=="
 
@@ -235,8 +210,7 @@ export namespace Str {
     type ComparatorStartChar = "<" | ">" | "="
 
     type OperatorStartChar =
-        | "["
-        | "?"
+        | ModifyingOperatorStartChar
         | BranchingOperatorToken
         | ComparatorStartChar
         | " "
@@ -254,7 +228,7 @@ export namespace Str {
     type BranchingOperatorToken = "|" | "&"
 
     /** These tokens modify the current expression */
-    type ModifyingToken = "[]" | "?"
+    type ModifyingOperatorStartChar = "[" | "?"
 
     type LiteralEnclosingChar = `'` | `"` | `/`
 
