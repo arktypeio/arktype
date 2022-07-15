@@ -12,10 +12,29 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 export namespace Str {
-    export type Parse<Def extends string> = ParseExpression<ListChars<Def>>
+    export type Parse<Def extends string, Dict> = Def extends `${infer Child}?`
+        ? [TryNaiveParse<Child, Dict>, "?"]
+        : TryNaiveParse<Def, Dict>
+
+    type IsNaiveTerminal<Def extends string, Dict> = Def extends
+        | Keyword.Definition
+        | AliasIn<Dict>
+        ? true
+        : false
+
+    type TryNaiveParse<
+        Def extends string,
+        Dict
+    > = Def extends `${infer Child}[]`
+        ? IsNaiveTerminal<Child, Dict> extends true
+            ? [Child, "[]"]
+            : ParseExpression<ListChars<Def>>
+        : IsNaiveTerminal<Def, Dict> extends true
+        ? Def
+        : ParseExpression<ListChars<Def>>
 
     export type Validate<Def extends string, Dict> = IfDefined<
-        ValidateParseTree<Parse<Def>, Dict>,
+        ValidateParseTree<Parse<Def, Dict>, Dict>,
         Def
     >
 
@@ -33,7 +52,7 @@ export namespace Str {
     type Iterate<Current, Remaining extends unknown[]> = [Current, ...Remaining]
 
     export type TypeOf<Def extends string, Dict, Seen> = TypeOfParseTree<
-        Parse<Def>,
+        Parse<Def, Dict>,
         Dict,
         Seen
     >
@@ -70,10 +89,7 @@ export namespace Str {
         ? TypeOfParseTree<Left, Dict, Seen> & TypeOfParseTree<Right, Dict, Seen>
         : unknown
 
-    export type References<Def extends string> = ExtractReferences<
-        Parse<Def>,
-        []
-    >
+    export type References<Def extends string> = []
 
     type ExtractReferences<Tree, Refs extends string[]> = []
 
@@ -142,11 +158,10 @@ export namespace Str {
         Tree extends ParseTree,
         Chars extends string[]
     > = Chars extends Scan<infer Char, infer Unscanned>
-        ? Char extends "?"
-            ? Unscanned extends []
-                ? [Tree, "?"]
-                : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
-            : Char extends "["
+        ? //  Unscanned extends []
+          //     ? [Tree, "?"]
+          //     : ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
+          Char extends "["
             ? Unscanned extends Scan<"]", infer NextUnscanned>
                 ? ParseOperators<[Tree, "[]"], NextUnscanned>
                 : ErrorToken<`Missing expected ']'.`>
@@ -156,6 +171,8 @@ export namespace Str {
             ? ShiftBound<Char, Unscanned, Tree>
             : Char extends " "
             ? ParseOperators<Tree, Unscanned>
+            : Char extends "?"
+            ? ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>
             : ErrorToken<`Expected an operator (got ${Char}).`>
         : Tree
 
