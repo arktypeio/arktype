@@ -211,7 +211,7 @@ export namespace Str {
               ParseExpression<Chars, Dict>,
               ParseExpression<Chars, Dict>
           >
-        : Terminal.Error<`One side of comparator ${Comparator} must be a number literal.`>
+        : ErrorToken<`One side of comparator ${Comparator} must be a number literal.`>
 
     type ComparatorStartChar = "<" | ">" | "="
 
@@ -253,7 +253,7 @@ export namespace Str {
 
     type AssertBoundableThen<Node, Next> = Node extends BoundableNode
         ? Next
-        : Terminal.Error<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
+        : ErrorToken<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
 
     type SplitByMatchingParen<
         Chars extends string[],
@@ -297,32 +297,6 @@ export namespace Str {
         : Token extends EmbeddedBigInt.Definition<infer Value>
         ? Value
         : unknown
-
-    export namespace Terminal {
-        export type Any = Record<string, unknown>
-
-        export type Typed<
-            Type,
-            Def extends string,
-            Error extends string | undefined = undefined
-        > = {
-            type: Type
-            def: Def
-            error: Error
-        }
-
-        export type DefinedFrom<Def extends string> = Typed<
-            unknown,
-            Def,
-            undefined
-        >
-
-        export type Error<Message extends string> = Typed<
-            unknown,
-            string,
-            Message
-        >
-    }
 
     export const matches = (def: unknown): def is string =>
         typeof def === "string"

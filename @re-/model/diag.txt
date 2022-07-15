@@ -1,22 +1,15 @@
-test/str/bound.test.ts(16,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(22,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(28,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(35,21): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(42,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(48,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(54,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              224
-Lines:            84090
-Nodes:           282366
-Identifiers:     102176
-Symbols:         205811
-Types:            63543
-Instantiations:  358252
-Memory used:    192283K
+Lines:            84064
+Nodes:           282295
+Identifiers:     102153
+Symbols:         205531
+Types:            63503
+Instantiations:  358241
+Memory used:    189985K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.56s
+Parse time:       0.54s
 Bind time:        0.21s
-Check time:       1.85s
+Check time:       1.79s
 Emit time:        0.00s
-Total time:       2.62s
+Total time:       2.54s
