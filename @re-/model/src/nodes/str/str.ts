@@ -88,14 +88,13 @@ export namespace Str {
 
     type ComparatorToken = "<" | ">" | "<=" | ">=" | "=="
 
-    type Scan<Next extends string, Unscanned extends string[]> = [
-        Next,
+    type Scan<Left extends string, Unscanned extends string[]> = [
+        Left,
         ...Unscanned
     ]
 
     type ParseTree = string | ParseTree[]
 
-    /** An Expression is a list of tokens that must form a completed type to be valid */
     type ParseExpression<Chars extends string[], Dict> = Chars extends Scan<
         infer Char,
         infer Unscanned
