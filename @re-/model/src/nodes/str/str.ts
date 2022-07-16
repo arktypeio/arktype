@@ -16,27 +16,30 @@ export namespace Str {
         ? [TryNaiveParse<Child, Dict>, "?"]
         : TryNaiveParse<Def, Dict>
 
-    export type IsTriviallyTerminal<Def extends string, Dict> = Def extends
-        | Keyword.Definition
-        | AliasIn<Dict>
-        | EmbeddedNumber.Definition
-        | EmbeddedBigInt.Definition
-        ? true
-        : false
-
     type TryNaiveParse<
         Def extends string,
         Dict
     > = Def extends `${infer Child}[]`
-        ? IsTriviallyTerminal<Child, Dict> extends true
+        ? IsTrivialTerminal<Child, Dict> extends true
             ? [Child, "[]"]
             : ParseExpression<ListChars<Def>, Dict>
-        : IsTriviallyTerminal<Def, Dict> extends true
+        : IsTrivialTerminal<Def, Dict> extends true
         ? Def
         : ParseExpression<ListChars<Def>, Dict>
 
+    type TrivialTerminal<Dict> =
+        | Keyword.Definition
+        | AliasIn<Dict>
+        | EmbeddedNumber.Definition
+        | EmbeddedBigInt.Definition
+
+    type IsTrivialTerminal<
+        Def extends string,
+        Dict
+    > = Def extends TrivialTerminal<Dict> ? true : false
+
     export type Validate<Def extends string, Dict> = IfDefined<
-        ValidateParseNode<Parse<Def, Dict>>,
+        ValidateTree<Parse<Def, Dict>>,
         Def
     >
 
@@ -44,30 +47,30 @@ export namespace Str {
 
     type Iterate<Current, Remaining extends unknown[]> = [Current, ...Remaining]
 
-    export type TypeOf<Def extends string, Dict, Seen> = TypeOfParseTree<
+    export type TypeOf<Def extends string, Dict, Seen> = TypeOfTree<
         Parse<Def, Dict>,
         Dict,
         Seen
     >
 
-    type TypeOfParseTree<Tree, Dict, Seen> = Tree extends string
+    type TypeOfTree<Tree, Dict, Seen> = Tree extends string
         ? TypeOfTerminal<Tree, Dict, Seen>
         : Tree extends [infer Next, "?"]
-        ? TypeOfParseTree<Next, Dict, Seen> | undefined
+        ? TypeOfTree<Next, Dict, Seen> | undefined
         : Tree extends [infer Next, "[]"]
-        ? TypeOfParseTree<Next, Dict, Seen>[]
+        ? TypeOfTree<Next, Dict, Seen>[]
         : Tree extends [infer Left, "|", infer Right]
-        ? TypeOfParseTree<Left, Dict, Seen> | TypeOfParseTree<Right, Dict, Seen>
+        ? TypeOfTree<Left, Dict, Seen> | TypeOfTree<Right, Dict, Seen>
         : Tree extends [infer Left, "&", infer Right]
-        ? TypeOfParseTree<Left, Dict, Seen> & TypeOfParseTree<Right, Dict, Seen>
+        ? TypeOfTree<Left, Dict, Seen> & TypeOfTree<Right, Dict, Seen>
         : unknown
 
-    type ValidateParseNode<Node> = Node extends string
-        ? Node extends ErrorToken<infer Message>
+    type ValidateTree<Tree> = Tree extends string
+        ? Tree extends ErrorToken<infer Message>
             ? Message
             : undefined
-        : Node extends Iterate<infer Node, infer Remaining>
-        ? IfDefined<ValidateParseNode<Node>, ValidateParseNode<Remaining>>
+        : Tree extends Iterate<infer Node, infer Remaining>
+        ? IfDefined<ValidateTree<Node>, ValidateTree<Remaining>>
         : undefined
 
     export type References<Def extends string, Dict> = LeavesOf<
@@ -85,8 +88,8 @@ export namespace Str {
 
     type ComparatorToken = "<" | ">" | "<=" | ">=" | "=="
 
-    type Scan<Char extends string, Unscanned extends string[]> = [
-        Char,
+    type Scan<Next extends string, Unscanned extends string[]> = [
+        Next,
         ...Unscanned
     ]
 
@@ -140,7 +143,7 @@ export namespace Str {
             : ParseFragment<`${Fragment}${Char}`, Unscanned, Dict>
         : ValidateFragment<Fragment, Dict>
 
-    type ValidateFragment<Fragment extends string, Dict> = IsTriviallyTerminal<
+    type ValidateFragment<Fragment extends string, Dict> = IsTrivialTerminal<
         Fragment,
         Dict
     > extends true
