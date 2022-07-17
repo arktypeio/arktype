@@ -93,7 +93,7 @@ export namespace Str {
         Dict
     > = Unscanned extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "("
-            ? ShiftGroup<NextUnscanned, [], [], Dict>
+            ? ShiftParenthesized<NextUnscanned, [], [], Dict>
             : Lookahead extends LiteralEnclosingChar
             ? ShiftLiteral<Lookahead, "", NextUnscanned, Dict>
             : Lookahead extends " "
@@ -162,14 +162,14 @@ export namespace Str {
             : ErrorToken<`Expected an operator (got ${Lookahead}).`>
         : Tree
 
-    type ShiftGroup<
+    type ShiftParenthesized<
         Unscanned extends string[],
         Scanned extends string[],
         Depth extends unknown[],
         Dict
     > = Unscanned extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "("
-            ? ShiftGroup<
+            ? ShiftParenthesized<
                   NextUnscanned,
                   [...Scanned, Lookahead],
                   [...Depth, 1],
@@ -178,7 +178,7 @@ export namespace Str {
             : Lookahead extends ")"
             ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
               Depth extends [...infer DepthMinusOne, infer Pop]
-                ? ShiftGroup<
+                ? ShiftParenthesized<
                       NextUnscanned,
                       [...Scanned, Lookahead],
                       DepthMinusOne,
@@ -189,7 +189,12 @@ export namespace Str {
                       NextUnscanned,
                       Dict
                   >
-            : ShiftGroup<NextUnscanned, [...Scanned, Lookahead], Depth, Dict>
+            : ShiftParenthesized<
+                  NextUnscanned,
+                  [...Scanned, Lookahead],
+                  Depth,
+                  Dict
+              >
         : ErrorToken<"Missing ).">
 
     type ShiftBound<

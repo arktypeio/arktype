@@ -10,8 +10,18 @@ describe("str", () => {
                 `Argument of type '""' is not assignable to parameter of type '"Expected an expression."'.`
             )
     })
-    it("ignores whitespace", () => {
+    it("ignores whitespace between identifiers/operators", () => {
         const modelWithWhitespace = model("     string  | boolean    []   ")
         assert(modelWithWhitespace.type).typed as string | boolean[]
+    })
+    it("errors on bad whitespace", () => {
+        assert(() =>
+            // @ts-expect-error
+            model("string | boo lean[]")
+        ).throwsAndHasTypeError("Expected an operator (got l).")
+        // @ts-expect-error
+        assert(() => model("string | boolean[ ]")).throwsAndHasTypeError(
+            "Missing expected ']'."
+        )
     })
 })

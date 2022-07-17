@@ -134,15 +134,6 @@ g: 4 is not assignable to 3.`)
                 `"yes" is not assignable to "yes|no|maybe".`
             )
         })
-        it("union with list", () => {
-            const unionOfLists = model("boolean|number[]")
-            assert(unionOfLists.type).typed as boolean | number[]
-            assert(unionOfLists.validate(true).error).equals(undefined)
-            assert(unionOfLists.validate([1, 2, 3]).error).equals(undefined)
-            assert(unionOfLists.validate([true, false]).error?.message).snap(
-                `[true, false] is not assignable to any of boolean|number[].`
-            )
-        })
         it("union of literals of unions", () => {
             const unionOfLiteralsOfUnions = model("'yes|no'|'true|false'")
             assert(unionOfLiteralsOfUnions.type).typed as
