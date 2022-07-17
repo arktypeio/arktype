@@ -199,43 +199,35 @@ export namespace Str {
         Dict
     > = Unscanned extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "="
-            ? ReduceBound<Tree, `${FirstChar}=`, NextUnscanned, Dict>
+            ? ReduceBound<
+                  Tree,
+                  `${FirstChar}=`,
+                  ParseExpression<NextUnscanned, Dict>
+              >
             : FirstChar extends "="
             ? ErrorToken<`= is not a valid comparator. Use == instead.`>
-            : // Use Chars here instead of Unscanned since the comparator was only 1 character
-              // @ts-expect-error
-              ReduceBound<Tree, FirstChar, Unscanned, Dict>
+            : ReduceBound<
+                  Tree,
+                  // @ts-expect-error
+                  FirstChar,
+                  // Use Unscanned here instead of NextUnscanned since the comparator was only 1 character
+                  ParseExpression<Unscanned, Dict>
+              >
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
     type ReduceBound<
-        Tree extends ExpressionTree,
+        Left extends ExpressionTree,
         Comparator extends ComparatorToken,
-        Unscanned extends string[],
-        Dict
-    > = LookaheadFragment<"", Unscanned> extends Iterate<
-        EmbeddedNumber.Definition,
-        infer NextUnscanned
-    >
-        ? // @ts-expect-error
-          AssertBoundableThen<Tree, ShiftOperators<Tree, NextUnscanned, Dict>>
-        : Tree extends EmbeddedNumber.Definition
-        ? AssertBoundableThen<
-              ParseExpression<Unscanned, Dict>,
-              ParseExpression<Unscanned, Dict>
-          >
-        : [
-              ErrorToken<`One side of comparator ${Comparator} must be a number literal.`>,
-              LookaheadFragment<"", Unscanned>
-          ]
-
-    type LookaheadFragment<
-        Fragment extends string,
-        Chars extends string[]
-    > = Chars extends Scan<infer Lookahead, infer Unscanned>
-        ? Lookahead extends OperatorStartChar
-            ? [Fragment, Chars]
-            : LookaheadFragment<`${Fragment}${Lookahead}`, Unscanned>
-        : [Fragment, Chars]
+        Right extends ExpressionTree
+    > = Right extends EmbeddedNumber.Definition
+        ? Left extends BoundableNode
+            ? Left
+            : BoundabilityError
+        : Left extends EmbeddedNumber.Definition
+        ? Right extends BoundableNode
+            ? Right
+            : BoundabilityError
+        : ErrorToken<`One side of comparator ${Comparator} must be a number literal.`>
 
     type ComparatorStartChar = "<" | ">" | "="
 
@@ -274,9 +266,8 @@ export namespace Str {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    type AssertBoundableThen<Node, Next> = Node extends BoundableNode
-        ? Next
-        : ErrorToken<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
+    type BoundabilityError =
+        ErrorToken<`Bounded expression must be a numbed-or-string-typed keyword or a list-typed expression.`>
 
     type TypeOfTerminal<
         Token extends string,

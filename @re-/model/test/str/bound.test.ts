@@ -50,12 +50,6 @@ describe("bound", () => {
                     "Definition '5' is not boundable."
                 )
             })
-            it("too many values", () => {
-                // @ts-expect-error
-                assert(() => eager("1<2<number<4")).throwsAndHasTypeError(
-                    "Bounds must be either of the form D<N or N<D<N, where 'D' is a boundable definition, 'N' is a number literal, and '<' is a comparison token."
-                )
-            })
         })
     })
     describe("validation", () => {
