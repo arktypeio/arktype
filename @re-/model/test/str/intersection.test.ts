@@ -38,7 +38,7 @@ describe("intersection", () => {
             ).is(undefined)
         })
         it("keyword specifiers", () => {
-            assert(model("integer&nonnegative").validate(7).error?.message).is(
+            assert(model("integer&number").validate(7).error?.message).is(
                 undefined
             )
         })
@@ -60,7 +60,7 @@ describe("intersection", () => {
             })
             it("bad keyword specifiers", () => {
                 assert(
-                    model("integer&positive").validate(7.5).error?.message
+                    model("number&integer").validate(7.5).error?.message
                 ).snap(`7.5 is not assignable to integer.`)
             })
         })

@@ -1,20 +1,17 @@
 import { Base } from "../base.js"
 import {
     IntegerKeyword,
-    NonNegativeKeyword,
     NumberKeyword,
-    NumberKeywordNode,
-    PositiveKeyword
+    NumberKeywordNode
 } from "./numberKeyword.js"
 import {
     AlphaKeyword,
-    AlphaNumericKeyword,
-    CharacterKeyword,
+    AlphaNumKeyword,
     EmailKeyword,
-    LowercaseKeyword,
+    LowerKeyword,
     StringKeyword,
     StringKeywordNode,
-    UppercaseKeyword
+    UpperKeyword
 } from "./stringKeyword.js"
 import {
     AnyKeyword,
@@ -33,32 +30,29 @@ import {
 } from "./typeKeyword.js"
 
 const keywordsToNodes = {
-    symbol: SymbolKeyword,
-    function: FunctionKeyword,
-    true: TrueKeyword,
-    false: FalseKeyword,
-    undefined: UndefinedKeyword,
-    null: NullKeyword,
     any: AnyKeyword,
+    bigint: BigintKeyword,
+    boolean: BooleanKeyword,
+    false: FalseKeyword,
+    function: FunctionKeyword,
+    never: NeverKeyword,
+    null: NullKeyword,
+    object: ObjectKeyword,
+    symbol: SymbolKeyword,
+    true: TrueKeyword,
+    undefined: UndefinedKeyword,
     unknown: UnknownKeyword,
     void: VoidKeyword,
-    never: NeverKeyword,
-    object: ObjectKeyword,
-    boolean: BooleanKeyword,
-    bigint: BigintKeyword,
-    // String subtypes
+    // String-typed
     string: StringKeyword,
     email: EmailKeyword,
     alpha: AlphaKeyword,
-    alphanumeric: AlphaNumericKeyword,
-    lowercase: LowercaseKeyword,
-    uppercase: UppercaseKeyword,
-    character: CharacterKeyword,
-    // Number subtypes
+    alphanum: AlphaNumKeyword,
+    lower: LowerKeyword,
+    upper: UpperKeyword,
+    // Number-typed
     number: NumberKeyword,
-    integer: IntegerKeyword,
-    positive: PositiveKeyword,
-    nonnegative: NonNegativeKeyword
+    integer: IntegerKeyword
 }
 
 type KeywordsToNodes = typeof keywordsToNodes

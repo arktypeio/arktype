@@ -1,0 +1,56 @@
+<definition> ::= <expression> <modifiers>
+
+<expression> ::= <reference> | <transform_expression> | <branch_expression>
+<modifiers> ::= "?"? 
+
+<transform_expression> ::= <expression> <transform_operator>
+<transform_operator> ::= "[]"
+
+<branch_expression> ::= <expression> <branch_operator> <expression>
+<branch_operator> ::= "|" | "&"
+
+<reference> ::= <identifier> | <embedded_literal>
+<identifier> ::= <keyword> | <alias>
+<keyword> ::= <string_keyword> | <number_keyword> | <type_keyword>
+<alias> ::= <letter> <alphanum_char>*
+<embedded_literal> ::= <embedded_string_literal> | <embedded_number_literal> | <embedded_bigint_literal> | <embedded_regex_literal>
+
+<string_keyword> ::= "string" | "email" | "alpha" | "alphanum" | "upper" | "lower"
+<number_keyword> ::= "number" | "integer"
+<type_keyword> ::= "any" | "bigint" | "boolean" | "false" | "function" | "never" | "null" 
+                | "object" | "symbol" | "true" | "undefined" | "unknown" | "void" 
+
+<embedded_string_literal> ::= <embedded_single_quoted_literal> | <embedded_double_quoted_literal>
+
+<embedded_single_quoted_literal> ::= "'" | <non_single_quote>* | "'"
+<non_single_quote> ::= <non_enclosing_symbol> | "\"" | "/"
+
+<embedded_double_quoted_literal> ::= "\"" | <non_double_quote>* | "\""
+<non_double_quote> ::= <non_enclosing_char> | "'" | "/"
+
+<embedded_regex_literal> ::= "/" | <non_forward_slash>* | "/"
+<non_forward_slash> ::= <non_enclosing_char> | "\"" | "'"
+
+<embedded_number_literal> ::= <integer> | <number_with_decimal>
+
+<embedded_bigint_literal> ::= <integer> "n"
+
+<integer> ::= "0" | ("-"? <positive_integer>)
+<number_with_decimal> ::= "-"? <non_negative_integer> <decimal_suffix>
+
+<non_negative_integer> ::= "0" | <positive_integer>
+<positive_integer> ::= <non_zero_digit> <digit>*
+<decimal_suffix> ::= "." <digit>+
+
+<alphanum_char> ::= <letter> | <digit>
+
+<letter> ::= [a-z] | [A-Z]
+
+<digit> ::= "0" | <non_zero_digit>
+
+<non_zero_digit> ::= [1-9]
+
+<non_enclosing_symbol> ::= "|" | "!" | "#" | "$" | "%" | "&" | "(" | ")" | "*" | "+" | "," | "_" 
+        | "." | ":" | ";" | ">" | "=" | "<" | "?" | "@" | "[" | "\\" | "]" | "^" | "-" | "`" | "{" | "}" | "~"
+
+<non_enclosing_char> ::= <alphanum_char> | <non_enclosing_symbol>

@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { eager, model } from "../../src/index.js"
 
-// TODO: Add lists, add ==
+// TODO: Add lists, add ==, test +/- infinity and NaN
 
 describe("bound", () => {
     describe("type", () => {

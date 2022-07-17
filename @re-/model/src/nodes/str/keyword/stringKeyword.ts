@@ -51,30 +51,20 @@ export class AlphaKeyword extends BaseStringKeyword {
     }
 }
 
-export class AlphaNumericKeyword extends BaseStringKeyword {
+export class AlphaNumKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return isAlphaNumeric(value)
     }
 }
 
-export class LowercaseKeyword extends BaseStringKeyword {
+export class LowerKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return value === value.toLowerCase()
     }
 }
 
-export class UppercaseKeyword extends BaseStringKeyword {
+export class UpperKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return value === value.toUpperCase()
-    }
-}
-
-export class CharacterKeyword extends BaseStringKeyword {
-    allowsString(value: string) {
-        return value.length === 1
-    }
-
-    override generate() {
-        return "a"
     }
 }

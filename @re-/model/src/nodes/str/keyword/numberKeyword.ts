@@ -37,19 +37,3 @@ export class IntegerKeyword extends BaseNumberKeyword {
         return Number.isInteger(value)
     }
 }
-
-export class PositiveKeyword extends BaseNumberKeyword {
-    allowsNumber(value: number) {
-        return value > 0
-    }
-
-    override generate() {
-        return 1
-    }
-}
-
-export class NonNegativeKeyword extends BaseNumberKeyword {
-    allowsNumber(value: number) {
-        return value >= 0
-    }
-}

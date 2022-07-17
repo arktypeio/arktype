@@ -235,42 +235,42 @@ describe("keyword", () => {
                 `"a B c" is not assignable to alpha.`
             )
         })
-        it("alphanumeric", () => {
-            const alphaNumeric = model("alphanumeric")
+        it("alphanum", () => {
+            const alphaNumeric = model("alphanum")
             assert(alphaNumeric.type).typed as string
             assert(alphaNumeric.validate("aBc123").error).is(undefined)
             assert(alphaNumeric.validate("aBc+123").error?.message).snap(
-                `"aBc+123" is not assignable to alphanumeric.`
+                `"aBc+123" is not assignable to alphanum.`
             )
         })
-        it("lowercase", () => {
-            const lowercase = model("lowercase")
+        it("lower", () => {
+            const lowercase = model("lower")
             assert(lowercase.type).typed as string
             assert(lowercase.validate("as long as no uppercase").error).is(
                 undefined
             )
             assert(lowercase.validate("whoOps").error?.message).snap(
-                `"whoOps" is not assignable to lowercase.`
+                `"whoOps" is not assignable to lower.`
             )
         })
-        it("uppercase", () => {
-            const uppercase = model("uppercase")
+        it("upper", () => {
+            const uppercase = model("upper")
             assert(uppercase.type).typed as string
             assert(uppercase.validate("AS LONG AS NO LOWERCASE").error).is(
                 undefined
             )
             assert(uppercase.validate("WHOoPS").error?.message).snap(
-                `"WHOoPS" is not assignable to uppercase.`
+                `"WHOoPS" is not assignable to upper.`
             )
         })
-        it("character", () => {
-            const character = model("character")
-            assert(character.type).typed as string
-            assert(character.validate("!").error).is(undefined)
-            assert(character.validate(":(").error?.message).snap(
-                `":(" is not assignable to character.`
-            )
-        })
+        // it("char", () => {
+        //     const character = model("char")
+        //     assert(character.type).typed as string
+        //     assert(character.validate("!").error).is(undefined)
+        //     assert(character.validate(":(").error?.message).snap(
+        //         `":(" is not assignable to char.`
+        //     )
+        // })
     })
     describe("number", () => {
         describe("number", () => {
@@ -304,34 +304,6 @@ describe("keyword", () => {
                 )
                 assert(integer.validate(NaN).error?.message).snap(
                     `NaN is not assignable to integer.`
-                )
-            })
-            it("positive", () => {
-                const positive = model("positive")
-                assert(positive.type).typed as number
-                assert(positive.validate(0.0001).error).is(undefined)
-                assert(positive.validate(-0.0001).error?.message).snap(
-                    `-0.0001 is not assignable to positive.`
-                )
-                assert(positive.validate(Infinity).error?.message).snap(
-                    undefined
-                )
-                assert(positive.validate(NaN).error?.message).snap(
-                    `NaN is not assignable to positive.`
-                )
-            })
-            it("nonNegative", () => {
-                const nonNegative = model("nonnegative")
-                assert(nonNegative.type).typed as number
-                assert(nonNegative.validate(0).error).is(undefined)
-                assert(nonNegative.validate(-999).error?.message).snap(
-                    `-999 is not assignable to nonnegative.`
-                )
-                assert(nonNegative.validate(Infinity).error?.message).snap(
-                    undefined
-                )
-                assert(nonNegative.validate(NaN).error?.message).snap(
-                    `NaN is not assignable to nonnegative.`
                 )
             })
         })

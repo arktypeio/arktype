@@ -15,7 +15,7 @@ describe("references", () => {
         },
         strings: {
             keyword: "boolean",
-            expression: "string[]|integer&positive|null"
+            expression: "string[]|(5>integer>0)|null"
         },
         listed: [-1n, "null", "string|boolean"],
         regex: /.*/
@@ -34,8 +34,7 @@ describe("references", () => {
         "true",
         "5",
         "7n",
-        "integer",
-        "positive"
+        "integer"
     ])
 
     type ExpectedObjectDefReferenceTuple = typeof expectedObjectDefReferences
@@ -57,7 +56,7 @@ describe("references", () => {
         it("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
                 .$meta.model(
-                    "user[]|group[]|boolean&true|integer&positive|null|1<number<2"
+                    "user[]|group[]|boolean&true|(integer>0)|null|1<number<2"
                 )
                 .references()
             const expectedReferenceSet = narrow([
@@ -67,7 +66,6 @@ describe("references", () => {
                 "true",
                 "number",
                 "integer",
-                "positive",
                 "null"
             ])
             type ExpectedReferences = ElementOf<typeof expectedReferenceSet>[]
@@ -100,7 +98,7 @@ describe("references", () => {
                 },
                 strings: {
                     keyword: ["boolean"],
-                    expression: ["string", "integer", "positive", "null"]
+                    expression: ["string", "integer", "null"]
                 },
                 listed: [["-1n"], ["null"], ["string", "boolean"]],
                 regex: ["/.*/" as `/${string}/`]
@@ -121,10 +119,9 @@ describe("references", () => {
             const referencesEndingWithE = model(objectDef).references({
                 filter: (reference) => reference.endsWith("e")
             })
-            assert(referencesEndingWithE).equals(
-                ["true", "false", "positive"],
-                { listComparison: "permutable" }
-            ).typed as ExpectedObjectDefReferenceList
+            assert(referencesEndingWithE).equals(["true", "false"], {
+                listComparison: "permutable"
+            }).typed as ExpectedObjectDefReferenceList
         })
         it("typed filter", () => {
             const bigintLiteralReferences = model(objectDef).references({
