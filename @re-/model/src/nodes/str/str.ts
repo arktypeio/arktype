@@ -88,48 +88,87 @@ export namespace Str {
         ...Unscanned
     ]
 
-    type ParserState = [ExpressionTree, string[], ExpressionTree[]]
+    type ParserState = {
+        expression: ExpressionTree
+        unscanned: string[]
+        branches: ExpressionTree[]
+    }
+
+    namespace State {
+        type Base = {
+            expression: ExpressionTree
+            lookahead: string
+            unscanned: string[]
+            branches: ExpressionTree[]
+        }
+
+        type Initialize<Unscanned extends string[]> = {}
+    }
 
     type AdvanceScanner<
         State extends ParserState,
         Unscanned extends string[]
-    > = [State[0], Unscanned, State[2]]
+    > = {
+        expression: State["expression"]
+        unscanned: Unscanned
+        branches: State["branches"]
+    }
 
     type PushToken<
         State extends ParserState,
         Token extends string,
-        Unscanned extends string[] = State[1]
-    > = [[State[0], Token], Unscanned, State[2]]
+        Unscanned extends string[] = State["unscanned"]
+    > = {
+        expression: [State["expression"], Token]
+        unscanned: Unscanned
+        branches: State["branches"]
+    }
 
     type SetExpression<
         State extends ParserState,
         Expression extends string,
-        Unscanned extends string[] = State[1]
-    > = [Expression, Unscanned, State[2]]
+        Unscanned extends string[] = State["unscanned"]
+    > = {
+        expression: Expression
+        unscanned: Unscanned
+        branches: State["branches"]
+    }
 
     type PushBranch<
         State extends ParserState,
         Token extends BranchingOperatorToken,
-        Unscanned extends string[] = State[1]
-    > = [[], Unscanned, [...State[2], State[0], Token]]
+        Unscanned extends string[] = State["unscanned"]
+    > = {
+        expression: []
+        unscanned: Unscanned
+        branches: [...State["branches"], State["expression"], Token]
+    }
 
-    type Finalize<State extends ParserState> = State[2] extends []
-        ? State[0]
-        : [...State[2], State[0]]
+    type Finalize<State extends ParserState> = State["branches"] extends []
+        ? State["expression"]
+        : [...State["branches"], State["expression"]]
 
     type ParseDefinition<Def extends string, Dict> = Finalize<
-        ParseExpression<[[], ListChars<Def>, []], Dict>
+        ParseExpression<
+            { expression: []; unscanned: ListChars<Def>; branches: [] },
+            Dict
+        >
     >
-
-    // type F = TypeOf<"string|number", {}, {}>
 
     type ParseExpression<
         State extends ParserState,
         Dict
-    > = State[1] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "("
             ? ShiftOperators<
-                  ParseExpression<[[], NextUnscanned, []], Dict>,
+                  ParseExpression<
+                      {
+                          expression: []
+                          unscanned: NextUnscanned
+                          branches: []
+                      },
+                      Dict
+                  >,
                   Dict
               >
             : Lookahead extends LiteralEnclosingChar
@@ -153,7 +192,7 @@ export namespace Str {
         Contents extends string,
         State extends ParserState,
         Dict
-    > = State[1] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends EnclosedBy
             ? ShiftOperators<
                   SetExpression<
@@ -178,7 +217,7 @@ export namespace Str {
         Fragment extends string,
         State extends ParserState,
         Dict
-    > = State[1] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends OperatorStartChar
             ? ShiftOperators<
                   SetExpression<State, ValidateFragment<Fragment, Dict>>,
@@ -205,7 +244,7 @@ export namespace Str {
     type ShiftOperators<
         State extends ParserState,
         Dict
-    > = State[1] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "["
             ? NextUnscanned extends Scan<"]", infer NextNextUnscanned>
                 ? ShiftOperators<
@@ -218,7 +257,11 @@ export namespace Str {
             : Lookahead extends ComparatorStartChar
             ? ShiftBound<Lookahead, AdvanceScanner<State, NextUnscanned>, Dict>
             : Lookahead extends ")"
-            ? [[...State[2], State[0]], NextUnscanned, []]
+            ? {
+                  expression: [...State["branches"], State["expression"]]
+                  unscanned: NextUnscanned
+                  branches: []
+              }
             : Lookahead extends " "
             ? ShiftOperators<AdvanceScanner<State, NextUnscanned>, Dict>
             : Lookahead extends "?"
@@ -234,49 +277,11 @@ export namespace Str {
               >
         : State
 
-    // type ShiftParenthesized<
-    //     Unscanned extends string[],
-    //     Scanned extends string[],
-    //     Depth extends unknown[],
-    //     Dict
-    // > = Unscanned extends Scan<infer Lookahead, infer NextUnscanned>
-    //     ? Lookahead extends "("
-    //         ? ShiftParenthesized<
-    //               NextUnscanned,
-    //               [...Scanned, Lookahead],
-    //               [...Depth, 1],
-    //               Dict
-    //           >
-    //         : Lookahead extends ")"
-    //         ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //           Depth extends [...infer DepthMinusOne, infer Pop]
-    //             ? ShiftParenthesized<
-    //                   NextUnscanned,
-    //                   [...Scanned, Lookahead],
-    //                   DepthMinusOne,
-    //                   Dict
-    //               >
-    //             : ShiftOperators<
-    //                   ParseExpression<Scanned, Dict>,
-    //                   NextUnscanned,
-    //                   Dict
-    //               >
-    //         : ShiftParenthesized<
-    //               NextUnscanned,
-    //               [...Scanned, Lookahead],
-    //               Depth,
-    //               Dict
-    //           >
-    //     : ErrorToken<"Missing ).">
-
-    type zfds = ShiftBound<">", ["number", ["=", "5"], []], {}>
-    type FOMO = Parse<"''<number>5", {}>
-
     type ShiftBound<
         FirstChar extends ComparatorStartChar,
         State extends ParserState,
         Dict
-    > = State[1] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "="
             ? ReduceBound<
                   State,
@@ -298,12 +303,16 @@ export namespace Str {
         State extends ParserState,
         Comparator extends ComparatorToken,
         Next extends ParserState
-    > = Next[0] extends EmbeddedNumber.Definition
-        ? State[0] extends BoundableNode
-            ? [State[0], Next[1], State[2]]
+    > = Next["expression"] extends EmbeddedNumber.Definition
+        ? State["expression"] extends BoundableNode
+            ? {
+                  expression: State["expression"]
+                  unscanned: Next["unscanned"]
+                  branches: State["branches"]
+              }
             : BoundabilityError
-        : State[0] extends EmbeddedNumber.Definition
-        ? Next[0] extends BoundableNode
+        : State["expression"] extends EmbeddedNumber.Definition
+        ? Next["expression"] extends BoundableNode
             ? Next
             : BoundabilityError
         : PushToken<
@@ -375,7 +384,7 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
-    export const parse: Base.Parsing.Parser<string> = (def, ctx) => {
+    export const parsexpression: Base.Parsing.Parser<string> = (def, ctx) => {
         if (Optional.matches(def)) {
             return new Optional.Node(def, ctx)
         } else if (Keyword.matches(def)) {

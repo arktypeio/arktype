@@ -1,3 +1,11 @@
+src/nodes/resolution.ts(50,28): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
+src/nodes/root.ts(50,24): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
+src/nodes/str/bound.ts(78,24): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
+src/nodes/str/bound.ts(93,24): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
+src/nodes/str/intersection.ts(22,28): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
+src/nodes/str/list.ts(13,24): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
+src/nodes/str/optional.ts(18,24): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
+src/nodes/str/union.ts(38,28): error TS2339: Property 'parse' does not exist on type 'typeof Str'.
 test/references.test.ts(59,21): error TS2345: Argument of type '"user[]|group[]|boolean&true|(integer>0)|null|1<number<2"' is not assignable to parameter of type '"One side of comparator > must be a number literal."'.
 test/references.test.ts(72,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type '"integer"[]'.
   Type '"boolean" | "number" | "null" | "true" | "integer" | "user" | "group"' is not assignable to type '"integer"'.
@@ -5,7 +13,7 @@ test/references.test.ts(72,39): error TS2345: Argument of type '["user", "group"
 test/references.test.ts(78,40): error TS2322: Type 'string' is not assignable to type 'never'.
 test/references.test.ts(78,45): error TS2322: Type 'string' is not assignable to type 'never'.
 test/references.test.ts(82,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "undefined", "false", "true", "5", "7n", "integer"]' is not assignable to parameter of type '("string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n")[]'.
-  Type '"undefined" | "boolean" | "string" | `/${string}/` | "5" | "null" | "true" | "false" | "-1n" | "7n" | "integer"' is not assignable to type '"string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n"'.
+  Type '"undefined" | "boolean" | "string" | `/${string}/` | "null" | "true" | "false" | "-1n" | "5" | "7n" | "integer"' is not assignable to type '"string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n"'.
     Type '"integer"' is not assignable to type '"string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n"'.
 test/references.test.ts(114,39): error TS2345: Argument of type '{ primitives: { undefined: ["undefined"]; null: ["null"]; true: ["true"]; false: ["false"]; 5: ["5"]; bigint: ["7n"]; }; strings: { keyword: ["boolean"]; expression: ["string", "integer", "null"]; }; listed: [...]; regex: [...]; }' is not assignable to parameter of type '{ primitives: { undefined: "undefined"[]; null: "null"[]; true: "true"[]; false: "false"[]; 5: "5"[]; bigint: "7n"[]; }; strings: { keyword: "boolean"[]; expression: never[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
   The types of 'strings.expression' are incompatible between these types.
@@ -24,17 +32,17 @@ test/str/bound.test.ts(48,17): error TS2578: Unused '@ts-expect-error' directive
 test/str/list.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/str.test.ts(22,9): error TS2578: Unused '@ts-expect-error' directive.
 Files:              225
-Lines:            84129
-Nodes:           283405
-Identifiers:     102438
-Symbols:         342929
-Types:            92452
-Instantiations:  471476
-Memory used:    246861K
+Lines:            84137
+Nodes:           283436
+Identifiers:     102461
+Symbols:         255198
+Types:            81039
+Instantiations:  440118
+Memory used:    217839K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.53s
-Bind time:        0.21s
-Check time:       1.94s
+Parse time:       0.48s
+Bind time:        0.19s
+Check time:       1.70s
 Emit time:        0.00s
-Total time:       2.69s
+Total time:       2.37s
