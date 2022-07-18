@@ -1,4 +1,4 @@
-import { ListChars } from "@re-/tools"
+import { ListChars, Merge } from "@re-/tools"
 import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
@@ -88,115 +88,92 @@ export namespace Str {
         ...Unscanned
     ]
 
-    type ParserState = {
-        expression: ExpressionTree
-        unscanned: string[]
-        branches: ExpressionTree[]
-    }
-
     namespace State {
-        type Base = {
+        export type Base = {
             expression: ExpressionTree
-            lookahead: string
             unscanned: string[]
             branches: ExpressionTree[]
         }
 
-        type Initialize<Unscanned extends string[]> = {}
+        export type From<S extends Base> = S
+
+        export type Initialize<Unscanned extends string[]> = From<{
+            expression: []
+            unscanned: Unscanned
+            branches: []
+        }>
+
+        export type ScanTo<S extends Base, Unscanned extends string[]> = From<{
+            expression: S["expression"]
+            unscanned: Unscanned
+            branches: S["branches"]
+        }>
+
+        export type SetExpression<
+            S extends Base,
+            Expression extends ExpressionTree,
+            Unscanned extends string[] = S["unscanned"]
+        > = From<{
+            expression: Expression
+            unscanned: Unscanned
+            branches: S["branches"]
+        }>
+
+        export type PushToken<
+            S extends Base,
+            Token extends string,
+            Unscanned extends string[] = S["unscanned"]
+        > = From<{
+            expression: [S["expression"], Token]
+            unscanned: Unscanned
+            branches: S["branches"]
+        }>
+
+        export type PushBranch<
+            S extends Base,
+            Token extends BranchingOperatorToken,
+            Unscanned extends string[] = S["unscanned"]
+        > = From<{
+            expression: []
+            unscanned: Unscanned
+            branches: [...S["branches"], S["expression"], Token]
+        }>
+
+        export type Finalize<S extends Base> = S["branches"] extends []
+            ? S["expression"]
+            : [...S["branches"], S["expression"]]
     }
 
-    type AdvanceScanner<
-        State extends ParserState,
-        Unscanned extends string[]
-    > = {
-        expression: State["expression"]
-        unscanned: Unscanned
-        branches: State["branches"]
-    }
-
-    type PushToken<
-        State extends ParserState,
-        Token extends string,
-        Unscanned extends string[] = State["unscanned"]
-    > = {
-        expression: [State["expression"], Token]
-        unscanned: Unscanned
-        branches: State["branches"]
-    }
-
-    type SetExpression<
-        State extends ParserState,
-        Expression extends string,
-        Unscanned extends string[] = State["unscanned"]
-    > = {
-        expression: Expression
-        unscanned: Unscanned
-        branches: State["branches"]
-    }
-
-    type PushBranch<
-        State extends ParserState,
-        Token extends BranchingOperatorToken,
-        Unscanned extends string[] = State["unscanned"]
-    > = {
-        expression: []
-        unscanned: Unscanned
-        branches: [...State["branches"], State["expression"], Token]
-    }
-
-    type Finalize<State extends ParserState> = State["branches"] extends []
-        ? State["expression"]
-        : [...State["branches"], State["expression"]]
-
-    type ParseDefinition<Def extends string, Dict> = Finalize<
-        ParseExpression<
-            { expression: []; unscanned: ListChars<Def>; branches: [] },
-            Dict
-        >
+    type ParseDefinition<Def extends string, Dict> = State.Finalize<
+        ParseExpression<State.Initialize<ListChars<Def>>, Dict>
     >
 
     type ParseExpression<
-        State extends ParserState,
+        S extends State.Base,
         Dict
-    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "("
             ? ShiftOperators<
-                  ParseExpression<
-                      {
-                          expression: []
-                          unscanned: NextUnscanned
-                          branches: []
-                      },
-                      Dict
-                  >,
+                  ParseExpression<State.Initialize<NextUnscanned>, Dict>,
                   Dict
               >
             : Lookahead extends LiteralEnclosingChar
-            ? ShiftLiteral<
-                  Lookahead,
-                  "",
-                  AdvanceScanner<State, NextUnscanned>,
-                  Dict
-              >
+            ? ShiftLiteral<Lookahead, "", State.ScanTo<S, NextUnscanned>, Dict>
             : Lookahead extends " "
-            ? ParseExpression<AdvanceScanner<State, NextUnscanned>, Dict>
-            : ShiftFragment<
-                  Lookahead,
-                  AdvanceScanner<State, NextUnscanned>,
-                  Dict
-              >
-        : PushToken<State, ErrorToken<`Expected an expression.`>>
+            ? ParseExpression<State.ScanTo<S, NextUnscanned>, Dict>
+            : ShiftFragment<Lookahead, State.ScanTo<S, NextUnscanned>, Dict>
+        : State.SetExpression<S, ErrorToken<`Expected an expression.`>>
 
     type ShiftLiteral<
         EnclosedBy extends LiteralEnclosingChar,
         Contents extends string,
-        State extends ParserState,
+        S extends State.Base,
         Dict
-    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends EnclosedBy
             ? ShiftOperators<
-                  SetExpression<
-                      State,
+                  State.SetExpression<
+                      S,
                       `${EnclosedBy}${Contents}${EnclosedBy}`,
                       NextUnscanned
                   >,
@@ -205,30 +182,30 @@ export namespace Str {
             : ShiftLiteral<
                   EnclosedBy,
                   `${Contents}${Lookahead}`,
-                  AdvanceScanner<State, NextUnscanned>,
+                  State.ScanTo<S, NextUnscanned>,
                   Dict
               >
-        : PushToken<
-              State,
+        : State.SetExpression<
+              S,
               ErrorToken<`Expected a closing ${EnclosedBy} token for literal expression ${EnclosedBy}${Contents}`>
           >
 
     type ShiftFragment<
         Fragment extends string,
-        State extends ParserState,
+        S extends State.Base,
         Dict
-    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends OperatorStartChar
             ? ShiftOperators<
-                  SetExpression<State, ValidateFragment<Fragment, Dict>>,
+                  State.SetExpression<S, ValidateFragment<Fragment, Dict>>,
                   Dict
               >
             : ShiftFragment<
                   `${Fragment}${Lookahead}`,
-                  AdvanceScanner<State, NextUnscanned>,
+                  State.ScanTo<S, NextUnscanned>,
                   Dict
               >
-        : SetExpression<State, ValidateFragment<Fragment, Dict>>
+        : State.SetExpression<S, ValidateFragment<Fragment, Dict>>
 
     type ValidateFragment<Fragment extends string, Dict> = IsIdentifier<
         Fragment,
@@ -242,81 +219,87 @@ export namespace Str {
     type ExpressionTree = string | ExpressionTree[]
 
     type ShiftOperators<
-        State extends ParserState,
+        S extends State.Base,
         Dict
-    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "["
             ? NextUnscanned extends Scan<"]", infer NextNextUnscanned>
                 ? ShiftOperators<
-                      PushToken<State, "[]", NextNextUnscanned>,
+                      State.PushToken<S, "[]", NextNextUnscanned>,
                       Dict
                   >
                 : ErrorToken<`Missing expected ']'.`>
             : Lookahead extends BranchingOperatorToken
-            ? ParseExpression<PushBranch<State, Lookahead, NextUnscanned>, Dict>
+            ? ParseExpression<
+                  State.PushBranch<S, Lookahead, NextUnscanned>,
+                  Dict
+              >
             : Lookahead extends ComparatorStartChar
-            ? ShiftBound<Lookahead, AdvanceScanner<State, NextUnscanned>, Dict>
+            ? ShiftBound<Lookahead, State.ScanTo<S, NextUnscanned>, Dict>
             : Lookahead extends ")"
             ? {
-                  expression: [...State["branches"], State["expression"]]
+                  expression: [...S["branches"], S["expression"]]
                   unscanned: NextUnscanned
                   branches: []
               }
             : Lookahead extends " "
-            ? ShiftOperators<AdvanceScanner<State, NextUnscanned>, Dict>
+            ? ShiftOperators<State.ScanTo<S, NextUnscanned>, Dict>
             : Lookahead extends "?"
-            ? PushToken<
-                  State,
+            ? State.PushToken<
+                  S,
                   ErrorToken<`Modifier '?' is only valid at the end of a type definition.`>,
                   NextUnscanned
               >
-            : PushToken<
-                  State,
+            : State.PushToken<
+                  S,
                   ErrorToken<`Expected an operator (got ${Lookahead}).`>,
                   NextUnscanned
               >
-        : State
+        : S
 
     type ShiftBound<
         FirstChar extends ComparatorStartChar,
-        State extends ParserState,
+        S extends State.Base,
         Dict
-    > = State["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "="
             ? ReduceBound<
-                  State,
+                  S,
                   `${FirstChar}=`,
-                  ParseExpression<SetExpression<State, "", NextUnscanned>, Dict>
+                  ParseExpression<
+                      State.SetExpression<S, "", NextUnscanned>,
+                      Dict
+                  >
               >
             : FirstChar extends "="
             ? ErrorToken<`= is not a valid comparator. Use == instead.`>
             : ReduceBound<
-                  State,
+                  S,
                   // @ts-expect-error
                   FirstChar,
-                  ParseExpression<SetExpression<State, "">, Dict>
+                  ParseExpression<State.SetExpression<S, "">, Dict>
               >
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
     // TODO: Add boundability error
     type ReduceBound<
-        State extends ParserState,
+        S extends State.Base,
         Comparator extends ComparatorToken,
-        Next extends ParserState
+        Next extends State.Base
     > = Next["expression"] extends EmbeddedNumber.Definition
-        ? State["expression"] extends BoundableNode
+        ? S["expression"] extends BoundableNode
             ? {
-                  expression: State["expression"]
+                  expression: S["expression"]
                   unscanned: Next["unscanned"]
-                  branches: State["branches"]
+                  branches: S["branches"]
               }
             : BoundabilityError
-        : State["expression"] extends EmbeddedNumber.Definition
+        : S["expression"] extends EmbeddedNumber.Definition
         ? Next["expression"] extends BoundableNode
             ? Next
             : BoundabilityError
-        : PushToken<
-              State,
+        : State.PushToken<
+              S,
               ErrorToken<`One side of comparator ${Comparator} must be a number literal.`>
           >
 

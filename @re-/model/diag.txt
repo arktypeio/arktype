@@ -32,17 +32,17 @@ test/str/bound.test.ts(48,17): error TS2578: Unused '@ts-expect-error' directive
 test/str/list.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/str.test.ts(22,9): error TS2578: Unused '@ts-expect-error' directive.
 Files:              225
-Lines:            84137
-Nodes:           283436
-Identifiers:     102461
-Symbols:         255198
-Types:            81039
-Instantiations:  440118
-Memory used:    217839K
+Lines:            84126
+Nodes:           283537
+Identifiers:     102504
+Symbols:         249875
+Types:            78197
+Instantiations:  429326
+Memory used:    208294K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.48s
-Bind time:        0.19s
-Check time:       1.70s
+Parse time:       0.52s
+Bind time:        0.22s
+Check time:       1.71s
 Emit time:        0.00s
-Total time:       2.37s
+Total time:       2.45s
