@@ -237,11 +237,11 @@ export namespace Str {
             : Lookahead extends ComparatorStartChar
             ? ShiftBound<Lookahead, State.ScanTo<S, NextUnscanned>, Dict>
             : Lookahead extends ")"
-            ? {
+            ? State.From<{
                   expression: [...S["branches"], S["expression"]]
                   unscanned: NextUnscanned
                   branches: []
-              }
+              }>
             : Lookahead extends " "
             ? ShiftOperators<State.ScanTo<S, NextUnscanned>, Dict>
             : Lookahead extends "?"
@@ -281,7 +281,6 @@ export namespace Str {
               >
         : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
 
-    // TODO: Add boundability error
     type ReduceBound<
         S extends State.Base,
         Comparator extends ComparatorToken,
