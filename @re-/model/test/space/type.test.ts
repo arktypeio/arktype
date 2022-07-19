@@ -172,7 +172,9 @@ describe("space", () => {
     })
     it("errors on bad meta key", () => {
         // @ts-expect-error
-        assert(space({ $meta: { fake: "boolean" } })).type.errors.snap()
+        assert(space({ $meta: { fake: "boolean" } })).type.errors.snap(
+            `Type '{ fake: string; }' is not assignable to type '{ onCycle?: Validate<unknown, { $meta: { fake: string; }; } & { $cyclic: "unknown"; }> | undefined; onResolve?: Validate<unknown, { $meta: { fake: string; }; } & { $resolution: "unknown"; }> | undefined; }'.Object literal may only specify known properties, and 'fake' does not exist in type '{ onCycle?: Validate<unknown, { $meta: { fake: string; }; } & { $cyclic: "unknown"; }> | undefined; onResolve?: Validate<unknown, { $meta: { fake: string; }; } & { $resolution: "unknown"; }> | undefined; }'.`
+        )
     })
     it("errors on bad meta def", () => {
         // @ts-expect-error

@@ -1,32 +1,43 @@
-test/references.test.ts(72,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type '"integer"[]'.
-  Type '"boolean" | "number" | "null" | "true" | "integer" | "user" | "group"' is not assignable to type '"integer"'.
-    Type '"boolean"' is not assignable to type '"integer"'.
+test/references.test.ts(72,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type 'never[]'.
+  Type 'string' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
 test/references.test.ts(78,40): error TS2322: Type 'string' is not assignable to type 'never'.
 test/references.test.ts(78,45): error TS2322: Type 'string' is not assignable to type 'never'.
-test/references.test.ts(114,39): error TS2345: Argument of type '{ primitives: { undefined: ["undefined"]; null: ["null"]; true: ["true"]; false: ["false"]; 5: ["5"]; bigint: ["7n"]; }; strings: { keyword: ["boolean"]; expression: ["string", "integer", "null"]; }; listed: [...]; regex: [...]; }' is not assignable to parameter of type '{ primitives: { undefined: "undefined"[]; null: "null"[]; true: "true"[]; false: "false"[]; 5: "5"[]; bigint: "7n"[]; }; strings: { keyword: "boolean"[]; expression: "integer"[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
+test/references.test.ts(82,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "undefined", "false", "true", "5", "7n", "integer"]' is not assignable to parameter of type '("string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n")[]'.
+  Type '"undefined" | "boolean" | "string" | `/${string}/` | "null" | "true" | "false" | "-1n" | "5" | "7n" | "integer"' is not assignable to type '"string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n"'.
+    Type '"integer"' is not assignable to type '"string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n"'.
+test/references.test.ts(114,39): error TS2345: Argument of type '{ primitives: { undefined: ["undefined"]; null: ["null"]; true: ["true"]; false: ["false"]; 5: ["5"]; bigint: ["7n"]; }; strings: { keyword: ["boolean"]; expression: ["string", "integer", "null"]; }; listed: [...]; regex: [...]; }' is not assignable to parameter of type '{ primitives: { undefined: "undefined"[]; null: "null"[]; true: "true"[]; false: "false"[]; 5: "5"[]; bigint: "7n"[]; }; strings: { keyword: "boolean"[]; expression: "null"[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
   The types of 'strings.expression' are incompatible between these types.
-    Type '["string", "integer", "null"]' is not assignable to type '"integer"[]'.
-      Type '"string" | "null" | "integer"' is not assignable to type '"integer"'.
-        Type '"string"' is not assignable to type '"integer"'.
+    Type '["string", "integer", "null"]' is not assignable to type '"null"[]'.
+      Type '"string" | "null" | "integer"' is not assignable to type '"null"'.
+        Type '"string"' is not assignable to type '"null"'.
 test/references.test.ts(154,38): error TS2322: Type 'string' is not assignable to type 'never'.
 test/references.test.ts(154,43): error TS2322: Type 'string' is not assignable to type 'never'.
 test/references.test.ts(154,50): error TS2322: Type 'string' is not assignable to type 'never'.
 test/references.test.ts(154,55): error TS2322: Type 'string' is not assignable to type 'never'.
 test/references.test.ts(154,60): error TS2322: Type 'string' is not assignable to type 'never'.
+test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'ShiftExpression<{ left: { expression: []; branches: []; groups: []; }; right: ListChars<?, []>; }, Dict>["left"]["branches"]' and '[]'.
+test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'ShiftExpression<{ left: { expression: []; branches: []; groups: []; }; right: ListChars<Def, []>; }, ?>["left"]["branches"]' and '[]'.
 test/space/validation.test.ts(45,13): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(16,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(22,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/bound.test.ts(28,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(35,21): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(42,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/bound.test.ts(48,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/str.test.ts(6,9): error TS2578: Unused '@ts-expect-error' directive.
 Files:              225
-Lines:            84150
-Nodes:           283726
-Identifiers:     102556
-Symbols:         257120
-Types:            84976
-Instantiations:  451237
-Memory used:    214507K
+Lines:            84175
+Nodes:           283900
+Identifiers:     102603
+Symbols:         286039
+Types:           112078
+Instantiations:  509255
+Memory used:    241713K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.51s
+Parse time:       0.54s
 Bind time:        0.21s
-Check time:       1.82s
+Check time:       1.95s
 Emit time:        0.00s
-Total time:       2.54s
+Total time:       2.69s
