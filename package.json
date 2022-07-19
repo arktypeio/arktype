@@ -11,7 +11,7 @@
         "lint": "eslint .",
         "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm bench && pnpm build-pages",
         "docgen": "ts-node ./scripts/docgen.ts && pnpm build-pages",
-        "test-docgen": "cd ./scripts/docgen && mocha \"**/*.test.ts\"",
+        "test-docgen": "cd \"./scripts/docgen\" && mocha \"**/*.test.ts\"",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
