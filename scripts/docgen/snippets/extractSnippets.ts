@@ -1,7 +1,10 @@
+import { walkPaths } from "@re-/node"
+import { readFileSync, statSync } from "node:fs"
 import { relative } from "node:path"
-import { Node, Project, SourceFile, SyntaxKind, ts } from "ts-morph"
+import { Project } from "ts-morph"
 import { DocGenSnippetExtractionConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
+import { getTransformedText } from "./transformFileText.js"
 
 /** Represents paths mapped to snippet data for a file */
 export type PackageSnippets = Record<string, FileSnippets>
@@ -29,6 +32,8 @@ export const addDefaultsToTransformOptions = (
     ...options
 })
 
+const TS_FILE_REGEX = /^.*\.(c|m)?tsx?$/
+
 export const extractPackageSnippets = ({
     project,
     sources,
@@ -36,26 +41,23 @@ export const extractPackageSnippets = ({
 }: ExtractPackageSnippetsArgs): PackageSnippets => {
     const packageSnippets: PackageSnippets = {}
     for (const source of sources) {
-        const snippetSourceFiles = project.addSourceFilesAtPaths(
-            source.fileGlob
-        )
-        for (const sourceFile of snippetSourceFiles) {
-            const fileKey = relative(
-                packageMetadata.rootDir,
-                sourceFile.getFilePath()
-            )
-            packageSnippets[fileKey] = extractSnippetsFromFile(sourceFile, {
+        const paths = statSync(source.path).isDirectory()
+            ? walkPaths(source.path, { excludeDirs: true })
+            : [source.path]
+        for (const path of paths) {
+            const fileKey = relative(packageMetadata.rootDir, path)
+            const ctx = {
                 packageMetadata,
                 transforms: addDefaultsToTransformOptions(source.transforms)
-            })
+            }
+            const fileText = TS_FILE_REGEX.test(path)
+                ? getTransformedText(path, ctx, project)
+                : readFileSync(path, { encoding: "utf8" })
+
+            packageSnippets[fileKey] = extractSnippetsFromFile(fileText)
         }
     }
     return packageSnippets
-}
-
-export type ExtractFileSnippetContext = {
-    packageMetadata: PackageMetadata
-    transforms: SnippetTransformToggles
 }
 
 export type FileSnippets = {
@@ -63,77 +65,32 @@ export type FileSnippets = {
     byLabel: LabeledSnippets
 }
 
-export type LabeledSnippets = Record<string, Snippet>
-
-const extractSnippetsFromFile = (
-    sourceFile: SourceFile,
-    ctx: ExtractFileSnippetContext
-): FileSnippets => {
-    applyTransforms(sourceFile, ctx)
-    const snippetRanges = extractSnippetRangesFromFile(sourceFile)
-    const byLabel = extractTextFromSnippetRanges(sourceFile, snippetRanges)
+const extractSnippetsFromFile = (sourceFileText: string): FileSnippets => {
+    const byLabel = extractLabeledSnippets(sourceFileText)
+    const text = linesToOutput(sourceFileText.split("\n"))
     return {
         all: {
-            // It's important we get the file text after extracting snippets so snip comments are not included
-            text: sourceFile.getFullText().trim()
+            text
         },
         byLabel
     }
 }
 
-const applyTransforms = (
-    sourceFile: SourceFile,
-    ctx: ExtractFileSnippetContext
-) => {
-    if (ctx.transforms.imports) {
-        // Replace relative internal imports with standard external imports
-        const importDeclarations = sourceFile.getDescendantsOfKind(
-            SyntaxKind.ImportDeclaration
-        )
-        for (const declaration of importDeclarations) {
-            const specifier = declaration.getModuleSpecifier()
-            if (specifier.getLiteralText().endsWith("src/index.js")) {
-                specifier.replaceWithText(`"${ctx.packageMetadata.name}"`)
-            }
-        }
-    }
-}
+export type LabeledSnippets = Record<string, Snippet>
 
-const extractTextFromSnippetRanges = (
-    sourceFile: SourceFile,
-    snippetRanges: SnipRange[]
-): LabeledSnippets => {
+const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
     const labeledSnippets: Record<string, Snippet> = {}
-    for (const resolvedSnip of snippetRanges) {
-        let text
-        if ("node" in resolvedSnip.range) {
-            text = resolvedSnip.range.node.getFullText()
-        } else {
-            text = sourceFile
-                .getFullText()
-                .slice(
-                    resolvedSnip.range.start.getStart(),
-                    resolvedSnip.range.end.getEnd()
-                )
-        }
-        labeledSnippets[resolvedSnip.id] = {
-            text
-        }
-    }
-    return labeledSnippets
-}
+    const openBlocks: SnipStart[] = []
 
-const extractSnippetRangesFromFile = (sourceFile: SourceFile): SnipRange[] => {
-    const snipRanges: SnipRange[] = []
-    const openBlocks: ParsedSnip[] = []
-    const comments = sourceFile.getDescendantsOfKind(
-        SyntaxKind.SingleLineCommentTrivia
-    )
-    for (const comment of comments) {
-        if (comment.getText().includes("@snip")) {
-            const parsedSnip = parseSnipComment(comment)
+    const lines = sourceFileText.split("\n")
+    for (const [i, lineText] of lines.entries()) {
+        let text
+        const lineNumber = i + 1
+        if (lineText.includes("@snip")) {
+            const parsedSnip = parseSnipComment(lineText)
             if (parsedSnip.kind === "@snipStart") {
-                openBlocks.push(parsedSnip)
+                openBlocks.push({ ...parsedSnip, lineNumber })
+                continue
             } else if (parsedSnip.kind === "@snipEnd") {
                 const matchingSnipStartIndex = openBlocks.findIndex(
                     (block) => block.id === parsedSnip.id
@@ -147,19 +104,15 @@ const extractSnippetRangesFromFile = (sourceFile: SourceFile): SnipRange[] => {
                     matchingSnipStartIndex,
                     1
                 )[0]
-                snipRanges.push({
-                    id: parsedSnip.id,
-                    range: {
-                        start: matchingSnipStart.node,
-                        end: parsedSnip.node
-                    }
-                })
+                text = linesToOutput(
+                    lines.slice(matchingSnipStart.lineNumber, lineNumber)
+                )
+            } else if ((parsedSnip.kind = "@snipLine")) {
+                text = linesToOutput(lines.slice(lineNumber, lineNumber + 1))
             } else {
-                snipRanges.push({
-                    id: parsedSnip.id,
-                    range: { node: parsedSnip.node }
-                })
+                throw new Error(`Unrecognized snip '${parsedSnip.kind}'`)
             }
+            labeledSnippets[parsedSnip.id] = { text: text }
         }
     }
     if (openBlocks.length) {
@@ -169,27 +122,25 @@ const extractSnippetRangesFromFile = (sourceFile: SourceFile): SnipRange[] => {
                 .join(",")}.`
         )
     }
-    return snipRanges
+    return labeledSnippets
 }
 
-type SnipKind = `@snip${"Statement" | "Start" | "End"}`
+const linesToOutput = (lines: string[]) =>
+    lines.filter((line) => outputShouldInclude(line)).join("\n")
 
-type SnipRange = {
-    id: string
-    range:
-        | { node: Node<ts.Node> }
-        | { start: Node<ts.Node>; end: Node<ts.Node> }
+type SnipKind = `@snip${"Start" | "End" | "Line"}`
+
+type SnipStart = ParsedSnip & {
+    lineNumber: number
 }
 
 type ParsedSnip = {
     id: string
-    node: Node<ts.Node>
     kind: SnipKind
 }
 
-const parseSnipComment = (snipComment: Node<ts.Node>): ParsedSnip => {
-    const commentText = snipComment.getText()
-    const snipText = commentText.slice(commentText.indexOf("@snip"))
+const parseSnipComment = (snipComment: string): ParsedSnip => {
+    const snipText = snipComment.slice(snipComment.indexOf("@snip"))
     const parts = snipText.split(" ")
     const [kind, id] = parts[0].split(":") as [SnipKind, string | undefined]
     if (!id) {
@@ -197,50 +148,12 @@ const parseSnipComment = (snipComment: Node<ts.Node>): ParsedSnip => {
             `Snip comment '${snipText}' requires a label like '@snipStatement:mySnipLabel'.`
         )
     }
-    let node
-    if (kind === "@snipStatement" || kind === "@snipStart") {
-        node = getNextIncludedSibling(snipComment)
-    } else if (kind === "@snipEnd") {
-        node = getLastIncludedSibling(snipComment)
-    } else {
-        throw new Error(`Unable to parse snip type from '${commentText}'.`)
-    }
-    // Once we've parsed our snip comments, remove the nodes (only in memory) so they are not included in output
-    snipComment.replaceWithText("")
     return {
         id,
-        node,
         kind
     }
 }
 
-const getNextIncludedSibling = (snipComment: Node<ts.Node>) => {
-    const nextIncluded = getFirstIncluded(snipComment.getNextSiblings())
-    if (!nextIncluded) {
-        throw new Error(
-            `Snip comment '${snipComment.getText()}' requires at least one statement follows it.`
-        )
-    }
-    return nextIncluded
-}
-
-const getLastIncludedSibling = (snipComment: Node<ts.Node>) => {
-    const lastIncluded = getFirstIncluded(snipComment.getPreviousSiblings())
-    if (!lastIncluded) {
-        throw new Error(
-            `Snip comment '${snipComment.getText()}' requires at least one statement precede it.`
-        )
-    }
-    return lastIncluded
-}
-
-const getFirstIncluded = (nodes: Node<ts.Node>[]) =>
-    nodes.find(outputWillInclude)
-
-/** Whether a node will be included in snip output */
-const outputWillInclude = (node: Node<ts.Node>) => {
-    return (
-        !node.isKind(SyntaxKind.SingleLineCommentTrivia) ||
-        !node.getText().includes("@snip")
-    )
+const outputShouldInclude = (line: string) => {
+    return !line.includes("@snip")
 }
