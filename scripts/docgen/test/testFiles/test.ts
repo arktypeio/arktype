@@ -1,3 +1,4 @@
+// @ts-ignore
 import { model } from "@re-/model"
 
 //@snipStart:snip1
@@ -17,8 +18,8 @@ export const userModel = model({
 export type User = typeof userModel.type
 //@snipEnd:snip1
 
+//@snipStatement:commentStatement
 // But a model can also validate your data at runtime...
-//@snipStatement:statement1
 export const userData = {
     name: {
         first: "Reed",

@@ -1,4 +1,5 @@
-import assert from "node:assert"
+import { join } from "node:path"
+import { assert } from "@re-/assert"
 import { fromHere, readPackageJson } from "@re-/node"
 import { Project } from "ts-morph"
 import { PackageJson } from "type-fest"
@@ -30,32 +31,35 @@ const snippets = extractPackageSnippets({
     sources,
     packageMetadata
 })
-const snippetKeys = Object.keys(snippets)
 const SNIP_REGEX = /@snip(Start|End|Line)/
-const TEST_FILE_KEY = "docgen/test/testFile.md"
-const FOLDER_MD_FILE_KEY = "docgen/test/testFiles/test.md"
-const FOLDER_TS_FILE_KEY = "docgen/test/testFiles/test.ts"
+const TEST_FILE_KEY = join("docgen", "test", "testFile.md")
+const FOLDER_MD_FILE_KEY = join("docgen", "test", "testFiles", "test.md")
+const FOLDER_TS_FILE_KEY = join("docgen", "test", "testFiles", "test.ts")
 
 describe("Extracts snippets from file path", () => {
     it("adds file from filePath", () => {
-        assert(snippetKeys.includes(TEST_FILE_KEY))
+        assert(snippets[TEST_FILE_KEY])
     })
     it("@snipLine", () => {
-        assert.equal(
-            snippets[TEST_FILE_KEY].byLabel["line"].text,
+        assert(snippets[TEST_FILE_KEY].byLabel["line"].text).snap(
             `import { model } from "@re-/model"`
         )
     })
     it("@snipStart - @snipEnd", () => {
-        assert(snippets[TEST_FILE_KEY].byLabel["test1"].text.includes("Hello."))
+        assert(snippets[TEST_FILE_KEY].byLabel["test1"].text).snap(`Hello.`)
     })
     it("removes @snip(s) from file snippet", () => {
-        assert.equal(SNIP_REGEX.test(snippets[TEST_FILE_KEY].all.text), false)
+        assert(SNIP_REGEX.test(snippets[TEST_FILE_KEY].all.text)).equals(false)
     })
 })
 describe("Extracts snippets from Folder", () => {
-    it("adds files from dirPath", () => {
-        assert(snippetKeys.includes(FOLDER_MD_FILE_KEY))
-        assert(snippetKeys.includes(FOLDER_TS_FILE_KEY))
+    it("adds snippets from dirPath", () => {
+        assert(snippets[FOLDER_MD_FILE_KEY])
+        assert(snippets[FOLDER_MD_FILE_KEY].byLabel.textSnip.text).snap(
+            `labore et dolore magna aliqua. Nam libero justo laoreet sit. Rutrum tellus pellentesque eu tincidunt tortor`
+        )
+        assert(snippets[FOLDER_TS_FILE_KEY].byLabel.commentStatement.text).snap(
+            `// But a model can also validate your data at runtime...`
+        )
     })
 })

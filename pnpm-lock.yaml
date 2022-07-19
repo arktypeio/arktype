@@ -5,6 +5,7 @@ importers:
   .:
     specifiers:
       '@changesets/cli': 2.23.0
+      '@re-/assert': link:./@re-/assert
       '@re-/node': link:./@re-/node
       '@swc/cli': 0.1.57
       '@swc/core': 1.2.204
@@ -31,6 +32,7 @@ importers:
       typescript: 4.8.0-beta
     devDependencies:
       '@changesets/cli': 2.23.0
+      '@re-/assert': link:@re-/assert
       '@re-/node': link:@re-/node
       '@swc/cli': 0.1.57_@swc+core@1.2.204
       '@swc/core': 1.2.204
