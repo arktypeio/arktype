@@ -83,14 +83,14 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
     const openBlocks: SnipStart[] = []
 
     const lines = sourceFileText.split("\n")
-    let text
-    let lineNumber
     for (const [i, lineText] of lines.entries()) {
-        lineNumber = i + 1
+        let text
+        const lineNumber = i + 1
         if (lineText.includes("@snip")) {
             const parsedSnip = parseSnipComment(lineText)
             if (parsedSnip.kind === "@snipStart") {
                 openBlocks.push({ ...parsedSnip, lineNumber })
+                continue
             } else if (parsedSnip.kind === "@snipEnd") {
                 const matchingSnipStartIndex = openBlocks.findIndex(
                     (block) => block.id === parsedSnip.id
@@ -109,8 +109,10 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
                 )
             } else if ((parsedSnip.kind = "@snipLine")) {
                 text = linesToOutput(lines.slice(lineNumber, lineNumber + 1))
+            } else {
+                throw new Error(`Unrecognized snip '${parsedSnip.kind}'`)
             }
-            labeledSnippets[parsedSnip.id] = { text: text as string }
+            labeledSnippets[parsedSnip.id] = { text: text }
         }
     }
     if (openBlocks.length) {
@@ -152,7 +154,6 @@ const parseSnipComment = (snipComment: string): ParsedSnip => {
     }
 }
 
-/** Whether a node will be included in snip output */
 const outputShouldInclude = (line: string) => {
     return !line.includes("@snip")
 }

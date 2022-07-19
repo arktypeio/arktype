@@ -1,4 +1,3 @@
-//prettier-ignore
 import assert from "node:assert"
 import { fromHere, readPackageJson } from "@re-/node"
 import { Project } from "ts-morph"
