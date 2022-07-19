@@ -1,10 +1,11 @@
+import { walkPaths } from "@re-/node"
+import { readFileSync, statSync } from "node:fs"
 import { relative } from "node:path"
 import { Project } from "ts-morph"
 import { DocGenSnippetExtractionConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
-import { extractTransformText } from "./transformFileText.js"
+import { getTransformedText } from "./transformFileText.js"
 
-const TS_FILE_REGEX = /^.*\.(c|m)?tsx?$/
 /** Represents paths mapped to snippet data for a file */
 export type PackageSnippets = Record<string, FileSnippets>
 
@@ -31,6 +32,8 @@ export const addDefaultsToTransformOptions = (
     ...options
 })
 
+const TS_FILE_REGEX = /^.*\.(c|m)?tsx?$/
+
 export const extractPackageSnippets = ({
     project,
     sources,
@@ -38,21 +41,19 @@ export const extractPackageSnippets = ({
 }: ExtractPackageSnippetsArgs): PackageSnippets => {
     const packageSnippets: PackageSnippets = {}
     for (const source of sources) {
-        const snippetSourceFiles = project.addSourceFilesAtPaths(
-            source.fileGlob
-        )
-        for (const sourceFile of snippetSourceFiles) {
-            const fileKey = relative(
-                packageMetadata.rootDir,
-                sourceFile.getFilePath()
-            )
+        const paths = statSync(source.path).isDirectory()
+            ? walkPaths(source.path, { excludeDirs: true })
+            : [source.path]
+        for (const path of paths) {
+            const fileKey = relative(packageMetadata.rootDir, path)
             const ctx = {
                 packageMetadata,
                 transforms: addDefaultsToTransformOptions(source.transforms)
             }
-            const fileText = TS_FILE_REGEX.test(sourceFile.getExtension())
-                ? extractTransformText(sourceFile, ctx)
-                : sourceFile.getFullText()
+            const fileText = TS_FILE_REGEX.test(path)
+                ? getTransformedText(path, ctx, project)
+                : readFileSync(path, { encoding: "utf8" })
+
             packageSnippets[fileKey] = extractSnippetsFromFile(fileText)
         }
     }
@@ -66,7 +67,7 @@ export type FileSnippets = {
 
 const extractSnippetsFromFile = (sourceFileText: string): FileSnippets => {
     const byLabel = extractLabeledSnippets(sourceFileText)
-    const text = filterSnipStatements(sourceFileText.split("\n"))
+    const text = linesToOutput(sourceFileText.split("\n"))
     return {
         all: {
             text
@@ -81,15 +82,15 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
     const labeledSnippets: Record<string, Snippet> = {}
     const openBlocks: SnipStart[] = []
 
-    const textSplitByNewLine = sourceFileText.split("\n")
+    const lines = sourceFileText.split("\n")
     let text
-    for (const [i, lineText] of textSplitByNewLine.entries()) {
+    let lineNumber
+    for (const [i, lineText] of lines.entries()) {
+        lineNumber = i + 1
         if (lineText.includes("@snip")) {
             const parsedSnip = parseSnipComment(lineText)
             if (parsedSnip.kind === "@snipStart") {
-                let startSnip = parsedSnip as SnipStart
-                startSnip.lineNumber = i + 1
-                openBlocks.push(startSnip)
+                openBlocks.push({ ...parsedSnip, lineNumber })
             } else if (parsedSnip.kind === "@snipEnd") {
                 const matchingSnipStartIndex = openBlocks.findIndex(
                     (block) => block.id === parsedSnip.id
@@ -103,14 +104,11 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
                     matchingSnipStartIndex,
                     1
                 )[0]
-                text = sourceFileText.slice(matchingSnipStart.lineNumber, i + 1)
-                text = extractTextBetweenLines(
-                    textSplitByNewLine,
-                    matchingSnipStart.lineNumber,
-                    i
+                text = linesToOutput(
+                    lines.slice(matchingSnipStart.lineNumber, lineNumber)
                 )
             } else if ((parsedSnip.kind = "@snipLine")) {
-                text = extractTextBetweenLines(textSplitByNewLine, i, i + 1)
+                text = linesToOutput(lines.slice(lineNumber, lineNumber + 1))
             }
             labeledSnippets[parsedSnip.id] = { text: text as string }
         }
@@ -125,23 +123,10 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
     return labeledSnippets
 }
 
-const extractTextBetweenLines = (
-    lines: string[],
-    firstLine: number,
-    lastLine: number
-) => {
-    const filteredTextArray = []
-    for (let i = firstLine; i <= lastLine; i++) {
-        if (outputWillInclude(lines[i])) {
-            filteredTextArray.push(lines[i])
-        }
-    }
-    return filteredTextArray.join("\n")
-}
-const filterSnipStatements = (lines: string[]) =>
-    lines.filter((line) => outputWillInclude(line)).join("\n")
+const linesToOutput = (lines: string[]) =>
+    lines.filter((line) => outputShouldInclude(line)).join("\n")
 
-type SnipKind = `@snip${"Statement" | "Start" | "End" | "Line"}`
+type SnipKind = `@snip${"Start" | "End" | "Line"}`
 
 type SnipStart = ParsedSnip & {
     lineNumber: number
@@ -168,6 +153,6 @@ const parseSnipComment = (snipComment: string): ParsedSnip => {
 }
 
 /** Whether a node will be included in snip output */
-const outputWillInclude = (line: string) => {
+const outputShouldInclude = (line: string) => {
     return !line.includes("@snip")
 }

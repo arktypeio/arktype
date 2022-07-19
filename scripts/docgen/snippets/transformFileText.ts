@@ -1,4 +1,4 @@
-import { SourceFile, SyntaxKind } from "ts-morph"
+import { Project, SourceFile, SyntaxKind } from "ts-morph"
 import { PackageMetadata } from "../extract.js"
 import { SnippetTransformToggles } from "./index.js"
 
@@ -6,10 +6,24 @@ export type ExtractFileSnippetContext = {
     packageMetadata: PackageMetadata
     transforms: SnippetTransformToggles
 }
-export const extractTransformText = (
-    sourceFile: SourceFile,
-    ctx: ExtractFileSnippetContext
+export const getTransformedText = (
+    path: string,
+    ctx: ExtractFileSnippetContext,
+    project: Project
 ): string => {
+    const sourceFile = project.addSourceFileAtPath(path)
+    if (ctx.transforms.imports) {
+        // Replace relative internal imports with standard external imports
+        const importDeclarations = sourceFile.getDescendantsOfKind(
+            SyntaxKind.ImportDeclaration
+        )
+        for (const declaration of importDeclarations) {
+            const specifier = declaration.getModuleSpecifier()
+            if (specifier.getLiteralText().endsWith("src/index.js")) {
+                specifier.replaceWithText(`"${ctx.packageMetadata.name}"`)
+            }
+        }
+    }
     sourceFile
         .getDescendantsOfKind(SyntaxKind.SingleLineCommentTrivia)
         .filter((comment) => comment.getText().includes("@snipStatement"))
@@ -26,19 +40,6 @@ export const extractTransformText = (
                 )}`
             )
         })
-    sourceFile.saveSync()
-
-    if (ctx.transforms.imports) {
-        // Replace relative internal imports with standard external imports
-        const importDeclarations = sourceFile.getDescendantsOfKind(
-            SyntaxKind.ImportDeclaration
-        )
-        for (const declaration of importDeclarations) {
-            const specifier = declaration.getModuleSpecifier()
-            if (specifier.getLiteralText().endsWith("src/index.js")) {
-                specifier.replaceWithText(`"${ctx.packageMetadata.name}"`)
-            }
-        }
-    }
+    sourceFile.refreshFromFileSystem()
     return sourceFile.getFullText()
 }

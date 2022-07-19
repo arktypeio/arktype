@@ -47,8 +47,8 @@ export const extractRepo = (config: DocGenConfig): PackageExtractionData[] => {
         }
         if (packageConfig.snippets) {
             const sources = packageConfig.snippets.sources.map(
-                ({ fileGlob, ...rest }) => {
-                    return { fileGlob: join(rootDir, fileGlob), ...rest }
+                ({ path, ...rest }) => {
+                    return { path: join(rootDir, path), ...rest }
                 }
             )
             extractedPackage.snippets = extractPackageSnippets({
