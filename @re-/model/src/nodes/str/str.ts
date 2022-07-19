@@ -90,7 +90,7 @@ export namespace Str {
     ]
 
     namespace State {
-        export type Base = {
+        export type State = {
             left: {
                 expression: ExpressionTree
                 branches: ExpressionTree[]
@@ -98,7 +98,7 @@ export namespace Str {
             right: string[]
         }
 
-        export type From<S extends Base> = S
+        export type From<S extends State> = S
 
         export type Initialize<Unscanned extends string[]> = From<{
             left: {
@@ -108,13 +108,13 @@ export namespace Str {
             right: Unscanned
         }>
 
-        export type ScanTo<S extends Base, Unscanned extends string[]> = From<{
+        export type ScanTo<S extends State, Unscanned extends string[]> = From<{
             left: S["left"]
             right: Unscanned
         }>
 
         export type SetExpression<
-            S extends Base,
+            S extends State,
             Expression extends ExpressionTree,
             Unscanned extends string[] = S["right"]
         > = From<{
@@ -126,7 +126,7 @@ export namespace Str {
         }>
 
         export type PushToken<
-            S extends Base,
+            S extends State,
             Token extends string,
             Unscanned extends string[] = S["right"]
         > = From<{
@@ -138,7 +138,7 @@ export namespace Str {
         }>
 
         export type PushError<
-            S extends Base,
+            S extends State,
             Message extends string,
             Unscanned extends string[] = S["right"]
         > = From<{
@@ -152,7 +152,7 @@ export namespace Str {
         }>
 
         export type PushBranch<
-            S extends Base,
+            S extends State,
             Token extends BranchingOperatorToken,
             Unscanned extends string[] = S["right"]
         > = From<{
@@ -168,7 +168,7 @@ export namespace Str {
         }>
 
         export type PushGroup<
-            S extends Base,
+            S extends State,
             Unscanned extends string[]
         > = State.From<{
             left: {
@@ -178,7 +178,7 @@ export namespace Str {
             right: Unscanned
         }>
 
-        export type Finalize<S extends Base> = S["left"]["branches"] extends []
+        export type Finalize<S extends State> = S["left"]["branches"] extends []
             ? S["left"]["expression"]
             : [...S["left"]["branches"], S["left"]["expression"]]
     }
@@ -187,12 +187,12 @@ export namespace Str {
         ShiftExpression<State.Initialize<ListChars<Def>>, Dict>
     >
 
-    type ShiftExpression<S extends State.Base, Dict> = ShiftOperators<
+    type ShiftExpression<S extends State.State, Dict> = ShiftTransformations<
         ShiftBase<S, Dict>,
         Dict
     >
 
-    type ShiftBase<S extends State.Base, Dict> = S["right"] extends Scan<
+    type ShiftBase<S extends State.State, Dict> = S["right"] extends Scan<
         infer Lookahead,
         infer Unscanned
     >
@@ -208,7 +208,7 @@ export namespace Str {
     type ShiftLiteral<
         EnclosedBy extends LiteralEnclosingChar,
         Contents extends string,
-        S extends State.Base,
+        S extends State.State,
         Dict
     > = S["right"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends EnclosedBy
@@ -230,7 +230,7 @@ export namespace Str {
 
     type ShiftFragment<
         Fragment extends string,
-        S extends State.Base,
+        S extends State.State,
         Dict
     > = S["right"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends OperatorStartChar
@@ -253,22 +253,23 @@ export namespace Str {
 
     type ExpressionTree = string | ExpressionTree[]
 
-    type ShiftOperators<S extends State.Base, Dict> = S["right"] extends Scan<
-        infer Lookahead,
-        infer Unscanned
-    >
+    type ShiftTransformations<
+        S extends State.State,
+        Dict
+    > = S["right"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "["
-            ? Unscanned extends Scan<"]", infer NextUnscanned>
-                ? ShiftOperators<State.PushToken<S, "[]", NextUnscanned>, Dict>
-                : State.PushError<S, `Missing expected ']'.`, Unscanned>
+            ? ShiftTransformations<
+                  ShiftListToken<State.ScanTo<S, Unscanned>>,
+                  Dict
+              >
             : Lookahead extends BranchingOperatorToken
-            ? ShiftBase<State.PushBranch<S, Lookahead, Unscanned>, Dict>
+            ? ShiftExpression<State.PushBranch<S, Lookahead, Unscanned>, Dict>
             : Lookahead extends ComparatorStartChar
             ? ShiftBound<Lookahead, State.ScanTo<S, Unscanned>, Dict>
             : Lookahead extends ")"
             ? State.PushGroup<S, Unscanned>
             : Lookahead extends " "
-            ? ShiftOperators<State.ScanTo<S, Unscanned>, Dict>
+            ? ShiftTransformations<State.ScanTo<S, Unscanned>, Dict>
             : Lookahead extends "?"
             ? State.PushError<
                   S,
@@ -282,9 +283,17 @@ export namespace Str {
               >
         : S
 
+    type ShiftListToken<S extends State.State> = S["right"] extends Scan<
+        "]",
+        infer Unscanned
+    >
+        ? State.PushToken<S, "[]", Unscanned>
+        : State.PushError<S, `Missing expected ']'.`>
+
+    // Need some versin on ShiftGroup to fix validation.
     type ShiftBound<
         FirstChar extends ComparatorStartChar,
-        S extends State.Base,
+        S extends State.State,
         Dict
     > = S["right"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "="
@@ -304,19 +313,19 @@ export namespace Str {
         : State.PushError<S, `Expected a bound condition after ${FirstChar}.`>
 
     type ReduceBound<
-        S extends State.Base,
+        S extends State.State,
         Comparator extends ComparatorToken,
-        Next extends State.Base
-    > = Next["left"]["expression"] extends EmbeddedNumber.Definition
+        BaseLookahead extends State.State
+    > = BaseLookahead["left"]["expression"] extends EmbeddedNumber.Definition
         ? S["left"]["expression"] extends BoundableNode
             ? State.From<{
                   left: S["left"]
-                  right: Next["right"]
+                  right: BaseLookahead["right"]
               }>
             : State.PushToken<S, BoundabilityError>
         : S["left"]["expression"] extends EmbeddedNumber.Definition
-        ? Next["left"]["expression"] extends BoundableNode
-            ? Next
+        ? BaseLookahead["left"]["expression"] extends BoundableNode
+            ? BaseLookahead
             : State.PushToken<S, BoundabilityError>
         : State.PushError<
               S,
