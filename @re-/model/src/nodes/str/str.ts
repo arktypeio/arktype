@@ -145,22 +145,22 @@ export namespace Str {
     }
 
     type ParseDefinition<Def extends string, Dict> = State.Finalize<
-        ParseExpression<State.Initialize<ListChars<Def>>, Dict>
+        ShiftExpression<State.Initialize<ListChars<Def>>, Dict>
     >
 
-    type ParseExpression<
+    type ShiftExpression<
         S extends State.Base,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "("
             ? ShiftOperators<
-                  ParseExpression<State.Initialize<NextUnscanned>, Dict>,
+                  ShiftExpression<State.Initialize<NextUnscanned>, Dict>,
                   Dict
               >
             : Lookahead extends LiteralEnclosingChar
             ? ShiftLiteral<Lookahead, "", State.ScanTo<S, NextUnscanned>, Dict>
             : Lookahead extends " "
-            ? ParseExpression<State.ScanTo<S, NextUnscanned>, Dict>
+            ? ShiftExpression<State.ScanTo<S, NextUnscanned>, Dict>
             : ShiftFragment<Lookahead, State.ScanTo<S, NextUnscanned>, Dict>
         : State.SetExpression<S, ErrorToken<`Expected an expression.`>>
 
@@ -228,9 +228,9 @@ export namespace Str {
                       State.PushToken<S, "[]", NextNextUnscanned>,
                       Dict
                   >
-                : ErrorToken<`Missing expected ']'.`>
+                : State.SetExpression<S, ErrorToken<`Missing expected ']'.`>>
             : Lookahead extends BranchingOperatorToken
-            ? ParseExpression<
+            ? ShiftExpression<
                   State.PushBranch<S, Lookahead, NextUnscanned>,
                   Dict
               >
@@ -266,20 +266,26 @@ export namespace Str {
             ? ReduceBound<
                   S,
                   `${FirstChar}=`,
-                  ParseExpression<
+                  ShiftExpression<
                       State.SetExpression<S, "", NextUnscanned>,
                       Dict
                   >
               >
             : FirstChar extends "="
-            ? ErrorToken<`= is not a valid comparator. Use == instead.`>
+            ? State.PushToken<
+                  S,
+                  ErrorToken<`= is not a valid comparator. Use == instead.`>
+              >
             : ReduceBound<
                   S,
                   // @ts-expect-error
                   FirstChar,
-                  ParseExpression<State.SetExpression<S, "">, Dict>
+                  ShiftExpression<State.SetExpression<S, "">, Dict>
               >
-        : ErrorToken<`Expected a bound condition after ${FirstChar}.`>
+        : State.PushToken<
+              S,
+              ErrorToken<`Expected a bound condition after ${FirstChar}.`>
+          >
 
     type ReduceBound<
         S extends State.Base,
@@ -287,16 +293,16 @@ export namespace Str {
         Next extends State.Base
     > = Next["expression"] extends EmbeddedNumber.Definition
         ? S["expression"] extends BoundableNode
-            ? {
+            ? State.From<{
                   expression: S["expression"]
                   unscanned: Next["unscanned"]
                   branches: S["branches"]
-              }
-            : BoundabilityError
+              }>
+            : State.PushToken<S, BoundabilityError>
         : S["expression"] extends EmbeddedNumber.Definition
         ? Next["expression"] extends BoundableNode
             ? Next
-            : BoundabilityError
+            : State.PushToken<S, BoundabilityError>
         : State.PushToken<
               S,
               ErrorToken<`One side of comparator ${Comparator} must be a number literal.`>
@@ -366,7 +372,7 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
-    export const parsexpression: Base.Parsing.Parser<string> = (def, ctx) => {
+    export const parse: Base.Parsing.Parser<string> = (def, ctx) => {
         if (Optional.matches(def)) {
             return new Optional.Node(def, ctx)
         } else if (Keyword.matches(def)) {

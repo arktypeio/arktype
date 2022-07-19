@@ -15,7 +15,7 @@ describe("references", () => {
         },
         strings: {
             keyword: "boolean",
-            expression: "string[]|(5>integer>0)|null"
+            expression: "string[]|(integer>0)|null"
         },
         listed: [-1n, "null", "string|boolean"],
         regex: /.*/
