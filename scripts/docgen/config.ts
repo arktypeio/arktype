@@ -24,7 +24,7 @@ export type DocGenSnippetsConfig = {
 }
 
 export type DocGenSnippetExtractionConfig = {
-    fileGlob: string
+    path: string
     transforms?: SnippetTransformToggleOptions
 }
 
