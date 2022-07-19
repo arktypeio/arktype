@@ -9,7 +9,6 @@ let runTestsCmd = ""
 const runnerArgIndex = process.argv.findIndex((arg) =>
     /.*cli\.c?(j|t)s$/.test(arg)
 )
-const nodeExecutable = process.execPath
 if (runnerArgIndex === -1) {
     throw new Error(
         `Unable to parse @re-/assert CLI args '${process.argv.join(
@@ -31,7 +30,7 @@ if (runner === "node") {
             `Node's test runner requires at least version 18. You are running ${version}.`
         )
     }
-    runTestsCmd += `${nodeExecutable} --loader ts-node/esm --test `
+    runTestsCmd += `node --loader ts-node/esm --test `
 } else {
     let runnerIndexPath: string
     try {
@@ -54,7 +53,7 @@ if (runner === "node") {
                 `an executable at the expected location ('${runnerBinPath}').`
         )
     }
-    runTestsCmd += `${nodeExecutable} ${runnerBinPath} `
+    runTestsCmd += `node ${runnerBinPath} `
 }
 
 const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
@@ -83,7 +82,7 @@ try {
     const runnerStart = Date.now()
     shell(runTestsCmd, {
         stdio: "inherit",
-        env: { ...process.env, RE_ASSERT_CMD: runTestsCmd }
+        env: { RE_ASSERT_CMD: runTestsCmd }
     })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(
