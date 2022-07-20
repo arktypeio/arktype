@@ -1,24 +1,21 @@
-src/nodes/str/str.ts(198,9): error TS2321: Excessive stack depth comparing types 'ShiftExpression<ShiftOperators<ShiftBase<Initialize<Def>, Dict>>, Dict>' and 'State'.
-src/nodes/str/str.ts(202,9): error TS2321: Excessive stack depth comparing types 'ShiftOperators<ShiftBase<Initialize<Def>, Dict>>' and 'State'.
-src/nodes/str/str.ts(218,27): error TS2321: Excessive stack depth comparing types 'ShiftOperators<ShiftBase<{ l: { top: ""; groups: S["l"]["groups"] extends [] ? [S["l"]["top"], S["r"]["token"]] : [[...S["l"]["groups"], S["l"]["top"]], S["r"]["token"]]; }; r: { token: ""; lookahead: S["r"]["lookahead"]; unscanned: S["r"]["unscanned"]; }; }, Dict>>' and 'State'.
-test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected token <."'.
-test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected token <."'.
+test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Invalid operator 5."'.
+test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Invalid operator 0."'.
 test/str/parenthesized.test.ts(7,22): error TS2345: Argument of type '"(string)"' is not assignable to parameter of type '"'(string' does not exist in your space."'.
 test/str/parenthesized.test.ts(19,35): error TS2345: Argument of type '"(boolean|number)[]"' is not assignable to parameter of type '"'(boolean' does not exist in your space."'.
 test/str/parenthesized.test.ts(30,13): error TS2345: Argument of type '"((boolean|number)[]|(string|undefined)[])[]"' is not assignable to parameter of type '"'((boolean' does not exist in your space."'.
-test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'' does not exist in your space."'.
+test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"Invalid operator g."'.
 Files:              225
-Lines:            84107
-Nodes:           282599
-Identifiers:     102162
-Symbols:         258130
-Types:           103882
-Instantiations:  971897
-Memory used:    224062K
+Lines:            84112
+Nodes:           282488
+Identifiers:     102164
+Symbols:         232953
+Types:            76860
+Instantiations:  431211
+Memory used:    200667K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.55s
-Bind time:        0.21s
-Check time:       2.16s
+Parse time:       0.53s
+Bind time:        0.20s
+Check time:       1.63s
 Emit time:        0.00s
-Total time:       2.91s
+Total time:       2.36s
