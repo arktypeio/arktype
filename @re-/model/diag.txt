@@ -1,103 +1,24 @@
-docs/snippets/model.ts(7,9): error TS2322: Type '"'chrome'|'firefox'|'safari'"' is not assignable to type '"''firefox'' does not exist in your space."'.
-src/declaration.ts(74,37): error TS2321: Excessive stack depth comparing types 'Parse<Def, { [TypeName in ElementOf<DeclaredTypeNames>]: "unknown"; }>' and 'string & Parse<Def, { [TypeName in ElementOf<DeclaredTypeNames>]: "unknown"; }>'.
-src/model.ts(17,14): error TS2321: Excessive stack depth comparing types 'Parse<Def, {}>' and 'string & Parse<Def, {}>'.
-src/model.ts(24,12): error TS2321: Excessive stack depth comparing types 'Parse<?, Dict>' and 'string & Parse<?, Dict>'.
-src/model.ts(24,12): error TS2321: Excessive stack depth comparing types 'Parse<Def, ?>' and 'string & Parse<Def, ?>'.
-src/nodes/resolution.ts(12,11): error TS2321: Excessive stack depth comparing types 'Parse<Dict[string], Dict>' and 'string & Parse<Dict[string], Dict>'.
-src/nodes/resolution.ts(188,15): error TS2321: Excessive stack depth comparing types 'Parse<Dict[string], Dict>' and 'string & Parse<Dict[string], Dict>'.
-src/nodes/str/str.ts(193,54): error TS2321: Excessive stack depth comparing types '"l"' and 'keyof ShiftExpression<Initialize<Def>, Dict>'.
-src/nodes/str/str.ts(193,54): error TS2536: Type '"l"' cannot be used to index type 'ShiftExpression<Initialize<Def>, Dict>'.
-src/nodes/str/str.ts(193,54): error TS2321: Excessive stack depth comparing types '"groups"' and 'keyof ShiftExpression<Initialize<Def>, Dict>["l"]'.
-src/nodes/str/str.ts(193,54): error TS2536: Type '"groups"' cannot be used to index type 'ShiftExpression<Initialize<Def>, Dict>["l"]'.
-src/nodes/str/str.ts(193,54): error TS2321: Excessive stack depth comparing types '0' and 'keyof ShiftExpression<Initialize<Def>, Dict>["l"]["groups"]'.
-src/nodes/str/str.ts(193,54): error TS2536: Type '0' cannot be used to index type 'ShiftExpression<Initialize<Def>, Dict>["l"]["groups"]'.
-src/nodes/str/str.ts(204,27): error TS2321: Excessive stack depth comparing types 'ShiftOperators<ShiftBase<S, Dict>>' and 'State'.
-src/nodes/str/str.ts(206,27): error TS2321: Excessive stack depth comparing types 'ShiftOperators<ShiftBase<{ l: { top: ""; groups: S["l"]["groups"] extends [] ? [S["l"]["top"], S["r"]["token"]] : [[...S["l"]["groups"], S["l"]["top"]], S["r"]["token"]]; }; r: ScanAndUpdateToken<S["r"], S["r"]["lookahead"]>; }, Dict>>' and 'State'.
-src/space.ts(36,14): error TS2321: Excessive stack depth comparing types 'Parse<Def, unknown>' and 'string & Parse<Def, unknown>'.
-test/references.test.ts(57,32): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ user: "unknown"; group: "unknown"; }>>' and 'string & Parse<Def, ValidateDictionary<{ user: "unknown"; group: "unknown"; }>>'.
-test/references.test.ts(57,38): error TS2321: Excessive stack depth comparing types 'Parse<Dict["user"], Dict>' and 'string & Parse<Dict["user"], Dict>'.
-test/references.test.ts(72,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type '("user" | "group")[]'.
-  Type '"boolean" | "number" | "null" | "true" | "integer" | "user" | "group"' is not assignable to type '"user" | "group"'.
-    Type '"boolean"' is not assignable to type '"user" | "group"'.
-test/references.test.ts(82,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "undefined", "false", "true", "5", "7n", "integer"]' is not assignable to parameter of type '("string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n")[]'.
-  Type '"undefined" | "boolean" | "string" | `/${string}/` | "null" | "true" | "false" | "-1n" | "5" | "7n" | "integer"' is not assignable to type '"string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n"'.
-    Type '"integer"' is not assignable to type '"string" | "boolean" | "undefined" | `/${string}/` | "false" | "null" | "true" | "5" | "-1n" | "7n"'.
-test/references.test.ts(114,39): error TS2345: Argument of type '{ primitives: { undefined: ["undefined"]; null: ["null"]; true: ["true"]; false: ["false"]; 5: ["5"]; bigint: ["7n"]; }; strings: { keyword: ["boolean"]; expression: ["string", "integer", "null"]; }; listed: [...]; regex: [...]; }' is not assignable to parameter of type '{ primitives: { undefined: "undefined"[]; null: "null"[]; true: "true"[]; false: "false"[]; 5: "5"[]; bigint: "7n"[]; }; strings: { keyword: "boolean"[]; expression: "string"[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
-  The types of 'strings.expression' are incompatible between these types.
-    Type '["string", "integer", "null"]' is not assignable to type '"string"[]'.
-      Type '"string" | "null" | "integer"' is not assignable to type '"string"'.
-        Type '"null"' is not assignable to type '"string"'.
-test/space/creation.test.ts(17,28): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ banana: { length: "number"; description: "string?"; }; apple: { circumference: "number"; type: "string"; }; fruit: "banana|apple"; }>>' and 'string & Parse<Def, ValidateDictionary<{ banana: { length: "number"; description: "string?"; }; apple: { circumference: "number"; type: "string"; }; fruit: "banana|apple"; }>>'.
-test/space/creation.test.ts(34,13): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { c: "c?"; }; c: "a|b"; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { c: "c?"; }; c: "a|b"; }>>'.
-test/space/creation.test.ts(49,22): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { c: "c"; }; c: "a|b"; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { c: "c"; }; c: "a|b"; }>>'.
-test/space/creation.test.ts(64,13): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { c: "c"; }; c: "a|b"; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { c: "c"; }; c: "a|b"; }>>'.
-test/space/creation.test.ts(77,13): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; }>>'.
-test/space/creation.test.ts(89,26): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ group: { name: "string"; description: "string?"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ group: { name: "string"; description: "string?"; }; }>>'.
-test/space/customValidators.test.ts(14,28): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ palindrome: "string"; }>>' and 'string & Parse<Def, ValidateDictionary<{ palindrome: "string"; }>>'.
-test/space/customValidators.test.ts(76,16): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ first: 1; second: 2; }>>' and 'string & Parse<Def, ValidateDictionary<{ first: 1; second: 2; }>>'.
-test/space/declaration/group.ts(3,38): error TS2321: Excessive stack depth comparing types 'Parse<Def, { user: "unknown"; group: "unknown"; }>' and 'string & Parse<Def, { user: "unknown"; group: "unknown"; }>'.
-test/space/declare.test.ts(12,23): error TS2321: Excessive stack depth comparing types 'Parse<Dict["user"], Dict>' and 'string & Parse<Dict["user"], Dict>'.
-test/space/declare.test.ts(24,31): error TS2321: Excessive stack depth comparing types 'Parse<Def, { group: { name: "string"; members: "user[]"; }; user: { name: "string"; bestFriend: "user?"; groups: "group[]"; }; }>' and 'string & Parse<Def, { group: { name: "string"; members: "user[]"; }; user: { name: "string"; bestFriend: "user?"; groups: "group[]"; }; }>'.
-test/space/declare.test.ts(31,33): error TS2321: Excessive stack depth comparing types 'Parse<Def, { gottaDefineThis: "unknown"; }>' and 'string & Parse<Def, { gottaDefineThis: "unknown"; }>'.
-test/space/declare.test.ts(40,23): error TS2321: Excessive stack depth comparing types 'Parse<Dict["gottaDefineThis"], Dict>' and 'string & Parse<Dict["gottaDefineThis"], Dict>'.
-test/space/declare.test.ts(41,34): error TS2321: Excessive stack depth comparing types 'Parse<Def, { gottaDefineThis: "boolean"; }>' and 'string & Parse<Def, { gottaDefineThis: "boolean"; }>'.
-test/space/declare.test.ts(50,56): error TS2321: Excessive stack depth comparing types 'Parse<Def, { gottaDefineThis: "unknown"; gottaDefineThisToo: "unknown"; }>' and 'string & Parse<Def, { gottaDefineThis: "unknown"; gottaDefineThisToo: "unknown"; }>'.
-test/space/extend.test.ts(55,20): error TS2321: Excessive stack depth comparing types 'Parse<Get<Dict["$meta"], "onCycle">, Dict & { $cyclic: "unknown"; }>' and 'string & Parse<Get<Dict["$meta"], "onCycle">, Dict & { $cyclic: "unknown"; }>'.
-test/space/extend.test.ts(74,20): error TS2321: Excessive stack depth comparing types 'Parse<ExtensionDict["$meta"], { [K in keyof (Omit<ValidateDictionary<{ $meta: { onCycle: "number"; }; user: { name: "string"; }; group: { members: "user[]"; }; }>, Extract<"$meta", keyof ExtensionDict> | Extract<...> | Extract<...>> & ExtractMergeable<...>)]: (Omit<...> & ExtractMergeable<...>)[K]; }>' and 'string & Parse<ExtensionDict["$meta"], { [K in keyof (Omit<ValidateDictionary<{ $meta: { onCycle: "number"; }; user: { name: "string"; }; group: { members: "user[]"; }; }>, Extract<...> | ... 1 more ... | Extract<...>> & ExtractMergeable<...>)]: (Omit<...> & ExtractMergeable<...>)[K]; }>'.
-test/space/inheritableConfigs.test.ts(72,26): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ doll: { contents: "doll"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ doll: { contents: "doll"; }; }>>'.
-test/space/inheritableConfigs.test.ts(92,17): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ doll: { contents: "doll"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ doll: { contents: "doll"; }; }>>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'Parse<({} | Dict[keyof Dict & "$meta"])["onCycle"], { [K in keyof (Omit<Dict, "$cyclic"> & { $cyclic: Dict[?]; })]: (Omit<Dict, "$cyclic"> & { $cyclic: Dict[?]; })[K]; }>' and 'string & Parse<({} | Dict[keyof Dict & "$meta"])["onCycle"], { [K in keyof (Omit<Dict, "$cyclic"> & { $cyclic: Dict[?]; })]: (Omit<Dict, "$cyclic"> & { ...; })[K]; }>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'Parse<({} | Dict[keyof Dict & "$meta"])["onResolve"], { [K in keyof (Omit<Dict, "$resolution"> & { $resolution: Dict[?]; })]: (Omit<Dict, "$resolution"> & { ...; })[K]; }>' and 'string & Parse<({} | Dict[keyof Dict & "$meta"])["onResolve"], { [K in keyof (Omit<Dict, "$resolution"> & { $resolution: Dict[?]; })]: (Omit<Dict, "$resolution"> & { ...; })[K]; }>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'Parse<?["$meta"]["onCycle"], ? & { $cyclic: "unknown"; }>' and 'string & Parse<?["$meta"]["onCycle"], ? & { $cyclic: "unknown"; }>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'Parse<?[number], Dict>' and 'string & Parse<?[number], Dict>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'Parse<Def[string], ?>' and 'string & Parse<Def[string], ?>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'Parse<Dict[?], Dict>' and 'string & Parse<Dict[?], Dict>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'TryNaiveParse<?, Dict>' and 'string & TryNaiveParse<?, Dict>'.
-test/space/type.test.ts(7,9): error TS2321: Excessive stack depth comparing types 'TryNaiveParse<Def, ?>' and 'string & TryNaiveParse<Def, ?>'.
-test/space/type.test.ts(80,64): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<unknown>>' and 'string & Parse<Def, ValidateDictionary<unknown>>'.
-test/space/type.test.ts(96,16): error TS2321: Excessive stack depth comparing types 'Parse<Def[K], ValidateDictionary<{ a: any; }>>' and 'string & Parse<Def[K], ValidateDictionary<{ a: any; }>>'.
-test/space/type.test.ts(96,52): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: any; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: any; }>>'.
-test/space/type.test.ts(101,16): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; }>>'.
-test/space/type.test.ts(123,48): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ $meta: { onCycle: { cyclic: "$cyclic?"; }; }; a: { b: "b"; isA: "true"; isB: "false"; }; b: { a: "a"; isA: "false"; isB: "true"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ $meta: { onCycle: { cyclic: "$cyclic?"; }; }; a: { b: "b"; isA: "true"; isB: "false"; }; b: { a: "a"; isA: "false"; isB: "true"; }; }>>'.
-test/space/type.test.ts(140,28): error TS2321: Excessive stack depth comparing types 'Parse<Get<Dict["$meta"], "onResolve">, Dict & { $resolution: "unknown"; }>' and 'string & Parse<Get<Dict["$meta"], "onResolve">, Dict & { $resolution: "unknown"; }>'.
-test/space/type.test.ts(148,50): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ $meta: { onResolve: { wasResolved: "true"; resolvedType: "$resolution"; }; }; a: { b: "b"; isA: "true"; isB: "false"; }; b: { a: "a"; isA: "false"; isB: "true"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ $meta: { onResolve: { wasResolved: "true"; resolvedType: "$resolution"; }; }; a: { b: "b"; isA: "true"; isB: "false"; }; b: { a: "a"; isA: "false"; isB: "true"; }; }>>'.
-test/space/validation.test.ts(13,24): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ banana: { length: "number"; description: "string?"; }; apple: { circumference: "number"; type: "string"; }; fruit: "banana|apple"; }>>' and 'string & Parse<Def, ValidateDictionary<{ banana: { length: "number"; description: "string?"; }; apple: { circumference: "number"; type: "string"; }; fruit: "banana|apple"; }>>'.
-test/space/validation.test.ts(54,24): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { a: "a?"; b: "b?"; isA: "true"; }; b: { a: "a?"; b: "b?"; isA: "false"; }; either: "a|b"; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { a: "a?"; b: "b?"; isA: "true"; }; b: { a: "a?"; b: "b?"; isA: "false"; }; either: "a|b"; }>>'.
-test/str/bound.test.ts(16,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(22,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(28,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(35,21): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(42,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/bound.test.ts(48,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/intersection.test.ts(18,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/intersection.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
-test/str/list.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
+src/nodes/str/str.ts(198,9): error TS2321: Excessive stack depth comparing types 'ShiftExpression<ShiftOperators<ShiftBase<Initialize<Def>, Dict>>, Dict>' and 'State'.
+src/nodes/str/str.ts(202,9): error TS2321: Excessive stack depth comparing types 'ShiftOperators<ShiftBase<Initialize<Def>, Dict>>' and 'State'.
+src/nodes/str/str.ts(218,27): error TS2321: Excessive stack depth comparing types 'ShiftOperators<ShiftBase<{ l: { top: ""; groups: S["l"]["groups"] extends [] ? [S["l"]["top"], S["r"]["token"]] : [[...S["l"]["groups"], S["l"]["top"]], S["r"]["token"]]; }; r: { token: ""; lookahead: S["r"]["lookahead"]; unscanned: S["r"]["unscanned"]; }; }, Dict>>' and 'State'.
+test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected token <."'.
+test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected token <."'.
 test/str/parenthesized.test.ts(7,22): error TS2345: Argument of type '"(string)"' is not assignable to parameter of type '"'(string' does not exist in your space."'.
 test/str/parenthesized.test.ts(19,35): error TS2345: Argument of type '"(boolean|number)[]"' is not assignable to parameter of type '"'(boolean' does not exist in your space."'.
 test/str/parenthesized.test.ts(30,13): error TS2345: Argument of type '"((boolean|number)[]|(string|undefined)[])[]"' is not assignable to parameter of type '"'((boolean' does not exist in your space."'.
-test/str/str.test.ts(19,13): error TS2578: Unused '@ts-expect-error' directive.
-test/str/stringLiteral.test.ts(36,21): error TS2578: Unused '@ts-expect-error' directive.
-test/str/stringLiteral.test.ts(44,21): error TS2578: Unused '@ts-expect-error' directive.
-test/str/union.test.ts(10,26): error TS2345: Argument of type '"false|null|undefined|0|''"' is not assignable to parameter of type '"'' requires a closing '."'.
-test/str/union.test.ts(42,23): error TS2345: Argument of type '"0|false|undefined|null|'zero'|void"' is not assignable to parameter of type '"''zero'' does not exist in your space."'.
-test/str/union.test.ts(68,27): error TS2345: Argument of type '"'yes'|'no'"' is not assignable to parameter of type '"''no'' does not exist in your space."'.
-test/str/union.test.ts(94,20): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ five: 5; duck: "'duck'"; nested: {}; }>>' and 'string & Parse<Def, ValidateDictionary<{ five: 5; duck: "'duck'"; nested: {}; }>>'.
-test/str/union.test.ts(99,26): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; }>>'.
-test/str/union.test.ts(111,32): error TS2321: Excessive stack depth comparing types 'Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; safe: "false"; }>>' and 'string & Parse<Def, ValidateDictionary<{ a: { b: "b"; }; b: { a: "a"; }; safe: "false"; }>>'.
-test/str/union.test.ts(118,43): error TS2345: Argument of type '"'yes'|'no'|'maybe'"' is not assignable to parameter of type '"''no'' does not exist in your space."'.
-test/str/union.test.ts(138,51): error TS2345: Argument of type '"'yes|no'|'true|false'"' is not assignable to parameter of type '"''true' does not exist in your space."'.
+test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'' does not exist in your space."'.
 Files:              225
-Lines:            84089
-Nodes:           283563
-Identifiers:     102441
-Symbols:         299131
-Types:           177048
-Instantiations: 1168547
-Memory used:    280827K
+Lines:            84107
+Nodes:           282599
+Identifiers:     102162
+Symbols:         258130
+Types:           103882
+Instantiations:  971897
+Memory used:    224062K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.52s
-Bind time:        0.20s
-Check time:       2.40s
+Parse time:       0.55s
+Bind time:        0.21s
+Check time:       2.16s
 Emit time:        0.00s
-Total time:       3.13s
+Total time:       2.91s

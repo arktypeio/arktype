@@ -1,4 +1,4 @@
-import { ListChars } from "@re-/tools"
+import { Get, ListChars } from "@re-/tools"
 import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
@@ -70,17 +70,14 @@ export namespace Str {
         : undefined
 
     export type References<Def extends string, Dict> = LeavesOf<
-        Parse<Def, Dict>,
-        []
+        Parse<Def, Dict>
     >
 
-    type LeavesOf<Tree, Leaves extends string[]> = Tree extends string
-        ? [...Leaves, Tree]
-        : Tree extends [infer Child, string]
-        ? LeavesOf<Child, Leaves>
+    type LeavesOf<Tree> = Tree extends [infer Child, string]
+        ? LeavesOf<Child>
         : Tree extends [infer Left, string, infer Right]
-        ? LeavesOf<Right, LeavesOf<Left, Leaves>>
-        : Leaves
+        ? [...LeavesOf<Right>, ...LeavesOf<Left>]
+        : [Tree]
 
     type ComparatorToken = "<" | ">" | "<=" | ">=" | "=="
 
@@ -150,6 +147,11 @@ export namespace Str {
             Top
         ]
 
+        type PushOrSet<
+            Stack extends unknown[],
+            Node extends unknown[]
+        > = Stack extends [] ? Node : [Stack, ...Node]
+
         export type PushBranch<S extends State> = From<{
             l: {
                 top: ""
@@ -157,17 +159,19 @@ export namespace Str {
                     ? [S["l"]["top"], S["r"]["token"]]
                     : [[...S["l"]["groups"], S["l"]["top"]], S["r"]["token"]]
             }
-            r: ScanAndUpdateToken<S["r"], S["r"]["lookahead"]>
+            r: {
+                token: ""
+                lookahead: S["r"]["lookahead"]
+                unscanned: S["r"]["unscanned"]
+            }
         }>
 
         export type Finalize<S extends State> = From<{
             l: {
-                top: ""
-                groups: S["l"]["groups"] extends []
-                    ? [S["l"]["top"]]
-                    : [[...S["l"]["groups"], S["l"]["top"]]]
+                top: ExtractIfTerminal<[...S["l"]["groups"], S["l"]["top"]]>
+                groups: []
             }
-            r: ScanAndUpdateToken<S["r"], S["r"]["lookahead"]>
+            r: S["r"]
         }>
 
         export type PushError<
@@ -190,19 +194,27 @@ export namespace Str {
         }>
     }
 
-    type ParseDefinition<Def extends string, Dict> = ShiftExpression<
-        State.Initialize<Def>,
+    type ParseDefinition<Def extends string, Dict> = State.Finalize<
+        ShiftDefinition<Def, Dict>
+    >["l"]["top"]
+
+    type ShiftDefinition<Def extends string, Dict> = ShiftExpression<
+        ShiftBranch<State.Initialize<Def>, Dict>,
         Dict
-    >["l"]["groups"][0]
+    >
+
+    type ExtractIfTerminal<Tree extends ExpressionTree> = Tree extends [string]
+        ? Tree[0]
+        : Tree
+
+    type FOO = ParseDefinition<"string[]|boolean|number[]", {}>
 
     type ShiftExpression<
         S extends State.State,
         Dict
     > = S["r"]["token"] extends ExpressionTerminatingChar
-        ? State.Finalize<S>
-        : S["r"]["token"] extends ""
-        ? ShiftExpression<ShiftBranch<S, Dict>, Dict>
-        : S["r"]["token"] extends "|"
+        ? S
+        : S["r"]["token"] extends "|" | "&"
         ? ShiftExpression<ShiftBranch<State.PushBranch<S>, Dict>, Dict>
         : State.PushError<S, `Unexpected token ${S["r"]["token"]}.`>
 
@@ -248,16 +260,21 @@ export namespace Str {
     type ShiftOperators<S extends State.State> =
         S["r"]["token"] extends BranchTerminatingChar
             ? S
-            : S["r"]["token"] extends "["
-            ? ShiftOperators<ShiftListToken<S>>
-            : S["r"]["token"] extends " "
-            ? ShiftOperators<State.Skip<S>>
-            : S["r"]["token"] extends "?"
-            ? State.PushError<
-                  S,
-                  `Modifier '?' is only valid at the end of a definition.`
+            : ShiftOperators<
+                  S["r"]["token"] extends "["
+                      ? ShiftListToken<S>
+                      : S["r"]["token"] extends " "
+                      ? State.Skip<S>
+                      : S["r"]["token"] extends "?"
+                      ? State.PushError<
+                            S,
+                            `Modifier '?' is only valid at the end of a definition.`
+                        >
+                      : State.PushError<
+                            S,
+                            `Invalid operator ${S["r"]["token"]}.`
+                        >
               >
-            : State.PushError<S, `Invalid operator ${S["r"]["token"]}.`>
 
     type ShiftListToken<S extends State.State> = S["r"]["lookahead"] extends "]"
         ? State.PushToken<State.Shift<S>>
