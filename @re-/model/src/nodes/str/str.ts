@@ -95,53 +95,49 @@ export namespace Str {
             r: Right
         }
 
-        export type Left = {
-            stack: ExpressionTree
-            token: string
-        }
+        export type Left = ExpressionTree
 
         export type Right = {
+            fragment: string
             lookahead: string
             unscanned: string[]
         }
 
-        type ScanRight<R extends Right> = R["unscanned"] extends Scan<
-            infer Lookahead,
-            infer Unscanned
-        >
+        type ScanRight<
+            R extends Right,
+            Fragment extends string | undefined = undefined
+        > = R["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
             ? {
+                  fragment: Fragment extends undefined
+                      ? `${R["fragment"]}${R["lookahead"]}`
+                      : Fragment
                   lookahead: Lookahead
                   unscanned: Unscanned
               }
             : {
+                  fragment: Fragment extends undefined
+                      ? R["fragment"]
+                      : Fragment
                   lookahead: "END"
                   unscanned: []
               }
 
         export type Shift<S extends State> = From<{
-            l: {
-                stack: S["l"]["stack"]
-                token: `${S["l"]["token"]}${S["r"]["lookahead"]}`
-            }
+            l: S["l"]
             r: ScanRight<S["r"]>
         }>
 
         export type Skip<S extends State> = From<{
             l: S["l"]
-            r: ScanRight<S["r"]>
+            r: ScanRight<S["r"], S["r"]["fragment"]>
         }>
 
         export type PushToken<
             S extends State,
-            Token extends string = S["l"]["token"]
+            Token extends string = S["r"]["fragment"]
         > = From<{
-            l: {
-                stack: S["l"]["stack"] extends ""
-                    ? Token
-                    : [S["l"]["stack"], Token]
-                token: ""
-            }
-            r: S["r"]
+            l: S["l"] extends "" ? Token : [S["l"], Token]
+            r: ScanRight<S["r"]>
         }>
 
         export type PushError<
@@ -152,11 +148,9 @@ export namespace Str {
         export type From<S extends State> = S
 
         export type Initialize<Def extends string> = Shift<{
-            l: {
-                stack: ""
-                token: ""
-            }
+            l: ""
             r: {
+                fragment: ""
                 lookahead: ""
                 unscanned: ListChars<Def>
             }
@@ -165,7 +159,7 @@ export namespace Str {
 
     type Initial = State.Initialize<"'string'">
 
-    type FO = ShiftBranch<Initial, {}>
+    type FO = ShiftBase<Initial, {}>
 
     type ParseDefinition<Def extends string, Dict> = "any"
 
@@ -177,21 +171,18 @@ export namespace Str {
         S extends State.State,
         Dict
     > = S["r"]["lookahead"] extends LiteralEnclosingChar
-        ? ShiftLiteral<State.Skip<S>, S["r"]["lookahead"]>
+        ? ShiftLiteral<State.Shift<S>, S["r"]["lookahead"]>
         : ShiftNonLiteral<S, Dict>
 
     type ShiftLiteral<
         S extends State.State,
         EnclosedBy extends LiteralEnclosingChar
     > = S["r"]["lookahead"] extends EnclosedBy
-        ? State.PushToken<
-              State.Skip<S>,
-              `${EnclosedBy}${S["l"]["token"]}${EnclosedBy}`
-          >
+        ? State.PushToken<State.Shift<S>>
         : S["r"]["lookahead"] extends "END"
         ? State.PushError<
               S,
-              `Expected a closing ${EnclosedBy} token for literal expression ${EnclosedBy}${S["l"]["token"]}`
+              `Expected a closing ${EnclosedBy} token for literal expression ${S["r"]["fragment"]}`
           >
         : ShiftLiteral<State.Shift<S>, EnclosedBy>
 
@@ -199,7 +190,7 @@ export namespace Str {
         S extends State.State,
         Dict
     > = S["r"]["lookahead"] extends OperatorStartChar
-        ? State.PushToken<S, ValidateNonLiteral<S["l"]["token"], Dict>>
+        ? State.PushToken<S, ValidateNonLiteral<S["r"]["fragment"], Dict>>
         : ShiftNonLiteral<State.Shift<S>, Dict>
 
     type ValidateNonLiteral<Fragment extends string, Dict> = IsResolvableName<
