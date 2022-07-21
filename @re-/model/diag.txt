@@ -1,19 +1,18 @@
 test/str/optional.test.ts(23,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/optional.test.ts(29,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/optional.test.ts(38,25): error TS2578: Unused '@ts-expect-error' directive.
-test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"Expected an expression."'.
 Files:              225
-Lines:            84307
-Nodes:           283439
-Identifiers:     102494
-Symbols:         223979
-Types:            68238
-Instantiations:  378011
-Memory used:    198909K
-I/O read:         0.01s
+Lines:            84304
+Nodes:           283434
+Identifiers:     102493
+Symbols:         227470
+Types:            68513
+Instantiations:  379956
+Memory used:    201079K
+I/O read:         0.02s
 I/O write:        0.00s
-Parse time:       0.58s
-Bind time:        0.23s
-Check time:       1.75s
+Parse time:       0.70s
+Bind time:        0.21s
+Check time:       1.77s
 Emit time:        0.00s
-Total time:       2.57s
+Total time:       2.69s

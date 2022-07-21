@@ -287,6 +287,8 @@ export namespace Str {
             ? ShiftExpression<State.OpenGroup<S, Unscanned>, Dict>
             : Lookahead extends LiteralEnclosingChar
             ? ShiftLiteral<State.ScanTo<S, Unscanned>, Lookahead, Lookahead>
+            : Lookahead extends " "
+            ? ShiftBase<State.ScanTo<S, Unscanned>, Dict>
             : ShiftNonLiteral<S, "", Dict>
         : MissingExpressionError
 
