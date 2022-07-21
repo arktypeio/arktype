@@ -1,0 +1,5 @@
+export { type, eager, type References, type TypeOf as Parse } from "./model.js"
+export { space } from "./space.js"
+export { declare } from "./declaration.js"
+export { Root } from "./nodes/root.js"
+export type { CustomValidator } from "./nodes/base/features/validation.js"

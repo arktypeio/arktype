@@ -1,6 +1,6 @@
 # Syntax
 
-`@re-/model` supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. The following sections outline the kinds of definitions available to you when creating a model.
+`@re-/type` supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. The following sections outline the kinds of definitions available to you when creating a model.
 
 If there's a type or expression you wish were supported but isn't, we'd love for you to [create a feature request!](https://github.com/re-do/re-po/issues/new) Our parser is easy to extend, so you might just see it an upcoming release 🎁
 
@@ -13,7 +13,7 @@ Object definitions are sets of keys or indices corresponding to string, literal,
 Map definitions are represented using the familiar object literal syntax.
 
 ```ts
-import { create } from "@re-/model"
+import { create } from "@re-/type"
 
 const foo = create({
     key: "string?",
@@ -37,7 +37,7 @@ type FooToo = {
 Tuple definitions are useful for fixed-length lists and are represented as array literals.
 
 ```ts
-import { create } from "@re-/model"
+import { create } from "@re-/type"
 
 const bar = create([
     "true|null",

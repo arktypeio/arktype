@@ -10,7 +10,7 @@ const fromRedoDevDocsDir = (...segments: string[]) =>
 export const config: DocGenConfig = {
     packages: [
         {
-            path: "@re-/model",
+            path: "@re-/type",
             api: {
                 outDir: fromRedoDevDocsDir("model", "api")
             },
