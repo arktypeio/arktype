@@ -6,19 +6,20 @@ test/str/optional.test.ts(38,25): error TS2578: Unused '@ts-expect-error' direct
 test/str/parenthesized.test.ts(7,22): error TS2345: Argument of type '"(string)"' is not assignable to parameter of type '"'(string' does not exist in your space."'.
 test/str/parenthesized.test.ts(19,35): error TS2345: Argument of type '"(boolean|number)[]"' is not assignable to parameter of type '"'(boolean' does not exist in your space."'.
 test/str/parenthesized.test.ts(30,13): error TS2345: Argument of type '"((boolean|number)[]|(string|undefined)[])[]"' is not assignable to parameter of type '"'((boolean' does not exist in your space."'.
+test/str/str.test.ts(6,9): error TS2578: Unused '@ts-expect-error' directive.
 test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'' does not exist in your space."'.
 Files:              225
-Lines:            84106
-Nodes:           282556
-Identifiers:     102188
-Symbols:         207482
-Types:            67011
-Instantiations:  363857
-Memory used:    198816K
+Lines:            84154
+Nodes:           282662
+Identifiers:     102249
+Symbols:         207936
+Types:            66135
+Instantiations:  358924
+Memory used:    196613K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.48s
-Bind time:        0.18s
+Parse time:       0.51s
+Bind time:        0.19s
 Check time:       1.47s
 Emit time:        0.00s
-Total time:       2.12s
+Total time:       2.17s
