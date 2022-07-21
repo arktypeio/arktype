@@ -4,17 +4,17 @@ test/str/optional.test.ts(38,25): error TS2578: Unused '@ts-expect-error' direct
 test/str/str.test.ts(6,9): error TS2578: Unused '@ts-expect-error' directive.
 test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'' does not exist in your space."'.
 Files:              225
-Lines:            84252
-Nodes:           283115
-Identifiers:     102397
-Symbols:         227067
-Types:            73153
-Instantiations:  381858
-Memory used:    198749K
+Lines:            84257
+Nodes:           283143
+Identifiers:     102406
+Symbols:         227126
+Types:            73132
+Instantiations:  382102
+Memory used:    208430K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.57s
-Bind time:        0.23s
-Check time:       1.76s
+Parse time:       0.53s
+Bind time:        0.20s
+Check time:       1.66s
 Emit time:        0.00s
-Total time:       2.55s
+Total time:       2.39s

@@ -92,10 +92,15 @@ export namespace Str {
 
     namespace State {
         export type State = {
-            groups: CurrentBranch[]
+            groups: GroupState[]
             branch: CurrentBranch
             expression: unknown
             unscanned: string[]
+            ctx: Context
+        }
+
+        type GroupState = {
+            branch: CurrentBranch
             ctx: Context
         }
 
@@ -183,21 +188,21 @@ export namespace Str {
             ctx: S["ctx"]
         }>
 
-        export type PushGroup<
+        export type OpenGroup<
             S extends State,
             Unscanned extends string[]
         > = From<{
-            groups: [...S["groups"], S["branch"]]
+            groups: [...S["groups"], { branch: S["branch"]; ctx: S["ctx"] }]
             branch: []
             expression: []
             unscanned: Unscanned
             ctx: {}
         }>
 
-        type PopGroup<
-            Stack extends CurrentBranch[],
-            Top extends CurrentBranch
-        > = [...Stack, Top]
+        type PopGroup<Stack extends GroupState[], Top extends GroupState> = [
+            ...Stack,
+            Top
+        ]
 
         export type CloseGroup<
             S extends State,
@@ -205,10 +210,10 @@ export namespace Str {
         > = S["groups"] extends PopGroup<infer Stack, infer Top>
             ? From<{
                   groups: Stack
-                  branch: Top
+                  branch: Top["branch"]
                   expression: MergeExpression<S["branch"], S["expression"]>
                   unscanned: Unscanned
-                  ctx: {}
+                  ctx: Top["ctx"]
               }>
             : Error<`Unexpected ).`>
 
@@ -259,7 +264,7 @@ export namespace Str {
         infer Unscanned
     >
         ? Lookahead extends "("
-            ? ShiftExpression<State.PushGroup<S, Unscanned>, Dict>
+            ? ShiftExpression<State.OpenGroup<S, Unscanned>, Dict>
             : Lookahead extends LiteralEnclosingChar
             ? ShiftLiteral<State.ScanTo<S, Unscanned>, Lookahead, Lookahead>
             : ShiftNonLiteral<S, "", Dict>
