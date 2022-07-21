@@ -7,17 +7,17 @@ test/str/parenthesized.test.ts(30,13): error TS2345: Argument of type '"((boolea
 test/str/str.test.ts(6,9): error TS2578: Unused '@ts-expect-error' directive.
 test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'' does not exist in your space."'.
 Files:              225
-Lines:            84194
-Nodes:           282879
-Identifiers:     102310
-Symbols:         211549
-Types:            66749
-Instantiations:  361938
-Memory used:    190870K
+Lines:            84165
+Nodes:           282914
+Identifiers:     102330
+Symbols:         210182
+Types:            66642
+Instantiations:  360868
+Memory used:    189794K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.62s
-Bind time:        0.26s
-Check time:       1.75s
+Parse time:       0.54s
+Bind time:        0.21s
+Check time:       1.64s
 Emit time:        0.00s
-Total time:       2.63s
+Total time:       2.40s
