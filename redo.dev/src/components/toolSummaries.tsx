@@ -21,7 +21,7 @@ type ToolSummaryProps = ToolSummaryData & {
 
 const toolSummaries: ToolSummaryData[] = [
     {
-        name: "Model",
+        name: "Type",
         illustration: <Svgs.Type />,
         description: <>One definition from editor to runtime</>,
         demoElement: modelDemo
