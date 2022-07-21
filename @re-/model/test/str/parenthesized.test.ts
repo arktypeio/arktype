@@ -57,55 +57,73 @@ describe("parenthesized", () => {
             assert(() => {
                 // @ts-expect-error
                 model("()").type
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '"()"' is not assignable to parameter of type '"Expected an expression."'.`
+            )
         })
         it("unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
                 model("string|(boolean|number[]").type
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '"string|(boolean|number[]"' is not assignable to parameter of type '"Missing )."'.`
+            )
         })
         it("unmatched )", () => {
             assert(() => {
                 // @ts-expect-error
                 model("string|number[]|boolean)").type
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '"string|number[]|boolean)"' is not assignable to parameter of type '"Unexpected )."'.`
+            )
         })
         it("lone )", () => {
             assert(() => {
                 // @ts-expect-error
                 model(")").type
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '")"' is not assignable to parameter of type '"Expected an expression."'.`
+            )
         })
         it("lone (", () => {
             assert(() => {
                 // @ts-expect-error
                 model("(").type
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '"("' is not assignable to parameter of type '"Expected an expression."'.`
+            )
         })
         it("deep unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
                 model("(null|(undefined|(1))|2").type
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '"(null|(undefined|(1))|2"' is not assignable to parameter of type '"Missing )."'.`
+            )
         })
         it("deep unmatched )", () => {
             assert(() => {
                 // @ts-expect-error
                 model("((string|number)[]|boolean))").type
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '"((string|number)[]|boolean))"' is not assignable to parameter of type '"Unexpected )."'.`
+            )
         })
         it("starting )", () => {
             assert(() => {
                 // @ts-expect-error
                 model(")number(")
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '")number("' is not assignable to parameter of type '"Expected an expression."'.`
+            )
         })
         it("misplaced )", () => {
             assert(() => {
                 // @ts-expect-error
                 model("(number|)")
-            }).type.errors.snap()
+            }).type.errors.snap(
+                `Argument of type '"(number|)"' is not assignable to parameter of type '"Expected an expression."'.`
+            )
         })
     })
 })
