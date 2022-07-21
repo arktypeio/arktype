@@ -92,32 +92,25 @@ export namespace Str {
 
     namespace State {
         export type State = {
-            l: unknown
-            branch: [] | [unknown, string]
-            r: string[]
+            groups: CurrentBranch[]
+            branch: CurrentBranch
+            expression: unknown
+            unscanned: string[]
             ctx: Context
         }
+
+        type CurrentBranch = [] | [unknown, string]
 
         type Context = {
             leftBounded?: boolean
             rightBounded?: boolean
         }
 
-        type Pop<Stack extends ExpressionTree[], Top extends ExpressionTree> = [
-            ...Stack,
-            Top
-        ]
-
-        type PopTwo<
-            Stack extends ExpressionTree[],
-            PreviousTop extends ExpressionTree,
-            Top extends ExpressionTree
-        > = [...Stack, PreviousTop, Top]
-
         export type ScanTo<S extends State, Unscanned extends string[]> = From<{
-            l: S["l"]
+            groups: S["groups"]
             branch: S["branch"]
-            r: Unscanned
+            expression: S["expression"]
+            unscanned: Unscanned
             ctx: S["ctx"]
         }>
 
@@ -125,9 +118,10 @@ export namespace Str {
             S extends State,
             Updates extends Partial<Context>
         > = From<{
-            l: S["l"]
+            groups: S["groups"]
             branch: S["branch"]
-            r: S["r"]
+            expression: S["expression"]
+            unscanned: S["unscanned"]
             ctx: S["ctx"] & Updates
         }>
 
@@ -136,9 +130,10 @@ export namespace Str {
             Token extends string,
             Unscanned extends string[]
         > = From<{
-            l: Token
+            groups: S["groups"]
             branch: S["branch"]
-            r: Unscanned
+            expression: Token
+            unscanned: Unscanned
             ctx: S["ctx"]
         }>
 
@@ -147,75 +142,125 @@ export namespace Str {
             Token extends string,
             Unscanned extends string[]
         > = From<{
-            l: ""
+            groups: S["groups"]
             branch: [
-                S["branch"] extends [] ? S["l"] : [...S["branch"], S["l"]],
+                S["branch"] extends []
+                    ? S["expression"]
+                    : [...S["branch"], S["expression"]],
                 Token
             ]
-            r: Unscanned
+            expression: []
+            unscanned: Unscanned
             ctx: {}
         }>
 
         type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
 
-        export type Finalize<S extends State> = From<{
-            l: ExtractIfSingleton<[...S["branch"], S["l"]]>
-            branch: []
-            r: []
-            ctx: S["ctx"]
-        }>
+        type MergeExpression<
+            Branch extends CurrentBranch,
+            Expression
+        > = ExtractIfSingleton<[...Branch, Expression]>
+
+        export type Finalize<S extends State> = S["groups"] extends []
+            ? From<{
+                  groups: []
+                  branch: []
+                  expression: MergeExpression<S["branch"], S["expression"]>
+                  unscanned: []
+                  ctx: S["ctx"]
+              }>
+            : Error<`Missing ).`>
 
         export type PushTransform<
             S extends State,
             Token extends string,
             Unscanned extends string[]
         > = From<{
-            l: [S["l"], Token]
+            groups: S["groups"]
             branch: S["branch"]
-            r: Unscanned
+            expression: [S["expression"], Token]
+            unscanned: Unscanned
             ctx: S["ctx"]
         }>
 
-        export type Error<Message extends string> = From<{
-            l: ErrorToken<Message>
+        export type PushGroup<
+            S extends State,
+            Unscanned extends string[]
+        > = From<{
+            groups: [...S["groups"], S["branch"]]
             branch: []
-            r: []
+            expression: []
+            unscanned: Unscanned
+            ctx: {}
+        }>
+
+        type PopGroup<
+            Stack extends CurrentBranch[],
+            Top extends CurrentBranch
+        > = [...Stack, Top]
+
+        export type CloseGroup<
+            S extends State,
+            Unscanned extends string[]
+        > = S["groups"] extends PopGroup<infer Stack, infer Top>
+            ? From<{
+                  groups: Stack
+                  branch: Top
+                  expression: MergeExpression<S["branch"], S["expression"]>
+                  unscanned: Unscanned
+                  ctx: {}
+              }>
+            : Error<`Unexpected ).`>
+
+        export type Error<Message extends string> = From<{
+            groups: []
+            branch: []
+            expression: ErrorToken<Message>
+            unscanned: []
             ctx: {}
         }>
 
         export type From<S extends State> = S
 
         export type Initialize<Def extends string> = From<{
-            l: ""
+            groups: []
             branch: []
-            r: ListChars<Def>
+            expression: []
+            unscanned: ListChars<Def>
             ctx: {}
         }>
     }
 
     type ParseDefinition<Def extends string, Dict> = State.Finalize<
         ShiftDefinition<Def, Dict>
-    >["l"]
+    >["expression"]
 
     type ShiftDefinition<Def extends string, Dict> = ShiftExpression<
         State.Initialize<Def>,
         Dict
     >
 
-    type ShiftExpression<S extends State.State, Dict> = S["r"] extends []
-        ? S
-        : ShiftExpression<ShiftBranch<S, Dict>, Dict>
+    type ShiftExpression<
+        S extends State.State,
+        Dict
+    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
+        ? Lookahead extends ")"
+            ? State.CloseGroup<S, Unscanned>
+            : ShiftExpression<ShiftBranch<S, Dict>, Dict>
+        : S
 
     type ShiftBranch<S extends State.State, Dict> = ShiftOperators<
         ShiftBase<S, Dict>,
         Dict
     >
 
-    type ShiftBase<S extends State.State, Dict> = S["r"] extends Scan<
+    type ShiftBase<S extends State.State, Dict> = S["unscanned"] extends Scan<
         infer Lookahead,
         infer Unscanned
     >
-        ? Lookahead extends LiteralEnclosingChar
+        ? Lookahead extends "("
+            ? ShiftExpression<State.PushGroup<S, Unscanned>, Dict>
+            : Lookahead extends LiteralEnclosingChar
             ? ShiftLiteral<State.ScanTo<S, Unscanned>, Lookahead, Lookahead>
             : ShiftNonLiteral<S, "", Dict>
         : State.Error<`Expected an expression.`>
@@ -224,7 +269,7 @@ export namespace Str {
         S extends State.State,
         FirstChar extends LiteralEnclosingChar,
         Token extends string
-    > = S["r"] extends Scan<infer Lookahead, infer Unscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends FirstChar
             ? State.PushBase<S, `${Token}${Lookahead}`, Unscanned>
             : ShiftLiteral<
@@ -238,7 +283,7 @@ export namespace Str {
         S extends State.State,
         Token extends string,
         Dict
-    > = S["r"] extends Scan<infer Lookahead, infer Unscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends BaseTerminatingChar
             ? ReduceNonLiteral<S, Token, Dict>
             : ShiftNonLiteral<
@@ -253,21 +298,23 @@ export namespace Str {
         Token extends string,
         Dict
     > = IsResolvableName<Token, Dict> extends true
-        ? State.PushBase<S, Token, S["r"]>
+        ? State.PushBase<S, Token, S["unscanned"]>
         : Token extends EmbeddedNumber.Definition | EmbeddedBigInt.Definition
-        ? State.PushBase<S, Token, S["r"]>
+        ? State.PushBase<S, Token, S["unscanned"]>
         : State.Error<`'${Token}' does not exist in your space.`>
 
-    type ShiftOperators<S extends State.State, Dict> = S["r"] extends Scan<
-        infer Lookahead,
-        infer Unscanned
-    >
+    type ShiftOperators<
+        S extends State.State,
+        Dict
+    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "["
             ? ShiftOperators<ShiftListToken<State.ScanTo<S, Unscanned>>, Dict>
             : Lookahead extends "|" | "&"
             ? State.PushBranchingToken<S, Lookahead, Unscanned>
             : Lookahead extends ComparatorStartChar
             ? ShiftComparatorToken<State.ScanTo<S, Unscanned>, Lookahead, Dict>
+            : Lookahead extends ")"
+            ? S
             : Lookahead extends " "
             ? ShiftOperators<State.ScanTo<S, Unscanned>, Dict>
             : Lookahead extends "?"
@@ -275,7 +322,7 @@ export namespace Str {
             : State.Error<`Invalid operator ${Lookahead}.`>
         : S
 
-    type ShiftListToken<S extends State.State> = S["r"] extends Scan<
+    type ShiftListToken<S extends State.State> = S["unscanned"] extends Scan<
         infer Lookahead,
         infer Unscanned
     >
@@ -288,7 +335,7 @@ export namespace Str {
         S extends State.State,
         FirstChar extends ComparatorStartChar,
         Dict
-    > = S["r"] extends Scan<infer Lookahead, infer Unscanned>
+    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "="
             ? ReduceBound<State.ScanTo<S, Unscanned>, `${FirstChar}=`, Dict>
             : FirstChar extends "="
@@ -301,7 +348,7 @@ export namespace Str {
         S extends State.State,
         Token extends string,
         Dict
-    > = S["l"] extends BoundableNode
+    > = S["expression"] extends BoundableNode
         ? ReduceRightBound<
               S,
               Token,
@@ -309,14 +356,14 @@ export namespace Str {
           >
         : S["ctx"]["rightBounded"] extends true
         ? State.Error<`Right side of comparator ${Token} cannot be bounded more than once.`>
-        : S["l"] extends EmbeddedNumber.Definition
+        : S["expression"] extends EmbeddedNumber.Definition
         ? ReduceLeftBound<
               S,
               Token,
               ShiftBranch<State.UpdateContext<S, { leftBounded: true }>, Dict>
           >
         : State.Error<`Left side of comparator ${Token} must be a number literal or boundable definition (got ${TreeToString<
-              S["l"]
+              S["expression"]
           >}).`>
 
     type ReduceRightBound<
@@ -325,8 +372,8 @@ export namespace Str {
         Right extends State.State
     > = Right extends State.Error<string>
         ? Right
-        : Right["l"] extends EmbeddedNumber.Definition
-        ? State.ScanTo<Left, Right["r"]>
+        : Right["expression"] extends EmbeddedNumber.Definition
+        ? State.ScanTo<Left, Right["unscanned"]>
         : State.Error<`Right side of comparator ${Token} must be a number literal.`>
 
     type ReduceLeftBound<
@@ -337,7 +384,7 @@ export namespace Str {
         ? State.Error<`Left side of comparator ${Token} cannot be bounded more than once.`>
         : Right extends State.Error<string>
         ? Right
-        : Right["l"] extends BoundableNode
+        : Right["expression"] extends BoundableNode
         ? Right
         : State.Error<`Right side of comparator ${Token} must be a numbed-or-string-typed keyword or a list-typed expression.`>
 
@@ -374,7 +421,7 @@ export namespace Str {
 
     type ErrorToken<Message extends string> = `!${Message}`
 
-    /** A BoundableNode must be either:
+    /** A BoundableNode must be eitheunscanned:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
      *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100>alphanumeric")
      *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
