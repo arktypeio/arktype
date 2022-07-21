@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
 import { model } from "../../src/model.js"
 
-// TODO: Add error tests
 describe("parenthesized", () => {
     it("entire expression", () => {
         assert(model("(string)").type).typed as string
