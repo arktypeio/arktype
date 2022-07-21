@@ -9,5 +9,5 @@ undefined
 ## text
 
 ```ts
-export declare type CustomValidator = Allows.CustomValidator
+export declare type CustomValidator = Validation.CustomValidator
 ```

@@ -1,4 +1,4 @@
-# model
+# type
 
 ## tags
 
@@ -34,5 +34,5 @@
 ## text
 
 ```ts
-model: ModelFunction
+type: ModelFunction
 ```

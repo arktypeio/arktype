@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-declare: DeclareFunction
+declare: DeclareFn
 ```

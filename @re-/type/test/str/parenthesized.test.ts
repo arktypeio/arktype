@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { type } from "../../src/model.js"
+import { type } from "../../src/type.js"
 
 describe("parenthesized", () => {
     it("entire expression", () => {

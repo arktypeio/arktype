@@ -13,9 +13,9 @@ Type-first validation from editor to runtime🧬
 
 </div>
 
-## What's a model? 🤷
+## What's a (re) type? 🤷
 
-A model is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of TypeScript in your editor and build and a validator like Yup or JOI at runtime.
+@re-/type is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of TypeScript in your editor and build and a validator like Yup or JOI at runtime.
 
 ## Installation 📦
 
@@ -29,15 +29,15 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 Modify any of these examples in our live editor to see the types and validation results change in realtime.
 
-### Your first model (⏱️30s)
+### Your first type (⏱️30s)
 
-[Try it out.](https://redo.dev/model/intro#start-quick-%EF%B8%8F)
+[Try it out.](https://redo.dev/type/intro#start-quick-%EF%B8%8F)
 
-```ts @snipFrom:docs/snippets/model.ts
-import { model } from "@re-/type"
+```ts @snipFrom:docs/snippets/type.ts
+import { type } from "@re-/type"
 
 // Models look just like types...
-export const user = model({
+export const user = type({
     age: "number",
     browser: "'chrome'|'firefox'|'other'|null",
     name: {
@@ -84,7 +84,7 @@ if (error) {
 
 ### Spaces
 
-[Try it out.](https://redo.dev/model/spaces)
+[Try it out.](https://redo.dev/type/spaces)
 
 ```ts @snipFrom:docs/snippets/space.ts
 import { space } from "@re-/type"
@@ -105,11 +105,11 @@ export const redo = space({
 })
 
 // Recursive and cyclic types are inferred to arbitrary depth.
-export type Package = typeof redo.types.package
+export type Package = typeof redo.package
 
 export const readPackageData = () => {
     return {
-        name: "@re-/type",
+        name: "@re-/model",
         version: "latest",
         dependencies: [
             {
@@ -133,7 +133,7 @@ export const getValidatedPackageData = () => {
     //    dependencies/0/version: 2.2 is not assignable to string.
     //    dependencies/0/contributors: Required value of type contributor[] was missing.
     //    contributors/0/packages: Required value of type package[] was missing.`
-    const validatedPackageData = redo.models.package.assert(packageDataFromFile)
+    const validatedPackageData = redo.package.assert(packageDataFromFile)
     return validatedPackageData
 }
 ```
@@ -142,7 +142,7 @@ export const getValidatedPackageData = () => {
 
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
-[Try it out.](https://redo.dev/model/declarations)
+[Try it out.](https://redo.dev/type/declarations)
 
 `index.ts`
 
@@ -186,7 +186,7 @@ export const groupDef = define.group({
 
 TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
 
-[**Constraints** have you covered.](https://redo.dev/model/constraints)
+[**Constraints** have you covered.](https://redo.dev/type/constraints)
 
 ```ts @snipFrom:docs/snippets/constraints.ts
 import { model } from "@re-/type"
@@ -225,7 +225,7 @@ console.log(error ?? "Flawless. Obviously.")
 
 ## Syntax
 
-`@re-/type` supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. The following sections outline the kinds of definitions available to you when creating a model.
+`@re-/type` supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. The following sections outline the kinds of definitions available to you when creating a type.
 
 If there's a type or expression you wish were supported but isn't, we'd love for you to [create a feature request!](https://github.com/re-do/re-po/issues/new) Our parser is easy to extend, so you might just see it an upcoming release 🎁
 
@@ -238,9 +238,9 @@ Object definitions are sets of keys or indices corresponding to string, literal,
 Map definitions are represented using the familiar object literal syntax.
 
 ```ts
-const foo = model({
+const foo = type({
     key: "string?",
-    anotherKey: ["unknown", { re: "'model'|'state'|'test'" }]
+    anotherKey: ["unknown", { re: "'re'|'do'|'dev'" }]
 })
 
 // Equivalent TS
@@ -249,7 +249,7 @@ type FooToo = {
     anotherKey: [
         unknown,
         {
-            re: "model" | "state" | "test"
+            re: "re" | "do" | "dev"
         }
     ]
 }
@@ -260,7 +260,7 @@ type FooToo = {
 Tuple definitions are useful for fixed-length lists and are represented as array literals.
 
 ```ts
-const bar = model([
+const bar = type([
     "true|null",
     { coords: ["number", "number"], piOus: [3, 1, 4] }
 ])
@@ -379,7 +379,7 @@ Any definition that is neither a string nor an object is considered a primitive 
 
 ## API
 
-Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don't hesitate to reach out on the [dedicated Discord channel](https://discord.gg/WSNF3Kc4xh)!
+Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your types and spaces. If you have any questions, don't hesitate to reach out on the [dedicated Discord channel](https://discord.gg/WSNF3Kc4xh)!
 
 ## Contributing
 

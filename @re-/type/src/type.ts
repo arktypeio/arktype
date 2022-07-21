@@ -11,40 +11,40 @@ import { Base, Root } from "./nodes/index.js"
 /**
  * Create a model.
  * @param definition {@as string} Document this.
- * @param options {@as ModelConfig?} And that.
+ * @param options {@as TypeConfig?} And that.
  * @returns {@as any} The result.
  */
-export const type: ModelFunction = (definition, options) => {
+export const type: TypeFunction = (definition, options) => {
     const root = Root.parse(definition, Base.Parsing.createContext(options))
-    return new Model(root, options) as any
+    return new Type(root, options) as any
 }
 
-export const eager: ModelFunction = (definition, options = {}) => {
+export const eager: TypeFunction = (definition, options = {}) => {
     options.parse = { eager: true }
     return type(definition, options) as any
 }
 
-export type ModelFunction<Dict = {}> = <Def>(
+export type TypeFunction<Dict = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
-    options?: Base.ModelOptions
-) => ModelFrom<Def, Dict, TypeOf<Def, Dict>>
+    options?: Base.TypeOptions
+) => TypeFrom<Def, Dict, TypeOf<Def, Dict>>
 
-export type ModelFrom<Def, Dict, ModeledType> = Evaluate<{
+export type TypeFrom<Def, Dict, TypeOf> = Evaluate<{
     definition: Def
-    type: ModeledType
-    validate: ValidateFunction<ModeledType>
-    assert: AssertFunction<ModeledType>
-    default: ModeledType
-    create: CreateFunction<ModeledType>
+    type: TypeOf
+    validate: ValidateFunction<TypeOf>
+    assert: AssertFunction<TypeOf>
+    default: TypeOf
+    create: CreateFunction<TypeOf>
     references: ReferencesFunction<Def, Dict>
 }>
 
-export class Model implements ModelFrom<unknown, unknown, unknown> {
+export class Type implements TypeFrom<unknown, unknown, unknown> {
     definition: unknown
 
     constructor(
         public root: Base.Parsing.Node,
-        public config: Base.ModelOptions = {}
+        public config: Base.TypeOptions = {}
     ) {
         this.definition = root.def
     }
@@ -107,26 +107,26 @@ export class Model implements ModelFrom<unknown, unknown, unknown> {
 
 export type AssertOptions = Base.Validation.Options
 
-export type ValidateFunction<ModeledType> = (
+export type ValidateFunction<TypeedType> = (
     value: unknown,
     options?: Base.Validation.Options
-) => ValidationResult<ModeledType>
+) => ValidationResult<TypeedType>
 
-export type ValidationResult<ModeledType> = MutuallyExclusiveProps<
-    { data: ModeledType },
+export type ValidationResult<TypeedType> = MutuallyExclusiveProps<
+    { data: TypeedType },
     {
         error: Base.Validation.ValidationError
     }
 >
 
-export type AssertFunction<ModeledType> = (
+export type AssertFunction<TypeedType> = (
     value: unknown,
     options?: Base.Validation.Options
-) => ModeledType
+) => TypeedType
 
-export type CreateFunction<ModeledType> = (
+export type CreateFunction<TypeedType> = (
     options?: Base.Create.Options
-) => ModeledType
+) => TypeedType
 
 export type ReferencesFunction<Def, Dict> = <
     Options extends Base.References.Options = {}

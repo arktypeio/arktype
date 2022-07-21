@@ -1,7 +1,7 @@
-import { type } from "../../src/index.js"
+import { model } from "../../src/index.js"
 
-const employee = type({
-    // Not a fan of regex? Don't worry, 'email' is builtin :)
+const employee = model({
+    // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {
         // Single or double bound numeric types

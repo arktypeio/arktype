@@ -7,9 +7,9 @@ import {
     Merge,
     RequireKeys
 } from "@re-/tools"
-import { Model, ModelFrom, ModelFunction, Validate } from "./model.js"
 import { Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
+import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
     spaceRaw(dictionary, options) as any
@@ -28,7 +28,7 @@ export const spaceRaw = (
             deepMerge(options, options?.models?.[alias]),
             meta
         )
-        compiled[alias] = new Model(new Resolution.Node(alias, ctx))
+        compiled[alias] = new Type(new Resolution.Node(alias, ctx))
     }
     return compiled
 }
@@ -43,12 +43,12 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
         this.resolutions = {}
     }
 
-    model(def: unknown, options?: Base.ModelOptions) {
+    model(def: unknown, options?: Base.TypeOptions) {
         const root = Root.parse(
             def,
             Base.Parsing.createContext(deepMerge(this.options, options), this)
         )
-        return new Model(root, deepMerge(this.options, options)) as any
+        return new Type(root, deepMerge(this.options, options)) as any
     }
 
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
@@ -88,10 +88,10 @@ type ValidateDictionaryMeta<Meta, Dict> = Conform<
     }
 >
 
-export type SpaceLevelOptions = Base.ModelOptions
+export type SpaceLevelOptions = Base.TypeOptions
 
-export type SpaceOptions<ModelName extends string> = SpaceLevelOptions & {
-    models?: { [K in ModelName]?: Base.ModelOptions }
+export type SpaceOptions<TypeName extends string> = SpaceLevelOptions & {
+    models?: { [K in TypeName]?: Base.TypeOptions }
 }
 
 export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models">
@@ -99,21 +99,21 @@ export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models">
 export type SpaceDictionary = Record<string, unknown>
 
 export type SpaceFrom<Dict> = Evaluate<
-    DictionaryToModels<Dict> & {
+    DictionaryToTypes<Dict> & {
         $meta: SpaceMetaFrom<Dict>
     }
 >
 
 export type SpaceMetaFrom<Dict> = {
     types: DictToTypes<Dict>
-    model: ModelFunction<Dict>
+    model: TypeFunction<Dict>
     extend: ExtendFunction<Dict>
     dictionary: Dict
     options: SpaceOptions<AliasIn<Dict>> | undefined
 }
 
-export type DictionaryToModels<Dict> = Evaluate<{
-    [Alias in AliasIn<Dict>]: ModelFrom<
+export type DictionaryToTypes<Dict> = Evaluate<{
+    [Alias in AliasIn<Dict>]: TypeFrom<
         Dict[Alias],
         Dict,
         Resolution.TypeOf<Alias, Dict>
@@ -137,11 +137,11 @@ export type ExtendFunction<BaseDict> = <ExtensionDict>(
 ) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
 
 export type SpaceExtensionOptions<
-    BaseModelName extends string,
-    ExtensionModelName extends string
+    BaseTypeName extends string,
+    ExtensionTypeName extends string
 > = SpaceLevelOptions & {
     models?: {
-        [ModelName in BaseModelName | ExtensionModelName]?: Base.ModelOptions
+        [TypeName in BaseTypeName | ExtensionTypeName]?: Base.TypeOptions
     }
 }
 

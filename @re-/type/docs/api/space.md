@@ -1,4 +1,4 @@
-# compile
+# space
 
 ## tags
 
@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-compile: CompileFunction
+space: CreateSpaceFn
 ```

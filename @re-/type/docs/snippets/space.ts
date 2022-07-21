@@ -1,30 +1,49 @@
 import { space } from "../../src/index.js"
 
 // Spaces are collections of models that can reference each other.
-export const models = space({
+export const redo = space({
     package: {
         name: "string",
+        version: "string",
         dependencies: "package[]",
         contributors: "contributor[]"
     },
     contributor: {
-        // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
-        email: "email",
-        packages: "package[]?"
+        name: "string",
+        isInternal: "boolean",
+        packages: "package[]"
     }
 })
 
-// Cyclic models are inferred to arbitrary depth...
-export type Package = typeof models.package.type
+// Recursive and cyclic types are inferred to arbitrary depth.
+export type Package = typeof redo.package
 
-// And can validate cyclic data.
-export const readPackageData = () => ({
-    name: "@re-/type",
-    dependencies: [{ name: "@re-/tools", dependencies: [] }],
-    contributors: [{ email: "david@redodev" }]
-})
+export const readPackageData = () => {
+    return {
+        name: "@re-/model",
+        version: "latest",
+        dependencies: [
+            {
+                name: "@re-/tools",
+                version: 2.2,
+                dependencies: []
+            }
+        ],
+        contributors: [
+            {
+                name: "David Blass",
+                isInternal: true
+            }
+        ]
+    }
+}
 
-// `Encountered errors at the following paths:
-//   dependencies/0/contributors: Required value of type contributor[] was missing.
-//   contributors/0/email: "david@redodev" is not assignable to email.`
-export const { error } = models.package.validate(readPackageData())
+export const getValidatedPackageData = () => {
+    const packageDataFromFile = readPackageData()
+    // Throws: `Error: Encountered errors at the following paths:
+    //    dependencies/0/version: 2.2 is not assignable to string.
+    //    dependencies/0/contributors: Required value of type contributor[] was missing.
+    //    contributors/0/packages: Required value of type package[] was missing.`
+    const validatedPackageData = redo.package.assert(packageDataFromFile)
+    return validatedPackageData
+}

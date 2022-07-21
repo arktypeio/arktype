@@ -43,7 +43,7 @@ export const stringifyValue = (value: unknown) =>
 export const stringifyPathContext = (path: string) =>
     path ? ` at path ${path}` : ""
 
-export type ModelOptions = {
+export type TypeOptions = {
     parse?: Parsing.Options
     validate?: Validation.Options
     generate?: Create.Options

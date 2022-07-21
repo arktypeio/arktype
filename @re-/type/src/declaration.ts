@@ -7,13 +7,13 @@ import {
     SetChange,
     transform
 } from "@re-/tools"
-import { Validate } from "./model.js"
 import {
     SpaceFrom,
     SpaceOptions,
     spaceRaw,
     ValidateDictionary
 } from "./space.js"
+import { Validate } from "./type.js"
 
 export const declare: DeclareFn = (...names) => ({
     define: createDeclaredDefineFunctionMap(names) as any,

@@ -9,5 +9,5 @@ undefined
 ## text
 
 ```ts
-export declare type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
+export declare type TypeOf<Def, Dict> = Root.TypeOf<Def, Dict, {}>
 ```
