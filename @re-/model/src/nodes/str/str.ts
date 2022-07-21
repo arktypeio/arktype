@@ -1,4 +1,4 @@
-import { Get, ListChars } from "@re-/tools"
+import { ListChars } from "@re-/tools"
 import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
@@ -34,10 +34,14 @@ export namespace Str {
         Dict
     > = Def extends ResolvableName<Dict> ? true : false
 
-    export type Validate<Def extends string, Dict> = IfDefined<
-        ValidateTree<Parse<Def, Dict>>,
-        Def
+    export type Validate<Def extends string, Dict> = ValidateParseResult<
+        Def,
+        Parse<Def, Dict>
     >
+
+    type ValidateParseResult<Def, Tree> = Tree extends ErrorToken<infer Message>
+        ? Message
+        : Def
 
     type IfDefined<T, Fallback> = T extends undefined ? Fallback : T
 
@@ -60,14 +64,6 @@ export namespace Str {
         : Tree extends [infer Left, "&", infer Right]
         ? TypeOfTree<Left, Dict, Seen> & TypeOfTree<Right, Dict, Seen>
         : unknown
-
-    type ValidateTree<Tree> = Tree extends string
-        ? Tree extends ErrorToken<infer Message>
-            ? Message
-            : undefined
-        : Tree extends Iterate<infer Node, infer Remaining>
-        ? IfDefined<ValidateTree<Node>, ValidateTree<Remaining>>
-        : undefined
 
     export type References<Def extends string, Dict> = LeavesOf<
         Parse<Def, Dict>
@@ -126,11 +122,6 @@ export namespace Str {
             Top
         ]
 
-        type PushOrSet<
-            Stack extends unknown[],
-            Node extends unknown[]
-        > = Stack extends [] ? Node : [Stack, ...Node]
-
         export type ScanTo<S extends State, Unscanned extends string[]> = From<{
             l: S["l"]
             r: Unscanned
@@ -160,11 +151,13 @@ export namespace Str {
             r: S["r"]
         }>
 
-        export type PushError<
-            S extends State,
-            Message extends string,
-            Unscanned extends string[]
-        > = PushBase<S, ErrorToken<Message>, Unscanned>
+        export type Error<Message extends string> = From<{
+            l: {
+                top: ErrorToken<Message>
+                groups: []
+            }
+            r: []
+        }>
 
         export type From<S extends State> = S
 
@@ -181,25 +174,25 @@ export namespace Str {
         ShiftDefinition<Def, Dict>
     >["l"]["top"]
 
-    type ShiftDefinition<Def extends string, Dict> = ShiftBranch<
-        State.Initialize<Def>,
+    type ShiftDefinition<Def extends string, Dict> = ShiftExpression<
+        ShiftBranch<State.Initialize<Def>, Dict>,
         Dict
     >
 
-    type FOO = ParseDefinition<"string", {}>
-
-    // type ShiftExpression<
-    //     S extends State.State,
-    //     Dict
-    // > = S["r"]["token"] extends ExpressionTerminatingChar
-    //     ? S
-    //     : S["r"]["token"] extends "|" | "&"
-    //     ? ShiftExpression<ShiftBranch<State.PushBranch<S>, Dict>, Dict>
-    //     : State.PushError<S, `Unexpected token ${S["r"]["token"]}.`>
+    type ShiftExpression<S extends State.State, Dict> = S["r"] extends Scan<
+        infer Lookahead,
+        infer Unscanned
+    >
+        ? Lookahead extends "|" | "&"
+            ? ShiftExpression<
+                  ShiftBranch<State.PushBranch<S, Lookahead, Unscanned>, Dict>,
+                  Dict
+              >
+            : State.Error<`Unexpected token ${Lookahead}.`>
+        : S
 
     type ShiftBranch<S extends State.State, Dict> = ShiftOperators<
-        ShiftBase<S, Dict>,
-        Dict
+        ShiftBase<S, Dict>
     >
 
     type ShiftBase<S extends State.State, Dict> = S["r"] extends Scan<
@@ -209,7 +202,7 @@ export namespace Str {
         ? Lookahead extends LiteralEnclosingChar
             ? ShiftLiteral<State.ScanTo<S, Unscanned>, Lookahead, Lookahead>
             : ShiftNonLiteral<S, "", Dict>
-        : State.PushError<S, `Expected an expression.`, []>
+        : State.Error<`Expected an expression.`>
 
     type ShiftLiteral<
         S extends State.State,
@@ -223,7 +216,7 @@ export namespace Str {
                   FirstChar,
                   `${Token}${Lookahead}`
               >
-        : State.PushError<S, `${Token} requires a closing ${FirstChar}.`, []>
+        : State.Error<`${Token} requires a closing ${FirstChar}.`>
 
     type ShiftNonLiteral<
         S extends State.State,
@@ -231,49 +224,39 @@ export namespace Str {
         Dict
     > = S["r"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends BaseTerminatingChar
-            ? State.PushBase<S, ValidateNonLiteral<Token, Dict>, S["r"]>
+            ? ReduceNonLiteral<S, Token, Dict>
             : ShiftNonLiteral<
                   State.ScanTo<S, Unscanned>,
                   `${Token}${Lookahead}`,
                   Dict
               >
-        : State.PushBase<S, ValidateNonLiteral<Token, Dict>, []>
+        : ReduceNonLiteral<S, Token, Dict>
 
-    type ValidateNonLiteral<Token extends string, Dict> = IsResolvableName<
-        Token,
+    type ReduceNonLiteral<
+        S extends State.State,
+        Token extends string,
         Dict
-    > extends true
-        ? Token
+    > = IsResolvableName<Token, Dict> extends true
+        ? State.PushBase<S, Token, S["r"]>
         : Token extends EmbeddedNumber.Definition | EmbeddedBigInt.Definition
-        ? Token
-        : ErrorToken<`'${Token}' does not exist in your space.`>
+        ? State.PushBase<S, Token, S["r"]>
+        : State.Error<`'${Token}' does not exist in your space.`>
 
-    type ShiftOperators<S extends State.State, Dict> = S["r"] extends Scan<
+    type ShiftOperators<S extends State.State> = S["r"] extends Scan<
         infer Lookahead,
         infer Unscanned
     >
-        ? Lookahead extends "|" | "&"
-            ? ShiftBranch<State.PushBranch<S, Lookahead, Unscanned>, Dict>
-            : Lookahead extends ")"
+        ? Lookahead extends "["
+            ? ShiftOperators<ShiftListToken<State.ScanTo<S, Unscanned>>>
+            : Lookahead extends "|" | "&" | ")"
             ? S
-            : ShiftOperators<
-                  Lookahead extends "["
-                      ? ShiftListToken<State.ScanTo<S, Unscanned>>
-                      : Lookahead extends " "
-                      ? State.ScanTo<S, Unscanned>
-                      : Lookahead extends "?"
-                      ? State.PushError<
-                            S,
-                            `Modifier '?' is only valid at the end of a definition.`,
-                            Unscanned
-                        >
-                      : State.PushError<
-                            S,
-                            `Invalid operator ${Lookahead}.`,
-                            Unscanned
-                        >,
-                  Dict
-              >
+            : Lookahead extends " "
+            ? ShiftOperators<State.ScanTo<S, Unscanned>>
+            : Lookahead extends ComparatorStartChar
+            ? State.Error<`Bounding token '${ComparatorStartChar}' is only valid at the beginning or end of a definition.`>
+            : Lookahead extends "?"
+            ? State.Error<`Modifier '?' is only valid at the end of a definition.`>
+            : S //State.Error<`Invalid operator ${Lookahead}.`>
         : S
 
     type ShiftListToken<S extends State.State> = S["r"] extends Scan<
@@ -282,8 +265,19 @@ export namespace Str {
     >
         ? Lookahead extends "]"
             ? State.PushTransform<S, "[]", Unscanned>
-            : State.PushError<S, `Missing expected ']'.`, []>
-        : State.PushError<S, `Missing expected ']'.`, []>
+            : State.Error<`Missing expected ']'.`>
+        : State.Error<`Missing expected ']'.`>
+
+    type ShiftComparatorToken<
+        S extends State.State,
+        FirstChar extends ComparatorStartChar
+    > = S["r"] extends Scan<infer Lookahead, infer Unscanned>
+        ? Lookahead extends "="
+            ? State.PushBranch<S, `${FirstChar}=`, Unscanned>
+            : FirstChar extends "="
+            ? State.Error<`= is not a valid comparator. Use == instead.`>
+            : State.PushBranch<S, FirstChar, S["r"]>
+        : State.Error<`Expected a bound condition after ${FirstChar}.`>
 
     type ExpressionTree = string | ExpressionTree[]
 
@@ -297,7 +291,7 @@ export namespace Str {
         | ExpressionTerminatingChar
         | ComparatorStartChar
 
-    type ExpressionTerminatingChar = "END" | ")"
+    type ExpressionTerminatingChar = ")"
 
     /** These tokens complete the current expression and start parsing a new expression from RemainingTokens.
      *

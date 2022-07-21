@@ -1,21 +1,24 @@
-test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Invalid operator 5."'.
-test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Invalid operator 0."'.
+test/snippets.test.ts(37,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Bounding token '<' is only valid at the beginning or end of a definition." | "Bounding token '>' is only valid at the beginning or end of a definition." | "Bounding token '=' is only valid at the beginning or end of a definition."'.
+test/snippets.test.ts(39,17): error TS2322: Type '"string<=160"' is not assignable to type '"Bounding token '<' is only valid at the beginning or end of a definition." | "Bounding token '>' is only valid at the beginning or end of a definition." | "Bounding token '=' is only valid at the beginning or end of a definition."'.
+test/str/optional.test.ts(23,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(29,17): error TS2578: Unused '@ts-expect-error' directive.
+test/str/optional.test.ts(38,25): error TS2578: Unused '@ts-expect-error' directive.
 test/str/parenthesized.test.ts(7,22): error TS2345: Argument of type '"(string)"' is not assignable to parameter of type '"'(string' does not exist in your space."'.
 test/str/parenthesized.test.ts(19,35): error TS2345: Argument of type '"(boolean|number)[]"' is not assignable to parameter of type '"'(boolean' does not exist in your space."'.
 test/str/parenthesized.test.ts(30,13): error TS2345: Argument of type '"((boolean|number)[]|(string|undefined)[])[]"' is not assignable to parameter of type '"'((boolean' does not exist in your space."'.
-test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"Invalid operator g."'.
+test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'' does not exist in your space."'.
 Files:              225
-Lines:            84112
-Nodes:           282488
-Identifiers:     102164
-Symbols:         232953
-Types:            76860
-Instantiations:  431211
-Memory used:    200667K
+Lines:            84106
+Nodes:           282556
+Identifiers:     102188
+Symbols:         207482
+Types:            67011
+Instantiations:  363857
+Memory used:    198816K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.53s
-Bind time:        0.20s
-Check time:       1.63s
+Parse time:       0.48s
+Bind time:        0.18s
+Check time:       1.47s
 Emit time:        0.00s
-Total time:       2.36s
+Total time:       2.12s
