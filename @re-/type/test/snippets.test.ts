@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
-import * as modelSnippet from "../docs/snippets/model.js"
 import * as spaceSnippet from "../docs/snippets/space.js"
+import * as modelSnippet from "../docs/snippets/type.js"
 import { type } from "../src/index.js"
 
 describe("snippets", () => {
@@ -18,10 +18,10 @@ describe("snippets", () => {
         )
     })
     it("space", () => {
-        assert(spaceSnippet.models.$meta.types.package).type.toString.snap(
+        assert(spaceSnippet.redo.$meta.types.package).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
-        assert(spaceSnippet.error?.message)
+        assert(spaceSnippet.getValidatedPackageData).throws
             .snap(`Encountered errors at the following paths:
   dependencies/0/contributors: Required value of type contributor[] was missing.
   contributors/0/email: "david@redodev" is not assignable to email.
