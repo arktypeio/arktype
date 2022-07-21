@@ -1,20 +1,20 @@
 test/str/optional.test.ts(23,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/optional.test.ts(29,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/optional.test.ts(38,25): error TS2578: Unused '@ts-expect-error' directive.
-test/str/str.test.ts(6,9): error TS2578: Unused '@ts-expect-error' directive.
+test/str/parenthesized.test.ts(106,17): error TS2578: Unused '@ts-expect-error' directive.
 test/str/str.test.ts(14,43): error TS2345: Argument of type '"     string  | boolean    []   "' is not assignable to parameter of type '"'' does not exist in your space."'.
 Files:              225
-Lines:            84257
-Nodes:           283143
-Identifiers:     102406
-Symbols:         227126
-Types:            73132
-Instantiations:  382102
-Memory used:    208430K
+Lines:            84287
+Nodes:           283400
+Identifiers:     102478
+Symbols:         224226
+Types:            68978
+Instantiations:  379863
+Memory used:    198875K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.53s
-Bind time:        0.20s
+Parse time:       0.54s
+Bind time:        0.21s
 Check time:       1.66s
 Emit time:        0.00s
-Total time:       2.39s
+Total time:       2.40s

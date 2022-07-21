@@ -52,44 +52,60 @@ describe("parenthesized", () => {
             listOfUnionOfListsOfUnions.validate([[false, "foo"]]).error?.message
         ).snap()
     })
-    // describe("errors", () => {
-    //     it("empty", () => {
-    //         assert(() => {
-    //             model("()").type
-    //         }).type.errors.snap()
-    //     })
-    //     it("unmatched (", () => {
-    //         assert(() => {
-    //             model("()").type
-    //         }).type.errors.snap()
-    //     })
-    //     it("unmatched )", () => {
-    //         assert(() => {
-    //             model("()").type
-    //         }).type.errors.snap()
-    //     })
-    //     it("deep unmatched (", () => {
-    //         assert(() => {
-    //             model("(null|undefined|1|(").type
-    //         }).type.errors.snap()
-    //     })
-    //     it("deep unmatched )", () => {
-    //         assert(() => {
-    //             // @ts-expect-error
-    //             model("((string|number)[]|boolean))").type
-    //         }).type.errors.snap()
-    //     })
-    //     it("starting )", () => {
-    //         assert(() => {
-    //             // @ts-expect-error
-    //             model(")number(")
-    //         }).type.errors.snap()
-    //     })
-    //     it("misplaced )", () => {
-    //         assert(() => {
-    //             // @ts-expect-error
-    //             model("(number|)")
-    //         }).type.errors.snap()
-    //     })
-    // })
+    describe("errors", () => {
+        it("empty", () => {
+            assert(() => {
+                // @ts-expect-error
+                model("()").type
+            }).type.errors.snap()
+        })
+        it("unmatched (", () => {
+            assert(() => {
+                // @ts-expect-error
+                model("string|(boolean|number[]").type
+            }).type.errors.snap()
+        })
+        it("unmatched )", () => {
+            assert(() => {
+                // @ts-expect-error
+                model("string|number[]|boolean)").type
+            }).type.errors.snap()
+        })
+        it("lone )", () => {
+            assert(() => {
+                // @ts-expect-error
+                model(")").type
+            }).type.errors.snap()
+        })
+        it("lone (", () => {
+            assert(() => {
+                // @ts-expect-error
+                model("(").type
+            }).type.errors.snap()
+        })
+        it("deep unmatched (", () => {
+            assert(() => {
+                // @ts-expect-error
+                model("(null|(undefined|(1))|2").type
+            }).type.errors.snap()
+        })
+        it("deep unmatched )", () => {
+            assert(() => {
+                // @ts-expect-error
+                model("((string|number)[]|boolean))").type
+            }).type.errors.snap()
+        })
+        it("starting )", () => {
+            assert(() => {
+                // @ts-expect-error
+                model(")number(")
+            }).type.errors.snap()
+        })
+        it("misplaced )", () => {
+            assert(() => {
+                // @ts-expect-error
+                model("(number|)")
+            }).type.errors.snap()
+        })
+    })
 })

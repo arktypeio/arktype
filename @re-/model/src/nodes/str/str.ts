@@ -96,12 +96,12 @@ export namespace Str {
             branch: CurrentBranch
             expression: unknown
             unscanned: string[]
-            ctx: Context
+            branchContext: Context
         }
 
         type GroupState = {
             branch: CurrentBranch
-            ctx: Context
+            branchContext: Context
         }
 
         type CurrentBranch = [] | [unknown, string]
@@ -116,10 +116,10 @@ export namespace Str {
             branch: S["branch"]
             expression: S["expression"]
             unscanned: Unscanned
-            ctx: S["ctx"]
+            branchContext: S["branchContext"]
         }>
 
-        export type UpdateContext<
+        export type UpdateBranchContext<
             S extends State,
             Updates extends Partial<Context>
         > = From<{
@@ -127,7 +127,7 @@ export namespace Str {
             branch: S["branch"]
             expression: S["expression"]
             unscanned: S["unscanned"]
-            ctx: S["ctx"] & Updates
+            branchContext: S["branchContext"] & Updates
         }>
 
         export type PushBase<
@@ -139,7 +139,7 @@ export namespace Str {
             branch: S["branch"]
             expression: Token
             unscanned: Unscanned
-            ctx: S["ctx"]
+            branchContext: S["branchContext"]
         }>
 
         export type PushBranchingToken<
@@ -156,7 +156,7 @@ export namespace Str {
             ]
             expression: []
             unscanned: Unscanned
-            ctx: {}
+            branchContext: {}
         }>
 
         type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
@@ -172,7 +172,7 @@ export namespace Str {
                   branch: []
                   expression: MergeExpression<S["branch"], S["expression"]>
                   unscanned: []
-                  ctx: S["ctx"]
+                  branchContext: S["branchContext"]
               }>
             : Error<`Missing ).`>
 
@@ -185,18 +185,21 @@ export namespace Str {
             branch: S["branch"]
             expression: [S["expression"], Token]
             unscanned: Unscanned
-            ctx: S["ctx"]
+            branchContext: S["branchContext"]
         }>
 
         export type OpenGroup<
             S extends State,
             Unscanned extends string[]
         > = From<{
-            groups: [...S["groups"], { branch: S["branch"]; ctx: S["ctx"] }]
+            groups: [
+                ...S["groups"],
+                { branch: S["branch"]; branchContext: S["branchContext"] }
+            ]
             branch: []
             expression: []
             unscanned: Unscanned
-            ctx: {}
+            branchContext: {}
         }>
 
         type PopGroup<Stack extends GroupState[], Top extends GroupState> = [
@@ -213,7 +216,7 @@ export namespace Str {
                   branch: Top["branch"]
                   expression: MergeExpression<S["branch"], S["expression"]>
                   unscanned: Unscanned
-                  ctx: Top["ctx"]
+                  branchContext: Top["branchContext"]
               }>
             : Error<`Unexpected ).`>
 
@@ -222,7 +225,7 @@ export namespace Str {
             branch: []
             expression: ErrorToken<Message>
             unscanned: []
-            ctx: {}
+            branchContext: {}
         }>
 
         export type From<S extends State> = S
@@ -232,7 +235,7 @@ export namespace Str {
             branch: []
             expression: []
             unscanned: ListChars<Def>
-            ctx: {}
+            branchContext: {}
         }>
     }
 
@@ -245,13 +248,22 @@ export namespace Str {
         Dict
     >
 
-    type ShiftExpression<
+    /**
+     * We start by shifting the first branch before looping via ShiftBranches
+     * in order to ensure we error on an empty expression like "" or "()".
+     */
+    type ShiftExpression<S extends State.State, Dict> = ShiftBranches<
+        ShiftBranch<S, Dict>,
+        Dict
+    >
+
+    type ShiftBranches<
         S extends State.State,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends ")"
             ? State.CloseGroup<S, Unscanned>
-            : ShiftExpression<ShiftBranch<S, Dict>, Dict>
+            : ShiftBranches<ShiftBranch<S, Dict>, Dict>
         : S
 
     type ShiftBranch<S extends State.State, Dict> = ShiftOperators<
@@ -357,15 +369,21 @@ export namespace Str {
         ? ReduceRightBound<
               S,
               Token,
-              ShiftBranch<State.UpdateContext<S, { rightBounded: true }>, Dict>
+              ShiftBranch<
+                  State.UpdateBranchContext<S, { rightBounded: true }>,
+                  Dict
+              >
           >
-        : S["ctx"]["rightBounded"] extends true
+        : S["branchContext"]["rightBounded"] extends true
         ? State.Error<`Right side of comparator ${Token} cannot be bounded more than once.`>
         : S["expression"] extends EmbeddedNumber.Definition
         ? ReduceLeftBound<
               S,
               Token,
-              ShiftBranch<State.UpdateContext<S, { leftBounded: true }>, Dict>
+              ShiftBranch<
+                  State.UpdateBranchContext<S, { leftBounded: true }>,
+                  Dict
+              >
           >
         : State.Error<`Left side of comparator ${Token} must be a number literal or boundable definition (got ${TreeToString<
               S["expression"]
@@ -385,7 +403,7 @@ export namespace Str {
         Left extends State.State,
         Token extends string,
         Right extends State.State
-    > = Left["ctx"]["leftBounded"] extends true
+    > = Left["branchContext"]["leftBounded"] extends true
         ? State.Error<`Left side of comparator ${Token} cannot be bounded more than once.`>
         : Right extends State.Error<string>
         ? Right
