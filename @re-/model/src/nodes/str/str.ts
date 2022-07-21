@@ -261,9 +261,17 @@ export namespace Str {
         S extends State.State,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-        ? Lookahead extends ")"
+        ? Lookahead extends BranchingOperatorToken
+            ? ShiftBranches<
+                  ShiftBranch<
+                      State.PushBranchingToken<S, Lookahead, Unscanned>,
+                      Dict
+                  >,
+                  Dict
+              >
+            : Lookahead extends ")"
             ? State.CloseGroup<S, Unscanned>
-            : ShiftBranches<ShiftBranch<S, Dict>, Dict>
+            : State.Error<`Unexpected branch token ${Lookahead}.`>
         : S
 
     type ShiftBranch<S extends State.State, Dict> = ShiftOperators<
@@ -280,7 +288,7 @@ export namespace Str {
             : Lookahead extends LiteralEnclosingChar
             ? ShiftLiteral<State.ScanTo<S, Unscanned>, Lookahead, Lookahead>
             : ShiftNonLiteral<S, "", Dict>
-        : State.Error<`Expected an expression.`>
+        : MissingExpressionError
 
     type ShiftLiteral<
         S extends State.State,
@@ -318,6 +326,8 @@ export namespace Str {
         ? State.PushBase<S, Token, S["unscanned"]>
         : Token extends EmbeddedNumber.Definition | EmbeddedBigInt.Definition
         ? State.PushBase<S, Token, S["unscanned"]>
+        : Token extends ""
+        ? MissingExpressionError
         : State.Error<`'${Token}' does not exist in your space.`>
 
     type ShiftOperators<
@@ -326,12 +336,10 @@ export namespace Str {
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "["
             ? ShiftOperators<ShiftListToken<State.ScanTo<S, Unscanned>>, Dict>
-            : Lookahead extends "|" | "&"
-            ? State.PushBranchingToken<S, Lookahead, Unscanned>
+            : Lookahead extends BranchTerminatingChar
+            ? S
             : Lookahead extends ComparatorStartChar
             ? ShiftComparatorToken<State.ScanTo<S, Unscanned>, Lookahead, Dict>
-            : Lookahead extends ")"
-            ? S
             : Lookahead extends " "
             ? ShiftOperators<State.ScanTo<S, Unscanned>, Dict>
             : Lookahead extends "?"
@@ -415,13 +423,14 @@ export namespace Str {
 
     type ComparatorStartChar = "<" | ">" | "="
 
-    type BaseTerminatingChar = "[" | " " | "?" | BranchTerminatingChar
-
-    type BranchTerminatingChar =
-        | "|"
-        | "&"
-        | ExpressionTerminatingChar
+    type BaseTerminatingChar =
+        | "["
+        | " "
+        | "?"
         | ComparatorStartChar
+        | BranchTerminatingChar
+
+    type BranchTerminatingChar = "|" | "&" | ExpressionTerminatingChar
 
     type ExpressionTerminatingChar = ")"
 
@@ -443,6 +452,8 @@ export namespace Str {
     type LiteralEnclosingChar = `'` | `"` | `/`
 
     type ErrorToken<Message extends string> = `!${Message}`
+
+    type MissingExpressionError = State.Error<`Expected an expression.`>
 
     /** A BoundableNode must be eitheunscanned:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
