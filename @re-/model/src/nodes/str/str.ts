@@ -12,14 +12,20 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 export namespace Str {
-    export type Parse<Def extends string, Dict> = Def extends `${infer Child}?`
-        ? [TryNaiveParse<Child, Dict>, "?"]
-        : TryNaiveParse<Def, Dict>
+    export type Parse<Def extends string, Dict> = TryNaiveParse<Def, Dict>
+    // Def extends `${infer Child}?`
+    // ? [TryNaiveParse<Child, Dict>, "?"]
+    // : TryNaiveParse<Def, Dict>
 
-    type TryNaiveParse<
-        Def extends string,
-        Dict
-    > = Def extends `${infer Child}[]`
+    type TryNaiveParse<Def extends string, Dict> = Def extends `${infer Child}?`
+        ? Child extends `${infer Item}[]`
+            ? IsResolvableName<Item, Dict> extends true
+                ? [[Item, "[]"], "?"]
+                : ParseDefinition<Def, Dict>
+            : IsResolvableName<Child, Dict> extends true
+            ? [Child, "?"]
+            : ParseDefinition<Def, Dict>
+        : Def extends `${infer Child}[]`
         ? IsResolvableName<Child, Dict> extends true
             ? [Child, "[]"]
             : ParseDefinition<Def, Dict>
@@ -27,7 +33,20 @@ export namespace Str {
         ? Def
         : ParseDefinition<Def, Dict>
 
+    // type TryNaiveParse<
+    //     Def extends string,
+    //     Dict
+    // > = Def extends `${infer Child}[]`
+    //     ? IsResolvableName<Child, Dict> extends true
+    //         ? [Child, "[]"]
+    //         : ParseDefinition<Def, Dict>
+    //     : IsResolvableName<Def, Dict> extends true
+    //     ? Def
+    //     : ParseDefinition<Def, Dict>
+
     type ResolvableName<Dict> = Keyword.Definition | AliasIn<Dict>
+
+    type Z = Validate<"foooop?", {}>
 
     type IsResolvableName<
         Def extends string,
@@ -336,7 +355,11 @@ export namespace Str {
         S extends State.State,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-        ? Lookahead extends "["
+        ? Lookahead extends "?"
+            ? Unscanned extends []
+                ? State.PushTransform<S, "?", Unscanned>
+                : State.Error<`Modifier '?' is only valid at the end of a definition.`>
+            : Lookahead extends "["
             ? ShiftOperators<ShiftListToken<State.ScanTo<S, Unscanned>>, Dict>
             : Lookahead extends BranchTerminatingChar
             ? S
@@ -344,8 +367,6 @@ export namespace Str {
             ? ShiftComparatorToken<State.ScanTo<S, Unscanned>, Lookahead, Dict>
             : Lookahead extends " "
             ? ShiftOperators<State.ScanTo<S, Unscanned>, Dict>
-            : Lookahead extends "?"
-            ? State.Error<`Modifier '?' is only valid at the end of a definition.`>
             : State.Error<`Invalid operator ${Lookahead}.`>
         : S
 
