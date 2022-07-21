@@ -32,26 +32,18 @@ const config = {
         [
             "@docusaurus/plugin-content-docs",
             {
-                id: "model",
-                path: "docs/model",
-                routeBasePath: "model",
-                sidebarPath: require.resolve("./docs/model/sidebar.js")
+                id: "type",
+                path: "docs/type",
+                routeBasePath: "type",
+                sidebarPath: require.resolve("./docs/type/sidebar.js")
             }
         ],
         [
             "@docusaurus/plugin-content-docs",
             {
-                id: "state",
-                path: "docs/state",
-                routeBasePath: "state"
-            }
-        ],
-        [
-            "@docusaurus/plugin-content-docs",
-            {
-                id: "test",
-                path: "docs/test",
-                routeBasePath: "test"
+                id: "assert",
+                path: "docs/assert",
+                routeBasePath: "assert"
             }
         ]
     ],
@@ -67,27 +59,21 @@ const config = {
                 items: [
                     {
                         type: "doc",
-                        label: "Model",
+                        label: "Type",
                         docId: "intro",
-                        docsPluginId: "model"
+                        docsPluginId: "type"
                     },
                     {
                         type: "doc",
-                        label: "State",
+                        label: "Assert",
                         docId: "intro",
-                        docsPluginId: "state"
-                    },
-                    {
-                        type: "doc",
-                        label: "Test",
-                        docId: "intro",
-                        docsPluginId: "test"
+                        docsPluginId: "assert"
                     },
                     {
                         type: "docsVersionDropdown",
                         position: "right",
-                        docsPluginId: "model",
-                        className: "navbar-model-versions"
+                        docsPluginId: "type",
+                        className: "navbar-type-versions"
                     },
                     {
                         href: "https://github.com/re-do/re-po",
@@ -103,16 +89,12 @@ const config = {
                         title: "Docs",
                         items: [
                             {
-                                label: "Model",
-                                to: "/model"
+                                label: "Type",
+                                to: "/type"
                             },
                             {
-                                label: "State",
-                                to: "/state"
-                            },
-                            {
-                                label: "Test",
-                                to: "/test"
+                                label: "Assert",
+                                to: "/assert"
                             }
                         ]
                     },

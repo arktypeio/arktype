@@ -1,7 +1,7 @@
 import { useTheme } from "@mui/material"
 import React from "react"
 
-export const Model = () => {
+export const Type = () => {
     const { palette } = useTheme()
     return (
         <svg width="200" height="200" viewBox="0 0 1040.32 649.16">

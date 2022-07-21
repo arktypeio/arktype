@@ -1,0 +1,33 @@
+---
+id: intro
+title: Intro
+sidebar_position: 1
+---
+
+# Assert
+
+## Under Construction
+
+Ever wonder how we maintain such strict parity between @re-/type's runtime behavior, its inferred types, and TypeScript's own definitions?
+
+Given the unprecedented scope of @re-/type as a project whose types are as important as its functionality, we found ourselves in need of a unit testing framework designed to test them together.
+
+From a single statement, @re-/assert allows you to make assertions about types, values or both:
+
+```ts
+assert(o).equals({ re: "do" }).typed as { re: string }
+```
+
+We're actively relying on @re-/assert for hundreds of tests in @re-/type, but still need to freeze the API and add documentation.
+
+If you want to learn more, the project is tracked [here](https://github.com/re-do/re-po/projects/1).
+
+If you're interested in contributing, check out our guide [here](https://github.com/re-do/re-po/blob/main/CONTRIBUTING.md) or, if you really want to make my day, reach out to [david@redo.dev](mailto:david@redo.dev). I'd love to talk about your ideas or suggest issues that might be a good fit! 😻
+
+<div>
+    <img
+        style={{ height: 300 }}
+        src="/img/construction.svg"
+        alt="Under Construction"
+    />
+</div>

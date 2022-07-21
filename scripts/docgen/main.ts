@@ -12,7 +12,7 @@ export const config: DocGenConfig = {
         {
             path: "@re-/type",
             api: {
-                outDir: fromRedoDevDocsDir("model", "api")
+                outDir: fromRedoDevDocsDir("type", "api")
             },
             snippets: {
                 sources: [

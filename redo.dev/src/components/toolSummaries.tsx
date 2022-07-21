@@ -22,19 +22,14 @@ type ToolSummaryProps = ToolSummaryData & {
 const toolSummaries: ToolSummaryData[] = [
     {
         name: "Model",
-        illustration: <Svgs.Model />,
+        illustration: <Svgs.Type />,
         description: <>One definition from editor to runtime</>,
         demoElement: modelDemo
     },
     {
-        name: "State (coming soon)",
-        illustration: <Svgs.State />,
-        description: <>Self-validating states from simple shapes</>
-    },
-    {
-        name: "Test (coming soon)",
-        illustration: <Svgs.Test />,
-        description: <>Web testing that writes itself</>
+        name: "Assert (coming soon)",
+        illustration: <Svgs.Assert />,
+        description: <>Seamless testing for types and code</>
     }
 ]
 
@@ -125,7 +120,7 @@ export const ToolSummaries = () => {
         <Container maxWidth="xl">
             <Grid container direction="row">
                 {toolSummaries.map((props, index) => (
-                    <Grid item key={index} xs={12} md={4}>
+                    <Grid item key={index} xs={12} md={6}>
                         <ToolSummary
                             {...props}
                             setActiveDemo={setActiveDemo}

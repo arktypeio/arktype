@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async"
 import { useLocation } from "@docusaurus/router"
 
 const hideModelVersionDropdownCss = `
-.navbar-model-versions {
+.navbar-type-versions {
     display: none;
 }
 `
@@ -14,7 +14,7 @@ export default ({ children }) => {
     return (
         <>
             <Helmet>
-                {pathname.startsWith("/model") ? null : (
+                {pathname.startsWith("/type") ? null : (
                     <style>{hideModelVersionDropdownCss}</style>
                 )}
             </Helmet>

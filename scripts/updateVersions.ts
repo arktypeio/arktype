@@ -13,7 +13,7 @@ import {
 import { docgen } from "./docgen/main.js"
 
 const suffixes = {
-    model: "alpha"
+    type: "alpha"
 }
 
 const forEachPackageWithSuffix = (transformer: SuffixTransformer) => {
@@ -76,8 +76,8 @@ const REDO_DEV_DIR = fromPackageRoot("redo.dev")
 
 const docusaurusVersionedPackages = [
     {
-        packageRoot: fromPackageRoot("@re-", "model"),
-        docsName: "model"
+        packageRoot: fromPackageRoot("@re-", "type"),
+        docsName: "type"
     }
 ]
 
