@@ -38,7 +38,6 @@ export type TypeFrom<Def, Dict, TypeOf> = Evaluate<{
     create: CreateFunction<TypeOf>
     references: ReferencesFunction<Def, Dict>
 }>
-
 export class Type implements TypeFrom<unknown, unknown, unknown> {
     definition: unknown
 

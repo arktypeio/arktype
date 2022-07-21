@@ -24,12 +24,22 @@ describe("union", () => {
             it("double pipes", () => {
                 // @ts-expect-error
                 assert(() => eager("boolean||null")).throwsAndHasTypeError(
-                    "Unable to determine the type of ''."
+                    "Expected an expression after 'boolean|'."
                 )
             })
             it("ends with |", () => {
                 // @ts-expect-error
-                assert(() => eager("boolean|")).throwsAndHasTypeError()
+                assert(() => eager("boolean|")).throwsAndHasTypeError(
+                    "Expected an expression after 'boolean|'."
+                )
+            })
+            it("long missing |", () => {
+                assert(() =>
+                    // @ts-expect-error
+                    type("boolean[]|(string|number|)|object")
+                ).throwsAndHasTypeError(
+                    "Expected an expression after 'string|number|'."
+                )
             })
         })
     })

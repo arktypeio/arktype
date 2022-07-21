@@ -109,14 +109,14 @@ export namespace Str {
             branchContext: Context
         }
 
-        type GroupState = {
+        export type GroupState = {
             branch: CurrentBranch
             branchContext: Context
         }
 
-        type CurrentBranch = [] | [unknown, string]
+        export type CurrentBranch = [] | [unknown, string]
 
-        type Context = {
+        export type Context = {
             leftBounded?: boolean
             rightBounded?: boolean
         }
@@ -300,7 +300,7 @@ export namespace Str {
             : Lookahead extends " "
             ? ShiftBase<State.ScanTo<S, Unscanned>, Dict>
             : ShiftNonLiteral<S, "", Dict>
-        : MissingExpressionError
+        : MissingExpressionError<S>
 
     type ShiftLiteral<
         S extends State.State,
@@ -339,8 +339,13 @@ export namespace Str {
         : Token extends EmbeddedNumber.Definition | EmbeddedBigInt.Definition
         ? State.PushBase<S, Token, S["unscanned"]>
         : Token extends ""
-        ? MissingExpressionError
+        ? MissingExpressionError<S>
         : State.Error<`'${Token}' does not exist in your space.`>
+
+    type MissingExpressionError<S extends State.State> =
+        State.Error<`Expected an expression${S["branch"] extends []
+            ? ""
+            : ` after '${TreeToString<S["branch"]>}'`}.`>
 
     type ShiftOperators<
         S extends State.State,
@@ -433,16 +438,13 @@ export namespace Str {
         ? Right
         : State.Error<`Right side of comparator ${Token} must be a numbed-or-string-typed keyword or a list-typed expression.`>
 
-    type ExpressionTree = string | ExpressionTree[]
-
     type ComparatorStartChar = "<" | ">" | "="
 
     type BaseTerminatingChar =
-        | "["
-        | " "
-        | "?"
+        | ModifyingOperatorStartChar
         | ComparatorStartChar
         | BranchTerminatingChar
+        | " "
 
     type BranchTerminatingChar = "|" | "&" | ExpressionTerminatingChar
 
@@ -467,9 +469,7 @@ export namespace Str {
 
     type ErrorToken<Message extends string> = `!${Message}`
 
-    type MissingExpressionError = State.Error<`Expected an expression.`>
-
-    /** A BoundableNode must be eitheunscanned:
+    /** A BoundableNode must be either:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
      *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100>alphanumeric")
      *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
