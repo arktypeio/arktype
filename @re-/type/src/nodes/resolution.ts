@@ -9,15 +9,20 @@ export namespace Resolution {
         Alias extends keyof Dict,
         Dict
     > = Dict[Alias] extends string
-        ? IfShallowCycleErrorElse<
-              CheckResolutionForShallowCycle<
-                  Dict[Alias],
-                  Dict,
-                  [Extract<Alias, string>]
-              >,
-              Str.Validate<Dict[Alias], Dict>
-          >
+        ? ValidateStringResolution<Alias, Dict>
         : Root.Validate<Dict[Alias], Dict>
+
+    export type ValidateStringResolution<
+        Alias extends keyof Dict,
+        Dict
+    > = IfShallowCycleErrorElse<
+        CheckResolutionForShallowCycle<
+            Dict[Alias],
+            Dict,
+            [Extract<Alias, string>]
+        >,
+        Str.Validate<Extract<Dict[Alias], string>, Dict>
+    >
 
     export type TypeOf<
         Alias extends AliasIn<Dict>,

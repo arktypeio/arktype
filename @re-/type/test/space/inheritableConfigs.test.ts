@@ -29,6 +29,7 @@ describe("inheritable configs", () => {
                 undefined
             )
         })
+
         it("model config in space", () => {
             const mySpace = space(
                 { user: { name: "string" } },
