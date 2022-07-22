@@ -5,7 +5,7 @@ describe("map", () => {
     describe("empty", () => {
         const empty = type({})
         it("type", () => {
-            assert(empty.type).typed as {}
+            assert(empty.infer).typed as {}
         })
         it("validation", () => {
             assert(empty.validate({}).error).is(undefined)
@@ -25,7 +25,7 @@ describe("map", () => {
         })
 
         it("type", () => {
-            assert(shallow.type).typed as {
+            assert(shallow.infer).typed as {
                 a: string
                 b: number
                 c: 67
@@ -115,7 +115,7 @@ describe("map", () => {
         })
         describe("type", () => {
             it("standard", () => {
-                assert(nested.type).typed as {
+                assert(nested.infer).typed as {
                     nested: {
                         russian: "doll"
                     }
@@ -127,7 +127,7 @@ describe("map", () => {
                     b: "false",
                     c: { nested: "boolean" }
                 } as const
-                assert(type(readonlyDef).type).typed as {
+                assert(type(readonlyDef).infer).typed as {
                     a: true
                     b: false
                     c: {

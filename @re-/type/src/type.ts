@@ -31,7 +31,7 @@ export type TypeFunction<Dict = {}> = <Def>(
 
 export type TypeFrom<Def, Dict, TypeOf> = Evaluate<{
     definition: Def
-    type: TypeOf
+    infer: TypeOf
     validate: ValidateFunction<TypeOf>
     assert: AssertFunction<TypeOf>
     default: TypeOf
@@ -48,7 +48,7 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
         this.definition = root.def
     }
 
-    get type() {
+    get infer() {
         return chainableNoOpProxy
     }
 

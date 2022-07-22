@@ -5,7 +5,7 @@ describe("keyword", () => {
     describe("boolean", () => {
         const b = type("boolean")
         it("type", () => {
-            assert(b.type).typed as boolean
+            assert(b.infer).typed as boolean
         })
         it("generation", () => {
             assert(b.create()).is(false)
@@ -21,7 +21,7 @@ describe("keyword", () => {
     describe("true", () => {
         const t = type("true")
         it("type", () => {
-            assert(t.type).typed as true
+            assert(t.infer).typed as true
         })
         it("generation", () => {
             assert(t.create()).is(true)
@@ -36,7 +36,7 @@ describe("keyword", () => {
     describe("false", () => {
         const f = type("false")
         it("type", () => {
-            assert(f.type).typed as false
+            assert(f.infer).typed as false
         })
         it("generation", () => {
             assert(f.create()).is(false)
@@ -51,7 +51,7 @@ describe("keyword", () => {
     describe("bigint", () => {
         const b = type("bigint")
         it("type", () => {
-            assert(b.type).typed as bigint
+            assert(b.infer).typed as bigint
         })
         it("generation", () => {
             assert(b.create()).is(0n)
@@ -66,7 +66,7 @@ describe("keyword", () => {
     describe("symbol", () => {
         const s = type("symbol")
         it("type", () => {
-            assert(s.type).typed as symbol
+            assert(s.infer).typed as symbol
         })
         it("generation", () => {
             assert(typeof s.create()).is("symbol")
@@ -81,7 +81,7 @@ describe("keyword", () => {
     describe("function", () => {
         const f = type("function")
         it("type", () => {
-            assert(f.type).typed as Function
+            assert(f.infer).typed as Function
         })
         it("generation", () => {
             assert(typeof f.create()).equals("function")
@@ -96,7 +96,7 @@ describe("keyword", () => {
     describe("object", () => {
         const o = type("object")
         it("type", () => {
-            assert(o.type).typed as object
+            assert(o.infer).typed as object
         })
         it("generation", () => {
             assert(o.create()).equals({})
@@ -112,7 +112,7 @@ describe("keyword", () => {
     describe("undefined", () => {
         const u = type("undefined")
         it("type", () => {
-            assert(u.type).typed as undefined
+            assert(u.infer).typed as undefined
         })
         it("generation", () => {
             assert(u.create()).is(undefined)
@@ -127,7 +127,7 @@ describe("keyword", () => {
     describe("null", () => {
         const n = type("null")
         it("type", () => {
-            assert(n.type).typed as null
+            assert(n.infer).typed as null
         })
         it("generation", () => {
             assert(n.create()).is(null)
@@ -142,7 +142,7 @@ describe("keyword", () => {
     describe("void", () => {
         const v = type("void")
         it("type", () => {
-            assert(v.type).typed as void
+            assert(v.infer).typed as void
         })
         it("generation", () => {
             assert(v.create()).is(undefined)
@@ -157,7 +157,7 @@ describe("keyword", () => {
     describe("any", () => {
         const a = type("any")
         it("type", () => {
-            assert(a.type).typed as any
+            assert(a.infer).typed as any
         })
         it("generation", () => {
             assert(a.create()).is(undefined)
@@ -172,7 +172,7 @@ describe("keyword", () => {
         const u = type("unknown")
         it("type", () => {
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-            assert(u.type).typed as unknown
+            assert(u.infer).typed as unknown
         })
         it("generation", () => {
             assert(u.create()).is(undefined)
@@ -187,7 +187,7 @@ describe("keyword", () => {
         const n = type("never")
         it("type", () => {
             // @ts-ignore
-            assert(n.type).typed as never
+            assert(n.infer).typed as never
         })
         it("generation", () => {
             assert(() => n.create()).throws.snap(
@@ -207,7 +207,7 @@ describe("keyword", () => {
         describe("string", () => {
             const s = type("string")
             it("type", () => {
-                assert(s.type).typed as string
+                assert(s.infer).typed as string
             })
             it("generation", () => {
                 assert(s.create()).is("")
@@ -221,7 +221,7 @@ describe("keyword", () => {
         })
         it("email", () => {
             const email = type("email")
-            assert(email.type).typed as string
+            assert(email.infer).typed as string
             assert(email.validate("david@redo.dev").error).is(undefined)
             assert(email.validate("david@redo@dev").error?.message).snap(
                 `"david@redo@dev" is not assignable to email.`
@@ -229,7 +229,7 @@ describe("keyword", () => {
         })
         it("alpha", () => {
             const alpha = type("alpha")
-            assert(alpha.type).typed as string
+            assert(alpha.infer).typed as string
             assert(alpha.validate("aBc").error).is(undefined)
             assert(alpha.validate("a B c").error?.message).snap(
                 `"a B c" is not assignable to alpha.`
@@ -237,7 +237,7 @@ describe("keyword", () => {
         })
         it("alphanum", () => {
             const alphaNumeric = type("alphanum")
-            assert(alphaNumeric.type).typed as string
+            assert(alphaNumeric.infer).typed as string
             assert(alphaNumeric.validate("aBc123").error).is(undefined)
             assert(alphaNumeric.validate("aBc+123").error?.message).snap(
                 `"aBc+123" is not assignable to alphanum.`
@@ -245,7 +245,7 @@ describe("keyword", () => {
         })
         it("lower", () => {
             const lowercase = type("lower")
-            assert(lowercase.type).typed as string
+            assert(lowercase.infer).typed as string
             assert(lowercase.validate("as long as no uppercase").error).is(
                 undefined
             )
@@ -255,7 +255,7 @@ describe("keyword", () => {
         })
         it("upper", () => {
             const uppercase = type("upper")
-            assert(uppercase.type).typed as string
+            assert(uppercase.infer).typed as string
             assert(uppercase.validate("AS LONG AS NO LOWERCASE").error).is(
                 undefined
             )
@@ -276,7 +276,7 @@ describe("keyword", () => {
         describe("number", () => {
             const n = type("number")
             it("type", () => {
-                assert(n.type).typed as number
+                assert(n.infer).typed as number
             })
             it("generation", () => {
                 assert(n.create()).is(0)
@@ -294,7 +294,7 @@ describe("keyword", () => {
         describe("subtypes", () => {
             it("integer", () => {
                 const integer = type("integer")
-                assert(integer.type).typed as number
+                assert(integer.infer).typed as number
                 assert(integer.validate(5).error).is(undefined)
                 assert(integer.validate(5.0001).error?.message).snap(
                     `5.0001 is not assignable to integer.`

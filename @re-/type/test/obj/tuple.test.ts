@@ -5,7 +5,7 @@ describe("tuple", () => {
     describe("empty", () => {
         const empty = type([])
         it("type", () => {
-            assert(empty.type).typed as []
+            assert(empty.infer).typed as []
         })
         it("validation", () => {
             assert(empty.validate([]).error).is(undefined)
@@ -21,7 +21,7 @@ describe("tuple", () => {
         const shallow = type(["string", "number", 6])
         describe("type", () => {
             it("standard", () => {
-                assert(shallow.type).typed as [string, number, 6]
+                assert(shallow.infer).typed as [string, number, 6]
             })
             describe("errors", () => {
                 it("invalid item definition", () => {
@@ -74,7 +74,7 @@ describe("tuple", () => {
         ])
         describe("type", () => {
             it("handles nested tuples", () => {
-                assert(nested.type).typed as [
+                assert(nested.infer).typed as [
                     "Cuckoo",
                     ["Swallow", "Oriole", "Condor"],
                     []
@@ -82,7 +82,11 @@ describe("tuple", () => {
             })
             it("removes readonly modifier", () => {
                 const readonlyDef = ["true", "false", ["boolean"]] as const
-                assert(type(readonlyDef).type).typed as [true, false, [boolean]]
+                assert(type(readonlyDef).infer).typed as [
+                    true,
+                    false,
+                    [boolean]
+                ]
             })
         })
         describe("validation", () => {

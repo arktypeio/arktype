@@ -1,6 +1,6 @@
 import { type } from "../../src/index.js"
 
-// Models look just like types...
+// Define a type...
 export const user = type({
     age: "number",
     browser: "'chrome'|'firefox'|'other'|null",
@@ -11,17 +11,8 @@ export const user = type({
     }
 })
 
-// And can be used just like types...
-export type User = typeof user.type
-export type EquivalentType = {
-    age: number
-    browser: "chrome" | "firefox" | "other" | null
-    name: {
-        first: string
-        middle?: string
-        last: string
-    }
-}
+// Infer it...
+export type User = typeof user.infer
 
 // But while types are confined to your IDE...
 export const fetchUser = () => {

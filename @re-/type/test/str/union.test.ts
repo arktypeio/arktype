@@ -4,10 +4,10 @@ import { eager, space, type } from "../../src/index.js"
 describe("union", () => {
     describe("type", () => {
         it("two types", () => {
-            assert(type("number|string").type).typed as string | number
+            assert(type("number|string").infer).typed as string | number
         })
         it("several types", () => {
-            assert(type("false|null|undefined|0|''").type).typed as
+            assert(type("false|null|undefined|0|''").infer).typed as
                 | number
                 | false
                 | ""
@@ -126,7 +126,7 @@ g: 4 is not assignable to 3.`)
     describe("integration", () => {
         it("union of literals", () => {
             const unionOfLiterals = type("'yes'|'no'|'maybe'")
-            assert(unionOfLiterals.type).typed as "yes" | "no" | "maybe"
+            assert(unionOfLiterals.infer).typed as "yes" | "no" | "maybe"
             assert(unionOfLiterals.validate("no").error).equals(undefined)
             assert(
                 unionOfLiterals.validate("yes|no|maybe").error?.message
@@ -136,7 +136,7 @@ g: 4 is not assignable to 3.`)
         })
         it("literal of union", () => {
             const literalOfUnion = type('"yes|no|maybe"')
-            assert(literalOfUnion.type).typed as "yes|no|maybe"
+            assert(literalOfUnion.infer).typed as "yes|no|maybe"
             assert(literalOfUnion.validate("yes|no|maybe").error).equals(
                 undefined
             )
@@ -146,7 +146,7 @@ g: 4 is not assignable to 3.`)
         })
         it("union of literals of unions", () => {
             const unionOfLiteralsOfUnions = type("'yes|no'|'true|false'")
-            assert(unionOfLiteralsOfUnions.type).typed as
+            assert(unionOfLiteralsOfUnions.infer).typed as
                 | "yes|no"
                 | "true|false"
             assert(unionOfLiteralsOfUnions.validate("true|false").error).equals(

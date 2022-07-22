@@ -4,13 +4,13 @@ import { type } from "../src/index.js"
 describe("number", () => {
     describe("type", () => {
         it("whole", () => {
-            assert(type(4).type).typed as 4
+            assert(type(4).infer).typed as 4
         })
         it("decimal", () => {
-            assert(type(1.234).type).typed as 1.234
+            assert(type(1.234).infer).typed as 1.234
         })
         it("negative", () => {
-            assert(type(-5.7).type).typed as -5.7
+            assert(type(-5.7).infer).typed as -5.7
         })
     })
     describe("validation", () => {
@@ -62,12 +62,12 @@ describe("bigint", () => {
     describe("type", () => {
         // For now, using type.toString() since SWC is confused by bigint cast like "as -1n"
         it("positive", () => {
-            assert(type(999999999999999n).type).type.toString(
+            assert(type(999999999999999n).infer).type.toString(
                 "999999999999999n"
             )
         })
         it("negative", () => {
-            assert(type(-1n).type).type.toString("-1n")
+            assert(type(-1n).infer).type.toString("-1n")
         })
     })
     describe("validation", () => {
@@ -109,7 +109,7 @@ describe("boolean", () => {
     describe("true", () => {
         const t = type(true)
         it("type", () => {
-            assert(t.type).typed as true
+            assert(t.infer).typed as true
         })
         it("generation", () => {
             assert(t.create()).is(true)
@@ -124,7 +124,7 @@ describe("boolean", () => {
     describe("false", () => {
         const f = type(false)
         it("type", () => {
-            assert(f.type).typed as false
+            assert(f.infer).typed as false
         })
         it("generation", () => {
             assert(f.create()).is(false)
@@ -140,7 +140,7 @@ describe("boolean", () => {
 describe("undefined", () => {
     const u = type(undefined)
     it("type", () => {
-        assert(u.type).typed as undefined
+        assert(u.infer).typed as undefined
     })
     it("generation", () => {
         assert(u.create()).is(undefined)
@@ -155,7 +155,7 @@ describe("undefined", () => {
 describe("null", () => {
     const n = type(null)
     it("type", () => {
-        assert(n.type).typed as null
+        assert(n.infer).typed as null
     })
     it("generation", () => {
         assert(n.create()).is(null)

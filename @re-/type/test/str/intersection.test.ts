@@ -4,14 +4,14 @@ import { eager, type } from "../../src/index.js"
 describe("intersection", () => {
     describe("type", () => {
         it("two types", () => {
-            assert(type("boolean&true").type).typed as true
+            assert(type("boolean&true").infer).typed as true
         })
         it("several types", () => {
-            assert(type("unknown&boolean&false").type).typed as false
+            assert(type("unknown&boolean&false").infer).typed as false
         })
         it("empty intersection", () => {
             // @ts-ignore
-            assert(type("number&string").type).typed as never
+            assert(type("number&string").infer).typed as never
         })
         describe("errors", () => {
             it("bad reference", () => {

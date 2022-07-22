@@ -4,16 +4,16 @@ import { eager, type } from "../../src/index.js"
 describe("bound", () => {
     describe("type", () => {
         it("single-bounded", () => {
-            assert(type("string>5").type).typed as string
+            assert(type("string>5").infer).typed as string
         })
         it("double-bounded", () => {
-            assert(type("-7<=integer<99").type).typed as number
+            assert(type("-7<=integer<99").infer).typed as number
         })
         it("list", () => {
-            assert(type("-7<=unknown[]<99").type).typed as unknown[]
+            assert(type("-7<=unknown[]<99").infer).typed as unknown[]
         })
         it("parenthesized list", () => {
-            assert(type("-7<=(string|number[]|boolean[][])[]<99").type)
+            assert(type("-7<=(string|number[]|boolean[][])[]<99").infer)
                 .typed as (string | number[] | boolean[][])[]
         })
         describe("errors", () => {

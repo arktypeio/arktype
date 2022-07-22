@@ -4,14 +4,14 @@ import { eager, type } from "../../src/index.js"
 describe("optional", () => {
     describe("type", () => {
         it("adds undefined to standalone type", () => {
-            assert(type("string?").type).typed as string | undefined
+            assert(type("string?").infer).typed as string | undefined
         })
         it("adds undefined to in-object type and makes it optional", () => {
             assert(
                 type({
                     required: "boolean",
                     optional: "boolean?"
-                }).type
+                }).infer
             ).typed as {
                 required: boolean
                 optional?: boolean | undefined

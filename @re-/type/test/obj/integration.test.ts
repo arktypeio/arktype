@@ -4,7 +4,7 @@ import { type } from "../../src/index.js"
 describe("integration", () => {
     const mixed = type(["true", { a: ["string", ["number|boolean[]"]] }])
     it("type", () => {
-        assert(mixed.type).typed as [
+        assert(mixed.infer).typed as [
             true,
             {
                 a: [string, [number | boolean[]]]

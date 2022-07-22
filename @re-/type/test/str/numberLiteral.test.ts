@@ -8,15 +8,15 @@ describe("numberLiteral", () => {
     describe("type", () => {
         it("whole", () => {
             // assert(model("4").type).typed as 4
-            assert(type("4").type).typed as number
+            assert(type("4").infer).typed as number
         })
         it("decimal", () => {
             // assert(model("1.234").type).typed as 1.234
-            assert(type("1.234").type).typed as number
+            assert(type("1.234").infer).typed as number
         })
         it("negative", () => {
             // assert(model("-5.7").type).typed as -5.7
-            assert(type("-5.7").type).typed as number
+            assert(type("-5.7").infer).typed as number
         })
         describe("errors", () => {
             it("multiple decimals", () => {

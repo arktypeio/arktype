@@ -8,11 +8,11 @@ describe("bigintLiteral", () => {
          */
         it("positive", () => {
             // assert(model("999999999999999n").type).typed as 999999999999999n
-            assert(type("999999999999999n").type).typed as bigint
+            assert(type("999999999999999n").infer).typed as bigint
         })
         it("negative", () => {
             // assert(model("-1n").type).typed as -1n
-            assert(type("-1n").type).typed as bigint
+            assert(type("-1n").infer).typed as bigint
         })
         describe("errors", () => {
             it("decimal", () => {

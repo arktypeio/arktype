@@ -6,7 +6,7 @@ import { type } from "../src/index.js"
 
 describe("snippets", () => {
     it("model", () => {
-        assert(modelSnippet.user.type).typed as {
+        assert(modelSnippet.user.infer).typed as {
             name: string
             browser: {
                 kind: "chrome" | "firefox" | "safari"
@@ -41,7 +41,7 @@ describe("snippets", () => {
         })
 
         // Subtypes like 'email' and 'integer' become 'string' and 'number'
-        type Employee = typeof employee.type
+        type Employee = typeof employee.infer
 
         // But enforce their original definition during validation
         const { error } = employee.validate({
@@ -51,7 +51,7 @@ describe("snippets", () => {
                 bio: "I am very interesting.".repeat(10)
             }
         })
-        assert(employee.type).typed as {
+        assert(employee.infer).typed as {
             email: string
             about: {
                 age: number

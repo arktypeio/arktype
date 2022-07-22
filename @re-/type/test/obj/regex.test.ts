@@ -4,7 +4,7 @@ import { type } from "../../src/index.js"
 describe("regex", () => {
     const regex = type(/.*@redo\.dev/)
     it("type", () => {
-        assert(regex.type).typed as string
+        assert(regex.infer).typed as string
     })
     it("generation", () => {
         assert(() => regex.create()).throws.snap(

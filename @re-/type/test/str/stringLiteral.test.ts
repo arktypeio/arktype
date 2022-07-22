@@ -4,19 +4,19 @@ import { eager, type } from "../../src/index.js"
 describe("stringLiteral", () => {
     describe("type", () => {
         it("single quotes", () => {
-            assert(type("'hello'").type).typed as "hello"
+            assert(type("'hello'").infer).typed as "hello"
         })
         it("double quotes", () => {
-            assert(type('"goodbye"').type).typed as "goodbye"
+            assert(type('"goodbye"').infer).typed as "goodbye"
         })
         it("single-quoted literal", () => {
-            assert(type(`"'single-quoted'"`).type).typed as "'single-quoted'"
+            assert(type(`"'single-quoted'"`).infer).typed as "'single-quoted'"
         })
         it("double-quoted literal", () => {
-            assert(type(`'"double-quoted"'`).type).typed as '"double-quoted"'
+            assert(type(`'"double-quoted"'`).infer).typed as '"double-quoted"'
         })
         it("with spaces", () => {
-            assert(type("'this has spaces'").type).typed as "this has spaces"
+            assert(type("'this has spaces'").infer).typed as "this has spaces"
         })
         describe("errors", () => {
             it("unclosed quotes", () => {

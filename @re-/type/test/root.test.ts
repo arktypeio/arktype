@@ -13,6 +13,6 @@ describe("root definition", () => {
         )
     })
     it("doesn't try to validate any as a model definition", () => {
-        assert(type({} as any).type).typed as any
+        assert(type({} as any).infer).typed as any
     })
 })

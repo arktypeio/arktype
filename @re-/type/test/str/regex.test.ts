@@ -4,7 +4,7 @@ import { eager, type } from "../../src/index.js"
 describe("regex", () => {
     describe("type", () => {
         it("inferred as string", () => {
-            assert(type("/.*/").type).typed as string
+            assert(type("/.*/").infer).typed as string
         })
         describe("errors", () => {
             it("unterminated", () => {

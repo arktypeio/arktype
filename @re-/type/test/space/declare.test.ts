@@ -14,14 +14,14 @@ describe("multifile", () => {
         assert(space.$meta.types.user).type.toString.snap(
             `{ name: string; groups: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }`
         )
-        assert(space.group.type).type.toString.snap(
+        assert(space.group.infer).type.toString.snap(
             `{ name: string; members: { name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; }[]; }`
         )
-        assert(space.user.type.bestFriend).type.toString.snap(
+        assert(space.user.infer.bestFriend).type.toString.snap(
             `{ name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined`
         )
         assert(
-            space.$meta.model({ foozler: "user", choozler: "group[]" }).type
+            space.$meta.model({ foozler: "user", choozler: "group[]" }).infer
         ).type.toString.snap(
             `{ foozler: { name: string; groups: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }; choozler: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; }`
         )
@@ -38,7 +38,7 @@ describe("multifile", () => {
             "Unable to determine the type of 'whoops'"
         )
         const space = compile(gottaDefineThis)
-        assert(space.$meta.model({ a: "gottaDefineThis" }).type).typed as {
+        assert(space.$meta.model({ a: "gottaDefineThis" }).infer).typed as {
             a: boolean
         }
     })

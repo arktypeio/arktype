@@ -4,10 +4,10 @@ import { eager, type } from "../../src/index.js"
 describe("list", () => {
     describe("type", () => {
         it("basic", () => {
-            assert(type("string[]").type).typed as string[]
+            assert(type("string[]").infer).typed as string[]
         })
         it("two-dimensional", () => {
-            assert(type("number[][]").type).typed as number[][]
+            assert(type("number[][]").infer).typed as number[][]
         })
         describe("errors", () => {
             it("bad item type", () => {

@@ -82,7 +82,7 @@ describe("space", () => {
             // @ts-ignore
             alias: "myType"
         })
-        assert(parseWithAnySpace.type).typed as {
+        assert(parseWithAnySpace.infer).typed as {
             alias: unknown
             literal: string
         }
@@ -93,12 +93,12 @@ describe("space", () => {
         )
     })
     it("doesn't try to validate any as a dictionary member", () => {
-        assert(space({ a: {} as any }).$meta.model(["number", "a"]).type)
+        assert(space({ a: {} as any }).$meta.model(["number", "a"]).infer)
             .typed as [number, any]
     })
     it("model from space", () => {
         const anotherCyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
-        assert(anotherCyclicSpace.$meta.model("a|b|null").type).typed as
+        assert(anotherCyclicSpace.$meta.model("a|b|null").infer).typed as
             | { b: { a: { b: { a: any } } } }
             | { a: { b: { a: { b: any } } } }
             | null
@@ -124,13 +124,13 @@ describe("space", () => {
             a: "a",
             b: "b"
         })
-        assert(cyclicModel.type.a.b.a.cyclic).type.toString.snap(
+        assert(cyclicModel.infer.a.b.a.cyclic).type.toString.snap(
             `{ b: { a: { b: { cyclic?: { a: { b: { a: { cyclic?: { b: { a: { b: any; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined`
         )
-        assert(cyclicModel.type.b.a.b.cyclic).type.toString.snap(
+        assert(cyclicModel.infer.b.a.b.cyclic).type.toString.snap(
             `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
         )
-        assert(cyclicModel.type.a.b.a.cyclic?.b.a.b.cyclic).type.toString.snap(
+        assert(cyclicModel.infer.a.b.a.cyclic?.b.a.b.cyclic).type.toString.snap(
             `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
         )
     })
@@ -151,11 +151,11 @@ describe("space", () => {
                 favoriteSoup: "'borscht'"
             }
         })
-        assert(withOnResolve.type.referencesA.wasResolved).typed as true
-        assert(withOnResolve.type.referencesA.resolvedType.b.wasResolved)
+        assert(withOnResolve.infer.referencesA.wasResolved).typed as true
+        assert(withOnResolve.infer.referencesA.resolvedType.b.wasResolved)
             .typed as true
         // @ts-expect-error
-        assert(withOnResolve.type.noReferences.wasResolved).type.errors(
+        assert(withOnResolve.infer.noReferences.wasResolved).type.errors(
             "Property 'wasResolved' does not exist on type '{ favoriteSoup: \"borscht\"; }'."
         )
     })
