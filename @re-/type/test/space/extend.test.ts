@@ -4,7 +4,7 @@ import { space } from "../../src/index.js"
 describe("extend space", () => {
     it("type", () => {
         const extended = getExtendedSpace()
-        assert(extended.$meta.types).typed as {
+        assert(extended.$meta.infer).typed as {
             user: {
                 age: number
             }

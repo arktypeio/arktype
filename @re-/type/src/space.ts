@@ -43,7 +43,7 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
         this.resolutions = {}
     }
 
-    model(def: unknown, options?: Base.TypeOptions) {
+    type(def: unknown, options?: Base.TypeOptions) {
         const root = Root.parse(
             def,
             Base.Parsing.createContext(deepMerge(this.options, options), this)
@@ -58,7 +58,7 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
         ) as any
     }
 
-    get types() {
+    get infer() {
         return chainableNoOpProxy
     }
 }
@@ -67,6 +67,12 @@ export type CreateSpaceFn = <Dict>(
     dictionary: ValidateDictionary<Dict>,
     options?: SpaceOptions<AliasIn<Dict>>
 ) => SpaceFrom<ValidateDictionary<Dict>>
+
+export const define = <Def>(def: Def, options?: Base.TypeOptions) =>
+    ({
+        $def: def,
+        options
+    } as Def)
 
 export type ValidateDictionary<Dict> = {
     [Alias in keyof Dict]: Alias extends "$meta"
@@ -105,8 +111,8 @@ export type SpaceFrom<Dict> = Evaluate<
 >
 
 export type SpaceMetaFrom<Dict> = {
-    types: DictToTypes<Dict>
-    model: TypeFunction<Dict>
+    infer: DictToTypes<Dict>
+    type: TypeFunction<Dict>
     extend: ExtendFunction<Dict>
     dictionary: Dict
     options: SpaceOptions<AliasIn<Dict>> | undefined

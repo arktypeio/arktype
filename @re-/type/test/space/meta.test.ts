@@ -12,7 +12,7 @@ describe("meta", () => {
             a: { b: "b", isA: "true", isB: "false" },
             b: { a: "a", isA: "false", isB: "true" }
         })
-        const cyclicModel = models.$meta.model({
+        const cyclicModel = models.$meta.type({
             a: "a",
             b: "b"
         })
@@ -37,7 +37,7 @@ describe("meta", () => {
             a: { b: "b", isA: "true", isB: "false" },
             b: { a: "a", isA: "false", isB: "true" }
         })
-        const withOnResolve = models.$meta.model({
+        const withOnResolve = models.$meta.type({
             referencesA: "a",
             noReferences: {
                 favoriteSoup: "'borscht'"
@@ -54,7 +54,7 @@ describe("meta", () => {
     it("allows non-meta references within meta", () => {
         assert(
             space({ $meta: { onCycle: "s" }, a: { a: "a" }, s: "string" }).$meta
-                .types
+                .infer
         ).typed as {
             a: {
                 a: string

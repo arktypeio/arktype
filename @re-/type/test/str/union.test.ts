@@ -101,12 +101,12 @@ g: 4 is not assignable to 3.`)
                 duck: "'duck'",
                 nested: {}
             })
-            assert(mySpace.$meta.model("nested|five|duck").create()).is(5)
-            assert(mySpace.$meta.model("duck|nested").create()).is("duck")
+            assert(mySpace.$meta.type("nested|five|duck").create()).is(5)
+            assert(mySpace.$meta.type("duck|nested").create()).is("duck")
         })
         it("creates onCycle values if needed", () => {
             const models = space({ a: { b: "b" }, b: { a: "a" } })
-            const aOrB = models.$meta.model("a|b")
+            const aOrB = models.$meta.type("a|b")
             const created = aOrB.create({ onRequiredCycle: "cycle" })
             assert(created).value.equals({
                 b: { a: "cycle" }
@@ -118,7 +118,7 @@ g: 4 is not assignable to 3.`)
                 b: { a: "a" },
                 safe: "false"
             })
-            const aOrBOrSafe = models.$meta.model("a|b|safe")
+            const aOrBOrSafe = models.$meta.type("a|b|safe")
             const created = aOrBOrSafe.create()
             assert(created).value.equals(false)
         })

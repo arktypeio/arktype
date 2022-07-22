@@ -55,7 +55,7 @@ describe("references", () => {
         })
         it("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
-                .$meta.model(
+                .$meta.type(
                     "user[]|group[]|boolean&true|(integer>0)|null|1<number<2"
                 )
                 .references()
