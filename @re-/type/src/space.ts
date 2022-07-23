@@ -69,7 +69,7 @@ export type CreateSpaceFn = <Dict, Meta>(
 /**
  * Although this function claims to return Def, it actually returns an object
  * with a nested "$def" key containing the definition alongside any options
- * passed in an "options" key (or undefined if no options were passed).
+ * passed in an "$opts" key (or undefined if no options were passed).
  *
  * This allows users to provide alias-specific options without interfering
  * with type inference.
@@ -77,7 +77,7 @@ export type CreateSpaceFn = <Dict, Meta>(
 export const def = <Def>(def: Def, options: Base.TypeOptions) =>
     ({
         $def: def,
-        options
+        $opts: options
     } as Def)
 
 export type DefWithOptions = {
@@ -86,10 +86,10 @@ export type DefWithOptions = {
 }
 
 export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
-    if (def?.$def !== undefined) {
+    if (def.$def !== undefined) {
         return {
             def: def.$def,
-            options: def.options
+            options: def.$opts
         }
     }
     return {
