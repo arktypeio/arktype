@@ -12,8 +12,8 @@ export namespace Parsing {
     export type Parser<DefType = unknown> = (def: DefType, ctx: Context) => Node
 
     export type InferenceContext = {
-        dict: unknown
-        meta: unknown
+        dict: SpaceDictionary
+        meta: MetaDefinitions
         seen: Record<string, true>
     }
 

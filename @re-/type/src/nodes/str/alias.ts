@@ -12,7 +12,7 @@ export namespace Alias {
         Def extends "$resolution" ? false : true
     > extends true
         ? Root.TypeOf<
-              Get<Ctx["meta"], "onResolve">,
+              Ctx["meta"]["onResolve"],
               {
                   dict: WithPropValue<
                       Ctx["dict"],
@@ -28,7 +28,7 @@ export namespace Alias {
               Def extends keyof Ctx["seen"] ? true : false
           > extends true
         ? Root.TypeOf<
-              Get<Ctx["meta"], "onCycle">,
+              Ctx["meta"]["onCycle"],
               {
                   dict: WithPropValue<Ctx["dict"], "$cyclic", Ctx["dict"][Def]>
                   meta: Ctx["meta"]

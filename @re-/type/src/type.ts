@@ -147,6 +147,7 @@ export type ReferencesFunction<Def, Dict> = <
 
 export type TypeOf<Def, Dict = {}, Meta = {}> = Root.TypeOf<
     Def,
+    // @ts-expect-error
     { dict: Dict; meta: Meta; seen: {} }
 >
 

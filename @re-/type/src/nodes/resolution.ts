@@ -39,6 +39,7 @@ export namespace Resolution {
         ? unknown
         : Root.TypeOf<
               Dict[Alias],
+              // @ts-expect-error
               { dict: Dict; meta: Meta; seen: { [K in Alias]: true } }
           >
 
