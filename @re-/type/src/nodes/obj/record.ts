@@ -8,18 +8,16 @@ export namespace Record {
 
     export type TypeOf<
         Def,
-        Dict,
-        Meta,
-        Seen,
+        Ctx extends Base.Parsing.InferenceContext,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
         }[keyof Def],
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            -readonly [K in RequiredKey]: Root.TypeOf<Def[K], Dict, Meta, Seen>
+            -readonly [K in RequiredKey]: Root.TypeOf<Def[K], Ctx>
         } & {
-            -readonly [K in OptionalKey]?: Root.TypeOf<Def[K], Dict, Meta, Seen>
+            -readonly [K in OptionalKey]?: Root.TypeOf<Def[K], Ctx>
         }
     >
 

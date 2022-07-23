@@ -1,4 +1,8 @@
-import type { SpaceMeta } from "../../../space.js"
+import type {
+    MetaDefinitions,
+    SpaceDictionary,
+    SpaceMeta
+} from "../../../space.js"
 import type { Node as AbstractNode } from "../kinds/node.js"
 import { defToString, stringifyPathContext, TypeOptions } from "../utils.js"
 
@@ -6,6 +10,12 @@ export namespace Parsing {
     export type Node<DefType = unknown> = AbstractNode<DefType>
 
     export type Parser<DefType = unknown> = (def: DefType, ctx: Context) => Node
+
+    export type InferenceContext = {
+        dict: unknown
+        meta: unknown
+        seen: Record<string, true>
+    }
 
     /** Maps aliases to their definitions or to nodes parsed from their definitions */
     export type ResolutionMap = Record<string, unknown>

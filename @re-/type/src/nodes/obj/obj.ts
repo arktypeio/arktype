@@ -13,13 +13,14 @@ export namespace Obj {
         [K in keyof Def]: Root.Validate<Def[K], Dict>
     }
 
-    export type TypeOf<Def, Dict, Meta, Seen> = Def extends
-        | unknown[]
-        | readonly unknown[]
+    export type TypeOf<
+        Def,
+        Ctx extends Base.Parsing.InferenceContext
+    > = Def extends unknown[] | readonly unknown[]
         ? Evaluate<{
-              -readonly [I in keyof Def]: Root.TypeOf<Def[I], Dict, Meta, Seen>
+              -readonly [I in keyof Def]: Root.TypeOf<Def[I], Ctx>
           }>
-        : Record.TypeOf<Def, Dict, Meta, Seen>
+        : Record.TypeOf<Def, Ctx>
 
     export type References<
         Def extends object,

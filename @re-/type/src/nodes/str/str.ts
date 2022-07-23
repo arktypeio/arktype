@@ -52,26 +52,24 @@ export namespace Str {
         ? Message
         : Def
 
-    export type TypeOf<Def extends string, Dict, Meta, Seen> = TypeOfTree<
-        Parse<Def, Dict>,
-        Dict,
-        Meta,
-        Seen
-    >
+    export type TypeOf<
+        Def extends string,
+        Ctx extends Base.Parsing.InferenceContext
+    > = TypeOfTree<Parse<Def, Ctx["dict"]>, Ctx>
 
-    type TypeOfTree<Tree, Dict, Meta, Seen> = Tree extends string
-        ? TypeOfTerminal<Tree, Dict, Meta, Seen>
+    type TypeOfTree<
+        Tree,
+        Ctx extends Base.Parsing.InferenceContext
+    > = Tree extends string
+        ? TypeOfTerminal<Tree, Ctx>
         : Tree extends [infer Next, "?"]
-        ? TypeOfTree<Next, Dict, Meta, Seen> | undefined
+        ? TypeOfTree<Next, Ctx> | undefined
         : Tree extends [infer Next, "[]"]
-        ? TypeOfTree<Next, Dict, Meta, Seen>[]
+        ? TypeOfTree<Next, Ctx>[]
         : Tree extends [infer Left, "|", infer Right]
-        ?
-              | TypeOfTree<Left, Dict, Meta, Seen>
-              | TypeOfTree<Right, Dict, Meta, Seen>
+        ? TypeOfTree<Left, Ctx> | TypeOfTree<Right, Ctx>
         : Tree extends [infer Left, "&", infer Right]
-        ? TypeOfTree<Left, Dict, Meta, Seen> &
-              TypeOfTree<Right, Dict, Meta, Seen>
+        ? TypeOfTree<Left, Ctx> & TypeOfTree<Right, Ctx>
         : unknown
 
     export type References<Def extends string, Dict> = LeavesOf<
@@ -484,13 +482,11 @@ export namespace Str {
 
     type TypeOfTerminal<
         Token extends string,
-        Dict,
-        Meta,
-        Seen
+        Ctx extends Base.Parsing.InferenceContext
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
-        : Token extends keyof Dict
-        ? Alias.TypeOf<Token, Dict, Meta, Seen>
+        : Token extends keyof Ctx["dict"]
+        ? Alias.TypeOf<Token, Ctx>
         : Token extends `'${infer Value}'`
         ? Value
         : Token extends `"${infer Value}"`

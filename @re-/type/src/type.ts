@@ -145,9 +145,12 @@ export type ReferencesFunction<Def, Dict> = <
       >
     : []
 
-export type TypeOf<Def, Dict, Meta> = Root.TypeOf<Def, Dict, Meta, {}>
+export type TypeOf<Def, Dict = {}, Meta = {}> = Root.TypeOf<
+    Def,
+    { dict: Dict; meta: Meta; seen: {} }
+>
 
-export type Validate<Def, Dict> = Root.Validate<Def, Dict>
+export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>
 
 export type References<
     Def,
