@@ -18,7 +18,7 @@ describe("snippets", () => {
         )
     })
     it("space", () => {
-        assert(spaceSnippet.redo.$meta.infer.package).type.toString.snap(
+        assert(spaceSnippet.redo.$root.infer.package).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
         assert(spaceSnippet.getValidatedPackageData).throws

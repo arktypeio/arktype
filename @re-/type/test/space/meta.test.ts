@@ -17,7 +17,7 @@ describe("meta", () => {
                 }
             }
         )
-        const cyclicModel = models.$meta.type({
+        const cyclicModel = models.$root.type({
             a: "a",
             b: "b"
         })
@@ -46,7 +46,7 @@ describe("meta", () => {
                 }
             }
         )
-        const withOnResolve = models.$meta.type({
+        const withOnResolve = models.$root.type({
             referencesA: "a",
             noReferences: {
                 favoriteSoup: "'borscht'"
@@ -63,7 +63,7 @@ describe("meta", () => {
     it("allows non-meta references within meta", () => {
         assert(
             space({ a: { a: "a" }, s: "string" }, { parse: { onCycle: "s" } })
-                .$meta.infer
+                .$root.infer
         ).typed as {
             a: {
                 a: string

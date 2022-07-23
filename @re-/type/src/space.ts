@@ -13,17 +13,17 @@ import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
 export const space: CreateSpaceFn = (dictionary, options) =>
     rawSpace(dictionary, options) as any
 
-export type RawSpace = Record<string, any> & { $meta: SpaceMeta }
+export type RawSpace = Record<string, any> & { $root: SpaceMeta }
 
-// TODO: Update dict extension meta to not deepmerge
+// TODO: Update dict extension meta to not deepmerge, fix extension meta.
 export const rawSpace = (
     dictionary: SpaceDictionary,
     options: SpaceOptions = {}
 ) => {
     const meta = new SpaceMeta(dictionary, options)
-    const compiled: Record<string, any> = { $meta: meta }
+    const compiled: Record<string, any> = { $root: meta }
     for (const alias of Object.keys(dictionary)) {
-        if (alias === "$meta") {
+        if (alias === "$root") {
             continue
         }
         compiled[alias] = new Type(new Resolution.Node(alias, meta, []))
@@ -102,6 +102,7 @@ export type ValidateDictionary<Dict> = {
     [Alias in keyof Dict]: Resolution.Validate<Alias, Dict>
 }
 
+// TODO: Implement runtime equivalent for these
 type MetaDefs<Dict, Meta> = {
     onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "any" }>
     onResolve?: Root.Validate<
@@ -120,7 +121,7 @@ export type SpaceDictionary = Record<string, unknown>
 
 export type SpaceFrom<Dict, Meta> = Evaluate<
     DictionaryToTypes<Dict, Meta> & {
-        $meta: SpaceMetaFrom<Dict, Meta>
+        $root: SpaceMetaFrom<Dict, Meta>
     }
 >
 

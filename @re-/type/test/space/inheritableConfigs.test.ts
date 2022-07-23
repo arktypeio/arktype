@@ -70,7 +70,7 @@ describe("inheritable configs", () => {
                     generate: { onRequiredCycle: "space" }
                 }
             )
-            const doll = nesting.$meta.type("doll", {
+            const doll = nesting.$root.type("doll", {
                 generate: { onRequiredCycle: "type" }
             })
             // When all four are provided, the options provided to the call win
@@ -78,7 +78,7 @@ describe("inheritable configs", () => {
                 doll.create({ onRequiredCycle: "create" }).contents
             ).value.equals("create")
             // When no args are provided, options def config wins
-            assert(nesting.$meta.type("doll").create().contents).value.equals(
+            assert(nesting.$root.type("doll").create().contents).value.equals(
                 "def"
             )
             // When no type-specific config is provided, space config applies
@@ -91,7 +91,7 @@ describe("inheritable configs", () => {
             // When there is no other config, create options will apply
             assert(
                 space({ doll: { contents: "doll" } })
-                    .$meta.type("doll", {
+                    .$root.type("doll", {
                         generate: { onRequiredCycle: "create" }
                     })
                     .create().contents

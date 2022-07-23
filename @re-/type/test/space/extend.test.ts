@@ -4,7 +4,7 @@ import { def, space } from "../../src/index.js"
 describe("extend space", () => {
     it("type", () => {
         const extended = getExtendedSpace()
-        assert(extended.$meta.infer).typed as {
+        assert(extended.$root.infer).typed as {
             user: {
                 first: string
                 last: string
@@ -31,7 +31,7 @@ describe("extend space", () => {
     })
     it("dictionary", () => {
         const extended = getExtendedSpace()
-        assert(extended.$meta.dictionary).snap({
+        assert(extended.$root.dictionary).snap({
             $meta: { onCycle: `boolean` },
             user: { first: `string`, last: `string` },
             group: {
@@ -48,7 +48,7 @@ describe("extend space", () => {
     })
     it("options", () => {
         const extended = getExtendedSpace()
-        assert(extended.$meta.options).snap({
+        assert(extended.$root.options).snap({
             validate: {
                 ignoreExtraneousKeys: false,
                 // @ts-expect-error (can't serialize function)
@@ -78,7 +78,7 @@ const getExtendedSpace = () => {
             validate: { ignoreExtraneousKeys: true, validator: () => undefined }
         }
     )
-    const extended = mySpace.$meta.extend(
+    const extended = mySpace.$root.extend(
         {
             $meta: {
                 onCycle: "boolean"

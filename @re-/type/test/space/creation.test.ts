@@ -14,7 +14,7 @@ describe("creation", () => {
                     type: "string"
                 },
                 fruit: "banana|apple"
-            }).$meta.type({
+            }).$root.type({
                 fruits: "fruit[]",
                 bestBanana: "banana",
                 bestApple: "apple",
@@ -36,7 +36,7 @@ describe("creation", () => {
                 b: { c: "c?" },
                 c: "a|b"
             })
-                .$meta.type("a")
+                .$root.type("a")
                 .create()
         ).equals({ b: {} })
     })
@@ -46,10 +46,10 @@ describe("creation", () => {
             b: { c: "c" },
             c: "a|b"
         })
-        assert(() => cyclicSpace.$meta.type("a").create()).throws.snap(
+        assert(() => cyclicSpace.$root.type("a").create()).throws.snap(
             `Error: Unable to generate a value for 'a|b': None of the definitions can be generated.`
         )
-        assert(() => cyclicSpace.$meta.type("a").create({ verbose: true }))
+        assert(() => cyclicSpace.$root.type("a").create({ verbose: true }))
             .throws
             .snap(`Error: Unable to generate a value for 'a|b': None of the definitions can be generated:
 Unable to generate a value for 'a': Definition includes a required cycle:
@@ -66,7 +66,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                 b: { c: "c" },
                 c: "a|b"
             })
-                .$meta.type("a")
+                .$root.type("a")
                 .create({ onRequiredCycle: { whoops: ["cycle"] } })
         ).value.equals({
             b: { c: { whoops: ["cycle"] } }
@@ -78,7 +78,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                 a: { b: "b" },
                 b: { a: "a" }
             })
-                .$meta.type("a|b")
+                .$root.type("a|b")
                 .create({ onRequiredCycle: "cycle" })
         ).value.equals({ b: { a: "cycle" } })
     })
@@ -86,7 +86,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
         const defaultValue = space({
             group: { name: "string", description: "string?" }
         })
-            .$meta.type({
+            .$root.type({
                 requiredGroup: "group",
                 requiredGroups: "group[]",
                 optionalGroup: "group?",
