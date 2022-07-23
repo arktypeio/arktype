@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { CustomValidator, space, type } from "../../src/index.js"
+import { CustomValidator, def, space, type } from "../../src/index.js"
 
 describe("custom validators", () => {
     const validator: CustomValidator = ({ value }) => {
@@ -23,26 +23,19 @@ describe("custom validators", () => {
         })
     })
     it("model root", () => {
-        const mySpace = space(
-            { palindrome: "string" },
-            { models: { palindrome: { validate: { validator } } } }
-        )
+        const mySpace = space({
+            palindrome: def("string", { validate: { validator } })
+        })
         assert(mySpace.palindrome.validate("redivider").error).is(undefined)
         assert(mySpace.palindrome.validate("predivider").error?.message).is(
             `predivider is not a palindrome!`
         )
     })
     it("model nested", () => {
-        const mySpace = space(
-            { palindrome: "string", yourPal: { name: "palindrome" } },
-            {
-                models: {
-                    palindrome: {
-                        validate: { validator }
-                    }
-                }
-            }
-        )
+        const mySpace = space({
+            palindrome: def("string", { validate: { validator } }),
+            yourPal: { name: "palindrome" }
+        })
         assert(mySpace.yourPal.validate({ name: "bob" }).error).is(undefined)
         assert(mySpace.yourPal.validate({ name: "rob" }).error?.message).snap(
             `At path name, rob is not a palindrome!`
