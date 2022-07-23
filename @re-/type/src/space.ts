@@ -74,7 +74,7 @@ export type CreateSpaceFn = <Dict, Meta>(
  * This allows users to provide alias-specific options without interfering
  * with type inference.
  */
-export const def = <Def>(def: Def, options: Base.TypeOptions) =>
+export const def = <Def>(def: Def, options?: Base.TypeOptions) =>
     ({
         $def: def,
         $opts: options

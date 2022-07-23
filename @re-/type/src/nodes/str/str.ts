@@ -256,8 +256,9 @@ export namespace Str {
         }>
     }
 
-    type ParseDefinition<Def extends string, Dict> = State.Finalize<
-        ShiftDefinition<Def, Dict>
+    type ParseDefinition<Def extends string, Dict> = ShiftDefinition<
+        Def,
+        Dict
     >["expression"]
 
     type ShiftDefinition<Def extends string, Dict> = ShiftExpression<
@@ -278,7 +279,11 @@ export namespace Str {
         S extends State.State,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-        ? Lookahead extends BranchingOperatorToken
+        ? Lookahead extends "?"
+            ? Unscanned extends []
+                ? State.PushTransform<State.Finalize<S>, "?", []>
+                : State.Error<`Modifier '?' is only valid at the end of a definition.`>
+            : Lookahead extends BranchingOperatorToken
             ? ShiftBranches<
                   ShiftBranch<
                       State.PushBranchingToken<S, Lookahead, Unscanned>,
@@ -289,7 +294,7 @@ export namespace Str {
             : Lookahead extends ")"
             ? State.CloseGroup<S, Unscanned>
             : State.Error<`Unexpected branch token ${Lookahead}.`>
-        : S
+        : State.Finalize<S>
 
     type ShiftBranch<S extends State.State, Dict> = ShiftOperators<
         ShiftBase<S, Dict>,
@@ -358,11 +363,7 @@ export namespace Str {
         S extends State.State,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-        ? Lookahead extends "?"
-            ? Unscanned extends []
-                ? State.PushTransform<S, "?", Unscanned>
-                : State.Error<`Modifier '?' is only valid at the end of a definition.`>
-            : Lookahead extends "["
+        ? Lookahead extends "["
             ? ShiftOperators<ShiftListToken<State.ScanTo<S, Unscanned>>, Dict>
             : Lookahead extends BranchTerminatingChar
             ? S
@@ -455,7 +456,7 @@ export namespace Str {
 
     type BranchTerminatingChar = "|" | "&" | ExpressionTerminatingChar
 
-    type ExpressionTerminatingChar = ")"
+    type ExpressionTerminatingChar = ")" | "?"
 
     /** These tokens complete the current expression and start parsing a new expression from RemainingTokens.
      *

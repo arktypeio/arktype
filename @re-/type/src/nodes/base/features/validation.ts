@@ -164,7 +164,8 @@ export namespace Validation {
                 let aggregatedMessage =
                     "Encountered errors at the following paths:\n"
                 for (const [path, message] of entries) {
-                    aggregatedMessage += `  ${path}: ${message}\n`
+                    // Display root path (which is internally an empty string) as "/"
+                    aggregatedMessage += `  ${path || "/"}: ${message}\n`
                 }
                 return aggregatedMessage
             }
