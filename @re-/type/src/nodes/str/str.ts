@@ -53,22 +53,26 @@ export namespace Str {
         ? Message
         : Def
 
-    export type TypeOf<Def extends string, Dict, Seen> = TypeOfTree<
+    export type TypeOf<Def extends string, Dict, Meta, Seen> = TypeOfTree<
         Parse<Def, Dict>,
         Dict,
+        Meta,
         Seen
     >
 
-    type TypeOfTree<Tree, Dict, Seen> = Tree extends string
-        ? TypeOfTerminal<Tree, Dict, Seen>
+    type TypeOfTree<Tree, Dict, Meta, Seen> = Tree extends string
+        ? TypeOfTerminal<Tree, Dict, Meta, Seen>
         : Tree extends [infer Next, "?"]
-        ? TypeOfTree<Next, Dict, Seen> | undefined
+        ? TypeOfTree<Next, Dict, Meta, Seen> | undefined
         : Tree extends [infer Next, "[]"]
-        ? TypeOfTree<Next, Dict, Seen>[]
+        ? TypeOfTree<Next, Dict, Meta, Seen>[]
         : Tree extends [infer Left, "|", infer Right]
-        ? TypeOfTree<Left, Dict, Seen> | TypeOfTree<Right, Dict, Seen>
+        ?
+              | TypeOfTree<Left, Dict, Meta, Seen>
+              | TypeOfTree<Right, Dict, Meta, Seen>
         : Tree extends [infer Left, "&", infer Right]
-        ? TypeOfTree<Left, Dict, Seen> & TypeOfTree<Right, Dict, Seen>
+        ? TypeOfTree<Left, Dict, Meta, Seen> &
+              TypeOfTree<Right, Dict, Meta, Seen>
         : unknown
 
     export type References<Def extends string, Dict> = LeavesOf<
@@ -482,11 +486,12 @@ export namespace Str {
     type TypeOfTerminal<
         Token extends string,
         Dict,
+        Meta,
         Seen
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
         : Token extends AliasIn<Dict>
-        ? Alias.TypeOf<Token, Dict, Seen>
+        ? Alias.TypeOf<Token, Dict, Meta, Seen>
         : Token extends `'${infer Value}'`
         ? Value
         : Token extends `"${infer Value}"`

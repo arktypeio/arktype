@@ -24,10 +24,10 @@ export const eager: TypeFunction = (definition, options = {}) => {
     return type(definition, options) as any
 }
 
-export type TypeFunction<Dict = {}> = <Def>(
+export type TypeFunction<Dict = {}, Meta = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
     options?: Base.TypeOptions
-) => TypeFrom<Def, Dict, TypeOf<Def, Dict>>
+) => TypeFrom<Def, Dict, TypeOf<Def, Dict, Meta>>
 
 export type TypeFrom<Def, Dict, TypeOf> = Evaluate<{
     definition: Def
@@ -145,7 +145,7 @@ export type ReferencesFunction<Def, Dict> = <
       >
     : []
 
-export type TypeOf<Def, Dict> = Root.TypeOf<Def, Dict, {}>
+export type TypeOf<Def, Dict, Meta> = Root.TypeOf<Def, Dict, Meta, {}>
 
 export type Validate<Def, Dict> = Root.Validate<Def, Dict>
 

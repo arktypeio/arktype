@@ -33,10 +33,11 @@ export namespace Resolution {
 
     export type TypeOf<
         Alias extends AliasIn<Dict>,
-        Dict
+        Dict,
+        Meta
     > = Dict[Alias] extends Base.Parsing.ErrorMessage
         ? unknown
-        : Root.TypeOf<Dict[Alias], Dict, { [K in Alias]: true }>
+        : Root.TypeOf<Dict[Alias], Dict, Meta, { [K in Alias]: true }>
 
     export class Node extends Base.Link<string> {
         resolvedDef: unknown

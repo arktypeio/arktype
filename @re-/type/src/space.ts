@@ -15,6 +15,7 @@ export const space: CreateSpaceFn = (dictionary, options) =>
 
 export type RawSpace = Record<string, any> & { $meta: SpaceMeta }
 
+// TODO: Update dict extension meta to not deepmerge
 export const rawSpace = (
     dictionary: SpaceDictionary,
     options: SpaceOptions = {}
@@ -30,7 +31,7 @@ export const rawSpace = (
     return compiled as RawSpace
 }
 
-export class SpaceMeta implements SpaceMetaFrom<unknown> {
+export class SpaceMeta implements SpaceMetaFrom<unknown, unknown> {
     resolutions: Record<string, Resolution.Node>
 
     constructor(
@@ -60,10 +61,10 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
     }
 }
 
-export type CreateSpaceFn = <Dict>(
+export type CreateSpaceFn = <Dict, Meta>(
     dictionary: ValidateDictionary<Dict>,
-    options?: SpaceOptions
-) => SpaceFrom<ValidateDictionary<Dict>>
+    options?: ValidateSpaceOptions<Dict, Meta>
+) => SpaceFrom<ValidateDictionary<Dict>, Meta>
 
 /**
  * Although this function claims to return Def, it actually returns an object
@@ -98,53 +99,52 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 }
 
 export type ValidateDictionary<Dict> = {
-    [Alias in keyof Dict]: Alias extends "$meta"
-        ? ValidateDictionaryMeta<Dict[Alias], Dict>
-        : Resolution.Validate<Alias, Dict>
+    [Alias in keyof Dict]: Resolution.Validate<Alias, Dict>
+    //  Alias extends "$meta"
+    //     ? ValidateDictionaryMeta<Dict[Alias], Dict>
+    //     : Resolution.Validate<Alias, Dict>
 }
 
-type ValidateDictionaryMeta<Meta, Dict> = Conform<
-    Meta,
-    {
-        onCycle?: Root.Validate<
-            Get<Meta, "onCycle">,
-            Dict & { $cyclic: "unknown" }
-        >
-        onResolve?: Root.Validate<
-            Get<Meta, "onResolve">,
-            Dict & { $resolution: "unknown" }
-        >
-    }
->
+type MetaDefs<Dict, Meta> = {
+    onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "unknown" }>
+    onResolve?: Root.Validate<
+        Get<Meta, "onResolve">,
+        Dict & { $resolution: "unknown" }
+    >
+}
+
+type ValidateSpaceOptions<Dict, Meta> = {
+    meta?: Conform<Meta, MetaDefs<Dict, Meta>>
+} & Base.TypeOptions
 
 export type SpaceOptions = Base.TypeOptions
 
 export type SpaceDictionary = Record<string, unknown>
 
-export type SpaceFrom<Dict> = Evaluate<
-    DictionaryToTypes<Dict> & {
-        $meta: SpaceMetaFrom<Dict>
+export type SpaceFrom<Dict, Meta> = Evaluate<
+    DictionaryToTypes<Dict, Meta> & {
+        $meta: SpaceMetaFrom<Dict, Meta>
     }
 >
 
-export type SpaceMetaFrom<Dict> = {
-    infer: DictToTypes<Dict>
-    type: TypeFunction<Dict>
+export type SpaceMetaFrom<Dict, Meta> = {
+    infer: DictToTypes<Dict, Meta>
+    type: TypeFunction<Dict, Meta>
     extend: ExtendFunction<Dict>
     dictionary: Dict
     options: SpaceOptions
 }
 
-export type DictionaryToTypes<Dict> = Evaluate<{
+export type DictionaryToTypes<Dict, Meta> = Evaluate<{
     [Alias in AliasIn<Dict>]: TypeFrom<
         Dict[Alias],
         Dict,
-        Resolution.TypeOf<Alias, Dict>
+        Resolution.TypeOf<Alias, Dict, Meta>
     >
 }>
 
-export type DictToTypes<Dict> = Evaluate<{
-    [Alias in AliasIn<Dict>]: Resolution.TypeOf<Alias, Dict>
+export type DictToTypes<Dict, Meta> = Evaluate<{
+    [Alias in AliasIn<Dict>]: Resolution.TypeOf<Alias, Dict, Meta>
 }>
 
 export type MetaDefinitions = {
@@ -157,7 +157,7 @@ export type AliasIn<Dict> = Extract<Exclude<keyof Dict, "$meta">, string>
 export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
     options?: SpaceOptions
-) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
+) => SpaceFrom<Merge<BaseDict, ExtensionDict>, {}>
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
     [TypeName in keyof ExtensionDict]: Validate<

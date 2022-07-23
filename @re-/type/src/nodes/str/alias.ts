@@ -3,28 +3,28 @@ import { Resolution } from "../resolution.js"
 import { Root } from "../root.js"
 import { Base } from "./base.js"
 
-type GetMetaDefinitions<Dict> = "$meta" extends keyof Dict ? Dict["$meta"] : {}
-
 export namespace Alias {
-    export type TypeOf<Def extends keyof Dict, Dict, Seen> = And<
-        "onResolve" extends keyof GetMetaDefinitions<Dict> ? true : false,
+    export type TypeOf<Def extends keyof Dict, Dict, Meta, Seen> = And<
+        "onResolve" extends keyof Meta ? true : false,
         Def extends "$resolution" ? false : true
     > extends true
         ? Root.TypeOf<
-              Get<GetMetaDefinitions<Dict>, "onResolve">,
+              Get<Meta, "onResolve">,
               WithPropValue<Dict, "$resolution", Dict[Def]>,
+              Meta,
               Seen & { [K in Def]: true }
           >
         : And<
-              "onCycle" extends keyof GetMetaDefinitions<Dict> ? true : false,
+              "onCycle" extends keyof Meta ? true : false,
               Def extends keyof Seen ? true : false
           > extends true
         ? Root.TypeOf<
-              Get<GetMetaDefinitions<Dict>, "onCycle">,
+              Get<Meta, "onCycle">,
               WithPropValue<Dict, "$cyclic", Dict[Def]>,
+              Meta,
               {}
           >
-        : Root.TypeOf<Dict[Def], Dict, Seen & { [K in Def]: true }>
+        : Root.TypeOf<Dict[Def], Dict, Meta, Seen & { [K in Def]: true }>
 
     export const matches = (def: string, ctx: Base.Parsing.Context) =>
         !!ctx.space && def in ctx.space.dictionary

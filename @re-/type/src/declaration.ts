@@ -10,7 +10,6 @@ import {
 import {
     rawSpace,
     SpaceFrom,
-    SpaceMeta,
     SpaceOptions,
     ValidateDictionary
 } from "./space.js"
@@ -98,7 +97,7 @@ export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
 >(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
     options?: SpaceOptions
-) => SpaceFrom<Dict>
+) => SpaceFrom<Dict, {}>
 
 export class DeclarationError extends Error {
     constructor(discrepancies: NonNullable<SetChange<string>>) {

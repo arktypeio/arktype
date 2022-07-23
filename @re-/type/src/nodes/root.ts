@@ -15,15 +15,15 @@ export namespace Root {
         ? Def
         : Obj.Validate<Def, Dict>
 
-    export type TypeOf<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
+    export type TypeOf<Def, Dict, Meta, Seen> = IsAnyOrUnknown<Def> extends true
         ? Def
         : Def extends string
-        ? Str.TypeOf<Def, Dict, Seen>
+        ? Str.TypeOf<Def, Dict, Meta, Seen>
         : Def extends BadDefinitionType
         ? unknown
         : Def extends Literal.Definition
         ? Def
-        : Obj.TypeOf<Def, Dict, Seen>
+        : Obj.TypeOf<Def, Dict, Meta, Seen>
 
     export type References<
         Def,
