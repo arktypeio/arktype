@@ -1,6 +1,6 @@
 import { Entry } from "@re-/tools"
 import { Base } from "./base.js"
-import { EmbeddedNumber } from "./embedded.js"
+import { NumberLiteral } from "./literal.js"
 import { Str } from "./str.js"
 
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
@@ -42,10 +42,10 @@ export namespace Bound {
     export const matches = (def: string): def is Definition => matcher.test(def)
 
     const valueFromBoundPart = (part: string) => {
-        if (!EmbeddedNumber.matches(part)) {
+        if (!NumberLiteral.matches(part)) {
             throw new Error(invalidBoundError(part))
         }
-        return EmbeddedNumber.valueFrom(part)
+        return NumberLiteral.valueFrom(part)
     }
 
     export type BoundEntry = Entry<ComparatorToken, number>

@@ -65,10 +65,6 @@ bench("validate regex", () => {
     type(/.*/).validate("test")
 }).median(`135.00ns`)
 
-bench("validate literal", () => {
-    type(7).validate(7)
-}).median(`119.00ns`)
-
 bench("parse union", () => {
     type("string|number", { parse: { eager: true } })
 }).median(`573.00ns`)

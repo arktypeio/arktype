@@ -2,12 +2,16 @@ import { ListChars } from "@re-/tools"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"
-import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"
 import { Keyword } from "./keyword/keyword.js"
 import { List } from "./list.js"
+import {
+    BigintLiteral,
+    NumberLiteral,
+    RegexLiteral,
+    StringLiteral
+} from "./literal.js"
 import { Optional } from "./optional.js"
-import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 
 export namespace Str {
@@ -337,7 +341,7 @@ export namespace Str {
         Dict
     > = IsResolvableName<Token, Dict> extends true
         ? State.PushBase<S, Token, S["unscanned"]>
-        : Token extends EmbeddedNumber.Definition | EmbeddedBigInt.Definition
+        : Token extends NumberLiteral.Definition | BigintLiteral.Definition
         ? State.PushBase<S, Token, S["unscanned"]>
         : Token extends ""
         ? MissingExpressionError<S>
@@ -404,7 +408,7 @@ export namespace Str {
           >
         : S["branchContext"]["rightBounded"] extends true
         ? State.Error<`Right side of comparator ${Token} cannot be bounded more than once.`>
-        : S["expression"] extends EmbeddedNumber.Definition
+        : S["expression"] extends NumberLiteral.Definition
         ? ReduceLeftBound<
               S,
               Token,
@@ -423,7 +427,7 @@ export namespace Str {
         Right extends State.State
     > = Right extends State.Error<string>
         ? Right
-        : Right["expression"] extends EmbeddedNumber.Definition
+        : Right["expression"] extends NumberLiteral.Definition
         ? State.ScanTo<Left, Right["unscanned"]>
         : State.Error<`Right side of comparator ${Token} must be a number literal.`>
 
@@ -491,11 +495,11 @@ export namespace Str {
         ? Value
         : Token extends `"${infer Value}"`
         ? Value
-        : Token extends `/${string}/`
+        : Token extends RegexLiteral.Definition
         ? string
-        : Token extends EmbeddedNumber.Definition<infer Value>
+        : Token extends NumberLiteral.Definition<infer Value>
         ? Value
-        : Token extends EmbeddedBigInt.Definition<infer Value>
+        : Token extends BigintLiteral.Definition<infer Value>
         ? Value
         : unknown
 
@@ -510,13 +514,13 @@ export namespace Str {
         } else if (Alias.matches(def, ctx)) {
             return new Alias.Node(def, ctx)
         } else if (StringLiteral.matches(def)) {
-            return new StringLiteral.Node(def, ctx)
-        } else if (EmbeddedRegex.matches(def)) {
-            return EmbeddedRegex.parse(def, ctx)
-        } else if (EmbeddedNumber.matches(def)) {
-            return EmbeddedNumber.parse(def, ctx)
-        } else if (EmbeddedBigInt.matches(def)) {
-            return EmbeddedBigInt.parse(def, ctx)
+            return StringLiteral.parse(def, ctx)
+        } else if (RegexLiteral.matches(def)) {
+            return RegexLiteral.parse(def, ctx)
+        } else if (NumberLiteral.matches(def)) {
+            return NumberLiteral.parse(def, ctx)
+        } else if (BigintLiteral.matches(def)) {
+            return BigintLiteral.parse(def, ctx)
         } else if (Intersection.matches(def)) {
             return new Intersection.Node(def, ctx)
         } else if (Union.matches(def)) {

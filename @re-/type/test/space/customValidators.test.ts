@@ -44,8 +44,8 @@ describe("custom validators", () => {
     it("space", () => {
         const mySpace = space(
             {
-                first: 1,
-                second: 2
+                first: "1",
+                second: "2"
             },
             {
                 validate: {

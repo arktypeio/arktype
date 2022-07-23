@@ -59,10 +59,10 @@ describe("union", () => {
                     a: "b|c",
                     b: "d|e",
                     c: "f|g",
-                    d: 0,
-                    e: 1,
-                    f: 2,
-                    g: 3
+                    d: "0",
+                    e: "1",
+                    f: "2",
+                    g: "3"
                 }).a.validate(4, { verbose: true }).error?.message
             ).snap(`4 is not assignable to any of b|c.
 b: 4 is not assignable to any of d|e.
@@ -97,7 +97,7 @@ g: 4 is not assignable to 3.`)
         })
         it("prefers simple aliases", () => {
             const mySpace = space({
-                five: 5,
+                five: "5",
                 duck: "'duck'",
                 nested: {}
             })

@@ -18,7 +18,7 @@ describe("tuple", () => {
         })
     })
     describe("shallow", () => {
-        const shallow = type(["string", "number", 6])
+        const shallow = type(["string", "number", "6"])
         describe("type", () => {
             it("standard", () => {
                 assert(shallow.infer).typed as [string, number, 6]

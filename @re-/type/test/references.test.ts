@@ -5,19 +5,11 @@ import { References, space, type } from "../src/index.js"
 
 describe("references", () => {
     const objectDef = {
-        primitives: {
-            undefined: undefined,
-            null: null,
-            true: true,
-            false: false,
-            5: 5,
-            bigint: 7n
-        },
         strings: {
             keyword: "boolean",
             expression: "string[]|(integer>0)|null"
         },
-        listed: [-1n, "null", "string|boolean"],
+        listed: ["-1n", "null", "string|boolean"],
         regex: /.*/
     } as const
 
@@ -29,11 +21,6 @@ describe("references", () => {
         "null",
         "string",
         "boolean",
-        "undefined",
-        "false",
-        "true",
-        "5",
-        "7n",
         "integer"
     ])
 
@@ -45,14 +32,6 @@ describe("references", () => {
     type ExpectedObjectDefReferenceList = ExpectedObjectDefReferenceUnion[]
 
     describe("model", () => {
-        it("from literal", () => {
-            assert(type(undefined).references()).equals(["undefined"])
-                .typed as "undefined"[]
-            assert(type(null).references()).equals(["null"]).typed as "null"[]
-            assert(type(true).references()).equals(["true"]).typed as "true"[]
-            assert(type(5).references()).equals(["5"]).typed as "5"[]
-            assert(type(0n).references()).equals(["0n"]).typed as "0n"[]
-        })
         it("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
                 .$meta.type(
@@ -88,14 +67,6 @@ describe("references", () => {
                 preserveStructure: true
             })
             const expectedReferenceSets = narrow({
-                primitives: {
-                    undefined: ["undefined"],
-                    null: ["null"],
-                    true: ["true"],
-                    false: ["false"],
-                    5: ["5"],
-                    bigint: ["7n"]
-                },
                 strings: {
                     keyword: ["boolean"],
                     expression: ["string", "integer", "null"]
@@ -116,10 +87,10 @@ describe("references", () => {
             }).typed as ExpectedReferences
         })
         it("filter", () => {
-            const referencesEndingWithE = type(objectDef).references({
-                filter: (reference) => reference.endsWith("e")
+            const referencesIncludingE = type(objectDef).references({
+                filter: (reference) => reference.includes("e")
             })
-            assert(referencesEndingWithE).equals(["true", "false"], {
+            assert(referencesIncludingE).equals(["integer", "boolean"], {
                 listComparison: "permutable"
             }).typed as ExpectedObjectDefReferenceList
         })
@@ -129,9 +100,9 @@ describe("references", () => {
                     isNumeric(reference.slice(0, -1)) &&
                     reference.at(-1) === "n"
             })
-            assert(bigintLiteralReferences).equals(["-1n", "7n"], {
+            assert(bigintLiteralReferences).equals(["-1n"], {
                 listComparison: "permutable"
-            }).typed as ("-1n" | "7n")[]
+            }).typed as "-1n"[]
         })
         it("filtered structured", () => {
             const mySpace = space({
@@ -189,11 +160,7 @@ describe("references", () => {
                 {},
                 { filter: `${string}i${string}`; format: "union" }
             >
-            assert(referencesContainingI).typed as
-                | "string"
-                | "undefined"
-                | "integer"
-                | "positive"
+            assert(referencesContainingI).typed as "string" | "integer"
         })
     })
 })

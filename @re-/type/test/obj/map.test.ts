@@ -21,9 +21,8 @@ describe("map", () => {
         const shallow = type({
             a: "string",
             b: "number",
-            c: 67
+            c: "67"
         })
-
         it("type", () => {
             assert(shallow.infer).typed as {
                 a: string

@@ -22,4 +22,8 @@ describe("regex", () => {
             `Non-string value {inObject: "david@redo.dev"} cannot satisfy regex definitions.`
         )
     })
+    it("references", () => {
+        assert(regex.references()).equals([`/.*@redo.dev/`])
+            .typed as `/${string}/`[]
+    })
 })

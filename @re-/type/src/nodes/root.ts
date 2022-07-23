@@ -1,6 +1,4 @@
-import { IsAnyOrUnknown } from "@re-/tools"
 import { Base } from "./base/index.js"
-import { Literal } from "./literal.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 
@@ -9,23 +7,21 @@ export namespace Root {
         ? Def
         : Def extends string
         ? Str.Validate<Def, Dict>
-        : Def extends BadDefinitionType
-        ? BadDefinitionTypeMessage<Def>
-        : Def extends Obj.Unmapped | Literal.Definition
+        : Def extends Obj.Unmapped
         ? Def
+        : Def extends BadDefinitionType
+        ? BadDefinitionTypeMessage
         : Obj.Validate<Def, Dict>
 
     export type TypeOf<
         Def,
         Ctx extends Base.Parsing.InferenceContext
-    > = IsAnyOrUnknown<Def> extends true
+    > = unknown extends Def
         ? Def
         : Def extends string
         ? Str.TypeOf<Def, Ctx>
         : Def extends BadDefinitionType
-        ? unknown
-        : Def extends Literal.Definition
-        ? Def
+        ? never
         : Obj.TypeOf<Def, Ctx>
 
     export type References<
@@ -34,18 +30,22 @@ export namespace Root {
         PreserveStructure extends boolean
     > = Def extends string
         ? Str.References<Def, Dict>
-        : Def extends Literal.Definition
-        ? [Literal.DefToString<Def>]
         : Def extends object
         ? Obj.References<Def, Dict, PreserveStructure>
         : []
 
-    export type BadDefinitionType = Function | symbol
+    export type BadDefinitionType =
+        | undefined
+        | null
+        | boolean
+        | number
+        | bigint
+        | Function
+        | symbol
 
-    type BadDefinitionTypeMessage<Def extends BadDefinitionType> =
-        `Values of type ${Def extends Function
-            ? "function"
-            : "symbol"} are not valid definitions.`
+    const BAD_DEF_TYPE_MESSAGE = "Type definitions must be strings or objects"
+
+    type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
 
     export const parse: Base.Parsing.Parser<unknown> = (def, ctx) => {
         if (Str.matches(def)) {
@@ -55,13 +55,9 @@ export namespace Root {
         if (Obj.matches(def)) {
             return Obj.parse(def, ctx)
         }
-        if (Literal.matches(def)) {
-            return new Literal.Node(def, ctx)
-        }
         throw new Base.Parsing.ParseError(
-            `${
-                ctx.path ? `At path ${ctx.path}, values` : "Values"
-            } of type ${typeof def} are not valid definitions.`
+            BAD_DEF_TYPE_MESSAGE +
+                ` (got ${typeof def}${ctx.path ? ` at path ${ctx.path}` : ""}).`
         )
     }
 }
