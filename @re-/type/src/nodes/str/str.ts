@@ -42,12 +42,14 @@ export namespace Str {
         ? Def
         : ParseDefinition<Def, Dict>
 
-    type ResolvableName<Dict> = Keyword.Definition | keyof Dict
-
     type IsResolvableName<
         Def extends string,
         Dict
-    > = Def extends ResolvableName<Dict> ? true : false
+    > = Def extends Keyword.Definition
+        ? true
+        : Def extends keyof Dict
+        ? true
+        : false
 
     export type Validate<Def extends string, Dict> = Parse<
         Def,
@@ -491,9 +493,9 @@ export namespace Str {
         ? Keyword.Types[Token]
         : Token extends keyof Ctx["dict"]
         ? Alias.TypeOf<Token, Ctx>
-        : Token extends `'${infer Value}'`
+        : Token extends StringLiteral.SingleQuoted<infer Value>
         ? Value
-        : Token extends `"${infer Value}"`
+        : Token extends StringLiteral.DoubleQuoted<infer Value>
         ? Value
         : Token extends RegexLiteral.Definition
         ? string
