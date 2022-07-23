@@ -13,6 +13,14 @@ describe("Assertions", () => {
     it("equals", () => {
         assert(o).equals({ re: "do" })
     })
+    it("object", () => {
+        assert({ i: "love my wife" }).typed as { i: string }
+        strict.throws(
+            () => assert({ g: "whiz" as unknown }).typed as { g: string },
+            strict.AssertionError,
+            "unknown"
+        )
+    })
     it("union of function chainable", () => {
         const t: number | ((n: number) => number) = (n: number) => n
         // Temporarily disabled, can't get types to split non-functional values into comparable checks

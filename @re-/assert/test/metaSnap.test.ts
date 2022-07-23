@@ -27,15 +27,15 @@ const testSnapPopulation = (precached: boolean) => {
         strict.equal(statement.getText(), expected)
     }
 }
-// describe("inline meta tests", () => {
-//     after(() => {
-//         rmSync(testFileCopyPath, { force: true })
-//     })
-//     it("Checks snap gets populated - precache: true", () => {
-//         testSnapPopulation(true)
-//     }).timeout(9999)
+describe("inline meta tests", () => {
+    after(() => {
+        rmSync(testFileCopyPath, { force: true })
+    })
+    it("Checks snap gets populated - precache: true", () => {
+        testSnapPopulation(true)
+    }).timeout(9999)
 
-//     it("Checks snap gets populated - precache: false", () => {
-//         testSnapPopulation(false)
-//     }).timeout(9999)
-// })
+    it("Checks snap gets populated - precache: false", () => {
+        testSnapPopulation(false)
+    }).timeout(9999)
+})

@@ -21,10 +21,7 @@ assert({ re: "dew" }, { updateSnapshots: true }).snap()
 // @ts-ignore (using internal updateSnapshots hook)
 assert(5, { updateSnapshots: true }).snap(6)
 
-/**
- * Bug: undefined does not populate .snap() currently
- */
 //undefined
-// assert(undefined).snap()
+assert(undefined).snap()
 
 isPrecached && cleanupAssertions()

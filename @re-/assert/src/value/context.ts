@@ -236,7 +236,12 @@ export const valueAssertions = <T>(
     const inlineSnap = (...args: [unknown]) => {
         const actualSerialized = serialize(actual)
         if (!args.length || ctx.config.updateSnapshots) {
-            if (!isDeepStrictEqual(actualSerialized, serialize(args[0]))) {
+            if (
+                !isDeepStrictEqual(actualSerialized, serialize(args[0])) ||
+                // If actual is undefined, we still need to write the "undefined" literal
+                // to the snap even though it will serialize to the same value as the (nonexistent) first arg
+                actual === undefined
+            ) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
                     serializedValue: actualSerialized
@@ -314,7 +319,11 @@ export const valueAssertions = <T>(
                 )
                 if (!expectedSnapshot || ctx.config.updateSnapshots) {
                     if (
-                        !isDeepStrictEqual(actualSerialized, expectedSnapshot)
+                        !isDeepStrictEqual(
+                            actualSerialized,
+                            expectedSnapshot
+                        ) ||
+                        actual === undefined
                     ) {
                         updateExternalSnapshot({
                             serializedValue: actualSerialized,

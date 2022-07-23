@@ -25,8 +25,7 @@ export const medianBenchRegex = new RegExp(
 export const meanBenchRegex = new RegExp(
     createBenchStatExpression(false, "mean")
 )
-console.log(medianBenchRegex)
-console.log(meanBenchRegex)
+
 const EXPECTED_RESULTS_JSON_PATH = fromHere("expectedResults.json")
 const PATH_TO_ASSERTIONS_DIR = fromHere(".reassert")
 const testFile = "copiedTestFile.ts"
