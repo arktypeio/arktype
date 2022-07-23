@@ -7,16 +7,16 @@ import {
 } from "./baseline.js"
 import { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import {
-    createMeasure,
-    createMeasureComparison,
-    MeasureString,
-    stringifyMeasure
-} from "./measure.js"
-import { BenchTypeAssertions, createBenchTypeAssertions } from "./type.js"
+    createTimeComparison,
+    createTimeMeasure,
+    stringifyTimeMeasure,
+    TimeString
+} from "./measure/index.js"
+import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
 
 export type StatName = keyof typeof stats
 
-export type AssertionName = StatName | "mark"
+export type AssertionName = StatName | "mark" | "type"
 
 export const stats = {
     mean: (callTimes: number[]) => {
@@ -98,9 +98,7 @@ export class BenchAssertions<
     private label: string
     private lastCallTimes: number[] | undefined
     constructor(private fn: Fn, private ctx: BenchContext) {
-        this.label = `${ctx.isTypeAssertion ? "Typecheck" : "Call"}: ${
-            ctx.name
-        }`
+        this.label = `Call: ${ctx.name}`
     }
 
     private callTimesSync() {
@@ -122,34 +120,35 @@ export class BenchAssertions<
     private createAssertion<Name extends AssertionName>(
         name: Name,
         baseline: Name extends "mark"
-            ? Record<StatName, MeasureString> | undefined
-            : MeasureString | undefined,
+            ? Record<StatName, TimeString> | undefined
+            : TimeString | undefined,
         callTimes: number[]
     ) {
         if (name === "mark") {
             return this.markAssertion(baseline as any, callTimes)
         }
         const ms: number = (stats as any)[name](callTimes)
-        const comparison = createMeasureComparison(
-            ms,
-            baseline as MeasureString
-        )
+        const comparison = createTimeComparison(ms, baseline as TimeString)
         console.group(`${this.label} (${name}):`)
         compareToBaseline(comparison, this.ctx)
         console.groupEnd()
-        updateBaselineIfNeeded(stringifyMeasure(createMeasure(ms)), baseline, {
-            ...this.ctx,
-            kind: name
-        })
+        updateBaselineIfNeeded(
+            stringifyTimeMeasure(createTimeMeasure(ms)),
+            baseline,
+            {
+                ...this.ctx,
+                kind: name
+            }
+        )
         return this.getNextAssertions()
     }
 
     private markAssertion(
-        baseline: Record<StatName, MeasureString> | undefined,
+        baseline: Record<StatName, TimeString> | undefined,
         callTimes: number[]
     ) {
         console.group(`${this.label}:`)
-        const markEntries: [StatName, MeasureString | undefined][] = (
+        const markEntries: [StatName, TimeString | undefined][] = (
             baseline
                 ? Object.entries(baseline)
                 : // If nothing was passed, gather all available baselines by setting their values to undefined.
@@ -160,10 +159,10 @@ export class BenchAssertions<
             ([, [kind, kindBaseline]]) => {
                 console.group(kind)
                 const ms = stats[kind](callTimes)
-                const comparison = createMeasureComparison(ms, kindBaseline)
+                const comparison = createTimeComparison(ms, kindBaseline)
                 compareToBaseline(comparison, this.ctx)
                 console.groupEnd()
-                return [kind, stringifyMeasure(comparison.result)]
+                return [kind, stringifyTimeMeasure(comparison.result)]
             }
         )
         console.groupEnd()
@@ -175,16 +174,14 @@ export class BenchAssertions<
     }
 
     private getNextAssertions(): NextAssertions {
-        return (
-            this.ctx.isTypeAssertion ? {} : createBenchTypeAssertions(this.ctx)
-        ) as NextAssertions
+        return createBenchTypeAssertion(this.ctx) as NextAssertions
     }
 
     private createStatMethod<Name extends AssertionName>(
         name: Name,
         baseline: Name extends "mark"
-            ? Record<StatName, MeasureString> | undefined
-            : MeasureString | undefined
+            ? Record<StatName, TimeString> | undefined
+            : TimeString | undefined
     ) {
         if (this.ctx.isAsync) {
             return new Promise((resolve, reject) => {
@@ -196,7 +193,7 @@ export class BenchAssertions<
         return this.createAssertion(name, baseline, this.callTimesSync())
     }
 
-    median(baseline?: MeasureString) {
+    median(baseline?: TimeString) {
         this.ctx.lastSnapCallPosition = caller()
         return this.createStatMethod(
             "median",
@@ -204,7 +201,7 @@ export class BenchAssertions<
         ) as any as ReturnedAssertions
     }
 
-    mean(baseline?: MeasureString) {
+    mean(baseline?: TimeString) {
         this.ctx.lastSnapCallPosition = caller()
         return this.createStatMethod(
             "mean",
@@ -212,7 +209,7 @@ export class BenchAssertions<
         ) as any as ReturnedAssertions
     }
 
-    mark(baseline?: Record<StatName, MeasureString>) {
+    mark(baseline?: Record<StatName, TimeString>) {
         this.ctx.lastSnapCallPosition = caller()
         return this.createStatMethod(
             "mark",

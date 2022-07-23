@@ -1,7 +1,7 @@
 import { literalSerialize } from "../common.js"
 import { queueInlineSnapshotWriteOnProcessExit } from "../value/snapshot.js"
 import { BenchAssertionContext, BenchContext } from "./bench.js"
-import { MeasureComparison } from "./measure.js"
+import { MeasureComparison, stringifyMeasure } from "./measure/index.js"
 
 export const updateBaselineIfNeeded = (
     result: string | object,
@@ -31,9 +31,9 @@ export const compareToBaseline = (
     { result, baseline }: MeasureComparison,
     { name, config }: BenchContext
 ) => {
-    console.log(`🏌️ Result: ${result.n.toFixed(2)}${result.unit}`)
+    console.log(`🏌️ Result: ${stringifyMeasure(result)}`)
     if (baseline && !config.updateSnapshots) {
-        console.log(`⛳ Baseline: ${baseline.n.toFixed(2)}${baseline.unit}`)
+        console.log(`⛳ Baseline: ${stringifyMeasure(baseline)}`)
         const delta = ((result.n - baseline.n) / baseline.n) * 100
         const formattedDelta = `${delta.toFixed(2)}%`
         if (delta > config.benchPercentThreshold) {

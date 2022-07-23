@@ -25,6 +25,7 @@ export const medianBenchRegex = new RegExp(
 export const meanBenchRegex = new RegExp(
     createBenchStatExpression(false, "mean")
 )
+export const benchTypeRegex = /type\(d+\sinstantiations\)/
 
 const EXPECTED_RESULTS_JSON_PATH = fromHere("expectedResults.json")
 const PATH_TO_ASSERTIONS_DIR = fromHere(".reassert")
@@ -36,7 +37,8 @@ const filterExpressionStatements = (statements: ExpressionStatement[]) =>
         (statement) =>
             benchStatSnapCall.test(statement.getText()) ||
             snapRegex.test(statement.getText()) ||
-            benchMarkSnapCall.test(statement.getText())
+            benchMarkSnapCall.test(statement.getText()) ||
+            benchTypeRegex.test(statement.getText())
     )
 
 export const getTestComment = (
@@ -48,10 +50,6 @@ export const getTestComment = (
         .slice(range[0].getPos(), range[0].getEnd())
         .replace("//", "")
         .trim()
-}
-export const cleanUpSourceFile = (sf: SourceFile, template: string) => {
-    sf.replaceWithText(template)
-    sf.saveSync()
 }
 
 export const getTestFileData = (templateFilename: string, precache = true) => {
@@ -76,7 +74,7 @@ export const getTestFileData = (templateFilename: string, precache = true) => {
         SyntaxKind.ExpressionStatement
     )
     return {
-        statements: filterExpressionStatements(expressionStatements) ?? [],
+        statements: filterExpressionStatements(expressionStatements),
         expected: readJson(EXPECTED_RESULTS_JSON_PATH),
         sourceFile,
         initialText

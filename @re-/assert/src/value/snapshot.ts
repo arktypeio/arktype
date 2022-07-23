@@ -10,7 +10,7 @@ import {
     positionToString,
     SourcePosition
 } from "../common.js"
-import { getTsProject, tsNodeAtPosition } from "../type/analysis.js"
+import { getDefaultTsProject, tsNodeAtPosition } from "../type/analysis.js"
 
 export interface SnapshotArgs {
     position: SourcePosition
@@ -153,7 +153,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     snapFunctionName = "snap",
     baselineName
 }: SnapshotArgs) => {
-    const project = getTsProject()
+    const project = getDefaultTsProject()
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
     queuedUpdates.push({

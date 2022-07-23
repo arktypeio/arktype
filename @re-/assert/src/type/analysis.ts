@@ -44,7 +44,8 @@ export const cleanupAssertions = () => {
 }
 
 export const tsNodeAtPosition = (position: SourcePosition) => {
-    const sourceFile = getTsProject().getSourceFileOrThrow(position.file)
+    const project = getDefaultTsProject()
+    const sourceFile = project.getSourceFileOrThrow(position.file)
     const node = sourceFile.getDescendantAtPos(
         ts.getPositionOfLineAndCharacter(
             sourceFile.compilerNode,
@@ -61,16 +62,33 @@ export const tsNodeAtPosition = (position: SourcePosition) => {
     return node
 }
 
-export const getTsProject = memoize(() => {
+export type ForceGetTsProjectOptions = {
+    addFiles?: boolean
+}
+
+export const forceGetTsProject = ({
+    addFiles
+}: ForceGetTsProjectOptions = {}) => {
     const config = getReAssertConfig()
     const tsConfigFilePath = config.tsconfig ? config.tsconfig : undefined
     const project = new Project({
-        tsConfigFilePath
+        tsConfigFilePath,
+        compilerOptions: {
+            diagnostics: true,
+            noEmit: true,
+            composite: false,
+            incremental: false
+        },
+        skipAddingFilesFromTsConfig: !addFiles
     })
-    if (!tsConfigFilePath) {
+    if (!tsConfigFilePath && addFiles) {
         project.addSourceFilesAtPaths(["**"])
     }
     return project
+}
+
+export const getDefaultTsProject = memoize(() => {
+    return forceGetTsProject({ addFiles: true })
 })
 
 type LinePositionRange = {
@@ -128,7 +146,7 @@ const analyzeTypeAssertions = memoize(
             }
             return readJson(config.assertionCacheFile)
         }
-        const project = getTsProject()
+        const project = getDefaultTsProject()
         const assertionsByFile: AssertionsByFile = {}
         const diagnosticsByFile: DiagnosticsByFile = {}
 

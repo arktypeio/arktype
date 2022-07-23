@@ -20,7 +20,7 @@ export const declare: DeclareFn = (...names) => ({
     compile: (dict, options) => {
         const discrepancies = diffSets(names, Object.keys(dict))
         if (discrepancies) {
-            throw new DeclarationError(discrepancies)
+            throw new DeclaredCompilationError(discrepancies)
         }
         return rawSpace(dict, options) as any
     }
@@ -99,7 +99,7 @@ export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
     options?: SpaceOptions
 ) => SpaceFrom<Dict, {}>
 
-export class DeclarationError extends Error {
+export class DeclaredCompilationError extends Error {
     constructor(discrepancies: NonNullable<SetChange<string>>) {
         const errorParts = [] as string[]
         if (discrepancies.added) {

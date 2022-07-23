@@ -2,7 +2,7 @@ import { caller } from "@re-/node"
 import { chainableNoOpProxy } from "@re-/tools"
 import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
 import { AssertionName, BenchAssertions } from "./call.js"
-import { BenchTypeAssertions, createBenchTypeAssertions } from "./type.js"
+import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
 
 export interface UntilOptions {
     ms?: number
@@ -26,7 +26,6 @@ export interface BenchContext {
     config: ReAssertConfig
     benchCallPosition: SourcePosition
     lastSnapCallPosition: SourcePosition | undefined
-    isTypeAssertion: boolean
     isAsync: boolean
 }
 
@@ -49,7 +48,6 @@ export const bench = <Fn extends BenchableFunction>(
         options,
         config: getReAssertConfig(),
         benchCallPosition: caller(),
-        isTypeAssertion: false,
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
     }
@@ -58,6 +56,6 @@ export const bench = <Fn extends BenchableFunction>(
         return chainableNoOpProxy
     }
     const assertions = new BenchAssertions(fn, ctx)
-    Object.assign(assertions, createBenchTypeAssertions(ctx))
+    Object.assign(assertions, createBenchTypeAssertion(ctx))
     return assertions as any
 }
