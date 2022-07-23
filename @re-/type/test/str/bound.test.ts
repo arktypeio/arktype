@@ -150,7 +150,9 @@ describe("bound", () => {
             assert(type("number>=10").validate(Number.NaN).error).snap(
                 undefined
             )
-            assert(type("number<=10").validate(Number.NaN).error).snap()
+            assert(type("number<=10").validate(Number.NaN).error).snap(
+                undefined
+            )
         })
         describe("errors", () => {
             it("invalid string length", () => {

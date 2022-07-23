@@ -9,7 +9,7 @@ describe("meta", () => {
                 b: { a: "a", isA: "false", isB: "true" }
             },
             {
-                meta: {
+                parse: {
                     onCycle: {
                         cyclic: "$cyclic?"
                     }
@@ -37,7 +37,7 @@ describe("meta", () => {
                 b: { a: "a", isA: "false", isB: "true" }
             },
             {
-                meta: {
+                parse: {
                     onResolve: {
                         wasResolved: "true",
                         resolvedType: "$resolution"
@@ -61,7 +61,7 @@ describe("meta", () => {
     })
     it("allows non-meta references within meta", () => {
         assert(
-            space({ a: { a: "a" }, s: "string" }, { meta: { onCycle: "s" } })
+            space({ a: { a: "a" }, s: "string" }, { parse: { onCycle: "s" } })
                 .$meta.infer
         ).typed as {
             a: {
@@ -70,32 +70,24 @@ describe("meta", () => {
             s: string
         }
     })
-    // it("errors on bad meta key", () => {
-    //     // @ts-expect-error
-    //     assert(space({ $meta: { fake: "boolean" } })).type.errors.snap(
-    //         `Type '{ fake: string; }' is not assignable to type '{ onCycle?: Validate<unknown, { $meta: { fake: string; }; } & { $cyclic: "unknown"; }> | undefined; onResolve?: Validate<unknown, { $meta: { fake: string; }; } & { $resolution: "unknown"; }> | undefined; }'.Object literal may only specify known properties, and 'fake' does not exist in type '{ onCycle?: Validate<unknown, { $meta: { fake: string; }; } & { $cyclic: "unknown"; }> | undefined; onResolve?: Validate<unknown, { $meta: { fake: string; }; } & { $resolution: "unknown"; }> | undefined; }'.`
-    //     )
-    // })
-    // it("errors on bad meta def", () => {
-    //     // @ts-expect-error
-    //     assert(space({ $meta: { onCycle: "fake" } })).type.errors.snap(
-    //         `Type '"fake"' is not assignable to type '"'fake' does not exist in your space."'.`
-    //     )
-    // })
-    // it("doesn't allow meta-only defs outside meta", () => {
-    //     // @ts-expect-error
-    //     assert(space({ a: "$cyclic" })).type.errors.snap()
-    // })
-    // it("doesn't allow key-specific meta references in other meta keys", () => {
-    //     // @ts-expect-error
-    //     assert(space({ $meta: { onCycle: "$resolution" } })).type.errors.snap(
-    //         `Type '"$resolution"' is not assignable to type '"'$resolution' does not exist in your space."'.`
-    //     )
-    // })
-    // it("doesn't allow references to $meta", () => {
-    //     // @ts-expect-error
-    //     assert(space({ $meta: {}, a: "$meta" })).type.errors.snap(
-    //         `Type '"$meta"' is not assignable to type '"'$meta' does not exist in your space."'.`
-    //     )
-    // })
+    it("errors on bad meta key", () => {
+        // @ts-expect-error
+        assert(space({}, { parse: { fake: "boolean" } })).type.errors.snap()
+    })
+    it("errors on bad meta def", () => {
+        // @ts-expect-error
+        assert(space({}, { parse: { onCycle: "fake" } })).type.errors.snap(
+            `Type '"fake"' is not assignable to type '"'fake' does not exist in your space."'.`
+        )
+    })
+    it("doesn't allow meta-only defs outside meta", () => {
+        // @ts-expect-error
+        assert(space({ a: "$cyclic" })).type.errors.snap()
+    })
+    it("doesn't allow key-specific meta references in other meta keys", () => {
+        assert(
+            // @ts-expect-error
+            space({}, { parse: { onCycle: "$resolution" } })
+        ).type.errors.snap()
+    })
 })

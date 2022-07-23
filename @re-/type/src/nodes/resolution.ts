@@ -6,7 +6,7 @@ import {
     Join,
     KeyValuate
 } from "@re-/tools"
-import { AliasIn, getResolutionDefAndOptions, SpaceMeta } from "../space.js"
+import { getResolutionDefAndOptions, SpaceMeta } from "../space.js"
 import { Base } from "./base/index.js"
 import { Root } from "./root.js"
 import { Str } from "./str/str.js"
@@ -32,7 +32,7 @@ export namespace Resolution {
     >
 
     export type TypeOf<
-        Alias extends AliasIn<Dict>,
+        Alias extends keyof Dict,
         Dict,
         Meta
     > = Dict[Alias] extends Base.Parsing.ErrorMessage

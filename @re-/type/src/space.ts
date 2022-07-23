@@ -100,21 +100,18 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 
 export type ValidateDictionary<Dict> = {
     [Alias in keyof Dict]: Resolution.Validate<Alias, Dict>
-    //  Alias extends "$meta"
-    //     ? ValidateDictionaryMeta<Dict[Alias], Dict>
-    //     : Resolution.Validate<Alias, Dict>
 }
 
 type MetaDefs<Dict, Meta> = {
-    onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "unknown" }>
+    onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "any" }>
     onResolve?: Root.Validate<
         Get<Meta, "onResolve">,
-        Dict & { $resolution: "unknown" }
+        Dict & { $resolution: "any" }
     >
 }
 
 type ValidateSpaceOptions<Dict, Meta> = {
-    meta?: Conform<Meta, MetaDefs<Dict, Meta>>
+    parse?: Conform<Meta, MetaDefs<Dict, Meta>>
 } & Base.TypeOptions
 
 export type SpaceOptions = Base.TypeOptions
@@ -128,7 +125,7 @@ export type SpaceFrom<Dict, Meta> = Evaluate<
 >
 
 export type SpaceMetaFrom<Dict, Meta> = {
-    infer: DictToTypes<Dict, Meta>
+    infer: RootDictType<Dict, Meta>
     type: TypeFunction<Dict, Meta>
     extend: ExtendFunction<Dict>
     dictionary: Dict
@@ -136,23 +133,21 @@ export type SpaceMetaFrom<Dict, Meta> = {
 }
 
 export type DictionaryToTypes<Dict, Meta> = Evaluate<{
-    [Alias in AliasIn<Dict>]: TypeFrom<
+    [Alias in keyof Dict]: TypeFrom<
         Dict[Alias],
         Dict,
         Resolution.TypeOf<Alias, Dict, Meta>
     >
 }>
 
-export type DictToTypes<Dict, Meta> = Evaluate<{
-    [Alias in AliasIn<Dict>]: Resolution.TypeOf<Alias, Dict, Meta>
+export type RootDictType<Dict, Meta> = Evaluate<{
+    [Alias in keyof Dict]: Resolution.TypeOf<Alias, Dict, Meta>
 }>
 
 export type MetaDefinitions = {
     onCycle?: unknown
     onResolve?: unknown
 }
-
-export type AliasIn<Dict> = Extract<Exclude<keyof Dict, "$meta">, string>
 
 export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,

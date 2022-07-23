@@ -1,5 +1,4 @@
 import { ListChars } from "@re-/tools"
-import { AliasIn } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"
@@ -39,7 +38,7 @@ export namespace Str {
         ? Def
         : ParseDefinition<Def, Dict>
 
-    type ResolvableName<Dict> = Keyword.Definition | AliasIn<Dict>
+    type ResolvableName<Dict> = Keyword.Definition | keyof Dict
 
     type IsResolvableName<
         Def extends string,
@@ -490,7 +489,7 @@ export namespace Str {
         Seen
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
-        : Token extends AliasIn<Dict>
+        : Token extends keyof Dict
         ? Alias.TypeOf<Token, Dict, Meta, Seen>
         : Token extends `'${infer Value}'`
         ? Value
