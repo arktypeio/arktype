@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { space, type } from "../../src/index.js"
+import { def, space, type } from "../../src/index.js"
 
 describe("inheritable configs", () => {
     describe("methods", () => {
@@ -20,7 +20,7 @@ describe("inheritable configs", () => {
                 ).error
             ).is(undefined)
         })
-        it("create options", () => {
+        it("type options", () => {
             const user = type(
                 { name: "string" },
                 { validate: { ignoreExtraneousKeys: true } }
@@ -30,15 +30,13 @@ describe("inheritable configs", () => {
             )
         })
 
-        it("model config in space", () => {
-            const mySpace = space(
-                { user: { name: "string" } },
-                {
-                    models: {
-                        user: { validate: { ignoreExtraneousKeys: true } }
-                    }
-                }
-            )
+        it("def config in space", () => {
+            const mySpace = space({
+                user: def(
+                    { name: "string" },
+                    { validate: { ignoreExtraneousKeys: true } }
+                )
+            })
             assert(
                 mySpace.user.validate({
                     name: "David Blass",
@@ -62,32 +60,34 @@ describe("inheritable configs", () => {
         })
         it("precedence", () => {
             const nesting = space(
-                { doll: { contents: "doll" } },
                 {
-                    generate: { onRequiredCycle: "space" },
-                    models: {
-                        doll: { generate: { onRequiredCycle: "model" } }
-                    }
+                    doll: def(
+                        { contents: "doll" },
+                        { generate: { onRequiredCycle: "def" } }
+                    )
+                },
+                {
+                    generate: { onRequiredCycle: "space" }
                 }
             )
             const doll = nesting.$meta.type("doll", {
-                generate: { onRequiredCycle: "create" }
+                generate: { onRequiredCycle: "type" }
             })
             // When all four are provided, the options provided to the call win
             assert(
-                doll.create({ onRequiredCycle: "generate" }).contents
-            ).equals("generate" as any)
-            // When no args are provided, options model-specific config wins
-            assert(nesting.$meta.type("doll").create().contents).equals(
-                "model" as any
+                doll.create({ onRequiredCycle: "create" }).contents
+            ).value.equals("create")
+            // When no args are provided, options def config wins
+            assert(nesting.$meta.type("doll").create().contents).value.equals(
+                "def"
             )
-            // When no model-specific config is provided, space config applies
+            // When no type-specific config is provided, space config applies
             assert(
                 space(
                     { doll: { contents: "doll" } },
                     { generate: { onRequiredCycle: "space" } }
                 ).doll.create()
-            ).equals({ contents: "space" } as any)
+            ).value.equals({ contents: "space" })
             // When there is no other config, create options will apply
             assert(
                 space({ doll: { contents: "doll" } })
@@ -95,7 +95,7 @@ describe("inheritable configs", () => {
                         generate: { onRequiredCycle: "create" }
                     })
                     .create().contents
-            ).equals("create" as any)
+            ).value.equals("create")
         })
     })
 })

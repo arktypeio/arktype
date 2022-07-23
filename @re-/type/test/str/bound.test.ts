@@ -122,7 +122,9 @@ describe("bound", () => {
             assert(
                 type("boolean[][]<4").validate([[true, "false", true], [true]])
                     .error
-            ).snap()
+            ).snap({
+                paths: { "0/1": `"false" is not assignable to boolean.` }
+            })
         })
         it("valid single-bounded", () => {
             assert(type("number>5").validate(7).error).is(undefined)

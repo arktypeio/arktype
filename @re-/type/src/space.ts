@@ -4,19 +4,20 @@ import {
     deepMerge,
     Evaluate,
     Get,
-    Merge,
-    RequireKeys
+    Merge
 } from "@re-/tools"
 import { Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
 import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
-    spaceRaw(dictionary, options) as any
+    rawSpace(dictionary, options) as any
 
-export const spaceRaw = (
+export type RawSpace = Record<string, any> & { $meta: SpaceMeta }
+
+export const rawSpace = (
     dictionary: SpaceDictionary,
-    options: SpaceOptions<string> = {}
+    options: SpaceOptions = {}
 ) => {
     const meta = new SpaceMeta(dictionary, options)
     const compiled: Record<string, any> = { $meta: meta }
@@ -24,13 +25,9 @@ export const spaceRaw = (
         if (alias === "$meta") {
             continue
         }
-        const ctx = Base.Parsing.createContext(
-            deepMerge(options, options?.models?.[alias]),
-            meta
-        )
-        compiled[alias] = new Type(new Resolution.Node(alias, ctx))
+        compiled[alias] = new Type(new Resolution.Node(alias, meta, []))
     }
-    return compiled
+    return compiled as RawSpace
 }
 
 export class SpaceMeta implements SpaceMetaFrom<unknown> {
@@ -38,7 +35,7 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
 
     constructor(
         public dictionary: SpaceDictionary,
-        public options: SpaceOptions<string> = {}
+        public options: SpaceOptions = {}
     ) {
         this.resolutions = {}
     }
@@ -51,8 +48,8 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
         return new Type(root, deepMerge(this.options, options)) as any
     }
 
-    extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
-        return spaceRaw(
+    extend(extensions: SpaceDictionary, overrides?: SpaceOptions) {
+        return rawSpace(
             { ...this.dictionary, ...extensions },
             deepMerge(this.options, overrides)
         ) as any
@@ -65,14 +62,40 @@ export class SpaceMeta implements SpaceMetaFrom<unknown> {
 
 export type CreateSpaceFn = <Dict>(
     dictionary: ValidateDictionary<Dict>,
-    options?: SpaceOptions<AliasIn<Dict>>
+    options?: SpaceOptions
 ) => SpaceFrom<ValidateDictionary<Dict>>
 
-export const define = <Def>(def: Def, options?: Base.TypeOptions) =>
+/**
+ * Although this function claims to return Def, it actually returns an object
+ * with a nested "$def" key containing the definition alongside any options
+ * passed in an "options" key (or undefined if no options were passed).
+ *
+ * This allows users to provide alias-specific options without interfering
+ * with type inference.
+ */
+export const def = <Def>(def: Def, options: Base.TypeOptions) =>
     ({
         $def: def,
         options
     } as Def)
+
+export type DefWithOptions = {
+    def: unknown
+    options: Base.TypeOptions | undefined
+}
+
+export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
+    if (def?.$def !== undefined) {
+        return {
+            def: def.$def,
+            options: def.options
+        }
+    }
+    return {
+        def,
+        options: undefined
+    }
+}
 
 export type ValidateDictionary<Dict> = {
     [Alias in keyof Dict]: Alias extends "$meta"
@@ -94,13 +117,7 @@ type ValidateDictionaryMeta<Meta, Dict> = Conform<
     }
 >
 
-export type SpaceLevelOptions = Base.TypeOptions
-
-export type SpaceOptions<TypeName extends string> = SpaceLevelOptions & {
-    models?: { [K in TypeName]?: Base.TypeOptions }
-}
-
-export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models">
+export type SpaceOptions = Base.TypeOptions
 
 export type SpaceDictionary = Record<string, unknown>
 
@@ -115,7 +132,7 @@ export type SpaceMetaFrom<Dict> = {
     type: TypeFunction<Dict>
     extend: ExtendFunction<Dict>
     dictionary: Dict
-    options: SpaceOptions<AliasIn<Dict>> | undefined
+    options: SpaceOptions
 }
 
 export type DictionaryToTypes<Dict> = Evaluate<{
@@ -139,17 +156,8 @@ export type AliasIn<Dict> = Extract<Exclude<keyof Dict, "$meta">, string>
 
 export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
-    options?: SpaceExtensionOptions<AliasIn<BaseDict>, AliasIn<ExtensionDict>>
+    options?: SpaceOptions
 ) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
-
-export type SpaceExtensionOptions<
-    BaseTypeName extends string,
-    ExtensionTypeName extends string
-> = SpaceLevelOptions & {
-    models?: {
-        [TypeName in BaseTypeName | ExtensionTypeName]?: Base.TypeOptions
-    }
-}
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
     [TypeName in keyof ExtensionDict]: Validate<

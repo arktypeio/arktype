@@ -30,7 +30,11 @@ export namespace Alias {
         !!ctx.space && def in ctx.space.dictionary
 
     export class Node extends Base.Leaf<string> {
-        resolution = new Resolution.Node(this.def, this.ctx)
+        resolution = new Resolution.Node(
+            this.def,
+            this.ctx.space!,
+            this.ctx.shallowSeen
+        )
 
         allows(args: Base.Validation.Args) {
             return this.resolution.allows(args)

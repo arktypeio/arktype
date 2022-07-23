@@ -1,5 +1,12 @@
-import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
-import { AliasIn } from "../space.js"
+import {
+    deepMerge,
+    ElementOf,
+    IsAny,
+    Iteration,
+    Join,
+    KeyValuate
+} from "@re-/tools"
+import { AliasIn, getResolutionDefAndOptions, SpaceMeta } from "../space.js"
 import { Base } from "./base/index.js"
 import { Root } from "./root.js"
 import { Str } from "./str/str.js"
@@ -32,27 +39,39 @@ export namespace Resolution {
         : Root.TypeOf<Dict[Alias], Dict, { [K in Alias]: true }>
 
     export class Node extends Base.Link<string> {
-        constructor(def: string, ctx: Base.Parsing.Context) {
-            if (!ctx.space!.resolutions[def]) {
+        resolvedDef: unknown
+
+        constructor(alias: string, space: SpaceMeta, shallowSeen: string[]) {
+            if (!space.resolutions[alias]) {
+                const defAndOptions = getResolutionDefAndOptions(
+                    space.dictionary[alias]
+                )
+                const ctx = Base.Parsing.createContext(
+                    defAndOptions.options
+                        ? deepMerge(space.options, defAndOptions.options)
+                        : space.options,
+                    space
+                )
+                ctx.shallowSeen = shallowSeen
                 // If this is the first time we've seen the alias,
                 // create a Node that will be used for future resolutions of the alias.
                 // Pass the neverEager flag so that we can wait to call next() until after
                 // adding this node to space.resolutions.
-                super(def, ctx, true)
-                ctx.space!.resolutions[def] = this
+                super(alias, ctx, true)
+                this.resolvedDef = defAndOptions.def
+                space.resolutions[alias] = this
                 this.next()
-            } else if (ctx.shallowSeen.includes(def)) {
+            } else if (shallowSeen.includes(alias)) {
                 throw new Base.Parsing.ParseError(
-                    shallowCycleError([...ctx.shallowSeen, def])
+                    shallowCycleError([...shallowSeen, alias])
                 )
             }
-            return ctx.space!.resolutions[def]
+            return space.resolutions[alias]
         }
 
         parse() {
-            const rootDef = this.ctx.space!.dictionary[this.def]
-            if (Str.matches(rootDef)) {
-                return Str.parse(rootDef, {
+            if (Str.matches(this.resolvedDef)) {
+                return Str.parse(this.resolvedDef, {
                     ...this.ctx,
                     cfg: {
                         ...this.ctx.cfg,
@@ -66,7 +85,7 @@ export namespace Resolution {
                 })
             } else {
                 // Non-string this.defs can never participate in shallow cycles, so reset shallowSeen
-                return Root.parse(rootDef, {
+                return Root.parse(this.resolvedDef, {
                     ...this.ctx,
                     shallowSeen: []
                 })
