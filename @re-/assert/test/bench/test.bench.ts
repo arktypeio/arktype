@@ -12,16 +12,16 @@ type MakeComplexType<S extends string> = ListPossibleTypes<
 
 bench("trvial type", () => {
     return {} as any as MakeTrivialType<"!">
-}).type()
+}).type(`2 instantiations`)
 
 bench("non-trvial type", () => {
     return {} as any as MakeNonTrivialType<"!">
-}).type()
+}).type(`1827 instantiations`)
 
 bench("complex type", () => {
     return [] as any as MakeComplexType<"!">
-}).type()
+}).type(`51255 instantiations`)
 
 bench("duplicate complex type", () => {
     return [] as any as MakeComplexType<"!">
-}).type()
+}).type(`51255 instantiations`)

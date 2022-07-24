@@ -6,7 +6,6 @@ import { compareToBaseline, updateBaselineIfNeeded } from "./baseline.js"
 import { BenchContext } from "./bench.js"
 import {
     createTypeComparison,
-    Measure,
     MeasureComparison,
     stringifyTypeMeasure,
     TypeString,
@@ -31,48 +30,78 @@ const getUpdatedInstantiationCount = (project: Project) => {
     return typeChecker.getInstantiationCount()
 }
 
-const getTransformedBenchFileText = (
-    benchFn: Node<ts.CallExpression>,
-    includeBenchFn: boolean
-) => {
-    const file = benchFn.getSourceFile()
-    const originalText = file.getText()
-    file.getDescendantsOfKind(SyntaxKind.CallExpression).forEach((node) => {
-        if (node === benchFn && includeBenchFn) {
-            return
-        }
-        const benchCallStatement = node.getFirstAncestorByKindOrThrow(
-            SyntaxKind.ExpressionStatement
+const emptyBenchFn = (statement: Node<ts.ExpressionStatement>) => {
+    const benchCall = statement
+        .getDescendantsOfKind(SyntaxKind.CallExpression)
+        .find(
+            (node) =>
+                node.getFirstChildByKind(SyntaxKind.Identifier)?.getText() ===
+                "bench"
         )
-        benchCallStatement.replaceWithText("\n")
-    })
-    const transformedText = file.getFullText()
-    /**
-     *  Even though we're not actually emitting to the file system,
-     *  it's still important to leave the node in its original state
-     *  so that snap() calls work properly.
-     */
-    file.replaceWithText(originalText)
-    return transformedText
+    if (!benchCall) {
+        throw new Error(
+            `Unable to find bench call from expression '${statement.getText()}'.`
+        )
+    }
+    benchCall.getArguments()[1].replaceWithText("()=>{}")
+}
+
+const getTopLevelExpressionStatements = (file: SourceFile) =>
+    file
+        .getFirstChildByKindOrThrow(SyntaxKind.SyntaxList)
+        .getChildrenOfKind(SyntaxKind.ExpressionStatement)
+
+const isBenchExpression = (statement: Node<ts.ExpressionStatement>) =>
+    statement
+        .getFirstChildByKind(SyntaxKind.CallExpression)
+        ?.getFirstDescendantByKind(SyntaxKind.Identifier)
+        ?.getText() === "bench"
+
+const getInstantiationsForIsolatedBench = (
+    originalFileText: string,
+    isolatedBenchExressionText: string,
+    includeBenchFn: boolean,
+    fakePath: string
+) => {
+    const isolatedProject = forceGetTsProject()
+    const fileToTransform = isolatedProject.createSourceFile(
+        fakePath,
+        originalFileText
+    )
+    const topLevelStatements = getTopLevelExpressionStatements(fileToTransform)
+    for (const statement of topLevelStatements) {
+        if (statement.getText() === isolatedBenchExressionText) {
+            if (!includeBenchFn) {
+                emptyBenchFn(statement)
+            }
+        } else if (isBenchExpression(statement)) {
+            statement.replaceWithText("")
+        }
+    }
+    return getUpdatedInstantiationCount(isolatedProject)
 }
 
 const getInstantiationsContributedByNode = (
-    benchFn: Node<ts.CallExpression>
+    benchCall: Node<ts.CallExpression>
 ) => {
-    const fakePath = benchFn.getSourceFile().getFilePath() + ".nonexistent.ts"
-    const projectWithNode = forceGetTsProject()
-    projectWithNode.createSourceFile(
-        fakePath,
-        getTransformedBenchFileText(benchFn, true)
+    const fakePath = benchCall.getSourceFile().getFilePath() + ".nonexistent.ts"
+    const originalFileText = benchCall.getSourceFile().getText()
+    const benchExpression = benchCall.getFirstAncestorByKindOrThrow(
+        SyntaxKind.ExpressionStatement
     )
-    const instantiationsWithNode = getUpdatedInstantiationCount(projectWithNode)
-    const projectWithoutNode = forceGetTsProject()
-    projectWithoutNode.createSourceFile(
-        fakePath,
-        getTransformedBenchFileText(benchFn, false)
+    const originalBenchExpressionText = benchExpression.getText()
+    const instantiationsWithNode = getInstantiationsForIsolatedBench(
+        originalFileText,
+        originalBenchExpressionText,
+        true,
+        fakePath
     )
-    const instantiationsWithoutNode =
-        getUpdatedInstantiationCount(projectWithoutNode)
+    const instantiationsWithoutNode = getInstantiationsForIsolatedBench(
+        originalFileText,
+        originalBenchExpressionText,
+        false,
+        fakePath
+    )
     return instantiationsWithNode - instantiationsWithoutNode
 }
 
