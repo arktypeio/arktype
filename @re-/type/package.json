@@ -23,13 +23,14 @@
         }
     },
     "scripts": {
-        "build": "pnpm ts-node ../../scripts/build.ts",
+        "build": "ts-node ../../scripts/build.ts",
         "test": "reassert mocha",
         "tnt": "reassert mocha --skipTypes",
-        "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
-        "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
-        "benchCore": "pnpm ts-node ./test/bench/parser.bench.ts",
-        "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt"
+        "benchCyclic": "ts-node ./test/bench/cyclic.bench.ts",
+        "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
+        "benchCore": "ts-node ./test/bench/parser.bench.ts",
+        "diag": "tsc -p ./test/tsconfig.json > diag.txt",
+        "parse": "ts-node src/nodes/str/parse.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

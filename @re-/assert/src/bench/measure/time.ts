@@ -44,7 +44,7 @@ export const parseTimeString = (s: TimeString): Measure<TimeUnit> => {
 }
 
 export const stringifyTimeMeasure = (m: Measure<TimeUnit>) =>
-    `${m.n} ${m.unit}` as TimeString
+    `${m.n.toFixed(2)}${m.unit}` as TimeString
 
 const convertTimeMeasure = (n: number, from: TimeUnit, to: TimeUnit) => {
     return (n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to]

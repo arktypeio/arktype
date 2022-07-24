@@ -1,4 +1,5 @@
 import { ListChars } from "@re-/tools"
+import { SpaceDictionary } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"
@@ -107,7 +108,7 @@ export namespace Str {
         ? `${TreeToString<Left>}${Token}${TreeToString<Right>}`
         : ""
 
-    namespace State {
+    export namespace State {
         export type State = {
             groups: GroupState[]
             branch: CurrentBranch
@@ -115,6 +116,14 @@ export namespace Str {
             unscanned: string[]
             branchContext: Context
         }
+
+        export type Initialize<Def extends string> = From<{
+            groups: []
+            branch: []
+            expression: []
+            unscanned: ListChars<Def>
+            branchContext: {}
+        }>
 
         export type GroupState = {
             branch: CurrentBranch
@@ -246,14 +255,6 @@ export namespace Str {
         }>
 
         export type From<S extends State> = S
-
-        export type Initialize<Def extends string> = From<{
-            groups: []
-            branch: []
-            expression: []
-            unscanned: ListChars<Def>
-            branchContext: {}
-        }>
     }
 
     type ParseDefinition<Def extends string, Dict> = ShiftDefinition<
@@ -458,20 +459,9 @@ export namespace Str {
 
     type ExpressionTerminatingChar = ")" | "?"
 
-    /** These tokens complete the current expression and start parsing a new expression from RemainingTokens.
-     *
-     *  Instead of passing the updated tree to ParseExpression like a ModifyingToken
-     *  BranchingTokens return the left half of the expression and the token directly,
-     *  thus finalizing them, and then begin parsing the right half. This ensures
-     *  that, in absence of parentheses, an expression like "string|number[]" is parsed as:
-     *     string | (number[])
-     *  instead of:
-     *     (string | number)[]
-     **/
     type BranchingOperatorToken = "|" | "&"
 
-    /** These tokens modify the current expression */
-    type ModifyingOperatorStartChar = "[" | "?"
+    type ModifyingOperatorStartChar = "["
 
     type LiteralEnclosingChar = `'` | `"` | `/`
 
