@@ -29,7 +29,12 @@ const literalEnclosing = {
 
 type LiteralEnclosing = keyof typeof literalEnclosing
 
-type CurrentBranch = [] | [ExpressionTree, string]
+type OpenBranchExpression = [] | [ExpressionTree, string]
+
+type BranchState = {
+    branch: OpenBranchExpression
+    context: Str.State.Context
+}
 
 const comparatorStarting = {
     "<": 1,
@@ -50,15 +55,15 @@ const baseTerminating = {
 }
 
 export class Parser {
-    groups: Str.State.GroupState[]
-    branch: CurrentBranch
+    openGroups: BranchState[]
+    branch: OpenBranchExpression
     expression: ExpressionTree
     branchContext: Str.State.Context
     chars: string[]
     location: number
 
     constructor(def: string, private dict: SpaceDictionary) {
-        this.groups = []
+        this.openGroups = []
         this.branch = []
         this.expression = ""
         this.chars = [...def, "END"]
@@ -83,6 +88,8 @@ export class Parser {
         this.mergeBranches()
         if (this.chars[this.location] === "?") {
             this.shiftOptional()
+        } else if (this.chars[this.location] === ")") {
+            this.popGroup()
         }
     }
 
@@ -121,11 +128,37 @@ export class Parser {
     }
 
     shiftBase() {
-        if (this.chars[this.location] in literalEnclosing) {
+        if (this.chars[this.location] === "(") {
+            this.shiftGroup()
+        } else if (this.chars[this.location] in literalEnclosing) {
             this.shiftEnclosed()
+        } else if (this.chars[this.location] === " ") {
+            this.location++
+            this.shiftBase()
         } else {
             this.shiftNonLiteral()
         }
+    }
+
+    shiftGroup() {
+        this.openGroups.push({
+            branch: this.branch,
+            context: this.branchContext
+        })
+        this.branch = []
+        this.branchContext = {}
+        this.location++
+        this.shiftBranches()
+    }
+
+    popGroup() {
+        const group = this.openGroups.pop()
+        if (group === undefined) {
+            throw new Error(`Unexpected ).`)
+        }
+        this.branch = group.branch
+        this.branchContext = group.context
+        this.location++
     }
 
     shiftNonLiteral() {
@@ -172,6 +205,8 @@ export class Parser {
             if (this.chars[this.location] === "[") {
                 this.shiftListToken()
             } else if (this.chars[this.location] in comparatorStarting) {
+            } else if (this.chars[this.location] === " ") {
+                this.location++
             } else {
                 throw new Error(
                     `Invalid operator ${this.chars[this.location]}.`
@@ -190,6 +225,6 @@ export class Parser {
     }
 }
 
-const s = new Parser("'string'[]|number|number[]", {})
+const s = new Parser("boolean |   ('string'|number)[]|number[]", {})
 s.shiftBranches()
 console.log(s.expression)
