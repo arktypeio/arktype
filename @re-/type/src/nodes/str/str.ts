@@ -518,7 +518,7 @@ export namespace Str {
 
     const tryNaiveParse = (def: string, ctx: Base.Parsing.Context) => {
         if (def.endsWith("?")) {
-            const possibleIdentifierNode = tryNaiveParseIdentifier(
+            const possibleIdentifierNode = tryNaiveParseList(
                 def.slice(0, -1),
                 ctx
             )
