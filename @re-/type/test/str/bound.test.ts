@@ -255,15 +255,6 @@ describe("bound", () => {
                                 type("1==number==1").validate(1).error
                             ).equals(undefined)
                         })
-                        assert(type("5<=number<9999").validate(9998).error).is(
-                            undefined
-                        )
-                        assert(type("-5>=number>=-1000").validate(-5).error).is(
-                            undefined
-                        )
-                        assert(
-                            type("-5>=number>=-1000").validate(-1000).error
-                        ).is(undefined)
                     })
                 })
                 describe("invalid", () => {

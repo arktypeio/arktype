@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
-import * as spaceSnippet from "../docs/snippets/space.js"
-import * as modelSnippet from "../docs/snippets/type.js"
 import { type } from "../src/index.js"
 
 describe("snippets", () => {
-    it("model", () => {
+    it("model", async () => {
+        const modelSnippet = await import("../docs/snippets/type.js")
         assert(modelSnippet.user.infer).typed as {
             name: string
             browser: {
@@ -17,7 +15,8 @@ describe("snippets", () => {
             `At path browser/kind, "Internet Explorer" is not assignable to any of 'chrome'|'firefox'|'safari'.`
         )
     })
-    it("space", () => {
+    it("space", async () => {
+        const spaceSnippet = await import("../docs/snippets/space.js")
         assert(spaceSnippet.redo.$root.infer.package).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
@@ -40,9 +39,6 @@ describe("snippets", () => {
             }
         })
 
-        // Subtypes like 'email' and 'integer' become 'string' and 'number'
-        type Employee = typeof employee.infer
-
         // But enforce their original definition during validation
         const { error } = employee.validate({
             email: "david@redo.biz",
@@ -59,9 +55,9 @@ describe("snippets", () => {
             }
         }
         assert(error?.message).snap(`Encountered errors at the following paths:
-  email: "david@redo.biz" does not match expression /[a-z]*@redo\\.dev/.
-  about/age: Must be greater than or equal to 18 (got 17).
-  about/bio: Must be less than or equal to 160 characters (got 220).
-`)
+      email: "david@redo.biz" does not match expression /[a-z]*@redo\\.dev/.
+      about/age: Must be greater than or equal to 18 (got 17).
+      about/bio: Must be less than or equal to 160 characters (got 220).
+    `)
     })
 })

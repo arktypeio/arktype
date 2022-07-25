@@ -20,9 +20,15 @@ describe("parenthesized", () => {
         assert(listOfUnion.validate([]).error).equals(undefined)
         assert(listOfUnion.validate([1]).error).equals(undefined)
         assert(listOfUnion.validate([1, true]).error).equals(undefined)
-        assert(listOfUnion.validate(true).error?.message).snap()
-        assert(listOfUnion.validate(1).error?.message).snap()
-        assert(listOfUnion.validate(["foo"]).error?.message).snap()
+        assert(listOfUnion.validate(true).error?.message).snap(
+            `true is not assignable to boolean|number[].`
+        )
+        assert(listOfUnion.validate(1).error?.message).snap(
+            `1 is not assignable to boolean|number[].`
+        )
+        assert(listOfUnion.validate(["foo"]).error?.message).snap(
+            `At index 0, "foo" is not assignable to any of boolean|number.`
+        )
     })
     it("nested precedence", () => {
         const listOfUnionOfListsOfUnions = type(
@@ -45,11 +51,15 @@ describe("parenthesized", () => {
         ).equals(undefined)
         assert(
             listOfUnionOfListsOfUnions.validate([undefined]).error?.message
-        ).snap()
+        ).snap(
+            `At index 0, undefined is not assignable to any of boolean|number[]|string|undefined[].`
+        )
         // Can't mix items from each list
         assert(
             listOfUnionOfListsOfUnions.validate([[false, "foo"]]).error?.message
-        ).snap()
+        ).snap(
+            `At index 0, [false, "foo"] is not assignable to any of boolean|number[]|string|undefined[].`
+        )
     })
     describe("errors", () => {
         it("empty", () => {

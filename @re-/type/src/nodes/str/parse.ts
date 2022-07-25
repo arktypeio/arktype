@@ -239,6 +239,7 @@ export class Parser {
             if (this.lookahead === "[") {
                 this.shiftListToken()
             } else if (this.lookahead in comparatorStarting) {
+                throw new Error(`Bounds are not yet implemented.`)
             } else if (this.lookahead === " ") {
                 this.scan++
             } else {
