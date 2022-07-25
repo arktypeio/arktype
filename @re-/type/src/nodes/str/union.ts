@@ -23,26 +23,11 @@ export namespace Union {
         Right extends string = string
     > = `${Left}|${Right}`
 
-    export const matches = (def: string): def is Definition => def.includes("|")
-
-    const matcher = createSplittableMatcher("|")
-
-    export const getMembers = (def: Definition) => def.match(matcher)!
-
-    export class Node extends Base.Branch<Definition> {
-        parse() {
-            return getMembers(this.def).map((member) => {
-                if (member === "||") {
-                    throw new Base.Parsing.UnknownTypeError("")
-                }
-                return Str.parse(member, this.ctx)
-            })
-        }
-
+    export class Node extends Base.NonTerminal<Base.Parsing.Node[]> {
         allows(args: Base.Validation.Args) {
             const unionErrors = args.errors.split(args.ctx.path)
             for (const branch of this.children) {
-                const branchErrors = unionErrors.branch(branch.defToString())
+                const branchErrors = unionErrors.branch(branch.toString())
                 if (branch.allows({ ...args, errors: branchErrors })) {
                     // If any branch of a Union does not have errors,
                     // we can return right away since the whole definition is valid
@@ -52,7 +37,7 @@ export namespace Union {
             // If we haven't returned, all branches are invalid, so add an error
             const summaryErrorMessage = `${Base.stringifyValue(
                 args.value
-            )} is not assignable to any of ${this.defToString()}.`
+            )} is not assignable to any of ${this.toString()}.`
             if (args.cfg.verbose) {
                 unionErrors.mergeAll(summaryErrorMessage)
             } else {
@@ -77,7 +62,7 @@ export namespace Union {
             }
             if (!possibleValues.length) {
                 throw new Base.Create.UngeneratableError(
-                    this.def,
+                    this.toString(),
                     "None of the definitions can be generated" +
                         (args.cfg.verbose
                             ? `:\n${generationErrors.join("\n")}`

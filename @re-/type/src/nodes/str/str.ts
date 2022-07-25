@@ -1,5 +1,4 @@
 import { ListChars } from "@re-/tools"
-import { SpaceDictionary } from "../../space.js"
 import { Alias } from "./alias.js"
 import { Base } from "./base.js"
 import { Bound } from "./bound.js"

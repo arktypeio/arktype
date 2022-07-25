@@ -2,14 +2,14 @@ import { Base } from "../base.js"
 import { Bound } from "../bound.js"
 
 abstract class BaseNumberKeyword
-    extends Base.Leaf<string>
+    extends Base.Terminal<string>
     implements Bound.Boundable
 {
     allows(args: Base.Validation.Args) {
         if (typeof args.value === "number" && this.allowsNumber(args.value)) {
             return true
         }
-        this.addUnassignable(args)
+        //this.addUnassignable(args)
         return false
     }
 

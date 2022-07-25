@@ -83,7 +83,7 @@ export namespace Keyword {
     export const matches = (def: string): def is Definition =>
         def in keywordsToNodes
 
-    export const parse: Base.Parsing.Parser<Definition> = (def, ctx) => {
-        return new keywordsToNodes[def](def as never, ctx)
+    export const parse: Base.Parsing.Parser<Definition> = (def) => {
+        return new keywordsToNodes[def](def as never)
     }
 }

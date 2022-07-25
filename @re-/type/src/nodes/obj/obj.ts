@@ -53,7 +53,7 @@ export namespace Obj {
 
     export const parse: Base.Parsing.Parser<object> = (def, ctx) => {
         if (Regex.matches(def)) {
-            return new Regex.Node(def, ctx)
+            return new Regex.Node(def)
         }
         if (Tuple.matches(def)) {
             return new Tuple.Node(def, ctx)

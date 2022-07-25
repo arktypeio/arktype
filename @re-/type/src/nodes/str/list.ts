@@ -8,20 +8,16 @@ export namespace List {
     export const matches = (def: string): def is Definition =>
         def.endsWith("[]")
 
-    export class Node extends Base.Link<Definition> implements Bound.Boundable {
-        parse() {
-            return Str.parse(this.def.slice(0, -2), this.ctx)
-        }
-
+    export class Node extends Base.NonTerminal implements Bound.Boundable {
         allows(args: Base.Validation.Args) {
             if (!Array.isArray(args.value)) {
-                this.addUnassignable(args)
+                // this.addUnassignable(args)
                 return false
             }
             let allItemsAllowed = true
             let itemIndex = 0
             for (const itemValue of args.value) {
-                const itemIsAllowed = this.child.allows({
+                const itemIsAllowed = this.children.allows({
                     ...args,
                     value: itemValue,
                     ctx: {

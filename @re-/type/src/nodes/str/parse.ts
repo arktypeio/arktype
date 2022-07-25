@@ -1,4 +1,3 @@
-import { print } from "@re-/tools"
 import { SpaceDictionary } from "../../space.js"
 import { Keyword } from "./keyword/keyword.js"
 import { BigintLiteral, NumberLiteral } from "./literal.js"
@@ -32,7 +31,7 @@ type LiteralEnclosing = keyof typeof literalEnclosing
 type OpenBranchExpression = [] | [ExpressionTree, string]
 
 type BranchState = {
-    branch: OpenBranchExpression
+    branch: ExpressionTree[]
     context: Str.State.Context
 }
 
@@ -56,7 +55,7 @@ const baseTerminating = {
 
 export class Parser {
     openGroups: BranchState[]
-    branch: OpenBranchExpression
+    branch: ExpressionTree[]
     expression: ExpressionTree
     branchContext: Str.State.Context
     chars: string[]

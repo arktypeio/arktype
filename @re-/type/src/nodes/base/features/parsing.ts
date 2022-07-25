@@ -3,7 +3,7 @@ import type { Node as AbstractNode } from "../kinds/node.js"
 import { defToString, stringifyPathContext, TypeOptions } from "../utils.js"
 
 export namespace Parsing {
-    export type Node<DefType = unknown> = AbstractNode<DefType>
+    export type Node = AbstractNode
 
     export type Parser<DefType = unknown> = (def: DefType, ctx: Context) => Node
 
@@ -22,11 +22,8 @@ export namespace Parsing {
 
     export type Config = Options
 
-    export type ConstraintValidator = (value: unknown) => string | undefined
-
     export type Context = {
         path: string
-        stringRoot: string | null
         cfg: TypeOptions
         space: SpaceMeta | undefined
         shallowSeen: string[]
@@ -38,7 +35,6 @@ export namespace Parsing {
     ): Context => {
         return {
             path: "",
-            stringRoot: null,
             shallowSeen: [],
             cfg,
             space

@@ -1,4 +1,3 @@
-export * from "./leaf.js"
-export * from "./branch.js"
-export * from "./link.js"
-export * from "./shape.js"
+export * from "./terminal.js"
+export * from "./nonTerminal.js"
+export * from "./node.js"

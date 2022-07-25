@@ -49,7 +49,6 @@ export namespace Root {
 
     export const parse: Base.Parsing.Parser<unknown> = (def, ctx) => {
         if (Str.matches(def)) {
-            ctx.stringRoot = def
             return Str.parse(def, ctx)
         }
         if (Obj.matches(def)) {

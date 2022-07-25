@@ -13,16 +13,7 @@ export namespace Intersection {
 
     export const getMembers = (def: Definition) => def.match(matcher)!
 
-    export class Node extends Base.Branch<Definition> {
-        parse() {
-            return getMembers(this.def).map((member) => {
-                if (member === "&&") {
-                    throw new Base.Parsing.UnknownTypeError("")
-                }
-                return Str.parse(member, this.ctx)
-            })
-        }
-
+    export class Node extends Base.NonTerminal<Base.Parsing.Node[]> {
         allows(args: Base.Validation.Args) {
             for (const branch of this.children) {
                 if (!branch.allows(args)) {
@@ -34,7 +25,7 @@ export namespace Intersection {
 
         generate() {
             throw new Base.Create.UngeneratableError(
-                this.def,
+                this.toString(),
                 "Intersection generation is unsupported."
             )
         }

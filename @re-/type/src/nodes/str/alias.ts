@@ -49,18 +49,20 @@ export namespace Alias {
     export const matches = (def: string, ctx: Base.Parsing.Context) =>
         !!ctx.space && def in ctx.space.dictionary
 
-    export class Node extends Base.Leaf<string> {
-        resolution = new Resolution.Node(
-            this.def,
-            this.ctx.space!,
-            this.ctx.shallowSeen
-        )
+    export class Node extends Base.Terminal<string> {
+        constructor(def: string, private ctx: Base.Parsing.Context) {
+            super(def)
+        }
 
-        allows(args: Base.Validation.Args) {
+        get resolution() {
+            return this.ctx.space!.resolutions[this.def]
+        }
+
+        allows(args: Base.Validation.Args): boolean {
             return this.resolution.allows(args)
         }
 
-        generate(args: Base.Create.Args) {
+        generate(args: Base.Create.Args): unknown {
             return this.resolution.generate(args)
         }
     }

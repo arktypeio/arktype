@@ -6,7 +6,7 @@ export namespace Regex {
     export const matches = (def: object): def is Definition =>
         def instanceof RegExp
 
-    export class Node extends Base.Leaf<Definition> {
+    export class Node extends Base.Terminal<Definition> {
         allows(args: Base.Validation.Args) {
             if (typeof args.value !== "string") {
                 args.errors.add(

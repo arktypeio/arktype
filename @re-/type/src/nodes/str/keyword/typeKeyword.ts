@@ -1,11 +1,11 @@
 import { Base } from "../base.js"
 
-abstract class BaseTypeKeyword extends Base.Leaf<string> {
+abstract class BaseTypeKeyword extends Base.Terminal<string> {
     allows(args: Base.Validation.Args) {
         if (this.allowsValue(args.value)) {
             return true
         }
-        this.addUnassignable(args)
+        //this.addUnassignable(args)
         return false
     }
 

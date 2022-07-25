@@ -26,24 +26,23 @@ export namespace Record {
     ): value is Record<string, unknown> =>
         typeof value === "object" && value !== null && !Array.isArray(value)
 
-    export class Node extends Base.Shape<Definition> {
-        parse() {
-            return Object.entries(this.def).map(
-                ([key, propDef]): [string, Base.Parsing.Node] => {
-                    return [
-                        key,
-                        Root.parse(propDef, {
-                            ...this.ctx,
-                            path: Base.pathAdd(this.ctx.path, key)
-                        })
-                    ]
-                }
-            )
-        }
+    export const parse: Base.Parsing.Parser<object> = (def, ctx) => undefined
+    // Object.entries(def).map(
+    //     ([key, propDef]): [string, Base.Parsing.Node] => {
+    //         return [
+    //             key,
+    //             Root.parse(propDef, {
+    //                 ...this.ctx,
+    //                 path: Base.pathAdd(this.ctx.path, key)
+    //             })
+    //         ]
+    //     }
+    // )
 
+    export class Node extends Base.NonTerminal<[]> {
         allows(args: Base.Validation.Args) {
             if (!valueIsRecordLike(args.value)) {
-                this.addUnassignable(args)
+                //this.addUnassignable(args)
                 return false
             }
             const valueKeysLeftToCheck = new Set(Object.keys(args.value))
@@ -105,13 +104,13 @@ export namespace Record {
             return result
         }
 
-        override structureReferences(args: Base.References.Args) {
-            const structuredReferences: Record<string, TreeOf<string[]>> = {}
-            for (const [propKey, propNode] of this.entries) {
-                structuredReferences[propKey] =
-                    propNode.structureReferences(args)
-            }
-            return structuredReferences
-        }
+        // override structureReferences(args: Base.References.Args) {
+        //     const structuredReferences: Record<string, TreeOf<string[]>> = {}
+        //     for (const [propKey, propNode] of this.entries) {
+        //         structuredReferences[propKey] =
+        //             propNode.structureReferences(args)
+        //     }
+        //     return structuredReferences
+        // }
     }
 }

@@ -53,24 +53,8 @@ export namespace Bound {
     type BoundParts = [string, ComparatorToken, string]
     type RangeParts = [string, ComparatorToken, string, ComparatorToken, string]
 
-    export class Node extends Base.Link<Definition, Boundable> {
+    export class Node extends Base.NonTerminal<Boundable> {
         private bounds: BoundEntry[] | undefined
-
-        parse() {
-            // The regex guarantees odd-indexed parts are comparators (<=, >=, < or >)
-            const parts = this.def.split(matcher)
-            let child
-            // Delegate validation of the bounded definition and bound values
-            if (parts.length === 3) {
-                child = this.parseBound(parts as BoundParts)
-            } else if (parts.length === 5) {
-                child = this.parseRange(parts as RangeParts)
-            } else {
-                throw new Error(boundPartsErrorTemplate)
-            }
-            this.assertBoundable(child)
-            return child
-        }
 
         // E.g. ["number", ">=", "5"]
         private parseBound(parts: BoundParts) {
@@ -99,7 +83,7 @@ export namespace Bound {
             if ("toBound" in node) {
                 return
             }
-            throw new Error(unboundableError(node.defToString()))
+            throw new Error(unboundableError(node.toString()))
         }
 
         private addBoundErrorAndReturnFalse(
@@ -116,7 +100,7 @@ export namespace Bound {
         }
 
         allows(args: Base.Validation.Args) {
-            const boundedNode = this.child
+            const boundedNode = this.children
             if (!boundedNode.allows(args)) {
                 return false
             }
@@ -168,7 +152,7 @@ export namespace Bound {
 
         generate() {
             throw new Base.Create.UngeneratableError(
-                this.def,
+                this.toString(),
                 "Bounded generation is unsupported."
             )
         }

@@ -1,22 +1,23 @@
+import { Create, References, Validation } from "../base.js"
 import { Parsing } from "../features/parsing.js"
 import { Node } from "./node.js"
 
-export abstract class NonTerminal<DefType, ParseResult> extends Node<DefType> {
-    private cache?: ParseResult
+export type ParseChildren = Parsing.Node | Parsing.Node[]
 
-    constructor(def: DefType, ctx: Parsing.Context, neverEager?: boolean) {
-        super(def, ctx)
-        if (ctx.cfg.parse?.eager && !neverEager) {
-            this.cache = this.parse()
+export abstract class NonTerminal<Children extends ParseChildren = Parsing.Node>
+    implements Node
+{
+    constructor(public children: Children, public ctx: Parsing.Context) {}
+
+    abstract allows(args: Validation.Args): boolean
+    abstract generate(args: Create.Args): unknown
+    collectReferences(args: References.Args, collected: Set<string>) {
+        if (Array.isArray(this.children)) {
+            for (const child of this.children) {
+                child.collectReferences(args, collected)
+            }
+        } else {
+            this.children.collectReferences(args, collected)
         }
     }
-
-    next() {
-        if (!this.cache) {
-            this.cache = this.parse()
-        }
-        return this.cache
-    }
-
-    abstract parse(): ParseResult
 }

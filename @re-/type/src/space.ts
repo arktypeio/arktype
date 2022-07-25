@@ -6,12 +6,12 @@ import {
     Get,
     Merge
 } from "@re-/tools"
-import { Base, Root } from "./nodes/index.js"
+import { Alias, Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
 import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
 
-export const space: CreateSpaceFn = (dictionary, options) =>
-    rawSpace(dictionary, options) as any
+export const space: CreateSpaceFn = (dictionary, options) => ({} as any)
+// rawSpace(dictionary, options) as any
 
 export type RawSpace = Record<string, any> & { $root: SpaceMeta }
 
@@ -23,10 +23,9 @@ export const rawSpace = (
     const meta = new SpaceMeta(dictionary, options)
     const compiled: Record<string, any> = { $root: meta }
     for (const alias of Object.keys(dictionary)) {
-        if (alias === "$root") {
-            continue
-        }
-        compiled[alias] = new Type(new Resolution.Node(alias, meta, []))
+        const resolution = new Resolution.Node(alias, meta)
+        meta.resolutions[alias] = resolution
+        compiled[alias] = new Type(resolution)
     }
     return compiled as RawSpace
 }

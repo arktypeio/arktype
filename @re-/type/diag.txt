@@ -1,15 +1,112 @@
-Files:              227
-Lines:            84540
-Nodes:           284653
-Identifiers:     102826
-Symbols:         262682
-Types:            64623
-Instantiations:  377196
-Memory used:    207668K
+src/nodes/base/features/validation.ts(58,23): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/obj/obj.ts(54,18): error TS2322: Type '(def: object, ctx: Context) => Regex.Node | Record.Node | Tuple.Node' is not assignable to type 'Parser<object>'.
+  Type 'Regex.Node | Record.Node | Tuple.Node' is not assignable to type 'Node'.
+    Property 'collectReferences' is missing in type 'import("/home/ssalb/re-po/@re-/type/src/nodes/obj/record", { assert: { "resolution-mode": "import" } }).Record.Node' but required in type 'import("/home/ssalb/re-po/@re-/type/src/nodes/base/kinds/node", { assert: { "resolution-mode": "import" } }).Node'.
+src/nodes/obj/obj.ts(56,40): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/obj/obj.ts(59,35): error TS2554: Expected 0 arguments, but got 2.
+src/nodes/obj/obj.ts(61,32): error TS2554: Expected 0 arguments, but got 2.
+src/nodes/obj/record.ts(29,36): error TS2339: Property 'Shape' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/nodes/base/base", { assert: { "resolution-mode": "import" } })'.
+src/nodes/obj/record.ts(31,40): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/obj/record.ts(36,37): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/obj/record.ts(37,53): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/obj/record.ts(46,22): error TS2339: Property 'addUnassignable' does not exist on type 'Node'.
+src/nodes/obj/record.ts(51,52): error TS2339: Property 'entries' does not exist on type 'Node'.
+src/nodes/obj/record.ts(92,52): error TS2339: Property 'entries' does not exist on type 'Node'.
+src/nodes/obj/record.ts(108,18): error TS4112: This member cannot have an 'override' modifier because its containing class 'Node' does not extend another class.
+src/nodes/obj/record.ts(110,52): error TS2339: Property 'entries' does not exist on type 'Node'.
+src/nodes/obj/regex.ts(13,26): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/obj/regex.ts(22,26): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/obj/regex.ts(25,57): error TS2339: Property 'defToString' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(14,36): error TS2339: Property 'Shape' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/nodes/base/base", { assert: { "resolution-mode": "import" } })'.
+src/nodes/obj/tuple.ts(16,25): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(17,18): error TS7006: Parameter 'elementDef' implicitly has an 'any' type.
+src/nodes/obj/tuple.ts(17,30): error TS7006: Parameter 'elementIndex' implicitly has an 'any' type.
+src/nodes/obj/tuple.ts(20,33): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(21,49): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(29,22): error TS2339: Property 'addUnassignable' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(32,22): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(35,38): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(40,54): error TS2339: Property 'entries' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(58,54): error TS2339: Property 'entries' does not exist on type 'Node'.
+src/nodes/obj/tuple.ts(72,18): error TS4112: This member cannot have an 'override' modifier because its containing class 'Node' does not extend another class.
+src/nodes/obj/tuple.ts(74,45): error TS2339: Property 'entries' does not exist on type 'Node'.
+src/nodes/str/bound.ts(56,36): error TS2339: Property 'Link' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/nodes/base/base", { assert: { "resolution-mode": "import" } })'.
+src/nodes/str/bound.ts(61,32): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/str/bound.ts(78,45): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/str/bound.ts(93,45): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/str/bound.ts(102,51): error TS2339: Property 'defToString' does not exist on type 'Node'.
+src/nodes/str/bound.ts(119,38): error TS2339: Property 'child' does not exist on type 'Node'.
+src/nodes/str/bound.ts(171,22): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/str/intersection.ts(16,48): error TS2344: Type '`${string}&${string}`' does not satisfy the constraint 'ParseChildren'.
+src/nodes/str/intersection.ts(18,36): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/str/intersection.ts(28,29): error TS2339: Property 'allows' does not exist on type 'string'.
+src/nodes/str/intersection.ts(37,22): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/str/keyword/keyword.ts(87,55): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/str/keyword/numberKeyword.ts(12,14): error TS2339: Property 'addUnassignable' does not exist on type 'BaseNumberKeyword'.
+src/nodes/str/keyword/stringKeyword.ts(13,14): error TS2339: Property 'addUnassignable' does not exist on type 'BaseStringKeyword'.
+src/nodes/str/keyword/typeKeyword.ts(8,14): error TS2339: Property 'addUnassignable' does not exist on type 'BaseTypeKeyword'.
+src/nodes/str/list.ts(11,18): error TS2420: Class 'Node' incorrectly implements interface 'Boundable'.
+  Property 'collectReferences' is missing in type 'Node' but required in type 'Boundable'.
+src/nodes/str/list.ts(11,36): error TS2339: Property 'Link' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/nodes/base/base", { assert: { "resolution-mode": "import" } })'.
+src/nodes/str/list.ts(13,35): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/str/list.ts(13,58): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/str/list.ts(18,22): error TS2339: Property 'addUnassignable' does not exist on type 'Node'.
+src/nodes/str/list.ts(24,44): error TS2339: Property 'child' does not exist on type 'Node'.
+src/nodes/str/literal.ts(10,14): error TS2339: Property 'addUnassignable' does not exist on type 'LiteralNode'.
+src/nodes/str/literal.ts(34,57): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/str/literal.ts(49,41): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/str/literal.ts(63,41): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/str/literal.ts(86,42): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/str/optional.ts(13,36): error TS2339: Property 'Link' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/nodes/base/base", { assert: { "resolution-mode": "import" } })'.
+src/nodes/str/optional.ts(15,22): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/str/optional.ts(15,46): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/str/optional.ts(18,35): error TS2339: Property 'def' does not exist on type 'Node'.
+src/nodes/str/optional.ts(18,58): error TS2339: Property 'ctx' does not exist on type 'Node'.
+src/nodes/str/optional.ts(25,25): error TS2339: Property 'child' does not exist on type 'Node'.
+src/nodes/str/str.ts(504,18): error TS2322: Type '(def: string, ctx: Context) => Node | Bound.Node | List.Node | Optional.Node' is not assignable to type 'Parser<string>'.
+  Type 'Node | Bound.Node | List.Node | Optional.Node' is not assignable to type 'Node'.
+    Property 'collectReferences' is missing in type 'import("/home/ssalb/re-po/@re-/type/src/nodes/str/bound", { assert: { "resolution-mode": "import" } }).Bound.Node' but required in type 'import("/home/ssalb/re-po/@re-/type/src/nodes/base/kinds/node", { assert: { "resolution-mode": "import" } }).Node'.
+src/nodes/str/str.ts(506,38): error TS2554: Expected 0 arguments, but got 2.
+src/nodes/str/str.ts(521,26): error TS2339: Property 'matches' does not exist on type 'typeof Union'.
+src/nodes/str/str.ts(522,35): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Node[]'.
+src/nodes/str/str.ts(524,34): error TS2554: Expected 0 arguments, but got 2.
+src/nodes/str/str.ts(526,35): error TS2554: Expected 0 arguments, but got 2.
+src/type.ts(48,32): error TS2339: Property 'def' does not exist on type 'Node'.
+src/type.ts(99,30): error TS2339: Property 'structureReferences' does not exist on type 'Node'.
+test/references.test.ts(51,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type 'never[]'.
+  Type 'string' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
+test/references.test.ts(57,40): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(57,45): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(61,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type '`/${string}/`[]'.
+  Type '"string" | `/${string}/` | "boolean" | "-1n" | "null" | "integer"' is not assignable to type '`/${string}/`'.
+    Type '"string"' is not assignable to type '`/${string}/`'.
+test/references.test.ts(85,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer", "null"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: never[]; expression: never[]; }; listed: [never[], never[], never[]]; regex: `/${string}/`[]; }'.
+  The types of 'strings.keyword' are incompatible between these types.
+    Type '["boolean"]' is not assignable to type 'never[]'.
+      Type 'string' is not assignable to type 'never'.
+test/references.test.ts(93,50): error TS2322: Type '"integer"' is not assignable to type '`/${string}/`'.
+test/references.test.ts(93,61): error TS2322: Type '"boolean"' is not assignable to type '`/${string}/`'.
+test/references.test.ts(103,53): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(125,31): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(125,38): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(125,43): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(125,50): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(125,55): error TS2322: Type 'string' is not assignable to type 'never'.
+test/references.test.ts(125,60): error TS2322: Type 'string' is not assignable to type 'never'.
+test/space/validation.test.ts(45,13): error TS2578: Unused '@ts-expect-error' directive.
+Files:              224
+Lines:            84417
+Nodes:           284006
+Identifiers:     102619
+Symbols:         250937
+Types:            60466
+Instantiations:  371908
+Memory used:    197632K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.57s
-Bind time:        0.21s
-Check time:       1.57s
+Parse time:       0.56s
+Bind time:        0.24s
+Check time:       1.65s
 Emit time:        0.00s
-Total time:       2.35s
+Total time:       2.45s
