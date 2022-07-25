@@ -1,7 +1,13 @@
-import { SpaceDictionary } from "../../space.js"
+import { Regex } from "../obj/regex.js"
+import { AliasNode, AliasType } from "./alias.js"
+import { Base } from "./base.js"
+import { IntersectionNode, IntersectionType } from "./intersection.js"
 import { Keyword } from "./keyword/keyword.js"
-import { BigintLiteral, NumberLiteral } from "./literal.js"
+import { ListNode, ListType } from "./list.js"
+import { BigintLiteral, LiteralNode, NumberLiteral } from "./literal.js"
+import { OptionalNode, OptionalType } from "./optional.js"
 import { Str } from "./str.js"
+import { UnionNode, UnionType } from "./union.js"
 
 type ExpressionTree = string | ExpressionTree[]
 
@@ -28,13 +34,6 @@ const literalEnclosing = {
 
 type LiteralEnclosing = keyof typeof literalEnclosing
 
-type OpenBranchExpression = [] | [ExpressionTree, string]
-
-type BranchState = {
-    branch: ExpressionTree[]
-    context: Str.State.BranchContext
-}
-
 const comparatorStarting = {
     "<": 1,
     ">": 1,
@@ -53,27 +52,24 @@ const baseTerminating = {
     " ": 1
 }
 
+type BranchState = {
+    union?: UnionNode
+    intersection?: IntersectionNode
+    ctx?: Str.State.BranchContext
+}
+
 export class Parser {
     openGroups: BranchState[]
-    branch: ExpressionTree[]
-    expression: ExpressionTree
-    branchContext: Str.State.BranchContext
+    branch: BranchState
+    expression?: Base.Parsing.Node
     chars: string[]
     location: number
 
-    constructor(def: string, private dict: SpaceDictionary) {
+    constructor(def: string, private ctx: Base.Parsing.Context) {
         this.openGroups = []
-        this.branch = []
-        this.expression = ""
+        this.branch = {}
         this.chars = [...def, "END"]
         this.location = 0
-        this.branchContext = {}
-    }
-
-    mergeBranches() {
-        if (this.branch.length === 2) {
-            this.expression = [this.branch[0], this.branch[1], this.expression]
-        }
     }
 
     shiftBranches() {
@@ -84,7 +80,7 @@ export class Parser {
     }
 
     finalizeExpression() {
-        this.mergeBranches()
+        this.mergeUnion()
         if (this.chars[this.location] === "?") {
             this.shiftOptional()
         } else if (this.chars[this.location] === ")") {
@@ -98,27 +94,59 @@ export class Parser {
                 `Modifier '?' is only valid at the end of a definition.`
             )
         }
-        this.expression = [this.expression, "?"]
+        this.expression = new OptionalNode(this.expression!, this.ctx)
     }
 
     shouldContinueBranching() {
         if (this.chars[this.location] in expressionTerminating) {
             return false
+        } else if (this.chars[this.location] === "|") {
+            this.shiftUnion()
+        } else {
+            this.shiftIntersection()
         }
-        this.shiftBranchToken()
         return true
     }
 
-    shiftBranchToken() {
-        if (this.branch.length === 0) {
-            this.branch = [this.expression, this.chars[this.location]]
+    shiftUnion() {
+        this.mergeIntersection()
+        if (!this.branch.union) {
+            this.branch.union = new UnionNode([this.expression!], this.ctx)
         } else {
-            this.branch = [
-                [this.branch[0], this.branch[1], this.expression],
-                this.chars[this.location]
-            ]
+            this.branch.union.children.push(this.expression!)
         }
+        this.expression = undefined
         this.location++
+    }
+
+    mergeUnion() {
+        if (this.branch.union) {
+            this.mergeIntersection()
+            this.branch.union.children.push(this.expression!)
+            this.expression = this.branch.union
+            this.branch.union = undefined
+        }
+    }
+
+    shiftIntersection() {
+        if (!this.branch.intersection) {
+            this.branch.intersection = new IntersectionNode(
+                [this.expression!],
+                this.ctx
+            )
+        } else {
+            this.branch.intersection.children.push(this.expression!)
+        }
+        this.expression = undefined
+        this.location++
+    }
+
+    mergeIntersection() {
+        if (this.branch.intersection) {
+            this.branch.intersection.children.push(this.expression!)
+            this.expression = this.branch.intersection
+            this.branch.intersection = undefined
+        }
     }
 
     shiftBranch() {
@@ -140,23 +168,18 @@ export class Parser {
     }
 
     shiftGroup() {
-        this.openGroups.push({
-            branch: this.branch,
-            context: this.branchContext
-        })
-        this.branch = []
-        this.branchContext = {}
+        this.openGroups.push(this.branch)
+        this.branch = {}
         this.location++
         this.shiftBranches()
     }
 
     popGroup() {
-        const group = this.openGroups.pop()
-        if (group === undefined) {
+        const previousBranches = this.openGroups.pop()
+        if (previousBranches === undefined) {
             throw new Error(`Unexpected ).`)
         }
-        this.branch = group.branch
-        this.branchContext = group.context
+        this.branch = previousBranches
         this.location++
     }
 
@@ -173,13 +196,13 @@ export class Parser {
 
     reduceNonLiteral(fragment: string) {
         if (Keyword.matches(fragment)) {
-            this.expression = fragment
-        } else if (fragment in this.dict) {
-            this.expression = fragment
+            this.expression = Keyword.parse(fragment)
+        } else if (AliasNode.matches(fragment, this.ctx)) {
+            this.expression = new AliasNode(fragment, this.ctx)
         } else if (NumberLiteral.matches(fragment)) {
-            this.expression = fragment
+            this.expression = new LiteralNode(fragment)
         } else if (BigintLiteral.matches(fragment)) {
-            this.expression = fragment
+            this.expression = new LiteralNode(fragment)
         } else if (fragment === "") {
             throw new Error("Expected an expression.")
         } else {
@@ -195,7 +218,11 @@ export class Parser {
             content += this.chars[scanLocation]
             scanLocation++
         }
-        this.expression = `${enclosing}${content}${enclosing}`
+        if (enclosing === "/") {
+            this.expression = new Regex.Node(new RegExp(content))
+        } else {
+            this.expression = new LiteralNode(content)
+        }
         this.location = scanLocation + 1
     }
 
@@ -216,7 +243,7 @@ export class Parser {
 
     shiftListToken() {
         if (this.chars[this.location + 1] === "]") {
-            this.expression = [this.expression, "[]"]
+            this.expression = new ListNode(this.expression!, this.ctx)
             this.location += 2
         } else {
             throw new Error(`Missing expected ].`)
@@ -224,6 +251,10 @@ export class Parser {
     }
 }
 
-const s = new Parser("boolean |   ('string'|number)[]|number[]", {})
-s.shiftBranches()
-console.log(s.expression)
+// const s = new Parser(
+//     "boolean |   ('string'|number)[]|number[]",
+//     Base.Parsing.createContext()
+// )
+// s.shiftBranches()
+
+// console.log(s)

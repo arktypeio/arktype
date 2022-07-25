@@ -1,6 +1,8 @@
 import { assert } from "@re-/assert"
 import { eager, type } from "../../src/index.js"
 
+// TODO: Add precedence union vs intersection
+
 describe("intersection", () => {
     describe("type", () => {
         it("two types", () => {

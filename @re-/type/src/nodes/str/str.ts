@@ -1,18 +1,14 @@
 import { ListChars } from "@re-/tools"
-import { Alias } from "./alias.js"
+import { AliasType } from "./alias.js"
 import { Base } from "./base.js"
-import { Bound } from "./bound.js"
-import { Intersection } from "./intersection.js"
 import { Keyword } from "./keyword/keyword.js"
-import { List } from "./list.js"
 import {
     BigintLiteral,
     NumberLiteral,
     RegexLiteral,
     StringLiteral
 } from "./literal.js"
-import { Optional } from "./optional.js"
-import { Union } from "./union.js"
+import { Parser } from "./parse.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = TryNaiveParse<Def, Dict>
@@ -292,8 +288,6 @@ export namespace Str {
         Dict
     >
 
-    type ZZZZ = ShiftDefinition<"string|number[]&boolean", {}>
-
     type ShiftBranches<
         S extends State.State,
         Dict
@@ -501,7 +495,7 @@ export namespace Str {
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
         : Token extends keyof Ctx["dict"]
-        ? Alias.TypeOf<Token, Ctx>
+        ? AliasType.Of<Token, Ctx>
         : Token extends StringLiteral.SingleQuoted<infer Value>
         ? Value
         : Token extends StringLiteral.DoubleQuoted<infer Value>
@@ -518,33 +512,8 @@ export namespace Str {
         typeof def === "string"
 
     export const parse: Base.Parsing.Parser<string> = (def, ctx) => {
-        if (Optional.matches(def)) {
-            return new Optional.Node(def, ctx)
-        } else if (Keyword.matches(def)) {
-            return Keyword.parse(def, ctx)
-        } else if (Alias.matches(def, ctx)) {
-            return new Alias.Node(def, ctx)
-        } else if (StringLiteral.matches(def)) {
-            return StringLiteral.parse(def, ctx)
-        } else if (RegexLiteral.matches(def)) {
-            return RegexLiteral.parse(def, ctx)
-        } else if (NumberLiteral.matches(def)) {
-            return NumberLiteral.parse(def, ctx)
-        } else if (BigintLiteral.matches(def)) {
-            return BigintLiteral.parse(def, ctx)
-        } else if (Intersection.matches(def)) {
-            return new Intersection.Node(def, ctx)
-        } else if (Union.matches(def)) {
-            return new Union.Node(def, ctx)
-        } else if (List.matches(def)) {
-            return new List.Node(def, ctx)
-        } else if (Bound.matches(def)) {
-            return new Bound.Node(def, ctx)
-        }
-        throw new Base.Parsing.ParseError(
-            `Unable to determine the type of '${Base.defToString(
-                def
-            )}'${Base.stringifyPathContext(ctx.path)}.`
-        )
+        const parser = new Parser(def, ctx)
+        parser.shiftBranches()
+        return parser.expression!
     }
 }

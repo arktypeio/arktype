@@ -6,12 +6,12 @@ import {
     Get,
     Merge
 } from "@re-/tools"
-import { Alias, Base, Root } from "./nodes/index.js"
+import { AliasType, Base, Root } from "./nodes/index.js"
 import { Resolution } from "./nodes/resolution.js"
 import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
 
-export const space: CreateSpaceFn = (dictionary, options) => ({} as any)
-// rawSpace(dictionary, options) as any
+export const space: CreateSpaceFn = (dictionary, options) =>
+    rawSpace(dictionary, options) as any
 
 export type RawSpace = Record<string, any> & { $root: SpaceMeta }
 

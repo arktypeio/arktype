@@ -10,7 +10,7 @@ export namespace Regex {
         allows(args: Base.Validation.Args) {
             if (typeof args.value !== "string") {
                 args.errors.add(
-                    this.ctx.path,
+                    "",
                     `Non-string value ${Base.stringifyValue(
                         args.value
                     )} cannot satisfy regex definitions.`
@@ -19,10 +19,10 @@ export namespace Regex {
             }
             if (!this.def.test(args.value)) {
                 args.errors.add(
-                    this.ctx.path,
+                    "",
                     `${Base.stringifyValue(
                         args.value
-                    )} does not match expression ${this.defToString()}.`
+                    )} does not match expression ${this.toString()}.`
                 )
                 return false
             }

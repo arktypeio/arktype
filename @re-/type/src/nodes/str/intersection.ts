@@ -1,33 +1,21 @@
-import { Base, createSplittableMatcher } from "./base.js"
-import { Str } from "./str.js"
+import { Base } from "./base.js"
 
-export namespace Intersection {
-    export type Definition<
-        Left extends string = string,
-        Right extends string = string
-    > = `${Left}&${Right}`
+export namespace IntersectionType {}
 
-    export const matches = (def: string): def is Definition => def.includes("&")
-
-    const matcher = createSplittableMatcher("&")
-
-    export const getMembers = (def: Definition) => def.match(matcher)!
-
-    export class Node extends Base.NonTerminal<Base.Parsing.Node[]> {
-        allows(args: Base.Validation.Args) {
-            for (const branch of this.children) {
-                if (!branch.allows(args)) {
-                    return false
-                }
+export class IntersectionNode extends Base.NonTerminal<Base.Parsing.Node[]> {
+    allows(args: Base.Validation.Args) {
+        for (const branch of this.children) {
+            if (!branch.allows(args)) {
+                return false
             }
-            return true
         }
+        return true
+    }
 
-        generate() {
-            throw new Base.Create.UngeneratableError(
-                this.toString(),
-                "Intersection generation is unsupported."
-            )
-        }
+    generate() {
+        throw new Base.Create.UngeneratableError(
+            this.toString(),
+            "Intersection generation is unsupported."
+        )
     }
 }

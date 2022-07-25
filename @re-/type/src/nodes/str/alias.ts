@@ -3,26 +3,26 @@ import { Resolution } from "../resolution.js"
 import { Root } from "../root.js"
 import { Base } from "./base.js"
 
-export namespace Alias {
-    export type TypeOf<
+export namespace AliasType {
+    export type Of<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
     > = "onResolve" extends keyof Ctx["meta"]
         ? Def extends "$resolution"
-            ? BaseTypeOf<Def, Ctx>
-            : OnResolveTypeOf<Def, Ctx>
+            ? BaseOf<Def, Ctx>
+            : OnResolveOf<Def, Ctx>
         : "onCycle" extends keyof Ctx["meta"]
         ? Def extends keyof Ctx["seen"]
-            ? OnCycleTypeOf<Def, Ctx>
-            : BaseTypeOf<Def, Ctx>
-        : BaseTypeOf<Def, Ctx>
+            ? OnCycleOf<Def, Ctx>
+            : BaseOf<Def, Ctx>
+        : BaseOf<Def, Ctx>
 
-    type BaseTypeOf<
+    type BaseOf<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
     > = Root.TypeOf<Ctx["dict"][Def], Ctx & { seen: { [K in Def]: true } }>
 
-    type OnResolveTypeOf<
+    type OnResolveOf<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
     > = Root.TypeOf<
@@ -34,7 +34,7 @@ export namespace Alias {
         }
     >
 
-    type OnCycleTypeOf<
+    type OnCycleOf<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
     > = Root.TypeOf<
@@ -45,25 +45,26 @@ export namespace Alias {
             seen: {}
         }
     >
+}
 
-    export const matches = (def: string, ctx: Base.Parsing.Context) =>
-        !!ctx.space && def in ctx.space.dictionary
+export class AliasNode extends Base.Terminal<string> {
+    static matches(def: string, ctx: Base.Parsing.Context) {
+        return !!ctx.space && def in ctx.space.dictionary
+    }
 
-    export class Node extends Base.Terminal<string> {
-        constructor(def: string, private ctx: Base.Parsing.Context) {
-            super(def)
-        }
+    constructor(def: string, private ctx: Base.Parsing.Context) {
+        super(def)
+    }
 
-        get resolution() {
-            return this.ctx.space!.resolutions[this.def]
-        }
+    get resolution() {
+        return this.ctx.space!.resolutions[this.def]
+    }
 
-        allows(args: Base.Validation.Args): boolean {
-            return this.resolution.allows(args)
-        }
+    allows(args: Base.Validation.Args): boolean {
+        return this.resolution.allows(args)
+    }
 
-        generate(args: Base.Create.Args): unknown {
-            return this.resolution.generate(args)
-        }
+    generate(args: Base.Create.Args): unknown {
+        return this.resolution.generate(args)
     }
 }

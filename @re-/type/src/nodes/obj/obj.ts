@@ -1,9 +1,9 @@
 import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
 import { Root } from "../root.js"
 import { Base } from "./base.js"
-import { Record } from "./record.js"
+import { RecordNode, RecordType } from "./record.js"
 import { Regex } from "./regex.js"
-import { Tuple } from "./tuple.js"
+import { TupleNode, TupleType } from "./tuple.js"
 
 export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
@@ -20,7 +20,7 @@ export namespace Obj {
         ? Evaluate<{
               -readonly [I in keyof Def]: Root.TypeOf<Def[I], Ctx>
           }>
-        : Record.TypeOf<Def, Ctx>
+        : RecordType.Of<Def, Ctx>
 
     export type References<
         Def extends object,
@@ -55,9 +55,9 @@ export namespace Obj {
         if (Regex.matches(def)) {
             return new Regex.Node(def)
         }
-        if (Tuple.matches(def)) {
-            return new Tuple.Node(def, ctx)
+        if (TupleNode.matches(def)) {
+            return new TupleNode(def, ctx)
         }
-        return new Record.Node(def as Record.Definition, ctx)
+        return new RecordNode(def as RecordType.Definition, ctx)
     }
 }
