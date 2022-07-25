@@ -1,13 +1,15 @@
 import { ListChars } from "@re-/tools"
-import { AliasType } from "./alias.js"
+import { AliasNode, AliasType } from "./alias.js"
 import { Base } from "./base.js"
 import { Keyword } from "./keyword/keyword.js"
+import { ListNode } from "./list.js"
 import {
     BigintLiteral,
     NumberLiteral,
     RegexLiteral,
     StringLiteral
 } from "./literal.js"
+import { OptionalNode } from "./optional.js"
 import { Parser } from "./parse.js"
 
 export namespace Str {
@@ -511,7 +513,47 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
-    export const parse: Base.Parsing.Parser<string> = (def, ctx) => {
+    export const parse: Base.Parsing.Parser<string> = (def, ctx) =>
+        tryNaiveParse(def, ctx) ?? fullParse(def, ctx)
+
+    const tryNaiveParse = (def: string, ctx: Base.Parsing.Context) => {
+        if (def.endsWith("?")) {
+            const possibleIdentifierNode = tryNaiveParseIdentifier(
+                def.slice(0, -1),
+                ctx
+            )
+            if (possibleIdentifierNode) {
+                return new OptionalNode(possibleIdentifierNode, ctx)
+            }
+        }
+        return tryNaiveParseList(def, ctx)
+    }
+
+    const tryNaiveParseList = (def: string, ctx: Base.Parsing.Context) => {
+        if (def.endsWith("[]")) {
+            const possibleIdentifierNode = tryNaiveParseIdentifier(
+                def.slice(0, -2),
+                ctx
+            )
+            if (possibleIdentifierNode) {
+                return new ListNode(possibleIdentifierNode, ctx)
+            }
+        }
+        return tryNaiveParseIdentifier(def, ctx)
+    }
+
+    const tryNaiveParseIdentifier = (
+        possibleIdentifier: string,
+        ctx: Base.Parsing.Context
+    ) => {
+        if (Keyword.matches(possibleIdentifier)) {
+            return Keyword.parse(possibleIdentifier)
+        } else if (AliasNode.matches(possibleIdentifier, ctx)) {
+            return new AliasNode(possibleIdentifier, ctx)
+        }
+    }
+
+    const fullParse = (def: string, ctx: Base.Parsing.Context) => {
         const parser = new Parser(def, ctx)
         parser.shiftBranches()
         return parser.expression!

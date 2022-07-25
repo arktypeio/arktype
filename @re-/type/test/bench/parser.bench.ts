@@ -13,21 +13,11 @@ const deepStringDef = "string|".repeat(20).slice(0, -1)
 
 bench("parse deeep", () => {
     type(deepStringDef as any)
-}).median(`206.00ns`)
-
-bench("parse deeep eager", () => {
-    type(deepStringDef as any, { parse: { eager: true } })
 }).median(`2.31us`)
 
 bench("parse and validate deeep", () => {
     type(deepStringDef as any).validate("test")
 }).median(`2.54us`)
-
-const deepPreparsed = type(deepStringDef as any)
-
-bench("validate deeep preparsed", () => {
-    deepPreparsed.validate("test")
-}).median(`138.00ns`)
 
 bench("validate map", () => {
     type({ a: "string?", b: "number?", c: { nested: "boolean?" } }).validate({
@@ -66,10 +56,10 @@ bench("validate regex", () => {
 }).median(`135.00ns`)
 
 bench("parse union", () => {
-    type("string|number", { parse: { eager: true } })
+    type("string|number")
 }).median(`573.00ns`)
 
-const smallUnion = type("string|number", { parse: { eager: true } })
+const smallUnion = type("string|number")
 
 bench("validate small union second", () => {
     smallUnion.validate(5)
@@ -80,7 +70,7 @@ bench("validate small union first", () => {
 }).median(`162.00ns`)
 
 bench("parse large union eager", () => {
-    type("1|2|3|4|5|6|7|8|9", { parse: { eager: true } })
+    type("1|2|3|4|5|6|7|8|9")
 }).median(`1.73us`)
 
 bench("parse then validate large union", () => {
