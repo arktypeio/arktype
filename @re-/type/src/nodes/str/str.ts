@@ -109,50 +109,53 @@ export namespace Str {
 
     export namespace State {
         export type State = {
-            groups: GroupState[]
-            branch: CurrentBranch
+            openGroups: BranchState[]
+            branch: BranchState
             expression: unknown
             unscanned: string[]
-            branchContext: Context
         }
 
         export type Initialize<Def extends string> = From<{
-            groups: []
-            branch: []
+            openGroups: []
+            branch: DefaultBranchState
             expression: []
             unscanned: ListChars<Def>
-            branchContext: {}
         }>
 
-        export type GroupState = {
-            branch: CurrentBranch
-            branchContext: Context
+        export type BranchState = {
+            union: CurrentBranch
+            intersection: CurrentBranch
+            ctx: BranchContext
+        }
+
+        type DefaultBranchState = {
+            union: []
+            intersection: []
+            ctx: {}
         }
 
         export type CurrentBranch = [] | [unknown, string]
 
-        export type Context = {
+        export type BranchContext = {
             leftBounded?: boolean
             rightBounded?: boolean
         }
 
         export type ScanTo<S extends State, Unscanned extends string[]> = From<{
-            groups: S["groups"]
+            openGroups: S["openGroups"]
             branch: S["branch"]
             expression: S["expression"]
             unscanned: Unscanned
-            branchContext: S["branchContext"]
         }>
 
         export type UpdateBranchContext<
             S extends State,
-            Updates extends Partial<Context>
+            Updates extends Partial<BranchContext>
         > = From<{
-            groups: S["groups"]
-            branch: S["branch"]
+            openGroups: S["openGroups"]
+            branch: S["branch"] & { ctx: Updates }
             expression: S["expression"]
             unscanned: S["unscanned"]
-            branchContext: S["branchContext"] & Updates
         }>
 
         export type PushBase<
@@ -160,28 +163,45 @@ export namespace Str {
             Token extends string,
             Unscanned extends string[]
         > = From<{
-            groups: S["groups"]
+            openGroups: S["openGroups"]
             branch: S["branch"]
             expression: Token
             unscanned: Unscanned
-            branchContext: S["branchContext"]
         }>
+
+        type PushIntersection<B extends BranchState, Expression> = {
+            union: B["union"]
+            intersection: [
+                B["intersection"] extends []
+                    ? Expression
+                    : [...B["intersection"], Expression],
+                "&"
+            ]
+            ctx: B["ctx"]
+        }
+
+        type PushUnion<B extends BranchState, Expression> = {
+            union: [
+                B["union"] extends []
+                    ? MergeExpression<B["intersection"], Expression>
+                    : [...B["union"], Expression],
+                "|"
+            ]
+            intersection: []
+            ctx: {}
+        }
 
         export type PushBranchingToken<
             S extends State,
-            Token extends string,
+            Token extends BranchingOperatorToken,
             Unscanned extends string[]
         > = From<{
-            groups: S["groups"]
-            branch: [
-                S["branch"] extends []
-                    ? S["expression"]
-                    : [...S["branch"], S["expression"]],
-                Token
-            ]
+            openGroups: S["openGroups"]
+            branch: Token extends "|"
+                ? PushUnion<S["branch"], S["expression"]>
+                : PushIntersection<S["branch"], S["expression"]>
             expression: []
             unscanned: Unscanned
-            branchContext: {}
         }>
 
         type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
@@ -191,13 +211,17 @@ export namespace Str {
             Expression
         > = ExtractIfSingleton<[...Branch, Expression]>
 
-        export type Finalize<S extends State> = S["groups"] extends []
+        type MergeBranches<B extends BranchState, Expression> = MergeExpression<
+            B["union"],
+            MergeExpression<B["intersection"], Expression>
+        >
+
+        export type Finalize<S extends State> = S["openGroups"] extends []
             ? From<{
-                  groups: []
-                  branch: []
-                  expression: MergeExpression<S["branch"], S["expression"]>
+                  openGroups: []
+                  branch: DefaultBranchState
+                  expression: MergeBranches<S["branch"], S["expression"]>
                   unscanned: []
-                  branchContext: S["branchContext"]
               }>
             : Error<`Missing ).`>
 
@@ -206,28 +230,23 @@ export namespace Str {
             Token extends string,
             Unscanned extends string[]
         > = From<{
-            groups: S["groups"]
+            openGroups: S["openGroups"]
             branch: S["branch"]
             expression: [S["expression"], Token]
             unscanned: Unscanned
-            branchContext: S["branchContext"]
         }>
 
         export type OpenGroup<
             S extends State,
             Unscanned extends string[]
         > = From<{
-            groups: [
-                ...S["groups"],
-                { branch: S["branch"]; branchContext: S["branchContext"] }
-            ]
-            branch: []
+            openGroups: [...S["openGroups"], S["branch"]]
+            branch: DefaultBranchState
             expression: []
             unscanned: Unscanned
-            branchContext: {}
         }>
 
-        type PopGroup<Stack extends GroupState[], Top extends GroupState> = [
+        type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
             ...Stack,
             Top
         ]
@@ -235,22 +254,20 @@ export namespace Str {
         export type CloseGroup<
             S extends State,
             Unscanned extends string[]
-        > = S["groups"] extends PopGroup<infer Stack, infer Top>
+        > = S["openGroups"] extends PopGroup<infer Stack, infer Top>
             ? From<{
-                  groups: Stack
-                  branch: Top["branch"]
-                  expression: MergeExpression<S["branch"], S["expression"]>
+                  openGroups: Stack
+                  branch: Top
+                  expression: MergeBranches<S["branch"], S["expression"]>
                   unscanned: Unscanned
-                  branchContext: Top["branchContext"]
               }>
             : Error<`Unexpected ).`>
 
         export type Error<Message extends string> = From<{
-            groups: []
-            branch: []
+            openGroups: []
+            branch: DefaultBranchState
             expression: ErrorToken<Message>
             unscanned: []
-            branchContext: {}
         }>
 
         export type From<S extends State> = S
@@ -274,6 +291,8 @@ export namespace Str {
         ShiftBranch<S, Dict>,
         Dict
     >
+
+    type ZZZZ = ShiftDefinition<"string|number[]&boolean", {}>
 
     type ShiftBranches<
         S extends State.State,
@@ -409,7 +428,7 @@ export namespace Str {
                   Dict
               >
           >
-        : S["branchContext"]["rightBounded"] extends true
+        : S["branch"]["ctx"]["rightBounded"] extends true
         ? State.Error<`Right side of comparator ${Token} cannot be bounded more than once.`>
         : S["expression"] extends NumberLiteral.Definition
         ? ReduceLeftBound<
@@ -438,7 +457,7 @@ export namespace Str {
         Left extends State.State,
         Token extends string,
         Right extends State.State
-    > = Left["branchContext"]["leftBounded"] extends true
+    > = Left["branch"]["ctx"]["leftBounded"] extends true
         ? State.Error<`Left side of comparator ${Token} cannot be bounded more than once.`>
         : Right extends State.Error<string>
         ? Right

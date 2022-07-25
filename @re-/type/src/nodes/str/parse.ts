@@ -32,7 +32,7 @@ type OpenBranchExpression = [] | [ExpressionTree, string]
 
 type BranchState = {
     branch: ExpressionTree[]
-    context: Str.State.Context
+    context: Str.State.BranchContext
 }
 
 const comparatorStarting = {
@@ -57,7 +57,7 @@ export class Parser {
     openGroups: BranchState[]
     branch: ExpressionTree[]
     expression: ExpressionTree
-    branchContext: Str.State.Context
+    branchContext: Str.State.BranchContext
     chars: string[]
     location: number
 
