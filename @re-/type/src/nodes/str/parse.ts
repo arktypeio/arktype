@@ -63,13 +63,21 @@ export class Parser {
     branch: BranchState
     expression?: Base.Parsing.Node
     chars: string[]
-    location: number
+    scan: number
 
     constructor(def: string, private ctx: Base.Parsing.Context) {
         this.openGroups = []
         this.branch = {}
         this.chars = [...def, "END"]
-        this.location = 0
+        this.scan = 0
+    }
+
+    get lookahead() {
+        return this.chars[this.scan]
+    }
+
+    get nextLookahead() {
+        return this.chars[this.scan + 1]
     }
 
     shiftBranches() {
@@ -81,15 +89,15 @@ export class Parser {
 
     finalizeExpression() {
         this.mergeUnion()
-        if (this.chars[this.location] === "?") {
+        if (this.lookahead === "?") {
             this.shiftOptional()
-        } else if (this.chars[this.location] === ")") {
+        } else if (this.lookahead === ")") {
             this.popGroup()
         }
     }
 
     shiftOptional() {
-        if (this.chars[this.location + 1] !== "END") {
+        if (this.nextLookahead !== "END") {
             throw new Error(
                 `Modifier '?' is only valid at the end of a definition.`
             )
@@ -98,9 +106,9 @@ export class Parser {
     }
 
     shouldContinueBranching() {
-        if (this.chars[this.location] in expressionTerminating) {
+        if (this.lookahead in expressionTerminating) {
             return false
-        } else if (this.chars[this.location] === "|") {
+        } else if (this.lookahead === "|") {
             this.shiftUnion()
         } else {
             this.shiftIntersection()
@@ -116,7 +124,7 @@ export class Parser {
             this.branch.union.children.push(this.expression!)
         }
         this.expression = undefined
-        this.location++
+        this.scan++
     }
 
     mergeUnion() {
@@ -138,7 +146,7 @@ export class Parser {
             this.branch.intersection.children.push(this.expression!)
         }
         this.expression = undefined
-        this.location++
+        this.scan++
     }
 
     mergeIntersection() {
@@ -155,12 +163,12 @@ export class Parser {
     }
 
     shiftBase() {
-        if (this.chars[this.location] === "(") {
+        if (this.lookahead === "(") {
             this.shiftGroup()
-        } else if (this.chars[this.location] in literalEnclosing) {
+        } else if (this.lookahead in literalEnclosing) {
             this.shiftEnclosed()
-        } else if (this.chars[this.location] === " ") {
-            this.location++
+        } else if (this.lookahead === " ") {
+            this.scan++
             this.shiftBase()
         } else {
             this.shiftNonLiteral()
@@ -170,7 +178,7 @@ export class Parser {
     shiftGroup() {
         this.openGroups.push(this.branch)
         this.branch = {}
-        this.location++
+        this.scan++
         this.shiftBranches()
     }
 
@@ -180,17 +188,17 @@ export class Parser {
             throw new Error(`Unexpected ).`)
         }
         this.branch = previousBranches
-        this.location++
+        this.scan++
     }
 
     shiftNonLiteral() {
         let fragment = ""
-        let scanLocation = this.location
-        while (!(this.chars[scanLocation] in baseTerminating)) {
-            fragment += this.chars[scanLocation]
-            scanLocation++
+        let scanAhead = this.scan
+        while (!(this.chars[scanAhead] in baseTerminating)) {
+            fragment += this.chars[scanAhead]
+            scanAhead++
         }
-        this.location = scanLocation
+        this.scan = scanAhead
         this.reduceNonLiteral(fragment)
     }
 
@@ -211,50 +219,40 @@ export class Parser {
     }
 
     shiftEnclosed() {
-        const enclosing = this.chars[this.location]
+        const enclosing = this.lookahead
         let content = ""
-        let scanLocation = this.location + 1
-        while (this.chars[scanLocation] !== enclosing) {
-            content += this.chars[scanLocation]
-            scanLocation++
+        let scanAhead = this.scan + 1
+        while (this.chars[scanAhead] !== enclosing) {
+            content += this.chars[scanAhead]
+            scanAhead++
         }
         if (enclosing === "/") {
             this.expression = new Regex.Node(new RegExp(content))
         } else {
             this.expression = new LiteralNode(content)
         }
-        this.location = scanLocation + 1
+        this.scan = scanAhead + 1
     }
 
     shiftTransforms() {
-        while (!(this.chars[this.location] in branchTerminating)) {
-            if (this.chars[this.location] === "[") {
+        while (!(this.lookahead in branchTerminating)) {
+            if (this.lookahead === "[") {
                 this.shiftListToken()
-            } else if (this.chars[this.location] in comparatorStarting) {
-            } else if (this.chars[this.location] === " ") {
-                this.location++
+            } else if (this.lookahead in comparatorStarting) {
+            } else if (this.lookahead === " ") {
+                this.scan++
             } else {
-                throw new Error(
-                    `Invalid operator ${this.chars[this.location]}.`
-                )
+                throw new Error(`Invalid operator ${this.lookahead}.`)
             }
         }
     }
 
     shiftListToken() {
-        if (this.chars[this.location + 1] === "]") {
+        if (this.nextLookahead === "]") {
             this.expression = new ListNode(this.expression!, this.ctx)
-            this.location += 2
+            this.scan += 2
         } else {
             throw new Error(`Missing expected ].`)
         }
     }
 }
-
-// const s = new Parser(
-//     "boolean |   ('string'|number)[]|number[]",
-//     Base.Parsing.createContext()
-// )
-// s.shiftBranches()
-
-// console.log(s)
