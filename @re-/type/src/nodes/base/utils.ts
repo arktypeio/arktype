@@ -1,6 +1,6 @@
 import { toString } from "@re-/tools"
 import { Create, Validation } from "./features/index.js"
-import { Parsing } from "./features/parsing.js"
+import { Parsing } from "./parse/parsing.js"
 
 export const pathAdd = (...subpaths: (string | number)[]) =>
     subpaths.filter((_) => _ !== "").join("/")

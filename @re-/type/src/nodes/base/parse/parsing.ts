@@ -1,10 +1,8 @@
 import type { MetaDefinitions, SpaceMeta } from "../../../space.js"
-import type { Node as AbstractNode } from "../kinds/node.js"
 import { defToString, stringifyPathContext, TypeOptions } from "../utils.js"
+import { Node } from "./index.js"
 
 export namespace Parsing {
-    export type Node = AbstractNode
-
     export type ParseFn<DefType = unknown> = (
         def: DefType,
         ctx: Context

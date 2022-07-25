@@ -1,4 +1,5 @@
-import { Base, StructuredNonTerminal } from "./base.js"
+import { Base } from "../base/index.js"
+import { StructuredNonTerminal } from "./structured.js"
 
 export namespace TupleType {
     export type Definition = unknown[] | readonly unknown[]

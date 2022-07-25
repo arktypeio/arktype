@@ -18,8 +18,8 @@ const preferredDefaults: PreferredDefaults = [
 
 export namespace UnionType {}
 
-export class UnionNode extends Base.NonTerminal<Base.Parsing.Node[]> {
-    addMember(node: Base.Parsing.Node) {
+export class UnionNode extends Base.NonTerminal<Base.Node[]> {
+    addMember(node: Base.Node) {
         this.children.push(node)
     }
 

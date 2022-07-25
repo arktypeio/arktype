@@ -1,11 +1,11 @@
 import { References } from "../base.js"
-import { Parsing } from "../features/parsing.js"
 import { Node } from "./node.js"
+import { Parsing } from "./parsing.js"
 
-export type ParseChildren = Parsing.Node | Parsing.Node[]
+export type ParseChildren = Node | Node[]
 
 export abstract class NonTerminal<
-    Children extends ParseChildren = Parsing.Node
+    Children extends ParseChildren = Node
 > extends Node {
     constructor(protected children: Children, protected ctx: Parsing.Context) {
         super()

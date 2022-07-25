@@ -1,9 +1,9 @@
 import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
+import { Base } from "../base/index.js"
 import { Root } from "../root.js"
-import { Base } from "./base.js"
 import { RecordNode, RecordType } from "./record.js"
 import { Regex } from "./regex.js"
-import { TupleNode, TupleType } from "./tuple.js"
+import { TupleNode } from "./tuple.js"
 
 export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"

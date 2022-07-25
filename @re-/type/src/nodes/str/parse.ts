@@ -61,7 +61,7 @@ type BranchState = {
 export class Parser {
     openGroups: BranchState[]
     branch: BranchState
-    expression?: Base.Parsing.Node
+    expression?: Base.Node
     chars: string[]
     scan: number
 

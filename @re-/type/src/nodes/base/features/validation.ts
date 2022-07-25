@@ -1,6 +1,6 @@
 import { isDigits, uncapitalize } from "@re-/tools"
+import { Parsing } from "../parse/parsing.js"
 import { defToString, stringifyValue } from "../utils.js"
-import { Parsing } from "./parsing.js"
 import { Traversal } from "./traversal.js"
 
 export type CustomValidator = Validation.CustomValidator

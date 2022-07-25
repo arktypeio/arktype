@@ -1,4 +1,4 @@
-import { StructuredNonTerminal } from "../../obj/base.js"
+import type { StructuredNonTerminal } from "../../obj/structured.js"
 import { Create, Validation } from "../features/index.js"
 import { References } from "../features/references.js"
 import { stringifyValue } from "../utils.js"
@@ -23,7 +23,7 @@ export abstract class Node {
     }
 
     isStructured(): this is StructuredNonTerminal {
-        return this instanceof StructuredNonTerminal
+        return "structureReferences" in this
     }
 
     addUnassignable(args: Validation.Args) {

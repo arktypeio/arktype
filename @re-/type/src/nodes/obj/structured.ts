@@ -1,18 +1,16 @@
 import { TreeOf } from "@re-/tools"
 import { Base } from "../base/index.js"
-import { defToString } from "../base/utils.js"
 import { Root } from "../root.js"
-export { Base } from "../base/index.js"
 
-export type ChildEntry<KeyType> = [KeyType, Base.Parsing.Node]
+export type ChildEntry<KeyType> = [KeyType, Base.Node]
 
 export abstract class StructuredNonTerminal extends Base.NonTerminal<
-    Base.Parsing.Node[]
+    Base.Node[]
 > {
     entries: ChildEntry<string>[]
 
     constructor(private def: object, ctx: Base.Parsing.Context) {
-        const children: Base.Parsing.Node[] = []
+        const children: Base.Node[] = []
         const entries = Object.entries(def).map(
             ([k, childDef]): ChildEntry<string> => {
                 const propNode = Root.parse(childDef, {
@@ -28,7 +26,7 @@ export abstract class StructuredNonTerminal extends Base.NonTerminal<
     }
 
     toString() {
-        return defToString(this.def)
+        return Base.defToString(this.def)
     }
 
     structureReferences(opts: Base.References.Options) {

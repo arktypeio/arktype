@@ -36,7 +36,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
 export class Type implements TypeFrom<unknown, unknown, unknown> {
     constructor(
         public definition: unknown,
-        public root: Base.Parsing.Node,
+        public root: Base.Node,
         public config: Base.TypeOptions = {}
     ) {}
 

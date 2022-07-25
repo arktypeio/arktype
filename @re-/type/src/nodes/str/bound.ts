@@ -32,7 +32,7 @@ const invertComparator = (token: ComparatorToken): ComparatorToken => {
 export namespace Bound {
     export type Definition = `${string}${ComparatorToken}${string}`
 
-    export interface Boundable extends Base.Parsing.Node {
+    export interface Boundable extends Base.Node {
         boundBy?: string
         toBound(value: unknown): number
     }
@@ -82,7 +82,7 @@ export namespace Bound {
         }
 
         private assertBoundable(
-            node: Base.Parsing.Node | Boundable
+            node: Base.Node | Boundable
         ): asserts node is Boundable {
             if ("toBound" in node) {
                 return
