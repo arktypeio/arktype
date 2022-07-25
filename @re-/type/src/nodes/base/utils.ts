@@ -30,9 +30,8 @@ export const defToString = (def: unknown, indentation = ""): string => {
         return objDefToString + indentation + (isArray ? "]" : "}")
     } else if (typeof def === "bigint") {
         return `${def}n`
-    } else {
-        return String(def)
     }
+    return String(def)
 }
 
 export const stringifyValue = (value: unknown) =>

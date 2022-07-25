@@ -55,7 +55,8 @@ export namespace Validation {
         const customErrors = validator({
             value: args.value,
             path: args.ctx.path,
-            def: node.def,
+            // TODO: Need to figure out what params to provide here now that we don't have def on every node
+            def: "def" in node ? (node as any).def : node.toString(),
             getOriginalErrors: () => {
                 const branchedErrors = args.errors.split(args.ctx.path)
                 const originalErrors = branchedErrors.branch("original")

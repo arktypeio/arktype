@@ -1,18 +1,39 @@
-import { asNumber } from "@re-/tools"
+import { asNumber, toString } from "@re-/tools"
 import { Regex } from "../obj/regex.js"
 import { Base } from "./base.js"
 
-export class LiteralNode extends Base.Terminal<string | number | bigint> {
+export type LiteralValue = string | number | bigint
+
+export class LiteralNode extends Base.Terminal<string> {
+    constructor(private value: LiteralValue) {
+        super(LiteralNode.valueToDef(value))
+    }
+
     allows(args: Base.Validation.Args) {
-        if (args.value === this.def) {
+        if (args.value === this.value) {
             return true
         }
-        // this.addUnassignable(args)
+        this.addUnassignable(args)
         return false
     }
 
     generate() {
-        return this.def
+        return this.value
+    }
+
+    static valueToDef(value: LiteralValue) {
+        switch (typeof value) {
+            case "string":
+                return `'${value}'`
+            case "number":
+                return `${value}`
+            case "bigint":
+                return `${value}n`
+            default:
+                throw new Error(
+                    `Unexpected LiteralNode value: ${toString(value)}`
+                )
+        }
     }
 }
 

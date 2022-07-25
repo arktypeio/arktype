@@ -6,8 +6,8 @@ import {
     Get,
     Merge
 } from "@re-/tools"
-import { AliasType, Base, Root } from "./nodes/index.js"
-import { Resolution } from "./nodes/resolution.js"
+import { Base, Root } from "./nodes/index.js"
+import { ResolutionNode, ResolutionType } from "./nodes/resolution.js"
 import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
@@ -23,15 +23,15 @@ export const rawSpace = (
     const meta = new SpaceMeta(dictionary, options)
     const compiled: Record<string, any> = { $root: meta }
     for (const alias of Object.keys(dictionary)) {
-        const resolution = new Resolution.Node(alias, meta)
+        const resolution = new ResolutionNode(alias, meta)
         meta.resolutions[alias] = resolution
-        compiled[alias] = new Type(resolution)
+        compiled[alias] = new Type(resolution.def, resolution)
     }
     return compiled as RawSpace
 }
 
 export class SpaceMeta implements SpaceMetaFrom<unknown, unknown> {
-    resolutions: Record<string, Resolution.Node>
+    resolutions: Record<string, ResolutionNode>
 
     constructor(
         public dictionary: SpaceDictionary,
@@ -45,7 +45,7 @@ export class SpaceMeta implements SpaceMetaFrom<unknown, unknown> {
             def,
             Base.Parsing.createContext(deepMerge(this.options, options), this)
         )
-        return new Type(root, deepMerge(this.options, options)) as any
+        return new Type(def, root, deepMerge(this.options, options)) as any
     }
 
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions) {
@@ -98,7 +98,7 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 }
 
 export type ValidateDictionary<Dict> = {
-    [Alias in keyof Dict]: Resolution.Validate<Alias, Dict>
+    [Alias in keyof Dict]: ResolutionType.Validate<Alias, Dict>
 }
 
 // TODO: Implement runtime equivalent for these
@@ -136,12 +136,12 @@ export type DictionaryToTypes<Dict, Meta> = Evaluate<{
     [Alias in keyof Dict]: TypeFrom<
         Dict[Alias],
         Dict,
-        Resolution.TypeOf<Alias, Dict, Meta>
+        ResolutionType.Infer<Alias, Dict, Meta>
     >
 }>
 
 export type RootDictType<Dict, Meta> = Evaluate<{
-    [Alias in keyof Dict]: Resolution.TypeOf<Alias, Dict, Meta>
+    [Alias in keyof Dict]: ResolutionType.Infer<Alias, Dict, Meta>
 }>
 
 export type MetaDefinitions = {

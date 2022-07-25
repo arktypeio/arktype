@@ -56,24 +56,24 @@ export namespace Str {
         ? Message
         : Def
 
-    export type TypeOf<
+    export type Infer<
         Def extends string,
         Ctx extends Base.Parsing.InferenceContext
-    > = TypeOfTree<Parse<Def, Ctx["dict"]>, Ctx>
+    > = InferTree<Parse<Def, Ctx["dict"]>, Ctx>
 
-    type TypeOfTree<
+    type InferTree<
         Tree,
         Ctx extends Base.Parsing.InferenceContext
     > = Tree extends string
-        ? TypeOfTerminal<Tree, Ctx>
+        ? InferTerminal<Tree, Ctx>
         : Tree extends [infer Next, "?"]
-        ? TypeOfTree<Next, Ctx> | undefined
+        ? InferTree<Next, Ctx> | undefined
         : Tree extends [infer Next, "[]"]
-        ? TypeOfTree<Next, Ctx>[]
+        ? InferTree<Next, Ctx>[]
         : Tree extends [infer Left, "|", infer Right]
-        ? TypeOfTree<Left, Ctx> | TypeOfTree<Right, Ctx>
+        ? InferTree<Left, Ctx> | InferTree<Right, Ctx>
         : Tree extends [infer Left, "&", infer Right]
-        ? TypeOfTree<Left, Ctx> & TypeOfTree<Right, Ctx>
+        ? InferTree<Left, Ctx> & InferTree<Right, Ctx>
         : unknown
 
     export type References<Def extends string, Dict> = LeavesOf<
@@ -85,8 +85,6 @@ export namespace Str {
         : Tree extends [infer Left, string, infer Right]
         ? [...LeavesOf<Right>, ...LeavesOf<Left>]
         : [Tree]
-
-    type ComparatorToken = "<" | ">" | "<=" | ">=" | "=="
 
     type Scan<Left extends string, Unscanned extends string[]> = [
         Left,
@@ -182,7 +180,10 @@ export namespace Str {
             union: [
                 B["union"] extends []
                     ? MergeExpression<B["intersection"], Expression>
-                    : [...B["union"], Expression],
+                    : [
+                          ...B["union"],
+                          MergeExpression<B["intersection"], Expression>
+                      ],
                 "|"
             ]
             intersection: []
@@ -491,7 +492,7 @@ export namespace Str {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    type TypeOfTerminal<
+    type InferTerminal<
         Token extends string,
         Ctx extends Base.Parsing.InferenceContext
     > = Token extends Keyword.Definition

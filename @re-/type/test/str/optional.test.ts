@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, type } from "../../src/index.js"
+import { type } from "../../src/index.js"
 
 describe("optional", () => {
     describe("type", () => {
@@ -21,19 +21,19 @@ describe("optional", () => {
         describe("errors", () => {
             it("bad inner type", () => {
                 // @ts-expect-error
-                assert(() => eager("nonexistent?")).throwsAndHasTypeError(
+                assert(() => type("nonexistent?")).throwsAndHasTypeError(
                     "Unable to determine the type of 'nonexistent'."
                 )
             })
             it("multiple consecutive", () => {
                 // @ts-expect-error
-                assert(() => eager("boolean??")).throwsAndHasTypeError(
+                assert(() => type("boolean??")).throwsAndHasTypeError(
                     "Modifier '?' is only valid at the end of a type definition."
                 )
             })
             it("multiple non-consecutive", () => {
                 assert(() =>
-                    eager({
+                    type({
                         a: "string",
                         // @ts-expect-error
                         b: "number?|string?"
@@ -45,7 +45,7 @@ describe("optional", () => {
             it("within expression", () => {
                 assert(() =>
                     // @ts-expect-error
-                    eager("boolean?|string|number")
+                    type("boolean?|string|number")
                 ).throwsAndHasTypeError(
                     "Modifier '?' is only valid at the end of a type definition."
                 )

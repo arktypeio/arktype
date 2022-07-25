@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, type } from "../../src/index.js"
+import { type } from "../../src/index.js"
 
 // TODO: Add precedence union vs intersection
 
@@ -18,13 +18,13 @@ describe("intersection", () => {
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error
-                assert(() => eager("boolean&tru")).throwsAndHasTypeError(
+                assert(() => type("boolean&tru")).throwsAndHasTypeError(
                     "Unable to determine the type of 'tru'."
                 )
             })
             it("double and", () => {
                 // @ts-expect-error
-                assert(() => eager("boolean&&true")).throwsAndHasTypeError(
+                assert(() => type("boolean&&true")).throwsAndHasTypeError(
                     "Unable to determine the type of ''."
                 )
             })

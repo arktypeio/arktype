@@ -11,13 +11,16 @@ export abstract class NonTerminal<
         super()
     }
 
-    collectReferences(args: References.Args, collected: Set<string>) {
+    collectReferences(
+        opts: References.Options,
+        collected: References.Collection
+    ) {
         if (Array.isArray(this.children)) {
             for (const child of this.children) {
-                child.collectReferences(args, collected)
+                child.references(opts, collected)
             }
         } else {
-            this.children.collectReferences(args, collected)
+            this.children.collectReferences(opts, collected)
         }
     }
 }

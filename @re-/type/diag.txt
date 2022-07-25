@@ -1,41 +1,15 @@
-src/nodes/base/features/validation.ts(58,23): error TS2339: Property 'def' does not exist on type 'Node'.
-src/nodes/obj/obj.ts(59,35): error TS2345: Argument of type 'Definition' is not assignable to parameter of type 'Node[]'.
-  Type 'unknown[]' is not assignable to type 'Node[]'.
-    Type 'unknown' is not assignable to type 'Node'.
-src/nodes/obj/obj.ts(61,32): error TS2345: Argument of type 'Definition' is not assignable to parameter of type '[]'.
-src/nodes/obj/record.ts(29,69): error TS2322: Type 'undefined' is not assignable to type 'Node'.
-src/nodes/obj/record.ts(50,52): error TS2339: Property 'entries' does not exist on type 'Node'.
-src/nodes/obj/record.ts(91,52): error TS2339: Property 'entries' does not exist on type 'Node'.
-src/nodes/obj/regex.ts(13,26): error TS2339: Property 'ctx' does not exist on type 'Node'.
-src/nodes/obj/regex.ts(22,26): error TS2339: Property 'ctx' does not exist on type 'Node'.
-src/nodes/obj/regex.ts(25,57): error TS2339: Property 'defToString' does not exist on type 'Node'.
-src/nodes/str/str.ts(522,38): error TS2345: Argument of type '`${string}?`' is not assignable to parameter of type 'Node'.
-  Type 'String' is missing the following properties from type 'Node': allows, generate, collectReferences
-src/nodes/str/str.ts(536,42): error TS2345: Argument of type '`${string}&${string}`' is not assignable to parameter of type 'Node[]'.
-  Type 'String' is missing the following properties from type 'Node[]': pop, push, join, reverse, and 21 more.
-src/nodes/str/str.ts(537,26): error TS2339: Property 'matches' does not exist on type 'typeof Union'.
-src/nodes/str/str.ts(538,35): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Node[]'.
-src/nodes/str/str.ts(540,34): error TS2345: Argument of type '`${string}[]`' is not assignable to parameter of type 'Node'.
-  Type 'String' is missing the following properties from type 'Node': allows, generate, collectReferences
-src/nodes/str/str.ts(542,35): error TS2345: Argument of type '`${string}<=${string}` | `${string}>=${string}` | `${string}<${string}` | `${string}>${string}` | `${string}==${string}`' is not assignable to parameter of type 'Boundable'.
-  Type 'String' is missing the following properties from type 'Boundable': toBound, allows, generate, collectReferences
-src/type.ts(48,32): error TS2339: Property 'def' does not exist on type 'Node'.
-src/type.ts(99,30): error TS2339: Property 'structureReferences' does not exist on type 'Node'.
-test/references.test.ts(51,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type '("number" | "null" | "true" | "integer" | "user" | "group")[]'.
-  Type '"number" | "boolean" | "null" | "integer" | "user" | "group" | "true"' is not assignable to type '"number" | "null" | "true" | "integer" | "user" | "group"'.
-    Type '"boolean"' is not assignable to type '"number" | "null" | "true" | "integer" | "user" | "group"'.
-Files:              224
-Lines:            84384
-Nodes:           283728
-Identifiers:     102516
-Symbols:         260141
-Types:            63969
-Instantiations:  379537
-Memory used:    199611K
+Files:              225
+Lines:            84646
+Nodes:           284766
+Identifiers:     102777
+Symbols:         257593
+Types:            64071
+Instantiations:  378623
+Memory used:    198349K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.58s
-Bind time:        0.23s
-Check time:       1.60s
+Parse time:       0.55s
+Bind time:        0.21s
+Check time:       1.55s
 Emit time:        0.00s
-Total time:       2.41s
+Total time:       2.31s

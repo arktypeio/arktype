@@ -13,16 +13,16 @@ export namespace Root {
         ? BadDefinitionTypeMessage
         : Obj.Validate<Def, Dict>
 
-    export type TypeOf<
+    export type Infer<
         Def,
         Ctx extends Base.Parsing.InferenceContext
     > = unknown extends Def
         ? Def
         : Def extends string
-        ? Str.TypeOf<Def, Ctx>
+        ? Str.Infer<Def, Ctx>
         : Def extends BadDefinitionType
         ? never
-        : Obj.TypeOf<Def, Ctx>
+        : Obj.Infer<Def, Ctx>
 
     export type References<
         Def,

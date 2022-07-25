@@ -1,16 +1,30 @@
-import { TreeOf } from "@re-/tools"
-import { Create, Parsing, Validation } from "../features/index.js"
+import { StructuredNonTerminal } from "../../obj/base.js"
+import { Create, Validation } from "../features/index.js"
 import { References } from "../features/references.js"
-import { defToString, stringifyValue } from "../utils.js"
+import { stringifyValue } from "../utils.js"
 
 export abstract class Node {
     abstract allows(args: Validation.Args): boolean
     abstract generate(args: Create.Args): unknown
+    /** Mutates collected by adding references as keys */
     abstract collectReferences(
-        args: References.Args,
-        collected: Set<string>
+        opts: References.Options,
+        collected: References.Collection
     ): void
     abstract toString(): string
+
+    references(opts: References.Options<string, boolean>) {
+        if (opts.preserveStructure && this.isStructured()) {
+            return this.structureReferences(opts)
+        }
+        const collected = {}
+        this.collectReferences(opts, collected)
+        return Object.keys(collected)
+    }
+
+    isStructured(): this is StructuredNonTerminal {
+        return this instanceof StructuredNonTerminal
+    }
 
     addUnassignable(args: Validation.Args) {
         args.errors.add(
@@ -21,22 +35,3 @@ export abstract class Node {
         )
     }
 }
-
-// export abstract class Node {
-//     abstract allows(args: Validation.Args): boolean
-//     abstract generate(args: Create.Args): unknown
-//     abstract collectReferences(
-//         args: References.Args,
-//         collected: Set<string>
-//     ): void
-
-//     /**
-//      * Get definition references organized according to the structure of the original definition.
-//      * Structured nodes like Record and Tuple should override this method.
-//      */
-//     structureReferences(args: References.Args): TreeOf<string[]> {
-//         const refs = new Set<string>()
-//         this.collectReferences(args, refs)
-//         return [...refs]
-//     }
-// }

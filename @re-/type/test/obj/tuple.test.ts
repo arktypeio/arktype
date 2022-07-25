@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, type } from "../../src/index.js"
+import { type } from "../../src/index.js"
 
 describe("tuple", () => {
     describe("empty", () => {
@@ -27,7 +27,7 @@ describe("tuple", () => {
                 it("invalid item definition", () => {
                     assert(() =>
                         // @ts-expect-error
-                        eager(["string", ["number", "boolean", "whoops"]])
+                        type(["string", ["number", "boolean", "whoops"]])
                     )
                         .throws(
                             "Unable to determine the type of 'whoops' at path 1/2."

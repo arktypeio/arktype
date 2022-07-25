@@ -11,7 +11,7 @@ import { Base } from "./base/index.js"
 import { Root } from "./root.js"
 import { Str } from "./str/str.js"
 
-export namespace Resolution {
+export namespace ResolutionType {
     export type Validate<
         Alias extends keyof Dict,
         Dict
@@ -31,100 +31,97 @@ export namespace Resolution {
         Str.Validate<Extract<Dict[Alias], string>, Dict>
     >
 
-    export type TypeOf<
+    export type Infer<
         Alias extends keyof Dict,
         Dict,
         Meta
     > = Dict[Alias] extends Base.Parsing.ErrorMessage
         ? unknown
-        : Root.TypeOf<
+        : Root.Infer<
               Dict[Alias],
               // @ts-expect-error
               { dict: Dict; meta: Meta; seen: { [K in Alias]: true } }
           >
-    export class Node extends Base.NonTerminal {
-        constructor(private alias: string, space: SpaceMeta) {
-            // If this is the first time we've seen the alias,
-            // create a Node that will be used for future resolutions.
-            const defAndOptions = getResolutionDefAndOptions(
-                space.dictionary[alias]
+}
+
+export class ResolutionNode extends Base.NonTerminal {
+    def: unknown
+
+    constructor(public alias: string, space: SpaceMeta) {
+        // If this is the first time we've seen the alias,
+        // create a Node that will be used for future resolutions.
+        const defAndOptions = getResolutionDefAndOptions(
+            space.dictionary[alias]
+        )
+        const ctx = Base.Parsing.createContext(
+            defAndOptions.options
+                ? deepMerge(space.options, defAndOptions.options)
+                : space.options,
+            space
+        )
+        super(Root.parse(defAndOptions.def, ctx), ctx)
+        this.def = defAndOptions.def
+    }
+
+    toString() {
+        return this.alias
+    }
+
+    allows(args: Base.Validation.Args): boolean {
+        const nextArgs = this.nextArgs(args, this.ctx.cfg.validate)
+        if (typeof args.value === "object" && args.value !== null) {
+            if (
+                args.ctx.checkedValuesByAlias[this.alias]?.includes(args.value)
+            ) {
+                // If we've already seen this value, it must not have any errors or else we wouldn't be here
+                return true
+            }
+            if (!args.ctx.checkedValuesByAlias[this.alias]) {
+                nextArgs.ctx.checkedValuesByAlias[this.alias] = [args.value]
+            } else {
+                nextArgs.ctx.checkedValuesByAlias[this.alias].push(args.value)
+            }
+        }
+        const customValidator =
+            nextArgs.cfg.validator ??
+            nextArgs.ctx.modelCfg.validator ??
+            "default"
+        if (customValidator !== "default") {
+            return Base.Validation.customValidatorAllows(
+                customValidator,
+                this,
+                nextArgs
             )
-            const ctx = Base.Parsing.createContext(
-                defAndOptions.options
-                    ? deepMerge(space.options, defAndOptions.options)
-                    : space.options,
-                space
-            )
-            super(Root.parse(defAndOptions.def, ctx), ctx)
         }
+        return this.children.allows(nextArgs)
+    }
 
-        toString() {
-            return this.alias
+    generate(args: Base.Create.Args) {
+        const nextArgs = this.nextArgs(args, this.ctx.cfg.generate)
+        if (args.ctx.seen.includes(this.alias)) {
+            const onRequiredCycle =
+                nextArgs.cfg.onRequiredCycle ??
+                nextArgs.ctx.modelCfg.onRequiredCycle
+            if (onRequiredCycle) {
+                return onRequiredCycle
+            }
+            throw new Base.Create.RequiredCycleError(this.alias, args.ctx.seen)
         }
+        return this.children.generate(nextArgs)
+    }
 
-        allows(args: Base.Validation.Args): boolean {
-            const nextArgs = this.nextArgs(args, this.ctx.cfg.validate)
-            if (typeof args.value === "object" && args.value !== null) {
-                if (
-                    args.ctx.checkedValuesByAlias[this.alias]?.includes(
-                        args.value
-                    )
-                ) {
-                    // If we've already seen this value, it must not have any errors or else we wouldn't be here
-                    return true
-                }
-                if (!args.ctx.checkedValuesByAlias[this.alias]) {
-                    nextArgs.ctx.checkedValuesByAlias[this.alias] = [args.value]
-                } else {
-                    nextArgs.ctx.checkedValuesByAlias[this.alias].push(
-                        args.value
-                    )
-                }
-            }
-            const customValidator =
-                nextArgs.cfg.validator ??
-                nextArgs.ctx.modelCfg.validator ??
-                "default"
-            if (customValidator !== "default") {
-                return Base.Validation.customValidatorAllows(
-                    customValidator,
-                    this,
-                    nextArgs
-                )
-            }
-            return this.children.allows(nextArgs)
+    private nextArgs<
+        Args extends {
+            ctx: Base.Traversal.Context<any>
+            cfg: any
         }
-
-        generate(args: Base.Create.Args) {
-            const nextArgs = this.nextArgs(args, this.ctx.cfg.generate)
-            if (args.ctx.seen.includes(this.alias)) {
-                const onRequiredCycle =
-                    nextArgs.cfg.onRequiredCycle ??
-                    nextArgs.ctx.modelCfg.onRequiredCycle
-                if (onRequiredCycle) {
-                    return onRequiredCycle
-                }
-                throw new Base.Create.RequiredCycleError(
-                    this.alias,
-                    args.ctx.seen
-                )
-            }
-            return this.children.generate(nextArgs)
-        }
-
-        private nextArgs<
-            Args extends {
-                ctx: Base.Traversal.Context<any>
-                cfg: any
-            }
-        >(args: Args, aliasCfg: any): Args {
-            return {
-                ...args,
-                ctx: {
-                    ...args.ctx,
-                    seen: [...args.ctx.seen, this.alias],
-                    modelCfg: { ...args.ctx.modelCfg, ...aliasCfg }
-                }
+    >(args: Args, aliasCfg: any): Args {
+        return {
+            ...args,
+            ctx: {
+                ...args.ctx,
+                seen: [...args.ctx.seen, this.alias],
+                modelCfg: { ...args.ctx.modelCfg, ...aliasCfg }
             }
         }
     }

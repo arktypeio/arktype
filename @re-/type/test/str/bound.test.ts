@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, type } from "../../src/index.js"
+import { type } from "../../src/index.js"
 
 describe("bound", () => {
     describe("type", () => {
@@ -22,69 +22,69 @@ describe("bound", () => {
         describe("errors", () => {
             it("invalid single bound", () => {
                 // @ts-expect-error
-                assert(() => eager("number<integer")).throwsAndHasTypeError(
+                assert(() => type("number<integer")).throwsAndHasTypeError(
                     "Bounding value 'integer' must be a number literal."
                 )
             })
             it("invalid left bound", () => {
                 // @ts-expect-error
-                assert(() => eager("null<number<5")).throwsAndHasTypeError(
+                assert(() => type("null<number<5")).throwsAndHasTypeError(
                     "Bounding value 'null' must be a number literal."
                 )
             })
             it("invalid right bound", () => {
                 // @ts-expect-error
-                assert(() => eager("1<number<string")).throwsAndHasTypeError(
+                assert(() => type("1<number<string")).throwsAndHasTypeError(
                     "Bounding value 'string' must be a number literal."
                 )
             })
             it("two invalid bounds", () => {
                 assert(() =>
                     // @ts-expect-error
-                    eager("number<number<number")
+                    type("number<number<number")
                 ).throwsAndHasTypeError(
                     "Bounding value 'number' must be a number literal."
                 )
             })
             it("single-bounded unboundable", () => {
                 // @ts-expect-error
-                assert(() => eager("object==999")).throwsAndHasTypeError(
+                assert(() => type("object==999")).throwsAndHasTypeError(
                     "Definition 'object' is not boundable."
                 )
             })
             it("double-bounded unboundable", () => {
                 // @ts-expect-error
-                assert(() => eager("1<5<999")).throwsAndHasTypeError(
+                assert(() => type("1<5<999")).throwsAndHasTypeError(
                     "Definition '5' is not boundable."
                 )
             })
             it("left-only bounds", () => {
                 // @ts-expect-error
-                assert(() => eager("1>5>number[]")).throwsAndHasTypeError(
+                assert(() => type("1>5>number[]")).throwsAndHasTypeError(
                     "Left side of comparator > cannot be bounded more than once."
                 )
             })
             it("extra left bounds", () => {
                 // @ts-expect-error
-                assert(() => eager("1<5<number<10")).throwsAndHasTypeError(
+                assert(() => type("1<5<number<10")).throwsAndHasTypeError(
                     "Left side of comparator < cannot be bounded more than once."
                 )
             })
             it("right-only bounds", () => {
                 // @ts-expect-error
-                assert(() => eager("number>=5>999")).throwsAndHasTypeError(
+                assert(() => type("number>=5>999")).throwsAndHasTypeError(
                     "Right side of comparator > cannot be bounded more than once."
                 )
             })
             it("extra right bounds", () => {
                 // @ts-expect-error
-                assert(() => eager("1<number<999<1000")).throwsAndHasTypeError(
+                assert(() => type("1<number<999<1000")).throwsAndHasTypeError(
                     "Right side of comparator < cannot be bounded more than once."
                 )
             })
             it("single equals", () => {
                 // @ts-expect-error
-                assert(() => eager("1=number")).throwsAndHasTypeError(
+                assert(() => type("1=number")).throwsAndHasTypeError(
                     "= is not a valid comparator. Use == instead."
                 )
             })

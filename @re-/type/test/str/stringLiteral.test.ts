@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, type } from "../../src/index.js"
+import { type } from "../../src/index.js"
 
 describe("stringLiteral", () => {
     describe("type", () => {
@@ -21,20 +21,20 @@ describe("stringLiteral", () => {
         describe("errors", () => {
             it("unclosed quotes", () => {
                 // @ts-expect-error
-                assert(() => eager("'mismatched")).throwsAndHasTypeError(
+                assert(() => type("'mismatched")).throwsAndHasTypeError(
                     "Unable to determine the type of ''mismatched'."
                 )
             })
             it("mismatched quotes", () => {
                 // @ts-expect-error
-                assert(() => eager(`"mismatched'`)).throwsAndHasTypeError(
+                assert(() => type(`"mismatched'`)).throwsAndHasTypeError(
                     /Unable to determine the type of[\S\s]*mismatched'/
                 )
             })
             it("extraneous single quotes", () => {
                 assert(() =>
                     // @ts-expect-error
-                    eager(`'this isn't allowed'`)
+                    type(`'this isn't allowed'`)
                 ).throwsAndHasTypeError(
                     /Unable to determine the type of[\S\s]*allowed'/
                 )
@@ -42,7 +42,7 @@ describe("stringLiteral", () => {
             it("nested double quote pair", () => {
                 assert(() =>
                     // @ts-expect-error
-                    eager(`"not "ok""`)
+                    type(`"not "ok""`)
                 ).throwsAndHasTypeError(
                     /Unable to determine the type of[\S\s]*ok/
                 )

@@ -16,37 +16,29 @@ import { Base, Root } from "./nodes/index.js"
  */
 export const type: TypeFunction = (definition, options) => {
     const root = Root.parse(definition, Base.Parsing.createContext(options))
-    return new Type(root, options) as any
-}
-
-export const eager: TypeFunction = (definition, options = {}) => {
-    options.parse = { eager: true }
-    return type(definition, options) as any
+    return new Type(definition, root, options) as any
 }
 
 export type TypeFunction<Dict = {}, Meta = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
     options?: Base.TypeOptions
-) => TypeFrom<Def, Dict, TypeOf<Def, Dict, Meta>>
+) => TypeFrom<Def, Dict, Infer<Def, Dict, Meta>>
 
-export type TypeFrom<Def, Dict, TypeOf> = Evaluate<{
+export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     definition: Def
-    infer: TypeOf
-    validate: ValidateFunction<TypeOf>
-    assert: AssertFunction<TypeOf>
-    default: TypeOf
-    create: CreateFunction<TypeOf>
+    infer: Inferred
+    validate: ValidateFunction<Inferred>
+    assert: AssertFunction<Inferred>
+    default: Inferred
+    create: CreateFunction<Inferred>
     references: ReferencesFunction<Def, Dict>
 }>
 export class Type implements TypeFrom<unknown, unknown, unknown> {
-    definition: unknown
-
     constructor(
+        public definition: unknown,
         public root: Base.Parsing.Node,
         public config: Base.TypeOptions = {}
-    ) {
-        this.definition = root.def
-    }
+    ) {}
 
     get infer() {
         return chainableNoOpProxy
@@ -95,12 +87,7 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
     }
 
     references(options: Base.References.Options = {}) {
-        if (options.preserveStructure) {
-            return this.root.structureReferences(options) as any
-        }
-        const collected = new Set<string>()
-        this.root.collectReferences(options, collected)
-        return [...collected]
+        return this.root.references(options) as any
     }
 }
 
@@ -145,7 +132,7 @@ export type ReferencesFunction<Def, Dict> = <
       >
     : []
 
-export type TypeOf<Def, Dict = {}, Meta = {}> = Root.TypeOf<
+export type Infer<Def, Dict = {}, Meta = {}> = Root.Infer<
     Def,
     // @ts-expect-error
     { dict: Dict; meta: Meta; seen: {} }

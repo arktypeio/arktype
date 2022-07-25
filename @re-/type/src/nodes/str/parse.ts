@@ -1,13 +1,13 @@
 import { Regex } from "../obj/regex.js"
-import { AliasNode, AliasType } from "./alias.js"
+import { AliasNode } from "./alias.js"
 import { Base } from "./base.js"
-import { IntersectionNode, IntersectionType } from "./intersection.js"
+import { IntersectionNode } from "./intersection.js"
 import { Keyword } from "./keyword/keyword.js"
-import { ListNode, ListType } from "./list.js"
+import { ListNode } from "./list.js"
 import { BigintLiteral, LiteralNode, NumberLiteral } from "./literal.js"
-import { OptionalNode, OptionalType } from "./optional.js"
+import { OptionalNode } from "./optional.js"
 import { Str } from "./str.js"
-import { UnionNode, UnionType } from "./union.js"
+import { UnionNode } from "./union.js"
 
 type ExpressionTree = string | ExpressionTree[]
 

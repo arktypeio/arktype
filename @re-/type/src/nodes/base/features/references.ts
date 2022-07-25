@@ -26,5 +26,5 @@ export namespace References {
     // The preserveStructure option is reflected by whether collectReferences() or structureRefrences() is called
     export type Args = Omit<Options, "preserveStructure">
 
-    export type Collection = Set<string>
+    export type Collection = Record<string, true>
 }

@@ -1,46 +1,46 @@
 import { assert } from "@re-/assert"
-import { eager, type } from "../src/index.js"
+import { type } from "../src/index.js"
 
 describe("root definition", () => {
     describe("bad def types", () => {
         const expectedError = "Type definitions must be strings or objects."
         it("undefined", () => {
             // @ts-expect-error
-            assert(() => eager({ bad: undefined })).throwsAndHasTypeError(
+            assert(() => type({ bad: undefined })).throwsAndHasTypeError(
                 expectedError
             )
         })
         it("null", () => {
             // @ts-expect-error
-            assert(() => eager({ bad: null })).throwsAndHasTypeError(
+            assert(() => type({ bad: null })).throwsAndHasTypeError(
                 expectedError
             )
         })
         it("boolean", () => {
             // @ts-expect-error
-            assert(() => eager({ bad: true })).throwsAndHasTypeError(
+            assert(() => type({ bad: true })).throwsAndHasTypeError(
                 expectedError
             )
         })
         it("number", () => {
             // @ts-expect-error
-            assert(() => eager({ bad: 5 })).throwsAndHasTypeError(expectedError)
+            assert(() => type({ bad: 5 })).throwsAndHasTypeError(expectedError)
         })
         it("bigint", () => {
             // @ts-expect-error
-            assert(() => eager({ bad: 99999n })).throwsAndHasTypeError(
+            assert(() => type({ bad: 99999n })).throwsAndHasTypeError(
                 expectedError
             )
         })
         it("function", () => {
             // @ts-expect-error
-            assert(() => eager({ bad: () => {} })).throwsAndHasTypeError(
+            assert(() => type({ bad: () => {} })).throwsAndHasTypeError(
                 expectedError
             )
         })
         it("symbol", () => {
             // @ts-expect-error
-            assert(() => eager({ bad: Symbol() })).throwsAndHasTypeError(
+            assert(() => type({ bad: Symbol() })).throwsAndHasTypeError(
                 expectedError
             )
         })

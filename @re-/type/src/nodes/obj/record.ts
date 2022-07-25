@@ -1,12 +1,12 @@
 import { Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { OptionalNode } from "../str/index.js"
-import { Base } from "./base.js"
+import { Base, StructuredNonTerminal } from "./base.js"
 
 export namespace RecordType {
     export type Definition = Record<string, unknown>
 
-    export type Of<
+    export type Infer<
         Def,
         Ctx extends Base.Parsing.InferenceContext,
         OptionalKey extends keyof Def = {
@@ -15,9 +15,9 @@ export namespace RecordType {
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            -readonly [K in RequiredKey]: Root.TypeOf<Def[K], Ctx>
+            -readonly [K in RequiredKey]: Root.Infer<Def[K], Ctx>
         } & {
-            -readonly [K in OptionalKey]?: Root.TypeOf<Def[K], Ctx>
+            -readonly [K in OptionalKey]?: Root.Infer<Def[K], Ctx>
         }
     >
 }
@@ -27,28 +27,10 @@ export const valueIsRecordLike = (
 ): value is Record<string, unknown> =>
     typeof value === "object" && value !== null && !Array.isArray(value)
 
-export class RecordNode extends Base.NonTerminal<Base.Parsing.Node[]> {
-    entries: [string, Base.Parsing.Node][]
-
-    constructor(def: object, ctx: Base.Parsing.Context) {
-        const children: Base.Parsing.Node[] = []
-        const entries = Object.entries(def).map(
-            ([key, propDef]): [string, Base.Parsing.Node] => {
-                const propNode = Root.parse(propDef, {
-                    ...ctx,
-                    path: Base.pathAdd(ctx.path, key)
-                })
-                children.push(propNode)
-                return [key, propNode]
-            }
-        )
-        super(children, ctx)
-        this.entries = entries
-    }
-
+export class RecordNode extends StructuredNonTerminal {
     allows(args: Base.Validation.Args) {
         if (!valueIsRecordLike(args.value)) {
-            //this.addUnassignable(args)
+            this.addUnassignable(args)
             return false
         }
         const valueKeysLeftToCheck = new Set(Object.keys(args.value))
@@ -109,13 +91,4 @@ export class RecordNode extends Base.NonTerminal<Base.Parsing.Node[]> {
         }
         return result
     }
-
-    // override structureReferences(args: Base.References.Args) {
-    //     const structuredReferences: Record<string, TreeOf<string[]>> = {}
-    //     for (const [propKey, propNode] of this.entries) {
-    //         structuredReferences[propKey] =
-    //             propNode.structureReferences(args)
-    //     }
-    //     return structuredReferences
-    // }
 }

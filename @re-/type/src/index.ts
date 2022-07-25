@@ -1,4 +1,4 @@
-export { type, eager, type References, type TypeOf as Parse } from "./type.js"
+export { type, type References, type Infer as Parse } from "./type.js"
 export { space, def } from "./space.js"
 export { declare } from "./declaration.js"
 export { Root } from "./nodes/root.js"

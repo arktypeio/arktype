@@ -19,12 +19,12 @@ export namespace AliasType {
     type BaseOf<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
-    > = Root.TypeOf<Ctx["dict"][Def], Ctx & { seen: { [K in Def]: true } }>
+    > = Root.Infer<Ctx["dict"][Def], Ctx & { seen: { [K in Def]: true } }>
 
     type OnResolveOf<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
-    > = Root.TypeOf<
+    > = Root.Infer<
         Ctx["meta"]["onResolve"],
         {
             dict: WithPropValue<Ctx["dict"], "$resolution", Ctx["dict"][Def]>
@@ -36,7 +36,7 @@ export namespace AliasType {
     type OnCycleOf<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
-    > = Root.TypeOf<
+    > = Root.Infer<
         Ctx["meta"]["onCycle"],
         {
             dict: WithPropValue<Ctx["dict"], "$cyclic", Ctx["dict"][Def]>

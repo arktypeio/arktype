@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, space, type } from "../../src/index.js"
+import { space, type } from "../../src/index.js"
 
 describe("union", () => {
     describe("type", () => {
@@ -17,19 +17,19 @@ describe("union", () => {
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error
-                assert(() => eager("number|sting")).throwsAndHasTypeError(
+                assert(() => type("number|sting")).throwsAndHasTypeError(
                     "Unable to determine the type of 'sting'."
                 )
             })
             it("double pipes", () => {
                 // @ts-expect-error
-                assert(() => eager("boolean||null")).throwsAndHasTypeError(
+                assert(() => type("boolean||null")).throwsAndHasTypeError(
                     "Expected an expression after 'boolean|'."
                 )
             })
             it("ends with |", () => {
                 // @ts-expect-error
-                assert(() => eager("boolean|")).throwsAndHasTypeError(
+                assert(() => type("boolean|")).throwsAndHasTypeError(
                     "Expected an expression after 'boolean|'."
                 )
             })

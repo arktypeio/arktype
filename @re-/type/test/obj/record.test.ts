@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, type } from "../../src/index.js"
+import { type } from "../../src/index.js"
 
 describe("map", () => {
     describe("empty", () => {
@@ -137,7 +137,7 @@ describe("map", () => {
             describe("errors", () => {
                 it("invalid prop def", () => {
                     // @ts-expect-error
-                    assert(() => eager({ a: { b: "whoops" } }))
+                    assert(() => type({ a: { b: "whoops" } }))
                         .throws(
                             "Unable to determine the type of 'whoops' at path a/b."
                         )
