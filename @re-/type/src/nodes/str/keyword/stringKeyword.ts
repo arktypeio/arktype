@@ -10,7 +10,7 @@ abstract class BaseStringKeyword
         if (typeof args.value === "string" && this.allowsString(args.value)) {
             return true
         }
-        //this.addUnassignable(args)
+        this.addUnassignable(args)
         return false
     }
 

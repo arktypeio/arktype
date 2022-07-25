@@ -1,10 +1,9 @@
 import { WithPropValue } from "@re-/tools"
-import { Resolution } from "../resolution.js"
 import { Root } from "../root.js"
 import { Base } from "./base.js"
 
 export namespace AliasType {
-    export type Of<
+    export type Infer<
         Def extends keyof Ctx["dict"],
         Ctx extends Base.Parsing.InferenceContext
     > = "onResolve" extends keyof Ctx["meta"]

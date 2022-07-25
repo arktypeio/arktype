@@ -5,7 +5,10 @@ import { defToString, stringifyPathContext, TypeOptions } from "../utils.js"
 export namespace Parsing {
     export type Node = AbstractNode
 
-    export type Parser<DefType = unknown> = (def: DefType, ctx: Context) => Node
+    export type ParseFn<DefType = unknown> = (
+        def: DefType,
+        ctx: Context
+    ) => Node
 
     export type InferenceContext = {
         dict: unknown

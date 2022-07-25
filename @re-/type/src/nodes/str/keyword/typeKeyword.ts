@@ -5,7 +5,7 @@ abstract class BaseTypeKeyword extends Base.Terminal<string> {
         if (this.allowsValue(args.value)) {
             return true
         }
-        //this.addUnassignable(args)
+        this.addUnassignable(args)
         return false
     }
 

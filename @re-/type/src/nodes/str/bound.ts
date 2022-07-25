@@ -56,6 +56,10 @@ export namespace Bound {
     export class Node extends Base.NonTerminal<Boundable> {
         private bounds: BoundEntry[] | undefined
 
+        toString() {
+            return "Bounds not impelmented.."
+        }
+
         // E.g. ["number", ">=", "5"]
         private parseBound(parts: BoundParts) {
             this.bounds = [[parts[1], valueFromBoundPart(parts[2])]]

@@ -3,21 +3,21 @@ import { space, type } from "../../src/index.js"
 
 bench("validate undefined", () => {
     type("string?").validate(undefined)
-}).median(`103.00ns`)
+}).median(`109.00ns`)
 
 bench("validate string", () => {
     type("string?").validate("test")
-}).median(`112.00ns`)
+}).median(`116.00ns`)
 
 const deepStringDef = "string|".repeat(20).slice(0, -1)
 
 bench("parse deeep", () => {
     type(deepStringDef as any)
-}).median(`5.19us`)
+}).median(`5.23us`)
 
 bench("parse and validate deeep", () => {
     type(deepStringDef as any).validate("test")
-}).median(`5.28us`)
+}).median(`5.30us`)
 
 bench("validate map", () => {
     type({ a: "string?", b: "number?", c: { nested: "boolean?" } }).validate({
@@ -25,7 +25,7 @@ bench("validate map", () => {
         b: 5,
         c: { nested: true }
     })
-}).median(`1.92us`)
+}).median(`1.97us`)
 
 bench("validate map extraneous", () => {
     type({ a: "string?", b: "number?", c: { nested: "boolean?" } }).validate({
@@ -37,7 +37,7 @@ bench("validate map extraneous", () => {
         f: {},
         g: true
     })
-}).median(`6.13us`)
+}).median(`6.26us`)
 
 bench("validate map bad", () => {
     type({ a: "string?", b: "number?", c: { nested: "boolean?" } }).validate({
@@ -45,45 +45,45 @@ bench("validate map bad", () => {
         b: 5,
         c: { nested: true }
     })
-}).median(`1.89us`)
+}).median(`6.33us`)
 
 bench("validate tuple", () => {
     type(["string?", "number?", ["boolean?"]]).validate(["okay", 5, [true]])
-}).median(`1.89us`)
+}).median(`1.97us`)
 
 bench("validate regex", () => {
     type(/.*/).validate("test")
-}).median(`124.00ns`)
+}).median(`123.00ns`)
 
 bench("parse union", () => {
     type("string|number")
-}).median(`794.00ns`)
+}).median(`849.00ns`)
 
 const smallUnion = type("string|number")
 
 bench("validate small union second", () => {
     smallUnion.validate(5)
-}).median(`103.00ns`)
+}).median(`187.00ns`)
 
 bench("validate small union first", () => {
     smallUnion.validate("")
-}).median(`81.00ns`)
+}).median(`105.00ns`)
 
 bench("parse large union eager", () => {
     type("1|2|3|4|5|6|7|8|9")
-}).median(`1.08us`)
+}).median(`1.23us`)
 
 bench("parse then validate large union", () => {
     type("1|2|3|4|5|6|7|8|9").validate(5)
-}).median(`5.63us`)
+}).median(`6.46us`)
 
 bench("parse then validate large union first", () => {
     type("1|2|3|4|5|6|7|8|9").validate(1)
-}).median(`5.60us`)
+}).median(`6.45us`)
 
 bench("parse then validate large union miss", () => {
     type("1|2|3|4|5|6|7|8|9").validate(10)
-}).median(`5.68us`)
+}).median(`6.57us`)
 
 bench("errors at paths", () => {
     type({
@@ -91,11 +91,11 @@ bench("errors at paths", () => {
         b: "boolean?",
         c: { nested: ["undefined|null", "bigint"] }
     }).validate({ a: [], b: "hi", c: { nested: [true, 5] } })
-}).median(`9.82us`)
+}).median(`11.04us`)
 
 bench("list type", () => {
     type("string[]").validate(["hi", "there", "we're", "strings", 5])
-}).median(`666.00ns`)
+}).median(`5.60us`)
 
 const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })
 const dejaVu: typeof recursive.$root.infer.dejaVu = {}
@@ -108,4 +108,4 @@ while (i < 50) {
 }
 bench("validate recursive", () => {
     recursive.dejaVu.validate(dejaVu)
-}).median(`73.58us`)
+}).median(`72.27us`)

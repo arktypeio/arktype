@@ -9,7 +9,7 @@ abstract class BaseNumberKeyword
         if (typeof args.value === "number" && this.allowsNumber(args.value)) {
             return true
         }
-        //this.addUnassignable(args)
+        this.addUnassignable(args)
         return false
     }
 

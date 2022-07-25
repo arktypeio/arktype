@@ -5,9 +5,13 @@ import { Str } from "./str.js"
 export namespace ListType {}
 
 export class ListNode extends Base.NonTerminal implements Bound.Boundable {
+    toString() {
+        return this.children.toString() + "[]"
+    }
+
     allows(args: Base.Validation.Args) {
         if (!Array.isArray(args.value)) {
-            // this.addUnassignable(args)
+            this.addUnassignable(args)
             return false
         }
         let allItemsAllowed = true

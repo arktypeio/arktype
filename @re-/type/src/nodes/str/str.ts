@@ -497,7 +497,7 @@ export namespace Str {
     > = Token extends Keyword.Definition
         ? Keyword.Types[Token]
         : Token extends keyof Ctx["dict"]
-        ? AliasType.Of<Token, Ctx>
+        ? AliasType.Infer<Token, Ctx>
         : Token extends StringLiteral.SingleQuoted<infer Value>
         ? Value
         : Token extends StringLiteral.DoubleQuoted<infer Value>
@@ -513,7 +513,7 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
-    export const parse: Base.Parsing.Parser<string> = (def, ctx) =>
+    export const parse: Base.Parsing.ParseFn<string> = (def, ctx) =>
         tryNaiveParse(def, ctx) ?? fullParse(def, ctx)
 
     const tryNaiveParse = (def: string, ctx: Base.Parsing.Context) => {

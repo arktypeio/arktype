@@ -3,6 +3,10 @@ import { Base } from "./base.js"
 export namespace OptionalType {}
 
 export class OptionalNode extends Base.NonTerminal {
+    toString() {
+        return this.children.toString() + "?"
+    }
+
     allows(args: Base.Validation.Args) {
         if (args.value === undefined) {
             return true

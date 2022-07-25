@@ -30,7 +30,7 @@ export namespace RegexLiteral {
 
     export const expressionFrom = (def: Definition) => def.slice(1, -1)
 
-    export const parse: Base.Parsing.Parser<Definition> = (def) =>
+    export const parse: Base.Parsing.ParseFn<Definition> = (def) =>
         new Regex.Node(new RegExp(expressionFrom(def)))
 }
 
@@ -45,7 +45,7 @@ export namespace NumberLiteral {
     export const valueFrom = (def: Definition) =>
         asNumber(def, { assert: true })
 
-    export const parse: Base.Parsing.Parser<Definition> = (def) =>
+    export const parse: Base.Parsing.ParseFn<Definition> = (def) =>
         new LiteralNode(valueFrom(def))
 }
 
@@ -59,7 +59,7 @@ export namespace BigintLiteral {
 
     export const valueFrom = (def: Definition) => BigInt(def.slice(0, -1))
 
-    export const parse: Base.Parsing.Parser<Definition> = (def) =>
+    export const parse: Base.Parsing.ParseFn<Definition> = (def) =>
         new LiteralNode(valueFrom(def))
 }
 
@@ -82,6 +82,6 @@ export namespace StringLiteral {
 
     export const quotedText = (def: Definition) => def.slice(1, -1)
 
-    export const parse: Base.Parsing.Parser<Definition> = (def) =>
+    export const parse: Base.Parsing.ParseFn<Definition> = (def) =>
         new LiteralNode(quotedText(def))
 }

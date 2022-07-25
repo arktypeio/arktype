@@ -58,6 +58,10 @@ export namespace Resolution {
             super(Root.parse(defAndOptions.def, ctx), ctx)
         }
 
+        toString() {
+            return this.alias
+        }
+
         allows(args: Base.Validation.Args): boolean {
             const nextArgs = this.nextArgs(args, this.ctx.cfg.validate)
             if (typeof args.value === "object" && args.value !== null) {

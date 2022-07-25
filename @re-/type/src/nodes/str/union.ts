@@ -19,6 +19,14 @@ const preferredDefaults: PreferredDefaults = [
 export namespace UnionType {}
 
 export class UnionNode extends Base.NonTerminal<Base.Parsing.Node[]> {
+    addMember(node: Base.Parsing.Node) {
+        this.children.push(node)
+    }
+
+    toString() {
+        return this.children.map((_) => _.toString()).join("|")
+    }
+
     allows(args: Base.Validation.Args) {
         const unionErrors = args.errors.split(args.ctx.path)
         for (const branch of this.children) {

@@ -121,7 +121,7 @@ export class Parser {
         if (!this.branch.union) {
             this.branch.union = new UnionNode([this.expression!], this.ctx)
         } else {
-            this.branch.union.children.push(this.expression!)
+            this.branch.union.addMember(this.expression!)
         }
         this.expression = undefined
         this.scan++
@@ -130,7 +130,7 @@ export class Parser {
     mergeUnion() {
         if (this.branch.union) {
             this.mergeIntersection()
-            this.branch.union.children.push(this.expression!)
+            this.branch.union.addMember(this.expression!)
             this.expression = this.branch.union
             this.branch.union = undefined
         }
@@ -143,7 +143,7 @@ export class Parser {
                 this.ctx
             )
         } else {
-            this.branch.intersection.children.push(this.expression!)
+            this.branch.intersection.addMember(this.expression!)
         }
         this.expression = undefined
         this.scan++
@@ -151,7 +151,7 @@ export class Parser {
 
     mergeIntersection() {
         if (this.branch.intersection) {
-            this.branch.intersection.children.push(this.expression!)
+            this.branch.intersection.addMember(this.expression!)
             this.expression = this.branch.intersection
             this.branch.intersection = undefined
         }

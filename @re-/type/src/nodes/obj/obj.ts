@@ -51,7 +51,7 @@ export namespace Obj {
     export const matches = (def: unknown): def is object =>
         typeof def === "object" && def !== null
 
-    export const parse: Base.Parsing.Parser<object> = (def, ctx) => {
+    export const parse: Base.Parsing.ParseFn<object> = (def, ctx) => {
         if (Regex.matches(def)) {
             return new Regex.Node(def)
         }
