@@ -1,6 +1,7 @@
 import { Regex } from "../obj/regex.js"
 import { AliasNode } from "./alias.js"
 import { Base } from "./base.js"
+import { Bound } from "./bound.js"
 import { IntersectionNode } from "./intersection.js"
 import { Keyword } from "./keyword/keyword.js"
 import { ListNode } from "./list.js"
@@ -55,7 +56,7 @@ const baseTerminating = {
 type BranchState = {
     union?: UnionNode
     intersection?: IntersectionNode
-    ctx?: Str.State.BranchContext
+    ctx: Str.State.BranchContext
 }
 
 export class Parser {
@@ -67,7 +68,7 @@ export class Parser {
 
     constructor(def: string, private ctx: Base.Parsing.Context) {
         this.openGroups = []
-        this.branch = {}
+        this.branch = { ctx: {} }
         this.chars = [...def, "END"]
         this.scan = 0
     }
@@ -177,7 +178,7 @@ export class Parser {
 
     shiftGroup() {
         this.openGroups.push(this.branch)
-        this.branch = {}
+        this.branch = { ctx: {} }
         this.scan++
         this.shiftBranches()
     }
@@ -256,4 +257,74 @@ export class Parser {
             throw new Error(`Missing expected ].`)
         }
     }
+
+    shiftComparatorToken() {
+        if (this.nextLookahead === "=") {
+            this.scan += 2
+            this.reduceBound(
+                `${this.lookahead}${this.nextLookahead}` as ComparatorToken
+            )
+        } else if (this.lookahead === "=") {
+            throw new Error(`= is not a valid comparator. Use == instead.`)
+        } else {
+            this.scan++
+            this.reduceBound(this.lookahead as ComparatorToken)
+        }
+    }
+
+    reduceBound(token: ComparatorToken) {
+        if (Bound.isBoundable(this.expression!)) {
+            this.reduceRightBound(this.expression!, token)
+        } else if (
+            this.expression instanceof LiteralNode &&
+            typeof this.expression.value === "number"
+        ) {
+            this.reduceLeftBound(this.expression.value, token)
+        } else {
+            throw new Error(
+                `Left side of comparator ${token} must be a number literal or boundable definition (got ${this.expression?.toString()}).`
+            )
+        }
+    }
+
+    reduceRightBound(expression: Bound.Boundable, token: ComparatorToken) {
+        if (this.branch.ctx.rightBounded) {
+            throw new Error(
+                `Right side of comparator ${token} cannot be bounded more than once.`
+            )
+        }
+        this.branch.ctx.rightBounded = true
+        const bounded = this.expression
+        this.shiftBranch()
+        if (
+            this.expression instanceof LiteralNode &&
+            typeof this.expression.value === "number"
+        ) {
+            this.expression = bounded
+            // Apply bound
+        } else {
+            throw new Error(
+                `Right side of comparator ${token} must be a number literal.`
+            )
+        }
+    }
+
+    reduceLeftBound(value: number, token: ComparatorToken) {
+        if (this.branch.ctx.leftBounded) {
+            throw new Error(
+                `Left side of comparator ${token} cannot be bounded more than once.`
+            )
+        }
+        this.branch.ctx.leftBounded = true
+        this.shiftBranch()
+        if (Bound.isBoundable(this.expression!)) {
+            // Apply bound
+        } else {
+            throw new Error(
+                `Right side of comparator ${token} must be a numbed-or-string-typed keyword or a list-typed expression.`
+            )
+        }
+    }
 }
+
+type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="

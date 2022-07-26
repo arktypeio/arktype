@@ -37,6 +37,9 @@ export namespace Bound {
         toBound(value: unknown): number
     }
 
+    export const isBoundable = (node: Base.Node): node is Boundable =>
+        "toBound" in node
+
     const matcher = /(<=|>=|<|>|==)/
 
     export const matches = (def: string): def is Definition => matcher.test(def)
@@ -81,10 +84,10 @@ export namespace Bound {
             return Str.parse(parts[2], this.ctx)
         }
 
-        private assertBoundable(
+        assertBoundable(
             node: Base.Node | Boundable
         ): asserts node is Boundable {
-            if ("toBound" in node) {
+            if (isBoundable(node)) {
                 return
             }
             throw new Error(unboundableError(node.toString()))

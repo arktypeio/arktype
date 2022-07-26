@@ -5,7 +5,7 @@ import { Base } from "./base.js"
 export type LiteralValue = string | number | bigint
 
 export class LiteralNode extends Base.Terminal<string> {
-    constructor(private value: LiteralValue) {
+    constructor(public value: LiteralValue) {
         super(LiteralNode.valueToDef(value))
     }
 
