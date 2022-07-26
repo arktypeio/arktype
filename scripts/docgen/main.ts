@@ -24,7 +24,9 @@ export const config: DocGenConfig = {
                 targets: ["README.md"],
                 consumers: [
                     createWriteFilesConsumer({
-                        rootOutDir: fromRedoDevDir("static", "stackblitz")
+                        rootOutDir: fromRedoDevDir("static", "stackblitz"),
+                        transformFileName: (name) =>
+                            `${name.split("/").pop()}.raw`
                     })
                 ]
             }

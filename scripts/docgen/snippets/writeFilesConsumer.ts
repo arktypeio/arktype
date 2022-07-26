@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { DocGenSnippetConsumer } from "../config.js"
 
 export type CreateWriteFilesConsumerOptions = {
@@ -8,12 +10,15 @@ export type CreateWriteFilesConsumerOptions = {
 export const createWriteFilesConsumer =
     (options: CreateWriteFilesConsumerOptions): DocGenSnippetConsumer =>
     (snippets) => {
-        Object.fromEntries(
+        const obj = Object.fromEntries(
             Object.entries(snippets).map(([path, fileSnippets]) => [
-                path,
+                options.transformFileName
+                    ? options.transformFileName(path)
+                    : path,
                 fileSnippets.all.text
             ])
         )
-        // Write all files to options.rootOutDir, add options for transform file name (in this case we want to add .raw)
-        // Should write the files and return nothing
+        for (const snippet of Object.keys(obj)) {
+            writeFileSync(`${join(options.rootOutDir, snippet)}`, obj[snippet])
+        }
     }
