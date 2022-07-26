@@ -1,16 +1,16 @@
 import { ListChars } from "@re-/tools"
-import { AliasNode, AliasType } from "./alias.js"
-import { Base } from "./base.js"
-import { Keyword } from "./keyword/keyword.js"
-import { ListNode } from "./list.js"
+import { Base } from "../base/index.js"
 import {
     BigintLiteral,
     NumberLiteral,
     RegexLiteral,
     StringLiteral
 } from "./literal.js"
-import { OptionalNode } from "./optional.js"
+import { ListNode } from "./nonTerminal/list.js"
+import { OptionalNode } from "./nonTerminal/optional.js"
 import { Parser } from "./parse.js"
+import { AliasNode, AliasType } from "./terminal/alias.js"
+import { Keyword } from "./terminal/keyword/keyword.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = TryNaiveParse<Def, Dict>

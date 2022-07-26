@@ -1,6 +1,5 @@
-import { Base } from "./base.js"
+import { Base } from "../../base/index.js"
 import { Bound } from "./bound.js"
-import { Str } from "./str.js"
 
 export namespace ListType {}
 

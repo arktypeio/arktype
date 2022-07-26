@@ -1,7 +1,7 @@
 import { Entry } from "@re-/tools"
-import { Base } from "./base.js"
+import { Base } from "../../base/index.js"
+import { Str } from "../str.js"
 import { NumberLiteral } from "./literal.js"
-import { Str } from "./str.js"
 
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
 

@@ -1,14 +1,20 @@
+import { Base } from "../base/index.js"
 import { Regex } from "../obj/regex.js"
-import { AliasNode } from "./alias.js"
-import { Base } from "./base.js"
-import { Bound } from "./bound.js"
-import { IntersectionNode } from "./intersection.js"
-import { Keyword } from "./keyword/keyword.js"
-import { ListNode } from "./list.js"
-import { BigintLiteral, LiteralNode, NumberLiteral } from "./literal.js"
-import { OptionalNode } from "./optional.js"
+import {
+    Bound,
+    IntersectionNode,
+    ListNode,
+    OptionalNode,
+    UnionNode
+} from "./nonTerminal/index.js"
 import { Str } from "./str.js"
-import { UnionNode } from "./union.js"
+import {
+    AliasNode,
+    BigintLiteralNode,
+    Keyword,
+    NumberLiteralNode,
+    StringLiteralNode
+} from "./terminal/index.js"
 
 type ExpressionTree = string | ExpressionTree[]
 
@@ -208,10 +214,10 @@ export class Parser {
             this.expression = Keyword.parse(fragment)
         } else if (AliasNode.matches(fragment, this.ctx)) {
             this.expression = new AliasNode(fragment, this.ctx)
-        } else if (NumberLiteral.matches(fragment)) {
-            this.expression = new LiteralNode(fragment)
-        } else if (BigintLiteral.matches(fragment)) {
-            this.expression = new LiteralNode(fragment)
+        } else if (NumberLiteralNode.matches(fragment)) {
+            this.expression = new NumberLiteralNode(fragment)
+        } else if (BigintLiteralNode.matches(fragment)) {
+            this.expression = new BigintLiteralNode(fragment)
         } else if (fragment === "") {
             throw new Error("Expected an expression.")
         } else {
@@ -220,17 +226,17 @@ export class Parser {
     }
 
     shiftEnclosed() {
-        const enclosing = this.lookahead
-        let content = ""
+        const enclosedBy = this.lookahead as LiteralEnclosing
+        let text = ""
         let scanAhead = this.scan + 1
-        while (this.chars[scanAhead] !== enclosing) {
-            content += this.chars[scanAhead]
+        while (this.chars[scanAhead] !== enclosedBy) {
+            text += this.chars[scanAhead]
             scanAhead++
         }
-        if (enclosing === "/") {
-            this.expression = new Regex.Node(new RegExp(content))
+        if (enclosedBy === "/") {
+            this.expression = new Regex.Node(new RegExp(text))
         } else {
-            this.expression = new LiteralNode(content)
+            this.expression = new StringLiteralNode(text, enclosedBy)
         }
         this.scan = scanAhead + 1
     }
@@ -275,14 +281,11 @@ export class Parser {
     reduceBound(token: ComparatorToken) {
         if (Bound.isBoundable(this.expression!)) {
             this.reduceRightBound(this.expression!, token)
-        } else if (
-            this.expression instanceof LiteralNode &&
-            typeof this.expression.value === "number"
-        ) {
+        } else if (this.expression instanceof NumberLiteralNode) {
             this.reduceLeftBound(this.expression.value, token)
         } else {
             throw new Error(
-                `Left side of comparator ${token} must be a number literal or boundable definition (got ${this.expression?.toString()}).`
+                `Left side of comparator ${token} must be a number literal or boundable definition (got ${this.expression!.toString()}).`
             )
         }
     }
@@ -296,10 +299,7 @@ export class Parser {
         this.branch.ctx.rightBounded = true
         const bounded = this.expression
         this.shiftBranch()
-        if (
-            this.expression instanceof LiteralNode &&
-            typeof this.expression.value === "number"
-        ) {
+        if (this.expression instanceof NumberLiteralNode) {
             this.expression = bounded
             // Apply bound
         } else {

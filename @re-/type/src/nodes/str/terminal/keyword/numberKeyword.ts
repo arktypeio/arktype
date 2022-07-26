@@ -1,8 +1,8 @@
-import { Base } from "../base.js"
-import { Bound } from "../bound.js"
+import { Base } from "../../../base/index.js"
+import { Bound } from "../../nonTerminal/bound.js"
 
 abstract class BaseNumberKeyword
-    extends Base.Terminal<string>
+    extends Base.Terminal
     implements Bound.Boundable
 {
     allows(args: Base.Validation.Args) {
