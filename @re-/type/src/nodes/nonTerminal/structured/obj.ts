@@ -1,14 +1,10 @@
 import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
-import { Base } from "../base/index.js"
-import { Root } from "../root.js"
+import { Base } from "../../base/index.js"
+import { Root } from "../../root.js"
 import { RecordNode, RecordType } from "./record.js"
-import { Regex } from "./regex.js"
 import { TupleNode } from "./tuple.js"
 
-export namespace Obj {
-    // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
-    export type Unmapped = Regex.Definition
-
+export namespace Struct {
     export type Validate<Def, Dict> = {
         [K in keyof Def]: Root.Validate<Def[K], Dict>
     }
@@ -26,9 +22,7 @@ export namespace Obj {
         Def extends object,
         Dict,
         PreserveStructure extends boolean
-    > = Def extends Regex.Definition
-        ? [`/${Def["source"]}/`]
-        : PreserveStructure extends true
+    > = PreserveStructure extends true
         ? StructuredReferences<Def, Dict>
         : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, [], Dict>
 
@@ -52,9 +46,6 @@ export namespace Obj {
         typeof def === "object" && def !== null
 
     export const parse: Base.Parsing.ParseFn<object> = (def, ctx) => {
-        if (Regex.matches(def)) {
-            return new Regex.Node(def)
-        }
         if (TupleNode.matches(def)) {
             return new TupleNode(def, ctx)
         }

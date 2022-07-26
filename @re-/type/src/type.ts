@@ -8,12 +8,6 @@ import {
 } from "@re-/tools"
 import { Base, Root } from "./nodes/index.js"
 
-/**
- * Create a model.
- * @param definition {@as string} Document this.
- * @param options {@as TypeConfig?} And that.
- * @returns {@as any} The result.
- */
 export const type: TypeFunction = (definition, options) => {
     const root = Root.parse(definition, Base.Parsing.createContext(options))
     return new Type(definition, root, options) as any

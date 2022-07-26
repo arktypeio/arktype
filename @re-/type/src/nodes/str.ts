@@ -1,16 +1,14 @@
 import { ListChars } from "@re-/tools"
-import { Base } from "../base/index.js"
-import {
-    BigintLiteral,
-    NumberLiteral,
-    RegexLiteral,
-    StringLiteral
-} from "./literal.js"
-import { ListNode } from "./nonTerminal/list.js"
-import { OptionalNode } from "./nonTerminal/optional.js"
+import { Base } from "./base/index.js"
+import { ListNode, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
-import { AliasNode, AliasType } from "./terminal/alias.js"
-import { Keyword } from "./terminal/keyword/keyword.js"
+import {
+    AliasNode,
+    BigintLiteralDefinition,
+    InferTerminalStr,
+    Keyword,
+    NumberLiteralDefinition
+} from "./terminal/index.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = TryNaiveParse<Def, Dict>
@@ -65,7 +63,7 @@ export namespace Str {
         Tree,
         Ctx extends Base.Parsing.InferenceContext
     > = Tree extends string
-        ? InferTerminal<Tree, Ctx>
+        ? InferTerminalStr<Tree, Ctx>
         : Tree extends [infer Next, "?"]
         ? InferTree<Next, Ctx> | undefined
         : Tree extends [infer Next, "[]"]
@@ -364,7 +362,7 @@ export namespace Str {
         Dict
     > = IsResolvableName<Token, Dict> extends true
         ? State.PushBase<S, Token, S["unscanned"]>
-        : Token extends NumberLiteral.Definition | BigintLiteral.Definition
+        : Token extends NumberLiteralDefinition | BigintLiteralDefinition
         ? State.PushBase<S, Token, S["unscanned"]>
         : Token extends ""
         ? MissingExpressionError<S>
@@ -427,7 +425,7 @@ export namespace Str {
           >
         : S["branch"]["ctx"]["rightBounded"] extends true
         ? State.Error<`Right side of comparator ${Token} cannot be bounded more than once.`>
-        : S["expression"] extends NumberLiteral.Definition
+        : S["expression"] extends NumberLiteralDefinition
         ? ReduceLeftBound<
               S,
               Token,
@@ -446,7 +444,7 @@ export namespace Str {
         Right extends State.State
     > = Right extends State.Error<string>
         ? Right
-        : Right["expression"] extends NumberLiteral.Definition
+        : Right["expression"] extends NumberLiteralDefinition
         ? State.ScanTo<Left, Right["unscanned"]>
         : State.Error<`Right side of comparator ${Token} must be a number literal.`>
 
@@ -484,32 +482,13 @@ export namespace Str {
 
     /** A BoundableNode must be either:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
-     *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100>alphanumeric")
+     *    2. A string-typed keyword terminal (e.g. "alphanum" in "100>alphanum")
      *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
      */
     type BoundableNode =
         | Keyword.OfTypeNumber
         | Keyword.OfTypeString
         | [unknown, "[]"]
-
-    type InferTerminal<
-        Token extends string,
-        Ctx extends Base.Parsing.InferenceContext
-    > = Token extends Keyword.Definition
-        ? Keyword.Types[Token]
-        : Token extends keyof Ctx["dict"]
-        ? AliasType.Infer<Token, Ctx>
-        : Token extends StringLiteral.SingleQuoted<infer Value>
-        ? Value
-        : Token extends StringLiteral.DoubleQuoted<infer Value>
-        ? Value
-        : Token extends RegexLiteral.Definition
-        ? string
-        : Token extends NumberLiteral.Definition<infer Value>
-        ? Value
-        : Token extends BigintLiteral.Definition<infer Value>
-        ? Value
-        : unknown
 
     export const matches = (def: unknown): def is string =>
         typeof def === "string"

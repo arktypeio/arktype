@@ -1,4 +1,4 @@
-import { Base } from "../../../base/index.js"
+import { Base } from "../../base/index.js"
 
 abstract class BaseTypeKeyword extends Base.Terminal {
     allows(args: Base.Validation.Args) {

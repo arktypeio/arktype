@@ -1,17 +1,18 @@
 import { Base } from "./base/index.js"
-import { Obj } from "./obj/index.js"
-import { Str } from "./str/index.js"
+import { Struct } from "./nonTerminal/index.js"
+import { Str } from "./str.js"
+import { TerminalObj } from "./terminal/index.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []
         ? Def
         : Def extends string
         ? Str.Validate<Def, Dict>
-        : Def extends Obj.Unmapped
+        : Def extends TerminalObj.Definition
         ? Def
         : Def extends BadDefinitionType
         ? BadDefinitionTypeMessage
-        : Obj.Validate<Def, Dict>
+        : Struct.Validate<Def, Dict>
 
     export type Infer<
         Def,
@@ -22,7 +23,9 @@ export namespace Root {
         ? Str.Infer<Def, Ctx>
         : Def extends BadDefinitionType
         ? never
-        : Obj.Infer<Def, Ctx>
+        : Def extends TerminalObj.Definition
+        ? TerminalObj.Infer<Def>
+        : Struct.Infer<Def, Ctx>
 
     export type References<
         Def,
@@ -30,8 +33,10 @@ export namespace Root {
         PreserveStructure extends boolean
     > = Def extends string
         ? Str.References<Def, Dict>
+        : Def extends TerminalObj.Definition
+        ? TerminalObj.References<Def>
         : Def extends object
-        ? Obj.References<Def, Dict, PreserveStructure>
+        ? Struct.References<Def, Dict, PreserveStructure>
         : []
 
     export type BadDefinitionType =
@@ -51,8 +56,8 @@ export namespace Root {
         if (Str.matches(def)) {
             return Str.parse(def, ctx)
         }
-        if (Obj.matches(def)) {
-            return Obj.parse(def, ctx)
+        if (Struct.matches(def)) {
+            return Struct.parse(def, ctx)
         }
         throw new Base.Parsing.ParseError(
             BAD_DEF_TYPE_MESSAGE +

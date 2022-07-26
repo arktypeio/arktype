@@ -1,5 +1,5 @@
 import { isDigits, uncapitalize } from "@re-/tools"
-import { Parsing } from "../parse/parsing.js"
+import type { Node } from "../base.js"
 import { defToString, stringifyValue } from "../utils.js"
 import { Traversal } from "./traversal.js"
 
@@ -49,7 +49,7 @@ export namespace Validation {
 
     export const customValidatorAllows = (
         validator: CustomValidator,
-        node: Parsing.Node,
+        node: Node,
         args: Args
     ): boolean => {
         const customErrors = validator({

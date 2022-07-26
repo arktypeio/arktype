@@ -1,4 +1,4 @@
-import { Base } from "../../../base/index.js"
+import { Base } from "../../base/index.js"
 
 export type PrimitiveLiteralValue = string | number | bigint
 

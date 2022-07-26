@@ -1,5 +1,4 @@
-import { Base } from "../base/index.js"
-import { Regex } from "../obj/regex.js"
+import { Base } from "./base/index.js"
 import {
     Bound,
     IntersectionNode,
@@ -13,6 +12,7 @@ import {
     BigintLiteralNode,
     Keyword,
     NumberLiteralNode,
+    RegexNode,
     StringLiteralNode
 } from "./terminal/index.js"
 
@@ -234,7 +234,7 @@ export class Parser {
             scanAhead++
         }
         if (enclosedBy === "/") {
-            this.expression = new Regex.Node(new RegExp(text))
+            this.expression = new RegexNode(new RegExp(text))
         } else {
             this.expression = new StringLiteralNode(text, enclosedBy)
         }

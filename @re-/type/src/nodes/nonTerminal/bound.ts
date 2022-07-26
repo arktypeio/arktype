@@ -1,7 +1,7 @@
 import { Entry } from "@re-/tools"
-import { Base } from "../../base/index.js"
+import { Base } from "../base/index.js"
 import { Str } from "../str.js"
-import { NumberLiteral } from "./literal.js"
+import { NumberLiteralNode } from "../terminal/index.js"
 
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
 
@@ -30,8 +30,6 @@ const invertComparator = (token: ComparatorToken): ComparatorToken => {
 }
 
 export namespace Bound {
-    export type Definition = `${string}${ComparatorToken}${string}`
-
     export interface Boundable extends Base.Node {
         boundBy?: string
         toBound(value: unknown): number
@@ -40,48 +38,13 @@ export namespace Bound {
     export const isBoundable = (node: Base.Node): node is Boundable =>
         "toBound" in node
 
-    const matcher = /(<=|>=|<|>|==)/
-
-    export const matches = (def: string): def is Definition => matcher.test(def)
-
-    const valueFromBoundPart = (part: string) => {
-        if (!NumberLiteral.matches(part)) {
-            throw new Error(invalidBoundError(part))
-        }
-        return NumberLiteral.valueFrom(part)
-    }
-
     export type BoundEntry = Entry<ComparatorToken, number>
-
-    type BoundParts = [string, ComparatorToken, string]
-    type RangeParts = [string, ComparatorToken, string, ComparatorToken, string]
 
     export class Node extends Base.NonTerminal<Boundable> {
         private bounds: BoundEntry[] | undefined
 
         toString() {
             return "Bounds not impelmented.."
-        }
-
-        // E.g. ["number", ">=", "5"]
-        private parseBound(parts: BoundParts) {
-            this.bounds = [[parts[1], valueFromBoundPart(parts[2])]]
-            return Str.parse(parts[0], this.ctx)
-        }
-
-        // E.g. ["5", "<", "string", "<=", "20"]
-        private parseRange(parts: RangeParts) {
-            /** We have to invert the first comparator in an expression like
-             * 5<=number<10
-             * so that it can be split into two expressions like
-             * number>=5
-             * number<10
-             */
-            this.bounds = [
-                [invertComparator(parts[1]), valueFromBoundPart(parts[0])],
-                [parts[3], valueFromBoundPart(parts[4])]
-            ]
-            return Str.parse(parts[2], this.ctx)
         }
 
         assertBoundable(

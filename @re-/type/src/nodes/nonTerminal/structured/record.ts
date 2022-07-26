@@ -1,7 +1,7 @@
 import { Evaluate } from "@re-/tools"
-import { Base } from "../base/index.js"
-import { Root } from "../root.js"
-import { OptionalNode } from "../str/index.js"
+import { Base } from "../../base/index.js"
+import { Root } from "../../root.js"
+import { OptionalNode } from "../optional.js"
 import { StructuredNonTerminal } from "./structured.js"
 
 export namespace RecordType {

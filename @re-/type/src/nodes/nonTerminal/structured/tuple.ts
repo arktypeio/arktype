@@ -1,4 +1,4 @@
-import { Base } from "../base/index.js"
+import { Base } from "../../base/index.js"
 import { StructuredNonTerminal } from "./structured.js"
 
 export namespace TupleType {
@@ -15,7 +15,7 @@ export class TupleNode extends StructuredNonTerminal {
 
     allows(args: Base.Validation.Args) {
         if (!Array.isArray(args.value)) {
-            //this.addUnassignable(args)
+            this.addUnassignable(args)
             return false
         }
         if (this.children.length !== args.value.length) {

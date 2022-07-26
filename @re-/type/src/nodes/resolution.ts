@@ -9,7 +9,7 @@ import {
 import { getResolutionDefAndOptions, SpaceMeta } from "../space.js"
 import { Base } from "./base/index.js"
 import { Root } from "./root.js"
-import { Str } from "./str/str.js"
+import { Str } from "./str.js"
 
 export namespace ResolutionType {
     export type Validate<

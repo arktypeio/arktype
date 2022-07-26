@@ -1,6 +1,0 @@
-export * from "./str.js"
-export * from "./nonTerminal/optional.js"
-export * from "./terminal/keyword/typeKeyword.js"
-export * from "./nonTerminal/bound.js"
-export * from "./nonTerminal/intersection.js"
-export * from "./terminal/alias.js"

@@ -1,4 +1,4 @@
-import type { StructuredNonTerminal } from "../../obj/structured.js"
+import type { StructuredNonTerminal } from "../../nonTerminal/index.js"
 import { Create, Validation } from "../features/index.js"
 import { References } from "../features/references.js"
 import { stringifyValue } from "../utils.js"

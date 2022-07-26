@@ -1,5 +1,5 @@
 import { TypeOfResult } from "@re-/tools"
-import { Base } from "../../base/index.js"
+import { Base } from "../base/index.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
 

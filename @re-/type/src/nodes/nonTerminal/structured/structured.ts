@@ -1,6 +1,6 @@
 import { TreeOf } from "@re-/tools"
-import { Base } from "../base/index.js"
-import { Root } from "../root.js"
+import { Base } from "../../base/index.js"
+import { Root } from "../../root.js"
 
 export type ChildEntry<KeyType> = [KeyType, Base.Node]
 

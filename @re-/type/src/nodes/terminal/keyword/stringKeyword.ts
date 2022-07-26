@@ -1,5 +1,5 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { Base } from "../../../base/index.js"
+import { Base } from "../../base/index.js"
 import { Bound } from "../../nonTerminal/bound.js"
 
 abstract class BaseStringKeyword
