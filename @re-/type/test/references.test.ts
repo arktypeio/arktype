@@ -1,6 +1,7 @@
 export {}
 import { assert } from "@re-/assert"
 import { ElementOf, Evaluate, isNumeric, narrow } from "@re-/tools"
+import { describe, test } from "vitest"
 import { References, space, type } from "../src/index.js"
 
 describe("references", () => {
@@ -32,7 +33,7 @@ describe("references", () => {
     type ExpectedObjectDefReferenceList = ExpectedObjectDefReferenceUnion[]
 
     describe("model", () => {
-        it("from string", () => {
+        test("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
                 .$root.type(
                     "user[]|group[]|boolean&true|(integer>0)|null|1<number<2"
@@ -52,17 +53,17 @@ describe("references", () => {
                 listComparison: "permutable"
             }).typed as ExpectedReferences
         })
-        it("from string with duplicates", () => {
+        test("from string with duplicates", () => {
             const zeroAndOne = type("0|1|0[]|1[]|0[][]|1[][]?").references()
             assert(zeroAndOne).equals(["0", "1"]).typed as ("0" | "1")[]
         })
-        it("from object", () => {
+        test("from object", () => {
             const references = type(objectDef).references()
             assert(references).equals(expectedObjectDefReferences, {
                 listComparison: "permutable"
             }).typed as ExpectedObjectDefReferenceList
         })
-        it("from object with preserveStructure", () => {
+        test("from object with preserveStructure", () => {
             const references = type(objectDef).references({
                 preserveStructure: true
             })
@@ -86,7 +87,7 @@ describe("references", () => {
                 listComparison: "permutable"
             }).typed as ExpectedReferences
         })
-        it("filter", () => {
+        test("filter", () => {
             const referencesIncludingE = type(objectDef).references({
                 filter: (reference) => reference.includes("e")
             })
@@ -94,7 +95,7 @@ describe("references", () => {
                 listComparison: "permutable"
             }).typed as ExpectedObjectDefReferenceList
         })
-        it("typed filter", () => {
+        test("typed filter", () => {
             const bigintLiteralReferences = type(objectDef).references({
                 filter: (reference): reference is `${number}n` =>
                     isNumeric(reference.slice(0, -1)) &&
@@ -104,7 +105,7 @@ describe("references", () => {
                 listComparison: "permutable"
             }).typed as "-1n"[]
         })
-        it("filtered structured", () => {
+        test("filtered structured", () => {
             const mySpace = space({
                 a: "any",
                 b: "boolean",
@@ -133,11 +134,11 @@ describe("references", () => {
     })
     describe("type", () => {
         describe("format", () => {
-            it("default (list)", () => {
+            test("default (list)", () => {
                 const actual = {} as References<ObjectDef, {}>
                 assert(actual).typed as ExpectedObjectDefReferenceList
             })
-            it("tuple", () => {
+            test("tuple", () => {
                 const actual = {} as References<
                     "string|number[]|boolean&true?",
                     {},
@@ -145,7 +146,7 @@ describe("references", () => {
                 >
                 assert(actual).typed as ["string", "number", "boolean", "true"]
             })
-            it("union", () => {
+            test("union", () => {
                 const actual = {} as References<
                     ObjectDef,
                     {},
@@ -154,7 +155,7 @@ describe("references", () => {
                 assert(actual).typed as ExpectedObjectDefReferenceUnion
             })
         })
-        it("filters", () => {
+        test("filters", () => {
             const referencesContainingI = {} as References<
                 ObjectDef,
                 {},

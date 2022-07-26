@@ -1,30 +1,31 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { type } from "../../src/index.js"
 
 describe("tuple", () => {
     describe("empty", () => {
-        const empty = type([])
-        it("type", () => {
-            assert(empty.infer).typed as []
+        const empty = () => type([])
+        test("type", () => {
+            assert(empty().infer).typed as []
         })
-        it("validation", () => {
-            assert(empty.validate([]).error).is(undefined)
-            assert(empty.validate({}).error?.message).snap(
+        test("validation", () => {
+            assert(empty().validate([]).error).is(undefined)
+            assert(empty().validate({}).error?.message).snap(
                 `{} is not assignable to [].`
             )
         })
-        it("generation", () => {
-            assert(empty.create()).equals([])
+        test("generation", () => {
+            assert(empty().create()).equals([])
         })
     })
     describe("shallow", () => {
-        const shallow = type(["string", "number", "6"])
+        const shallow = () => type(["string", "number", "6"])
         describe("type", () => {
-            it("standard", () => {
-                assert(shallow.infer).typed as [string, number, 6]
+            test("standard", () => {
+                assert(shallow().infer).typed as [string, number, 6]
             })
             describe("errors", () => {
-                it("invalid item definition", () => {
+                test("invalid item definition", () => {
                     assert(() =>
                         // @ts-expect-error
                         type(["string", ["number", "boolean", "whoops"]])
@@ -37,50 +38,50 @@ describe("tuple", () => {
             })
         })
         describe("validation", () => {
-            it("standard", () => {
-                assert(shallow.validate(["violin", 42, 6]).error).is(undefined)
+            test("standard", () => {
+                assert(shallow().validate(["violin", 42, 6]).error).is(
+                    undefined
+                )
             })
             describe("errors", () => {
-                it("bad item value", () => {
+                test("bad item value", () => {
                     assert(
-                        shallow.validate(["violin", 42n, 6]).error?.message
+                        shallow().validate(["violin", 42n, 6]).error?.message
                     ).snap(`At index 1, 42n is not assignable to number.`)
                 })
-                it("too short", () => {
+                test("too short", () => {
                     assert(
-                        shallow.validate(["violin", 42]).error?.message
+                        shallow().validate(["violin", 42]).error?.message
                     ).snap(
                         `Tuple of length 2 is not assignable to tuple of length 3.`
                     )
                 })
-                it("too long", () => {
+                test("too long", () => {
                     assert(
-                        shallow.validate(["violin", 42, 6, null]).error?.message
+                        shallow().validate(["violin", 42, 6, null]).error
+                            ?.message
                     ).snap(
                         `Tuple of length 4 is not assignable to tuple of length 3.`
                     )
                 })
             })
         })
-        it("generation", () => {
-            assert(shallow.create()).equals(["", 0, 6])
+        test("generation", () => {
+            assert(shallow().create()).equals(["", 0, 6])
         })
     })
     describe("nested", () => {
-        const nested = type([
-            "'Cuckoo'",
-            ["'Swallow'", "'Oriole'", "'Condor'"],
-            []
-        ])
+        const nested = () =>
+            type(["'Cuckoo'", ["'Swallow'", "'Oriole'", "'Condor'"], []])
         describe("type", () => {
-            it("handles nested tuples", () => {
-                assert(nested.infer).typed as [
+            test("handles nested tuples", () => {
+                assert(nested().infer).typed as [
                     "Cuckoo",
                     ["Swallow", "Oriole", "Condor"],
                     []
                 ]
             })
-            it("removes readonly modifier", () => {
+            test("removes readonly modifier", () => {
                 const readonlyDef = ["true", "false", ["boolean"]] as const
                 assert(type(readonlyDef).infer).typed as [
                     true,
@@ -90,9 +91,9 @@ describe("tuple", () => {
             })
         })
         describe("validation", () => {
-            it("standard", () => {
+            test("standard", () => {
                 assert(
-                    nested.validate([
+                    nested().validate([
                         "Cuckoo",
                         ["Swallow", "Oriole", "Condor"],
                         []
@@ -100,9 +101,9 @@ describe("tuple", () => {
                 ).is(undefined)
             })
             describe("errors", () => {
-                it("single", () => {
+                test("single", () => {
                     assert(
-                        nested.validate([
+                        nested().validate([
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
                         ]).error?.message
@@ -110,9 +111,9 @@ describe("tuple", () => {
                         `Tuple of length 2 is not assignable to tuple of length 3.`
                     )
                 })
-                it("multiple", () => {
+                test("multiple", () => {
                     assert(
-                        nested.validate([
+                        nested().validate([
                             "Clock",
                             ["Swallow", "Oriole", "Gondor"],
                             ["Too long"]
@@ -125,8 +126,8 @@ describe("tuple", () => {
                 })
             })
         })
-        it("generation", () => {
-            assert(nested.create()).equals([
+        test("generation", () => {
+            assert(nested().create()).equals([
                 "Cuckoo",
                 ["Swallow", "Oriole", "Condor"],
                 []

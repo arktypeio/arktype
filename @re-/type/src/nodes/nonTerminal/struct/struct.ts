@@ -42,9 +42,6 @@ export namespace Struct {
         -readonly [K in keyof Def]: Root.References<Def[K], Dict, true>
     }>
 
-    export const matches = (def: unknown): def is object =>
-        typeof def === "object" && def !== null
-
     export const parse: Base.Parsing.ParseFn<object> = (def, ctx) => {
         if (TupleNode.matches(def)) {
             return new TupleNode(def, ctx)

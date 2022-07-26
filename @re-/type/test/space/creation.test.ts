@@ -1,8 +1,9 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { space } from "../../src/index.js"
 
 describe("creation", () => {
-    it("simple space", () => {
+    test("simple space", () => {
         assert(
             space({
                 banana: {
@@ -28,7 +29,7 @@ describe("creation", () => {
             bestFruit: { length: 0 }
         })
     })
-    it("optional cycle", () => {
+    test("optional cycle", () => {
         // If it's optional, the cycle should be ignored and just return undefined
         assert(
             space({
@@ -40,7 +41,7 @@ describe("creation", () => {
                 .create()
         ).equals({ b: {} })
     })
-    it("required cycle", () => {
+    test("required cycle", () => {
         const cyclicSpace = space({
             a: { b: "b" },
             b: { c: "c" },
@@ -59,7 +60,7 @@ Unable to generate a value for 'b': Definition includes a required cycle:
 a=>b=>c=>b
 If you'd like to avoid throwing when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.`)
     })
-    it("onRequiredCycle", () => {
+    test("onRequiredCycle", () => {
         assert(
             space({
                 a: { b: "b" },
@@ -72,7 +73,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
             b: { c: { whoops: ["cycle"] } }
         })
     })
-    it("onRequiredCycle with union", () => {
+    test("onRequiredCycle with union", () => {
         assert(
             space({
                 a: { b: "b" },
@@ -82,7 +83,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                 .create({ onRequiredCycle: "cycle" })
         ).value.equals({ b: { a: "cycle" } })
     })
-    it("from parsed", () => {
+    test("from parsed", () => {
         const defaultValue = space({
             group: { name: "string", description: "string?" }
         })

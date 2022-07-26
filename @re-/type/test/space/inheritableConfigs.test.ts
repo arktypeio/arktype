@@ -1,9 +1,10 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { def, space, type } from "../../src/index.js"
 
 describe("inheritable configs", () => {
     describe("methods", () => {
-        it("no config", () => {
+        test("no config", () => {
             assert(
                 type({ name: "string" }).validate({
                     name: "David Blass",
@@ -11,7 +12,7 @@ describe("inheritable configs", () => {
                 }).error?.message
             ).snap(`Keys 'age' were unexpected.`)
         })
-        it("ad hoc", () => {
+        test("ad hoc", () => {
             const user = type({ name: "string" })
             assert(
                 user.validate(
@@ -20,7 +21,7 @@ describe("inheritable configs", () => {
                 ).error
             ).is(undefined)
         })
-        it("type options", () => {
+        test("type options", () => {
             const user = type(
                 { name: "string" },
                 { validate: { ignoreExtraneousKeys: true } }
@@ -30,7 +31,7 @@ describe("inheritable configs", () => {
             )
         })
 
-        it("def config in space", () => {
+        test("def config in space", () => {
             const mySpace = space({
                 user: def(
                     { name: "string" },
@@ -44,7 +45,7 @@ describe("inheritable configs", () => {
                 }).error
             ).is(undefined)
         })
-        it("space config", () => {
+        test("space config", () => {
             const mySpace = space(
                 { user: { name: "string" } },
                 {
@@ -58,7 +59,7 @@ describe("inheritable configs", () => {
                 }).error
             ).is(undefined)
         })
-        it("precedence", () => {
+        test("precedence", () => {
             const nesting = space(
                 {
                     doll: def(

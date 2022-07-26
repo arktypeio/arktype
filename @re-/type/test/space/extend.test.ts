@@ -1,8 +1,9 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { def, space } from "../../src/index.js"
 
 describe("extend space", () => {
-    it("type", () => {
+    test("type", () => {
         const extended = getExtendedSpace()
         assert(extended.$root.infer).typed as {
             user: {
@@ -29,7 +30,7 @@ describe("extend space", () => {
             }
         }
     })
-    it("dictionary", () => {
+    test("dictionary", () => {
         const extended = getExtendedSpace()
         assert(extended.$root.dictionary).snap({
             $meta: { onCycle: `boolean` },
@@ -46,7 +47,7 @@ describe("extend space", () => {
             }
         })
     })
-    it("options", () => {
+    test("options", () => {
         const extended = getExtendedSpace()
         assert(extended.$root.options).snap({
             validate: {

@@ -24,8 +24,8 @@
     },
     "scripts": {
         "build": "ts-node ../../scripts/build.ts",
-        "test": "reassert mocha",
-        "tnt": "reassert mocha --skipTypes",
+        "test": "reassert --cmd mocha",
+        "tnt": "reassert --skipTypes --cmd vitest run",
         "benchCyclic": "ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
         "benchCore": "ts-node ./test/bench/parser.bench.ts",
@@ -36,7 +36,7 @@
         "@re-/tools": "workspace:*"
     },
     "devDependencies": {
-        "@re-/node": "workspace:*",
-        "@re-/assert": "workspace:*"
+        "@re-/assert": "workspace:*",
+        "@re-/node": "workspace:*"
     }
 }

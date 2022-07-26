@@ -1,37 +1,38 @@
+import { describe, test } from "vitest"
 import { assert } from "@re-/assert"
 import { type } from "../../src/index.js"
 
 describe("stringLiteral", () => {
     describe("type", () => {
-        it("single quotes", () => {
+        test("single quotes", () => {
             assert(type("'hello'").infer).typed as "hello"
         })
-        it("double quotes", () => {
+        test("double quotes", () => {
             assert(type('"goodbye"').infer).typed as "goodbye"
         })
-        it("single-quoted literal", () => {
+        test("single-quoted literal", () => {
             assert(type(`"'single-quoted'"`).infer).typed as "'single-quoted'"
         })
-        it("double-quoted literal", () => {
+        test("double-quoted literal", () => {
             assert(type(`'"double-quoted"'`).infer).typed as '"double-quoted"'
         })
-        it("with spaces", () => {
+        test("with spaces", () => {
             assert(type("'this has spaces'").infer).typed as "this has spaces"
         })
         describe("errors", () => {
-            it("unclosed quotes", () => {
+            test("unclosed quotes", () => {
                 // @ts-expect-error
                 assert(() => type("'mismatched")).throwsAndHasTypeError(
                     "Unable to determine the type of ''mismatched'."
                 )
             })
-            it("mismatched quotes", () => {
+            test("mismatched quotes", () => {
                 // @ts-expect-error
                 assert(() => type(`"mismatched'`)).throwsAndHasTypeError(
                     /Unable to determine the type of[\S\s]*mismatched'/
                 )
             })
-            it("extraneous single quotes", () => {
+            test("extraneous single quotes", () => {
                 assert(() =>
                     // @ts-expect-error
                     type(`'this isn't allowed'`)
@@ -39,7 +40,7 @@ describe("stringLiteral", () => {
                     /Unable to determine the type of[\S\s]*allowed'/
                 )
             })
-            it("nested double quote pair", () => {
+            test("nested double quote pair", () => {
                 assert(() =>
                     // @ts-expect-error
                     type(`"not "ok""`)
@@ -50,11 +51,11 @@ describe("stringLiteral", () => {
         })
     })
     describe("validation", () => {
-        it("matching literal", () => {
+        test("matching literal", () => {
             assert(type("'dursurdo'").validate("dursurdo").error).is(undefined)
         })
         describe("errors", () => {
-            it("mismatched literal", () => {
+            test("mismatched literal", () => {
                 assert(
                     type("'dursurdo'").validate("durrrrrr").error?.message
                 ).snap(`"durrrrrr" is not assignable to 'dursurdo'.`)
@@ -62,7 +63,7 @@ describe("stringLiteral", () => {
         })
     })
     describe("generation", () => {
-        it("matching literal", () => {
+        test("matching literal", () => {
             assert(type("'generated'").create()).is("generated")
         })
     })

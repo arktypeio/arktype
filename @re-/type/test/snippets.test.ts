@@ -1,8 +1,9 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { type } from "../src/index.js"
 
 describe("snippets", () => {
-    it("model", async () => {
+    test("model", async () => {
         const modelSnippet = await import("../docs/snippets/type.js")
         assert(modelSnippet.user.infer).typed as {
             name: string
@@ -15,7 +16,7 @@ describe("snippets", () => {
             `At path browser/kind, "Internet Explorer" is not assignable to any of 'chrome'|'firefox'|'safari'.`
         )
     })
-    it("space", async () => {
+    test("space", async () => {
         const spaceSnippet = await import("../docs/snippets/space.js")
         assert(spaceSnippet.redo.$root.infer.package).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
@@ -27,7 +28,7 @@ describe("snippets", () => {
 `)
     })
     // See multifile.assert.ts for declaration demo
-    it("constraints", () => {
+    test("constraints", () => {
         const employee = type({
             // Not a fan of regex? Don't worry, 'email' is a builtin type :)
             email: /[a-z]*@redo\.dev/,

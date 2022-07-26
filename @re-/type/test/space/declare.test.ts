@@ -1,4 +1,5 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { declare } from "../../src/index.js"
 
 // Declare the models you will define
@@ -7,7 +8,7 @@ import { groupDef } from "./declaration/group.js"
 import { userDef } from "./declaration/user.js"
 
 describe("multifile", () => {
-    it("compiles", () => {
+    test("compiles", () => {
         // Creates your space (or tells you which definition you forgot to include)
         const space = compile({ ...userDef, ...groupDef })
         assert(space.$root.infer.user.name).typed as string
@@ -26,7 +27,7 @@ describe("multifile", () => {
             `{ foozler: { name: string; groups: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }; choozler: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; }`
         )
     })
-    it("single", () => {
+    test("single", () => {
         const { define, compile } = declare("gottaDefineThis")
         const gottaDefineThis = define.gottaDefineThis("boolean")
         assert(() =>
@@ -42,7 +43,7 @@ describe("multifile", () => {
             a: boolean
         }
     })
-    it("errors on compile with declared type undefined", () => {
+    test("errors on compile with declared type undefined", () => {
         const { define, compile } = declare(
             "gottaDefineThis",
             "gottaDefineThisToo"
@@ -55,7 +56,7 @@ describe("multifile", () => {
             .throws("Declared types 'gottaDefineThisToo' were never defined.")
             .type.errors("Property 'gottaDefineThisToo' is missing")
     })
-    it("errors on compile with undeclared type defined", () => {
+    test("errors on compile with undeclared type defined", () => {
         const { define, compile } = declare("gottaDefineThis")
         const gottaDefineThis = define.gottaDefineThis("boolean")
         assert(() =>

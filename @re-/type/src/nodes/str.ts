@@ -490,9 +490,6 @@ export namespace Str {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    export const matches = (def: unknown): def is string =>
-        typeof def === "string"
-
     export const parse: Base.Parsing.ParseFn<string> = (def, ctx) =>
         tryNaiveParse(def, ctx) ?? fullParse(def, ctx)
 

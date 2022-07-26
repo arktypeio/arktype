@@ -1,10 +1,11 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { type } from "../../src/index.js"
 
 describe("integration", () => {
-    const mixed = type(["true", { a: ["string", ["number|boolean[]"]] }])
-    it("type", () => {
-        assert(mixed.infer).typed as [
+    const mixed = () => type(["true", { a: ["string", ["number|boolean[]"]] }])
+    test("type", () => {
+        assert(mixed().infer).typed as [
             true,
             {
                 a: [string, [number | boolean[]]]
@@ -12,15 +13,15 @@ describe("integration", () => {
         ]
     })
     describe("validation", () => {
-        it("standard", () => {
-            assert(mixed.validate([true, { a: ["ok", [0]] }]).error).is(
+        test("standard", () => {
+            assert(mixed().validate([true, { a: ["ok", [0]] }]).error).is(
                 undefined
             )
         })
         describe("errors", () => {
-            it("single", () => {
+            test("single", () => {
                 assert(
-                    mixed.validate([
+                    mixed().validate([
                         true,
                         { a: ["ok", [[true, false]], "extraElement"] }
                     ]).error?.message
@@ -28,9 +29,9 @@ describe("integration", () => {
                     `At path 1/a, tuple of length 3 is not assignable to tuple of length 2.`
                 )
             })
-            it("multiple", () => {
+            test("multiple", () => {
                 assert(
-                    mixed.validate([false, { a: [0, [0, 1, 2]] }]).error
+                    mixed().validate([false, { a: [0, [0, 1, 2]] }]).error
                         ?.message
                 ).snap(`Encountered errors at the following paths:
   0: false is not assignable to true.
@@ -40,7 +41,7 @@ describe("integration", () => {
             })
         })
     })
-    it("generation", () => {
-        assert(mixed.create()).equals([true, { a: ["", [0]] }])
+    test("generation", () => {
+        assert(mixed().create()).equals([true, { a: ["", [0]] }])
     })
 })

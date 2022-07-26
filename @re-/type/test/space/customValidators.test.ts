@@ -1,4 +1,5 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { CustomValidator, def, space, type } from "../../src/index.js"
 
 describe("custom validators", () => {
@@ -10,7 +11,7 @@ describe("custom validators", () => {
             return `${value} is not a palindrome!`
         }
     }
-    it("inline", () => {
+    test("inline", () => {
         const palindrome = space({ palindrome: "string" }).$root.type(
             "palindrome",
             {
@@ -22,7 +23,7 @@ describe("custom validators", () => {
             "": `step on your cat is not a palindrome!`
         })
     })
-    it("model root", () => {
+    test("model root", () => {
         const mySpace = space({
             palindrome: def("string", { validate: { validator } })
         })
@@ -31,7 +32,7 @@ describe("custom validators", () => {
             `predivider is not a palindrome!`
         )
     })
-    it("model nested", () => {
+    test("model nested", () => {
         const mySpace = space({
             palindrome: def("string", { validate: { validator } }),
             yourPal: { name: "palindrome" }
@@ -41,7 +42,7 @@ describe("custom validators", () => {
             `At path name, rob is not a palindrome!`
         )
     })
-    it("space", () => {
+    test("space", () => {
         const mySpace = space(
             {
                 first: "1",
@@ -70,7 +71,7 @@ describe("custom validators", () => {
             `1 is not assignable to 2.`
         )
     })
-    it("can access standard validation errors and ctx", () => {
+    test("can access standard validation errors and ctx", () => {
         const num = type("number", {
             validate: {
                 validator: ({ getOriginalErrors, path }) => {

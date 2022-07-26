@@ -1,29 +1,30 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { type } from "../../src/index.js"
 
 describe("regex", () => {
-    const regex = type(/.*@redo\.dev/)
-    it("type", () => {
-        assert(regex.infer).typed as string
+    const regex = () => type(/.*@redo\.dev/)
+    test("type", () => {
+        assert(regex().infer).typed as string
     })
-    it("generation", () => {
-        assert(() => regex.create()).throws.snap(
+    test("generation", () => {
+        assert(() => regex().create()).throws.snap(
             `Error: Unable to generate a value for '/.*@redo\\.dev/': Regex generation is unsupported.`
         )
     })
-    it("validation", () => {
-        assert(regex.validate("david@redo.dev").error).is(undefined)
-        assert(regex.validate("david@redo.qa").error?.message).snap(
+    test("validation", () => {
+        assert(regex().validate("david@redo.dev").error).is(undefined)
+        assert(regex().validate("david@redo.qa").error?.message).snap(
             `"david@redo.qa" does not match expression /.*@redo\\.dev/.`
         )
         assert(
-            regex.validate({ inObject: "david@redo.dev" }).error?.message
+            regex().validate({ inObject: "david@redo.dev" }).error?.message
         ).snap(
             `Non-string value {inObject: "david@redo.dev"} cannot satisfy regex definitions.`
         )
     })
-    it("references", () => {
-        assert(regex.references()).equals([`/.*@redo.dev/`])
+    test("references", () => {
+        assert(regex().references()).equals([`/.*@redo.dev/`])
             .typed as `/${string}/`[]
     })
 })

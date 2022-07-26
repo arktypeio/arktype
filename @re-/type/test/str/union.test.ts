@@ -1,12 +1,13 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { space, type } from "../../src/index.js"
 
 describe("union", () => {
     describe("type", () => {
-        it("two types", () => {
+        test("two types", () => {
             assert(type("number|string").infer).typed as string | number
         })
-        it("several types", () => {
+        test("several types", () => {
             assert(type("false|null|undefined|0|''").infer).typed as
                 | number
                 | false
@@ -15,25 +16,25 @@ describe("union", () => {
                 | undefined
         })
         describe("errors", () => {
-            it("bad reference", () => {
+            test("bad reference", () => {
                 // @ts-expect-error
                 assert(() => type("number|sting")).throwsAndHasTypeError(
                     "Unable to determine the type of 'sting'."
                 )
             })
-            it("double pipes", () => {
+            test("double pipes", () => {
                 // @ts-expect-error
                 assert(() => type("boolean||null")).throwsAndHasTypeError(
                     "Expected an expression after 'boolean|'."
                 )
             })
-            it("ends with |", () => {
+            test("ends with |", () => {
                 // @ts-expect-error
                 assert(() => type("boolean|")).throwsAndHasTypeError(
                     "Expected an expression after 'boolean|'."
                 )
             })
-            it("long missing |", () => {
+            test("long missing |", () => {
                 assert(() =>
                     // @ts-expect-error
                     type("boolean[]|(string|number|)|object")
@@ -44,16 +45,16 @@ describe("union", () => {
         })
     })
     describe("validation", () => {
-        it("two types", () => {
+        test("two types", () => {
             assert(type("true|false").validate(false).error).is(undefined)
         })
-        it("several types", () => {
+        test("several types", () => {
             assert(
                 type("0|false|undefined|null|'zero'|void").validate("zero")
                     .error
             ).is(undefined)
         })
-        it("verbose validation", () => {
+        test("verbose validation", () => {
             assert(
                 space({
                     a: "b|c",
@@ -73,12 +74,12 @@ f: 4 is not assignable to 2.
 g: 4 is not assignable to 3.`)
         })
         describe("errors", () => {
-            it("two types", () => {
+            test("two types", () => {
                 assert(
                     type("'yes'|'no'").validate("maybe").error?.message
                 ).snap(`"maybe" is not assignable to any of 'yes'|'no'.`)
             })
-            it("several types", () => {
+            test("several types", () => {
                 assert(type("2|4|6|8").validate(5).error?.message).snap(
                     `5 is not assignable to any of 2|4|6|8.`
                 )
@@ -86,16 +87,16 @@ g: 4 is not assignable to 3.`)
         })
     })
     describe("creation", () => {
-        it("prefers simple values", () => {
+        test("prefers simple values", () => {
             assert(type("undefined|string").create()).is(undefined)
             assert(type("number|false|bigint").create() as any).is(false)
             assert(type("symbol|object").create()).equals({})
         })
-        it("avoids ungeneratable", () => {
+        test("avoids ungeneratable", () => {
             assert(type("object|function").create()).equals({})
             assert(type("never|number|boolean").create()).equals(false)
         })
-        it("prefers simple aliases", () => {
+        test("prefers simple aliases", () => {
             const mySpace = space({
                 five: "5",
                 duck: "'duck'",
@@ -104,7 +105,7 @@ g: 4 is not assignable to 3.`)
             assert(mySpace.$root.type("nested|five|duck").create()).is(5)
             assert(mySpace.$root.type("duck|nested").create()).is("duck")
         })
-        it("creates onCycle values if needed", () => {
+        test("creates onCycle values if needed", () => {
             const models = space({ a: { b: "b" }, b: { a: "a" } })
             const aOrB = models.$root.type("a|b")
             const created = aOrB.create({ onRequiredCycle: "cycle" })
@@ -112,7 +113,7 @@ g: 4 is not assignable to 3.`)
                 b: { a: "cycle" }
             })
         })
-        it("avoids required cycles if possible", () => {
+        test("avoids required cycles if possible", () => {
             const models = space({
                 a: { b: "b" },
                 b: { a: "a" },
@@ -124,7 +125,7 @@ g: 4 is not assignable to 3.`)
         })
     })
     describe("integration", () => {
-        it("union of literals", () => {
+        test("union of literals", () => {
             const unionOfLiterals = type("'yes'|'no'|'maybe'")
             assert(unionOfLiterals.infer).typed as "yes" | "no" | "maybe"
             assert(unionOfLiterals.validate("no").error).equals(undefined)
@@ -134,7 +135,7 @@ g: 4 is not assignable to 3.`)
                 `"yes|no|maybe" is not assignable to any of 'yes'|'no'|'maybe'.`
             )
         })
-        it("literal of union", () => {
+        test("literal of union", () => {
             const literalOfUnion = type('"yes|no|maybe"')
             assert(literalOfUnion.infer).typed as "yes|no|maybe"
             assert(literalOfUnion.validate("yes|no|maybe").error).equals(
@@ -144,7 +145,7 @@ g: 4 is not assignable to 3.`)
                 `"yes" is not assignable to "yes|no|maybe".`
             )
         })
-        it("union of literals of unions", () => {
+        test("union of literals of unions", () => {
             const unionOfLiteralsOfUnions = type("'yes|no'|'true|false'")
             assert(unionOfLiteralsOfUnions.infer).typed as
                 | "yes|no"

@@ -1,7 +1,11 @@
 import { Base } from "./base/index.js"
 import { Struct } from "./nonTerminal/index.js"
 import { Str } from "./str.js"
-import { TerminalObj } from "./terminal/index.js"
+import {
+    matchesTerminalObj,
+    parseTerminalObj,
+    TerminalObj
+} from "./terminal/index.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []
@@ -53,10 +57,13 @@ export namespace Root {
     type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
 
     export const parse: Base.Parsing.ParseFn<unknown> = (def, ctx) => {
-        if (Str.matches(def)) {
+        if (typeof def === "string") {
             return Str.parse(def, ctx)
         }
-        if (Struct.matches(def)) {
+        if (typeof def === "object" && def !== null) {
+            if (matchesTerminalObj(def)) {
+                return parseTerminalObj(def)
+            }
             return Struct.parse(def, ctx)
         }
         throw new Base.Parsing.ParseError(

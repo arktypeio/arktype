@@ -1,7 +1,7 @@
 import { Base } from "../../base/index.js"
 
 export class RegexNode extends Base.Terminal<RegExp> {
-    static matches(def: object): def is RegExp {
+    static matches(def: unknown): def is RegExp {
         return def instanceof RegExp
     }
 

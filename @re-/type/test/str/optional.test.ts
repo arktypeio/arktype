@@ -1,12 +1,13 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { type } from "../../src/index.js"
 
 describe("optional", () => {
     describe("type", () => {
-        it("adds undefined to standalone type", () => {
+        test("adds undefined to standalone type", () => {
             assert(type("string?").infer).typed as string | undefined
         })
-        it("adds undefined to in-object type and makes it optional", () => {
+        test("adds undefined to in-object type and makes it optional", () => {
             assert(
                 type({
                     required: "boolean",
@@ -19,19 +20,19 @@ describe("optional", () => {
         })
 
         describe("errors", () => {
-            it("bad inner type", () => {
+            test("bad inner type", () => {
                 // @ts-expect-error
                 assert(() => type("nonexistent?")).throwsAndHasTypeError(
                     "Unable to determine the type of 'nonexistent'."
                 )
             })
-            it("multiple consecutive", () => {
+            test("multiple consecutive", () => {
                 // @ts-expect-error
                 assert(() => type("boolean??")).throwsAndHasTypeError(
                     "Modifier '?' is only valid at the end of a type definition."
                 )
             })
-            it("multiple non-consecutive", () => {
+            test("multiple non-consecutive", () => {
                 assert(() =>
                     type({
                         a: "string",
@@ -42,7 +43,7 @@ describe("optional", () => {
                     "Modifier '?' is only valid at the end of a type definition."
                 )
             })
-            it("within expression", () => {
+            test("within expression", () => {
                 assert(() =>
                     // @ts-expect-error
                     type("boolean?|string|number")
@@ -54,13 +55,13 @@ describe("optional", () => {
     })
 
     describe("validation", () => {
-        it("preserves original type", () => {
+        test("preserves original type", () => {
             assert(type("false?").validate(false).error).is(undefined)
         })
-        it("allows undefined", () => {
+        test("allows undefined", () => {
             assert(type("false?").validate(undefined).error).is(undefined)
         })
-        it("allows omission of key", () => {
+        test("allows omission of key", () => {
             assert(
                 type({
                     required: "string",
@@ -69,7 +70,7 @@ describe("optional", () => {
             ).is(undefined)
         })
         describe("errors", () => {
-            it("bad inner type", () => {
+            test("bad inner type", () => {
                 assert(type("true?").validate(false).error?.message).snap(
                     `false is not assignable to true.`
                 )
@@ -77,10 +78,10 @@ describe("optional", () => {
         })
     })
     describe("generation", () => {
-        it("standalone is undefined by default", () => {
+        test("standalone is undefined by default", () => {
             assert(type("null?").create()).is(undefined)
         })
-        it("optional key is omitted by default", () => {
+        test("optional key is omitted by default", () => {
             assert(
                 type({ required: "string", optional: "string?" }).create()
             ).equals({ required: "" })

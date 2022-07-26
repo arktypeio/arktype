@@ -1,15 +1,16 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { space } from "../../src/index.js"
 
 describe("space", () => {
-    it("single", () => {
+    test("single", () => {
         assert(space({ a: "string" }).$root.infer.a).typed as string
         assert(() =>
             // @ts-expect-error
             space({ a: "strig" }, { parse: { eager: true } })
         ).throwsAndHasTypeError("Unable to determine the type of 'strig'.")
     })
-    it("independent", () => {
+    test("independent", () => {
         assert(space({ a: "string", b: { c: "boolean" } }).$root.infer.b)
             .typed as {
             c: boolean
@@ -22,7 +23,7 @@ describe("space", () => {
             )
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
-    it("interdependent", () => {
+    test("interdependent", () => {
         assert(space({ a: "string", b: { c: "a" } }).$root.infer.b.c)
             .typed as string
         assert(() =>
@@ -30,7 +31,7 @@ describe("space", () => {
             space({ a: "yikes", b: { c: "a" } }, { parse: { eager: true } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
-    it("cyclic", () => {
+    test("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         // Type hint displays as any on hitting cycle
         assert(cyclicSpace.$root.infer.a).typed as {
@@ -53,7 +54,7 @@ describe("space", () => {
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
-    it("cyclic eager", () => {
+    test("cyclic eager", () => {
         const cyclicEagerSpace = space(
             { a: { b: "b" }, b: { a: "a" } },
             { parse: { eager: true } }
@@ -69,14 +70,14 @@ describe("space", () => {
         }
         assert(cyclicEagerSpace.a.validate({ b: {} }).error)
     })
-    it("object list", () => {
+    test("object list", () => {
         assert(space({ a: "string", b: [{ c: "a" }] }).$root.infer.b).typed as [
             {
                 c: string
             }
         ]
     })
-    it("doesn't try to validate any as a dictionary", () => {
+    test("doesn't try to validate any as a dictionary", () => {
         const parseWithAnySpace = space({} as any).$root.type({
             literal: "string",
             // @ts-ignore
@@ -92,11 +93,11 @@ describe("space", () => {
             `Error: Unable to determine the type of 'myType' at path alias.`
         )
     })
-    it("doesn't try to validate any as a dictionary member", () => {
+    test("doesn't try to validate any as a dictionary member", () => {
         assert(space({ a: {} as any }).$root.type(["number", "a"]).infer)
             .typed as [number, any]
     })
-    it("model from space", () => {
+    test("model from space", () => {
         const anotherCyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         assert(anotherCyclicSpace.$root.type("a|b|null").infer).typed as
             | { b: { a: { b: { a: any } } } }

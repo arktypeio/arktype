@@ -1,9 +1,10 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { space } from "../../src/index.js"
 
 describe("meta", () => {
     // TODO: Add tests for runtime behavior....
-    it("with onCycle option", () => {
+    test("with onCycle option", () => {
         const models = space(
             {
                 a: { b: "b", isA: "true", isB: "false" },
@@ -31,7 +32,7 @@ describe("meta", () => {
             `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
         )
     })
-    it("with onResolve option", () => {
+    test("with onResolve option", () => {
         const models = space(
             {
                 a: { b: "b", isA: "true", isB: "false" },
@@ -60,7 +61,7 @@ describe("meta", () => {
             "Property 'wasResolved' does not exist on type '{ favoriteSoup: \"borscht\"; }'."
         )
     })
-    it("allows non-meta references within meta", () => {
+    test("allows non-meta references within meta", () => {
         assert(
             space({ a: { a: "a" }, s: "string" }, { parse: { onCycle: "s" } })
                 .$root.infer
@@ -71,25 +72,25 @@ describe("meta", () => {
             s: string
         }
     })
-    it("type error on bad meta key", () => {
+    test("type error on bad meta key", () => {
         // @ts-expect-error
         assert(space({}, { parse: { fake: "boolean" } })).type.errors.snap(
             `Type '{ fake: string; }' is not assignable to type 'MetaDefs<unknown, { fake: string; }> & Options'.Object literal may only specify known properties, and 'fake' does not exist in type 'MetaDefs<unknown, { fake: string; }> & Options'.`
         )
     })
-    it("errors on bad meta def", () => {
+    test("errors on bad meta def", () => {
         assert(() =>
             // @ts-expect-error
             space({}, { parse: { onCycle: "fake" } })
         ).throwsAndHasTypeError("'fake' does not exist in your space.")
     })
-    it("doesn't allow meta-only defs outside meta", () => {
+    test("doesn't allow meta-only defs outside meta", () => {
         // @ts-expect-error
         assert(() => space({ a: "$cyclic" })).throwsAndHasTypeError(
             "'$cyclic' does not exist in your space."
         )
     })
-    it("doesn't allow key-specific meta references in other meta keys", () => {
+    test("doesn't allow key-specific meta references in other meta keys", () => {
         assert(() =>
             // @ts-expect-error
             space({}, { parse: { onCycle: "$resolution" } })

@@ -230,6 +230,11 @@ export class Parser {
         let text = ""
         let scanAhead = this.scan + 1
         while (this.chars[scanAhead] !== enclosedBy) {
+            if (this.chars[scanAhead] === "END") {
+                throw new Error(
+                    `'${enclosedBy}${text} requires a closing ${enclosedBy}.`
+                )
+            }
             text += this.chars[scanAhead]
             scanAhead++
         }

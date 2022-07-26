@@ -1,51 +1,52 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { type } from "../src/index.js"
 
 describe("root definition", () => {
     describe("bad def types", () => {
         const expectedError = "Type definitions must be strings or objects."
-        it("undefined", () => {
+        test("undefined", () => {
             // @ts-expect-error
             assert(() => type({ bad: undefined })).throwsAndHasTypeError(
                 expectedError
             )
         })
-        it("null", () => {
+        test("null", () => {
             // @ts-expect-error
             assert(() => type({ bad: null })).throwsAndHasTypeError(
                 expectedError
             )
         })
-        it("boolean", () => {
+        test("boolean", () => {
             // @ts-expect-error
             assert(() => type({ bad: true })).throwsAndHasTypeError(
                 expectedError
             )
         })
-        it("number", () => {
+        test("number", () => {
             // @ts-expect-error
             assert(() => type({ bad: 5 })).throwsAndHasTypeError(expectedError)
         })
-        it("bigint", () => {
+        test("bigint", () => {
             // @ts-expect-error
             assert(() => type({ bad: 99999n })).throwsAndHasTypeError(
                 expectedError
             )
         })
-        it("function", () => {
+        test("function", () => {
             // @ts-expect-error
             assert(() => type({ bad: () => {} })).throwsAndHasTypeError(
                 expectedError
             )
         })
-        it("symbol", () => {
+        test("symbol", () => {
             // @ts-expect-error
             assert(() => type({ bad: Symbol() })).throwsAndHasTypeError(
                 expectedError
             )
         })
     })
-    it("doesn't try to validate any as a model definition", () => {
+    test("doesn't try to validate any as a model definition", () => {
         assert(type({} as any).infer).typed as any
     })
 })

@@ -1,7 +1,7 @@
 {
     "name": "@re-/po",
     "private": true,
-    "packageManager": "pnpm@7.1.2",
+    "packageManager": "pnpm@7.6.0",
     "type": "module",
     "scripts": {
         "build": "pnpm --filter '@re-/*' build",
@@ -21,9 +21,9 @@
         "ci:publish": "pnpm changeset publish"
     },
     "devDependencies": {
-        "@re-/node": "link:./@re-/node",
-        "@re-/assert": "link:./@re-/assert",
         "@changesets/cli": "2.23.0",
+        "@re-/assert": "link:./@re-/assert",
+        "@re-/node": "link:./@re-/node",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.2.204",
         "@types/mocha": "9.1.1",
@@ -45,8 +45,9 @@
         "pretty-quick": "3.1.3",
         "ts-morph": "15.1.0",
         "ts-node": "10.9.1",
+        "type-fest": "2.13.1",
         "typescript": "4.8.0-beta",
-        "type-fest": "2.13.1"
+        "vitest": "0.19.1"
     },
     "config": {
         "commitizen": {

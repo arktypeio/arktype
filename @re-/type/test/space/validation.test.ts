@@ -1,8 +1,9 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { space } from "../../src/index.js"
 
 describe("validation", () => {
-    it("simple space", () => {
+    test("simple space", () => {
         const groceries = space({
             banana: {
                 length: "number",
@@ -36,7 +37,7 @@ describe("validation", () => {
   fruits/1: {type: "Fuji"} is not assignable to any of banana|apple.
 `)
     })
-    it("errors on shallow cycle", () => {
+    test("errors on shallow cycle", () => {
         // @ts-expect-error
         assert(() => space({ a: "a" })).throwsAndHasTypeError(
             `Error: a references a shallow cycle: a=>a.`
@@ -46,7 +47,7 @@ describe("validation", () => {
             space({ a: "b", b: "c", c: "a|b|c" })
         ).throwsAndHasTypeError(`a references a shallow cycle: a=>b=>c=>a`)
     })
-    it("cyclic space", () => {
+    test("cyclic space", () => {
         const bicycle = space({
             a: { a: "a?", b: "b?", isA: "true" },
             b: { a: "a?", b: "b?", isA: "false" },
@@ -119,14 +120,14 @@ describe("validation", () => {
 `)
     })
     const recursiveDict = { dejaVu: { dejaVu: "dejaVu?" } } as const
-    it("validates recursive objects", () => {
+    test("validates recursive objects", () => {
         const recursive = space(recursiveDict)
         type DejaVu = typeof recursive.$root.infer.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
         assert(recursive.dejaVu.validate(dejaVu).error).equals(undefined)
     })
-    it("validates deep objects", () => {
+    test("validates deep objects", () => {
         const recursive = space(recursiveDict)
         const dejaVu: typeof recursive.$root.infer.dejaVu = {}
         let i = 0

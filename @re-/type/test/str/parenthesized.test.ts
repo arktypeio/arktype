@@ -1,11 +1,12 @@
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { type } from "../../src/type.js"
 
 describe("parenthesized", () => {
-    it("entire expression", () => {
+    test("entire expression", () => {
         assert(type("(string)").infer).typed as string
     })
-    it("default precedence", () => {
+    test("default precedence", () => {
         const unionWithList = type("boolean|number[]")
         assert(unionWithList.infer).typed as boolean | number[]
         assert(unionWithList.validate(true).error).equals(undefined)
@@ -14,7 +15,7 @@ describe("parenthesized", () => {
             `[true, false] is not assignable to any of boolean|number[].`
         )
     })
-    it("grouped precedence", () => {
+    test("grouped precedence", () => {
         const listOfUnion = type("(boolean|number)[]")
         assert(listOfUnion.infer).typed as (boolean | number)[]
         assert(listOfUnion.validate([]).error).equals(undefined)
@@ -30,7 +31,7 @@ describe("parenthesized", () => {
             `At index 0, "foo" is not assignable to any of boolean|number.`
         )
     })
-    it("nested precedence", () => {
+    test("nested precedence", () => {
         const listOfUnionOfListsOfUnions = type(
             "((boolean|number)[]|(string|undefined)[])[]"
         )
@@ -62,7 +63,7 @@ describe("parenthesized", () => {
         )
     })
     describe("errors", () => {
-        it("empty", () => {
+        test("empty", () => {
             assert(() => {
                 // @ts-expect-error
                 type("()").infer
@@ -70,7 +71,7 @@ describe("parenthesized", () => {
                 `Argument of type '"()"' is not assignable to parameter of type '"Expected an expression."'.`
             )
         })
-        it("unmatched (", () => {
+        test("unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("string|(boolean|number[]").infer
@@ -78,7 +79,7 @@ describe("parenthesized", () => {
                 `Argument of type '"string|(boolean|number[]"' is not assignable to parameter of type '"Missing )."'.`
             )
         })
-        it("unmatched )", () => {
+        test("unmatched )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)").infer
@@ -86,7 +87,7 @@ describe("parenthesized", () => {
                 `Argument of type '"string|number[]|boolean)"' is not assignable to parameter of type '"Unexpected )."'.`
             )
         })
-        it("lone )", () => {
+        test("lone )", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")").infer
@@ -94,7 +95,7 @@ describe("parenthesized", () => {
                 `Argument of type '")"' is not assignable to parameter of type '"Expected an expression."'.`
             )
         })
-        it("lone (", () => {
+        test("lone (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(").infer
@@ -102,7 +103,7 @@ describe("parenthesized", () => {
                 `Argument of type '"("' is not assignable to parameter of type '"Expected an expression."'.`
             )
         })
-        it("deep unmatched (", () => {
+        test("deep unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(null|(undefined|(1))|2").infer
@@ -110,7 +111,7 @@ describe("parenthesized", () => {
                 `Argument of type '"(null|(undefined|(1))|2"' is not assignable to parameter of type '"Missing )."'.`
             )
         })
-        it("deep unmatched )", () => {
+        test("deep unmatched )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))").infer
@@ -118,7 +119,7 @@ describe("parenthesized", () => {
                 `Argument of type '"((string|number)[]|boolean))"' is not assignable to parameter of type '"Unexpected )."'.`
             )
         })
-        it("starting )", () => {
+        test("starting )", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")number(")
@@ -126,7 +127,7 @@ describe("parenthesized", () => {
                 `Argument of type '")number("' is not assignable to parameter of type '"Expected an expression."'.`
             )
         })
-        it("misplaced )", () => {
+        test("misplaced )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(number|)")
