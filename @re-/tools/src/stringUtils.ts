@@ -1,7 +1,8 @@
 import {
     ElementOf,
     FilterFunction,
-    Iteration,
+    Iterate,
+    IterateType,
     List,
     ListPossibleTypes,
     Stringifiable
@@ -151,7 +152,7 @@ type SpliterateRecurse<
     Delimiters extends string[],
     IncludeDelimiters extends boolean,
     PreviousDelimiters extends string[]
-> = Delimiters extends Iteration<
+> = Delimiters extends IterateType<
     string,
     infer CurrentDelimiter,
     infer RemainingDelimiters
@@ -177,7 +178,7 @@ type SpliterateRecurse<
 type UnpackNestedTuples<
     T extends List,
     Result extends unknown[] = []
-> = T extends Iteration<unknown, infer Current, infer Remaining>
+> = T extends Iterate<infer Current, infer Remaining>
     ? Current extends List
         ? [...UnpackNestedTuples<Current>, ...UnpackNestedTuples<Remaining>]
         : [Current, ...UnpackNestedTuples<Remaining>]
@@ -187,7 +188,7 @@ export type Join<
     Segments extends Stringifiable[],
     Delimiter extends string,
     Result extends string = ""
-> = Segments extends Iteration<Stringifiable, infer Segment, infer Remaining>
+> = Segments extends IterateType<Stringifiable, infer Segment, infer Remaining>
     ? Join<
           Remaining,
           Delimiter,
