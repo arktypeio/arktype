@@ -1,5 +1,7 @@
 import { AssertionError } from "node:assert"
 import { rmSync } from "node:fs"
+import { fromHere } from "@re-/node"
+import { afterAll, describe, test } from "vitest"
 import {
     benchMarkSnapCall,
     getTestComment,
@@ -10,7 +12,7 @@ import {
     testFileCopyPath
 } from "./metaTests/testHelpers.js"
 
-const benchTemplate = "templateForBenches.ts"
+const benchTemplate = fromHere("metaTests", "templateForBenches.ts")
 
 const throwAssertionError = (statementText: string) => {
     throw new AssertionError({
@@ -49,11 +51,11 @@ const checkThatBenchSnapGetsPopulated = (testData: TestData) => {
     }
 }
 describe("bench", () => {
-    after(() => {
+    afterAll(() => {
         rmSync(testFileCopyPath, { force: true })
     })
-    it("checks that bench set some kind of value", () => {
+    test("checks that bench set some kind of value", () => {
         const testData: TestData = getTestFileData(benchTemplate, false)
         checkThatBenchSnapGetsPopulated(testData)
-    }).timeout(19999)
+    }, 19999)
 })

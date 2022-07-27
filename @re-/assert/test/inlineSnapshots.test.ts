@@ -1,5 +1,5 @@
 import { strict } from "node:assert"
-import { DeepEqualAssertionError } from "@re-/tools"
+import { describe, test } from "vitest"
 import { assert } from "../src/assert.js"
 
 const o = { re: "do" }
@@ -12,20 +12,20 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 describe("Assertions for Inline Snapshots", () => {
-    it("default serializer doesn't care about prop order", () => {
+    test("default serializer doesn't care about prop order", () => {
         const actual = { a: true, b: false }
         assert(actual).snap({ b: false, a: true })
     })
-    it("snap", () => {
+    test("snap", () => {
         assert(o).snap({ re: `do` })
         assert(o).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
         strict.throws(
             () => assert(o).snap({ re: `dorf` }),
-            DeepEqualAssertionError,
+            strict.AssertionError,
             "dorf"
         )
     })
-    it("value and type snap", () => {
+    test("value and type snap", () => {
         assert(o).snap({ re: `do` }).type.toString.snap(`{ re: string; }`)
         strict.throws(
             () =>
@@ -36,7 +36,7 @@ describe("Assertions for Inline Snapshots", () => {
             "number"
         )
     })
-    it("error and type error snap", () => {
+    test("error and type error snap", () => {
         // @ts-expect-error
         assert(() => shouldThrow(true))
             .throws.snap(`Error: true is not assignable to false`)
@@ -55,7 +55,7 @@ describe("Assertions for Inline Snapshots", () => {
             "'2'"
         )
     })
-    it("throws", () => {
+    test("throws", () => {
         assert(throwError).throws(/error/g)
         strict.throws(
             // Snap should never be populated
@@ -68,13 +68,13 @@ describe("Assertions for Inline Snapshots", () => {
      * Some TS errors as formatted as diagnostic "chains"
      * We represent them by joining the parts of the message with newlines
      */
-    it("TS diagnostic chain", () => {
+    test("TS diagnostic chain", () => {
         // @ts-expect-error
         assert(() => shouldThrow({} as {} | false)).type.errors.snap(
             `Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.`
         )
     })
-    it("multiple inline snaps", () => {
+    test("multiple inline snaps", () => {
         assert("firstLine\nsecondLine").snap(`firstLine
 secondLine`)
         assert("firstLine\nsecondLine").snap(`firstLine

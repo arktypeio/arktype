@@ -8,7 +8,6 @@ import {
 import { Merge } from "./merge.js"
 import { Narrow, narrow } from "./narrow.js"
 import { asNumber } from "./stringUtils.js"
-import { toString } from "./toString.js"
 
 export type ListComparisonMode = "ordered" | "permutable" | "set"
 
@@ -46,24 +45,6 @@ export type ChangesByPath<Options extends DiffOptions> = Record<
     string,
     Change<Options>
 >
-
-export class DeepEqualAssertionError extends Error {}
-
-export const assertDeepEqual = (
-    base: unknown,
-    compare: unknown,
-    options?: DiffOptions
-) => {
-    const changes = diff(base, compare, options)
-    if (changes) {
-        throw new DeepEqualAssertionError(
-            `Values were not equal at the following paths:\n${toString(
-                changes,
-                { indent: 2 }
-            )}`
-        )
-    }
-}
 
 export const diff = <Options extends DiffOptions = {}>(
     base: unknown,

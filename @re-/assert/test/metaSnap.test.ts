@@ -1,6 +1,8 @@
 import { strict } from "node:assert"
 import { rmSync } from "node:fs"
+import { fromHere } from "@re-/node"
 import { ExpressionStatement } from "ts-morph"
+import { afterAll, describe, test } from "vitest"
 import {
     getTestComment,
     getTestFileData,
@@ -8,7 +10,7 @@ import {
     testFileCopyPath
 } from "./metaTests/testHelpers.js"
 
-const snapshotTemplate = "templateForSnapshots.ts"
+const snapshotTemplate = fromHere("metaTests", "templateForSnapshots.ts")
 
 const getExpectedResult = (
     statement: ExpressionStatement,
@@ -28,14 +30,14 @@ const testSnapPopulation = (precached: boolean) => {
     }
 }
 describe("inline meta tests", () => {
-    after(() => {
+    afterAll(() => {
         rmSync(testFileCopyPath, { force: true })
     })
-    it("Checks snap gets populated - precache: true", () => {
+    test("Checks snap gets populated - precache: true", () => {
         testSnapPopulation(true)
-    }).timeout(9999)
+    }, 9999)
 
-    it("Checks snap gets populated - precache: false", () => {
+    test("Checks snap gets populated - precache: false", () => {
         testSnapPopulation(false)
-    }).timeout(9999)
+    }, 9999)
 })

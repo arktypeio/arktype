@@ -1,6 +1,11 @@
 import { fileURLToPath } from "node:url"
 import { caller } from "@re-/node"
-import { getReAssertConfig, ReAssertConfig } from "./common.js"
+import {
+    fixVitestPos,
+    getReAssertConfig,
+    isVitest,
+    ReAssertConfig
+} from "./common.js"
 import { TypeAssertions } from "./type/index.js"
 import { ValueAssertion, valueAssertions } from "./value/index.js"
 
@@ -23,7 +28,10 @@ export const assert: Assertion = (
     value: unknown,
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
-    const position = caller()
+    let position = caller()
+    if (isVitest()) {
+        position = fixVitestPos(position)
+    }
     if (!/\.(c|m)?tsx?$/.test(position.file)) {
         throw new Error(
             `Assert cannot be called from outside a TypeScript source file (got '${position.file}'). `

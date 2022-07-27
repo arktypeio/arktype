@@ -3,8 +3,17 @@ import { existsSync } from "node:fs"
 import { platform } from "node:os"
 import { join, relative, resolve } from "node:path"
 import { ensureDir, readJson, shell } from "@re-/node"
-import { assertDeepEqual, isRecursible, transform } from "@re-/tools"
+import {
+    diff,
+    DiffOptions,
+    isRecursible,
+    toString,
+    transform
+} from "@re-/tools"
+// @ts-ignore
+import ConvertSourceMap from "convert-source-map"
 import { default as memoize } from "micro-memoize"
+import { SourceMapConsumer } from "source-map-js"
 import type { EqualsOptions } from "./value/context.js"
 
 export type LinePosition = {
@@ -72,13 +81,31 @@ export const literalSerialize = (value: any): any => {
     return value
 }
 
+export const assertDeepEquals = (
+    expected: unknown,
+    actual: unknown,
+    options?: DiffOptions
+) => {
+    const changes = diff(expected, actual, options)
+    if (changes) {
+        throw new strict.AssertionError({
+            message: `Values differed at the following paths:\n${toString(
+                changes,
+                { indent: 2 }
+            )}`,
+            expected,
+            actual
+        })
+    }
+}
+
 export const assertEquals = (
     expected: unknown,
     actual: unknown,
     options?: EqualsOptions
 ) => {
     if (isRecursible(expected) && isRecursible(actual)) {
-        assertDeepEqual(expected, actual, {
+        assertDeepEquals(expected, actual, {
             ...options,
             baseKey: "expected",
             compareKey: "actual"
@@ -166,4 +193,33 @@ const getCmdFromPosixPid = (pid: number) => {
         return undefined
     }
     return output
+}
+
+export const isVitest = () => "__vitest_worker__" in globalThis
+
+// :(
+export const fixVitestPos = (transformedPos: SourcePosition) => {
+    const transformedFileContents = (
+        globalThis as any
+    ).__vitest_worker__.moduleCache.get(transformedPos.file).code
+    const jsonSourceMap = ConvertSourceMap.fromSource(transformedFileContents)
+        .setProperty("sources", [transformedPos.file])
+        .toJSON()
+    const mapper = new SourceMapConsumer(jsonSourceMap)
+    const originalPos = mapper.originalPositionFor({
+        line: transformedPos.line,
+        column: transformedPos.char
+    })
+    if (originalPos.line === null || originalPos.column === null) {
+        throw new Error(
+            `Unable to determine vitest sourcemap for ${toString(
+                transformedPos
+            )}.`
+        )
+    }
+    return {
+        ...transformedPos,
+        line: originalPos.line,
+        char: originalPos.column + 1
+    }
 }

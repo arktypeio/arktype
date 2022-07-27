@@ -52,8 +52,7 @@ export const getTestComment = (
         .trim()
 }
 
-export const getTestFileData = (templateFilename: string, precache = true) => {
-    const templatePath = fromHere(`${templateFilename}`)
+export const getTestFileData = (templatePath: string, precache = true) => {
     const project = new Project()
     const emptySnapsTemplateFile = project.addSourceFileAtPath(templatePath)
     const initialText = emptySnapsTemplateFile.getFullText()

@@ -368,7 +368,8 @@ export const getAssertionData = (position: SourcePosition) => {
     })
     if (!matchingAssertion) {
         throw new Error(
-            `Found no assertion at line ${position.line} char ${position.char} in '${fileKey}'.`
+            `Found no assertion at line ${position.line} char ${position.char} in '${fileKey}'.
+Are sourcemaps enabled and working properly?`
         )
     }
     return matchingAssertion

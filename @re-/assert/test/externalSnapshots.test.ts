@@ -1,7 +1,7 @@
 import { AssertionError, strict, throws } from "node:assert"
 import { join } from "node:path"
 import { dirName, readJson, writeJson } from "@re-/node"
-import { DeepEqualAssertionError } from "@re-/tools"
+import { describe, test } from "vitest"
 import { assert } from "../src/assert.js"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
@@ -20,14 +20,14 @@ describe("Snapshots Using Files", () => {
         }
     }
 
-    it("snap toFile", () => {
+    test("snap toFile", () => {
         writeJson(defaultSnapshotPath, defaultSnapshotFileContents)
         // Check existing
         assert(o).snap.toFile("toFile")
         // Check existing fail
         strict.throws(
             () => assert({ re: "kt" }).snap.toFile("toFile"),
-            DeepEqualAssertionError,
+            strict.AssertionError,
             "kt"
         )
         // Add new
@@ -40,7 +40,7 @@ describe("Snapshots Using Files", () => {
             }
         })
     })
-    it("snap update toFile", () => {
+    test("snap update toFile", () => {
         writeJson(defaultSnapshotPath, defaultSnapshotFileContents)
         // @ts-ignore (using internal updateSnapshots hook)
         assert({ re: "dew" }, { updateSnapshots: true }).snap.toFile(
@@ -64,7 +64,7 @@ describe("Snapshots Using Files", () => {
         }
     }
 
-    it("snap to custom file", () => {
+    test("snap to custom file", () => {
         writeJson(defaultSnapshotCustomPath, defaultSnapshotCustomFileContents)
         // Check existing
         assert(o).snap.toFile("toCustomFile", {
@@ -76,7 +76,7 @@ describe("Snapshots Using Files", () => {
                 assert({ re: "kt" }).snap.toFile("toCustomFile", {
                     path: "custom.snapshots.json"
                 }),
-            DeepEqualAssertionError,
+            strict.AssertionError,
             "kt"
         )
         // Add new
@@ -91,7 +91,7 @@ describe("Snapshots Using Files", () => {
             }
         })
     })
-    it("nonexistent types always fail", () => {
+    test("nonexistent types always fail", () => {
         // @ts-expect-error
         const nonexistent: NonExistent = {}
         throws(

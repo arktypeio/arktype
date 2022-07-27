@@ -1,11 +1,5 @@
 import { assert } from "@re-/assert"
-import {
-    assertDeepEqual,
-    deepEquals,
-    diff,
-    diffPermutables,
-    diffSets
-} from "../src/index.js"
+import { deepEquals, diff, diffPermutables, diffSets } from "../src/index.js"
 
 const base = {
     a: "",
@@ -88,23 +82,6 @@ it("can change base/compare keys", () => {
         a: { expected: true, actual: false },
         b: { expected: false, actual: true }
     })
-})
-
-it("can assert deep equals", () => {
-    assertDeepEqual({ a: true, b: false }, { b: false, a: true })
-    assert(() => {
-        assertDeepEqual({ a: true, b: false }, { b: true, a: false })
-    }).throws.snap(`Error: Values were not equal at the following paths:
-{
-    a: {
-        base: true,
-        compare: false
-    },
-    b: {
-        base: false,
-        compare: true
-    }
-}`)
 })
 
 it("diff sets of objects", () => {

@@ -1,5 +1,5 @@
 import { strict } from "node:assert"
-import { DeepEqualAssertionError } from "@re-/tools"
+import { describe, test } from "vitest"
 import { assert } from "../src/assert.js"
 
 const n = 5
@@ -13,21 +13,21 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 describe("assertion errors", () => {
-    it("not equal", () => {
+    test("not equal", () => {
         strict.throws(
             () => assert(o).equals({ re: "doo" }),
-            DeepEqualAssertionError,
+            strict.AssertionError,
             "do !== doo"
         )
     })
-    it("incorrect type", () => {
+    test("incorrect type", () => {
         strict.throws(
             () => assert(o).typed as { re: number },
             strict.AssertionError,
             "o is not of type number"
         )
     })
-    it("incorrect return type", () => {
+    test("incorrect return type", () => {
         assert(() => null).returns(null).typed as null
         strict.throws(
             () =>
@@ -46,7 +46,7 @@ describe("assertion errors", () => {
             "input is not of type number"
         )
     })
-    it("valid type errors", () => {
+    test("valid type errors", () => {
         // @ts-expect-error
         assert(o.re.length.nonexistent).type.errors(
             /Property 'nonexistent' does not exist on type 'number'/
@@ -57,7 +57,7 @@ describe("assertion errors", () => {
             "Expected 1 arguments, but got 2."
         )
     })
-    it("bad type errors", () => {
+    test("bad type errors", () => {
         strict.throws(
             () => assert(o).type.errors(/This error doesn't exist/),
             strict.AssertionError,
@@ -73,14 +73,14 @@ describe("assertion errors", () => {
             "not assignable"
         )
     })
-    it("chainable", () => {
+    test("chainable", () => {
         assert(o).equals({ re: "do" }).typed as { re: string }
         // @ts-expect-error
         assert(() => throwError("this is a type error"))
             .throws("Test error.")
             .type.errors("Expected 0 arguments, but got 1.")
     })
-    it("bad chainable", () => {
+    test("bad chainable", () => {
         strict.throws(
             () =>
                 assert(n)
@@ -100,7 +100,7 @@ describe("assertion errors", () => {
             "null"
         )
     })
-    it("any type", () => {
+    test("any type", () => {
         assert(n as any).typedValue(5 as any)
         assert(o as any).typed as any
         strict.throws(
@@ -114,7 +114,7 @@ describe("assertion errors", () => {
             "unknown"
         )
     })
-    it("typedValue", () => {
+    test("typedValue", () => {
         const getDo = () => "do"
         assert(o).typedValue({ re: getDo() })
         strict.throws(
@@ -124,11 +124,11 @@ describe("assertion errors", () => {
         )
         strict.throws(
             () => assert(o).typedValue({ re: "don't" }),
-            DeepEqualAssertionError,
+            strict.AssertionError,
             "don't"
         )
     })
-    it("return has typed value", () => {
+    test("return has typed value", () => {
         assert(() => "ooo").returns.typedValue("ooo")
         // Wrong value
         strict.throws(
@@ -149,7 +149,7 @@ describe("assertion errors", () => {
             "unknown"
         )
     })
-    it("throwsAndHasTypeError", () => {
+    test("throwsAndHasTypeError", () => {
         // @ts-expect-error
         assert(() => shouldThrow(true)).throwsAndHasTypeError(
             /true[\S\s]*not assignable[\S\s]*false/
@@ -174,7 +174,7 @@ describe("assertion errors", () => {
             "not assignable"
         )
     })
-    it("assert value ignores type", () => {
+    test("assert value ignores type", () => {
         const myValue = { a: ["+"] } as const
         const myExpectedValue = { a: ["+"] }
         // @ts-expect-error
@@ -186,7 +186,7 @@ describe("assertion errors", () => {
             "not reference-equal"
         )
     })
-    it("throws empty", () => {
+    test("throws empty", () => {
         assert(throwError).throws()
         strict.throws(
             () => assert(() => shouldThrow(false)).throws(),
@@ -194,7 +194,7 @@ describe("assertion errors", () => {
             "didn't throw"
         )
     })
-    it("args", () => {
+    test("args", () => {
         assert((input: string) => `${input}!`)
             .args("omg")
             .returns.is("omg!")
@@ -210,7 +210,7 @@ describe("assertion errors", () => {
         )
     })
 
-    it("multiline", () => {
+    test("multiline", () => {
         assert({
             several: true,
             lines: true,

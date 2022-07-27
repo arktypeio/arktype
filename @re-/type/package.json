@@ -24,13 +24,12 @@
     },
     "scripts": {
         "build": "ts-node ../../scripts/build.ts",
-        "test": "reassert --cmd mocha",
+        "test": "reassert --cmd vitest run",
         "tnt": "reassert --skipTypes --cmd vitest run",
         "benchCyclic": "ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
         "benchCore": "ts-node ./test/bench/parser.bench.ts",
-        "diag": "tsc -p ./test/tsconfig.json > diag.txt",
-        "parse": "ts-node src/nodes/str/parse.ts"
+        "diag": "tsc -p ./test/tsconfig.json > diag.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

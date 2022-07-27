@@ -4,7 +4,7 @@ import { type } from "../src/index.js"
 
 describe("root definition", () => {
     describe("bad def types", () => {
-        const expectedError = "Type definitions must be strings or objects."
+        const expectedError = "Type definitions must be strings or objects"
         test("undefined", () => {
             // @ts-expect-error
             assert(() => type({ bad: undefined })).throwsAndHasTypeError(

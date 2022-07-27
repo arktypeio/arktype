@@ -1,7 +1,8 @@
 import { strict } from "node:assert"
+import { test } from "vitest"
 import { assert } from "../src/index.js"
 
-it("handles listComparison options", () => {
+test("handles listComparison options", () => {
     assert([
         ["a", "b"],
         ["b", "a"]
