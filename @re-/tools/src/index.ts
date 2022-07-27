@@ -1,5 +1,5 @@
 export * from "./common.js"
-export * from "./diff.js"
+export * from "./diff/index.js"
 export * from "./stringUtils.js"
 export * from "./narrow.js"
 export * from "./merge.js"
