@@ -1,11 +1,11 @@
 import { join } from "node:path"
-import { assert } from "@re-/assert"
-import { fromHere, readPackageJson } from "@re-/node"
 import { Project } from "ts-morph"
 import { PackageJson } from "type-fest"
 import { DocGenSnippetExtractionConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
 import { extractPackageSnippets } from "../snippets/extractSnippets.js"
+import { assert } from "@re-/assert"
+import { fromHere, readPackageJson } from "@re-/node"
 
 const rootDir = fromHere("..", "..")
 const packageJsonData: PackageJson = readPackageJson(rootDir)

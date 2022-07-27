@@ -2,7 +2,7 @@ import { caller } from "@re-/node"
 import { Node, Project, SourceFile, SyntaxKind, ts } from "ts-morph"
 import { forceGetTsProject } from "../type/analysis.js"
 import { findCallExpressionAncestor } from "../value/snapshot.js"
-import { compareToBaseline, updateBaselineIfNeeded } from "./baseline.js"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import { BenchContext } from "./bench.js"
 import {
     createTypeComparison,
@@ -121,8 +121,8 @@ export const createBenchTypeAssertion = (
             args[0]
         )
         compareToBaseline(comparison, ctx)
-        updateBaselineIfNeeded(
-            stringifyTypeMeasure(comparison.result),
+        queueBaselineUpdateIfNeeded(
+            stringifyTypeMeasure(comparison.updated),
             args[0],
             {
                 ...ctx,

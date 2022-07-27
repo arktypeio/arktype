@@ -15,5 +15,5 @@
         }
     },
     "vitest.enable": true,
-    "vitest.commandLine": "pnpm reassert --cmd vitest"
+    "vitest.commandLine": "pnpm node_modules/@re-/assert/cli.cjs --skipTypes --cmd vitest"
 }

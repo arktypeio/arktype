@@ -3,7 +3,7 @@ import { caller } from "@re-/node"
 import { transform } from "@re-/tools"
 import {
     compareToBaseline,
-    updateBaselineIfNeeded as updateBaselineIfNeeded
+    queueBaselineUpdateIfNeeded as queueBaselineUpdateIfNeeded
 } from "./baseline.js"
 import { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import {
@@ -132,7 +132,7 @@ export class BenchAssertions<
         console.group(`${this.label} (${name}):`)
         compareToBaseline(comparison, this.ctx)
         console.groupEnd()
-        updateBaselineIfNeeded(
+        queueBaselineUpdateIfNeeded(
             stringifyTimeMeasure(createTimeMeasure(ms)),
             baseline,
             {
@@ -162,11 +162,11 @@ export class BenchAssertions<
                 const comparison = createTimeComparison(ms, kindBaseline)
                 compareToBaseline(comparison, this.ctx)
                 console.groupEnd()
-                return [kind, stringifyTimeMeasure(comparison.result)]
+                return [kind, stringifyTimeMeasure(comparison.updated)]
             }
         )
         console.groupEnd()
-        updateBaselineIfNeeded(markResults, baseline, {
+        queueBaselineUpdateIfNeeded(markResults, baseline, {
             ...this.ctx,
             kind: "mark"
         })

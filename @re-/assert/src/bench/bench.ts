@@ -23,7 +23,7 @@ export interface BenchOptions extends BaseBenchOptions {
 export interface BenchContext {
     name: string
     options: BenchOptions
-    config: ReAssertConfig
+    cfg: ReAssertConfig
     benchCallPosition: SourcePosition
     lastSnapCallPosition: SourcePosition | undefined
     isAsync: boolean
@@ -46,12 +46,12 @@ export const bench = <Fn extends BenchableFunction>(
     const ctx: BenchContext = {
         name,
         options,
-        config: getReAssertConfig(),
+        cfg: getReAssertConfig(),
         benchCallPosition: caller(),
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
     }
-    if (ctx.config.matcher && !ctx.config.matcher.test(name)) {
+    if (ctx.cfg.matcher && !ctx.cfg.matcher.test(name)) {
         // If a matcher was provided via --only and it does not match, ignore all checks
         return chainableNoOpProxy
     }

@@ -148,7 +148,7 @@ export const diffPermutables = <Base extends List, Compare extends List>(
             delete unseenCompareItems[matchingUnseenIndex]
         }
     }
-    for (let unseenIndex in unseenCompareItems) {
+    for (const unseenIndex in unseenCompareItems) {
         added.push(unseenCompareItems[unseenIndex])
     }
     return toDiffSetsResult(added, removed)
@@ -212,7 +212,7 @@ export const diffSets = <Base extends List, Compare extends List>(
             }
         }
     }
-    for (let unseenIndex in unseenCompareItems) {
+    for (const unseenIndex in unseenCompareItems) {
         added.push(unseenCompareItems[unseenIndex])
     }
     return toDiffSetsResult(added, removed)
@@ -226,7 +226,7 @@ const findDeepEqualIndices = (
     mode: UnorderedDiffMode
 ) => {
     const matchingIndices = []
-    for (let i in list) {
+    for (const i in list) {
         if (
             deepEquals(item, list[i], {
                 listComparison: mode
@@ -243,7 +243,7 @@ const findFirstDeepEqualIndex = (
     item: unknown,
     mode: UnorderedDiffMode
 ) => {
-    for (let i in list) {
+    for (const i in list) {
         if (
             deepEquals(item, list[i], {
                 listComparison: mode

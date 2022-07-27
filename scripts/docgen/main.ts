@@ -1,8 +1,8 @@
 import { stdout } from "node:process"
-import { fromPackageRoot } from "@re-/node"
 import { DocGenConfig } from "./config.js"
 import { extractRepo } from "./extract.js"
 import { writeRepo } from "./write.js"
+import { fromPackageRoot } from "@re-/node"
 
 const fromRedoDevDocsDir = (...segments: string[]) =>
     fromPackageRoot("redo.dev", "docs", ...segments)

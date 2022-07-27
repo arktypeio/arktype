@@ -1,9 +1,9 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, shell, writeFile } from "@re-/node"
 import { DocGenApiConfig } from "../config.js"
 import { PackageExtractionData } from "../extract.js"
 import { ApiEntryPoint, ExportData } from "./extractApi.js"
+import { ensureDir, shell, writeFile } from "@re-/node"
 
 export type WritePackageApiContext = {
     packageApiConfig: DocGenApiConfig

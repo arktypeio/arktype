@@ -20,7 +20,7 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["@re-/state/**", "**/dist/**", "**/snippets/**", "**/*js"],
+    ignorePatterns: ["**/dist/**", "**/snippets/**", "**/*js"],
     rules: {
         /**
          * General restrictions
@@ -82,7 +82,9 @@ module.exports = defineConfig({
         /**
          * Namespaces are useful for grouping generic types with related functionality
          */
-        "@typescript-eslint/no-namespace": "off"
+        "@typescript-eslint/no-namespace": "off",
+        // More of a pain during dev (or testing) than it's worth to prevent something that is trivially caught in PR
+        "@typescript-eslint/no-empty-function": "off"
     },
     overrides: [
         /**
@@ -90,16 +92,13 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
+            excludedFiles: ["**/$test/**"],
             rules: {
                 /**
                  * Keep functions and files concise and readable
                  */
-                // TODO Enable these rules
-                // complexity: ["error", 10],
-                // "max-depth": ["error", 5],
-                // "max-lines": ["error", 250],
-                // "max-lines-per-function": ["error", 50],
-                // "max-statements": ["error", 10],
+                "max-statements": ["error", 10],
+                "max-lines": ["error", 250],
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
                  * so no need to worry about checking imports beyond what TypeScript does by default.
@@ -107,20 +106,8 @@ module.exports = defineConfig({
                 "import/no-extraneous-dependencies": "error"
             }
         },
-        /**
-         * These rules apply only to tests and benches
-         */
         {
-            files: ["**/test/**", "**/bench/**"],
-            rules: {
-                "@typescript-eslint/no-empty-function": "off"
-            }
-        },
-        /**
-         * These rules apply only to benches
-         */
-        {
-            files: ["**/bench/**"],
+            files: ["**/*.bench.ts"],
             rules: {
                 // Assignment to a variable is required to ensure types are parsed
                 "@typescript-eslint/no-unused-vars": "off"

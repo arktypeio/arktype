@@ -9,7 +9,7 @@ export type Measure<Unit extends MeasureUnit = MeasureUnit> = {
 }
 
 export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
-    result: Measure<Unit>
+    updated: Measure<Unit>
     baseline: Measure<Unit> | undefined
 }
 

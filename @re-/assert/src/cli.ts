@@ -34,7 +34,7 @@ if (testCmd === "node") {
     runTestsCmd += `npx --no ${testCmd} `
 }
 
-const reassertArgs = process.argv.slice(0, cmdFlagIndex)
+const reassertArgs = [...process.argv.slice(0, cmdFlagIndex), "--precache"]
 
 const skipTypes = reassertArgs.includes("--skipTypes")
 

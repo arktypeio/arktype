@@ -46,7 +46,7 @@ export const parseTimeString = (s: TimeString): Measure<TimeUnit> => {
 export const stringifyTimeMeasure = (m: Measure<TimeUnit>) =>
     `${m.n.toFixed(2)}${m.unit}` as TimeString
 
-const convertTimeMeasure = (n: number, from: TimeUnit, to: TimeUnit) => {
+const convertTimeUnit = (n: number, from: TimeUnit, to: TimeUnit) => {
     return (n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to]
 }
 
@@ -56,25 +56,31 @@ const convertTimeMeasure = (n: number, from: TimeUnit, to: TimeUnit) => {
 export const createTimeMeasure = (ms: number) => {
     let bestMatch: Measure<TimeUnit> | undefined
     for (const u in TIME_UNIT_RATIOS) {
-        const unit = u as TimeUnit
-        const n = convertTimeMeasure(ms, "ms", unit)
-        const candidateMeasure: Measure<TimeUnit> = {
-            n,
-            unit
-        }
+        const candidateMeasure = createTimeMeasureForUnit(ms, u as TimeUnit)
         if (!bestMatch) {
             bestMatch = candidateMeasure
         } else if (bestMatch.n >= 1) {
-            if (n >= 1 && n < bestMatch.n) {
+            if (candidateMeasure.n >= 1 && candidateMeasure.n < bestMatch.n) {
                 bestMatch = candidateMeasure
             }
         } else {
-            if (n >= bestMatch.n) {
+            if (candidateMeasure.n >= bestMatch.n) {
                 bestMatch = candidateMeasure
             }
         }
     }
     return bestMatch!
+}
+
+const createTimeMeasureForUnit = (
+    ms: number,
+    unit: TimeUnit
+): Measure<TimeUnit> => {
+    const n = convertTimeUnit(ms, "ms", unit)
+    return {
+        n,
+        unit
+    }
 }
 
 export const createTimeComparison = (
@@ -85,15 +91,15 @@ export const createTimeComparison = (
         // Convert the new result to the existing units for comparison
         const baseline = parseTimeString(baselineString)
         return {
-            result: {
-                n: convertTimeMeasure(ms, "ms", baseline.unit),
+            updated: {
+                n: convertTimeUnit(ms, "ms", baseline.unit),
                 unit: baseline.unit
             },
             baseline
         }
     }
     return {
-        result: createTimeMeasure(ms),
+        updated: createTimeMeasure(ms),
         baseline: undefined
     }
 }

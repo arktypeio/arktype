@@ -41,7 +41,7 @@ export const createTypeComparison = (
     baselineString: TypeString | undefined
 ): MeasureComparison<TypeUnit> => {
     return {
-        result: {
+        updated: {
             n,
             unit: "instantiations"
         },
