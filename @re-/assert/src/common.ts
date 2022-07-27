@@ -3,13 +3,7 @@ import { existsSync } from "node:fs"
 import { platform } from "node:os"
 import { join, relative, resolve } from "node:path"
 import { ensureDir, readJson, shell } from "@re-/node"
-import {
-    diff,
-    DiffOptions,
-    isRecursible,
-    toString,
-    transform
-} from "@re-/tools"
+import { diff, DiffOptions, isRecursible, toString } from "@re-/tools"
 // @ts-ignore
 import ConvertSourceMap from "convert-source-map"
 import { default as memoize } from "micro-memoize"
@@ -19,6 +13,11 @@ import type { EqualsOptions } from "./value/context.js"
 export type LinePosition = {
     line: number
     char: number
+}
+
+export type LinePositionRange = {
+    start: LinePosition
+    end: LinePosition
 }
 
 export type SourcePosition = LinePosition & {
@@ -67,7 +66,12 @@ export const literalSerialize = (value: any): any => {
     if (typeof value === "object") {
         return value === null
             ? null
-            : transform(value, ([k, v]) => [k, literalSerialize(v)])
+            : Object.fromEntries(
+                  Object.entries(value).map(([k, v]) => [
+                      k,
+                      literalSerialize(v)
+                  ])
+              )
     }
     if (typeof value === "symbol") {
         return `<symbol ${value.description ?? "(anonymous)"}>`

@@ -4,7 +4,7 @@ import { caller } from "@re-/node"
 import { Fn, IsAnyOrUnknown, ListComparisonMode, toString } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { assertEquals, literalSerialize, SourcePosition } from "../common.js"
-import { getAssertionData, TypeAssertions } from "../type/index.js"
+import { getAssertionAtPos, TypeAssertions } from "../type/index.js"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit,
@@ -298,7 +298,7 @@ export const valueAssertions = <T>(
             )
             if (!ctx.config.skipTypes) {
                 defaultAssert(
-                    getAssertionData(position).errors,
+                    getAssertionAtPos(position).errors,
                     matchValue,
                     true
                 )
@@ -344,7 +344,7 @@ export const valueAssertions = <T>(
         typedValue: (expectedValue: unknown) => {
             defaultAssert(actual, expectedValue)
             if (!ctx.config.skipTypes) {
-                const typeData = getAssertionData(position)
+                const typeData = getAssertionAtPos(position)
                 if (!typeData.type.expected) {
                     throw new Error(
                         `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +

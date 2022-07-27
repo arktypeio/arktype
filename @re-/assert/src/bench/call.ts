@@ -1,6 +1,5 @@
 import { performance } from "node:perf_hooks"
 import { caller } from "@re-/node"
-import { transform } from "@re-/tools"
 import {
     compareToBaseline,
     queueBaselineUpdateIfNeeded as queueBaselineUpdateIfNeeded
@@ -154,16 +153,15 @@ export class BenchAssertions<
                 : // If nothing was passed, gather all available baselines by setting their values to undefined.
                   Object.entries(stats).map(([kind]) => [kind, undefined])
         ) as any
-        const markResults = transform(
-            markEntries,
-            ([, [kind, kindBaseline]]) => {
+        const markResults = Object.fromEntries(
+            markEntries.map(([kind, kindBaseline]) => {
                 console.group(kind)
                 const ms = stats[kind](callTimes)
                 const comparison = createTimeComparison(ms, kindBaseline)
                 compareToBaseline(comparison, this.ctx)
                 console.groupEnd()
                 return [kind, stringifyTimeMeasure(comparison.updated)]
-            }
+            })
         )
         console.groupEnd()
         queueBaselineUpdateIfNeeded(markResults, baseline, {

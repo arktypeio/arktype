@@ -10,7 +10,7 @@ import {
     positionToString,
     SourcePosition
 } from "../common.js"
-import { getDefaultTsProject, tsNodeAtPosition } from "../type/analysis.js"
+import { getDefaultTsMorphProject, getTsNodeAtPosition } from "../type/index.js"
 
 export interface SnapshotArgs {
     position: SourcePosition
@@ -74,7 +74,7 @@ export const findCallExpressionAncestor = (
     position: SourcePosition,
     functionName: string
 ): CallExpression<ts.CallExpression> => {
-    const startNode = tsNodeAtPosition(position)
+    const startNode = getTsNodeAtPosition(position)
     const matchingCall = startNode.getAncestors().find((ancestor) => {
         const expression = ancestor
             .asKind(SyntaxKind.CallExpression)
@@ -100,60 +100,13 @@ export const findCallExpressionAncestor = (
     return matchingCall
 }
 
-type QueuedUpdate = {
-    file: SourceFile
-    snapCall: CallExpression
-    serializedValue: unknown
-    baselineName: string | undefined
-}
-
-const queuedUpdates: QueuedUpdate[] = []
-
-// Waiting until process exit to write snapshots avoids invalidating existing source positions
-process.on("exit", () => {
-    for (const {
-        file,
-        snapCall,
-        serializedValue,
-        baselineName
-    } of queuedUpdates) {
-        const originalArgs = snapCall.getArguments()
-        const previousValue = originalArgs.length
-            ? originalArgs[0].getText()
-            : undefined
-        for (const originalArg of originalArgs) {
-            snapCall.removeArgument(originalArg)
-        }
-        const updatedSnapArgText = toString(serializedValue, {
-            quote: "backtick",
-            nonAlphaNumKeyQuote: "double"
-        }).replace(`\\`, `\\\\`)
-        snapCall.addArgument(updatedSnapArgText)
-        file.saveSync()
-        let updateSummary = `${
-            originalArgs.length ? "🆙  Updated" : "📸  Established"
-        } `
-        updateSummary += baselineName
-            ? `baseline '${baselineName}' `
-            : `snap on line ${snapCall.getStartLineNumber()} of ${getFileKey(
-                  file.getFilePath()
-              )} `
-        updateSummary += previousValue
-            ? `from ${previousValue} to `
-            : `${baselineName ? "at" : "as"} `
-
-        updateSummary += updatedSnapArgText
-        console.log(updateSummary)
-    }
-})
-
 export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
     snapFunctionName = "snap",
     baselineName
 }: SnapshotArgs) => {
-    const project = getDefaultTsProject()
+    const project = getDefaultTsMorphProject()
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
     queuedUpdates.push({
@@ -198,3 +151,45 @@ export const getSnapshotByName = (
     const snapshotPath = resolveSnapshotPath(file, customPath)
     return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
+
+type QueuedUpdate = {
+    file: SourceFile
+    snapCall: CallExpression
+    serializedValue: unknown
+    baselineName: string | undefined
+}
+
+const queuedUpdates: QueuedUpdate[] = []
+
+// Waiting until process exit to write snapshots avoids invalidating existing source positions
+process.on("exit", () => {
+    for (const update of queuedUpdates) {
+        const originalArgs = update.snapCall.getArguments()
+        const previousValue = originalArgs.length
+            ? originalArgs[0].getText()
+            : undefined
+        for (const originalArg of originalArgs) {
+            update.snapCall.removeArgument(originalArg)
+        }
+        const updatedSnapArgText = toString(update.serializedValue, {
+            quote: "backtick",
+            nonAlphaNumKeyQuote: "double"
+        }).replace(`\\`, `\\\\`)
+        update.snapCall.addArgument(updatedSnapArgText)
+        update.file.saveSync()
+        let updateSummary = `${
+            originalArgs.length ? "🆙  Updated" : "📸  Established"
+        } `
+        updateSummary += update.baselineName
+            ? `baseline '${update.baselineName}' `
+            : `snap on line ${update.snapCall.getStartLineNumber()} of ${getFileKey(
+                  update.file.getFilePath()
+              )} `
+        updateSummary += previousValue
+            ? `from ${previousValue} to `
+            : `${update.baselineName ? "at" : "as"} `
+
+        updateSummary += updatedSnapArgText
+        console.log(updateSummary)
+    }
+})

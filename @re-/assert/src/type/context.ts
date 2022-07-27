@@ -3,7 +3,7 @@ import { chainableNoOpProxy } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { SourcePosition } from "../common.js"
 import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
-import { getAssertionData } from "./analysis.js"
+import { getAssertionAtPos } from "./getAssertionAtPos.js"
 
 export type ValueFromTypeAssertion<
     Expected,
@@ -33,12 +33,12 @@ export class TypeAssertions {
         return {
             toString: chainableAssertion(
                 this.position,
-                () => getAssertionData(this.position).type.actual,
+                () => getAssertionAtPos(this.position).type.actual,
                 { ...this.ctx, allowTypeAssertions: false }
             ),
             errors: chainableAssertion(
                 this.position,
-                () => getAssertionData(this.position).errors,
+                () => getAssertionAtPos(this.position).errors,
                 { ...this.ctx, allowTypeAssertions: false },
                 { allowRegex: true }
             )
@@ -49,7 +49,7 @@ export class TypeAssertions {
         if (this.ctx.config.skipTypes) {
             return chainableNoOpProxy
         }
-        const assertionData = getAssertionData(this.position)
+        const assertionData = getAssertionAtPos(this.position)
         if (!assertionData.type.expected) {
             throw new Error(
                 `Expected an 'as' expression after 'typed' prop access at position ${this.position.char} on ` +

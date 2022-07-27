@@ -1,2 +1,5 @@
 export * from "./context.js"
 export * from "./analysis.js"
+export * from "./getAssertionAtPos.js"
+export * from "./getTsMorphProject.js"
+export * from "./getTsNodeAtPos.js"
