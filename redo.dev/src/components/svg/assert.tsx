@@ -1,6 +1,8 @@
+/* eslint-disable max-lines */
 import { useTheme } from "@mui/material"
 import React from "react"
 
+// eslint-disable-next-line max-lines-per-function
 export const Assert = () => {
     const { palette } = useTheme()
     return (

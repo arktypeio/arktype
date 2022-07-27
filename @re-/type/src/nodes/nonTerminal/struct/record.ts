@@ -23,19 +23,43 @@ export namespace RecordType {
     >
 }
 
-export const valueIsRecordLike = (
-    value: unknown
-): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null && !Array.isArray(value)
+type RecordLike = Record<string, unknown>
+
+export const isArgValueRecordLike = (
+    args: Base.Validation.Args
+): args is Base.Validation.Args<RecordLike> =>
+    typeof args.value === "object" &&
+    args.value !== null &&
+    !Array.isArray(args.value)
 
 export class RecordNode extends StructuredNonTerminal {
     allows(args: Base.Validation.Args) {
-        if (!valueIsRecordLike(args.value)) {
+        if (!isArgValueRecordLike(args)) {
             this.addUnassignable(args)
             return false
         }
-        const valueKeysLeftToCheck = new Set(Object.keys(args.value))
-        let allPropsAllowed = true
+        const propValidationResults = this.allowsProps(args)
+        if (
+            propValidationResults.unseenValueKeys.size &&
+            !args.cfg.ignoreExtraneousKeys &&
+            !args.ctx.modelCfg.ignoreExtraneousKeys
+        ) {
+            args.errors.add(
+                args.ctx.path,
+                `Keys ${[...propValidationResults.unseenValueKeys]
+                    .map((k) => `'${k}'`)
+                    .join(", ")} were unexpected.`
+            )
+            return false
+        }
+        return propValidationResults.allSeenKeysAllowed
+    }
+
+    private allowsProps(args: Base.Validation.Args<Record<string, unknown>>) {
+        const result = {
+            unseenValueKeys: new Set(Object.keys(args.value)),
+            allSeenKeysAllowed: true
+        }
         for (const [propKey, propNode] of this.entries) {
             const pathWithProp = Base.pathAdd(args.ctx.path, propKey)
             if (propKey in args.value) {
@@ -48,31 +72,18 @@ export class RecordNode extends StructuredNonTerminal {
                     }
                 })
                 if (!propIsAllowed) {
-                    allPropsAllowed = false
+                    result.allSeenKeysAllowed = false
                 }
             } else if (!(propNode instanceof OptionalNode)) {
                 args.errors.add(
                     pathWithProp,
                     `Required value of type ${propNode.toString()} was missing.`
                 )
-                allPropsAllowed = false
+                result.allSeenKeysAllowed = false
             }
-            valueKeysLeftToCheck.delete(propKey)
+            result.unseenValueKeys.delete(propKey)
         }
-        if (
-            valueKeysLeftToCheck.size &&
-            !args.cfg.ignoreExtraneousKeys &&
-            !args.ctx.modelCfg.ignoreExtraneousKeys
-        ) {
-            args.errors.add(
-                args.ctx.path,
-                `Keys ${[...valueKeysLeftToCheck]
-                    .map((k) => `'${k}'`)
-                    .join(", ")} were unexpected.`
-            )
-            return false
-        }
-        return allPropsAllowed
+        return result
     }
 
     generate(args: Base.Create.Args) {

@@ -127,8 +127,8 @@ export class ResolutionNode extends Base.NonTerminal {
     }
 }
 
-const shallowCycleError = (shallowSeen: string[]) =>
-    `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
+// const shallowCycleError = (shallowSeen: string[]) =>
+//     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
     Base.Parsing.ErrorMessage<`${Seen[0]} references shallow cycle ${Join<

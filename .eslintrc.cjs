@@ -97,8 +97,9 @@ module.exports = defineConfig({
                 /**
                  * Keep functions and files concise and readable
                  */
-                "max-statements": ["error", 10],
-                "max-lines": ["error", 250],
+                "max-statements": ["error", 16],
+                "max-lines-per-function": ["error", 32],
+                "max-lines": ["error", 256],
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
                  * so no need to worry about checking imports beyond what TypeScript does by default.
@@ -118,6 +119,14 @@ module.exports = defineConfig({
             files: ["redo.dev/src/pages/*"],
             rules: {
                 "import/no-default-export": "off"
+            }
+        },
+        // Components that are mostly just SVG data with some theme injections
+        {
+            files: ["redo.dev/**/svg/*.tsx"],
+            rules: {
+                "max-lines": "off",
+                "max-lines-per-function": "off"
             }
         }
     ]

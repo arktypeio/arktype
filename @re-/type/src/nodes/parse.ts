@@ -1,3 +1,5 @@
+// TODO: Remove this
+/* eslint-disable max-lines */
 import { Base } from "./base/index.js"
 import {
     Bound,
@@ -15,8 +17,6 @@ import {
     RegexNode,
     StringLiteralNode
 } from "./terminal/index.js"
-
-type ExpressionTree = string | ExpressionTree[]
 
 const expressionTerminating = {
     ")": 1,

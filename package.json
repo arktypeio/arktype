@@ -58,7 +58,8 @@
         "peerDependencyRules": {
             "ignoreMissing": [
                 "webpack",
-                "@babel/core"
+                "@babel/core",
+                "@algolia/client-search"
             ]
         }
     }

@@ -1,33 +1,31 @@
 import { Entry } from "@re-/tools"
 import { Base } from "../base/index.js"
-import { Str } from "../str.js"
-import { NumberLiteralNode } from "../terminal/index.js"
 
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
 
-const invalidBoundError = (bound: string) =>
-    `Bounding value '${Base.defToString(bound)}' must be a number literal.`
+// const invalidBoundError = (bound: string) =>
+//     `Bounding value '${Base.defToString(bound)}' must be a number literal.`
 
 const unboundableError = (inner: string) =>
     `Definition '${Base.defToString(inner)}' is not boundable.`
 
-const boundPartsErrorTemplate =
-    "Bounds must be either of the form D<N or N<D<N, where 'D' is a boundable definition, 'N' is a number literal, and '<' is a comparison token."
+// const boundPartsErrorTemplate =
+//     "Bounds must be either of the form D<N or N<D<N, where 'D' is a boundable definition, 'N' is a number literal, and '<' is a comparison token."
 
-const invertComparator = (token: ComparatorToken): ComparatorToken => {
-    switch (token) {
-        case "<=":
-            return ">="
-        case ">=":
-            return "<="
-        case "<":
-            return ">"
-        case ">":
-            return "<"
-        case "==":
-            return "=="
-    }
-}
+// const invertComparator = (token: ComparatorToken): ComparatorToken => {
+//     switch (token) {
+//         case "<=":
+//             return ">="
+//         case ">=":
+//             return "<="
+//         case "<":
+//             return ">"
+//         case ">":
+//             return "<"
+//         case "==":
+//             return "=="
+//     }
+// }
 
 export namespace Bound {
     export interface Boundable extends Base.Node {
@@ -56,19 +54,8 @@ export namespace Bound {
             throw new Error(unboundableError(node.toString()))
         }
 
-        private addBoundErrorAndReturnFalse(
-            comparatorName: string,
-            boundedValue: number,
-            boundDescription: string,
-            args: Base.Validation.Args
-        ) {
-            args.errors.add(
-                args.ctx.path,
-                `Must be ${comparatorName} ${boundDescription} (got ${boundedValue}).`
-            )
-            return false
-        }
-
+        // TODO: Remove this once bounds are converted over
+        // eslint-disable-next-line max-lines-per-function
         allows(args: Base.Validation.Args) {
             const boundedNode = this.children
             if (!boundedNode.allows(args)) {
@@ -80,35 +67,35 @@ export namespace Bound {
                     boundedNode.boundBy ? " " + boundedNode.boundBy : ""
                 }`
                 if (comparator === "<=" && boundedValue > bound) {
-                    return this.addBoundErrorAndReturnFalse(
+                    return this.addBoundError(
                         "less than or equal to",
                         boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === ">=" && boundedValue < bound) {
-                    return this.addBoundErrorAndReturnFalse(
+                    return this.addBoundError(
                         "greater than or equal to",
                         boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === "<" && boundedValue >= bound) {
-                    return this.addBoundErrorAndReturnFalse(
+                    return this.addBoundError(
                         "less than",
                         boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === ">" && boundedValue <= bound) {
-                    return this.addBoundErrorAndReturnFalse(
+                    return this.addBoundError(
                         "greater than",
                         boundedValue,
                         boundDescription,
                         args
                     )
                 } else if (comparator === "==" && boundedValue !== bound) {
-                    return this.addBoundErrorAndReturnFalse(
+                    return this.addBoundError(
                         // Error message is cleaner without token name for equality check
                         "",
                         boundedValue,
@@ -125,6 +112,19 @@ export namespace Bound {
                 this.toString(),
                 "Bounded generation is unsupported."
             )
+        }
+
+        private addBoundError(
+            comparatorName: string,
+            boundedValue: number,
+            boundDescription: string,
+            args: Base.Validation.Args
+        ) {
+            args.errors.add(
+                args.ctx.path,
+                `Must be ${comparatorName} ${boundDescription} (got ${boundedValue}).`
+            )
+            return false
         }
     }
 }

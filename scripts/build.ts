@@ -22,6 +22,7 @@ const typesOut = join(outRoot, "types")
 const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
 const inFiles = walkPaths(srcRoot, {
+    ignoreDirsMatching: /\$test$/,
     excludeDirs: true
 })
 const successMessage = `🎁 Successfully built ${packageName}!`

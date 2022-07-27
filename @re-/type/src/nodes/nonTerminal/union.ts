@@ -50,30 +50,13 @@ export class UnionNode extends Base.NonTerminal<Base.Node[]> {
     }
 
     generate(args: Base.Create.Args) {
-        const possibleValues: unknown[] = []
-        const generationErrors: string[] = []
-        for (const node of this.children) {
-            try {
-                possibleValues.push(node.generate(args))
-            } catch (error) {
-                if (error instanceof Base.Create.UngeneratableError) {
-                    generationErrors.push(error.message)
-                } else {
-                    throw error
-                }
-            }
-        }
-        if (!possibleValues.length) {
-            throw new Base.Create.UngeneratableError(
-                this.toString(),
-                "None of the definitions can be generated" +
-                    (args.cfg.verbose
-                        ? `:\n${generationErrors.join("\n")}`
-                        : ".")
-            )
+        // These results are *literally* from the next generation...
+        const nextGenResults = this.generateChildren(args)
+        if (!nextGenResults.values.length) {
+            this.throwAllMembersUngeneratableError(nextGenResults.errors, args)
         }
         for (const constraint of preferredDefaults) {
-            const matches = possibleValues.filter((value) =>
+            const matches = nextGenResults.values.filter((value) =>
                 "value" in constraint
                     ? constraint.value === value
                     : constraint.typeOf === typeof value
@@ -82,10 +65,38 @@ export class UnionNode extends Base.NonTerminal<Base.Node[]> {
                 return matches[0]
             }
         }
-        /*
-         * If we've made it to this point without returning, somehow the value wasn't in our priority list.
-         * However, since we know we have least one generated value that didn't throw, just return it.
-         */
-        return possibleValues[0]
+        throw new Error(
+            `Unable to generate a value for unexpected union def ${this.toString()}.`
+        )
+    }
+
+    private generateChildren(args: Base.Create.Args) {
+        const results = {
+            values: [] as unknown[],
+            errors: [] as string[]
+        }
+        for (const node of this.children) {
+            try {
+                results.values.push(node.generate(args))
+            } catch (error) {
+                if (error instanceof Base.Create.UngeneratableError) {
+                    results.errors.push(error.message)
+                } else {
+                    throw error
+                }
+            }
+        }
+        return results
+    }
+
+    private throwAllMembersUngeneratableError(
+        errors: string[],
+        args: Base.Create.Args
+    ) {
+        throw new Base.Create.UngeneratableError(
+            this.toString(),
+            "None of the definitions can be generated" +
+                (args.cfg.verbose ? `:\n${errors.join("\n")}` : ".")
+        )
     }
 }

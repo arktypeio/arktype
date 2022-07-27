@@ -1,7 +1,7 @@
 import { Box } from "@mui/material"
 import React from "react"
 
-export const modelDemo = (
+export const typeDemo = (
     <Box
         style={{
             width: "100%",

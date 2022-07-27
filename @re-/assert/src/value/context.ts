@@ -261,8 +261,7 @@ export const valueAssertions = <T>(
         }
         return nextAssertions
     }
-    let currentAssertions: any
-    currentAssertions = {
+    const currentAssertions = {
         args: (...args: any[]) =>
             valueAssertions(position, actual, {
                 ...ctx,

@@ -27,8 +27,8 @@ export namespace Validation {
         checkedValuesByAlias: Record<string, object[]>
     }
 
-    export type Args = {
-        value: unknown
+    export type Args<Value = unknown> = {
+        value: Value
         errors: ErrorTree
         cfg: Config
         ctx: Context
