@@ -52,9 +52,9 @@ export type ValueAssertion<
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertions : {}
 
-export class Assertions<T> {
-    actual: T
-    actualSerialized: any
+export class Assertions {
+    actual: unknown
+    actualSerialized: unknown
 
     constructor(private ctx: AssertionContext) {
         this.actual = ctx.actualValueThunk() as any
