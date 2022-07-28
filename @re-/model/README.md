@@ -76,7 +76,7 @@ export const { error, data } = user.validate(fetchUser())
 
 if (error) {
     // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
-    console.log(error.message)
+    console.log(error)
 }
 
 // Try changing "user" or "fetchUser" and see what happens!
@@ -191,7 +191,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 ```ts @snipFrom:docs/snippets/constraints.ts
 import { model } from "@re-/model"
 
-const employee = model({
+export const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {
@@ -206,7 +206,7 @@ const employee = model({
 type Employee = typeof employee.type
 
 // The error messages are so nice you might be tempted to break your code more often ;)
-const { error } = employee.validate({
+export const { error } = employee.validate({
     email: "david@redo.biz",
     about: {
         age: 17,

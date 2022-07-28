@@ -19,6 +19,9 @@ export const createWriteFilesConsumer =
             ])
         )
         for (const snippet of Object.keys(obj)) {
-            writeFileSync(`${join(options.rootOutDir, snippet)}`, obj[snippet])
+            writeFileSync(
+                `${join(options.rootOutDir, "generated", snippet)}`,
+                obj[snippet]
+            )
         }
     }

@@ -8,10 +8,9 @@
         "types": [
             "@types/node",
             "@docusaurus/module-type-aliases",
-            "@docusaurus/preset-classic",
-            "src/index.d.ts"
+            "@docusaurus/preset-classic"
         ],
         "lib": ["DOM"]
     },
-    "include": ["src", "static", "src/index.d.ts", "index.d.ts"]
+    "include": ["src", "static"]
 }

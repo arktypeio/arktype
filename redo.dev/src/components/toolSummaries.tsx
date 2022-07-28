@@ -24,7 +24,7 @@ const toolSummaries: ToolSummaryData[] = [
         name: "Model",
         illustration: <Svgs.Model />,
         description: <>One definition from editor to runtime</>,
-        demoElement: <ModelDemo embedId="model" />
+        demoElement: <ModelDemo embedId="model" elementId="demo" />
     },
     {
         name: "State (coming soon)",

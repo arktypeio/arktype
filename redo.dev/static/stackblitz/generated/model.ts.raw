@@ -40,7 +40,7 @@ export const { error, data } = user.validate(fetchUser())
 
 if (error) {
     // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
-    console.log(error.message)
+    console.log(error)
 }
 
 // Try changing "user" or "fetchUser" and see what happens!
