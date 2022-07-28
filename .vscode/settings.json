@@ -4,14 +4,6 @@
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
-    "eslint.options": {
-        "overrideConfig": {
-            "rules": {
-                "@typescript-eslint/no-empty-function": "off",
-                "@typescript-eslint/no-empty-interface": "off",
-                "no-empty": "off",
-                "prefer-const": "off"
-            }
-        }
-    }
+    "vitest.enable": true,
+    "vitest.commandLine": "pnpm node_modules/@re-/assert/cli.cjs --skipTypes --cmd vitest"
 }
