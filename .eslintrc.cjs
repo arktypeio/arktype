@@ -3,7 +3,13 @@ const { defineConfig } = require("eslint-define-config")
 module.exports = defineConfig({
     root: true,
     parser: "@typescript-eslint/parser",
-    plugins: ["@typescript-eslint", "prefer-arrow", "import", "unicorn"],
+    plugins: [
+        "@typescript-eslint",
+        "prefer-arrow",
+        "import",
+        "unicorn",
+        "only-warn"
+    ],
     extends: [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
@@ -25,34 +31,34 @@ module.exports = defineConfig({
         /**
          * General restrictions
          */
-        curly: "error",
-        eqeqeq: "error",
-        "no-param-reassign": "error",
-        "@typescript-eslint/default-param-last": "error",
+        curly: "warn",
+        eqeqeq: "warn",
+        "no-param-reassign": "warn",
+        "@typescript-eslint/default-param-last": "warn",
         /**
          * Conventions
          */
-        "import/no-default-export": "error",
+        "import/no-default-export": "warn",
         /**
          * Require the use of arrow functions where possible
          */
-        "func-style": ["error", "expression"],
+        "func-style": ["warn", "expression"],
         "prefer-arrow/prefer-arrow-functions": [
-            "error",
+            "warn",
             {
                 disallowPrototype: true,
                 singleReturnOnly: false,
                 classPropertiesAllowed: false
             }
         ],
-        "prefer-arrow-callback": ["error", { allowNamedFunctions: true }],
+        "prefer-arrow-callback": ["warn", { allowNamedFunctions: true }],
         /**
          * Organize imports
          */
-        "import/no-duplicates": "error",
+        "import/no-duplicates": "warn",
         // Sort import statements
         "import/order": [
-            "error",
+            "warn",
             {
                 alphabetize: {
                     order: "asc"
@@ -61,7 +67,7 @@ module.exports = defineConfig({
         ],
         // Sort destructured variables within a single import statement
         "sort-imports": [
-            "error",
+            "warn",
             {
                 ignoreCase: true,
                 ignoreDeclarationSort: true
@@ -77,8 +83,8 @@ module.exports = defineConfig({
         /**
          * ESM support, clarity
          */
-        "unicorn/prefer-module": "error",
-        "unicorn/prefer-node-protocol": "error",
+        "unicorn/prefer-module": "warn",
+        "unicorn/prefer-node-protocol": "warn",
         /**
          * Namespaces are useful for grouping generic types with related functionality
          */
@@ -97,14 +103,14 @@ module.exports = defineConfig({
                 /**
                  * Keep functions and files concise and readable
                  */
-                "max-statements": ["error", 16],
-                "max-lines-per-function": ["error", 32],
-                "max-lines": ["error", 256],
+                "max-statements": ["warn", 16],
+                "max-lines-per-function": ["warn", 32],
+                "max-lines": ["warn", 256],
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
                  * so no need to worry about checking imports beyond what TypeScript does by default.
                  **/
-                "import/no-extraneous-dependencies": "error"
+                "import/no-extraneous-dependencies": "warn"
             }
         },
         {
