@@ -2,7 +2,9 @@
 /* eslint-disable max-lines-per-function */
 import { ListComparisonMode } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
-import { TypeAssertions } from "../type/index.js"
+
+export type NextAssertions<AllowTypeAssertions extends boolean> =
+    AllowTypeAssertions extends true ? {} : {}
 
 export type ChainAssertion<
     ArgsType extends [value: any, ...rest: any[]],
@@ -21,6 +23,65 @@ export type ChainContext = {
     allowRegex?: boolean
     defaultExpected?: unknown
 }
+
+export type CallableFunctionAssertions<
+    Return,
+    AllowTypeAssertions extends boolean
+> = {
+    returns: ChainAssertion<[value: Return], AllowTypeAssertions, Return, true>
+    throws: ChainAssertion<
+        [message: string | RegExp],
+        AllowTypeAssertions,
+        string,
+        false
+    >
+} & (AllowTypeAssertions extends true
+    ? {
+          throwsAndHasTypeError: (message: string | RegExp) => undefined
+      }
+    : {})
+
+export type FunctionAssertions<
+    Args extends any[],
+    Return,
+    AllowTypeAssertions extends boolean
+> = ([] extends Args
+    ? CallableFunctionAssertions<Return, AllowTypeAssertions>
+    : {}) &
+    (Args extends []
+        ? {}
+        : {
+              args: (
+                  ...args: Args
+              ) => CallableFunctionAssertions<Return, AllowTypeAssertions>
+          })
+
+export type ValueFromTypeAssertion<
+    Expected,
+    Chained = Expected
+> = ChainAssertion<[expected: Expected], false, Chained, false>
+
+export type TypeAssertionProps = {
+    toString: ValueFromTypeAssertion<string>
+    errors: ValueFromTypeAssertion<string | RegExp, string>
+}
+
+export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
+    is: (value: T) => NextAssertions<AllowTypeAssertions>
+    snap: ((value?: T) => NextAssertions<AllowTypeAssertions>) & {
+        toFile: (
+            name: string,
+            options?: ExternalSnapshotOptions
+        ) => NextAssertions<AllowTypeAssertions>
+    }
+    equals: (
+        value: T,
+        options?: EqualsOptions
+    ) => NextAssertions<AllowTypeAssertions>
+    value: Omit<ComparableValueAssertion<unknown, AllowTypeAssertions>, "value">
+} & (AllowTypeAssertions extends true
+    ? { typedValue: (expected: unknown) => undefined }
+    : {})
 
 const createAssertFn =
     (ctx: AssertionContext) =>
@@ -65,6 +126,3 @@ export type ExternalSnapshotOptions = {
 export type EqualsOptions = {
     listComparison?: ListComparisonMode
 }
-
-export const getNextAssertions = (ctx: AssertionContext) =>
-    ctx.allowTypeAssertions ? new TypeAssertions(ctx) : {}

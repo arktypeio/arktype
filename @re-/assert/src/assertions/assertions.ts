@@ -3,9 +3,15 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
-import { Fn, IsAnyOrUnknown, ListComparisonMode, toString } from "@re-/tools"
+import {
+    chainableNoOpProxy,
+    Fn,
+    IsAnyOrUnknown,
+    ListComparisonMode,
+    toString
+} from "@re-/tools"
 import { AssertionContext } from "../assert.js"
-import { assertEquals, literalSerialize, SourcePosition } from "../common.js"
+import { assertEquals, literalSerialize } from "../common.js"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit,
@@ -15,6 +21,7 @@ import {
 } from "../snapshot.js"
 import { getAssertionAtPos, TypeAssertions } from "../type/index.js"
 import { defaultAssert } from "./defaultAssert.js"
+import { callAssertedFunction, getThrownMessage } from "./utils.js"
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean
@@ -52,7 +59,7 @@ export type ValueAssertion<
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertions : {}
 
-export class Assertions {
+export class ChainableAssertions {
     actual: unknown
     actualSerialized: unknown
 
@@ -89,17 +96,17 @@ export class Assertions {
         } else {
             assertEquals(expectedSerialized, this.actualSerialized)
         }
-        return new TypeAssertions(this.ctx)
+        return new ChainableAssertions(this.ctx)
     }
 
     args(...args: any[]) {
-        return new Assertions({
+        return new ChainableAssertions({
             ...this.ctx,
             assertedFnArgs: args
         })
     }
     returns() {
-        return new Assertions({
+        return new ChainableAssertions({
             ...this.ctx,
             isReturn: true,
             actualValueThunk: () => {
@@ -115,7 +122,7 @@ export class Assertions {
     }
 
     throws() {
-        return new Assertions({
+        return new ChainableAssertions({
             ...this.ctx,
             allowRegex: true,
             defaultExpected: "",
@@ -184,30 +191,31 @@ export class Assertions {
             }
             defaultAssert(typeData.type.actual, typeData.type.expected)
         }
+        return new ChainableAssertions(this.ctx)
     }
 
-    get type(): TypeAssertionProps {
+    get type() {
         if (this.ctx.cfg.skipTypes) {
             return chainableNoOpProxy
         }
         return {
-            toString: createChainableAssertFn({
+            toString: new ChainableAssertions({
                 ...this.ctx,
                 actualValueThunk: () =>
                     getAssertionAtPos(this.ctx.position).type.actual,
                 allowTypeAssertions: false
             }),
-            errors: createChainableAssertFn({
+            errors: new ChainableAssertions({
                 ...this.ctx,
                 actualValueThunk: () =>
                     getAssertionAtPos(this.ctx.position).errors,
                 allowRegex: true,
                 allowTypeAssertions: false
             })
-        } as TypeAssertionProps
+        }
     }
 
-    get typed(): unknown {
+    get typed() {
         if (this.ctx.cfg.skipTypes) {
             return chainableNoOpProxy
         }
