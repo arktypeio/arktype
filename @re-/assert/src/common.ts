@@ -8,7 +8,7 @@ import { diff, DiffOptions, isRecursible, toString } from "@re-/tools"
 import ConvertSourceMap from "convert-source-map"
 import { default as memoize } from "micro-memoize"
 import { SourceMapConsumer } from "source-map-js"
-import type { EqualsOptions } from "./value/context.js"
+import type { EqualsOptions } from "./assertions/value.js"
 
 export type LinePosition = {
     line: number

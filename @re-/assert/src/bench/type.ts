@@ -1,7 +1,7 @@
 import { caller } from "@re-/node"
 import { Node, Project, SourceFile, SyntaxKind, ts } from "ts-morph"
+import { findCallExpressionAncestor } from "../snapshot.js"
 import { forceGetTsProject } from "../type/analysis.js"
-import { findCallExpressionAncestor } from "../value/snapshot.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import { BenchContext } from "./bench.js"
 import {

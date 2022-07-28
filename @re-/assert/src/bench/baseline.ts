@@ -1,5 +1,5 @@
 import { literalSerialize } from "../common.js"
-import { queueInlineSnapshotWriteOnProcessExit } from "../value/snapshot.js"
+import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.js"
 import { BenchAssertionContext, BenchContext } from "./bench.js"
 import { MeasureComparison, stringifyMeasure } from "./measure/index.js"
 

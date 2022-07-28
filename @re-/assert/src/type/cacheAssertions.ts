@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync } from "node:fs"
 import { writeJson } from "@re-/node"
+import { writeCachedInlineSnapshotUpdates } from "../assertions/index.js"
 import { getReAssertConfig } from "../common.js"
-import { writeCachedInlineSnapshotUpdates } from "../value/index.js"
 import { getAssertionsByFile } from "./analysis.js"
 
 export type SetupCacheOptions = {

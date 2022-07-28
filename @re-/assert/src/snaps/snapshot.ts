@@ -9,8 +9,8 @@ import {
     getReAssertConfig,
     positionToString,
     SourcePosition
-} from "../common.js"
-import { getDefaultTsMorphProject, getTsNodeAtPosition } from "../type/index.js"
+} from "./common.js"
+import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
 
 export interface SnapshotArgs {
     position: SourcePosition

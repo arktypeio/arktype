@@ -1,4 +1,4 @@
-export * from "./context.js"
+export * from "../assertions/type.js"
 export * from "./analysis.js"
 export * from "./getAssertionAtPos.js"
 export * from "./getTsMorphProject.js"
