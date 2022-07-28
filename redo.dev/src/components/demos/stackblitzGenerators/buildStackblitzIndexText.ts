@@ -1,4 +1,6 @@
-export const stackblitzIndexFileBuilder = (embedId: string) => {
+import { EmbedId } from "./stackblitzDemoBuilder"
+
+export const buildStackblitzIndexText = (embedId: EmbedId) => {
     const demoInfo = demoAdapters[embedId]
     const fileImports = demoInfo[0]
     const dataObject = demoInfo[1]
@@ -8,14 +10,15 @@ ${fileImports}
 populateDemo(${dataObject})`
 }
 
-const demoAdapters: Record<string, string[]> = {
+type DemoAdapter = [importFromDemo: string, dataFromImports: string]
+const demoAdapters: Record<EmbedId, DemoAdapter> = {
     model: [
         `import {fetchUser, error, user} from "./model"`,
         `{data: fetchUser(), error, type: user.definition}`
     ],
     space: [
         `import {readPackageData, getValidatedPackageData, redo} from "./space"`,
-        "{data: readPackageData(), definition: redo, error: getValidatedPackageData }"
+        "{data: readPackageData(), type: redo.inputs.dictionary, error: getValidatedPackageData }"
     ],
     constraints: [
         `import {employee, error} from "./constraints"`,
@@ -24,5 +27,7 @@ const demoAdapters: Record<string, string[]> = {
     declaration: [
         `import {define, compile, mySpace} from "./declaration"`,
         "{data: define, definition: compile, error: mySpace}"
-    ]
+    ],
+    user: [``, ``],
+    group: [``, ``]
 }

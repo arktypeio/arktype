@@ -1,3 +1,4 @@
+import { basename } from "node:path"
 import { stdout } from "node:process"
 import { fromPackageRoot } from "@re-/node"
 import { DocGenConfig } from "./config.js"
@@ -24,9 +25,12 @@ export const config: DocGenConfig = {
                 targets: ["README.md"],
                 consumers: [
                     createWriteFilesConsumer({
-                        rootOutDir: fromRedoDevDir("static", "stackblitz"),
-                        transformFileName: (name) =>
-                            `${name.split("/").pop()}.raw`
+                        rootOutDir: fromRedoDevDir(
+                            "static",
+                            "stackblitz",
+                            "generated"
+                        ),
+                        transformRelativePath: (path) => `${basename(path)}.raw`
                     })
                 ]
             }

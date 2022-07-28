@@ -1,7 +1,6 @@
 import { useColorMode } from "@docusaurus/theme-common"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { ThemeProvider, Typography } from "@mui/material"
-import sdk from "@stackblitz/sdk"
 import Layout from "@theme/Layout"
 
 import React from "react"
@@ -40,40 +39,6 @@ const Contents = () => {
 }
 export default () => {
     const { siteConfig } = useDocusaurusContext()
-    enum Template {
-        ts = "typescript",
-        js = "javascript",
-        html = "html"
-    }
-    const getEmbedOptions: any = () => {
-        return {
-            clickToLoad: false,
-            view: "preview",
-            height: "100%",
-            width: "100%"
-        }
-    }
-    const createStackblitzDemo = (
-        files: Record<string, string>,
-        title: string,
-        description: string,
-        template: Template,
-        component: any
-    ) => {
-        sdk.openProject(
-            {
-                files,
-                title,
-                description,
-                template,
-                dependencies: {
-                    "@re-/tools": "2.1.1",
-                    "@re-/model": "2.0.3-alpha"
-                }
-            },
-            getEmbedOptions()
-        )
-    }
     return (
         <Layout
             title={siteConfig.title}

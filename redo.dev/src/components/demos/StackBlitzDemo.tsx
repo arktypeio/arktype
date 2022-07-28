@@ -1,25 +1,23 @@
 import { Box } from "@mui/material"
-import model from "raw-loader!/stackblitz/generated/model.ts.raw"
 import React, { useEffect } from "react"
+import { buildStackblitzIndexText } from "./stackblitzGenerators/buildStackblitzIndexText"
 import { defaultFiles } from "./stackblitzGenerators/defaultFiles"
+import { contentsByEmbedId } from "./stackblitzGenerators/rawDemoFIles"
 import {
     createStackblitzDemo,
-    DemoProps,
-    Template
+    DemoProps
 } from "./stackblitzGenerators/stackblitzDemoBuilder"
-import { stackblitzIndexFileBuilder } from "./stackblitzGenerators/stackblitzIndexFileBuilder"
 
-export const ModelDemo = ({ embedId, elementId }: DemoProps) => {
+export const StackBlitzDemo = ({ embedId, elementId }: DemoProps) => {
     useEffect(() => {
         createStackblitzDemo({
             files: {
-                "model.ts": model,
-                "index.ts": stackblitzIndexFileBuilder(embedId),
+                [`${embedId}.ts`]: contentsByEmbedId[embedId],
+                "index.ts": buildStackblitzIndexText(embedId),
                 ...defaultFiles
             },
             title: `${embedId}`,
             description: `Demo for ${embedId}`,
-            template: Template.ts,
             embedId,
             elementId
         })

@@ -76,7 +76,7 @@ export const { error, data } = user.validate(fetchUser())
 
 if (error) {
     // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
-    console.log(error)
+    console.log(error.message)
 }
 
 // Try changing "user" or "fetchUser" and see what happens!
@@ -220,7 +220,7 @@ export const { error } = employee.validate({
 //   about/age: '17 was less than 18.',
 //   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
 // }"
-console.log(error ?? "Flawless. Obviously.")
+console.log(error.message ?? "Flawless. Obviously.")
 ```
 
 ## Syntax

@@ -1,26 +1,28 @@
 import sdk from "@stackblitz/sdk"
 
+export type EmbedId =
+    | "model"
+    | "space"
+    | "constraints"
+    | "declaration"
+    | "user"
+    | "group"
+
 export type DemoProps = {
-    embedId: "model" | "space" | "declaration" | "constraints"
+    embedId: EmbedId
     elementId: string
 }
-export enum Template {
-    ts = "typescript"
-}
-
 type DemoArgs = {
     files: Record<string, string>
     title: string
     description: string
-    template: Template
-    embedId: "model" | "space" | "declaration" | "constraints"
+    embedId: EmbedId
     elementId: string
 }
 export const createStackblitzDemo = ({
     files,
     title,
     description,
-    template,
     embedId,
     elementId
 }: DemoArgs) => {
@@ -30,11 +32,10 @@ export const createStackblitzDemo = ({
             files,
             title,
             description,
-            template,
+            template: "typescript",
             dependencies: {
                 "@re-/tools": "latest",
-                "@re-/model": "2.0.3-alpha",
-                typescript: "latest"
+                "@re-/model": "latest"
             }
         },
         {

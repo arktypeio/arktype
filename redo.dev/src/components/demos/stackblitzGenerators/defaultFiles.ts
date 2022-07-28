@@ -1,6 +1,6 @@
-import html from "raw-loader!/stackblitz/index.html"
-import populateDemo from "raw-loader!/stackblitz/populateDemo.ts"
-import css from "!!raw-loader!/stackblitz/demo.css"
+import indexHtml from "raw-loader!/stackblitz/index.html"
+import populateDemoTsText from "raw-loader!/stackblitz/populateDemo.ts"
+import demoCssText from "!!raw-loader!/stackblitz/demo.css"
 
 const tsConfig = {
     compilerOptions: {
@@ -11,8 +11,8 @@ const tsConfig = {
 }
 
 export const defaultFiles = {
-    "index.html": html,
-    "demo.css": css,
-    "populateDemo.ts": populateDemo,
+    "index.html": indexHtml,
+    "demo.css": demoCssText,
+    "populateDemo.ts": populateDemoTsText,
     "tsconfig.json": JSON.stringify(tsConfig, null, 4)
 }
