@@ -29,7 +29,8 @@
         "benchCyclic": "ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
         "benchCore": "ts-node ./test/bench/parser.bench.ts",
-        "diag": "tsc -p ./test/tsconfig.json > diag.txt"
+        "diag": "tsc -p ./src/__tests__/tsconfig.json > diag.txt",
+        "check": "tsc --noEmit"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

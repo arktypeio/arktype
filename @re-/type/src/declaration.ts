@@ -1,12 +1,4 @@
-import {
-    diffSets,
-    ElementOf,
-    Exact,
-    Get,
-    Narrow,
-    SetChange,
-    transform
-} from "@re-/tools"
+import { diffSets, ElementOf, Exact, Get, Narrow, SetChange } from "@re-/tools"
 import {
     rawSpace,
     SpaceFrom,
@@ -36,10 +28,12 @@ export type DeclareFn = <DeclaredTypeNames extends string[]>(
 const createDeclaredDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
 ): DeclaredDefineFunctionMap<DeclaredTypeNames> =>
-    transform(typeNames, ([, typeName]) => [
-        typeName as string,
-        createDeclaredDefineFunction(typeNames, typeName as any)
-    ])
+    Object.fromEntries(
+        typeNames.map((typeName) => [
+            typeName,
+            createDeclaredDefineFunction(typeNames, typeName as any)
+        ])
+    ) as any
 
 type DeclaredDefineFunctionMap<DeclaredTypeNames extends string[]> = {
     [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DeclaredDefineFunction<

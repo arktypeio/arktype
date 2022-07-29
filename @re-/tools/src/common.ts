@@ -106,7 +106,7 @@ export type Or<A extends boolean, B extends boolean> = {
 
 export type Iterate<Next, Remaining extends Next[]> = [Next, ...Remaining]
 
-export type IterateType<T, Next extends T, Remaining extends Next[]> = [
+export type IterateType<T, Next extends T, Remaining extends T[]> = [
     Next,
     ...Remaining
 ]

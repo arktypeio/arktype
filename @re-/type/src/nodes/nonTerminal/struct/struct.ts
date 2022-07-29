@@ -1,4 +1,4 @@
-import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
+import { Evaluate, IterateType, ListPossibleTypes, ValueOf } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import { Root } from "../../root.js"
 import { RecordNode, RecordType } from "./record.js"
@@ -30,7 +30,7 @@ export namespace Struct {
         Values extends unknown[],
         Result extends unknown[],
         Dict
-    > = Values extends Iteration<unknown, infer Current, infer Remaining>
+    > = Values extends IterateType<unknown, infer Current, infer Remaining>
         ? UnstructuredReferences<
               Remaining,
               [...Result, ...Root.References<Current, Dict, false>],

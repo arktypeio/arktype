@@ -69,7 +69,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
             })
                 .$root.type("a")
                 .create({ onRequiredCycle: { whoops: ["cycle"] } })
-        ).value.equals({
+        ).unknown.equals({
             b: { c: { whoops: ["cycle"] } }
         })
     })
@@ -81,7 +81,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
             })
                 .$root.type("a|b")
                 .create({ onRequiredCycle: "cycle" })
-        ).value.equals({ b: { a: "cycle" } })
+        ).unknown.equals({ b: { a: "cycle" } })
     })
     test("from parsed", () => {
         const defaultValue = space({

@@ -1,11 +1,4 @@
-import {
-    deepMerge,
-    ElementOf,
-    IsAny,
-    Iteration,
-    Join,
-    KeyValuate
-} from "@re-/tools"
+import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
 import { getResolutionDefAndOptions, SpaceMeta } from "../space.js"
 import { Base } from "./base/index.js"
 import { Root } from "./root.js"
@@ -163,13 +156,13 @@ type IterateReferencesForShallowCycle<
     References,
     Dict,
     Seen extends string[]
-> = References extends Iteration<string, infer Current, infer Remaining>
+> = References extends IterateType<string, infer Current, infer Remaining>
     ? Current extends keyof Dict
         ? Current extends ElementOf<Seen>
             ? [...Seen, Current]
             : IfShallowCycleTupleElse<
                   CheckResolutionForShallowCycleRecurse<
-                      KeyValuate<Dict, Current>,
+                      Get<Dict, Current>,
                       Dict,
                       [...Seen, Current]
                   >,

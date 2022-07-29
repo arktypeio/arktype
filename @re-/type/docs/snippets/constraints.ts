@@ -1,6 +1,6 @@
-import { model } from "../../src/index.js"
+import { type } from "../../src/index.js"
 
-const employee = model({
+const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {
@@ -12,7 +12,7 @@ const employee = model({
 })
 
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
-type Employee = typeof employee.type
+type Employee = typeof employee.infer
 
 // The error messages are so nice you might be tempted to break your code more often ;)
 const { error } = employee.validate({

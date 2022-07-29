@@ -2,7 +2,7 @@ import {
     chainableNoOpProxy,
     ElementOf,
     Evaluate,
-    Iteration,
+    IterateType,
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
@@ -99,14 +99,14 @@ export type ValidationResult<TypeedType> = MutuallyExclusiveProps<
     }
 >
 
-export type AssertFunction<TypeedType> = (
+export type AssertFunction<InferredType> = (
     value: unknown,
     options?: Base.Validation.Options
-) => TypeedType
+) => InferredType
 
-export type CreateFunction<TypeedType> = (
+export type CreateFunction<InferredType> = (
     options?: Base.Create.Options
-) => TypeedType
+) => InferredType
 
 export type ReferencesFunction<Def, Dict> = <
     Options extends Base.References.Options = {}
@@ -171,7 +171,7 @@ type FilterReferenceList<
     References extends string[],
     Filter extends string,
     Result extends string[]
-> = References extends Iteration<string, infer Current, infer Remaining>
+> = References extends IterateType<string, infer Current, infer Remaining>
     ? FilterReferenceList<
           Remaining,
           Filter,

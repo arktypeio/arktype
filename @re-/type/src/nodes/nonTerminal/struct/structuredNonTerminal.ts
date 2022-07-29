@@ -1,8 +1,11 @@
-import { TreeOf } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import { Root } from "../../root.js"
 
 export type ChildEntry<KeyType> = [KeyType, Base.Node]
+
+export type StructuredReferences = {
+    [K in string | number]: string[] | StructuredReferences
+}
 
 export abstract class StructuredNonTerminal extends Base.NonTerminal<
     Base.Node[]
@@ -30,7 +33,7 @@ export abstract class StructuredNonTerminal extends Base.NonTerminal<
     }
 
     structureReferences(opts: Base.References.Options) {
-        const references: TreeOf<string[]> = {}
+        const references: StructuredReferences = {}
         for (const [k, childNode] of this.entries) {
             references[k] = childNode.references(opts)
         }

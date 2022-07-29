@@ -109,7 +109,7 @@ g: 4 is not assignable to 3.`)
             const models = space({ a: { b: "b" }, b: { a: "a" } })
             const aOrB = models.$root.type("a|b")
             const created = aOrB.create({ onRequiredCycle: "cycle" })
-            assert(created).value.equals({
+            assert(created).unknown.equals({
                 b: { a: "cycle" }
             })
         })
@@ -121,7 +121,7 @@ g: 4 is not assignable to 3.`)
             })
             const aOrBOrSafe = models.$root.type("a|b|safe")
             const created = aOrBOrSafe.create()
-            assert(created).value.equals(false)
+            assert(created).unknown.equals(false)
         })
     })
     describe("integration", () => {

@@ -55,7 +55,7 @@ describe("defz", () => {
             name: age,
             age: name
         }
-        assert(types.user.validate(validUserWithExtraKey).data).value.equals(
+        assert(types.user.validate(validUserWithExtraKey).data).unknown.equals(
             validUserWithExtraKey
         ).typed as
             | {
