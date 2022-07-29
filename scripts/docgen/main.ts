@@ -1,18 +1,20 @@
+import { basename } from "node:path"
 import { stdout } from "node:process"
 import { fromPackageRoot } from "@re-/node"
 import { DocGenConfig } from "./config.js"
 import { extractRepo } from "./extract.js"
+import { createWriteFilesConsumer } from "./snippets/writeFilesConsumer.js"
 import { writeRepo } from "./write.js"
 
-const fromRedoDevDocsDir = (...segments: string[]) =>
-    fromPackageRoot("redo.dev", "docs", ...segments)
+const fromRedoDevDir = (...segments: string[]) =>
+    fromPackageRoot("redo.dev", ...segments)
 
 export const config: DocGenConfig = {
     packages: [
         {
             path: "@re-/model",
             api: {
-                outDir: fromRedoDevDocsDir("model", "api")
+                outDir: fromRedoDevDir("docs", "model", "api")
             },
             snippets: {
                 sources: [
@@ -20,7 +22,22 @@ export const config: DocGenConfig = {
                         path: "docs/snippets/"
                     }
                 ],
-                targets: ["README.md"]
+                targets: ["README.md"],
+                consumers: [
+                    createWriteFilesConsumer({
+                        rootOutDir: fromRedoDevDir(
+                            "docs",
+                            "model",
+                            "demos",
+                            "static",
+                            "generated"
+                        ),
+                        transformRelativePath: (path) =>
+                            `${basename(path)}.raw`,
+                        transformJsImports: (snippet) =>
+                            snippet.replaceAll(".js", "")
+                    })
+                ]
             }
         }
     ]
