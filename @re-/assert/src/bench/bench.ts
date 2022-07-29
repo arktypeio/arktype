@@ -1,36 +1,40 @@
 import { caller } from "@re-/node"
 import { chainableNoOpProxy } from "@re-/tools"
 import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
-import { AssertionName, BenchAssertions } from "./call.js"
+import { BenchAssertions, TimeAssertionName } from "./call.js"
 import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
 
-export interface UntilOptions {
+export type UntilOptions = {
     ms?: number
     count?: number
 }
 
-export interface BaseBenchOptions {
+export type BaseBenchOptions = {
     until?: UntilOptions
 }
 
-export interface BenchOptions extends BaseBenchOptions {
+export type BenchOptions = BaseBenchOptions & {
     hooks?: {
         beforeCall?: () => void
         afterCall?: () => void
     }
 }
 
-export interface BenchContext {
+export type InternalBenchOptions = BenchOptions & {
+    fakeCallMs?: number | "count"
+}
+
+export type BenchContext = {
     name: string
-    options: BenchOptions
+    options: InternalBenchOptions
     cfg: ReAssertConfig
     benchCallPosition: SourcePosition
     lastSnapCallPosition: SourcePosition | undefined
     isAsync: boolean
 }
 
-export interface BenchAssertionContext extends BenchContext {
-    kind: AssertionName
+export type BenchAssertionContext = BenchContext & {
+    kind: TimeAssertionName | "type"
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>

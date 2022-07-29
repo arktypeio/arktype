@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url"
 import { caller } from "@re-/node"
-import { ValueAssertion, valueAssertions } from "./assertions/index.js"
+import { Assertions, ValueAssertion } from "./assertions/index.js"
 import {
     fixVitestPos,
     getReAssertConfig,
@@ -8,28 +8,26 @@ import {
     ReAssertConfig,
     SourcePosition
 } from "./common.js"
-import { TypeAssertions } from "./type/index.js"
 
-export type AvailableAssertions<T> = ValueAssertion<T, true> & TypeAssertions
+export type AvailableAssertions<T> = ValueAssertion<T, true>
 
 export type AssertionResult<T> = AvailableAssertions<T>
 
-export type Assertion = <T>(value: T) => AssertionResult<T>
+export type AssertFn = <T>(value: T) => AssertionResult<T>
 
 export type AssertionContext = {
-    allowTypeAssertions: boolean
+    actual: unknown
     originalAssertedValue: unknown
     assertedFnArgs: unknown[]
     cfg: ReAssertConfig
     isReturn: boolean
     allowRegex: boolean
     position: SourcePosition
-    actualValueThunk: () => unknown
     defaultExpected?: unknown
 }
 
 // @ts-ignore
-export const assert: Assertion = (
+export const assert: AssertFn = (
     value: unknown,
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
@@ -46,17 +44,13 @@ export const assert: Assertion = (
         position.file = fileURLToPath(position.file)
     }
     const ctx: AssertionContext = {
-        allowTypeAssertions: true,
+        actual: value,
         isReturn: false,
         allowRegex: false,
         originalAssertedValue: value,
         assertedFnArgs: [],
         position,
-        actualValueThunk: () => value,
         cfg: { ...getReAssertConfig(), ...internalConfigHooks }
     }
-    return Object.assign(
-        new TypeAssertions(ctx),
-        valueAssertions(position, value, ctx)
-    )
+    return new Assertions(ctx)
 }

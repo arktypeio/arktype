@@ -1,3 +1,5 @@
 export * from "./assertions.js"
-export * from "../snapshot.js"
-export * from "./type.js"
+export type {
+    RootAssertions as ValueAssertion,
+    EqualsOptions
+} from "./types.js"

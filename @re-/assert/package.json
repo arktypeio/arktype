@@ -25,7 +25,7 @@
     "scripts": {
         "build": "pnpm ts-node ../../scripts/build.ts",
         "test": "pnpm ts-node ./src/cli.ts --cmd vitest run",
-        "bench": "pnpm ts-node ./test/bench/test.bench.ts"
+        "test2": "node --loader ts-node/esm src/cli.ts --skipTypes --cmd vitest run"
     },
     "bin": {
         "reassert": "./cli.cjs"

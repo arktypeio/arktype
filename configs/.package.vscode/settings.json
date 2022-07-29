@@ -5,5 +5,5 @@
     "typescript.tsdk": "node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "vitest.enable": true,
-    "vitest.commandLine": "pnpm node_modules/@re-/assert/cli.cjs --skipTypes --cmd vitest"
+    "vitest.commandLine": "--loader ts-node/esm src/cli.ts --skipTypes --cmd vitest"
 }

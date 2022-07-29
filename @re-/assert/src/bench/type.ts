@@ -1,7 +1,7 @@
 import { caller } from "@re-/node"
 import { Node, Project, SourceFile, SyntaxKind, ts } from "ts-morph"
 import { findCallExpressionAncestor } from "../snapshot.js"
-import { forceGetTsProject } from "../type/analysis.js"
+import { forceCreateTsMorphProject } from "../type/index.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import { BenchContext } from "./bench.js"
 import {
@@ -63,7 +63,7 @@ const getInstantiationsForIsolatedBench = (
     includeBenchFn: boolean,
     fakePath: string
 ) => {
-    const isolatedProject = forceGetTsProject()
+    const isolatedProject = forceCreateTsMorphProject()
     const fileToTransform = isolatedProject.createSourceFile(
         fakePath,
         originalFileText

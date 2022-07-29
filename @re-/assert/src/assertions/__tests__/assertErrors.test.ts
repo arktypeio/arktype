@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { describe, test } from "vitest"
-import { assert } from "../assert.js"
+import { assert } from "../../index.js"
 
 const n = 5
 const o = { re: "do" }
@@ -29,6 +29,9 @@ describe("assertion errors", () => {
     })
     test("incorrect return type", () => {
         assert(() => null).returns(null).typed as null
+
+        const ok = assert(() => ({})).returns
+        ok.equals({})
         strict.throws(
             () =>
                 assert((input: string) => `${input}!`)
@@ -43,7 +46,7 @@ describe("assertion errors", () => {
                     .args("hi")
                     .returns.type.toString("number"),
             strict.AssertionError,
-            "input is not of type number"
+            "string"
         )
     })
     test("valid type errors", () => {
@@ -174,14 +177,14 @@ describe("assertion errors", () => {
             "not assignable"
         )
     })
-    test("assert value ignores type", () => {
+    test("assert unknown ignores type", () => {
         const myValue = { a: ["+"] } as const
         const myExpectedValue = { a: ["+"] }
         // @ts-expect-error
         assert(myValue).equals(myExpectedValue)
-        assert(myValue).value.equals(myExpectedValue)
+        assert(myValue).unknown.equals(myExpectedValue)
         strict.throws(
-            () => assert(myValue).value.is(myExpectedValue),
+            () => assert(myValue).unknown.is(myExpectedValue),
             strict.AssertionError,
             "not reference-equal"
         )
@@ -225,6 +228,18 @@ describe("assertion errors", () => {
                 }).typed as object,
             strict.AssertionError,
             "object"
+        )
+    })
+    test("nonexistent types always fail", () => {
+        // @ts-expect-error
+        const nonexistent: NonExistent = {}
+        strict.throws(
+            () =>
+                assert(nonexistent).typed as {
+                    something: "specific"
+                },
+            strict.AssertionError,
+            "specific"
         )
     })
 })

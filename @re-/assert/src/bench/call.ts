@@ -4,7 +4,12 @@ import {
     compareToBaseline,
     queueBaselineUpdateIfNeeded as queueBaselineUpdateIfNeeded
 } from "./baseline.js"
-import { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
+import {
+    BenchableFunction,
+    BenchContext,
+    InternalBenchOptions,
+    UntilOptions
+} from "./bench.js"
 import {
     createTimeComparison,
     createTimeMeasure,
@@ -15,7 +20,7 @@ import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
 
 export type StatName = keyof typeof stats
 
-export type AssertionName = StatName | "mark" | "type"
+export type TimeAssertionName = StatName | "mark"
 
 export const stats = {
     mean: (callTimes: number[]) => {
@@ -100,11 +105,22 @@ export class BenchAssertions<
         this.label = `Call: ${ctx.name}`
     }
 
+    private applyCallTimeHooks() {
+        if (this.ctx.options.fakeCallMs !== undefined) {
+            const fakeMs =
+                this.ctx.options.fakeCallMs === "count"
+                    ? this.lastCallTimes!.length
+                    : this.ctx.options.fakeCallMs
+            this.lastCallTimes = this.lastCallTimes!.map((_) => fakeMs)
+        }
+    }
+
     private callTimesSync() {
         if (!this.lastCallTimes) {
             this.lastCallTimes = loopCalls(this.fn as any, this.ctx)
             this.lastCallTimes.sort()
         }
+        this.applyCallTimeHooks()
         return this.lastCallTimes
     }
 
@@ -113,10 +129,11 @@ export class BenchAssertions<
             this.lastCallTimes = await loopAsyncCalls(this.fn as any, this.ctx)
             this.lastCallTimes.sort()
         }
+        this.applyCallTimeHooks()
         return this.lastCallTimes
     }
 
-    private createAssertion<Name extends AssertionName>(
+    private createAssertion<Name extends TimeAssertionName>(
         name: Name,
         baseline: Name extends "mark"
             ? Record<StatName, TimeString> | undefined
@@ -126,7 +143,7 @@ export class BenchAssertions<
         if (name === "mark") {
             return this.markAssertion(baseline as any, callTimes)
         }
-        const ms: number = (stats as any)[name](callTimes)
+        const ms: number = stats[name as StatName](callTimes)
         const comparison = createTimeComparison(ms, baseline as TimeString)
         console.group(`${this.label} (${name}):`)
         compareToBaseline(comparison, this.ctx)
@@ -172,10 +189,10 @@ export class BenchAssertions<
     }
 
     private getNextAssertions(): NextAssertions {
-        return createBenchTypeAssertion(this.ctx) as NextAssertions
+        return createBenchTypeAssertion(this.ctx) as any as NextAssertions
     }
 
-    private createStatMethod<Name extends AssertionName>(
+    private createStatMethod<Name extends TimeAssertionName>(
         name: Name,
         baseline: Name extends "mark"
             ? Record<StatName, TimeString> | undefined

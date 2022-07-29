@@ -1,50 +1,47 @@
 import { ListPossibleTypes, StringReplace } from "@re-/tools"
 import { Type } from "ts-morph"
-import { bench } from "../../src/index.js"
+import { bench } from "../../index.js"
 
-//median
+const fakeCallOptions = { until: { count: 2 }, fakeCallMs: "count" }
+
 bench(
     "bench call single stat",
     () => {
         return "boofoozoo".includes("foo")
     },
-    { until: { count: 2 } }
+    fakeCallOptions
 ).median()
 
-//mean
 bench(
     "bench call single stat",
     () => {
         return "boofoozoo".includes("foo")
     },
-    { until: { count: 2 } }
+    fakeCallOptions
 ).mean()
 
-//mark
 bench(
     "bench call mark",
     () => {
         return /.*foo.*/.test("boofoozoo")
     },
-    { until: { count: 2 } }
+    fakeCallOptions
 ).mark()
 
 type MakeComplexType<S extends string> = ListPossibleTypes<
     StringReplace<keyof Type, "e", S>
 >
 
-//type
 bench("bench type", () => {
     return [] as any as MakeComplexType<"!">
 }).type()
 
-//callAndType
 bench(
     "bench call and type",
     () => {
         return /.*foo.*/.test("boofoozoo") as any as MakeComplexType<"?">
     },
-    { until: { count: 2 } }
+    fakeCallOptions
 )
     .mean()
     .type()

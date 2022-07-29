@@ -98,7 +98,7 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
-            excludedFiles: ["**/$test/**"],
+            excludedFiles: ["**/__tests__/**"],
             rules: {
                 /**
                  * Keep functions and files concise and readable

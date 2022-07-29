@@ -1,6 +1,6 @@
 import { AssertionError, strict } from "node:assert"
 import { describe, test } from "vitest"
-import { assert } from "../index.js"
+import { assert } from "../../index.js"
 const o = { re: "do" }
 
 describe("Assertions", () => {

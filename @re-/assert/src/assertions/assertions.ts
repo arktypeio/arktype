@@ -1,15 +1,7 @@
-/* eslint-disable max-lines */
-/* eslint-disable max-lines-per-function */
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
-import {
-    chainableNoOpProxy,
-    Fn,
-    IsAnyOrUnknown,
-    ListComparisonMode,
-    toString
-} from "@re-/tools"
+import { chainableNoOpProxy, Fn, toString } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { assertEquals, literalSerialize } from "../common.js"
 import {
@@ -19,9 +11,17 @@ import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
 } from "../snapshot.js"
-import { getAssertionAtPos, TypeAssertions } from "../type/index.js"
-import { defaultAssert } from "./defaultAssert.js"
-import { callAssertedFunction, getThrownMessage } from "./utils.js"
+import { getTypeDataAtPos } from "../type/index.js"
+import {
+    AnyValueAssertion,
+    EqualsOptions,
+    ExternalSnapshotArgs
+} from "./types.js"
+import {
+    assertEqualOrMatching,
+    callAssertedFunction,
+    getThrownMessage
+} from "./utils.js"
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean
@@ -29,44 +29,12 @@ export type ChainableAssertionOptions = {
     defaultExpected?: unknown
 }
 
-export type ExternalSnapshotOptions = {
-    path?: string
-}
+type AnyAssertions = AnyValueAssertion<any, true>
 
-export type EqualsOptions = {
-    listComparison?: ListComparisonMode
-}
+type AssertionRecord = { [K in keyof AnyAssertions]: any }
 
-export type AnyOrUnknownValueAssertion<
-    T,
-    AllowTypeAssertions extends boolean
-> = FunctionAssertions<T[], T, AllowTypeAssertions> &
-    ComparableValueAssertion<T, AllowTypeAssertions>
-
-export type TypedValueAssertions<T, AllowTypeAssertions extends boolean> = [
-    T
-] extends [Fn<infer Args, infer Return>]
-    ? FunctionAssertions<Args, Return, AllowTypeAssertions>
-    : ComparableValueAssertion<T, AllowTypeAssertions>
-
-export type ValueAssertion<
-    T,
-    AllowTypeAssertions extends boolean
-> = IsAnyOrUnknown<T> extends true
-    ? AnyOrUnknownValueAssertion<T, AllowTypeAssertions>
-    : TypedValueAssertions<T, AllowTypeAssertions>
-
-export type NextAssertions<AllowTypeAssertions extends boolean> =
-    AllowTypeAssertions extends true ? TypeAssertions : {}
-
-export class ChainableAssertions {
-    actual: unknown
-    actualSerialized: unknown
-
-    constructor(private ctx: AssertionContext) {
-        this.actual = ctx.actualValueThunk() as any
-        this.actualSerialized = this.serialize(this.actual)
-    }
+export class Assertions implements AssertionRecord {
+    constructor(private ctx: AssertionContext) {}
 
     private serialize(value: unknown) {
         return this.ctx.cfg.stringifySnapshots
@@ -74,18 +42,57 @@ export class ChainableAssertions {
             : literalSerialize(value)
     }
 
+    private get actual() {
+        return this.ctx.actual
+    }
+
+    private get serializedActual() {
+        return this.serialize(this.actual)
+    }
+
+    private snapRequiresUpdate(expectedSerialized: unknown) {
+        return (
+            !isDeepStrictEqual(this.serializedActual, expectedSerialized) ||
+            // If actual is undefined, we still need to write the "undefined" literal
+            // to the snap even though it will serialize to the same value as the (nonexistent) first arg
+            this.actual === undefined
+        )
+    }
+
+    get unknown() {
+        return this
+    }
+
+    is(expected: unknown) {
+        strict.equal(this.actual, expected)
+        return this
+    }
+    equals(expected: unknown, options?: EqualsOptions) {
+        assertEquals(expected, this.actual, options)
+        return this
+    }
+
+    typedValue(expectedValue: unknown) {
+        assertEquals(expectedValue, this.actual)
+        if (!this.ctx.cfg.skipTypes) {
+            const typeData = getTypeDataAtPos(this.ctx.position)
+            if (!typeData.type.expected) {
+                throw new Error(
+                    `Unable to infer type at position ${this.ctx.position.char} on` +
+                        `line ${this.ctx.position.line} of ${this.ctx.position.file}.`
+                )
+            }
+            assertEquals(typeData.type.expected, typeData.type.actual)
+        }
+    }
+
     snap(...args: [expected: unknown]) {
         const expectedSerialized = this.serialize(args[0])
         if (!args.length || this.ctx.cfg.updateSnapshots) {
-            if (
-                !isDeepStrictEqual(this.actualSerialized, expectedSerialized) ||
-                // If actual is undefined, we still need to write the "undefined" literal
-                // to the snap even though it will serialize to the same value as the (nonexistent) first arg
-                this.actual === undefined
-            ) {
+            if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
-                    serializedValue: this.actualSerialized
+                    serializedValue: this.serializedActual
                 }
                 if (this.ctx.cfg.precached) {
                     writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
@@ -94,132 +101,123 @@ export class ChainableAssertions {
                 }
             }
         } else {
-            assertEquals(expectedSerialized, this.actualSerialized)
+            assertEquals(expectedSerialized, this.serializedActual)
         }
-        return new ChainableAssertions(this.ctx)
+        return this
     }
 
-    args(...args: any[]) {
-        return new ChainableAssertions({
-            ...this.ctx,
-            assertedFnArgs: args
-        })
-    }
-    returns() {
-        return new ChainableAssertions({
-            ...this.ctx,
-            isReturn: true,
-            actualValueThunk: () => {
-                const result = callAssertedFunction(this.actual as Fn, ctx)
-                if (!("returned" in result)) {
-                    throw new strict.AssertionError({
-                        message: result.threw
-                    })
-                }
-                return result.returned
-            }
-        })
-    }
-
-    throws() {
-        return new ChainableAssertions({
-            ...this.ctx,
-            allowRegex: true,
-            defaultExpected: "",
-            actualValueThunk: () =>
-                getThrownMessage(callAssertedFunction(actual as Fn, ctx))
-        })
-    }
-
-    throwsAndHasTypeError(matchValue: string | RegExp) {
-        defaultAssert(
-            getThrownMessage(callAssertedFunction(actual as Fn, ctx)),
-            matchValue,
-            true
-        )
-        if (!this.ctx.cfg.skipTypes) {
-            defaultAssert(
-                getAssertionAtPos(this.ctx.position).errors,
-                matchValue,
-                true
-            )
-        }
-    }
-    is(expected: unknown) {
-        strict.equal(this.actual, expected)
-        return new TypeAssertions(this.ctx)
-    }
-    equals(expected: unknown, options?: EqualsOptions) {
-        assertEquals(expected, this.actual, options)
-        return new TypeAssertions(this.ctx)
-    }
-
-    toFile(name: string, options: ExternalSnapshotOptions = {}) {
-        const actualSerialized = serialize(actual)
+    snapToFile(args: ExternalSnapshotArgs) {
         const expectedSnapshot = getSnapshotByName(
-            position.file,
-            name,
-            options.path
+            this.ctx.position.file,
+            args.id,
+            args.path
         )
-        if (!expectedSnapshot || ctx.cfg.updateSnapshots) {
-            if (
-                !isDeepStrictEqual(actualSerialized, expectedSnapshot) ||
-                actual === undefined
-            ) {
+        if (!expectedSnapshot || this.ctx.cfg.updateSnapshots) {
+            if (this.snapRequiresUpdate(expectedSnapshot)) {
                 updateExternalSnapshot({
-                    serializedValue: actualSerialized,
+                    serializedValue: this.serializedActual,
                     position: caller(),
-                    name,
-                    customPath: options.path
+                    name: args.id,
+                    customPath: args.path
                 })
             }
         } else {
-            assertEquals(expectedSnapshot, actualSerialized)
+            assertEquals(expectedSnapshot, this.serializedActual)
         }
-        return new TypeAssertions(this.ctx)
+        return this
     }
 
-    typedValue(expectedValue: unknown) {
-        defaultAssert(this.actual, expectedValue)
-        if (!this.ctx.cfg.skipTypes) {
-            const typeData = getAssertionAtPos(this.ctx.position)
-            if (!typeData.type.expected) {
-                throw new Error(
-                    `Unable to infer type at position ${this.ctx.position.char} on` +
-                        `line ${this.ctx.position.line} of ${this.ctx.position.file}.`
-                )
+    args(...args: any[]) {
+        this.ctx.assertedFnArgs = args
+        return this
+    }
+
+    private immediateOrChained() {
+        const immediateAssertion = (...args: [expected: unknown]) => {
+            let expected
+            if (args.length) {
+                expected = args[0]
+            } else {
+                if ("defaultExpected" in this.ctx) {
+                    expected = this.ctx.defaultExpected
+                } else {
+                    throw new Error(
+                        `Assertion call requires an arg representing the expected value.`
+                    )
+                }
             }
-            defaultAssert(typeData.type.actual, typeData.type.expected)
+            if (this.ctx.allowRegex) {
+                assertEqualOrMatching(expected, this.actual)
+            } else {
+                assertEquals(expected, this.actual)
+            }
+            return this
         }
-        return new ChainableAssertions(this.ctx)
+        return new Proxy(immediateAssertion, {
+            get: (target, prop) => (this as any)[prop]
+        })
+    }
+
+    get returns() {
+        const result = callAssertedFunction(this.actual as Fn, this.ctx)
+        if (!("returned" in result)) {
+            throw new strict.AssertionError({
+                message: result.threw
+            })
+        }
+        this.ctx.actual = result.returned
+        this.ctx.isReturn = true
+        return this.immediateOrChained()
+    }
+
+    get throws() {
+        const result = callAssertedFunction(this.actual as Fn, this.ctx)
+        this.ctx.actual = getThrownMessage(result)
+        this.ctx.allowRegex = true
+        this.ctx.defaultExpected = ""
+        return this.immediateOrChained()
+    }
+
+    throwsAndHasTypeError(matchValue: string | RegExp) {
+        assertEqualOrMatching(
+            matchValue,
+            getThrownMessage(callAssertedFunction(this.actual as Fn, this.ctx))
+        )
+        if (!this.ctx.cfg.skipTypes) {
+            assertEqualOrMatching(
+                matchValue,
+                getTypeDataAtPos(this.ctx.position).errors
+            )
+        }
     }
 
     get type() {
         if (this.ctx.cfg.skipTypes) {
             return chainableNoOpProxy
         }
+        // We need to bind this to return an object with getters
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const self = this
         return {
-            toString: new ChainableAssertions({
-                ...this.ctx,
-                actualValueThunk: () =>
-                    getAssertionAtPos(this.ctx.position).type.actual,
-                allowTypeAssertions: false
-            }),
-            errors: new ChainableAssertions({
-                ...this.ctx,
-                actualValueThunk: () =>
-                    getAssertionAtPos(this.ctx.position).errors,
-                allowRegex: true,
-                allowTypeAssertions: false
-            })
+            get toString() {
+                self.ctx.actual = getTypeDataAtPos(
+                    self.ctx.position
+                ).type.actual
+                return self.immediateOrChained()
+            },
+            get errors() {
+                self.ctx.actual = getTypeDataAtPos(self.ctx.position).errors
+                self.ctx.allowRegex = true
+                return self.immediateOrChained()
+            }
         }
     }
 
     get typed() {
         if (this.ctx.cfg.skipTypes) {
-            return chainableNoOpProxy
+            return
         }
-        const assertionData = getAssertionAtPos(this.ctx.position)
+        const assertionData = getTypeDataAtPos(this.ctx.position)
         if (!assertionData.type.expected) {
             throw new Error(
                 `Expected an 'as' expression after 'typed' prop access at position ${this.ctx.position.char} on ` +
@@ -232,6 +230,5 @@ export class ChainableAssertions {
         ) {
             strict.equal(assertionData.type.actual, assertionData.type.expected)
         }
-        return undefined
     }
 }

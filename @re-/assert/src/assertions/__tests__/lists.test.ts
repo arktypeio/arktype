@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { test } from "vitest"
-import { assert } from "../index.js"
+import { assert } from "../../index.js"
 
 test("handles listComparison options", () => {
     assert([

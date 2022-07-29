@@ -22,7 +22,7 @@ const isPositionWithinRange = (
     return true
 }
 
-export const getAssertionAtPos = (position: SourcePosition) => {
+export const getTypeDataAtPos = (position: SourcePosition) => {
     const fileKey = getFileKey(position.file)
     const assertionsByFile = getAssertionsByFile()
     if (!assertionsByFile[fileKey]) {
