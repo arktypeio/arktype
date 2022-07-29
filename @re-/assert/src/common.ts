@@ -35,7 +35,6 @@ export interface ReAssertConfig extends Required<ReAssertJson> {
     assertionCacheFile: string
     snapCacheDir: string
     skipTypes: boolean
-    skipBenches: boolean
 }
 
 interface ReAssertJson {
@@ -158,8 +157,6 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     return {
         updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
         skipTypes: argsToCheck.includes("--skipTypes"),
-        skipBenches:
-            process.env.NODE_ENV === "test" && !argsToCheck.includes("--bench"),
         benchMatcher: getMatcher(argsToCheck),
         tsconfig,
         precached: argsToCheck.includes("--precache"),

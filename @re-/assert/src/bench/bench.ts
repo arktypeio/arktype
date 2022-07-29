@@ -42,12 +42,6 @@ export type BenchableFunction = () => unknown | Promise<unknown>
 export type InitialBenchAssertions<Fn extends BenchableFunction> =
     BenchAssertions<Fn> & BenchTypeAssertions
 
-const shouldSkipBench = (name: string, ctx: BenchContext) => {
-    const isExcludedByFilter =
-        ctx.cfg.benchMatcher && !ctx.cfg.benchMatcher.test(name)
-    return isExcludedByFilter || ctx.cfg.skipBenches
-}
-
 export const bench = <Fn extends BenchableFunction>(
     name: string,
     fn: Fn,
@@ -61,7 +55,7 @@ export const bench = <Fn extends BenchableFunction>(
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
     }
-    if (shouldSkipBench(name, ctx)) {
+    if (ctx.cfg.benchMatcher && !ctx.cfg.benchMatcher.test(name)) {
         return chainableNoOpProxy
     }
     const assertions = new BenchAssertions(fn, ctx)

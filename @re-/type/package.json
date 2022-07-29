@@ -24,13 +24,14 @@
     },
     "scripts": {
         "build": "ts-node ../../scripts/build.ts",
+        "typecheck": "tsc --noEmit",
         "test": "reassert --cmd vitest run",
         "tnt": "reassert --skipTypes --cmd vitest run",
+        "bench": "reassert bench",
         "benchCyclic": "ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
         "benchCore": "ts-node ./test/bench/parser.bench.ts",
-        "diag": "tsc -p ./src/__tests__/tsconfig.json > diag.txt",
-        "check": "tsc --noEmit"
+        "diag": "tsc -p ./src/__tests__/tsconfig.json > diag.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { version, versions } from "node:process"
-import { fileName, shell } from "@re-/node"
+import { basename, join } from "node:path"
+import { exit, version, versions } from "node:process"
+import { fileName, findPackageRoot, shell, walkPaths } from "@re-/node"
 import { cacheAssertions, cleanupAssertions } from "./type/index.js"
 
 let runTestsCmd = ""
@@ -13,6 +14,22 @@ if (reassertArgIndex === -1) {
             " "
         )}' (expected to find a reference to ${fileName()}).`
     )
+}
+
+if (process.argv[reassertArgIndex + 1] === "bench") {
+    const packageRoot = findPackageRoot(process.cwd())
+    const benchFilePaths = walkPaths(join(packageRoot, "src"), {
+        include: (path) => basename(path).includes(".bench.")
+    })
+    let exitCode = 0
+    for (const path of benchFilePaths) {
+        try {
+            shell(`npx --no ts-node ${path}`)
+        } catch {
+            exitCode = 1
+        }
+    }
+    process.exit(exitCode)
 }
 
 const cmdFlagIndex = process.argv.indexOf("--cmd")

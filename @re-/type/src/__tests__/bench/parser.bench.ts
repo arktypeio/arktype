@@ -20,7 +20,11 @@ bench("parse and validate deeep", () => {
 }).median(`5.30us`)
 
 bench("validate map", () => {
-    type({ a: "string?", b: "number?", c: { nested: "boolean?" } }).validate({
+    type({
+        a: "string?",
+        b: "number?",
+        c: { nested: "boolean?" }
+    }).validate({
         a: "okay",
         b: 5,
         c: { nested: true }
@@ -28,7 +32,11 @@ bench("validate map", () => {
 }).median(`1.97us`)
 
 bench("validate map extraneous", () => {
-    type({ a: "string?", b: "number?", c: { nested: "boolean?" } }).validate({
+    type({
+        a: "string?",
+        b: "number?",
+        c: { nested: "boolean?" }
+    }).validate({
         a: "okay",
         b: 5,
         c: { nested: true },
@@ -40,7 +48,11 @@ bench("validate map extraneous", () => {
 }).median(`6.26us`)
 
 bench("validate map bad", () => {
-    type({ a: "string?", b: "number?", c: { nested: "boolean?" } }).validate({
+    type({
+        a: "string?",
+        b: "number?",
+        c: { nested: "boolean?" }
+    }).validate({
         a: 5,
         b: 5,
         c: { nested: true }
