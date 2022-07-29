@@ -27,8 +27,12 @@ export const createStackblitzDemo = ({
             description,
             template: "typescript",
             dependencies: {
-                "@re-/tools": "latest",
-                "@re-/model": "latest"
+                // @writeFrom:@re-/type/package.json:version
+                // "@re-/type": "#version",
+                "@re-/model": "latest",
+                // @writeFrom:@re-/tools/package.json:version
+                // "@re-/tools": "#version"
+                "@re-/tools": "latest"
             },
             settings: {
                 compile: {

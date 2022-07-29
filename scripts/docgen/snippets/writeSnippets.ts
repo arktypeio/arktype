@@ -30,15 +30,7 @@ const updateTargets = (targets: string[], ctx: WriteSnippetsContext) => {
         if (!existsSync(fullTargetPath)) {
             throw new Error(`Target did not exist at path '${fullTargetPath}'.`)
         }
-        if (fullTargetPath.toLowerCase().endsWith(".md")) {
-            updateMarkdownTarget(fullTargetPath, ctx)
-        } else {
-            throw new Error(
-                `Unable to update target of unknown type at '${basename(
-                    relativeTargetPath
-                )}'.`
-            )
-        }
+        updateTextTarget(fullTargetPath, ctx)
     }
 }
 
@@ -53,10 +45,7 @@ const runConsumers = (
 
 const SNIP_FROM_TOKEN = "@snipFrom"
 
-const updateMarkdownTarget = (
-    targetPath: string,
-    ctx: WriteSnippetsContext
-) => {
+const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
     const originalLines = readFile(targetPath).split("\n")
     const transformedLines = []
     let waitingForBlockEnd = false
@@ -66,14 +55,22 @@ const updateMarkdownTarget = (
                 transformedLines.push(originalLine)
                 waitingForBlockEnd = false
             }
-        } else if (originalLine.includes(SNIP_FROM_TOKEN)) {
-            const parsedLine = parseLineContainingGeneratedToken(originalLine)
-            transformedLines.push(
-                originalLine,
-                ...getReplacementLines(parsedLine, targetPath, ctx)
-            )
-            // Until we reach a block end token, skip pushing originalLines to transformedLines
-            waitingForBlockEnd = true
+        } else if (originalLine.includes("@snip")) {
+            if (originalLine.includes("@snipFrom")) {
+                const parsedLine = parseLineContainingSnipFrom(originalLine)
+                transformedLines.push(
+                    originalLine,
+                    ...getReplacementLines(parsedLine, targetPath, ctx)
+                )
+                // Until we reach a block end token, skip pushing originalLines to transformedLines
+                waitingForBlockEnd = true
+            } else if (originalLine.includes("@snipPkg")) {
+                const parsedLine = parseLineContainingSnipPkg(originalLine)
+            } else {
+                throw new Error(
+                    `Line contained an unrecognized @snip comment: ${originalLine}`
+                )
+            }
         } else {
             transformedLines.push(originalLine)
         }
@@ -82,7 +79,7 @@ const updateMarkdownTarget = (
 }
 
 const getReplacementLines = (
-    { snippetFilePath, label }: ParsedGeneratedLine,
+    { snippetFilePath, label }: ParsedSnipFromLine,
     targetPath: string,
     ctx: WriteSnippetsContext
 ) => {
@@ -109,14 +106,14 @@ const getReplacementLines = (
     return snippetTextToCopy.split("\n")
 }
 
-type ParsedGeneratedLine = {
+const parseLineContainingSnipPkg = (line: string) => {}
+
+type ParsedSnipFromLine = {
     snippetFilePath: string
     label: string | undefined
 }
 
-const parseLineContainingGeneratedToken = (
-    line: string
-): ParsedGeneratedLine => {
+const parseLineContainingSnipFrom = (line: string): ParsedSnipFromLine => {
     const generatedFromExpressionParts = line
         .slice(line.indexOf(SNIP_FROM_TOKEN))
         .split(" ")[0]

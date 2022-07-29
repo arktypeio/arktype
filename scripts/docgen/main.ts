@@ -9,12 +9,21 @@ import { fromPackageRoot } from "@re-/node"
 const fromRedoDevDir = (...segments: string[]) =>
     fromPackageRoot("redo.dev", ...segments)
 
+const fromTypeDocsDir = (...segments: string[]) =>
+    fromRedoDevDir("docs", "type", ...segments)
+
+const fromTypeDemosDir = (...segments: string[]) =>
+    fromTypeDocsDir("demos", ...segments)
+
+const fromTypePackageRoot = (...segments: string[]) =>
+    fromPackageRoot("@re-", "type", ...segments)
+
 export const config: DocGenConfig = {
     packages: [
         {
             path: "@re-/type",
             api: {
-                outDir: fromRedoDevDir("docs", "type", "api")
+                outDir: fromTypeDocsDir("api")
             },
             snippets: {
                 sources: [
@@ -22,16 +31,16 @@ export const config: DocGenConfig = {
                         path: "docs/snippets/"
                     }
                 ],
-                targets: ["README.md"],
+                targets: [
+                    fromTypePackageRoot("README.md"),
+                    fromTypeDemosDir(
+                        "stackblitzGenerators",
+                        "createStackblitzDemo.ts"
+                    )
+                ],
                 consumers: [
                     createWriteFilesConsumer({
-                        rootOutDir: fromRedoDevDir(
-                            "docs",
-                            "type",
-                            "demos",
-                            "static",
-                            "generated"
-                        ),
+                        rootOutDir: fromTypeDemosDir("static", "generated"),
                         transformRelativePath: (path) =>
                             `${basename(path)}.raw`,
                         transformJsImports: (snippet) =>
