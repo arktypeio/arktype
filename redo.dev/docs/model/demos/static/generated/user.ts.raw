@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { define } from "./declaration"
 
 export const userDef = define.user({

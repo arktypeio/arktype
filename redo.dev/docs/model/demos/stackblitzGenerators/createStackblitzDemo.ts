@@ -1,10 +1,10 @@
 import sdk from "@stackblitz/sdk"
 
 export type EmbedId = "model" | "space" | "constraints" | "declaration"
-export type DeclarationFiles = "user" | "group"
+export type AddonFile = "user" | "group"
 export type DemoProps = {
     embedId: EmbedId
-    addonFiles?: DeclarationFiles[]
+    addonFiles?: AddonFile[]
 }
 type DemoArgs = {
     files: Record<string, string>
@@ -12,7 +12,7 @@ type DemoArgs = {
     description: string
     embedId: EmbedId
 }
-const ELEMENT_ID = "demo"
+const DEMO_ELEMENT_ID = "demo"
 export const createStackblitzDemo = ({
     files,
     title,
@@ -20,7 +20,7 @@ export const createStackblitzDemo = ({
     embedId
 }: DemoArgs) => {
     sdk.embedProject(
-        ELEMENT_ID,
+        DEMO_ELEMENT_ID,
         {
             files,
             title,

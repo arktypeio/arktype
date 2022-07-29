@@ -13,11 +13,11 @@ export const writePackageSnippets = (ctx: WriteSnippetsContext) => {
     if (!ctx.packageConfig.snippets) {
         return
     }
-    if (ctx.packageConfig.snippets.consumers) {
-        runConsumers(ctx.packageConfig.snippets.consumers, ctx)
-    }
     if (ctx.packageConfig.snippets.targets) {
         updateTargets(ctx.packageConfig.snippets.targets, ctx)
+    }
+    if (ctx.packageConfig.snippets.consumers) {
+        runConsumers(ctx.packageConfig.snippets.consumers, ctx)
     }
 }
 

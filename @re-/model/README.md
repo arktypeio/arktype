@@ -147,14 +147,13 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 `index.ts`
 
 ```ts @snipFrom:docs/snippets/declaration/declaration.ts
-// @ts-nocheck
 import { declare } from "@re-/model"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 
-import { groupDef } from "./group"
-import { userDef } from "./user"
+import { groupDef } from "./group.js"
+import { userDef } from "./user.js"
 
 // Creates your space (or tells you which definition you forgot to include)
 export const mySpace = compile({ ...userDef, ...groupDef })
@@ -181,8 +180,7 @@ export const { error } = mySpace.models.group.validate(fetchGroupData)
 `user.ts`
 
 ```ts @snipFrom:docs/snippets/declaration/user.ts
-// @ts-nocheck
-import { define } from "./declaration"
+import { define } from "./declaration.js"
 
 export const userDef = define.user({
     name: "string",
@@ -194,8 +192,7 @@ export const userDef = define.user({
 `group.ts`
 
 ```ts @snipFrom:docs/snippets/declaration/group.ts
-// @ts-nocheck
-import { define } from "./declaration"
+import { define } from "./declaration.js"
 
 export const groupDef = define.group({
     title: "string",

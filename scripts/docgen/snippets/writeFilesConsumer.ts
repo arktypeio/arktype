@@ -6,6 +6,7 @@ import { DocGenSnippetConsumer } from "../config.js"
 export type CreateWriteFilesConsumerOptions = {
     rootOutDir: string
     transformRelativePath?: (path: string) => string
+    transformJsImports?: (snippet: string) => string
 }
 
 export const createWriteFilesConsumer =
@@ -16,7 +17,9 @@ export const createWriteFilesConsumer =
                 options.transformRelativePath
                     ? options.transformRelativePath(path)
                     : path,
-                fileSnippets.all.text
+                options.transformJsImports
+                    ? options.transformJsImports(fileSnippets.all.text)
+                    : fileSnippets.all.text
             ]
         )
 

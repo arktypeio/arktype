@@ -32,7 +32,10 @@ export const config: DocGenConfig = {
                             "static",
                             "generated"
                         ),
-                        transformRelativePath: (path) => `${basename(path)}.raw`
+                        transformRelativePath: (path) =>
+                            `${basename(path)}.raw`,
+                        transformJsImports: (snippet) =>
+                            snippet.replaceAll(".js", "")
                     })
                 ]
             }

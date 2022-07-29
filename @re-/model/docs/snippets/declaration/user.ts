@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { define } from "./declaration"
+import { define } from "./declaration.js"
 
 export const userDef = define.user({
     name: "string",

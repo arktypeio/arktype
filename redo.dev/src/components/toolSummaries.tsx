@@ -24,12 +24,7 @@ const toolSummaries: ToolSummaryData[] = [
         name: "Model",
         illustration: <Svgs.Model />,
         description: <>One definition from editor to runtime</>,
-        demoElement: (
-            <StackBlitzDemo
-                embedId="declaration"
-                addonFiles={["group", "user"]}
-            />
-        )
+        demoElement: <StackBlitzDemo embedId="model" />
     },
     {
         name: "State (coming soon)",
