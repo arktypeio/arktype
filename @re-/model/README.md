@@ -157,6 +157,24 @@ import { userDef } from "./user.js"
 
 // Creates your space (or tells you which definition you forgot to include)
 export const mySpace = compile({ ...userDef, ...groupDef })
+
+// Mouse over "Group" to see the inferred type...
+export type Group = typeof mySpace.models
+
+export const fetchGroupData = () => {
+    return {
+        title: "Type Enjoyers",
+        members: [
+            {
+                name: "Devin Aldai",
+                grapes: []
+            }
+        ]
+    }
+}
+
+// Try changing the definitions in "group.ts"/"user.ts" or the data in "fetchGroupData"!
+export const { error } = mySpace.models.group.validate(fetchGroupData())
 ```
 
 `user.ts`
@@ -191,7 +209,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 ```ts @snipFrom:docs/snippets/constraints.ts
 import { model } from "@re-/model"
 
-const employee = model({
+export const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {
@@ -205,14 +223,17 @@ const employee = model({
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
 type Employee = typeof employee.type
 
-// The error messages are so nice you might be tempted to break your code more often ;)
-const { error } = employee.validate({
-    email: "david@redo.biz",
-    about: {
-        age: 17,
-        bio: "I am very interesting.".repeat(5)
+export const fetchEmployee = () => {
+    return {
+        email: "david@redo.biz",
+        about: {
+            age: 17,
+            bio: "I am very interesting.".repeat(5)
+        }
     }
-})
+}
+// The error messages are so nice you might be tempted to break your code more often ;)
+export const { error } = employee.validate(fetchEmployee())
 
 // Output: "Encountered errors at the following paths:
 // {
@@ -220,7 +241,7 @@ const { error } = employee.validate({
 //   about/age: '17 was less than 18.',
 //   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
 // }"
-console.log(error ?? "Flawless. Obviously.")
+console.log(error.message ?? "Flawless. Obviously.")
 ```
 
 ## Syntax

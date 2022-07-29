@@ -3,6 +3,8 @@ id: intro
 hide_table_of_contents: true
 ---
 
+import { StackBlitzDemo } from "./demos/index"
+
 # Model
 
 <h4>
@@ -25,23 +27,4 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 This snippet will give you an idea of `@re-/model` syntax. Try messing around with the `user` definition below and see how the type hints help guide you in the right direction.
 
-<div
-    style={{
-        width: "100%",
-        height: "660px",
-        border: 0,
-        marginLeft: -8,
-        marginRight: -8,
-        padding: 16,
-        overflow: "hidden",
-        borderRadius: 8
-    }}
->
-    <iframe
-        id="demo"
-        src="https://stackblitz.com/edit/re-model?embed=1&file=model.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark"
-        style={{ height: "100%", width: "100%", borderRadius: 8 }}
-        title="@re-/model"
-        sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-    />
-</div>
+<StackBlitzDemo embedId="model" />
