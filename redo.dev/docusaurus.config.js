@@ -33,7 +33,7 @@ const config = {
             {
                 id: "type",
                 path: "docs/type",
-                routeBasePath: "type",
+                routeBasePath: "/type",
                 sidebarPath: require.resolve("./docs/type/sidebar.js")
             }
         ],

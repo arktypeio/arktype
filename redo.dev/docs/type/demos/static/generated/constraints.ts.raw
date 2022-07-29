@@ -1,6 +1,6 @@
-import { type } from "../../src/index.js"
+import { model } from "@re-/model"
 
-const employee = type({
+export const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {
@@ -12,7 +12,7 @@ const employee = type({
 })
 
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
-type Employee = typeof employee.infer
+type Employee = typeof employee.type
 
 export const fetchEmployee = () => {
     return {
@@ -32,4 +32,4 @@ export const { error } = employee.validate(fetchEmployee())
 //   about/age: '17 was less than 18.',
 //   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
 // }"
-console.log(error?.message ?? "Flawless. Obviously.")
+console.log(error.message ?? "Flawless. Obviously.")

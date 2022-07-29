@@ -4,7 +4,7 @@ import Expand from "@mui/icons-material/ExpandMore"
 import Terminal from "@mui/icons-material/Terminal"
 import { Button, Container, Grid, Stack, Typography } from "@mui/material"
 import React, { useState } from "react"
-import { typeDemo } from "./demos/model"
+import { StackBlitzDemo } from "../../docs/type/demos/index"
 import * as Svgs from "./svg"
 
 type ToolSummaryData = {
@@ -26,7 +26,7 @@ const toolSummaries: ToolSummaryData[] = [
         name: "Type",
         illustration: <Svgs.Type />,
         description: <>One definition from editor to runtime</>,
-        demoElement: typeDemo
+        demoElement: <StackBlitzDemo embedId="type" />
     },
     {
         name: "Assert",

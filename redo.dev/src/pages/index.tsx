@@ -36,7 +36,6 @@ const Contents = () => {
         </ThemeProvider>
     )
 }
-
 export default () => {
     const { siteConfig } = useDocusaurusContext()
     return (

@@ -1,16 +1,16 @@
-import { declare } from "../../../src/index.js"
+import { declare } from "@re-/model"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 
-import { groupDef } from "./group.js"
-import { userDef } from "./user.js"
+import { groupDef } from "./group"
+import { userDef } from "./user"
 
 // Creates your space (or tells you which definition you forgot to include)
 export const mySpace = compile({ ...userDef, ...groupDef })
 
 // Mouse over "Group" to see the inferred type...
-export type Group = typeof mySpace.group.infer
+export type Group = typeof mySpace.models
 
 export const fetchGroupData = () => {
     return {
@@ -25,4 +25,4 @@ export const fetchGroupData = () => {
 }
 
 // Try changing the definitions in "group.ts"/"user.ts" or the data in "fetchGroupData"!
-export const { error } = mySpace.group.validate(fetchGroupData())
+export const { error } = mySpace.models.group.validate(fetchGroupData())
