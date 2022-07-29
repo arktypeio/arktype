@@ -1,10 +1,11 @@
 import { Base } from "../../base/index.js"
+import { Terminal } from "../terminal.js"
 
 export type PrimitiveLiteralValue = string | number | bigint
 
 export abstract class PrimitiveLiteralNode<
     Value extends PrimitiveLiteralValue
-> extends Base.Terminal {
+> extends Terminal {
     constructor(public def: string, public value: Value) {
         super(def)
     }

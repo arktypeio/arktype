@@ -1,5 +1,6 @@
 import { Entry } from "@re-/tools"
 import { Base } from "../base/index.js"
+import { NonTerminal } from "./nonTerminal.js"
 
 type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
 
@@ -38,7 +39,7 @@ export namespace Bound {
 
     export type BoundEntry = Entry<ComparatorToken, number>
 
-    export class Node extends Base.NonTerminal<Boundable> {
+    export class Node extends NonTerminal<Boundable> {
         private bounds: BoundEntry[] | undefined
 
         toString() {

@@ -1,5 +1,6 @@
 import { Base } from "../../base/index.js"
 import { Root } from "../../root.js"
+import { NonTerminal } from "../nonTerminal.js"
 
 export type ChildEntry<KeyType> = [KeyType, Base.Node]
 
@@ -7,9 +8,7 @@ export type StructuredReferences = {
     [K in string | number]: string[] | StructuredReferences
 }
 
-export abstract class StructuredNonTerminal extends Base.NonTerminal<
-    Base.Node[]
-> {
+export abstract class StructuredNonTerminal extends NonTerminal<Base.Node[]> {
     entries: ChildEntry<string>[]
 
     constructor(private def: object, ctx: Base.Parsing.Context) {

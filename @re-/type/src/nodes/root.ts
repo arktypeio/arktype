@@ -1,4 +1,3 @@
-import { type } from "../type.js"
 import { Base } from "./base/index.js"
 import { Struct } from "./nonTerminal/index.js"
 import { Str } from "./str.js"
@@ -7,8 +6,6 @@ import {
     parseTerminalObj,
     TerminalObj
 } from "./terminal/index.js"
-
-// TODO: Iterate only checks first type?
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []

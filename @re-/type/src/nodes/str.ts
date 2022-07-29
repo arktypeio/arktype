@@ -1,7 +1,6 @@
 // TODO: Remove this once file is refactored
 /* eslint-disable max-lines */
 import { ListChars } from "@re-/tools"
-import { space } from "../space.js"
 import { Base } from "./base/index.js"
 import { ListNode, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"

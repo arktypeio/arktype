@@ -1,9 +1,10 @@
 import { Base } from "../base/index.js"
 import { Bound } from "./bound.js"
+import { NonTerminal } from "./nonTerminal.js"
 
 export namespace ListType {}
 
-export class ListNode extends Base.NonTerminal implements Bound.Boundable {
+export class ListNode extends NonTerminal implements Bound.Boundable {
     toString() {
         return this.children.toString() + "[]"
     }

@@ -1,8 +1,9 @@
 import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
-import { getResolutionDefAndOptions, SpaceMeta } from "../space.js"
-import { Base } from "./base/index.js"
-import { Root } from "./root.js"
-import { Str } from "./str.js"
+import { getResolutionDefAndOptions, SpaceMeta } from "../../space.js"
+import { Base } from "../base/index.js"
+import { Root } from "../root.js"
+import { Str } from "../str.js"
+import { NonTerminal } from "./nonTerminal.js"
 
 export namespace ResolutionType {
     export type Validate<
@@ -37,7 +38,7 @@ export namespace ResolutionType {
           >
 }
 
-export class ResolutionNode extends Base.NonTerminal {
+export class ResolutionNode extends NonTerminal {
     def: unknown
 
     constructor(public alias: string, space: SpaceMeta) {

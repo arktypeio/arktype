@@ -1,6 +1,7 @@
 import { Base } from "../../base/index.js"
+import { Terminal } from "../terminal.js"
 
-abstract class BaseTypeKeyword extends Base.Terminal {
+abstract class BaseTypeKeyword extends Terminal {
     allows(args: Base.Validation.Args) {
         if (this.allowsValue(args.value)) {
             return true

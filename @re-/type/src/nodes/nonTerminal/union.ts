@@ -1,5 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
 import { Base } from "../base/index.js"
+import { NonTerminal } from "./nonTerminal.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
 
@@ -18,7 +19,7 @@ const preferredDefaults: PreferredDefaults = [
 
 export namespace UnionType {}
 
-export class UnionNode extends Base.NonTerminal<Base.Node[]> {
+export class UnionNode extends NonTerminal<Base.Node[]> {
     addMember(node: Base.Node) {
         this.children.push(node)
     }

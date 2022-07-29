@@ -1,8 +1,9 @@
 import { Base } from "../base/index.js"
+import { NonTerminal } from "./nonTerminal.js"
 
 export namespace IntersectionType {}
 
-export class IntersectionNode extends Base.NonTerminal<Base.Node[]> {
+export class IntersectionNode extends NonTerminal<Base.Node[]> {
     addMember(node: Base.Node) {
         this.children.push(node)
     }

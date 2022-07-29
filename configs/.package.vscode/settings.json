@@ -2,8 +2,8 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
-    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.tsdk": "../../node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "vitest.enable": true,
-    "vitest.commandLine": "node --loader ts-node/esm src/cli.ts --skipTypes --cmd vitest"
+    "vitest.commandLine": "node --loader ts-node/esm ../assert/src/cli.ts --skipTypes --cmd vitest"
 }

@@ -1,8 +1,9 @@
 import { Base } from "../base/index.js"
+import { NonTerminal } from "./nonTerminal.js"
 
 export namespace OptionalType {}
 
-export class OptionalNode extends Base.NonTerminal {
+export class OptionalNode extends NonTerminal {
     toString() {
         return this.children.toString() + "?"
     }

@@ -1,11 +1,9 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import { Bound } from "../../nonTerminal/bound.js"
+import { Terminal } from "../terminal.js"
 
-abstract class BaseStringKeyword
-    extends Base.Terminal
-    implements Bound.Boundable
-{
+abstract class BaseStringKeyword extends Terminal implements Bound.Boundable {
     allows(args: Base.Validation.Args) {
         if (typeof args.value === "string" && this.allowsString(args.value)) {
             return true

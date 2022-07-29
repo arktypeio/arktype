@@ -7,7 +7,10 @@ import {
     Merge
 } from "@re-/tools"
 import { Base, Root } from "./nodes/index.js"
-import { ResolutionNode, ResolutionType } from "./nodes/resolution.js"
+import {
+    ResolutionNode,
+    ResolutionType
+} from "./nodes/nonTerminal/resolution.js"
 import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
