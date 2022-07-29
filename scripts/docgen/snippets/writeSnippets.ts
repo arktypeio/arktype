@@ -43,7 +43,7 @@ const runConsumers = (
     }
 }
 
-const SNIP_FROM_TOKEN = "@snipFrom"
+const WRITE_FROM_TOKEN = "@writeFrom"
 
 const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
     const originalLines = readFile(targetPath).split("\n")
@@ -55,22 +55,14 @@ const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
                 transformedLines.push(originalLine)
                 waitingForBlockEnd = false
             }
-        } else if (originalLine.includes("@snip")) {
-            if (originalLine.includes("@snipFrom")) {
-                const parsedLine = parseLineContainingSnipFrom(originalLine)
-                transformedLines.push(
-                    originalLine,
-                    ...getReplacementLines(parsedLine, targetPath, ctx)
-                )
-                // Until we reach a block end token, skip pushing originalLines to transformedLines
-                waitingForBlockEnd = true
-            } else if (originalLine.includes("@snipPkg")) {
-                const parsedLine = parseLineContainingSnipPkg(originalLine)
-            } else {
-                throw new Error(
-                    `Line contained an unrecognized @snip comment: ${originalLine}`
-                )
-            }
+        } else if (originalLine.includes("@writeFrom")) {
+            const parsedLine = parseLineContainingWriteFrom(originalLine)
+            transformedLines.push(
+                originalLine,
+                ...getReplacementLines(parsedLine, targetPath, ctx)
+            )
+            // Until we reach a block end token, skip pushing originalLines to transformedLines
+            waitingForBlockEnd = true
         } else {
             transformedLines.push(originalLine)
         }
@@ -79,7 +71,7 @@ const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
 }
 
 const getReplacementLines = (
-    { snippetFilePath, label }: ParsedSnipFromLine,
+    { snippetFilePath, label }: ParsedWriteFromLine,
     targetPath: string,
     ctx: WriteSnippetsContext
 ) => {
@@ -106,26 +98,27 @@ const getReplacementLines = (
     return snippetTextToCopy.split("\n")
 }
 
-const parseLineContainingSnipPkg = (line: string) => {}
-
-type ParsedSnipFromLine = {
+type ParsedWriteFromLine = {
     snippetFilePath: string
     label: string | undefined
 }
 
-const parseLineContainingSnipFrom = (line: string): ParsedSnipFromLine => {
+// @writeFrom:@re-/tools/package.json:version
+// @to:"@re-/tools": "#version"
+
+const parseLineContainingWriteFrom = (line: string): ParsedWriteFromLine => {
     const generatedFromExpressionParts = line
-        .slice(line.indexOf(SNIP_FROM_TOKEN))
+        .slice(line.indexOf(WRITE_FROM_TOKEN))
         .split(" ")[0]
         .split(":")
-    const snippetFilePath = generatedFromExpressionParts[1]
-    if (!snippetFilePath) {
+    const filePath = generatedFromExpressionParts[1]
+    if (!filePath) {
         throw new Error(
-            `${SNIP_FROM_TOKEN} expression '${line}' required a file path, e.g. '${SNIP_FROM_TOKEN}:demo.ts'.`
+            `${WRITE_FROM_TOKEN} expression '${line}' required a file path, e.g. '${WRITE_FROM_TOKEN}:demo.ts'.`
         )
     }
     return {
-        snippetFilePath,
+        snippetFilePath: filePath,
         label: generatedFromExpressionParts[2]
     }
 }
