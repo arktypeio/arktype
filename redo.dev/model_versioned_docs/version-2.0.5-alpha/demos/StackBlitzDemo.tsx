@@ -15,9 +15,7 @@ const getAddonFiles = (addonFiles: DeclarationFiles[]) => {
     }
     return obj
 }
-
 export const StackBlitzDemo = ({ embedId, addonFiles }: DemoProps) => {
-    console.log(addonFiles)
     useEffect(() => {
         createStackblitzDemo({
             files: {
