@@ -1,48 +1,15 @@
-src/__tests__/references.test.ts(51,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type 'never[]'.
-  Type 'string' is not assignable to type 'never'.
-    Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(57,40): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(57,45): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(61,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type 'never[]'.
-  Type '"string" | "boolean" | `/${string}/` | "-1n" | "null" | "integer"' is not assignable to type 'never'.
-    Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(85,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer", "null"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: "boolean"[]; expression: never[]; }; listed: ["-1n"[], "null"[], never[]]; regex: `/${string}/`[]; }'.
-  The types of 'strings.expression' are incompatible between these types.
-    Type '["string", "integer", "null"]' is not assignable to type 'never[]'.
-      Type 'string' is not assignable to type 'never'.
-        Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(93,50): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(93,61): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(103,53): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(125,31): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(125,38): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(125,43): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(125,50): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(125,55): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(125,60): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/space/creation.test.ts(72,11): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ b: { c: { b: { c: ... | { c: ... | { b: ...; }; }; }; } | { c: ... | { b: ...; }; }; }; }>'.
-src/__tests__/space/creation.test.ts(84,11): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ b: { a: { b: { a: ...; }; }; }; } | { a: { b: { a: { b: ...; }; }; }; }>'.
-src/__tests__/space/def.test.ts(58,65): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ name: { first: string; last: string; }; } | undefined>'.
-src/__tests__/space/inheritableConfigs.test.ts(80,15): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ contents: ...; }>'.
-src/__tests__/space/inheritableConfigs.test.ts(82,66): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ contents: ...; }>'.
-src/__tests__/space/inheritableConfigs.test.ts(91,15): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ contents: { contents: ...; }; }>'.
-src/__tests__/space/inheritableConfigs.test.ts(99,15): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ contents: ...; }>'.
-src/__tests__/space/validation.test.ts(45,9): error TS2589: Type instantiation is excessively deep and possibly infinite.
-src/__tests__/space/validation.test.ts(46,13): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/str/union.test.ts(112,29): error TS2339: Property 'value' does not exist on type 'AssertionResult<{ b: { a: { b: { a: ...; }; }; }; } | { a: { b: { a: { b: ...; }; }; }; }>'.
-src/__tests__/str/union.test.ts(124,29): error TS2339: Property 'value' does not exist on type 'AssertionResult<false | { b: { a: { b: { a: ...; }; }; }; } | { a: { b: { a: { b: ...; }; }; }; }>'.
 Files:              257
-Lines:            74332
-Nodes:           209981
-Identifiers:      70758
-Symbols:         243705
-Types:            63378
-Instantiations:  526557
-Memory used:    183542K
+Lines:            74335
+Nodes:           209986
+Identifiers:      70756
+Symbols:         244616
+Types:            63587
+Instantiations:  378407
+Memory used:    177878K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.50s
+Parse time:       0.49s
 Bind time:        0.17s
-Check time:       1.63s
+Check time:       1.56s
 Emit time:        0.00s
-Total time:       2.31s
+Total time:       2.21s
