@@ -24,8 +24,7 @@
     },
     "scripts": {
         "build": "pnpm ts-node ../../scripts/build.ts",
-        "test": "pnpm ts-node ./src/cli.ts --cmd vitest run",
-        "test2": "node --loader ts-node/esm src/cli.ts --skipTypes --cmd vitest run"
+        "test": "pnpm ts-node ./src/cli.ts --cmd vitest run"
     },
     "bin": {
         "reassert": "./cli.cjs"
@@ -33,7 +32,6 @@
     "dependencies": {
         "@re-/node": "workspace:*",
         "@re-/tools": "workspace:*",
-        "esbuild": "0.14.50",
         "micro-memoize": "4.0.10",
         "ts-morph": "15.1.0",
         "source-map-js": "1.0.2",

@@ -25,8 +25,14 @@ export const getAssertionsByFile = memoize(
         const diagnosticsByFile = getDiagnosticsByFile()
         const assertionsByFile: AssertionsByFile = {}
         for (const file of project.getSourceFiles()) {
-            assertionsByFile[getFileKey(file.getFilePath())] =
-                getAssertionsInFile(file, diagnosticsByFile)
+            const assertionsInFile = getAssertionsInFile(
+                file,
+                diagnosticsByFile
+            )
+            if (assertionsInFile.length) {
+                assertionsByFile[getFileKey(file.getFilePath())] =
+                    assertionsInFile
+            }
         }
         return assertionsByFile
     }

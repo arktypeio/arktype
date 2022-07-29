@@ -108,9 +108,8 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
         ComparableValueAssertion<unknown, AllowTypeAssertions>,
         "unknown"
     >
-} & (AllowTypeAssertions extends true
-    ? { typedValue: (expected: unknown) => undefined }
-    : {})
+    typedValue: (expected: unknown) => undefined
+}
 
 export type ExternalSnapshotArgs = {
     id: string

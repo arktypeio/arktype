@@ -1,14 +1,18 @@
-import { fromHere } from "@re-/node"
-import { describe, expect, test } from "vitest"
+import { strict } from "node:assert"
+import { fromHere, readFile } from "@re-/node"
+import { describe, test } from "vitest"
 import { runThenGetContents } from "../../../__tests__/utils.js"
 
 const snapshotTemplate = fromHere("snapWriteTemplate.ts")
+const expectedOutput = readFile(fromHere("snapWriteExpectedOutput.ts"))
 
 describe("inline snap write", () => {
     test("dynamic", () => {
-        expect(runThenGetContents(snapshotTemplate, false)).toMatchSnapshot()
-    }, 9999)
+        const actual = runThenGetContents(snapshotTemplate, false)
+        strict.equal(actual, expectedOutput)
+    }, 10000)
     test("precache", () => {
-        expect(runThenGetContents(snapshotTemplate, true)).toMatchSnapshot()
-    }, 9999)
+        const actual = runThenGetContents(snapshotTemplate, true)
+        strict.equal(actual, expectedOutput)
+    }, 10000)
 })

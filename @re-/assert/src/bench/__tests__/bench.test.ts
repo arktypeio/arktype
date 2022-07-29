@@ -1,11 +1,14 @@
-import { fromHere } from "@re-/node"
-import { describe, expect, test } from "vitest"
+import { strict } from "node:assert"
+import { fromHere, readFile } from "@re-/node"
+import { describe, test } from "vitest"
 import { runThenGetContents } from "../../__tests__/utils.js"
 
 const benchTemplate = fromHere("benchTemplate.ts")
+const expectedOutput = readFile(fromHere("benchExpectedOutput.ts"))
 
 describe("bench", () => {
     test("populates file", () => {
-        expect(runThenGetContents(benchTemplate, false)).toMatchSnapshot()
-    }, 9999)
+        const actual = runThenGetContents(benchTemplate, false)
+        strict.equal(actual, expectedOutput)
+    }, 10000)
 })

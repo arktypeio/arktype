@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
-import { readJson, writeJson } from "@re-/node"
+import { readJson, requireResolve, shell, writeJson } from "@re-/node"
 import { toString } from "@re-/tools"
-import { CallExpression, SourceFile, SyntaxKind, ts } from "ts-morph"
+import { CallExpression, Node, SourceFile, SyntaxKind, ts } from "ts-morph"
 import {
     getFileKey,
     getReAssertConfig,
@@ -109,10 +109,15 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     const project = getDefaultTsMorphProject()
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
+    const newArgText = toString(serializedValue, {
+        quote: "backtick",
+        nonAlphaNumKeyQuote: "double"
+    }).replace(`\\`, `\\\\`)
     queuedUpdates.push({
         file,
+        position,
         snapCall,
-        serializedValue,
+        newArgText,
         baselineName
     })
 }
@@ -154,8 +159,9 @@ export const getSnapshotByName = (
 
 type QueuedUpdate = {
     file: SourceFile
+    position: SourcePosition
     snapCall: CallExpression
-    serializedValue: unknown
+    newArgText: string
     baselineName: string | undefined
 }
 
@@ -163,33 +169,57 @@ const queuedUpdates: QueuedUpdate[] = []
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
 process.on("exit", () => {
+    if (!queuedUpdates.length) {
+        return
+    }
     for (const update of queuedUpdates) {
         const originalArgs = update.snapCall.getArguments()
         const previousValue = originalArgs.length
             ? originalArgs[0].getText()
             : undefined
-        for (const originalArg of originalArgs) {
-            update.snapCall.removeArgument(originalArg)
-        }
-        const updatedSnapArgText = toString(update.serializedValue, {
-            quote: "backtick",
-            nonAlphaNumKeyQuote: "double"
-        }).replace(`\\`, `\\\\`)
-        update.snapCall.addArgument(updatedSnapArgText)
-        update.file.saveSync()
-        let updateSummary = `${
-            originalArgs.length ? "🆙  Updated" : "📸  Established"
-        } `
-        updateSummary += update.baselineName
-            ? `baseline '${update.baselineName}' `
-            : `snap on line ${update.snapCall.getStartLineNumber()} of ${getFileKey(
-                  update.file.getFilePath()
-              )} `
-        updateSummary += previousValue
-            ? `from ${previousValue} to `
-            : `${update.baselineName ? "at" : "as"} `
-
-        updateSummary += updatedSnapArgText
-        console.log(updateSummary)
+        writeUpdateToFile(originalArgs, update)
+        summarizeSnapUpdate(originalArgs, update, previousValue)
+    }
+    try {
+        const prettierPath = requireResolve("prettier")
+        const prettierBin = join(dirname(prettierPath), "bin-prettier.js")
+        const updatedPaths = [
+            ...new Set(queuedUpdates.map((update) => update.file.getFilePath()))
+        ]
+        shell(`node ${prettierBin} --write ${updatedPaths.join(" ")}`)
+    } catch {
+        // If prettier is unavailable, do nothing.
     }
 })
+
+const writeUpdateToFile = (
+    originalArgs: Node<ts.Node>[],
+    update: QueuedUpdate
+) => {
+    for (const originalArg of originalArgs) {
+        update.snapCall.removeArgument(originalArg)
+    }
+    update.snapCall.addArgument(update.newArgText)
+    update.file.saveSync()
+}
+
+const summarizeSnapUpdate = (
+    originalArgs: Node<ts.Node>[],
+    update: QueuedUpdate,
+    previousValue: string | undefined
+) => {
+    let updateSummary = `${
+        originalArgs.length ? "🆙  Updated" : "📸  Established"
+    } `
+    updateSummary += update.baselineName
+        ? `baseline '${update.baselineName}' `
+        : `snap on line ${update.position.line} of ${getFileKey(
+              update.file.getFilePath()
+          )} `
+    updateSummary += previousValue
+        ? `from ${previousValue} to `
+        : `${update.baselineName ? "at" : "as"} `
+
+    updateSummary += update.newArgText
+    console.log(updateSummary)
+}
