@@ -11,29 +11,29 @@ import {
 bench("cyclic(10)", () => {
     const cyclic10Space = space(cyclic10)
 })
-    .median(`35.23us`)
-    .type(`1909 instantiations`)
+    .median(`17.97us`)
+    .type(`1940 instantiations`)
 
 bench("cyclic(50)", () => {
     const cyclic50Space = space(cyclic50)
 })
-    .median(`204.17us`)
-    .type(`4955 instantiations`)
+    .median(`99.98us`)
+    .type(`4986 instantiations`)
 
 bench("cyclic(100)", () => {
     const cyclic100Space = space(cyclic100)
 })
-    .median(`428.02us`)
-    .type(`8775 instantiations`)
+    .median(`203.16us`)
+    .type(`8806 instantiations`)
 
 bench("cyclic(250)", () => {
     const cyclic250Space = space(cyclic250)
 })
-    .median(`1.36ms`)
-    .type(`20062 instantiations`)
+    .median(`531.49us`)
+    .type(`20093 instantiations`)
 
 bench("cyclic(500)", () => {
     const cyclic500Space = space(cyclic500)
 })
-    .median(`2.71ms`)
-    .type(`39917 instantiations`)
+    .median(`1.22ms`)
+    .type(`39948 instantiations`)

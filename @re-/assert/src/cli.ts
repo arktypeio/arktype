@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { basename, join } from "node:path"
-import { exit, version, versions } from "node:process"
+import { version, versions } from "node:process"
 import { fileName, findPackageRoot, shell, walkPaths } from "@re-/node"
 import { cacheAssertions, cleanupAssertions } from "./type/index.js"
 
@@ -24,7 +24,13 @@ if (process.argv[reassertArgIndex + 1] === "bench") {
     let exitCode = 0
     for (const path of benchFilePaths) {
         try {
-            shell(`npx --no ts-node ${path}`)
+            shell(`npx --no ts-node ${path}`, {
+                env: {
+                    RE_ASSERT_CMD: process.argv
+                        .slice(reassertArgIndex + 1)
+                        .join(" ")
+                }
+            })
         } catch {
             exitCode = 1
         }

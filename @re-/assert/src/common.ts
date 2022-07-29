@@ -30,7 +30,7 @@ export const positionToString = (position: SourcePosition) =>
 
 export interface ReAssertConfig extends Required<ReAssertJson> {
     updateSnapshots: boolean
-    benchMatcher: RegExp | undefined
+    benchMatcher: RegExp | string | undefined
     cacheDir: string
     assertionCacheFile: string
     snapCacheDir: string
@@ -137,10 +137,15 @@ const getMatcher = (argsToCheck: string[]) => {
     // This matcher can be used to filter calls we have control over like benches
     const possibleMatcher = checkArgsForParam(argsToCheck, "only")
     if (possibleMatcher) {
+        const asRegex = !!possibleMatcher.match(/\/.*\//)
         console.log(
-            `Running benches matching expression '${possibleMatcher}'...`
+            `Running benches ${
+                asRegex ? "matching expression" : "including"
+            } '${possibleMatcher}'...`
         )
-        return new RegExp(possibleMatcher)
+        return asRegex
+            ? new RegExp(possibleMatcher.slice(1, -1))
+            : possibleMatcher
     }
 }
 

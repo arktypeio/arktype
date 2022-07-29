@@ -55,8 +55,18 @@ export const bench = <Fn extends BenchableFunction>(
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
     }
-    if (ctx.cfg.benchMatcher && !ctx.cfg.benchMatcher.test(name)) {
-        return chainableNoOpProxy
+    if (ctx.cfg.benchMatcher) {
+        if (
+            typeof ctx.cfg.benchMatcher === "string" &&
+            !name.includes(ctx.cfg.benchMatcher)
+        ) {
+            return chainableNoOpProxy
+        } else if (
+            ctx.cfg.benchMatcher instanceof RegExp &&
+            !ctx.cfg.benchMatcher.test(name)
+        ) {
+            return chainableNoOpProxy
+        }
     }
     const assertions = new BenchAssertions(fn, ctx)
     Object.assign(assertions, createBenchTypeAssertion(ctx))
