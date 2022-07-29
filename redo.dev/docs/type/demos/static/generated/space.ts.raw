@@ -1,4 +1,4 @@
-import { space } from "@re-/model"
+import { space } from "@re-/type"
 
 // Spaces are collections of models that can reference each other.
 export const redo = space({
@@ -16,7 +16,7 @@ export const redo = space({
 })
 
 // Recursive and cyclic types are inferred to arbitrary depth.
-export type Package = typeof redo.types.package
+export type Package = typeof redo.package
 
 export const readPackageData = () => {
     return {
@@ -44,6 +44,6 @@ export const getValidatedPackageData = () => {
     //    dependencies/0/version: 2.2 is not assignable to string.
     //    dependencies/0/contributors: Required value of type contributor[] was missing.
     //    contributors/0/packages: Required value of type package[] was missing.`
-    const validatedPackageData = redo.models.package.assert(packageDataFromFile)
+    const validatedPackageData = redo.package.assert(packageDataFromFile)
     return validatedPackageData
 }

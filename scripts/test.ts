@@ -1,4 +1,4 @@
 import { fromHere, shell } from "@re-/node"
 
-const mochaBin = fromHere("..", "node_modules", "mocha", "bin", "mocha.js")
-shell(`node ${mochaBin}`, { cwd: fromHere("docgen") })
+const vitestBin = fromHere("..", "node_modules", "vitest", "vitest.mjs")
+shell(`node ${vitestBin} run`, { cwd: fromHere("docgen") })

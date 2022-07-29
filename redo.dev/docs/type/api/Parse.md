@@ -9,5 +9,12 @@ undefined
 ## text
 
 ```ts
-export declare type TypeOf<Def, Dict> = Root.TypeOf<Def, Dict, {}>
+export declare type Infer<Def, Dict = {}, Meta = {}> = Root.Infer<
+    Def,
+    {
+        dict: Dict
+        meta: Meta
+        seen: {}
+    }
+>
 ```

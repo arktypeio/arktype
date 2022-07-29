@@ -1,7 +1,7 @@
-import { model } from "@re-/model"
+import { type } from "@re-/type"
 
-// Models look just like types...
-export const user = model({
+// Define a type...
+export const user = type({
     age: "number",
     browser: "'chrome'|'firefox'|'other'|null",
     name: {
@@ -11,17 +11,8 @@ export const user = model({
     }
 })
 
-// And can be used just like types...
-export type User = typeof user.type
-export type EquivalentType = {
-    age: number
-    browser: "chrome" | "firefox" | "other" | null
-    name: {
-        first: string
-        middle?: string
-        last: string
-    }
-}
+// Infer it...
+export type User = typeof user.infer
 
 // But while types are confined to your IDE...
 export const fetchUser = () => {

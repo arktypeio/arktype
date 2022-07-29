@@ -14,37 +14,45 @@ export declare namespace Root {
         ? Def
         : Def extends string
         ? Str.Validate<Def, Dict>
-        : Def extends BadDefinitionType
-        ? BadDefinitionTypeMessage<Def>
-        : Def extends Obj.Unmapped | Literal.Definition
+        : Def extends TerminalObj.Definition
         ? Def
-        : Obj.Validate<Def, Dict>
-    export type TypeOf<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
+        : Def extends BadDefinitionType
+        ? BadDefinitionTypeMessage
+        : Struct.Validate<Def, Dict>
+    export type Infer<
+        Def,
+        Ctx extends Base.Parsing.InferenceContext
+    > = unknown extends Def
         ? Def
         : Def extends string
-        ? Str.TypeOf<Def, Dict, Seen>
+        ? Str.Infer<Def, Ctx>
         : Def extends BadDefinitionType
-        ? unknown
-        : Def extends Literal.Definition
-        ? Def
-        : Obj.TypeOf<Def, Dict, Seen>
+        ? never
+        : Def extends TerminalObj.Definition
+        ? TerminalObj.Infer<Def>
+        : Struct.Infer<Def, Ctx>
     export type References<
         Def,
         Dict,
         PreserveStructure extends boolean
     > = Def extends string
         ? Str.References<Def, Dict>
-        : Def extends Literal.Definition
-        ? [Literal.DefToString<Def>]
+        : Def extends TerminalObj.Definition
+        ? TerminalObj.References<Def>
         : Def extends object
-        ? Obj.References<Def, Dict, PreserveStructure>
+        ? Struct.References<Def, Dict, PreserveStructure>
         : []
-    export type BadDefinitionType = Function | symbol
-    type BadDefinitionTypeMessage<Def extends BadDefinitionType> =
-        `Values of type ${Def extends Function
-            ? "function"
-            : "symbol"} are not valid definitions.`
-    export const parse: Base.Parsing.Parser<unknown>
+    export type BadDefinitionType =
+        | undefined
+        | null
+        | boolean
+        | number
+        | bigint
+        | Function
+        | symbol
+    const BAD_DEF_TYPE_MESSAGE = "Type definitions must be strings or objects"
+    type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
+    export const parse: Base.Parsing.ParseFn<unknown>
     export {}
 }
 ```

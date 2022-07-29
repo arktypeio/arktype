@@ -36,7 +36,7 @@ Modify any of these examples in our live editor to see the types and validation 
 ```ts @snipFrom:docs/snippets/type.ts
 import { type } from "@re-/type"
 
-// Models look just like types...
+// Define a type...
 export const user = type({
     age: "number",
     browser: "'chrome'|'firefox'|'other'|null",
@@ -47,17 +47,8 @@ export const user = type({
     }
 })
 
-// And can be used just like types...
-export type User = typeof user.type
-export type EquivalentType = {
-    age: number
-    browser: "chrome" | "firefox" | "other" | null
-    name: {
-        first: string
-        middle?: string
-        last: string
-    }
-}
+// Infer it...
+export type User = typeof user.infer
 
 // But while types are confined to your IDE...
 export const fetchUser = () => {
@@ -159,7 +150,7 @@ import { userDef } from "./user.js"
 export const mySpace = compile({ ...userDef, ...groupDef })
 
 // Mouse over "Group" to see the inferred type...
-export type Group = typeof mySpace.models
+export type Group = typeof mySpace.group.infer
 
 export const fetchGroupData = () => {
     return {
@@ -174,7 +165,7 @@ export const fetchGroupData = () => {
 }
 
 // Try changing the definitions in "group.ts"/"user.ts" or the data in "fetchGroupData"!
-export const { error } = mySpace.models.group.validate(fetchGroupData())
+export const { error } = mySpace.group.validate(fetchGroupData())
 ```
 
 `user.ts`
@@ -207,9 +198,9 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 [**Constraints** have you covered.](https://redo.dev/type/constraints)
 
 ```ts @snipFrom:docs/snippets/constraints.ts
-import { model } from "@re-/type"
+import { type } from "@re-/type"
 
-export const employee = model({
+const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {
@@ -221,7 +212,7 @@ export const employee = model({
 })
 
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
-type Employee = typeof employee.type
+type Employee = typeof employee.infer
 
 export const fetchEmployee = () => {
     return {
@@ -241,7 +232,7 @@ export const { error } = employee.validate(fetchEmployee())
 //   about/age: '17 was less than 18.',
 //   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
 // }"
-console.log(error.message ?? "Flawless. Obviously.")
+console.log(error?.message ?? "Flawless. Obviously.")
 ```
 
 ## Syntax

@@ -1,10 +1,11 @@
 import { join } from "node:path"
-import { assert } from "@re-/assert"
 import { Project } from "ts-morph"
 import { PackageJson } from "type-fest"
+import { describe, test } from "vitest"
 import { DocGenSnippetExtractionConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
 import { extractPackageSnippets } from "../snippets/extractSnippets.js"
+import { assert } from "@re-/assert"
 import { fromHere, readPackageJson } from "@re-/node"
 
 const rootDir = fromHere("..", "..")
@@ -37,23 +38,23 @@ const FOLDER_MD_FILE_KEY = join("docgen", "test", "testFiles", "test.md")
 const FOLDER_TS_FILE_KEY = join("docgen", "test", "testFiles", "test.ts")
 
 describe("Extracts snippets from file path", () => {
-    it("adds file from filePath", () => {
+    test("adds file from filePath", () => {
         assert(snippets[TEST_FILE_KEY])
     })
-    it("@snipLine", () => {
+    test("@snipLine", () => {
         assert(snippets[TEST_FILE_KEY].byLabel["line"].text).snap(
             `import { model } from "@re-/model"`
         )
     })
-    it("@snipStart - @snipEnd", () => {
+    test("@snipStart - @snipEnd", () => {
         assert(snippets[TEST_FILE_KEY].byLabel["test1"].text).snap(`Hello.`)
     })
-    it("removes @snip(s) from file snippet", () => {
+    test("removes @snip(s) from file snippet", () => {
         assert(SNIP_REGEX.test(snippets[TEST_FILE_KEY].all.text)).equals(false)
     })
 })
 describe("Extracts snippets from Folder", () => {
-    it("adds snippets from dirPath", () => {
+    test("adds snippets from dirPath", () => {
         assert(snippets[FOLDER_MD_FILE_KEY])
         assert(snippets[FOLDER_MD_FILE_KEY].byLabel.textSnip.text).snap(
             `labore et dolore magna aliqua. Nam libero justo laoreet sit. Rutrum tellus pellentesque eu tincidunt tortor`
