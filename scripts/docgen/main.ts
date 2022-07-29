@@ -26,8 +26,10 @@ export const config: DocGenConfig = {
                 consumers: [
                     createWriteFilesConsumer({
                         rootOutDir: fromRedoDevDir(
+                            "docs",
+                            "model",
+                            "demos",
                             "static",
-                            "stackblitz",
                             "generated"
                         ),
                         transformRelativePath: (path) => `${basename(path)}.raw`

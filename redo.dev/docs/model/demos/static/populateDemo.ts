@@ -3,13 +3,13 @@
 import "./demo.css"
 
 type PopulateDemoArgs = {
-    error: string
-    type: object
     data: object
+    definition: object
+    error: string
 }
-export const populateDemo = ({ data, type, error }: PopulateDemoArgs) => {
+export const populateDemo = ({ data, definition, error }: PopulateDemoArgs) => {
     const defElement = document.querySelector("#definition")!
-    defElement.textContent = JSON.stringify(type, null, 2)
+    defElement.textContent = JSON.stringify(definition, null, 2)
     defElement.innerHTML = recolor(defElement.innerHTML)
 
     const dataElement = document.querySelector("#data")!

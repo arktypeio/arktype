@@ -14,14 +14,17 @@ export const employee = model({
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
 type Employee = typeof employee.type
 
-// The error messages are so nice you might be tempted to break your code more often ;)
-export const { error } = employee.validate({
-    email: "david@redo.biz",
-    about: {
-        age: 17,
-        bio: "I am very interesting.".repeat(5)
+export const fetchEmployee = () => {
+    return {
+        email: "david@redo.biz",
+        about: {
+            age: 17,
+            bio: "I am very interesting.".repeat(5)
+        }
     }
-})
+}
+// The error messages are so nice you might be tempted to break your code more often ;)
+export const { error } = employee.validate(fetchEmployee())
 
 // Output: "Encountered errors at the following paths:
 // {

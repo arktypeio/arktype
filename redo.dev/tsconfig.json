@@ -12,5 +12,5 @@
         ],
         "lib": ["DOM"]
     },
-    "include": ["src", "static"]
+    "include": ["src", "docs"]
 }

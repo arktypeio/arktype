@@ -20,10 +20,10 @@ export const createWriteFilesConsumer =
             ]
         )
 
+        rmSync(options.rootOutDir, { recursive: true, force: true })
         for (const [path, snippet] of snippetsByRelativeOutPath) {
-            const outDir = dirname(path)
-            rmSync(outDir, { recursive: true, force: true })
-            ensureDir(outDir)
-            writeFileSync(path, snippet)
+            const resolvedPath = join(options.rootOutDir, path)
+            ensureDir(dirname(resolvedPath))
+            writeFileSync(resolvedPath, snippet)
         }
     }

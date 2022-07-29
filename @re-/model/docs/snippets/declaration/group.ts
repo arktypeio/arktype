@@ -1,4 +1,5 @@
-import { define } from "./declaration.js"
+// @ts-nocheck
+import { define } from "./declaration"
 
 export const groupDef = define.group({
     title: "string",

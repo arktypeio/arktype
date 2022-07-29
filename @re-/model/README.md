@@ -147,22 +147,42 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 `index.ts`
 
 ```ts @snipFrom:docs/snippets/declaration/declaration.ts
+// @ts-nocheck
 import { declare } from "@re-/model"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 
-import { groupDef } from "./group.js"
-import { userDef } from "./user.js"
+import { groupDef } from "./group"
+import { userDef } from "./user"
 
 // Creates your space (or tells you which definition you forgot to include)
 export const mySpace = compile({ ...userDef, ...groupDef })
+
+// Mouse over "Group" to see the inferred type...
+export type Group = typeof mySpace.models
+
+export const fetchGroupData = () => {
+    return {
+        title: "Type Enjoyers",
+        members: [
+            {
+                name: "Devin Aldai",
+                grapes: []
+            }
+        ]
+    }
+}
+
+// Try changing the definitions in "group.ts"/"user.ts" or the data in "fetchGroupData"!
+export const { error } = mySpace.models.group.validate(fetchGroupData)
 ```
 
 `user.ts`
 
 ```ts @snipFrom:docs/snippets/declaration/user.ts
-import { define } from "./declaration.js"
+// @ts-nocheck
+import { define } from "./declaration"
 
 export const userDef = define.user({
     name: "string",
@@ -174,7 +194,8 @@ export const userDef = define.user({
 `group.ts`
 
 ```ts @snipFrom:docs/snippets/declaration/group.ts
-import { define } from "./declaration.js"
+// @ts-nocheck
+import { define } from "./declaration"
 
 export const groupDef = define.group({
     title: "string",
@@ -205,14 +226,17 @@ export const employee = model({
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
 type Employee = typeof employee.type
 
-// The error messages are so nice you might be tempted to break your code more often ;)
-export const { error } = employee.validate({
-    email: "david@redo.biz",
-    about: {
-        age: 17,
-        bio: "I am very interesting.".repeat(5)
+export const fetchEmployee = () => {
+    return {
+        email: "david@redo.biz",
+        about: {
+            age: 17,
+            bio: "I am very interesting.".repeat(5)
+        }
     }
-})
+}
+// The error messages are so nice you might be tempted to break your code more often ;)
+export const { error } = employee.validate(fetchEmployee())
 
 // Output: "Encountered errors at the following paths:
 // {

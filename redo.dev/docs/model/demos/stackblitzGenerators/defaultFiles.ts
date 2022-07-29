@@ -1,6 +1,6 @@
-import indexHtml from "raw-loader!/stackblitz/index.html"
-import populateDemoTsText from "raw-loader!/stackblitz/populateDemo.ts"
-import demoCssText from "!!raw-loader!/stackblitz/demo.css"
+import indexHtml from "raw-loader!../static/index.html"
+import populateDemoTsText from "raw-loader!../static/populateDemo.ts"
+import demoCssText from "!!raw-loader!../static/demo.css"
 
 const tsConfig = {
     compilerOptions: {
