@@ -25,4 +25,4 @@ export const fetchGroupData = () => {
 }
 
 // Try changing the definitions in "group.ts"/"user.ts" or the data in "fetchGroupData"!
-export const { error } = mySpace.models.group.validate(fetchGroupData)
+export const { error } = mySpace.models.group.validate(fetchGroupData())

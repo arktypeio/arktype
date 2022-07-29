@@ -32,6 +32,6 @@ try{
     ],
     declaration: [
         `import {mySpace, fetchGroupData, error } from "./declaration"`,
-        "{data: fetchGroupData(), definition: mySpace.inputs.dictionary, error}"
+        "{data: fetchGroupData(), definition: mySpace.inputs.dictionary, error }"
     ]
 }
