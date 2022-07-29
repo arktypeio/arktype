@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "vitest"
-import { type } from "../../type.js"
+import { type } from "../../../type.js"
 
 describe("str", () => {
     test("errors on empty string", () => {

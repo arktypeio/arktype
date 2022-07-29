@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "vitest"
-import { type } from "../../index.js"
+import { type } from "../../../../index.js"
 
 describe("integration", () => {
     const mixed = () => type(["true", { a: ["string", ["number|boolean[]"]] }])

@@ -73,7 +73,8 @@ const generateSpaceBenches = ({
     const toFile = fromHere(
         "..",
         "src",
-        "__benches__",
+        "__tests__",
+        "space",
         "generated",
         `${seed}.ts`
     )
