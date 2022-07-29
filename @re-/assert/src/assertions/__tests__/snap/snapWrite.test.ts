@@ -8,11 +8,11 @@ const expectedOutput = readFile(fromHere("snapWriteExpectedOutput.ts"))
 
 describe("inline snap write", () => {
     test("dynamic", () => {
-        const actual = runThenGetContents(snapshotTemplate, false)
+        const actual = runThenGetContents(snapshotTemplate)
         strict.equal(actual, expectedOutput)
     }, 10000)
     test("precache", () => {
-        const actual = runThenGetContents(snapshotTemplate, true)
+        const actual = runThenGetContents(snapshotTemplate, { precache: true })
         strict.equal(actual, expectedOutput)
     }, 10000)
 })

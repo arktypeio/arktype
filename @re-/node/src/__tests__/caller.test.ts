@@ -1,11 +1,12 @@
 import { platform } from "node:os"
 import { assert } from "@re-/assert"
+import { describe, test } from "vitest"
 import { caller } from "../index.js"
 import { callMeFromDir, callPipeSeperated } from "./fromDir/reflectedFromDir.js"
 import { callMe, callMeAnonymous } from "./reflected.js"
 
 describe("caller", () => {
-    it("named", () => {
+    test("named", () => {
         const result = callMe()
         assert(result).snap({
             method: `callMe`,
@@ -14,7 +15,7 @@ describe("caller", () => {
             char: 12
         })
     })
-    it("anonymous", () => {
+    test("anonymous", () => {
         const result = callMeAnonymous()
         assert(result).snap({
             method: `callMeAnonymous`,
@@ -23,7 +24,7 @@ describe("caller", () => {
             char: 68
         })
     })
-    it("fromDir", () => {
+    test("fromDir", () => {
         const result = callMeFromDir()
         if (platform() === "win32") {
             assert(result).snap({
@@ -41,7 +42,7 @@ describe("caller", () => {
             })
         }
     })
-    it("with custom seperator", () => {
+    test("with custom seperator", () => {
         const result = callPipeSeperated()
         assert(result).snap({
             method: `callPipeSeperated`,
@@ -50,13 +51,13 @@ describe("caller", () => {
             char: 12
         })
     })
-    it("with methodName", () => {
+    test("with methodName", () => {
         const inner = () => caller({ methodName: "middle" })
         const middle = () => inner()
         const outer = () => middle()
         assert(outer().method).equals("outer")
     })
-    it("with skip", () => {
+    test("with skip", () => {
         const inner = () =>
             caller({ skip: ({ method }) => method === "middle" })
         const middle = () => inner()

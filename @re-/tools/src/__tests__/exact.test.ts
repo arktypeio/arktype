@@ -1,15 +1,13 @@
 import { assert } from "@re-/assert"
 import { describe, it } from "vitest"
-import { DeepEvaluate, Exact } from "../index.js"
+import { Exact } from "../index.js"
 
 describe("exact", () => {
     it("base", () => {
         assert(
-            {} as DeepEvaluate<
-                Exact<
-                    { a: "ok"; nested: { on: true } },
-                    { a: "hi"; nested: { on: false } }
-                >
+            {} as Exact<
+                { a: "ok"; nested: { on: true } },
+                { a: "hi"; nested: { on: false } }
             >
         ).typed as {
             a: "hi"
@@ -18,32 +16,30 @@ describe("exact", () => {
             }
         }
         assert(
-            {} as DeepEvaluate<
-                Exact<
-                    { a: "ok"; nested: { on: true } },
-                    { a: string; nested: { on: boolean } }
-                >
+            {} as Exact<
+                { a: "ok"; nested: { on: true } },
+                { a: string; nested: { on: boolean } }
             >
         ).typed as { a: "ok"; nested: { on: true } }
     })
     it("unions", () => {
         assert(
-            {} as DeepEvaluate<
-                Exact<{ a: string | number }, { a: string | number | boolean }>
+            {} as Exact<
+                { a: string | number },
+                { a: string | number | boolean }
             >
         ).typed as { a: string | number }
         assert(
-            {} as DeepEvaluate<
-                Exact<{ a: string | number | boolean }, { a: string | number }>
+            {} as Exact<
+                { a: string | number | boolean },
+                { a: string | number }
             >
         ).typed as { a: string | number }
     })
 
     it("optional", () => {
         assert(
-            {} as DeepEvaluate<
-                Exact<{ a: { nested: true } }, { a?: { nested: boolean } }>
-            >
+            {} as Exact<{ a: { nested: true } }, { a?: { nested: boolean } }>
         ).typed as { a: { nested: true } }
     })
 })

@@ -1,5 +1,5 @@
 // Changing this file at all will break tests as it is used to test source locations
-import { caller, fromHere } from "../../src/index.js"
+import { caller, fromHere } from "../../../src/index.js"
 
 const formatPath = { relative: fromHere("..") }
 

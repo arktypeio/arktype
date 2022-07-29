@@ -63,7 +63,7 @@ describe("diff", () => {
     })
 
     it("diffs array", () => {
-        assert(diff(["ok"], ["different"])).value.equals({
+        assert(diff(["ok"], ["different"])).unknown.equals({
             "0": { base: "ok", compare: "different" }
         })
     })

@@ -8,7 +8,9 @@ const expectedOutput = readFile(fromHere("benchExpectedOutput.ts"))
 
 describe("bench", () => {
     test("populates file", () => {
-        const actual = runThenGetContents(benchTemplate, false)
+        const actual = runThenGetContents(benchTemplate, {
+            includeBenches: true
+        })
         strict.equal(actual, expectedOutput)
     }, 10000)
 })

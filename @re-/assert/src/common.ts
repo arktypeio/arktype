@@ -30,11 +30,12 @@ export const positionToString = (position: SourcePosition) =>
 
 export interface ReAssertConfig extends Required<ReAssertJson> {
     updateSnapshots: boolean
-    matcher: RegExp | undefined
+    benchMatcher: RegExp | undefined
     cacheDir: string
     assertionCacheFile: string
     snapCacheDir: string
     skipTypes: boolean
+    skipBenches: boolean
 }
 
 interface ReAssertJson {
@@ -42,7 +43,6 @@ interface ReAssertJson {
     precached?: boolean
     preserveCache?: boolean
     assertAliases?: string[]
-    stringifySnapshots?: boolean
     benchPercentThreshold?: number
     benchErrorOnThresholdExceeded?: boolean
 }
@@ -135,7 +135,7 @@ const getArgsToCheck = () => {
 }
 
 const getMatcher = (argsToCheck: string[]) => {
-    // This matcher can be used to filter processes we have control over like benches
+    // This matcher can be used to filter calls we have control over like benches
     const possibleMatcher = checkArgsForParam(argsToCheck, "only")
     if (possibleMatcher) {
         console.log(
@@ -158,12 +158,13 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     return {
         updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
         skipTypes: argsToCheck.includes("--skipTypes"),
-        matcher: getMatcher(argsToCheck),
+        skipBenches:
+            process.env.NODE_ENV === "test" && !argsToCheck.includes("--bench"),
+        benchMatcher: getMatcher(argsToCheck),
         tsconfig,
         precached: argsToCheck.includes("--precache"),
         preserveCache: false,
         assertAliases: ["assert"],
-        stringifySnapshots: false,
         cacheDir,
         snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),

@@ -37,9 +37,7 @@ export class Assertions implements AssertionRecord {
     constructor(private ctx: AssertionContext) {}
 
     private serialize(value: unknown) {
-        return this.ctx.cfg.stringifySnapshots
-            ? `${toString(value, { quote: "double" })}`
-            : literalSerialize(value)
+        return literalSerialize(value)
     }
 
     private get actual() {
