@@ -106,6 +106,7 @@ export namespace Str {
             branch: BranchState
             expression: unknown
             unscanned: string[]
+            ctx: DefContext
         }
 
         export type Initialize<Def extends string> = From<{
@@ -113,26 +114,23 @@ export namespace Str {
             branch: DefaultBranchState
             expression: []
             unscanned: ListChars<Def>
+            ctx: {}
         }>
 
         export type BranchState = {
             union: CurrentBranch
             intersection: CurrentBranch
-            ctx: BranchContext
         }
 
-        type DefaultBranchState = {
+        export type DefaultBranchState = {
             union: []
             intersection: []
-            ctx: {}
         }
 
         export type CurrentBranch = [] | [unknown, string]
 
-        export type BranchContext = {
+        export type DefContext = {
             bounded?: boolean
-            leftBounded?: boolean
-            rightBounded?: boolean
         }
 
         export type ScanTo<S extends State, Unscanned extends string[]> = From<{
@@ -140,16 +138,19 @@ export namespace Str {
             branch: S["branch"]
             expression: S["expression"]
             unscanned: Unscanned
+            ctx: S["ctx"]
         }>
 
-        export type UpdateBranchContext<
+        export type UpdateContext<
             S extends State,
-            Updates extends Partial<BranchContext>
+            Updates extends Partial<DefContext>,
+            Unscanned extends string[] = S["unscanned"]
         > = From<{
             openGroups: S["openGroups"]
-            branch: S["branch"] & { ctx: Updates }
+            branch: S["branch"]
             expression: S["expression"]
-            unscanned: S["unscanned"]
+            unscanned: Unscanned
+            ctx: S["ctx"] & Updates
         }>
 
         export type PushBase<
@@ -161,6 +162,7 @@ export namespace Str {
             branch: S["branch"]
             expression: Token
             unscanned: Unscanned
+            ctx: S["ctx"]
         }>
 
         type PushIntersection<B extends BranchState, Expression> = {
@@ -171,7 +173,6 @@ export namespace Str {
                     : [...B["intersection"], Expression],
                 "&"
             ]
-            ctx: B["ctx"]
         }
 
         type PushUnion<B extends BranchState, Expression> = {
@@ -185,7 +186,6 @@ export namespace Str {
                 "|"
             ]
             intersection: []
-            ctx: {}
         }
 
         export type PushBranchingToken<
@@ -199,6 +199,7 @@ export namespace Str {
                 : PushIntersection<S["branch"], S["expression"]>
             expression: []
             unscanned: Unscanned
+            ctx: S["ctx"]
         }>
 
         type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
@@ -219,6 +220,7 @@ export namespace Str {
                   branch: DefaultBranchState
                   expression: MergeBranches<S["branch"], S["expression"]>
                   unscanned: []
+                  ctx: S["ctx"]
               }>
             : Error<`Missing ).`>
 
@@ -231,6 +233,7 @@ export namespace Str {
             branch: S["branch"]
             expression: [S["expression"], Token]
             unscanned: Unscanned
+            ctx: S["ctx"]
         }>
 
         export type OpenGroup<
@@ -241,6 +244,7 @@ export namespace Str {
             branch: DefaultBranchState
             expression: []
             unscanned: Unscanned
+            ctx: S["ctx"]
         }>
 
         type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
@@ -257,6 +261,7 @@ export namespace Str {
                   branch: Top
                   expression: MergeBranches<S["branch"], S["expression"]>
                   unscanned: Unscanned
+                  ctx: S["ctx"]
               }>
             : Error<`Unexpected ).`>
 
@@ -265,6 +270,7 @@ export namespace Str {
             branch: DefaultBranchState
             expression: ErrorToken<Message>
             unscanned: []
+            ctx: {}
         }>
 
         export type From<S extends State> = S
@@ -280,6 +286,10 @@ export namespace Str {
         Dict
     >
 
+    type ShiftOptional<S extends State.State> = S["unscanned"] extends ["?"]
+        ? State.PushTransform<State.Finalize<S>, "?", []>
+        : State.Error<`Suffix '?' is only valid at the end of a definition.`>
+
     /**
      * We start by shifting the first branch before looping via ShiftBranches
      * in order to ensure we error on an empty expression like "" or "()".
@@ -294,9 +304,7 @@ export namespace Str {
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "?"
-            ? Unscanned extends []
-                ? State.PushTransform<State.Finalize<S>, "?", []>
-                : State.Error<`Suffix '?' is only valid at the end of a definition.`>
+            ? S
             : Lookahead extends BranchingOperatorToken
             ? ShiftBranches<
                   ShiftBranch<
@@ -308,7 +316,7 @@ export namespace Str {
             : Lookahead extends ")"
             ? State.CloseGroup<S, Unscanned>
             : State.Error<`Unexpected branch token ${Lookahead}.`>
-        : State.Finalize<S>
+        : S
 
     type ShiftBranch<S extends State.State, Dict> = ShiftOperators<
         ShiftBase<S, Dict>,
@@ -398,7 +406,7 @@ export namespace Str {
             : Lookahead extends BranchTerminatingChar
             ? S
             : Lookahead extends ComparatorStartChar
-            ? ShiftComparatorToken<State.ScanTo<S, Unscanned>, Lookahead, Dict>
+            ? ShiftComparatorToken<S, Lookahead, Dict>
             : Lookahead extends " "
             ? ShiftOperators<State.ScanTo<S, Unscanned>, Dict>
             : State.Error<`Invalid operator ${Lookahead}.`>
@@ -413,70 +421,53 @@ export namespace Str {
             : State.Error<`Missing expected ']'.`>
         : State.Error<`Missing expected ']'.`>
 
-    // type ShiftSuffixes<S extends State.State> = {}
-
     type ShiftComparatorToken<
         S extends State.State,
-        FirstChar extends ComparatorStartChar,
+        StartChar extends ComparatorStartChar,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "="
-            ? ReduceBound<State.ScanTo<S, Unscanned>, `${FirstChar}=`, Dict>
-            : FirstChar extends "="
+            ? ReduceBound<State.ScanTo<S, Unscanned>, Dict>
+            : StartChar extends "="
             ? State.Error<`= is not a valid comparator. Use == instead.`>
-            : // FirstChar must be > or < at this point
-              ReduceBound<S, FirstChar, Dict>
-        : State.Error<`Expected a bound condition after ${FirstChar}.`>
+            : ReduceBound<S, Dict>
+        : State.Error<`Expected a bound condition after ${StartChar}.`>
 
     type ReduceBound<
         S extends State.State,
-        Token extends string,
         Dict
-    > = S["expression"] extends BoundableNode
-        ? ReduceRightBound<
-              S,
-              Token,
-              ShiftBranch<
-                  State.UpdateBranchContext<S, { rightBounded: true }>,
-                  Dict
-              >
-          >
-        : S["branch"]["ctx"]["rightBounded"] extends true
-        ? State.Error<`Right side of comparator ${Token} cannot be bounded more than once.`>
-        : S["expression"] extends NumberLiteralDefinition
-        ? ReduceLeftBound<
-              S,
-              Token,
-              ShiftBranch<
-                  State.UpdateBranchContext<S, { leftBounded: true }>,
-                  Dict
-              >
-          >
-        : State.Error<`Left side of comparator ${Token} must be a number literal or boundable definition (got ${TreeToString<
-              S["expression"]
-          >}).`>
+    > = IsValidLeftBound<S> extends true
+        ? ShiftBranch<State.UpdateContext<S, { bounded: true }>, Dict>
+        : ShiftRightBound<S, "">
 
-    type ReduceRightBound<
-        Left extends State.State,
-        Token extends string,
-        Right extends State.State
-    > = Right extends State.Error<string>
-        ? Right
-        : Right["expression"] extends NumberLiteralDefinition
-        ? State.ScanTo<Left, Right["unscanned"]>
-        : State.Error<`Right side of comparator ${Token} must be a number literal.`>
+    type ShiftRightBound<
+        S extends State.State,
+        BoundToken extends string
+    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
+        ? Lookahead extends "?"
+            ? BoundToken extends NumberLiteralDefinition
+                ? ShiftOptional<State.UpdateContext<S, { bounded: true }>>
+                : InvalidRightBound
+            : ShiftRightBound<
+                  State.ScanTo<S, Unscanned>,
+                  `${BoundToken}${Lookahead}`
+              >
+        : BoundToken extends NumberLiteralDefinition
+        ? State.Finalize<State.UpdateContext<S, { bounded: true }>>
+        : InvalidRightBound
 
-    type ReduceLeftBound<
-        Left extends State.State,
-        Token extends string,
-        Right extends State.State
-    > = Left["branch"]["ctx"]["leftBounded"] extends true
-        ? State.Error<`Left side of comparator ${Token} cannot be bounded more than once.`>
-        : Right extends State.Error<string>
-        ? Right
-        : Right["expression"] extends BoundableNode
-        ? Right
-        : State.Error<`Right side of comparator ${Token} must be a numbed-or-string-typed keyword or a list-typed expression.`>
+    type InvalidRightBound = State.Error<`Invalid right bound.`>
+
+    type IsValidLeftBound<S extends State.State> =
+        S["branch"] extends State.DefaultBranchState
+            ? S["openGroups"] extends []
+                ? S["expression"] extends NumberLiteralDefinition
+                    ? S["ctx"]["bounded"] extends true
+                        ? false
+                        : true
+                    : false
+                : false
+            : false
 
     type ComparatorStartChar = "<" | ">" | "="
 
