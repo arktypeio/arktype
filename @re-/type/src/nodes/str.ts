@@ -214,15 +214,13 @@ export namespace Str {
             MergeExpression<B["intersection"], Expression>
         >
 
-        export type Finalize<S extends State> = S["openGroups"] extends []
-            ? From<{
-                  openGroups: []
-                  branch: DefaultBranchState
-                  expression: MergeBranches<S["branch"], S["expression"]>
-                  unscanned: []
-                  ctx: S["ctx"]
-              }>
-            : Error<`Missing ).`>
+        export type ShiftEnd<S extends State> = From<{
+            openGroups: S["openGroups"]
+            branch: DefaultBranchState
+            expression: MergeBranches<S["branch"], S["expression"]>
+            unscanned: []
+            ctx: S["ctx"]
+        }>
 
         export type PushTransform<
             S extends State,
@@ -281,14 +279,42 @@ export namespace Str {
         Dict
     >["expression"]
 
-    type ShiftDefinition<Def extends string, Dict> = ShiftExpression<
-        State.Initialize<Def>,
-        Dict
+    type ShiftDefinition<Def extends string, Dict> = FinalizeState<
+        ShiftExpression<State.Initialize<Def>, Dict>
     >
 
+    type FinalizeState<S extends State.State> = S["openGroups"] extends []
+        ? S["ctx"]["bounded"] extends true
+            ? S["expression"] extends BoundableNode
+                ? S
+                : State.Error<`Bounded expression '${TreeToString<
+                      S["expression"]
+                  >}' must be a number-or-string-typed keyword or a list-typed expression.`>
+            : S
+        : State.Error<`Missing ).`>
+
     type ShiftOptional<S extends State.State> = S["unscanned"] extends ["?"]
-        ? State.PushTransform<State.Finalize<S>, "?", []>
+        ? State.PushTransform<State.ShiftEnd<S>, "?", []>
         : State.Error<`Suffix '?' is only valid at the end of a definition.`>
+
+    type ShiftRightBound<
+        S extends State.State,
+        BoundToken extends string
+    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
+        ? Lookahead extends "?"
+            ? BoundToken extends NumberLiteralDefinition
+                ? ShiftOptional<State.UpdateContext<S, { bounded: true }>>
+                : InvalidRightBound<BoundToken>
+            : ShiftRightBound<
+                  State.ScanTo<S, Unscanned>,
+                  `${BoundToken}${Lookahead}`
+              >
+        : BoundToken extends NumberLiteralDefinition
+        ? State.ShiftEnd<State.UpdateContext<S, { bounded: true }>>
+        : InvalidRightBound<BoundToken>
+
+    type InvalidRightBound<Token extends string> =
+        State.Error<`Right bound ${Token} must be a number literal followed only by other suffixes.`>
 
     /**
      * We start by shifting the first branch before looping via ShiftBranches
@@ -304,7 +330,7 @@ export namespace Str {
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends "?"
-            ? S
+            ? ShiftOptional<S>
             : Lookahead extends BranchingOperatorToken
             ? ShiftBranches<
                   ShiftBranch<
@@ -316,7 +342,7 @@ export namespace Str {
             : Lookahead extends ")"
             ? State.CloseGroup<S, Unscanned>
             : State.Error<`Unexpected branch token ${Lookahead}.`>
-        : S
+        : State.ShiftEnd<S>
 
     type ShiftBranch<S extends State.State, Dict> = ShiftOperators<
         ShiftBase<S, Dict>,
@@ -406,7 +432,7 @@ export namespace Str {
             : Lookahead extends BranchTerminatingChar
             ? S
             : Lookahead extends ComparatorStartChar
-            ? ShiftComparatorToken<S, Lookahead, Dict>
+            ? ShiftComparatorToken<State.ScanTo<S, Unscanned>, Lookahead, Dict>
             : Lookahead extends " "
             ? ShiftOperators<State.ScanTo<S, Unscanned>, Dict>
             : State.Error<`Invalid operator ${Lookahead}.`>
@@ -437,34 +463,16 @@ export namespace Str {
         S extends State.State,
         Dict
     > = IsValidLeftBound<S> extends true
-        ? ShiftBranch<State.UpdateContext<S, { bounded: true }>, Dict>
+        ? S["ctx"]["bounded"] extends true
+            ? State.Error<`Definitions cannot have multiple left bounds.`>
+            : ShiftBranch<State.UpdateContext<S, { bounded: true }>, Dict>
         : ShiftRightBound<S, "">
-
-    type ShiftRightBound<
-        S extends State.State,
-        BoundToken extends string
-    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-        ? Lookahead extends "?"
-            ? BoundToken extends NumberLiteralDefinition
-                ? ShiftOptional<State.UpdateContext<S, { bounded: true }>>
-                : InvalidRightBound
-            : ShiftRightBound<
-                  State.ScanTo<S, Unscanned>,
-                  `${BoundToken}${Lookahead}`
-              >
-        : BoundToken extends NumberLiteralDefinition
-        ? State.Finalize<State.UpdateContext<S, { bounded: true }>>
-        : InvalidRightBound
-
-    type InvalidRightBound = State.Error<`Invalid right bound.`>
 
     type IsValidLeftBound<S extends State.State> =
         S["branch"] extends State.DefaultBranchState
             ? S["openGroups"] extends []
                 ? S["expression"] extends NumberLiteralDefinition
-                    ? S["ctx"]["bounded"] extends true
-                        ? false
-                        : true
+                    ? true
                     : false
                 : false
             : false
@@ -477,7 +485,9 @@ export namespace Str {
         | BranchTerminatingChar
         | " "
 
-    type BranchTerminatingChar = "|" | "&" | ExpressionTerminatingChar
+    type BranchTerminatingChar =
+        | BranchingOperatorToken
+        | ExpressionTerminatingChar
 
     type ExpressionTerminatingChar = ")" | "?"
 
