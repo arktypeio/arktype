@@ -33,7 +33,7 @@ Modify any of these examples in our live editor to see the types and validation 
 
 [Try it out.](https://redo.dev/type/intro#start-quick-%EF%B8%8F)
 
-```ts @blockFrom:docs/snippets/type.ts
+```ts @blockFrom:@re-/type/docs/snippets/type.ts
 import { type } from "@re-/type"
 
 // Define a type...
@@ -77,7 +77,7 @@ if (error) {
 
 [Try it out.](https://redo.dev/type/spaces)
 
-```ts @blockFrom:docs/snippets/space.ts
+```ts @blockFrom:@re-/type/docs/snippets/space.ts
 import { space } from "@re-/type"
 
 // Spaces are collections of models that can reference each other.
@@ -137,7 +137,7 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 
 `index.ts`
 
-```ts @blockFrom:docs/snippets/declaration/declaration.ts
+```ts @blockFrom:@re-/type/docs/snippets/declaration/declaration.ts
 import { declare } from "@re-/type"
 
 // Declare the models you will define
@@ -170,7 +170,7 @@ export const { error } = mySpace.group.validate(fetchGroupData())
 
 `user.ts`
 
-```ts @blockFrom:docs/snippets/declaration/user.ts
+```ts @blockFrom:@re-/type/docs/snippets/declaration/user.ts
 import { define } from "./declaration.js"
 
 export const userDef = define.user({
@@ -182,7 +182,7 @@ export const userDef = define.user({
 
 `group.ts`
 
-```ts @blockFrom:docs/snippets/declaration/group.ts
+```ts @blockFrom:@re-/type/docs/snippets/declaration/group.ts
 import { define } from "./declaration.js"
 
 export const groupDef = define.group({
@@ -197,7 +197,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://redo.dev/type/constraints)
 
-```ts @blockFrom:docs/snippets/constraints.ts
+```ts @blockFrom:@re-/type/docs/snippets/constraints.ts
 import { type } from "@re-/type"
 
 const employee = type({

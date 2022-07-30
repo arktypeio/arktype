@@ -1,6 +1,11 @@
 import { existsSync } from "node:fs"
-import { join } from "node:path"
-import { fromPackageRoot, readFile, readJson, writeFile } from "@re-/node"
+import {
+    fromPackageRoot,
+    readFile,
+    readJson,
+    shell,
+    writeFile
+} from "@re-/node"
 import { DocGenPackageConfig, DocGenSnippetConsumer } from "../config.js"
 import { PackageExtractionData } from "../extract.js"
 
@@ -22,15 +27,14 @@ export const writePackageSnippets = (ctx: WriteSnippetsContext) => {
 }
 
 const updateTargets = (targets: string[], ctx: WriteSnippetsContext) => {
-    for (const relativeTargetPath of targets) {
-        const fullTargetPath = join(
-            ctx.extractedPackage.metadata.rootDir,
-            relativeTargetPath
-        )
-        if (!existsSync(fullTargetPath)) {
-            throw new Error(`Target did not exist at path '${fullTargetPath}'.`)
+    for (const path of targets) {
+        if (!existsSync(path)) {
+            throw new Error(`Target did not exist at path '${path}'.`)
         }
-        updateTextTarget(fullTargetPath, ctx)
+        updateTextTarget(path, ctx)
+    }
+    if (targets.length) {
+        shell(`pnpm exec prettier --write ${targets.join(" ")}`)
     }
 }
 
@@ -111,8 +115,9 @@ const getUpdatedLines = (
             lineFromRefeferenceParts[2],
             token
         )
+    } else {
+        lines = getSnippedBlockLines(filePath, lineFromRefeferenceParts[2], ctx)
     }
-    lines = getSnippedBlockLines(filePath, lineFromRefeferenceParts[2], ctx)
     const possibleTemplate = line.split("=>")[1]
     if (possibleTemplate) {
         lines = lines.map((line) =>
@@ -160,15 +165,15 @@ const getSnippedBlockLines = (
     const fileSnippets = ctx.extractedPackage.snippets[pathToFile]
     let snippetTextToCopy: string
     if (label) {
-        if (!(label in fileSnippets.byLabel)) {
+        if (!(label in fileSnippets)) {
             throw new Error(
                 `No snippet with label ${label} exists in file at ${pathToFile}. ` +
-                    `Available labels are ${Object.keys(
-                        fileSnippets.byLabel
-                    ).join(", ")}.`
+                    `Available labels are ${Object.keys(fileSnippets).join(
+                        ", "
+                    )}.`
             )
         }
-        snippetTextToCopy = fileSnippets.byLabel[label].text
+        snippetTextToCopy = fileSnippets[label].text
     } else {
         snippetTextToCopy = fileSnippets.all.text
     }
