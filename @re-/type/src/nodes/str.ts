@@ -40,10 +40,7 @@ export namespace Str {
         ? Def
         : ParseDefinition<Def, Dict>
 
-    type IsResolvableName<
-        Def extends string,
-        Dict
-    > = Def extends Keyword.Definition
+    type IsResolvableName<Def, Dict> = Def extends Keyword.Definition
         ? true
         : Def extends keyof Dict
         ? true
@@ -324,51 +321,67 @@ export namespace Str {
         ? Lookahead extends "("
             ? ShiftExpression<State.OpenGroup<S, Unscanned>, Dict>
             : Lookahead extends LiteralEnclosingChar
-            ? ShiftLiteral<State.ScanTo<S, Unscanned>, Lookahead, Lookahead>
+            ? ShiftEnclosedBase<
+                  State.ScanTo<S, Unscanned>,
+                  Lookahead,
+                  Lookahead
+              >
             : Lookahead extends " "
             ? ShiftBase<State.ScanTo<S, Unscanned>, Dict>
-            : ShiftNonLiteral<S, "", Dict>
+            : ShiftUnenclosedBase<S, "", Dict>
         : MissingExpressionError<S>
 
-    type ShiftLiteral<
+    type ShiftEnclosedBase<
         S extends State.State,
         FirstChar extends LiteralEnclosingChar,
         Token extends string
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends FirstChar
-            ? State.PushBase<S, `${Token}${Lookahead}`, Unscanned>
-            : ShiftLiteral<
+            ? ReduceEnclosedBase<
+                  State.PushBase<S, `${Token}${Lookahead}`, Unscanned>
+              >
+            : ShiftEnclosedBase<
                   State.ScanTo<S, Unscanned>,
                   FirstChar,
                   `${Token}${Lookahead}`
               >
         : State.Error<`${Token} requires a closing ${FirstChar}.`>
 
-    type ShiftNonLiteral<
+    type ReduceEnclosedBase<S extends State.State> =
+        S["expression"] extends "//"
+            ? State.Error<`Regex literals cannot be empty.`>
+            : S
+
+    type ShiftUnenclosedBase<
         S extends State.State,
         Token extends string,
         Dict
     > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
         ? Lookahead extends BaseTerminatingChar
-            ? ReduceNonLiteral<S, Token, Dict>
-            : ShiftNonLiteral<
+            ? ReduceUnenclosedBase<
+                  State.PushBase<S, Token, S["unscanned"]>,
+                  Dict
+              >
+            : ShiftUnenclosedBase<
                   State.ScanTo<S, Unscanned>,
                   `${Token}${Lookahead}`,
                   Dict
               >
-        : ReduceNonLiteral<S, Token, Dict>
+        : ReduceUnenclosedBase<State.PushBase<S, Token, S["unscanned"]>, Dict>
 
-    type ReduceNonLiteral<
-        S extends State.State,
-        Token extends string,
+    type ReduceUnenclosedBase<S extends State.State, Dict> = IsResolvableName<
+        S["expression"],
         Dict
-    > = IsResolvableName<Token, Dict> extends true
-        ? State.PushBase<S, Token, S["unscanned"]>
-        : Token extends NumberLiteralDefinition | BigintLiteralDefinition
-        ? State.PushBase<S, Token, S["unscanned"]>
-        : Token extends ""
+    > extends true
+        ? S
+        : S["expression"] extends
+              | NumberLiteralDefinition
+              | BigintLiteralDefinition
+        ? S
+        : S["expression"] extends ""
         ? MissingExpressionError<S>
-        : State.Error<`'${Token}' does not exist in your space.`>
+        : State.Error<`'${S["expression"] &
+              string}' does not exist in your space.`>
 
     type MissingExpressionError<S extends State.State> =
         State.Error<`Expected an expression${S["branch"] extends []
