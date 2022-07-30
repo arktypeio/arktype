@@ -3,7 +3,9 @@ import { space, type } from "../../index.js"
 
 bench("validate undefined", () => {
     type("string?").validate(undefined)
-}).median(`111.00ns`)
+})
+    .median(`111.00ns`)
+    .type(`91 instantiations`)
 
 bench("validate string", () => {
     type("string?").validate("test")
@@ -29,7 +31,9 @@ bench("validate map", () => {
         b: 5,
         c: { nested: true }
     })
-}).median(`1.96us`)
+})
+    .median(`1.96us`)
+    .type(`551 instantiations`)
 
 bench("validate map extraneous", () => {
     type({
@@ -61,17 +65,24 @@ bench("validate map bad", () => {
 
 bench("validate tuple", () => {
     type(["string?", "number?", ["boolean?"]]).validate(["okay", 5, [true]])
-}).median(`2.22us`)
+})
+    .median(`2.22us`)
+    .type(`886 instantiations`)
 
 bench("validate regex", () => {
     type(/.*/).validate("test")
-}).median(`100.00ns`)
+})
+    .median(`100.00ns`)
+    .type(`58 instantiations`)
 
-bench("parse union", () => {
-    type("string|number")
-}).median(`892.00ns`)
+bench("parseUnion", () => {
+    const result = type("string|number")
+})
+    .median(`892.00ns`)
+    .type(`944 instantiations`)
 
-const smallUnion = type("string|number")
+// Marked as any so that we can still measure instantiations in parse union
+const smallUnion = type("string|number" as any)
 
 bench("validate small union second", () => {
     smallUnion.validate(5)
@@ -81,9 +92,11 @@ bench("validate small union first", () => {
     smallUnion.validate("")
 }).median(`106.00ns`)
 
-bench("parse large union eager", () => {
+bench("parse large union", () => {
     type("1|2|3|4|5|6|7|8|9")
-}).median(`1.41us`)
+})
+    .median(`1.41us`)
+    .type(`2350 instantiations`)
 
 bench("parse then validate large union", () => {
     type("1|2|3|4|5|6|7|8|9").validate(5)
@@ -107,7 +120,9 @@ bench("errors at paths", () => {
 
 bench("list type", () => {
     type("string[]").validate(["hi", "there", "we're", "strings", 5])
-}).median(`6.13us`)
+})
+    .median(`6.13us`)
+    .type(`101 instantiations`)
 
 const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })
 const dejaVu: typeof recursive.$root.infer.dejaVu = {}

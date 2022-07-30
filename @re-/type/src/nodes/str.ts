@@ -130,6 +130,7 @@ export namespace Str {
         export type CurrentBranch = [] | [unknown, string]
 
         export type BranchContext = {
+            bounded?: boolean
             leftBounded?: boolean
             rightBounded?: boolean
         }
@@ -295,7 +296,7 @@ export namespace Str {
         ? Lookahead extends "?"
             ? Unscanned extends []
                 ? State.PushTransform<State.Finalize<S>, "?", []>
-                : State.Error<`Modifier '?' is only valid at the end of a definition.`>
+                : State.Error<`Suffix '?' is only valid at the end of a definition.`>
             : Lookahead extends BranchingOperatorToken
             ? ShiftBranches<
                   ShiftBranch<
@@ -411,6 +412,8 @@ export namespace Str {
             ? State.PushTransform<S, "[]", Unscanned>
             : State.Error<`Missing expected ']'.`>
         : State.Error<`Missing expected ']'.`>
+
+    // type ShiftSuffixes<S extends State.State> = {}
 
     type ShiftComparatorToken<
         S extends State.State,
