@@ -62,7 +62,7 @@ const baseTerminating = {
 type BranchState = {
     union?: UnionNode
     intersection?: IntersectionNode
-    ctx: Str.State.BranchContext
+    ctx: any
 }
 
 export class Parser {

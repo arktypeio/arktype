@@ -32,6 +32,8 @@
         "tnt": "reassert --skipTypes --cmd vitest run",
         "bench": "reassert bench",
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
+        "benchParse": "ts-node ./src/nodes/__tests__/parse.bench.ts",
+        "benchBound": "ts-node ./src/nodes/nonTerminal/__tests__/bound.bench.ts",
         "diag": "tsc -p ./src/__tests__/tsconfig.json > diag.txt"
     },
     "dependencies": {
