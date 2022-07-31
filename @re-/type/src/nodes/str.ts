@@ -107,7 +107,7 @@ export namespace Str {
             expression: unknown
             token: string
             unscanned: string[]
-            ctx: DefContext
+            bounds: Bounds
         }
 
         export type Initialize<Def extends string> = From<{
@@ -116,7 +116,7 @@ export namespace Str {
             expression: []
             token: ""
             unscanned: ListChars<Def>
-            ctx: {}
+            bounds: {}
         }>
 
         export type BranchState = {
@@ -131,8 +131,9 @@ export namespace Str {
 
         export type CurrentBranch = [] | [unknown, string]
 
-        export type DefContext = {
-            bounded?: boolean
+        export type Bounds = {
+            left?: [NumberLiteralDefinition, ComparatorToken]
+            right?: [ComparatorToken, NumberLiteralDefinition]
         }
 
         export type ScanTo<S extends State, Unscanned extends string[]> = From<{
@@ -141,19 +142,19 @@ export namespace Str {
             expression: S["expression"]
             token: S["token"]
             unscanned: Unscanned
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
-        export type UpdateContext<
+        export type UpdateBounds<
             S extends State,
-            Updates extends Partial<DefContext>
+            Updates extends Partial<Bounds>
         > = From<{
             openGroups: S["openGroups"]
             branch: S["branch"]
             expression: S["expression"]
             token: ""
             unscanned: S["unscanned"]
-            ctx: S["ctx"] & Updates
+            bounds: S["bounds"] & Updates
         }>
 
         export type ReduceBase<S extends State> = From<{
@@ -162,7 +163,7 @@ export namespace Str {
             expression: S["token"]
             token: ""
             unscanned: S["unscanned"]
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
         export type ShiftChar<
@@ -175,7 +176,7 @@ export namespace Str {
             expression: S["expression"]
             token: `${S["token"]}${Char}`
             unscanned: Unscanned
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
         export type DiscardToken<S extends State> = From<{
@@ -184,7 +185,7 @@ export namespace Str {
             expression: S["expression"]
             token: ""
             unscanned: S["unscanned"]
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
         export type ReduceModifier<S extends State> = From<{
@@ -193,7 +194,7 @@ export namespace Str {
             expression: [S["expression"], S["token"]]
             token: ""
             unscanned: S["unscanned"]
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
         export type ReduceBrancher<S extends State> = From<{
@@ -204,7 +205,7 @@ export namespace Str {
             expression: []
             token: ""
             unscanned: S["unscanned"]
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
         type PushIntersection<B extends BranchState, Expression> = {
@@ -248,7 +249,7 @@ export namespace Str {
             expression: MergeBranches<S["branch"], S["expression"]>
             token: S["token"]
             unscanned: S["unscanned"]
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
         export type OpenGroup<
@@ -260,7 +261,7 @@ export namespace Str {
             expression: []
             token: S["token"]
             unscanned: Unscanned
-            ctx: S["ctx"]
+            bounds: S["bounds"]
         }>
 
         type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
@@ -276,7 +277,7 @@ export namespace Str {
                       expression: MergeBranches<S["branch"], S["expression"]>
                       token: ""
                       unscanned: S["unscanned"]
-                      ctx: S["ctx"]
+                      bounds: S["bounds"]
                   }>
                 : Error<`Unexpected ).`>
 
@@ -286,7 +287,7 @@ export namespace Str {
             expression: ErrorToken<Message>
             token: ""
             unscanned: []
-            ctx: {}
+            bounds: {}
         }>
 
         export type From<S extends State> = S
@@ -303,13 +304,13 @@ export namespace Str {
     >
 
     type FinalizeState<S extends State.State> = S["openGroups"] extends []
-        ? S["ctx"]["bounded"] extends true
-            ? S["expression"] extends BoundableNode
-                ? S
-                : State.Error<`Bounded expression '${TreeToString<
-                      S["expression"]
-                  >}' must be a number-or-string-typed keyword or a list-typed expression.`>
-            : S
+        ? {} extends S["bounds"]
+            ? S
+            : S["expression"] extends BoundableNode
+            ? S
+            : State.Error<`Bounded expression '${TreeToString<
+                  S["expression"]
+              >}' must be a number-or-string-typed keyword or a list-typed expression.`>
         : State.Error<`Missing ).`>
 
     type ParseExpression<S extends State.State, Dict> = ParseOperators<
@@ -427,25 +428,28 @@ export namespace Str {
         Dict
     > = S["expression"] extends NumberLiteralDefinition
         ? S["token"] extends ComparatorToken
-            ? S["ctx"]["bounded"] extends true
-                ? State.Error<`Definitions cannot have multiple left bounds.`>
-                : ParseExpression<
-                      State.From<{
-                          openGroups: []
-                          branch: S["branch"]
-                          expression: []
-                          token: ""
-                          unscanned: S["unscanned"]
-                          ctx: { bounded: true }
-                      }>,
-                      Dict
-                  >
+            ? ParseExpression<
+                  State.From<{
+                      openGroups: []
+                      branch: S["branch"]
+                      expression: []
+                      token: ""
+                      unscanned: S["unscanned"]
+                      bounds: S["bounds"] & {
+                          left: [S["expression"], S["token"]]
+                      }
+                  }>,
+                  Dict
+              >
             : ParseOperators<S, Dict>
         : ParseOperators<S, Dict>
 
     type ParseSuffixes<S extends State.State> =
         S["token"] extends ComparatorToken
-            ? ReduceRightBound<ShiftUnenclosedBase<State.DiscardToken<S>>>
+            ? ReduceRightBound<
+                  ShiftUnenclosedBase<State.DiscardToken<S>>,
+                  S["token"]
+              >
             : ParseFinalizer<S>
 
     type ParseFinalizer<S extends State.State> = S["token"] extends "END"
@@ -458,14 +462,16 @@ export namespace Str {
         ? State.ReduceModifier<FinalizeState<S>>
         : State.Error<`Suffix '?' is only valid at the end of a definition.`>
 
-    type FF = ShiftDefinition<"string==4", {}>
-
-    type ReduceRightBound<S extends State.State> =
-        S["token"] extends NumberLiteralDefinition
-            ? ParseFinalizer<
-                  LexOperator<State.UpdateContext<S, { bounded: true }>>
+    type ReduceRightBound<
+        S extends State.State,
+        Comparator extends ComparatorToken
+    > = S["token"] extends NumberLiteralDefinition
+        ? ParseFinalizer<
+              LexOperator<
+                  State.UpdateBounds<S, { right: [Comparator, S["token"]] }>
               >
-            : InvalidRightBound<S["token"]>
+          >
+        : InvalidRightBound<S["token"]>
 
     type InvalidRightBound<Token extends string> =
         State.Error<`Right bound ${Token} must be a number literal followed only by other suffixes.`>
