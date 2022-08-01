@@ -1,8 +1,14 @@
 import { relative } from "node:path"
-import { BindingNamedNode, Project } from "ts-morph"
+import { fromHere } from "@re-/node"
+import {
+    BindingNamedNode,
+    ClassDeclaration,
+    Project,
+    SyntaxKind
+} from "ts-morph"
 
 const project = new Project({
-    tsConfigFilePath: "tsconfig.references.json"
+    tsConfigFilePath: fromHere("..", "tsconfig.shawn.json")
 })
 
 const unusedByFile: Record<string, string[]> = {}
@@ -24,32 +30,45 @@ const unusedByFile: Record<string, string[]> = {}
 for (const sourceFile of project.getSourceFiles()) {
     const file = relative(".", sourceFile.getFilePath())
     const unusedInFile = []
-    for (const exportedSymbol of sourceFile.getExportSymbols()) {
-        const exportName = exportedSymbol.getName()
-        const references = exportedSymbol
-            .getDeclarations()
-            .flatMap((declaration) => {
-                if (declaration.getKindName() === "ExportSpecifier") {
-                    return []
+    for (const statement of sourceFile.getVariableStatements()) {
+        if (statement.hasModifier(SyntaxKind.ExportKeyword)) {
+            const declarations = statement.getDeclarations()
+            for (const declaration of declarations) {
+                const references = declaration.findReferences()
+                if (references.length === 1) {
+                    unusedInFile.push(declaration.getName())
                 }
-                if (declaration.getSourceFile() !== sourceFile) {
-                    return []
-                }
-                return (declaration as any as BindingNamedNode)
-                    .findReferences()
-                    .flatMap((ref) => ref.getReferences())
-            })
-        if (references.length === 1) {
-            unusedInFile.push(exportName)
+            }
+        }
+        if (unusedInFile.length) {
+            unusedByFile[file] = unusedInFile
         }
     }
-    if (unusedInFile.length) {
-        unusedByFile[file] = unusedInFile
-    }
 }
+//     const references = exportedSymbol
+//         .getDeclarations()
+//         .flatMap((declaration) => {
+//             if (declaration.getKindName() === "ExportSpecifier") {
+//                 return []
+//             }
+//             if (declaration.getSourceFile() !== sourceFile) {
+//                 return []
+//             }
+//             return (declaration as any as BindingNamedNode)
+//                 .findReferences()
+//                 .flatMap((ref) => ref.getReferences())
+//         })
+//     if (references.length === 1) {
+//         unusedInFile.push(exportName)
+//     }
+// }
+// if (unusedInFile.length) {
+//     unusedByFile[file] = unusedInFile
+// }
+//}
 
 if (Object.keys(unusedByFile).length) {
-    console.error("The following unused exports must be removed:")
+    console.error("Code doesn't need to be exported or is completely unused")
     for (const [file, unusedNames] of Object.entries(unusedByFile)) {
         console.group(`\n${file}:`)
         for (const unusedName of unusedNames) {
