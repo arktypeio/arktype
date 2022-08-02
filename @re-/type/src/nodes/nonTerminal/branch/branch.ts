@@ -1,36 +1,24 @@
-import type { Shift } from "../../parser/shift.js"
+import { Shift } from "../../parser/index.js"
 import { ParserState } from "../../parser/state.js"
 
 export namespace Branches {
-    export type State = {
-        union: Branch
-        intersection: Branch
-    }
-
-    export type Initial = {
-        union: []
-        intersection: []
-    }
-
     export type Token = "|" | "&"
 
     export type Branch = [] | [unknown, string]
 
-    export type MergeAll<B extends State, Expression> = MergeExpression<
-        B["union"],
-        MergeExpression<B["intersection"], Expression>
+    export type MergeAll<T extends ParserState.Tree> = MergeExpression<
+        T["union"],
+        MergeExpression<T["intersection"], T["root"]>
     >
 
-    export type ParseToken<
+    export type Parse<
         S extends ParserState.State,
-        Branch extends State,
+        Tree extends ParserState.Tree,
         Dict
     > = ParserState.From<{
         L: {
-            groups: S["L"]["groups"]
-            branches: Branch
-            expression: []
-            bounds: S["L"]["bounds"]
+            tree: Tree
+            ctx: S["L"]["ctx"]
         }
         R: Shift.Base<S["R"]["unscanned"], Dict>
     }>

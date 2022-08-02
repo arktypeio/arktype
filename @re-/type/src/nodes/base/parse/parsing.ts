@@ -18,6 +18,7 @@ export namespace Parsing {
     export type ResolutionMap = Record<string, unknown>
 
     export type Options = {
+        // TODO: This doesn't exist anymore
         eager?: boolean
     }
 

@@ -75,11 +75,11 @@ export namespace Bounds {
         Dict
     > = ParserState.From<{
         L: {
-            groups: S["L"]["groups"]
-            branches: S["L"]["branches"]
-            expression: ""
-            bounds: {
-                left: [N, T]
+            tree: ParserState.InitialTree
+            ctx: S["L"]["ctx"] & {
+                bounds: {
+                    left: [N, T]
+                }
             }
         }
         R: Shift.Base<S["R"]["unscanned"], Dict>
@@ -91,11 +91,11 @@ export namespace Bounds {
         N extends NumberLiteralDefinition
     > = ParserState.From<{
         L: {
-            groups: S["L"]["groups"]
-            branches: S["L"]["branches"]
-            expression: S["L"]["expression"]
-            bounds: S["L"]["bounds"] & {
-                right: [T, N]
+            tree: S["L"]["tree"]
+            ctx: S["L"]["ctx"] & {
+                bounds: {
+                    right: [T, N]
+                }
             }
         }
         R: Shift.Operator<S["R"]["unscanned"]>
@@ -132,19 +132,19 @@ export namespace Bounds {
         ? CoreParser.ParseMain<ParseLeft<S, S["R"]["lookahead"], N, Dict>, Dict>
         : CoreParser.ParseMain<
               ParserState.From<{
-                  L: ParserState.SetExpression<S["L"], N>
+                  L: ParserState.SetRoot<S["L"], N>
                   R: S["R"]
               }>,
               Dict
           >
 
     export type AssertBoundable<S extends ParserState.State> =
-        S["L"]["expression"] extends Bounds.Boundable
+        S["L"]["tree"]["root"] extends Bounds.Boundable
             ? S
             : ParserState.Error<
                   S,
                   `Bounded expression '${ParseTree.ToString<
-                      S["L"]["expression"]
+                      S["L"]["tree"]["root"]
                   >}' must be a number-or-string-typed keyword or a list-typed expression.`
               >
 }

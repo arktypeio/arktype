@@ -15,8 +15,8 @@ import { ParserState } from "./state.js"
 
 export namespace CoreParser {
     export type Parse<Def extends string, Dict> = Get<
-        Get<ParseDefinition<Def, Dict>, "L">,
-        "expression"
+        Get<Get<ParseDefinition<Def, Dict>, "L">, "tree">,
+        "root"
     >
 
     type ParseDefinition<Def extends string, Dict> = ParsePrefix<
@@ -59,24 +59,23 @@ export namespace CoreParser {
         : S["R"]["lookahead"] extends "("
         ? Group.ParseOpen<S, Dict>
         : ParserState.From<{
-              L: ParserState.SetExpression<S["L"], S["R"]["lookahead"]>
+              L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
               R: Shift.Operator<S["R"]["unscanned"]>
           }>
 
     type ParseSuffixes<
         S extends ParserState.State,
         Dict
-    > = S["L"]["groups"] extends []
+    > = S["L"]["ctx"]["groups"] extends []
         ? Bounds.ParsePossibleRightBound<
               {
                   L: {
-                      groups: S["L"]["groups"]
-                      branches: Branches.Initial
-                      expression: Branches.MergeAll<
-                          S["L"]["branches"],
-                          S["L"]["expression"]
-                      >
-                      bounds: S["L"]["bounds"]
+                      tree: {
+                          root: Branches.MergeAll<S["L"]["tree"]>
+                          union: []
+                          intersection: []
+                      }
+                      ctx: S["L"]["ctx"]
                   }
                   R: S["R"]
               },
@@ -85,7 +84,7 @@ export namespace CoreParser {
         : ParserState.Error<S, "Missing ).">
 
     type FinalizeState<S extends ParserState.State> =
-        {} extends S["L"]["bounds"] ? S : Bounds.AssertBoundable<S>
+        {} extends S["L"]["ctx"]["bounds"] ? S : Bounds.AssertBoundable<S>
 
     export type ParseFinalizing<S extends ParserState.State> =
         S["R"]["lookahead"] extends "END"
@@ -94,7 +93,7 @@ export namespace CoreParser {
             ? Optional.Parse<FinalizeState<S>>
             : S["R"]["lookahead"] extends ParseError<string>
             ? ParserState.From<{
-                  L: ParserState.SetExpression<S["L"], S["R"]["lookahead"]>
+                  L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
                   R: S["R"]
               }>
             : ParserState.Error<

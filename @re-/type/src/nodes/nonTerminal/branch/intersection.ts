@@ -4,23 +4,24 @@ import { NonTerminal } from "./../nonTerminal.js"
 import { Branches } from "./branch.js"
 
 export namespace Intersection {
-    export type ReduceBranches<B extends Branches.State, Expression> = {
-        union: B["union"]
+    type ReduceTree<T extends ParserState.Tree> = {
+        root: ""
+        union: T["union"]
         intersection: [
-            B["intersection"] extends []
-                ? Expression
-                : [...B["intersection"], Expression],
+            T["intersection"] extends []
+                ? T["root"]
+                : [...T["intersection"], T["root"]],
             "&"
         ]
     }
 
-    export type Parse<S extends ParserState.State, Dict> = Branches.ParseToken<
+    export type Parse<S extends ParserState.State, Dict> = Branches.Parse<
         S,
-        ReduceBranches<S["L"]["branches"], S["L"]["expression"]>,
+        ReduceTree<S["L"]["tree"]>,
         Dict
     >
 
-    export type Node<Left = unknown, Right = unknown> = [Left, "&", Right]
+    export type Node<Left, Right> = [Left, "&", Right]
 }
 
 export class IntersectionNode extends NonTerminal<Base.Node[]> {

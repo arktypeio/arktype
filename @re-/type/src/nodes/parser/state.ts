@@ -10,11 +10,20 @@ export namespace ParserState {
         R: Right
     }
 
+    export type Tree = {
+        root: unknown
+        union: Branches.Branch
+        intersection: Branches.Branch
+    }
+
     export type Left = {
-        groups: Branches.State[]
-        branches: Branches.State
-        expression: unknown
+        tree: Tree
+        ctx: Context
+    }
+
+    export type Context = {
         bounds: Bounds.State
+        groups: Tree[]
     }
 
     export type Right = {
@@ -27,7 +36,7 @@ export namespace ParserState {
     export type From<S extends State> = S
 
     export type Error<S extends State, Message extends string> = From<{
-        L: SetExpression<S["L"], ParseError<Message>>
+        L: SetRoot<S["L"], ParseError<Message>>
         R: S["R"]
     }>
 
@@ -41,28 +50,37 @@ export namespace ParserState {
         unscanned: ListChars<Def>
     }>
 
-    export type InitialLeft = {
+    export type InitialTree = {
+        root: ""
+        union: []
+        intersection: []
+    }
+
+    export type InitialContext = {
         groups: []
-        branches: Branches.Initial
-        expression: []
         bounds: {}
     }
+
+    export type InitialLeft = LeftFrom<{
+        tree: InitialTree
+        ctx: InitialContext
+    }>
 
     export type ModifierToken = "[]" | "?"
 
     type LeftFrom<L extends Left> = L
 
-    export type Modify<L extends Left, Token extends ModifierToken> = LeftFrom<{
-        groups: L["groups"]
-        branches: L["branches"]
-        expression: [L["expression"], Token]
-        bounds: L["bounds"]
-    }>
+    export type Modify<L extends Left, Token extends ModifierToken> = SetRoot<
+        L,
+        [L["tree"]["root"], Token]
+    >
 
-    export type SetExpression<L extends Left, Token extends string> = LeftFrom<{
-        groups: L["groups"]
-        branches: L["branches"]
-        expression: Token
-        bounds: L["bounds"]
+    export type SetRoot<L extends Left, Node> = LeftFrom<{
+        tree: {
+            root: Node
+            union: L["tree"]["union"]
+            intersection: L["tree"]["intersection"]
+        }
+        ctx: L["ctx"]
     }>
 }
