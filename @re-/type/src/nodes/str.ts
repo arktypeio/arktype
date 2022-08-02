@@ -2,7 +2,7 @@
 /* eslint-disable max-lines */
 import { Get, ListChars } from "@re-/tools"
 import { Base } from "./base/index.js"
-import { ListNode, ListType, OptionalNode } from "./nonTerminal/index.js"
+import { GroupType, ListNode, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
 import type { Right, Shift } from "./shift.js"
 import {
@@ -16,6 +16,47 @@ export type State = {
     L: Left
     R: Right
 }
+
+export type StateFrom<S extends State> = S
+
+export type ErrorState<S extends State, Message extends string> = StateFrom<{
+    L: Str.SetExpression<S["L"], ErrorToken<Message>>
+    R: S["R"]
+}>
+
+type ErrorToken<Message extends string> = `!${Message}`
+
+type Union<B extends BranchState, Expression> = {
+    union: [
+        B["union"] extends []
+            ? MergeExpression<B["intersection"], Expression>
+            : [...B["union"], MergeExpression<B["intersection"], Expression>],
+        "|"
+    ]
+    intersection: []
+}
+
+type Intersection<B extends BranchState, Expression> = {
+    union: B["union"]
+    intersection: [
+        B["intersection"] extends []
+            ? Expression
+            : [...B["intersection"], Expression],
+        "&"
+    ]
+}
+
+type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
+
+type MergeExpression<
+    Branch extends CurrentBranch,
+    Expression
+> = ExtractIfSingleton<[...Branch, Expression]>
+
+export type MergeBranches<B extends BranchState, Expression> = MergeExpression<
+    B["union"],
+    MergeExpression<B["intersection"], Expression>
+>
 
 export type Left = {
     openGroups: BranchState[]
@@ -157,8 +198,6 @@ export namespace Str {
         R: Shift.Base<ListChars<Def>, Dict>
     }
 
-    export type StateFrom<S extends State> = S
-
     type TreeFrom<Def extends string, Dict> = Get<
         Get<ParseDefinition<Def, Dict>, "L">,
         "expression"
@@ -218,34 +257,13 @@ export namespace Str {
               R: Shift.Base<S["R"]["unscanned"], Dict>
           }>
         : S["R"]["lookahead"] extends ")"
-        ? CloseGroup<S>
+        ? GroupType.ParseClose<S>
         : S["R"]["lookahead"] extends "("
-        ? StateFrom<{
-              L: OpenGroup<S["L"]>
-              R: Shift.Base<S["R"]["unscanned"], Dict>
-          }>
+        ? GroupType.ParseOpen<S, Dict>
         : StateFrom<{
               L: SetExpression<S["L"], S["R"]["lookahead"]>
               R: Shift.Operator<S["R"]["unscanned"]>
           }>
-
-    type CloseGroup<S extends State> = S["L"]["openGroups"] extends PopGroup<
-        infer Stack,
-        infer Top
-    >
-        ? StateFrom<{
-              L: LeftFrom<{
-                  openGroups: Stack
-                  branch: Top
-                  expression: MergeBranches<
-                      S["L"]["branch"],
-                      S["L"]["expression"]
-                  >
-                  bounds: S["L"]["bounds"]
-              }>
-              R: Shift.Operator<S["R"]["unscanned"]>
-          }>
-        : SemanticError<S, `Unexpected ).`>
 
     type ParseSuffixes<S extends State, Dict> = S["L"]["openGroups"] extends []
         ? ParsePossibleRightBound<
@@ -263,7 +281,7 @@ export namespace Str {
               }>,
               Dict
           >
-        : SemanticError<S, "Missing ).">
+        : ErrorState<S, "Missing ).">
 
     type ParsePossibleRightBound<
         S extends State,
@@ -288,24 +306,16 @@ export namespace Str {
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>
           >
-        : SemanticError<
+        : ErrorState<
               S,
               `Right bound ${S["R"]["lookahead"]} must be a number literal followed only by other suffixes.`
           >
-
-    export type SemanticError<
-        S extends State,
-        Message extends string
-    > = StateFrom<{
-        L: SetExpression<S["L"], ErrorToken<Message>>
-        R: S["R"]
-    }>
 
     type FinalizeState<S extends State> = {} extends S["L"]["bounds"]
         ? S
         : S["L"]["expression"] extends BoundableNode
         ? S
-        : SemanticError<
+        : ErrorState<
               S,
               `Bounded expression '${TreeToString<
                   S["L"]["expression"]
@@ -321,36 +331,19 @@ export namespace Str {
               L: SetExpression<S["L"], S["R"]["lookahead"]>
               R: S["R"]
           }>
-        : SemanticError<S, `Unexpected suffix token ${S["R"]["lookahead"]}.`>
+        : ErrorState<S, `Unexpected suffix token ${S["R"]["lookahead"]}.`>
 
     export type ParseOptional<S extends State> = S["R"]["unscanned"] extends []
         ? StateFrom<{
               L: Modifier<S["L"], "?">
               R: Shift.Operator<S["R"]["unscanned"]>
           }>
-        : SemanticError<
-              S,
-              `Suffix '?' is only valid at the end of a definition.`
-          >
+        : ErrorState<S, `Suffix '?' is only valid at the end of a definition.`>
 
     type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
     type SuffixToken = "END" | "?" | ComparatorToken | ErrorToken<string>
 
     type BranchToken = "|" | "&"
-
-    type ErrorToken<Message extends string> = `!${Message}`
-
-    export type OpenGroup<L extends Left> = LeftFrom<{
-        openGroups: [...L["openGroups"], L["branch"]]
-        branch: DefaultBranchState
-        expression: []
-        bounds: L["bounds"]
-    }>
-
-    type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
-        ...Stack,
-        Top
-    ]
 
     export type SetExpression<L extends Left, Token extends string> = LeftFrom<{
         openGroups: L["openGroups"]
@@ -405,41 +398,6 @@ export namespace Str {
         expression: []
         bounds: L["bounds"]
     }>
-
-    type Union<B extends BranchState, Expression> = {
-        union: [
-            B["union"] extends []
-                ? MergeExpression<B["intersection"], Expression>
-                : [
-                      ...B["union"],
-                      MergeExpression<B["intersection"], Expression>
-                  ],
-            "|"
-        ]
-        intersection: []
-    }
-
-    type Intersection<B extends BranchState, Expression> = {
-        union: B["union"]
-        intersection: [
-            B["intersection"] extends []
-                ? Expression
-                : [...B["intersection"], Expression],
-            "&"
-        ]
-    }
-
-    type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
-
-    type MergeExpression<
-        Branch extends CurrentBranch,
-        Expression
-    > = ExtractIfSingleton<[...Branch, Expression]>
-
-    type MergeBranches<B extends BranchState, Expression> = MergeExpression<
-        B["union"],
-        MergeExpression<B["intersection"], Expression>
-    >
 
     /** A BoundableNode must be either:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
