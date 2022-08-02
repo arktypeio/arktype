@@ -2,12 +2,11 @@
 /* eslint-disable max-lines */
 import { Get, ListChars } from "@re-/tools"
 import { Base } from "./base/index.js"
-import { ListNode, OptionalNode } from "./nonTerminal/index.js"
+import { ListNode, ListType, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
-import type { InitializeRight, Right, Shift } from "./shift.js"
+import type { Right, Shift } from "./shift.js"
 import {
     AliasNode,
-    BigintLiteralDefinition,
     InferTerminalStr,
     Keyword,
     NumberLiteralDefinition
@@ -182,66 +181,53 @@ export namespace Str {
               S["R"]["lookahead"],
               Dict
           >
-        : ParseBase<S, Dict>
+        : ParseMain<S, Dict>
 
     type ParsePossibleLowerBound<
         S extends State,
         Value extends NumberLiteralDefinition,
         Dict
     > = S["R"]["lookahead"] extends ComparatorToken
-        ? ParseBase<
+        ? ParseMain<
               StateFrom<{
                   L: LeftBound<S["L"], S["R"]["lookahead"], Value>
                   R: Shift.Base<S["R"]["unscanned"], Dict>
               }>,
               Dict
           >
-        : ParseOperators<
+        : ParseMain<
               StateFrom<{ L: SetExpression<S["L"], Value>; R: S["R"] }>,
               Dict
           >
 
-    type ParseBase<S extends State, Dict> = S["R"]["lookahead"] extends "("
-        ? ParseBase<
-              StateFrom<{
-                  L: OpenGroup<S["L"]>
-                  R: Shift.Base<S["R"]["unscanned"], Dict>
-              }>,
-              Dict
-          >
-        : S["R"]["lookahead"] extends ErrorToken<string>
-        ? ParseSuffixes<S, Dict>
-        : ParseOperators<
-              StateFrom<{
-                  L: SetExpression<S["L"], S["R"]["lookahead"]>
-                  R: Shift.Operator<S["R"]["unscanned"]>
-              }>,
-              Dict
-          >
-
-    type ParseOperators<
+    type ParseMain<
         S extends State,
         Dict
-    > = S["R"]["lookahead"] extends "[]"
-        ? ParseOperators<
-              StateFrom<{
-                  L: Modifier<S["L"], "[]">
-                  R: Shift.Operator<S["R"]["unscanned"]>
-              }>,
-              Dict
-          >
+    > = S["R"]["lookahead"] extends SuffixToken
+        ? ParseSuffixes<S, Dict>
+        : ParseMain<ParseNext<S, Dict>, Dict>
+
+    type ParseNext<S extends State, Dict> = S["R"]["lookahead"] extends "[]"
+        ? StateFrom<{
+              L: Modifier<S["L"], "[]">
+              R: Shift.Operator<S["R"]["unscanned"]>
+          }>
         : S["R"]["lookahead"] extends BranchToken
-        ? ParseBase<
-              StateFrom<{
-                  L: Branch<S["L"], S["R"]["lookahead"]>
-                  R: Shift.Base<S["R"]["unscanned"], Dict>
-              }>,
-              Dict
-          >
+        ? StateFrom<{
+              L: Branch<S["L"], S["R"]["lookahead"]>
+              R: Shift.Base<S["R"]["unscanned"], Dict>
+          }>
         : S["R"]["lookahead"] extends ")"
-        ? ParseOperators<CloseGroup<S>, Dict>
-        : // Must be a suffix token by process of elimination
-          ParseSuffixes<S, Dict>
+        ? CloseGroup<S>
+        : S["R"]["lookahead"] extends "("
+        ? StateFrom<{
+              L: OpenGroup<S["L"]>
+              R: Shift.Base<S["R"]["unscanned"], Dict>
+          }>
+        : StateFrom<{
+              L: SetExpression<S["L"], S["R"]["lookahead"]>
+              R: Shift.Operator<S["R"]["unscanned"]>
+          }>
 
     type CloseGroup<S extends State> = S["L"]["openGroups"] extends PopGroup<
         infer Stack,

@@ -94,15 +94,20 @@ export namespace Shift {
         infer Lookahead,
         infer Rest
     >
-        ? Lookahead extends "["
+        ? Lookahead extends BranchingOperatorToken | "?" | ")"
+            ? RightFrom<{
+                  lookahead: Lookahead
+                  unscanned: Rest
+              }>
+            : Lookahead extends "["
             ? ListToken<Rest>
             : Lookahead extends ComparatorStartChar
             ? ComparatorToken<Lookahead, Rest>
             : Lookahead extends " "
             ? Operator<Rest>
             : RightFrom<{
-                  lookahead: Lookahead
-                  unscanned: Rest
+                  lookahead: ErrorToken<`Expected an operator (got '${Lookahead}').`>
+                  unscanned: []
               }>
         : RightFrom<{
               lookahead: "END"

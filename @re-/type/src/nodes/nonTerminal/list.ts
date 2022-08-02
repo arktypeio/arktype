@@ -2,7 +2,14 @@ import { Base } from "../base/index.js"
 import { Bound } from "./bound.js"
 import { NonTerminal } from "./nonTerminal.js"
 
-export namespace ListType {}
+export namespace ListType {
+    export type Token = "[]"
+
+    export type Meta = {
+        kind: "modifier"
+        phase: "operator"
+    }
+}
 
 export class ListNode extends NonTerminal implements Bound.Boundable {
     toString() {
