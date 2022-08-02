@@ -10,20 +10,15 @@ export namespace ParserState {
         R: Right
     }
 
-    export type Tree = {
-        root: unknown
-        union: Branches.Branch
-        intersection: Branches.Branch
-    }
-
     export type Left = {
-        tree: Tree
+        groups: Branches.State[]
+        branches: Branches.State
+        root: unknown
         ctx: Context
     }
 
     export type Context = {
         bounds: Bounds.State
-        groups: Tree[]
     }
 
     export type Right = {
@@ -50,19 +45,15 @@ export namespace ParserState {
         unscanned: ListChars<Def>
     }>
 
-    export type InitialTree = {
-        root: ""
-        union: []
-        intersection: []
-    }
-
     export type InitialContext = {
         groups: []
         bounds: {}
     }
 
     export type InitialLeft = LeftFrom<{
-        tree: InitialTree
+        groups: []
+        branches: {}
+        root: undefined
         ctx: InitialContext
     }>
 
@@ -72,15 +63,13 @@ export namespace ParserState {
 
     export type Modify<L extends Left, Token extends ModifierToken> = SetRoot<
         L,
-        [L["tree"]["root"], Token]
+        [L["root"], Token]
     >
 
     export type SetRoot<L extends Left, Node> = LeftFrom<{
-        tree: {
-            root: Node
-            union: L["tree"]["union"]
-            intersection: L["tree"]["intersection"]
-        }
+        groups: L["groups"]
+        branches: L["branches"]
+        root: Node
         ctx: L["ctx"]
     }>
 }

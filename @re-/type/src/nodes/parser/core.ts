@@ -15,7 +15,7 @@ import { ParserState } from "./state.js"
 
 export namespace CoreParser {
     export type Parse<Def extends string, Dict> = Get<
-        Get<Get<ParseDefinition<Def, Dict>, "L">, "tree">,
+        Get<ParseDefinition<Def, Dict>, "L">,
         "root"
     >
 
@@ -66,15 +66,16 @@ export namespace CoreParser {
     type ParseSuffixes<
         S extends ParserState.State,
         Dict
-    > = S["L"]["ctx"]["groups"] extends []
+    > = S["L"]["groups"] extends []
         ? Bounds.ParsePossibleRightBound<
               {
                   L: {
-                      tree: {
-                          root: Branches.MergeAll<S["L"]["tree"]>
-                          union: []
-                          intersection: []
-                      }
+                      groups: []
+                      branches: {}
+                      root: Branches.MergeAll<
+                          S["L"]["branches"],
+                          S["L"]["root"]
+                      >
                       ctx: S["L"]["ctx"]
                   }
                   R: S["R"]

@@ -8,33 +8,30 @@ export namespace Group {
         Dict
     > = ParserState.From<{
         L: {
-            tree: ParserState.InitialTree
-            ctx: {
-                bounds: S["L"]["ctx"]["bounds"]
-                groups: [...S["L"]["ctx"]["groups"], S["L"]["tree"]]
-            }
+            groups: [...S["L"]["groups"], S["L"]["branches"]]
+            branches: {}
+            root: null
+            ctx: S["L"]["ctx"]
         }
         R: Shift.Base<S["R"]["unscanned"], Dict>
     }>
 
     type PopGroup<
-        Stack extends ParserState.Tree[],
-        Top extends ParserState.Tree
+        Stack extends Branches.State[],
+        Top extends Branches.State
     > = [...Stack, Top]
 
     export type ParseClose<S extends ParserState.State> =
-        S["L"]["ctx"]["groups"] extends PopGroup<infer Stack, infer Top>
+        S["L"]["groups"] extends PopGroup<infer Stack, infer Top>
             ? ParserState.From<{
                   L: {
-                      tree: {
-                          root: Branches.MergeAll<S["L"]["tree"]>
-                          union: Top["union"]
-                          intersection: Top["intersection"]
-                      }
-                      ctx: {
-                          groups: Stack
-                          bounds: S["L"]["ctx"]["bounds"]
-                      }
+                      groups: Stack
+                      root: Branches.MergeAll<
+                          S["L"]["branches"],
+                          S["L"]["root"]
+                      >
+                      branches: Top
+                      ctx: S["L"]["ctx"]
                   }
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>

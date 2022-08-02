@@ -75,7 +75,9 @@ export namespace Bounds {
         Dict
     > = ParserState.From<{
         L: {
-            tree: ParserState.InitialTree
+            groups: []
+            branches: {}
+            root: undefined
             ctx: S["L"]["ctx"] & {
                 bounds: {
                     left: [N, T]
@@ -91,7 +93,9 @@ export namespace Bounds {
         N extends NumberLiteralDefinition
     > = ParserState.From<{
         L: {
-            tree: S["L"]["tree"]
+            groups: S["L"]["groups"]
+            branches: S["L"]["branches"]
+            root: S["L"]["root"]
             ctx: S["L"]["ctx"] & {
                 bounds: {
                     right: [T, N]
@@ -139,12 +143,12 @@ export namespace Bounds {
           >
 
     export type AssertBoundable<S extends ParserState.State> =
-        S["L"]["tree"]["root"] extends Bounds.Boundable
+        S["L"]["root"] extends Bounds.Boundable
             ? S
             : ParserState.Error<
                   S,
                   `Bounded expression '${ParseTree.ToString<
-                      S["L"]["tree"]["root"]
+                      S["L"]["root"]
                   >}' must be a number-or-string-typed keyword or a list-typed expression.`
               >
 }

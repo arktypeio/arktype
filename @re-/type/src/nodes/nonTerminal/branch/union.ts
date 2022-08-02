@@ -20,23 +20,19 @@ const preferredDefaults: PreferredDefaults = [
 ]
 
 export namespace Union {
-    export type ReduceTree<T extends ParserState.Tree> = {
-        root: ""
+    export type PushRoot<B extends Branches.State, Root> = {
         union: [
-            T["union"] extends []
-                ? Branches.MergeExpression<T["intersection"], T["root"]>
-                : [
-                      ...T["union"],
-                      Branches.MergeExpression<T["intersection"], T["root"]>
-                  ],
+            Branches.MergeExpression<
+                B["union"],
+                Branches.MergeExpression<B["intersection"], Root>
+            >,
             "|"
         ]
-        intersection: []
     }
 
     export type Parse<S extends ParserState.State, Dict> = Branches.Parse<
         S,
-        ReduceTree<S["L"]["tree"]>,
+        PushRoot<S["L"]["branches"], S["L"]["root"]>,
         Dict
     >
 
