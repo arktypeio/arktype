@@ -74,12 +74,14 @@ export namespace Reduce {
           }>
         : Error<L, `Unexpected ).`>
 
-    export type SuffixStart<L extends Left> = LeftFrom<{
-        openGroups: L["openGroups"]
-        branch: DefaultBranchState
-        expression: MergeBranches<L["branch"], L["expression"]>
-        bounds: L["bounds"]
-    }>
+    export type SuffixStart<L extends Left> = L["openGroups"] extends []
+        ? LeftFrom<{
+              openGroups: L["openGroups"]
+              branch: DefaultBranchState
+              expression: MergeBranches<L["branch"], L["expression"]>
+              bounds: L["bounds"]
+          }>
+        : Error<L, "Missing ).">
 
     export type UpdateBounds<
         L extends Left,

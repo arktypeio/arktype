@@ -126,7 +126,7 @@ export namespace Str {
 
     export type StateFrom<S extends State> = S
 
-    type Z = ParseDefinition<"string[]|number[]", {}>
+    type Z = ParseDefinition<"string[][]|number[]", {}>
 
     type ParseDefinition<Def extends string, Dict> = ParseBase<
         {
@@ -171,6 +171,14 @@ export namespace Str {
               }>,
               Dict
           >
+        : S["R"]["lookahead"] extends ")"
+        ? ParseOperators<
+              StateFrom<{
+                  L: Reduce.CloseGroup<S["L"]>
+                  R: Shift.Operator<S["R"]["unscanned"]>
+              }>,
+              Dict
+          >
         : ParseSuffixes<
               StateFrom<{
                   L: Reduce.SuffixStart<S["L"]>
@@ -178,13 +186,13 @@ export namespace Str {
               }>
           >
 
-    // type ParseSuffixes<S extends State> =
-    //     S["R"]["lookahead"] extends ComparatorToken
-    //         ? ReduceRightBound<
-    //               ShiftUnenclosedBase<State.DiscardToken<S>>,
-    //               S["R"]["lookahead"]
-    //           >
-    //         : ParseFinalizer<S>
+    type ParseSuffixes<S extends State> = S
+    // S["R"]["lookahead"] extends ComparatorToken
+    //     ? ReduceRightBound<
+    //           ShiftUnenclosedBase<State.DiscardToken<S>>,
+    //           S["R"]["lookahead"]
+    //       >
+    //     : ParseFinalizer<S>
 
     // export type Optional<L extends Left> = S["unscanned"] extends []
     //     ? ReduceModifier<FinalizeState<S>>
