@@ -4,7 +4,7 @@ import { Base } from "./base/index.js"
 import {
     Bound,
     IntersectionNode,
-    ListNode,
+    List,
     OptionalNode,
     UnionNode
 } from "./nonTerminal/index.js"
@@ -65,15 +65,15 @@ type BranchState = {
 }
 
 export class Parser {
-    openGroups: BranchState[]
-    branch: BranchState
+    groups: BranchState[]
+    branches: BranchState
     expression?: Base.Node
     chars: string[]
     scan: number
 
     constructor(def: string, private ctx: Base.Parsing.Context) {
-        this.openGroups = []
-        this.branch = { ctx: {} }
+        this.groups = []
+        this.branches = { ctx: {} }
         this.chars = [...def, "END"]
         this.scan = 0
     }
@@ -124,42 +124,42 @@ export class Parser {
 
     shiftUnion() {
         this.mergeIntersection()
-        if (!this.branch.union) {
-            this.branch.union = new UnionNode([this.expression!], this.ctx)
+        if (!this.branches.union) {
+            this.branches.union = new UnionNode([this.expression!], this.ctx)
         } else {
-            this.branch.union.addMember(this.expression!)
+            this.branches.union.addMember(this.expression!)
         }
         this.expression = undefined
         this.scan++
     }
 
     mergeUnion() {
-        if (this.branch.union) {
+        if (this.branches.union) {
             this.mergeIntersection()
-            this.branch.union.addMember(this.expression!)
-            this.expression = this.branch.union
-            this.branch.union = undefined
+            this.branches.union.addMember(this.expression!)
+            this.expression = this.branches.union
+            this.branches.union = undefined
         }
     }
 
     shiftIntersection() {
-        if (!this.branch.intersection) {
-            this.branch.intersection = new IntersectionNode(
+        if (!this.branches.intersection) {
+            this.branches.intersection = new IntersectionNode(
                 [this.expression!],
                 this.ctx
             )
         } else {
-            this.branch.intersection.addMember(this.expression!)
+            this.branches.intersection.addMember(this.expression!)
         }
         this.expression = undefined
         this.scan++
     }
 
     mergeIntersection() {
-        if (this.branch.intersection) {
-            this.branch.intersection.addMember(this.expression!)
-            this.expression = this.branch.intersection
-            this.branch.intersection = undefined
+        if (this.branches.intersection) {
+            this.branches.intersection.addMember(this.expression!)
+            this.expression = this.branches.intersection
+            this.branches.intersection = undefined
         }
     }
 
@@ -182,18 +182,18 @@ export class Parser {
     }
 
     shiftGroup() {
-        this.openGroups.push(this.branch)
-        this.branch = { ctx: {} }
+        this.groups.push(this.branches)
+        this.branches = { ctx: {} }
         this.scan++
         this.shiftBranches()
     }
 
     popGroup() {
-        const previousBranches = this.openGroups.pop()
+        const previousBranches = this.groups.pop()
         if (previousBranches === undefined) {
             throw new Error(`Unexpected ).`)
         }
-        this.branch = previousBranches
+        this.branches = previousBranches
         this.scan++
     }
 
@@ -261,7 +261,7 @@ export class Parser {
 
     shiftListToken() {
         if (this.nextLookahead === "]") {
-            this.expression = new ListNode(this.expression!, this.ctx)
+            this.expression = new List.ListNode(this.expression!, this.ctx)
             this.scan += 2
         } else {
             throw new Error(`Missing expected ].`)
@@ -295,12 +295,12 @@ export class Parser {
     }
 
     reduceRightBound(expression: Bound.Boundable, token: ComparatorToken) {
-        if (this.branch.ctx.rightBounded) {
+        if (this.branches.ctx.rightBounded) {
             throw new Error(
                 `Right side of comparator ${token} cannot be bounded more than once.`
             )
         }
-        this.branch.ctx.rightBounded = true
+        this.branches.ctx.rightBounded = true
         const bounded = this.expression
         this.shiftBranch()
         if (this.expression instanceof NumberLiteralNode) {
@@ -314,12 +314,12 @@ export class Parser {
     }
 
     reduceLeftBound(value: number, token: ComparatorToken) {
-        if (this.branch.ctx.leftBounded) {
+        if (this.branches.ctx.leftBounded) {
             throw new Error(
                 `Left side of comparator ${token} cannot be bounded more than once.`
             )
         }
-        this.branch.ctx.leftBounded = true
+        this.branches.ctx.leftBounded = true
         this.shiftBranch()
         if (Bound.isBoundable(this.expression!)) {
             // Apply bound

@@ -16,7 +16,7 @@ export namespace IntersectionType {
 
     export type Parse<S extends ParserType.State, Dict> = Branches.ParseToken<
         S,
-        ReduceBranches<S["L"]["branch"], S["L"]["expression"]>,
+        ReduceBranches<S["L"]["branches"], S["L"]["expression"]>,
         Dict
     >
 }

@@ -2,51 +2,53 @@ import { Base } from "../base/index.js"
 import { Bound } from "./bound.js"
 import { NonTerminal } from "./nonTerminal.js"
 
-export namespace ListType {
-    export type Token = "[]"
+export namespace List {
+    export namespace T {
+        export type Token = "[]"
 
-    export type Meta = {
-        kind: "modifier"
-        phase: "operator"
-    }
-}
-
-export class ListNode extends NonTerminal implements Bound.Boundable {
-    toString() {
-        return this.children.toString() + "[]"
-    }
-
-    allows(args: Base.Validation.Args) {
-        if (!Array.isArray(args.value)) {
-            this.addUnassignable(args)
-            return false
+        export type Meta = {
+            kind: "modifier"
+            phase: "operator"
         }
-        let allItemsAllowed = true
-        let itemIndex = 0
-        for (const itemValue of args.value) {
-            const itemIsAllowed = this.children.allows({
-                ...args,
-                value: itemValue,
-                ctx: {
-                    ...args.ctx,
-                    path: Base.pathAdd(args.ctx.path, itemIndex)
-                }
-            })
-            if (!itemIsAllowed) {
-                allItemsAllowed = false
+    }
+
+    export class ListNode extends NonTerminal implements Bound.Boundable {
+        toString() {
+            return this.children.toString() + "[]"
+        }
+
+        allows(args: Base.Validation.Args) {
+            if (!Array.isArray(args.value)) {
+                this.addUnassignable(args)
+                return false
             }
-            itemIndex++
+            let allItemsAllowed = true
+            let itemIndex = 0
+            for (const itemValue of args.value) {
+                const itemIsAllowed = this.children.allows({
+                    ...args,
+                    value: itemValue,
+                    ctx: {
+                        ...args.ctx,
+                        path: Base.pathAdd(args.ctx.path, itemIndex)
+                    }
+                })
+                if (!itemIsAllowed) {
+                    allItemsAllowed = false
+                }
+                itemIndex++
+            }
+            return allItemsAllowed
         }
-        return allItemsAllowed
-    }
 
-    generate() {
-        return []
-    }
+        generate() {
+            return []
+        }
 
-    boundBy = "items"
+        boundBy = "items"
 
-    toBound(value: unknown[]) {
-        return value.length
+        toBound(value: unknown[]) {
+            return value.length
+        }
     }
 }

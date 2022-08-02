@@ -10,8 +10,8 @@ export namespace GroupType {
         Dict
     > = ParserType.StateFrom<{
         L: {
-            openGroups: [...S["L"]["openGroups"], S["L"]["branch"]]
-            branch: Branches.Initial
+            groups: [...S["L"]["groups"], S["L"]["branches"]]
+            branches: Branches.Initial
             expression: []
             bounds: S["L"]["bounds"]
         }
@@ -24,13 +24,13 @@ export namespace GroupType {
     ]
 
     export type ParseClose<S extends ParserType.State> =
-        S["L"]["openGroups"] extends PopGroup<infer Stack, infer Top>
+        S["L"]["groups"] extends PopGroup<infer Stack, infer Top>
             ? ParserType.StateFrom<{
                   L: {
-                      openGroups: Stack
-                      branch: Top
+                      groups: Stack
+                      branches: Top
                       expression: Branches.MergeAll<
-                          S["L"]["branch"],
+                          S["L"]["branches"],
                           S["L"]["expression"]
                       >
                       bounds: S["L"]["bounds"]

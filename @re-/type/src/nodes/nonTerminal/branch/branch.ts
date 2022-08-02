@@ -25,8 +25,8 @@ export namespace Branches {
         Dict
     > = ParserType.StateFrom<{
         L: {
-            openGroups: S["L"]["openGroups"]
-            branch: Branch
+            groups: S["L"]["groups"]
+            branches: Branch
             expression: []
             bounds: S["L"]["bounds"]
         }

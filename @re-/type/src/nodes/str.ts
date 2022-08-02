@@ -1,5 +1,5 @@
 import { Base } from "./base/index.js"
-import { ListNode, OptionalNode } from "./nonTerminal/index.js"
+import { List, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
 import { ParserType } from "./parser.js"
 import { AliasNode, InferTerminalStr, Keyword } from "./terminal/index.js"
@@ -98,7 +98,7 @@ export namespace Str {
                 ctx
             )
             if (possibleIdentifierNode) {
-                return new ListNode(possibleIdentifierNode, ctx)
+                return new List.ListNode(possibleIdentifierNode, ctx)
             }
         }
         return tryNaiveParseIdentifier(def, ctx)
