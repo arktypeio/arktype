@@ -4,6 +4,8 @@ import { Get, ListChars } from "@re-/tools"
 import { Base } from "./base/index.js"
 import { ListNode, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
+import { DefaultLeft, Left, Reduce } from "./reduce.js"
+import { InitializeRight, Right, Shift } from "./shift.js"
 import {
     AliasNode,
     BigintLiteralDefinition,
@@ -11,6 +13,11 @@ import {
     Keyword,
     NumberLiteralDefinition
 } from "./terminal/index.js"
+
+export type State = {
+    L: Left
+    R: Right
+}
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = TryNaiveParse<Def, Dict>
@@ -83,11 +90,6 @@ export namespace Str {
         ? [...LeavesOf<Right>, ...LeavesOf<Left>]
         : [Tree]
 
-    type Scan<Left extends string, Unscanned extends string[]> = [
-        Left,
-        ...Unscanned
-    ]
-
     type TransformedNode<Child, Token extends string> = [Child, Token]
 
     type BranchNode<Left, Token extends string, Right> = [Left, Token, Right]
@@ -100,381 +102,186 @@ export namespace Str {
         ? `${TreeToString<Left>}${Token}${TreeToString<Right>}`
         : ""
 
-    export namespace State {
-        export type State = {
-            openGroups: BranchState[]
-            branch: BranchState
-            expression: unknown
-            token: string
-            unscanned: string[]
-            bounds: Bounds
-        }
-
-        export type Initialize<Def extends string> = From<{
-            openGroups: []
-            branch: DefaultBranchState
-            expression: []
-            token: ""
-            unscanned: ListChars<Def>
-            bounds: {}
-        }>
-
-        export type BranchState = {
-            union: CurrentBranch
-            intersection: CurrentBranch
-        }
-
-        export type DefaultBranchState = {
-            union: []
-            intersection: []
-        }
-
-        export type CurrentBranch = [] | [unknown, string]
-
-        export type Bounds = {
-            left?: [NumberLiteralDefinition, ComparatorToken]
-            right?: [ComparatorToken, NumberLiteralDefinition]
-        }
-
-        export type ScanTo<S extends State, Unscanned extends string[]> = From<{
-            openGroups: S["openGroups"]
-            branch: S["branch"]
-            expression: S["expression"]
-            token: S["token"]
-            unscanned: Unscanned
-            bounds: S["bounds"]
-        }>
-
-        export type UpdateBounds<
-            S extends State,
-            Updates extends Partial<Bounds>
-        > = From<{
-            openGroups: S["openGroups"]
-            branch: S["branch"]
-            expression: S["expression"]
-            token: ""
-            unscanned: S["unscanned"]
-            bounds: S["bounds"] & Updates
-        }>
-
-        export type ReduceBase<S extends State> = From<{
-            openGroups: S["openGroups"]
-            branch: S["branch"]
-            expression: S["token"]
-            token: ""
-            unscanned: S["unscanned"]
-            bounds: S["bounds"]
-        }>
-
-        export type ShiftChar<
-            S extends State,
-            Char extends string,
-            Unscanned extends string[]
-        > = From<{
-            openGroups: S["openGroups"]
-            branch: S["branch"]
-            expression: S["expression"]
-            token: `${S["token"]}${Char}`
-            unscanned: Unscanned
-            bounds: S["bounds"]
-        }>
-
-        export type DiscardToken<S extends State> = From<{
-            openGroups: S["openGroups"]
-            branch: S["branch"]
-            expression: S["expression"]
-            token: ""
-            unscanned: S["unscanned"]
-            bounds: S["bounds"]
-        }>
-
-        export type ReduceModifier<S extends State> = From<{
-            openGroups: S["openGroups"]
-            branch: S["branch"]
-            expression: [S["expression"], S["token"]]
-            token: ""
-            unscanned: S["unscanned"]
-            bounds: S["bounds"]
-        }>
-
-        export type ReduceBrancher<S extends State> = From<{
-            openGroups: S["openGroups"]
-            branch: S["token"] extends "|"
-                ? PushUnion<S["branch"], S["expression"]>
-                : PushIntersection<S["branch"], S["expression"]>
-            expression: []
-            token: ""
-            unscanned: S["unscanned"]
-            bounds: S["bounds"]
-        }>
-
-        type PushIntersection<B extends BranchState, Expression> = {
-            union: B["union"]
-            intersection: [
-                B["intersection"] extends []
-                    ? Expression
-                    : [...B["intersection"], Expression],
-                "&"
-            ]
-        }
-
-        type PushUnion<B extends BranchState, Expression> = {
-            union: [
-                B["union"] extends []
-                    ? MergeExpression<B["intersection"], Expression>
-                    : [
-                          ...B["union"],
-                          MergeExpression<B["intersection"], Expression>
-                      ],
-                "|"
-            ]
-            intersection: []
-        }
-
-        type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
-
-        type MergeExpression<
-            Branch extends CurrentBranch,
-            Expression
-        > = ExtractIfSingleton<[...Branch, Expression]>
-
-        type MergeBranches<B extends BranchState, Expression> = MergeExpression<
-            B["union"],
-            MergeExpression<B["intersection"], Expression>
-        >
-
-        export type ReduceSuffixStart<S extends State> = From<{
-            openGroups: S["openGroups"]
-            branch: DefaultBranchState
-            expression: MergeBranches<S["branch"], S["expression"]>
-            token: S["token"]
-            unscanned: S["unscanned"]
-            bounds: S["bounds"]
-        }>
-
-        export type OpenGroup<
-            S extends State,
-            Unscanned extends string[]
-        > = From<{
-            openGroups: [...S["openGroups"], S["branch"]]
-            branch: DefaultBranchState
-            expression: []
-            token: S["token"]
-            unscanned: Unscanned
-            bounds: S["bounds"]
-        }>
-
-        type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
-            ...Stack,
-            Top
-        ]
-
-        export type CloseGroup<S extends State> =
-            S["openGroups"] extends PopGroup<infer Stack, infer Top>
-                ? From<{
-                      openGroups: Stack
-                      branch: Top
-                      expression: MergeBranches<S["branch"], S["expression"]>
-                      token: ""
-                      unscanned: S["unscanned"]
-                      bounds: S["bounds"]
-                  }>
-                : Error<`Unexpected ).`>
-
-        export type Error<Message extends string> = From<{
-            openGroups: []
-            branch: DefaultBranchState
-            expression: ErrorToken<Message>
-            token: ""
-            unscanned: []
-            bounds: {}
-        }>
-
-        export type From<S extends State> = S
+    export type BranchState = {
+        union: CurrentBranch
+        intersection: CurrentBranch
     }
 
-    type ParseDefinition<Def extends string, Dict> = Get<
-        ShiftDefinition<Def, Dict>,
-        "expression"
-    >
+    export type DefaultBranchState = {
+        union: []
+        intersection: []
+    }
 
-    type ShiftDefinition<Def extends string, Dict> = ParsePrefixes<
-        ParseBranch<State.Initialize<Def>, Dict>,
+    export type CurrentBranch = [] | [unknown, string]
+
+    export type Bounds = {
+        left?: [NumberLiteralDefinition, ComparatorToken]
+        right?: [ComparatorToken, NumberLiteralDefinition]
+    }
+
+    export type InitializeState<Def extends string> = {
+        L: DefaultLeft
+        R: InitializeRight<Def>
+    }
+
+    export type StateFrom<S extends State> = S
+
+    type Z = ParseDefinition<"string[]|number[]", {}>
+
+    type ParseDefinition<Def extends string, Dict> = ParseBase<
+        {
+            L: DefaultLeft
+            R: Shift.Base<ListChars<Def>, Dict>
+        },
         Dict
     >
 
-    type FinalizeState<S extends State.State> = S["openGroups"] extends []
-        ? {} extends S["bounds"]
-            ? S
-            : S["expression"] extends BoundableNode
-            ? S
-            : State.Error<`Bounded expression '${TreeToString<
-                  S["expression"]
-              >}' must be a number-or-string-typed keyword or a list-typed expression.`>
-        : State.Error<`Missing ).`>
-
-    type ParseExpression<S extends State.State, Dict> = ParseOperators<
-        ParseBranch<S, Dict>,
-        Dict
-    >
-
-    type ParseBranch<S extends State.State, Dict> = LexOperator<
-        ParseBase<S, Dict>
-    >
-
-    type ParseBase<S extends State.State, Dict> = S["unscanned"] extends Scan<
-        infer Lookahead,
-        infer Unscanned
-    >
-        ? Lookahead extends "("
-            ? ParseBase<State.OpenGroup<S, Unscanned>, Dict>
-            : Lookahead extends LiteralEnclosingChar
-            ? ReduceEnclosedBase<
-                  ShiftEnclosedBase<
-                      State.ShiftChar<S, Lookahead, Unscanned>,
-                      Lookahead
-                  >
-              >
-            : Lookahead extends " "
-            ? ParseBase<State.ScanTo<S, Unscanned>, Dict>
-            : ReduceUnenclosedBase<ShiftUnenclosedBase<S>, Dict>
-        : MissingExpressionError<S>
-
-    type ShiftEnclosedBase<
-        S extends State.State,
-        StartChar extends LiteralEnclosingChar
-    > = S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-        ? Lookahead extends StartChar
-            ? State.ShiftChar<S, Lookahead, Unscanned>
-            : ShiftEnclosedBase<
-                  State.ShiftChar<S, Lookahead, Unscanned>,
-                  StartChar
-              >
-        : State.Error<`${S["token"]} requires a closing ${StartChar}.`>
-
-    type ReduceEnclosedBase<S extends State.State> = S["token"] extends "//"
-        ? State.Error<`Regex literals cannot be empty.`>
-        : State.ReduceBase<S>
-
-    type ShiftUnenclosedBase<S extends State.State> =
-        S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-            ? Lookahead extends BaseTerminatingChar
-                ? S
-                : ShiftUnenclosedBase<State.ShiftChar<S, Lookahead, Unscanned>>
-            : S
-
-    type ReduceUnenclosedBase<S extends State.State, Dict> = IsResolvableName<
-        S["token"],
-        Dict
-    > extends true
-        ? State.ReduceBase<S>
-        : S["token"] extends NumberLiteralDefinition | BigintLiteralDefinition
-        ? State.ReduceBase<S>
-        : S["token"] extends ""
-        ? MissingExpressionError<S>
-        : State.Error<`'${S["token"]}' does not exist in your space.`>
-
-    type MissingExpressionError<S extends State.State> =
-        State.Error<`Expected an expression${S["branch"] extends {}
-            ? ""
-            : ` after '${TreeToString<S["branch"]>}'`}.`>
+    type ParseBase<S extends State, Dict> = S["R"]["lookahead"] extends "("
+        ? ParseBase<
+              StateFrom<{
+                  L: Reduce.OpenGroup<S["L"]>
+                  R: Shift.Base<S["R"]["unscanned"], Dict>
+              }>,
+              Dict
+          >
+        : ParseOperators<
+              StateFrom<{
+                  L: Reduce.SetExpression<S["L"], S["R"]["lookahead"]>
+                  R: Shift.Operator<S["R"]["unscanned"]>
+              }>,
+              Dict
+          >
 
     type ParseOperators<
-        S extends State.State,
+        S extends State,
         Dict
-    > = S["token"] extends SuffixToken
-        ? ParseSuffixes<State.ReduceSuffixStart<S>>
-        : S["token"] extends "[]"
-        ? ParseOperators<LexOperator<State.ReduceModifier<S>>, Dict>
-        : S["token"] extends BranchingOperatorToken
-        ? ParseExpression<State.ReduceBrancher<S>, Dict>
-        : S["token"] extends ")"
-        ? ParseOperators<LexOperator<State.CloseGroup<S>>, Dict>
-        : State.Error<`Unexpected token '${S["token"]}'.`>
-
-    type LexOperator<S extends State.State> = S["unscanned"] extends Scan<
-        infer Lookahead,
-        infer Unscanned
-    >
-        ? Lookahead extends "["
-            ? LexListToken<State.ShiftChar<S, "[", Unscanned>>
-            : Lookahead extends ComparatorStartChar
-            ? LexComparatorToken<State.ShiftChar<S, Lookahead, Unscanned>>
-            : Lookahead extends " "
-            ? LexOperator<State.ScanTo<S, Unscanned>>
-            : State.ShiftChar<S, Lookahead, Unscanned>
-        : State.ShiftChar<S, "END", []>
-
-    type LexComparatorToken<S extends State.State> =
-        S["unscanned"] extends Scan<infer Lookahead, infer Unscanned>
-            ? Lookahead extends "="
-                ? State.ShiftChar<S, Lookahead, Unscanned>
-                : S["token"] extends "="
-                ? State.Error<`= is not a valid comparator. Use == instead.`>
-                : S
-            : State.Error<`Expected a bound condition after ${S["token"]}.`>
-
-    type LexListToken<S extends State.State> = S["unscanned"] extends Scan<
-        infer Lookahead,
-        infer Unscanned
-    >
-        ? Lookahead extends "]"
-            ? State.ShiftChar<S, "]", Unscanned>
-            : State.Error<`Missing expected ']'.`>
-        : State.Error<`Missing expected ']'.`>
-
-    type ParsePrefixes<
-        S extends State.State,
-        Dict
-    > = S["expression"] extends NumberLiteralDefinition
-        ? S["token"] extends ComparatorToken
-            ? ParseExpression<
-                  State.From<{
-                      openGroups: []
-                      branch: S["branch"]
-                      expression: []
-                      token: ""
-                      unscanned: S["unscanned"]
-                      bounds: S["bounds"] & {
-                          left: [S["expression"], S["token"]]
-                      }
-                  }>,
-                  Dict
-              >
-            : ParseOperators<S, Dict>
-        : ParseOperators<S, Dict>
-
-    type ParseSuffixes<S extends State.State> =
-        S["token"] extends ComparatorToken
-            ? ReduceRightBound<
-                  ShiftUnenclosedBase<State.DiscardToken<S>>,
-                  S["token"]
-              >
-            : ParseFinalizer<S>
-
-    type ParseFinalizer<S extends State.State> = S["token"] extends "END"
-        ? FinalizeState<S>
-        : S["token"] extends "?"
-        ? ReduceOptional<S>
-        : State.Error<`Unexpected suffix token ${S["token"]}.`>
-
-    type ReduceOptional<S extends State.State> = S["unscanned"] extends []
-        ? State.ReduceModifier<FinalizeState<S>>
-        : State.Error<`Suffix '?' is only valid at the end of a definition.`>
-
-    type ReduceRightBound<
-        S extends State.State,
-        Comparator extends ComparatorToken
-    > = S["token"] extends NumberLiteralDefinition
-        ? ParseFinalizer<
-              LexOperator<
-                  State.UpdateBounds<S, { right: [Comparator, S["token"]] }>
-              >
+    > = S["R"]["lookahead"] extends "[]"
+        ? ParseOperators<
+              StateFrom<{
+                  L: Reduce.List<S["L"]>
+                  R: Shift.Operator<S["R"]["unscanned"]>
+              }>,
+              Dict
           >
-        : InvalidRightBound<S["token"]>
+        : S["R"]["lookahead"] extends BranchingOperatorToken
+        ? ParseBase<
+              StateFrom<{
+                  L: Reduce.Branch<S["L"], S["R"]["lookahead"]>
+                  R: Shift.Base<S["R"]["unscanned"], Dict>
+              }>,
+              Dict
+          >
+        : ParseSuffixes<
+              StateFrom<{
+                  L: Reduce.SuffixStart<S["L"]>
+                  R: S["R"]
+              }>
+          >
 
-    type InvalidRightBound<Token extends string> =
-        State.Error<`Right bound ${Token} must be a number literal followed only by other suffixes.`>
+    // type ParseSuffixes<S extends State> =
+    //     S["R"]["lookahead"] extends ComparatorToken
+    //         ? ReduceRightBound<
+    //               ShiftUnenclosedBase<State.DiscardToken<S>>,
+    //               S["R"]["lookahead"]
+    //           >
+    //         : ParseFinalizer<S>
+
+    // export type Optional<L extends Left> = S["unscanned"] extends []
+    //     ? ReduceModifier<FinalizeState<S>>
+    //     : State.Error<`Suffix '?' is only valid at the end of a definition.`>
+
+    // export type RightBound<
+    //     S extends Left,
+    //     Comparator extends ComparatorToken
+    // > = S["lookahead"] extends NumberLiteralDefinition
+    //     ? ParseFinalizer<
+    //           Shift.Operator<
+    //               State.UpdateBounds<S, { right: [Comparator, S["lookahead"]] }>
+    //           >
+    //       >
+    //     : InvalidRightBound<S["lookahead"]>
+
+    // type InvalidRightBound<Token extends string> =
+    //     State.Error<`Right bound ${Token} must be a number literal followed only by other suffixes.`>
+
+    // type ParseBranches<
+    //     S extends State,
+    //     Dict
+    // > = S["L"]["expression"] extends ErrorToken<string>
+    //     ? S
+    //     : S["R"]["lookahead"] extends SuffixToken
+    //     ? S
+    //     : ParseBranches<
+    //           StateFrom<{
+    //               L: Reduce.Token<S["L"], S["R"]["lookahead"]>
+    //               R: Shift.Token<S["R"], Dict>
+    //           }>,
+    //           Dict
+    //       >
+
+    // export type ReduceBase<
+    //     L extends Left,
+    //     Token extends string
+    // > = Token extends "(" ? OpenGroup<L> : SetExpression<L, Token>
+
+    // export type ReduceOperators<
+    //     L extends Left,
+    //     Token extends OperatorToken
+    // > = Token extends "[]"
+    //     ? ReduceModifier<L, Token>
+    //     : Token extends BranchingOperatorToken
+    //     ? Branch<L, Token>
+    //     : Token extends ")"
+    //     ? CloseGroup<L>
+    //     : {}
+
+    // type ReduceBranch<L extends Left, R extends Right> = StateFrom<{
+    //     L: Reduce.SetExpression<L, R["lookahead"]>
+    //     R: Shift.Operator<R>
+    // }>
+
+    // type ShiftDefinition<Def extends string, Dict> = ParsePrefixes<
+    //     ParseBranch<State.Initialize<Def>, Dict>,
+    //     Dict
+    // >
+
+    // type FinalizeState<S extends State> = S["openGroups"] extends []
+    //     ? {} extends S["bounds"]
+    //         ? S
+    //         : S["expression"] extends BoundableNode
+    //         ? S
+    //         : State.Error<`Bounded expression '${TreeToString<
+    //               S["expression"]
+    //           >}' must be a number-or-string-typed keyword or a list-typed expression.`>
+    //     : State.Error<`Missing ).`>
+
+    // type ParsePrefixes<
+    //     L extends Left,
+    //     R extends Right,
+    //     Dict
+    // > = S["expression"] extends NumberLiteralDefinition
+    //     ? S["lookahead"] extends ComparatorToken
+    //         ? ParseExpression<
+    //               State.From<{
+    //                   openGroups: []
+    //                   branch: S["branch"]
+    //                   expression: []
+    //                   lookahead: ""
+    //                   unscanned: S["unscanned"]
+    //                   bounds: S["bounds"] & {
+    //                       left: [S["expression"], S["lookahead"]]
+    //                   }
+    //               }>,
+    //               Dict
+    //           >
+    //         : ParseOperators<S, Dict>
+    //     : ParseOperators<S, Dict>
+
+    // type ParseFinalizer<S extends State.State> = S["lookahead"] extends "END"
+    //     ? FinalizeState<S>
+    //     : S["lookahead"] extends "?"
+    //     ? ReduceOptional<S>
+    //     : State.Error<`Unexpected suffix token ${S["lookahead"]}.`>
 
     type ComparatorStartChar = "<" | ">" | "="
 
@@ -490,7 +297,7 @@ export namespace Str {
         | "="
 
     type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
-    type SuffixToken = "END" | "?" | ComparatorToken
+    type SuffixToken = "END" | "?" | ComparatorToken | ErrorToken<string>
 
     type BranchingOperatorToken = "|" | "&"
 

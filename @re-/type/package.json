@@ -22,9 +22,6 @@
             "require": "./dist/cjs/index.js"
         }
     },
-    "imports": {
-        "#re-/type": "./src/index.js"
-    },
     "scripts": {
         "build": "ts-node ../../scripts/build.ts",
         "typecheck": "tsc --noEmit",
@@ -34,7 +31,7 @@
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
         "benchParse": "ts-node ./src/nodes/__tests__/parse.bench.ts",
         "benchBound": "ts-node ./src/nodes/nonTerminal/__tests__/bound.bench.ts",
-        "diag": "tsc -p ./src/__tests__/tsconfig.json > diag.txt"
+        "diag": "tsc --composite false --noEmit --diagnostics --incremental false > diag.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
