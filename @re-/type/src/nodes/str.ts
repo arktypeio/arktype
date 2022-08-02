@@ -4,7 +4,6 @@ import { Get, ListChars } from "@re-/tools"
 import { Base } from "./base/index.js"
 import { ListNode, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
-import { InitialLeft, Left, Reduce } from "./reduce.js"
 import { InitializeRight, Right, Shift } from "./shift.js"
 import {
     AliasNode,
@@ -17,6 +16,41 @@ import {
 export type State = {
     L: Left
     R: Right
+}
+
+export type Left = {
+    openGroups: BranchState[]
+    branch: BranchState
+    expression: unknown
+    bounds: Bounds
+}
+
+export type InitialLeft = {
+    openGroups: []
+    branch: DefaultBranchState
+    expression: []
+    bounds: {}
+}
+
+export type BranchState = {
+    union: CurrentBranch
+    intersection: CurrentBranch
+}
+
+export type DefaultBranchState = {
+    union: []
+    intersection: []
+}
+
+type LeftFrom<L extends Left> = L
+
+export type CurrentBranch = [] | [unknown, string]
+
+type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
+
+export type Bounds = {
+    left?: [NumberLiteralDefinition, ComparatorToken]
+    right?: [ComparatorToken, NumberLiteralDefinition]
 }
 
 export namespace Str {
@@ -133,10 +167,6 @@ export namespace Str {
         Dict
     >
 
-    type Parse2<S extends State, Dict> = S["L"]["phase"] extends "prefix"
-        ? ParsePrefix<S, Dict>
-        : S
-
     type ParsePrefix<
         S extends State,
         Dict
@@ -158,27 +188,27 @@ export namespace Str {
     > = S["R"]["lookahead"] extends ComparatorToken
         ? ParseBase<
               StateFrom<{
-                  L: Reduce.LeftBound<S["L"], S["R"]["lookahead"], Value>
+                  L: LeftBound<S["L"], S["R"]["lookahead"], Value>
                   R: Shift.Base<S["R"]["unscanned"], Dict>
               }>,
               Dict
           >
         : ParseOperators<
-              StateFrom<{ L: Reduce.SetExpression<S["L"], Value>; R: S["R"] }>,
+              StateFrom<{ L: SetExpression<S["L"], Value>; R: S["R"] }>,
               Dict
           >
 
     type ParseBase<S extends State, Dict> = S["R"]["lookahead"] extends "("
         ? ParseBase<
               StateFrom<{
-                  L: Reduce.OpenGroup<S["L"]>
+                  L: OpenGroup<S["L"]>
                   R: Shift.Base<S["R"]["unscanned"], Dict>
               }>,
               Dict
           >
         : ParseOperators<
               StateFrom<{
-                  L: Reduce.SetExpression<S["L"], S["R"]["lookahead"]>
+                  L: SetExpression<S["L"], S["R"]["lookahead"]>
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>,
               Dict
@@ -190,7 +220,7 @@ export namespace Str {
     > = S["R"]["lookahead"] extends "[]"
         ? ParseOperators<
               StateFrom<{
-                  L: Reduce.List<S["L"]>
+                  L: List<S["L"]>
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>,
               Dict
@@ -198,7 +228,7 @@ export namespace Str {
         : S["R"]["lookahead"] extends BranchingOperatorToken
         ? ParseBase<
               StateFrom<{
-                  L: Reduce.Branch<S["L"], S["R"]["lookahead"]>
+                  L: Branch<S["L"], S["R"]["lookahead"]>
                   R: Shift.Base<S["R"]["unscanned"], Dict>
               }>,
               Dict
@@ -206,14 +236,14 @@ export namespace Str {
         : S["R"]["lookahead"] extends ")"
         ? ParseOperators<
               StateFrom<{
-                  L: Reduce.CloseGroup<S["L"]>
+                  L: CloseGroup<S["L"]>
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>,
               Dict
           >
         : ParseSuffixes<
               StateFrom<{
-                  L: Reduce.SuffixStart<S["L"]>
+                  L: SuffixStart<S["L"]>
                   R: S["R"]
               }>,
               Dict
@@ -236,9 +266,7 @@ export namespace Str {
         S extends State,
         Comparator extends ComparatorToken
     > = S["R"]["lookahead"] extends NumberLiteralDefinition
-        ? ParseFinalizing<
-              Reduce.RightBound<S["L"], Comparator, S["R"]["lookahead"]>
-          >
+        ? ParseFinalizing<RightBound<S["L"], Comparator, S["R"]["lookahead"]>>
         : InvalidRightBound<S["lookahead"]>
 
     // type InvalidRightBound<Token extends string> =
@@ -268,6 +296,131 @@ export namespace Str {
     type BranchingOperatorToken = "|" | "&"
 
     type ErrorToken<Message extends string> = `!${Message}`
+
+    export type OpenGroup<L extends Left> = LeftFrom<{
+        openGroups: [...L["openGroups"], L["branch"]]
+        branch: DefaultBranchState
+        expression: []
+        bounds: L["bounds"]
+    }>
+
+    type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
+        ...Stack,
+        Top
+    ]
+
+    export type SetExpression<L extends Left, Token extends string> = LeftFrom<{
+        openGroups: L["openGroups"]
+        branch: L["branch"]
+        expression: Token
+        bounds: L["bounds"]
+    }>
+
+    type Error<L extends Left, Message extends string> = SetExpression<
+        L,
+        ErrorToken<Message>
+    >
+
+    export type CloseGroup<L extends Left> = L["openGroups"] extends PopGroup<
+        infer Stack,
+        infer Top
+    >
+        ? LeftFrom<{
+              openGroups: Stack
+              branch: Top
+              expression: MergeBranches<L["branch"], L["expression"]>
+              bounds: L["bounds"]
+          }>
+        : Error<L, `Unexpected ).`>
+
+    export type SuffixStart<L extends Left> = L["openGroups"] extends []
+        ? LeftFrom<{
+              openGroups: L["openGroups"]
+              branch: DefaultBranchState
+              expression: MergeBranches<L["branch"], L["expression"]>
+              bounds: L["bounds"]
+          }>
+        : Error<L, "Missing ).">
+
+    export type LeftBound<
+        L extends Left,
+        Comparator extends ComparatorToken,
+        Bound extends NumberLiteralDefinition
+    > = LeftFrom<{
+        openGroups: L["openGroups"]
+        branch: L["branch"]
+        expression: ""
+        bounds: {
+            left: [Bound, Comparator]
+        }
+    }>
+
+    export type RightBound<
+        L extends Left,
+        Comparator extends ComparatorToken,
+        Bound extends NumberLiteralDefinition
+    > = LeftFrom<{
+        openGroups: L["openGroups"]
+        branch: L["branch"]
+        expression: L["expression"]
+        bounds: L["bounds"] & {
+            right: [Comparator, Bound]
+        }
+    }>
+
+    export type List<L extends Left> = LeftFrom<{
+        openGroups: L["openGroups"]
+        branch: L["branch"]
+        expression: [L["expression"], "[]"]
+        bounds: L["bounds"]
+    }>
+
+    export type Branch<
+        L extends Left,
+        Token extends BranchingOperatorToken
+    > = LeftFrom<{
+        openGroups: L["openGroups"]
+        branch: Token extends "|"
+            ? Union<L["branch"], L["expression"]>
+            : Intersection<L["branch"], L["expression"]>
+        expression: []
+        bounds: L["bounds"]
+    }>
+
+    type Union<B extends BranchState, Expression> = {
+        union: [
+            B["union"] extends []
+                ? MergeExpression<B["intersection"], Expression>
+                : [
+                      ...B["union"],
+                      MergeExpression<B["intersection"], Expression>
+                  ],
+            "|"
+        ]
+        intersection: []
+    }
+
+    type Intersection<B extends BranchState, Expression> = {
+        union: B["union"]
+        intersection: [
+            B["intersection"] extends []
+                ? Expression
+                : [...B["intersection"], Expression],
+            "&"
+        ]
+    }
+
+    type ExtractIfSingleton<T> = T extends [infer Element] ? Element : T
+
+    type MergeExpression<
+        Branch extends CurrentBranch,
+        Expression
+    > = ExtractIfSingleton<[...Branch, Expression]>
+
+    type MergeBranches<B extends BranchState, Expression> = MergeExpression<
+        B["union"],
+        MergeExpression<B["intersection"], Expression>
+    >
 
     /** A BoundableNode must be either:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
