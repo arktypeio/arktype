@@ -69,17 +69,17 @@ export namespace Str {
         ? Child extends `${infer Item}[]`
             ? IsResolvableName<Item, Dict> extends true
                 ? [[Item, "[]"], "?"]
-                : ParseDefinition<Def, Dict>
+                : TreeFrom<Def, Dict>
             : IsResolvableName<Child, Dict> extends true
             ? [Child, "?"]
-            : ParseDefinition<Def, Dict>
+            : TreeFrom<Def, Dict>
         : Def extends `${infer Child}[]`
         ? IsResolvableName<Child, Dict> extends true
             ? [Child, "[]"]
-            : ParseDefinition<Def, Dict>
+            : TreeFrom<Def, Dict>
         : IsResolvableName<Def, Dict> extends true
         ? Def
-        : ParseDefinition<Def, Dict>
+        : TreeFrom<Def, Dict>
 
     type IsResolvableName<Def, Dict> = Def extends Keyword.Definition
         ? true
@@ -160,7 +160,10 @@ export namespace Str {
 
     export type StateFrom<S extends State> = S
 
-    type Z = ParseDefinition<"string[][]|number[]", {}>
+    type TreeFrom<Def extends string, Dict> = Get<
+        Get<ParseDefinition<Def, Dict>, "L">,
+        "expression"
+    >
 
     type ParseDefinition<Def extends string, Dict> = ParsePrefix<
         InitializeState<Def, Dict>,
@@ -220,12 +223,12 @@ export namespace Str {
     > = S["R"]["lookahead"] extends "[]"
         ? ParseOperators<
               StateFrom<{
-                  L: List<S["L"]>
+                  L: Modifier<S["L"], "[]">
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>,
               Dict
           >
-        : S["R"]["lookahead"] extends BranchingOperatorToken
+        : S["R"]["lookahead"] extends BranchToken
         ? ParseBase<
               StateFrom<{
                   L: Branch<S["L"], S["R"]["lookahead"]>
@@ -241,7 +244,8 @@ export namespace Str {
               }>,
               Dict
           >
-        : ParseSuffixes<
+        : // Must be a suffix token by process of elimination
+          ParseSuffixes<
               StateFrom<{
                   L: SuffixStart<S["L"]>
                   R: S["R"]
@@ -266,34 +270,53 @@ export namespace Str {
         S extends State,
         Comparator extends ComparatorToken
     > = S["R"]["lookahead"] extends NumberLiteralDefinition
-        ? ParseFinalizing<RightBound<S["L"], Comparator, S["R"]["lookahead"]>>
-        : InvalidRightBound<S["lookahead"]>
+        ? ParseFinalizing<
+              StateFrom<{
+                  L: RightBound<S["L"], Comparator, S["R"]["lookahead"]>
+                  R: Shift.Operator<S["R"]["unscanned"]>
+              }>
+          >
+        : SemanticError<
+              S,
+              `Right bound ${S["R"]["lookahead"]} must be a number literal followed only by other suffixes.`
+          >
 
-    // type InvalidRightBound<Token extends string> =
-    //     State.Error<`Right bound ${Token} must be a number literal followed only by other suffixes.`>
+    export type SemanticError<
+        S extends State,
+        Message extends string
+    > = StateFrom<{ L: Error<S["L"], Message>; R: S["R"] }>
 
     type FinalizeState<S extends State> = {} extends S["L"]["bounds"]
         ? S
         : S["L"]["expression"] extends BoundableNode
         ? S
-        : State.Error<`Bounded expression '${TreeToString<
-              S["expression"]
-          >}' must be a number-or-string-typed keyword or a list-typed expression.`>
+        : SemanticError<
+              S,
+              `Bounded expression '${TreeToString<
+                  S["L"]["expression"]
+              >}' must be a number-or-string-typed keyword or a list-typed expression.`
+          >
 
     type ParseFinalizing<S extends State> = S["R"]["lookahead"] extends "END"
         ? FinalizeState<S>
         : S["R"]["lookahead"] extends "?"
-        ? ParseOptional<S>
-        : State.Error<`Unexpected suffix token ${S["lookahead"]}.`>
+        ? ParseOptional<FinalizeState<S>>
+        : SemanticError<S, `Unexpected suffix token ${S["R"]["lookahead"]}.`>
 
     export type ParseOptional<S extends State> = S["R"]["unscanned"] extends []
-        ? ReduceModifier<FinalizeState<S>>
-        : State.Error<`Suffix '?' is only valid at the end of a definition.`>
+        ? StateFrom<{
+              L: Modifier<S["L"], "?">
+              R: Shift.Operator<S["R"]["unscanned"]>
+          }>
+        : SemanticError<
+              S,
+              `Suffix '?' is only valid at the end of a definition.`
+          >
 
     type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
     type SuffixToken = "END" | "?" | ComparatorToken | ErrorToken<string>
 
-    type BranchingOperatorToken = "|" | "&"
+    type BranchToken = "|" | "&"
 
     type ErrorToken<Message extends string> = `!${Message}`
 
@@ -368,17 +391,19 @@ export namespace Str {
         }
     }>
 
-    export type List<L extends Left> = LeftFrom<{
+    export type ModifierToken = "[]" | "?"
+
+    export type Modifier<
+        L extends Left,
+        Token extends ModifierToken
+    > = LeftFrom<{
         openGroups: L["openGroups"]
         branch: L["branch"]
-        expression: [L["expression"], "[]"]
+        expression: [L["expression"], Token]
         bounds: L["bounds"]
     }>
 
-    export type Branch<
-        L extends Left,
-        Token extends BranchingOperatorToken
-    > = LeftFrom<{
+    export type Branch<L extends Left, Token extends BranchToken> = LeftFrom<{
         openGroups: L["openGroups"]
         branch: Token extends "|"
             ? Union<L["branch"], L["expression"]>

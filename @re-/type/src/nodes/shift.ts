@@ -11,6 +11,14 @@ export type Right = {
     unscanned: string[]
 }
 
+export type Right2 = {
+    token: string
+    lookahead: string
+    unscanned: string[]
+}
+
+type Right2From<R extends Right2> = R
+
 type Scan<Left extends string, Unscanned extends string[]> = [
     Left,
     ...Unscanned
