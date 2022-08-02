@@ -4,7 +4,7 @@ import { Get, ListChars } from "@re-/tools"
 import { Base } from "./base/index.js"
 import { ListNode, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
-import { InitializeRight, Right, Shift } from "./shift.js"
+import type { InitializeRight, Right, Shift } from "./shift.js"
 import {
     AliasNode,
     BigintLiteralDefinition,
@@ -209,6 +209,8 @@ export namespace Str {
               }>,
               Dict
           >
+        : S["R"]["lookahead"] extends ErrorToken<string>
+        ? ParseSuffixes<S, Dict>
         : ParseOperators<
               StateFrom<{
                   L: SetExpression<S["L"], S["R"]["lookahead"]>
@@ -237,23 +239,47 @@ export namespace Str {
               Dict
           >
         : S["R"]["lookahead"] extends ")"
-        ? ParseOperators<
-              StateFrom<{
-                  L: CloseGroup<S["L"]>
-                  R: Shift.Operator<S["R"]["unscanned"]>
-              }>,
-              Dict
-          >
+        ? ParseOperators<CloseGroup<S>, Dict>
         : // Must be a suffix token by process of elimination
-          ParseSuffixes<
+          ParseSuffixes<S, Dict>
+
+    type CloseGroup<S extends State> = S["L"]["openGroups"] extends PopGroup<
+        infer Stack,
+        infer Top
+    >
+        ? StateFrom<{
+              L: LeftFrom<{
+                  openGroups: Stack
+                  branch: Top
+                  expression: MergeBranches<
+                      S["L"]["branch"],
+                      S["L"]["expression"]
+                  >
+                  bounds: S["L"]["bounds"]
+              }>
+              R: Shift.Operator<S["R"]["unscanned"]>
+          }>
+        : SemanticError<S, `Unexpected ).`>
+
+    type ParseSuffixes<S extends State, Dict> = S["L"]["openGroups"] extends []
+        ? ParsePossibleRightBound<
               StateFrom<{
-                  L: SuffixStart<S["L"]>
+                  L: LeftFrom<{
+                      openGroups: S["L"]["openGroups"]
+                      branch: DefaultBranchState
+                      expression: MergeBranches<
+                          S["L"]["branch"],
+                          S["L"]["expression"]
+                      >
+                      bounds: S["L"]["bounds"]
+                  }>
                   R: S["R"]
               }>,
               Dict
           >
+        : SemanticError<S, "Missing ).">
 
-    type ParseSuffixes<
+    type ParsePossibleRightBound<
         S extends State,
         Dict
     > = S["R"]["lookahead"] extends ComparatorToken
@@ -284,7 +310,10 @@ export namespace Str {
     export type SemanticError<
         S extends State,
         Message extends string
-    > = StateFrom<{ L: Error<S["L"], Message>; R: S["R"] }>
+    > = StateFrom<{
+        L: SetExpression<S["L"], ErrorToken<Message>>
+        R: S["R"]
+    }>
 
     type FinalizeState<S extends State> = {} extends S["L"]["bounds"]
         ? S
@@ -301,6 +330,11 @@ export namespace Str {
         ? FinalizeState<S>
         : S["R"]["lookahead"] extends "?"
         ? ParseOptional<FinalizeState<S>>
+        : S["R"]["lookahead"] extends ErrorToken<string>
+        ? StateFrom<{
+              L: SetExpression<S["L"], S["R"]["lookahead"]>
+              R: S["R"]
+          }>
         : SemanticError<S, `Unexpected suffix token ${S["R"]["lookahead"]}.`>
 
     export type ParseOptional<S extends State> = S["R"]["unscanned"] extends []
@@ -338,32 +372,6 @@ export namespace Str {
         expression: Token
         bounds: L["bounds"]
     }>
-
-    type Error<L extends Left, Message extends string> = SetExpression<
-        L,
-        ErrorToken<Message>
-    >
-
-    export type CloseGroup<L extends Left> = L["openGroups"] extends PopGroup<
-        infer Stack,
-        infer Top
-    >
-        ? LeftFrom<{
-              openGroups: Stack
-              branch: Top
-              expression: MergeBranches<L["branch"], L["expression"]>
-              bounds: L["bounds"]
-          }>
-        : Error<L, `Unexpected ).`>
-
-    export type SuffixStart<L extends Left> = L["openGroups"] extends []
-        ? LeftFrom<{
-              openGroups: L["openGroups"]
-              branch: DefaultBranchState
-              expression: MergeBranches<L["branch"], L["expression"]>
-              bounds: L["bounds"]
-          }>
-        : Error<L, "Missing ).">
 
     export type LeftBound<
         L extends Left,

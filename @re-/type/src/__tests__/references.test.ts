@@ -8,7 +8,7 @@ describe("references", () => {
     const objectDef = {
         strings: {
             keyword: "boolean",
-            expression: "string[]|(integer>0)|null"
+            expression: "string[]|integer?"
         },
         listed: ["-1n", "null", "string|boolean"],
         regex: /.*/
@@ -35,16 +35,13 @@ describe("references", () => {
     describe("model", () => {
         test("from string", () => {
             const references = space({ user: "unknown", group: "unknown" })
-                .$root.type(
-                    "user[]|group[]|boolean&true|(integer>0)|null|1<number<2"
-                )
+                .$root.type("0<(user[]|group[]|boolean&true|integer|null)[]<2")
                 .references()
             const expectedReferenceSet = narrow([
                 "user",
                 "group",
                 "boolean",
                 "true",
-                "number",
                 "integer",
                 "null"
             ])
@@ -70,7 +67,7 @@ describe("references", () => {
             const expectedReferenceSets = narrow({
                 strings: {
                     keyword: ["boolean"],
-                    expression: ["string", "integer", "null"]
+                    expression: ["string", "integer"]
                 },
                 listed: [["-1n"], ["null"], ["string", "boolean"]],
                 regex: ["/.*/" as `/${string}/`]

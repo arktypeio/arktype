@@ -31,6 +31,7 @@
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
         "benchParse": "ts-node ./src/nodes/__tests__/parse.bench.ts",
         "benchBound": "ts-node ./src/nodes/nonTerminal/__tests__/bound.bench.ts",
+        "benchCyclic": "ts-node ./src/__tests__/space/cyclic.bench.ts",
         "diag": "tsc --composite false --noEmit --diagnostics --incremental false > diag.txt"
     },
     "dependencies": {

@@ -1,37 +1,15 @@
-src/__tests__/references.test.ts(39,21): error TS2345: Argument of type '"user[]|group[]|boolean&true|(integer>0)|null|1<number<2"' is not assignable to parameter of type '"Unexpected suffix token )."'.
-src/__tests__/references.test.ts(52,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "number", "integer", "null"]' is not assignable to parameter of type '"!Unexpected suffix token )."[]'.
-  Type '"number" | "boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"!Unexpected suffix token )."'.
-    Type '"number"' is not assignable to type '"!Unexpected suffix token )."'.
-src/__tests__/references.test.ts(61,37): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-  The types of 'strings.expression' are incompatible between these types.
-    Type '"string[]|(integer>0)|null"' is not assignable to type '"Unexpected suffix token )."'.
-src/__tests__/references.test.ts(62,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type '("string" | "boolean" | `/${string}/` | "null" | "-1n" | "!Unexpected suffix token ).")[]'.
-  Type '"string" | "boolean" | `/${string}/` | "-1n" | "null" | "integer"' is not assignable to type '"string" | "boolean" | `/${string}/` | "null" | "-1n" | "!Unexpected suffix token )."'.
-    Type '"integer"' is not assignable to type '"string" | "boolean" | `/${string}/` | "null" | "-1n" | "!Unexpected suffix token )."'.
-src/__tests__/references.test.ts(67,37): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/__tests__/references.test.ts(86,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer", "null"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: "boolean"[]; expression: "!Unexpected suffix token )."[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
-  The types of 'strings.expression' are incompatible between these types.
-    Type '["string", "integer", "null"]' is not assignable to type '"!Unexpected suffix token )."[]'.
-      Type '"string" | "null" | "integer"' is not assignable to type '"!Unexpected suffix token )."'.
-        Type '"string"' is not assignable to type '"!Unexpected suffix token )."'.
-src/__tests__/references.test.ts(91,47): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/__tests__/references.test.ts(94,50): error TS2322: Type '"integer"' is not assignable to type '"string" | "boolean" | `/${string}/` | "null" | "-1n" | "!Unexpected suffix token )."'.
-src/__tests__/references.test.ts(99,50): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|(integer>0)|null"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/nodes/terminal/__tests__/regex.test.ts(12,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/stringLiteral.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/stringLiteral.test.ts(30,17): error TS2578: Unused '@ts-expect-error' directive.
-Files:              266
-Lines:            74641
-Nodes:           211591
-Identifiers:      71157
-Symbols:         253553
-Types:            67804
-Instantiations:  395097
-Memory used:    184197K
+Files:              267
+Lines:            74767
+Nodes:           211940
+Identifiers:      71212
+Symbols:         278046
+Types:           100635
+Instantiations:  664773
+Memory used:    210377K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.42s
-Bind time:        0.14s
-Check time:       1.47s
+Parse time:       0.47s
+Bind time:        0.16s
+Check time:       1.69s
 Emit time:        0.00s
-Total time:       2.03s
+Total time:       2.31s

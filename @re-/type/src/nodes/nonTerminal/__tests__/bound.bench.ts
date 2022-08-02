@@ -3,16 +3,16 @@ import { type } from "../../../type.js"
 
 bench("single-bounded", () => {
     type("string>5").infer
-}).type(`646 instantiations`)
+}).type(`669 instantiations`)
 bench("double-bounded", () => {
     type("-7<=integer<99").infer
-}).type(`1067 instantiations`)
+}).type(`1041 instantiations`)
 bench("single-bounded list", () => {
     type("object[]==1").infer
-}).type(`783 instantiations`)
+}).type(`792 instantiations`)
 bench("double-bounded list", () => {
     type("-7>=unknown[]>99").infer
-}).type(`1177 instantiations`)
+}).type(`1153 instantiations`)
 bench("parenthesized list", () => {
     type("-7<=(string|number[]|boolean[][])[]<99").infer
-}).type(`2930 instantiations`)
+}).type(`2817 instantiations`)
