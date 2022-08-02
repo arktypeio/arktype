@@ -1,4 +1,4 @@
-import type { Shift } from "../parser/shift.js"
+import type { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
 import type { Branches } from "./branch/branch.js"
 
@@ -13,7 +13,7 @@ export namespace Group {
             root: null
             ctx: S["L"]["ctx"]
         }
-        R: Shift.Base<S["R"]["unscanned"], Dict>
+        R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
     }>
 
     type PopGroup<
@@ -33,7 +33,7 @@ export namespace Group {
                       branches: Top
                       ctx: S["L"]["ctx"]
                   }
-                  R: Shift.Operator<S["R"]["unscanned"]>
+                  R: Lexer.ShiftOperator<S["R"]["unscanned"]>
               }>
             : ParserState.Error<S, `Unexpected ).`>
 }

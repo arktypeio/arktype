@@ -15,7 +15,7 @@ export namespace Intersection {
         Dict
     >
 
-    export type Node<Left, Right> = [Left, "&", Right]
+    export type Node<Left = unknown, Right = unknown> = [Left, "&", Right]
 }
 
 export class IntersectionNode extends NonTerminal<Base.Node[]> {

@@ -1,7 +1,7 @@
 export * from "./tree.js"
 export * from "./parse.js"
 export * from "./core.js"
-export * from "./shift.js"
+export * from "./lexer.js"
 export * from "./state.js"
 export * from "./naive.js"
 export type { ParseError } from "./shared.js"

@@ -36,7 +36,7 @@ export namespace Union {
         Dict
     >
 
-    export type Node<Left, Right> = [Left, "|", Right]
+    export type Node<Left = unknown, Right = unknown> = [Left, "|", Right]
 }
 
 export class UnionNode extends NonTerminal<Base.Node[]> {

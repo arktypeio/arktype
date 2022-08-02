@@ -1,4 +1,4 @@
-import { Shift } from "../../parser/index.js"
+import { Lexer } from "../../parser/index.js"
 import { ParserState } from "../../parser/state.js"
 
 export namespace Branches {
@@ -27,7 +27,7 @@ export namespace Branches {
             root: undefined
             ctx: S["L"]["ctx"]
         }
-        R: Shift.Base<S["R"]["unscanned"], Dict>
+        R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
     }>
 
     export type MergeExpression<

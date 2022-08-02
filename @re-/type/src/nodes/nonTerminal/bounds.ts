@@ -1,7 +1,7 @@
 import { Entry } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { CoreParser } from "../parser/core.js"
-import { Shift } from "../parser/shift.js"
+import { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
 import { ParseTree } from "../parser/tree.js"
 import type { Keyword, NumberLiteralDefinition } from "../terminal/index.js"
@@ -54,19 +54,19 @@ export namespace Bounds {
     export type ShiftToken<
         Start extends StartChar,
         Unscanned extends string[]
-    > = Unscanned extends Shift.Scan<infer Lookahead, infer Rest>
+    > = Unscanned extends Lexer.Scan<infer Lookahead, infer Rest>
         ? Lookahead extends "="
             ? ParserState.RightFrom<{
                   lookahead: `${Start}=`
                   unscanned: Rest
               }>
             : Start extends "="
-            ? Shift.Error<`= is not a valid comparator. Use == instead.`>
+            ? Lexer.ShiftError<`= is not a valid comparator. Use == instead.`>
             : ParserState.RightFrom<{
                   lookahead: Start
                   unscanned: Unscanned
               }>
-        : Shift.Error<`Expected a bound condition after ${Start}.`>
+        : Lexer.ShiftError<`Expected a bound condition after ${Start}.`>
 
     export type ParseLeft<
         S extends ParserState.State,
@@ -84,7 +84,7 @@ export namespace Bounds {
                 }
             }
         }
-        R: Shift.Base<S["R"]["unscanned"], Dict>
+        R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
     }>
 
     export type ParseRight<
@@ -102,7 +102,7 @@ export namespace Bounds {
                 }
             }
         }
-        R: Shift.Operator<S["R"]["unscanned"]>
+        R: Lexer.ShiftOperator<S["R"]["unscanned"]>
     }>
 
     export type ParsePossibleRightBound<
@@ -112,7 +112,7 @@ export namespace Bounds {
         ? ParseRightBound<
               ParserState.From<{
                   L: S["L"]
-                  R: Shift.Base<S["R"]["unscanned"], Dict>
+                  R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
               }>,
               S["R"]["lookahead"]
           >

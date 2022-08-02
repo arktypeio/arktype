@@ -1,5 +1,5 @@
 import { Base } from "../base/index.js"
-import { Shift } from "../parser/shift.js"
+import { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
 import { NonTerminal } from "./nonTerminal.js"
 
@@ -8,7 +8,7 @@ export namespace Optional {
         S["R"]["unscanned"] extends []
             ? ParserState.From<{
                   L: ParserState.Modify<S["L"], "?">
-                  R: Shift.Operator<S["R"]["unscanned"]>
+                  R: Lexer.ShiftOperator<S["R"]["unscanned"]>
               }>
             : ParserState.Error<
                   S,

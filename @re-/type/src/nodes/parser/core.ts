@@ -9,8 +9,8 @@ import {
     Union
 } from "../nonTerminal/index.js"
 import { NumberLiteralDefinition } from "../terminal/index.js"
+import type { Lexer } from "./lexer.js"
 import { ParseError } from "./shared.js"
-import type { Shift } from "./shift.js"
 import { ParserState } from "./state.js"
 
 export namespace CoreParser {
@@ -31,7 +31,7 @@ export namespace CoreParser {
         ? Bounds.ParsePossibleLeftBound<
               ParserState.From<{
                   L: S["L"]
-                  R: Shift.Operator<S["R"]["unscanned"]>
+                  R: Lexer.ShiftOperator<S["R"]["unscanned"]>
               }>,
               S["R"]["lookahead"],
               Dict
@@ -60,7 +60,7 @@ export namespace CoreParser {
         ? Group.ParseOpen<S, Dict>
         : ParserState.From<{
               L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
-              R: Shift.Operator<S["R"]["unscanned"]>
+              R: Lexer.ShiftOperator<S["R"]["unscanned"]>
           }>
 
     type ParseSuffixes<

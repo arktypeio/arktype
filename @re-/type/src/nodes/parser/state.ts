@@ -1,8 +1,8 @@
 import { ListChars } from "@re-/tools"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bounds } from "../nonTerminal/index.js"
+import type { Lexer } from "./lexer.js"
 import { ParseError } from "./shared.js"
-import type { Shift } from "./shift.js"
 
 export namespace ParserState {
     export type State = {
@@ -37,7 +37,7 @@ export namespace ParserState {
 
     export type Initialize<Def extends string, Dict> = {
         L: InitialLeft
-        R: Shift.Base<ListChars<Def>, Dict>
+        R: Lexer.ShiftBase<ListChars<Def>, Dict>
     }
 
     export type InitializeRight<Def extends string> = RightFrom<{
