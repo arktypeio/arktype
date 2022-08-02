@@ -12,6 +12,8 @@ export namespace Branches {
         intersection: []
     }
 
+    export type Token = "|" | "&"
+
     export type Branch = [] | [unknown, string]
 
     export type MergeAll<B extends State, Expression> = MergeExpression<

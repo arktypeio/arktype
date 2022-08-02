@@ -1,5 +1,6 @@
 import { ListChars } from "@re-/tools"
-import { Bounds, GroupType, List } from "./nonTerminal/index.js"
+import { Branches } from "./nonTerminal/branch/branch.js"
+import { Bounds, List } from "./nonTerminal/index.js"
 import { Str } from "./str.js"
 import {
     BigintLiteralDefinition,
@@ -28,7 +29,7 @@ export namespace Shift {
         infer Lookahead,
         infer Rest
     >
-        ? Lookahead extends GroupType.OpenToken
+        ? Lookahead extends "("
             ? RightFrom<{ lookahead: Lookahead; unscanned: Rest }>
             : Lookahead extends LiteralEnclosingChar
             ? EnclosedBase<Lookahead, Lookahead, Rest>
@@ -88,7 +89,7 @@ export namespace Shift {
         infer Lookahead,
         infer Rest
     >
-        ? Lookahead extends BranchingOperatorToken | "?" | ")"
+        ? Lookahead extends TrivialSingleCharOperator
             ? RightFrom<{
                   lookahead: Lookahead
                   unscanned: Rest
@@ -112,25 +113,17 @@ export namespace Shift {
         lookahead: ErrorToken<Message>
         unscanned: []
     }>
+
+    type BaseTerminatingChar = "[" | BranchTerminatingChar | " "
+
+    // The operator tokens that are exactly one character and are not the first character of a longer token
+    type TrivialSingleCharOperator = Branches.Token | "?" | ")"
+
+    type BranchTerminatingChar = Branches.Token | ")" | SuffixStartChar
+
+    type SuffixStartChar = "?" | Bounds.T.StartChar
+
+    type LiteralEnclosingChar = `'` | `"` | `/`
+
+    type ErrorToken<Message extends string> = `!${Message}`
 }
-
-type BaseTerminatingChar =
-    | ModifyingOperatorStartChar
-    | BranchTerminatingChar
-    | " "
-
-type BranchTerminatingChar =
-    | BranchingOperatorToken
-    | ")"
-    | SuffixStartChar
-    | "="
-
-type SuffixStartChar = "END" | "?" | Bounds.T.StartChar
-
-type BranchingOperatorToken = "|" | "&"
-
-type ModifyingOperatorStartChar = "["
-
-type LiteralEnclosingChar = `'` | `"` | `/`
-
-type ErrorToken<Message extends string> = `!${Message}`

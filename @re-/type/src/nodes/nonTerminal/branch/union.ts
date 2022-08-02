@@ -20,8 +20,6 @@ const preferredDefaults: PreferredDefaults = [
 ]
 
 export namespace UnionType {
-    export type Token = "|"
-
     export type ReduceBranches<B extends Branches.State, Expression> = {
         union: [
             B["union"] extends []

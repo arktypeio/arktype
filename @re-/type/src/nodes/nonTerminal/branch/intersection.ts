@@ -4,8 +4,6 @@ import { NonTerminal } from "./../nonTerminal.js"
 import { Branches } from "./branch.js"
 
 export namespace IntersectionType {
-    export type Token = "&"
-
     export type ReduceBranches<B extends Branches.State, Expression> = {
         union: B["union"]
         intersection: [

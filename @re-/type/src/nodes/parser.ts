@@ -81,17 +81,15 @@ export namespace ParserType {
         ? ParseSuffixes<S, Dict>
         : ParseMain<ParseNext<S, Dict>, Dict>
 
-    type Z = ParsePrefix<InitializeState<"3<number<10", {}>, {}>
-
     type ParseNext<S extends State, Dict> = S["R"]["lookahead"] extends "[]"
         ? List.T.Parse<S>
-        : S["R"]["lookahead"] extends UnionType.Token
+        : S["R"]["lookahead"] extends "|"
         ? UnionType.Parse<S, Dict>
-        : S["R"]["lookahead"] extends IntersectionType.Token
+        : S["R"]["lookahead"] extends "&"
         ? IntersectionType.Parse<S, Dict>
-        : S["R"]["lookahead"] extends GroupType.CloseToken
+        : S["R"]["lookahead"] extends ")"
         ? GroupType.ParseClose<S>
-        : S["R"]["lookahead"] extends GroupType.OpenToken
+        : S["R"]["lookahead"] extends "("
         ? GroupType.ParseOpen<S, Dict>
         : StateFrom<{
               L: SetExpression<S["L"], S["R"]["lookahead"]>
