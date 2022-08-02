@@ -32,7 +32,7 @@ export namespace Str {
         ? Def
         : ParserType.Parse<Def, Dict>
 
-    type IsResolvableName<Def, Dict> = Def extends Keyword.Definition
+    export type IsResolvableName<Def, Dict> = Def extends Keyword.Definition
         ? true
         : Def extends keyof Dict
         ? true

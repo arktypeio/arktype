@@ -1,18 +1,28 @@
 import { Base } from "../base/index.js"
-import { Bound } from "./bound.js"
+import { ParserType } from "../parser.js"
+import { Shift } from "../shift.js"
+import { Bounds } from "./bounds.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
     export namespace T {
-        export type Token = "[]"
+        export type Parse<S extends ParserType.State> = ParserType.StateFrom<{
+            L: ParserType.Modifier<S["L"], "[]">
+            R: Shift.Operator<S["R"]["unscanned"]>
+        }>
 
-        export type Meta = {
-            kind: "modifier"
-            phase: "operator"
-        }
+        export type ShiftToken<Unscanned extends string[]> =
+            Unscanned extends Shift.Scan<infer Lookahead, infer Rest>
+                ? Lookahead extends "]"
+                    ? Shift.RightFrom<{
+                          lookahead: "[]"
+                          unscanned: Rest
+                      }>
+                    : Shift.Error<`Missing expected ']'.`>
+                : Shift.Error<`Missing expected ']'.`>
     }
 
-    export class ListNode extends NonTerminal implements Bound.Boundable {
+    export class ListNode extends NonTerminal implements Bounds.Boundable {
         toString() {
             return this.children.toString() + "[]"
         }

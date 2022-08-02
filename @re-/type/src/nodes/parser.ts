@@ -1,13 +1,15 @@
 import { Get, ListChars } from "@re-/tools"
 import { Branches } from "./nonTerminal/branch/branch.js"
 import {
-    Bound,
+    Bounds,
     GroupType,
     IntersectionType,
+    List,
+    Optional,
     UnionType
 } from "./nonTerminal/index.js"
-import type { Right, Shift } from "./shift.js"
-import { Keyword, NumberLiteralDefinition } from "./terminal/index.js"
+import type { Shift } from "./shift.js"
+import { NumberLiteralDefinition } from "./terminal/index.js"
 
 export namespace ParserType {
     export type Parse<Def extends string, Dict> = Get<
@@ -17,7 +19,7 @@ export namespace ParserType {
 
     export type State = {
         L: Left
-        R: Right
+        R: Shift.Right
     }
 
     export type StateFrom<S extends State> = S
@@ -36,7 +38,7 @@ export namespace ParserType {
         groups: Branches.State[]
         branches: Branches.State
         expression: unknown
-        bounds: Bounds
+        bounds: Bounds.T.State
     }
 
     export type InitialLeft = {
@@ -47,11 +49,6 @@ export namespace ParserType {
     }
 
     type LeftFrom<L extends Left> = L
-
-    export type Bounds = {
-        left?: [NumberLiteralDefinition, ComparatorToken]
-        right?: [ComparatorToken, NumberLiteralDefinition]
-    }
 
     export type InitializeState<Def extends string, Dict> = {
         L: InitialLeft
@@ -67,7 +64,7 @@ export namespace ParserType {
         S extends State,
         Dict
     > = S["R"]["lookahead"] extends NumberLiteralDefinition
-        ? Bound.T.ParsePossibleLeftBound<
+        ? Bounds.T.ParsePossibleLeftBound<
               StateFrom<{
                   L: S["L"]
                   R: Shift.Operator<S["R"]["unscanned"]>
@@ -84,18 +81,17 @@ export namespace ParserType {
         ? ParseSuffixes<S, Dict>
         : ParseMain<ParseNext<S, Dict>, Dict>
 
+    type Z = ParsePrefix<InitializeState<"3<number<10", {}>, {}>
+
     type ParseNext<S extends State, Dict> = S["R"]["lookahead"] extends "[]"
-        ? StateFrom<{
-              L: Modifier<S["L"], "[]">
-              R: Shift.Operator<S["R"]["unscanned"]>
-          }>
-        : S["R"]["lookahead"] extends "|"
+        ? List.T.Parse<S>
+        : S["R"]["lookahead"] extends UnionType.Token
         ? UnionType.Parse<S, Dict>
-        : S["R"]["lookahead"] extends "&"
+        : S["R"]["lookahead"] extends IntersectionType.Token
         ? IntersectionType.Parse<S, Dict>
-        : S["R"]["lookahead"] extends ")"
+        : S["R"]["lookahead"] extends GroupType.CloseToken
         ? GroupType.ParseClose<S>
-        : S["R"]["lookahead"] extends "("
+        : S["R"]["lookahead"] extends GroupType.OpenToken
         ? GroupType.ParseOpen<S, Dict>
         : StateFrom<{
               L: SetExpression<S["L"], S["R"]["lookahead"]>
@@ -103,7 +99,7 @@ export namespace ParserType {
           }>
 
     type ParseSuffixes<S extends State, Dict> = S["L"]["groups"] extends []
-        ? Bound.T.ParsePossibleRightBound<
+        ? Bounds.T.ParsePossibleRightBound<
               StateFrom<{
                   L: LeftFrom<{
                       groups: S["L"]["groups"]
@@ -122,7 +118,7 @@ export namespace ParserType {
 
     type FinalizeState<S extends State> = {} extends S["L"]["bounds"]
         ? S
-        : S["L"]["expression"] extends BoundableNode
+        : S["L"]["expression"] extends Bounds.T.Boundable
         ? S
         : ErrorState<
               S,
@@ -135,7 +131,7 @@ export namespace ParserType {
         S["R"]["lookahead"] extends "END"
             ? FinalizeState<S>
             : S["R"]["lookahead"] extends "?"
-            ? ParseOptional<FinalizeState<S>>
+            ? Optional.T.Parse<FinalizeState<S>>
             : S["R"]["lookahead"] extends Error<string>
             ? StateFrom<{
                   L: SetExpression<S["L"], S["R"]["lookahead"]>
@@ -143,15 +139,7 @@ export namespace ParserType {
               }>
             : ErrorState<S, `Unexpected suffix token ${S["R"]["lookahead"]}.`>
 
-    export type ParseOptional<S extends State> = S["R"]["unscanned"] extends []
-        ? StateFrom<{
-              L: Modifier<S["L"], "?">
-              R: Shift.Operator<S["R"]["unscanned"]>
-          }>
-        : ErrorState<S, `Suffix '?' is only valid at the end of a definition.`>
-
-    type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
-    type SuffixToken = "END" | "?" | ComparatorToken | Error<string>
+    type SuffixToken = "END" | "?" | Bounds.T.Token | Error<string>
 
     export type SetExpression<L extends Left, Token extends string> = LeftFrom<{
         groups: L["groups"]
@@ -183,14 +171,4 @@ export namespace ParserType {
         expression: [L["expression"], Token]
         bounds: L["bounds"]
     }>
-
-    /** A BoundableNode must be either:
-     *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
-     *    2. A string-typed keyword terminal (e.g. "alphanum" in "100>alphanum")
-     *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
-     */
-    type BoundableNode =
-        | Keyword.OfTypeNumber
-        | Keyword.OfTypeString
-        | [unknown, "[]"]
 }

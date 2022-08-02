@@ -5,6 +5,10 @@ import type { Branches } from "./branch/branch.js"
 export namespace GroupType {
     export type State = Branches.State[]
 
+    export type OpenToken = "("
+
+    export type CloseToken = ")"
+
     export type ParseOpen<
         S extends ParserType.State,
         Dict

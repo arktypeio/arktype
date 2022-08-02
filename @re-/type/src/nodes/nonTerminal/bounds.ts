@@ -1,9 +1,8 @@
 import { Entry } from "@re-/tools"
 import { Base } from "../base/index.js"
-import { Parser } from "../parse.js"
 import { ParserType } from "../parser.js"
 import { Shift } from "../shift.js"
-import type { NumberLiteralDefinition } from "../terminal/index.js"
+import type { Keyword, NumberLiteralDefinition } from "../terminal/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 // const invalidBoundError = (bound: string) =>
@@ -30,9 +29,43 @@ const unboundableError = (inner: string) =>
 //     }
 // }
 
-export namespace Bound {
+export namespace Bounds {
     export namespace T {
         export type Token = "<=" | ">=" | "<" | ">" | "=="
+
+        export type StartChar = "<" | ">" | "="
+
+        export type State = {
+            left?: [NumberLiteralDefinition, Token]
+            right?: [Token, NumberLiteralDefinition]
+        }
+
+        /** A BoundableNode must be either:
+         *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
+         *    2. A string-typed keyword terminal (e.g. "alphanum" in "100>alphanum")
+         *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
+         */
+        export type Boundable =
+            | Keyword.OfTypeNumber
+            | Keyword.OfTypeString
+            | [unknown, "[]"]
+
+        export type ShiftToken<
+            Start extends StartChar,
+            Unscanned extends string[]
+        > = Unscanned extends Shift.Scan<infer Lookahead, infer Rest>
+            ? Lookahead extends "="
+                ? Shift.RightFrom<{
+                      lookahead: `${Start}=`
+                      unscanned: Rest
+                  }>
+                : Start extends "="
+                ? Shift.Error<`= is not a valid comparator. Use == instead.`>
+                : Shift.RightFrom<{
+                      lookahead: Start
+                      unscanned: Unscanned
+                  }>
+            : Shift.Error<`Expected a bound condition after ${Start}.`>
 
         export type ParseLeft<
             S extends ParserType.State,
@@ -59,7 +92,7 @@ export namespace Bound {
             L: {
                 groups: S["L"]["groups"]
                 branches: S["L"]["branches"]
-                expression: ""
+                expression: S["L"]["expression"]
                 bounds: S["L"]["bounds"] & {
                     right: [T, N]
                 }

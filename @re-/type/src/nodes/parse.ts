@@ -2,7 +2,7 @@
 /* eslint-disable max-lines */
 import { Base } from "./base/index.js"
 import {
-    Bound,
+    Bounds,
     IntersectionNode,
     List,
     OptionalNode,
@@ -283,7 +283,7 @@ export class Parser {
     }
 
     reduceBound(token: ComparatorToken) {
-        if (Bound.isBoundable(this.expression!)) {
+        if (Bounds.isBoundable(this.expression!)) {
             this.reduceRightBound(this.expression!, token)
         } else if (this.expression instanceof NumberLiteralNode) {
             this.reduceLeftBound(this.expression.value, token)
@@ -294,7 +294,7 @@ export class Parser {
         }
     }
 
-    reduceRightBound(expression: Bound.Boundable, token: ComparatorToken) {
+    reduceRightBound(expression: Bounds.Boundable, token: ComparatorToken) {
         if (this.branches.ctx.rightBounded) {
             throw new Error(
                 `Right side of comparator ${token} cannot be bounded more than once.`
@@ -321,7 +321,7 @@ export class Parser {
         }
         this.branches.ctx.leftBounded = true
         this.shiftBranch()
-        if (Bound.isBoundable(this.expression!)) {
+        if (Bounds.isBoundable(this.expression!)) {
             // Apply bound
         } else {
             throw new Error(

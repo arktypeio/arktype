@@ -1,40 +1,35 @@
 import { ListChars } from "@re-/tools"
+import { Bounds, GroupType, List } from "./nonTerminal/index.js"
+import { Str } from "./str.js"
 import {
     BigintLiteralDefinition,
-    Keyword,
     NumberLiteralDefinition
 } from "./terminal/index.js"
 
-export type Right = {
-    lookahead: string
-    unscanned: string[]
-}
-
-type Scan<Left extends string, Unscanned extends string[]> = [
-    Left,
-    ...Unscanned
-]
-
-type RightFrom<R extends Right> = R
-
-export type InitializeRight<Def extends string> = RightFrom<{
-    lookahead: ""
-    unscanned: ListChars<Def>
-}>
-
-type IsResolvableName<Def, Dict> = Def extends Keyword.Definition
-    ? true
-    : Def extends keyof Dict
-    ? true
-    : false
-
 export namespace Shift {
+    export type Scan<Left extends string, Unscanned extends string[]> = [
+        Left,
+        ...Unscanned
+    ]
+
+    export type Right = {
+        lookahead: string
+        unscanned: string[]
+    }
+
+    export type RightFrom<R extends Right> = R
+
+    export type InitializeRight<Def extends string> = RightFrom<{
+        lookahead: ""
+        unscanned: ListChars<Def>
+    }>
+
     export type Base<Unscanned extends string[], Dict> = Unscanned extends Scan<
         infer Lookahead,
         infer Rest
     >
-        ? Lookahead extends "("
-            ? RightFrom<{ lookahead: "("; unscanned: Rest }>
+        ? Lookahead extends GroupType.OpenToken
+            ? RightFrom<{ lookahead: Lookahead; unscanned: Rest }>
             : Lookahead extends LiteralEnclosingChar
             ? EnclosedBase<Lookahead, Lookahead, Rest>
             : Lookahead extends " "
@@ -61,10 +56,10 @@ export namespace Shift {
               unscanned: []
           }>
 
-    type ValidateUnenclosedBase<Token extends string, Dict> = IsResolvableName<
-        Token,
+    type ValidateUnenclosedBase<
+        Token extends string,
         Dict
-    > extends true
+    > = Str.IsResolvableName<Token, Dict> extends true
         ? Token
         : Token extends NumberLiteralDefinition | BigintLiteralDefinition
         ? Token
@@ -99,9 +94,9 @@ export namespace Shift {
                   unscanned: Rest
               }>
             : Lookahead extends "["
-            ? ListToken<Rest>
-            : Lookahead extends ComparatorStartChar
-            ? ComparatorToken<Lookahead, Rest>
+            ? List.T.ShiftToken<Rest>
+            : Lookahead extends Bounds.T.StartChar
+            ? Bounds.T.ShiftToken<Lookahead, Rest>
             : Lookahead extends " "
             ? Operator<Rest>
             : RightFrom<{
@@ -113,52 +108,24 @@ export namespace Shift {
               unscanned: []
           }>
 
-    type ComparatorToken<
-        StartChar extends ComparatorStartChar,
-        Unscanned extends string[]
-    > = Unscanned extends Scan<infer Lookahead, infer Rest>
-        ? Lookahead extends "="
-            ? RightFrom<{
-                  lookahead: `${StartChar}=`
-                  unscanned: Rest
-              }>
-            : StartChar extends "="
-            ? Error<`= is not a valid comparator. Use == instead.`>
-            : RightFrom<{
-                  lookahead: StartChar
-                  unscanned: Unscanned
-              }>
-        : Error<`Expected a bound condition after ${StartChar}.`>
-
-    type ListToken<Unscanned extends string[]> = Unscanned extends Scan<
-        infer Lookahead,
-        infer Rest
-    >
-        ? Lookahead extends "]"
-            ? RightFrom<{
-                  lookahead: "[]"
-                  unscanned: Rest
-              }>
-            : Error<`Missing expected ']'.`>
-        : Error<`Missing expected ']'.`>
-
     export type Error<Message extends string> = RightFrom<{
         lookahead: ErrorToken<Message>
         unscanned: []
     }>
 }
 
-type ComparatorStartChar = "<" | ">" | "="
-
 type BaseTerminatingChar =
     | ModifyingOperatorStartChar
     | BranchTerminatingChar
     | " "
 
-type BranchTerminatingChar = BranchingOperatorToken | ")" | SuffixToken | "="
+type BranchTerminatingChar =
+    | BranchingOperatorToken
+    | ")"
+    | SuffixStartChar
+    | "="
 
-type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
-type SuffixToken = "END" | "?" | ComparatorToken
+type SuffixStartChar = "END" | "?" | Bounds.T.StartChar
 
 type BranchingOperatorToken = "|" | "&"
 
