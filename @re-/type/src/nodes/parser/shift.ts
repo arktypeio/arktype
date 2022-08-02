@@ -1,11 +1,12 @@
-import { ListChars } from "@re-/tools"
-import { Branches } from "./nonTerminal/branch/branch.js"
-import { Bounds, List } from "./nonTerminal/index.js"
-import { Str } from "./str.js"
+import { Branches } from "../nonTerminal/branch/branch.js"
+import { Bounds, List } from "../nonTerminal/index.js"
+
 import {
     BigintLiteralDefinition,
     NumberLiteralDefinition
-} from "./terminal/index.js"
+} from "../terminal/index.js"
+import { IsResolvableName, ParseError } from "./shared.js"
+import { ParserState } from "./state.js"
 
 export namespace Shift {
     export type Scan<Left extends string, Unscanned extends string[]> = [
@@ -13,31 +14,19 @@ export namespace Shift {
         ...Unscanned
     ]
 
-    export type Right = {
-        lookahead: string
-        unscanned: string[]
-    }
-
-    export type RightFrom<R extends Right> = R
-
-    export type InitializeRight<Def extends string> = RightFrom<{
-        lookahead: ""
-        unscanned: ListChars<Def>
-    }>
-
     export type Base<Unscanned extends string[], Dict> = Unscanned extends Scan<
         infer Lookahead,
         infer Rest
     >
         ? Lookahead extends "("
-            ? RightFrom<{ lookahead: Lookahead; unscanned: Rest }>
+            ? ParserState.RightFrom<{ lookahead: Lookahead; unscanned: Rest }>
             : Lookahead extends LiteralEnclosingChar
             ? EnclosedBase<Lookahead, Lookahead, Rest>
             : Lookahead extends " "
             ? Base<Rest, Dict>
             : UnenclosedBase<"", Unscanned, Dict>
-        : RightFrom<{
-              lookahead: ErrorToken<`Expected an expression.`>
+        : ParserState.RightFrom<{
+              lookahead: ParseError<`Expected an expression.`>
               unscanned: []
           }>
 
@@ -47,26 +36,26 @@ export namespace Shift {
         Dict
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends BaseTerminatingChar
-            ? RightFrom<{
+            ? ParserState.RightFrom<{
                   lookahead: ValidateUnenclosedBase<Token, Dict>
                   unscanned: Unscanned
               }>
             : UnenclosedBase<`${Token}${Lookahead}`, Rest, Dict>
-        : RightFrom<{
+        : ParserState.RightFrom<{
               lookahead: ValidateUnenclosedBase<Token, Dict>
               unscanned: []
           }>
 
-    type ValidateUnenclosedBase<
-        Token extends string,
+    type ValidateUnenclosedBase<Token extends string, Dict> = IsResolvableName<
+        Token,
         Dict
-    > = Str.IsResolvableName<Token, Dict> extends true
+    > extends true
         ? Token
         : Token extends NumberLiteralDefinition | BigintLiteralDefinition
         ? Token
         : Token extends ""
-        ? ErrorToken<`Expected an expression.`>
-        : ErrorToken<`'${Token}' does not exist in your space.`>
+        ? ParseError<`Expected an expression.`>
+        : ParseError<`'${Token}' does not exist in your space.`>
 
     type EnclosedBase<
         StartChar extends LiteralEnclosingChar,
@@ -74,7 +63,7 @@ export namespace Shift {
         Unscanned extends string[]
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends StartChar
-            ? RightFrom<{
+            ? ParserState.RightFrom<{
                   lookahead: ValidateEnclosedBase<`${Token}${Lookahead}`>
                   unscanned: Rest
               }>
@@ -82,7 +71,7 @@ export namespace Shift {
         : Error<`${Token} requires a closing ${StartChar}.`>
 
     type ValidateEnclosedBase<Token extends string> = Token extends "//"
-        ? ErrorToken<`Regex literals cannot be empty.`>
+        ? ParseError<`Regex literals cannot be empty.`>
         : Token
 
     export type Operator<Unscanned extends string[]> = Unscanned extends Scan<
@@ -90,27 +79,27 @@ export namespace Shift {
         infer Rest
     >
         ? Lookahead extends TrivialSingleCharOperator
-            ? RightFrom<{
+            ? ParserState.RightFrom<{
                   lookahead: Lookahead
                   unscanned: Rest
               }>
             : Lookahead extends "["
-            ? List.T.ShiftToken<Rest>
-            : Lookahead extends Bounds.T.StartChar
-            ? Bounds.T.ShiftToken<Lookahead, Rest>
+            ? List.ShiftToken<Rest>
+            : Lookahead extends Bounds.StartChar
+            ? Bounds.ShiftToken<Lookahead, Rest>
             : Lookahead extends " "
             ? Operator<Rest>
-            : RightFrom<{
-                  lookahead: ErrorToken<`Expected an operator (got '${Lookahead}').`>
+            : ParserState.RightFrom<{
+                  lookahead: ParseError<`Expected an operator (got '${Lookahead}').`>
                   unscanned: []
               }>
-        : RightFrom<{
+        : ParserState.RightFrom<{
               lookahead: "END"
               unscanned: []
           }>
 
-    export type Error<Message extends string> = RightFrom<{
-        lookahead: ErrorToken<Message>
+    export type Error<Message extends string> = ParserState.RightFrom<{
+        lookahead: ParseError<Message>
         unscanned: []
     }>
 
@@ -121,9 +110,7 @@ export namespace Shift {
 
     type BranchTerminatingChar = Branches.Token | ")" | SuffixStartChar
 
-    type SuffixStartChar = "?" | Bounds.T.StartChar
+    type SuffixStartChar = "?" | Bounds.StartChar
 
     type LiteralEnclosingChar = `'` | `"` | `/`
-
-    type ErrorToken<Message extends string> = `!${Message}`
 }

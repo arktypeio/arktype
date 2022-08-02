@@ -1,8 +1,8 @@
 import { Base } from "../../base/index.js"
-import { Bounds } from "../../nonTerminal/bounds.js"
+import { Boundable } from "../../nonTerminal/bounds.js"
 import { Terminal } from "../terminal.js"
 
-abstract class BaseNumberKeyword extends Terminal implements Bounds.Boundable {
+abstract class BaseNumberKeyword extends Terminal implements Boundable {
     allows(args: Base.Validation.Args) {
         if (typeof args.value === "number" && this.allowsNumber(args.value)) {
             return true

@@ -1,5 +1,5 @@
-import type { ParserType } from "../../parser.js"
-import type { Shift } from "../../shift.js"
+import type { Shift } from "../../parser/shift.js"
+import { ParserState } from "../../parser/state.js"
 
 export namespace Branches {
     export type State = {
@@ -22,10 +22,10 @@ export namespace Branches {
     >
 
     export type ParseToken<
-        S extends ParserType.State,
+        S extends ParserState.State,
         Branch extends State,
         Dict
-    > = ParserType.StateFrom<{
+    > = ParserState.From<{
         L: {
             groups: S["L"]["groups"]
             branches: Branch

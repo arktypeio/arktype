@@ -1,13 +1,15 @@
 // TODO: Remove this
 /* eslint-disable max-lines */
-import { Base } from "./base/index.js"
+import { Base } from "../base/index.js"
 import {
+    Boundable,
     Bounds,
     IntersectionNode,
-    List,
+    isBoundable,
+    ListNode,
     OptionalNode,
     UnionNode
-} from "./nonTerminal/index.js"
+} from "../nonTerminal/index.js"
 import {
     AliasNode,
     BigintLiteralNode,
@@ -15,7 +17,7 @@ import {
     NumberLiteralNode,
     RegexNode,
     StringLiteralNode
-} from "./terminal/index.js"
+} from "../terminal/index.js"
 
 const expressionTerminating = {
     ")": 1,
@@ -261,7 +263,7 @@ export class Parser {
 
     shiftListToken() {
         if (this.nextLookahead === "]") {
-            this.expression = new List.ListNode(this.expression!, this.ctx)
+            this.expression = new ListNode(this.expression!, this.ctx)
             this.scan += 2
         } else {
             throw new Error(`Missing expected ].`)
@@ -272,18 +274,18 @@ export class Parser {
         if (this.nextLookahead === "=") {
             this.scan += 2
             this.reduceBound(
-                `${this.lookahead}${this.nextLookahead}` as ComparatorToken
+                `${this.lookahead}${this.nextLookahead}` as Bounds.Token
             )
         } else if (this.lookahead === "=") {
             throw new Error(`= is not a valid comparator. Use == instead.`)
         } else {
             this.scan++
-            this.reduceBound(this.lookahead as ComparatorToken)
+            this.reduceBound(this.lookahead as Bounds.Token)
         }
     }
 
-    reduceBound(token: ComparatorToken) {
-        if (Bounds.isBoundable(this.expression!)) {
+    reduceBound(token: Bounds.Token) {
+        if (isBoundable(this.expression!)) {
             this.reduceRightBound(this.expression!, token)
         } else if (this.expression instanceof NumberLiteralNode) {
             this.reduceLeftBound(this.expression.value, token)
@@ -294,7 +296,7 @@ export class Parser {
         }
     }
 
-    reduceRightBound(expression: Bounds.Boundable, token: ComparatorToken) {
+    reduceRightBound(expression: Boundable, token: Bounds.Token) {
         if (this.branches.ctx.rightBounded) {
             throw new Error(
                 `Right side of comparator ${token} cannot be bounded more than once.`
@@ -313,7 +315,7 @@ export class Parser {
         }
     }
 
-    reduceLeftBound(value: number, token: ComparatorToken) {
+    reduceLeftBound(value: number, token: Bounds.Token) {
         if (this.branches.ctx.leftBounded) {
             throw new Error(
                 `Left side of comparator ${token} cannot be bounded more than once.`
@@ -321,7 +323,7 @@ export class Parser {
         }
         this.branches.ctx.leftBounded = true
         this.shiftBranch()
-        if (Bounds.isBoundable(this.expression!)) {
+        if (isBoundable(this.expression!)) {
             // Apply bound
         } else {
             throw new Error(
@@ -330,5 +332,3 @@ export class Parser {
         }
     }
 }
-
-type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="

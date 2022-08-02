@@ -1,21 +1,21 @@
 import { Base } from "../base/index.js"
-import { ParserType } from "../parser.js"
-import { Shift } from "../shift.js"
+import { Shift } from "../parser/shift.js"
+import { ParserState } from "../parser/state.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {
-    export namespace T {
-        export type Parse<S extends ParserType.State> =
-            S["R"]["unscanned"] extends []
-                ? ParserType.StateFrom<{
-                      L: ParserType.Modifier<S["L"], "?">
-                      R: Shift.Operator<S["R"]["unscanned"]>
-                  }>
-                : ParserType.ErrorState<
-                      S,
-                      `Suffix '?' is only valid at the end of a definition.`
-                  >
-    }
+    export type Parse<S extends ParserState.State> =
+        S["R"]["unscanned"] extends []
+            ? ParserState.From<{
+                  L: ParserState.Modify<S["L"], "?">
+                  R: Shift.Operator<S["R"]["unscanned"]>
+              }>
+            : ParserState.Error<
+                  S,
+                  `Suffix '?' is only valid at the end of a definition.`
+              >
+
+    export type Node<Child = unknown> = [Child, "?"]
 }
 
 export class OptionalNode extends NonTerminal {

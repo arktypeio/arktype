@@ -1,14 +1,14 @@
-import type { ParserType } from "../parser.js"
-import type { Shift } from "../shift.js"
+import type { Shift } from "../parser/shift.js"
+import { ParserState } from "../parser/state.js"
 import type { Branches } from "./branch/branch.js"
 
-export namespace GroupType {
+export namespace Group {
     export type State = Branches.State[]
 
     export type ParseOpen<
-        S extends ParserType.State,
+        S extends ParserState.State,
         Dict
-    > = ParserType.StateFrom<{
+    > = ParserState.From<{
         L: {
             groups: [...S["L"]["groups"], S["L"]["branches"]]
             branches: Branches.Initial
@@ -23,9 +23,9 @@ export namespace GroupType {
         Top
     ]
 
-    export type ParseClose<S extends ParserType.State> =
+    export type ParseClose<S extends ParserState.State> =
         S["L"]["groups"] extends PopGroup<infer Stack, infer Top>
-            ? ParserType.StateFrom<{
+            ? ParserState.From<{
                   L: {
                       groups: Stack
                       branches: Top
@@ -37,5 +37,5 @@ export namespace GroupType {
                   }
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>
-            : ParserType.ErrorState<S, `Unexpected ).`>
+            : ParserState.Error<S, `Unexpected ).`>
 }
