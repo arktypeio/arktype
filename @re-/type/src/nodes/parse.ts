@@ -8,7 +8,6 @@ import {
     OptionalNode,
     UnionNode
 } from "./nonTerminal/index.js"
-import { Str } from "./str.js"
 import {
     AliasNode,
     BigintLiteralNode,

@@ -1,36 +1,35 @@
+import type { ParserType } from "../parser.js"
 import type { Shift } from "../shift.js"
-import type {
-    BranchState,
-    DefaultBranchState,
-    ErrorState,
-    MergeBranches,
-    State,
-    StateFrom
-} from "../str.js"
+import type { Branches } from "./branch/branch.js"
 
 export namespace GroupType {
-    export type ParseOpen<S extends State, Dict> = StateFrom<{
+    export type State = Branches.State[]
+
+    export type ParseOpen<
+        S extends ParserType.State,
+        Dict
+    > = ParserType.StateFrom<{
         L: {
             openGroups: [...S["L"]["openGroups"], S["L"]["branch"]]
-            branch: DefaultBranchState
+            branch: Branches.Initial
             expression: []
             bounds: S["L"]["bounds"]
         }
         R: Shift.Base<S["R"]["unscanned"], Dict>
     }>
 
-    type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
+    type PopGroup<Stack extends State, Top extends Branches.State> = [
         ...Stack,
         Top
     ]
 
-    export type ParseClose<S extends State> =
+    export type ParseClose<S extends ParserType.State> =
         S["L"]["openGroups"] extends PopGroup<infer Stack, infer Top>
-            ? StateFrom<{
+            ? ParserType.StateFrom<{
                   L: {
                       openGroups: Stack
                       branch: Top
-                      expression: MergeBranches<
+                      expression: Branches.MergeAll<
                           S["L"]["branch"],
                           S["L"]["expression"]
                       >
@@ -38,5 +37,5 @@ export namespace GroupType {
                   }
                   R: Shift.Operator<S["R"]["unscanned"]>
               }>
-            : ErrorState<S, `Unexpected ).`>
+            : ParserType.ErrorState<S, `Unexpected ).`>
 }

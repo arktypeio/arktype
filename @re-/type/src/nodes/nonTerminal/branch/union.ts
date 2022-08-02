@@ -1,6 +1,8 @@
 import { TypeOfResult } from "@re-/tools"
-import { Base } from "../base/index.js"
-import { NonTerminal } from "./nonTerminal.js"
+import { Base } from "../../base/index.js"
+import { ParserType } from "../../parser.js"
+import { NonTerminal } from "../nonTerminal.js"
+import { Branches } from "./branch.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
 
@@ -17,7 +19,26 @@ const preferredDefaults: PreferredDefaults = [
     { typeOf: "function" }
 ]
 
-export namespace UnionType {}
+export namespace UnionType {
+    export type ReduceBranches<B extends Branches.State, Expression> = {
+        union: [
+            B["union"] extends []
+                ? Branches.MergeExpression<B["intersection"], Expression>
+                : [
+                      ...B["union"],
+                      Branches.MergeExpression<B["intersection"], Expression>
+                  ],
+            "|"
+        ]
+        intersection: []
+    }
+
+    export type Parse<S extends ParserType.State, Dict> = Branches.ParseToken<
+        S,
+        ReduceBranches<S["L"]["branch"], S["L"]["expression"]>,
+        Dict
+    >
+}
 
 export class UnionNode extends NonTerminal<Base.Node[]> {
     addMember(node: Base.Node) {

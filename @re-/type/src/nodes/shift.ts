@@ -1,5 +1,4 @@
 import { ListChars } from "@re-/tools"
-import { State } from "./str.js"
 import {
     BigintLiteralDefinition,
     Keyword,
