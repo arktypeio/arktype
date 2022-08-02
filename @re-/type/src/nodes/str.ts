@@ -4,7 +4,7 @@ import { Get, ListChars } from "@re-/tools"
 import { Base } from "./base/index.js"
 import { ListNode, OptionalNode } from "./nonTerminal/index.js"
 import { Parser } from "./parse.js"
-import { DefaultLeft, Left, Reduce } from "./reduce.js"
+import { InitialLeft, Left, Reduce } from "./reduce.js"
 import { InitializeRight, Right, Shift } from "./shift.js"
 import {
     AliasNode,
@@ -119,22 +119,54 @@ export namespace Str {
         right?: [ComparatorToken, NumberLiteralDefinition]
     }
 
-    export type InitializeState<Def extends string> = {
-        L: DefaultLeft
-        R: InitializeRight<Def>
+    export type InitializeState<Def extends string, Dict> = {
+        L: InitialLeft
+        R: Shift.Base<ListChars<Def>, Dict>
     }
 
     export type StateFrom<S extends State> = S
 
     type Z = ParseDefinition<"string[][]|number[]", {}>
 
-    type ParseDefinition<Def extends string, Dict> = ParseBase<
-        {
-            L: DefaultLeft
-            R: Shift.Base<ListChars<Def>, Dict>
-        },
+    type ParseDefinition<Def extends string, Dict> = ParsePrefix<
+        InitializeState<Def, Dict>,
         Dict
     >
+
+    type Parse2<S extends State, Dict> = S["L"]["phase"] extends "prefix"
+        ? ParsePrefix<S, Dict>
+        : S
+
+    type ParsePrefix<
+        S extends State,
+        Dict
+    > = S["R"]["lookahead"] extends NumberLiteralDefinition
+        ? ParsePossibleLowerBound<
+              StateFrom<{
+                  L: S["L"]
+                  R: Shift.Operator<S["R"]["unscanned"]>
+              }>,
+              S["R"]["lookahead"],
+              Dict
+          >
+        : ParseBase<S, Dict>
+
+    type ParsePossibleLowerBound<
+        S extends State,
+        Value extends NumberLiteralDefinition,
+        Dict
+    > = S["R"]["lookahead"] extends ComparatorToken
+        ? ParseBase<
+              StateFrom<{
+                  L: Reduce.LeftBound<S["L"], S["R"]["lookahead"], Value>
+                  R: Shift.Base<S["R"]["unscanned"], Dict>
+              }>,
+              Dict
+          >
+        : ParseOperators<
+              StateFrom<{ L: Reduce.SetExpression<S["L"], Value>; R: S["R"] }>,
+              Dict
+          >
 
     type ParseBase<S extends State, Dict> = S["R"]["lookahead"] extends "("
         ? ParseBase<
@@ -183,135 +215,57 @@ export namespace Str {
               StateFrom<{
                   L: Reduce.SuffixStart<S["L"]>
                   R: S["R"]
-              }>
+              }>,
+              Dict
           >
 
-    type ParseSuffixes<S extends State> = S
-    // S["R"]["lookahead"] extends ComparatorToken
-    //     ? ReduceRightBound<
-    //           ShiftUnenclosedBase<State.DiscardToken<S>>,
-    //           S["R"]["lookahead"]
-    //       >
-    //     : ParseFinalizer<S>
+    type ParseSuffixes<
+        S extends State,
+        Dict
+    > = S["R"]["lookahead"] extends ComparatorToken
+        ? ParseRightBound<
+              StateFrom<{
+                  L: S["L"]
+                  R: Shift.Base<S["R"]["unscanned"], Dict>
+              }>,
+              S["R"]["lookahead"]
+          >
+        : ParseFinalizing<S>
 
-    // export type Optional<L extends Left> = S["unscanned"] extends []
-    //     ? ReduceModifier<FinalizeState<S>>
-    //     : State.Error<`Suffix '?' is only valid at the end of a definition.`>
-
-    // export type RightBound<
-    //     S extends Left,
-    //     Comparator extends ComparatorToken
-    // > = S["lookahead"] extends NumberLiteralDefinition
-    //     ? ParseFinalizer<
-    //           Shift.Operator<
-    //               State.UpdateBounds<S, { right: [Comparator, S["lookahead"]] }>
-    //           >
-    //       >
-    //     : InvalidRightBound<S["lookahead"]>
+    export type ParseRightBound<
+        S extends State,
+        Comparator extends ComparatorToken
+    > = S["R"]["lookahead"] extends NumberLiteralDefinition
+        ? ParseFinalizing<
+              Reduce.RightBound<S["L"], Comparator, S["R"]["lookahead"]>
+          >
+        : InvalidRightBound<S["lookahead"]>
 
     // type InvalidRightBound<Token extends string> =
     //     State.Error<`Right bound ${Token} must be a number literal followed only by other suffixes.`>
 
-    // type ParseBranches<
-    //     S extends State,
-    //     Dict
-    // > = S["L"]["expression"] extends ErrorToken<string>
-    //     ? S
-    //     : S["R"]["lookahead"] extends SuffixToken
-    //     ? S
-    //     : ParseBranches<
-    //           StateFrom<{
-    //               L: Reduce.Token<S["L"], S["R"]["lookahead"]>
-    //               R: Shift.Token<S["R"], Dict>
-    //           }>,
-    //           Dict
-    //       >
+    type FinalizeState<S extends State> = {} extends S["L"]["bounds"]
+        ? S
+        : S["L"]["expression"] extends BoundableNode
+        ? S
+        : State.Error<`Bounded expression '${TreeToString<
+              S["expression"]
+          >}' must be a number-or-string-typed keyword or a list-typed expression.`>
 
-    // export type ReduceBase<
-    //     L extends Left,
-    //     Token extends string
-    // > = Token extends "(" ? OpenGroup<L> : SetExpression<L, Token>
+    type ParseFinalizing<S extends State> = S["R"]["lookahead"] extends "END"
+        ? FinalizeState<S>
+        : S["R"]["lookahead"] extends "?"
+        ? ParseOptional<S>
+        : State.Error<`Unexpected suffix token ${S["lookahead"]}.`>
 
-    // export type ReduceOperators<
-    //     L extends Left,
-    //     Token extends OperatorToken
-    // > = Token extends "[]"
-    //     ? ReduceModifier<L, Token>
-    //     : Token extends BranchingOperatorToken
-    //     ? Branch<L, Token>
-    //     : Token extends ")"
-    //     ? CloseGroup<L>
-    //     : {}
-
-    // type ReduceBranch<L extends Left, R extends Right> = StateFrom<{
-    //     L: Reduce.SetExpression<L, R["lookahead"]>
-    //     R: Shift.Operator<R>
-    // }>
-
-    // type ShiftDefinition<Def extends string, Dict> = ParsePrefixes<
-    //     ParseBranch<State.Initialize<Def>, Dict>,
-    //     Dict
-    // >
-
-    // type FinalizeState<S extends State> = S["openGroups"] extends []
-    //     ? {} extends S["bounds"]
-    //         ? S
-    //         : S["expression"] extends BoundableNode
-    //         ? S
-    //         : State.Error<`Bounded expression '${TreeToString<
-    //               S["expression"]
-    //           >}' must be a number-or-string-typed keyword or a list-typed expression.`>
-    //     : State.Error<`Missing ).`>
-
-    // type ParsePrefixes<
-    //     L extends Left,
-    //     R extends Right,
-    //     Dict
-    // > = S["expression"] extends NumberLiteralDefinition
-    //     ? S["lookahead"] extends ComparatorToken
-    //         ? ParseExpression<
-    //               State.From<{
-    //                   openGroups: []
-    //                   branch: S["branch"]
-    //                   expression: []
-    //                   lookahead: ""
-    //                   unscanned: S["unscanned"]
-    //                   bounds: S["bounds"] & {
-    //                       left: [S["expression"], S["lookahead"]]
-    //                   }
-    //               }>,
-    //               Dict
-    //           >
-    //         : ParseOperators<S, Dict>
-    //     : ParseOperators<S, Dict>
-
-    // type ParseFinalizer<S extends State.State> = S["lookahead"] extends "END"
-    //     ? FinalizeState<S>
-    //     : S["lookahead"] extends "?"
-    //     ? ReduceOptional<S>
-    //     : State.Error<`Unexpected suffix token ${S["lookahead"]}.`>
-
-    type ComparatorStartChar = "<" | ">" | "="
-
-    type BaseTerminatingChar =
-        | ModifyingOperatorStartChar
-        | BranchTerminatingChar
-        | " "
-
-    type BranchTerminatingChar =
-        | BranchingOperatorToken
-        | ")"
-        | SuffixToken
-        | "="
+    export type ParseOptional<S extends State> = S["R"]["unscanned"] extends []
+        ? ReduceModifier<FinalizeState<S>>
+        : State.Error<`Suffix '?' is only valid at the end of a definition.`>
 
     type ComparatorToken = "<=" | ">=" | "<" | ">" | "=="
     type SuffixToken = "END" | "?" | ComparatorToken | ErrorToken<string>
 
     type BranchingOperatorToken = "|" | "&"
-
-    type ModifyingOperatorStartChar = "["
-
-    type LiteralEnclosingChar = `'` | `"` | `/`
 
     type ErrorToken<Message extends string> = `!${Message}`
 

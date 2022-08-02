@@ -30,12 +30,6 @@ type IsResolvableName<Def, Dict> = Def extends Keyword.Definition
     : false
 
 export namespace Shift {
-    export type Token<R extends Right, Dict> = R["lookahead"] extends
-        | "("
-        | BranchingOperatorToken
-        ? Base<R["unscanned"], Dict>
-        : Operator<R["unscanned"]>
-
     export type Base<Unscanned extends string[], Dict> = Unscanned extends Scan<
         infer Lookahead,
         infer Rest

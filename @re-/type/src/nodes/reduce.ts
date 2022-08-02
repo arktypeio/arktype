@@ -2,18 +2,22 @@
 /* eslint-disable max-lines */
 import { NumberLiteralDefinition } from "./terminal/index.js"
 
+export type Phase = "prefix" | "base" | "operator" | "suffix"
+
 export type Left = {
     openGroups: BranchState[]
     branch: BranchState
     expression: unknown
     bounds: Bounds
+    phase: Phase
 }
 
-export type DefaultLeft = {
+export type InitialLeft = {
     openGroups: []
     branch: DefaultBranchState
     expression: []
     bounds: {}
+    phase: "prefix"
 }
 
 export type BranchState = {
@@ -43,6 +47,7 @@ export namespace Reduce {
         branch: DefaultBranchState
         expression: []
         bounds: L["bounds"]
+        phase: "base"
     }>
 
     type PopGroup<Stack extends BranchState[], Top extends BranchState> = [
@@ -55,6 +60,7 @@ export namespace Reduce {
         branch: L["branch"]
         expression: Token
         bounds: L["bounds"]
+        phase: "operator"
     }>
 
     type Error<L extends Left, Message extends string> = SetExpression<
@@ -71,6 +77,7 @@ export namespace Reduce {
               branch: Top
               expression: MergeBranches<L["branch"], L["expression"]>
               bounds: L["bounds"]
+              phase: "operator"
           }>
         : Error<L, `Unexpected ).`>
 
@@ -80,17 +87,36 @@ export namespace Reduce {
               branch: DefaultBranchState
               expression: MergeBranches<L["branch"], L["expression"]>
               bounds: L["bounds"]
+              phase: "suffix"
           }>
         : Error<L, "Missing ).">
 
-    export type UpdateBounds<
+    export type LeftBound<
         L extends Left,
-        Updates extends Partial<Bounds>
+        Comparator extends ComparatorToken,
+        Bound extends NumberLiteralDefinition
+    > = LeftFrom<{
+        openGroups: L["openGroups"]
+        branch: L["branch"]
+        expression: ""
+        bounds: {
+            left: [Bound, Comparator]
+        }
+        phase: "base"
+    }>
+
+    export type RightBound<
+        L extends Left,
+        Comparator extends ComparatorToken,
+        Bound extends NumberLiteralDefinition
     > = LeftFrom<{
         openGroups: L["openGroups"]
         branch: L["branch"]
         expression: L["expression"]
-        bounds: L["bounds"] & Updates
+        bounds: L["bounds"] & {
+            right: [Comparator, Bound]
+        }
+        phase: "suffix"
     }>
 
     export type List<L extends Left> = LeftFrom<{
@@ -98,6 +124,7 @@ export namespace Reduce {
         branch: L["branch"]
         expression: [L["expression"], "[]"]
         bounds: L["bounds"]
+        phase: "operator"
     }>
 
     export type Branch<
@@ -110,6 +137,7 @@ export namespace Reduce {
             : Intersection<L["branch"], L["expression"]>
         expression: []
         bounds: L["bounds"]
+        phase: "base"
     }>
 
     type Union<B extends BranchState, Expression> = {
@@ -148,21 +176,6 @@ export namespace Reduce {
     >
 }
 
-type ComparatorStartChar = "<" | ">" | "="
-
-type BaseTerminatingChar =
-    | ModifyingOperatorStartChar
-    | BranchTerminatingChar
-    | " "
-
-type BranchTerminatingChar = BranchingOperatorToken | ")" | SuffixToken | "="
-
-type SuffixToken = "END" | "?" | ComparatorToken
-
 type BranchingOperatorToken = "|" | "&"
-
-type ModifyingOperatorStartChar = "["
-
-type LiteralEnclosingChar = `'` | `"` | `/`
 
 type ErrorToken<Message extends string> = `!${Message}`
