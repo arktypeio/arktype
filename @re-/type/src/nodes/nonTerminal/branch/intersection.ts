@@ -9,10 +9,9 @@ export namespace Intersection {
         intersection: [Branches.MergeExpression<B["intersection"], Root>, "&"]
     }
 
-    export type Parse<S extends ParserState.State, Dict> = Branches.Parse<
+    export type Parse<S extends ParserState.State> = Branches.Parse<
         S,
-        PushRoot<S["L"]["branches"], S["L"]["root"]>,
-        Dict
+        PushRoot<S["L"]["branches"], S["L"]["root"]>
     >
 
     export type Node<Left = unknown, Right = unknown> = [Left, "&", Right]

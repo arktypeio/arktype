@@ -3,17 +3,14 @@ import { ParserState } from "../parser/state.js"
 import type { Branches } from "./branch/branch.js"
 
 export namespace Group {
-    export type ParseOpen<
-        S extends ParserState.State,
-        Dict
-    > = ParserState.From<{
+    export type ParseOpen<S extends ParserState.State> = ParserState.From<{
         L: {
             groups: [...S["L"]["groups"], S["L"]["branches"]]
             branches: {}
             root: null
             ctx: S["L"]["ctx"]
         }
-        R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
+        R: Lexer.ShiftBase<S["R"]["unscanned"]>
     }>
 
     type PopGroup<

@@ -35,9 +35,9 @@ export namespace ParserState {
         R: S["R"]
     }>
 
-    export type Initialize<Def extends string, Dict> = {
+    export type Initialize<Def extends string> = {
         L: InitialLeft
-        R: Lexer.ShiftBase<ListChars<Def>, Dict>
+        R: Lexer.ShiftBase<ListChars<Def>>
     }
 
     export type InitializeRight<Def extends string> = RightFrom<{

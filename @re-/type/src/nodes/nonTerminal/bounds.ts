@@ -71,8 +71,7 @@ export namespace Bounds {
     export type ParseLeft<
         S extends ParserState.State,
         T extends Token,
-        N extends NumberLiteralDefinition,
-        Dict
+        N extends NumberLiteralDefinition
     > = ParserState.From<{
         L: {
             groups: []
@@ -84,7 +83,7 @@ export namespace Bounds {
                 }
             }
         }
-        R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
+        R: Lexer.ShiftBase<S["R"]["unscanned"]>
     }>
 
     export type ParseRight<
@@ -105,18 +104,16 @@ export namespace Bounds {
         R: Lexer.ShiftOperator<S["R"]["unscanned"]>
     }>
 
-    export type ParsePossibleRightBound<
-        S extends ParserState.State,
-        Dict
-    > = S["R"]["lookahead"] extends Token
-        ? ParseRightBound<
-              ParserState.From<{
-                  L: S["L"]
-                  R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
-              }>,
-              S["R"]["lookahead"]
-          >
-        : CoreParser.ParseFinalizing<S>
+    export type ParsePossibleRightBound<S extends ParserState.State> =
+        S["R"]["lookahead"] extends Token
+            ? ParseRightBound<
+                  ParserState.From<{
+                      L: S["L"]
+                      R: Lexer.ShiftBase<S["R"]["unscanned"]>
+                  }>,
+                  S["R"]["lookahead"]
+              >
+            : CoreParser.ParseFinalizing<S>
 
     type ParseRightBound<
         S extends ParserState.State,
@@ -133,7 +130,7 @@ export namespace Bounds {
         N extends NumberLiteralDefinition,
         Dict
     > = S["R"]["lookahead"] extends Token
-        ? CoreParser.ParseMain<ParseLeft<S, S["R"]["lookahead"], N, Dict>, Dict>
+        ? CoreParser.ParseMain<ParseLeft<S, S["R"]["lookahead"], N>, Dict>
         : CoreParser.ParseMain<
               ParserState.From<{
                   L: ParserState.SetRoot<S["L"], N>

@@ -1,11 +1,6 @@
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bounds, List } from "../nonTerminal/index.js"
-
-import {
-    BigintLiteralDefinition,
-    NumberLiteralDefinition
-} from "../terminal/index.js"
-import { IsResolvableName, ParseError } from "./shared.js"
+import { ParseError } from "./shared.js"
 import { ParserState } from "./state.js"
 
 export namespace Lexer {
@@ -14,17 +9,17 @@ export namespace Lexer {
         ...Unscanned
     ]
 
-    export type ShiftBase<
-        Unscanned extends string[],
-        Dict
-    > = Unscanned extends Scan<infer Lookahead, infer Rest>
+    export type ShiftBase<Unscanned extends string[]> = Unscanned extends Scan<
+        infer Lookahead,
+        infer Rest
+    >
         ? Lookahead extends "("
             ? ParserState.RightFrom<{ lookahead: Lookahead; unscanned: Rest }>
             : Lookahead extends LiteralEnclosingChar
             ? EnclosedBase<Lookahead, Lookahead, Rest>
             : Lookahead extends " "
-            ? ShiftBase<Rest, Dict>
-            : UnenclosedBase<"", Unscanned, Dict>
+            ? ShiftBase<Rest>
+            : UnenclosedBase<"", Unscanned>
         : ParserState.RightFrom<{
               lookahead: ParseError<`Expected an expression.`>
               unscanned: []
@@ -32,30 +27,18 @@ export namespace Lexer {
 
     type UnenclosedBase<
         Token extends string,
-        Unscanned extends string[],
-        Dict
+        Unscanned extends string[]
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends BaseTerminatingChar
             ? ParserState.RightFrom<{
-                  lookahead: ValidateUnenclosedBase<Token, Dict>
+                  lookahead: Token
                   unscanned: Unscanned
               }>
-            : UnenclosedBase<`${Token}${Lookahead}`, Rest, Dict>
+            : UnenclosedBase<`${Token}${Lookahead}`, Rest>
         : ParserState.RightFrom<{
-              lookahead: ValidateUnenclosedBase<Token, Dict>
+              lookahead: Token
               unscanned: []
           }>
-
-    type ValidateUnenclosedBase<Token extends string, Dict> = IsResolvableName<
-        Token,
-        Dict
-    > extends true
-        ? Token
-        : Token extends NumberLiteralDefinition | BigintLiteralDefinition
-        ? Token
-        : Token extends ""
-        ? ParseError<`Expected an expression.`>
-        : ParseError<`'${Token}' does not exist in your space.`>
 
     type EnclosedBase<
         StartChar extends LiteralEnclosingChar,
@@ -64,15 +47,11 @@ export namespace Lexer {
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends StartChar
             ? ParserState.RightFrom<{
-                  lookahead: ValidateEnclosedBase<`${Token}${Lookahead}`>
+                  lookahead: `${Token}${Lookahead}`
                   unscanned: Rest
               }>
             : EnclosedBase<StartChar, `${Token}${Lookahead}`, Rest>
         : ShiftError<`${Token} requires a closing ${StartChar}.`>
-
-    type ValidateEnclosedBase<Token extends string> = Token extends "//"
-        ? ParseError<`Regex literals cannot be empty.`>
-        : Token
 
     export type ShiftOperator<Unscanned extends string[]> =
         Unscanned extends Scan<infer Lookahead, infer Rest>

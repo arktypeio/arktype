@@ -8,9 +8,14 @@ import {
     Optional,
     Union
 } from "../nonTerminal/index.js"
-import { NumberLiteralDefinition } from "../terminal/index.js"
+import {
+    BigintLiteralDefinition,
+    NumberLiteralDefinition,
+    RegexLiteralDefinition,
+    StringLiteralDefinition
+} from "../terminal/index.js"
 import type { Lexer } from "./lexer.js"
-import { ParseError } from "./shared.js"
+import { IsResolvableName, ParseError } from "./shared.js"
 import { ParserState } from "./state.js"
 
 export namespace CoreParser {
@@ -19,8 +24,10 @@ export namespace CoreParser {
         "root"
     >
 
+    type Z = ParseDefinition<"strin|number", {}>
+
     type ParseDefinition<Def extends string, Dict> = ParsePrefix<
-        ParserState.Initialize<Def, Dict>,
+        ParserState.Initialize<Def>,
         Dict
     >
 
@@ -42,7 +49,7 @@ export namespace CoreParser {
         S extends ParserState.State,
         Dict
     > = S["R"]["lookahead"] extends SuffixToken
-        ? ParseSuffixes<S, Dict>
+        ? ParseSuffixes<S>
         : ParseMain<ParseNext<S, Dict>, Dict>
 
     type ParseNext<
@@ -51,24 +58,46 @@ export namespace CoreParser {
     > = S["R"]["lookahead"] extends "[]"
         ? List.Parse<S>
         : S["R"]["lookahead"] extends "|"
-        ? Union.Parse<S, Dict>
+        ? Union.Parse<S>
         : S["R"]["lookahead"] extends "&"
-        ? Intersection.Parse<S, Dict>
+        ? Intersection.Parse<S>
+        : S["R"]["lookahead"] extends "("
+        ? Group.ParseOpen<S>
         : S["R"]["lookahead"] extends ")"
         ? Group.ParseClose<S>
-        : S["R"]["lookahead"] extends "("
-        ? Group.ParseOpen<S, Dict>
-        : ParserState.From<{
+        : IsResolvableName<S["R"]["lookahead"], Dict> extends true
+        ? ParserState.From<{
               L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
               R: Lexer.ShiftOperator<S["R"]["unscanned"]>
           }>
+        : ParserState.From<{
+              L: ParserState.SetRoot<
+                  S["L"],
+                  ValidateLiteral<S["R"]["lookahead"]>
+              >
+              R: ValidateLiteral<
+                  S["R"]["lookahead"]
+              > extends S["R"]["lookahead"]
+                  ? Lexer.ShiftOperator<S["R"]["unscanned"]>
+                  : ParserState.RightFrom<{ lookahead: "END"; unscanned: [] }>
+          }>
 
-    type ParseSuffixes<
-        S extends ParserState.State,
-        Dict
-    > = S["L"]["groups"] extends []
-        ? Bounds.ParsePossibleRightBound<
-              {
+    type ValidateLiteral<Token extends string> =
+        Token extends StringLiteralDefinition
+            ? Token
+            : Token extends RegexLiteralDefinition
+            ? Token extends "//"
+                ? ParseError<`Regex literals cannot be empty.`>
+                : Token
+            : Token extends NumberLiteralDefinition | BigintLiteralDefinition
+            ? Token
+            : Token extends ""
+            ? ParseError<`Expected an expression.`>
+            : ParseError<`'${Token}' does not exist in your space.`>
+
+    type ParseSuffixes<S extends ParserState.State> =
+        S["L"]["groups"] extends []
+            ? Bounds.ParsePossibleRightBound<{
                   L: {
                       groups: []
                       branches: {}
@@ -79,10 +108,8 @@ export namespace CoreParser {
                       ctx: S["L"]["ctx"]
                   }
                   R: S["R"]
-              },
-              Dict
-          >
-        : ParserState.Error<S, "Missing ).">
+              }>
+            : ParserState.Error<S, "Missing ).">
 
     type FinalizeState<S extends ParserState.State> =
         {} extends S["L"]["ctx"]["bounds"] ? S : Bounds.AssertBoundable<S>

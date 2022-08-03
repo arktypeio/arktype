@@ -18,8 +18,7 @@ export namespace Branches {
 
     export type Parse<
         S extends ParserState.State,
-        B extends Branches.State,
-        Dict
+        B extends Branches.State
     > = ParserState.From<{
         L: {
             groups: S["L"]["groups"]
@@ -27,7 +26,7 @@ export namespace Branches {
             root: undefined
             ctx: S["L"]["ctx"]
         }
-        R: Lexer.ShiftBase<S["R"]["unscanned"], Dict>
+        R: Lexer.ShiftBase<S["R"]["unscanned"]>
     }>
 
     export type MergeExpression<
