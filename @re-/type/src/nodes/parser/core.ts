@@ -25,7 +25,7 @@ export namespace Core {
 
     export const parse = (def: string, ctx: Base.Parsing.Context) => {
         const s = ParserState.initialize(def)
-        parsePrefixes(s)
+        parsePossiblePrefixes(s, ctx)
         parseExpression(s, ctx)
         parseSuffixes(s, ctx)
         return s.root!
@@ -47,11 +47,15 @@ export namespace Core {
               >
             : S
 
-    const parsePrefixes = (s: ParserState.Value) => {
-        if (NumberLiteralNode.matches(s.scanner.lookahead)) {
-            const n = s.scanner.lookahead
+    const parsePossiblePrefixes = (
+        s: ParserState.Value,
+        ctx: Base.Parsing.Context
+    ) => {
+        parseToken(s, ctx)
+        // TODO: Add a better way to do assertions like this
+        if (s.root instanceof NumberLiteralNode) {
             Lexer.shiftOperator(s.scanner)
-            parsePossibleLeftBound(s, n)
+            parsePossibleLeftBound(s as ParserState.Value<NumberLiteralNode>)
         }
     }
 
@@ -66,14 +70,10 @@ export namespace Core {
           }>
 
     const parsePossibleLeftBound = (
-        s: ParserState.Value,
-        n: NumberLiteralDefinition
+        s: ParserState.Value<NumberLiteralNode>
     ) => {
-        if (s.scanner.lookahead in Bound.tokens) {
-            // Parse left bound
-            Lexer.shiftOperator(s.scanner)
-        } else {
-            s.root = new NumberLiteralNode(n)
+        if (Bound.isToken(s.scanner.lookahead)) {
+            Bound.parseLeft(s, s.scanner.lookahead)
         }
     }
 
@@ -152,6 +152,7 @@ export namespace Core {
         while (s.scanner.lookahead !== "END") {
             parseSuffix(s, ctx)
         }
+        validateFinalState(s)
     }
 
     type ParseSuffix<S extends ParserState.Type> =
@@ -184,5 +185,20 @@ export namespace Core {
     }
 
     type ValidateFinalState<S extends ParserState.Type> =
-        {} extends S["L"]["ctx"]["bounds"] ? S : Bound.AssertBoundable<S>
+        "left" extends keyof S["L"]["ctx"]["bounds"]
+            ? "right" extends keyof S["L"]["ctx"]["bounds"]
+                ? S
+                : ParserState.Error<
+                      S,
+                      `Left bounds are only valid when paired with right bounds.`
+                  >
+            : S
+
+    const validateFinalState = (s: ParserState.Value) => {
+        if (s.bounds.left && !s.bounds.right) {
+            throw new Error(
+                `Left bounds are only valid when paired with right bounds.`
+            )
+        }
+    }
 }

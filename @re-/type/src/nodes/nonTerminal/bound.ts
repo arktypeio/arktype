@@ -1,37 +1,16 @@
 // TODO: Remove
 /* eslint-disable max-lines */
-import { Entry } from "@re-/tools"
+import { asNumber } from "@re-/tools"
 import { Base } from "../base/index.js"
-import { Core } from "../parser/core.js"
 import { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
 import { ParseTree } from "../parser/tree.js"
-import type { Keyword, NumberLiteralDefinition } from "../terminal/index.js"
+import {
+    Keyword,
+    NumberLiteralDefinition,
+    NumberLiteralNode
+} from "../terminal/index.js"
 import { NonTerminal } from "./nonTerminal.js"
-
-// const invalidBoundError = (bound: string) =>
-//     `Bounding value '${Base.defToString(bound)}' must be a number literal.`
-
-const unboundableError = (inner: string) =>
-    `Definition '${Base.defToString(inner)}' is not boundable.`
-
-// const boundPartsErrorTemplate =
-//     "Bounds must be either of the form D<N or N<D<N, where 'D' is a boundable definition, 'N' is a number literal, and '<' is a comparison token."
-
-// const invertComparator = (token: ComparatorToken): ComparatorToken => {
-//     switch (token) {
-//         case "<=":
-//             return ">="
-//         case ">=":
-//             return "<="
-//         case "<":
-//             return ">"
-//         case ">":
-//             return "<"
-//         case "==":
-//             return "=="
-//     }
-// }
 
 export namespace Bound {
     export const tokens = {
@@ -41,6 +20,8 @@ export namespace Bound {
         "<": 1,
         "==": 1
     }
+
+    export const isToken = (s: string): s is Token => s in tokens
 
     export type Token = keyof typeof tokens
 
@@ -55,13 +36,11 @@ export namespace Bound {
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
      *    2. A string-typed keyword terminal (e.g. "alphanum" in "100>alphanum")
      *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
-     *    4. An optional node whose child is one of the above
      */
     export type Boundable =
         | Keyword.OfTypeNumber
         | Keyword.OfTypeString
         | [unknown, "[]"]
-        | [Boundable, "?"]
 
     export type ShiftToken<
         Start extends StartChar,
@@ -109,6 +88,15 @@ export namespace Bound {
         R: Lexer.ShiftBase<S["R"]["unscanned"]>
     }>
 
+    export const parseLeft = (
+        s: ParserState.Value<NumberLiteralNode>,
+        token: Token
+    ) => {
+        s.bounds.left = [s.root.value, token]
+        s.root = undefined!
+        Lexer.shiftBase(s.scanner)
+    }
+
     export type ParseRight<
         S extends ParserState.Type,
         T extends Token
@@ -118,7 +106,8 @@ export namespace Bound {
                   S,
                   `Definitions cannot have multiple right bounds.`
               >
-            : ParserState.From<{
+            : S["L"]["root"] extends Boundable
+            ? ParserState.From<{
                   L: ParserState.UpdateContext<
                       S["L"],
                       {
@@ -129,66 +118,45 @@ export namespace Bound {
                   >
                   R: Lexer.ShiftOperator<S["R"]["unscanned"]>
               }>
-        : ParserState.Error<
-              S,
-              `Right bound ${S["R"]["lookahead"]} must be a number literal followed only by other suffixes.`
-          >
-
-    export type AssertBoundable<S extends ParserState.Type> =
-        S["L"]["root"] extends Bound.Boundable
-            ? S
             : ParserState.Error<
                   S,
                   `Bounded expression '${ParseTree.ToString<
                       S["L"]["root"]
                   >}' must be a number-or-string-typed keyword or a list-typed expression.`
               >
+        : ParserState.Error<
+              S,
+              `Right bound ${S["R"]["lookahead"]} must be a number literal followed only by other suffixes.`
+          >
 
-    // reduceBound(token: Bounds.Token) {
-    //     if (isBoundable(this.s.root!)) {
-    //         this.reduceRightBound(this.s.root!, token)
-    //     } else if (this.s.root instanceof NumberLiteralNode) {
-    //         this.reduceLeftBound(this.s.root.value, token)
-    //     } else {
-    //         throw new Error(
-    //             `Left side of comparator ${token} must be a number literal or boundable definition (got ${this.s.root!.toString()}).`
-    //         )
-    //     }
-    // }
-    // reduceRightBound(expression: Boundable, token: Bounds.Token) {
-    //     if (this.s.bounds) {
-    //         throw new Error(
-    //             `Right side of comparator ${token} cannot be bounded more than once.`
-    //         )
-    //     }
-    //     this.s.bounds.right = true
-    //     const bounded = this.s.root
-    //     this.shiftBranch()
-    //     if (this.s.root instanceof NumberLiteralNode) {
-    //         this.s.root = bounded
-    //         // Apply bound
-    //     } else {
-    //         throw new Error(
-    //             `Right side of comparator ${token} must be a number literal.`
-    //         )
-    //     }
-    // }
-    // reduceLeftBound(value: number, token: Bounds.Token) {
-    //     if (this.branches.ctx.leftBounded) {
-    //         throw new Error(
-    //             `Left side of comparator ${token} cannot be bounded more than once.`
-    //         )
-    //     }
-    //     this.branches.ctx.leftBounded = true
-    //     this.shiftBranch()
-    //     if (isBoundable(this.s.root!)) {
-    //         // Apply bound
-    //     } else {
-    //         throw new Error(
-    //             `Right side of comparator ${token} must be a numbed-or-string-typed keyword or a list-typed expression.`
-    //         )
-    //     }
-    // }
+    export const parseRight = (
+        s: ParserState.Value<Base.Node>,
+        token: Token,
+        ctx: Base.Parsing.Context
+    ) => {
+        if (NumberLiteralNode.matches(s.scanner.lookahead)) {
+            if (s.bounds.right) {
+                throw new Error(
+                    `Definitions cannot have multiple right bounds.`
+                )
+            }
+            s.bounds.right = [
+                token,
+                asNumber(s.scanner.lookahead, { assert: true })
+            ]
+            if (!isBoundable(s.root)) {
+                throw new Error(
+                    `Bounded expression '${s.root.toString()}' must be a number-or-string-typed keyword or a list-typed expression.`
+                )
+            }
+            s.root = new BoundNode(s.root, s.bounds, ctx)
+            Lexer.shiftOperator(s.scanner)
+        } else {
+            throw new Error(
+                `Right side of comparator ${token} must be a number literal.`
+            )
+        }
+    }
 }
 
 export interface Boundable extends Base.Node {
@@ -199,20 +167,30 @@ export interface Boundable extends Base.Node {
 export const isBoundable = (node: Base.Node): node is Boundable =>
     "toBound" in node
 
-export type BoundEntry = Entry<Bound.Token, number>
+export type NodeBounds = {
+    left?: [number, Bound.Token]
+    right?: [Bound.Token, number]
+}
 
 export class BoundNode extends NonTerminal<Boundable> {
-    private bounds: BoundEntry[] | undefined
-
-    toString() {
-        return "Bounds not impelmented.."
+    constructor(
+        child: Boundable,
+        private bounds: NodeBounds,
+        ctx: Base.Parsing.Context
+    ) {
+        super(child, ctx)
     }
 
-    assertBoundable(node: Base.Node | Boundable): asserts node is Boundable {
-        if (isBoundable(node)) {
-            return
+    toString() {
+        let result = ""
+        if (this.bounds.left) {
+            result += this.bounds.left.join("")
         }
-        throw new Error(unboundableError(node.toString()))
+        result += this.children.toString()
+        if (this.bounds.right) {
+            result += this.bounds.right.join("")
+        }
+        return result
     }
 
     // TODO: Remove this once bounds are converted over
@@ -223,48 +201,48 @@ export class BoundNode extends NonTerminal<Boundable> {
             return false
         }
         const boundedValue = boundedNode.toBound(args.value)
-        for (const [comparator, bound] of this.bounds!) {
-            const boundDescription = `${bound}${
-                boundedNode.boundBy ? " " + boundedNode.boundBy : ""
-            }`
-            if (comparator === "<=" && boundedValue > bound) {
-                return this.addBoundError(
-                    "less than or equal to",
-                    boundedValue,
-                    boundDescription,
-                    args
-                )
-            } else if (comparator === ">=" && boundedValue < bound) {
-                return this.addBoundError(
-                    "greater than or equal to",
-                    boundedValue,
-                    boundDescription,
-                    args
-                )
-            } else if (comparator === "<" && boundedValue >= bound) {
-                return this.addBoundError(
-                    "less than",
-                    boundedValue,
-                    boundDescription,
-                    args
-                )
-            } else if (comparator === ">" && boundedValue <= bound) {
-                return this.addBoundError(
-                    "greater than",
-                    boundedValue,
-                    boundDescription,
-                    args
-                )
-            } else if (comparator === "==" && boundedValue !== bound) {
-                return this.addBoundError(
-                    // Error message is cleaner without token name for equality check
-                    "",
-                    boundedValue,
-                    boundDescription,
-                    args
-                )
-            }
-        }
+        // for (const [comparator, bound] of this.bounds!) {
+        //     const boundDescription = `${bound}${
+        //         boundedNode.boundBy ? " " + boundedNode.boundBy : ""
+        //     }`
+        //     if (comparator === "<=" && boundedValue > bound) {
+        //         return this.addBoundError(
+        //             "less than or equal to",
+        //             boundedValue,
+        //             boundDescription,
+        //             args
+        //         )
+        //     } else if (comparator === ">=" && boundedValue < bound) {
+        //         return this.addBoundError(
+        //             "greater than or equal to",
+        //             boundedValue,
+        //             boundDescription,
+        //             args
+        //         )
+        //     } else if (comparator === "<" && boundedValue >= bound) {
+        //         return this.addBoundError(
+        //             "less than",
+        //             boundedValue,
+        //             boundDescription,
+        //             args
+        //         )
+        //     } else if (comparator === ">" && boundedValue <= bound) {
+        //         return this.addBoundError(
+        //             "greater than",
+        //             boundedValue,
+        //             boundDescription,
+        //             args
+        //         )
+        //     } else if (comparator === "==" && boundedValue !== bound) {
+        //         return this.addBoundError(
+        //             // Error message is cleaner without token name for equality check
+        //             "",
+        //             boundedValue,
+        //             boundDescription,
+        //             args
+        //         )
+        //     }
+        // }
         return true
     }
 

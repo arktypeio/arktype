@@ -1,7 +1,7 @@
 import { ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
-import { Bound, BoundNode } from "../nonTerminal/index.js"
+import { Bound, NodeBounds } from "../nonTerminal/index.js"
 import { ErrorToken, Lexer } from "./lexer.js"
 
 export namespace ParserState {
@@ -10,12 +10,14 @@ export namespace ParserState {
         R: Right
     }
 
-    export type Value = {
+    export type Value<
+        Root extends Base.Node | undefined = Base.Node | undefined
+    > = {
         // Left
         groups: Branches.state[]
         branches: Branches.state
-        bounds?: BoundNode
-        root?: Base.Node
+        bounds: NodeBounds
+        root: Root
         // Equivalent to Right
         scanner: Lexer.Scanner
     }
@@ -56,6 +58,8 @@ export namespace ParserState {
     export const initialize = (def: string): Value => ({
         groups: [],
         branches: {},
+        bounds: {},
+        root: undefined,
         scanner: Lexer.shiftBase(new Lexer.Scanner(def))
     })
 
