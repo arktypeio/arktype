@@ -2,7 +2,7 @@ import { strict } from "node:assert"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
 import { dirName, readJson, writeJson } from "@re-/node"
-import { afterEach, beforeEach, describe, test } from "vitest"
+import { afterEach, beforeEach, describe, test } from "mocha"
 import { assert } from "../../../index.js"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"

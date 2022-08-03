@@ -1,5 +1,5 @@
 import { AssertionError, strict } from "node:assert"
-import { describe, test } from "vitest"
+import { describe, test } from "mocha"
 import { assert } from "../../index.js"
 const o = { re: "do" }
 

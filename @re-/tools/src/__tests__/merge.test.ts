@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { describe, it } from "vitest"
+import { describe, test } from "mocha"
 import { deepMerge, merge, narrow } from "../index.js"
 
 describe("merge", () => {
-    it("simple values", () => {
+    test("simple values", () => {
         const expected = narrow({ a: "fromA", b: "fromB", c: "fromC" })
         const actual = merge(
             narrow({ a: "fromA", b: "fromA" }),
@@ -12,7 +12,7 @@ describe("merge", () => {
         )
         assert(actual).typedValue(expected)
     })
-    it("optional keys", () => {
+    test("optional keys", () => {
         const result = merge(
             { a: "fromA", b: "fromA" } as { a?: "fromA"; b?: "fromA" },
             narrow({
@@ -30,7 +30,7 @@ describe("merge", () => {
             c: "fromB"
         }
     })
-    it("merge exclude values", () => {
+    test("merge exclude values", () => {
         const expected = narrow({ a: "defined" })
         const actual = merge(narrow({ a: "defined" }), { a: undefined })
         // undefined excluded by default (type currently does not exclude undefined merging)
@@ -39,7 +39,7 @@ describe("merge", () => {
 })
 
 describe("deepMerge", () => {
-    it("optional keys", () => {
+    test("optional keys", () => {
         const result = deepMerge(
             {
                 nested: { a: "fromA", b: "fromA" } as {
@@ -63,7 +63,7 @@ describe("deepMerge", () => {
             }
         }
     })
-    it("treats arrays like non-objects", () => {
+    test("treats arrays like non-objects", () => {
         const base = narrow({ a: [1, 2, 3, 4, 5], b: 6, c: [7], d: [8] })
         const merged = narrow({
             a: ["a", "b", "c"],

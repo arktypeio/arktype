@@ -1,15 +1,15 @@
 import { assert } from "@re-/assert"
-import { describe, it } from "vitest"
+import { describe, test } from "mocha"
 import { toString } from "../index.js"
 import { o } from "./common.js"
 
 describe("toString", () => {
-    it("default", () => {
+    test("default", () => {
         assert(toString(o)).snap(
             `{a: {a: "", b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: "initial", e: [{a: ["old"]}, {a: ["old"]}]}`
         )
     })
-    it("quotes", () => {
+    test("quotes", () => {
         assert(toString({ a: "quoteless" }, { quote: "none" })).equals(
             `{a: quoteless}`
         )
@@ -23,7 +23,7 @@ describe("toString", () => {
             "{a: `backtick`}"
         )
     })
-    it("truncate", () => {
+    test("truncate", () => {
         assert(
             toString(
                 { a: "include this but not that" },
@@ -34,7 +34,7 @@ describe("toString", () => {
             toString({ a: "include this" }, { maxNestedStringLength: 17 })
         ).snap(`{a: "include this"}`)
     })
-    it("indent", () => {
+    test("indent", () => {
         assert(toString(o, { indent: 2 })).snap(`{
   a: {
     a: "",
@@ -100,7 +100,7 @@ describe("toString", () => {
     ]
 }`)
     })
-    it("symbol keys", () => {
+    test("symbol keys", () => {
         const symbolKey = Symbol("example")
         assert(
             toString({
@@ -108,12 +108,12 @@ describe("toString", () => {
             })
         ).snap(`{Symbol(example): true}`)
     })
-    it("key quotes", () => {
+    test("key quotes", () => {
         assert(toString({ a: "quoteKeys" }, { keyQuote: "single" })).equals(
             `{'a': "quoteKeys"}`
         )
     })
-    it("non-alphanumeric key quotes", () => {
+    test("non-alphanumeric key quotes", () => {
         assert(
             toString(
                 {

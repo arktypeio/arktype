@@ -1,7 +1,7 @@
 import { join } from "node:path"
+import { describe, test } from "mocha"
 import { Project } from "ts-morph"
 import { PackageJson } from "type-fest"
-import { describe, test } from "vitest"
 import { DocGenSnippetExtractionConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
 import { extractPackageSnippets } from "../snippets/extractSnippets.js"
@@ -42,12 +42,12 @@ describe("Extracts snippets from file path", () => {
         assert(snippets[TEST_FILE_KEY])
     })
     test("@snipLine", () => {
-        assert(snippets[TEST_FILE_KEY].byLabel["line"].text).snap(
+        assert(snippets[TEST_FILE_KEY]["line"].text).snap(
             `import { model } from "@re-/model"`
         )
     })
     test("@snipStart - @snipEnd", () => {
-        assert(snippets[TEST_FILE_KEY].byLabel["test1"].text).snap(`Hello.`)
+        assert(snippets[TEST_FILE_KEY]["test1"].text).snap(`Hello.`)
     })
     test("removes @snip(s) from file snippet", () => {
         assert(SNIP_REGEX.test(snippets[TEST_FILE_KEY].all.text)).equals(false)
@@ -56,10 +56,10 @@ describe("Extracts snippets from file path", () => {
 describe("Extracts snippets from Folder", () => {
     test("adds snippets from dirPath", () => {
         assert(snippets[FOLDER_MD_FILE_KEY])
-        assert(snippets[FOLDER_MD_FILE_KEY].byLabel.textSnip.text).snap(
+        assert(snippets[FOLDER_MD_FILE_KEY].textSnip.text).snap(
             `labore et dolore magna aliqua. Nam libero justo laoreet sit. Rutrum tellus pellentesque eu tincidunt tortor`
         )
-        assert(snippets[FOLDER_TS_FILE_KEY].byLabel.commentStatement.text).snap(
+        assert(snippets[FOLDER_TS_FILE_KEY].commentStatement.text).snap(
             `// But a model can also validate your data at runtime...`
         )
     })

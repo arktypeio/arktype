@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { fromHere, readFile } from "@re-/node"
-import { describe, test } from "vitest"
+import { describe, test } from "mocha"
 import { runThenGetContents } from "../../__tests__/utils.js"
 
 const benchTemplate = fromHere("benchTemplate.ts")
@@ -12,5 +12,5 @@ describe("bench", () => {
             includeBenches: true
         })
         strict.equal(actual, expectedOutput)
-    }, 10000)
+    }).timeout(10000)
 })

@@ -1,5 +1,5 @@
 import { strict } from "node:assert"
-import { test } from "vitest"
+import { test } from "mocha"
 import { assert } from "../../index.js"
 
 test("handles listComparison options", () => {

@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { describe, it } from "vitest"
+import { describe, test } from "mocha"
 import { deepEquals, diff, diffPermutables, diffSets } from "../index.js"
 
 const base = {
@@ -25,14 +25,14 @@ const compare = {
 }
 
 describe("diff", () => {
-    it("diffs shallow", () => {
+    test("diffs shallow", () => {
         assert(diff("hey", "hey")).equals(undefined)
         assert(diff("hey", "hi")).equals({
             "/": { base: "hey", compare: "hi" }
         })
     })
 
-    it("full deep diff", () => {
+    test("full deep diff", () => {
         assert(diff(base, base)).equals(undefined)
         const changes = diff(base, compare)
         assert(changes).equals({
@@ -44,7 +44,7 @@ describe("diff", () => {
         })
     })
 
-    it("removed keys", () => {
+    test("removed keys", () => {
         assert(diff({ a: "", b: "" }, { a: "" })).equals({
             "/": { removed: ["b"] }
         })
@@ -53,7 +53,7 @@ describe("diff", () => {
         ).equals({ nested: { removed: ["a"] } })
     })
 
-    it("added keys", () => {
+    test("added keys", () => {
         assert(diff({ a: "" }, { a: "", b: "" })).equals({
             "/": { added: ["b"] }
         })
@@ -62,13 +62,13 @@ describe("diff", () => {
         ).equals({ nested: { added: ["a"] } })
     })
 
-    it("diffs array", () => {
+    test("diffs array", () => {
         assert(diff(["ok"], ["different"])).unknown.equals({
             "0": { base: "ok", compare: "different" }
         })
     })
 
-    it("diff sets", () => {
+    test("diff sets", () => {
         assert(diffSets(["a", "a", "b"], ["b", "b", "a"])).equals(undefined)
         assert(diffSets(["a", "a", "b"], ["b", "b", "c"])).equals({
             added: ["c"],
@@ -76,7 +76,7 @@ describe("diff", () => {
         })
     })
 
-    it("can change base/compare keys", () => {
+    test("can change base/compare keys", () => {
         const changes = diff(
             { a: true, b: false },
             { b: true, a: false },
@@ -88,7 +88,7 @@ describe("diff", () => {
         })
     })
 
-    it("diff sets of objects", () => {
+    test("diff sets of objects", () => {
         assert(
             diffSets(
                 [{ a: true }, { a: true }, { b: true }],
@@ -103,7 +103,7 @@ describe("diff", () => {
         ).snap({ added: [{ c: true }], removed: [{ a: true }] })
     })
 
-    it("diff nested sets", () => {
+    test("diff nested sets", () => {
         assert(
             diff(
                 { a: ["a", "b", "a"], b: { nested: ["a", "b"] } },
@@ -123,7 +123,7 @@ describe("diff", () => {
         })
     })
 
-    it("diff deepSets", () => {
+    test("diff deepSets", () => {
         assert(
             diff(
                 {
@@ -164,7 +164,7 @@ describe("diff", () => {
         ).snap({ a: { added: [[`d`, `g`]], removed: [[`d`, `f`]] } })
     })
 
-    it("diff permutable", () => {
+    test("diff permutable", () => {
         assert(diffPermutables(["a", "b", "c"], ["c", "b", "a"])).equals(
             undefined
         )
@@ -174,7 +174,7 @@ describe("diff", () => {
         })
     })
 
-    it("diff deeply permutable object", () => {
+    test("diff deeply permutable object", () => {
         assert(
             diff(
                 {
@@ -226,7 +226,7 @@ describe("diff", () => {
         })
     })
 
-    it("deepEquals", () => {
+    test("deepEquals", () => {
         assert(deepEquals(base, { ...base })).equals(true)
         assert(
             deepEquals(base, {

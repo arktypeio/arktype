@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { describe, it } from "vitest"
+import { describe, test } from "mocha"
 import { Exact } from "../index.js"
 
 describe("exact", () => {
-    it("base", () => {
+    test("base", () => {
         assert(
             {} as Exact<
                 { a: "ok"; nested: { on: true } },
@@ -22,7 +22,7 @@ describe("exact", () => {
             >
         ).typed as { a: "ok"; nested: { on: true } }
     })
-    it("unions", () => {
+    test("unions", () => {
         assert(
             {} as Exact<
                 { a: string | number },
@@ -37,7 +37,7 @@ describe("exact", () => {
         ).typed as { a: string | number }
     })
 
-    it("optional", () => {
+    test("optional", () => {
         assert(
             {} as Exact<{ a: { nested: true } }, { a?: { nested: boolean } }>
         ).typed as { a: { nested: true } }
