@@ -7,11 +7,17 @@ export namespace Group {
         L: {
             groups: [...S["L"]["groups"], S["L"]["branches"]]
             branches: {}
-            root: null
+            root: undefined
             ctx: S["L"]["ctx"]
         }
         R: Lexer.ShiftBase<S["R"]["unscanned"]>
     }>
+
+    export const parseOpen = (s: ParserState.state) => {
+        s.groups.push(s.branches)
+        s.branches = {}
+        s.scan++
+    }
 
     type PopGroup<
         Stack extends Branches.State[],
@@ -33,4 +39,13 @@ export namespace Group {
                   R: Lexer.ShiftOperator<S["R"]["unscanned"]>
               }>
             : ParserState.Error<S, `Unexpected ).`>
+
+    export const parseClose = (s: ParserState.state) => {
+        const previousBranches = s.groups.pop()
+        if (previousBranches === undefined) {
+            throw new Error(`Unexpected ).`)
+        }
+        s.branches = previousBranches
+        s.scan++
+    }
 }

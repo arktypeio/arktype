@@ -18,74 +18,13 @@ import {
     RegexNode,
     StringLiteralNode
 } from "../terminal/index.js"
-
-const expressionTerminating = {
-    ")": 1,
-    "?": 1,
-    END: 1
-}
-
-const branchStarting = {
-    "|": 1,
-    "&": 1
-}
-
-const transformStarting = {
-    "[": 1
-}
-
-const literalEnclosing = {
-    "'": 1,
-    '"': 1,
-    "/": 1
-}
-
-type LiteralEnclosing = keyof typeof literalEnclosing
-
-const comparatorStarting = {
-    "<": 1,
-    ">": 1,
-    "=": 1
-}
-
-const branchTerminating = {
-    ...expressionTerminating,
-    ...branchStarting
-}
-
-const baseTerminating = {
-    ...transformStarting,
-    ...comparatorStarting,
-    ...branchTerminating,
-    " ": 1
-}
-
-type BranchState = {
-    union?: UnionNode
-    intersection?: IntersectionNode
-    ctx: any
-}
+import { ParserState } from "./state.js"
 
 export class Parser {
-    groups: BranchState[]
-    branches: BranchState
-    expression?: Base.Node
-    chars: string[]
-    scan: number
+    s: ParserState.state
 
     constructor(def: string, private ctx: Base.Parsing.Context) {
-        this.groups = []
-        this.branches = { ctx: {} }
-        this.chars = [...def, "END"]
-        this.scan = 0
-    }
-
-    get lookahead() {
-        return this.chars[this.scan]
-    }
-
-    get nextLookahead() {
-        return this.chars[this.scan + 1]
+        this.s = new ParserState.initialize(def)
     }
 
     shiftBranches() {
@@ -97,26 +36,26 @@ export class Parser {
 
     finalizeExpression() {
         this.mergeUnion()
-        if (this.lookahead === "?") {
+        if (this.s.lookahead === "?") {
             this.shiftOptional()
-        } else if (this.lookahead === ")") {
+        } else if (this.s.lookahead === ")") {
             this.popGroup()
         }
     }
 
     shiftOptional() {
-        if (this.nextLookahead !== "END") {
+        if (this.s.nextLookahead !== "END") {
             throw new Error(
                 `Modifier '?' is only valid at the end of a definition.`
             )
         }
-        this.expression = new OptionalNode(this.expression!, this.ctx)
+        this.s.root = new OptionalNode(this.s.root!, this.ctx)
     }
 
     shouldContinueBranching() {
-        if (this.lookahead in expressionTerminating) {
+        if (this.s.lookahead in expressionTerminating) {
             return false
-        } else if (this.lookahead === "|") {
+        } else if (this.s.lookahead === "|") {
             this.shiftUnion()
         } else {
             this.shiftIntersection()
@@ -126,42 +65,42 @@ export class Parser {
 
     shiftUnion() {
         this.mergeIntersection()
-        if (!this.branches.union) {
-            this.branches.union = new UnionNode([this.expression!], this.ctx)
+        if (!this.s.branches.union) {
+            this.s.branches.union = new UnionNode([this.s.root!], this.ctx)
         } else {
-            this.branches.union.addMember(this.expression!)
+            this.s.branches.union.addMember(this.s.root!)
         }
-        this.expression = undefined
-        this.scan++
+        this.s.root = undefined
+        this.s.scan++
     }
 
     mergeUnion() {
-        if (this.branches.union) {
+        if (this.s.branches.union) {
             this.mergeIntersection()
-            this.branches.union.addMember(this.expression!)
-            this.expression = this.branches.union
-            this.branches.union = undefined
+            this.s.branches.union.addMember(this.s.root!)
+            this.s.root = this.s.branches.union
+            this.s.branches.union = undefined
         }
     }
 
     shiftIntersection() {
-        if (!this.branches.intersection) {
-            this.branches.intersection = new IntersectionNode(
-                [this.expression!],
+        if (!this.s.branches.intersection) {
+            this.s.branches.intersection = new IntersectionNode(
+                [this.s.root!],
                 this.ctx
             )
         } else {
-            this.branches.intersection.addMember(this.expression!)
+            this.s.branches.intersection.addMember(this.s.root!)
         }
-        this.expression = undefined
-        this.scan++
+        this.s.root = undefined
+        this.s.scan++
     }
 
     mergeIntersection() {
-        if (this.branches.intersection) {
-            this.branches.intersection.addMember(this.expression!)
-            this.expression = this.branches.intersection
-            this.branches.intersection = undefined
+        if (this.s.branches.intersection) {
+            this.s.branches.intersection.addMember(this.s.root!)
+            this.s.root = this.s.branches.intersection
+            this.s.branches.intersection = undefined
         }
     }
 
@@ -171,54 +110,38 @@ export class Parser {
     }
 
     shiftBase() {
-        if (this.lookahead === "(") {
+        if (this.s.lookahead === "(") {
             this.shiftGroup()
-        } else if (this.lookahead in literalEnclosing) {
+        } else if (this.s.lookahead in literalEnclosing) {
             this.shiftEnclosed()
-        } else if (this.lookahead === " ") {
-            this.scan++
+        } else if (this.s.lookahead === " ") {
+            this.s.scan++
             this.shiftBase()
         } else {
             this.shiftNonLiteral()
         }
     }
 
-    shiftGroup() {
-        this.groups.push(this.branches)
-        this.branches = { ctx: {} }
-        this.scan++
-        this.shiftBranches()
-    }
-
-    popGroup() {
-        const previousBranches = this.groups.pop()
-        if (previousBranches === undefined) {
-            throw new Error(`Unexpected ).`)
-        }
-        this.branches = previousBranches
-        this.scan++
-    }
-
     shiftNonLiteral() {
         let fragment = ""
-        let scanAhead = this.scan
-        while (!(this.chars[scanAhead] in baseTerminating)) {
-            fragment += this.chars[scanAhead]
+        let scanAhead = this.s.scan
+        while (!(this.s.chars[scanAhead] in baseTerminating)) {
+            fragment += this.s.chars[scanAhead]
             scanAhead++
         }
-        this.scan = scanAhead
+        this.s.scan = scanAhead
         this.reduceNonLiteral(fragment)
     }
 
     reduceNonLiteral(fragment: string) {
         if (Keyword.matches(fragment)) {
-            this.expression = Keyword.parse(fragment)
+            this.s.root = Keyword.parse(fragment)
         } else if (AliasNode.matches(fragment, this.ctx)) {
-            this.expression = new AliasNode(fragment, this.ctx)
+            this.s.root = new AliasNode(fragment, this.ctx)
         } else if (NumberLiteralNode.matches(fragment)) {
-            this.expression = new NumberLiteralNode(fragment)
+            this.s.root = new NumberLiteralNode(fragment)
         } else if (BigintLiteralNode.matches(fragment)) {
-            this.expression = new BigintLiteralNode(fragment)
+            this.s.root = new BigintLiteralNode(fragment)
         } else if (fragment === "") {
             throw new Error("Expected an expression.")
         } else {
@@ -227,108 +150,108 @@ export class Parser {
     }
 
     shiftEnclosed() {
-        const enclosedBy = this.lookahead as LiteralEnclosing
+        const enclosedBy = this.s.lookahead as LiteralEnclosing
         let text = ""
-        let scanAhead = this.scan + 1
-        while (this.chars[scanAhead] !== enclosedBy) {
-            if (this.chars[scanAhead] === "END") {
+        let scanAhead = this.s.scan + 1
+        while (this.s.chars[scanAhead] !== enclosedBy) {
+            if (this.s.chars[scanAhead] === "END") {
                 throw new Error(
                     `'${enclosedBy}${text} requires a closing ${enclosedBy}.`
                 )
             }
-            text += this.chars[scanAhead]
+            text += this.s.chars[scanAhead]
             scanAhead++
         }
         if (enclosedBy === "/") {
-            this.expression = new RegexNode(new RegExp(text))
+            this.s.root = new RegexNode(new RegExp(text))
         } else {
-            this.expression = new StringLiteralNode(text, enclosedBy)
+            this.s.root = new StringLiteralNode(text, enclosedBy)
         }
-        this.scan = scanAhead + 1
+        this.s.scan = scanAhead + 1
     }
 
     shiftTransforms() {
-        while (!(this.lookahead in branchTerminating)) {
-            if (this.lookahead === "[") {
+        while (!(this.s.lookahead in branchTerminating)) {
+            if (this.s.lookahead === "[") {
                 this.shiftListToken()
-            } else if (this.lookahead in comparatorStarting) {
+            } else if (this.s.lookahead in comparatorStarting) {
                 throw new Error(`Bounds are not yet implemented.`)
-            } else if (this.lookahead === " ") {
-                this.scan++
+            } else if (this.s.lookahead === " ") {
+                this.s.scan++
             } else {
-                throw new Error(`Invalid operator ${this.lookahead}.`)
+                throw new Error(`Invalid operator ${this.s.lookahead}.`)
             }
         }
     }
 
     shiftListToken() {
-        if (this.nextLookahead === "]") {
-            this.expression = new ListNode(this.expression!, this.ctx)
-            this.scan += 2
+        if (this.s.nextLookahead === "]") {
+            this.s.root = new ListNode(this.s.root!, this.ctx)
+            this.s.scan += 2
         } else {
             throw new Error(`Missing expected ].`)
         }
     }
 
-    shiftComparatorToken() {
-        if (this.nextLookahead === "=") {
-            this.scan += 2
-            this.reduceBound(
-                `${this.lookahead}${this.nextLookahead}` as Bounds.Token
-            )
-        } else if (this.lookahead === "=") {
-            throw new Error(`= is not a valid comparator. Use == instead.`)
-        } else {
-            this.scan++
-            this.reduceBound(this.lookahead as Bounds.Token)
-        }
-    }
+    // shiftComparatorToken() {
+    //     if (this.s.nextLookahead === "=") {
+    //         this.s.scan += 2
+    //         this.reduceBound(
+    //             `${this.s.lookahead}${this.s.nextLookahead}` as Bounds.Token
+    //         )
+    //     } else if (this.s.lookahead === "=") {
+    //         throw new Error(`= is not a valid comparator. Use == instead.`)
+    //     } else {
+    //         this.s.scan++
+    //         this.reduceBound(this.s.lookahead as Bounds.Token)
+    //     }
+    // }
 
-    reduceBound(token: Bounds.Token) {
-        if (isBoundable(this.expression!)) {
-            this.reduceRightBound(this.expression!, token)
-        } else if (this.expression instanceof NumberLiteralNode) {
-            this.reduceLeftBound(this.expression.value, token)
-        } else {
-            throw new Error(
-                `Left side of comparator ${token} must be a number literal or boundable definition (got ${this.expression!.toString()}).`
-            )
-        }
-    }
+    // reduceBound(token: Bounds.Token) {
+    //     if (isBoundable(this.s.root!)) {
+    //         this.reduceRightBound(this.s.root!, token)
+    //     } else if (this.s.root instanceof NumberLiteralNode) {
+    //         this.reduceLeftBound(this.s.root.value, token)
+    //     } else {
+    //         throw new Error(
+    //             `Left side of comparator ${token} must be a number literal or boundable definition (got ${this.s.root!.toString()}).`
+    //         )
+    //     }
+    // }
 
-    reduceRightBound(expression: Boundable, token: Bounds.Token) {
-        if (this.branches.ctx.rightBounded) {
-            throw new Error(
-                `Right side of comparator ${token} cannot be bounded more than once.`
-            )
-        }
-        this.branches.ctx.rightBounded = true
-        const bounded = this.expression
-        this.shiftBranch()
-        if (this.expression instanceof NumberLiteralNode) {
-            this.expression = bounded
-            // Apply bound
-        } else {
-            throw new Error(
-                `Right side of comparator ${token} must be a number literal.`
-            )
-        }
-    }
+    // reduceRightBound(expression: Boundable, token: Bounds.Token) {
+    //     if (this.s.bounds) {
+    //         throw new Error(
+    //             `Right side of comparator ${token} cannot be bounded more than once.`
+    //         )
+    //     }
+    //     this.s.bounds.right = true
+    //     const bounded = this.s.root
+    //     this.shiftBranch()
+    //     if (this.s.root instanceof NumberLiteralNode) {
+    //         this.s.root = bounded
+    //         // Apply bound
+    //     } else {
+    //         throw new Error(
+    //             `Right side of comparator ${token} must be a number literal.`
+    //         )
+    //     }
+    // }
 
-    reduceLeftBound(value: number, token: Bounds.Token) {
-        if (this.branches.ctx.leftBounded) {
-            throw new Error(
-                `Left side of comparator ${token} cannot be bounded more than once.`
-            )
-        }
-        this.branches.ctx.leftBounded = true
-        this.shiftBranch()
-        if (isBoundable(this.expression!)) {
-            // Apply bound
-        } else {
-            throw new Error(
-                `Right side of comparator ${token} must be a numbed-or-string-typed keyword or a list-typed expression.`
-            )
-        }
-    }
+    // reduceLeftBound(value: number, token: Bounds.Token) {
+    //     if (this.branches.ctx.leftBounded) {
+    //         throw new Error(
+    //             `Left side of comparator ${token} cannot be bounded more than once.`
+    //         )
+    //     }
+    //     this.branches.ctx.leftBounded = true
+    //     this.shiftBranch()
+    //     if (isBoundable(this.s.root!)) {
+    //         // Apply bound
+    //     } else {
+    //         throw new Error(
+    //             `Right side of comparator ${token} must be a numbed-or-string-typed keyword or a list-typed expression.`
+    //         )
+    //     }
+    // }
 }

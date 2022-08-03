@@ -160,7 +160,7 @@ export const isBoundable = (node: Base.Node): node is Boundable =>
 
 export type BoundEntry = Entry<Bounds.Token, number>
 
-export class Node extends NonTerminal<Boundable> {
+export class BoundsNode extends NonTerminal<Boundable> {
     private bounds: BoundEntry[] | undefined
 
     toString() {

@@ -26,6 +26,6 @@ export namespace Str {
     const fullParse = (def: string, ctx: Base.Parsing.Context) => {
         const parser = new Parser(def, ctx)
         parser.shiftBranches()
-        return parser.expression!
+        return parser.s.root!
     }
 }
