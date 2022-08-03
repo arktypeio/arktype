@@ -1,5 +1,5 @@
 import { Base } from "../../base/index.js"
-import { TerminalNode } from "../terminal.js"
+import { TerminalNode } from "../node.js"
 
 export type PrimitiveLiteralValue = string | number | bigint
 

@@ -1,5 +1,5 @@
 import { Base } from "../../base/index.js"
-import { TerminalNode } from "../terminal.js"
+import { TerminalNode } from "../node.js"
 
 export class RegexNode extends TerminalNode<RegExp> {
     static matches(def: unknown): def is RegExp {

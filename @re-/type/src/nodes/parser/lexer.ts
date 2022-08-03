@@ -1,6 +1,5 @@
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound, List } from "../nonTerminal/index.js"
-import { ParseError } from "./shared.js"
 import { ParserState } from "./state.js"
 
 export const literalEnclosingChars = {
@@ -40,6 +39,17 @@ const baseTerminatingChars = {
     "[": 1,
     " ": 1
 }
+
+export const suffixTokens = {
+    ...Bound.tokens,
+    END: 1,
+    "?": 1
+}
+
+export type ErrorToken<Message extends string> = `!${Message}`
+
+// Right now, ErrorTokens only exist within the type parser since at runtime it would just throw directly
+export type SuffixToken = keyof typeof suffixTokens | ErrorToken<string>
 
 type BaseTerminatingChar = keyof typeof baseTerminatingChars
 
@@ -100,7 +110,7 @@ export namespace Lexer {
             ? ShiftBase<Rest>
             : UnenclosedBase<"", Unscanned>
         : ParserState.RightFrom<{
-              lookahead: ParseError<`Expected an expression.`>
+              lookahead: ErrorToken<`Expected an expression.`>
               unscanned: []
           }>
 
@@ -179,7 +189,7 @@ export namespace Lexer {
                 : Lookahead extends " "
                 ? ShiftOperator<Rest>
                 : ParserState.RightFrom<{
-                      lookahead: ParseError<`Expected an operator (got '${Lookahead}').`>
+                      lookahead: ErrorToken<`Expected an operator (got '${Lookahead}').`>
                       unscanned: []
                   }>
             : ParserState.RightFrom<{
@@ -188,25 +198,25 @@ export namespace Lexer {
               }>
 
     export const shiftOperator = (scanner: Scanner): Scanner => {
+        scanner.lookahead = ""
         scanner.shift()
-        const char = scanner.next
-        if (char in trivialSingleCharOperators) {
+        if (scanner.lookahead in trivialSingleCharOperators) {
             return scanner
         }
-        if (char === "[") {
+        if (scanner.lookahead === "[") {
             return List.shiftToken(scanner)
         }
-        if (char in boundStartingChars) {
+        if (scanner.lookahead in boundStartingChars) {
             return Bound.shiftToken(scanner)
         }
-        if (char === " ") {
+        if (scanner.lookahead === " ") {
             return shiftOperator(scanner)
         }
-        throw new Error(`Expected an operator (got '${char}').`)
+        throw new Error(`Expected an operator (got '${scanner.lookahead}').`)
     }
 
     export type ShiftError<Message extends string> = ParserState.RightFrom<{
-        lookahead: ParseError<Message>
+        lookahead: ErrorToken<Message>
         unscanned: []
     }>
 }

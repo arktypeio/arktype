@@ -1,5 +1,5 @@
 import { Base } from "./base/index.js"
-import { Core, Naive, ParseError, ParseTree } from "./parser/index.js"
+import { Core, ErrorToken, Naive, ParseTree } from "./parser/index.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = Naive.TryParse<Def, Dict>
@@ -7,7 +7,7 @@ export namespace Str {
     export type Validate<Def extends string, Dict> = Parse<
         Def,
         Dict
-    > extends ParseError<infer Message>
+    > extends ErrorToken<infer Message>
         ? Message
         : Def
 

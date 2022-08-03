@@ -14,8 +14,7 @@ import {
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
-import { Lexer } from "./lexer.js"
-import { ParseError } from "./shared.js"
+import { ErrorToken, Lexer, SuffixToken, suffixTokens } from "./lexer.js"
 import { ParserState } from "./state.js"
 
 export namespace Core {
@@ -26,7 +25,9 @@ export namespace Core {
 
     export const parse = (def: string, ctx: Base.Parsing.Context) => {
         const s = ParserState.initialize(def)
-        parseExpression(parsePrefixes(s), ctx)
+        parsePrefixes(s)
+        parseExpression(s, ctx)
+        parseSuffixes(s, ctx)
         return s.root!
     }
 
@@ -52,7 +53,6 @@ export namespace Core {
             Lexer.shiftOperator(s.scanner)
             parsePossibleLeftBound(s, n)
         }
-        return s
     }
 
     type ParsePossibleLeftBound<
@@ -71,6 +71,7 @@ export namespace Core {
     ) => {
         if (s.scanner.lookahead in Bound.tokens) {
             // Parse left bound
+            Lexer.shiftOperator(s.scanner)
         } else {
             s.root = new NumberLiteralNode(n)
         }
@@ -87,7 +88,9 @@ export namespace Core {
         s: ParserState.Value,
         ctx: Base.Parsing.Context
     ) => {
-        return s
+        while (!(s.scanner.lookahead in suffixTokens)) {
+            parseToken(s, ctx)
+        }
     }
 
     type ParseToken<
@@ -105,8 +108,25 @@ export namespace Core {
         ? Group.ParseClose<S>
         : Terminal.Parse<S, Dict>
 
+    const parseToken = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+        switch (s.scanner.lookahead) {
+            case "[]":
+                return List.parse(s, ctx)
+            case "|":
+                return Union.parse(s, ctx)
+            case "&":
+                return Intersection.parse(s, ctx)
+            case "(":
+                return Group.parseOpen(s)
+            case ")":
+                return Group.parseClose(s)
+            default:
+                return Terminal.parse(s, ctx)
+        }
+    }
+
     type ReduceExpression<S extends ParserState.Type> =
-        S["L"]["root"] extends ParseError<string>
+        S["L"]["root"] extends ErrorToken<string>
             ? S
             : S["L"]["groups"] extends []
             ? ParserState.From<{
@@ -126,9 +146,15 @@ export namespace Core {
     type ParseSuffixes<S extends ParserState.Type> =
         S["R"]["lookahead"] extends "END"
             ? ValidateFinalState<S>
-            : ParseSuffixes<ParseNextSuffix<S>>
+            : ParseSuffixes<ParseSuffix<S>>
 
-    type ParseNextSuffix<S extends ParserState.Type> =
+    const parseSuffixes = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+        while (s.scanner.lookahead !== "END") {
+            parseSuffix(s, ctx)
+        }
+    }
+
+    type ParseSuffix<S extends ParserState.Type> =
         S["R"]["lookahead"] extends "?"
             ? Optional.Parse<S>
             : S["R"]["lookahead"] extends Bound.Token
@@ -139,15 +165,24 @@ export namespace Core {
                   }>,
                   S["R"]["lookahead"]
               >
-            : S["R"]["lookahead"] extends ParseError<infer Message>
+            : S["R"]["lookahead"] extends ErrorToken<infer Message>
             ? ParserState.Error<S, Message>
             : ParserState.Error<
                   S,
                   `Unexpected suffix token ${S["R"]["lookahead"]}.`
               >
 
+    const parseSuffix = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+        if (s.scanner.lookahead === "?") {
+            Optional.parse(s, ctx)
+        } else if (s.scanner.lookahead in Bound.tokens) {
+            // Need to add a bound
+            Lexer.shiftOperator(Lexer.shiftBase(s.scanner))
+        } else {
+            throw new Error(`Unexpected suffix token ${s.scanner.lookahead}.`)
+        }
+    }
+
     type ValidateFinalState<S extends ParserState.Type> =
         {} extends S["L"]["ctx"]["bounds"] ? S : Bound.AssertBoundable<S>
-
-    type SuffixToken = "END" | "?" | Bound.Token | ParseError<string>
 }

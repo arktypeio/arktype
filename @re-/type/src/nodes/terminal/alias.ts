@@ -1,7 +1,7 @@
 import { WithPropValue } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Root } from "../root.js"
-import { TerminalNode } from "./terminal.js"
+import { TerminalNode } from "./node.js"
 
 export namespace AliasType {
     export type Infer<

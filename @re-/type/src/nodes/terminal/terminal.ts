@@ -1,7 +1,4 @@
-import { Create, References, Validation } from "../base/features/index.js"
 import { Base } from "../base/index.js"
-import { Node } from "../base/parse/node.js"
-import { defToString } from "../base/utils.js"
 import { Lexer, ParserState } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
@@ -80,29 +77,7 @@ export namespace Terminal {
                 `'${s.scanner.lookahead}' does not exist in your space.`
             )
         }
-    }
-}
-
-export abstract class TerminalNode<DefType = string> extends Node {
-    constructor(public def: DefType) {
-        super()
-    }
-
-    abstract allows(args: Validation.Args): boolean
-    abstract generate(args: Create.Args): unknown
-
-    toString() {
-        return defToString(this.def)
-    }
-
-    collectReferences(
-        args: References.Options,
-        collected: References.Collection
-    ) {
-        const reference = this.toString()
-        if (!args.filter || args.filter(reference)) {
-            collected[reference] = true
-        }
+        Lexer.shiftOperator(s.scanner)
     }
 }
 

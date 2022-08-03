@@ -2,8 +2,7 @@ import { ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound, BoundNode } from "../nonTerminal/index.js"
-import { Lexer } from "./lexer.js"
-import { ParseError } from "./shared.js"
+import { ErrorToken, Lexer } from "./lexer.js"
 
 export namespace ParserState {
     export type Type = {
@@ -42,7 +41,7 @@ export namespace ParserState {
     export type From<S extends Type> = S
 
     export type Error<S extends Type, Message extends string> = From<{
-        L: SetRoot<S["L"], ParseError<Message>>
+        L: SetRoot<S["L"], ErrorToken<Message>>
         R: RightFrom<{
             lookahead: "END"
             unscanned: S["R"]["unscanned"]

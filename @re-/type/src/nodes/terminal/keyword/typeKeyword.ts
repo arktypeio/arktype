@@ -1,5 +1,5 @@
 import { Base } from "../../base/index.js"
-import { TerminalNode } from "../terminal.js"
+import { TerminalNode } from "../node.js"
 
 abstract class BaseTypeKeyword extends TerminalNode {
     allows(args: Base.Validation.Args) {
