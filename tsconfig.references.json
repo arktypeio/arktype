@@ -1,8 +1,9 @@
 {
     "extends": "./tsconfig.json",
-    "include": ["./@re-/*/src/index.ts"],
+    "include": ["./@re-/*/src", "./@re-/*/docs", "scripts/docgen"],
     "exclude": ["**/node_modules", "**/dist"],
     "compilerOptions": {
+        "noEmit": true,
         "paths": {
             "@re-/*": ["./@re-/*/src/index.js"]
         }
