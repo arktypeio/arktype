@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { describe, test } from "vitest"
+import { describe, test } from "mocha"
 import { def, space } from "../../index.js"
 
 const getSpace = () =>
@@ -19,7 +19,7 @@ const getSpace = () =>
         }
     })
 
-describe("defz", () => {
+describe("def", () => {
     test("doesn't change the type of string defs", () => {
         const types = getSpace()
         assert(types.$root.infer).typed as {

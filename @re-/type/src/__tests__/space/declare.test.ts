@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { describe, test } from "vitest"
+import { describe, test } from "mocha"
 import { declare } from "../../index.js"
 
 // Declare the models you will define

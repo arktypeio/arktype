@@ -1,7 +1,6 @@
-export {}
 import { assert } from "@re-/assert"
 import { ElementOf, Evaluate, isNumeric, narrow } from "@re-/tools"
-import { describe, test } from "vitest"
+import { describe, test } from "mocha"
 import { References, space, type } from "../index.js"
 
 describe("references", () => {

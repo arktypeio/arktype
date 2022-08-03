@@ -9,6 +9,9 @@
     ],
     "typescript.tsdk": "../../node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
-    "vitest.enable": true,
-    "vitest.commandLine": "node --no-warnings --loader ts-node/esm ../assert/src/cli.ts --skipTypes --cmd vitest"
+    "mochaExplorer.nodeArgv": [
+        "--loader=ts-node/esm",
+        "--no-warnings=ExperimentalWarning",
+        "--experimental-specifier-resolution=node"
+    ]
 }

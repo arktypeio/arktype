@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { describe, test } from "vitest"
+import { describe, test } from "mocha"
 import { def, space } from "../../index.js"
 
 describe("extend space", () => {

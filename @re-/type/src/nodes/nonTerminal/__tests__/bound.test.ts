@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { describe, test } from "vitest"
+import { describe, test } from "mocha"
 import { type } from "../../../index.js"
 
 describe("bound", () => {
@@ -114,7 +114,7 @@ describe("bound", () => {
                     test("single-bounded", () => {
                         assert(
                             type("string==1").validate("").error?.message
-                        ).snap()
+                        ).snap(undefined)
                     })
                     test("double-bounded", () => {
                         assert(
