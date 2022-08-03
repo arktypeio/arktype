@@ -33,8 +33,16 @@ const unboundableError = (inner: string) =>
 //     }
 // }
 
-export namespace Bounds {
-    export type Token = "<=" | ">=" | "<" | ">" | "=="
+export namespace Bound {
+    export const tokens = {
+        "<=": 1,
+        ">=": 1,
+        ">": 1,
+        "<": 1,
+        "==": 1
+    }
+
+    export type Token = keyof typeof tokens
 
     export type StartChar = "<" | ">" | "="
 
@@ -127,7 +135,7 @@ export namespace Bounds {
           >
 
     export type AssertBoundable<S extends ParserState.Type> =
-        S["L"]["root"] extends Bounds.Boundable
+        S["L"]["root"] extends Bound.Boundable
             ? S
             : ParserState.Error<
                   S,
@@ -191,7 +199,7 @@ export interface Boundable extends Base.Node {
 export const isBoundable = (node: Base.Node): node is Boundable =>
     "toBound" in node
 
-export type BoundEntry = Entry<Bounds.Token, number>
+export type BoundEntry = Entry<Bound.Token, number>
 
 export class BoundNode extends NonTerminal<Boundable> {
     private bounds: BoundEntry[] | undefined

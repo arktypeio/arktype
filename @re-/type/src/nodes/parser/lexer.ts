@@ -1,5 +1,5 @@
 import { Branches } from "../nonTerminal/branch/branch.js"
-import { Bounds, List } from "../nonTerminal/index.js"
+import { Bound, List } from "../nonTerminal/index.js"
 import { ParseError } from "./shared.js"
 import { ParserState } from "./state.js"
 
@@ -174,8 +174,8 @@ export namespace Lexer {
                   }>
                 : Lookahead extends "["
                 ? List.ShiftToken<Rest>
-                : Lookahead extends Bounds.StartChar
-                ? Bounds.ShiftToken<Lookahead, Rest>
+                : Lookahead extends Bound.StartChar
+                ? Bound.ShiftToken<Lookahead, Rest>
                 : Lookahead extends " "
                 ? ShiftOperator<Rest>
                 : ParserState.RightFrom<{
@@ -197,7 +197,7 @@ export namespace Lexer {
             return List.shiftToken(scanner)
         }
         if (char in boundStartingChars) {
-            return Bounds.shiftToken(scanner)
+            return Bound.shiftToken(scanner)
         }
         if (char === " ") {
             return shiftOperator(scanner)

@@ -1,7 +1,7 @@
 import { ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
-import { BoundNode, Bounds } from "../nonTerminal/index.js"
+import { Bound, BoundNode } from "../nonTerminal/index.js"
 import { Lexer } from "./lexer.js"
 import { ParseError } from "./shared.js"
 
@@ -29,7 +29,7 @@ export namespace ParserState {
     }
 
     export type Context = {
-        bounds: Bounds.State
+        bounds: Bound.State
     }
 
     export type Right = {
