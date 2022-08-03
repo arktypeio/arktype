@@ -2,6 +2,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
+    "eslint.codeActionsOnSave.rules": [
+        "import/order",
+        "sort-imports",
+        "unicorn/prefer-node-protocol"
+    ],
     "typescript.tsdk": "../../node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "vitest.enable": true,
