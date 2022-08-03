@@ -4,7 +4,7 @@ import { AliasNode, Keyword } from "../terminal/index.js"
 import { CoreParser } from "./core.js"
 import { IsResolvableName } from "./shared.js"
 
-export namespace NaiveParser {
+export namespace Naive {
     /**
      * Try to parse the definition from right to left using the most common syntax.
      * This can be much more efficient for simple definitions. Unfortunately,
@@ -32,38 +32,38 @@ export namespace NaiveParser {
         : IsResolvableName<Def, Dict> extends true
         ? Def
         : CoreParser.Parse<Def, Dict>
-}
 
-export const tryNaiveParse = (def: string, ctx: Base.Parsing.Context) => {
-    if (def.endsWith("?")) {
-        const possibleIdentifierNode = tryNaiveParseList(def.slice(0, -1), ctx)
-        if (possibleIdentifierNode) {
-            return new OptionalNode(possibleIdentifierNode, ctx)
+    export const tryParse = (def: string, ctx: Base.Parsing.Context) => {
+        if (def.endsWith("?")) {
+            const possibleIdentifierNode = tryParseList(def.slice(0, -1), ctx)
+            if (possibleIdentifierNode) {
+                return new OptionalNode(possibleIdentifierNode, ctx)
+            }
         }
+        return tryParseList(def, ctx)
     }
-    return tryNaiveParseList(def, ctx)
-}
 
-const tryNaiveParseList = (def: string, ctx: Base.Parsing.Context) => {
-    if (def.endsWith("[]")) {
-        const possibleIdentifierNode = tryNaiveParseIdentifier(
-            def.slice(0, -2),
-            ctx
-        )
-        if (possibleIdentifierNode) {
-            return new ListNode(possibleIdentifierNode, ctx)
+    const tryParseList = (def: string, ctx: Base.Parsing.Context) => {
+        if (def.endsWith("[]")) {
+            const possibleIdentifierNode = tryParseIdentifier(
+                def.slice(0, -2),
+                ctx
+            )
+            if (possibleIdentifierNode) {
+                return new ListNode(possibleIdentifierNode, ctx)
+            }
         }
+        return tryParseIdentifier(def, ctx)
     }
-    return tryNaiveParseIdentifier(def, ctx)
-}
 
-const tryNaiveParseIdentifier = (
-    possibleIdentifier: string,
-    ctx: Base.Parsing.Context
-) => {
-    if (Keyword.matches(possibleIdentifier)) {
-        return Keyword.parse(possibleIdentifier)
-    } else if (AliasNode.matches(possibleIdentifier, ctx)) {
-        return new AliasNode(possibleIdentifier, ctx)
+    const tryParseIdentifier = (
+        possibleIdentifier: string,
+        ctx: Base.Parsing.Context
+    ) => {
+        if (Keyword.matches(possibleIdentifier)) {
+            return Keyword.parse(possibleIdentifier)
+        } else if (AliasNode.matches(possibleIdentifier, ctx)) {
+            return new AliasNode(possibleIdentifier, ctx)
+        }
     }
 }
