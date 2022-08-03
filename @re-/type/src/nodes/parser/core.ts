@@ -1,8 +1,8 @@
 import { Get } from "@re-/tools"
-import { Base } from "../index.js"
-import { Branches } from "../nonTerminal/branch/branch.js"
+import { Base } from "../base/index.js"
 import {
     Bounds,
+    Branches,
     Group,
     Intersection,
     List,
@@ -24,41 +24,48 @@ export namespace Core {
         "root"
     >
 
-    type ParseDefinition<Def extends string, Dict> = ParsePrefix<
-        ParserState.Initialize<Def>,
-        Dict
-    >
-
     export const parse = (def: string, ctx: Base.Parsing.Context) => {
         const s = ParserState.initialize(def)
         parsePrefix(s, ctx)
         return s.root!
     }
 
-    type ParsePrefix<
-        S extends ParserState.Type,
+    type ParseDefinition<Def extends string, Dict> = ParseMain<
+        ParsePrefix<ParserState.Initialize<Def>>,
         Dict
-    > = S["R"]["lookahead"] extends NumberLiteralDefinition
-        ? Bounds.ParsePossibleLeftBound<
-              ParserState.From<{
-                  L: S["L"]
-                  R: Lexer.ShiftOperator<S["R"]["unscanned"]>
-              }>,
-              S["R"]["lookahead"],
-              Dict
-          >
-        : ParseMain<S, Dict>
+    >
+
+    type ParsePrefix<S extends ParserState.Type> =
+        S["R"]["lookahead"] extends NumberLiteralDefinition
+            ? ParsePossibleLeftBound<
+                  ParserState.From<{
+                      L: S["L"]
+                      R: Lexer.ShiftOperator<S["R"]["unscanned"]>
+                  }>,
+                  S["R"]["lookahead"]
+              >
+            : S
+
+    type ParsePossibleLeftBound<
+        S extends ParserState.Type,
+        N extends NumberLiteralDefinition
+    > = S["R"]["lookahead"] extends Bounds.Token
+        ? Bounds.ParseLeft<S, S["R"]["lookahead"], N>
+        : ParserState.From<{
+              L: ParserState.SetRoot<S["L"], N>
+              R: S["R"]
+          }>
 
     const parsePrefix = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
         if (NumberLiteralNode.matches(s.scanner.lookahead)) {
         }
     }
 
-    export type ParseMain<
+    type ParseMain<
         S extends ParserState.Type,
         Dict
     > = S["R"]["lookahead"] extends SuffixToken
-        ? ParseSuffixes<S>
+        ? ParseSuffixes<ReduceExpression<S>>
         : ParseMain<ParseNext<S, Dict>, Dict>
 
     type ParseNext<
@@ -76,11 +83,11 @@ export namespace Core {
         ? Group.ParseClose<S>
         : Terminal.Parse<S, Dict>
 
-    type ParseSuffixes<S extends ParserState.Type> =
+    type ReduceExpression<S extends ParserState.Type> =
         S["L"]["root"] extends ParseError<string>
             ? S
             : S["L"]["groups"] extends []
-            ? Bounds.ParsePossibleRightBound<{
+            ? ParserState.From<{
                   L: {
                       groups: []
                       branches: {}
@@ -94,23 +101,31 @@ export namespace Core {
               }>
             : ParserState.Error<S, "Missing ).">
 
-    type FinalizeState<S extends ParserState.Type> =
-        {} extends S["L"]["ctx"]["bounds"] ? S : Bounds.AssertBoundable<S>
-
-    export type ParseFinalizing<S extends ParserState.Type> =
+    type ParseSuffixes<S extends ParserState.Type> =
         S["R"]["lookahead"] extends "END"
-            ? FinalizeState<S>
-            : S["R"]["lookahead"] extends "?"
-            ? Optional.Parse<FinalizeState<S>>
-            : S["R"]["lookahead"] extends ParseError<string>
-            ? ParserState.From<{
-                  L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
-                  R: S["R"]
-              }>
+            ? ValidateFinalState<S>
+            : ParseSuffixes<ParseNextSuffix<S>>
+
+    type ParseNextSuffix<S extends ParserState.Type> =
+        S["R"]["lookahead"] extends "?"
+            ? Optional.Parse<S>
+            : S["R"]["lookahead"] extends Bounds.Token
+            ? Bounds.ParseRight<
+                  ParserState.From<{
+                      L: S["L"]
+                      R: Lexer.ShiftBase<S["R"]["unscanned"]>
+                  }>,
+                  S["R"]["lookahead"]
+              >
+            : S["R"]["lookahead"] extends ParseError<infer Message>
+            ? ParserState.Error<S, Message>
             : ParserState.Error<
                   S,
                   `Unexpected suffix token ${S["R"]["lookahead"]}.`
               >
+
+    type ValidateFinalState<S extends ParserState.Type> =
+        {} extends S["L"]["ctx"]["bounds"] ? S : Bounds.AssertBoundable<S>
 
     type SuffixToken = "END" | "?" | Bounds.Token | ParseError<string>
 }

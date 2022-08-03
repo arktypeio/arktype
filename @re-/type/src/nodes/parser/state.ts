@@ -86,6 +86,16 @@ export namespace ParserState {
         [L["root"], Token]
     >
 
+    export type UpdateContext<
+        L extends Left,
+        Updates extends Partial<Context>
+    > = LeftFrom<{
+        groups: L["groups"]
+        branches: L["branches"]
+        root: L["root"]
+        ctx: L["ctx"] & Updates
+    }>
+
     export type SetRoot<L extends Left, Node> = LeftFrom<{
         groups: L["groups"]
         branches: L["branches"]

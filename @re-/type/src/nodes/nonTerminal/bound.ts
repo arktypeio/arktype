@@ -1,3 +1,5 @@
+// TODO: Remove
+/* eslint-disable max-lines */
 import { Entry } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Core } from "../parser/core.js"
@@ -45,11 +47,13 @@ export namespace Bounds {
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
      *    2. A string-typed keyword terminal (e.g. "alphanum" in "100>alphanum")
      *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
+     *    4. An optional node whose child is one of the above
      */
     export type Boundable =
         | Keyword.OfTypeNumber
         | Keyword.OfTypeString
         | [unknown, "[]"]
+        | [Boundable, "?"]
 
     export type ShiftToken<
         Start extends StartChar,
@@ -99,55 +103,27 @@ export namespace Bounds {
 
     export type ParseRight<
         S extends ParserState.Type,
-        T extends Token,
-        N extends NumberLiteralDefinition
-    > = ParserState.From<{
-        L: {
-            groups: S["L"]["groups"]
-            branches: S["L"]["branches"]
-            root: S["L"]["root"]
-            ctx: S["L"]["ctx"] & {
-                bounds: {
-                    right: [T, N]
-                }
-            }
-        }
-        R: Lexer.ShiftOperator<S["R"]["unscanned"]>
-    }>
-
-    export type ParsePossibleRightBound<S extends ParserState.Type> =
-        S["R"]["lookahead"] extends Token
-            ? ParseRightBound<
-                  ParserState.From<{
-                      L: S["L"]
-                      R: Lexer.ShiftBase<S["R"]["unscanned"]>
-                  }>,
-                  S["R"]["lookahead"]
-              >
-            : Core.ParseFinalizing<S>
-
-    type ParseRightBound<
-        S extends ParserState.Type,
         T extends Token
     > = S["R"]["lookahead"] extends NumberLiteralDefinition
-        ? Core.ParseFinalizing<ParseRight<S, T, S["R"]["lookahead"]>>
+        ? "right" extends keyof S["L"]["ctx"]["bounds"]
+            ? ParserState.Error<
+                  S,
+                  `Definitions cannot have multiple right bounds.`
+              >
+            : ParserState.From<{
+                  L: ParserState.UpdateContext<
+                      S["L"],
+                      {
+                          bounds: {
+                              right: [T, S["R"]["lookahead"]]
+                          }
+                      }
+                  >
+                  R: Lexer.ShiftOperator<S["R"]["unscanned"]>
+              }>
         : ParserState.Error<
               S,
               `Right bound ${S["R"]["lookahead"]} must be a number literal followed only by other suffixes.`
-          >
-
-    export type ParsePossibleLeftBound<
-        S extends ParserState.Type,
-        N extends NumberLiteralDefinition,
-        Dict
-    > = S["R"]["lookahead"] extends Token
-        ? Core.ParseMain<ParseLeft<S, S["R"]["lookahead"], N>, Dict>
-        : Core.ParseMain<
-              ParserState.From<{
-                  L: ParserState.SetRoot<S["L"], N>
-                  R: S["R"]
-              }>,
-              Dict
           >
 
     export type AssertBoundable<S extends ParserState.Type> =
