@@ -1,5 +1,5 @@
 import { Base } from "./base/index.js"
-import { Naive, ParseError, Parser, ParseTree } from "./parser/index.js"
+import { Core, Naive, ParseError, ParseTree } from "./parser/index.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = Naive.TryParse<Def, Dict>
@@ -21,11 +21,5 @@ export namespace Str {
     >
 
     export const parse: Base.Parsing.ParseFn<string> = (def, ctx) =>
-        Naive.tryParse(def, ctx) ?? fullParse(def, ctx)
-
-    const fullParse = (def: string, ctx: Base.Parsing.Context) => {
-        const parser = new Parser(def, ctx)
-        parser.shiftBranches()
-        return parser.s.root!
-    }
+        Naive.tryParse(def, ctx) ?? Core.parse(def, ctx)
 }

@@ -1,6 +1,6 @@
 import { Entry } from "@re-/tools"
 import { Base } from "../base/index.js"
-import { CoreParser } from "../parser/core.js"
+import { Core } from "../parser/core.js"
 import { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
 import { ParseTree } from "../parser/tree.js"
@@ -68,8 +68,19 @@ export namespace Bounds {
               }>
         : Lexer.ShiftError<`Expected a bound condition after ${Start}.`>
 
+    export const shiftToken = (scanner: Lexer.Scanner) => {
+        if (scanner.next === "=") {
+            scanner.shift()
+            return scanner
+        }
+        if (scanner.next === "=") {
+            throw new Error(`= is not a valid comparator. Use == instead.`)
+        }
+        return scanner
+    }
+
     export type ParseLeft<
-        S extends ParserState.State,
+        S extends ParserState.Type,
         T extends Token,
         N extends NumberLiteralDefinition
     > = ParserState.From<{
@@ -87,7 +98,7 @@ export namespace Bounds {
     }>
 
     export type ParseRight<
-        S extends ParserState.State,
+        S extends ParserState.Type,
         T extends Token,
         N extends NumberLiteralDefinition
     > = ParserState.From<{
@@ -104,7 +115,7 @@ export namespace Bounds {
         R: Lexer.ShiftOperator<S["R"]["unscanned"]>
     }>
 
-    export type ParsePossibleRightBound<S extends ParserState.State> =
+    export type ParsePossibleRightBound<S extends ParserState.Type> =
         S["R"]["lookahead"] extends Token
             ? ParseRightBound<
                   ParserState.From<{
@@ -113,25 +124,25 @@ export namespace Bounds {
                   }>,
                   S["R"]["lookahead"]
               >
-            : CoreParser.ParseFinalizing<S>
+            : Core.ParseFinalizing<S>
 
     type ParseRightBound<
-        S extends ParserState.State,
+        S extends ParserState.Type,
         T extends Token
     > = S["R"]["lookahead"] extends NumberLiteralDefinition
-        ? CoreParser.ParseFinalizing<ParseRight<S, T, S["R"]["lookahead"]>>
+        ? Core.ParseFinalizing<ParseRight<S, T, S["R"]["lookahead"]>>
         : ParserState.Error<
               S,
               `Right bound ${S["R"]["lookahead"]} must be a number literal followed only by other suffixes.`
           >
 
     export type ParsePossibleLeftBound<
-        S extends ParserState.State,
+        S extends ParserState.Type,
         N extends NumberLiteralDefinition,
         Dict
     > = S["R"]["lookahead"] extends Token
-        ? CoreParser.ParseMain<ParseLeft<S, S["R"]["lookahead"], N>, Dict>
-        : CoreParser.ParseMain<
+        ? Core.ParseMain<ParseLeft<S, S["R"]["lookahead"], N>, Dict>
+        : Core.ParseMain<
               ParserState.From<{
                   L: ParserState.SetRoot<S["L"], N>
                   R: S["R"]
@@ -139,7 +150,7 @@ export namespace Bounds {
               Dict
           >
 
-    export type AssertBoundable<S extends ParserState.State> =
+    export type AssertBoundable<S extends ParserState.Type> =
         S["L"]["root"] extends Bounds.Boundable
             ? S
             : ParserState.Error<
@@ -148,6 +159,52 @@ export namespace Bounds {
                       S["L"]["root"]
                   >}' must be a number-or-string-typed keyword or a list-typed expression.`
               >
+
+    // reduceBound(token: Bounds.Token) {
+    //     if (isBoundable(this.s.root!)) {
+    //         this.reduceRightBound(this.s.root!, token)
+    //     } else if (this.s.root instanceof NumberLiteralNode) {
+    //         this.reduceLeftBound(this.s.root.value, token)
+    //     } else {
+    //         throw new Error(
+    //             `Left side of comparator ${token} must be a number literal or boundable definition (got ${this.s.root!.toString()}).`
+    //         )
+    //     }
+    // }
+    // reduceRightBound(expression: Boundable, token: Bounds.Token) {
+    //     if (this.s.bounds) {
+    //         throw new Error(
+    //             `Right side of comparator ${token} cannot be bounded more than once.`
+    //         )
+    //     }
+    //     this.s.bounds.right = true
+    //     const bounded = this.s.root
+    //     this.shiftBranch()
+    //     if (this.s.root instanceof NumberLiteralNode) {
+    //         this.s.root = bounded
+    //         // Apply bound
+    //     } else {
+    //         throw new Error(
+    //             `Right side of comparator ${token} must be a number literal.`
+    //         )
+    //     }
+    // }
+    // reduceLeftBound(value: number, token: Bounds.Token) {
+    //     if (this.branches.ctx.leftBounded) {
+    //         throw new Error(
+    //             `Left side of comparator ${token} cannot be bounded more than once.`
+    //         )
+    //     }
+    //     this.branches.ctx.leftBounded = true
+    //     this.shiftBranch()
+    //     if (isBoundable(this.s.root!)) {
+    //         // Apply bound
+    //     } else {
+    //         throw new Error(
+    //             `Right side of comparator ${token} must be a numbed-or-string-typed keyword or a list-typed expression.`
+    //         )
+    //     }
+    // }
 }
 
 export interface Boundable extends Base.Node {
@@ -160,7 +217,7 @@ export const isBoundable = (node: Base.Node): node is Boundable =>
 
 export type BoundEntry = Entry<Bounds.Token, number>
 
-export class BoundsNode extends NonTerminal<Boundable> {
+export class BoundNode extends NonTerminal<Boundable> {
     private bounds: BoundEntry[] | undefined
 
     toString() {

@@ -1,8 +1,10 @@
 import { TypeOfResult } from "@re-/tools"
 import { Base } from "../../base/index.js"
+import { Lexer } from "../../parser/lexer.js"
 import { ParserState } from "../../parser/state.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Branches } from "./branch.js"
+import { Intersection } from "./intersection.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
 
@@ -30,10 +32,31 @@ export namespace Union {
         ]
     }
 
-    export type Parse<S extends ParserState.State> = Branches.Parse<
+    export type Parse<S extends ParserState.Type> = Branches.Parse<
         S,
         PushRoot<S["L"]["branches"], S["L"]["root"]>
     >
+
+    export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+        Intersection.merge(s)
+        if (!s.branches.union) {
+            s.branches.union = new UnionNode([s.root!], ctx)
+        } else {
+            s.branches.union.addMember(s.root!)
+        }
+        s.root = undefined
+        Lexer.shiftBase(s.scanner)
+    }
+
+    export const merge = (s: ParserState.Value) => {
+        if (s.branches.union) {
+            Intersection.merge(s)
+            // TODO: Find a better way to deal with all these!
+            s.branches.union.addMember(s.root!)
+            s.root = s.branches.union
+            s.branches.union = undefined
+        }
+    }
 
     export type Node<Left = unknown, Right = unknown> = [Left, "|", Right]
 }

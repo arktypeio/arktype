@@ -1,21 +1,23 @@
 import { ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
-import { Bounds, BoundsNode } from "../nonTerminal/index.js"
+import { BoundNode, Bounds } from "../nonTerminal/index.js"
 import { Lexer } from "./lexer.js"
 import { ParseError } from "./shared.js"
 
 export namespace ParserState {
-    export type State = {
+    export type Type = {
         L: Left
         R: Right
     }
 
-    export type state = {
+    export type Value = {
+        // Left
         groups: Branches.state[]
         branches: Branches.state
-        bounds?: BoundsNode
+        bounds?: BoundNode
         root?: Base.Node
+        // Equivalent to Right
         scanner: Lexer.Scanner
     }
 
@@ -37,9 +39,9 @@ export namespace ParserState {
 
     export type RightFrom<R extends Right> = R
 
-    export type From<S extends State> = S
+    export type From<S extends Type> = S
 
-    export type Error<S extends State, Message extends string> = From<{
+    export type Error<S extends Type, Message extends string> = From<{
         L: SetRoot<S["L"], ParseError<Message>>
         R: RightFrom<{
             lookahead: "END"
@@ -52,10 +54,10 @@ export namespace ParserState {
         R: Lexer.ShiftBase<ListChars<Def>>
     }
 
-    export const initialize = (def: string): state => ({
+    export const initialize = (def: string): Value => ({
         groups: [],
         branches: {},
-        scanner: new Lexer.Scanner(def)
+        scanner: Lexer.shiftBase(new Lexer.Scanner(def))
     })
 
     export type InitializeRight<Def extends string> = RightFrom<{

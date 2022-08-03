@@ -3,7 +3,7 @@ import { Bounds, List } from "../nonTerminal/index.js"
 import { ParseError } from "./shared.js"
 import { ParserState } from "./state.js"
 
-const literalEnclosingChars = {
+export const literalEnclosingChars = {
     "'": 1,
     '"': 1,
     "/": 1
@@ -60,8 +60,8 @@ export namespace Lexer {
     ]
 
     export class Scanner {
-        chars: string[]
-        i: number
+        private chars: string[]
+        private i: number
         lookahead: string
 
         constructor(def: string) {
@@ -70,17 +70,21 @@ export namespace Lexer {
             this.lookahead = ""
         }
 
-        shiftChar() {
-            this.lookahead += this.char
+        shift() {
+            this.lookahead += this.next
             this.i++
         }
 
-        get char() {
+        skip() {
+            this.i++
+        }
+
+        get next() {
             return this.chars[this.i]
         }
 
-        get nextChar() {
-            return this.chars[this.i + 1]
+        unscanned(i: number) {
+            return this.chars[this.i + i]
         }
     }
 
@@ -102,23 +106,23 @@ export namespace Lexer {
 
     export const shiftBase = (scanner: Scanner) => {
         scanner.lookahead = ""
-        if (scanner.char === "(") {
-            scanner.shiftChar()
-        } else if (scanner.char in literalEnclosingChars) {
+        if (scanner.next === "(") {
+            scanner.shift()
+        } else if (scanner.next in literalEnclosingChars) {
             shiftEnclosedBase(scanner)
-        } else if (scanner.char === " ") {
-            scanner.i++
+        } else if (scanner.next === " ") {
+            scanner.skip()
             shiftBase(scanner)
         } else {
             shiftUnenclosedBase(scanner)
         }
+        return scanner
     }
 
     const shiftUnenclosedBase = (scanner: Scanner) => {
-        while (!(scanner.char in baseTerminatingChars)) {
-            scanner.shiftChar()
+        while (!(scanner.next in baseTerminatingChars)) {
+            scanner.shift()
         }
-        return scanner
     }
 
     type UnenclosedBase<
@@ -138,15 +142,14 @@ export namespace Lexer {
 
     const shiftEnclosedBase = (scanner: Scanner) => {
         do {
-            scanner.shiftChar()
-            if (scanner.char === "END") {
+            scanner.shift()
+            if (scanner.next === "END") {
                 throw new Error(
                     `${scanner.lookahead} requires a closing ${scanner.lookahead[0]}.`
                 )
             }
-        } while (scanner.char !== scanner.lookahead[0])
-        scanner.shiftChar()
-        return scanner
+        } while (scanner.next !== scanner.lookahead[0])
+        scanner.shift()
     }
 
     type EnclosedBase<
@@ -184,12 +187,22 @@ export namespace Lexer {
                   unscanned: []
               }>
 
-    export const shiftOperator = (scanner: Scanner) => {
-        scanner.shiftChar()
-        const char = scanner.char
+    export const shiftOperator = (scanner: Scanner): Scanner => {
+        scanner.shift()
+        const char = scanner.next
         if (char in trivialSingleCharOperators) {
             return scanner
         }
+        if (char === "[") {
+            return List.shiftToken(scanner)
+        }
+        if (char in boundStartingChars) {
+            return Bounds.shiftToken(scanner)
+        }
+        if (char === " ") {
+            return shiftOperator(scanner)
+        }
+        throw new Error(`Expected an operator (got '${char}').`)
     }
 
     export type ShiftError<Message extends string> = ParserState.RightFrom<{

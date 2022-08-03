@@ -4,7 +4,7 @@ import { ParserState } from "../parser/state.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {
-    export type Parse<S extends ParserState.State> =
+    export type Parse<S extends ParserState.Type> =
         S["R"]["unscanned"] extends []
             ? ParserState.From<{
                   L: ParserState.Modify<S["L"], "?">
@@ -14,6 +14,16 @@ export namespace Optional {
                   S,
                   `Suffix '?' is only valid at the end of a definition.`
               >
+
+    export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+        if (s.scanner.next !== "END") {
+            throw new Error(
+                `Suffix '?' is only valid at the end of a definition.`
+            )
+        }
+        s.root = new OptionalNode(s.root!, ctx)
+        Lexer.shiftOperator(s.scanner)
+    }
 
     export type Node<Child = unknown> = [Child, "?"]
 }

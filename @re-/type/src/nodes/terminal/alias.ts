@@ -1,7 +1,7 @@
 import { WithPropValue } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Root } from "../root.js"
-import { Terminal } from "./terminal.js"
+import { TerminalNode } from "./terminal.js"
 
 export namespace AliasType {
     export type Infer<
@@ -47,7 +47,7 @@ export namespace AliasType {
     >
 }
 
-export class AliasNode extends Terminal {
+export class AliasNode extends TerminalNode {
     static matches(def: string, ctx: Base.Parsing.Context) {
         return !!ctx.space && def in ctx.space.dictionary
     }

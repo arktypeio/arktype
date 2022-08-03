@@ -1,8 +1,7 @@
 import { Base } from "../base/index.js"
 import { ListNode, OptionalNode } from "../nonTerminal/index.js"
-import { AliasNode, Keyword } from "../terminal/index.js"
-import { CoreParser } from "./core.js"
-import { IsResolvableName } from "./shared.js"
+import { AliasNode, Keyword, Terminal } from "../terminal/index.js"
+import { Core } from "./core.js"
 
 export namespace Naive {
     /**
@@ -19,19 +18,19 @@ export namespace Naive {
         Dict
     > = Def extends `${infer Child}?`
         ? Child extends `${infer Item}[]`
-            ? IsResolvableName<Item, Dict> extends true
+            ? Terminal.IsResolvableName<Item, Dict> extends true
                 ? [[Item, "[]"], "?"]
-                : CoreParser.Parse<Def, Dict>
-            : IsResolvableName<Child, Dict> extends true
+                : Core.Parse<Def, Dict>
+            : Terminal.IsResolvableName<Child, Dict> extends true
             ? [Child, "?"]
-            : CoreParser.Parse<Def, Dict>
+            : Core.Parse<Def, Dict>
         : Def extends `${infer Child}[]`
-        ? IsResolvableName<Child, Dict> extends true
+        ? Terminal.IsResolvableName<Child, Dict> extends true
             ? [Child, "[]"]
-            : CoreParser.Parse<Def, Dict>
-        : IsResolvableName<Def, Dict> extends true
+            : Core.Parse<Def, Dict>
+        : Terminal.IsResolvableName<Def, Dict> extends true
         ? Def
-        : CoreParser.Parse<Def, Dict>
+        : Core.Parse<Def, Dict>
 
     export const tryParse = (def: string, ctx: Base.Parsing.Context) => {
         if (def.endsWith("?")) {

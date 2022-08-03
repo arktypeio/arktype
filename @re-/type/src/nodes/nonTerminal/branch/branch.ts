@@ -1,7 +1,7 @@
 import { Lexer } from "../../parser/index.js"
 import { ParserState } from "../../parser/state.js"
-import { IntersectionNode } from "./intersection.js"
-import { UnionNode } from "./union.js"
+import { Intersection, IntersectionNode } from "./intersection.js"
+import { Union, UnionNode } from "./union.js"
 
 export namespace Branches {
     export const tokens = {
@@ -28,8 +28,14 @@ export namespace Branches {
         MergeExpression<B["intersection"], Root>
     >
 
+    export const mergeAll = (s: ParserState.Value) => {
+        // TODO: Clearer way to show these can be undefined
+        Intersection.merge(s)
+        Union.merge(s)
+    }
+
     export type Parse<
-        S extends ParserState.State,
+        S extends ParserState.Type,
         B extends Branches.State
     > = ParserState.From<{
         L: {

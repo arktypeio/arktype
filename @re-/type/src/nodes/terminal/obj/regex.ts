@@ -1,7 +1,7 @@
 import { Base } from "../../base/index.js"
-import { Terminal } from "../terminal.js"
+import { TerminalNode } from "../terminal.js"
 
-export class RegexNode extends Terminal<RegExp> {
+export class RegexNode extends TerminalNode<RegExp> {
     static matches(def: unknown): def is RegExp {
         return def instanceof RegExp
     }

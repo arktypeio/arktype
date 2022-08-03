@@ -1,9 +1,9 @@
-import type { Lexer } from "../parser/lexer.js"
+import { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
-import type { Branches } from "./branch/branch.js"
+import { Branches } from "./branch/branch.js"
 
 export namespace Group {
-    export type ParseOpen<S extends ParserState.State> = ParserState.From<{
+    export type ParseOpen<S extends ParserState.Type> = ParserState.From<{
         L: {
             groups: [...S["L"]["groups"], S["L"]["branches"]]
             branches: {}
@@ -13,10 +13,10 @@ export namespace Group {
         R: Lexer.ShiftBase<S["R"]["unscanned"]>
     }>
 
-    export const parseOpen = (s: ParserState.state) => {
+    export const parseOpen = (s: ParserState.Value) => {
         s.groups.push(s.branches)
         s.branches = {}
-        s.scan++
+        Lexer.shiftBase(s.scanner)
     }
 
     type PopGroup<
@@ -24,7 +24,7 @@ export namespace Group {
         Top extends Branches.State
     > = [...Stack, Top]
 
-    export type ParseClose<S extends ParserState.State> =
+    export type ParseClose<S extends ParserState.Type> =
         S["L"]["groups"] extends PopGroup<infer Stack, infer Top>
             ? ParserState.From<{
                   L: {
@@ -40,12 +40,13 @@ export namespace Group {
               }>
             : ParserState.Error<S, `Unexpected ).`>
 
-    export const parseClose = (s: ParserState.state) => {
+    export const parseClose = (s: ParserState.Value) => {
         const previousBranches = s.groups.pop()
         if (previousBranches === undefined) {
             throw new Error(`Unexpected ).`)
         }
+        Branches.mergeAll(s)
         s.branches = previousBranches
-        s.scan++
+        Lexer.shiftOperator(s.scanner)
     }
 }

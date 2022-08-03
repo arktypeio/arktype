@@ -7,7 +7,7 @@ export type StringLiteralDefinition<Text extends string = string> =
 export type StringLiteralQuote = `'` | `"`
 
 export class StringLiteralNode extends PrimitiveLiteralNode<string> {
-    constructor(text: string, enclosedBy: StringLiteralQuote) {
-        super(enclosedBy + text + enclosedBy, text)
+    constructor(def: string) {
+        super(def, def.slice(1, -1))
     }
 }

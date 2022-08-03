@@ -1,14 +1,19 @@
 import { Base } from "../base/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
-import { Boundable } from "./bounds.js"
+import { Boundable } from "./bound.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
-    export type Parse<S extends ParserState.State> = ParserState.From<{
+    export type Parse<S extends ParserState.Type> = ParserState.From<{
         L: ParserState.Modify<S["L"], "[]">
         R: Lexer.ShiftOperator<S["R"]["unscanned"]>
     }>
+
+    export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+        s.root = new ListNode(s.root!, ctx)
+        Lexer.shiftOperator(s.scanner)
+    }
 
     export type Node<Child = unknown> = [Child, "[]"]
 
@@ -21,6 +26,14 @@ export namespace List {
                   }>
                 : Lexer.ShiftError<`Missing expected ']'.`>
             : Lexer.ShiftError<`Missing expected ']'.`>
+
+    export const shiftToken = (scanner: Lexer.Scanner) => {
+        scanner.shift()
+        if (scanner.next !== "]") {
+            throw new Error(`Missing expected ].`)
+        }
+        return scanner
+    }
 }
 
 export class ListNode extends NonTerminal implements Boundable {
