@@ -23,7 +23,7 @@ export namespace Branches {
         L: {
             groups: S["L"]["groups"]
             branches: B
-            root: undefined
+            root: null
             ctx: S["L"]["ctx"]
         }
         R: Lexer.ShiftBase<S["R"]["unscanned"]>

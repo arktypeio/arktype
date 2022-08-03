@@ -1,20 +1,15 @@
-src/nodes/nonTerminal/__tests__/str.test.ts(20,13): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/intersection.test.ts(21,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/intersection.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              276
-Lines:            74813
-Nodes:           212465
-Identifiers:      71364
-Symbols:         262207
-Types:            79314
-Instantiations:  499545
-Memory used:    206071K
+Lines:            74811
+Nodes:           212481
+Identifiers:      71365
+Symbols:         249853
+Types:            75338
+Instantiations:  399838
+Memory used:    197546K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.45s
-Bind time:        0.15s
-Check time:       1.69s
+Parse time:       0.48s
+Bind time:        0.17s
+Check time:       1.67s
 Emit time:        0.00s
-Total time:       2.29s
+Total time:       2.32s

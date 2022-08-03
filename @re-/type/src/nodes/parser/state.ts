@@ -32,7 +32,10 @@ export namespace ParserState {
 
     export type Error<S extends State, Message extends string> = From<{
         L: SetRoot<S["L"], ParseError<Message>>
-        R: S["R"]
+        R: RightFrom<{
+            lookahead: "END"
+            unscanned: S["R"]["unscanned"]
+        }>
     }>
 
     export type Initialize<Def extends string> = {

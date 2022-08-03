@@ -24,8 +24,6 @@ export namespace CoreParser {
         "root"
     >
 
-    type Z = ParseDefinition<"strin|number", {}>
-
     type ParseDefinition<Def extends string, Dict> = ParsePrefix<
         ParserState.Initialize<Def>,
         Dict
@@ -70,33 +68,30 @@ export namespace CoreParser {
               L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
               R: Lexer.ShiftOperator<S["R"]["unscanned"]>
           }>
-        : ParserState.From<{
-              L: ParserState.SetRoot<
-                  S["L"],
-                  ValidateLiteral<S["R"]["lookahead"]>
-              >
-              R: ValidateLiteral<
-                  S["R"]["lookahead"]
-              > extends S["R"]["lookahead"]
-                  ? Lexer.ShiftOperator<S["R"]["unscanned"]>
-                  : ParserState.RightFrom<{ lookahead: "END"; unscanned: [] }>
+        : ValidateLiteral<S["R"]["lookahead"]> extends S["R"]["lookahead"]
+        ? ParserState.From<{
+              L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
+              R: Lexer.ShiftOperator<S["R"]["unscanned"]>
           }>
+        : ParserState.Error<S, ValidateLiteral<S["R"]["lookahead"]>>
 
     type ValidateLiteral<Token extends string> =
         Token extends StringLiteralDefinition
             ? Token
             : Token extends RegexLiteralDefinition
             ? Token extends "//"
-                ? ParseError<`Regex literals cannot be empty.`>
+                ? `Regex literals cannot be empty.`
                 : Token
             : Token extends NumberLiteralDefinition | BigintLiteralDefinition
             ? Token
             : Token extends ""
-            ? ParseError<`Expected an expression.`>
-            : ParseError<`'${Token}' does not exist in your space.`>
+            ? `Expected an expression.`
+            : `'${Token}' does not exist in your space.`
 
     type ParseSuffixes<S extends ParserState.State> =
-        S["L"]["groups"] extends []
+        S["L"]["root"] extends ParseError<string>
+            ? S
+            : S["L"]["groups"] extends []
             ? Bounds.ParsePossibleRightBound<{
                   L: {
                       groups: []
