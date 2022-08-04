@@ -1,58 +1,14 @@
 import { Bound, List } from "../nonTerminal/index.js"
 import { ParserState } from "./state.js"
-
-export const literalEnclosingChars = {
-    "'": 1,
-    '"': 1,
-    "/": 1
-}
-
-type LiteralEnclosingChar = keyof typeof literalEnclosingChars
-
-const baseTerminatingChars = {
-    END: 1,
-    "?": 1,
-    "<": 1,
-    ">": 1,
-    "=": 1,
-    "|": 1,
-    "&": 1,
-    "(": 1,
-    ")": 1,
-    "[": 1,
-    " ": 1
-}
-
-// TODO move token lists somewhere central to avoid redundancy.
-export const suffixTokens = {
-    "<": 1,
-    ">": 1,
-    ">=": 1,
-    "<=": 1,
-    "==": 1,
-    END: 1,
-    "?": 1
-}
-
-export type ErrorToken<Message extends string> = `!${Message}`
-
-// Right now, ErrorTokens only exist within the type parser since at runtime it would just throw directly
-export type SuffixToken = keyof typeof suffixTokens | ErrorToken<string>
-
-type BaseTerminatingChar = keyof typeof baseTerminatingChars
-
-// The operator tokens that are exactly one character and are not the first character of a longer token
-const trivialSingleCharOperators = {
-    "|": 1,
-    "&": 1,
-    "?": 1,
-    ")": 1,
-    END: 1
-}
-
-export type TokenSet = Record<string, number>
-
-type TrivialSingleCharOperator = keyof typeof trivialSingleCharOperators
+import {
+    BaseTerminatingChar,
+    baseTerminatingChars,
+    EnclosedBaseStartChar,
+    enclosedBaseStartChars,
+    ErrorToken,
+    TrivialSingleCharOperator,
+    trivialSingleCharOperators
+} from "./tokens.js"
 
 export namespace Lexer {
     export type Scan<Left extends string, Unscanned extends string[]> = [
@@ -102,21 +58,18 @@ export namespace Lexer {
     >
         ? Lookahead extends "("
             ? ParserState.RightFrom<{ lookahead: Lookahead; unscanned: Rest }>
-            : Lookahead extends LiteralEnclosingChar
+            : Lookahead extends EnclosedBaseStartChar
             ? EnclosedBase<Lookahead, Lookahead, Rest>
             : Lookahead extends " "
             ? ShiftBase<Rest>
             : UnenclosedBase<"", Unscanned>
-        : ParserState.RightFrom<{
-              lookahead: ErrorToken<`Expected an expression.`>
-              unscanned: []
-          }>
+        : ShiftError<[], `Expected an expression.`>
 
     export const shiftBase = (scanner: Scanner) => {
         scanner.lookahead = ""
         if (scanner.next === "(") {
             scanner.shift()
-        } else if (scanner.next in literalEnclosingChars) {
+        } else if (scanner.next in enclosedBaseStartChars) {
             shiftEnclosedBase(scanner)
         } else if (scanner.next === " ") {
             scanner.skip()
@@ -160,17 +113,22 @@ export namespace Lexer {
     }
 
     type EnclosedBase<
-        StartChar extends LiteralEnclosingChar,
+        StartChar extends EnclosedBaseStartChar,
         Token extends string,
         Unscanned extends string[]
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends StartChar
-            ? ParserState.RightFrom<{
-                  lookahead: `${Token}${Lookahead}`
-                  unscanned: Rest
-              }>
+            ? Token extends "/"
+                ? ShiftError<
+                      Unscanned,
+                      `${Token} requires a closing ${StartChar}.`
+                  >
+                : ParserState.RightFrom<{
+                      lookahead: `${Token}${Lookahead}`
+                      unscanned: Rest
+                  }>
             : EnclosedBase<StartChar, `${Token}${Lookahead}`, Rest>
-        : ShiftError<`${Token} requires a closing ${StartChar}.`>
+        : ShiftError<Unscanned, `${Token} requires a closing ${StartChar}.`>
 
     export type ShiftOperator<Unscanned extends string[]> =
         Unscanned extends Scan<infer Lookahead, infer Rest>
@@ -185,10 +143,10 @@ export namespace Lexer {
                 ? Bound.ShiftToken<Lookahead, Rest>
                 : Lookahead extends " "
                 ? ShiftOperator<Rest>
-                : ParserState.RightFrom<{
-                      lookahead: ErrorToken<`Expected an operator (got '${Lookahead}').`>
-                      unscanned: []
-                  }>
+                : ShiftError<
+                      Unscanned,
+                      `Expected an operator (got '${Lookahead}').`
+                  >
             : ParserState.RightFrom<{
                   lookahead: "END"
                   unscanned: []
@@ -212,8 +170,11 @@ export namespace Lexer {
         }
     }
 
-    export type ShiftError<Message extends string> = ParserState.RightFrom<{
+    export type ShiftError<
+        Unscanned extends string[],
+        Message extends string
+    > = ParserState.RightFrom<{
         lookahead: ErrorToken<Message>
-        unscanned: []
+        unscanned: Unscanned
     }>
 }

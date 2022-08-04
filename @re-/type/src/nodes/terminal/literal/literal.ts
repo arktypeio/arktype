@@ -7,6 +7,12 @@ import {
     NumberLiteralDefinition
 } from "./numeric/index.js"
 
+export type LiteralDefinition =
+    | StringLiteralDefinition
+    | RegexLiteralDefinition
+    | NumberLiteralDefinition
+    | BigintLiteralDefinition
+
 export type InferLiteral<Token extends string> =
     Token extends StringLiteralDefinition<infer Value>
         ? Value

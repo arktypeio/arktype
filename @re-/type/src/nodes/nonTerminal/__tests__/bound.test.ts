@@ -128,7 +128,7 @@ describe("bound", () => {
                 describe("valid", () => {
                     test("single-bounded", () => {
                         assert(
-                            type("3<any[]").validate([
+                            type("any[]>=3").validate([
                                 1,
                                 "two",
                                 { three: 3 },

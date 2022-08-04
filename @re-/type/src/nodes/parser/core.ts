@@ -14,8 +14,9 @@ import {
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
-import { ErrorToken, Lexer, SuffixToken, suffixTokens } from "./lexer.js"
+import { Lexer } from "./lexer.js"
 import { ParserState } from "./state.js"
+import { ErrorToken, SuffixToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
@@ -71,10 +72,19 @@ export namespace Core {
               R: S["R"]
           }>
 
+    /**
+     * When at runtime we would throw a ParseError, we either:
+     * 1. Shift an ErrorToken from the Lexer
+     * 2. Set the State's root to an ErrorToken and lookahead to "ERR"
+     *
+     * Suffix parsing is responsible for converting lexical errors (1) into errors
+     * we can propagate as a parse result (2).
+     *
+     */
     type ParseExpression<
         S extends ParserState.Type,
         Dict
-    > = S["R"]["lookahead"] extends SuffixToken
+    > = S["R"]["lookahead"] extends SuffixToken | "ERR" | ErrorToken<string>
         ? ParseSuffixes<ReduceExpression<S>>
         : ParseExpression<ParseToken<S, Dict>, Dict>
 
@@ -123,33 +133,44 @@ export namespace Core {
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
     type ReduceExpression<S extends ParserState.Type> =
-        S["L"]["root"] extends ErrorToken<string>
+        S["R"]["lookahead"] extends "ERR"
             ? S
-            : S["L"]["groups"] extends []
-            ? ParserState.From<{
-                  L: {
-                      groups: []
-                      branches: {}
-                      root: Branches.MergeAll<
-                          S["L"]["branches"],
-                          S["L"]["root"]
-                      >
-                      ctx: S["L"]["ctx"]
-                  }
-                  R: S["R"]
-              }>
-            : ParserState.Error<S, UnclosedGroupMessage>
+            : ValidateExpression<
+                  ParserState.From<{
+                      L: {
+                          groups: S["L"]["groups"]
+                          branches: {}
+                          root: Branches.MergeAll<
+                              S["L"]["branches"],
+                              S["L"]["root"]
+                          >
+                          ctx: S["L"]["ctx"]
+                      }
+                      R: S["R"]
+                  }>
+              >
 
     const reduceExpression = (s: ParserState.Value) => {
+        Branches.mergeAll(s)
+        validateExpression(s)
+    }
+
+    type ValidateExpression<S extends ParserState.Type> =
+        S["L"]["groups"] extends []
+            ? S
+            : ParserState.Error<S, UnclosedGroupMessage>
+
+    const validateExpression = (s: ParserState.Value) => {
         if (s.groups.length) {
             throw new Error(UNCLOSED_GROUP_MESSAGE)
         }
-        Branches.mergeAll(s)
     }
 
     type ParseSuffixes<S extends ParserState.Type> =
         S["R"]["lookahead"] extends "END"
-            ? ValidateFinalState<S>
+            ? ValidateEndState<S>
+            : S["R"]["lookahead"] extends "ERR"
+            ? S
             : ParseSuffixes<ParseSuffix<S>>
 
     const parseSuffixes = (
@@ -159,7 +180,7 @@ export namespace Core {
         while (s.scanner.lookahead !== "END") {
             parseSuffix(s, ctx)
         }
-        validateFinalState(s)
+        validateEndState(s)
     }
 
     type UnexpectedSuffixMessage<Lookahead extends string> =
@@ -201,14 +222,14 @@ export namespace Core {
     export const UNPAIRED_LEFT_BOUND_MESSAGE = `Left bounds are only valid when paired with right bounds.`
     type UnpairedLeftBoundMessage = typeof UNPAIRED_LEFT_BOUND_MESSAGE
 
-    type ValidateFinalState<S extends ParserState.Type> =
+    type ValidateEndState<S extends ParserState.Type> =
         "left" extends keyof S["L"]["ctx"]["bounds"]
             ? "right" extends keyof S["L"]["ctx"]["bounds"]
                 ? S
                 : ParserState.Error<S, UnpairedLeftBoundMessage>
             : S
 
-    const validateFinalState = (s: ParserState.Value) => {
+    const validateEndState = (s: ParserState.Value) => {
         if (s.bounds.left && !s.bounds.right) {
             throw new Error(UNPAIRED_LEFT_BOUND_MESSAGE)
         }

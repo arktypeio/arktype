@@ -4,6 +4,7 @@ import { asNumber } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { ParserState } from "../parser/state.js"
+import { boundStartChars, boundTokens } from "../parser/tokens.js"
 import { ParseTree } from "../parser/tree.js"
 import {
     Keyword,
@@ -13,19 +14,9 @@ import {
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Bound {
-    export const tokens = {
-        "<=": 1,
-        ">=": 1,
-        ">": 1,
-        "<": 1,
-        "==": 1
-    }
+    export const tokens = boundTokens
 
-    export const startChars = {
-        "<": 1,
-        ">": 1,
-        "=": 1
-    }
+    export const startChars = boundStartChars
 
     export type Token = keyof typeof tokens
 
@@ -49,19 +40,22 @@ export namespace Bound {
     export type ShiftToken<
         Start extends StartChar,
         Unscanned extends string[]
-    > = Unscanned extends Lexer.Scan<infer Lookahead, infer Rest>
+    > = Unscanned extends Lexer.Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "="
             ? ParserState.RightFrom<{
                   lookahead: `${Start}=`
-                  unscanned: Rest
+                  unscanned: NextUnscanned
               }>
             : Start extends "="
-            ? Lexer.ShiftError<`= is not a valid comparator. Use == instead.`>
+            ? Lexer.ShiftError<
+                  Unscanned,
+                  `= is not a valid comparator. Use == instead.`
+              >
             : ParserState.RightFrom<{
                   lookahead: Start
                   unscanned: Unscanned
               }>
-        : Lexer.ShiftError<`Expected a bound condition after ${Start}.`>
+        : Lexer.ShiftError<[], `Expected a bound condition after ${Start}.`>
 
     export const shiftToken = (scanner: Lexer.Scanner<Bound.StartChar>) => {
         if (scanner.next === "=") {

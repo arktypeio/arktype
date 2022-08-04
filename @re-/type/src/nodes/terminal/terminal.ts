@@ -1,11 +1,12 @@
 import { Base } from "../base/index.js"
-import { Lexer, ParserState } from "../parser/index.js"
+import { ErrorToken, Lexer, ParserState } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
     BigintLiteralDefinition,
     BigintLiteralNode,
     InferLiteral,
+    LiteralDefinition,
     NumberLiteralDefinition,
     NumberLiteralNode,
     RegexLiteralDefinition,
@@ -21,6 +22,7 @@ export namespace Terminal {
         ? true
         : false
 
+    // TODO: Check if previous way of literal checking was more efficient?
     export type Parse<S extends ParserState.Type, Dict> = IsResolvableName<
         S["R"]["lookahead"],
         Dict
@@ -29,25 +31,15 @@ export namespace Terminal {
               L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
               R: Lexer.ShiftOperator<S["R"]["unscanned"]>
           }>
-        : ValidateLiteral<S["R"]["lookahead"]> extends S["R"]["lookahead"]
+        : S["R"]["lookahead"] extends LiteralDefinition
         ? ParserState.From<{
               L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
               R: Lexer.ShiftOperator<S["R"]["unscanned"]>
           }>
-        : ParserState.Error<S, ValidateLiteral<S["R"]["lookahead"]>>
-
-    type ValidateLiteral<Token extends string> =
-        Token extends StringLiteralDefinition
-            ? Token
-            : Token extends RegexLiteralDefinition
-            ? Token extends "//"
-                ? `Regex literals cannot be empty.`
-                : Token
-            : Token extends NumberLiteralDefinition | BigintLiteralDefinition
-            ? Token
-            : Token extends ""
-            ? `Expected an expression.`
-            : `'${Token}' is not a builtin type and does not exist in your space.`
+        : ParserState.Error<
+              S,
+              `'${S["R"]["lookahead"]}' is not a builtin type and does not exist in your space.`
+          >
 
     export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {

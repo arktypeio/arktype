@@ -2,7 +2,8 @@ import { ClassOf, InstanceOf, ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound, NodeBounds } from "../nonTerminal/index.js"
-import { ErrorToken, Lexer, TokenSet } from "./lexer.js"
+import { Lexer } from "./lexer.js"
+import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace ParserState {
     export type Type = {
@@ -76,7 +77,7 @@ export namespace ParserState {
     export type Error<S extends Type, Message extends string> = From<{
         L: SetRoot<S["L"], ErrorToken<Message>>
         R: RightFrom<{
-            lookahead: "END"
+            lookahead: "ERR"
             unscanned: S["R"]["unscanned"]
         }>
     }>
@@ -115,11 +116,9 @@ export namespace ParserState {
         ctx: InitialContext
     }>
 
-    export type ModifierToken = "[]" | "?"
-
     type LeftFrom<L extends Left> = L
 
-    export type Modify<L extends Left, Token extends ModifierToken> = SetRoot<
+    export type Modify<L extends Left, Token extends string> = SetRoot<
         L,
         [L["root"], Token]
     >

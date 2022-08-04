@@ -24,8 +24,8 @@ export namespace List {
                       lookahead: "[]"
                       unscanned: Rest
                   }>
-                : Lexer.ShiftError<`Missing expected ']'.`>
-            : Lexer.ShiftError<`Missing expected ']'.`>
+                : Lexer.ShiftError<Unscanned, `Missing expected ']'.`>
+            : Lexer.ShiftError<[], `Missing expected ']'.`>
 
     export const shiftToken = (scanner: Lexer.Scanner<"[">) => {
         if (scanner.next !== "]") {
