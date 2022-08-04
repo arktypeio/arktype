@@ -3,9 +3,9 @@
 import { asNumber } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Lexer } from "../parser/lexer.js"
-import { ParserState } from "../parser/state.js"
+import { State } from "../parser/state.js"
 import { boundStartChars, boundTokens } from "../parser/tokens.js"
-import { ParseTree } from "../parser/tree.js"
+import { Tree } from "../parser/tree.js"
 import {
     Keyword,
     NumberLiteralDefinition,
@@ -22,7 +22,7 @@ export namespace Bound {
 
     export type StartChar = keyof typeof startChars
 
-    export type State = {
+    export type Bounds = {
         left?: [NumberLiteralDefinition, Token]
         right?: [Token, NumberLiteralDefinition]
     }
@@ -42,7 +42,7 @@ export namespace Bound {
         Unscanned extends string[]
     > = Unscanned extends Lexer.Scan<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends "="
-            ? ParserState.RightFrom<{
+            ? State.RightFrom<{
                   lookahead: `${Start}=`
                   unscanned: NextUnscanned
               }>
@@ -51,7 +51,7 @@ export namespace Bound {
                   Unscanned,
                   `= is not a valid comparator. Use == instead.`
               >
-            : ParserState.RightFrom<{
+            : State.RightFrom<{
                   lookahead: Start
                   unscanned: Unscanned
               }>
@@ -66,67 +66,60 @@ export namespace Bound {
     }
 
     export type ParseLeft<
-        S extends ParserState.Type,
+        S extends State.Type,
         T extends Token,
         N extends NumberLiteralDefinition
-    > = ParserState.From<{
-        L: {
-            groups: []
-            branches: {}
-            root: undefined
-            ctx: S["L"]["ctx"] & {
-                bounds: {
-                    left: [N, T]
-                }
-            }
+    > = State.From<{
+        groups: S["groups"]
+        branches: S["branches"]
+        bounds: S["bounds"] & {
+            left: [N, T]
         }
-        R: Lexer.ShiftBase<S["R"]["unscanned"]>
+        root: undefined
+        scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
     }>
 
     export const parseLeft = (
-        s: ParserState.WithLookaheadAndRoot<Bound.Token, NumberLiteralNode>
+        s: State.WithLookaheadAndRoot<Bound.Token, NumberLiteralNode>
     ) => {
-        s.bounds.left = [s.root.value, s.scanner.lookahead]
+        // @ts-ignore TODO: Fix this type at NumberLiteralNode
+        s.bounds.left = [s.root.def, s.scanner.lookahead]
         s.root = undefined as any
         Lexer.shiftBase(s.scanner)
     }
 
     export type ParseRight<
-        S extends ParserState.Type,
+        S extends State.Type,
         T extends Token
-    > = S["R"]["lookahead"] extends NumberLiteralDefinition
-        ? "right" extends keyof S["L"]["ctx"]["bounds"]
-            ? ParserState.Error<
-                  S,
-                  `Definitions cannot have multiple right bounds.`
-              >
-            : S["L"]["root"] extends Boundable
-            ? ParserState.From<{
-                  L: ParserState.UpdateContext<
-                      S["L"],
-                      {
-                          bounds: {
-                              right: [T, S["R"]["lookahead"]]
-                          }
-                      }
-                  >
-                  R: Lexer.ShiftOperator<S["R"]["unscanned"]>
+    > = S["scanner"]["lookahead"] extends NumberLiteralDefinition
+        ? "right" extends keyof S["bounds"]
+            ? State.Error<S, `Definitions cannot have multiple right bounds.`>
+            : S["root"] extends Boundable
+            ? State.From<{
+                  groups: S["groups"]
+                  branches: S["branches"]
+                  bounds: S["bounds"] & {
+                      right: [T, S["scanner"]["lookahead"]]
+                  }
+                  root: S["root"]
+                  scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
               }>
-            : ParserState.Error<
+            : State.Error<
                   S,
-                  `Bounded expression '${ParseTree.ToString<
-                      S["L"]["root"]
+                  `Bounded expression '${Tree.ToString<
+                      S["root"]
                   >}' must be a number-or-string-typed keyword or a list-typed expression.`
               >
-        : ParserState.Error<
+        : State.Error<
               S,
-              `Right bound ${S["R"]["lookahead"]} must be a number literal followed only by other suffixes.`
+              `Right bound ${S["scanner"]["lookahead"]} must be a number literal followed only by other suffixes.`
           >
 
     export const parseRight = (
-        s: ParserState.WithLookaheadAndRoot<Bound.Token>,
+        s: State.WithLookaheadAndRoot<Bound.Token>,
         ctx: Base.Parsing.Context
     ) => {
+        const token = s.scanner.lookahead
         Lexer.shiftBase(s.scanner)
         if (NumberLiteralNode.matches(s.scanner.lookahead)) {
             if (s.bounds.right) {
@@ -134,10 +127,7 @@ export namespace Bound {
                     `Definitions cannot have multiple right bounds.`
                 )
             }
-            s.bounds.right = [
-                s.scanner.lookahead,
-                asNumber(s.scanner.lookahead, { assert: true })
-            ]
+            s.bounds.right = [token, s.scanner.lookahead]
             if (!isBoundable(s.root)) {
                 throw new Error(
                     `Bounded expression '${s.root.toString()}' must be a number-or-string-typed keyword or a list-typed expression.`
@@ -161,15 +151,10 @@ export interface Boundable extends Base.Node {
 export const isBoundable = (node: Base.Node): node is Boundable =>
     "toBound" in node
 
-export type NodeBounds = {
-    left?: [number, Bound.Token]
-    right?: [Bound.Token, number]
-}
-
 export class BoundNode extends NonTerminal<Boundable> {
     constructor(
         child: Boundable,
-        private bounds: NodeBounds,
+        private bounds: Bound.Bounds,
         ctx: Base.Parsing.Context
     ) {
         super(child, ctx)

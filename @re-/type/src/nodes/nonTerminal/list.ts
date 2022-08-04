@@ -1,16 +1,16 @@
 import { Base } from "../base/index.js"
 import { Lexer } from "../parser/lexer.js"
-import { ParserState } from "../parser/state.js"
+import { State } from "../parser/state.js"
 import { Boundable } from "./bound.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
-    export type Parse<S extends ParserState.Type> = ParserState.From<{
-        L: ParserState.Modify<S["L"], "[]">
-        R: Lexer.ShiftOperator<S["R"]["unscanned"]>
-    }>
+    export type Parse<S extends State.Type> = State.ShiftOperator<
+        S,
+        [S["root"], "[]"]
+    >
 
-    export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         s.root = new ListNode(s.root!, ctx)
         Lexer.shiftOperator(s.scanner)
     }
@@ -20,7 +20,7 @@ export namespace List {
     export type ShiftToken<Unscanned extends string[]> =
         Unscanned extends Lexer.Scan<infer Lookahead, infer Rest>
             ? Lookahead extends "]"
-                ? ParserState.RightFrom<{
+                ? State.RightFrom<{
                       lookahead: "[]"
                       unscanned: Rest
                   }>

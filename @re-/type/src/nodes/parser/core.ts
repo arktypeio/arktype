@@ -14,18 +14,17 @@ import {
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
-import { Lexer } from "./lexer.js"
-import { ParserState } from "./state.js"
+import { State } from "./state.js"
 import { ErrorToken, SuffixToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
-        Get<ParseDefinition<Def, Dict>, "L">,
+        ParseDefinition<Def, Dict>,
         "root"
     >
 
     export const parse = (def: string, ctx: Base.Parsing.Context) => {
-        const s = ParserState.initialize(def)
+        const s = State.initialize(def)
         parsePossiblePrefixes(s, ctx)
         parseExpression(s, ctx)
         reduceExpression(s)
@@ -34,43 +33,37 @@ export namespace Core {
     }
 
     type ParseDefinition<Def extends string, Dict> = ParseExpression<
-        ParsePrefixes<ParserState.Initialize<Def>>,
+        ParsePrefixes<State.Initialize<Def>>,
         Dict
     >
 
-    type ParsePrefixes<S extends ParserState.Type> =
-        S["R"]["lookahead"] extends NumberLiteralDefinition
+    type ParsePrefixes<S extends State.Type> =
+        S["scanner"]["lookahead"] extends NumberLiteralDefinition
             ? ParsePossibleLeftBound<
-                  ParserState.From<{
-                      L: S["L"]
-                      R: Lexer.ShiftOperator<S["R"]["unscanned"]>
-                  }>,
-                  S["R"]["lookahead"]
+                  State.ShiftOperator<S>,
+                  S["scanner"]["lookahead"]
               >
             : S
 
     const parsePossiblePrefixes = (
-        s: ParserState.Value,
+        s: State.Value,
         ctx: Base.Parsing.Context
     ) => {
         parseToken(s, ctx)
         if (
-            ParserState.rootIs(s, NumberLiteralNode) &&
-            ParserState.lookaheadIn(s, Bound.tokens)
+            State.rootIs(s, NumberLiteralNode) &&
+            State.lookaheadIn(s, Bound.tokens)
         ) {
             Bound.parseLeft(s)
         }
     }
 
     type ParsePossibleLeftBound<
-        S extends ParserState.Type,
+        S extends State.Type,
         N extends NumberLiteralDefinition
-    > = S["R"]["lookahead"] extends Bound.Token
-        ? Bound.ParseLeft<S, S["R"]["lookahead"], N>
-        : ParserState.From<{
-              L: ParserState.SetRoot<S["L"], N>
-              R: S["R"]
-          }>
+    > = S["scanner"]["lookahead"] extends Bound.Token
+        ? Bound.ParseLeft<S, S["scanner"]["lookahead"], N>
+        : State.SetRoot<S, N>
 
     /**
      * When at runtime we would throw a ParseError, we either:
@@ -82,37 +75,37 @@ export namespace Core {
      *
      */
     type ParseExpression<
-        S extends ParserState.Type,
+        S extends State.Type,
         Dict
-    > = S["R"]["lookahead"] extends SuffixToken | "ERR" | ErrorToken<string>
+    > = S["scanner"]["lookahead"] extends
+        | SuffixToken
+        | "ERR"
+        | ErrorToken<string>
         ? ParseSuffixes<ReduceExpression<S>>
         : ParseExpression<ParseToken<S, Dict>, Dict>
 
-    const parseExpression = (
-        s: ParserState.Value,
-        ctx: Base.Parsing.Context
-    ) => {
+    const parseExpression = (s: State.Value, ctx: Base.Parsing.Context) => {
         while (!(s.scanner.lookahead in suffixTokens)) {
             parseToken(s, ctx)
         }
     }
 
     type ParseToken<
-        S extends ParserState.Type,
+        S extends State.Type,
         Dict
-    > = S["R"]["lookahead"] extends "[]"
+    > = S["scanner"]["lookahead"] extends "[]"
         ? List.Parse<S>
-        : S["R"]["lookahead"] extends "|"
+        : S["scanner"]["lookahead"] extends "|"
         ? Union.Parse<S>
-        : S["R"]["lookahead"] extends "&"
+        : S["scanner"]["lookahead"] extends "&"
         ? Intersection.Parse<S>
-        : S["R"]["lookahead"] extends "("
+        : S["scanner"]["lookahead"] extends "("
         ? Group.ParseOpen<S>
-        : S["R"]["lookahead"] extends ")"
+        : S["scanner"]["lookahead"] extends ")"
         ? Group.ParseClose<S>
         : Terminal.Parse<S, Dict>
 
-    const parseToken = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+    const parseToken = (s: State.Value, ctx: Base.Parsing.Context) => {
         switch (s.scanner.lookahead) {
             case "[]":
                 return List.parse(s, ctx)
@@ -132,51 +125,42 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ReduceExpression<S extends ParserState.Type> =
-        S["R"]["lookahead"] extends "ERR"
+    type ReduceExpression<S extends State.Type> =
+        S["scanner"]["lookahead"] extends "ERR"
             ? S
             : ValidateExpression<
-                  ParserState.From<{
-                      L: {
-                          groups: S["L"]["groups"]
-                          branches: {}
-                          root: Branches.MergeAll<
-                              S["L"]["branches"],
-                              S["L"]["root"]
-                          >
-                          ctx: S["L"]["ctx"]
-                      }
-                      R: S["R"]
+                  State.From<{
+                      groups: S["groups"]
+                      branches: {}
+                      root: Branches.MergeAll<S["branches"], S["root"]>
+                      bounds: S["bounds"]
+                      scanner: S["scanner"]
                   }>
               >
 
-    const reduceExpression = (s: ParserState.Value) => {
+    const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)
         validateExpression(s)
     }
 
-    type ValidateExpression<S extends ParserState.Type> =
-        S["L"]["groups"] extends []
-            ? S
-            : ParserState.Error<S, UnclosedGroupMessage>
+    type ValidateExpression<S extends State.Type> = S["groups"] extends []
+        ? S
+        : State.Error<S, UnclosedGroupMessage>
 
-    const validateExpression = (s: ParserState.Value) => {
+    const validateExpression = (s: State.Value) => {
         if (s.groups.length) {
             throw new Error(UNCLOSED_GROUP_MESSAGE)
         }
     }
 
-    type ParseSuffixes<S extends ParserState.Type> =
-        S["R"]["lookahead"] extends "END"
+    type ParseSuffixes<S extends State.Type> =
+        S["scanner"]["lookahead"] extends "END"
             ? ValidateEndState<S>
-            : S["R"]["lookahead"] extends "ERR"
+            : S["scanner"]["lookahead"] extends "ERR"
             ? S
             : ParseSuffixes<ParseSuffix<S>>
 
-    const parseSuffixes = (
-        s: ParserState.WithRoot,
-        ctx: Base.Parsing.Context
-    ) => {
+    const parseSuffixes = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
         while (s.scanner.lookahead !== "END") {
             parseSuffix(s, ctx)
         }
@@ -191,28 +175,19 @@ export namespace Core {
     ): UnexpectedSuffixMessage<Lookahead> =>
         `Unexpected suffix token '${lookahead}'.`
 
-    type ParseSuffix<S extends ParserState.Type> =
-        S["R"]["lookahead"] extends "?"
+    type ParseSuffix<S extends State.Type> =
+        S["scanner"]["lookahead"] extends "?"
             ? Optional.Parse<S>
-            : S["R"]["lookahead"] extends Bound.Token
-            ? Bound.ParseRight<
-                  ParserState.From<{
-                      L: S["L"]
-                      R: Lexer.ShiftBase<S["R"]["unscanned"]>
-                  }>,
-                  S["R"]["lookahead"]
-              >
-            : S["R"]["lookahead"] extends ErrorToken<infer Message>
-            ? ParserState.Error<S, Message>
-            : ParserState.Error<S, UnexpectedSuffixMessage<S["R"]["lookahead"]>>
+            : S["scanner"]["lookahead"] extends Bound.Token
+            ? Bound.ParseRight<State.ShiftBase<S>, S["scanner"]["lookahead"]>
+            : S["scanner"]["lookahead"] extends ErrorToken<infer Message>
+            ? State.Error<S, Message>
+            : State.Error<S, UnexpectedSuffixMessage<S["scanner"]["lookahead"]>>
 
-    const parseSuffix = (
-        s: ParserState.WithRoot,
-        ctx: Base.Parsing.Context
-    ) => {
+    const parseSuffix = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
         if (s.scanner.lookahead === "?") {
             Optional.parse(s, ctx)
-        } else if (ParserState.lookaheadIn(s, Bound.tokens)) {
+        } else if (State.lookaheadIn(s, Bound.tokens)) {
             Bound.parseRight(s, ctx)
         } else {
             throw new Error(unexpectedSuffixMessage(s.scanner.lookahead))
@@ -222,14 +197,14 @@ export namespace Core {
     export const UNPAIRED_LEFT_BOUND_MESSAGE = `Left bounds are only valid when paired with right bounds.`
     type UnpairedLeftBoundMessage = typeof UNPAIRED_LEFT_BOUND_MESSAGE
 
-    type ValidateEndState<S extends ParserState.Type> =
-        "left" extends keyof S["L"]["ctx"]["bounds"]
-            ? "right" extends keyof S["L"]["ctx"]["bounds"]
+    type ValidateEndState<S extends State.Type> =
+        "left" extends keyof S["bounds"]
+            ? "right" extends keyof S["bounds"]
                 ? S
-                : ParserState.Error<S, UnpairedLeftBoundMessage>
+                : State.Error<S, UnpairedLeftBoundMessage>
             : S
 
-    const validateEndState = (s: ParserState.Value) => {
+    const validateEndState = (s: State.Value) => {
         if (s.bounds.left && !s.bounds.right) {
             throw new Error(UNPAIRED_LEFT_BOUND_MESSAGE)
         }

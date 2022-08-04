@@ -1,7 +1,7 @@
 import { TypeOfResult } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import { Lexer } from "../../parser/lexer.js"
-import { ParserState } from "../../parser/state.js"
+import { State } from "../../parser/state.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"
@@ -22,7 +22,7 @@ const preferredDefaults: PreferredDefaults = [
 ]
 
 export namespace Union {
-    export type PushRoot<B extends Branches.State, Root> = {
+    export type PushRoot<B extends Branches.TypeState, Root> = {
         union: [
             Branches.MergeExpression<
                 B["union"],
@@ -32,12 +32,12 @@ export namespace Union {
         ]
     }
 
-    export type Parse<S extends ParserState.Type> = Branches.Parse<
+    export type Parse<S extends State.Type> = Branches.Parse<
         S,
-        PushRoot<S["L"]["branches"], S["L"]["root"]>
+        PushRoot<S["branches"], S["root"]>
     >
 
-    export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         Intersection.merge(s)
         if (!s.branches.union) {
             s.branches.union = new UnionNode([s.root!], ctx)
@@ -48,7 +48,7 @@ export namespace Union {
         Lexer.shiftBase(s.scanner)
     }
 
-    export const merge = (s: ParserState.Value) => {
+    export const merge = (s: State.Value) => {
         if (s.branches.union) {
             Intersection.merge(s)
             // TODO: Find a better way to deal with all these!

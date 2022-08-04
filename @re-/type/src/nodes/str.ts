@@ -1,5 +1,5 @@
 import { Base } from "./base/index.js"
-import { Core, ErrorToken, Naive, ParseTree } from "./parser/index.js"
+import { Core, ErrorToken, Naive, Tree } from "./parser/index.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = Naive.TryParse<Def, Dict>
@@ -14,9 +14,9 @@ export namespace Str {
     export type Infer<
         Def extends string,
         Ctx extends Base.Parsing.InferenceContext
-    > = ParseTree.Infer<Parse<Def, Ctx["dict"]>, Ctx>
+    > = Tree.Infer<Parse<Def, Ctx["dict"]>, Ctx>
 
-    export type References<Def extends string, Dict> = ParseTree.LeavesOf<
+    export type References<Def extends string, Dict> = Tree.LeavesOf<
         Parse<Def, Dict>
     >
 

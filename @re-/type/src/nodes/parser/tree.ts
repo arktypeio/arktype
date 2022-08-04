@@ -2,7 +2,7 @@ import { Base } from "../base/index.js"
 import { Intersection, List, Optional, Union } from "../nonTerminal/index.js"
 import { InferTerminalStr } from "../terminal/index.js"
 
-export namespace ParseTree {
+export namespace Tree {
     type ModifiedNode<Child, Token extends string> = [Child, Token]
 
     type BranchNode<Left, Token extends string, Right> = [Left, Token, Right]

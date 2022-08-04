@@ -1,21 +1,18 @@
 import { Base } from "../base/index.js"
 import { Lexer } from "../parser/lexer.js"
-import { ParserState } from "../parser/state.js"
+import { State } from "../parser/state.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {
-    export type Parse<S extends ParserState.Type> =
-        S["R"]["unscanned"] extends []
-            ? ParserState.From<{
-                  L: ParserState.Modify<S["L"], "?">
-                  R: Lexer.ShiftOperator<S["R"]["unscanned"]>
-              }>
-            : ParserState.Error<
+    export type Parse<S extends State.Type> =
+        S["scanner"]["unscanned"] extends []
+            ? State.ShiftOperator<S, [S["root"], "[]"]>
+            : State.Error<
                   S,
                   `Suffix '?' is only valid at the end of a definition.`
               >
 
-    export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         if (s.scanner.next !== "END") {
             throw new Error(
                 `Suffix '?' is only valid at the end of a definition.`

@@ -1,5 +1,5 @@
 import { Base } from "../base/index.js"
-import { Lexer, ParserState } from "../parser/index.js"
+import { Lexer, State } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
@@ -19,25 +19,19 @@ export namespace Terminal {
         ? true
         : false
 
-    export type Parse<S extends ParserState.Type, Dict> = IsResolvableName<
-        S["R"]["lookahead"],
+    export type Parse<S extends State.Type, Dict> = IsResolvableName<
+        S["scanner"]["lookahead"],
         Dict
     > extends true
-        ? ParserState.From<{
-              L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
-              R: Lexer.ShiftOperator<S["R"]["unscanned"]>
-          }>
-        : S["R"]["lookahead"] extends LiteralDefinition
-        ? ParserState.From<{
-              L: ParserState.SetRoot<S["L"], S["R"]["lookahead"]>
-              R: Lexer.ShiftOperator<S["R"]["unscanned"]>
-          }>
-        : ParserState.Error<
+        ? State.ShiftOperator<S, S["scanner"]["lookahead"]>
+        : S["scanner"]["lookahead"] extends LiteralDefinition
+        ? State.ShiftOperator<S, S["scanner"]["lookahead"]>
+        : State.Error<
               S,
-              `'${S["R"]["lookahead"]}' is not a builtin type and does not exist in your space.`
+              `'${S["scanner"]["lookahead"]}' is not a builtin type and does not exist in your space.`
           >
 
-    export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {
             s.root = Keyword.parse(s.scanner.lookahead)
         } else if (AliasNode.matches(s.scanner.lookahead, ctx)) {
