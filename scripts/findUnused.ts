@@ -8,7 +8,6 @@ const project = new Project({
 const unusedByFile: Record<string, string[]> = {}
 const snippetFileRegex = /snippets\/\w+/
 const exportAllRegex = /export \*/
-const packagesThatExposePublicApi = {}
 for (const sourceFile of project.getSourceFiles()) {
     const file = relative(".", sourceFile.getFilePath())
     if (snippetFileRegex.test(file)) {
@@ -17,9 +16,6 @@ for (const sourceFile of project.getSourceFiles()) {
     const unusedInFile = []
     for (const statement of sourceFile.getVariableStatements()) {
         if (statement.hasModifier(SyntaxKind.ExportKeyword)) {
-            if (exportAllRegex.test(statement.getText())) {
-                console.log(statement.getText())
-            }
             const declarations = statement.getDeclarations()
             for (const declaration of declarations) {
                 const references = declaration
