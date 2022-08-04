@@ -18,7 +18,8 @@
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node ./scripts/findUnused.ts",
         "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-pages",
-        "ci:publish": "pnpm changeset publish"
+        "ci:publish": "pnpm changeset publish",
+        "p": "ts-prune -p tsconfig.references.json"
     },
     "devDependencies": {
         "@re-/node": "link:./@re-/node",
@@ -46,7 +47,8 @@
         "ts-morph": "15.1.0",
         "ts-node": "10.9.1",
         "typescript": "4.8.0-beta",
-        "type-fest": "2.13.1"
+        "type-fest": "2.13.1",
+        "ts-prune": "latest"
     },
     "config": {
         "commitizen": {
