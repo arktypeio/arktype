@@ -1,6 +1,6 @@
 {
     "extends": "./tsconfig.json",
-    "include": ["./@re-/*/src", "./@re-/*/docs", "scripts/docgen"],
+    "include": ["./@re-/*/src", "./@re-/*/docs"],
     "exclude": ["**/node_modules", "**/dist"],
     "compilerOptions": {
         "noEmit": true,
