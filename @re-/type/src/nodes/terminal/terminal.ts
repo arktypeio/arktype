@@ -47,7 +47,7 @@ export namespace Terminal {
             ? Token
             : Token extends ""
             ? `Expected an expression.`
-            : `'${Token}' does not exist in your space.`
+            : `'${Token}' is not a builtin type and does not exist in your space.`
 
     export const parse = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {
@@ -74,7 +74,7 @@ export namespace Terminal {
             throw new Error("Expected an expression.")
         } else {
             throw new Error(
-                `'${s.scanner.lookahead}' does not exist in your space.`
+                `'${s.scanner.lookahead}' is not a builtin type and does not exist in your space.`
             )
         }
         Lexer.shiftOperator(s.scanner)

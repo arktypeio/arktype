@@ -119,6 +119,9 @@ export namespace Core {
         }
     }
 
+    export const UNCLOSED_GROUP_MESSAGE = "Missing )."
+    type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
+
     type ReduceExpression<S extends ParserState.Type> =
         S["L"]["root"] extends ErrorToken<string>
             ? S
@@ -135,11 +138,11 @@ export namespace Core {
                   }
                   R: S["R"]
               }>
-            : ParserState.Error<S, "Missing ).">
+            : ParserState.Error<S, UnclosedGroupMessage>
 
     const reduceExpression = (s: ParserState.Value) => {
         if (s.groups.length) {
-            throw new Error(`Missing ).`)
+            throw new Error(UNCLOSED_GROUP_MESSAGE)
         }
         Branches.mergeAll(s)
     }
@@ -159,6 +162,14 @@ export namespace Core {
         validateFinalState(s)
     }
 
+    type UnexpectedSuffixMessage<Lookahead extends string> =
+        `Unexpected suffix token '${Lookahead}'.`
+
+    export const unexpectedSuffixMessage = <Lookahead extends string>(
+        lookahead: Lookahead
+    ): UnexpectedSuffixMessage<Lookahead> =>
+        `Unexpected suffix token '${lookahead}'.`
+
     type ParseSuffix<S extends ParserState.Type> =
         S["R"]["lookahead"] extends "?"
             ? Optional.Parse<S>
@@ -172,10 +183,7 @@ export namespace Core {
               >
             : S["R"]["lookahead"] extends ErrorToken<infer Message>
             ? ParserState.Error<S, Message>
-            : ParserState.Error<
-                  S,
-                  `Unexpected suffix token ${S["R"]["lookahead"]}.`
-              >
+            : ParserState.Error<S, UnexpectedSuffixMessage<S["R"]["lookahead"]>>
 
     const parseSuffix = (
         s: ParserState.WithRoot,
@@ -186,25 +194,23 @@ export namespace Core {
         } else if (ParserState.lookaheadIn(s, Bound.tokens)) {
             Bound.parseRight(s, ctx)
         } else {
-            throw new Error(`Unexpected suffix token ${s.scanner.lookahead}.`)
+            throw new Error(unexpectedSuffixMessage(s.scanner.lookahead))
         }
     }
+
+    export const UNPAIRED_LEFT_BOUND_MESSAGE = `Left bounds are only valid when paired with right bounds.`
+    type UnpairedLeftBoundMessage = typeof UNPAIRED_LEFT_BOUND_MESSAGE
 
     type ValidateFinalState<S extends ParserState.Type> =
         "left" extends keyof S["L"]["ctx"]["bounds"]
             ? "right" extends keyof S["L"]["ctx"]["bounds"]
                 ? S
-                : ParserState.Error<
-                      S,
-                      `Left bounds are only valid when paired with right bounds.`
-                  >
+                : ParserState.Error<S, UnpairedLeftBoundMessage>
             : S
 
     const validateFinalState = (s: ParserState.Value) => {
         if (s.bounds.left && !s.bounds.right) {
-            throw new Error(
-                `Left bounds are only valid when paired with right bounds.`
-            )
+            throw new Error(UNPAIRED_LEFT_BOUND_MESSAGE)
         }
     }
 }

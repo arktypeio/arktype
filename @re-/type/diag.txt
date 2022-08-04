@@ -1,19 +1,21 @@
-src/nodes/nonTerminal/__tests__/bound.test.ts(131,34): error TS2345:
-Argument of type '"3<any[]"' is not assignable to parameter of type 
-'"Left bounds are only valid when paired with right bounds."'.
-
+src/nodes/nonTerminal/__tests__/bound.test.ts(131,34): error TS2345: Argument of type '"3<any[]"' is not assignable to parameter of type '"Left bounds are only valid when paired with right bounds."'.
+src/nodes/parser/core.ts(31,23): error TS2345: Argument of type 'Value' is not assignable to parameter of type 'WithRoot<Node>'.
+  Type 'Value' is not assignable to type '{ root: Node; }'.
+    Types of property 'root' are incompatible.
+      Type 'Node | undefined' is not assignable to type 'Node'.
+        Type 'undefined' is not assignable to type 'Node'.
 Files:              251
-Lines:            65817
-Nodes:           183315
-Identifiers:      61726
-Symbols:         245422
-Types:            76555
-Instantiations:  393837
-Memory used:    186131K
+Lines:            65872
+Nodes:           183553
+Identifiers:      61808
+Symbols:         245664
+Types:            76737
+Instantiations:  394240
+Memory used:    187456K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.39s
-Bind time:        0.14s
-Check time:       1.41s
+Parse time:       0.43s
+Bind time:        0.16s
+Check time:       1.62s
 Emit time:        0.00s
-Total time:       1.94s
+Total time:       2.21s
