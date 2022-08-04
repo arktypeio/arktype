@@ -1,17 +1,14 @@
 import { Base } from "../base/index.js"
-import { ErrorToken, Lexer, ParserState } from "../parser/index.js"
+import { Lexer, ParserState } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
-    BigintLiteralDefinition,
     BigintLiteralNode,
     InferLiteral,
     LiteralDefinition,
-    NumberLiteralDefinition,
     NumberLiteralNode,
     RegexLiteralDefinition,
     regexLiteralToNode,
-    StringLiteralDefinition,
     StringLiteralNode
 } from "./literal/index.js"
 
@@ -22,7 +19,6 @@ export namespace Terminal {
         ? true
         : false
 
-    // TODO: Check if previous way of literal checking was more efficient?
     export type Parse<S extends ParserState.Type, Dict> = IsResolvableName<
         S["R"]["lookahead"],
         Dict
