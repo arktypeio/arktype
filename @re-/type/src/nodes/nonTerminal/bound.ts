@@ -27,8 +27,6 @@ export namespace Bound {
         "=": 1
     }
 
-    export const isToken = (s: string): s is Token => s in tokens
-
     export type Token = keyof typeof tokens
 
     export type StartChar = keyof typeof startChars
@@ -65,15 +63,12 @@ export namespace Bound {
               }>
         : Lexer.ShiftError<`Expected a bound condition after ${Start}.`>
 
-    export const shiftToken = (scanner: Lexer.Scanner) => {
+    export const shiftToken = (scanner: Lexer.Scanner<Bound.StartChar>) => {
         if (scanner.next === "=") {
             scanner.shift()
-            return scanner
-        }
-        if (scanner.next === "=") {
+        } else if (scanner.lookahead === "=") {
             throw new Error(`= is not a valid comparator. Use == instead.`)
         }
-        return scanner
     }
 
     export type ParseLeft<
@@ -95,11 +90,10 @@ export namespace Bound {
     }>
 
     export const parseLeft = (
-        s: ParserState.Value<NumberLiteralNode>,
-        token: Token
+        s: ParserState.WithLookaheadAndRoot<Bound.Token, NumberLiteralNode>
     ) => {
-        s.bounds.left = [s.root.value, token]
-        s.root = undefined!
+        s.bounds.left = [s.root.value, s.scanner.lookahead]
+        s.root = undefined as any
         Lexer.shiftBase(s.scanner)
     }
 
@@ -136,10 +130,10 @@ export namespace Bound {
           >
 
     export const parseRight = (
-        s: ParserState.Value<Base.Node>,
-        token: Token,
+        s: ParserState.WithLookaheadAndRoot<Bound.Token>,
         ctx: Base.Parsing.Context
     ) => {
+        Lexer.shiftBase(s.scanner)
         if (NumberLiteralNode.matches(s.scanner.lookahead)) {
             if (s.bounds.right) {
                 throw new Error(
@@ -147,7 +141,7 @@ export namespace Bound {
                 )
             }
             s.bounds.right = [
-                token,
+                s.scanner.lookahead,
                 asNumber(s.scanner.lookahead, { assert: true })
             ]
             if (!isBoundable(s.root)) {
@@ -159,7 +153,7 @@ export namespace Bound {
             Lexer.shiftOperator(s.scanner)
         } else {
             throw new Error(
-                `Right side of comparator ${token} must be a number literal.`
+                `Right side of comparator ${s.scanner.lookahead} must be a number literal.`
             )
         }
     }

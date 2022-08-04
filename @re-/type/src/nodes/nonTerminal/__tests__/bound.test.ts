@@ -120,7 +120,7 @@ describe("bound", () => {
                         assert(
                             type("999>string>100").validate("tooShort").error
                                 ?.message
-                        ).snap()
+                        ).snap(undefined)
                     })
                 })
             })
@@ -155,12 +155,14 @@ describe("bound", () => {
                     test("single-bounded", () => {
                         assert(
                             type("any[]==1").validate([1, "foo"]).error
-                        ).snap()
+                        ).snap(undefined)
                     })
                     test("double-bounded with equality", () => {
                         const impossible = type("1==(boolean|number)[]==2")
                         assert(impossible).typed as (number | boolean)[]
-                        assert(impossible.validate([]).error?.message).snap()
+                        assert(impossible.validate([]).error?.message).snap(
+                            undefined
+                        )
                     })
                     test("bad inner type", () => {
                         assert(
@@ -170,7 +172,10 @@ describe("bound", () => {
                     test("bad inner type and length", () => {
                         assert(
                             type("0<never[]<2").validate([1, 2]).error?.message
-                        ).snap()
+                        ).snap(`Encountered errors at the following paths:
+  0: 1 is not assignable to never.
+  1: 2 is not assignable to never.
+`)
                     })
                 })
             })

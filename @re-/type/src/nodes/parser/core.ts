@@ -27,6 +27,7 @@ export namespace Core {
         const s = ParserState.initialize(def)
         parsePossiblePrefixes(s, ctx)
         parseExpression(s, ctx)
+        reduceExpression(s)
         parseSuffixes(s, ctx)
         return s.root!
     }
@@ -52,10 +53,11 @@ export namespace Core {
         ctx: Base.Parsing.Context
     ) => {
         parseToken(s, ctx)
-        // TODO: Add a better way to do assertions like this
-        if (s.root instanceof NumberLiteralNode) {
-            Lexer.shiftOperator(s.scanner)
-            parsePossibleLeftBound(s as ParserState.Value<NumberLiteralNode>)
+        if (
+            ParserState.rootIs(s, NumberLiteralNode) &&
+            ParserState.lookaheadIn(s, Bound.tokens)
+        ) {
+            Bound.parseLeft(s)
         }
     }
 
@@ -68,14 +70,6 @@ export namespace Core {
               L: ParserState.SetRoot<S["L"], N>
               R: S["R"]
           }>
-
-    const parsePossibleLeftBound = (
-        s: ParserState.Value<NumberLiteralNode>
-    ) => {
-        if (Bound.isToken(s.scanner.lookahead)) {
-            Bound.parseLeft(s, s.scanner.lookahead)
-        }
-    }
 
     type ParseExpression<
         S extends ParserState.Type,
@@ -143,12 +137,22 @@ export namespace Core {
               }>
             : ParserState.Error<S, "Missing ).">
 
+    const reduceExpression = (s: ParserState.Value) => {
+        if (s.groups.length) {
+            throw new Error(`Missing ).`)
+        }
+        Branches.mergeAll(s)
+    }
+
     type ParseSuffixes<S extends ParserState.Type> =
         S["R"]["lookahead"] extends "END"
             ? ValidateFinalState<S>
             : ParseSuffixes<ParseSuffix<S>>
 
-    const parseSuffixes = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+    const parseSuffixes = (
+        s: ParserState.WithRoot,
+        ctx: Base.Parsing.Context
+    ) => {
         while (s.scanner.lookahead !== "END") {
             parseSuffix(s, ctx)
         }
@@ -173,12 +177,14 @@ export namespace Core {
                   `Unexpected suffix token ${S["R"]["lookahead"]}.`
               >
 
-    const parseSuffix = (s: ParserState.Value, ctx: Base.Parsing.Context) => {
+    const parseSuffix = (
+        s: ParserState.WithRoot,
+        ctx: Base.Parsing.Context
+    ) => {
         if (s.scanner.lookahead === "?") {
             Optional.parse(s, ctx)
-        } else if (s.scanner.lookahead in Bound.tokens) {
-            // Need to add a bound
-            Lexer.shiftOperator(Lexer.shiftBase(s.scanner))
+        } else if (ParserState.lookaheadIn(s, Bound.tokens)) {
+            Bound.parseRight(s, ctx)
         } else {
             throw new Error(`Unexpected suffix token ${s.scanner.lookahead}.`)
         }

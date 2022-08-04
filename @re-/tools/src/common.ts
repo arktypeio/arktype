@@ -104,6 +104,13 @@ export type Or<A extends boolean, B extends boolean> = {
     }
 }[`${A}`][`${B}`]
 
+export type ClassOf<Instance> = new (...constructorArgs: any[]) => Instance
+export type InstanceOf<Class extends ClassOf<any>> = Class extends ClassOf<
+    infer Instance
+>
+    ? Instance
+    : never
+
 export type Iterate<Next, Remaining extends unknown[]> = [Next, ...Remaining]
 
 export type IterateType<T, Next extends T, Remaining extends T[]> = [

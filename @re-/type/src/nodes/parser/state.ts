@@ -1,8 +1,8 @@
-import { ListChars } from "@re-/tools"
+import { ClassOf, InstanceOf, ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound, NodeBounds } from "../nonTerminal/index.js"
-import { ErrorToken, Lexer } from "./lexer.js"
+import { ErrorToken, Lexer, TokenSet } from "./lexer.js"
 
 export namespace ParserState {
     export type Type = {
@@ -10,17 +10,48 @@ export namespace ParserState {
         R: Right
     }
 
-    export type Value<
-        Root extends Base.Node | undefined = Base.Node | undefined
-    > = {
+    export type Value = {
         // Left
         groups: Branches.state[]
         branches: Branches.state
         bounds: NodeBounds
-        root: Root
+        root: Base.Node | undefined
         // Equivalent to Right
         scanner: Lexer.Scanner
     }
+
+    export type WithLookaheadAndRoot<
+        Token extends string,
+        Node extends Base.Node = Base.Node
+    > = Value & {
+        scanner: Lexer.Scanner<Token>
+        root: Node
+    }
+
+    export type WithLookahead<Token extends string> = Value & {
+        scanner: Lexer.Scanner<Token>
+    }
+
+    export type WithRoot<Node extends Base.Node = Base.Node> = Value & {
+        root: Node
+    }
+
+    export const lookaheadIs = <Token extends string>(
+        state: Value,
+        token: Token
+    ): state is WithLookahead<Token> => state.scanner.lookaheadIs(token)
+
+    export const lookaheadIn = <Tokens extends TokenSet>(
+        state: Value,
+        tokens: Tokens
+    ): state is WithLookahead<Extract<keyof Tokens, string>> =>
+        state.scanner.lookaheadIsIn(tokens)
+
+    export const rootIs = <NodeClass extends ClassOf<Base.Node>>(
+        state: Value,
+        nodeClass: NodeClass
+    ): state is WithRoot<InstanceOf<NodeClass>> =>
+        state.root instanceof nodeClass
 
     export type Left = {
         groups: Branches.State[]
@@ -55,13 +86,17 @@ export namespace ParserState {
         R: Lexer.ShiftBase<ListChars<Def>>
     }
 
-    export const initialize = (def: string): Value => ({
-        groups: [],
-        branches: {},
-        bounds: {},
-        root: undefined,
-        scanner: Lexer.shiftBase(new Lexer.Scanner(def))
-    })
+    export const initialize = (def: string): Value => {
+        const scanner = new Lexer.Scanner(def)
+        Lexer.shiftBase(scanner)
+        return {
+            groups: [],
+            branches: {},
+            bounds: {},
+            root: undefined,
+            scanner
+        }
+    }
 
     export type InitializeRight<Def extends string> = RightFrom<{
         lookahead: ""

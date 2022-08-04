@@ -50,6 +50,8 @@ const trivialSingleCharOperators = {
     END: 1
 }
 
+export type TokenSet = Record<string, number>
+
 type TrivialSingleCharOperator = keyof typeof trivialSingleCharOperators
 
 export namespace Lexer {
@@ -58,19 +60,30 @@ export namespace Lexer {
         ...Unscanned
     ]
 
-    export class Scanner {
+    export class Scanner<Lookahead extends string = string> {
         private chars: string[]
         private i: number
-        lookahead: string
+        lookahead: Lookahead
 
         constructor(def: string) {
             this.chars = [...def, "END"]
             this.i = 0
-            this.lookahead = ""
+            this.lookahead = "" as any
+        }
+
+        lookaheadIs<Token extends string>(
+            token: Token
+        ): this is Scanner<Token> {
+            return this.lookahead === (token as string)
+        }
+
+        lookaheadIsIn<O>(o: O): this is Scanner<Extract<keyof O, string>> {
+            return this.lookahead in o
         }
 
         shift() {
-            this.lookahead += this.next
+            // @ts-ignore
+            this.lookahead += this.chars[this.i]
             this.i++
         }
 
@@ -80,10 +93,6 @@ export namespace Lexer {
 
         get next() {
             return this.chars[this.i]
-        }
-
-        unscanned(i: number) {
-            return this.chars[this.i + i]
         }
     }
 
@@ -115,7 +124,6 @@ export namespace Lexer {
         } else {
             shiftUnenclosedBase(scanner)
         }
-        return scanner
     }
 
     const shiftUnenclosedBase = (scanner: Scanner) => {
@@ -186,22 +194,22 @@ export namespace Lexer {
                   unscanned: []
               }>
 
-    export const shiftOperator = (scanner: Scanner): Scanner => {
+    export const shiftOperator = (scanner: Scanner) => {
         scanner.lookahead = ""
         scanner.shift()
         if (scanner.lookahead in trivialSingleCharOperators) {
-            return scanner
+            scanner
+        } else if (scanner.lookaheadIs("[")) {
+            List.shiftToken(scanner)
+        } else if (scanner.lookaheadIsIn(Bound.startChars)) {
+            Bound.shiftToken(scanner)
+        } else if (scanner.lookahead === " ") {
+            shiftOperator(scanner)
+        } else {
+            throw new Error(
+                `Expected an operator (got '${scanner.lookahead}').`
+            )
         }
-        if (scanner.lookahead === "[") {
-            return List.shiftToken(scanner)
-        }
-        if (scanner.lookahead in Bound.startChars) {
-            return Bound.shiftToken(scanner)
-        }
-        if (scanner.lookahead === " ") {
-            return shiftOperator(scanner)
-        }
-        throw new Error(`Expected an operator (got '${scanner.lookahead}').`)
     }
 
     export type ShiftError<Message extends string> = ParserState.RightFrom<{
