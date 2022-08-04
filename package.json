@@ -19,7 +19,7 @@
         "find-unused": "ts-node ./scripts/findUnused.ts",
         "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-pages",
         "ci:publish": "pnpm changeset publish",
-        "p": "ts-prune -p tsconfig.references.json"
+        "unused-exports": "ts-prune -p tsconfig.references.json"
     },
     "devDependencies": {
         "@re-/node": "link:./@re-/node",

@@ -1,11 +1,12 @@
 import { relative } from "node:path"
 import { fromHere } from "@re-/node"
-import { Project, SyntaxKind } from "ts-morph"
+import { BindingNamedNode, Project } from "ts-morph"
 
 const project = new Project({
     tsConfigFilePath: fromHere("..", "tsconfig.references.json")
 })
-const unusedByFile: Record<string, string[]> = {}
+
+const unused: Record<string, string[]> = {}
 const snippetFileRegex = /snippets\/\w+/
 const exportAllRegex = /export \*/
 const exportNameRegex = /\.\/\w+/
@@ -26,36 +27,43 @@ for (const file of indexFiles) {
 }
 for (const sourceFile of project.getSourceFiles()) {
     const file = relative(".", sourceFile.getFilePath())
-    const unusedInFile = []
     if (
-        apiExports.includes(sourceFile.getBaseNameWithoutExtension()) ||
-        snippetFileRegex.test(file)
+        snippetFileRegex.test(file) ||
+        apiExports.includes(sourceFile.getBaseNameWithoutExtension())
     ) {
         continue
     }
-    for (const statement of sourceFile.getVariableStatements()) {
-        if (statement.hasModifier(SyntaxKind.ExportKeyword)) {
-            if (exportAllRegex.test(statement.getText())) {
-                console.log(statement.getText())
-            }
-            const declarations = statement.getDeclarations()
-            for (const declaration of declarations) {
-                const references = declaration
+    const unusedInFile = []
+    for (const exportedSymbol of sourceFile.getExportSymbols()) {
+        const exportName = exportedSymbol.getName()
+        const references = exportedSymbol
+            .getDeclarations()
+            .flatMap((declaration) => {
+                if (declaration.getKindName() === "ExportSpecifier") {
+                    return []
+                }
+                if (declaration.getSourceFile() !== sourceFile) {
+                    return []
+                }
+                if (declaration.getText().includes("* as")) {
+                    return []
+                }
+                return (declaration as any as BindingNamedNode)
                     .findReferences()
                     .flatMap((ref) => ref.getReferences())
-                if (references.length === 1) {
-                    unusedInFile.push(declaration.getName())
-                }
-            }
-        }
-        if (unusedInFile.length) {
-            unusedByFile[file] = unusedInFile
+            })
+        if (references.length === 1) {
+            unusedInFile.push(exportName)
         }
     }
+    if (unusedInFile.length) {
+        unused[file] = unusedInFile
+    }
 }
-if (Object.keys(unusedByFile).length) {
+
+if (Object.keys(unused).length) {
     console.error("The following unused exports must be removed:")
-    for (const [file, unusedNames] of Object.entries(unusedByFile)) {
+    for (const [file, unusedNames] of Object.entries(unused)) {
         console.group(`\n${file}:`)
         for (const unusedName of unusedNames) {
             console.log(`❌${unusedName}`)

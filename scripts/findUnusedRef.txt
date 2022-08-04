@@ -1,20 +1,3 @@
-scripts/docgen/config.ts:20 - DocGenSnippetsConfig (used in module)
-scripts/docgen/main.ts:10 - config (used in module)
-scripts/docgen/main.ts:29 - docgen
-scripts/docgen/write.ts:6 - WriteApiContext (used in module)
-scripts/docgen/api/index.ts:17 - ExtractPackageApiContext
-scripts/docgen/api/index.ts:67 - ExportData
-scripts/docgen/api/index.ts:119 - TsDocData
-scripts/docgen/api/writeApi.ts:8 - WritePackageApiContext (used in module)
-scripts/docgen/snippets/extractTsSnippets.ts:6 - extractTsSnippets
-scripts/docgen/snippets/index.ts:12 - Snippet
-scripts/docgen/snippets/index.ts:16 - SnippetTransformToggleOptions
-scripts/docgen/snippets/index.ts:22 - ExtractPackageSnippetsArgs
-scripts/docgen/snippets/index.ts:28 - addDefaultsToTransformOptions
-scripts/docgen/snippets/index.ts:63 - FileSnippets
-scripts/docgen/snippets/index.ts:79 - LabeledSnippets
-scripts/docgen/snippets/transformFileText.ts:5 - ExtractFileSnippetContext (used in module)
-scripts/docgen/snippets/writeSnippets.ts:7 - WriteSnippetsContext (used in module)
 @re-/assert/src/common.ts:129 - getCmdFromPid (used in module)
 @re-/assert/src/index.ts:8 - AvailableAssertions
 @re-/assert/src/index.ts:14 - AssertionResult
@@ -50,16 +33,22 @@ scripts/docgen/snippets/writeSnippets.ts:7 - WriteSnippetsContext (used in modul
 @re-/model/src/space.ts:112 - ExtendFunction (used in module)
 @re-/model/src/space.ts:117 - SpaceExtensionOptions (used in module)
 @re-/model/src/space.ts:126 - ValidateDictionaryExtension (used in module)
+@re-/node/src/index.ts:27 - readFile
+@re-/node/src/index.ts:29 - writeFile
 @re-/node/src/index.ts:38 - JsonTransformer
 @re-/node/src/index.ts:40 - rewriteJson
 @re-/node/src/index.ts:43 - WalkOptions
+@re-/node/src/index.ts:50 - walkPaths
 @re-/node/src/index.ts:63 - mapFilesToContents
 @re-/node/src/index.ts:67 - filePath
 @re-/node/src/index.ts:88 - dirName
+@re-/node/src/index.ts:90 - fromHere
 @re-/node/src/index.ts:93 - fromCwd
 @re-/node/src/index.ts:96 - fromHome
 @re-/node/src/index.ts:98 - fsRoot
 @re-/node/src/index.ts:100 - findPackageRoot
+@re-/node/src/index.ts:121 - fromPackageRoot
+@re-/node/src/index.ts:124 - readPackageJson
 @re-/node/src/index.ts:3 - ShellOptions
 @re-/node/src/index.ts:7 - LinePosition
 @re-/node/src/index.ts:12 - SourcePosition
@@ -181,10 +170,6 @@ scripts/docgen/snippets/writeSnippets.ts:7 - WriteSnippetsContext (used in modul
 @re-/tools/src/random.ts:7 - randomsFromList
 @re-/tools/src/random.ts:10 - randomFromSeed (used in module)
 @re-/tools/src/random.ts:20 - randomRgbFromSeed
-scripts/docgen/test/testFiles/test.ts:6 - userModel (used in module)
-scripts/docgen/test/testFiles/test.ts:18 - User
-scripts/docgen/test/testFiles/test.ts:23 - userData (used in module)
-scripts/docgen/test/testFiles/test.ts:32 - userValidationResult
 @re-/assert/src/bench/call.ts:17 - StatName (used in module)
 @re-/assert/src/bench/measure.ts:14 - Measure (used in module)
 @re-/assert/src/bench/measure.ts:42 - parseMeasure (used in module)

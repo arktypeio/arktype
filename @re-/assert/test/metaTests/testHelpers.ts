@@ -50,10 +50,6 @@ export const getTestComment = (
         .replace("//", "")
         .trim()
 }
-export const cleanUpSourceFile = (sf: SourceFile, template: string) => {
-    sf.replaceWithText(template)
-    sf.saveSync()
-}
 
 export const getTestFileData = (templateFilename: string, precache = true) => {
     const templatePath = fromHere(`${templateFilename}`)
