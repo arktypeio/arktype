@@ -21,11 +21,17 @@ export namespace Bound {
         "==": 1
     }
 
+    export const startChars = {
+        "<": 1,
+        ">": 1,
+        "=": 1
+    }
+
     export const isToken = (s: string): s is Token => s in tokens
 
     export type Token = keyof typeof tokens
 
-    export type StartChar = "<" | ">" | "="
+    export type StartChar = keyof typeof startChars
 
     export type State = {
         left?: [NumberLiteralDefinition, Token]

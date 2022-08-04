@@ -9,6 +9,11 @@
     ],
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
-    "vitest.enable": true,
-    "vitest.commandLine": "pnpm node_modules/@re-/assert/cli.cjs --skipTypes --cmd vitest"
+    "mochaExplorer.nodeArgv": [
+        "--loader=ts-node/esm",
+        "--no-warnings=ExperimentalWarning"
+    ],
+    "mochaExplorer.env": {
+        "RE_ASSERT_CMD": "--skipTypes"
+    }
 }

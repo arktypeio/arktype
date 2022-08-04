@@ -1,4 +1,3 @@
-import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound, List } from "../nonTerminal/index.js"
 import { ParserState } from "./state.js"
 
@@ -10,38 +9,27 @@ export const literalEnclosingChars = {
 
 type LiteralEnclosingChar = keyof typeof literalEnclosingChars
 
-const boundStartingChars = {
+const baseTerminatingChars = {
+    END: 1,
+    "?": 1,
     "<": 1,
     ">": 1,
-    "=": 1
-}
-
-type BoundStartingChar = keyof typeof boundStartingChars
-
-const suffixStartingChars = {
-    ...boundStartingChars,
-    "?": 1,
-    END: 1
-}
-
-type SuffixStartingChar = keyof typeof suffixStartingChars
-
-const branchTerminating = {
-    ...suffixStartingChars,
-    ...Branches.tokens,
-    ")": 1
-}
-
-type BranchTerminatingChar = keyof typeof branchTerminating
-
-const baseTerminatingChars = {
-    ...branchTerminating,
+    "=": 1,
+    "|": 1,
+    "&": 1,
+    "(": 1,
+    ")": 1,
     "[": 1,
     " ": 1
 }
 
+// TODO move token lists somewhere central to avoid redundancy.
 export const suffixTokens = {
-    ...Bound.tokens,
+    "<": 1,
+    ">": 1,
+    ">=": 1,
+    "<=": 1,
+    "==": 1,
     END: 1,
     "?": 1
 }
@@ -55,7 +43,8 @@ type BaseTerminatingChar = keyof typeof baseTerminatingChars
 
 // The operator tokens that are exactly one character and are not the first character of a longer token
 const trivialSingleCharOperators = {
-    ...Branches.tokens,
+    "|": 1,
+    "&": 1,
     "?": 1,
     ")": 1,
     END: 1
@@ -206,7 +195,7 @@ export namespace Lexer {
         if (scanner.lookahead === "[") {
             return List.shiftToken(scanner)
         }
-        if (scanner.lookahead in boundStartingChars) {
+        if (scanner.lookahead in Bound.startChars) {
             return Bound.shiftToken(scanner)
         }
         if (scanner.lookahead === " ") {

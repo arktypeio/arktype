@@ -1,15 +1,19 @@
-Files:              274
-Lines:            74863
-Nodes:           212736
-Identifiers:      71588
-Symbols:         252153
-Types:            76839
-Instantiations:  396000
-Memory used:    191590K
+src/nodes/nonTerminal/__tests__/bound.test.ts(131,34): error TS2345:
+Argument of type '"3<any[]"' is not assignable to parameter of type 
+'"Left bounds are only valid when paired with right bounds."'.
+
+Files:              251
+Lines:            65817
+Nodes:           183315
+Identifiers:      61726
+Symbols:         245422
+Types:            76555
+Instantiations:  393837
+Memory used:    186131K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.46s
-Bind time:        0.18s
-Check time:       1.64s
+Parse time:       0.39s
+Bind time:        0.14s
+Check time:       1.41s
 Emit time:        0.00s
-Total time:       2.27s
+Total time:       1.94s

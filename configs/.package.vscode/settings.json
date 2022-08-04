@@ -11,7 +11,9 @@
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
-        "--no-warnings=ExperimentalWarning",
-        "--experimental-specifier-resolution=node"
-    ]
+        "--no-warnings=ExperimentalWarning"
+    ],
+    "mochaExplorer.env": {
+        "RE_ASSERT_CMD": "--skipTypes"
+    }
 }
