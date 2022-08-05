@@ -11,13 +11,7 @@ describe("regex", () => {
             test("unterminated", () => {
                 // @ts-expect-error
                 assert(() => type("/.*")).throwsAndHasTypeError(
-                    "Unable to determine the type of '/.*'."
-                )
-            })
-            test("extra forward slash", () => {
-                // @ts-expect-error
-                assert(() => type("/.*//")).throwsAndHasTypeError(
-                    "Unable to determine the type of '/.*//'."
+                    "/.* requires a closing /."
                 )
             })
         })

@@ -56,6 +56,7 @@ export namespace Validation {
             value: args.value,
             path: args.ctx.path,
             // TODO: Need to figure out what params to provide here now that we don't have def on every node
+            // Should it be root def? Or current node?
             def: "def" in node ? (node as any).def : node.toString(),
             getOriginalErrors: () => {
                 const branchedErrors = args.errors.split(args.ctx.path)

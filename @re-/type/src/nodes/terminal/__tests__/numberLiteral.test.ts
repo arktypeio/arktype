@@ -23,13 +23,13 @@ describe("numberLiteral", () => {
             test("multiple decimals", () => {
                 // @ts-expect-error
                 assert(() => type("127.0.0.1")).throwsAndHasTypeError(
-                    "Unable to determine the type of '127.0.0.1'."
+                    "'127.0.0.1' is not a builtin type and does not exist in your space."
                 )
             })
             test("with alpha", () => {
                 // @ts-expect-error
                 assert(() => type("13three7")).throwsAndHasTypeError(
-                    "Unable to determine the type of '13three7'."
+                    "'13three7' is not a builtin type and does not exist in your space."
                 )
             })
         })

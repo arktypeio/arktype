@@ -1,9 +1,9 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
 import { Base } from "../../base/index.js"
-import { Boundable } from "../../nonTerminal/bound/node.js"
+import { BoundableNode } from "../../nonTerminal/bound/index.js"
 import { TerminalNode } from "../node.js"
 
-abstract class BaseStringKeyword extends TerminalNode implements Boundable {
+abstract class BaseStringKeyword extends TerminalNode implements BoundableNode {
     allows(args: Base.Validation.Args) {
         if (typeof args.value === "string" && this.allowsString(args.value)) {
             return true

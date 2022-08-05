@@ -16,6 +16,11 @@ export namespace Lexer {
         ...Unscanned
     ]
 
+    export type ReverseScan<
+        Right extends string,
+        Unscanned extends string[]
+    > = [...Unscanned, Right]
+
     export class Scanner<Lookahead extends string = string> {
         private chars: string[]
         private i: number
@@ -51,6 +56,39 @@ export namespace Lexer {
             return this.chars[this.i]
         }
     }
+
+    // export type ShiftSuffix<Unscanned extends string[]> =
+    //     Unscanned extends ReverseScan<infer Right, infer Rest>
+    //         ? Right extends "?"
+    //             ? State.ScannerFrom<{ lookahead: "?"; unscanned: Rest }>
+    //             : ShiftPossibleBoundSuffix<Unscanned, "", Unscanned>
+    //         : State.ScannerFrom<{ lookahead: ""; unscanned: Unscanned }>
+
+    // // TODO: Clarify lookahead names for chars/tokens
+    // type ShiftPossibleBoundSuffix<
+    //     OriginalUnscanned extends string[],
+    //     Token extends string,
+    //     Unscanned extends string[]
+    // > = Unscanned extends ReverseScan<infer Next, infer Rest>
+    //     ? Next extends BaseTerminatingChar | EnclosedBaseStartChar
+    //         ? Next extends Bound.StartChar
+    //             ? State.ScannerFrom<{
+    //                   lookahead: `${Next}${Token}`
+    //                   unscanned: Rest
+    //               }>
+    //             : State.ScannerFrom<{
+    //                   lookahead: ""
+    //                   unscanned: OriginalUnscanned
+    //               }>
+    //         : ShiftPossibleBoundSuffix<
+    //               OriginalUnscanned,
+    //               `${Token}${Next}`,
+    //               Rest
+    //           >
+    //     : State.ScannerFrom<{
+    //           lookahead: ""
+    //           unscanned: OriginalUnscanned
+    //       }>
 
     export type ShiftBase<Unscanned extends string[]> = Unscanned extends Scan<
         infer Lookahead,

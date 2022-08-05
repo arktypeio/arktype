@@ -1,20 +1,15 @@
-src/nodes/parser/core.ts(31,23): error TS2345: Argument of type 'Value' is not assignable to parameter of type 'WithRoot<Node>'.
-  Type 'Value' is not assignable to type '{ root: Node; }'.
-    Types of property 'root' are incompatible.
-      Type 'Node | undefined' is not assignable to type 'Node'.
-        Type 'undefined' is not assignable to type 'Node'.
-Files:              252
-Lines:            65850
-Nodes:           183488
-Identifiers:      61824
-Symbols:         247743
-Types:            78964
-Instantiations:  396484
-Memory used:    190485K
+Files:              256
+Lines:            66026
+Nodes:           184149
+Identifiers:      62048
+Symbols:         243148
+Types:            83721
+Instantiations:  398172
+Memory used:    188705K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.43s
+Parse time:       0.46s
 Bind time:        0.15s
-Check time:       1.79s
+Check time:       1.69s
 Emit time:        0.00s
-Total time:       2.37s
+Total time:       2.29s

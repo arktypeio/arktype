@@ -18,16 +18,15 @@ describe("snippets", () => {
     })
     test("space", async () => {
         const spaceSnippet = await import("../../docs/snippets/space.js")
-        assert(spaceSnippet.redo.$root.infer.package).type.toString.snap(
+        assert(spaceSnippet.models.package.infer).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
-        assert(spaceSnippet.getValidatedPackageData).throws
+        assert(spaceSnippet.error?.message)
             .snap(`Encountered errors at the following paths:
   dependencies/0/contributors: Required value of type contributor[] was missing.
   contributors/0/email: "david@redodev" is not assignable to email.
 `)
     })
-    // See multifile.assert.ts for declaration demo
     test("constraints", () => {
         const employee = type({
             // Not a fan of regex? Don't worry, 'email' is a builtin type :)
@@ -61,4 +60,5 @@ describe("snippets", () => {
       about/bio: Must be less than or equal to 160 characters (got 220).
     `)
     })
+    // TODO: Add demo snippet test
 })

@@ -23,7 +23,7 @@ describe("stringLiteral", () => {
             test("unclosed quotes", () => {
                 // @ts-expect-error
                 assert(() => type("'mismatched")).throwsAndHasTypeError(
-                    "Unable to determine the type of ''mismatched'."
+                    "'mismatched requires a closing '."
                 )
             })
             test("mismatched quotes", () => {

@@ -36,7 +36,7 @@ describe("multifile", () => {
         ).throwsAndHasTypeError("somethingUndeclared")
         // @ts-expect-error
         assert(() => define.gottaDefineThis("whoops")).throwsAndHasTypeError(
-            "Unable to determine the type of 'whoops'"
+            "'whoops' is not a builtin type and does not exist in your space."
         )
         const space = compile(gottaDefineThis)
         assert(space.$root.type({ a: "gottaDefineThis" }).infer).typed as {

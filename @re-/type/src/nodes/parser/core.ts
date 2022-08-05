@@ -46,6 +46,41 @@ export namespace Core {
               >
             : S
 
+    // type PState = {
+    //     scanner: State.TypeScanner
+    //     bounds: string[]
+    //     optional: boolean
+    // }
+
+    // type Z = PS2Root<"string<5">
+
+    // type PS2Root<Def extends string> = PS2<{
+    //     scanner: Lexer.ShiftSuffix<ListChars<Def>>
+    //     bounds: []
+    //     optional: false
+    // }>
+
+    // type PS2<S extends PState> = S["scanner"]["lookahead"] extends ""
+    //     ? S
+    //     : // State.From<{
+    //     //       groups: []
+    //     //       branches: {}
+    //     //       bounds: {}
+    //     //       root: undefined
+    //     //       scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
+    //     //   }>
+    //     S["scanner"]["lookahead"] extends "?"
+    //     ? PS2<{
+    //           scanner: Lexer.ShiftSuffix<S["scanner"]["unscanned"]>
+    //           bounds: S["bounds"]
+    //           optional: true
+    //       }>
+    //     : PS2<{
+    //           scanner: Lexer.ShiftSuffix<S["scanner"]["unscanned"]>
+    //           bounds: [...S["bounds"], S["scanner"]["lookahead"]]
+    //           optional: S["optional"]
+    //       }>
+
     const parsePossiblePrefixes = (
         s: State.Value,
         ctx: Base.Parsing.Context

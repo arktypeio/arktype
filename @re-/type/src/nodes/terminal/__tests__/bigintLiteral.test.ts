@@ -19,7 +19,7 @@ describe("bigintLiteral", () => {
             test("decimal", () => {
                 // @ts-expect-error
                 assert(() => type("99999.99n")).throwsAndHasTypeError(
-                    "Unable to determine the type of '99999.99n'."
+                    "'99999.99n' is not a builtin type and does not exist in your space."
                 )
             })
         })
