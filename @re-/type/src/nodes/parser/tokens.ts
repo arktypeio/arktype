@@ -2,10 +2,10 @@ import { Evaluate, Narrow } from "@re-/tools"
 
 export type TokenSet = Record<string, 1>
 
-export const tokens = <T extends TokenSet>(tokenSet: Narrow<T>) =>
+export const tokenSet = <T extends TokenSet>(tokenSet: Narrow<T>) =>
     tokenSet as Evaluate<T>
 
-export const enclosedBaseStartChars = tokens({
+export const enclosedBaseStartChars = tokenSet({
     "'": 1,
     '"': 1,
     "/": 1
@@ -13,13 +13,13 @@ export const enclosedBaseStartChars = tokens({
 
 export type EnclosedBaseStartChar = keyof typeof enclosedBaseStartChars
 
-export const boundStartChars = tokens({
+export const boundStartChars = tokenSet({
     "<": 1,
     ">": 1,
     "=": 1
 })
 
-export const boundTokens = tokens({
+export const boundTokens = tokenSet({
     "<": 1,
     ">": 1,
     ">=": 1,
@@ -27,7 +27,7 @@ export const boundTokens = tokens({
     "==": 1
 })
 
-export const baseTerminatingChars = tokens({
+export const baseTerminatingChars = tokenSet({
     ...boundStartChars,
     END: 1,
     "?": 1,
@@ -41,7 +41,7 @@ export const baseTerminatingChars = tokens({
 
 export type BaseTerminatingChar = keyof typeof baseTerminatingChars
 
-export const suffixTokens = tokens({
+export const suffixTokens = tokenSet({
     ...boundTokens,
     END: 1,
     "?": 1

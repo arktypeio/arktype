@@ -1,4 +1,4 @@
-import { asNumber } from "../stringUtils.js"
+import { toNumber } from "../stringUtils.js"
 import { deepEquals, ListComparisonMode } from "./diff.js"
 
 export type UnorderedDiffMode = Exclude<ListComparisonMode, "ordered">
@@ -38,7 +38,7 @@ export const findDeepEqualIndices = (
                 listComparison: mode
             })
         ) {
-            matchingIndices.push(asNumber(i, { assert: true }))
+            matchingIndices.push(toNumber(i))
         }
     }
     return matchingIndices
@@ -55,7 +55,7 @@ export const findFirstDeepEqualIndex = (
                 listComparison: mode
             })
         ) {
-            return asNumber(i, { assert: true })
+            return toNumber(i)
         }
     }
     return -1

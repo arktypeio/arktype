@@ -1,4 +1,4 @@
-import { asNumber } from "@re-/tools"
+import { toNumber } from "@re-/tools"
 import { Measure, MeasureComparison } from "./measure.js"
 
 const TIME_UNIT_RATIOS = Object.freeze({
@@ -35,7 +35,7 @@ export const parseTimeString = (s: TimeString): Measure<TimeUnit> => {
     // If the two last characters match one of the units, split based on a unit length of two
     // The only other possibility since the regex was matched is length one ("s")
     const unitLength = TIME_UNITS.includes(s.slice(-2)) ? 2 : 1
-    const n = asNumber(s.slice(0, -unitLength), { assert: true })
+    const n = toNumber(s.slice(0, -unitLength))
     const unit = s.slice(-unitLength) as TimeUnit
     return {
         n,

@@ -104,7 +104,10 @@ module.exports = defineConfig({
                  * Keep functions and files concise and readable
                  */
                 "max-statements": ["warn", 16],
-                "max-lines-per-function": ["warn", 32],
+                "max-lines-per-function": [
+                    "warn",
+                    { max: 32, skipComments: true, skipBlankLines: true }
+                ],
                 "max-lines": ["warn", 256],
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,

@@ -4,17 +4,17 @@ src/nodes/parser/core.ts(31,23): error TS2345: Argument of type 'Value' is not a
       Type 'Node | undefined' is not assignable to type 'Node'.
         Type 'undefined' is not assignable to type 'Node'.
 Files:              252
-Lines:            65835
-Nodes:           183472
-Identifiers:      61813
-Symbols:         247832
-Types:            79181
-Instantiations:  396824
-Memory used:    189418K
+Lines:            65850
+Nodes:           183488
+Identifiers:      61824
+Symbols:         247743
+Types:            78964
+Instantiations:  396484
+Memory used:    190485K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.45s
-Bind time:        0.17s
-Check time:       1.65s
+Parse time:       0.43s
+Bind time:        0.15s
+Check time:       1.79s
 Emit time:        0.00s
-Total time:       2.28s
+Total time:       2.37s

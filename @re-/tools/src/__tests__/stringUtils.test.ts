@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import {
-    asNumber,
     camelCase,
     capitalize,
     capsCase,
@@ -13,6 +12,7 @@ import {
     isNumeric,
     lettersAfterFirstToLower,
     ListChars,
+    toNumber,
     transformSubstring
 } from "../index.js"
 
@@ -119,15 +119,12 @@ describe("alphanumeric regex", () => {
         assert(isInteger(654)).equals(true)
         assert(isInteger("0.1")).equals(false)
         assert(isInteger(654.456)).equals(false)
-        assert(asNumber("7")).equals(7)
-        assert(asNumber("7.5")).equals(7.5)
-        assert(asNumber("7", { asFloat: true })).equals(7)
-        assert(asNumber("7.5", { asFloat: false })).equals(7)
-        assert(asNumber("-3.14159", { asFloat: true })).equals(-3.141_59)
-        assert(asNumber("4.567n")).equals(null)
-        assert(asNumber("I'm a number ;-)")).equals(null)
-        assert(() => asNumber("KEKW", { assert: true })).throws()
-        assert(asNumber(12)).equals(12)
+    })
+    test("toNumber", () => {
+        assert(toNumber("7")).equals(7)
+        assert(toNumber("7.5")).equals(7.5)
+        assert(toNumber("-3.14159")).equals(-3.14159)
+        assert(() => toNumber("4.7foo")).throws()
     })
     test("filterChars", () => {
         const s = "aB0 !a"

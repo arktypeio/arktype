@@ -29,11 +29,6 @@ export const isNumeric = (s: any) => numericRegex.test(s)
 
 export const isInteger = (s: any) => integerRegex.test(s)
 
-export type AsNumberOptions = {
-    asFloat?: boolean
-    assert?: boolean
-}
-
 export type StringOrNumberFrom<
     K,
     Original = K & (string | number)
@@ -43,23 +38,17 @@ export type StringOrNumberFrom<
     ? Value | Original
     : Original
 
-export const asNumber = <Options extends AsNumberOptions>(
-    s: any,
-    options?: Options
-): number | (Options["assert"] extends true ? never : null) => {
+export const toNumber = (s: string): number => {
+    // By default, parseFloat allows values like "5.7blah",
+    // so we ensure the value is a well-formatted number first.
     if (isNumeric(s)) {
-        const parsable = String(s)
-        const asFloat = options?.asFloat ?? parsable.includes(".")
-        const parser = asFloat ? Number.parseFloat : Number.parseInt
-        const result = parser(parsable)
-        if (!Number.isNaN(result)) {
-            return result
+        const asFloat = Number.parseFloat(s)
+        if (!Number.isNaN(asFloat)) {
+            return asFloat
         }
     }
-    if (options?.assert) {
-        throw new Error(`'${s}' cannot be converted to a number.`)
-    }
-    return null as any
+
+    throw new Error(`'${s}' cannot be converted to a number.`)
 }
 
 export const isAlphaNumeric = (s: string) => alphaNumericRegex.test(s)

@@ -28,6 +28,7 @@ export namespace Core {
         parsePossiblePrefixes(s, ctx)
         parseExpression(s, ctx)
         reduceExpression(s)
+        // @ts-ignore TODO: Allow parse functions to assert their state returned.
         parseSuffixes(s, ctx)
         return s.root!
     }
@@ -39,7 +40,7 @@ export namespace Core {
 
     type ParsePrefixes<S extends State.Type> =
         S["scanner"]["lookahead"] extends NumberLiteralDefinition
-            ? ParsePossibleLeftBound<
+            ? Bound.ParsePossibleLeft<
                   State.ShiftOperator<S>,
                   S["scanner"]["lookahead"]
               >
@@ -50,20 +51,10 @@ export namespace Core {
         ctx: Base.Parsing.Context
     ) => {
         parseToken(s, ctx)
-        if (
-            State.rootIs(s, NumberLiteralNode) &&
-            State.lookaheadIn(s, Bound.tokens)
-        ) {
-            Bound.parseLeft(s)
+        if (State.rootIs(s, NumberLiteralNode)) {
+            Bound.parsePossibleLeft(s)
         }
     }
-
-    type ParsePossibleLeftBound<
-        S extends State.Type,
-        N extends NumberLiteralDefinition
-    > = S["scanner"]["lookahead"] extends Bound.Token
-        ? Bound.ParseLeft<S, S["scanner"]["lookahead"], N>
-        : State.SetRoot<S, N>
 
     /**
      * When at runtime we would throw a ParseError, we either:
@@ -164,7 +155,6 @@ export namespace Core {
         while (s.scanner.lookahead !== "END") {
             parseSuffix(s, ctx)
         }
-        validateEndState(s)
     }
 
     type UnexpectedSuffixMessage<Lookahead extends string> =
@@ -194,19 +184,5 @@ export namespace Core {
         }
     }
 
-    export const UNPAIRED_LEFT_BOUND_MESSAGE = `Left bounds are only valid when paired with right bounds.`
-    type UnpairedLeftBoundMessage = typeof UNPAIRED_LEFT_BOUND_MESSAGE
-
-    type ValidateEndState<S extends State.Type> =
-        "left" extends keyof S["bounds"]
-            ? "right" extends keyof S["bounds"]
-                ? S
-                : State.Error<S, UnpairedLeftBoundMessage>
-            : S
-
-    const validateEndState = (s: State.Value) => {
-        if (s.bounds.left && !s.bounds.right) {
-            throw new Error(UNPAIRED_LEFT_BOUND_MESSAGE)
-        }
-    }
+    type ValidateEndState<S extends State.Type> = Bound.ValidateBounds<S>
 }

@@ -4,9 +4,10 @@ import { TerminalNode } from "../node.js"
 export type PrimitiveLiteralValue = string | number | bigint
 
 export abstract class PrimitiveLiteralNode<
+    Def extends string,
     Value extends PrimitiveLiteralValue
 > extends TerminalNode {
-    constructor(public def: string, public value: Value) {
+    constructor(public def: Def, public value: Value) {
         super(def)
     }
 

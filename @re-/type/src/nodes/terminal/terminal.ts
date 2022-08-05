@@ -9,6 +9,7 @@ import {
     NumberLiteralNode,
     RegexLiteralDefinition,
     regexLiteralToNode,
+    StringLiteralDefinition,
     StringLiteralNode
 } from "./literal/index.js"
 
@@ -36,15 +37,19 @@ export namespace Terminal {
             s.root = Keyword.parse(s.scanner.lookahead)
         } else if (AliasNode.matches(s.scanner.lookahead, ctx)) {
             s.root = new AliasNode(s.scanner.lookahead, ctx)
+            /**
+             * The Lexer is responsible for validating EnclosedLiterals.
+             * As long as the first character is <'><"> or </>,
+             * we are assuming the rest of the token is of the expected literal type.
+             **/
         } else if (
             s.scanner.lookahead[0] === `'` ||
             s.scanner.lookahead[0] === `"`
         ) {
-            s.root = new StringLiteralNode(s.scanner.lookahead)
+            s.root = new StringLiteralNode(
+                s.scanner.lookahead as StringLiteralDefinition
+            )
         } else if (s.scanner.lookahead[0] === `/`) {
-            if (s.scanner.lookahead === "//") {
-                throw new Error(`Regex literals cannot be empty.`)
-            }
             s.root = regexLiteralToNode(
                 s.scanner.lookahead as RegexLiteralDefinition
             )

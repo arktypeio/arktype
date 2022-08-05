@@ -1,4 +1,4 @@
-import { asNumber, ElementOf } from "@re-/tools"
+import { ElementOf, toNumber } from "@re-/tools"
 import { Measure, MeasureComparison } from "./measure.js"
 
 export const TYPE_UNITS = ["instantiations"] as const
@@ -25,7 +25,7 @@ const assertTypeString: (s: string) => asserts s is TypeString = (
 export const parseTypeString = (s: TypeString): Measure<TypeUnit> => {
     assertTypeString(s)
     const parts = s.split(" ")
-    const n = asNumber(parts[0], { assert: true })
+    const n = toNumber(parts[0])
     const unit = parts[1] as TypeUnit
     return {
         n,

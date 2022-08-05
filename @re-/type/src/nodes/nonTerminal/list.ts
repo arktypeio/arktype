@@ -1,7 +1,7 @@
 import { Base } from "../base/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { State } from "../parser/state.js"
-import { Boundable } from "./bound.js"
+import { Boundable } from "./bound/bound.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
@@ -20,7 +20,7 @@ export namespace List {
     export type ShiftToken<Unscanned extends string[]> =
         Unscanned extends Lexer.Scan<infer Lookahead, infer Rest>
             ? Lookahead extends "]"
-                ? State.RightFrom<{
+                ? State.ScannerFrom<{
                       lookahead: "[]"
                       unscanned: Rest
                   }>

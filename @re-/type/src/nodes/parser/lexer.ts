@@ -33,7 +33,7 @@ export namespace Lexer {
             return this.lookahead === (token as string)
         }
 
-        lookaheadIsIn<O>(o: O): this is Scanner<Extract<keyof O, string>> {
+        lookaheadIn<O>(o: O): this is Scanner<Extract<keyof O, string>> {
             return this.lookahead in o
         }
 
@@ -57,7 +57,7 @@ export namespace Lexer {
         infer Rest
     >
         ? Lookahead extends "("
-            ? State.RightFrom<{ lookahead: Lookahead; unscanned: Rest }>
+            ? State.ScannerFrom<{ lookahead: Lookahead; unscanned: Rest }>
             : Lookahead extends EnclosedBaseStartChar
             ? EnclosedBase<Lookahead, Lookahead, Rest>
             : Lookahead extends " "
@@ -90,12 +90,12 @@ export namespace Lexer {
         Unscanned extends string[]
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends BaseTerminatingChar
-            ? State.RightFrom<{
+            ? State.ScannerFrom<{
                   lookahead: Token
                   unscanned: Unscanned
               }>
             : UnenclosedBase<`${Token}${Lookahead}`, Rest>
-        : State.RightFrom<{
+        : State.ScannerFrom<{
               lookahead: Token
               unscanned: []
           }>
@@ -109,6 +109,9 @@ export namespace Lexer {
                 )
             }
         } while (scanner.next !== scanner.lookahead[0])
+        if (scanner.lookahead === "/") {
+            throw new Error(`Regex literals cannot be empty.`)
+        }
         scanner.shift()
     }
 
@@ -119,11 +122,8 @@ export namespace Lexer {
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends StartChar
             ? Token extends "/"
-                ? ShiftError<
-                      Unscanned,
-                      `${Token} requires a closing ${StartChar}.`
-                  >
-                : State.RightFrom<{
+                ? ShiftError<Unscanned, `Regex literals cannot be empty.`>
+                : State.ScannerFrom<{
                       lookahead: `${Token}${Lookahead}`
                       unscanned: Rest
                   }>
@@ -133,7 +133,7 @@ export namespace Lexer {
     export type ShiftOperator<Unscanned extends string[]> =
         Unscanned extends Scan<infer Lookahead, infer Rest>
             ? Lookahead extends TrivialSingleCharOperator
-                ? State.RightFrom<{
+                ? State.ScannerFrom<{
                       lookahead: Lookahead
                       unscanned: Rest
                   }>
@@ -147,7 +147,7 @@ export namespace Lexer {
                       Unscanned,
                       `Expected an operator (got '${Lookahead}').`
                   >
-            : State.RightFrom<{
+            : State.ScannerFrom<{
                   lookahead: "END"
                   unscanned: []
               }>
@@ -159,7 +159,7 @@ export namespace Lexer {
             scanner
         } else if (scanner.lookaheadIs("[")) {
             List.shiftToken(scanner)
-        } else if (scanner.lookaheadIsIn(Bound.startChars)) {
+        } else if (scanner.lookaheadIn(Bound.startChars)) {
             Bound.shiftToken(scanner)
         } else if (scanner.lookahead === " ") {
             shiftOperator(scanner)
@@ -173,7 +173,7 @@ export namespace Lexer {
     export type ShiftError<
         Unscanned extends string[],
         Message extends string
-    > = State.RightFrom<{
+    > = State.ScannerFrom<{
         lookahead: ErrorToken<Message>
         unscanned: Unscanned
     }>

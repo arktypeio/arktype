@@ -9,15 +9,15 @@ export namespace State {
     export type Type = {
         groups: Branches.TypeState[]
         branches: Branches.TypeState
-        bounds: Bound.Bounds
+        bounds: Bound.PartialBoundsDefinition
         root: unknown
-        scanner: Right
+        scanner: TypeScanner
     }
 
     export type Value = {
         groups: Branches.ValueState[]
         branches: Branches.ValueState
-        bounds: Bound.Bounds
+        bounds: Bound.PartialBoundsDefinition
         root: Parse.Node | undefined
         scanner: Lexer.Scanner
     }
@@ -47,7 +47,7 @@ export namespace State {
         state: Value,
         tokens: Tokens
     ): state is WithLookahead<Extract<keyof Tokens, string>> =>
-        state.scanner.lookaheadIsIn(tokens)
+        state.scanner.lookaheadIn(tokens)
 
     export const rootIs = <NodeClass extends ClassOf<Parse.Node>>(
         state: Value,
@@ -56,15 +56,15 @@ export namespace State {
         state.root instanceof nodeClass
 
     export type Context = {
-        bounds: Bound.Bounds
+        bounds: Bound.PartialBoundsDefinition
     }
 
-    export type Right = {
+    export type TypeScanner = {
         lookahead: string
         unscanned: string[]
     }
 
-    export type RightFrom<R extends Right> = R
+    export type ScannerFrom<R extends TypeScanner> = R
 
     export type From<S extends Type> = S
 
