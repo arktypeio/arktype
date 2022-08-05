@@ -14,12 +14,8 @@ import {
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
+import { ParseAffixes, PrefixContext, AffixState } from "./affix.js"
 import { Lexer } from "./lexer.js"
-import {
-    ParsePrefixesAndSuffixes,
-    PrefixContext,
-    PrefixState
-} from "./prefix.js"
 import { State } from "./state.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
@@ -41,11 +37,11 @@ export namespace Core {
 
     type ParseDefinition<Def extends string, Dict> = ParseExpressionRoot<
         // @ts-expect-error
-        ParsePrefixesAndSuffixes<Def>,
+        ParseAffixes<Def>,
         Dict
     >
 
-    type ParseExpressionRoot<S extends PrefixState, Dict> = ApplyContext<
+    type ParseExpressionRoot<S extends AffixState, Dict> = ApplyContext<
         // @ts-expect-error
         ParseExpression<State.Initialize<S["scanner"]>, Dict>,
         S["ctx"]

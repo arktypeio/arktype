@@ -1,6 +1,4 @@
-import { ListChars } from "@re-/tools"
 import { Bound, List } from "../nonTerminal/index.js"
-import { State } from "./state.js"
 import {
     BaseTerminatingChar,
     baseTerminatingChars,
