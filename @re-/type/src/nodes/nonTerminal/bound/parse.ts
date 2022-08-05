@@ -64,25 +64,25 @@ export namespace Bound {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    export type ShiftToken<
-        Start extends StartChar,
-        Unscanned extends string[]
-    > = Unscanned extends Lexer.Scan<infer Lookahead, infer NextUnscanned>
-        ? Lookahead extends "="
-            ? State.ScannerFrom<{
-                  lookahead: `${Start}=`
-                  unscanned: NextUnscanned
-              }>
-            : Start extends "="
-            ? Lexer.ShiftError<
-                  Unscanned,
-                  `= is not a valid comparator. Use == instead.`
-              >
-            : State.ScannerFrom<{
-                  lookahead: Start
-                  unscanned: Unscanned
-              }>
-        : Lexer.ShiftError<[], `Expected a bound condition after ${Start}.`>
+    // export type ShiftToken<
+    //     Start extends StartChar,
+    //     Unscanned extends string[]
+    // > = Unscanned extends Lexer.Scan<infer Lookahead, infer NextUnscanned>
+    //     ? Lookahead extends "="
+    //         ? State.ScannerFrom<{
+    //               lookahead: `${Start}=`
+    //               unscanned: NextUnscanned
+    //           }>
+    //         : Start extends "="
+    //         ? Lexer.ShiftError<
+    //               Unscanned,
+    //               `= is not a valid comparator. Use == instead.`
+    //           >
+    //         : State.ScannerFrom<{
+    //               lookahead: Start
+    //               unscanned: Unscanned
+    //           }>
+    //     : Lexer.ShiftError<[], `Expected a bound condition after ${Start}.`>
 
     export const shiftToken = (
         scanner: Lexer.ValueScanner<Bound.StartChar>
@@ -141,33 +141,33 @@ export namespace Bound {
         Lexer.shiftBase(s.scanner)
     }
 
-    export type ParseRight<
-        S extends State.Type,
-        T extends Token
-    > = S["scanner"]["lookahead"] extends NumberLiteralDefinition
-        ? "right" extends keyof S["bounds"]
-            ? State.Error<S, `Definitions cannot have multiple right bounds.`>
-            : S["root"] extends Boundable
-            ? State.From<{
-                  groups: S["groups"]
-                  branches: S["branches"]
-                  bounds: {
-                      left: S["bounds"]["left"]
-                      right: [T, S["scanner"]["lookahead"]]
-                  }
-                  root: S["root"]
-                  scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
-              }>
-            : State.Error<
-                  S,
-                  `Bounded expression '${Tree.ToString<
-                      S["root"]
-                  >}' must be a number-or-string-typed keyword or a list-typed expression.`
-              >
-        : State.Error<
-              S,
-              `Right side of ${T} must be a number literal (got '${S["scanner"]["lookahead"]}').`
-          >
+    // export type ParseRight<
+    //     S extends State.Type,
+    //     T extends Token
+    // > = S["scanner"]["lookahead"] extends NumberLiteralDefinition
+    //     ? "right" extends keyof S["bounds"]
+    //         ? State.Error<S, `Definitions cannot have multiple right bounds.`>
+    //         : S["root"] extends Boundable
+    //         ? State.From<{
+    //               groups: S["groups"]
+    //               branches: S["branches"]
+    //               bounds: {
+    //                   left: S["bounds"]["left"]
+    //                   right: [T, S["scanner"]["lookahead"]]
+    //               }
+    //               root: S["root"]
+    //               scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
+    //           }>
+    //         : State.Error<
+    //               S,
+    //               `Bounded expression '${Tree.ToString<
+    //                   S["root"]
+    //               >}' must be a number-or-string-typed keyword or a list-typed expression.`
+    //           >
+    //     : State.Error<
+    //           S,
+    //           `Right side of ${T} must be a number literal (got '${S["scanner"]["lookahead"]}').`
+    //       >
 
     export const parseRight = (
         s: State.WithLookaheadAndRoot<Bound.Token>,
@@ -233,20 +233,20 @@ export namespace Bound {
         }
     }
 
-    export type ValidateBounds<S extends State.Type> =
-        S["bounds"]["left"] extends Left
-            ? S["bounds"]["right"] extends Right
-                ? S["bounds"]["right"][0] extends DoubleBoundToken
-                    ? S
-                    : State.Error<
-                          S,
-                          InvalidDoubleBoundMessage<
-                              S["bounds"]["left"][1],
-                              S["bounds"]["right"][0]
-                          >
-                      >
-                : State.Error<S, UnpairedLeftBoundMessage>
-            : S
+    // export type ValidateBounds<S extends State.Type> =
+    //     S["bounds"]["left"] extends Left
+    //         ? S["bounds"]["right"] extends Right
+    //             ? S["bounds"]["right"][0] extends DoubleBoundToken
+    //                 ? S
+    //                 : State.Error<
+    //                       S,
+    //                       InvalidDoubleBoundMessage<
+    //                           S["bounds"]["left"][1],
+    //                           S["bounds"]["right"][0]
+    //                       >
+    //                   >
+    //             : State.Error<S, UnpairedLeftBoundMessage>
+    //         : S
 
     const validateSingleBound = (bound: Right): SingleBoundDefinition => {
         return [bound[0], toNumber(bound[1])]

@@ -7,7 +7,6 @@ export namespace Group {
         groups: [...S["groups"], S["branches"]]
         branches: {}
         root: undefined
-        bounds: S["bounds"]
         scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
     }>
 
@@ -30,7 +29,6 @@ export namespace Group {
               groups: Stack
               root: Branches.MergeAll<S["branches"], S["root"]>
               branches: Top
-              bounds: S["bounds"]
               scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
           }>
         : State.Error<S, `Unexpected ).`>

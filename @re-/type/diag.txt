@@ -1,15 +1,23 @@
-Files:              256
-Lines:            66026
-Nodes:           184149
-Identifiers:      62048
-Symbols:         243148
-Types:            83721
-Instantiations:  398172
-Memory used:    188705K
+docs/snippets/constraints.ts(8,9): error TS2322: Type '"18<=integer<125"' is not assignable to type '"'' is not a builtin type and does not exist in your space."'.
+docs/snippets/constraints.ts(10,9): error TS2322: Type '"string<=80"' is not assignable to type '"Expected an expression."'.
+src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"'' is not a builtin type and does not exist in your space."'.
+src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"Expected an expression."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(8,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"'' is not a builtin type and does not exist in your space."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(11,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"Expected an operator (got '=')."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(14,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"'' is not a builtin type and does not exist in your space."'.
+src/nodes/nonTerminal/__tests__/optional.test.ts(30,17): error TS2578: Unused '@ts-expect-error' directive.
+Files:              257
+Lines:            66014
+Nodes:           182856
+Identifiers:      61716
+Symbols:         244394
+Types:            71657
+Instantiations:  369898
+Memory used:    179576K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.46s
+Parse time:       0.43s
 Bind time:        0.15s
-Check time:       1.69s
+Check time:       1.59s
 Emit time:        0.00s
-Total time:       2.29s
+Total time:       2.17s

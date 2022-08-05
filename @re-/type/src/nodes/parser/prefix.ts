@@ -10,10 +10,12 @@ type ParsePrefixes<S extends PrefixState> =
     S["scanner"]["lookahead"] extends `${string}${Bound.StartChar}`
         ? From<{
               scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
-              ctx: S["ctx"] & {
+              ctx: {
                   bounds: {
+                      right: S["ctx"]["bounds"]["right"]
                       left: S["scanner"]["lookahead"]
                   }
+                  optional: S["ctx"]["optional"]
               }
           }>
         : S
@@ -50,7 +52,7 @@ type ParseSuffixes<S extends PrefixState> = S["scanner"]["lookahead"] extends ""
     ? ParseSuffixes<{
           scanner: Lexer.ShiftSuffix<S["scanner"]["unscanned"]>
           ctx: {
-              bounds: S["ctx"]["bounds"]
+              bounds: {}
               optional: true
           }
       }>

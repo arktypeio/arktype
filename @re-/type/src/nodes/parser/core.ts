@@ -21,7 +21,7 @@ import {
     PrefixState
 } from "./prefix.js"
 import { State } from "./state.js"
-import { ErrorToken, SuffixToken, suffixTokens } from "./tokens.js"
+import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
@@ -38,8 +38,6 @@ export namespace Core {
         parseSuffixes(s, ctx)
         return s.root!
     }
-
-    type Z = ParseDefinition<"3<number<5?", {}>
 
     type ParseDefinition<Def extends string, Dict> = ParseExpressionRoot<
         // @ts-expect-error
@@ -88,6 +86,8 @@ export namespace Core {
         ? ReduceExpression<S>
         : S["scanner"]["lookahead"] extends "ERR"
         ? S
+        : S["scanner"]["lookahead"] extends ErrorToken<infer Message>
+        ? State.Error<S, Message>
         : ParseExpression<ParseToken<S, Dict>, Dict>
 
     const parseExpression = (s: State.Value, ctx: Base.Parsing.Context) => {
@@ -109,8 +109,6 @@ export namespace Core {
         ? Group.ParseOpen<S>
         : S["scanner"]["lookahead"] extends ")"
         ? Group.ParseClose<S>
-        : S["scanner"]["lookahead"] extends ErrorToken<infer Message>
-        ? State.Error<S, Message>
         : Terminal.Parse<S, Dict>
 
     const parseToken = (s: State.Value, ctx: Base.Parsing.Context) => {
@@ -157,13 +155,6 @@ export namespace Core {
         }
     }
 
-    type ParseSuffixes<S extends State.Type> =
-        S["scanner"]["lookahead"] extends "END"
-            ? ValidateEndState<S>
-            : S["scanner"]["lookahead"] extends "ERR"
-            ? S
-            : ParseSuffixes<ParseSuffix<S>>
-
     const parseSuffixes = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
         while (s.scanner.lookahead !== "END") {
             parseSuffix(s, ctx)
@@ -178,15 +169,6 @@ export namespace Core {
     ): UnexpectedSuffixMessage<Lookahead> =>
         `Unexpected suffix token '${lookahead}'.`
 
-    type ParseSuffix<S extends State.Type> =
-        S["scanner"]["lookahead"] extends "?"
-            ? Optional.Parse<S>
-            : S["scanner"]["lookahead"] extends Bound.Token
-            ? Bound.ParseRight<State.ShiftBase<S>, S["scanner"]["lookahead"]>
-            : S["scanner"]["lookahead"] extends ErrorToken<infer Message>
-            ? State.Error<S, Message>
-            : State.Error<S, UnexpectedSuffixMessage<S["scanner"]["lookahead"]>>
-
     const parseSuffix = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
         if (s.scanner.lookahead === "?") {
             Optional.parse(s, ctx)
@@ -196,6 +178,4 @@ export namespace Core {
             throw new Error(unexpectedSuffixMessage(s.scanner.lookahead))
         }
     }
-
-    type ValidateEndState<S extends State.Type> = Bound.ValidateBounds<S>
 }

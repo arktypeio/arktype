@@ -20,7 +20,7 @@ export namespace List {
     export type ShiftToken<Unscanned extends string[]> =
         Unscanned extends Lexer.Scan<infer Lookahead, infer Rest>
             ? Lookahead extends "]"
-                ? State.ScannerFrom<{
+                ? Lexer.ScannerFrom<{
                       lookahead: "[]"
                       unscanned: Rest
                   }>

@@ -20,14 +20,6 @@ export const createBoundChecker = (token: Bound.Token, x: number) => {
     }
 }
 
-export const tokenInverses: Record<Bound.Token, Bound.Token> = {
-    "<=": ">",
-    ">=": "<",
-    "<": ">=",
-    ">": "<=",
-    "==": "=="
-}
-
 export interface BoundableNode extends Base.Node {
     boundBy?: string
     toBound(value: unknown): number

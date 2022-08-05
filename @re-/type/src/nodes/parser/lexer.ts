@@ -198,9 +198,9 @@ export namespace Lexer {
                   }>
                 : Lookahead extends "["
                 ? List.ShiftToken<Rest>
-                : Lookahead extends Bound.StartChar
-                ? Bound.ShiftToken<Lookahead, Rest>
-                : Lookahead extends " "
+                : // : Lookahead extends Bound.StartChar
+                // ? Bound.ShiftToken<Lookahead, Rest>
+                Lookahead extends " "
                 ? ShiftOperator<Rest>
                 : ShiftError<
                       Unscanned,

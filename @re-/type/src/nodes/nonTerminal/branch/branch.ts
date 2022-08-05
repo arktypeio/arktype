@@ -41,7 +41,6 @@ export namespace Branches {
         groups: S["groups"]
         branches: B
         root: undefined
-        bounds: S["bounds"]
         scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
     }>
 
