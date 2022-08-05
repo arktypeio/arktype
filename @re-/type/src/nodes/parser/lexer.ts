@@ -1,3 +1,4 @@
+import { ListChars } from "@re-/tools"
 import { Bound, List } from "../nonTerminal/index.js"
 import { State } from "./state.js"
 import {
@@ -57,38 +58,53 @@ export namespace Lexer {
         }
     }
 
-    // export type ShiftSuffix<Unscanned extends string[]> =
-    //     Unscanned extends ReverseScan<infer Right, infer Rest>
-    //         ? Right extends "?"
-    //             ? State.ScannerFrom<{ lookahead: "?"; unscanned: Rest }>
-    //             : ShiftPossibleBoundSuffix<Unscanned, "", Unscanned>
-    //         : State.ScannerFrom<{ lookahead: ""; unscanned: Unscanned }>
+    export type ShiftSuffix<Unscanned extends string[]> =
+        Unscanned extends ReverseScan<infer Right, infer Rest>
+            ? Right extends "?"
+                ? State.ScannerFrom<{ lookahead: "?"; unscanned: Rest }>
+                : ShiftPossibleBoundSuffix<Unscanned, "", Unscanned>
+            : State.ScannerFrom<{ lookahead: ""; unscanned: Unscanned }>
 
-    // // TODO: Clarify lookahead names for chars/tokens
-    // type ShiftPossibleBoundSuffix<
-    //     OriginalUnscanned extends string[],
-    //     Token extends string,
-    //     Unscanned extends string[]
-    // > = Unscanned extends ReverseScan<infer Next, infer Rest>
-    //     ? Next extends BaseTerminatingChar | EnclosedBaseStartChar
-    //         ? Next extends Bound.StartChar
-    //             ? State.ScannerFrom<{
-    //                   lookahead: `${Next}${Token}`
-    //                   unscanned: Rest
-    //               }>
-    //             : State.ScannerFrom<{
-    //                   lookahead: ""
-    //                   unscanned: OriginalUnscanned
-    //               }>
-    //         : ShiftPossibleBoundSuffix<
-    //               OriginalUnscanned,
-    //               `${Token}${Next}`,
-    //               Rest
-    //           >
-    //     : State.ScannerFrom<{
-    //           lookahead: ""
-    //           unscanned: OriginalUnscanned
-    //       }>
+    // TODO: Clarify lookahead names for chars/tokens
+    type ShiftPossibleBoundSuffix<
+        OriginalUnscanned extends string[],
+        Token extends string,
+        Unscanned extends string[]
+    > = Unscanned extends ReverseScan<infer Next, infer Rest>
+        ? Next extends BaseTerminatingChar | EnclosedBaseStartChar
+            ? Next extends Bound.StartChar
+                ? State.ScannerFrom<{
+                      lookahead: `${Next}${Token}`
+                      unscanned: Rest
+                  }>
+                : State.ScannerFrom<{
+                      lookahead: ""
+                      unscanned: OriginalUnscanned
+                  }>
+            : ShiftPossibleBoundSuffix<
+                  OriginalUnscanned,
+                  `${Token}${Next}`,
+                  Rest
+              >
+        : State.ScannerFrom<{
+              lookahead: ""
+              unscanned: OriginalUnscanned
+          }>
+
+    type Z = ShiftPrefix<ListChars<"3<string[]">>
+
+    export type ShiftPrefix<Unscanned extends string[]> =
+        ShiftPossibleBoundPrefix<ShiftBase<Unscanned>>
+
+    type ShiftPossibleBoundPrefix<S extends State.TypeScanner> =
+        S["unscanned"] extends Scan<infer Lookahead, infer Rest>
+            ? Lookahead extends Bound.StartChar
+                ? State.ScannerFrom<{
+                      lookahead: `${S["lookahead"]}${Lookahead}`
+                      unscanned: Rest
+                  }>
+                : S
+            : S
 
     export type ShiftBase<Unscanned extends string[]> = Unscanned extends Scan<
         infer Lookahead,

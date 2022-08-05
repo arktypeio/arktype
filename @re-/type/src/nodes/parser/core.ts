@@ -1,4 +1,4 @@
-import { Get } from "@re-/tools"
+import { Get, ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import {
     Bound,
@@ -14,6 +14,7 @@ import {
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
+import { Lexer } from "./lexer.js"
 import { State } from "./state.js"
 import { ErrorToken, SuffixToken, suffixTokens } from "./tokens.js"
 
@@ -33,53 +34,75 @@ export namespace Core {
         return s.root!
     }
 
-    type ParseDefinition<Def extends string, Dict> = ParseExpression<
-        ParsePrefixes<State.Initialize<Def>>,
-        Dict
-    >
+    namespace Fix {
+        type Z = ParseDefinition<"3<number<5?", {}>
 
-    type ParsePrefixes<S extends State.Type> =
-        S["scanner"]["lookahead"] extends NumberLiteralDefinition
-            ? Bound.ParsePossibleLeft<
-                  State.ShiftOperator<S>,
-                  S["scanner"]["lookahead"]
-              >
-            : S
+        type ParseDefinition<Def extends string, Dict> = ParsePrefixes<
+            ParseSuffixes<Initialize<Def>>
+        >
 
-    // type PState = {
-    //     scanner: State.TypeScanner
-    //     bounds: string[]
-    //     optional: boolean
-    // }
+        type LeftBound<
+            Value extends string,
+            Token extends Bound.StartChar
+        > = `${Value}${Token}`
 
-    // type Z = PS2Root<"string<5">
+        type ParsePrefixes<S extends State> =
+            S["scanner"]["lookahead"] extends LeftBound<
+                infer Value,
+                infer Token
+            >
+                ? From<{
+                      scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
+                      bounds: {
+                          left: S["scanner"]["lookahead"]
+                          right: S["bounds"]["right"]
+                      }
+                      optional: S["optional"]
+                  }>
+                : S
 
-    // type PS2Root<Def extends string> = PS2<{
-    //     scanner: Lexer.ShiftSuffix<ListChars<Def>>
-    //     bounds: []
-    //     optional: false
-    // }>
+        type State = {
+            scanner: State.TypeScanner
+            bounds: {
+                left?: string
+                right?: string
+            }
+            optional: boolean
+        }
 
-    // type PS2<S extends PState> = S["scanner"]["lookahead"] extends ""
-    //     ? S
-    //     : // State.From<{
-    //     //       groups: []
-    //     //       branches: {}
-    //     //       bounds: {}
-    //     //       root: undefined
-    //     //       scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
-    //     //   }>
-    //     S["scanner"]["lookahead"] extends "?"
-    //     ? PS2<{
-    //           scanner: Lexer.ShiftSuffix<S["scanner"]["unscanned"]>
-    //           bounds: S["bounds"]
-    //           optional: true
-    //       }>
-    //     : PS2<{
-    //           scanner: Lexer.ShiftSuffix<S["scanner"]["unscanned"]>
-    //           bounds: [...S["bounds"], S["scanner"]["lookahead"]]
-    //           optional: S["optional"]
-    //       }>
+        // type StateShiftPrefixes<S extends State> = From<{
+        //     scanner: Lexer.ShiftPrefix<S["scanner"]["unscanned"]>
+        //     bounds: S["bounds"]
+        //     optional: S["optional"]
+        // }>
+
+        type From<S extends State> = S
+
+        type Initialize<Def extends string> = From<{
+            scanner: Lexer.ShiftSuffix<ListChars<Def>>
+            bounds: {}
+            optional: false
+        }>
+
+        type ParseSuffixes<S extends State> =
+            S["scanner"]["lookahead"] extends ""
+                ? From<{
+                      scanner: Lexer.ShiftPrefix<S["scanner"]["unscanned"]>
+                      bounds: S["bounds"]
+                      optional: S["optional"]
+                  }>
+                : S["scanner"]["lookahead"] extends "?"
+                ? ParseSuffixes<{
+                      scanner: Lexer.ShiftSuffix<S["scanner"]["unscanned"]>
+                      bounds: S["bounds"]
+                      optional: true
+                  }>
+                : From<{
+                      scanner: Lexer.ShiftPrefix<S["scanner"]["unscanned"]>
+                      bounds: { right: S["scanner"]["lookahead"] }
+                      optional: S["optional"]
+                  }>
+    }
 
     const parsePossiblePrefixes = (
         s: State.Value,
