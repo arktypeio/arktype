@@ -120,8 +120,9 @@ export namespace Validation {
             return this.count === 0
         }
 
-        add(path: string, message: string) {
-            this.errors[path] = message
+        // TODO: Fix types
+        add(path: string, message: string | object) {
+            this.errors[path] = message as any
         }
 
         assign(errors: ErrorsByPath) {

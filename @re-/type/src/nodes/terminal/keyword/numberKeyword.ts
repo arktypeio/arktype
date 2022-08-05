@@ -1,5 +1,5 @@
 import { Base } from "../../base/index.js"
-import { Boundable } from "../../nonTerminal/bound/bound.js"
+import { Boundable } from "../../nonTerminal/bound/node.js"
 import { TerminalNode } from "../node.js"
 
 abstract class BaseNumberKeyword extends TerminalNode implements Boundable {

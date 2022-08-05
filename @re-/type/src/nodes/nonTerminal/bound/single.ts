@@ -1,78 +1,37 @@
-/* eslint-disable max-lines-per-function */
-import { toNumber } from "@re-/tools"
 import { Base } from "../../base/index.js"
-import { NumberLiteralDefinition } from "../../index.js"
 import { NonTerminal } from "../nonTerminal.js"
-import { Bound, Boundable } from "./bound.js"
+import { Bound } from "./parse.js"
+import {
+    BoundableNode,
+    BoundableValue,
+    BoundChecker,
+    createBoundChecker
+} from "./shared.js"
 
-export type ValidSingleBoundDefinition = [Bound.Token, NumberLiteralDefinition]
+export type SingleBoundValidationError = {
+    bound: SingleBoundDefinition
+    value: BoundableValue
+    evaluated: number
+}
 
-export class SingleBoundNode extends NonTerminal<Boundable> {
-    token: Bound.Token
-    value: number
-    description: string
-    validator: (actual: number, args: Base.Validation.Args) => boolean
+export type SingleBoundDefinition = [Bound.Token, number]
+
+export class SingleBoundNode extends NonTerminal<BoundableNode> {
+    bound: SingleBoundDefinition
+    check: BoundChecker
 
     constructor(
-        child: Boundable,
-        bound: ValidSingleBoundDefinition,
+        child: BoundableNode,
+        bound: SingleBoundDefinition,
         ctx: Base.Parsing.Context
     ) {
         super(child, ctx)
-        this.token = bound[0]
-        this.value = toNumber(bound[1])
-        this.description = `${this.value}${
-            child.boundBy ? " " + child.boundBy : ""
-        }`
-        this.validator = this.createBoundValidator()
+        this.bound = [bound[0], bound[1]]
+        this.check = createBoundChecker(this.bound[0], this.bound[1])
     }
-
-    createBoundValidator() {
-        switch (this.token) {
-            // TODO: Create another helper to build these functions
-            case "<=":
-                return (actual: number, args: Base.Validation.Args) =>
-                    actual > this.value
-                        ? this.addBoundError(
-                              "less than or equal to",
-                              actual,
-                              args
-                          )
-                        : true
-            case ">=":
-                return (actual: number, args: Base.Validation.Args) =>
-                    actual < this.value
-                        ? this.addBoundError(
-                              "greater than or equal to",
-                              actual,
-                              args
-                          )
-                        : true
-            case "<":
-                return (actual: number, args: Base.Validation.Args) =>
-                    actual >= this.value
-                        ? this.addBoundError("less than", actual, args)
-                        : true
-            case ">":
-                return (actual: number, args: Base.Validation.Args) =>
-                    actual <= this.value
-                        ? this.addBoundError("greater than", actual, args)
-                        : true
-            case "==":
-                return (actual: number, args: Base.Validation.Args) =>
-                    actual !== this.value
-                        ? // Error message is cleaner without this.token name for equality check
-                          this.addBoundError("", actual, args)
-                        : true
-            default:
-                throw new Error(`Unexpected bound token ${this.token}.`)
-        }
-    }
-
-    createValidatorForBound() {}
 
     toString() {
-        return this.children.toString() + this.token + this.value
+        return this.children.toString() + this.bound[0] + this.bound[1]
     }
 
     allows(args: Base.Validation.Args) {
@@ -80,25 +39,23 @@ export class SingleBoundNode extends NonTerminal<Boundable> {
         if (!this.children.allows(args)) {
             return false
         }
-        return this.validator(this.children.toBound(args.value), args)
+        const evaluated = this.children.toBound(args.value)
+        if (!this.check(evaluated)) {
+            const error: SingleBoundValidationError = {
+                bound: this.bound,
+                evaluated,
+                value: args.value as BoundableValue
+            }
+            args.errors.add(args.ctx.path, error)
+            return false
+        }
+        return true
     }
 
     generate() {
         throw new Base.Create.UngeneratableError(
             this.toString(),
-            "Bounded generation is unsupported."
+            "Bound generation is unsupported."
         )
-    }
-
-    addBoundError(
-        comparatorName: string,
-        boundedValue: number,
-        args: Base.Validation.Args
-    ) {
-        args.errors.add(
-            args.ctx.path,
-            `Must be ${comparatorName} ${this.description} (got ${boundedValue}).`
-        )
-        return false
     }
 }

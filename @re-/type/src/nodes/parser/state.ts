@@ -24,18 +24,18 @@ export namespace State {
 
     export type WithLookaheadAndRoot<
         Lookahead extends string,
-        Node extends Parse.Node = Parse.Node
+        Root extends Parse.Node = Parse.Node
     > = Value & {
         scanner: Lexer.Scanner<Lookahead>
-        root: Node
+        root: Root
     }
 
     export type WithLookahead<Lookahead extends string> = Value & {
         scanner: Lexer.Scanner<Lookahead>
     }
 
-    export type WithRoot<Node extends Parse.Node = Parse.Node> = Value & {
-        root: Node
+    export type WithRoot<Root extends Parse.Node = Parse.Node> = Value & {
+        root: Root
     }
 
     export const lookaheadIs = <Token extends string>(

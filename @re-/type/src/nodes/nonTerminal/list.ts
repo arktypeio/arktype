@@ -1,7 +1,7 @@
 import { Base } from "../base/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { State } from "../parser/state.js"
-import { Boundable } from "./bound/bound.js"
+import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
@@ -35,7 +35,7 @@ export namespace List {
     }
 }
 
-export class ListNode extends NonTerminal implements Boundable {
+export class ListNode extends NonTerminal implements BoundableNode {
     toString() {
         return this.children.toString() + "[]"
     }

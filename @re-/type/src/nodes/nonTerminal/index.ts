@@ -1,4 +1,4 @@
-export * from "./bound/bound.js"
+export * from "./bound/index.js"
 export * from "./branch/index.js"
 export * from "./list.js"
 export * from "./optional.js"

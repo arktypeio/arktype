@@ -10,9 +10,6 @@ bench("double-bounded", () => {
 bench("single-bounded list", () => {
     type("object[]==1").infer
 }).type(`792 instantiations`)
-bench("double-bounded list", () => {
-    type("-7>=unknown[]>99").infer
-}).type(`1153 instantiations`)
 bench("parenthesized list", () => {
     type("-7<=(string|number[]|boolean[][])[]<99").infer
 }).type(`2817 instantiations`)

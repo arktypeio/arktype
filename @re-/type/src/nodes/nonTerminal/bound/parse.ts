@@ -1,17 +1,23 @@
 // TODO: Remove
 /* eslint-disable max-lines */
-import { RequireKeys, toNumber } from "@re-/tools"
+import { toNumber } from "@re-/tools"
 import { Base } from "../../base/index.js"
-import { Lexer } from "../../parser/lexer.js"
-import { State } from "../../parser/state.js"
-import { boundStartChars, boundTokens, tokenSet } from "../../parser/tokens.js"
-import { Tree } from "../../parser/tree.js"
+import {
+    boundStartChars,
+    boundTokens,
+    Lexer,
+    State,
+    tokenSet,
+    Tree
+} from "../../parser/index.js"
 import {
     Keyword,
     NumberLiteralDefinition,
     NumberLiteralNode
 } from "../../terminal/index.js"
-import { NonTerminal } from "../nonTerminal.js"
+import { DoubleBoundDefinition, DoubleBoundNode } from "./double.js"
+import { isBoundable } from "./shared.js"
+import { SingleBoundDefinition, SingleBoundNode } from "./single.js"
 
 export namespace Bound {
     export const tokens = boundTokens
@@ -22,6 +28,10 @@ export namespace Bound {
         "<": 1,
         "<=": 1
     })
+
+    export const isDoubleBoundToken = (
+        token: string
+    ): token is DoubleBoundToken => token in doubleBoundTokens
 
     export type Token = keyof typeof tokens
 
@@ -34,20 +44,11 @@ export namespace Bound {
         right?: Right
     }
 
-    export type ValidatedBoundsDefinition = ValidSingleBound | ValidDoubleBound
+    export type DoubleBoundCandidate = Required<PartialBoundsDefinition>
 
-    type ValidSingleBound = {
-        right: [Bound.Token, NumberLiteralDefinition]
-    }
-
-    export const isDoubleBoundDefinition = (
-        bounds: ValidatedBoundsDefinition
-    ): bounds is ValidDoubleBound => (bounds as any).left === undefined
-
-    type ValidDoubleBound = {
-        left: [NumberLiteralDefinition, Bound.DoubleBoundToken]
-        right: [Bound.DoubleBoundToken, NumberLiteralDefinition]
-    }
+    export const isDoubleBoundCandidate = (
+        bounds: PartialBoundsDefinition
+    ): bounds is DoubleBoundCandidate => "left" in bounds && "right" in bounds
 
     export type Left = [NumberLiteralDefinition, DoubleBoundToken]
 
@@ -163,7 +164,7 @@ export namespace Bound {
               >
         : State.Error<
               S,
-              `Right bound ${S["scanner"]["lookahead"]} must be a number literal followed only by other suffixes.`
+              `Right side of ${T} must be a number literal (got '${S["scanner"]["lookahead"]}').`
           >
 
     export const parseRight = (
@@ -178,18 +179,11 @@ export namespace Bound {
                     `Definitions cannot have multiple right bounds.`
                 )
             }
-            s.bounds.right = [token, s.scanner.lookahead]
-            if (!isBoundable(s.root)) {
-                throw new Error(
-                    `Bounded expression '${s.root.toString()}' must be a number-or-string-typed keyword or a list-typed expression.`
-                )
-            }
-            const validatedBounds = validateBounds(s.bounds)
-            s.root = new BoundNode(s.root, validatedBounds, ctx)
+            s.root = createBound(s, [token, s.scanner.lookahead], ctx)
             Lexer.shiftOperator(s.scanner)
         } else {
             throw new Error(
-                `Right side of comparator ${s.scanner.lookahead} must be a number literal.`
+                `Right side of ${token} must be a number literal (got '${s.scanner.lookahead}').`
             )
         }
     }
@@ -211,6 +205,32 @@ export namespace Bound {
     ): InvalidDoubleBoundMessage<Left, Right> =>
         `Right-side bound token ${right} is redundant or incompatible with left-side token ${left}.`
 
+    const createBound = (
+        s: State.WithRoot,
+        right: Right,
+        ctx: Base.Parsing.Context
+    ) => {
+        s.bounds.right = right
+        if (!isBoundable(s.root)) {
+            throw new Error(
+                `Bounded expression '${s.root.toString()}' must be a number-or-string-typed keyword or a list-typed expression.`
+            )
+        }
+        if (isDoubleBoundCandidate(s.bounds)) {
+            return new DoubleBoundNode(
+                s.root,
+                validateDoubleBound(s.bounds),
+                ctx
+            )
+        } else {
+            return new SingleBoundNode(
+                s.root,
+                validateSingleBound(s.bounds.right),
+                ctx
+            )
+        }
+    }
+
     export type ValidateBounds<S extends State.Type> =
         S["bounds"]["left"] extends Left
             ? S["bounds"]["right"] extends Right
@@ -226,125 +246,25 @@ export namespace Bound {
                 : State.Error<S, UnpairedLeftBoundMessage>
             : S
 
-    const validateBounds = (bounds: PartialBoundsDefinition) => {
-        if (bounds.left) {
-            if (!bounds.right) {
-                throw new Error(unpairedLeftBoundMessage)
-            }
-            if (!(bounds.right[0] in doubleBoundTokens)) {
-                throw new Error(
-                    invalidDoubleBoundMessage(bounds.left[1], bounds.right[0])
-                )
-            }
+    const validateSingleBound = (bound: Right): SingleBoundDefinition => {
+        return [bound[0], toNumber(bound[1])]
+    }
+
+    const validateDoubleBound = (
+        bounds: Bound.DoubleBoundCandidate
+    ): DoubleBoundDefinition => {
+        // TODO: get this to work at runtime.
+        if (!bounds.right) {
+            throw new Error(unpairedLeftBoundMessage)
         }
-        return bounds as ValidatedBoundsDefinition
-    }
-}
-
-export interface Boundable extends Base.Node {
-    boundBy?: string
-    toBound(value: unknown): number
-}
-
-export const isBoundable = (node: Base.Node): node is Boundable =>
-    "toBound" in node
-
-export class BoundNode extends NonTerminal<Boundable> {
-    left?: [number, Bound.DoubleBoundToken]
-    right: [Bound.Token, number]
-
-    constructor(
-        child: Boundable,
-        bounds: Bound.ValidatedBoundsDefinition,
-        ctx: Base.Parsing.Context
-    ) {
-        super(child, ctx)
-        if (Bound.isDoubleBoundDefinition(bounds)) {
-            this.left = [toNumber(bounds.left[0]), bounds.left[1]]
+        if (!isDoubleBoundToken(bounds.right[0])) {
+            throw new Error(
+                invalidDoubleBoundMessage(bounds.left[1], bounds.right[0])
+            )
         }
-        this.right = [bounds.right[0], toNumber(bounds.right[1])]
-    }
-
-    toString() {
-        let result = ""
-        if (this.left) {
-            result += `${this.left[0]}${this.left[1]}`
+        return {
+            lower: [toNumber(bounds.left[0]), bounds.left[1]],
+            upper: [bounds.right[0], toNumber(bounds.right[1])]
         }
-        result += this.children.toString()
-        result += `${this.right[0]}${this.right[1]}`
-        return result
-    }
-
-    // TODO: Remove this once bounds are converted over
-    // eslint-disable-next-line max-lines-per-function
-    allows(args: Base.Validation.Args) {
-        const boundedNode = this.children
-        if (!boundedNode.allows(args)) {
-            return false
-        }
-        const boundedValue = boundedNode.toBound(args.value)
-        // for (const [comparator, bound] of this.bounds!) {
-        //     const boundDescription = `${bound}${
-        //         boundedNode.boundBy ? " " + boundedNode.boundBy : ""
-        //     }`
-        //     if (comparator === "<=" && boundedValue > bound) {
-        //         return this.addBoundError(
-        //             "less than or equal to",
-        //             boundedValue,
-        //             boundDescription,
-        //             args
-        //         )
-        //     } else if (comparator === ">=" && boundedValue < bound) {
-        //         return this.addBoundError(
-        //             "greater than or equal to",
-        //             boundedValue,
-        //             boundDescription,
-        //             args
-        //         )
-        //     } else if (comparator === "<" && boundedValue >= bound) {
-        //         return this.addBoundError(
-        //             "less than",
-        //             boundedValue,
-        //             boundDescription,
-        //             args
-        //         )
-        //     } else if (comparator === ">" && boundedValue <= bound) {
-        //         return this.addBoundError(
-        //             "greater than",
-        //             boundedValue,
-        //             boundDescription,
-        //             args
-        //         )
-        //     } else if (comparator === "==" && boundedValue !== bound) {
-        //         return this.addBoundError(
-        //             // Error message is cleaner without token name for equality check
-        //             "",
-        //             boundedValue,
-        //             boundDescription,
-        //             args
-        //         )
-        //     }
-        // }
-        return true
-    }
-
-    generate() {
-        throw new Base.Create.UngeneratableError(
-            this.toString(),
-            "Bounded generation is unsupported."
-        )
-    }
-
-    private addBoundError(
-        comparatorName: string,
-        boundedValue: number,
-        boundDescription: string,
-        args: Base.Validation.Args
-    ) {
-        args.errors.add(
-            args.ctx.path,
-            `Must be ${comparatorName} ${boundDescription} (got ${boundedValue}).`
-        )
-        return false
     }
 }
