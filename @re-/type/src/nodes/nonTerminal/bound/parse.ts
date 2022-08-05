@@ -84,7 +84,9 @@ export namespace Bound {
               }>
         : Lexer.ShiftError<[], `Expected a bound condition after ${Start}.`>
 
-    export const shiftToken = (scanner: Lexer.Scanner<Bound.StartChar>) => {
+    export const shiftToken = (
+        scanner: Lexer.ValueScanner<Bound.StartChar>
+    ) => {
         if (scanner.next === "=") {
             scanner.shift()
         } else if (scanner.lookahead === "=") {

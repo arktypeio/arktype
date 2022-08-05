@@ -15,6 +15,11 @@ import {
     Terminal
 } from "../terminal/index.js"
 import { Lexer } from "./lexer.js"
+import {
+    ParsePrefixesAndSuffixes,
+    PrefixContext,
+    PrefixState
+} from "./prefix.js"
 import { State } from "./state.js"
 import { ErrorToken, SuffixToken, suffixTokens } from "./tokens.js"
 
@@ -34,75 +39,28 @@ export namespace Core {
         return s.root!
     }
 
-    namespace Fix {
-        type Z = ParseDefinition<"3<number<5?", {}>
+    type Z = ParseDefinition<"3<number<5?", {}>
 
-        type ParseDefinition<Def extends string, Dict> = ParsePrefixes<
-            ParseSuffixes<Initialize<Def>>
-        >
+    type ParseDefinition<Def extends string, Dict> = ParseExpressionRoot<
+        // @ts-expect-error
+        ParsePrefixesAndSuffixes<Def>,
+        Dict
+    >
 
-        type LeftBound<
-            Value extends string,
-            Token extends Bound.StartChar
-        > = `${Value}${Token}`
+    type ParseExpressionRoot<S extends PrefixState, Dict> = ApplyContext<
+        // @ts-expect-error
+        ParseExpression<State.Initialize<S["scanner"]>, Dict>,
+        S["ctx"]
+    >
 
-        type ParsePrefixes<S extends State> =
-            S["scanner"]["lookahead"] extends LeftBound<
-                infer Value,
-                infer Token
-            >
-                ? From<{
-                      scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
-                      bounds: {
-                          left: S["scanner"]["lookahead"]
-                          right: S["bounds"]["right"]
-                      }
-                      optional: S["optional"]
-                  }>
-                : S
-
-        type State = {
-            scanner: State.TypeScanner
-            bounds: {
-                left?: string
-                right?: string
-            }
-            optional: boolean
-        }
-
-        // type StateShiftPrefixes<S extends State> = From<{
-        //     scanner: Lexer.ShiftPrefix<S["scanner"]["unscanned"]>
-        //     bounds: S["bounds"]
-        //     optional: S["optional"]
-        // }>
-
-        type From<S extends State> = S
-
-        type Initialize<Def extends string> = From<{
-            scanner: Lexer.ShiftSuffix<ListChars<Def>>
-            bounds: {}
-            optional: false
-        }>
-
-        type ParseSuffixes<S extends State> =
-            S["scanner"]["lookahead"] extends ""
-                ? From<{
-                      scanner: Lexer.ShiftPrefix<S["scanner"]["unscanned"]>
-                      bounds: S["bounds"]
-                      optional: S["optional"]
-                  }>
-                : S["scanner"]["lookahead"] extends "?"
-                ? ParseSuffixes<{
-                      scanner: Lexer.ShiftSuffix<S["scanner"]["unscanned"]>
-                      bounds: S["bounds"]
-                      optional: true
-                  }>
-                : From<{
-                      scanner: Lexer.ShiftPrefix<S["scanner"]["unscanned"]>
-                      bounds: { right: S["scanner"]["lookahead"] }
-                      optional: S["optional"]
-                  }>
-    }
+    type ApplyContext<
+        S extends State.Type,
+        Ctx extends PrefixContext
+    > = S["scanner"]["lookahead"] extends "ERR"
+        ? S
+        : Ctx["optional"] extends true
+        ? State.SetRoot<S, [S["root"], "?"]>
+        : S
 
     const parsePossiblePrefixes = (
         s: State.Value,
@@ -126,11 +84,10 @@ export namespace Core {
     type ParseExpression<
         S extends State.Type,
         Dict
-    > = S["scanner"]["lookahead"] extends
-        | SuffixToken
-        | "ERR"
-        | ErrorToken<string>
-        ? ParseSuffixes<ReduceExpression<S>>
+    > = S["scanner"]["lookahead"] extends "END"
+        ? ReduceExpression<S>
+        : S["scanner"]["lookahead"] extends "ERR"
+        ? S
         : ParseExpression<ParseToken<S, Dict>, Dict>
 
     const parseExpression = (s: State.Value, ctx: Base.Parsing.Context) => {
@@ -152,6 +109,8 @@ export namespace Core {
         ? Group.ParseOpen<S>
         : S["scanner"]["lookahead"] extends ")"
         ? Group.ParseClose<S>
+        : S["scanner"]["lookahead"] extends ErrorToken<infer Message>
+        ? State.Error<S, Message>
         : Terminal.Parse<S, Dict>
 
     const parseToken = (s: State.Value, ctx: Base.Parsing.Context) => {
@@ -174,18 +133,14 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ReduceExpression<S extends State.Type> =
-        S["scanner"]["lookahead"] extends "ERR"
-            ? S
-            : ValidateExpression<
-                  State.From<{
-                      groups: S["groups"]
-                      branches: {}
-                      root: Branches.MergeAll<S["branches"], S["root"]>
-                      bounds: S["bounds"]
-                      scanner: S["scanner"]
-                  }>
-              >
+    type ReduceExpression<S extends State.Type> = ValidateExpression<
+        State.From<{
+            groups: S["groups"]
+            branches: {}
+            root: Branches.MergeAll<S["branches"], S["root"]>
+            scanner: S["scanner"]
+        }>
+    >
 
     const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)

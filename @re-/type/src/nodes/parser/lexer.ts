@@ -22,7 +22,14 @@ export namespace Lexer {
         Unscanned extends string[]
     > = [...Unscanned, Right]
 
-    export class Scanner<Lookahead extends string = string> {
+    export type ScannerFrom<R extends TypeScanner> = R
+
+    export type TypeScanner = {
+        lookahead: string
+        unscanned: string[]
+    }
+
+    export class ValueScanner<Lookahead extends string = string> {
         private chars: string[]
         private i: number
         lookahead: Lookahead
@@ -35,11 +42,11 @@ export namespace Lexer {
 
         lookaheadIs<Token extends string>(
             token: Token
-        ): this is Scanner<Token> {
+        ): this is ValueScanner<Token> {
             return this.lookahead === (token as string)
         }
 
-        lookaheadIn<O>(o: O): this is Scanner<Extract<keyof O, string>> {
+        lookaheadIn<O>(o: O): this is ValueScanner<Extract<keyof O, string>> {
             return this.lookahead in o
         }
 
@@ -61,9 +68,9 @@ export namespace Lexer {
     export type ShiftSuffix<Unscanned extends string[]> =
         Unscanned extends ReverseScan<infer Right, infer Rest>
             ? Right extends "?"
-                ? State.ScannerFrom<{ lookahead: "?"; unscanned: Rest }>
+                ? ScannerFrom<{ lookahead: "?"; unscanned: Rest }>
                 : ShiftPossibleBoundSuffix<Unscanned, "", Unscanned>
-            : State.ScannerFrom<{ lookahead: ""; unscanned: Unscanned }>
+            : ScannerFrom<{ lookahead: ""; unscanned: Unscanned }>
 
     // TODO: Clarify lookahead names for chars/tokens
     type ShiftPossibleBoundSuffix<
@@ -73,33 +80,31 @@ export namespace Lexer {
     > = Unscanned extends ReverseScan<infer Next, infer Rest>
         ? Next extends BaseTerminatingChar | EnclosedBaseStartChar
             ? Next extends Bound.StartChar
-                ? State.ScannerFrom<{
+                ? ScannerFrom<{
                       lookahead: `${Next}${Token}`
                       unscanned: Rest
                   }>
-                : State.ScannerFrom<{
+                : ScannerFrom<{
                       lookahead: ""
                       unscanned: OriginalUnscanned
                   }>
             : ShiftPossibleBoundSuffix<
                   OriginalUnscanned,
-                  `${Token}${Next}`,
+                  `${Next}${Token}`,
                   Rest
               >
-        : State.ScannerFrom<{
+        : ScannerFrom<{
               lookahead: ""
               unscanned: OriginalUnscanned
           }>
 
-    type Z = ShiftPrefix<ListChars<"3<string[]">>
-
     export type ShiftPrefix<Unscanned extends string[]> =
         ShiftPossibleBoundPrefix<ShiftBase<Unscanned>>
 
-    type ShiftPossibleBoundPrefix<S extends State.TypeScanner> =
+    type ShiftPossibleBoundPrefix<S extends TypeScanner> =
         S["unscanned"] extends Scan<infer Lookahead, infer Rest>
             ? Lookahead extends Bound.StartChar
-                ? State.ScannerFrom<{
+                ? ScannerFrom<{
                       lookahead: `${S["lookahead"]}${Lookahead}`
                       unscanned: Rest
                   }>
@@ -111,7 +116,7 @@ export namespace Lexer {
         infer Rest
     >
         ? Lookahead extends "("
-            ? State.ScannerFrom<{ lookahead: Lookahead; unscanned: Rest }>
+            ? ScannerFrom<{ lookahead: Lookahead; unscanned: Rest }>
             : Lookahead extends EnclosedBaseStartChar
             ? EnclosedBase<Lookahead, Lookahead, Rest>
             : Lookahead extends " "
@@ -119,7 +124,7 @@ export namespace Lexer {
             : UnenclosedBase<"", Unscanned>
         : ShiftError<[], `Expected an expression.`>
 
-    export const shiftBase = (scanner: Scanner) => {
+    export const shiftBase = (scanner: ValueScanner) => {
         scanner.lookahead = ""
         if (scanner.next === "(") {
             scanner.shift()
@@ -133,7 +138,7 @@ export namespace Lexer {
         }
     }
 
-    const shiftUnenclosedBase = (scanner: Scanner) => {
+    const shiftUnenclosedBase = (scanner: ValueScanner) => {
         while (!(scanner.next in baseTerminatingChars)) {
             scanner.shift()
         }
@@ -144,17 +149,17 @@ export namespace Lexer {
         Unscanned extends string[]
     > = Unscanned extends Scan<infer Lookahead, infer Rest>
         ? Lookahead extends BaseTerminatingChar
-            ? State.ScannerFrom<{
+            ? ScannerFrom<{
                   lookahead: Token
                   unscanned: Unscanned
               }>
             : UnenclosedBase<`${Token}${Lookahead}`, Rest>
-        : State.ScannerFrom<{
+        : ScannerFrom<{
               lookahead: Token
               unscanned: []
           }>
 
-    const shiftEnclosedBase = (scanner: Scanner) => {
+    const shiftEnclosedBase = (scanner: ValueScanner) => {
         do {
             scanner.shift()
             if (scanner.next === "END") {
@@ -177,7 +182,7 @@ export namespace Lexer {
         ? Lookahead extends StartChar
             ? Token extends "/"
                 ? ShiftError<Unscanned, `Regex literals cannot be empty.`>
-                : State.ScannerFrom<{
+                : ScannerFrom<{
                       lookahead: `${Token}${Lookahead}`
                       unscanned: Rest
                   }>
@@ -187,7 +192,7 @@ export namespace Lexer {
     export type ShiftOperator<Unscanned extends string[]> =
         Unscanned extends Scan<infer Lookahead, infer Rest>
             ? Lookahead extends TrivialSingleCharOperator
-                ? State.ScannerFrom<{
+                ? ScannerFrom<{
                       lookahead: Lookahead
                       unscanned: Rest
                   }>
@@ -201,12 +206,12 @@ export namespace Lexer {
                       Unscanned,
                       `Expected an operator (got '${Lookahead}').`
                   >
-            : State.ScannerFrom<{
+            : ScannerFrom<{
                   lookahead: "END"
                   unscanned: []
               }>
 
-    export const shiftOperator = (scanner: Scanner) => {
+    export const shiftOperator = (scanner: ValueScanner) => {
         scanner.lookahead = ""
         scanner.shift()
         if (scanner.lookahead in trivialSingleCharOperators) {
@@ -227,7 +232,7 @@ export namespace Lexer {
     export type ShiftError<
         Unscanned extends string[],
         Message extends string
-    > = State.ScannerFrom<{
+    > = ScannerFrom<{
         lookahead: ErrorToken<Message>
         unscanned: Unscanned
     }>

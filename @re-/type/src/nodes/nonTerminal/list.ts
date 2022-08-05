@@ -27,7 +27,7 @@ export namespace List {
                 : Lexer.ShiftError<Unscanned, `Missing expected ']'.`>
             : Lexer.ShiftError<[], `Missing expected ']'.`>
 
-    export const shiftToken = (scanner: Lexer.Scanner<"[">) => {
+    export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {
         if (scanner.next !== "]") {
             throw new Error(`Missing expected ].`)
         }

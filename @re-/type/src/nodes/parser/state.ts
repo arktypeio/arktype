@@ -1,4 +1,4 @@
-import { ClassOf, InstanceOf, ListChars } from "@re-/tools"
+import { ClassOf, InstanceOf } from "@re-/tools"
 import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
@@ -9,9 +9,8 @@ export namespace State {
     export type Type = {
         groups: Branches.TypeState[]
         branches: Branches.TypeState
-        bounds: Bound.PartialBoundsDefinition
         root: unknown
-        scanner: TypeScanner
+        scanner: Lexer.TypeScanner
     }
 
     export type Value = {
@@ -19,19 +18,19 @@ export namespace State {
         branches: Branches.ValueState
         bounds: Bound.PartialBoundsDefinition
         root: Parse.Node | undefined
-        scanner: Lexer.Scanner
+        scanner: Lexer.ValueScanner
     }
 
     export type WithLookaheadAndRoot<
         Lookahead extends string,
         Root extends Parse.Node = Parse.Node
     > = Value & {
-        scanner: Lexer.Scanner<Lookahead>
+        scanner: Lexer.ValueScanner<Lookahead>
         root: Root
     }
 
     export type WithLookahead<Lookahead extends string> = Value & {
-        scanner: Lexer.Scanner<Lookahead>
+        scanner: Lexer.ValueScanner<Lookahead>
     }
 
     export type WithRoot<Root extends Parse.Node = Parse.Node> = Value & {
@@ -59,19 +58,11 @@ export namespace State {
         bounds: Bound.PartialBoundsDefinition
     }
 
-    export type TypeScanner = {
-        lookahead: string
-        unscanned: string[]
-    }
-
-    export type ScannerFrom<R extends TypeScanner> = R
-
     export type From<S extends Type> = S
 
     export type Error<S extends Type, Message extends string> = From<{
         groups: S["groups"]
         branches: S["branches"]
-        bounds: S["bounds"]
         root: ErrorToken<Message>
         scanner: {
             lookahead: "ERR"
@@ -79,16 +70,15 @@ export namespace State {
         }
     }>
 
-    export type Initialize<Def extends string> = From<{
+    export type Initialize<Scanner extends Lexer.TypeScanner> = From<{
         groups: []
         branches: {}
-        bounds: {}
         root: undefined
-        scanner: Lexer.ShiftBase<ListChars<Def>>
+        scanner: Scanner
     }>
 
     export const initialize = (def: string): Value => {
-        const scanner = new Lexer.Scanner(def)
+        const scanner = new Lexer.ValueScanner(def)
         Lexer.shiftBase(scanner)
         return {
             groups: [],
@@ -107,7 +97,6 @@ export namespace State {
     export type SetRoot<S extends Type, Node> = From<{
         groups: S["groups"]
         branches: S["branches"]
-        bounds: S["bounds"]
         root: Node
         scanner: S["scanner"]
     }>
@@ -115,7 +104,6 @@ export namespace State {
     export type ShiftBase<S extends Type, Root = S["root"]> = From<{
         groups: S["groups"]
         branches: S["branches"]
-        bounds: S["bounds"]
         root: Root
         scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
     }>
@@ -123,7 +111,6 @@ export namespace State {
     export type ShiftOperator<S extends Type, Root = S["root"]> = From<{
         groups: S["groups"]
         branches: S["branches"]
-        bounds: S["bounds"]
         root: Root
         scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
     }>
