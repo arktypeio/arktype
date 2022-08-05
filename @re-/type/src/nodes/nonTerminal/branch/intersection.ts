@@ -1,6 +1,6 @@
 import { Base } from "../../base/index.js"
+import { Expression } from "../../parser/expression.js"
 import { Lexer } from "../../parser/lexer.js"
-import { State } from "../../parser/state.js"
 import { NonTerminal } from "./../nonTerminal.js"
 import { Branches } from "./branch.js"
 
@@ -10,12 +10,15 @@ export namespace Intersection {
         intersection: [Branches.MergeExpression<B["intersection"], Root>, "&"]
     }
 
-    export type Parse<S extends State.Type> = Branches.Parse<
+    export type Parse<S extends Expression.State.Type> = Branches.Parse<
         S,
         PushRoot<S["branches"], S["root"]>
     >
 
-    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (
+        s: Expression.State.Value,
+        ctx: Base.Parsing.Context
+    ) => {
         if (!s.branches.intersection) {
             s.branches.intersection = new IntersectionNode([s.root!], ctx)
         } else {
@@ -25,7 +28,7 @@ export namespace Intersection {
         Lexer.shiftBase(s.scanner)
     }
 
-    export const merge = (s: State.Value) => {
+    export const merge = (s: Expression.State.Value) => {
         if (s.branches.intersection) {
             s.branches.intersection.addMember(s.root!)
             s.root = s.branches.intersection

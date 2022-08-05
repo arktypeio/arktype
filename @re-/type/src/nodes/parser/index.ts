@@ -1,6 +1,6 @@
 export * from "./tree.js"
 export * from "./core.js"
 export * from "./lexer.js"
-export * from "./state.js"
+export * from "./expression.js"
 export * from "./naive.js"
 export * from "./tokens.js"

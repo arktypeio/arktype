@@ -5,8 +5,8 @@ import { Base } from "../../base/index.js"
 import {
     boundStartChars,
     boundTokens,
+    Expression,
     Lexer,
-    State,
     tokenSet,
     Tree
 } from "../../parser/index.js"
@@ -103,27 +103,32 @@ export namespace Bound {
         `Left-side bound values must specify a lower bound using < or <= (got ${token}).`
 
     export type ParsePossibleLeft<
-        S extends State.Type,
+        S extends Expression.State.Type,
         N extends NumberLiteralDefinition
     > = S["scanner"]["lookahead"] extends DoubleBoundToken
         ? Bound.ParseLeft<S, S["scanner"]["lookahead"], N>
         : S["scanner"]["lookahead"] extends Token
-        ? State.Error<S, InvalidLeftBoundMessage<S["scanner"]["lookahead"]>>
-        : State.SetRoot<S, N>
+        ? Expression.State.Error<
+              S,
+              InvalidLeftBoundMessage<S["scanner"]["lookahead"]>
+          >
+        : Expression.SetRoot<S, N>
 
-    export const parsePossibleLeft = (s: State.WithRoot<NumberLiteralNode>) => {
-        if (State.lookaheadIn(s, doubleBoundTokens)) {
+    export const parsePossibleLeft = (
+        s: Expression.State.WithRoot<NumberLiteralNode>
+    ) => {
+        if (Expression.State.lookaheadIn(s, doubleBoundTokens)) {
             parseLeft(s)
-        } else if (State.lookaheadIn(s, Bound.tokens)) {
+        } else if (Expression.State.lookaheadIn(s, Bound.tokens)) {
             throw new Error(invalidLeftBoundMessage(s.scanner.lookahead))
         }
     }
 
     export type ParseLeft<
-        S extends State.Type,
+        S extends Expression.State.Type,
         T extends DoubleBoundToken,
         N extends NumberLiteralDefinition
-    > = State.From<{
+    > = Expression.State.From<{
         groups: S["groups"]
         branches: S["branches"]
         bounds: {
@@ -134,7 +139,10 @@ export namespace Bound {
     }>
 
     export const parseLeft = (
-        s: State.WithLookaheadAndRoot<Bound.DoubleBoundToken, NumberLiteralNode>
+        s: Expression.State.WithLookaheadAndRoot<
+            Bound.DoubleBoundToken,
+            NumberLiteralNode
+        >
     ) => {
         s.bounds.left = [s.root.def, s.scanner.lookahead]
         s.root = undefined as any
@@ -170,7 +178,7 @@ export namespace Bound {
     //       >
 
     export const parseRight = (
-        s: State.WithLookaheadAndRoot<Bound.Token>,
+        s: Expression.State.WithLookaheadAndRoot<Bound.Token>,
         ctx: Base.Parsing.Context
     ) => {
         const token = s.scanner.lookahead
@@ -208,7 +216,7 @@ export namespace Bound {
         `Right-side bound token ${right} is redundant or incompatible with left-side token ${left}.`
 
     const createBound = (
-        s: State.WithRoot,
+        s: Expression.State.WithRoot,
         right: Right,
         ctx: Base.Parsing.Context
     ) => {

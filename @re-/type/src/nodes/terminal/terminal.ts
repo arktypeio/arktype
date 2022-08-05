@@ -1,5 +1,5 @@
 import { Base } from "../base/index.js"
-import { Lexer, State } from "../parser/index.js"
+import { Expression, Lexer } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
@@ -20,19 +20,22 @@ export namespace Terminal {
         ? true
         : false
 
-    export type Parse<S extends State.Type, Dict> = IsResolvableName<
+    export type Parse<S extends Expression.State.Type, Dict> = IsResolvableName<
         S["scanner"]["lookahead"],
         Dict
     > extends true
-        ? State.ShiftOperator<S, S["scanner"]["lookahead"]>
+        ? Expression.ShiftOperator<S, S["scanner"]["lookahead"]>
         : S["scanner"]["lookahead"] extends LiteralDefinition
-        ? State.ShiftOperator<S, S["scanner"]["lookahead"]>
-        : State.Error<
+        ? Expression.ShiftOperator<S, S["scanner"]["lookahead"]>
+        : Expression.State.Error<
               S,
               `'${S["scanner"]["lookahead"]}' is not a builtin type and does not exist in your space.`
           >
 
-    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (
+        s: Expression.State.Value,
+        ctx: Base.Parsing.Context
+    ) => {
         if (Keyword.matches(s.scanner.lookahead)) {
             s.root = Keyword.parse(s.scanner.lookahead)
         } else if (AliasNode.matches(s.scanner.lookahead, ctx)) {
