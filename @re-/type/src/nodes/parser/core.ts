@@ -9,7 +9,11 @@ import {
     Optional,
     Union
 } from "../nonTerminal/index.js"
-import { NumberLiteralNode, Terminal } from "../terminal/index.js"
+import {
+    EnclosedLiteralDefinition,
+    NumberLiteralNode,
+    Terminal
+} from "../terminal/index.js"
 import { Expression } from "./expression.js"
 import { Shift } from "./shift.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
@@ -45,6 +49,10 @@ export namespace Core {
         Dict
     > = S["tree"]["root"] extends ErrorToken<string>
         ? S
+        : S["scanner"]["lookahead"] extends Terminal.UnenclosedToken<
+              infer Token
+          >
+        ? ParseToken<Terminal.ParseUnenclosed<S, Token, Dict>, Dict>
         : S["scanner"]["lookahead"] extends "END"
         ? ReduceExpression<S>
         : S["scanner"]["lookahead"] extends "[]"
@@ -57,10 +65,15 @@ export namespace Core {
         ? ParseToken<Group.ParseOpen<S>, Dict>
         : S["scanner"]["lookahead"] extends ")"
         ? ParseToken<Group.ParseClose<S>, Dict>
-        : // TODO: Don't redunandantly remove!
+        : S["scanner"]["lookahead"] extends EnclosedLiteralDefinition
+        ? ParseToken<Terminal.ParseEnclosed<S, S["scanner"]["lookahead"]>, Dict>
+        : // TODO: Don't redunandantly remove "!""
         S["scanner"]["lookahead"] extends ErrorToken<infer Message>
         ? Expression.T.Error<S, Message>
-        : ParseToken<Terminal.Parse<S, Dict>, Dict>
+        : Expression.T.Error<
+              S,
+              `Unexpected token ${S["scanner"]["lookahead"] & string}.`
+          >
 
     const parseExpression = (
         s: Expression.State,

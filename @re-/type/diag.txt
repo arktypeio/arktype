@@ -1,55 +1,52 @@
-docs/snippets/constraints.ts(8,9): error TS2322: Type '"18<=integer<125"' is not assignable to type '"'<=' is not a builtin type and does not exist in your space."'.
-docs/snippets/constraints.ts(10,9): error TS2322: Type '"string<=80"' is not assignable to type '"'<=' is not a builtin type and does not exist in your space."'.
-src/__tests__/references.test.ts(37,29): error TS2345: Argument of type '"0<(user[]|group[]|boolean&true|integer|null)[]<2"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"!'<' is not a builtin type and does not exist in your space."[]'.
-  Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"!'<' is not a builtin type and does not exist in your space."'.
-    Type '"boolean"' is not assignable to type '"!'<' is not a builtin type and does not exist in your space."'.
-src/__tests__/references.test.ts(53,37): error TS2345: Argument of type '"0|1|0[]|1[]|0[][]|1[][]?"' is not assignable to parameter of type '"'?' is not a builtin type and does not exist in your space."'.
-src/__tests__/references.test.ts(54,40): error TS2322: Type '"0"' is not assignable to type '"!'?' is not a builtin type and does not exist in your space."'.
-src/__tests__/references.test.ts(54,45): error TS2322: Type '"1"' is not assignable to type '"!'?' is not a builtin type and does not exist in your space."'.
+docs/snippets/constraints.ts(8,9): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected token <=."'.
+docs/snippets/constraints.ts(10,9): error TS2322: Type '"string<=80"' is not assignable to type '"Unexpected token <=."'.
+src/__tests__/references.test.ts(37,29): error TS2345: Argument of type '"0<(user[]|group[]|boolean&true|integer|null)[]<2"' is not assignable to parameter of type '"Unexpected token <."'.
+src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"!Unexpected token <."[]'.
+  Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"!Unexpected token <."'.
+    Type '"boolean"' is not assignable to type '"!Unexpected token <."'.
+src/__tests__/references.test.ts(53,37): error TS2345: Argument of type '"0|1|0[]|1[]|0[][]|1[][]?"' is not assignable to parameter of type '"Unexpected token ?."'.
+src/__tests__/references.test.ts(54,40): error TS2322: Type '"0"' is not assignable to type '"!Unexpected token ?."'.
+src/__tests__/references.test.ts(54,45): error TS2322: Type '"1"' is not assignable to type '"!Unexpected token ?."'.
 src/__tests__/references.test.ts(57,37): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
   The types of 'strings.expression' are incompatible between these types.
-    Type '"string[]|integer?"' is not assignable to type '"'?' is not a builtin type and does not exist in your space."'.
-src/__tests__/references.test.ts(58,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type '("string" | "boolean" | "null" | `/${string}/` | "-1n" | "!'?' is not a builtin type and does not exist in your space.")[]'.
-  Type '"boolean" | "string" | `/${string}/` | "-1n" | "null" | "integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!'?' is not a builtin type and does not exist in your space."'.
-    Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!'?' is not a builtin type and does not exist in your space."'.
+    Type '"string[]|integer?"' is not assignable to type '"Unexpected token ?."'.
+src/__tests__/references.test.ts(58,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type '("string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?.")[]'.
+  Type '"boolean" | `/${string}/` | "string" | "-1n" | "null" | "integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?."'.
+    Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?."'.
 src/__tests__/references.test.ts(63,37): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/__tests__/references.test.ts(82,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: "boolean"[]; expression: "!'?' is not a builtin type and does not exist in your space."[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
+src/__tests__/references.test.ts(82,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: "boolean"[]; expression: "!Unexpected token ?."[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
   The types of 'strings.expression' are incompatible between these types.
-    Type '["string", "integer"]' is not assignable to type '"!'?' is not a builtin type and does not exist in your space."[]'.
-      Type '"string" | "integer"' is not assignable to type '"!'?' is not a builtin type and does not exist in your space."'.
-        Type '"string"' is not assignable to type '"!'?' is not a builtin type and does not exist in your space."'.
+    Type '["string", "integer"]' is not assignable to type '"!Unexpected token ?."[]'.
+      Type '"string" | "integer"' is not assignable to type '"!Unexpected token ?."'.
+        Type '"string"' is not assignable to type '"!Unexpected token ?."'.
 src/__tests__/references.test.ts(87,47): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/__tests__/references.test.ts(90,50): error TS2322: Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!'?' is not a builtin type and does not exist in your space."'.
+src/__tests__/references.test.ts(90,50): error TS2322: Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?."'.
 src/__tests__/references.test.ts(95,50): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"'<=' is not a builtin type and does not exist in your space."'.
-src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(5,10): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(8,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(11,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(14,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/optional.test.ts(11,25): error TS2345: Argument of type '"(string|number[])?"' is not assignable to parameter of type '"'?' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(68,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(132,17): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected token <=."'.
+src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected token <=."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(5,10): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Unexpected token >."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(8,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"Unexpected token <=."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(11,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"Unexpected token ==."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(14,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"Unexpected token <=."'.
+src/nodes/nonTerminal/__tests__/optional.test.ts(11,25): error TS2345: Argument of type '"(string|number[])?"' is not assignable to parameter of type '"Unexpected token ?."'.
 src/nodes/nonTerminal/bound/parse.ts(216,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/bound/parse.ts(228,59): error TS2554: Expected 1 arguments, but got 2.
 src/nodes/nonTerminal/bound/parse.ts(232,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/bound/parse.ts(232,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/bound/parse.ts(233,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(39,21): error TS2578: Unused '@ts-expect-error' directive.
 Files:              258
-Lines:            65974
-Nodes:           182653
-Identifiers:      61658
-Symbols:         203573
-Types:            66895
-Instantiations:  336014
-Memory used:    166149K
-I/O read:         0.01s
+Lines:            66028
+Nodes:           182776
+Identifiers:      61694
+Symbols:         203331
+Types:            67128
+Instantiations:  335876
+Memory used:    178067K
+I/O read:         0.02s
 I/O write:        0.00s
-Parse time:       0.50s
-Bind time:        0.19s
-Check time:       1.77s
+Parse time:       0.46s
+Bind time:        0.17s
+Check time:       1.69s
 Emit time:        0.00s
-Total time:       2.47s
+Total time:       2.31s

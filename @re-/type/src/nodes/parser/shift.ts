@@ -1,4 +1,5 @@
 import { Iterate, ListChars } from "@re-/tools"
+import { Terminal } from "../index.js"
 import { Bound } from "../nonTerminal/index.js"
 import { EnclosedBaseStartChar, ErrorToken } from "./tokens.js"
 
@@ -58,7 +59,8 @@ export namespace Shift {
             ? EnclosedBase<Next, "", Rest>
             : Next extends " "
             ? Base<Rest>
-            : UnenclosedBase<Next & string, Rest>
+            : // @ts-ignore TODO figure out what to do with string type?
+              UnenclosedBase<Next, Rest>
         : Error<`Expected an expression.`, []>
 
     export type Operator<Unscanned extends unknown[]> = Unscanned extends Scan<
@@ -116,9 +118,9 @@ export namespace Shift {
         Unscanned extends unknown[]
     > = Unscanned extends Scan<infer Next, infer Rest>
         ? Next extends BaseTermatingChar
-            ? ScannerFrom<Fragment, Unscanned>
+            ? ScannerFrom<Terminal.UnenclosedToken<Fragment>, Unscanned>
             : UnenclosedBase<`${Fragment}${Next}`, Rest>
-        : ScannerFrom<Fragment, []>
+        : ScannerFrom<Terminal.UnenclosedToken<Fragment>, []>
 
     type Error<
         Message extends string,
