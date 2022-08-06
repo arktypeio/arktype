@@ -6,7 +6,7 @@ import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
     export type Parse<S extends Expression.State.Type> =
-        Expression.ShiftOperator<S, [S["root"], "[]"]>
+        Expression.State.ShiftOperator<S, [S["root"], "[]"]>
 
     export const parse = (
         s: Expression.State.Value,
@@ -17,16 +17,6 @@ export namespace List {
     }
 
     export type Node<Child = unknown> = [Child, "[]"]
-
-    export type ShiftToken<Unscanned extends string[]> =
-        Unscanned extends Lexer.Scan<infer Lookahead, infer Rest>
-            ? Lookahead extends "]"
-                ? Lexer.ScannerFrom<{
-                      lookahead: "[]"
-                      unscanned: Rest
-                  }>
-                : Lexer.ShiftError<Unscanned, `Missing expected ']'.`>
-            : Lexer.ShiftError<[], `Missing expected ']'.`>
 
     export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {
         if (scanner.next !== "]") {

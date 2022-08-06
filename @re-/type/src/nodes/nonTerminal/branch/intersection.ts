@@ -5,14 +5,19 @@ import { NonTerminal } from "./../nonTerminal.js"
 import { Branches } from "./branch.js"
 
 export namespace Intersection {
-    type PushRoot<B extends Branches.TypeState, Root> = {
+    type Push<B extends Branches.TypeState, Root> = {
         union: B["union"]
-        intersection: [Branches.MergeExpression<B["intersection"], Root>, "&"]
+        intersection: [...B["intersection"], Root]
     }
+
+    export type Merge<
+        B extends Branches.TypeState,
+        Root
+    > = B["intersection"] extends [] ? Root : ["&", ...B["intersection"], Root]
 
     export type Parse<S extends Expression.State.Type> = Branches.Parse<
         S,
-        PushRoot<S["branches"], S["root"]>
+        Push<S["branches"], S["root"]>
     >
 
     export const parse = (

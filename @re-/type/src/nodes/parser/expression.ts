@@ -69,7 +69,10 @@ export namespace Expression {
 
         export type Initialize<Scanner extends Lexer.TypeScanner> = From<{
             groups: []
-            branches: {}
+            branches: {
+                intersection: []
+                union: []
+            }
             root: undefined
             scanner: Scanner
         }>

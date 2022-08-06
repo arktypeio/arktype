@@ -11,22 +11,17 @@ export namespace Branches {
 
     export type Token = keyof typeof tokens
 
-    export type Branch = [unknown, string]
+    export type Branch = unknown[]
 
     export type TypeState = {
-        union?: Branch
-        intersection?: Branch
+        union: Branch
+        intersection: Branch
     }
 
     export type ValueState = {
         union?: UnionNode
         intersection?: IntersectionNode
     }
-
-    export type MergeAll<B extends Branches.TypeState, Root> = MergeExpression<
-        B["union"],
-        MergeExpression<B["intersection"], Root>
-    >
 
     export const mergeAll = (s: Expression.State.Value) => {
         // TODO: Clearer way to show these can be undefined
@@ -43,9 +38,4 @@ export namespace Branches {
         root: undefined
         scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
     }>
-
-    export type MergeExpression<
-        B extends Branch | undefined,
-        Expression
-    > = B extends Branch ? [...B, Expression] : Expression
 }

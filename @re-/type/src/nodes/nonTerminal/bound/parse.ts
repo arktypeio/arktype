@@ -64,26 +64,6 @@ export namespace Bound {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    // export type ShiftToken<
-    //     Start extends StartChar,
-    //     Unscanned extends string[]
-    // > = Unscanned extends Lexer.Scan<infer Lookahead, infer NextUnscanned>
-    //     ? Lookahead extends "="
-    //         ? State.ScannerFrom<{
-    //               lookahead: `${Start}=`
-    //               unscanned: NextUnscanned
-    //           }>
-    //         : Start extends "="
-    //         ? Lexer.ShiftError<
-    //               Unscanned,
-    //               `= is not a valid comparator. Use == instead.`
-    //           >
-    //         : State.ScannerFrom<{
-    //               lookahead: Start
-    //               unscanned: Unscanned
-    //           }>
-    //     : Lexer.ShiftError<[], `Expected a bound condition after ${Start}.`>
-
     export const shiftToken = (
         scanner: Lexer.ValueScanner<Bound.StartChar>
     ) => {
@@ -112,7 +92,7 @@ export namespace Bound {
               S,
               InvalidLeftBoundMessage<S["scanner"]["lookahead"]>
           >
-        : Expression.SetRoot<S, N>
+        : Expression.State.SetRoot<S, N>
 
     export const parsePossibleLeft = (
         s: Expression.State.WithRoot<NumberLiteralNode>

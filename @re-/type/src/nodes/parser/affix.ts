@@ -12,8 +12,8 @@ export namespace Affixes {
 
         export type Context = {
             bounds: {
-                left?: string
-                right?: string
+                left?: Bound.Left
+                right?: Bound.Right
             }
             optional: boolean
         }
@@ -29,18 +29,20 @@ export namespace Affixes {
         }>
     }
 
+    type Z = Parse<"3<=number<=5">
+
     export type Parse<Def extends string> = ParsePrefixes<
         ParseSuffixes<State.Initialize<Def>>
     >
 
     type ParsePrefixes<S extends State.Type> =
-        S["scanner"]["lookahead"] extends `${string}${Bound.StartChar}`
+        S["scanner"]["lookahead"] extends [infer Value, infer Token]
             ? State.From<{
                   scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
                   ctx: {
                       bounds: {
                           right: S["ctx"]["bounds"]["right"]
-                          left: S["scanner"]["lookahead"]
+                          left: [Value, Token]
                       }
                       optional: S["ctx"]["optional"]
                   }

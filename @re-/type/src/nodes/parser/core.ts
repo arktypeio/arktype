@@ -39,6 +39,7 @@ export namespace Core {
         S extends Affixes.State.Type,
         Dict
     > = Affixes.Apply<
+        // @ts-ignore
         ParseExpression<Expression.State.Initialize<S["scanner"]>, Dict>,
         S["ctx"]
     >
@@ -123,8 +124,11 @@ export namespace Core {
     type ReduceExpression<S extends Expression.State.Type> = ValidateExpression<
         Expression.State.From<{
             groups: S["groups"]
-            branches: {}
-            root: Branches.MergeAll<S["branches"], S["root"]>
+            branches: {
+                union: []
+                intersection: []
+            }
+            root: Union.Merge<S["branches"], S["root"]>
             scanner: S["scanner"]
         }>
     >

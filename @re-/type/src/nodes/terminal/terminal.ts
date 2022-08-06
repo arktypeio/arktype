@@ -24,9 +24,9 @@ export namespace Terminal {
         S["scanner"]["lookahead"],
         Dict
     > extends true
-        ? Expression.ShiftOperator<S, S["scanner"]["lookahead"]>
+        ? Expression.State.ShiftOperator<S, S["scanner"]["lookahead"]>
         : S["scanner"]["lookahead"] extends LiteralDefinition
-        ? Expression.ShiftOperator<S, S["scanner"]["lookahead"]>
+        ? Expression.State.ShiftOperator<S, S["scanner"]["lookahead"]>
         : Expression.State.Error<
               S,
               `'${S["scanner"]["lookahead"]}' is not a builtin type and does not exist in your space.`

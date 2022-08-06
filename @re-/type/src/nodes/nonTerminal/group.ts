@@ -1,12 +1,15 @@
 import { Expression } from "../parser/expression.js"
 import { Lexer } from "../parser/lexer.js"
-import { Branches } from "./branch/branch.js"
+import { Branches, Union } from "./branch/index.js"
 
 export namespace Group {
     export type ParseOpen<S extends Expression.State.Type> =
         Expression.State.From<{
             groups: [...S["groups"], S["branches"]]
-            branches: {}
+            branches: {
+                union: []
+                intersection: []
+            }
             root: undefined
             scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
         }>
@@ -26,7 +29,7 @@ export namespace Group {
         S["groups"] extends PopGroup<infer Stack, infer Top>
             ? Expression.State.From<{
                   groups: Stack
-                  root: Branches.MergeAll<S["branches"], S["root"]>
+                  root: Union.Merge<S["branches"], S["root"]>
                   branches: Top
                   scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
               }>

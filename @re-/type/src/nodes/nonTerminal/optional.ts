@@ -6,7 +6,7 @@ import { NonTerminal } from "./nonTerminal.js"
 export namespace Optional {
     export type Parse<S extends Expression.State.Type> =
         S["scanner"]["unscanned"] extends []
-            ? Expression.ShiftOperator<S, [S["root"], "[]"]>
+            ? Expression.State.ShiftOperator<S, [S["root"], "[]"]>
             : Expression.State.Error<
                   S,
                   `Suffix '?' is only valid at the end of a definition.`
