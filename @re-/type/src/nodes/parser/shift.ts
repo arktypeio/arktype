@@ -19,35 +19,14 @@ export namespace Shift {
         unscanned: unknown[]
     }
 
-    type SingleCharToken = "|" | "&" | "(" | ")"
-
     type SingleCharOperator = "|" | "&" | ")"
 
-    type BaseTermatingChar = "?" | SingleCharToken | "[" | Bound.StartChar | " "
-
-    export type Token<Unscanned extends unknown[]> = Unscanned extends Scan<
-        infer Next,
-        infer Rest
-    >
-        ? Next extends "?"
-            ? ScannerFrom<
-                  Rest extends []
-                      ? "?"
-                      : ErrorToken<`Suffix '?' is only valid at the end of a definition.`>,
-                  Rest
-              >
-            : Next extends SingleCharToken
-            ? ScannerFrom<Next, Rest>
-            : Next extends "["
-            ? List<Rest>
-            : Next extends Bound.StartChar
-            ? Bound<Next, Rest>
-            : Next extends EnclosedBaseStartChar
-            ? EnclosedBase<Next, "", Rest>
-            : Next extends " "
-            ? Token<Rest>
-            : UnenclosedBase<Next, Rest>
-        : ScannerFrom<"END", []>
+    type BaseTermatingChar =
+        | "?"
+        | SingleCharOperator
+        | "["
+        | Bound.StartChar
+        | " "
 
     export type Base<Unscanned extends unknown[]> = Unscanned extends Iterate<
         infer Next,

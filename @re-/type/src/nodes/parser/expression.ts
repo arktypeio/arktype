@@ -50,13 +50,6 @@ export namespace Expression {
             root: Node
         }>
 
-        export type Modify<T extends Tree, Token extends string> = SetRoot<
-            T,
-            T["root"] extends undefined
-                ? ErrorToken<`Unable to apply modifier ${Token} to an empty expression.`>
-                : [T["root"], Token]
-        >
-
         export type From<S extends T.State> = S
 
         export type Initial<Tokens extends unknown[]> = From<{

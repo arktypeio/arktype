@@ -20,13 +20,13 @@ export namespace Tree {
         Ctx extends Base.Parsing.InferenceContext
     > = Tree extends string
         ? InferTerminalStr<Tree, Ctx>
-        : Tree extends Optional.Node<infer Child>
+        : Tree extends [infer Child, "?"]
         ? Infer<Child, Ctx> | undefined
-        : Tree extends List.Node<infer Child>
+        : Tree extends [infer Child, "[]"]
         ? Infer<Child, Ctx>[]
-        : Tree extends Union.Node<infer Left, infer Right>
+        : Tree extends [infer Left, "|", infer Right]
         ? Infer<Left, Ctx> | Infer<Right, Ctx>
-        : Tree extends Intersection.Node<infer Left, infer Right>
+        : Tree extends [infer Left, "&", infer Right]
         ? Infer<Left, Ctx> & Infer<Right, Ctx>
         : never
 

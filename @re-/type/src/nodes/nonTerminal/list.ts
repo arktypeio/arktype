@@ -7,7 +7,7 @@ import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
     export type Parse<S extends Expression.T.State> = Expression.T.From<{
-        tree: Expression.T.Modify<S["tree"], "[]">
+        tree: Expression.T.SetRoot<S["tree"], [S["tree"]["root"], "[]"]>
         scanner: Shift.Operator<S["scanner"]["unscanned"]>
     }>
 
