@@ -1,5 +1,5 @@
 import { Base } from "../base/index.js"
-import { Expression, Lexer } from "../parser/index.js"
+import { ErrorToken, Expression, Lexer } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
@@ -27,6 +27,8 @@ export namespace Terminal {
     > = IsResolvableName<Token, Dict> extends true
         ? Expression.State.SetRoot<S, Token>
         : Token extends LiteralDefinition
+        ? Expression.State.SetRoot<S, Token>
+        : Token extends ErrorToken<string>
         ? Expression.State.SetRoot<S, Token>
         : Expression.State.Error<
               S,

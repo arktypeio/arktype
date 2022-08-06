@@ -1,23 +1,21 @@
-src/nodes/parser/affix.ts(40,11): error TS2344: Type '{ bounds: { right: A["bounds"]["right"]; left: [Value, Token]; }; optional: A["optional"]; }' does not satisfy the constraint 'Affixes'.
-  Type at position 0 in source is not compatible with type at position 0 in target.
-    The types of 'bounds.left' are incompatible between these types.
-      Type 'Value' is not assignable to type '`${number}`'.
-src/nodes/parser/affix.ts(82,11): error TS2344: Type '{ bounds: { right: [Token, Value]; }; optional: A["optional"]; }' does not satisfy the constraint 'Affixes'.
-  Type at position 1 in source is not compatible with type at position 1 in target.
-    The types of 'bounds.right' are incompatible between these types.
-      Type 'Value' is not assignable to type '`${number}`'.
+src/nodes/nonTerminal/bound/parse.ts(216,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/nodes/nonTerminal/bound/parse.ts(228,59): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/nonTerminal/bound/parse.ts(232,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/nodes/nonTerminal/bound/parse.ts(232,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
+  Type '">"' is not assignable to type '"<" | "<="'.
+src/nodes/nonTerminal/bound/parse.ts(233,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 Files:              258
-Lines:            66136
-Nodes:           182407
-Identifiers:      61637
-Symbols:         255562
-Types:            72165
-Instantiations:  350602
-Memory used:    187768K
+Lines:            65931
+Nodes:           183935
+Identifiers:      62050
+Symbols:         278728
+Types:            75867
+Instantiations:  376073
+Memory used:    192681K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.44s
+Parse time:       0.49s
 Bind time:        0.17s
-Check time:       1.61s
+Check time:       1.86s
 Emit time:        0.00s
-Total time:       2.22s
+Total time:       2.53s

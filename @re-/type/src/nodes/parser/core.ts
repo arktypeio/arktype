@@ -67,6 +67,8 @@ export namespace Core {
             ? ParseBase<Intersection.Parse<S>, Rest, Dict>
             : Lookahead extends ")"
             ? ParseOperator<Group.ParseClose<S>, Rest, Dict>
+            : Lookahead extends ErrorToken<string>
+            ? Expression.State.SetRoot<S, Lookahead>
             : Expression.State.Error<
                   S,
                   // @ts-ignore TODO: Remove

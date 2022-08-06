@@ -5,10 +5,7 @@ import { Lex } from "./lex.js"
 import { ErrorToken } from "./tokens.js"
 
 export type Affixes = {
-    bounds: {
-        left?: Bound.Left
-        right?: Bound.Right
-    }
+    bounds: Bound.Raw
     optional: boolean
 }
 
@@ -95,6 +92,9 @@ export type Apply<
     A extends Affixes
 > = S["root"] extends ErrorToken<string>
     ? S
+    : // TODO: Bounds should be validated before parse. Find a way to communicate better between phases
+    Bound.Validate<A["bounds"], S["root"]> extends ErrorToken<infer Message>
+    ? Expression.State.Error<S, Message>
     : A["optional"] extends true
     ? Expression.State.SetRoot<S, [S["root"], "?"]>
     : S

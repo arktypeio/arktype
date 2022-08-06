@@ -16,7 +16,7 @@ export namespace Expression {
         export type Value = {
             groups: Branches.ValueState[]
             branches: Branches.ValueState
-            bounds: Bound.PartialBoundsDefinition
+            bounds: Bound.Raw
             root: Parse.Node | undefined
             scanner: Lexer.ValueScanner
         }

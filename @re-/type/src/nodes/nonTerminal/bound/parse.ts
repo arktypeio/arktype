@@ -5,6 +5,7 @@ import { Base } from "../../base/index.js"
 import {
     boundStartChars,
     boundTokens,
+    ErrorToken,
     Expression,
     Lexer,
     tokenSet,
@@ -39,20 +40,21 @@ export namespace Bound {
 
     export type DoubleBoundToken = keyof typeof doubleBoundTokens
 
-    export type PartialBoundsDefinition = {
-        left?: Left
-        right?: Right
+    export type Raw = {
+        left?: RawLeft
+        right?: RawRight
     }
 
-    export type DoubleBoundCandidate = Required<PartialBoundsDefinition>
+    export type RawLeft = [unknown, Token]
 
-    export const isDoubleBoundCandidate = (
-        bounds: PartialBoundsDefinition
-    ): bounds is DoubleBoundCandidate => "left" in bounds && "right" in bounds
+    export type RawRight = [Token, unknown]
 
-    export type Left = [NumberLiteralDefinition, DoubleBoundToken]
+    export type RawDouble = Required<Raw>
 
-    export type Right = [Token, NumberLiteralDefinition]
+    export type RawSingle = { right: RawRight }
+
+    export const isDoubleBoundCandidate = (bounds: Raw): bounds is RawDouble =>
+        "left" in bounds && "right" in bounds
 
     /** A BoundableNode must be either:
      *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
@@ -74,25 +76,69 @@ export namespace Bound {
         }
     }
 
-    type InvalidLeftBoundMessage<T extends Token> =
-        `Left-side bound values must specify a lower bound using < or <= (got ${T}).`
+    type InvalidDoubleBoundMessage<T extends Token> =
+        `Double-bound expressions must specify their bounds using < or <= (got ${T}).`
 
-    export const invalidLeftBoundMessage = <T extends Token>(
-        token: T
-    ): InvalidLeftBoundMessage<T> =>
-        `Left-side bound values must specify a lower bound using < or <= (got ${token}).`
+    export const invalidDoubleBoundMessage = <T extends Token>(
+        T: T
+    ): InvalidDoubleBoundMessage<T> =>
+        `Double-bound expressions must specify their bounds using < or <= (got ${T}).`
 
-    // export type ParsePossibleLeft<
-    //     S extends Expression.State.Type,
-    //     N extends NumberLiteralDefinition
-    // > = S["scanner"]["lookahead"] extends DoubleBoundToken
-    //     ? Bound.ParseLeft<S, S["scanner"]["lookahead"], N>
-    //     : S["scanner"]["lookahead"] extends Token
-    //     ? Expression.State.Error<
-    //           S,
-    //           InvalidLeftBoundMessage<S["scanner"]["lookahead"]>
-    //       >
-    //     : Expression.State.SetRoot<S, N>
+    type NonNumericBoundMessage<Value extends string> =
+        `Bounding values must be specified using a number literal (got '${Value}').`
+
+    export const nonNumericBoundingMessage = <Value extends string>(
+        Value: Value
+    ): NonNumericBoundMessage<Value> =>
+        `Bounding values must be specified using a number literal (got '${Value}').`
+
+    export type Validate<Bounds extends Raw, Expression> = {} extends Bounds
+        ? Bounds
+        : CheckEach<ValidateEach<Bounds>, Expression>
+
+    type CheckEach<
+        ValidatedBounds extends BoundValidationResult,
+        Expression
+    > = ValidatedBounds["left"] extends ErrorToken<string>
+        ? ValidatedBounds["left"]
+        : ValidatedBounds["right"] extends ErrorToken<string>
+        ? ValidatedBounds["right"]
+        : Expression extends Boundable
+        ? ValidatedBounds
+        : ErrorToken<`Bounded expression '${Tree.ToString<Expression>}' must be a number-or-string-typed keyword or a list-typed expression.`>
+
+    type BoundValidationResult = {
+        left?: [NumberLiteralDefinition, DoubleBoundToken] | ErrorToken<string>
+        right?: [Token, NumberLiteralDefinition] | ErrorToken<string>
+    }
+
+    type ValidateEach<Bounds extends Raw> = Bounds extends RawDouble
+        ? ValidateDoubleBound<Bounds>
+        : Bounds extends RawSingle
+        ? ValidateSingleBound<Bounds>
+        : {
+              left: ErrorToken<UnpairedLeftBoundMessage>
+          }
+
+    type ValidateDoubleBound<Bounds extends RawDouble> = {
+        left: ValidateDoubleBoundSide<Bounds["left"][0], Bounds["left"][1]>
+        right: ValidateDoubleBoundSide<Bounds["right"][1], Bounds["right"][0]>
+    }
+
+    type ValidateDoubleBoundSide<
+        Value,
+        T extends Token
+    > = Value extends NumberLiteralDefinition
+        ? T extends DoubleBoundToken
+            ? [Value, T]
+            : ErrorToken<InvalidDoubleBoundMessage<T>>
+        : ErrorToken<NonNumericBoundMessage<Value & string>>
+
+    type ValidateSingleBound<Bounds extends RawSingle> = {
+        right: Bounds["right"][1] extends NumberLiteralDefinition
+            ? Bounds
+            : ErrorToken<NonNumericBoundMessage<Bounds["right"][1] & string>>
+    }
 
     export const parsePossibleLeft = (
         s: Expression.State.WithRoot<NumberLiteralNode>
@@ -100,23 +146,10 @@ export namespace Bound {
         if (Expression.State.lookaheadIn(s, doubleBoundTokens)) {
             parseLeft(s)
         } else if (Expression.State.lookaheadIn(s, Bound.tokens)) {
-            throw new Error(invalidLeftBoundMessage(s.scanner.lookahead))
+            // TODO: Fix
+            throw new Error("Must be < or <=.")
         }
     }
-
-    // export type ParseLeft<
-    //     S extends Expression.State.Type,
-    //     T extends DoubleBoundToken,
-    //     N extends NumberLiteralDefinition
-    // > = Expression.State.From<{
-    //     groups: S["groups"]
-    //     branches: S["branches"]
-    //     bounds: {
-    //         left: [N, T]
-    //     }
-    //     root: undefined
-    //     scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
-    // }>
 
     export const parseLeft = (
         s: Expression.State.WithLookaheadAndRoot<
@@ -128,34 +161,6 @@ export namespace Bound {
         s.root = undefined as any
         Lexer.shiftBase(s.scanner)
     }
-
-    // export type ParseRight<
-    //     S extends State.Type,
-    //     T extends Token
-    // > = S["scanner"]["lookahead"] extends NumberLiteralDefinition
-    //     ? "right" extends keyof S["bounds"]
-    //         ? State.Error<S, `Definitions cannot have multiple right bounds.`>
-    //         : S["root"] extends Boundable
-    //         ? State.From<{
-    //               groups: S["groups"]
-    //               branches: S["branches"]
-    //               bounds: {
-    //                   left: S["bounds"]["left"]
-    //                   right: [T, S["scanner"]["lookahead"]]
-    //               }
-    //               root: S["root"]
-    //               scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
-    //           }>
-    //         : State.Error<
-    //               S,
-    //               `Bounded expression '${Tree.ToString<
-    //                   S["root"]
-    //               >}' must be a number-or-string-typed keyword or a list-typed expression.`
-    //           >
-    //     : State.Error<
-    //           S,
-    //           `Right side of ${T} must be a number literal (got '${S["scanner"]["lookahead"]}').`
-    //       >
 
     export const parseRight = (
         s: Expression.State.WithLookaheadAndRoot<Bound.Token>,
@@ -181,23 +186,9 @@ export namespace Bound {
     export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
     type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
 
-    type InvalidDoubleBoundMessage<
-        Left extends Token,
-        Right extends Token
-    > = `Right-side bound token ${Right} is redundant or incompatible with left-side token ${Left}.`
-
-    export const invalidDoubleBoundMessage = <
-        Left extends Token,
-        Right extends Token
-    >(
-        left: Left,
-        right: Right
-    ): InvalidDoubleBoundMessage<Left, Right> =>
-        `Right-side bound token ${right} is redundant or incompatible with left-side token ${left}.`
-
     const createBound = (
         s: Expression.State.WithRoot,
-        right: Right,
+        right: RawRight,
         ctx: Base.Parsing.Context
     ) => {
         s.bounds.right = right
@@ -221,27 +212,12 @@ export namespace Bound {
         }
     }
 
-    // export type ValidateBounds<S extends State.Type> =
-    //     S["bounds"]["left"] extends Left
-    //         ? S["bounds"]["right"] extends Right
-    //             ? S["bounds"]["right"][0] extends DoubleBoundToken
-    //                 ? S
-    //                 : State.Error<
-    //                       S,
-    //                       InvalidDoubleBoundMessage<
-    //                           S["bounds"]["left"][1],
-    //                           S["bounds"]["right"][0]
-    //                       >
-    //                   >
-    //             : State.Error<S, UnpairedLeftBoundMessage>
-    //         : S
-
-    const validateSingleBound = (bound: Right): SingleBoundDefinition => {
+    const validateSingleBound = (bound: RawRight): SingleBoundDefinition => {
         return [bound[0], toNumber(bound[1])]
     }
 
     const validateDoubleBound = (
-        bounds: Bound.DoubleBoundCandidate
+        bounds: Bound.RawDouble
     ): DoubleBoundDefinition => {
         // TODO: get this to work at runtime.
         if (!bounds.right) {
