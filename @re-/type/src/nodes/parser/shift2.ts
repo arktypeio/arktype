@@ -8,7 +8,7 @@ export type Scan<Left extends string, Unscanned extends unknown[]> = [
     ...Unscanned
 ]
 
-export namespace Shift {
+export namespace Shift2 {
     export type ScannerFrom<Lookahead, Unscanned extends unknown[]> = {
         lookahead: Lookahead
         unscanned: Unscanned
@@ -32,8 +32,6 @@ export namespace Shift {
         | "["
         | Bound.StartChar
         | " "
-
-    type Z = Branch<ListChars<"string[][]|number[]">>
 
     export type Branch<Unscanned extends unknown[]> = Unscanned extends Iterate<
         infer Next,

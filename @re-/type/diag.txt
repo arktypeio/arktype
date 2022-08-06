@@ -35,18 +35,20 @@ src/nodes/nonTerminal/bound/parse.ts(232,30): error TS2345: Argument of type 'un
 src/nodes/nonTerminal/bound/parse.ts(232,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/bound/parse.ts(233,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-Files:              258
-Lines:            66006
-Nodes:           182728
-Identifiers:      61672
-Symbols:         203012
-Types:            66706
-Instantiations:  333817
-Memory used:    165411K
+src/nodes/parser/shift2.ts(61,44): error TS2322: Type 'Next' is not assignable to type 'string | number | bigint | boolean | null | undefined'.
+src/nodes/parser/shift2.ts(62,45): error TS2322: Type 'Next' is not assignable to type 'string | number | bigint | boolean | null | undefined'.
+Files:              259
+Lines:            66115
+Nodes:           183196
+Identifiers:      61815
+Symbols:         203417
+Types:            67152
+Instantiations:  334211
+Memory used:    168900K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.51s
-Bind time:        0.16s
-Check time:       1.69s
+Parse time:       0.45s
+Bind time:        0.15s
+Check time:       1.62s
 Emit time:        0.00s
-Total time:       2.36s
+Total time:       2.21s
