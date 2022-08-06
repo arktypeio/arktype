@@ -1,6 +1,7 @@
 import { TypeOfResult } from "@re-/tools"
 import { Base } from "../../base/index.js"
-import { Expression } from "../../parser/common.js"
+import { Expression } from "../../parser/index.js"
+import { Lex } from "../../parser/lex.js"
 import { Lexer } from "../../parser/lexer.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Branches } from "./branch.js"
@@ -32,10 +33,16 @@ export namespace Union {
         ]
     }
 
-    export type Parse<S extends Expression.T.State> = Branches.Parse<
-        S,
-        PushRoot<S["branches"], S["root"]>
-    >
+    export type Parse<S extends Expression.T.State> = Expression.T.From<{
+        tree: Reduce<S["tree"]>
+        scanner: Lex.ShiftToken<S["scanner"]["unscanned"]>
+    }>
+
+    export type Reduce<Tree extends Expression.T.Tree> = Expression.T.TreeFrom<{
+        groups: Tree["groups"]
+        branches: PushRoot<Tree["branches"], Tree["root"]>
+        root: undefined
+    }>
 
     export const parse = (s: Expression.State, ctx: Base.Parsing.Context) => {
         Intersection.merge(s)

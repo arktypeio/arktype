@@ -1,4 +1,4 @@
-import { ListChars } from "@re-/tools"
+import { Iterate, ListChars } from "@re-/tools"
 import { Bound } from "../nonTerminal/index.js"
 import { EnclosedBaseStartChar, ErrorToken } from "./tokens.js"
 
@@ -10,9 +10,14 @@ export type Scan<Left extends string, Unscanned extends string[]> = [
 export namespace Lex {
     export type ScannerFrom<R extends TypeScanner> = R
 
+    export type ShiftToken<Unscanned extends unknown[]> =
+        Unscanned extends Iterate<infer Next, infer Rest>
+            ? ScannerFrom<{ lookahead: Next; unscanned: Rest }>
+            : ScannerFrom<{ lookahead: "END"; unscanned: [] }>
+
     export type TypeScanner = {
         lookahead: unknown
-        unscanned: string[]
+        unscanned: unknown[]
     }
 
     export type Definition<Def extends string> = Token<[], ListChars<Def>>

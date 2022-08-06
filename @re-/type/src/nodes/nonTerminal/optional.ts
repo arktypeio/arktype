@@ -1,5 +1,5 @@
 import { Base } from "../base/index.js"
-import { Expression } from "../parser/common.js"
+import { Expression } from "../parser/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { NonTerminal } from "./nonTerminal.js"
 

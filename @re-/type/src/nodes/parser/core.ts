@@ -1,4 +1,4 @@
-import { Get, Iterate } from "@re-/tools"
+import { Get } from "@re-/tools"
 import { Base } from "../base/index.js"
 import {
     Bound,
@@ -10,13 +10,16 @@ import {
     Union
 } from "../nonTerminal/index.js"
 import { NumberLiteralNode, Terminal } from "../terminal/index.js"
-import { ParseAffixes } from "./affix.js"
-import { Expression } from "./common.js"
+import { Expression } from "./expression.js"
+import { Lex } from "./lex.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
-        ParseAffixes<Def, Dict>,
+        Get<
+            ParseToken<Expression.T.Initial<Lex.Definition<Def>>, Dict>,
+            "tree"
+        >,
         "root"
     >
 
@@ -40,41 +43,62 @@ export namespace Core {
         }
     }
 
+    export type ParseToken<
+        S extends Expression.T.State,
+        Dict
+    > = S["scanner"]["lookahead"] extends "END"
+        ? ReduceExpression<S>
+        : S["tree"]["root"] extends ErrorToken<string>
+        ? S
+        : S["scanner"]["lookahead"] extends "("
+        ? ParseToken<Group.ParseOpen<S>, Dict>
+        : S["scanner"]["lookahead"] extends "[]"
+        ? ParseToken<List.Parse<S>, Dict>
+        : S["scanner"]["lookahead"] extends "|"
+        ? ParseToken<Union.Parse<S>, Dict>
+        : S["scanner"]["lookahead"] extends "&"
+        ? ParseToken<Intersection.Parse<S>, Dict>
+        : S["scanner"]["lookahead"] extends ")"
+        ? ParseToken<Group.ParseClose<S>, Dict>
+        : // TODO: Don't redunandantly remove!
+        S["scanner"]["lookahead"] extends ErrorToken<infer Message>
+        ? Expression.T.Error<S, Message>
+        : ParseToken<Terminal.Parse<S, Dict>, Dict>
+
     export type ParseBase<
         S extends Expression.T.State,
-        Unscanned extends unknown[],
         Dict
-    > = S["root"] extends ErrorToken<string>
+    > = S["scanner"]["lookahead"] extends "END"
+        ? Expression.T.Error<S, `Expected an expression.`>
+        : S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : Unscanned extends Iterate<infer Lookahead, infer Rest>
-        ? Lookahead extends "("
-            ? ParseBase<Group.ParseOpen<S>, Rest, Dict>
-            : ParseOperator<Terminal.Parse<S, Lookahead, Dict>, Rest, Dict>
-        : Expression.T.Error<S, `Expected an expression.`>
+        : S["scanner"]["lookahead"] extends "("
+        ? ParseBase<Group.ParseOpen<S>, Dict>
+        : ParseOperator<Terminal.Parse<S, Dict>, Dict>
 
     type ParseOperator<
         S extends Expression.T.State,
-        Unscanned extends unknown[],
         Dict
-    > = S["root"] extends ErrorToken<string>
+    > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : Unscanned extends Iterate<infer Lookahead, infer Rest>
-        ? Lookahead extends "[]"
-            ? ParseOperator<List.Parse<S>, Rest, Dict>
-            : Lookahead extends "|"
-            ? ParseBase<Union.Parse<S>, Rest, Dict>
-            : Lookahead extends "&"
-            ? ParseBase<Intersection.Parse<S>, Rest, Dict>
-            : Lookahead extends ")"
-            ? ParseOperator<Group.ParseClose<S>, Rest, Dict>
-            : Lookahead extends ErrorToken<string>
-            ? Expression.T.SetRoot<S, Lookahead>
-            : Expression.T.Error<
-                  S,
-                  // @ts-ignore TODO: Remove
-                  `Expected an operator (got ${Lookahead}).`
-              >
-        : ReduceExpression<S>
+        : S["scanner"]["lookahead"] extends "END"
+        ? ReduceExpression<S>
+        : S["scanner"]["lookahead"] extends "[]"
+        ? ParseOperator<List.Parse<S>, Dict>
+        : S["scanner"]["lookahead"] extends "|"
+        ? ParseBase<Union.Parse<S>, Dict>
+        : S["scanner"]["lookahead"] extends "&"
+        ? ParseBase<Intersection.Parse<S>, Dict>
+        : S["scanner"]["lookahead"] extends ")"
+        ? ParseOperator<Group.ParseClose<S>, Dict>
+        : // TODO: Don't redunandantly remove!
+        S["scanner"]["lookahead"] extends ErrorToken<infer Message>
+        ? Expression.T.Error<S, Message>
+        : Expression.T.Error<
+              S,
+              `Expected an operator (got ${S["scanner"]["lookahead"] &
+                  string}).`
+          >
 
     const parseExpression = (
         s: Expression.State,
@@ -105,13 +129,14 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ReduceExpression<S extends Expression.T.State> = ValidateExpression<
-        Expression.T.From<{
-            groups: S["groups"]
+    type ReduceExpression<S extends Expression.T.State> = ValidateExpression<{
+        tree: {
+            groups: S["tree"]["groups"]
             branches: {}
-            root: Branches.MergeAll<S["branches"], S["root"]>
-        }>
-    >
+            root: Branches.MergeAll<S["tree"]["branches"], S["tree"]["root"]>
+        }
+        scanner: S["scanner"]
+    }>
 
     const reduceExpression = (s: Expression.State) => {
         Branches.mergeAll(s)
@@ -119,7 +144,9 @@ export namespace Core {
     }
 
     type ValidateExpression<S extends Expression.T.State> =
-        S["groups"] extends [] ? S : Expression.T.Error<S, UnclosedGroupMessage>
+        S["tree"]["groups"] extends []
+            ? S
+            : Expression.T.Error<S, UnclosedGroupMessage>
 
     const validateExpression = (s: Expression.State) => {
         if (s.groups.length) {
@@ -136,13 +163,12 @@ export namespace Core {
         }
     }
 
-    type UnexpectedSuffixMessage<Lookahead extends string> =
-        `Unexpected suffix token '${Lookahead}'.`
+    type UnexpectedSuffixMessage<Token extends string> =
+        `Unexpected suffix token '${Token}'.`
 
-    export const unexpectedSuffixMessage = <Lookahead extends string>(
-        lookahead: Lookahead
-    ): UnexpectedSuffixMessage<Lookahead> =>
-        `Unexpected suffix token '${lookahead}'.`
+    export const unexpectedSuffixMessage = <Token extends string>(
+        token: Token
+    ): UnexpectedSuffixMessage<Token> => `Unexpected suffix token '${token}'.`
 
     const parseSuffix = (s: Expression.WithRoot, ctx: Base.Parsing.Context) => {
         if (s.scanner.lookahead === "?") {
