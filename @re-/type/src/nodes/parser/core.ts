@@ -20,7 +20,10 @@ import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
-        Get<ParseToken<Expression.T.Initial<ListChars<Def>>, Dict>, "tree">,
+        Get<
+            ParseExpression<Expression.T.Initial<ListChars<Def>>, Dict>,
+            "tree"
+        >,
         "root"
     >
 
@@ -44,29 +47,32 @@ export namespace Core {
         }
     }
 
-    export type ParseToken<
+    export type ParseExpression<
         S extends Expression.T.State,
         Dict
     > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : S["scanner"]["lookahead"] extends Terminal.UnenclosedToken<
-              infer Token
-          >
-        ? ParseToken<Terminal.ParseUnenclosed<S, Token, Dict>, Dict>
         : S["scanner"]["lookahead"] extends "END"
         ? ReduceExpression<S>
+        : ParseExpression<ParseToken<S, Dict>, Dict>
+
+    export type ParseToken<
+        S extends Expression.T.State,
+        Dict
+    > = S["scanner"]["lookahead"] extends Terminal.UnenclosedToken<infer Token>
+        ? Terminal.ParseUnenclosed<S, Token, Dict>
         : S["scanner"]["lookahead"] extends "[]"
-        ? ParseToken<List.Parse<S>, Dict>
+        ? List.Parse<S>
         : S["scanner"]["lookahead"] extends "|"
-        ? ParseToken<Union.Parse<S>, Dict>
+        ? Union.Parse<S>
         : S["scanner"]["lookahead"] extends "&"
-        ? ParseToken<Intersection.Parse<S>, Dict>
+        ? Intersection.Parse<S>
         : S["scanner"]["lookahead"] extends "("
-        ? ParseToken<Group.ParseOpen<S>, Dict>
+        ? Group.ParseOpen<S>
         : S["scanner"]["lookahead"] extends ")"
-        ? ParseToken<Group.ParseClose<S>, Dict>
+        ? Group.ParseClose<S>
         : S["scanner"]["lookahead"] extends EnclosedLiteralDefinition
-        ? ParseToken<Terminal.ParseEnclosed<S, S["scanner"]["lookahead"]>, Dict>
+        ? Terminal.ParseEnclosed<S, S["scanner"]["lookahead"]>
         : // TODO: Don't redunandantly remove "!""
         S["scanner"]["lookahead"] extends ErrorToken<infer Message>
         ? Expression.T.Error<S, Message>
