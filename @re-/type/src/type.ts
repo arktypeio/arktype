@@ -7,6 +7,7 @@ import {
     MutuallyExclusiveProps
 } from "@re-/tools"
 import { Base, Root } from "./nodes/index.js"
+import { Parse } from "./index.js"
 
 export const type: TypeFunction = (definition, options) => {
     const root = Root.parse(definition, Base.Parsing.createContext(options))
@@ -27,6 +28,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     create: CreateFunction<Inferred>
     references: ReferencesFunction<Def, Dict>
 }>
+
 export class Type implements TypeFrom<unknown, unknown, unknown> {
     constructor(
         public definition: unknown,

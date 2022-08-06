@@ -1,4 +1,4 @@
-import { Get } from "@re-/tools"
+import { Get, Iterate } from "@re-/tools"
 import { Base } from "../base/index.js"
 import {
     Bound,
@@ -12,6 +12,7 @@ import {
 import { NumberLiteralNode, Terminal } from "../terminal/index.js"
 import { Affixes } from "./affix.js"
 import { Expression } from "./expression.js"
+import { Lex } from "./lex.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
@@ -30,19 +31,25 @@ export namespace Core {
         return s.root!
     }
 
-    type ParseDefinition<Def extends string, Dict> = ParseExpressionRoot<
-        Affixes.Parse<Def>,
+    type ParseDefinition<Def extends string, Dict> = ParseBase<
+        Expression.State.Initial,
+        Lex.Definition<Def>,
         Dict
     >
 
-    type ParseExpressionRoot<
-        S extends Affixes.State.Type,
-        Dict
-    > = Affixes.Apply<
-        // @ts-ignore
-        ParseExpression<Expression.State.Initialize<S["scanner"]>, Dict>,
-        S["ctx"]
-    >
+    // type ParseDefinition<Def extends string, Dict> = ParseExpressionRoot<
+    //     Affixes.Parse<Def>,
+    //     Dict
+    // >
+
+    // type ParseExpressionRoot<
+    //     S extends Affixes.State.Type,
+    //     Dict
+    // > = Affixes.Apply<
+    //     // @ts-ignore
+    //     ParseOperator<Expression.State.Initialize<S["scanner"]>, Dict>,
+    //     S["ctx"]
+    // >
 
     const parsePossiblePrefixes = (
         s: Expression.State.Value,
@@ -54,25 +61,41 @@ export namespace Core {
         }
     }
 
-    /**
-     * When at runtime we would throw a ParseError, we either:
-     * 1. Shift an ErrorToken from the Lexer
-     * 2. Set the State's root to an ErrorToken and lookahead to "ERR"
-     *
-     * Suffix parsing is responsible for converting lexical errors (1) into errors
-     * we can propagate as a parse result (2).
-     *
-     */
-    type ParseExpression<
+    type ParseBase<
         S extends Expression.State.Type,
+        Unscanned extends unknown[],
         Dict
-    > = S["scanner"]["lookahead"] extends "END"
-        ? ReduceExpression<S>
-        : S["scanner"]["lookahead"] extends "ERR"
+    > = S["root"] extends ErrorToken<string>
         ? S
-        : S["scanner"]["lookahead"] extends ErrorToken<infer Message>
-        ? Expression.State.Error<S, Message>
-        : ParseExpression<ParseToken<S, Dict>, Dict>
+        : Unscanned extends Iterate<infer Lookahead, infer Rest>
+        ? Lookahead extends "("
+            ? ParseBase<Group.ParseOpen<S>, Rest, Dict>
+            : ParseOperator<Terminal.Parse<S, Lookahead, Dict>, Rest, Dict>
+        : Expression.State.Error<S, `Expected an expression.`>
+
+    type ParseOperator<
+        S extends Expression.State.Type,
+        Unscanned extends unknown[],
+        Dict
+    > = S["root"] extends ErrorToken<string>
+        ? S
+        : Unscanned extends Iterate<infer Lookahead, infer Rest>
+        ? Lookahead extends "?"
+            ? ParseOperator<Optional.Parse<S, Rest>, Rest, Dict>
+            : Lookahead extends "[]"
+            ? ParseOperator<List.Parse<S>, Rest, Dict>
+            : Lookahead extends "|"
+            ? ParseBase<Union.Parse<S>, Rest, Dict>
+            : Lookahead extends "&"
+            ? ParseBase<Intersection.Parse<S>, Rest, Dict>
+            : Lookahead extends ")"
+            ? ParseOperator<Group.ParseClose<S>, Rest, Dict>
+            : Expression.State.Error<
+                  S,
+                  // @ts-ignore TODO: Remove
+                  `Expected an operator (got ${Lookahead}).`
+              >
+        : ReduceExpression<S>
 
     const parseExpression = (
         s: Expression.State.Value,
@@ -82,21 +105,6 @@ export namespace Core {
             parseToken(s, ctx)
         }
     }
-
-    type ParseToken<
-        S extends Expression.State.Type,
-        Dict
-    > = S["scanner"]["lookahead"] extends "[]"
-        ? List.Parse<S>
-        : S["scanner"]["lookahead"] extends "|"
-        ? Union.Parse<S>
-        : S["scanner"]["lookahead"] extends "&"
-        ? Intersection.Parse<S>
-        : S["scanner"]["lookahead"] extends "("
-        ? Group.ParseOpen<S>
-        : S["scanner"]["lookahead"] extends ")"
-        ? Group.ParseClose<S>
-        : Terminal.Parse<S, Dict>
 
     const parseToken = (
         s: Expression.State.Value,
@@ -124,12 +132,8 @@ export namespace Core {
     type ReduceExpression<S extends Expression.State.Type> = ValidateExpression<
         Expression.State.From<{
             groups: S["groups"]
-            branches: {
-                union: []
-                intersection: []
-            }
-            root: Union.Merge<S["branches"], S["root"]>
-            scanner: S["scanner"]
+            branches: {}
+            root: Branches.MergeAll<S["branches"], S["root"]>
         }>
     >
 

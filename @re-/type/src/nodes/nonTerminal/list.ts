@@ -6,7 +6,7 @@ import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
     export type Parse<S extends Expression.State.Type> =
-        Expression.State.ShiftOperator<S, [S["root"], "[]"]>
+        Expression.State.SetRoot<S, ["[]", S["root"]]>
 
     export const parse = (
         s: Expression.State.Value,
@@ -16,14 +16,14 @@ export namespace List {
         Lexer.shiftOperator(s.scanner)
     }
 
-    export type Node<Child = unknown> = [Child, "[]"]
-
     export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {
         if (scanner.next !== "]") {
             throw new Error(`Missing expected ].`)
         }
         scanner.shift()
     }
+
+    export type Node<Child> = [Child, "[]"]
 }
 
 export class ListNode extends NonTerminal implements BoundableNode {

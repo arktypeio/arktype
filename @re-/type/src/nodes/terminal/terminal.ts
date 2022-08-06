@@ -20,16 +20,18 @@ export namespace Terminal {
         ? true
         : false
 
-    export type Parse<S extends Expression.State.Type, Dict> = IsResolvableName<
-        S["scanner"]["lookahead"],
+    export type Parse<
+        S extends Expression.State.Type,
+        Token,
         Dict
-    > extends true
-        ? Expression.State.ShiftOperator<S, S["scanner"]["lookahead"]>
-        : S["scanner"]["lookahead"] extends LiteralDefinition
-        ? Expression.State.ShiftOperator<S, S["scanner"]["lookahead"]>
+    > = IsResolvableName<Token, Dict> extends true
+        ? Expression.State.SetRoot<S, Token>
+        : Token extends LiteralDefinition
+        ? Expression.State.SetRoot<S, Token>
         : Expression.State.Error<
               S,
-              `'${S["scanner"]["lookahead"]}' is not a builtin type and does not exist in your space.`
+              // @ts-ignore TODO
+              `'${Token}' is not a builtin type and does not exist in your space.`
           >
 
     export const parse = (

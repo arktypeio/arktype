@@ -1,17 +1,13 @@
 import { Expression } from "../parser/expression.js"
 import { Lexer } from "../parser/lexer.js"
-import { Branches, Union } from "./branch/index.js"
+import { Branches } from "./branch/index.js"
 
 export namespace Group {
     export type ParseOpen<S extends Expression.State.Type> =
         Expression.State.From<{
             groups: [...S["groups"], S["branches"]]
-            branches: {
-                union: []
-                intersection: []
-            }
+            branches: {}
             root: undefined
-            scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
         }>
 
     export const parseOpen = (s: Expression.State.Value) => {
@@ -29,9 +25,8 @@ export namespace Group {
         S["groups"] extends PopGroup<infer Stack, infer Top>
             ? Expression.State.From<{
                   groups: Stack
-                  root: Union.Merge<S["branches"], S["root"]>
+                  root: Branches.MergeAll<S["branches"], S["root"]>
                   branches: Top
-                  scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
               }>
             : Expression.State.Error<S, `Unexpected ).`>
 

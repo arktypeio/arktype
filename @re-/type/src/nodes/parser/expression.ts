@@ -11,7 +11,6 @@ export namespace Expression {
             groups: Branches.TypeState[]
             branches: Branches.TypeState
             root: unknown
-            scanner: Lexer.TypeScanner
         }
 
         export type Value = {
@@ -61,20 +60,12 @@ export namespace Expression {
             groups: S["groups"]
             branches: S["branches"]
             root: ErrorToken<Message>
-            scanner: {
-                lookahead: "ERR"
-                unscanned: S["scanner"]["unscanned"]
-            }
         }>
 
-        export type Initialize<Scanner extends Lexer.TypeScanner> = From<{
+        export type Initial = From<{
             groups: []
-            branches: {
-                intersection: []
-                union: []
-            }
+            branches: {}
             root: undefined
-            scanner: Scanner
         }>
 
         export const initialize = (def: string): State.Value => {
@@ -98,24 +89,6 @@ export namespace Expression {
             groups: S["groups"]
             branches: S["branches"]
             root: Node
-            scanner: S["scanner"]
-        }>
-
-        export type ShiftBase<S extends State.Type, Root = S["root"]> = From<{
-            groups: S["groups"]
-            branches: S["branches"]
-            root: Root
-            scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
-        }>
-
-        export type ShiftOperator<
-            S extends State.Type,
-            Root = S["root"]
-        > = From<{
-            groups: S["groups"]
-            branches: S["branches"]
-            root: Root
-            scanner: Lexer.ShiftOperator<S["scanner"]["unscanned"]>
         }>
     }
 }

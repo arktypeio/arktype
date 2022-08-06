@@ -82,17 +82,17 @@ export namespace Bound {
     ): InvalidLeftBoundMessage<T> =>
         `Left-side bound values must specify a lower bound using < or <= (got ${token}).`
 
-    export type ParsePossibleLeft<
-        S extends Expression.State.Type,
-        N extends NumberLiteralDefinition
-    > = S["scanner"]["lookahead"] extends DoubleBoundToken
-        ? Bound.ParseLeft<S, S["scanner"]["lookahead"], N>
-        : S["scanner"]["lookahead"] extends Token
-        ? Expression.State.Error<
-              S,
-              InvalidLeftBoundMessage<S["scanner"]["lookahead"]>
-          >
-        : Expression.State.SetRoot<S, N>
+    // export type ParsePossibleLeft<
+    //     S extends Expression.State.Type,
+    //     N extends NumberLiteralDefinition
+    // > = S["scanner"]["lookahead"] extends DoubleBoundToken
+    //     ? Bound.ParseLeft<S, S["scanner"]["lookahead"], N>
+    //     : S["scanner"]["lookahead"] extends Token
+    //     ? Expression.State.Error<
+    //           S,
+    //           InvalidLeftBoundMessage<S["scanner"]["lookahead"]>
+    //       >
+    //     : Expression.State.SetRoot<S, N>
 
     export const parsePossibleLeft = (
         s: Expression.State.WithRoot<NumberLiteralNode>
@@ -104,19 +104,19 @@ export namespace Bound {
         }
     }
 
-    export type ParseLeft<
-        S extends Expression.State.Type,
-        T extends DoubleBoundToken,
-        N extends NumberLiteralDefinition
-    > = Expression.State.From<{
-        groups: S["groups"]
-        branches: S["branches"]
-        bounds: {
-            left: [N, T]
-        }
-        root: undefined
-        scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
-    }>
+    // export type ParseLeft<
+    //     S extends Expression.State.Type,
+    //     T extends DoubleBoundToken,
+    //     N extends NumberLiteralDefinition
+    // > = Expression.State.From<{
+    //     groups: S["groups"]
+    //     branches: S["branches"]
+    //     bounds: {
+    //         left: [N, T]
+    //     }
+    //     root: undefined
+    //     scanner: Lexer.ShiftBase<S["scanner"]["unscanned"]>
+    // }>
 
     export const parseLeft = (
         s: Expression.State.WithLookaheadAndRoot<
