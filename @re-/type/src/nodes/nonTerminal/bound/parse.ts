@@ -141,18 +141,18 @@ export namespace Bound {
     }
 
     export const parsePossibleLeft = (
-        s: Expression.State.WithRoot<NumberLiteralNode>
+        s: Expression.WithRoot<NumberLiteralNode>
     ) => {
-        if (Expression.State.lookaheadIn(s, doubleBoundTokens)) {
+        if (Expression.lookaheadIn(s, doubleBoundTokens)) {
             parseLeft(s)
-        } else if (Expression.State.lookaheadIn(s, Bound.tokens)) {
+        } else if (Expression.lookaheadIn(s, Bound.tokens)) {
             // TODO: Fix
             throw new Error("Must be < or <=.")
         }
     }
 
     export const parseLeft = (
-        s: Expression.State.WithLookaheadAndRoot<
+        s: Expression.WithLookaheadAndRoot<
             Bound.DoubleBoundToken,
             NumberLiteralNode
         >
@@ -163,7 +163,7 @@ export namespace Bound {
     }
 
     export const parseRight = (
-        s: Expression.State.WithLookaheadAndRoot<Bound.Token>,
+        s: Expression.WithLookaheadAndRoot<Bound.Token>,
         ctx: Base.Parsing.Context
     ) => {
         const token = s.scanner.lookahead
@@ -187,7 +187,7 @@ export namespace Bound {
     type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
 
     const createBound = (
-        s: Expression.State.WithRoot,
+        s: Expression.WithRoot,
         right: RawRight,
         ctx: Base.Parsing.Context
     ) => {

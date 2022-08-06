@@ -21,25 +21,22 @@ export namespace Terminal {
         : false
 
     export type Parse<
-        S extends Expression.State.Type,
+        S extends Expression.T.State,
         Token,
         Dict
     > = IsResolvableName<Token, Dict> extends true
-        ? Expression.State.SetRoot<S, Token>
+        ? Expression.T.SetRoot<S, Token>
         : Token extends LiteralDefinition
-        ? Expression.State.SetRoot<S, Token>
+        ? Expression.T.SetRoot<S, Token>
         : Token extends ErrorToken<string>
-        ? Expression.State.SetRoot<S, Token>
-        : Expression.State.Error<
+        ? Expression.T.SetRoot<S, Token>
+        : Expression.T.Error<
               S,
               // @ts-ignore TODO
               `'${Token}' is not a builtin type and does not exist in your space.`
           >
 
-    export const parse = (
-        s: Expression.State.Value,
-        ctx: Base.Parsing.Context
-    ) => {
+    export const parse = (s: Expression.State, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {
             s.root = Keyword.parse(s.scanner.lookahead)
         } else if (AliasNode.matches(s.scanner.lookahead, ctx)) {

@@ -1,6 +1,6 @@
 import { Bound } from "../index.js"
+import { Expression } from "./common.js"
 import { Core } from "./core.js"
-import { Expression } from "./expression.js"
 import { Lex } from "./lex.js"
 import { ErrorToken } from "./tokens.js"
 
@@ -50,7 +50,7 @@ type ParseExpression<
     A extends Affixes,
     Unscanned extends unknown[],
     Dict
-> = Apply<Core.ParseBase<Expression.State.Initial, Unscanned, Dict>, A>
+> = Apply<Core.ParseBase<Expression.T.Initial, Unscanned, Dict>, A>
 
 type IterateLeft<Next, Remaining extends unknown[]> = [...Remaining, Next]
 
@@ -88,13 +88,13 @@ type ParseSuffixes<
     : ParsePrefixes<A, Unscanned, Dict>
 
 export type Apply<
-    S extends Expression.State.Type,
+    S extends Expression.T.State,
     A extends Affixes
 > = S["root"] extends ErrorToken<string>
     ? S
     : // TODO: Bounds should be validated before parse. Find a way to communicate better between phases
     Bound.Validate<A["bounds"], S["root"]> extends ErrorToken<infer Message>
-    ? Expression.State.Error<S, Message>
+    ? Expression.T.Error<S, Message>
     : A["optional"] extends true
-    ? Expression.State.SetRoot<S, [S["root"], "?"]>
+    ? Expression.T.SetRoot<S, [S["root"], "?"]>
     : S

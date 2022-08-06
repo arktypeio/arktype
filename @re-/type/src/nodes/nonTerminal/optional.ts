@@ -1,23 +1,10 @@
 import { Base } from "../base/index.js"
-import { Expression } from "../parser/expression.js"
+import { Expression } from "../parser/common.js"
 import { Lexer } from "../parser/lexer.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {
-    // export type Parse<
-    //     S extends Expression.State.Type,
-    //     Unscanned extends unknown[]
-    // > = Unscanned extends []
-    //     ? Expression.State.SetRoot<S, Node<S["root"]>>
-    //     : Expression.State.Error<
-    //           S,
-    //           `Suffix '?' is only valid at the end of a definition.`
-    //       >
-
-    export const parse = (
-        s: Expression.State.Value,
-        ctx: Base.Parsing.Context
-    ) => {
+    export const parse = (s: Expression.State, ctx: Base.Parsing.Context) => {
         if (s.scanner.next !== "END") {
             throw new Error(
                 `Suffix '?' is only valid at the end of a definition.`

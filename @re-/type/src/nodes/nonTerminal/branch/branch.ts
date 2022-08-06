@@ -1,4 +1,4 @@
-import { Expression } from "../../parser/expression.js"
+import { Expression } from "../../parser/common.js"
 import { Lexer } from "../../parser/index.js"
 import { Intersection, IntersectionNode } from "./intersection.js"
 import { Union, UnionNode } from "./union.js"
@@ -28,16 +28,16 @@ export namespace Branches {
         MergeExpression<B["intersection"], Root>
     >
 
-    export const mergeAll = (s: Expression.State.Value) => {
+    export const mergeAll = (s: Expression.State) => {
         // TODO: Clearer way to show these can be undefined
         Intersection.merge(s)
         Union.merge(s)
     }
 
     export type Parse<
-        S extends Expression.State.Type,
+        S extends Expression.T.State,
         B extends Branches.TypeState
-    > = Expression.State.From<{
+    > = Expression.T.From<{
         groups: S["groups"]
         branches: B
         root: undefined
