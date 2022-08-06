@@ -43,59 +43,24 @@ export namespace Core {
     export type ParseToken<
         S extends Expression.T.State,
         Dict
-    > = S["scanner"]["lookahead"] extends "END"
-        ? ReduceExpression<S>
-        : S["tree"]["root"] extends ErrorToken<string>
+    > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : S["scanner"]["lookahead"] extends "("
-        ? ParseToken<Group.ParseOpen<S>, Dict>
+        : S["scanner"]["lookahead"] extends "END"
+        ? ReduceExpression<S>
         : S["scanner"]["lookahead"] extends "[]"
         ? ParseToken<List.Parse<S>, Dict>
         : S["scanner"]["lookahead"] extends "|"
         ? ParseToken<Union.Parse<S>, Dict>
         : S["scanner"]["lookahead"] extends "&"
         ? ParseToken<Intersection.Parse<S>, Dict>
+        : S["scanner"]["lookahead"] extends "("
+        ? ParseToken<Group.ParseOpen<S>, Dict>
         : S["scanner"]["lookahead"] extends ")"
         ? ParseToken<Group.ParseClose<S>, Dict>
         : // TODO: Don't redunandantly remove!
         S["scanner"]["lookahead"] extends ErrorToken<infer Message>
         ? Expression.T.Error<S, Message>
         : ParseToken<Terminal.Parse<S, Dict>, Dict>
-
-    // export type ParseBase<
-    //     S extends Expression.T.State,
-    //     Dict
-    // > = S["scanner"]["lookahead"] extends "END"
-    //     ? Expression.T.Error<S, `Expected an expression.`>
-    //     : S["tree"]["root"] extends ErrorToken<string>
-    //     ? S
-    //     : S["scanner"]["lookahead"] extends "("
-    //     ? ParseBase<Group.ParseOpen<S>, Dict>
-    //     : ParseOperator<Terminal.Parse<S, Dict>, Dict>
-
-    // type ParseOperator<
-    //     S extends Expression.T.State,
-    //     Dict
-    // > = S["tree"]["root"] extends ErrorToken<string>
-    //     ? S
-    //     : S["scanner"]["lookahead"] extends "END"
-    //     ? ReduceExpression<S>
-    //     : S["scanner"]["lookahead"] extends "[]"
-    //     ? ParseOperator<List.Parse<S>, Dict>
-    //     : S["scanner"]["lookahead"] extends "|"
-    //     ? ParseBase<Union.Parse<S>, Dict>
-    //     : S["scanner"]["lookahead"] extends "&"
-    //     ? ParseBase<Intersection.Parse<S>, Dict>
-    //     : S["scanner"]["lookahead"] extends ")"
-    //     ? ParseOperator<Group.ParseClose<S>, Dict>
-    //     : // TODO: Don't redunandantly remove!
-    //     S["scanner"]["lookahead"] extends ErrorToken<infer Message>
-    //     ? Expression.T.Error<S, Message>
-    //     : Expression.T.Error<
-    //           S,
-    //           `Expected an operator (got ${S["scanner"]["lookahead"] &
-    //               string}).`
-    //       >
 
     const parseExpression = (
         s: Expression.State,
