@@ -1,12 +1,12 @@
 import { ErrorToken, Expression } from "../parser/index.js"
-import { Lex } from "../parser/lex.js"
 import { Lexer } from "../parser/lexer.js"
+import { Shift } from "../parser/shift.js"
 import { Branches } from "./branch/index.js"
 
 export namespace Group {
     export type ParseOpen<S extends Expression.T.State> = Expression.T.From<{
         tree: ReduceOpen<S["tree"]>
-        scanner: Lex.ShiftToken<S["scanner"]["unscanned"]>
+        scanner: Shift.Base<S["scanner"]["unscanned"]>
     }>
 
     export type ReduceOpen<Tree extends Expression.T.Tree> =
@@ -29,7 +29,7 @@ export namespace Group {
 
     export type ParseClose<S extends Expression.T.State> = Expression.T.From<{
         tree: ReduceClose<S["tree"]>
-        scanner: Lex.ShiftToken<S["scanner"]["unscanned"]>
+        scanner: Shift.Operator<S["scanner"]["unscanned"]>
     }>
 
     export type ReduceClose<Tree extends Expression.T.Tree> =
@@ -42,7 +42,7 @@ export namespace Group {
             : Expression.T.TreeFrom<{
                   groups: Tree["groups"]
                   branches: Tree["branches"]
-                  root: [ErrorToken<`Unexpected ).`>]
+                  root: ErrorToken<`Unexpected ).`>
               }>
 
     export const parseClose = (s: Expression.State) => {

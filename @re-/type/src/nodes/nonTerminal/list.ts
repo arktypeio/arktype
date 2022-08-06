@@ -1,14 +1,14 @@
 import { Base } from "../base/index.js"
 import { Expression } from "../parser/index.js"
-import { Lex } from "../parser/lex.js"
 import { Lexer } from "../parser/lexer.js"
+import { Shift } from "../parser/shift.js"
 import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
     export type Parse<S extends Expression.T.State> = Expression.T.From<{
         tree: Expression.T.Modify<S["tree"], "[]">
-        scanner: Lex.ShiftToken<S["scanner"]["unscanned"]>
+        scanner: Shift.Operator<S["scanner"]["unscanned"]>
     }>
 
     export const parse = (s: Expression.State, ctx: Base.Parsing.Context) => {

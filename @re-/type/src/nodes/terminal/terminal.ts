@@ -1,6 +1,6 @@
 import { Base } from "../base/index.js"
 import { ErrorToken, Expression, Lexer } from "../parser/index.js"
-import { Lex } from "../parser/lex.js"
+import { Shift } from "../parser/shift.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
@@ -23,7 +23,7 @@ export namespace Terminal {
 
     export type Parse<S extends Expression.T.State, Dict> = Expression.T.From<{
         tree: Reduce<S["tree"], S["scanner"]["lookahead"], Dict>
-        scanner: Lex.ShiftToken<S["scanner"]["unscanned"]>
+        scanner: Shift.Operator<S["scanner"]["unscanned"]>
     }>
 
     export type Reduce<

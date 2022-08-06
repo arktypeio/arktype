@@ -1,7 +1,7 @@
 import { Bound } from "../index.js"
 import { Core } from "./core.js"
 import { Expression } from "./expression.js"
-import { Lex } from "./lex.js"
+import { Shift } from "./shift.js"
 import { ErrorToken } from "./tokens.js"
 
 // export type ParseAffixes<Def extends string, Dict> = ParseSuffixes<

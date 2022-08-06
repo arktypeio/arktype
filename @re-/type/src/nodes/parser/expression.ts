@@ -2,15 +2,15 @@ import { ClassOf, InstanceOf, Iterate } from "@re-/tools"
 import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
-import { Lex, Scan } from "./lex.js"
 import { Lexer } from "./lexer.js"
+import { Scan, Shift } from "./shift.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace Expression {
     export namespace T {
         export type State = {
             tree: Tree
-            scanner: Lex.TypeScanner
+            scanner: Shift.TypeScanner
         }
 
         export type Tree = {
@@ -61,7 +61,7 @@ export namespace Expression {
 
         export type Initial<Tokens extends unknown[]> = From<{
             tree: InitialTree
-            scanner: Lex.ShiftToken<Tokens>
+            scanner: Shift.Base<Tokens>
         }>
     }
 

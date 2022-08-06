@@ -7,6 +7,9 @@ describe("optional", () => {
         test("adds undefined to standalone type", () => {
             assert(type("string?").infer).typed as string | undefined
         })
+        test("adds undefined to non terminal", () => {
+            assert(type("(string|number[])?").infer).typed as string | undefined
+        })
         test("adds undefined to in-object type and makes it optional", () => {
             assert(
                 type({

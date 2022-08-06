@@ -1,7 +1,7 @@
 import { Base } from "../../base/index.js"
 import { Expression } from "../../parser/index.js"
-import { Lex } from "../../parser/lex.js"
 import { Lexer } from "../../parser/lexer.js"
+import { Shift } from "../../parser/shift.js"
 import { NonTerminal } from "./../nonTerminal.js"
 import { Branches } from "./branch.js"
 
@@ -13,7 +13,7 @@ export namespace Intersection {
 
     export type Parse<S extends Expression.T.State> = Expression.T.From<{
         tree: Reduce<S["tree"]>
-        scanner: Lex.ShiftToken<S["scanner"]["unscanned"]>
+        scanner: Shift.Base<S["scanner"]["unscanned"]>
     }>
 
     export type Reduce<Tree extends Expression.T.Tree> = Expression.T.TreeFrom<{

@@ -1,4 +1,4 @@
-import { Get } from "@re-/tools"
+import { Get, ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import {
     Bound,
@@ -11,15 +11,12 @@ import {
 } from "../nonTerminal/index.js"
 import { NumberLiteralNode, Terminal } from "../terminal/index.js"
 import { Expression } from "./expression.js"
-import { Lex } from "./lex.js"
+import { Shift } from "./shift.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
-        Get<
-            ParseToken<Expression.T.Initial<Lex.Definition<Def>>, Dict>,
-            "tree"
-        >,
+        Get<ParseToken<Expression.T.Initial<ListChars<Def>>, Dict>, "tree">,
         "root"
     >
 
@@ -65,40 +62,40 @@ export namespace Core {
         ? Expression.T.Error<S, Message>
         : ParseToken<Terminal.Parse<S, Dict>, Dict>
 
-    export type ParseBase<
-        S extends Expression.T.State,
-        Dict
-    > = S["scanner"]["lookahead"] extends "END"
-        ? Expression.T.Error<S, `Expected an expression.`>
-        : S["tree"]["root"] extends ErrorToken<string>
-        ? S
-        : S["scanner"]["lookahead"] extends "("
-        ? ParseBase<Group.ParseOpen<S>, Dict>
-        : ParseOperator<Terminal.Parse<S, Dict>, Dict>
+    // export type ParseBase<
+    //     S extends Expression.T.State,
+    //     Dict
+    // > = S["scanner"]["lookahead"] extends "END"
+    //     ? Expression.T.Error<S, `Expected an expression.`>
+    //     : S["tree"]["root"] extends ErrorToken<string>
+    //     ? S
+    //     : S["scanner"]["lookahead"] extends "("
+    //     ? ParseBase<Group.ParseOpen<S>, Dict>
+    //     : ParseOperator<Terminal.Parse<S, Dict>, Dict>
 
-    type ParseOperator<
-        S extends Expression.T.State,
-        Dict
-    > = S["tree"]["root"] extends ErrorToken<string>
-        ? S
-        : S["scanner"]["lookahead"] extends "END"
-        ? ReduceExpression<S>
-        : S["scanner"]["lookahead"] extends "[]"
-        ? ParseOperator<List.Parse<S>, Dict>
-        : S["scanner"]["lookahead"] extends "|"
-        ? ParseBase<Union.Parse<S>, Dict>
-        : S["scanner"]["lookahead"] extends "&"
-        ? ParseBase<Intersection.Parse<S>, Dict>
-        : S["scanner"]["lookahead"] extends ")"
-        ? ParseOperator<Group.ParseClose<S>, Dict>
-        : // TODO: Don't redunandantly remove!
-        S["scanner"]["lookahead"] extends ErrorToken<infer Message>
-        ? Expression.T.Error<S, Message>
-        : Expression.T.Error<
-              S,
-              `Expected an operator (got ${S["scanner"]["lookahead"] &
-                  string}).`
-          >
+    // type ParseOperator<
+    //     S extends Expression.T.State,
+    //     Dict
+    // > = S["tree"]["root"] extends ErrorToken<string>
+    //     ? S
+    //     : S["scanner"]["lookahead"] extends "END"
+    //     ? ReduceExpression<S>
+    //     : S["scanner"]["lookahead"] extends "[]"
+    //     ? ParseOperator<List.Parse<S>, Dict>
+    //     : S["scanner"]["lookahead"] extends "|"
+    //     ? ParseBase<Union.Parse<S>, Dict>
+    //     : S["scanner"]["lookahead"] extends "&"
+    //     ? ParseBase<Intersection.Parse<S>, Dict>
+    //     : S["scanner"]["lookahead"] extends ")"
+    //     ? ParseOperator<Group.ParseClose<S>, Dict>
+    //     : // TODO: Don't redunandantly remove!
+    //     S["scanner"]["lookahead"] extends ErrorToken<infer Message>
+    //     ? Expression.T.Error<S, Message>
+    //     : Expression.T.Error<
+    //           S,
+    //           `Expected an operator (got ${S["scanner"]["lookahead"] &
+    //               string}).`
+    //       >
 
     const parseExpression = (
         s: Expression.State,

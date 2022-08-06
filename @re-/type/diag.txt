@@ -19,50 +19,10 @@ src/nodes/nonTerminal/__tests__/bound.bench.ts(5,10): error TS2345: Argument of 
 src/nodes/nonTerminal/__tests__/bound.bench.ts(8,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
 src/nodes/nonTerminal/__tests__/bound.bench.ts(11,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
 src/nodes/nonTerminal/__tests__/bound.bench.ts(14,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(8,25): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(11,25): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(14,25): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(17,25): error TS2345: Argument of type '"-7<=unknown[]<99"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(20,25): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(74,34): error TS2345: Argument of type '"string>4"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(81,34): error TS2345: Argument of type '"-999<string<=4"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(90,34): error TS2345: Argument of type '"string==1"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(99,34): error TS2345: Argument of type '"any[]>=3"' is not assignable to parameter of type '"'>=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(108,34): error TS2345: Argument of type '"boolean[][]<4"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(117,34): error TS2345: Argument of type '"5<number[]<=10"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(125,34): error TS2345: Argument of type '"any[]==1"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(130,34): error TS2345: Argument of type '"never[]==1"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(135,34): error TS2345: Argument of type '"0<never[]<2"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(147,34): error TS2345: Argument of type '"number>=10"' is not assignable to parameter of type '"'>=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(151,34): error TS2345: Argument of type '"number<=10"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(156,37): error TS2345: Argument of type '"number>10"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(160,34): error TS2345: Argument of type '"number>10"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(167,41): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(170,41): error TS2345: Argument of type '"number<=-5"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(175,41): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"'>=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(178,41): error TS2345: Argument of type '"number>=5"' is not assignable to parameter of type '"'>=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(184,38): error TS2345: Argument of type '"number<-999"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(188,41): error TS2345: Argument of type '"number>5"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(194,38): error TS2345: Argument of type '"number==5"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(200,41): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(206,38): error TS2345: Argument of type '"5<=number<=9999"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(216,38): error TS2345: Argument of type '"number<=5"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(221,38): error TS2345: Argument of type '"number>=-999"' is not assignable to parameter of type '"'>=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(227,38): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(230,38): error TS2345: Argument of type '"number<5"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(235,38): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(238,38): error TS2345: Argument of type '"number>-5"' is not assignable to parameter of type '"'>' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(243,38): error TS2345: Argument of type '"number==5"' is not assignable to parameter of type '"'==' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(250,38): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(253,38): error TS2345: Argument of type '"5<number<10"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(258,38): error TS2345: Argument of type '"5<=number<=9999"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(264,38): error TS2345: Argument of type '"5<=number<=9999"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(270,38): error TS2345: Argument of type '"5<=number<9999"' is not assignable to parameter of type '"'<=' is not a builtin type and does not exist in your space."'.
-src/nodes/nonTerminal/__tests__/bound.test.ts(281,31): error TS2345: Argument of type '"1<number<5"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
+src/nodes/nonTerminal/__tests__/optional.test.ts(11,25): error TS2345: Argument of type '"(string|number[])?"' is not assignable to parameter of type '"'?' is not a builtin type and does not exist in your space."'.
 src/nodes/nonTerminal/__tests__/parenthesized.test.ts(68,17): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/__tests__/parenthesized.test.ts(84,17): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/__tests__/parenthesized.test.ts(132,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/str.test.ts(7,9): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/bound/parse.ts(216,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/bound/parse.ts(228,59): error TS2554: Expected 1 arguments, but got 2.
 src/nodes/nonTerminal/bound/parse.ts(232,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
@@ -73,20 +33,19 @@ src/nodes/nonTerminal/branch/__tests__/intersection.test.ts(21,17): error TS2578
 src/nodes/nonTerminal/branch/__tests__/intersection.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/branch/__tests__/union.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/branch/__tests__/union.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/branch/__tests__/union.test.ts(39,21): error TS2578: Unused '@ts-expect-error' directive.
 Files:              258
-Lines:            65979
-Nodes:           184166
-Identifiers:      62065
-Symbols:         263086
-Types:            77695
-Instantiations:  390740
-Memory used:    190604K
+Lines:            66009
+Nodes:           182653
+Identifiers:      61658
+Symbols:         206612
+Types:            68068
+Instantiations:  340942
+Memory used:    172119K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.43s
-Bind time:        0.14s
-Check time:       1.67s
+Parse time:       0.47s
+Bind time:        0.18s
+Check time:       1.68s
 Emit time:        0.00s
-Total time:       2.24s
+Total time:       2.34s
