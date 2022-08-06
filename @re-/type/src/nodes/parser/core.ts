@@ -10,14 +10,13 @@ import {
     Union
 } from "../nonTerminal/index.js"
 import { NumberLiteralNode, Terminal } from "../terminal/index.js"
-import { Affixes } from "./affix.js"
+import { ParseAffixes } from "./affix.js"
 import { Expression } from "./expression.js"
-import { Lex } from "./lex.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
-        ParseDefinition<Def, Dict>,
+        ParseAffixes<Def, Dict>,
         "root"
     >
 
@@ -31,26 +30,6 @@ export namespace Core {
         return s.root!
     }
 
-    type ParseDefinition<Def extends string, Dict> = ParseBase<
-        Expression.State.Initial,
-        Lex.Definition<Def>,
-        Dict
-    >
-
-    // type ParseDefinition<Def extends string, Dict> = ParseExpressionRoot<
-    //     Affixes.Parse<Def>,
-    //     Dict
-    // >
-
-    // type ParseExpressionRoot<
-    //     S extends Affixes.State.Type,
-    //     Dict
-    // > = Affixes.Apply<
-    //     // @ts-ignore
-    //     ParseOperator<Expression.State.Initialize<S["scanner"]>, Dict>,
-    //     S["ctx"]
-    // >
-
     const parsePossiblePrefixes = (
         s: Expression.State.Value,
         ctx: Base.Parsing.Context
@@ -61,7 +40,7 @@ export namespace Core {
         }
     }
 
-    type ParseBase<
+    export type ParseBase<
         S extends Expression.State.Type,
         Unscanned extends unknown[],
         Dict
@@ -80,9 +59,7 @@ export namespace Core {
     > = S["root"] extends ErrorToken<string>
         ? S
         : Unscanned extends Iterate<infer Lookahead, infer Rest>
-        ? Lookahead extends "?"
-            ? ParseOperator<Optional.Parse<S, Rest>, Rest, Dict>
-            : Lookahead extends "[]"
+        ? Lookahead extends "[]"
             ? ParseOperator<List.Parse<S>, Rest, Dict>
             : Lookahead extends "|"
             ? ParseBase<Union.Parse<S>, Rest, Dict>

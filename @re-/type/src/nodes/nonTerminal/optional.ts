@@ -4,15 +4,15 @@ import { Lexer } from "../parser/lexer.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {
-    export type Parse<
-        S extends Expression.State.Type,
-        Unscanned extends unknown[]
-    > = Unscanned extends []
-        ? Expression.State.SetRoot<S, Node<S["root"]>>
-        : Expression.State.Error<
-              S,
-              `Suffix '?' is only valid at the end of a definition.`
-          >
+    // export type Parse<
+    //     S extends Expression.State.Type,
+    //     Unscanned extends unknown[]
+    // > = Unscanned extends []
+    //     ? Expression.State.SetRoot<S, Node<S["root"]>>
+    //     : Expression.State.Error<
+    //           S,
+    //           `Suffix '?' is only valid at the end of a definition.`
+    //       >
 
     export const parse = (
         s: Expression.State.Value,

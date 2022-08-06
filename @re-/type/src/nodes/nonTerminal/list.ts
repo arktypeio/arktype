@@ -6,7 +6,7 @@ import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
     export type Parse<S extends Expression.State.Type> =
-        Expression.State.SetRoot<S, ["[]", S["root"]]>
+        Expression.State.SetRoot<S, [S["root"], "[]"]>
 
     export const parse = (
         s: Expression.State.Value,

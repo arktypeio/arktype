@@ -1,34 +1,23 @@
-docs/snippets/constraints.ts(8,9): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Expected an operator (got <=)."'.
-docs/snippets/constraints.ts(10,9): error TS2322: Type '"string<=80"' is not assignable to type '"Expected an operator (got <=)."'.
-src/__tests__/references.test.ts(37,29): error TS2345: Argument of type '"0<(user[]|group[]|boolean&true|integer|null)[]<2"' is not assignable to parameter of type '"Expected an operator (got <)."'.
-src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"!Expected an operator (got <)."[]'.
-  Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"!Expected an operator (got <)."'.
-    Type '"boolean"' is not assignable to type '"!Expected an operator (got <)."'.
-src/__tests__/references.test.ts(54,40): error TS2322: Type 'string' is not assignable to type '["[]", ("[]" | "1")[]]'.
-src/__tests__/references.test.ts(54,45): error TS2322: Type 'string' is not assignable to type '["[]", ("[]" | "0")[]]'.
-src/__tests__/references.test.ts(82,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: "boolean"[]; expression: ("integer" | "[]")[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
-  The types of 'strings.expression' are incompatible between these types.
-    Type '["string", "integer"]' is not assignable to type '("integer" | "[]")[]'.
-      Type '"string" | "integer"' is not assignable to type '"integer" | "[]"'.
-        Type '"string"' is not assignable to type '"integer" | "[]"'.
-src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Expected an operator (got <=)."'.
-src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"Expected an operator (got <=)."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(5,10): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Expected an operator (got >)."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(8,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(11,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"Expected an operator (got ==)."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(14,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"Expected an operator (got <=)."'.
+src/nodes/parser/affix.ts(40,11): error TS2344: Type '{ bounds: { right: A["bounds"]["right"]; left: [Value, Token]; }; optional: A["optional"]; }' does not satisfy the constraint 'Affixes'.
+  Type at position 0 in source is not compatible with type at position 0 in target.
+    The types of 'bounds.left' are incompatible between these types.
+      Type 'Value' is not assignable to type '`${number}`'.
+src/nodes/parser/affix.ts(82,11): error TS2344: Type '{ bounds: { right: [Token, Value]; }; optional: A["optional"]; }' does not satisfy the constraint 'Affixes'.
+  Type at position 1 in source is not compatible with type at position 1 in target.
+    The types of 'bounds.right' are incompatible between these types.
+      Type 'Value' is not assignable to type '`${number}`'.
 Files:              258
-Lines:            66121
-Nodes:           182891
-Identifiers:      61790
-Symbols:         236157
-Types:            71102
-Instantiations:  339733
-Memory used:    182645K
+Lines:            66136
+Nodes:           182407
+Identifiers:      61637
+Symbols:         255562
+Types:            72165
+Instantiations:  350602
+Memory used:    187768K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.45s
-Bind time:        0.16s
-Check time:       1.67s
+Parse time:       0.44s
+Bind time:        0.17s
+Check time:       1.61s
 Emit time:        0.00s
-Total time:       2.28s
+Total time:       2.22s
