@@ -4,23 +4,23 @@ src/__tests__/references.test.ts(37,29): error TS2345: Argument of type '"0<(use
 src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"!Unexpected operator '<'"[]'.
   Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"!Unexpected operator '<'"'.
     Type '"boolean"' is not assignable to type '"!Unexpected operator '<'"'.
-src/__tests__/references.test.ts(53,37): error TS2345: Argument of type '"0|1|0[]|1[]|0[][]|1[][]?"' is not assignable to parameter of type '"Unexpected operator '?'"'.
-src/__tests__/references.test.ts(54,40): error TS2322: Type '"0"' is not assignable to type '"!Unexpected operator '?'"'.
-src/__tests__/references.test.ts(54,45): error TS2322: Type '"1"' is not assignable to type '"!Unexpected operator '?'"'.
+src/__tests__/references.test.ts(53,37): error TS2345: Argument of type '"0|1|0[]|1[]|0[][]|1[][]?"' is not assignable to parameter of type '"Unexpected token ?."'.
+src/__tests__/references.test.ts(54,40): error TS2322: Type '"0"' is not assignable to type '"!Unexpected token ?."'.
+src/__tests__/references.test.ts(54,45): error TS2322: Type '"1"' is not assignable to type '"!Unexpected token ?."'.
 src/__tests__/references.test.ts(57,37): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
   The types of 'strings.expression' are incompatible between these types.
-    Type '"string[]|integer?"' is not assignable to type '"Unexpected operator '?'"'.
-src/__tests__/references.test.ts(58,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type '("string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected operator '?'")[]'.
-  Type '"boolean" | `/${string}/` | "string" | "-1n" | "null" | "integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected operator '?'"'.
-    Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected operator '?'"'.
+    Type '"string[]|integer?"' is not assignable to type '"Unexpected token ?."'.
+src/__tests__/references.test.ts(58,39): error TS2345: Argument of type '[`/${string}/`, "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type '("string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?.")[]'.
+  Type '"boolean" | `/${string}/` | "string" | "-1n" | "null" | "integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?."'.
+    Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?."'.
 src/__tests__/references.test.ts(63,37): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/__tests__/references.test.ts(82,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: "boolean"[]; expression: "!Unexpected operator '?'"[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
+src/__tests__/references.test.ts(82,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: [`/${string}/`]; }' is not assignable to parameter of type '{ strings: { keyword: "boolean"[]; expression: "!Unexpected token ?."[]; }; listed: ["-1n"[], "null"[], ("string" | "boolean")[]]; regex: `/${string}/`[]; }'.
   The types of 'strings.expression' are incompatible between these types.
-    Type '["string", "integer"]' is not assignable to type '"!Unexpected operator '?'"[]'.
-      Type '"string" | "integer"' is not assignable to type '"!Unexpected operator '?'"'.
-        Type '"string"' is not assignable to type '"!Unexpected operator '?'"'.
+    Type '["string", "integer"]' is not assignable to type '"!Unexpected token ?."[]'.
+      Type '"string" | "integer"' is not assignable to type '"!Unexpected token ?."'.
+        Type '"string"' is not assignable to type '"!Unexpected token ?."'.
 src/__tests__/references.test.ts(87,47): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
-src/__tests__/references.test.ts(90,50): error TS2322: Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected operator '?'"'.
+src/__tests__/references.test.ts(90,50): error TS2322: Type '"integer"' is not assignable to type '"string" | "boolean" | "null" | `/${string}/` | "-1n" | "!Unexpected token ?."'.
 src/__tests__/references.test.ts(95,50): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
 src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected operator '<'"'.
 src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected operator '<'"'.
@@ -28,7 +28,7 @@ src/nodes/nonTerminal/__tests__/bound.bench.ts(6,10): error TS2345: Argument of 
 src/nodes/nonTerminal/__tests__/bound.bench.ts(9,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"Unexpected operator '<'"'.
 src/nodes/nonTerminal/__tests__/bound.bench.ts(12,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"Unexpected operator '='"'.
 src/nodes/nonTerminal/__tests__/bound.bench.ts(15,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"Unexpected operator '<'"'.
-src/nodes/nonTerminal/__tests__/optional.test.ts(11,25): error TS2345: Argument of type '"(string|number[])?"' is not assignable to parameter of type '"Unexpected operator '?'"'.
+src/nodes/nonTerminal/__tests__/optional.test.ts(11,25): error TS2345: Argument of type '"(string|number[])?"' is not assignable to parameter of type '"Unexpected token ?."'.
 src/nodes/nonTerminal/bound/parse.ts(214,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/bound/parse.ts(226,59): error TS2554: Expected 1 arguments, but got 2.
 src/nodes/nonTerminal/bound/parse.ts(230,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
@@ -36,17 +36,17 @@ src/nodes/nonTerminal/bound/parse.ts(230,47): error TS2322: Type '"<" | ">" | ">
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/bound/parse.ts(231,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 Files:              258
-Lines:            66052
-Nodes:           182590
-Identifiers:      61628
-Symbols:          99529
-Types:            53908
-Instantiations:  286424
-Memory used:    147606K
+Lines:            65988
+Nodes:           182646
+Identifiers:      61648
+Symbols:          99538
+Types:            53518
+Instantiations:  282707
+Memory used:    146333K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.47s
-Bind time:        0.16s
-Check time:       1.37s
+Parse time:       0.45s
+Bind time:        0.17s
+Check time:       1.35s
 Emit time:        0.00s
-Total time:       2.00s
+Total time:       1.97s

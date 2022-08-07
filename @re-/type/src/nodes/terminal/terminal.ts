@@ -24,11 +24,6 @@ export namespace Terminal {
 
     export type UnenclosedToken<Fragment extends string> = `~${Fragment}`
 
-    // export type Parse<S extends Expression.T.State, Dict> = Expression.T.From<{
-    //     tree: Reduce<S["tree"], S["scanner"]["lookahead"], Dict>
-    //     scanner: Shift.Operator<S["scanner"]["unscanned"]>
-    // }>
-
     export type ParseUnenclosed<
         S extends Expression.T.State,
         Token,

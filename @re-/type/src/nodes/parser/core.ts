@@ -61,8 +61,8 @@ export namespace Core {
     export type ParseToken<
         S extends Expression.T.State,
         Dict
-    > = S["scanner"]["lookahead"] extends Terminal.UnenclosedToken<infer Token>
-        ? Terminal.ParseUnenclosed<S, Token, Dict>
+    > = S["scanner"]["lookahead"] extends Terminal.UnenclosedToken<infer Base>
+        ? Terminal.ParseUnenclosed<S, Base, Dict>
         : S["scanner"]["lookahead"] extends "[]"
         ? List.Parse<S>
         : S["scanner"]["lookahead"] extends "|"

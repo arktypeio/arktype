@@ -13,6 +13,11 @@ export namespace Expression {
             scanner: Shift.TypeScanner
         }
 
+        export type StateWithLookahead<Lookahead> = {
+            tree: Tree
+            scanner: Shift.TypeScannerWithLookahead<Lookahead>
+        }
+
         export type Tree = {
             groups: Branches.TypeState[]
             branches: Branches.TypeState

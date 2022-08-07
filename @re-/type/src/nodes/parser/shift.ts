@@ -7,11 +7,6 @@ export type Scan<
     Unscanned extends string
 > = `${First}${Unscanned}`
 
-export type ScanLeftward<
-    Unscanned extends string,
-    Last extends string
-> = `${Unscanned}${Last}`
-
 export namespace Shift {
     export type ScannerFrom<Lookahead, Unscanned extends string> = {
         lookahead: Lookahead
@@ -23,9 +18,14 @@ export namespace Shift {
         unscanned: string
     }
 
-    type SingleCharOperator = "|" | "&" | ")"
+    export type TypeScannerWithLookahead<Lookahead> = ScannerFrom<
+        Lookahead,
+        string
+    >
 
-    type BaseTerminatingChar = "?" | SingleCharOperator | "[" | Bound.Char | " "
+    type SingleCharOperator = "|" | "&" | ")" | "?"
+
+    type BaseTerminatingChar = SingleCharOperator | "[" | Bound.Char | " "
 
     export type Base<Unscanned extends string> = Unscanned extends Scan<
         infer Next,
@@ -34,7 +34,7 @@ export namespace Shift {
         ? Next extends "("
             ? ScannerFrom<"(", Rest>
             : Next extends EnclosedBaseStartChar
-            ? EnclosedBase<Next, "", Rest>
+            ? EnclosedBase<Next, Rest>
             : Next extends " "
             ? Base<Rest>
             : UnenclosedBase<Next, Rest>
@@ -62,13 +62,10 @@ export namespace Shift {
 
     type EnclosedBase<
         Enclosing extends EnclosedBaseStartChar,
-        Contents extends string,
         Unscanned extends string
-    > = Unscanned extends Scan<infer Next, infer Rest>
-        ? Next extends Enclosing
-            ? ScannerFrom<`${Enclosing}${Contents}${Enclosing}`, Rest>
-            : EnclosedBase<Enclosing, `${Contents}${Next}`, Rest>
-        : Error<`${Contents} requires a closing ${Enclosing}.`, Unscanned>
+    > = Unscanned extends `${infer Contents}${Enclosing}${infer Rest}`
+        ? ScannerFrom<`${Enclosing}${Contents}${Enclosing}`, Rest>
+        : Error<`${Unscanned} requires a closing ${Enclosing}.`, "">
 
     type Bound<
         Start extends Bound.Char,
@@ -89,9 +86,15 @@ export namespace Shift {
             ? ScannerFrom<Terminal.UnenclosedToken<Fragment>, Unscanned>
             : UnenclosedBase<`${Fragment}${Next}`, Rest>
         : ScannerFrom<Terminal.UnenclosedToken<Fragment>, "">
+    //ScannerFrom<[Fragment, "END"], "">
 
     type Error<Message extends string, Unscanned extends string> = ScannerFrom<
         ErrorToken<Message>,
         Unscanned
     >
+
+    // type PrependBase<Base extends string, S extends TypeScanner> = ScannerFrom<
+    //     [Base, S["lookahead"]],
+    //     S["unscanned"]
+    // >
 }
