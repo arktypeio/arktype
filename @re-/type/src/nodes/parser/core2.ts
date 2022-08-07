@@ -1,4 +1,4 @@
-import { Get, ListChars } from "@re-/tools"
+import { Get, Iterate, ListChars } from "@re-/tools"
 import { Base } from "../base/index.js"
 import {
     Bound,
@@ -11,11 +11,12 @@ import {
 } from "../nonTerminal/index.js"
 import {
     EnclosedLiteralDefinition,
+    LiteralDefinition,
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
 import { Expression } from "./expression.js"
-import { Scan, Shift } from "./shift.js"
+import { Scan, Shift2 } from "./shift2.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
@@ -49,39 +50,64 @@ export namespace Core {
         }
     }
 
-    export type ParseExpression<
-        S extends Expression.T.State,
-        Dict
-    > = S["tree"]["root"] extends ErrorToken<string>
-        ? S
-        : S["scanner"]["lookahead"] extends "END"
-        ? ReduceExpression<S>
-        : ParseExpression<ParseToken<S, Dict>, Dict>
+    type Z = ParseBase<
+        Expression.T.InitialTree,
+        Shift2.Branch<"string[][][]|number?">["lookahead"],
+        {}
+    >
 
-    export type ParseToken<
-        S extends Expression.T.State,
+    export type ParseBranches<
+        Tree extends Expression.T.Tree,
+        Tokens extends string[],
         Dict
-    > = S["scanner"]["lookahead"] extends Terminal.UnenclosedToken<infer Base>
-        ? Terminal.ParseUnenclosed<S, Base, Dict>
-        : S["scanner"]["lookahead"] extends "[]"
-        ? List.Parse<S>
-        : S["scanner"]["lookahead"] extends "|"
-        ? Union.Parse<S>
-        : S["scanner"]["lookahead"] extends "&"
-        ? Intersection.Parse<S>
-        : S["scanner"]["lookahead"] extends "("
-        ? Group.ParseOpen<S>
-        : S["scanner"]["lookahead"] extends ")"
-        ? Group.ParseClose<S>
-        : S["scanner"]["lookahead"] extends EnclosedLiteralDefinition
-        ? Terminal.ParseEnclosed<S, S["scanner"]["lookahead"]>
-        : // TODO: Don't redunandantly remove "!""
-        S["scanner"]["lookahead"] extends ErrorToken<infer Message>
-        ? Expression.T.Error<S, Message>
-        : Expression.T.Error<
-              S,
-              `Unexpected token ${S["scanner"]["lookahead"] & string}.`
+    > = Tokens extends [] ? Tree : {}
+
+    export type ParseBase<
+        Tree extends Expression.T.Tree,
+        Tokens extends string[],
+        Dict
+    > = Tokens extends ["("]
+        ? Group.ReduceOpen<Tree>
+        : Tokens extends Iterate<infer Base, infer Operators>
+        ? Terminal.IsResolvable<Base, Dict> extends true
+            ? ParseOperators<Expression.T.SetRoot<Tree, Base>, Operators>
+            : Expression.T.SetRoot<
+                  Tree,
+                  ErrorToken<`'${Base &
+                      string}' is not a builtin type and does not exist in your space.`>
+              >
+        : never
+
+    export type ParseOperators<
+        Tree extends Expression.T.Tree,
+        Tokens extends unknown[]
+    > = Tree["root"] extends ErrorToken<string>
+        ? Tree
+        : Tokens extends Iterate<infer Next, infer Rest>
+        ? ParseOperators<
+              Next extends "?" | "[]"
+                  ? Expression.T.SetRoot<Tree, [Tree["root"], Next]>
+                  : Next extends "|"
+                  ? Union.Reduce<Tree>
+                  : Next extends "&"
+                  ? Intersection.Reduce<Tree>
+                  : Next extends ")"
+                  ? Group.ReduceClose<Tree>
+                  : Expression.T.SetRoot<
+                        Tree,
+                        ErrorToken<`Unexpected token ${Next}.`>
+                    >,
+              Rest
           >
+        : Tree
+
+    // TOdo: Add group validation.
+    export type ReduceTree<T extends Expression.T.Tree> =
+        Expression.T.TreeFrom<{
+            groups: T["groups"]
+            branches: {}
+            root: Branches.MergeAll<T["branches"], T["root"]>
+        }>
 
     const parseExpression = (
         s: Expression.State,
@@ -111,15 +137,6 @@ export namespace Core {
 
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
-
-    type ReduceExpression<S extends Expression.T.State> = ValidateExpression<{
-        tree: {
-            groups: S["tree"]["groups"]
-            branches: {}
-            root: Branches.MergeAll<S["tree"]["branches"], S["tree"]["root"]>
-        }
-        scanner: S["scanner"]
-    }>
 
     const reduceExpression = (s: Expression.State) => {
         Branches.mergeAll(s)

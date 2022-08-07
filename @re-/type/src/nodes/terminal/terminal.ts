@@ -7,6 +7,7 @@ import {
     BigintLiteralDefinition,
     BigintLiteralNode,
     InferLiteral,
+    LiteralDefinition,
     NumberLiteralDefinition,
     NumberLiteralNode,
     RegexLiteralDefinition,
@@ -32,6 +33,15 @@ export namespace Terminal {
         tree: Expression.T.SetRoot<S["tree"], ValidateUnenclosed<Token, Dict>>
         scanner: Shift.Operator<S["scanner"]["unscanned"]>
     }>
+
+    export type IsResolvable<Token, Dict> = IsResolvableName<
+        Token,
+        Dict
+    > extends true
+        ? true
+        : Token extends LiteralDefinition
+        ? true
+        : false
 
     type ValidateUnenclosed<Token, Dict> = IsResolvableName<
         Token,
@@ -60,8 +70,6 @@ export namespace Terminal {
     // > = IsResolvableName<Token, Dict> extends true
     //     ? Expression.T.SetRoot<Tree, Token>
     //     : Token extends LiteralDefinition
-    //     ? Expression.T.SetRoot<Tree, Token>
-    //     : Token extends ErrorToken<string>
     //     ? Expression.T.SetRoot<Tree, Token>
     //     : Expression.T.SetRoot<
     //           Tree,
