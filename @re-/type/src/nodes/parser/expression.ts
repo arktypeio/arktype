@@ -3,7 +3,7 @@ import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
 import { Lexer } from "./lexer.js"
-import { Scan, Shift } from "./shift.js"
+import { ScanLeftward, Shift } from "./shift.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace Expression {
@@ -18,18 +18,6 @@ export namespace Expression {
             branches: Branches.TypeState
             root: unknown
         }
-
-        export type Affixes = {
-            bounds: Bound.Raw
-            optional: boolean
-        }
-
-        type InitialAffixes = AffixesFrom<{
-            bounds: {}
-            optional: false
-        }>
-
-        type AffixesFrom<A extends Affixes> = A
 
         export type Error<S extends State, Message extends string> = From<{
             tree: SetRoot<S["tree"], ErrorToken<Message>>

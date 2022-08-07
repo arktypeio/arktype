@@ -1,11 +1,26 @@
-import { Iterate, ListChars } from "@re-/tools"
+import { Iterate } from "@re-/tools"
 import { Terminal } from "../index.js"
 import { Bound } from "../nonTerminal/index.js"
 import { EnclosedBaseStartChar, ErrorToken } from "./tokens.js"
 
-export type Scan<Left extends string, Unscanned extends unknown[]> = [
-    Left,
+export type ScanDirection = "left" | "right"
+
+export type Scan<First extends string, Unscanned extends unknown[]> = [
+    First,
     ...Unscanned
+]
+
+export type ScanInDirection<
+    Next extends string,
+    Unscanned extends unknown[],
+    Direction extends ScanDirection
+> = Direction extends "left"
+    ? ScanLeftward<Unscanned, Next>
+    : Scan<Next, Unscanned>
+
+export type ScanLeftward<Unscanned extends unknown[], Last extends string> = [
+    ...Unscanned,
+    Last
 ]
 
 export namespace Shift {
@@ -21,7 +36,7 @@ export namespace Shift {
 
     type SingleCharOperator = "|" | "&" | ")"
 
-    type BaseTermatingChar =
+    type BaseTerminatingChar =
         | "?"
         | SingleCharOperator
         | "["
@@ -46,34 +61,14 @@ export namespace Shift {
         infer Next,
         infer Rest
     >
-        ? Next extends "?"
-            ? ScannerFrom<
-                  Rest extends []
-                      ? "?"
-                      : ErrorToken<`Suffix '?' is only valid at the end of a definition.`>,
-                  Rest
-              >
-            : Next extends SingleCharOperator
+        ? Next extends SingleCharOperator
             ? ScannerFrom<Next, Rest>
             : Next extends "["
             ? List<Rest>
-            : Next extends Bound.StartChar
-            ? Bound<Next, Rest>
             : Next extends " "
             ? Operator<Rest>
             : Error<`Unexpected operator '${Next}'`, Unscanned>
         : ScannerFrom<"END", []>
-
-    type Bound<
-        Start extends Bound.StartChar,
-        Unscanned extends unknown[]
-    > = Unscanned extends Iterate<infer Next, infer Rest>
-        ? Next extends "="
-            ? ScannerFrom<`${Start}=`, Rest>
-            : Start extends "="
-            ? Error<`= is not a valid comparator. Use == instead.`, Unscanned>
-            : ScannerFrom<Start, Unscanned>
-        : Error<`Expected a bound condition after ${Start}.`, []>
 
     type List<Unscanned extends unknown[]> = Unscanned extends Scan<
         "]",
@@ -96,7 +91,7 @@ export namespace Shift {
         Fragment extends string,
         Unscanned extends unknown[]
     > = Unscanned extends Scan<infer Next, infer Rest>
-        ? Next extends BaseTermatingChar
+        ? Next extends BaseTerminatingChar
             ? ScannerFrom<Terminal.UnenclosedToken<Fragment>, Unscanned>
             : UnenclosedBase<`${Fragment}${Next}`, Rest>
         : ScannerFrom<Terminal.UnenclosedToken<Fragment>, []>
@@ -105,4 +100,60 @@ export namespace Shift {
         Message extends string,
         Unscanned extends unknown[]
     > = ScannerFrom<ErrorToken<Message>, Unscanned>
+
+    export type Suffix<Unscanned extends unknown[]> =
+        Unscanned extends ScanLeftward<infer Rest, infer Last>
+            ? Last extends "?"
+                ? ScannerFrom<"?", Rest>
+                : PossibleBoundSuffix<Unscanned, "", Unscanned>
+            : ScannerFrom<"", Unscanned>
+
+    export type Prefix<Unscanned extends unknown[]> = PossibleBoundPrefix<
+        Base<Unscanned>
+    >
+
+    type PossibleBoundSuffix<
+        OriginalUnscanned extends unknown[],
+        Token extends string,
+        Unscanned extends unknown[]
+    > = Unscanned extends ScanLeftward<infer Rest, infer Last>
+        ? Last extends BaseTerminatingChar | EnclosedBaseStartChar
+            ? Last extends Bound.StartChar
+                ? Bound<Last, Rest, "left", Token>
+                : ScannerFrom<"", OriginalUnscanned>
+            : PossibleBoundSuffix<OriginalUnscanned, `${Last}${Token}`, Rest>
+        : ScannerFrom<"", OriginalUnscanned>
+
+    type PossibleBoundPrefix<S extends TypeScanner> =
+        S["unscanned"] extends Scan<infer Next, infer Rest>
+            ? Next extends Bound.StartChar
+                ? Bound<Next, Rest, "right", S["lookahead"]>
+                : S
+            : S
+
+    type Bound<
+        Start extends Bound.StartChar,
+        Unscanned extends unknown[],
+        Direction extends ScanDirection,
+        Value
+    > = Unscanned extends ScanInDirection<infer Next, infer Rest, Direction>
+        ? Next extends "="
+            ? ScannerFrom<
+                  Direction extends "right"
+                      ? [Value, `${Start}=`]
+                      : [`${Start}=`, Value],
+                  Rest
+              >
+            : Start extends "="
+            ? Error<`= is not a valid comparator. Use == instead.`, Unscanned>
+            : ScannerFrom<
+                  Direction extends "right" ? [Value, Start] : [Start, Value],
+                  Unscanned
+              >
+        : Error<
+              `Expected a bound condition ${Direction extends "left"
+                  ? "before"
+                  : "after"} ${Start}.`,
+              []
+          >
 }
