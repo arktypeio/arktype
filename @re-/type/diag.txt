@@ -24,10 +24,10 @@ src/__tests__/references.test.ts(90,50): error TS2322: Type '"integer"' is not a
 src/__tests__/references.test.ts(95,50): error TS2345: Argument of type '{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }' is not assignable to parameter of type 'Validate<{ readonly strings: { readonly keyword: "boolean"; readonly expression: "string[]|integer?"; }; readonly listed: readonly ["-1n", "null", "string|boolean"]; readonly regex: RegExp; }, {}>'.
 src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected operator '<'"'.
 src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected operator '<'"'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(5,10): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Unexpected operator '>'"'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(8,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"Unexpected operator '<'"'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(11,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"Unexpected operator '='"'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(14,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"Unexpected operator '<'"'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(6,10): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Unexpected operator '>'"'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(9,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"Unexpected operator '<'"'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(12,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"Unexpected operator '='"'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(15,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"Unexpected operator '<'"'.
 src/nodes/nonTerminal/__tests__/optional.test.ts(11,25): error TS2345: Argument of type '"(string|number[])?"' is not assignable to parameter of type '"Unexpected operator '?'"'.
 src/nodes/nonTerminal/bound/parse.ts(214,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/bound/parse.ts(226,59): error TS2554: Expected 1 arguments, but got 2.
@@ -36,17 +36,17 @@ src/nodes/nonTerminal/bound/parse.ts(230,47): error TS2322: Type '"<" | ">" | ">
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/bound/parse.ts(231,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 Files:              258
-Lines:            66074
-Nodes:           182794
-Identifiers:      61697
-Symbols:          99915
-Types:            54105
-Instantiations:  288062
-Memory used:    144220K
-I/O read:         0.02s
+Lines:            66052
+Nodes:           182590
+Identifiers:      61628
+Symbols:          99529
+Types:            53908
+Instantiations:  286424
+Memory used:    147606K
+I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.46s
+Parse time:       0.47s
 Bind time:        0.16s
-Check time:       1.52s
+Check time:       1.37s
 Emit time:        0.00s
-Total time:       2.14s
+Total time:       2.00s

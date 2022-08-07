@@ -14,7 +14,6 @@ import {
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
-import { AffixState, ParseAffixes } from "./affix.js"
 import { Expression } from "./expression.js"
 import { Shift } from "./shift.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
@@ -25,17 +24,8 @@ export namespace Core {
         "root"
     >
 
-    export type ParseDefinition<Def extends string, Dict> = ParseRoot<
-        // @ts-ignore Stack depth
-        ParseAffixes<Def>,
-        Dict
-    >
-
-    export type ParseRoot<A extends AffixState, Dict> = ParseExpression<
-        Expression.T.From<{
-            tree: Expression.T.InitialTree
-            scanner: A["scanner"]
-        }>,
+    export type ParseDefinition<Def extends string, Dict> = ParseExpression<
+        Expression.T.Initial<Def>,
         Dict
     >
 

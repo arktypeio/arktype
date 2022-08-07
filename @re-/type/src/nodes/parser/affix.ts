@@ -1,38 +1,41 @@
-import { ListChars } from "@re-/tools"
-import { Bound } from "../index.js"
-import { Expression } from "./expression.js"
-import { Shift } from "./shift.js"
-import { ErrorToken } from "./tokens.js"
+// import { ListChars } from "@re-/tools"
+// import { Bound } from "../index.js"
+// import { Expression } from "./expression.js"
+// import { Shift } from "./shift.js"
+// import { ErrorToken } from "./tokens.js"
 
-export type ParseAffixes<Unscanned extends string> =
-    InitializeAffixState<Unscanned>
-// ParsePrefixes<
-//     // @ts-ignore Random stack depth error
-//     ParseSuffixes<InitializeAffixState<Unscanned>>
-// >
+// export type ParseAffixes<Unscanned extends string> = ParseSuffixes<Unscanned>
 
-// type Z = ParseAffixes<ListChars<"2<=string[]<3?">>
+// type ParseSuffixes<Unscanned extends string> =
+//     Unscanned extends `${infer Rest}?`
+//         ? ParsePossibleRightBound<Rest>
+//         : ParsePossibleRightBound<Unscanned>
 
-export type Affixes = {
-    bounds: Bound.Raw
-    optional: boolean
-}
+// type ParsePossibleRightBound<Unscanned extends string> =
+//     Unscanned extends `${infer Rest}${infer Token extends Bound.Token}${infer N extends NumberLiteralDefinition}`
+//         ? [Rest, Token, N]
+//         : Unscanned
 
-export type AffixState = {
-    affixes: Affixes
-    scanner: Shift.TypeScanner
-}
+// export type Affixes = {
+//     bounds: Bound.Raw
+//     optional: boolean
+// }
 
-type AffixStateFrom<S extends AffixState> = S
+// export type AffixState = {
+//     affixes: Affixes
+//     scanner: Shift.TypeScanner
+// }
 
-type InitializeAffixState<Unscanned extends string> = AffixStateFrom<{
-    affixes: {
-        bounds: {}
-        optional: false
-    }
-    // Shift.Suffix<
-    scanner: Shift.Base<Unscanned>
-}>
+// type AffixStateFrom<S extends AffixState> = S
+
+// type InitializeAffixState<Unscanned extends string> = AffixStateFrom<{
+//     affixes: {
+//         bounds: {}
+//         optional: false
+//     }
+//     // Shift.Suffix<
+//     scanner: Shift.Base<Unscanned>
+// }>
 
 // type ParsePrefixes<S extends AffixState> =
 //     S["scanner"]["lookahead"] extends Bound.RawLeft
