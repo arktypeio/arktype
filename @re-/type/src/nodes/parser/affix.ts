@@ -1,14 +1,17 @@
 import { ListChars } from "@re-/tools"
 import { Bound } from "../index.js"
+import { Expression } from "./expression.js"
 import { Shift } from "./shift.js"
 import { ErrorToken } from "./tokens.js"
 
-export type ParseAffixes<Unscanned extends unknown[]> = ParsePrefixes<
-    // @ts-ignore Random stack depth error
-    ParseSuffixes<InitializeAffixState<Unscanned>>
->
+export type ParseAffixes<Unscanned extends unknown[]> =
+    InitializeAffixState<Unscanned>
+// ParsePrefixes<
+//     // @ts-ignore Random stack depth error
+//     ParseSuffixes<InitializeAffixState<Unscanned>>
+// >
 
-type Z = ParseAffixes<ListChars<"2<=string[]<3?">>
+// type Z = ParseAffixes<ListChars<"2<=string[]<3?">>
 
 export type Affixes = {
     bounds: Bound.Raw
@@ -27,51 +30,52 @@ type InitializeAffixState<Unscanned extends unknown[]> = AffixStateFrom<{
         bounds: {}
         optional: false
     }
-    scanner: Shift.Suffix<Unscanned>
+    // Shift.Suffix<
+    scanner: Shift.Base<Unscanned>
 }>
 
-type ParsePrefixes<S extends AffixState> =
-    S["scanner"]["lookahead"] extends Bound.RawLeft
-        ? AffixStateFrom<{
-              affixes: {
-                  bounds: {
-                      left: S["scanner"]["lookahead"]
-                      right: S["affixes"]["bounds"]["right"]
-                  }
-                  optional: S["affixes"]["optional"]
-              }
-              scanner: Shift.Base<S["scanner"]["unscanned"]>
-          }>
-        : S
+// type ParsePrefixes<S extends AffixState> =
+//     S["scanner"]["lookahead"] extends Bound.RawLeft
+//         ? AffixStateFrom<{
+//               affixes: {
+//                   bounds: {
+//                       left: S["scanner"]["lookahead"]
+//                       right: S["affixes"]["bounds"]["right"]
+//                   }
+//                   optional: S["affixes"]["optional"]
+//               }
+//               scanner: Shift.Base<S["scanner"]["unscanned"]>
+//           }>
+//         : S
 
-type ParseSuffixes<S extends AffixState> = S["scanner"]["lookahead"] extends ""
-    ? AffixStateFrom<{
-          affixes: S["affixes"]
-          scanner: Shift.Prefix<S["scanner"]["unscanned"]>
-      }>
-    : S["scanner"]["lookahead"] extends ErrorToken<string>
-    ? S
-    : ParseSuffixes<ParseSuffix<S>>
+// type ParseSuffixes<S extends AffixState> = S["scanner"]["lookahead"] extends ""
+//     ? AffixStateFrom<{
+//           affixes: S["affixes"]
+//           scanner: Shift.Prefix<S["scanner"]["unscanned"]>
+//       }>
+//     : S["scanner"]["lookahead"] extends ErrorToken<string>
+//     ? S
+//     : ParseSuffixes<ParseSuffix<S>>
 
-type ParseSuffix<S extends AffixState> = S["scanner"]["lookahead"] extends "?"
-    ? ParseSuffix<{
-          affixes: {
-              bounds: {}
-              optional: true
-          }
-          scanner: Shift.Suffix<S["scanner"]["unscanned"]>
-      }>
-    : S["scanner"]["lookahead"] extends Bound.RawRight
-    ? AffixStateFrom<{
-          affixes: {
-              bounds: {
-                  right: S["scanner"]["lookahead"]
-              }
-              optional: S["affixes"]["optional"]
-          }
-          scanner: Shift.Suffix<S["scanner"]["unscanned"]>
-      }>
-    : S
+// type ParseSuffix<S extends AffixState> = S["scanner"]["lookahead"] extends "?"
+//     ? ParseSuffix<{
+//           affixes: {
+//               bounds: {}
+//               optional: true
+//           }
+//           scanner: Shift.Suffix<S["scanner"]["unscanned"]>
+//       }>
+//     : S["scanner"]["lookahead"] extends Bound.RawRight
+//     ? AffixStateFrom<{
+//           affixes: {
+//               bounds: {
+//                   right: S["scanner"]["lookahead"]
+//               }
+//               optional: S["affixes"]["optional"]
+//           }
+//           scanner: Shift.Suffix<S["scanner"]["unscanned"]>
+//       }>
+//     : S
 
 // // export type Apply<
 // //     S extends Expression.T.State,

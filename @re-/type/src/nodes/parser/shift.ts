@@ -94,83 +94,83 @@ export namespace Shift {
         Unscanned extends unknown[]
     > = ScannerFrom<ErrorToken<Message>, Unscanned>
 
-    export type Suffix<Unscanned extends unknown[]> =
-        Unscanned extends ScanLeftward<infer Rest, infer Last>
-            ? Last extends "?"
-                ? ScannerFrom<"?", Rest>
-                : PossibleBoundSuffix<Unscanned, "", Unscanned>
-            : ScannerFrom<"", Unscanned>
+    // export type Suffix<Unscanned extends unknown[]> =
+    //     Unscanned extends ScanLeftward<infer Rest, infer Last>
+    //         ? Last extends "?"
+    //             ? ScannerFrom<"?", Rest>
+    //             : PossibleBoundSuffix<Unscanned, "", Unscanned>
+    //         : ScannerFrom<"", Unscanned>
 
-    export type Prefix<Unscanned extends unknown[]> = PossibleBoundPrefix<
-        Base<Unscanned>
-    >
+    // export type Prefix<Unscanned extends unknown[]> = PossibleBoundPrefix<
+    //     Base<Unscanned>
+    // >
 
-    type PossibleBoundSuffix<
-        OriginalUnscanned extends unknown[],
-        PossibleBoundingValue extends string,
-        Unscanned extends unknown[]
-    > = Unscanned extends ScanLeftward<infer Rest, infer Last>
-        ? Last extends BaseTerminatingChar | EnclosedBaseStartChar
-            ? Last extends Bound.Char
-                ? Bound<Last, Rest, true, PossibleBoundingValue>
-                : ScannerFrom<"", OriginalUnscanned>
-            : PossibleBoundSuffix<
-                  OriginalUnscanned,
-                  `${Last}${PossibleBoundingValue}`,
-                  Rest
-              >
-        : ScannerFrom<"", OriginalUnscanned>
+    // type PossibleBoundSuffix<
+    //     OriginalUnscanned extends unknown[],
+    //     PossibleBoundingValue extends string,
+    //     Unscanned extends unknown[]
+    // > = Unscanned extends ScanLeftward<infer Rest, infer Last>
+    //     ? Last extends BaseTerminatingChar | EnclosedBaseStartChar
+    //         ? Last extends Bound.Char
+    //             ? Bound<Last, Rest, true, PossibleBoundingValue>
+    //             : ScannerFrom<"", OriginalUnscanned>
+    //         : PossibleBoundSuffix<
+    //               OriginalUnscanned,
+    //               `${Last}${PossibleBoundingValue}`,
+    //               Rest
+    //           >
+    //     : ScannerFrom<"", OriginalUnscanned>
 
-    type PossibleBoundPrefix<S extends TypeScanner> =
-        S["unscanned"] extends Scan<infer Next, infer Rest>
-            ? Next extends Bound.Char
-                ? Bound<Next, Rest, false, S["lookahead"]>
-                : S
-            : S
+    // type PossibleBoundPrefix<S extends TypeScanner> =
+    //     S["unscanned"] extends Scan<infer Next, infer Rest>
+    //         ? Next extends Bound.Char
+    //             ? Bound<Next, Rest, false, S["lookahead"]>
+    //             : S
+    //         : S
 
-    type DirectionalConcat<
-        Left,
-        Right,
-        Reverse extends boolean
-    > = Reverse extends true ? [Right, Left] : [Left, Right]
+    // type DirectionalConcat<
+    //     Left,
+    //     Right,
+    //     Reverse extends boolean
+    // > = Reverse extends true ? [Right, Left] : [Left, Right]
 
-    type DirectionalStrConcat<
-        Left extends string,
-        Right extends string,
-        Reverse extends boolean
-    > = Reverse extends true ? `${Right}${Left}` : `${Left}${Right}`
+    // type DirectionalStrConcat<
+    //     Left extends string,
+    //     Right extends string,
+    //     Reverse extends boolean
+    // > = Reverse extends true ? `${Right}${Left}` : `${Left}${Right}`
 
-    type Bound<
-        FirstEncountered extends Bound.Char,
-        Unscanned extends unknown[],
-        Reverse extends boolean,
-        BoundingValue
-    > = Unscanned extends DirectionalScan<infer Next, infer Rest, Reverse>
-        ? DirectionalStrConcat<
-              FirstEncountered,
-              Next,
-              Reverse
-          > extends Bound.Token
-            ? ScannerFrom<
-                  DirectionalConcat<
-                      BoundingValue,
-                      DirectionalStrConcat<FirstEncountered, Next, Reverse>,
-                      Reverse
-                  >,
-                  Rest
-              >
-            : FirstEncountered extends "="
-            ? Error<`= is not a valid comparator. Use == instead.`, Unscanned>
-            : ScannerFrom<
-                  DirectionalConcat<BoundingValue, FirstEncountered, Reverse>,
-                  Unscanned
-              >
-        : Error<
-              `Expected an expression ${Reverse extends true
-                  ? "before"
-                  : "after"} ${FirstEncountered}.`,
-              []
-          >
+    // type Bound<
+    //     FirstEncountered extends Bound.Char,
+    //     Unscanned extends unknown[],
+    //     Reverse extends boolean,
+    //     BoundingValue
+    // > = Unscanned extends DirectionalScan<infer Next, infer Rest, Reverse>
+    //     ? DirectionalStrConcat<
+    //           FirstEncountered,
+    //           Next,
+    //           Reverse
+    //       > extends Bound.Token
+    //         ? ScannerFrom<
+    //               DirectionalConcat<
+    //                   BoundingValue,
+    //                   DirectionalStrConcat<FirstEncountered, Next, Reverse>,
+    //                   Reverse
+    //               >,
+    //               Rest
+    //           >
+    //         : FirstEncountered extends "="
+    //         ? Error<`= is not a valid comparator. Use == instead.`, Unscanned>
+    //         : ScannerFrom<
+    //               DirectionalConcat<BoundingValue, FirstEncountered, Reverse>,
+    //               Unscanned
+    //           >
+    //     : Error<
+    //           `Expected an expression ${Reverse extends true
+    //               ? "before"
+    //               : "after"} ${FirstEncountered}.`,
+    //           []
+    //       >
 
     // type LeftBound<
     //     Start extends Bound.Char,
