@@ -27,7 +27,7 @@ export namespace Core {
 
     export type ParseDefinition<Def extends string, Dict> = ParseRoot<
         // @ts-ignore Stack depth
-        ParseAffixes<ListChars<Def>>,
+        ParseAffixes<Def>,
         Dict
     >
 

@@ -7,7 +7,6 @@ import {
     BigintLiteralDefinition,
     BigintLiteralNode,
     InferLiteral,
-    LiteralDefinition,
     NumberLiteralDefinition,
     NumberLiteralNode,
     RegexLiteralDefinition,

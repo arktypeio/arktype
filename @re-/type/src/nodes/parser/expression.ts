@@ -1,9 +1,9 @@
-import { ClassOf, InstanceOf, Iterate } from "@re-/tools"
+import { ClassOf, InstanceOf } from "@re-/tools"
 import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
 import { Lexer } from "./lexer.js"
-import { ScanLeftward, Shift } from "./shift.js"
+import { Shift } from "./shift.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace Expression {
@@ -40,9 +40,9 @@ export namespace Expression {
 
         export type From<S extends T.State> = S
 
-        export type Initial<Tokens extends unknown[]> = From<{
+        export type Initial<Def extends string> = From<{
             tree: InitialTree
-            scanner: Shift.Base<Tokens>
+            scanner: Shift.Base<Def>
         }>
     }
 

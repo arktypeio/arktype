@@ -36,17 +36,17 @@ src/nodes/nonTerminal/bound/parse.ts(230,47): error TS2322: Type '"<" | ">" | ">
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/bound/parse.ts(231,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 Files:              258
-Lines:            66093
-Nodes:           182784
-Identifiers:      61693
-Symbols:         202737
-Types:            66711
-Instantiations:  335523
-Memory used:    165399K
-I/O read:         0.01s
+Lines:            66074
+Nodes:           182794
+Identifiers:      61697
+Symbols:          99915
+Types:            54105
+Instantiations:  288062
+Memory used:    144220K
+I/O read:         0.02s
 I/O write:        0.00s
 Parse time:       0.46s
 Bind time:        0.16s
-Check time:       1.62s
+Check time:       1.52s
 Emit time:        0.00s
-Total time:       2.24s
+Total time:       2.14s

@@ -4,7 +4,7 @@ import { Expression } from "./expression.js"
 import { Shift } from "./shift.js"
 import { ErrorToken } from "./tokens.js"
 
-export type ParseAffixes<Unscanned extends unknown[]> =
+export type ParseAffixes<Unscanned extends string> =
     InitializeAffixState<Unscanned>
 // ParsePrefixes<
 //     // @ts-ignore Random stack depth error
@@ -25,7 +25,7 @@ export type AffixState = {
 
 type AffixStateFrom<S extends AffixState> = S
 
-type InitializeAffixState<Unscanned extends unknown[]> = AffixStateFrom<{
+type InitializeAffixState<Unscanned extends string> = AffixStateFrom<{
     affixes: {
         bounds: {}
         optional: false
