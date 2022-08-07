@@ -10,13 +10,11 @@ export type Scan<First extends string, Unscanned extends unknown[]> = [
     ...Unscanned
 ]
 
-export type ScanInDirection<
+export type DirectionalScan<
     Next extends string,
     Unscanned extends unknown[],
-    Direction extends ScanDirection
-> = Direction extends "left"
-    ? ScanLeftward<Unscanned, Next>
-    : Scan<Next, Unscanned>
+    Reverse extends boolean
+> = Reverse extends true ? ScanLeftward<Unscanned, Next> : Scan<Next, Unscanned>
 
 export type ScanLeftward<Unscanned extends unknown[], Last extends string> = [
     ...Unscanned,
@@ -36,12 +34,7 @@ export namespace Shift {
 
     type SingleCharOperator = "|" | "&" | ")"
 
-    type BaseTerminatingChar =
-        | "?"
-        | SingleCharOperator
-        | "["
-        | Bound.StartChar
-        | " "
+    type BaseTerminatingChar = "?" | SingleCharOperator | "[" | Bound.Char | " "
 
     export type Base<Unscanned extends unknown[]> = Unscanned extends Iterate<
         infer Next,
@@ -114,46 +107,92 @@ export namespace Shift {
 
     type PossibleBoundSuffix<
         OriginalUnscanned extends unknown[],
-        Token extends string,
+        PossibleBoundingValue extends string,
         Unscanned extends unknown[]
     > = Unscanned extends ScanLeftward<infer Rest, infer Last>
         ? Last extends BaseTerminatingChar | EnclosedBaseStartChar
-            ? Last extends Bound.StartChar
-                ? Bound<Last, Rest, "left", Token>
+            ? Last extends Bound.Char
+                ? Bound<Last, Rest, true, PossibleBoundingValue>
                 : ScannerFrom<"", OriginalUnscanned>
-            : PossibleBoundSuffix<OriginalUnscanned, `${Last}${Token}`, Rest>
+            : PossibleBoundSuffix<
+                  OriginalUnscanned,
+                  `${Last}${PossibleBoundingValue}`,
+                  Rest
+              >
         : ScannerFrom<"", OriginalUnscanned>
 
     type PossibleBoundPrefix<S extends TypeScanner> =
         S["unscanned"] extends Scan<infer Next, infer Rest>
-            ? Next extends Bound.StartChar
-                ? Bound<Next, Rest, "right", S["lookahead"]>
+            ? Next extends Bound.Char
+                ? Bound<Next, Rest, false, S["lookahead"]>
                 : S
             : S
 
+    type DirectionalConcat<
+        Left,
+        Right,
+        Reverse extends boolean
+    > = Reverse extends true ? [Right, Left] : [Left, Right]
+
+    type DirectionalStrConcat<
+        Left extends string,
+        Right extends string,
+        Reverse extends boolean
+    > = Reverse extends true ? `${Right}${Left}` : `${Left}${Right}`
+
     type Bound<
-        Start extends Bound.StartChar,
+        FirstEncountered extends Bound.Char,
         Unscanned extends unknown[],
-        Direction extends ScanDirection,
-        Value
-    > = Unscanned extends ScanInDirection<infer Next, infer Rest, Direction>
-        ? Next extends "="
+        Reverse extends boolean,
+        BoundingValue
+    > = Unscanned extends DirectionalScan<infer Next, infer Rest, Reverse>
+        ? DirectionalStrConcat<
+              FirstEncountered,
+              Next,
+              Reverse
+          > extends Bound.Token
             ? ScannerFrom<
-                  Direction extends "right"
-                      ? [Value, `${Start}=`]
-                      : [`${Start}=`, Value],
+                  DirectionalConcat<
+                      BoundingValue,
+                      DirectionalStrConcat<FirstEncountered, Next, Reverse>,
+                      Reverse
+                  >,
                   Rest
               >
-            : Start extends "="
+            : FirstEncountered extends "="
             ? Error<`= is not a valid comparator. Use == instead.`, Unscanned>
             : ScannerFrom<
-                  Direction extends "right" ? [Value, Start] : [Start, Value],
+                  DirectionalConcat<BoundingValue, FirstEncountered, Reverse>,
                   Unscanned
               >
         : Error<
-              `Expected a bound condition ${Direction extends "left"
+              `Expected an expression ${Reverse extends true
                   ? "before"
-                  : "after"} ${Start}.`,
+                  : "after"} ${FirstEncountered}.`,
               []
           >
+
+    // type LeftBound<
+    //     Start extends Bound.Char,
+    //     Unscanned extends unknown[],
+    //     Value
+    // > = Unscanned extends Scan<infer Next, infer Rest>
+    //     ? Next extends "="
+    //         ? ScannerFrom<[Value, `${Start}=`], Rest>
+    //         : Start extends "="
+    //         ? Error<`= is not a valid comparator. Use == instead.`, Unscanned>
+    //         : ScannerFrom<[Value, Start], Unscanned>
+    //     : Error<`Expected a bound condition after ${Start}.`, []>
+
+    // type RightBound<
+    //     Start extends Bound.Char,
+    //     Unscanned extends unknown[],
+    //     Value
+    // > = Unscanned extends ScanLeftward<infer Rest, infer Next>
+    //     ? Next extends Bound.Boundable
+    //         ? ScannerFrom<[Value, `${Start}=`], Rest>
+    //         : Start extends "="
+    //         ? Error<`= is not a valid comparator. Use == instead.`, Unscanned>
+    //         : ScannerFrom<[Value, Start], Unscanned>
+    //     : Error<`Expected a bound condition after ${Start}.`, []>
 }

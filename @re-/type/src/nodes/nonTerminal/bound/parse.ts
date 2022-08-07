@@ -36,7 +36,7 @@ export namespace Bound {
 
     export type Token = keyof typeof tokens
 
-    export type StartChar = keyof typeof startChars
+    export type Char = keyof typeof startChars
 
     export type DoubleBoundToken = keyof typeof doubleBoundTokens
 
@@ -66,9 +66,7 @@ export namespace Bound {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    export const shiftToken = (
-        scanner: Lexer.ValueScanner<Bound.StartChar>
-    ) => {
+    export const shiftToken = (scanner: Lexer.ValueScanner<Bound.Char>) => {
         if (scanner.next === "=") {
             scanner.shift()
         } else if (scanner.lookahead === "=") {

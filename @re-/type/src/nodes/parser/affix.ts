@@ -1,20 +1,21 @@
 import { ListChars } from "@re-/tools"
 import { Bound } from "../index.js"
 import { Shift } from "./shift.js"
+import { ErrorToken } from "./tokens.js"
 
 export type ParseAffixes<Unscanned extends unknown[]> = ParsePrefixes<
     // @ts-ignore Random stack depth error
     ParseSuffixes<InitializeAffixState<Unscanned>>
 >
 
-type Z = ParseAffixes<ListChars<"2<string[]<3?">>
+type Z = ParseAffixes<ListChars<"2<=string[]<3?">>
 
 export type Affixes = {
     bounds: Bound.Raw
     optional: boolean
 }
 
-type AffixState = {
+export type AffixState = {
     affixes: Affixes
     scanner: Shift.TypeScanner
 }
@@ -48,6 +49,8 @@ type ParseSuffixes<S extends AffixState> = S["scanner"]["lookahead"] extends ""
           affixes: S["affixes"]
           scanner: Shift.Prefix<S["scanner"]["unscanned"]>
       }>
+    : S["scanner"]["lookahead"] extends ErrorToken<string>
+    ? S
     : ParseSuffixes<ParseSuffix<S>>
 
 type ParseSuffix<S extends AffixState> = S["scanner"]["lookahead"] extends "?"

@@ -14,17 +14,29 @@ import {
     NumberLiteralNode,
     Terminal
 } from "../terminal/index.js"
+import { AffixState, ParseAffixes } from "./affix.js"
 import { Expression } from "./expression.js"
 import { Shift } from "./shift.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
-        Get<
-            ParseExpression<Expression.T.Initial<ListChars<Def>>, Dict>,
-            "tree"
-        >,
+        Get<ParseDefinition<Def, Dict>, "tree">,
         "root"
+    >
+
+    export type ParseDefinition<Def extends string, Dict> = ParseRoot<
+        // @ts-ignore Stack depth
+        ParseAffixes<ListChars<Def>>,
+        Dict
+    >
+
+    export type ParseRoot<A extends AffixState, Dict> = ParseExpression<
+        Expression.T.From<{
+            tree: Expression.T.InitialTree
+            scanner: A["scanner"]
+        }>,
+        Dict
     >
 
     export const parse = (def: string, ctx: Base.Parsing.Context) => {
