@@ -116,7 +116,18 @@ const config = {
                     }
                 ],
                 copyright: `Copyright © ${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
-            }
+            },
+            presets: [
+                [
+                    "@docusaurus/preset-classic",
+                    {
+                        googleAnalytics: {
+                            trackingID: "UA-173540201-1",
+                            anonymizeIP: true
+                        }
+                    }
+                ]
+            ]
         })
 }
 
