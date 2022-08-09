@@ -1,6 +1,6 @@
 import { relative } from "node:path"
 import { fromHere } from "@re-/node"
-import { BindingNamedNode, Project } from "ts-morph"
+import { BindingNamedNode, CommentRange, Project } from "ts-morph"
 
 const project = new Project({
     tsConfigFilePath: fromHere("..", "tsconfig.references.json")
@@ -9,30 +9,9 @@ const project = new Project({
 const unused: Record<string, string[]> = {}
 const snippetFileRegex = /snippets\/\w+/
 const exportAllRegex = /export \*/
-const exportNameRegex = /\.\/\w+/
-const renamedAll = /\* as /
-const apiExports = []
-/**
- * Goal: Find exports that are not referenced in any non-test file,
- * and are not an entry point for a public package (i.e. @re-/type, @re-/assert)
- *
- * Notes:
- * - Even if the export is re-exported by an index.ts file, unless it is explicitly
- * references somewhere by name, it should not be considered used.
- *
- * - Can either check whether the export is referenced anywhere explicitly by name,
- * even if it is reexported (e.g. export { type } from "@re-/type") (this would
- * be a heuristic for whether it's part of a public API) or have a special
- * case for entry point files for public packages.
-
-reassert index file && cli.ts
-retype index file(remodel)
-docgen -> update tsconfig file
-scripts => 
-    docgen.ts
-    findUnused.ts
-    updateVersions.ts
-*/
+const exportAllRenamedRegex = /\* as /
+const ignoreUnusedComment = "@ignore-unused"
+const apiExports: { path: string; exportedDeclarations: string[] }[] = []
 
 const sourceFiles = project.getSourceFiles()
 const indexFiles = sourceFiles.filter(
@@ -41,18 +20,21 @@ const indexFiles = sourceFiles.filter(
 for (const file of indexFiles) {
     const publicApiExports = file
         .getExportDeclarations()
-        .filter((declaration) => exportAllRegex.test(declaration.getText()))
-        .map((declaration) =>
-            declaration.getText().match(exportNameRegex)![0].replace("./", "")
-        )
-    apiExports.push(...publicApiExports)
+        .filter((declaration) => !exportAllRegex.test(declaration.getText()))
+        .map((declaration) => {
+            return {
+                path: relative(".", declaration.getSourceFile().getFilePath()),
+                exportedDeclarations: declaration
+                    .getNamedExports()
+                    .map((namedExport) => namedExport.getName())
+            }
+        })
+    publicApiExports.length && apiExports.push(...publicApiExports)
 }
 for (const sourceFile of project.getSourceFiles()) {
     const file = relative(".", sourceFile.getFilePath())
-    if (
-        snippetFileRegex.test(file) ||
-        apiExports.includes(sourceFile.getBaseNameWithoutExtension())
-    ) {
+    const sourceFileText = sourceFile.getFullText()
+    if (snippetFileRegex.test(file)) {
         continue
     }
     const unusedInFile = []
@@ -61,17 +43,44 @@ for (const sourceFile of project.getSourceFiles()) {
         const references = exportedSymbol
             .getDeclarations()
             .flatMap((declaration) => {
+                const publicApiExport = apiExports.find(
+                    (apiExport) => apiExport.path === exportName
+                )
+                if (publicApiExport) {
+                    return []
+                }
                 if (declaration.getKindName() === "ExportSpecifier") {
                     return []
                 }
-                if (renamedAll.test(declaration.getText())) {
+                if (exportAllRenamedRegex.test(declaration.getText())) {
                     return []
                 }
                 if (declaration.getSourceFile() !== sourceFile) {
                     return []
                 }
+                const commentRanges = declaration.getLeadingCommentRanges()
+                let hasComment = false
+                for (const range of commentRanges) {
+                    console.log(
+                        sourceFileText
+                            .slice(range.getPos(), range.getEnd())
+                            .includes(ignoreUnusedComment)
+                    )
+                    // if (
+                    //     sourceFileText
+                    //         .slice(range.getPos(), range.getEnd())
+                    //         .includes(ignoreUnusedComment)
+                    // ) {
+                    //     hasComment = true
+                    //     break
+                    // }
+                }
+                if (hasComment) {
+                    console.log("HOLY BATMAN")
+                    console.log(declaration.getText())
+                    return []
+                }
                 return (declaration as any as BindingNamedNode)
-
                     .findReferences()
                     .flatMap((ref) => ref.getReferences())
             })
