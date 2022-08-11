@@ -12,8 +12,23 @@ const exportAllRegex = /export \*/
 const exportAllRenamedRegex = /\* as /
 const ignoreUnusedComment = "@ignore-unused"
 const apiExports: { path: string; exportedDeclarations: string[] }[] = []
-
 const sourceFiles = project.getSourceFiles()
+
+const checkForIgnoreUnusedComment = (
+    sourceFileText: string,
+    range: CommentRange,
+    referencesLength: number,
+    declarationName: string
+) => {
+    const foundComment = sourceFileText
+        .slice(range.getPos(), range.getEnd())
+        .includes(ignoreUnusedComment)
+    if (referencesLength > 1 && foundComment) {
+        console.log(`@ignore-unused wasn't needed for ${declarationName}`)
+    }
+    return foundComment
+}
+
 const indexFiles = sourceFiles.filter(
     (file) => file.getBaseName() === "index.ts"
 )
@@ -38,54 +53,78 @@ for (const sourceFile of project.getSourceFiles()) {
         continue
     }
     const unusedInFile = []
-    for (const exportedSymbol of sourceFile.getExportSymbols()) {
-        const exportName = exportedSymbol.getName()
-        const references = exportedSymbol
-            .getDeclarations()
-            .flatMap((declaration) => {
-                const publicApiExport = apiExports.find(
-                    (apiExport) => apiExport.path === exportName
-                )
-                if (publicApiExport) {
+    for (const [name, declarations] of sourceFile.getExportedDeclarations()) {
+        const references = declarations.flatMap((declaration) => {
+            if (declaration.getKindName() === "ExportSpecifier") {
+                return []
+            }
+            if (declaration.getSourceFile() !== sourceFile) {
+                return []
+            }
+            if (exportAllRenamedRegex.test(declaration.getText())) {
+                return []
+            }
+            const knownExport = apiExports.find(
+                (apiExport) => apiExport.path === file
+            )
+            if (knownExport) {
+                if (knownExport.exportedDeclarations.includes(name)) {
                     return []
                 }
-                if (declaration.getKindName() === "ExportSpecifier") {
-                    return []
+            }
+            const references = (declaration as any as BindingNamedNode)
+                .findReferences()
+                .flatMap((ref) => ref.getReferences())
+
+            switch (declaration.getKindName()) {
+                case "VariableDeclaration":
+                    {
+                        const ranges = declaration
+                            .getParent()
+                            ?.getParent()
+                            ?.getLeadingCommentRanges()
+
+                        for (const range of ranges!) {
+                            if (
+                                checkForIgnoreUnusedComment(
+                                    sourceFileText,
+                                    range,
+                                    references.length,
+                                    (
+                                        declaration as any as BindingNamedNode
+                                    ).getName()
+                                )
+                            ) {
+                                return []
+                            }
+                        }
+                    }
+                    break
+                default: {
+                    const ranges = declaration.getLeadingCommentRanges()
+
+                    for (const range of ranges!) {
+                        if (
+                            checkForIgnoreUnusedComment(
+                                sourceFileText,
+                                range,
+                                references.length,
+                                (
+                                    declaration as any as BindingNamedNode
+                                ).getName()
+                            )
+                        ) {
+                            return []
+                        }
+                    }
                 }
-                if (exportAllRenamedRegex.test(declaration.getText())) {
-                    return []
-                }
-                if (declaration.getSourceFile() !== sourceFile) {
-                    return []
-                }
-                const commentRanges = declaration.getLeadingCommentRanges()
-                let hasComment = false
-                for (const range of commentRanges) {
-                    console.log(
-                        sourceFileText
-                            .slice(range.getPos(), range.getEnd())
-                            .includes(ignoreUnusedComment)
-                    )
-                    // if (
-                    //     sourceFileText
-                    //         .slice(range.getPos(), range.getEnd())
-                    //         .includes(ignoreUnusedComment)
-                    // ) {
-                    //     hasComment = true
-                    //     break
-                    // }
-                }
-                if (hasComment) {
-                    console.log("HOLY BATMAN")
-                    console.log(declaration.getText())
-                    return []
-                }
-                return (declaration as any as BindingNamedNode)
-                    .findReferences()
-                    .flatMap((ref) => ref.getReferences())
-            })
+            }
+            return references
+        })
         if (references.length === 1) {
-            unusedInFile.push(exportName)
+            unusedInFile.push(name)
+        } else {
+            //Here I can check if there's an unnecessary unused statement
         }
     }
     if (unusedInFile.length) {
