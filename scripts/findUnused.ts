@@ -151,5 +151,4 @@ if (Object.keys(unused).length) {
         }
         console.groupEnd()
     }
-    process.exit(1)
 }
