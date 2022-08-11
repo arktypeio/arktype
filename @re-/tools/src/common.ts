@@ -10,6 +10,7 @@ export type UntilOptions = {
     intervalSeconds?: number
 }
 
+// dwadwadsapeeen
 export const until = async (
     condition: () => boolean,
     { timeoutSeconds = 10, intervalSeconds = 0.1 }: UntilOptions = {}

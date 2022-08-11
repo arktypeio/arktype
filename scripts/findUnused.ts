@@ -1,6 +1,6 @@
 import { relative } from "node:path"
 import { fromHere } from "@re-/node"
-import { BindingNamedNode, CommentRange, Project } from "ts-morph"
+import { BindingNamedNode, Node, Project, ts } from "ts-morph"
 
 const project = new Project({
     tsConfigFilePath: fromHere("..", "tsconfig.references.json")
@@ -11,22 +11,41 @@ const snippetFileRegex = /snippets\/\w+/
 const exportAllRegex = /export \*/
 const exportAllRenamedRegex = /\* as /
 const ignoreUnusedComment = "@ignore-unused"
-const apiExports: { path: string; exportedDeclarations: string[] }[] = []
+const apiExports: ApiExports[] = []
 const sourceFiles = project.getSourceFiles()
-
-const checkForIgnoreUnusedComment = (
-    sourceFileText: string,
-    range: CommentRange,
-    referencesLength: number,
+type DeclarationInfo = {
+    filePath: string
+    sourceFileText: string
+    declarationNode: Node<ts.Node>
+    referencesLength: number
     declarationName: string
-) => {
-    const foundComment = sourceFileText
-        .slice(range.getPos(), range.getEnd())
-        .includes(ignoreUnusedComment)
-    if (referencesLength > 1 && foundComment) {
-        console.log(`@ignore-unused wasn't needed for ${declarationName}`)
+}
+type ApiExports = {
+    path: string
+    exportedDeclarations: string[]
+}
+const checkForIgnoreUnusedComment = ({
+    filePath,
+    sourceFileText,
+    declarationNode,
+    referencesLength,
+    declarationName
+}: DeclarationInfo) => {
+    for (const range of declarationNode.getLeadingCommentRanges()) {
+        if (
+            sourceFileText
+                .slice(range.getPos(), range.getEnd())
+                .includes(ignoreUnusedComment)
+        ) {
+            if (referencesLength > 1) {
+                console.log(
+                    `@ignore-unused wasn't needed for ${declarationName} - ${filePath}\n`
+                )
+            }
+            return true
+        }
     }
-    return foundComment
+    return false
 }
 
 const indexFiles = sourceFiles.filter(
@@ -44,7 +63,9 @@ for (const file of indexFiles) {
                     .map((namedExport) => namedExport.getName())
             }
         })
-    publicApiExports.length && apiExports.push(...publicApiExports)
+    if (publicApiExports.length) {
+        apiExports.push(...publicApiExports)
+    }
 }
 for (const sourceFile of project.getSourceFiles()) {
     const file = relative(".", sourceFile.getFilePath())
@@ -76,46 +97,37 @@ for (const sourceFile of project.getSourceFiles()) {
                 .findReferences()
                 .flatMap((ref) => ref.getReferences())
 
+            const sourceFileAndReferencesData = {
+                filePath: file,
+                sourceFileText,
+                referencesLength: references.length,
+                declarationName: (
+                    declaration as any as BindingNamedNode
+                ).getName()
+            }
             switch (declaration.getKindName()) {
                 case "VariableDeclaration":
                     {
-                        const ranges = declaration
-                            .getParent()
-                            ?.getParent()
-                            ?.getLeadingCommentRanges()
+                        const foundComment = checkForIgnoreUnusedComment({
+                            ...sourceFileAndReferencesData,
+                            declarationNode: declaration
+                                .getParentOrThrow()
+                                .getParentOrThrow()
+                        })
 
-                        for (const range of ranges!) {
-                            if (
-                                checkForIgnoreUnusedComment(
-                                    sourceFileText,
-                                    range,
-                                    references.length,
-                                    (
-                                        declaration as any as BindingNamedNode
-                                    ).getName()
-                                )
-                            ) {
-                                return []
-                            }
+                        if (foundComment) {
+                            return []
                         }
                     }
                     break
                 default: {
-                    const ranges = declaration.getLeadingCommentRanges()
+                    const foundComment = checkForIgnoreUnusedComment({
+                        ...sourceFileAndReferencesData,
+                        declarationNode: declaration
+                    })
 
-                    for (const range of ranges!) {
-                        if (
-                            checkForIgnoreUnusedComment(
-                                sourceFileText,
-                                range,
-                                references.length,
-                                (
-                                    declaration as any as BindingNamedNode
-                                ).getName()
-                            )
-                        ) {
-                            return []
-                        }
+                    if (foundComment) {
+                        return []
                     }
                 }
             }
@@ -123,8 +135,6 @@ for (const sourceFile of project.getSourceFiles()) {
         })
         if (references.length === 1) {
             unusedInFile.push(name)
-        } else {
-            //Here I can check if there's an unnecessary unused statement
         }
     }
     if (unusedInFile.length) {
