@@ -1,4 +1,4 @@
-import { Get, ListChars } from "@re-/tools"
+import { Get } from "@re-/tools"
 import { Base } from "../base/index.js"
 import {
     Bound,
@@ -15,7 +15,6 @@ import {
     Terminal
 } from "../terminal/index.js"
 import { Expression } from "./expression.js"
-import { Scan, Shift } from "./shift.js"
 import { ErrorToken, suffixTokens } from "./tokens.js"
 
 export namespace Core {
