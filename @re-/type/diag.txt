@@ -1,4 +1,7 @@
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(84,17): error TS2578: Unused '@ts-expect-error' directive.
+src/nodes/nonTerminal/__tests__/optional.test.ts(33,17): error TS2578: Unused '@ts-expect-error' directive.
+src/nodes/nonTerminal/__tests__/optional.test.ts(42,25): error TS2578: Unused '@ts-expect-error' directive.
+src/nodes/nonTerminal/__tests__/optional.test.ts(51,21): error TS2578: Unused '@ts-expect-error' directive.
+src/nodes/nonTerminal/__tests__/str.test.ts(7,9): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/bound/parse.ts(153,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(170,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(209,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
@@ -7,18 +10,19 @@ src/nodes/nonTerminal/bound/parse.ts(225,30): error TS2345: Argument of type 'un
 src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/bound/parse.ts(226,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              257
-Lines:            66143
-Nodes:           181149
-Identifiers:      61734
-Symbols:         105072
-Types:            62066
-Instantiations:  304756
-Memory used:    164073K
+Lines:            66117
+Nodes:           181006
+Identifiers:      61694
+Symbols:         103009
+Types:            54133
+Instantiations:  280917
+Memory used:    157695K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.45s
-Bind time:        0.16s
-Check time:       1.44s
+Parse time:       0.47s
+Bind time:        0.18s
+Check time:       1.51s
 Emit time:        0.00s
-Total time:       2.05s
+Total time:       2.16s

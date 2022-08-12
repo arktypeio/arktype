@@ -1,97 +1,99 @@
-// import { ListChars } from "@re-/tools"
 // import { Bound } from "../index.js"
-// import { Expression } from "./expression.js"
-// import { Shift } from "./shift.js"
+// import { State } from "./state.js"
 // import { ErrorToken } from "./tokens.js"
 
-// export type ParseAffixes<Unscanned extends string> = ParseSuffixes<Unscanned>
+// type TwoCharComparator = "<=" | ">=" | "=="
+// type SingleCharComparator = "<" | ">"
 
-// type ParseSuffixes<Unscanned extends string> =
-//     Unscanned extends `${infer Rest}?`
-//         ? ParsePossibleRightBound<Rest>
-//         : ParsePossibleRightBound<Unscanned>
+// // export type ParsePrefixes<Def extends string> = ParsePossibleLeftBound<
+// //     InitializeAffixState<Def>
+// // >
 
-// type ParsePossibleRightBound<Unscanned extends string> =
-//     Unscanned extends `${infer Rest}${infer Token extends Bound.Token}${infer N extends NumberLiteralDefinition}`
-//         ? [Rest, Token, N]
-//         : Unscanned
+// export type ParseSuffixes<
+//     Root,
+//     Unscanned extends string,
+//     Bounds extends Bound.Raw
+// > = ParsePossibleRightBound<
+//     ParsePossibleOptional<{ final: Root; unscanned: Unscanned; bounds: Bounds }>
+// >
 
-// export type Affixes = {
-//     bounds: Bound.Raw
-//     optional: boolean
-// }
+// type ParsePossibleOptional<S extends AffixState> =
+//     S["unscanned"] extends `${infer Rest}?`
+//         ? AffixStateFrom<{
+//               bounds: S["bounds"]
+//               final: [S["final"], "?"]
+//               unscanned: Rest
+//           }>
+//         : S
+
+// // type ParsePossibleLeftBound<S extends AffixState> =
+// //     S["unscanned"] extends `${infer LeftValue extends number}${TwoCharComparator}${infer Rest}`
+// //         ? S["unscanned"] extends `${LeftValue}${infer Token}${Rest}`
+// //             ? AffixStateFrom<{
+// //                   bounds: {
+// //                       left: [LeftValue, Token]
+// //                   }
+// //                   final: S["final"]
+// //                   unscanned: Rest
+// //               }>
+// //             : never
+// //         : S["unscanned"] extends `${infer LeftValue extends number}${SingleCharComparator}${infer Rest}`
+// //         ? S["unscanned"] extends `${LeftValue}${infer Token}${Rest}`
+// //             ? AffixStateFrom<{
+// //                   bounds: {
+// //                       left: [LeftValue, Token]
+// //                   }
+// //                   final: S["final"]
+// //                   unscanned: Rest
+// //               }>
+// //             : never
+// //         : S
+
+// type ParsePossibleRightBound<S extends AffixState> =
+//     S["unscanned"] extends `${infer Rest}${TwoCharComparator}${infer RightValue extends number}`
+//         ? S["unscanned"] extends `${Rest}${infer Token}${RightValue}`
+//             ? AffixStateFrom<{
+//                   bounds: S["bounds"] & {
+//                       right: [Token, RightValue]
+//                   }
+//                   final: S["final"]
+//                   unscanned: Rest
+//               }>
+//             : never
+//         : S["unscanned"] extends `${infer Rest}${SingleCharComparator}${infer RightValue extends number}`
+//         ? S["unscanned"] extends `${Rest}${infer Token}${RightValue}`
+//             ? AffixStateFrom<{
+//                   bounds: S["bounds"] & {
+//                       right: [Token, RightValue]
+//                   }
+//                   final: S["final"]
+//                   unscanned: Rest
+//               }>
+//             : never
+//         : S
 
 // export type AffixState = {
-//     affixes: Affixes
-//     scanner: Shift.TypeScanner
+//     bounds: Bound.Raw
+//     final: unknown
+//     unscanned: string
 // }
 
 // type AffixStateFrom<S extends AffixState> = S
 
 // type InitializeAffixState<Unscanned extends string> = AffixStateFrom<{
-//     affixes: {
-//         bounds: {}
-//         optional: false
-//     }
-//     scanner: Shift.Base<Unscanned>
+//     bounds: {}
+//     final: undefined
+//     unscanned: Unscanned
 // }>
 
-// type ParsePrefixes<S extends AffixState> =
-//     S["scanner"]["lookahead"] extends Bound.RawLeft
-//         ? AffixStateFrom<{
-//               affixes: {
-//                   bounds: {
-//                       left: S["scanner"]["lookahead"]
-//                       right: S["affixes"]["bounds"]["right"]
-//                   }
-//                   optional: S["affixes"]["optional"]
-//               }
-//               scanner: Shift.Base<S["scanner"]["unscanned"]>
-//           }>
-//         : S
-
-// type ParseSuffixes<S extends AffixState> = S["scanner"]["lookahead"] extends ""
-//     ? AffixStateFrom<{
-//           affixes: S["affixes"]
-//           scanner: Shift.Prefix<S["scanner"]["unscanned"]>
-//       }>
-//     : S["scanner"]["lookahead"] extends ErrorToken<string>
-//     ? S
-//     : ParseSuffixes<ParseSuffix<S>>
-
-// type ParseSuffix<S extends AffixState> = S["scanner"]["lookahead"] extends "?"
-//     ? ParseSuffix<{
-//           affixes: {
-//               bounds: {}
-//               optional: true
-//           }
-//           scanner: Shift.Suffix<S["scanner"]["unscanned"]>
-//       }>
-//     : S["scanner"]["lookahead"] extends Bound.RawRight
-//     ? AffixStateFrom<{
-//           affixes: {
-//               bounds: {
-//                   right: S["scanner"]["lookahead"]
-//               }
-//               optional: S["affixes"]["optional"]
-//           }
-//           scanner: Shift.Suffix<S["scanner"]["unscanned"]>
-//       }>
-//     : S
-
-// export type Apply<
-//     S extends Expression.T.State,
-//     A extends Affixes
-// > = S["tree"]["root"] extends ErrorToken<string>
-//     ? S
-//     : // TODO: Bounds should be validated before parse. Find a way to communicate better between phases
-//     Bound.Validate<A["bounds"], S["tree"]["root"]> extends ErrorToken<
-//           infer Message
-//       >
-//     ? Expression.T.Error<S, Message>
-//     : A["optional"] extends true
-//     ? Expression.T.From<{
-//           tree: Expression.T.SetRoot<S, [S["tree"]["root"], "?"]>
-//           scanner: S["scanner"]
-//       }>
-//     : S
+// // export type FinalizeTree<
+// //     Root,
+// //     A extends Affixes
+// // > = Root extends ErrorToken<string>
+// //     ? Root
+// //     : // TODO: Bounds should be validated before parse. Find a way to communicate better between phases
+// //     Bound.Validate<A["bounds"], Root> extends ErrorToken<infer Message>
+// //     ? ErrorToken<Message>
+// //     : A["optional"] extends true
+// //     ? [Root, "?"]
+// //     : Root
