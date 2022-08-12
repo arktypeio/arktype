@@ -1,38 +1,24 @@
-docs/snippets/constraints.ts(8,9): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected operator '<'."'.
-docs/snippets/constraints.ts(10,9): error TS2322: Type '"string<=80"' is not assignable to type '"Unexpected operator '<'."'.
-src/__tests__/references.test.ts(37,29): error TS2345: Argument of type '"0<(user[]|group[]|boolean&true|integer|null)[]<2"' is not assignable to parameter of type '"Unexpected operator '<'."'.
-src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"!Unexpected operator '<'."[]'.
-  Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"!Unexpected operator '<'."'.
-    Type '"boolean"' is not assignable to type '"!Unexpected operator '<'."'.
-src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"Unexpected operator '<'."'.
-src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"Unexpected operator '<'."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(6,10): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Unexpected operator '>'."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(9,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"Unexpected operator '<'."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(12,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"Unexpected operator '='."'.
-src/nodes/nonTerminal/__tests__/bound.bench.ts(15,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"Unexpected operator '<'."'.
-src/nodes/nonTerminal/__tests__/str.test.ts(7,9): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/bound/parse.ts(158,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
-src/nodes/nonTerminal/bound/parse.ts(175,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
-src/nodes/nonTerminal/bound/parse.ts(214,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/nodes/nonTerminal/bound/parse.ts(226,59): error TS2554: Expected 1 arguments, but got 2.
-src/nodes/nonTerminal/bound/parse.ts(230,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/nodes/nonTerminal/bound/parse.ts(230,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
+src/nodes/nonTerminal/__tests__/parenthesized.test.ts(84,17): error TS2578: Unused '@ts-expect-error' directive.
+src/nodes/nonTerminal/bound/parse.ts(153,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
+src/nodes/nonTerminal/bound/parse.ts(170,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
+src/nodes/nonTerminal/bound/parse.ts(209,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/nodes/nonTerminal/bound/parse.ts(221,59): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/nonTerminal/bound/parse.ts(225,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
-src/nodes/nonTerminal/bound/parse.ts(231,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/terminal.ts(3,23): error TS2307: Cannot find module '../parser/shift.js' or its corresponding type declarations.
+src/nodes/nonTerminal/bound/parse.ts(226,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 Files:              257
-Lines:            65957
-Nodes:           182323
-Identifiers:      61562
-Symbols:         100824
-Types:            53141
-Instantiations:  274400
-Memory used:    148431K
+Lines:            66143
+Nodes:           181149
+Identifiers:      61734
+Symbols:         105072
+Types:            62066
+Instantiations:  304756
+Memory used:    164073K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.49s
-Bind time:        0.17s
-Check time:       1.57s
+Parse time:       0.45s
+Bind time:        0.16s
+Check time:       1.44s
 Emit time:        0.00s
-Total time:       2.23s
+Total time:       2.05s

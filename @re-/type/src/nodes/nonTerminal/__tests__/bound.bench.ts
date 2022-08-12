@@ -1,6 +1,5 @@
 import { bench } from "@re-/assert"
 import { type } from "../../../type.js"
-import { Bound } from "../index.js"
 
 bench("single-bounded", () => {
     type("string>5").infer

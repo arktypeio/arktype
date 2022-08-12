@@ -6,7 +6,11 @@ import { Lexer } from "./lexer.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace State {
+    export type Phase = "affix" | "expression" | "end"
+
     export type Type = {
+        phase: Phase
+        bounds: Bound.Raw
         tree: Tree
         unscanned: string
     }
@@ -21,6 +25,17 @@ export namespace State {
 
     export type TreeFrom<T extends Tree> = T
 
+    export type Expression<
+        S extends Type,
+        T extends Tree,
+        Unscanned extends string
+    > = From<{
+        phase: S["phase"]
+        bounds: S["bounds"]
+        tree: T
+        unscanned: Unscanned
+    }>
+
     export type SetRoot<T extends Tree, Node> = TreeFrom<{
         groups: T["groups"]
         branches: T["branches"]
@@ -28,11 +43,22 @@ export namespace State {
     }>
 
     export type Error<S extends Type, Message extends string> = From<{
+        phase: "end"
+        bounds: S["bounds"]
         tree: SetRoot<S["tree"], ErrorToken<Message>>
         unscanned: S["unscanned"]
     }>
 
+    export type SetPhase<S extends Type, P extends Phase> = From<{
+        phase: P
+        bounds: S["bounds"]
+        tree: S["tree"]
+        unscanned: S["unscanned"]
+    }>
+
     export type Initialize<Def extends string> = From<{
+        phase: "expression"
+        bounds: {}
         tree: InitialTree
         unscanned: Def
     }>

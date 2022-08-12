@@ -9,7 +9,11 @@ import {
     Optional,
     Union
 } from "../nonTerminal/index.js"
-import { NumberLiteralNode, Terminal } from "../terminal/index.js"
+import {
+    NumberLiteralDefinition,
+    NumberLiteralNode,
+    Terminal
+} from "../terminal/index.js"
 import { State } from "./state.js"
 import {
     BaseTerminatingChar,
@@ -57,10 +61,10 @@ export namespace Core {
     export type ParseExpression<
         S extends State.Type,
         Dict
-    > = S["tree"]["root"] extends ErrorToken<string>
+    > = S["phase"] extends "end"
         ? S
-        : S["unscanned"] extends ""
-        ? ReduceExpression<S>
+        : S["phase"] extends "affix"
+        ? ParseExpression<Affix<S>, Dict>
         : S["tree"]["root"] extends undefined
         ? ParseExpression<Base<S, Dict>, Dict>
         : ParseExpression<Operator<S>, Dict>
@@ -70,20 +74,11 @@ export namespace Core {
         infer Rest
     >
         ? Next extends "("
-            ? State.From<{
-                  tree: Group.ReduceOpen<S["tree"]>
-                  unscanned: Rest
-              }>
+            ? State.Expression<S, Group.ReduceOpen<S["tree"]>, Rest>
             : Next extends EnclosedBaseStartChar
             ? EnclosedBase<S, Next>
             : Next extends " "
-            ? Base<
-                  State.From<{
-                      tree: S["tree"]
-                      unscanned: Rest
-                  }>,
-                  Dict
-              >
+            ? Base<State.Expression<S, S["tree"], Rest>, Dict>
             : UnenclosedBase<S, Next, Rest, Dict>
         : State.Error<S, `Expected an expression.`>
 
@@ -91,65 +86,106 @@ export namespace Core {
         infer Next,
         infer Rest
     >
-        ? Next extends "["
+        ? Next extends AffixStartChar
+            ? ReduceExpression<S, "affix">
+            : Next extends "["
             ? Rest extends Scan<"]", infer Remaining>
-                ? State.From<{
-                      tree: State.SetRoot<S["tree"], [S["tree"]["root"], "[]"]>
-                      unscanned: Remaining
-                  }>
+                ? State.Expression<
+                      S,
+                      State.SetRoot<S["tree"], [S["tree"]["root"], "[]"]>,
+                      Remaining
+                  >
                 : State.Error<S, `Missing expected ']'.`>
-            : Next extends "?"
-            ? Rest extends ""
-                ? State.From<{
-                      tree: {
-                          groups: S["tree"]["groups"]
-                          branches: {}
-                          root: [
-                              Branches.MergeAll<
-                                  S["tree"]["branches"],
-                                  S["tree"]["root"]
-                              >,
-                              "?"
-                          ]
-                      }
+            : Next extends "|"
+            ? State.Expression<S, Union.Reduce<S["tree"]>, Rest>
+            : Next extends "&"
+            ? State.Expression<S, Intersection.Reduce<S["tree"]>, Rest>
+            : Next extends ")"
+            ? State.Expression<S, Group.ReduceClose<S["tree"]>, Rest>
+            : Next extends " "
+            ? Operator<State.Expression<S, S["tree"], Rest>>
+            : State.Error<S, `Unexpected operator '${Next}'.`>
+        : ReduceExpression<S, "end">
 
-                      unscanned: ""
-                  }>
+    type Affix<S extends State.Type> = S["unscanned"] extends Scan<
+        infer Next,
+        infer Rest
+    >
+        ? Next extends "?"
+            ? Rest extends ""
+                ? State.Expression<
+                      S,
+                      State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
+                      ""
+                  >
                 : State.Error<
                       S,
                       `Suffix '?' is only valid at the end of a definition.`
                   >
-            : Next extends "|"
-            ? State.From<{
-                  tree: Union.Reduce<S["tree"]>
-                  unscanned: Rest
-              }>
-            : Next extends "&"
-            ? State.From<{
-                  tree: Intersection.Reduce<S["tree"]>
-                  unscanned: Rest
-              }>
-            : Next extends ")"
-            ? State.From<{
-                  tree: Group.ReduceClose<S["tree"]>
-                  unscanned: Rest
-              }>
-            : Next extends " "
-            ? Operator<State.From<{ tree: S["tree"]; unscanned: Rest }>>
-            : State.Error<S, `Unexpected operator '${Next}'.`>
-        : never
+            : Next extends Bound.Char
+            ? Bound<State.Expression<S, S["tree"], Rest>, Next>
+            : State.Error<S, `Unexpected suffix token ${Next}.`>
+        : State.SetPhase<S, "end">
+
+    type IsLeftBound<Tree extends State.Tree> = Tree extends State.TreeFrom<{
+        groups: []
+        branches: {}
+        root: NumberLiteralDefinition
+    }>
+        ? true
+        : false
+
+    type AffixStartChar = Bound.Char | "?"
+
+    type ReduceBound<
+        S extends State.Type,
+        Token extends Bound.Token
+    > = IsLeftBound<S["tree"]> extends true
+        ? State.From<{
+              phase: "expression"
+              bounds: {
+                  left: [S["tree"]["root"], Token]
+              }
+              tree: State.InitialTree
+              unscanned: S["unscanned"]
+          }>
+        : // TODO: Should we have dict here?
+          ReduceRightBound<Base<S, {}>, S["tree"]["root"], Token>
+
+    type ReduceRightBound<
+        S extends State.Type,
+        OriginalRoot,
+        Token extends Bound.Token
+    > = State.From<{
+        phase: "affix"
+        bounds: {
+            left: S["bounds"]["left"]
+            right: [Token, S["tree"]["root"]]
+        }
+        tree: State.SetRoot<S["tree"], OriginalRoot>
+        unscanned: S["unscanned"]
+    }>
+
+    type Bound<
+        S extends State.Type,
+        Start extends Bound.Char
+    > = S["unscanned"] extends Scan<infer Next, infer Rest>
+        ? Next extends "="
+            ? ReduceBound<State.Expression<S, S["tree"], Rest>, `${Start}=`>
+            : Start extends ">" | "<"
+            ? ReduceBound<S, Start>
+            : State.Error<S, `= is not a valid comparator. Use == instead.`>
+        : State.Error<S, `Expected a bound condition after ${Start}.`>
 
     type EnclosedBase<
         S extends State.Type,
         Enclosing extends EnclosedBaseStartChar
     > = S["unscanned"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.From<{
-              tree: State.SetRoot<
-                  S["tree"],
-                  `${Enclosing}${Contents}${Enclosing}`
-              >
-              unscanned: Rest
-          }>
+        ? State.Expression<
+              S,
+              State.SetRoot<S["tree"], `${Enclosing}${Contents}${Enclosing}`>,
+              Rest
+          >
         : State.Error<S, `${S["unscanned"]} requires a closing ${Enclosing}.`>
 
     type UnenclosedBase<
@@ -169,10 +205,7 @@ export namespace Core {
         Unscanned extends string,
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
-        ? State.From<{
-              tree: State.SetRoot<S["tree"], Fragment>
-              unscanned: Unscanned
-          }>
+        ? State.Expression<S, State.SetRoot<S["tree"], Fragment>, Unscanned>
         : State.Error<
               S,
               `'${Fragment}' is not a builtin type and does not exist in your space.`
@@ -204,14 +237,24 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ReduceExpression<S extends State.Type> = ValidateExpression<{
-        tree: {
-            groups: S["tree"]["groups"]
-            branches: {}
-            root: Branches.MergeAll<S["tree"]["branches"], S["tree"]["root"]>
-        }
-        unscanned: S["unscanned"]
-    }>
+    type ReduceExpression<
+        S extends State.Type,
+        Phase extends "end" | "affix"
+    > = ValidateExpression<
+        State.From<{
+            phase: Phase
+            bounds: S["bounds"]
+            tree: {
+                groups: S["tree"]["groups"]
+                branches: {}
+                root: Branches.MergeAll<
+                    S["tree"]["branches"],
+                    S["tree"]["root"]
+                >
+            }
+            unscanned: S["unscanned"]
+        }>
+    >
 
     const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)

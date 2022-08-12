@@ -33,7 +33,6 @@
 //         bounds: {}
 //         optional: false
 //     }
-//     // Shift.Suffix<
 //     scanner: Shift.Base<Unscanned>
 // }>
 
@@ -80,19 +79,19 @@
 //       }>
 //     : S
 
-// // export type Apply<
-// //     S extends Expression.T.State,
-// //     A extends Affixes
-// // > = S["tree"]["root"] extends ErrorToken<string>
-// //     ? S
-// //     : // TODO: Bounds should be validated before parse. Find a way to communicate better between phases
-// //     Bound.Validate<A["bounds"], S["tree"]["root"]> extends ErrorToken<
-// //           infer Message
-// //       >
-// //     ? Expression.T.Error<S, Message>
-// //     : A["optional"] extends true
-// //     ? Expression.T.From<{
-// //           tree: Expression.T.SetRoot<S, [S["tree"]["root"], "?"]>
-// //           scanner: S["scanner"]
-// //       }>
-// //     : S
+// export type Apply<
+//     S extends Expression.T.State,
+//     A extends Affixes
+// > = S["tree"]["root"] extends ErrorToken<string>
+//     ? S
+//     : // TODO: Bounds should be validated before parse. Find a way to communicate better between phases
+//     Bound.Validate<A["bounds"], S["tree"]["root"]> extends ErrorToken<
+//           infer Message
+//       >
+//     ? Expression.T.Error<S, Message>
+//     : A["optional"] extends true
+//     ? Expression.T.From<{
+//           tree: Expression.T.SetRoot<S, [S["tree"]["root"], "?"]>
+//           scanner: S["scanner"]
+//       }>
+//     : S
