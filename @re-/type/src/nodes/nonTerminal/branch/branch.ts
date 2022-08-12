@@ -1,4 +1,4 @@
-import { Expression } from "../../parser/index.js"
+import { State } from "../../parser/index.js"
 import { Intersection, IntersectionNode } from "./intersection.js"
 import { Union, UnionNode } from "./union.js"
 
@@ -27,7 +27,7 @@ export namespace Branches {
         MergeExpression<B["intersection"], Root>
     >
 
-    export const mergeAll = (s: Expression.State) => {
+    export const mergeAll = (s: State.Value) => {
         // TODO: Clearer way to show these can be undefined
         Intersection.merge(s)
         Union.merge(s)

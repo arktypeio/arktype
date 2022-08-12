@@ -6,8 +6,8 @@ import {
     boundStartChars,
     boundTokens,
     ErrorToken,
-    Expression,
     Lexer,
+    State,
     tokenSet,
     Tree
 } from "../../parser/index.js"
@@ -138,22 +138,17 @@ export namespace Bound {
             : ErrorToken<NonNumericBoundMessage<Bounds["right"][1] & string>>
     }
 
-    export const parsePossibleLeft = (
-        s: Expression.WithRoot<NumberLiteralNode>
-    ) => {
-        if (Expression.lookaheadIn(s, doubleBoundTokens)) {
+    export const parsePossibleLeft = (s: State.WithRoot<NumberLiteralNode>) => {
+        if (State.lookaheadIn(s, doubleBoundTokens)) {
             parseLeft(s)
-        } else if (Expression.lookaheadIn(s, Bound.tokens)) {
+        } else if (State.lookaheadIn(s, Bound.tokens)) {
             // TODO: Fix
             throw new Error("Must be < or <=.")
         }
     }
 
     export const parseLeft = (
-        s: Expression.WithLookaheadAndRoot<
-            Bound.DoubleBoundToken,
-            NumberLiteralNode
-        >
+        s: State.WithLookaheadAndRoot<Bound.DoubleBoundToken, NumberLiteralNode>
     ) => {
         s.bounds.left = [s.root.def, s.scanner.lookahead]
         s.root = undefined as any
@@ -161,7 +156,7 @@ export namespace Bound {
     }
 
     export const parseRight = (
-        s: Expression.WithLookaheadAndRoot<Bound.Token>,
+        s: State.WithLookaheadAndRoot<Bound.Token>,
         ctx: Base.Parsing.Context
     ) => {
         const token = s.scanner.lookahead
@@ -185,7 +180,7 @@ export namespace Bound {
     type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
 
     const createBound = (
-        s: Expression.WithRoot,
+        s: State.WithRoot,
         right: RawRight,
         ctx: Base.Parsing.Context
     ) => {

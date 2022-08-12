@@ -5,47 +5,45 @@ import { Bound } from "../nonTerminal/index.js"
 import { Lexer } from "./lexer.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
-export namespace Expression {
-    export namespace T {
-        export type State = {
-            tree: Tree
-            unscanned: string
-        }
-
-        export type Tree = {
-            groups: Branches.TypeState[]
-            branches: Branches.TypeState
-            root: unknown
-        }
-
-        export type Error<S extends State, Message extends string> = From<{
-            tree: SetRoot<S["tree"], ErrorToken<Message>>
-            unscanned: S["unscanned"]
-        }>
-
-        export type TreeFrom<T extends Tree> = T
-
-        export type InitialTree = TreeFrom<{
-            groups: []
-            branches: {}
-            root: undefined
-        }>
-
-        export type SetRoot<T extends Tree, Node> = TreeFrom<{
-            groups: T["groups"]
-            branches: T["branches"]
-            root: Node
-        }>
-
-        export type From<S extends T.State> = S
-
-        export type Initial<Def extends string> = From<{
-            tree: InitialTree
-            unscanned: Def
-        }>
+export namespace State {
+    export type Type = {
+        tree: Tree
+        unscanned: string
     }
 
-    export type State = {
+    export type Tree = {
+        groups: Branches.TypeState[]
+        branches: Branches.TypeState
+        root: unknown
+    }
+
+    export type From<S extends Type> = S
+
+    export type TreeFrom<T extends Tree> = T
+
+    export type SetRoot<T extends Tree, Node> = TreeFrom<{
+        groups: T["groups"]
+        branches: T["branches"]
+        root: Node
+    }>
+
+    export type Error<S extends Type, Message extends string> = From<{
+        tree: SetRoot<S["tree"], ErrorToken<Message>>
+        unscanned: S["unscanned"]
+    }>
+
+    export type Initialize<Def extends string> = From<{
+        tree: InitialTree
+        unscanned: Def
+    }>
+
+    export type InitialTree = TreeFrom<{
+        groups: []
+        branches: {}
+        root: undefined
+    }>
+
+    export type Value = {
         groups: Branches.ValueState[]
         branches: Branches.ValueState
         bounds: Bound.Raw
@@ -56,37 +54,37 @@ export namespace Expression {
     export type WithLookaheadAndRoot<
         Lookahead extends string,
         Root extends Parse.Node = Parse.Node
-    > = State & {
+    > = Value & {
         unscanned: Lexer.ValueScanner<Lookahead>
         root: Root
     }
 
-    export type WithLookahead<Lookahead extends string> = State & {
+    export type WithLookahead<Lookahead extends string> = Value & {
         unscanned: Lexer.ValueScanner<Lookahead>
     }
 
-    export type WithRoot<Root extends Parse.Node = Parse.Node> = State & {
+    export type WithRoot<Root extends Parse.Node = Parse.Node> = Value & {
         root: Root
     }
 
     export const lookaheadIs = <Token extends string>(
-        state: State,
+        state: Value,
         token: Token
     ): state is WithLookahead<Token> => state.scanner.lookaheadIs(token)
 
     export const lookaheadIn = <Tokens extends TokenSet>(
-        state: State,
+        state: Value,
         tokens: Tokens
     ): state is WithLookahead<Extract<keyof Tokens, string>> =>
         state.scanner.lookaheadIn(tokens)
 
     export const rootIs = <NodeClass extends ClassOf<Parse.Node>>(
-        state: State,
+        state: Value,
         nodeClass: NodeClass
     ): state is WithRoot<InstanceOf<NodeClass>> =>
         state.root instanceof nodeClass
 
-    export const initialize = (def: string): State => {
+    export const initialize = (def: string): Value => {
         const scanner = new Lexer.ValueScanner(def)
         Lexer.shiftBase(scanner)
         return {

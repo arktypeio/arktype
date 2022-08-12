@@ -1,5 +1,5 @@
 import { Base } from "../base/index.js"
-import { Expression, Lexer } from "../parser/index.js"
+import { Lexer, State } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
@@ -30,7 +30,7 @@ export namespace Terminal {
         ? true
         : false
 
-    export const parse = (s: Expression.State, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {
             s.root = Keyword.parse(s.scanner.lookahead)
         } else if (AliasNode.matches(s.scanner.lookahead, ctx)) {

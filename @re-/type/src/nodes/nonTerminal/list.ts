@@ -1,11 +1,11 @@
 import { Base } from "../base/index.js"
-import { Expression } from "../parser/index.js"
+import { State } from "../parser/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
-    export const parse = (s: Expression.State, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         s.root = new ListNode(s.root!, ctx)
         Lexer.shiftOperator(s.scanner)
     }
