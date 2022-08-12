@@ -1,13 +1,11 @@
 import { Base } from "../base/index.js"
-import { ErrorToken, Expression, Lexer } from "../parser/index.js"
-import { Shift } from "../parser/shift.js"
+import { Expression, Lexer } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
     BigintLiteralDefinition,
     BigintLiteralNode,
     InferLiteral,
-    LiteralDefinition,
     NumberLiteralDefinition,
     NumberLiteralNode,
     RegexLiteralDefinition,
@@ -17,65 +15,20 @@ import {
 } from "./literal/index.js"
 
 export namespace Terminal {
-    export type IsResolvableName<Def, Dict> = Def extends Keyword.Definition
+    export type IsResolvableName<Token, Dict> = Token extends Keyword.Definition
         ? true
-        : Def extends keyof Dict
+        : Token extends keyof Dict
         ? true
         : false
 
-    export type UnenclosedToken<Fragment extends string> = `~${Fragment}`
-
-    export type ParseUnenclosed<
-        S extends Expression.T.State,
-        Token,
-        Dict
-    > = Expression.T.From<{
-        tree: Expression.T.SetRoot<S["tree"], ValidateUnenclosed<Token, Dict>>
-        scanner: Shift.Operator<S["scanner"]["unscanned"]>
-    }>
-
-    export type IsResolvable<Token, Dict> = IsResolvableName<
+    export type IsResolvableUnenclosed<Token, Dict> = IsResolvableName<
         Token,
         Dict
     > extends true
         ? true
-        : Token extends LiteralDefinition
+        : Token extends NumberLiteralDefinition | BigintLiteralDefinition
         ? true
         : false
-
-    type ValidateUnenclosed<Token, Dict> = IsResolvableName<
-        Token,
-        Dict
-    > extends true
-        ? Token
-        : Token extends NumberLiteralDefinition
-        ? Token
-        : Token extends BigintLiteralDefinition
-        ? Token
-        : ErrorToken<`'${Token &
-              string}' is not a builtin type and does not exist in your space.`>
-
-    export type ParseEnclosed<
-        S extends Expression.T.State,
-        Token
-    > = Expression.T.From<{
-        tree: Expression.T.SetRoot<S["tree"], Token>
-        scanner: Shift.Operator<S["scanner"]["unscanned"]>
-    }>
-
-    // export type Reduce<
-    //     Tree extends Expression.T.Tree,
-    //     Token,
-    //     Dict
-    // > = IsResolvableName<Token, Dict> extends true
-    //     ? Expression.T.SetRoot<Tree, Token>
-    //     : Token extends LiteralDefinition
-    //     ? Expression.T.SetRoot<Tree, Token>
-    //     : Expression.T.SetRoot<
-    //           Tree,
-    //           ErrorToken<`'${Token &
-    //               string}' is not a builtin type and does not exist in your space.`>
-    //       >
 
     export const parse = (s: Expression.State, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {

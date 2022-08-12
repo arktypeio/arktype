@@ -1,14 +1,8 @@
 import { ErrorToken, Expression } from "../parser/index.js"
 import { Lexer } from "../parser/lexer.js"
-import { Shift } from "../parser/shift.js"
 import { Branches } from "./branch/index.js"
 
 export namespace Group {
-    export type ParseOpen<S extends Expression.T.State> = Expression.T.From<{
-        tree: ReduceOpen<S["tree"]>
-        scanner: Shift.Base<S["scanner"]["unscanned"]>
-    }>
-
     export type ReduceOpen<Tree extends Expression.T.Tree> =
         Expression.T.TreeFrom<{
             groups: [...Tree["groups"], Tree["branches"]]
@@ -26,11 +20,6 @@ export namespace Group {
         Stack extends Branches.TypeState[],
         Top extends Branches.TypeState
     > = [...Stack, Top]
-
-    export type ParseClose<S extends Expression.T.State> = Expression.T.From<{
-        tree: ReduceClose<S["tree"]>
-        scanner: Shift.Operator<S["scanner"]["unscanned"]>
-    }>
 
     export type ReduceClose<Tree extends Expression.T.Tree> =
         Tree["groups"] extends PopGroup<infer Stack, infer Top>

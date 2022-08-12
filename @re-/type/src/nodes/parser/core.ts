@@ -9,13 +9,19 @@ import {
     Optional,
     Union
 } from "../nonTerminal/index.js"
-import {
-    EnclosedLiteralDefinition,
-    NumberLiteralNode,
-    Terminal
-} from "../terminal/index.js"
+import { NumberLiteralNode, Terminal } from "../terminal/index.js"
 import { Expression } from "./expression.js"
-import { ErrorToken, suffixTokens } from "./tokens.js"
+import {
+    BaseTerminatingChar,
+    EnclosedBaseStartChar,
+    ErrorToken,
+    suffixTokens
+} from "./tokens.js"
+
+export type Scan<
+    First extends string,
+    Unscanned extends string
+> = `${First}${Unscanned}`
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Get<
@@ -53,33 +59,129 @@ export namespace Core {
         Dict
     > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : S["scanner"]["lookahead"] extends "END"
+        : S["unscanned"] extends ""
         ? ReduceExpression<S>
-        : ParseExpression<ParseToken<S, Dict>, Dict>
+        : S["tree"]["root"] extends undefined
+        ? ParseExpression<Base<S, Dict>, Dict>
+        : ParseExpression<Operator<S>, Dict>
 
-    export type ParseToken<
+    type Base<S extends Expression.T.State, Dict> = S["unscanned"] extends Scan<
+        infer Next,
+        infer Rest
+    >
+        ? Next extends "("
+            ? Expression.T.From<{
+                  tree: Group.ReduceOpen<S["tree"]>
+                  unscanned: Rest
+              }>
+            : Next extends EnclosedBaseStartChar
+            ? EnclosedBase<S, Next>
+            : Next extends " "
+            ? Base<
+                  Expression.T.From<{
+                      tree: S["tree"]
+                      unscanned: Rest
+                  }>,
+                  Dict
+              >
+            : UnenclosedBase<S, Next, Rest, Dict>
+        : Expression.T.Error<S, `Expected an expression.`>
+
+    type Operator<S extends Expression.T.State> = S["unscanned"] extends Scan<
+        infer Next,
+        infer Rest
+    >
+        ? Next extends "["
+            ? Rest extends Scan<"]", infer Remaining>
+                ? Expression.T.From<{
+                      tree: Expression.T.SetRoot<
+                          S["tree"],
+                          [S["tree"]["root"], "[]"]
+                      >
+                      unscanned: Remaining
+                  }>
+                : Expression.T.Error<S, `Missing expected ']'.`>
+            : Next extends "?"
+            ? Rest extends ""
+                ? Expression.T.From<{
+                      tree: {
+                          groups: S["tree"]["groups"]
+                          branches: {}
+                          root: [
+                              Branches.MergeAll<
+                                  S["tree"]["branches"],
+                                  S["tree"]["root"]
+                              >,
+                              "?"
+                          ]
+                      }
+
+                      unscanned: ""
+                  }>
+                : Expression.T.Error<
+                      S,
+                      `Suffix '?' is only valid at the end of a definition.`
+                  >
+            : Next extends "|"
+            ? Expression.T.From<{
+                  tree: Union.Reduce<S["tree"]>
+                  unscanned: Rest
+              }>
+            : Next extends "&"
+            ? Expression.T.From<{
+                  tree: Intersection.Reduce<S["tree"]>
+                  unscanned: Rest
+              }>
+            : Next extends ")"
+            ? Expression.T.From<{
+                  tree: Group.ReduceClose<S["tree"]>
+                  unscanned: Rest
+              }>
+            : Next extends " "
+            ? Operator<Expression.T.From<{ tree: S["tree"]; unscanned: Rest }>>
+            : Expression.T.Error<S, `Unexpected operator '${Next}'.`>
+        : never
+
+    type EnclosedBase<
         S extends Expression.T.State,
-        Dict
-    > = S["scanner"]["lookahead"] extends Terminal.UnenclosedToken<infer Base>
-        ? Terminal.ParseUnenclosed<S, Base, Dict>
-        : S["scanner"]["lookahead"] extends "[]"
-        ? List.Parse<S>
-        : S["scanner"]["lookahead"] extends "|"
-        ? Union.Parse<S>
-        : S["scanner"]["lookahead"] extends "&"
-        ? Intersection.Parse<S>
-        : S["scanner"]["lookahead"] extends "("
-        ? Group.ParseOpen<S>
-        : S["scanner"]["lookahead"] extends ")"
-        ? Group.ParseClose<S>
-        : S["scanner"]["lookahead"] extends EnclosedLiteralDefinition
-        ? Terminal.ParseEnclosed<S, S["scanner"]["lookahead"]>
-        : // TODO: Don't redunandantly remove "!""
-        S["scanner"]["lookahead"] extends ErrorToken<infer Message>
-        ? Expression.T.Error<S, Message>
+        Enclosing extends EnclosedBaseStartChar
+    > = S["unscanned"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
+        ? Expression.T.From<{
+              tree: Expression.T.SetRoot<
+                  S["tree"],
+                  `${Enclosing}${Contents}${Enclosing}`
+              >
+              unscanned: Rest
+          }>
         : Expression.T.Error<
               S,
-              `Unexpected token ${S["scanner"]["lookahead"] & string}.`
+              `${S["unscanned"]} requires a closing ${Enclosing}.`
+          >
+
+    type UnenclosedBase<
+        S extends Expression.T.State,
+        Fragment extends string,
+        Unscanned extends string,
+        Dict
+    > = Unscanned extends Scan<infer Next, infer Rest>
+        ? Next extends BaseTerminatingChar
+            ? ValidateUnenclosed<S, Fragment, Unscanned, Dict>
+            : UnenclosedBase<S, `${Fragment}${Next}`, Rest, Dict>
+        : ValidateUnenclosed<S, Fragment, "", Dict>
+
+    type ValidateUnenclosed<
+        S extends Expression.T.State,
+        Fragment extends string,
+        Unscanned extends string,
+        Dict
+    > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
+        ? Expression.T.From<{
+              tree: Expression.T.SetRoot<S["tree"], Fragment>
+              unscanned: Unscanned
+          }>
+        : Expression.T.Error<
+              S,
+              `'${Fragment}' is not a builtin type and does not exist in your space.`
           >
 
     const parseExpression = (
@@ -117,7 +219,7 @@ export namespace Core {
             branches: {}
             root: Branches.MergeAll<S["tree"]["branches"], S["tree"]["root"]>
         }
-        scanner: S["scanner"]
+        unscanned: S["unscanned"]
     }>
 
     const reduceExpression = (s: Expression.State) => {

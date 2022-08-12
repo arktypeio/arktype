@@ -3,19 +3,13 @@ import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
 import { Lexer } from "./lexer.js"
-import { Shift } from "./shift.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace Expression {
     export namespace T {
         export type State = {
             tree: Tree
-            scanner: Shift.TypeScanner
-        }
-
-        export type StateWithLookahead<Lookahead> = {
-            tree: Tree
-            scanner: Shift.TypeScannerWithLookahead<Lookahead>
+            unscanned: string
         }
 
         export type Tree = {
@@ -26,7 +20,7 @@ export namespace Expression {
 
         export type Error<S extends State, Message extends string> = From<{
             tree: SetRoot<S["tree"], ErrorToken<Message>>
-            scanner: S["scanner"]
+            unscanned: S["unscanned"]
         }>
 
         export type TreeFrom<T extends Tree> = T
@@ -47,7 +41,7 @@ export namespace Expression {
 
         export type Initial<Def extends string> = From<{
             tree: InitialTree
-            scanner: Shift.Base<Def>
+            unscanned: Def
         }>
     }
 
@@ -63,12 +57,12 @@ export namespace Expression {
         Lookahead extends string,
         Root extends Parse.Node = Parse.Node
     > = State & {
-        scanner: Lexer.ValueScanner<Lookahead>
+        unscanned: Lexer.ValueScanner<Lookahead>
         root: Root
     }
 
     export type WithLookahead<Lookahead extends string> = State & {
-        scanner: Lexer.ValueScanner<Lookahead>
+        unscanned: Lexer.ValueScanner<Lookahead>
     }
 
     export type WithRoot<Root extends Parse.Node = Parse.Node> = State & {
