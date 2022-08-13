@@ -7,9 +7,14 @@ import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace State {
     export type Type = {
-        bounds: Bound.Raw
+        affixes: Affixes
         tree: Tree
         unscanned: string
+    }
+
+    export type Affixes = {
+        bounds: Bound.Raw
+        suffixStart?: string
     }
 
     export type Tree = {
@@ -27,13 +32,13 @@ export namespace State {
         T extends Tree,
         Unscanned extends string
     > = From<{
-        bounds: S["bounds"]
+        affixes: S["affixes"]
         tree: T
         unscanned: Unscanned
     }>
 
     export type ScanTo<S extends Type, Unscanned extends string> = From<{
-        bounds: S["bounds"]
+        affixes: S["affixes"]
         tree: S["tree"]
         unscanned: Unscanned
     }>
@@ -46,12 +51,14 @@ export namespace State {
 
     export type Error<S extends Type, Message extends string> = From<{
         tree: SetRoot<S["tree"], ErrorToken<Message>>
-        bounds: S["bounds"]
+        affixes: S["affixes"]
         unscanned: S["unscanned"]
     }>
 
     export type Initialize<Def extends string> = From<{
-        bounds: {}
+        affixes: {
+            bounds: {}
+        }
         tree: InitialTree
         unscanned: Def
     }>

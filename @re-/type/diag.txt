@@ -1,6 +1,15 @@
-src/nodes/nonTerminal/__tests__/optional.test.ts(33,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/optional.test.ts(42,25): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/optional.test.ts(51,21): error TS2578: Unused '@ts-expect-error' directive.
+docs/snippets/constraints.ts(8,9): error TS2322: Type '"18<=integer<125"' is not assignable to type '"'<' is not a builtin type and does not exist in your space."'.
+docs/snippets/constraints.ts(10,9): error TS2322: Type '"string<=80"' is not assignable to type '"Definitions may have at most one right bound."'.
+src/__tests__/references.test.ts(37,29): error TS2345: Argument of type '"0<(user[]|group[]|boolean&true|integer|null)[]<2"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
+src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"!'<' is not a builtin type and does not exist in your space."[]'.
+  Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"!'<' is not a builtin type and does not exist in your space."'.
+    Type '"boolean"' is not assignable to type '"!'<' is not a builtin type and does not exist in your space."'.
+src/__tests__/snippets.test.ts(36,17): error TS2322: Type '"18<=integer<125"' is not assignable to type '"'<' is not a builtin type and does not exist in your space."'.
+src/__tests__/snippets.test.ts(38,17): error TS2322: Type '"string<=160"' is not assignable to type '"Definitions may have at most one right bound."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(5,10): error TS2345: Argument of type '"string>5"' is not assignable to parameter of type '"Definitions may have at most one right bound."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(8,10): error TS2345: Argument of type '"-7<=integer<99"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(11,10): error TS2345: Argument of type '"object[]==1"' is not assignable to parameter of type '"= is not a valid comparator. Use == instead."'.
+src/nodes/nonTerminal/__tests__/bound.bench.ts(14,10): error TS2345: Argument of type '"-7<=(string|number[]|boolean[][])[]<99"' is not assignable to parameter of type '"'<' is not a builtin type and does not exist in your space."'.
 src/nodes/nonTerminal/__tests__/str.test.ts(7,9): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/bound/parse.ts(153,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(170,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
@@ -12,17 +21,17 @@ src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">
 src/nodes/nonTerminal/bound/parse.ts(226,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              257
-Lines:            66117
-Nodes:           181006
-Identifiers:      61694
-Symbols:         103009
-Types:            54133
-Instantiations:  280917
-Memory used:    157695K
+Lines:            66156
+Nodes:           181170
+Identifiers:      61741
+Symbols:         101631
+Types:            53378
+Instantiations:  279880
+Memory used:    154192K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.47s
-Bind time:        0.18s
-Check time:       1.51s
+Parse time:       0.43s
+Bind time:        0.16s
+Check time:       1.48s
 Emit time:        0.00s
-Total time:       2.16s
+Total time:       2.07s

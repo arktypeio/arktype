@@ -66,6 +66,8 @@ export namespace Core {
         ? S
         : S["unscanned"] extends ""
         ? ReduceExpression<S>
+        : S["affixes"]["suffixStart"] extends string
+        ? ParseSuffixes<S>
         : S["tree"]["root"] extends undefined
         ? ParseExpression<Base<S, Dict>, Dict>
         : ParseExpression<Operator<S>, Dict>
@@ -88,8 +90,7 @@ export namespace Core {
         infer Rest
     >
         ? Next extends "?"
-            ? // TODO: Add suffix/affix parse
-              ReduceExpression<State.ScanTo<S, Rest>>
+            ? ReduceExpression<S, "?">
             : Next extends "["
             ? Rest extends Scan<"]", infer Remaining>
                 ? State.Expression<
@@ -105,12 +106,11 @@ export namespace Core {
             : Next extends ")"
             ? State.Expression<S, Group.ReduceClose<S["tree"]>, Rest>
             : Next extends Bound.Char
-            ? ParseBound<State.ScanTo<S, Rest>, Next>
+            ? ParseBound<S, Next>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
             : State.Error<S, `Unexpected operator '${Next}'.`>
         : S
-
     type IsLeftBound<Tree extends State.Tree> = Tree extends State.TreeFrom<{
         groups: []
         branches: {}
@@ -118,6 +118,29 @@ export namespace Core {
     }>
         ? true
         : false
+
+    type ParseSuffixes<S extends State.Type> = S["unscanned"] extends Scan<
+        infer Next,
+        infer Rest
+    >
+        ? Next extends "?"
+            ? Rest extends ""
+                ? State.Expression<
+                      S,
+                      State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
+                      Rest
+                  >
+                : State.Error<
+                      S,
+                      `Suffix '?' is only valid at the end of a definition.`
+                  >
+            : Next extends Bound.Char
+            ? ParseBound<State.ScanTo<S, Rest>, Next>
+            : State.Error<
+                  S,
+                  `Non-suffix token '${Next}' is not allowed after suffix '${S["affixes"]["suffixStart"]}'.`
+              >
+        : S
 
     type ParseBound<
         S extends State.Type,
@@ -141,11 +164,13 @@ export namespace Core {
     type ReduceLeftBound<
         S extends State.Type,
         Token extends Bound.Token
-    > = "left" extends keyof S["bounds"]
+    > = "left" extends keyof S["affixes"]["bounds"]
         ? State.Error<S, `Definitions may have at most one left bound.`>
         : State.From<{
-              bounds: {
-                  left: [S["tree"]["root"], Token]
+              affixes: {
+                  bounds: {
+                      left: [S["tree"]["root"], Token]
+                  }
               }
               tree: State.InitialTree
               unscanned: S["unscanned"]
@@ -155,12 +180,15 @@ export namespace Core {
         S extends State.Type,
         OriginalRoot,
         Token extends Bound.Token
-    > = "right" extends keyof S["bounds"]
+    > = "right" extends keyof S["affixes"]["bounds"]
         ? State.Error<S, `Definitions may have at most one right bound.`>
         : State.From<{
-              bounds: {
-                  left: S["bounds"]["left"]
-                  right: [Token, S["tree"]["root"]]
+              affixes: S["affixes"] & {
+                  // TODO: Improve clarity around "suffixStart" transitions
+                  suffixStart: Token
+                  bounds: {
+                      right: [Token, S["tree"]["root"]]
+                  }
               }
               tree: State.SetRoot<S["tree"], OriginalRoot>
               unscanned: S["unscanned"]
@@ -226,19 +254,22 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ReduceExpression<S extends State.Type> = S["tree"]["groups"] extends []
-        ? State.Expression<
-              S,
-              {
+    type ReduceExpression<
+        S extends State.Type,
+        SuffixStart extends undefined | string = undefined
+    > = S["tree"]["groups"] extends []
+        ? State.From<{
+              affixes: S["affixes"] & { suffixStart: SuffixStart }
+              tree: {
                   groups: []
                   branches: {}
                   root: Branches.MergeAll<
                       S["tree"]["branches"],
                       S["tree"]["root"]
                   >
-              },
-              S["unscanned"]
-          >
+              }
+              unscanned: S["unscanned"]
+          }>
         : State.Error<S, UnclosedGroupMessage>
 
     const reduceExpression = (s: State.Value) => {
