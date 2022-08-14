@@ -173,17 +173,15 @@ export namespace Core {
     type ReduceLeftBound<
         S extends State.Type,
         Token extends Bound.Token
-    > = "left" extends keyof S["tree"]["bounds"]
-        ? State.Error<S, `Definitions may have at most one left bound.`>
-        : State.From<{
-              tree: {
-                  groups: []
-                  branches: {}
-                  root: undefined
-                  bounds: { left: [S["tree"]["root"], Token] }
-              }
-              unscanned: S["unscanned"]
-          }>
+    > = State.From<{
+        tree: {
+            groups: []
+            branches: {}
+            root: undefined
+            bounds: { left: [S["tree"]["root"], Token] }
+        }
+        unscanned: S["unscanned"]
+    }>
 
     type ReduceRightBound<
         S extends State.Type,
