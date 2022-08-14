@@ -1,4 +1,3 @@
-src/nodes/nonTerminal/__tests__/str.test.ts(7,9): error TS2578: Unused '@ts-expect-error' directive.
 src/nodes/nonTerminal/bound/parse.ts(153,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(170,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(209,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
@@ -9,17 +8,17 @@ src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">
 src/nodes/nonTerminal/bound/parse.ts(226,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              257
-Lines:            66149
-Nodes:           181163
-Identifiers:      61733
-Symbols:         103161
-Types:            54529
-Instantiations:  288354
-Memory used:    150916K
+Lines:            66156
+Nodes:           181176
+Identifiers:      61739
+Symbols:         103592
+Types:            55208
+Instantiations:  285393
+Memory used:    149297K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.45s
+Parse time:       0.47s
 Bind time:        0.17s
-Check time:       1.50s
+Check time:       1.49s
 Emit time:        0.00s
 Total time:       2.13s

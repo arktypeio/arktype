@@ -1,4 +1,4 @@
-import { State } from "../../parser/index.js"
+import { ErrorToken, State } from "../../parser/index.js"
 import { Intersection, IntersectionNode } from "./intersection.js"
 import { Union, UnionNode } from "./union.js"
 
@@ -36,5 +36,9 @@ export namespace Branches {
     export type MergeExpression<
         B extends OpenBranch | undefined,
         Expression
-    > = B extends OpenBranch ? [...B, Expression] : Expression
+    > = B extends OpenBranch
+        ? [...B, Expression]
+        : Expression extends undefined
+        ? ErrorToken<"Expected an expression.">
+        : Expression
 }

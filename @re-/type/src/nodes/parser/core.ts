@@ -66,8 +66,13 @@ export namespace Core {
         Dict
     > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : S["unscanned"] extends "" | `${AffixChar}${string}`
-        ? ParseAffix<
+        : S["unscanned"] extends ""
+        ? State.From<{
+              tree: FinalizeExpressionTree<S["tree"]>
+              unscanned: ""
+          }>
+        : S["unscanned"] extends `${AffixChar}${string}`
+        ? ParseAffixes<
               {
                   tree: FinalizeExpressionTree<S["tree"]>
                   unscanned: S["unscanned"]
@@ -124,7 +129,7 @@ export namespace Core {
             : false
         : false
 
-    type ParseAffix<S extends State.Type, Dict> = S["unscanned"] extends Scan<
+    type ParseAffixes<S extends State.Type, Dict> = S["unscanned"] extends Scan<
         infer Next,
         infer Rest
     >
@@ -165,7 +170,7 @@ export namespace Core {
         Dict
     > = IsLeftBound<S["tree"]> extends true
         ? ParseExpression<ReduceLeftBound<S, Token>, Dict>
-        : ParseAffix<
+        : ParseAffixes<
               ReduceRightBound<Base<S, {}>, S["tree"]["root"], Token>,
               Dict
           >
