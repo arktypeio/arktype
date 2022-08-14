@@ -59,14 +59,14 @@ export namespace Core {
         }
     }
 
-    export type SuffixChar = "?" | Bound.Char
+    export type AffixChar = "?" | Bound.Char
 
     export type ParseExpression<
         S extends State.Type,
         Dict
     > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : S["unscanned"] extends "" | `${SuffixChar}${string}`
+        : S["unscanned"] extends "" | `${AffixChar}${string}`
         ? ParseAffix<
               {
                   tree: FinalizeExpressionTree<S["tree"]>
