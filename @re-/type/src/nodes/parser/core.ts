@@ -59,28 +59,42 @@ export namespace Core {
         }
     }
 
-    export type AffixChar = "?" | Bound.Char
-
     export type ParseExpression<
         S extends State.Type,
         Dict
     > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : S["unscanned"] extends ""
-        ? State.From<{
-              tree: FinalizeExpressionTree<S["tree"]>
-              unscanned: ""
-          }>
-        : S["unscanned"] extends `${AffixChar}${string}`
-        ? ParseAffixes<
-              {
-                  tree: FinalizeExpressionTree<S["tree"]>
-                  unscanned: S["unscanned"]
-              },
-              Dict
-          >
         : S["tree"]["root"] extends undefined
         ? ParseExpression<Base<S, Dict>, Dict>
+        : S["unscanned"] extends ""
+        ? State.From<{
+              tree: ValidateFinal<{
+                  bounds: S["tree"]["bounds"]
+                  groups: S["tree"]["groups"]
+                  branches: {}
+                  root: Branches.MergeAll<
+                      S["tree"]["branches"],
+                      S["tree"]["root"]
+                  >
+              }>
+              unscanned: ""
+          }>
+        : S["unscanned"] extends "?"
+        ? State.From<{
+              tree: ValidateFinal<{
+                  bounds: S["tree"]["bounds"]
+                  groups: S["tree"]["groups"]
+                  branches: {}
+                  root: [
+                      Branches.MergeAll<
+                          S["tree"]["branches"],
+                          S["tree"]["root"]
+                      >,
+                      "?"
+                  ]
+              }>
+              unscanned: ""
+          }>
         : ParseExpression<Operator<S>, Dict>
 
     type Base<S extends State.Type, Dict> = S["unscanned"] extends Scan<
@@ -113,8 +127,15 @@ export namespace Core {
             ? State.Expression<Intersection.Reduce<S["tree"]>, Rest>
             : Next extends ")"
             ? State.Expression<Group.ReduceClose<S["tree"]>, Rest>
+            : Next extends Bound.Char
+            ? ParseBound<State.ScanTo<S, Rest>, Next>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
+            : Next extends "?"
+            ? State.Error<
+                  S,
+                  `Suffix '?' is only valid at the end of a definition.`
+              >
             : State.Error<S, `Unexpected operator '${Next}'.`>
         : S
 
@@ -122,58 +143,30 @@ export namespace Core {
         bounds: {}
         groups: []
         branches: {}
-        root: Tree["root"]
+        root: any
     } extends Tree
         ? Tree["root"] extends NumberLiteralDefinition
             ? true
             : false
         : false
 
-    type ParseAffixes<S extends State.Type, Dict> = S["unscanned"] extends Scan<
-        infer Next,
-        infer Rest
-    >
-        ? Next extends "?"
-            ? Rest extends ""
-                ? State.Expression<
-                      State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
-                      Rest
-                  >
-                : State.Error<
-                      S,
-                      `Suffix '?' is only valid at the end of a definition.`
-                  >
-            : Next extends Bound.Char
-            ? ParseBound<State.ScanTo<S, Rest>, Next, Dict>
-            : State.Error<
-                  S,
-                  // TODO: Start suffix token
-                  `Non-suffix token '${Next}' is not allowed in definition suffix.`
-              >
-        : S
-
     type ParseBound<
         S extends State.Type,
-        Start extends Bound.Char,
-        Dict
+        Start extends Bound.Char
     > = S["unscanned"] extends Scan<infer Next, infer Rest>
         ? Next extends "="
-            ? ReduceBound<State.ScanTo<S, Rest>, `${Start}=`, Dict>
+            ? ReduceBound<State.ScanTo<S, Rest>, `${Start}=`>
             : Start extends ">" | "<"
-            ? ReduceBound<S, Start, Dict>
+            ? ReduceBound<S, Start>
             : State.Error<S, `= is not a valid comparator. Use == instead.`>
         : State.Error<S, `Expected a bound condition after ${Start}.`>
 
     type ReduceBound<
         S extends State.Type,
-        Token extends Bound.Token,
-        Dict
+        Token extends Bound.Token
     > = IsLeftBound<S["tree"]> extends true
-        ? ParseExpression<ReduceLeftBound<S, Token>, Dict>
-        : ParseAffixes<
-              ReduceRightBound<Base<S, {}>, S["tree"]["root"], Token>,
-              Dict
-          >
+        ? ReduceLeftBound<S, Token>
+        : ReduceRightBound<S, Token>
 
     type ReduceLeftBound<
         S extends State.Type,
@@ -190,22 +183,28 @@ export namespace Core {
 
     type ReduceRightBound<
         S extends State.Type,
-        OriginalRoot,
         Token extends Bound.Token
     > = "right" extends keyof S["tree"]["bounds"]
         ? State.Error<S, `Definitions may have at most one right bound.`>
-        : State.From<{
+        : S["unscanned"] extends `${infer Value extends number}${"?" | ""}`
+        ? State.From<{
               tree: {
-                  groups: S["tree"]["groups"]
-                  branches: S["tree"]["branches"]
                   bounds: {
                       left: S["tree"]["bounds"]["left"]
-                      right: [Token, S["tree"]["root"]]
+                      right: [Token, Value]
                   }
-                  root: OriginalRoot
+                  groups: S["tree"]["groups"]
+                  branches: S["tree"]["branches"]
+                  root: S["tree"]["root"]
               }
-              unscanned: S["unscanned"]
+              unscanned: S["unscanned"] extends `${Value}${infer Rest}`
+                  ? Rest
+                  : never
           }>
+        : State.Error<
+              S,
+              `Expected a number literal after ${Token} followed only by other suffixes.`
+          >
 
     type EnclosedBase<
         S extends State.Type,
@@ -266,15 +265,9 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type FinalizeExpressionTree<Tree extends State.Tree> =
-        Tree["groups"] extends []
-            ? State.TreeFrom<{
-                  groups: []
-                  branches: {}
-                  root: Branches.MergeAll<Tree["branches"], Tree["root"]>
-                  bounds: Tree["bounds"]
-              }>
-            : State.SetRoot<Tree, ErrorToken<UnclosedGroupMessage>>
+    type ValidateFinal<Tree extends State.Tree> = Tree["groups"] extends []
+        ? Tree
+        : State.SetRoot<Tree, ErrorToken<UnclosedGroupMessage>>
 
     const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)

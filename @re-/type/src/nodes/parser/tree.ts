@@ -1,5 +1,4 @@
 import { Base } from "../base/index.js"
-import { Intersection, List, Optional, Union } from "../nonTerminal/index.js"
 import { InferTerminalStr } from "../terminal/index.js"
 
 export namespace Tree {

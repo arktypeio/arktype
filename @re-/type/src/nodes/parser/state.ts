@@ -7,6 +7,7 @@ import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace State {
     export type Type = {
+        lastAffix?: string
         tree: Tree
         unscanned: string
     }

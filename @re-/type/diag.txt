@@ -6,19 +6,18 @@ src/nodes/nonTerminal/bound/parse.ts(225,30): error TS2345: Argument of type 'un
 src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/bound/parse.ts(226,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
-Files:              257
-Lines:            66156
-Nodes:           181176
-Identifiers:      61739
-Symbols:         103592
-Types:            55208
-Instantiations:  285393
-Memory used:    149297K
-I/O read:         0.01s
+Files:              256
+Lines:            66047
+Nodes:           181140
+Identifiers:      61712
+Symbols:         103927
+Types:            60656
+Instantiations:  295085
+Memory used:    158896K
+I/O read:         0.02s
 I/O write:        0.00s
 Parse time:       0.47s
 Bind time:        0.17s
-Check time:       1.49s
+Check time:       1.51s
 Emit time:        0.00s
-Total time:       2.13s
+Total time:       2.15s
