@@ -22,11 +22,7 @@ export namespace State {
 
     export type TreeFrom<T extends Tree> = T
 
-    export type Expression<
-        S extends Type,
-        T extends Tree,
-        Unscanned extends string
-    > = From<{
+    export type Expression<T extends Tree, Unscanned extends string> = From<{
         tree: T
         unscanned: Unscanned
     }>

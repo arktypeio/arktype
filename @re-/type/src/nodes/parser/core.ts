@@ -59,13 +59,21 @@ export namespace Core {
         }
     }
 
+    export type SuffixChar = "?" | Bound.Char
+
     export type ParseExpression<
         S extends State.Type,
         Dict
     > = S["tree"]["root"] extends ErrorToken<string>
         ? S
-        : S["unscanned"] extends ""
-        ? ReduceExpression<S>
+        : S["unscanned"] extends "" | `${SuffixChar}${string}`
+        ? ParseAffix<
+              {
+                  tree: FinalizeExpressionTree<S["tree"]>
+                  unscanned: S["unscanned"]
+              },
+              Dict
+          >
         : S["tree"]["root"] extends undefined
         ? ParseExpression<Base<S, Dict>, Dict>
         : ParseExpression<Operator<S>, Dict>
@@ -75,11 +83,11 @@ export namespace Core {
         infer Rest
     >
         ? Next extends "("
-            ? State.Expression<S, Group.ReduceOpen<S["tree"]>, Rest>
+            ? State.Expression<Group.ReduceOpen<S["tree"]>, Rest>
             : Next extends EnclosedBaseStartChar
             ? EnclosedBase<S, Next>
             : Next extends " "
-            ? Base<State.Expression<S, S["tree"], Rest>, Dict>
+            ? Base<State.Expression<S["tree"], Rest>, Dict>
             : UnenclosedBase<S, Next, Rest, Dict>
         : State.Error<S, `Expected an expression.`>
 
@@ -87,33 +95,19 @@ export namespace Core {
         infer Next,
         infer Rest
     >
-        ? Next extends "?"
-            ? Rest extends ""
-                ? State.Expression<
-                      ReduceExpression<S>,
-                      State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
-                      Rest
-                  >
-                : State.Error<
-                      S,
-                      `Suffix '?' is only valid at the end of a definition.`
-                  >
-            : Next extends "["
+        ? Next extends "["
             ? Rest extends Scan<"]", infer Remaining>
                 ? State.Expression<
-                      S,
                       State.SetRoot<S["tree"], [S["tree"]["root"], "[]"]>,
                       Remaining
                   >
                 : State.Error<S, `Missing expected ']'.`>
             : Next extends "|"
-            ? State.Expression<S, Union.Reduce<S["tree"]>, Rest>
+            ? State.Expression<Union.Reduce<S["tree"]>, Rest>
             : Next extends "&"
-            ? State.Expression<S, Intersection.Reduce<S["tree"]>, Rest>
+            ? State.Expression<Intersection.Reduce<S["tree"]>, Rest>
             : Next extends ")"
-            ? State.Expression<S, Group.ReduceClose<S["tree"]>, Rest>
-            : Next extends Bound.Char
-            ? ParseBound<State.ScanTo<S, Rest>, Next>
+            ? State.Expression<Group.ReduceClose<S["tree"]>, Rest>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
             : State.Error<S, `Unexpected operator '${Next}'.`>
@@ -130,47 +124,51 @@ export namespace Core {
             : false
         : false
 
-    // type ParseSuffixes<S extends State.Type> = S["unscanned"] extends Scan<
-    //     infer Next,
-    //     infer Rest
-    // >
-    //     ? Next extends "?"
-    //         ? Rest extends ""
-    //             ? State.Expression<
-    //                   S,
-    //                   State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
-    //                   Rest
-    //               >
-    //             : State.Error<
-    //                   S,
-    //                   `Suffix '?' is only valid at the end of a definition.`
-    //               >
-    //         : Next extends Bound.Char
-    //         ? ParseBound<State.ScanTo<S, Rest>, Next>
-    //         : State.Error<
-    //               S,
-    //               // TODO: Start suffix token
-    //               `Non-suffix token '${Next}' is not allowed in definition suffix.`
-    //           >
-    //     : S
+    type ParseAffix<S extends State.Type, Dict> = S["unscanned"] extends Scan<
+        infer Next,
+        infer Rest
+    >
+        ? Next extends "?"
+            ? Rest extends ""
+                ? State.Expression<
+                      State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
+                      Rest
+                  >
+                : State.Error<
+                      S,
+                      `Suffix '?' is only valid at the end of a definition.`
+                  >
+            : Next extends Bound.Char
+            ? ParseBound<State.ScanTo<S, Rest>, Next, Dict>
+            : State.Error<
+                  S,
+                  // TODO: Start suffix token
+                  `Non-suffix token '${Next}' is not allowed in definition suffix.`
+              >
+        : S
 
     type ParseBound<
         S extends State.Type,
-        Start extends Bound.Char
+        Start extends Bound.Char,
+        Dict
     > = S["unscanned"] extends Scan<infer Next, infer Rest>
         ? Next extends "="
-            ? ReduceBound<State.ScanTo<S, Rest>, `${Start}=`>
+            ? ReduceBound<State.ScanTo<S, Rest>, `${Start}=`, Dict>
             : Start extends ">" | "<"
-            ? ReduceBound<S, Start>
+            ? ReduceBound<S, Start, Dict>
             : State.Error<S, `= is not a valid comparator. Use == instead.`>
         : State.Error<S, `Expected a bound condition after ${Start}.`>
 
     type ReduceBound<
         S extends State.Type,
-        Token extends Bound.Token
+        Token extends Bound.Token,
+        Dict
     > = IsLeftBound<S["tree"]> extends true
-        ? ReduceLeftBound<S, Token>
-        : ReduceRightBound<Base<S, {}>, S["tree"]["root"], Token>
+        ? ParseExpression<ReduceLeftBound<S, Token>, Dict>
+        : ParseAffix<
+              ReduceRightBound<Base<S, {}>, S["tree"]["root"], Token>,
+              Dict
+          >
 
     type ReduceLeftBound<
         S extends State.Type,
@@ -211,7 +209,6 @@ export namespace Core {
         Enclosing extends EnclosedBaseStartChar
     > = S["unscanned"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
         ? State.Expression<
-              S,
               State.SetRoot<S["tree"], `${Enclosing}${Contents}${Enclosing}`>,
               Rest
           >
@@ -234,7 +231,7 @@ export namespace Core {
         Unscanned extends string,
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
-        ? State.Expression<S, State.SetRoot<S["tree"], Fragment>, Unscanned>
+        ? State.Expression<State.SetRoot<S["tree"], Fragment>, Unscanned>
         : State.Error<
               S,
               `'${Fragment}' is not a builtin type and does not exist in your space.`
@@ -266,20 +263,15 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ReduceExpression<S extends State.Type> = S["tree"]["groups"] extends []
-        ? State.From<{
-              tree: {
+    type FinalizeExpressionTree<Tree extends State.Tree> =
+        Tree["groups"] extends []
+            ? State.TreeFrom<{
                   groups: []
                   branches: {}
-                  root: Branches.MergeAll<
-                      S["tree"]["branches"],
-                      S["tree"]["root"]
-                  >
-                  bounds: S["tree"]["bounds"]
-              }
-              unscanned: S["unscanned"]
-          }>
-        : State.Error<S, UnclosedGroupMessage>
+                  root: Branches.MergeAll<Tree["branches"], Tree["root"]>
+                  bounds: Tree["bounds"]
+              }>
+            : State.SetRoot<Tree, ErrorToken<UnclosedGroupMessage>>
 
     const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)
