@@ -11,6 +11,7 @@ export namespace Intersection {
     }
 
     export type Reduce<Tree extends State.Tree> = State.TreeFrom<{
+        bounds: Tree["bounds"]
         groups: Tree["groups"]
         branches: PushRoot<Tree["branches"], Tree["root"]>
         root: undefined

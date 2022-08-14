@@ -4,6 +4,7 @@ import { Branches } from "./branch/index.js"
 
 export namespace Group {
     export type ReduceOpen<Tree extends State.Tree> = State.TreeFrom<{
+        bounds: Tree["bounds"]
         groups: [...Tree["groups"], Tree["branches"]]
         branches: {}
         root: undefined
@@ -23,11 +24,13 @@ export namespace Group {
     export type ReduceClose<Tree extends State.Tree> =
         Tree["groups"] extends PopGroup<infer Stack, infer Top>
             ? State.TreeFrom<{
+                  bounds: Tree["bounds"]
                   groups: Stack
                   branches: Top
                   root: Branches.MergeAll<Tree["branches"], Tree["root"]>
               }>
             : State.TreeFrom<{
+                  bounds: Tree["bounds"]
                   groups: Tree["groups"]
                   branches: Tree["branches"]
                   root: ErrorToken<`Unexpected ).`>

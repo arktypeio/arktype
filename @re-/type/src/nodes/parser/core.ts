@@ -66,8 +66,6 @@ export namespace Core {
         ? S
         : S["unscanned"] extends ""
         ? ReduceExpression<S>
-        : S["affixes"]["suffixStart"] extends string
-        ? ParseSuffixes<S>
         : S["tree"]["root"] extends undefined
         ? ParseExpression<Base<S, Dict>, Dict>
         : ParseExpression<Operator<S>, Dict>
@@ -90,7 +88,16 @@ export namespace Core {
         infer Rest
     >
         ? Next extends "?"
-            ? ReduceExpression<S, "?">
+            ? Rest extends ""
+                ? State.Expression<
+                      ReduceExpression<S>,
+                      State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
+                      Rest
+                  >
+                : State.Error<
+                      S,
+                      `Suffix '?' is only valid at the end of a definition.`
+                  >
             : Next extends "["
             ? Rest extends Scan<"]", infer Remaining>
                 ? State.Expression<
@@ -106,41 +113,46 @@ export namespace Core {
             : Next extends ")"
             ? State.Expression<S, Group.ReduceClose<S["tree"]>, Rest>
             : Next extends Bound.Char
-            ? ParseBound<S, Next>
+            ? ParseBound<State.ScanTo<S, Rest>, Next>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
             : State.Error<S, `Unexpected operator '${Next}'.`>
         : S
-    type IsLeftBound<Tree extends State.Tree> = Tree extends State.TreeFrom<{
+
+    type IsLeftBound<Tree extends State.Tree> = {
+        bounds: {}
         groups: []
         branches: {}
-        root: NumberLiteralDefinition
-    }>
-        ? true
+        root: Tree["root"]
+    } extends Tree
+        ? Tree["root"] extends NumberLiteralDefinition
+            ? true
+            : false
         : false
 
-    type ParseSuffixes<S extends State.Type> = S["unscanned"] extends Scan<
-        infer Next,
-        infer Rest
-    >
-        ? Next extends "?"
-            ? Rest extends ""
-                ? State.Expression<
-                      S,
-                      State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
-                      Rest
-                  >
-                : State.Error<
-                      S,
-                      `Suffix '?' is only valid at the end of a definition.`
-                  >
-            : Next extends Bound.Char
-            ? ParseBound<State.ScanTo<S, Rest>, Next>
-            : State.Error<
-                  S,
-                  `Non-suffix token '${Next}' is not allowed after suffix '${S["affixes"]["suffixStart"]}'.`
-              >
-        : S
+    // type ParseSuffixes<S extends State.Type> = S["unscanned"] extends Scan<
+    //     infer Next,
+    //     infer Rest
+    // >
+    //     ? Next extends "?"
+    //         ? Rest extends ""
+    //             ? State.Expression<
+    //                   S,
+    //                   State.SetRoot<S["tree"], [S["tree"]["root"], "?"]>,
+    //                   Rest
+    //               >
+    //             : State.Error<
+    //                   S,
+    //                   `Suffix '?' is only valid at the end of a definition.`
+    //               >
+    //         : Next extends Bound.Char
+    //         ? ParseBound<State.ScanTo<S, Rest>, Next>
+    //         : State.Error<
+    //               S,
+    //               // TODO: Start suffix token
+    //               `Non-suffix token '${Next}' is not allowed in definition suffix.`
+    //           >
+    //     : S
 
     type ParseBound<
         S extends State.Type,
@@ -158,21 +170,20 @@ export namespace Core {
         Token extends Bound.Token
     > = IsLeftBound<S["tree"]> extends true
         ? ReduceLeftBound<S, Token>
-        : // TODO: Should we have dict here?
-          ReduceRightBound<Base<S, {}>, S["tree"]["root"], Token>
+        : ReduceRightBound<Base<S, {}>, S["tree"]["root"], Token>
 
     type ReduceLeftBound<
         S extends State.Type,
         Token extends Bound.Token
-    > = "left" extends keyof S["affixes"]["bounds"]
+    > = "left" extends keyof S["tree"]["bounds"]
         ? State.Error<S, `Definitions may have at most one left bound.`>
         : State.From<{
-              affixes: {
-                  bounds: {
-                      left: [S["tree"]["root"], Token]
-                  }
+              tree: {
+                  groups: []
+                  branches: {}
+                  root: undefined
+                  bounds: { left: [S["tree"]["root"], Token] }
               }
-              tree: State.InitialTree
               unscanned: S["unscanned"]
           }>
 
@@ -180,17 +191,18 @@ export namespace Core {
         S extends State.Type,
         OriginalRoot,
         Token extends Bound.Token
-    > = "right" extends keyof S["affixes"]["bounds"]
+    > = "right" extends keyof S["tree"]["bounds"]
         ? State.Error<S, `Definitions may have at most one right bound.`>
         : State.From<{
-              affixes: S["affixes"] & {
-                  // TODO: Improve clarity around "suffixStart" transitions
-                  suffixStart: Token
+              tree: {
+                  groups: S["tree"]["groups"]
+                  branches: S["tree"]["branches"]
                   bounds: {
+                      left: S["tree"]["bounds"]["left"]
                       right: [Token, S["tree"]["root"]]
                   }
+                  root: OriginalRoot
               }
-              tree: State.SetRoot<S["tree"], OriginalRoot>
               unscanned: S["unscanned"]
           }>
 
@@ -254,12 +266,8 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ReduceExpression<
-        S extends State.Type,
-        SuffixStart extends undefined | string = undefined
-    > = S["tree"]["groups"] extends []
+    type ReduceExpression<S extends State.Type> = S["tree"]["groups"] extends []
         ? State.From<{
-              affixes: S["affixes"] & { suffixStart: SuffixStart }
               tree: {
                   groups: []
                   branches: {}
@@ -267,6 +275,7 @@ export namespace Core {
                       S["tree"]["branches"],
                       S["tree"]["root"]
                   >
+                  bounds: S["tree"]["bounds"]
               }
               unscanned: S["unscanned"]
           }>
