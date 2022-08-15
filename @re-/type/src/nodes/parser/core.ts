@@ -29,10 +29,10 @@ export type Scan<
 > = `${First}${Unscanned}`
 
 export namespace Core {
-    export type Parse<Def extends string, Dict> = Get<
-        ParseLoop<Base<State.Initialize<Def>, Dict>, Dict>,
-        "L"
-    >
+    export type Parse<Def extends string, Dict> = ParseLoop<
+        Base<State.Initialize<Def>, Dict>,
+        Dict
+    >["L"]
 
     export const parse = (def: string, ctx: Base.Parsing.Context) => {
         const s = State.initialize(def)

@@ -5,17 +5,17 @@ src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">
   Type '">"' is not assignable to type '"<" | "<="'.
 src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              256
-Lines:            66046
-Nodes:           181060
-Identifiers:      61714
-Symbols:         103899
-Types:            53839
-Instantiations:  282732
-Memory used:    153938K
+Lines:            66043
+Nodes:           181042
+Identifiers:      61705
+Symbols:         103902
+Types:            53845
+Instantiations:  282004
+Memory used:    152541K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.43s
-Bind time:        0.17s
-Check time:       1.34s
+Parse time:       0.49s
+Bind time:        0.18s
+Check time:       1.57s
 Emit time:        0.00s
-Total time:       1.94s
+Total time:       2.24s

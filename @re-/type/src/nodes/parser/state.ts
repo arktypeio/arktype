@@ -69,12 +69,6 @@ export namespace State {
     }
 
     export type ErrorTree<Message extends string> = ErrorToken<Message>
-    //     TreeFrom<{
-    //     bounds: {}
-    //     groups: []
-    //     branches: {}
-    //     root: ErrorToken<Message>
-    // }>
 
     export type Initialize<Def extends string> = From<{
         L: InitialTree
