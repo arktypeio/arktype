@@ -1,5 +1,5 @@
 import { Base } from "../base/index.js"
-import { State } from "../parser/index.js"
+import { Scan, State } from "../parser/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
@@ -9,6 +9,16 @@ export namespace List {
         s.root = new ListNode(s.root!, ctx)
         Lexer.shiftOperator(s.scanner)
     }
+
+    export type Parse<S extends State.Expression> = S["R"] extends Scan<
+        "]",
+        infer Remaining
+    >
+        ? State.ExpressionFrom<
+              State.SetTreeRoot<S["L"], [S["L"]["root"], "[]"]>,
+              Remaining
+          >
+        : State.Throw<S, `Missing expected ']'.`>
 
     export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {
         if (scanner.next !== "]") {

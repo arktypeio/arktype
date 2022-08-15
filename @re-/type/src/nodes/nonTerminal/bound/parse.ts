@@ -7,6 +7,7 @@ import {
     boundTokens,
     ErrorToken,
     Lexer,
+    Scan,
     State,
     tokenSet,
     Tree
@@ -137,6 +138,57 @@ export namespace Bound {
             ? Bounds
             : ErrorToken<NonNumericBoundMessage<Bounds["right"][1] & string>>
     }
+
+    export type Parse<
+        S extends State.Expression,
+        Start extends Bound.Char
+    > = S["R"] extends Scan<infer Next, infer Rest>
+        ? Next extends "="
+            ? State.From<{ L: ReduceBound<S["L"], `${Start}=`>; R: Rest }>
+            : Start extends ">" | "<"
+            ? State.From<{ L: ReduceBound<S["L"], Start>; R: S["R"] }>
+            : State.Throw<S, `= is not a valid comparator. Use == instead.`>
+        : State.Throw<S, `Expected a bound condition after ${Start}.`>
+
+    type ReduceBound<
+        Tree extends State.Tree,
+        Token extends Bound.Token
+    > = Tree["root"] extends NumberLiteralDefinition
+        ? ReduceLeftBound<Tree, [Tree["root"], Token]>
+        : ReduceRightBound<Tree, Token>
+
+    type ReduceLeftBound<
+        Tree extends State.Tree,
+        Left extends Bound.RawLeft
+    > = {
+        bounds: {}
+        groups: []
+        branches: {}
+        root: any
+    } extends Tree
+        ? State.TreeFrom<{
+              groups: []
+              branches: {}
+              root: undefined
+              bounds: { left: Left }
+          }>
+        : State.ErrorTree<`Left bound '${Left[0]}${Left[1]}...' must occur at the beginning of the definition.`>
+
+    type ReduceRightBound<
+        Tree extends State.Tree,
+        Token extends Bound.Token
+    > = "rightToken" extends keyof Tree["bounds"]
+        ? State.ErrorTree<`Definitions may have at most one right bound.`>
+        : State.TreeFrom<{
+              bounds: {
+                  left: Tree["bounds"]["left"]
+                  bounded: Tree["root"]
+                  rightToken: Token
+              }
+              groups: Tree["groups"]
+              branches: Tree["branches"]
+              root: undefined
+          }>
 
     export const parsePossibleLeft = (s: State.WithRoot<NumberLiteralNode>) => {
         if (State.lookaheadIn(s, doubleBoundTokens)) {

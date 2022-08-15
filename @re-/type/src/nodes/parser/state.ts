@@ -9,11 +9,17 @@ export namespace State {
     export type Unvalidated = {
         L: Tree | ErrorToken<string>
         R: string
+        done?: true
+    }
+
+    export type Final = {
+        L: unknown
+        done: true
     }
 
     export type FinalFrom<Root> = {
         L: Root
-        R: ""
+        done: true
     }
 
     export type Expression = {
@@ -66,6 +72,7 @@ export namespace State {
     export type Throw<S extends Expression, Message extends string> = {
         L: ErrorTree<Message>
         R: ""
+        done: true
     }
 
     export type ErrorTree<Message extends string> = ErrorToken<Message>
