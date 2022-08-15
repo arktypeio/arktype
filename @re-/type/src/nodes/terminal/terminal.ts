@@ -2,6 +2,7 @@ import { Base } from "../base/index.js"
 import {
     BaseTerminatingChar,
     EnclosedBaseStartChar,
+    Left,
     Lexer,
     Scan,
     State
@@ -37,20 +38,17 @@ export namespace Terminal {
         : false
 
     export type EnclosedBase<
-        S extends State.Expression,
+        S extends State.Base,
         Enclosing extends EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
         ? State.From<{
-              L: State.SetTreeRoot<
-                  S["L"],
-                  `${Enclosing}${Contents}${Enclosing}`
-              >
+              L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
               R: Rest
           }>
-        : State.Throw<`${S["R"]} requires a closing ${Enclosing}.`>
+        : State.Error<`${S["R"]} requires a closing ${Enclosing}.`>
 
     export type UnenclosedBase<
-        S extends State.Expression,
+        S extends State.Base,
         Fragment extends string,
         Unscanned extends string,
         Dict
@@ -61,13 +59,13 @@ export namespace Terminal {
         : ValidateUnenclosed<S, Fragment, "", Dict>
 
     type ValidateUnenclosed<
-        S extends State.Expression,
+        S extends State.Base,
         Fragment extends string,
         Unscanned extends string,
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
-        ? State.From<{ L: State.SetTreeRoot<S["L"], Fragment>; R: Unscanned }>
-        : State.Throw<`'${Fragment}' is not a builtin type and does not exist in your space.`>
+        ? State.From<{ L: Left.SetRoot<S["L"], Fragment>; R: Unscanned }>
+        : State.Error<`'${Fragment}' is not a builtin type and does not exist in your space.`>
 
     export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {

@@ -5,24 +5,46 @@ import { Bound } from "../nonTerminal/index.js"
 import { Lexer } from "./lexer.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
-export namespace State {
-    export type Expression = {
-        L: Tree
-        R: string
-    }
-
-    export type BoundState = {
-        left?: Bound.RawLeft
-        bounded?: unknown
-        rightToken?: Bound.Token
-    }
-
-    export type Tree = {
-        bounds: BoundState
+export namespace Left {
+    export type Base = {
+        bounds: Bound.BoundState
         groups: Branches.TypeState[]
         branches: Branches.TypeState
         root: unknown
         done?: true
+    }
+
+    export type From<T extends Base> = T
+
+    export type Initial = From<{
+        bounds: {}
+        groups: []
+        branches: {}
+        root: undefined
+    }>
+
+    export type Finalize<Root> = From<{
+        bounds: {}
+        groups: []
+        branches: {}
+        root: Root
+        done: true
+    }>
+
+    export type SetRoot<T extends Base, Node> = From<{
+        bounds: T["bounds"]
+        groups: T["groups"]
+        branches: T["branches"]
+        root: Node
+    }>
+
+    export type Error<Message extends string> = Finalize<ErrorToken<Message>>
+}
+
+export namespace State {
+    export type Base = {
+        L: Left.Base
+        R: string
     }
 
     export type Final = {
@@ -32,71 +54,26 @@ export namespace State {
         }
     }
 
-    // This isn't even my...
-    export type FinalFrom<Root> = From<{
-        L: {
-            bounds: {}
-            groups: []
-            branches: {}
-            root: Root
-            done: true
-        }
+    export type Finalize<Root> = From<{
+        L: Left.Finalize<Root>
         R: ""
     }>
 
-    export type Update<T extends Tree, Changes extends Partial<Tree>> = {
-        bounds: "bounds" extends keyof Changes ? Changes["bounds"] : T["bounds"]
-        branches: "branches" extends keyof Changes
-            ? Changes["branches"]
-            : T["branches"]
-        groups: "groups" extends keyof Changes ? Changes["groups"] : T["groups"]
-        root: "root" extends keyof Changes ? Changes["root"] : T["root"]
-    }
-    //     Omit<
-    //     T,
-    //     keyof Changes
-    // > &
-    //     Changes
+    export type From<S extends Base> = S
 
-    export type From<S extends Expression> = S
-
-    export type TreeFrom<T extends Tree> = T
-
-    export type ScanTo<S extends Expression, Unscanned extends string> = From<{
+    export type ScanTo<S extends Base, Unscanned extends string> = From<{
         L: S["L"]
         R: Unscanned
     }>
 
-    export type SetTreeRoot<T extends Tree, Node> = TreeFrom<{
-        bounds: T["bounds"]
-        groups: T["groups"]
-        branches: T["branches"]
-        root: Node
-    }>
-
-    export type Throw<Message extends string> = {
-        L: ErrorTree<Message>
+    export type Error<Message extends string> = {
+        L: Left.Error<Message>
         R: ""
     }
 
-    export type ErrorTree<Message extends string> = TreeFrom<{
-        bounds: {}
-        groups: []
-        branches: {}
-        root: ErrorToken<Message>
-        done: true
-    }>
-
-    export type Initialize<Def extends string> = From<{
-        L: InitialTree
+    export type Initial<Def extends string> = From<{
+        L: Left.Initial
         R: Def
-    }>
-
-    export type InitialTree = TreeFrom<{
-        bounds: {}
-        groups: []
-        branches: {}
-        root: undefined
     }>
 
     export type Value = {

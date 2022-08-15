@@ -1,7 +1,6 @@
 import { Base } from "../base/index.js"
 import { State } from "../parser/index.js"
 import { Lexer } from "../parser/lexer.js"
-import { Branches } from "./branch/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {

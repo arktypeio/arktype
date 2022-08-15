@@ -9,7 +9,7 @@ import {
     Union
 } from "../nonTerminal/index.js"
 import { NumberLiteralNode, Terminal } from "../terminal/index.js"
-import { State } from "./state.js"
+import { Left, State } from "./state.js"
 import { EnclosedBaseStartChar, ErrorToken, suffixTokens } from "./tokens.js"
 
 export type Scan<
@@ -17,9 +17,15 @@ export type Scan<
     Unscanned extends string
 > = `${First}${Unscanned}`
 
+export type ScanTwo<
+    First extends string,
+    Second extends string,
+    Unscanned extends string
+> = `${First}${Second}${Unscanned}`
+
 export namespace Core {
     export type Parse<Def extends string, Dict> = Loop<
-        Base<State.Initialize<Def>, Dict>,
+        Base<State.Initial<Def>, Dict>,
         Dict
     >
 
@@ -43,16 +49,15 @@ export namespace Core {
         }
     }
 
-    type Loop<S extends State.Expression, Dict> = S extends State.Final
+    type Loop<S extends State.Base, Dict> = S extends State.Final
         ? S["L"]["root"]
         : Loop<Next<S, Dict>, Dict>
 
-    type Next<
-        S extends State.Expression,
-        Dict
-    > = S["L"]["root"] extends undefined ? Base<S, Dict> : Operator<S>
+    type Next<S extends State.Base, Dict> = S["L"]["root"] extends undefined
+        ? Base<S, Dict>
+        : Operator<S>
 
-    type Base<S extends State.Expression, Dict> = S["R"] extends Scan<
+    type Base<S extends State.Base, Dict> = S["R"] extends Scan<
         infer Next,
         infer Rest
     >
@@ -63,9 +68,9 @@ export namespace Core {
             : Next extends " "
             ? Base<State.ScanTo<S, Rest>, Dict>
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
-        : State.Throw<`Expected an expression.`>
+        : State.Error<`Expected an expression.`>
 
-    type Operator<S extends State.Expression> = S["R"] extends Scan<
+    type Operator<S extends State.Base> = S["R"] extends Scan<
         infer Next,
         infer Rest
     >
@@ -83,7 +88,7 @@ export namespace Core {
             ? Bound.Parse<State.ScanTo<S, Rest>, Next>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
-            : State.Throw<`Unexpected operator '${Next}'.`>
+            : State.Error<`Unexpected operator '${Next}'.`>
         : Finalize<S>
 
     const parseExpression = (s: State.Value, ctx: Base.Parsing.Context) => {
@@ -112,18 +117,17 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type Finalize<S extends State.Expression> = State.FinalFrom<
+    type Finalize<S extends State.Base> = State.Finalize<
         ApplyFinalizer<ExtractValidatedRoot<S["L"]>, S["R"]>
     >
 
-    type ExtractValidatedRoot<Tree extends State.Tree> =
-        Tree["groups"] extends []
-            ? {} extends Tree["bounds"]
-                ? Branches.MergeAll<Tree["branches"], Tree["root"]>
-                : ReduceBounded<Tree>
-            : ErrorToken<UnclosedGroupMessage>
+    type ExtractValidatedRoot<L extends Left.Base> = L["groups"] extends []
+        ? {} extends L["bounds"]
+            ? Branches.MergeAll<L["branches"], L["root"]>
+            : ReduceBounded<L>
+        : ErrorToken<UnclosedGroupMessage>
 
-    type ReduceBounded<Tree extends State.Tree> = Tree["bounds"]["bounded"]
+    type ReduceBounded<L extends Left.Base> = L["bounds"]["bounded"]
 
     type ApplyFinalizer<
         Root,

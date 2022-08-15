@@ -6,6 +6,7 @@ import {
     boundStartChars,
     boundTokens,
     ErrorToken,
+    Left,
     Lexer,
     Scan,
     State,
@@ -22,6 +23,12 @@ import { isBoundable } from "./shared.js"
 import { SingleBoundDefinition, SingleBoundNode } from "./single.js"
 
 export namespace Bound {
+    export type BoundState = {
+        left?: Bound.RawLeft
+        bounded?: unknown
+        rightToken?: Bound.Token
+    }
+
     export const tokens = boundTokens
 
     export const startChars = boundStartChars
@@ -140,53 +147,50 @@ export namespace Bound {
     }
 
     export type Parse<
-        S extends State.Expression,
+        S extends State.Base,
         Start extends Bound.Char
     > = S["R"] extends Scan<infer Next, infer Rest>
         ? Next extends "="
             ? State.From<{ L: ReduceBound<S["L"], `${Start}=`>; R: Rest }>
             : Start extends ">" | "<"
             ? State.From<{ L: ReduceBound<S["L"], Start>; R: S["R"] }>
-            : State.Throw<`= is not a valid comparator. Use == instead.`>
-        : State.Throw<`Expected a bound condition after ${Start}.`>
+            : State.Error<`= is not a valid comparator. Use == instead.`>
+        : State.Error<`Expected a bound condition after ${Start}.`>
 
     type ReduceBound<
-        Tree extends State.Tree,
+        Tree extends Left.Base,
         Token extends Bound.Token
     > = Tree["root"] extends NumberLiteralDefinition
         ? ReduceLeftBound<Tree, [Tree["root"], Token]>
         : ReduceRightBound<Tree, Token>
 
-    type ReduceLeftBound<
-        Tree extends State.Tree,
-        Left extends Bound.RawLeft
-    > = {
+    type ReduceLeftBound<Tree extends Left.Base, Left extends Bound.RawLeft> = {
         bounds: {}
         groups: []
         branches: {}
         root: any
     } extends Tree
-        ? State.TreeFrom<{
+        ? Left.From<{
               groups: []
               branches: {}
               root: undefined
               bounds: { left: Left }
           }>
-        : State.ErrorTree<`Left bound '${Left[0]}${Left[1]}...' must occur at the beginning of the definition.`>
+        : Left.Error<`Left bound '${Left[0]}${Left[1]}...' must occur at the beginning of the definition.`>
 
     type ReduceRightBound<
-        Tree extends State.Tree,
+        L extends Left.Base,
         Token extends Bound.Token
-    > = "rightToken" extends keyof Tree["bounds"]
-        ? State.ErrorTree<`Definitions may have at most one right bound.`>
-        : State.TreeFrom<{
+    > = "rightToken" extends keyof L["bounds"]
+        ? Left.Error<`Definitions may have at most one right bound.`>
+        : Left.From<{
               bounds: {
-                  left: Tree["bounds"]["left"]
-                  bounded: Tree["root"]
+                  left: L["bounds"]["left"]
+                  bounded: L["root"]
                   rightToken: Token
               }
-              groups: Tree["groups"]
-              branches: Tree["branches"]
+              groups: L["groups"]
+              branches: L["branches"]
               root: undefined
           }>
 

@@ -1,20 +1,20 @@
-src/nodes/nonTerminal/bound/parse.ts(205,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
-src/nodes/nonTerminal/bound/parse.ts(222,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
-src/nodes/nonTerminal/bound/parse.ts(273,59): error TS2554: Expected 1 arguments, but got 2.
-src/nodes/nonTerminal/bound/parse.ts(277,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
+src/nodes/nonTerminal/bound/parse.ts(209,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
+src/nodes/nonTerminal/bound/parse.ts(226,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
+src/nodes/nonTerminal/bound/parse.ts(277,59): error TS2554: Expected 1 arguments, but got 2.
+src/nodes/nonTerminal/bound/parse.ts(281,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
 Files:              256
-Lines:            66050
-Nodes:           181185
-Identifiers:      61751
-Symbols:         104245
-Types:            54415
-Instantiations:  283619
-Memory used:    155076K
+Lines:            66034
+Nodes:           181142
+Identifiers:      61748
+Symbols:         104233
+Types:            54388
+Instantiations:  283773
+Memory used:    153638K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.44s
-Bind time:        0.17s
-Check time:       1.52s
+Parse time:       0.43s
+Bind time:        0.15s
+Check time:       1.34s
 Emit time:        0.00s
-Total time:       2.13s
+Total time:       1.92s

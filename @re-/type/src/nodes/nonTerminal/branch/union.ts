@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
 import { Base } from "../../base/index.js"
-import { State } from "../../parser/index.js"
+import { Left, State } from "../../parser/index.js"
 import { Lexer } from "../../parser/lexer.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Branches } from "./branch.js"
@@ -32,10 +32,10 @@ export namespace Union {
         ]
     }
 
-    export type Reduce<Tree extends State.Tree> = State.TreeFrom<{
-        bounds: Tree["bounds"]
-        groups: Tree["groups"]
-        branches: PushRoot<Tree["branches"], Tree["root"]>
+    export type Reduce<L extends Left.Base> = Left.From<{
+        bounds: L["bounds"]
+        groups: L["groups"]
+        branches: PushRoot<L["branches"], L["root"]>
         root: undefined
     }>
 
