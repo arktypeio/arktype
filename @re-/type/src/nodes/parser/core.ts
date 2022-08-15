@@ -29,12 +29,7 @@ export type Scan<
 > = `${First}${Unscanned}`
 
 export namespace Core {
-    export type Parse<Def extends string, Dict> = Get<
-        Get<ParseDefinition<Def, Dict>, "L">,
-        "root"
-    >
-
-    export type ParseDefinition<Def extends string, Dict> = ParseExpression<
+    export type Parse<Def extends string, Dict> = ParseExpression<
         State.Initialize<Def>,
         Dict
     >
@@ -60,89 +55,79 @@ export namespace Core {
     }
 
     export type ParseExpression<
-        S extends State.Type,
+        S extends State.Expression,
         Dict
-    > = S["L"]["root"] extends ErrorToken<string>
+    > = S extends never
         ? S
         : S["L"]["root"] extends undefined
         ? ParseExpression<Base<S, Dict>, Dict>
-        : S["R"] extends ""
-        ? State.From<{
-              L: ValidateFinal<{
-                  bounds: S["L"]["bounds"]
-                  groups: S["L"]["groups"]
-                  branches: {}
-                  root: Branches.MergeAll<S["L"]["branches"], S["L"]["root"]>
-              }>
-              R: ""
-          }>
-        : S["R"] extends "?"
-        ? State.From<{
-              L: ValidateFinal<{
-                  bounds: S["L"]["bounds"]
-                  groups: S["L"]["groups"]
-                  branches: {}
-                  root: [
-                      Branches.MergeAll<S["L"]["branches"], S["L"]["root"]>,
-                      "?"
-                  ]
-              }>
-              R: ""
-          }>
+        : S["L"]["root"] extends ErrorToken<string>
+        ? S["L"]["root"]
+        : S["R"] extends "" | "?"
+        ? ParseFinalizing<Finalize<S["L"]>, S["R"]>
         : ParseExpression<Operator<S>, Dict>
 
-    type Base<S extends State.Type, Dict> = S["R"] extends Scan<
+    type ParseFinalizing<
+        Result,
+        Unscanned extends "" | "?"
+    > = Unscanned extends ""
+        ? Result
+        : Result extends ErrorToken<string>
+        ? Result
+        : [Result, "?"]
+
+    type Base<S extends State.Expression, Dict> = S["R"] extends Scan<
         infer Next,
         infer Rest
     >
         ? Next extends "("
-            ? State.Expression<Group.ReduceOpen<S["L"]>, Rest>
+            ? State.ExpressionFrom<Group.ReduceOpen<S["L"]>, Rest>
             : Next extends EnclosedBaseStartChar
             ? EnclosedBase<S, Next>
             : Next extends " "
-            ? Base<State.Expression<S["L"], Rest>, Dict>
+            ? Base<State.ExpressionFrom<S["L"], Rest>, Dict>
             : UnenclosedBase<S, Next, Rest, Dict>
-        : State.Error<S, `Expected an expression.`>
+        : State.Throw<S, `Expected an expression.`>
 
-    type Operator<S extends State.Type> = S["R"] extends Scan<
+    type Operator<S extends State.Expression> = S["R"] extends Scan<
         infer Next,
         infer Rest
     >
         ? Next extends "["
             ? Rest extends Scan<"]", infer Remaining>
-                ? State.Expression<
+                ? State.ExpressionFrom<
                       State.SetTreeRoot<S["L"], [S["L"]["root"], "[]"]>,
                       Remaining
                   >
-                : State.Error<S, `Missing expected ']'.`>
+                : State.Throw<S, `Missing expected ']'.`>
             : Next extends "|"
-            ? State.Expression<Union.Reduce<S["L"]>, Rest>
+            ? State.ExpressionFrom<Union.Reduce<S["L"]>, Rest>
             : Next extends "&"
-            ? State.Expression<Intersection.Reduce<S["L"]>, Rest>
+            ? State.ExpressionFrom<Intersection.Reduce<S["L"]>, Rest>
             : Next extends ")"
-            ? State.Expression<Group.ReduceClose<S["L"]>, Rest>
+            ? State.ExpressionFrom<Group.ReduceClose<S["L"]>, Rest>
             : Next extends Bound.Char
             ? ParseBound<State.ScanTo<S, Rest>, Next>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
             : Next extends "?"
-            ? State.Error<
+            ? State.Throw<
                   S,
                   `Suffix '?' is only valid at the end of a definition.`
               >
-            : State.Error<S, `Unexpected operator '${Next}'.`>
+            : State.Throw<S, `Unexpected operator '${Next}'.`>
         : S
 
     type ParseBound<
-        S extends State.Type,
+        S extends State.Expression,
         Start extends Bound.Char
     > = S["R"] extends Scan<infer Next, infer Rest>
         ? Next extends "="
             ? State.From<{ L: ReduceBound<S["L"], `${Start}=`>; R: Rest }>
             : Start extends ">" | "<"
             ? State.From<{ L: ReduceBound<S["L"], Start>; R: S["R"] }>
-            : State.Error<S, `= is not a valid comparator. Use == instead.`>
-        : State.Error<S, `Expected a bound condition after ${Start}.`>
+            : State.Throw<S, `= is not a valid comparator. Use == instead.`>
+        : State.Throw<S, `Expected a bound condition after ${Start}.`>
 
     type ReduceBound<
         Tree extends State.Tree,
@@ -185,17 +170,17 @@ export namespace Core {
           }>
 
     type EnclosedBase<
-        S extends State.Type,
+        S extends State.Expression,
         Enclosing extends EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.Expression<
+        ? State.ExpressionFrom<
               State.SetTreeRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>,
               Rest
           >
-        : State.Error<S, `${S["R"]} requires a closing ${Enclosing}.`>
+        : State.Throw<S, `${S["R"]} requires a closing ${Enclosing}.`>
 
     type UnenclosedBase<
-        S extends State.Type,
+        S extends State.Expression,
         Fragment extends string,
         Unscanned extends string,
         Dict
@@ -206,13 +191,13 @@ export namespace Core {
         : ValidateUnenclosed<S, Fragment, "", Dict>
 
     type ValidateUnenclosed<
-        S extends State.Type,
+        S extends State.Expression,
         Fragment extends string,
         Unscanned extends string,
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
-        ? State.Expression<State.SetTreeRoot<S["L"], Fragment>, Unscanned>
-        : State.Error<
+        ? State.ExpressionFrom<State.SetTreeRoot<S["L"], Fragment>, Unscanned>
+        : State.Throw<
               S,
               `'${Fragment}' is not a builtin type and does not exist in your space.`
           >
@@ -243,16 +228,13 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type ValidateFinal<Tree extends State.Tree> = Tree["groups"] extends []
+    type Finalize<Tree extends State.Tree> = Tree["groups"] extends []
         ? {} extends Tree["bounds"]
-            ? Tree
+            ? Branches.MergeAll<Tree["branches"], Tree["root"]>
             : ValidateBounds<Tree>
-        : State.SetTreeRoot<Tree, ErrorToken<UnclosedGroupMessage>>
+        : ErrorToken<UnclosedGroupMessage>
 
-    type ValidateBounds<Tree extends State.Tree> = State.SetTreeRoot<
-        Tree,
-        Tree["bounds"]["bounded"]
-    >
+    type ValidateBounds<Tree extends State.Tree> = Tree["bounds"]["bounded"]
 
     const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)

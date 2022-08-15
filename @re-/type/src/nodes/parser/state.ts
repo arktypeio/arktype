@@ -6,7 +6,7 @@ import { Lexer } from "./lexer.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace State {
-    export type Type = {
+    export type Expression = {
         L: Tree
         R: string
     }
@@ -24,16 +24,19 @@ export namespace State {
         root: unknown
     }
 
-    export type From<S extends Type> = S
+    export type From<S extends Expression> = S
 
     export type TreeFrom<T extends Tree> = T
 
-    export type Expression<T extends Tree, Unscanned extends string> = From<{
+    export type ExpressionFrom<
+        T extends Tree,
+        Unscanned extends string
+    > = From<{
         L: T
         R: Unscanned
     }>
 
-    export type ScanTo<S extends Type, Unscanned extends string> = From<{
+    export type ScanTo<S extends Expression, Unscanned extends string> = From<{
         L: S["L"]
         R: Unscanned
     }>
@@ -45,7 +48,7 @@ export namespace State {
         root: Node
     }>
 
-    export type Error<S extends Type, Message extends string> = From<{
+    export type Throw<S extends Expression, Message extends string> = From<{
         L: ErrorTree<Message>
         R: ""
     }>
