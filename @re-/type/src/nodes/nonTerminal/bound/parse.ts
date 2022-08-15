@@ -45,9 +45,9 @@ export namespace Bound {
         right?: RawRight
     }
 
-    export type RawLeft = [unknown, Token]
+    export type RawLeft = [NumberLiteralDefinition, Token]
 
-    export type RawRight = [Token, unknown]
+    export type RawRight = [Token, NumberLiteralDefinition]
 
     export type RawDouble = Required<Raw>
 

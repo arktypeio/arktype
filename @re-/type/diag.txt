@@ -1,23 +1,23 @@
+src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"2"[]'.
+  Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"2"'.
+    Type '"boolean"' is not assignable to type '"2"'.
 src/nodes/nonTerminal/bound/parse.ts(153,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(170,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
-src/nodes/nonTerminal/bound/parse.ts(209,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/bound/parse.ts(221,59): error TS2554: Expected 1 arguments, but got 2.
-src/nodes/nonTerminal/bound/parse.ts(225,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
-src/nodes/nonTerminal/bound/parse.ts(226,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
 Files:              256
-Lines:            66047
-Nodes:           181140
-Identifiers:      61712
-Symbols:         103927
-Types:            60656
-Instantiations:  295085
-Memory used:    158896K
-I/O read:         0.02s
+Lines:            66035
+Nodes:           181098
+Identifiers:      61713
+Symbols:         101668
+Types:            60152
+Instantiations:  293400
+Memory used:    157004K
+I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.47s
+Parse time:       0.46s
 Bind time:        0.17s
-Check time:       1.51s
+Check time:       1.44s
 Emit time:        0.00s
-Total time:       2.15s
+Total time:       2.06s

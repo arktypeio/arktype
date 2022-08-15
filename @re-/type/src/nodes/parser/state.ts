@@ -7,13 +7,18 @@ import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace State {
     export type Type = {
-        lastAffix?: string
-        tree: Tree
-        unscanned: string
+        L: Tree
+        R: string
+    }
+
+    export type BoundState = {
+        left?: Bound.RawLeft
+        bounded?: unknown
+        rightToken?: Bound.Token
     }
 
     export type Tree = {
-        bounds: Bound.Raw
+        bounds: BoundState
         groups: Branches.TypeState[]
         branches: Branches.TypeState
         root: unknown
@@ -24,16 +29,16 @@ export namespace State {
     export type TreeFrom<T extends Tree> = T
 
     export type Expression<T extends Tree, Unscanned extends string> = From<{
-        tree: T
-        unscanned: Unscanned
+        L: T
+        R: Unscanned
     }>
 
     export type ScanTo<S extends Type, Unscanned extends string> = From<{
-        tree: S["tree"]
-        unscanned: Unscanned
+        L: S["L"]
+        R: Unscanned
     }>
 
-    export type SetRoot<T extends Tree, Node> = TreeFrom<{
+    export type SetTreeRoot<T extends Tree, Node> = TreeFrom<{
         bounds: T["bounds"]
         groups: T["groups"]
         branches: T["branches"]
@@ -41,13 +46,20 @@ export namespace State {
     }>
 
     export type Error<S extends Type, Message extends string> = From<{
-        tree: SetRoot<S["tree"], ErrorToken<Message>>
-        unscanned: S["unscanned"]
+        L: ErrorTree<Message>
+        R: ""
+    }>
+
+    export type ErrorTree<Message extends string> = TreeFrom<{
+        bounds: {}
+        groups: []
+        branches: {}
+        root: ErrorToken<Message>
     }>
 
     export type Initialize<Def extends string> = From<{
-        tree: InitialTree
-        unscanned: Def
+        L: InitialTree
+        R: Def
     }>
 
     export type InitialTree = TreeFrom<{
@@ -69,12 +81,12 @@ export namespace State {
         Lookahead extends string,
         Root extends Parse.Node = Parse.Node
     > = Value & {
-        unscanned: Lexer.ValueScanner<Lookahead>
+        R: Lexer.ValueScanner<Lookahead>
         root: Root
     }
 
     export type WithLookahead<Lookahead extends string> = Value & {
-        unscanned: Lexer.ValueScanner<Lookahead>
+        R: Lexer.ValueScanner<Lookahead>
     }
 
     export type WithRoot<Root extends Parse.Node = Parse.Node> = Value & {
