@@ -1,23 +1,20 @@
-src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '"2"[]'.
-  Type '"boolean" | "user" | "group" | "null" | "integer" | "true"' is not assignable to type '"2"'.
-    Type '"boolean"' is not assignable to type '"2"'.
 src/nodes/nonTerminal/bound/parse.ts(153,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(170,38): error TS2322: Type 'string' is not assignable to type '"<" | ">" | ">=" | "<=" | "=="'.
 src/nodes/nonTerminal/bound/parse.ts(221,59): error TS2554: Expected 1 arguments, but got 2.
 src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
 Files:              256
-Lines:            66035
-Nodes:           181098
-Identifiers:      61713
-Symbols:         101668
-Types:            60152
-Instantiations:  293400
-Memory used:    157004K
+Lines:            66042
+Nodes:           181131
+Identifiers:      61724
+Symbols:         102737
+Types:            60321
+Instantiations:  294673
+Memory used:    157760K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.46s
-Bind time:        0.17s
-Check time:       1.44s
+Parse time:       0.44s
+Bind time:        0.16s
+Check time:       1.57s
 Emit time:        0.00s
-Total time:       2.06s
+Total time:       2.17s

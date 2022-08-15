@@ -244,8 +244,15 @@ export namespace Core {
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
     type ValidateFinal<Tree extends State.Tree> = Tree["groups"] extends []
-        ? Tree
+        ? {} extends Tree["bounds"]
+            ? Tree
+            : ValidateBounds<Tree>
         : State.SetTreeRoot<Tree, ErrorToken<UnclosedGroupMessage>>
+
+    type ValidateBounds<Tree extends State.Tree> = State.SetTreeRoot<
+        Tree,
+        Tree["bounds"]["bounded"]
+    >
 
     const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)
