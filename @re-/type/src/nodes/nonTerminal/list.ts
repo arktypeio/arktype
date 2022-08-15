@@ -14,10 +14,10 @@ export namespace List {
         "]",
         infer Remaining
     >
-        ? State.ExpressionFrom<
-              State.SetTreeRoot<S["L"], [S["L"]["root"], "[]"]>,
-              Remaining
-          >
+        ? State.From<{
+              L: State.SetTreeRoot<S["L"], [S["L"]["root"], "[]"]>
+              R: Remaining
+          }>
         : State.Throw<S, `Missing expected ']'.`>
 
     export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {

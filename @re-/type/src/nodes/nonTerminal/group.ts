@@ -1,4 +1,4 @@
-import { ErrorToken, State } from "../parser/index.js"
+import { State } from "../parser/index.js"
 import { Lexer } from "../parser/lexer.js"
 import { Branches } from "./branch/index.js"
 
@@ -29,7 +29,7 @@ export namespace Group {
                   branches: Top
                   root: Branches.MergeAll<Tree["branches"], Tree["root"]>
               }>
-            : ErrorToken<`Unexpected ).`>
+            : State.ErrorTree<`Unexpected ).`>
 
     export const parseClose = (s: State.Value) => {
         const previousBranches = s.groups.pop()

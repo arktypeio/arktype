@@ -43,10 +43,9 @@ export namespace Core {
         }
     }
 
-    type Loop<S extends State.Unvalidated, Dict> = S extends State.Final
-        ? S["L"]
-        : // @ts-expect-error S["L"] must be a valid tree at this point
-          Loop<Next<S, Dict>, Dict>
+    type Loop<S extends State.Expression, Dict> = S extends State.Final
+        ? S["L"]["root"]
+        : Loop<Next<S, Dict>, Dict>
 
     type Next<
         S extends State.Expression,
@@ -58,11 +57,11 @@ export namespace Core {
         infer Rest
     >
         ? Next extends "("
-            ? State.ExpressionFrom<Group.ReduceOpen<S["L"]>, Rest>
+            ? State.From<{ L: Group.ReduceOpen<S["L"]>; R: Rest }>
             : Next extends EnclosedBaseStartChar
             ? Terminal.EnclosedBase<S, Next>
             : Next extends " "
-            ? Base<State.ExpressionFrom<S["L"], Rest>, Dict>
+            ? Base<State.ScanTo<S, Rest>, Dict>
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
         : State.Throw<S, `Expected an expression.`>
 

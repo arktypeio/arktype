@@ -6,29 +6,8 @@ import { Lexer } from "./lexer.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace State {
-    export type Unvalidated = {
-        L: Tree | ErrorToken<string>
-        R: string
-        done?: true
-    }
-
-    export type Final = {
-        L: unknown
-        done: true
-    }
-
-    export type FinalFrom<Root> = {
-        L: Root
-        done: true
-    }
-
     export type Expression = {
         L: Tree
-        R: string
-    }
-
-    export type Error = {
-        L: ErrorToken<string>
         R: string
     }
 
@@ -43,19 +22,31 @@ export namespace State {
         groups: Branches.TypeState[]
         branches: Branches.TypeState
         root: unknown
+        done?: true
     }
 
-    export type From<S extends Unvalidated> = S
+    export type Final = {
+        L: {
+            root: unknown
+            done: true
+        }
+    }
+
+    // This isn't even my...
+    export type FinalFrom<Root> = From<{
+        L: {
+            bounds: {}
+            groups: []
+            branches: {}
+            root: Root
+            done: true
+        }
+        R: ""
+    }>
+
+    export type From<S extends Expression> = S
 
     export type TreeFrom<T extends Tree> = T
-
-    export type ExpressionFrom<
-        T extends Tree,
-        Unscanned extends string
-    > = From<{
-        L: T
-        R: Unscanned
-    }>
 
     export type ScanTo<S extends Expression, Unscanned extends string> = From<{
         L: S["L"]
@@ -72,10 +63,15 @@ export namespace State {
     export type Throw<S extends Expression, Message extends string> = {
         L: ErrorTree<Message>
         R: ""
-        done: true
     }
 
-    export type ErrorTree<Message extends string> = ErrorToken<Message>
+    export type ErrorTree<Message extends string> = TreeFrom<{
+        bounds: {}
+        groups: []
+        branches: {}
+        root: ErrorToken<Message>
+        done: true
+    }>
 
     export type Initialize<Def extends string> = From<{
         L: InitialTree

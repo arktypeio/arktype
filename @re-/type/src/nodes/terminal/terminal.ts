@@ -40,10 +40,13 @@ export namespace Terminal {
         S extends State.Expression,
         Enclosing extends EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.ExpressionFrom<
-              State.SetTreeRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>,
-              Rest
-          >
+        ? State.From<{
+              L: State.SetTreeRoot<
+                  S["L"],
+                  `${Enclosing}${Contents}${Enclosing}`
+              >
+              R: Rest
+          }>
         : State.Throw<S, `${S["R"]} requires a closing ${Enclosing}.`>
 
     export type UnenclosedBase<
@@ -63,7 +66,7 @@ export namespace Terminal {
         Unscanned extends string,
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
-        ? State.ExpressionFrom<State.SetTreeRoot<S["L"], Fragment>, Unscanned>
+        ? State.From<{ L: State.SetTreeRoot<S["L"], Fragment>; R: Unscanned }>
         : State.Throw<
               S,
               `'${Fragment}' is not a builtin type and does not exist in your space.`
