@@ -29,9 +29,9 @@ export type Scan<
 > = `${First}${Unscanned}`
 
 export namespace Core {
-    export type Parse<Def extends string, Dict> = ParseExpression<
-        State.Initialize<Def>,
-        Dict
+    export type Parse<Def extends string, Dict> = Get<
+        ParseLoop<Base<State.Initialize<Def>, Dict>, Dict>,
+        "L"
     >
 
     export const parse = (def: string, ctx: Base.Parsing.Context) => {
@@ -54,27 +54,22 @@ export namespace Core {
         }
     }
 
-    export type ParseExpression<
+    export type FinalizingToken = "" | "?"
+
+    export type ParseLoop<
+        S extends State.Unvalidated,
+        Dict
+    > = S extends State.Error
+        ? S
+        : S["R"] extends FinalizingToken
+        ? Finalize<S>
+        : // @ts-ignore S["L"] must be a valid tree at this point
+          ParseLoop<ParseNext<S, Dict>, Dict>
+
+    export type ParseNext<
         S extends State.Expression,
         Dict
-    > = S extends never
-        ? S
-        : S["L"]["root"] extends undefined
-        ? ParseExpression<Base<S, Dict>, Dict>
-        : S["L"]["root"] extends ErrorToken<string>
-        ? S["L"]["root"]
-        : S["R"] extends "" | "?"
-        ? ParseFinalizing<Finalize<S["L"]>, S["R"]>
-        : ParseExpression<Operator<S>, Dict>
-
-    type ParseFinalizing<
-        Result,
-        Unscanned extends "" | "?"
-    > = Unscanned extends ""
-        ? Result
-        : Result extends ErrorToken<string>
-        ? Result
-        : [Result, "?"]
+    > = S["L"]["root"] extends undefined ? Base<S, Dict> : Operator<S>
 
     type Base<S extends State.Expression, Dict> = S["R"] extends Scan<
         infer Next,
@@ -105,7 +100,7 @@ export namespace Core {
             : Next extends "&"
             ? State.ExpressionFrom<Intersection.Reduce<S["L"]>, Rest>
             : Next extends ")"
-            ? State.ExpressionFrom<Group.ReduceClose<S["L"]>, Rest>
+            ? State.From<{ L: Group.ReduceClose<S["L"]>; R: Rest }>
             : Next extends Bound.Char
             ? ParseBound<State.ScanTo<S, Rest>, Next>
             : Next extends " "
@@ -228,13 +223,26 @@ export namespace Core {
     export const UNCLOSED_GROUP_MESSAGE = "Missing )."
     type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
 
-    type Finalize<Tree extends State.Tree> = Tree["groups"] extends []
-        ? {} extends Tree["bounds"]
-            ? Branches.MergeAll<Tree["branches"], Tree["root"]>
-            : ValidateBounds<Tree>
-        : ErrorToken<UnclosedGroupMessage>
+    type Finalize<S extends State.Unvalidated> = S extends State.Error
+        ? S
+        : // @ts-ignore S["L"] must be a valid tree at this point
+          State.FinalFrom<ApplyFinalizer<ExtractValidatedRoot<S["L"]>, S["R"]>>
 
-    type ValidateBounds<Tree extends State.Tree> = Tree["bounds"]["bounded"]
+    type ExtractValidatedRoot<Tree extends State.Tree> =
+        Tree["groups"] extends []
+            ? {} extends Tree["bounds"]
+                ? Branches.MergeAll<Tree["branches"], Tree["root"]>
+                : Tree["bounds"]["bounded"]
+            : ErrorToken<UnclosedGroupMessage>
+
+    type ApplyFinalizer<
+        Root,
+        Finalizer extends string
+    > = Root extends ErrorToken<string>
+        ? Root
+        : Finalizer extends "?"
+        ? [Root, "?"]
+        : Root
 
     const reduceExpression = (s: State.Value) => {
         Branches.mergeAll(s)

@@ -6,8 +6,23 @@ import { Lexer } from "./lexer.js"
 import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace State {
+    export type Unvalidated = {
+        L: Tree | ErrorToken<string>
+        R: string
+    }
+
+    export type FinalFrom<Root> = {
+        L: Root
+        R: ""
+    }
+
     export type Expression = {
         L: Tree
+        R: string
+    }
+
+    export type Error = {
+        L: ErrorToken<string>
         R: string
     }
 
@@ -24,7 +39,7 @@ export namespace State {
         root: unknown
     }
 
-    export type From<S extends Expression> = S
+    export type From<S extends Unvalidated> = S
 
     export type TreeFrom<T extends Tree> = T
 
@@ -48,17 +63,18 @@ export namespace State {
         root: Node
     }>
 
-    export type Throw<S extends Expression, Message extends string> = From<{
+    export type Throw<S extends Expression, Message extends string> = {
         L: ErrorTree<Message>
         R: ""
-    }>
+    }
 
-    export type ErrorTree<Message extends string> = TreeFrom<{
-        bounds: {}
-        groups: []
-        branches: {}
-        root: ErrorToken<Message>
-    }>
+    export type ErrorTree<Message extends string> = ErrorToken<Message>
+    //     TreeFrom<{
+    //     bounds: {}
+    //     groups: []
+    //     branches: {}
+    //     root: ErrorToken<Message>
+    // }>
 
     export type Initialize<Def extends string> = From<{
         L: InitialTree

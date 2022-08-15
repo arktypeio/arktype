@@ -3,18 +3,19 @@ src/nodes/nonTerminal/bound/parse.ts(170,38): error TS2322: Type 'string' is not
 src/nodes/nonTerminal/bound/parse.ts(221,59): error TS2554: Expected 1 arguments, but got 2.
 src/nodes/nonTerminal/bound/parse.ts(225,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
+src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
 Files:              256
-Lines:            66027
-Nodes:           181040
-Identifiers:      61697
-Symbols:         104900
-Types:            56193
-Instantiations:  292289
-Memory used:    154299K
+Lines:            66046
+Nodes:           181060
+Identifiers:      61714
+Symbols:         103899
+Types:            53839
+Instantiations:  282732
+Memory used:    153938K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.45s
-Bind time:        0.16s
-Check time:       1.53s
+Parse time:       0.43s
+Bind time:        0.17s
+Check time:       1.34s
 Emit time:        0.00s
-Total time:       2.15s
+Total time:       1.94s

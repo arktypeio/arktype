@@ -29,12 +29,7 @@ export namespace Group {
                   branches: Top
                   root: Branches.MergeAll<Tree["branches"], Tree["root"]>
               }>
-            : State.TreeFrom<{
-                  bounds: Tree["bounds"]
-                  groups: Tree["groups"]
-                  branches: Tree["branches"]
-                  root: ErrorToken<`Unexpected ).`>
-              }>
+            : ErrorToken<`Unexpected ).`>
 
     export const parseClose = (s: State.Value) => {
         const previousBranches = s.groups.pop()
