@@ -11,17 +11,12 @@ import {
 import { NumberLiteralNode, Terminal } from "../terminal/index.js"
 import { Left, State } from "./state.js"
 import { EnclosedBaseStartChar, ErrorToken, suffixTokens } from "./tokens.js"
+import { Tree } from "./tree.js"
 
 export type Scan<
     First extends string,
     Unscanned extends string
 > = `${First}${Unscanned}`
-
-export type ScanTwo<
-    First extends string,
-    Second extends string,
-    Unscanned extends string
-> = `${First}${Second}${Unscanned}`
 
 export namespace Core {
     export type Parse<Def extends string, Dict> = Loop<
@@ -77,7 +72,9 @@ export namespace Core {
         ? Next extends "?"
             ? Finalize<S>
             : Next extends "["
-            ? List.Parse<State.ScanTo<S, Rest>>
+            ? Rest extends Scan<"]", infer Remaining>
+                ? State.From<{ L: List.Reduce<S["L"]>; R: Remaining }>
+                : State.Error<`Missing expected ']'.`>
             : Next extends "|"
             ? State.From<{ L: Union.Reduce<S["L"]>; R: Rest }>
             : Next extends "&"
@@ -85,11 +82,25 @@ export namespace Core {
             : Next extends ")"
             ? State.From<{ L: Group.ReduceClose<S["L"]>; R: Rest }>
             : Next extends Bound.Char
-            ? Bound.Parse<State.ScanTo<S, Rest>, Next>
+            ? ParseBound<S, Next, Rest>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
             : State.Error<`Unexpected operator '${Next}'.`>
         : Finalize<S>
+
+    type SingleCharBoundToken = ">" | "<"
+
+    type ParseBound<
+        S extends State.Base,
+        Start extends Bound.Char,
+        Unscanned extends string
+    > = Unscanned extends Scan<infer PossibleSecondChar, infer Rest>
+        ? PossibleSecondChar extends "="
+            ? State.From<{ L: Bound.Reduce<S["L"], `${Start}=`>; R: Rest }>
+            : Start extends SingleCharBoundToken
+            ? State.From<{ L: Bound.Reduce<S["L"], Start>; R: Unscanned }>
+            : State.Error<`= is not a valid comparator. Use == instead.`>
+        : State.Error<`Expected a bound condition after ${Start}.`>
 
     const parseExpression = (s: State.Value, ctx: Base.Parsing.Context) => {
         while (!(s.scanner.lookahead in suffixTokens)) {

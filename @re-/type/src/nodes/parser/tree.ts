@@ -6,32 +6,32 @@ export namespace Tree {
 
     type BranchNode<Left, Token extends string, Right> = [Left, Token, Right]
 
-    export type ToString<Tree> = Tree extends string
-        ? Tree
-        : Tree extends ModifiedNode<infer Child, infer Token>
+    export type ToString<T> = T extends string
+        ? T
+        : T extends ModifiedNode<infer Child, infer Token>
         ? `${ToString<Child>}${Token}`
-        : Tree extends BranchNode<infer Left, infer Token, infer Right>
+        : T extends BranchNode<infer Left, infer Token, infer Right>
         ? `${ToString<Left>}${Token}${ToString<Right>}`
         : ""
 
     export type Infer<
-        Tree,
+        T,
         Ctx extends Base.Parsing.InferenceContext
-    > = Tree extends string
-        ? InferTerminalStr<Tree, Ctx>
-        : Tree extends [infer Child, "?"]
+    > = T extends string
+        ? InferTerminalStr<T, Ctx>
+        : T extends [infer Child, "?"]
         ? Infer<Child, Ctx> | undefined
-        : Tree extends [infer Child, "[]"]
+        : T extends [infer Child, "[]"]
         ? Infer<Child, Ctx>[]
-        : Tree extends [infer Left, "|", infer Right]
+        : T extends [infer Left, "|", infer Right]
         ? Infer<Left, Ctx> | Infer<Right, Ctx>
-        : Tree extends [infer Left, "&", infer Right]
+        : T extends [infer Left, "&", infer Right]
         ? Infer<Left, Ctx> & Infer<Right, Ctx>
         : never
 
-    export type LeavesOf<Tree> = Tree extends [infer Child, string]
+    export type LeavesOf<T> = T extends [infer Child, string]
         ? LeavesOf<Child>
-        : Tree extends [infer Left, string, infer Right]
+        : T extends [infer Left, string, infer Right]
         ? [...LeavesOf<Right>, ...LeavesOf<Left>]
-        : [Tree]
+        : [T]
 }

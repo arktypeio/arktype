@@ -10,15 +10,7 @@ export namespace List {
         Lexer.shiftOperator(s.scanner)
     }
 
-    export type Parse<S extends State.Base> = S["R"] extends Scan<
-        "]",
-        infer Remaining
-    >
-        ? State.From<{
-              L: Left.SetRoot<S["L"], [S["L"]["root"], "[]"]>
-              R: Remaining
-          }>
-        : State.Error<`Missing expected ']'.`>
+    export type Reduce<L extends Left.Base> = Left.SetRoot<L, [L["root"], "[]"]>
 
     export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {
         if (scanner.next !== "]") {

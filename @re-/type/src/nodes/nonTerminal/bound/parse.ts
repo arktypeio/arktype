@@ -8,7 +8,6 @@ import {
     ErrorToken,
     Left,
     Lexer,
-    Scan,
     State,
     tokenSet,
     Tree
@@ -146,48 +145,36 @@ export namespace Bound {
             : ErrorToken<NonNumericBoundMessage<Bounds["right"][1] & string>>
     }
 
-    export type Parse<
-        S extends State.Base,
-        Start extends Bound.Char
-    > = S["R"] extends Scan<infer Next, infer Rest>
-        ? Next extends "="
-            ? State.From<{ L: ReduceBound<S["L"], `${Start}=`>; R: Rest }>
-            : Start extends ">" | "<"
-            ? State.From<{ L: ReduceBound<S["L"], Start>; R: S["R"] }>
-            : State.Error<`= is not a valid comparator. Use == instead.`>
-        : State.Error<`Expected a bound condition after ${Start}.`>
-
-    type ReduceBound<
-        Tree extends Left.Base,
+    export type Reduce<
+        L extends Left.Base,
         Token extends Bound.Token
-    > = Tree["root"] extends NumberLiteralDefinition
-        ? ReduceLeftBound<Tree, [Tree["root"], Token]>
-        : ReduceRightBound<Tree, Token>
+    > = L["root"] extends NumberLiteralDefinition
+        ? ReduceLeft<L, [L["root"], Token]>
+        : ReduceRightBound<L, Token>
 
-    type ReduceLeftBound<Tree extends Left.Base, Left extends Bound.RawLeft> = {
+    type ReduceLeft<L extends Left.Base, B extends Bound.RawLeft> = {
         bounds: {}
         groups: []
         branches: {}
         root: any
-    } extends Tree
+    } extends L
         ? Left.From<{
               groups: []
               branches: {}
               root: undefined
-              bounds: { left: Left }
+              bounds: { left: B }
           }>
-        : Left.Error<`Left bound '${Left[0]}${Left[1]}...' must occur at the beginning of the definition.`>
+        : Left.Error<`Left bound '${B[0]}${B[1]}...' must occur at the beginning of the definition.`>
 
     type ReduceRightBound<
         L extends Left.Base,
-        Token extends Bound.Token
+        B extends Bound.Token
     > = "rightToken" extends keyof L["bounds"]
         ? Left.Error<`Definitions may have at most one right bound.`>
         : Left.From<{
-              bounds: {
-                  left: L["bounds"]["left"]
+              bounds: L["bounds"] & {
                   bounded: L["root"]
-                  rightToken: Token
+                  rightToken: B
               }
               groups: L["groups"]
               branches: L["branches"]
