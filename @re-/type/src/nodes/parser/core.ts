@@ -63,7 +63,7 @@ export namespace Core {
             : Next extends " "
             ? Base<State.ScanTo<S, Rest>, Dict>
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
-        : State.Throw<S, `Expected an expression.`>
+        : State.Throw<`Expected an expression.`>
 
     type Operator<S extends State.Expression> = S["R"] extends Scan<
         infer Next,
@@ -83,7 +83,7 @@ export namespace Core {
             ? Bound.Parse<State.ScanTo<S, Rest>, Next>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
-            : State.Throw<S, `Unexpected operator '${Next}'.`>
+            : State.Throw<`Unexpected operator '${Next}'.`>
         : Finalize<S>
 
     const parseExpression = (s: State.Value, ctx: Base.Parsing.Context) => {

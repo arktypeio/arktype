@@ -47,7 +47,7 @@ export namespace Terminal {
               >
               R: Rest
           }>
-        : State.Throw<S, `${S["R"]} requires a closing ${Enclosing}.`>
+        : State.Throw<`${S["R"]} requires a closing ${Enclosing}.`>
 
     export type UnenclosedBase<
         S extends State.Expression,
@@ -67,10 +67,7 @@ export namespace Terminal {
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
         ? State.From<{ L: State.SetTreeRoot<S["L"], Fragment>; R: Unscanned }>
-        : State.Throw<
-              S,
-              `'${Fragment}' is not a builtin type and does not exist in your space.`
-          >
+        : State.Throw<`'${Fragment}' is not a builtin type and does not exist in your space.`>
 
     export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {

@@ -4,17 +4,17 @@ src/nodes/nonTerminal/bound/parse.ts(273,59): error TS2554: Expected 1 arguments
 src/nodes/nonTerminal/bound/parse.ts(277,47): error TS2322: Type '"<" | ">" | ">=" | "<=" | "=="' is not assignable to type '"<" | "<="'.
   Type '">"' is not assignable to type '"<" | "<="'.
 Files:              256
-Lines:            66039
-Nodes:           181117
-Identifiers:      61738
-Symbols:         104267
-Types:            54427
-Instantiations:  284815
-Memory used:    153306K
+Lines:            66050
+Nodes:           181185
+Identifiers:      61751
+Symbols:         104245
+Types:            54415
+Instantiations:  283619
+Memory used:    155076K
 I/O read:         0.01s
 I/O write:        0.00s
 Parse time:       0.44s
-Bind time:        0.15s
-Check time:       1.35s
+Bind time:        0.17s
+Check time:       1.52s
 Emit time:        0.00s
-Total time:       1.94s
+Total time:       2.13s

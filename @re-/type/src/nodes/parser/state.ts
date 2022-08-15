@@ -44,6 +44,20 @@ export namespace State {
         R: ""
     }>
 
+    export type Update<T extends Tree, Changes extends Partial<Tree>> = {
+        bounds: "bounds" extends keyof Changes ? Changes["bounds"] : T["bounds"]
+        branches: "branches" extends keyof Changes
+            ? Changes["branches"]
+            : T["branches"]
+        groups: "groups" extends keyof Changes ? Changes["groups"] : T["groups"]
+        root: "root" extends keyof Changes ? Changes["root"] : T["root"]
+    }
+    //     Omit<
+    //     T,
+    //     keyof Changes
+    // > &
+    //     Changes
+
     export type From<S extends Expression> = S
 
     export type TreeFrom<T extends Tree> = T
@@ -60,7 +74,7 @@ export namespace State {
         root: Node
     }>
 
-    export type Throw<S extends Expression, Message extends string> = {
+    export type Throw<Message extends string> = {
         L: ErrorTree<Message>
         R: ""
     }

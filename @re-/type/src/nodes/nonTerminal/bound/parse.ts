@@ -147,8 +147,8 @@ export namespace Bound {
             ? State.From<{ L: ReduceBound<S["L"], `${Start}=`>; R: Rest }>
             : Start extends ">" | "<"
             ? State.From<{ L: ReduceBound<S["L"], Start>; R: S["R"] }>
-            : State.Throw<S, `= is not a valid comparator. Use == instead.`>
-        : State.Throw<S, `Expected a bound condition after ${Start}.`>
+            : State.Throw<`= is not a valid comparator. Use == instead.`>
+        : State.Throw<`Expected a bound condition after ${Start}.`>
 
     type ReduceBound<
         Tree extends State.Tree,

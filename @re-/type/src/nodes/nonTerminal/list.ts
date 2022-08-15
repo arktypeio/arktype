@@ -18,7 +18,7 @@ export namespace List {
               L: State.SetTreeRoot<S["L"], [S["L"]["root"], "[]"]>
               R: Remaining
           }>
-        : State.Throw<S, `Missing expected ']'.`>
+        : State.Throw<`Missing expected ']'.`>
 
     export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {
         if (scanner.next !== "]") {
