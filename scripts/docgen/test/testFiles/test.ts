@@ -14,6 +14,7 @@ export const userModel = model({
 })
 
 // Mouse over "User" to see the inferred type...
+// @ignore-unused
 //@snipLine:line1
 export type User = typeof userModel.type
 //@snipEnd:snip1
@@ -29,6 +30,7 @@ export const userData = {
     browser: "Internet Explorer" // :(
 }
 
+// @ignore-unused
 export const userValidationResult = userModel.validate(userData)
 
 // Try changing "userModel" or "userData" and see what happens!
