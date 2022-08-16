@@ -8,6 +8,7 @@ import {
     ErrorToken,
     Left,
     Lexer,
+    Scan,
     State,
     tokenSet,
     Tree
@@ -74,6 +75,20 @@ export namespace Bound {
             throw new Error(`= is not a valid comparator. Use == instead.`)
         }
     }
+
+    type SingleCharBoundToken = ">" | "<"
+
+    export type ShiftReduce<
+        S extends State.T,
+        Start extends Bound.Char,
+        Unscanned extends string
+    > = Unscanned extends Scan<infer PossibleSecondChar, infer Rest>
+        ? PossibleSecondChar extends "="
+            ? State.From<{ L: Bound.Reduce<S["L"], `${Start}=`>; R: Rest }>
+            : Start extends SingleCharBoundToken
+            ? State.From<{ L: Bound.Reduce<S["L"], Start>; R: Unscanned }>
+            : State.Error<`= is not a valid comparator. Use == instead.`>
+        : State.Error<`Expected a bound condition after ${Start}.`>
 
     type InvalidDoubleBoundMessage<T extends Token> =
         `Double-bound expressions must specify their bounds using < or <= (got ${T}).`

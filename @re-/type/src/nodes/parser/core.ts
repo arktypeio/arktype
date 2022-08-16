@@ -93,11 +93,7 @@ export namespace Core {
             case "?":
                 return finalize(s, ctx)
             case "[": {
-                const next = s.r.shift()
-                if (next !== "]") {
-                    throw new Error(incompleteListTokenMessage)
-                }
-                return List.reduce(s, ctx)
+                return List.shiftReduce(s, ctx)
             }
             case "|":
                 return Union.reduce(s, ctx)
@@ -122,9 +118,7 @@ export namespace Core {
         ? Next extends "?"
             ? Finalize<S>
             : Next extends "["
-            ? Rest extends Scan<"]", infer Remaining>
-                ? State.From<{ L: List.Reduce<S["L"]>; R: Remaining }>
-                : State.Error<IncompleteListTokenMessage>
+            ? List.ShiftReduce<S, Rest>
             : Next extends "|"
             ? State.From<{ L: Union.Reduce<S["L"]>; R: Rest }>
             : Next extends "&"
@@ -132,29 +126,11 @@ export namespace Core {
             : Next extends ")"
             ? State.From<{ L: Group.ReduceClose<S["L"]>; R: Rest }>
             : Next extends Bound.Char
-            ? ParseBound<S, Next, Rest>
+            ? Bound.ShiftReduce<S, Next, Rest>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
             : State.Error<`Unexpected operator '${Next}'.`>
         : Finalize<S>
-
-    const incompleteListTokenMessage = `Missing expected ']'.`
-
-    type IncompleteListTokenMessage = `Missing expected ']'.`
-
-    type SingleCharBoundToken = ">" | "<"
-
-    type ParseBound<
-        S extends State.T,
-        Start extends Bound.Char,
-        Unscanned extends string
-    > = Unscanned extends Scan<infer PossibleSecondChar, infer Rest>
-        ? PossibleSecondChar extends "="
-            ? State.From<{ L: Bound.Reduce<S["L"], `${Start}=`>; R: Rest }>
-            : Start extends SingleCharBoundToken
-            ? State.From<{ L: Bound.Reduce<S["L"], Start>; R: Unscanned }>
-            : State.Error<`= is not a valid comparator. Use == instead.`>
-        : State.Error<`Expected a bound condition after ${Start}.`>
 
     export const unenclosedGroupMessage = "Missing )."
     type UnclosedGroupMessage = typeof unenclosedGroupMessage

@@ -1,12 +1,30 @@
 import { Base } from "../base/index.js"
-import { Left, State } from "../parser/index.js"
+import { Left, Scan, State } from "../parser/index.js"
 import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
-    export const reduce = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
+    export const shiftReduce = (
+        s: State.WithRoot,
+        ctx: Base.Parsing.Context
+    ) => {
+        const next = s.r.shift()
+        if (next !== "]") {
+            throw new Error(incompleteTokenMessage)
+        }
         s.l.root = new ListNode(s.l.root, ctx)
     }
+
+    export type ShiftReduce<
+        S extends State.T,
+        Unscanned extends string
+    > = Unscanned extends Scan<"]", infer Remaining>
+        ? State.From<{ L: List.Reduce<S["L"]>; R: Remaining }>
+        : State.Error<IncompleteTokenMessage>
+
+    const incompleteTokenMessage = `Missing expected ']'.`
+
+    type IncompleteTokenMessage = typeof incompleteTokenMessage
 
     export type Reduce<L extends Left.T> = Left.SetRoot<L, [L["root"], "[]"]>
 
