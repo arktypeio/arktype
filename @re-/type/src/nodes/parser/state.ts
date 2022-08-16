@@ -2,7 +2,7 @@ import { ClassOf, InstanceOf } from "@re-/tools"
 import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
-import { ErrorToken, TokenSet } from "./tokens.js"
+import { ErrorToken } from "./tokens.js"
 
 export namespace Left {
     export type V = {
@@ -78,7 +78,7 @@ export namespace State {
 
     export const initialize = (def: string): V => {
         const scanner = new Scanner(def)
-        //Lexer.shiftBase(scanner)
+        // TODO: Lexer.shiftBase(scanner)
         return {
             l: Left.initial,
             r: scanner
@@ -115,10 +115,13 @@ export namespace State {
     }
 
     export type WithRoot<Root extends Parse.Node = Parse.Node> = V & {
-        L: {
+        l: {
             root: Root
         }
     }
+
+    // TODO: Better way to differentiate runtime and type utilities
+    export type With<Values> = V & Values
 
     export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
 

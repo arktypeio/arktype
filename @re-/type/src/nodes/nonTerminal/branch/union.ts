@@ -1,7 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import { Left, State } from "../../parser/index.js"
-import { Lexer } from "../../parser/scanner.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"
@@ -32,35 +31,40 @@ export namespace Union {
         ]
     }
 
-    export type Reduce<L extends Left.T.Base> = Left.T.From<{
+    export const reduce = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
+        if (Intersection.isMergeable(s)) {
+            Intersection.merge(s)
+        }
+        if (!s.l.branches.union) {
+            s.l.branches.union = new UnionNode([s.l.root], ctx)
+        } else {
+            s.l.branches.union.addMember(s.l.root)
+        }
+        s.l.root = undefined as any
+    }
+
+    export type Reduce<L extends Left.T> = Left.From<{
         bounds: L["bounds"]
         groups: L["groups"]
         branches: PushRoot<L["branches"], L["root"]>
         root: undefined
     }>
 
-    export const parse = (s: State.V, ctx: Base.Parsing.Context) => {
-        Intersection.merge(s)
-        if (!s.branches.union) {
-            s.branches.union = new UnionNode([s.root!], ctx)
-        } else {
-            s.branches.union.addMember(s.root!)
+    export type Mergeable = State.With<{
+        l: {
+            root: Base.Node
+            branches: { union: UnionNode }
         }
-        s.root = undefined
-        Lexer.shiftBase(s.scanner)
-    }
+    }>
 
-    export const merge = (s: State.V) => {
-        if (s.branches.union) {
-            Intersection.merge(s)
-            // TODO: Find a better way to deal with all these!
-            s.branches.union.addMember(s.root!)
-            s.root = s.branches.union
-            s.branches.union = undefined
-        }
-    }
+    export const isMergeable = (s: State.V): s is Mergeable =>
+        s.l.root !== undefined && s.l.branches.intersection instanceof UnionNode
 
-    export type Node<Left = unknown, Right = unknown> = [Left, "|", Right]
+    export const merge = (s: Mergeable) => {
+        s.l.branches.union.addMember(s.l.root)
+        s.l.root = s.l.branches.union
+        s.l.branches.union = undefined as any
+    }
 }
 
 export class UnionNode extends NonTerminal<Base.Node[]> {

@@ -58,6 +58,7 @@ export namespace Core {
     const base = (s: State.V, ctx: Context): void => {
         const lookahead = s.r.shift()
         if (lookahead === "(") {
+            Group.reduceOpen(s)
         } else if (inTokenSet(lookahead, enclosedBaseStartChars)) {
             Terminal.enclosedBase(s, lookahead)
         } else if (lookahead === " ") {
@@ -82,15 +83,20 @@ export namespace Core {
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
         : State.Error<ExpressionExpectedMessage>
 
-    const operator = (s: State.V, ctx: Context) => {
+    const operator = (s: State.WithRoot, ctx: Context) => {
         const lookahead = s.r.shift()
         switch (lookahead) {
             case undefined:
                 return s
             case "?":
                 return s
-            case "[":
-                return s
+            case "[": {
+                const next = s.r.shift()
+                if (next !== "]") {
+                    throw new Error(incompleteListTokenMessage)
+                }
+                return List.reduce(s, ctx)
+            }
             case "|":
                 return s
             case "&":
@@ -116,7 +122,7 @@ export namespace Core {
             : Next extends "["
             ? Rest extends Scan<"]", infer Remaining>
                 ? State.From<{ L: List.Reduce<S["L"]>; R: Remaining }>
-                : State.Error<`Missing expected ']'.`>
+                : State.Error<IncompleteListTokenMessage>
             : Next extends "|"
             ? State.From<{ L: Union.Reduce<S["L"]>; R: Rest }>
             : Next extends "&"
@@ -129,6 +135,10 @@ export namespace Core {
             ? Operator<State.ScanTo<S, Rest>>
             : State.Error<`Unexpected operator '${Next}'.`>
         : Finalize<S>
+
+    const incompleteListTokenMessage = `Missing expected ']'.`
+
+    type IncompleteListTokenMessage = `Missing expected ']'.`
 
     type SingleCharBoundToken = ">" | "<"
 

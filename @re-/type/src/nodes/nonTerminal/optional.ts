@@ -1,20 +1,16 @@
 import { Base } from "../base/index.js"
 import { State } from "../parser/index.js"
-import { Lexer } from "../parser/scanner.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {
-    export const parse = (s: State.V, ctx: Base.Parsing.Context) => {
-        if (s.scanner.next !== "END") {
+    export const reduce = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
+        if (s.r.lookahead !== undefined) {
             throw new Error(
                 `Suffix '?' is only valid at the end of a definition.`
             )
         }
-        s.root = new OptionalNode(s.root!, ctx)
-        Lexer.shiftOperator(s.scanner)
+        s.l.root = new OptionalNode(s.l.root, ctx)
     }
-
-    export type Node<Child> = [Child, "?"]
 }
 
 export class OptionalNode extends NonTerminal {

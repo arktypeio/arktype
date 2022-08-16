@@ -1,19 +1,17 @@
 import { Left, State } from "../parser/index.js"
-import { Lexer } from "../parser/scanner.js"
 import { Branches } from "./branch/index.js"
 
 export namespace Group {
-    export type ReduceOpen<L extends Left.T.Base> = Left.T.From<{
+    export type ReduceOpen<L extends Left.T> = Left.From<{
         bounds: L["bounds"]
         groups: [...L["groups"], L["branches"]]
         branches: {}
         root: undefined
     }>
 
-    export const parseOpen = (s: State.V) => {
-        s.groups.push(s.branches)
-        s.branches = {}
-        Lexer.shiftBase(s.scanner)
+    export const reduceOpen = (s: State.V) => {
+        s.l.groups.push(s.l.branches)
+        s.l.branches = {}
     }
 
     type PopGroup<
@@ -21,23 +19,24 @@ export namespace Group {
         Top extends Branches.TypeState
     > = [...Stack, Top]
 
-    export type ReduceClose<L extends Left.T.Base> =
-        L["groups"] extends PopGroup<infer Stack, infer Top>
-            ? Left.T.From<{
-                  bounds: L["bounds"]
-                  groups: Stack
-                  branches: Top
-                  root: Branches.MergeAll<L["branches"], L["root"]>
-              }>
-            : Left.T.Error<`Unexpected ).`>
+    export type ReduceClose<L extends Left.T> = L["groups"] extends PopGroup<
+        infer Stack,
+        infer Top
+    >
+        ? Left.From<{
+              bounds: L["bounds"]
+              groups: Stack
+              branches: Top
+              root: Branches.MergeAll<L["branches"], L["root"]>
+          }>
+        : Left.Error<`Unexpected ).`>
 
-    export const parseClose = (s: State.V) => {
-        const previousBranches = s.groups.pop()
+    export const reduceClose = (s: State.WithRoot) => {
+        const previousBranches = s.l.groups.pop()
         if (previousBranches === undefined) {
             throw new Error(`Unexpected ).`)
         }
         Branches.mergeAll(s)
-        s.branches = previousBranches
-        Lexer.shiftOperator(s.scanner)
+        s.l.branches = previousBranches
     }
 }
