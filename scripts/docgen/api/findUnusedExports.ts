@@ -14,7 +14,7 @@ import {
     ts
 } from "ts-morph"
 import { PackageJson } from "type-fest"
-import { getEntryPointsToRelativeDtsPaths } from "./docgen/api/utils.js"
+import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 const ignoreUnusedComment = "@ignore-unused"
 const rootDir = fromPackageRoot("@re-")
@@ -22,18 +22,18 @@ const publicApis = ["assert", "model"]
 const exportAllRegex = /export \*/
 
 const project = new Project({
-    tsConfigFilePath: fromHere("..", "tsconfig.references.json")
+    tsConfigFilePath: fromPackageRoot("tsconfig.references.json")
 })
 const unusedExports: Record<string, string[]> = {}
-const ignorePaths: RegExp[] = [new RegExp(join("docs", "snippets"))]
+const ignorePaths: string[] = [join("docs", "snippets")]
+
 const exportAllRenamedRegex = /\* as /
 
 export const findUnusedExports = () => {
     const apiExports = getPublicApiExports(project)
     for (const sourceFile of project.getSourceFiles()) {
         const file = relative(".", sourceFile.getFilePath())
-
-        if (ignorePaths.some((pathRegex) => pathRegex.test(file))) {
+        if (ignorePaths.some((path) => file.includes(path))) {
             continue
         }
         const unusedExportsInFile = findUnusedExportsInFile({
