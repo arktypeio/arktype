@@ -29,11 +29,9 @@ export const boundTokens = tokenSet({
 
 export const baseTerminatingChars = tokenSet({
     ...boundStartChars,
-    END: 1,
     "?": 1,
     "|": 1,
     "&": 1,
-    "(": 1,
     ")": 1,
     "[": 1,
     " ": 1

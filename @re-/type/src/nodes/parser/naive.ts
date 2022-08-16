@@ -1,6 +1,6 @@
 import { Base } from "../base/index.js"
 import { ListNode, OptionalNode } from "../nonTerminal/index.js"
-import { AliasNode, Keyword, Terminal } from "../terminal/index.js"
+import { Terminal } from "../terminal/index.js"
 import { Core } from "./core.js"
 
 export namespace Naive {
@@ -44,25 +44,12 @@ export namespace Naive {
 
     const tryParseList = (def: string, ctx: Base.Parsing.Context) => {
         if (def.endsWith("[]")) {
-            const possibleIdentifierNode = tryParseIdentifier(
-                def.slice(0, -2),
-                ctx
-            )
+            const possibleIdentifierNode =
+                Terminal.toNodeIfResolvableIdentifier(def.slice(0, -2), ctx)
             if (possibleIdentifierNode) {
                 return new ListNode(possibleIdentifierNode, ctx)
             }
         }
-        return tryParseIdentifier(def, ctx)
-    }
-
-    const tryParseIdentifier = (
-        possibleIdentifier: string,
-        ctx: Base.Parsing.Context
-    ) => {
-        if (Keyword.matches(possibleIdentifier)) {
-            return Keyword.parse(possibleIdentifier)
-        } else if (AliasNode.matches(possibleIdentifier, ctx)) {
-            return new AliasNode(possibleIdentifier, ctx)
-        }
+        return Terminal.toNodeIfResolvableIdentifier(def, ctx)
     }
 }
