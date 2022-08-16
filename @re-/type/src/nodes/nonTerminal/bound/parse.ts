@@ -22,9 +22,9 @@ import { isBoundable } from "./shared.js"
 import { SingleBoundDefinition, SingleBoundNode } from "./single.js"
 
 export namespace Bound {
-    export type BoundState = {
-        left?: Bound.RawLeft
-        bounded?: unknown
+    export type Partial = {
+        left?: Bound.Left
+        bounded?: Boundable
         rightToken?: Bound.Token
     }
 
@@ -48,11 +48,11 @@ export namespace Bound {
     export type DoubleBoundToken = keyof typeof doubleBoundTokens
 
     export type Raw = {
-        left?: RawLeft
+        left?: Left
         right?: RawRight
     }
 
-    export type RawLeft = [NumberLiteralDefinition, Token]
+    export type Left = [NumberLiteralDefinition, DoubleBoundToken]
 
     export type RawRight = [Token, NumberLiteralDefinition]
 
@@ -117,6 +117,21 @@ export namespace Bound {
         right?: [Token, NumberLiteralDefinition] | ErrorToken<string>
     }
 
+    export type Finalize<Root, Bounds extends Partial> = {} extends Bounds
+        ? Root
+        : IsUnpairedLeftBound<Bounds> extends true
+        ? ErrorToken<UnpairedLeftBoundMessage>
+        : Root extends NumberLiteralDefinition
+        ? Bounds["bounded"]
+        : ErrorToken<NonNumericBoundMessage<Tree.ToString<Root>>>
+
+    type IsUnpairedLeftBound<Bounds extends Partial> =
+        "left" extends keyof Bounds
+            ? "rightToken" extends keyof Bounds
+                ? false
+                : true
+            : false
+
     type ValidateEach<Bounds extends Raw> = Bounds extends RawDouble
         ? ValidateDoubleBound<Bounds>
         : Bounds extends RawSingle
@@ -147,39 +162,52 @@ export namespace Bound {
 
     export type Reduce<
         L extends Left.Base,
-        Token extends Bound.Token
-    > = L["root"] extends NumberLiteralDefinition
-        ? ReduceLeft<L, [L["root"], Token]>
-        : ReduceRightBound<L, Token>
+        T extends Token
+    > = L extends Left.WithRoot<NumberLiteralDefinition>
+        ? ReduceLeft<L, T>
+        : ReduceRight<L, T>
 
-    type ReduceLeft<L extends Left.Base, B extends Bound.RawLeft> = {
-        bounds: {}
-        groups: []
-        branches: {}
-        root: any
-    } extends L
-        ? Left.From<{
-              groups: []
-              branches: {}
-              root: undefined
-              bounds: { left: B }
-          }>
-        : Left.Error<`Left bound '${B[0]}${B[1]}...' must occur at the beginning of the definition.`>
+    type ReduceLeft<
+        L extends Left.WithRoot<NumberLiteralDefinition>,
+        T extends Token
+    > = Left.IsPrefixable<L> extends true
+        ? T extends DoubleBoundToken
+            ? Left.From<{
+                  groups: []
+                  branches: {}
+                  root: undefined
+                  bounds: { left: [L["root"], T] }
+              }>
+            : Left.Error<InvalidDoubleBoundMessage<T>>
+        : Left.Error<`Left bound '${L["root"]}${T}...' must occur at the beginning of the definition.`>
 
-    type ReduceRightBound<
+    type ReduceRight<
         L extends Left.Base,
-        B extends Bound.Token
+        T extends Bound.Token
     > = "rightToken" extends keyof L["bounds"]
         ? Left.Error<`Definitions may have at most one right bound.`>
-        : Left.From<{
-              bounds: L["bounds"] & {
-                  bounded: L["root"]
-                  rightToken: B
-              }
-              groups: L["groups"]
-              branches: L["branches"]
-              root: undefined
-          }>
+        : L["root"] extends Boundable
+        ? RightTokenIsValid<L, T> extends true
+            ? Left.From<{
+                  bounds: L["bounds"] & {
+                      bounded: L["root"]
+                      rightToken: T
+                  }
+                  groups: L["groups"]
+                  branches: L["branches"]
+                  root: undefined
+              }>
+            : Left.Error<InvalidDoubleBoundMessage<T>>
+        : Left.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
+
+    type RightTokenIsValid<
+        L extends Left.Base,
+        T extends Token
+    > = "left" extends keyof L["bounds"]
+        ? T extends DoubleBoundToken
+            ? true
+            : false
+        : true
 
     export const parsePossibleLeft = (s: State.WithRoot<NumberLiteralNode>) => {
         if (State.lookaheadIn(s, doubleBoundTokens)) {
@@ -222,6 +250,14 @@ export namespace Bound {
     export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
     type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
 
+    type UnboundableMessage<Root extends string> =
+        `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
+
+    export const unboundableMessage = <Root extends string>(
+        Root: Root
+    ): UnboundableMessage<Root> =>
+        `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
+
     const createBound = (
         s: State.WithRoot,
         right: RawRight,
@@ -229,9 +265,7 @@ export namespace Bound {
     ) => {
         s.bounds.right = right
         if (!isBoundable(s.root)) {
-            throw new Error(
-                `Bounded expression '${s.root.toString()}' must be a number-or-string-typed keyword or a list-typed expression.`
-            )
+            throw new Error(unboundableMessage(s.root.toString()))
         }
         if (isDoubleBoundCandidate(s.bounds)) {
             return new DoubleBoundNode(

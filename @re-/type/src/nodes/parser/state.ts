@@ -7,7 +7,7 @@ import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace Left {
     export type Base = {
-        bounds: Bound.BoundState
+        bounds: Bound.Partial
         groups: Branches.TypeState[]
         branches: Branches.TypeState
         root: unknown
@@ -23,6 +23,15 @@ export namespace Left {
         root: undefined
     }>
 
+    export type IsPrefixable<T extends Base> = From<{
+        bounds: {}
+        groups: []
+        branches: {}
+        root: any
+    }> extends T
+        ? true
+        : false
+
     export type Finalize<Root> = From<{
         bounds: {}
         groups: []
@@ -30,6 +39,8 @@ export namespace Left {
         root: Root
         done: true
     }>
+
+    export type WithRoot<Node> = SetRoot<Base, Node>
 
     export type SetRoot<T extends Base, Node> = From<{
         bounds: T["bounds"]

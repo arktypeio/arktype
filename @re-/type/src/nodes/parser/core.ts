@@ -133,12 +133,11 @@ export namespace Core {
     >
 
     type ExtractValidatedRoot<L extends Left.Base> = L["groups"] extends []
-        ? {} extends L["bounds"]
-            ? Branches.MergeAll<L["branches"], L["root"]>
-            : ReduceBounded<L>
+        ? Bound.Finalize<
+              Branches.MergeAll<L["branches"], L["root"]>,
+              L["bounds"]
+          >
         : ErrorToken<UnclosedGroupMessage>
-
-    type ReduceBounded<L extends Left.Base> = L["bounds"]["bounded"]
 
     type ApplyFinalizer<
         Root,
