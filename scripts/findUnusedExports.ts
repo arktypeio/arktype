@@ -74,11 +74,7 @@ const shouldIgnoreDeclaration = (
     }
     return false
 }
-type UnusedFileExportsContext = {
-    sourceFile: SourceFile
-    apiExports: ApiExports[]
-    file: string
-}
+
 const checkForIgnoreUnusedComment = (
     name: string,
     declaration: Node<ts.Node>,
@@ -107,6 +103,13 @@ const checkForIgnoreUnusedComment = (
     }
     return false
 }
+
+type UnusedFileExportsContext = {
+    sourceFile: SourceFile
+    apiExports: ApiExports[]
+    file: string
+}
+
 const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
     const unusedExportsInFile = []
     for (const [
@@ -139,6 +142,7 @@ const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
     }
     return unusedExportsInFile
 }
+
 export const logUnusedExportsToConsole = (
     unusedExports: Record<string, string[]>
 ) => {
@@ -154,10 +158,6 @@ export const logUnusedExportsToConsole = (
     }
 }
 
-export type ApiExports = {
-    path: string
-    exportedDeclarations: string[]
-}
 const getEntryPointExports = (sourceFile: SourceFile, packageRoot: string) =>
     sourceFile
         .getExportDeclarations()
@@ -170,6 +170,11 @@ const getEntryPointExports = (sourceFile: SourceFile, packageRoot: string) =>
                     .map((namedExport) => namedExport.getName())
             }
         })
+
+export type ApiExports = {
+    path: string
+    exportedDeclarations: string[]
+}
 
 export const getPublicApiExports = (project: Project): ApiExports[] => {
     const apiExports: ApiExports[] = []
