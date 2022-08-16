@@ -1,10 +1,5 @@
 import { join, relative } from "node:path"
-import {
-    findPackageRoot,
-    fromHere,
-    fromPackageRoot,
-    readPackageJson
-} from "@re-/node"
+import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 import {
     BindingNamedNode,
     Node,
