@@ -2,7 +2,7 @@ import { Base } from "../../base/index.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Bound } from "./parse.js"
 import {
-    BoundableNode,
+    BoundableV,
     BoundableValue,
     BoundChecker,
     createBoundChecker
@@ -16,12 +16,12 @@ export type SingleBoundValidationError = {
 
 export type SingleBoundDefinition = [Bound.Token, number]
 
-export class SingleBoundNode extends NonTerminal<BoundableNode> {
+export class SingleBoundNode extends NonTerminal<BoundableV> {
     bound: SingleBoundDefinition
     check: BoundChecker
 
     constructor(
-        child: BoundableNode,
+        child: BoundableV,
         bound: SingleBoundDefinition,
         ctx: Base.Parsing.Context
     ) {

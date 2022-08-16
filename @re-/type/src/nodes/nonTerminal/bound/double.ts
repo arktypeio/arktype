@@ -2,7 +2,7 @@ import { Base } from "../../base/index.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Bound } from "./parse.js"
 import {
-    BoundableNode,
+    BoundableV,
     BoundableValue,
     BoundChecker,
     createBoundChecker
@@ -20,12 +20,12 @@ export type DoubleBoundDefinition = {
     upper: [Bound.DoubleBoundToken, number]
 }
 
-export class DoubleBoundNode extends NonTerminal<BoundableNode> {
+export class DoubleBoundNode extends NonTerminal<BoundableV> {
     checkLower: BoundChecker
     checkUpper: BoundChecker
 
     constructor(
-        child: BoundableNode,
+        child: BoundableV,
         private bounds: DoubleBoundDefinition,
         ctx: Base.Parsing.Context
     ) {

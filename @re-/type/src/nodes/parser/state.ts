@@ -1,4 +1,4 @@
-import { ClassOf, InstanceOf } from "@re-/tools"
+import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
 import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
@@ -6,7 +6,7 @@ import { ErrorToken } from "./tokens.js"
 
 export namespace Left {
     export type V = {
-        bounds: Bound.T
+        bounds: Bound.V
         groups: Branches.ValueState[]
         branches: Branches.ValueState
         root: Parse.Node | undefined
@@ -35,6 +35,9 @@ export namespace Left {
     }>
 
     export type From<L extends T> = L
+
+    export const isPrefixable = (l: V) =>
+        isEmpty(l.bounds) && isEmpty(l.branches) && !l.groups.length
 
     export type IsPrefixable<L extends T> = From<{
         bounds: {}

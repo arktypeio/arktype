@@ -20,12 +20,12 @@ export const createBoundChecker = (token: Bound.Token, x: number) => {
     }
 }
 
-export interface BoundableNode extends Base.Node {
+export interface BoundableV extends Base.Node {
     boundBy?: string
     toBound(value: unknown): number
 }
 
 export type BoundableValue = number | string | unknown[]
 
-export const isBoundable = (node: Base.Node): node is BoundableNode =>
+export const isBoundable = (node: Base.Node): node is BoundableV =>
     "toBound" in node

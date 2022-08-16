@@ -1,2 +1,2 @@
 export * from "./parse.js"
-export type { BoundableNode } from "./shared.js"
+export type { BoundableV as BoundableNode } from "./shared.js"
