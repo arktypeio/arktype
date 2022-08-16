@@ -108,7 +108,7 @@ export namespace Core {
                 if (inTokenSet(lookahead, Bound.chars)) {
                     return Bound.shiftReduce(s, lookahead)
                 }
-                throw new Error("Unexpected operator.")
+                throw new Error(unexpectedOperatorMessage(lookahead))
         }
     }
 
@@ -130,8 +130,15 @@ export namespace Core {
             ? Bound.ShiftReduce<S, Next, Rest>
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
-            : State.Error<`Unexpected operator '${Next}'.`>
+            : State.Error<UnexpectedOperatorMessage<Next>>
         : Finalize<S>
+
+    const unexpectedOperatorMessage = <Token extends string>(
+        token: Token
+    ): UnexpectedOperatorMessage<Token> => `Unexpected operator '${token}'.`
+
+    type UnexpectedOperatorMessage<Token extends string> =
+        `Unexpected operator '${Token}'.`
 
     export const unenclosedGroupMessage = "Missing )."
     type UnclosedGroupMessage = typeof unenclosedGroupMessage
@@ -150,10 +157,7 @@ export namespace Core {
     >
 
     type ExtractValidatedRoot<L extends Left.T> = L["groups"] extends []
-        ? Bound.Finalize<
-              Branches.MergeAll<L["branches"], L["root"]>,
-              L["bounds"]
-          >
+        ? Branches.MergeAll<L["branches"], L["root"]>
         : ErrorToken<UnclosedGroupMessage>
 
     const applyFinalizer = (s: State.WithRoot, ctx: Base.Parsing.Context) => {

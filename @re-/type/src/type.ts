@@ -7,7 +7,6 @@ import {
     MutuallyExclusiveProps
 } from "@re-/tools"
 import { Base, Root } from "./nodes/index.js"
-import { Parse } from "./index.js"
 
 export const type: TypeFunction = (definition, options) => {
     const root = Root.parse(definition, Base.Parsing.createContext(options))
