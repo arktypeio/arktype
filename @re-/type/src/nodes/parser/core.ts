@@ -45,24 +45,27 @@ export namespace Core {
         : Loop<Next<S, Dict>, Dict>
 
     const next = (S: State.V, ctx: Context) =>
-        S.l.root ? base(S, ctx) : operator(S, ctx)
+        S.l.root === undefined ? base(S, ctx) : operator(S, ctx)
 
     type Next<S extends State.T, Dict> = S["L"]["root"] extends undefined
         ? Base<S, Dict>
         : Operator<S>
 
-    const base = (S: State.V, ctx: Context) => {
-        const lookahead = S.r.shift()
+    const expressionExpectedMessage = `Expected an expression.`
+    type ExpressionExpectedMessage = typeof expressionExpectedMessage
+
+    const base = (s: State.V, ctx: Context): State.V => {
+        const lookahead = s.r.shift()
         if (!lookahead) {
-            throw new Error(`Whoops.`)
+            throw new Error(expressionExpectedMessage)
         }
         return lookahead === "("
-            ? S
+            ? s
             : lookahead in enclosedBaseStartChars
-            ? S
+            ? s
             : lookahead === " "
-            ? S
-            : S
+            ? base(s, ctx)
+            : s
     }
 
     type Base<S extends State.T, Dict> = S["R"] extends Scan<
@@ -76,7 +79,7 @@ export namespace Core {
             : Next extends " "
             ? Base<State.ScanTo<S, Rest>, Dict>
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
-        : State.Error<`Expected an expression.`>
+        : State.Error<ExpressionExpectedMessage>
 
     const operator = (s: State.V, ctx: Context) => {
         const lookahead = s.r.shift()

@@ -2,7 +2,7 @@ import { ClassOf, InstanceOf } from "@re-/tools"
 import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
-import { ErrorToken } from "./tokens.js"
+import { ErrorToken, TokenSet } from "./tokens.js"
 
 export namespace Left {
     export type V = {
@@ -120,6 +120,16 @@ export namespace State {
         }
     }
 
+    export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
+
+    export type OnInputEndFn = (scanner: Scanner, shifted: string) => string
+
+    export type ShiftUntilOptions = {
+        onInputEnd?: OnInputEndFn
+        inclusive?: boolean
+        shiftTo?: string
+    }
+
     export class Scanner {
         private chars: string[]
         private i: number
@@ -139,8 +149,18 @@ export namespace State {
             return this.chars[this.i]
         }
 
-        next() {
-            this.i++
+        shiftUntil(condition: UntilCondition, opts?: ShiftUntilOptions) {
+            let shifted = opts?.shiftTo ?? ""
+            while (this.lookahead && !condition(this, shifted)) {
+                shifted += this.shift()
+            }
+            if (!this.lookahead) {
+                return opts?.onInputEnd?.(this, shifted) ?? shifted
+            }
+            if (opts?.inclusive) {
+                shifted += this.shift()
+            }
+            return shifted
         }
     }
 

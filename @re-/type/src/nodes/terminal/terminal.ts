@@ -3,7 +3,6 @@ import {
     BaseTerminatingChar,
     EnclosedBaseStartChar,
     Left,
-    Lexer,
     Scan,
     State
 } from "../parser/index.js"
@@ -13,6 +12,8 @@ import {
     BigintLiteralDefinition,
     BigintLiteralNode,
     InferLiteral,
+    isRegexLiteralDefinition,
+    isStringLiteralDefinition,
     NumberLiteralDefinition,
     NumberLiteralNode,
     RegexLiteralDefinition,
@@ -37,18 +38,71 @@ export namespace Terminal {
         ? true
         : false
 
+    const unterminatedEnclosedMessage = <
+        Fragment extends string,
+        Enclosing extends EnclosedBaseStartChar
+    >(
+        fragment: Fragment,
+        enclosing: Enclosing
+    ): UnterminatedEnclosedMessage<Fragment, Enclosing> =>
+        `${fragment} requires a closing ${enclosing}.`
+
+    type UnterminatedEnclosedMessage<
+        Fragment extends string,
+        Enclosing extends EnclosedBaseStartChar
+    > = `${Fragment} requires a closing ${Enclosing}.`
+
+    const untilConditionsByChar: Record<
+        EnclosedBaseStartChar,
+        State.UntilCondition
+    > = {
+        "'": (scanner) => scanner.lookahead === `'`,
+        '"': (scanner) => scanner.lookahead === `"`,
+        "/": (scanner) => scanner.lookahead === `/`
+    }
+
+    export const enclosedBase = (
+        s: State.V,
+        enclosing: EnclosedBaseStartChar
+    ) => {
+        const enclosed = s.r.shiftUntil(untilConditionsByChar[enclosing], {
+            inclusive: true,
+            onInputEnd: throwUnterminatedEnclosed,
+            shiftTo: enclosing
+        })
+        if (enclosing === "/") {
+            s.l.root = regexLiteralToNode(enclosed as RegexLiteralDefinition)
+        } else {
+            s.l.root = new StringLiteralNode(
+                enclosed as StringLiteralDefinition
+            )
+        }
+    }
+
     export type EnclosedBase<
-        S extends State.T.Base,
+        S extends State.T,
         Enclosing extends EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.T.From<{
-              L: Left.T.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
+        ? State.From<{
+              L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
               R: Rest
           }>
-        : State.T.Error<`${S["R"]} requires a closing ${Enclosing}.`>
+        : State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
+
+    const throwUnterminatedEnclosed: State.OnInputEndFn = (
+        scanner,
+        shifted
+    ) => {
+        throw new Error(
+            unterminatedEnclosedMessage(
+                shifted,
+                shifted[0] as EnclosedBaseStartChar
+            )
+        )
+    }
 
     export type UnenclosedBase<
-        S extends State.T.Base,
+        S extends State.T,
         Fragment extends string,
         Unscanned extends string,
         Dict
@@ -59,48 +113,13 @@ export namespace Terminal {
         : ValidateUnenclosed<S, Fragment, "", Dict>
 
     type ValidateUnenclosed<
-        S extends State.T.Base,
+        S extends State.T,
         Fragment extends string,
         Unscanned extends string,
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
-        ? State.T.From<{ L: Left.T.SetRoot<S["L"], Fragment>; R: Unscanned }>
-        : State.T.Error<`'${Fragment}' is not a builtin type and does not exist in your space.`>
-
-    export const parse = (s: State.V, ctx: Base.Parsing.Context) => {
-        if (Keyword.matches(s.scanner.lookahead)) {
-            s.root = Keyword.parse(s.scanner.lookahead)
-        } else if (AliasNode.matches(s.scanner.lookahead, ctx)) {
-            s.root = new AliasNode(s.scanner.lookahead, ctx)
-            /**
-             * The Lexer is responsible for validating EnclosedLiterals.
-             * As long as the first character is <'><"> or </>,
-             * we are assuming the rest of the token is of the expected literal type.
-             **/
-        } else if (
-            s.scanner.lookahead[0] === `'` ||
-            s.scanner.lookahead[0] === `"`
-        ) {
-            s.root = new StringLiteralNode(
-                s.scanner.lookahead as StringLiteralDefinition
-            )
-        } else if (s.scanner.lookahead[0] === `/`) {
-            s.root = regexLiteralToNode(
-                s.scanner.lookahead as RegexLiteralDefinition
-            )
-        } else if (NumberLiteralNode.matches(s.scanner.lookahead)) {
-            s.root = new NumberLiteralNode(s.scanner.lookahead)
-        } else if (BigintLiteralNode.matches(s.scanner.lookahead)) {
-            s.root = new BigintLiteralNode(s.scanner.lookahead)
-        } else if (s.scanner.lookahead === "") {
-            throw new Error("Expected an expression.")
-        } else {
-            throw new Error(
-                `'${s.scanner.lookahead}' is not a builtin type and does not exist in your space.`
-            )
-        }
-        Lexer.shiftOperator(s.scanner)
-    }
+        ? State.From<{ L: Left.SetRoot<S["L"], Fragment>; R: Unscanned }>
+        : State.Error<`'${Fragment}' is not a builtin type and does not exist in your space.`>
 }
 
 export type InferTerminalStr<
