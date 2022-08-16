@@ -5,6 +5,7 @@ import {
     Group,
     Intersection,
     List,
+    OptionalNode,
     Union
 } from "../nonTerminal/index.js"
 import { Terminal } from "../terminal/index.js"
@@ -83,13 +84,14 @@ export namespace Core {
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
         : State.Error<ExpressionExpectedMessage>
 
-    const operator = (s: State.WithRoot, ctx: Context) => {
+    const operator = (s: State.WithRoot, ctx: Context): void => {
         const lookahead = s.r.shift()
+        // TODO: Test perf vs if block
         switch (lookahead) {
             case undefined:
-                return s
+                return finalize(s, ctx)
             case "?":
-                return s
+                return finalize(s, ctx)
             case "[": {
                 const next = s.r.shift()
                 if (next !== "]") {
@@ -98,13 +100,13 @@ export namespace Core {
                 return List.reduce(s, ctx)
             }
             case "|":
-                return s
+                return Union.reduce(s, ctx)
             case "&":
-                return s
+                return Intersection.reduce(s, ctx)
             case ")":
-                return s
+                return Group.reduceClose(s)
             case " ":
-                return s
+                return operator(s, ctx)
             default:
                 if (lookahead in Bound.startChars) {
                     return s
@@ -154,8 +156,17 @@ export namespace Core {
             : State.Error<`= is not a valid comparator. Use == instead.`>
         : State.Error<`Expected a bound condition after ${Start}.`>
 
-    export const UNCLOSED_GROUP_MESSAGE = "Missing )."
-    type UnclosedGroupMessage = typeof UNCLOSED_GROUP_MESSAGE
+    export const unenclosedGroupMessage = "Missing )."
+    type UnclosedGroupMessage = typeof unenclosedGroupMessage
+
+    const finalize = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
+        if (s.l.groups.length) {
+            throw new Error(unenclosedGroupMessage)
+        }
+        Branches.mergeAll(s)
+        Bound.finalize(s)
+        applyFinalizer(s, ctx)
+    }
 
     type Finalize<S extends State.T> = State.Finalize<
         ApplyFinalizer<ExtractValidatedRoot<S["L"]>, S["R"]>
@@ -167,6 +178,15 @@ export namespace Core {
               L["bounds"]
           >
         : ErrorToken<UnclosedGroupMessage>
+
+    const applyFinalizer = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
+        if (s.r.lookahead === undefined) {
+            return
+        }
+        if (s.r.lookahead === "?") {
+            s.l.root = new OptionalNode(s.l.root, ctx)
+        }
+    }
 
     type ApplyFinalizer<
         Root,

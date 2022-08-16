@@ -6,14 +6,14 @@ import { ErrorToken } from "./tokens.js"
 
 export namespace Left {
     export type V = {
-        bounds: Bound.Partial
+        bounds: Bound.T
         groups: Branches.ValueState[]
         branches: Branches.ValueState
         root: Parse.Node | undefined
     }
 
     export type T = {
-        bounds: Bound.Partial
+        bounds: Bound.T
         groups: Branches.TypeState[]
         branches: Branches.TypeState
         root: unknown

@@ -1,6 +1,6 @@
 // TODO: Remove
 /* eslint-disable max-lines */
-import { toNumber } from "@re-/tools"
+import { isEmpty, toNumber } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import {
     boundStartChars,
@@ -22,7 +22,13 @@ import { isBoundable } from "./shared.js"
 import { SingleBoundDefinition, SingleBoundNode } from "./single.js"
 
 export namespace Bound {
-    export type Partial = {
+    export type T = {
+        left?: Bound.Left
+        bounded?: Boundable
+        rightToken?: Bound.Token
+    }
+
+    export type V = {
         left?: Bound.Left
         bounded?: Boundable
         rightToken?: Bound.Token
@@ -99,7 +105,19 @@ export namespace Bound {
     ): NonPrefixLeftBoundMessage<Value, T> =>
         `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
-    export type Finalize<Root, Bounds extends Partial> = {} extends Bounds
+    export const finalize = (s: State.V) => {
+        if (isEmpty(s.l.bounds)) {
+            return
+        }
+        if (isUnpairedLeftBound(s.l.bounds)) {
+            throw new Error(unpairedLeftBoundMessage)
+        }
+        if (s.l.root instanceof NumberLiteralNode) {
+            s.l.root = s.l.bounds.bounded
+        }
+    }
+
+    export type Finalize<Root, Bounds extends T> = {} extends Bounds
         ? Root
         : IsUnpairedLeftBound<Bounds> extends true
         ? ErrorToken<UnpairedLeftBoundMessage>
@@ -107,42 +125,44 @@ export namespace Bound {
         ? Bounds["bounded"]
         : ErrorToken<NonNumericBoundMessage<Tree.ToString<Root>>>
 
-    type IsUnpairedLeftBound<Bounds extends Partial> =
-        "left" extends keyof Bounds
-            ? "rightToken" extends keyof Bounds
-                ? false
-                : true
-            : false
+    const isUnpairedLeftBound = (bounds: T) =>
+        !!bounds.left && !bounds.rightToken
+
+    type IsUnpairedLeftBound<Bounds extends T> = "left" extends keyof Bounds
+        ? "rightToken" extends keyof Bounds
+            ? false
+            : true
+        : false
 
     export type Reduce<
-        L extends Left.T.Base,
+        L extends Left.T,
         T extends Token
-    > = L extends Left.T.WithRoot<NumberLiteralDefinition>
+    > = L extends Left.WithRoot<NumberLiteralDefinition>
         ? ReduceLeft<L, T>
         : ReduceRight<L, T>
 
     type ReduceLeft<
-        L extends Left.T.WithRoot<NumberLiteralDefinition>,
+        L extends Left.WithRoot<NumberLiteralDefinition>,
         T extends Token
-    > = Left.T.IsPrefixable<L> extends true
+    > = Left.IsPrefixable<L> extends true
         ? T extends DoubleBoundToken
-            ? Left.T.From<{
+            ? Left.From<{
                   groups: []
                   branches: {}
                   root: undefined
                   bounds: { left: [L["root"], T] }
               }>
-            : Left.T.Error<InvalidDoubleBoundMessage<T>>
-        : Left.T.Error<NonPrefixLeftBoundMessage<L["root"], T>>
+            : Left.Error<InvalidDoubleBoundMessage<T>>
+        : Left.Error<NonPrefixLeftBoundMessage<L["root"], T>>
 
     type ReduceRight<
-        L extends Left.T.Base,
+        L extends Left.T,
         T extends Bound.Token
     > = "rightToken" extends keyof L["bounds"]
-        ? Left.T.Error<`Definitions may have at most one right bound.`>
+        ? Left.Error<`Definitions may have at most one right bound.`>
         : L["root"] extends Boundable
         ? RightTokenIsValid<L, T> extends true
-            ? Left.T.From<{
+            ? Left.From<{
                   bounds: L["bounds"] & {
                       bounded: L["root"]
                       rightToken: T
@@ -151,11 +171,11 @@ export namespace Bound {
                   branches: L["branches"]
                   root: undefined
               }>
-            : Left.T.Error<InvalidDoubleBoundMessage<T>>
-        : Left.T.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
+            : Left.Error<InvalidDoubleBoundMessage<T>>
+        : Left.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
 
     type RightTokenIsValid<
-        L extends Left.T.Base,
+        L extends Left.T,
         T extends Token
     > = "left" extends keyof L["bounds"]
         ? T extends DoubleBoundToken
@@ -163,43 +183,43 @@ export namespace Bound {
             : false
         : true
 
-    export const parsePossibleLeft = (s: State.WithRoot<NumberLiteralNode>) => {
-        if (State.lookaheadIn(s, doubleBoundTokens)) {
-            parseLeft(s)
-        } else if (State.lookaheadIn(s, Bound.tokens)) {
-            // TODO: Fix
-            throw new Error("Must be < or <=.")
-        }
-    }
+    // export const parsePossibleLeft = (s: State.WithRoot<NumberLiteralNode>) => {
+    //     if (State.lookaheadIn(s, doubleBoundTokens)) {
+    //         parseLeft(s)
+    //     } else if (State.lookaheadIn(s, Bound.tokens)) {
+    //         // TODO: Fix
+    //         throw new Error("Must be < or <=.")
+    //     }
+    // }
 
-    export const parseLeft = (
-        s: State.WithLookaheadAndRoot<Bound.DoubleBoundToken, NumberLiteralNode>
-    ) => {
-        s.bounds.left = [s.root.def, s.scanner.lookahead]
-        s.root = undefined as any
-        Lexer.shiftBase(s.scanner)
-    }
+    // export const parseLeft = (
+    //     s: State.WithLookaheadAndRoot<Bound.DoubleBoundToken, NumberLiteralNode>
+    // ) => {
+    //     s.bounds.left = [s.root.def, s.scanner.lookahead]
+    //     s.root = undefined as any
+    //     Lexer.shiftBase(s.scanner)
+    // }
 
-    export const parseRight = (
-        s: State.WithLookaheadAndRoot<Bound.Token>,
-        ctx: Base.Parsing.Context
-    ) => {
-        const token = s.scanner.lookahead
-        Lexer.shiftBase(s.scanner)
-        if (NumberLiteralNode.matches(s.scanner.lookahead)) {
-            if (s.bounds.right) {
-                throw new Error(
-                    `Definitions cannot have multiple right bounds.`
-                )
-            }
-            s.root = createBound(s, [token, s.scanner.lookahead], ctx)
-            Lexer.shiftOperator(s.scanner)
-        } else {
-            throw new Error(
-                `Right side of ${token} must be a number literal (got '${s.scanner.lookahead}').`
-            )
-        }
-    }
+    // export const parseRight = (
+    //     s: State.WithLookaheadAndRoot<Bound.Token>,
+    //     ctx: Base.Parsing.Context
+    // ) => {
+    //     const token = s.scanner.lookahead
+    //     Lexer.shiftBase(s.scanner)
+    //     if (NumberLiteralNode.matches(s.scanner.lookahead)) {
+    //         if (s.bounds.right) {
+    //             throw new Error(
+    //                 `Definitions cannot have multiple right bounds.`
+    //             )
+    //         }
+    //         s.root = createBound(s, [token, s.scanner.lookahead], ctx)
+    //         Lexer.shiftOperator(s.scanner)
+    //     } else {
+    //         throw new Error(
+    //             `Right side of ${token} must be a number literal (got '${s.scanner.lookahead}').`
+    //         )
+    //     }
+    // }
 
     const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
     type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
@@ -211,49 +231,49 @@ export namespace Bound {
     ): UnboundableMessage<Root> =>
         `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
 
-    const createBound = (
-        s: State.WithRoot,
-        right: Right,
-        ctx: Base.Parsing.Context
-    ) => {
-        s.bounds.right = right
-        if (!isBoundable(s.root)) {
-            throw new Error(unboundableMessage(s.root.toString()))
-        }
-        if (isDoubleBoundCandidate(s.bounds)) {
-            return new DoubleBoundNode(
-                s.root,
-                validateDoubleBound(s.bounds),
-                ctx
-            )
-        } else {
-            return new SingleBoundNode(
-                s.root,
-                validateSingleBound(s.bounds.right),
-                ctx
-            )
-        }
-    }
+    // const createBound = (
+    //     s: State.WithRoot,
+    //     right: Right,
+    //     ctx: Base.Parsing.Context
+    // ) => {
+    //     s.bounds.right = right
+    //     if (!isBoundable(s.root)) {
+    //         throw new Error(unboundableMessage(s.root.toString()))
+    //     }
+    //     if (isDoubleBoundCandidate(s.bounds)) {
+    //         return new DoubleBoundNode(
+    //             s.root,
+    //             validateDoubleBound(s.bounds),
+    //             ctx
+    //         )
+    //     } else {
+    //         return new SingleBoundNode(
+    //             s.root,
+    //             validateSingleBound(s.bounds.right),
+    //             ctx
+    //         )
+    //     }
+    // }
 
-    const validateSingleBound = (bound: Right): SingleBoundDefinition => {
-        return [bound[0], toNumber(bound[1])]
-    }
+    // const validateSingleBound = (bound: Right): SingleBoundDefinition => {
+    //     return [bound[0], toNumber(bound[1])]
+    // }
 
-    const validateDoubleBound = (
-        bounds: Bound.RawDouble
-    ): DoubleBoundDefinition => {
-        // TODO: get this to work at runtime.
-        if (!bounds.right) {
-            throw new Error(unpairedLeftBoundMessage)
-        }
-        if (!isDoubleBoundToken(bounds.right[0])) {
-            throw new Error(
-                invalidDoubleBoundMessage(bounds.left[1], bounds.right[0])
-            )
-        }
-        return {
-            lower: [toNumber(bounds.left[0]), bounds.left[1]],
-            upper: [bounds.right[0], toNumber(bounds.right[1])]
-        }
-    }
+    // const validateDoubleBound = (
+    //     bounds: Bound.RawDouble
+    // ): DoubleBoundDefinition => {
+    //     // TODO: get this to work at runtime.
+    //     if (!bounds.right) {
+    //         throw new Error(unpairedLeftBoundMessage)
+    //     }
+    //     if (!isDoubleBoundToken(bounds.right[0])) {
+    //         throw new Error(
+    //             invalidDoubleBoundMessage(bounds.left[1], bounds.right[0])
+    //         )
+    //     }
+    //     return {
+    //         lower: [toNumber(bounds.left[0]), bounds.left[1]],
+    //         upper: [bounds.right[0], toNumber(bounds.right[1])]
+    //     }
+    // }
 }
