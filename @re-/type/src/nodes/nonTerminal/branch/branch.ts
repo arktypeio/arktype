@@ -27,7 +27,7 @@ export namespace Branches {
         MergeExpression<B["intersection"], Root>
     >
 
-    export const mergeAll = (s: State.Value) => {
+    export const mergeAll = (s: State.V) => {
         // TODO: Clearer way to show these can be undefined
         Intersection.merge(s)
         Union.merge(s)

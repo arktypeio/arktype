@@ -38,17 +38,17 @@ export namespace Terminal {
         : false
 
     export type EnclosedBase<
-        S extends State.Base,
+        S extends State.T.Base,
         Enclosing extends EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.From<{
-              L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
+        ? State.T.From<{
+              L: Left.T.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
               R: Rest
           }>
-        : State.Error<`${S["R"]} requires a closing ${Enclosing}.`>
+        : State.T.Error<`${S["R"]} requires a closing ${Enclosing}.`>
 
     export type UnenclosedBase<
-        S extends State.Base,
+        S extends State.T.Base,
         Fragment extends string,
         Unscanned extends string,
         Dict
@@ -59,15 +59,15 @@ export namespace Terminal {
         : ValidateUnenclosed<S, Fragment, "", Dict>
 
     type ValidateUnenclosed<
-        S extends State.Base,
+        S extends State.T.Base,
         Fragment extends string,
         Unscanned extends string,
         Dict
     > = Terminal.IsResolvableUnenclosed<Fragment, Dict> extends true
-        ? State.From<{ L: Left.SetRoot<S["L"], Fragment>; R: Unscanned }>
-        : State.Error<`'${Fragment}' is not a builtin type and does not exist in your space.`>
+        ? State.T.From<{ L: Left.T.SetRoot<S["L"], Fragment>; R: Unscanned }>
+        : State.T.Error<`'${Fragment}' is not a builtin type and does not exist in your space.`>
 
-    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.V, ctx: Base.Parsing.Context) => {
         if (Keyword.matches(s.scanner.lookahead)) {
             s.root = Keyword.parse(s.scanner.lookahead)
         } else if (AliasNode.matches(s.scanner.lookahead, ctx)) {

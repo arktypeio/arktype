@@ -1,7 +1,7 @@
 import { TypeOfResult } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import { Left, State } from "../../parser/index.js"
-import { Lexer } from "../../parser/lexer.js"
+import { Lexer } from "../../parser/scanner.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"
@@ -32,14 +32,14 @@ export namespace Union {
         ]
     }
 
-    export type Reduce<L extends Left.Base> = Left.From<{
+    export type Reduce<L extends Left.T.Base> = Left.T.From<{
         bounds: L["bounds"]
         groups: L["groups"]
         branches: PushRoot<L["branches"], L["root"]>
         root: undefined
     }>
 
-    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.V, ctx: Base.Parsing.Context) => {
         Intersection.merge(s)
         if (!s.branches.union) {
             s.branches.union = new UnionNode([s.root!], ctx)
@@ -50,7 +50,7 @@ export namespace Union {
         Lexer.shiftBase(s.scanner)
     }
 
-    export const merge = (s: State.Value) => {
+    export const merge = (s: State.V) => {
         if (s.branches.union) {
             Intersection.merge(s)
             // TODO: Find a better way to deal with all these!

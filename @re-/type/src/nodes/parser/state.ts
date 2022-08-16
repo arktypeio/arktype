@@ -2,11 +2,17 @@ import { ClassOf, InstanceOf } from "@re-/tools"
 import { Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
-import { Lexer } from "./lexer.js"
-import { ErrorToken, TokenSet } from "./tokens.js"
+import { ErrorToken } from "./tokens.js"
 
 export namespace Left {
-    export type Base = {
+    export type V = {
+        bounds: Bound.Partial
+        groups: Branches.ValueState[]
+        branches: Branches.ValueState
+        root: Parse.Node | undefined
+    }
+
+    export type T = {
         bounds: Bound.Partial
         groups: Branches.TypeState[]
         branches: Branches.TypeState
@@ -14,7 +20,12 @@ export namespace Left {
         done?: true
     }
 
-    export type From<T extends Base> = T
+    export const initial = {
+        bounds: {},
+        groups: [],
+        branches: {},
+        root: undefined
+    }
 
     export type Initial = From<{
         bounds: {}
@@ -23,12 +34,14 @@ export namespace Left {
         root: undefined
     }>
 
-    export type IsPrefixable<T extends Base> = From<{
+    export type From<L extends T> = L
+
+    export type IsPrefixable<L extends T> = From<{
         bounds: {}
         groups: []
         branches: {}
         root: any
-    }> extends T
+    }> extends L
         ? true
         : false
 
@@ -40,12 +53,12 @@ export namespace Left {
         done: true
     }>
 
-    export type WithRoot<Node> = SetRoot<Base, Node>
+    export type WithRoot<Node> = SetRoot<T, Node>
 
-    export type SetRoot<T extends Base, Node> = From<{
-        bounds: T["bounds"]
-        groups: T["groups"]
-        branches: T["branches"]
+    export type SetRoot<L extends T, Node> = From<{
+        bounds: L["bounds"]
+        groups: L["groups"]
+        branches: L["branches"]
         root: Node
     }>
 
@@ -53,10 +66,29 @@ export namespace Left {
 }
 
 export namespace State {
-    export type Base = {
-        L: Left.Base
+    export type V = {
+        l: Left.V
+        r: Scanner
+    }
+
+    export type T = {
+        L: Left.T
         R: string
     }
+
+    export const initialize = (def: string): V => {
+        const scanner = new Scanner(def)
+        //Lexer.shiftBase(scanner)
+        return {
+            l: Left.initial,
+            r: scanner
+        }
+    }
+
+    export type Initialize<Def extends string> = From<{
+        L: Left.Initial
+        R: Def
+    }>
 
     export type Final = {
         L: {
@@ -70,9 +102,9 @@ export namespace State {
         R: ""
     }>
 
-    export type From<S extends Base> = S
+    export type From<S extends T> = S
 
-    export type ScanTo<S extends Base, Unscanned extends string> = From<{
+    export type ScanTo<S extends T, Unscanned extends string> = From<{
         L: S["L"]
         R: Unscanned
     }>
@@ -82,61 +114,38 @@ export namespace State {
         R: ""
     }
 
-    export type Initial<Def extends string> = From<{
-        L: Left.Initial
-        R: Def
-    }>
-
-    export type Value = {
-        groups: Branches.ValueState[]
-        branches: Branches.ValueState
-        bounds: Bound.Raw
-        root: Parse.Node | undefined
-        scanner: Lexer.ValueScanner
-    }
-
-    export type WithLookaheadAndRoot<
-        Lookahead extends string,
-        Root extends Parse.Node = Parse.Node
-    > = Value & {
-        R: Lexer.ValueScanner<Lookahead>
-        root: Root
-    }
-
-    export type WithLookahead<Lookahead extends string> = Value & {
-        R: Lexer.ValueScanner<Lookahead>
-    }
-
-    export type WithRoot<Root extends Parse.Node = Parse.Node> = Value & {
-        root: Root
-    }
-
-    export const lookaheadIs = <Token extends string>(
-        state: Value,
-        token: Token
-    ): state is WithLookahead<Token> => state.scanner.lookaheadIs(token)
-
-    export const lookaheadIn = <Tokens extends TokenSet>(
-        state: Value,
-        tokens: Tokens
-    ): state is WithLookahead<Extract<keyof Tokens, string>> =>
-        state.scanner.lookaheadIn(tokens)
-
-    export const rootIs = <NodeClass extends ClassOf<Parse.Node>>(
-        state: Value,
-        nodeClass: NodeClass
-    ): state is WithRoot<InstanceOf<NodeClass>> =>
-        state.root instanceof nodeClass
-
-    export const initialize = (def: string): Value => {
-        const scanner = new Lexer.ValueScanner(def)
-        Lexer.shiftBase(scanner)
-        return {
-            groups: [],
-            branches: {},
-            bounds: {},
-            root: undefined,
-            scanner
+    export type WithRoot<Root extends Parse.Node = Parse.Node> = V & {
+        L: {
+            root: Root
         }
     }
+
+    export class Scanner {
+        private chars: string[]
+        private i: number
+
+        constructor(def: string) {
+            this.chars = [...def]
+            this.i = 0
+        }
+
+        shift() {
+            const char = this.chars[this.i]
+            this.i++
+            return char
+        }
+
+        get lookahead() {
+            return this.chars[this.i]
+        }
+
+        next() {
+            this.i++
+        }
+    }
+
+    export const rootIs = <NodeClass extends ClassOf<Parse.Node>>(
+        S: V,
+        nodeClass: NodeClass
+    ): S is WithRoot<InstanceOf<NodeClass>> => S.l.root instanceof nodeClass
 }

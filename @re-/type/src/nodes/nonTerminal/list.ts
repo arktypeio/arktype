@@ -1,16 +1,19 @@
 import { Base } from "../base/index.js"
 import { Left, Scan, State } from "../parser/index.js"
-import { Lexer } from "../parser/lexer.js"
+import { Lexer } from "../parser/scanner.js"
 import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
-    export const parse = (s: State.Value, ctx: Base.Parsing.Context) => {
+    export const parse = (s: State.V, ctx: Base.Parsing.Context) => {
         s.root = new ListNode(s.root!, ctx)
         Lexer.shiftOperator(s.scanner)
     }
 
-    export type Reduce<L extends Left.Base> = Left.SetRoot<L, [L["root"], "[]"]>
+    export type Reduce<L extends Left.T.Base> = Left.T.SetRoot<
+        L,
+        [L["root"], "[]"]
+    >
 
     export const shiftToken = (scanner: Lexer.ValueScanner<"[">) => {
         if (scanner.next !== "]") {

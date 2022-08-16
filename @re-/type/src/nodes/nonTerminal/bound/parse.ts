@@ -115,34 +115,34 @@ export namespace Bound {
             : false
 
     export type Reduce<
-        L extends Left.Base,
+        L extends Left.T.Base,
         T extends Token
-    > = L extends Left.WithRoot<NumberLiteralDefinition>
+    > = L extends Left.T.WithRoot<NumberLiteralDefinition>
         ? ReduceLeft<L, T>
         : ReduceRight<L, T>
 
     type ReduceLeft<
-        L extends Left.WithRoot<NumberLiteralDefinition>,
+        L extends Left.T.WithRoot<NumberLiteralDefinition>,
         T extends Token
-    > = Left.IsPrefixable<L> extends true
+    > = Left.T.IsPrefixable<L> extends true
         ? T extends DoubleBoundToken
-            ? Left.From<{
+            ? Left.T.From<{
                   groups: []
                   branches: {}
                   root: undefined
                   bounds: { left: [L["root"], T] }
               }>
-            : Left.Error<InvalidDoubleBoundMessage<T>>
-        : Left.Error<NonPrefixLeftBoundMessage<L["root"], T>>
+            : Left.T.Error<InvalidDoubleBoundMessage<T>>
+        : Left.T.Error<NonPrefixLeftBoundMessage<L["root"], T>>
 
     type ReduceRight<
-        L extends Left.Base,
+        L extends Left.T.Base,
         T extends Bound.Token
     > = "rightToken" extends keyof L["bounds"]
-        ? Left.Error<`Definitions may have at most one right bound.`>
+        ? Left.T.Error<`Definitions may have at most one right bound.`>
         : L["root"] extends Boundable
         ? RightTokenIsValid<L, T> extends true
-            ? Left.From<{
+            ? Left.T.From<{
                   bounds: L["bounds"] & {
                       bounded: L["root"]
                       rightToken: T
@@ -151,11 +151,11 @@ export namespace Bound {
                   branches: L["branches"]
                   root: undefined
               }>
-            : Left.Error<InvalidDoubleBoundMessage<T>>
-        : Left.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
+            : Left.T.Error<InvalidDoubleBoundMessage<T>>
+        : Left.T.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
 
     type RightTokenIsValid<
-        L extends Left.Base,
+        L extends Left.T.Base,
         T extends Token
     > = "left" extends keyof L["bounds"]
         ? T extends DoubleBoundToken
