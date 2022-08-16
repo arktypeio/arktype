@@ -1,2 +1,2 @@
-export * from "./assert.js"
-export * from "./bench/index.js"
+export { assert } from "./assert.js"
+export { bench } from "./bench/index.js"
