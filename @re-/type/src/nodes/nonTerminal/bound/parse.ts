@@ -5,6 +5,7 @@ import { Base } from "../../base/index.js"
 import {
     boundChars,
     boundTokens,
+    Core,
     ErrorToken,
     inTokenSet,
     Left,
@@ -87,9 +88,9 @@ export namespace Bound {
         Start extends Bound.Char,
         Unscanned extends string
     > = Unscanned extends Scan<"=", infer Rest>
-        ? State.From<{ L: Bound.Reduce<S["L"], `${Start}=`>; R: Rest }>
+        ? Reduce<S["L"], `${Start}=`, Rest>
         : Start extends SingleCharBoundToken
-        ? State.From<{ L: Bound.Reduce<S["L"], Start>; R: Unscanned }>
+        ? Reduce<S["L"], Start, Unscanned>
         : State.Error<SingleEqualsMessage>
 
     const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
@@ -132,10 +133,14 @@ export namespace Bound {
 
     export type Reduce<
         L extends Left.T,
-        T extends Token
+        T extends Token,
+        Unscanned extends string
     > = L extends Left.WithRoot<NumberLiteralDefinition>
-        ? ReduceLeft<L, T>
-        : ReduceRight<L, T>
+        ? State.From<{ L: ReduceLeft<L, T>; R: Unscanned }>
+        : Finalize<{
+              L: ReduceRight<Core.FinalizeExpression<L>, T>
+              R: Unscanned
+          }>
 
     const reduceLeft = (
         s: State.WithRoot<NumberLiteralNode>,
@@ -180,18 +185,22 @@ export namespace Bound {
     type ReduceRight<
         L extends Left.T,
         T extends Bound.Token
-    > = "rightToken" extends keyof L["bounds"]
+    > = L["done"] extends true
+        ? // If expression finalization results in an error, just return right away
+          L
+        : "rightToken" extends keyof L["bounds"]
         ? Left.Error<MultipleRightBoundsMessage>
         : // TODO: We need to merge before we check this
         L["root"] extends BoundableT
-        ? RightTokenIsValid<L, T> extends true
-            ? Left.From<{
+        ? RightTokenIsValid<L["bounds"], T> extends true
+            ? // TODO: Maybe have a suffix state?
+              Left.From<{
                   bounds: L["bounds"] & {
                       bounded: L["root"]
                       rightToken: T
                   }
-                  groups: L["groups"]
-                  branches: L["branches"]
+                  groups: []
+                  branches: {}
                   root: undefined
               }>
             : Left.Error<InvalidDoubleBoundMessage<T>>
@@ -201,9 +210,9 @@ export namespace Bound {
     type MultipleRightBoundsMessage = typeof multipleRightBoundsMessage
 
     type RightTokenIsValid<
-        L extends Left.T,
+        Bounds extends Bound.T,
         T extends Token
-    > = "left" extends keyof L["bounds"]
+    > = "left" extends keyof Bounds
         ? T extends DoubleBoundToken
             ? true
             : false
@@ -221,13 +230,27 @@ export namespace Bound {
         }
     }
 
-    export type Finalize<Root, Bounds extends T> = {} extends Bounds
-        ? Root
-        : IsUnpairedLeftBound<Bounds> extends true
-        ? ErrorToken<UnpairedLeftBoundMessage>
-        : Root extends NumberLiteralDefinition
-        ? Bounds["bounded"]
-        : ErrorToken<NonNumericBoundMessage<Tree.ToString<Root>>>
+    type SuffixesWithRightBound<
+        N extends NumberLiteralDefinition,
+        Finalizing extends "" | "?"
+    > = `${N}${Finalizing}`
+
+    export type Finalize<S extends State.T> = {} extends S["L"]["bounds"]
+        ? S
+        : IsUnpairedLeftBound<S["L"]["bounds"]> extends true
+        ? State.Error<UnpairedLeftBoundMessage>
+        : S["R"] extends SuffixesWithRightBound<infer N, infer Finalizing>
+        ? Core.Finalize<{
+              L: {
+                  bounds: {}
+                  groups: []
+                  branches: {}
+                  root: S["L"]["bounds"]["bounded"]
+              }
+              R: Finalizing
+          }>
+        : // TODO: Update error message
+          State.Error<NonNumericBoundMessage<Tree.ToString<S["R"]>>>
 
     const isUnpairedLeftBound = (bounds: V) =>
         !!bounds.left && !bounds.rightToken

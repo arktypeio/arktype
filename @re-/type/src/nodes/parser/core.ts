@@ -73,7 +73,7 @@ export namespace Core {
         }
     }
 
-    type Base<S extends State.T, Dict> = S["R"] extends Scan<
+    export type Base<S extends State.T, Dict> = S["R"] extends Scan<
         infer Next,
         infer Rest
     >
@@ -117,7 +117,7 @@ export namespace Core {
         infer Rest
     >
         ? Next extends "?"
-            ? Finalize<S>
+            ? Finalize<{ L: FinalizeExpression<S["L"]>; R: S["R"] }>
             : Next extends "["
             ? List.ShiftReduce<S, Rest>
             : Next extends "|"
@@ -131,7 +131,7 @@ export namespace Core {
             : Next extends " "
             ? Operator<State.ScanTo<S, Rest>>
             : State.Error<UnexpectedOperatorMessage<Next>>
-        : Finalize<S>
+        : Finalize<{ L: FinalizeExpression<S["L"]>; R: S["R"] }>
 
     const unexpectedOperatorMessage = <Token extends string>(
         token: Token
@@ -152,13 +152,18 @@ export namespace Core {
         applyFinalizer(s, ctx)
     }
 
-    type Finalize<S extends State.T> = State.Finalize<
-        ApplyFinalizer<ExtractValidatedRoot<S["L"]>, S["R"]>
-    >
+    export type FinalizeExpression<L extends Left.T> = L["groups"] extends []
+        ? Left.From<{
+              bounds: L["bounds"]
+              groups: []
+              branches: {}
+              root: Branches.MergeAll<L["branches"], L["root"]>
+          }>
+        : Left.Error<UnclosedGroupMessage>
 
-    type ExtractValidatedRoot<L extends Left.T> = L["groups"] extends []
-        ? Branches.MergeAll<L["branches"], L["root"]>
-        : ErrorToken<UnclosedGroupMessage>
+    export type Finalize<S extends State.T> = ParseSuffixes<S> & {
+        L: { done: true }
+    }
 
     const applyFinalizer = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
         if (s.r.lookahead === undefined) {
@@ -169,14 +174,15 @@ export namespace Core {
         }
     }
 
-    type ApplyFinalizer<
-        Root,
-        Unscanned extends string
-    > = Root extends ErrorToken<string>
-        ? Root
-        : Unscanned extends ""
-        ? Root
-        : Unscanned extends "?"
-        ? [Root, "?"]
-        : ErrorToken<`Suffix '?' is only valid at the end of a definition.`>
+    type ParseSuffixes<S extends State.T> =
+        S["L"]["root"] extends ErrorToken<string>
+            ? S
+            : S["R"] extends ""
+            ? S
+            : S["R"] extends "?"
+            ? State.From<{
+                  L: Left.SetRoot<S["L"], [S["L"]["root"], "?"]>
+                  R: ""
+              }>
+            : State.Error<`Suffix '?' is only valid at the end of a definition (got '${S["R"]}').`>
 }
