@@ -8,6 +8,7 @@ import {
     SyntaxKind
 } from "ts-morph"
 import { PackageJson } from "type-fest"
+import { getEntryPointsToRelativeDtsPaths } from "../utils.js"
 
 export type ApiEntryPoint = {
     subpath: string
@@ -34,33 +35,6 @@ export const extractPackageApi = ({
             subpath,
             exports: extractExportsFromDts(entryPointDts)
         }
-    })
-}
-
-const hasTypesExport = (
-    conditions: PackageJson.Exports
-): conditions is { types: string } =>
-    typeof conditions === "object" &&
-    conditions !== null &&
-    "types" in conditions
-
-type EntryPointPathEntry = [string, string]
-
-const getEntryPointsToRelativeDtsPaths = (
-    packageJson: PackageJson
-): EntryPointPathEntry[] => {
-    if (!packageJson.exports) {
-        throw new Error(
-            `Package '${packageJson.name}' requires an 'exports' field in its package.json.`
-        )
-    }
-    return Object.entries(packageJson.exports).map(([path, conditions]) => {
-        if (!hasTypesExport(conditions)) {
-            throw new Error(
-                `Export ${path} from package.json in '${packageJson.name}' requires a 'types' key.`
-            )
-        }
-        return [path, conditions.types]
     })
 }
 
