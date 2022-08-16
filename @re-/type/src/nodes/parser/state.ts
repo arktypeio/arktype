@@ -140,9 +140,7 @@ export namespace State {
         }
 
         shift() {
-            const char = this.chars[this.i]
-            this.i++
-            return char
+            return this.chars[this.i++]
         }
 
         get lookahead() {

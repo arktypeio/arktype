@@ -12,7 +12,8 @@ import { Left, State } from "./state.js"
 import {
     EnclosedBaseStartChar,
     enclosedBaseStartChars,
-    ErrorToken
+    ErrorToken,
+    inTokenSet
 } from "./tokens.js"
 
 export type Context = Base.Parsing.Context
@@ -54,18 +55,18 @@ export namespace Core {
     const expressionExpectedMessage = `Expected an expression.`
     type ExpressionExpectedMessage = typeof expressionExpectedMessage
 
-    const base = (s: State.V, ctx: Context): State.V => {
+    const base = (s: State.V, ctx: Context): void => {
         const lookahead = s.r.shift()
-        if (!lookahead) {
+        if (lookahead === "(") {
+        } else if (inTokenSet(lookahead, enclosedBaseStartChars)) {
+            Terminal.enclosedBase(s, lookahead)
+        } else if (lookahead === " ") {
+            base(s, ctx)
+        } else if (lookahead === undefined) {
             throw new Error(expressionExpectedMessage)
+        } else {
+            Terminal.unenclosedBase(s, ctx)
         }
-        return lookahead === "("
-            ? s
-            : lookahead in enclosedBaseStartChars
-            ? s
-            : lookahead === " "
-            ? base(s, ctx)
-            : s
     }
 
     type Base<S extends State.T, Dict> = S["R"] extends Scan<
