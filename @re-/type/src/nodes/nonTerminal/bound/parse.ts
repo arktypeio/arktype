@@ -3,11 +3,10 @@
 import { isEmpty, toNumber } from "@re-/tools"
 import { Base } from "../../base/index.js"
 import {
-    boundStartChars,
+    boundChars,
     boundTokens,
     ErrorToken,
     inTokenSet,
-    Left,
     Left,
     Scan,
     State,
@@ -38,11 +37,11 @@ export namespace Bound {
 
     export const tokens = boundTokens
 
-    export const startChars = boundStartChars
+    export const chars = boundChars
 
     export type Token = keyof typeof tokens
 
-    export type Char = keyof typeof startChars
+    export type Char = keyof typeof chars
 
     export type DoubleBoundToken = keyof typeof doubleBoundTokens
 
@@ -51,9 +50,12 @@ export namespace Bound {
         "<=": 1
     })
 
-    // export const isDoubleBoundToken = (
-    //     token: string
-    // ): token is DoubleBoundToken => token in doubleBoundTokens
+    const singleCharBoundTokens = tokenSet({
+        "<": 1,
+        ">": 1
+    })
+
+    type SingleCharBoundToken = keyof typeof singleCharBoundTokens
 
     export type Left = [NumberLiteralDefinition, DoubleBoundToken]
 
@@ -69,27 +71,29 @@ export namespace Bound {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    export const shiftToken = (scanner: Lexer.ValueScanner<Bound.Char>) => {
-        if (scanner.next === "=") {
-            scanner.shift()
-        } else if (scanner.lookahead === "=") {
-            throw new Error(`= is not a valid comparator. Use == instead.`)
+    export const shiftReduce = (s: State.WithRoot, start: Bound.Char) => {
+        if (s.r.lookahead === "=") {
+            s.r.shift()
+            reduce(s, `${start}${s.r.lookahead}`)
+        } else if (inTokenSet(start, singleCharBoundTokens)) {
+            reduce(s, start)
+        } else {
+            throw new Error(singleEqualsMessage)
         }
     }
-
-    type SingleCharBoundToken = ">" | "<"
 
     export type ShiftReduce<
         S extends State.T,
         Start extends Bound.Char,
         Unscanned extends string
-    > = Unscanned extends Scan<infer PossibleSecondChar, infer Rest>
-        ? PossibleSecondChar extends "="
-            ? State.From<{ L: Bound.Reduce<S["L"], `${Start}=`>; R: Rest }>
-            : Start extends SingleCharBoundToken
-            ? State.From<{ L: Bound.Reduce<S["L"], Start>; R: Unscanned }>
-            : State.Error<`= is not a valid comparator. Use == instead.`>
-        : State.Error<`Expected a bound condition after ${Start}.`>
+    > = Unscanned extends Scan<"=", infer Rest>
+        ? State.From<{ L: Bound.Reduce<S["L"], `${Start}=`>; R: Rest }>
+        : Start extends SingleCharBoundToken
+        ? State.From<{ L: Bound.Reduce<S["L"], Start>; R: Unscanned }>
+        : State.Error<SingleEqualsMessage>
+
+    const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
+    type SingleEqualsMessage = typeof singleEqualsMessage
 
     type InvalidDoubleBoundMessage<T extends Token> =
         `Double-bound expressions must specify their bounds using < or <= (got ${T}).`
@@ -225,7 +229,7 @@ export namespace Bound {
         ? Bounds["bounded"]
         : ErrorToken<NonNumericBoundMessage<Tree.ToString<Root>>>
 
-    const isUnpairedLeftBound = (bounds: T) =>
+    const isUnpairedLeftBound = (bounds: V) =>
         !!bounds.left && !bounds.rightToken
 
     type IsUnpairedLeftBound<Bounds extends T> = "left" extends keyof Bounds
@@ -243,44 +247,6 @@ export namespace Bound {
         Root: Root
     ): UnboundableMessage<Root> =>
         `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
-
-    // export const parsePossibleLeft = (s: State.WithRoot<NumberLiteralNode>) => {
-    //     if (State.lookaheadIn(s, doubleBoundTokens)) {
-    //         parseLeft(s)
-    //     } else if (State.lookaheadIn(s, Bound.tokens)) {
-    //         // TODO: Fix
-    //         throw new Error("Must be < or <=.")
-    //     }
-    // }
-
-    // export const parseLeft = (
-    //     s: State.WithLookaheadAndRoot<Bound.DoubleBoundToken, NumberLiteralNode>
-    // ) => {
-    //     s.bounds.left = [s.root.def, s.scanner.lookahead]
-    //     s.root = undefined as any
-    //     Lexer.shiftBase(s.scanner)
-    // }
-
-    // export const parseRight = (
-    //     s: State.WithLookaheadAndRoot<Bound.Token>,
-    //     ctx: Base.Parsing.Context
-    // ) => {
-    //     const token = s.scanner.lookahead
-    //     Lexer.shiftBase(s.scanner)
-    //     if (NumberLiteralNode.matches(s.scanner.lookahead)) {
-    //         if (s.bounds.right) {
-    //             throw new Error(
-    //                 `Definitions cannot have multiple right bounds.`
-    //             )
-    //         }
-    //         s.root = createBound(s, [token, s.scanner.lookahead], ctx)
-    //         Lexer.shiftOperator(s.scanner)
-    //     } else {
-    //         throw new Error(
-    //             `Right side of ${token} must be a number literal (got '${s.scanner.lookahead}').`
-    //         )
-    //     }
-    // }
 
     // const createBound = (
     //     s: State.WithRoot,
@@ -303,28 +269,6 @@ export namespace Bound {
     //             validateSingleBound(s.bounds.right),
     //             ctx
     //         )
-    //     }
-    // }
-
-    // const validateSingleBound = (bound: Right): SingleBoundDefinition => {
-    //     return [bound[0], toNumber(bound[1])]
-    // }
-
-    // const validateDoubleBound = (
-    //     bounds: Bound.RawDouble
-    // ): DoubleBoundDefinition => {
-    //     // TODO: get this to work at runtime.
-    //     if (!bounds.right) {
-    //         throw new Error(unpairedLeftBoundMessage)
-    //     }
-    //     if (!isDoubleBoundToken(bounds.right[0])) {
-    //         throw new Error(
-    //             invalidDoubleBoundMessage(bounds.left[1], bounds.right[0])
-    //         )
-    //     }
-    //     return {
-    //         lower: [toNumber(bounds.left[0]), bounds.left[1]],
-    //         upper: [bounds.right[0], toNumber(bounds.right[1])]
     //     }
     // }
 }

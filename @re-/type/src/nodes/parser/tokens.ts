@@ -18,7 +18,7 @@ export const enclosedBaseStartChars = tokenSet({
 
 export type EnclosedBaseStartChar = keyof typeof enclosedBaseStartChars
 
-export const boundStartChars = tokenSet({
+export const boundChars = tokenSet({
     "<": 1,
     ">": 1,
     "=": 1
@@ -33,7 +33,7 @@ export const boundTokens = tokenSet({
 })
 
 export const baseTerminatingChars = tokenSet({
-    ...boundStartChars,
+    ...boundChars,
     "?": 1,
     "|": 1,
     "&": 1,

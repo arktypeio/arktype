@@ -46,8 +46,10 @@ export namespace Core {
         ? S["L"]["root"]
         : Loop<Next<S, Dict>, Dict>
 
-    const next = (S: State.V, ctx: Context) =>
-        S.l.root === undefined ? base(S, ctx) : operator(S, ctx)
+    const next = (s: State.V, ctx: Context) =>
+        s.l.root === undefined
+            ? base(s, ctx)
+            : operator(s as State.WithRoot, ctx)
 
     type Next<S extends State.T, Dict> = S["L"]["root"] extends undefined
         ? Base<S, Dict>
@@ -92,9 +94,8 @@ export namespace Core {
                 return finalize(s, ctx)
             case "?":
                 return finalize(s, ctx)
-            case "[": {
+            case "[":
                 return List.shiftReduce(s, ctx)
-            }
             case "|":
                 return Union.reduce(s, ctx)
             case "&":
@@ -104,8 +105,8 @@ export namespace Core {
             case " ":
                 return operator(s, ctx)
             default:
-                if (lookahead in Bound.startChars) {
-                    return s
+                if (inTokenSet(lookahead, Bound.chars)) {
+                    return Bound.shiftReduce(s, lookahead)
                 }
                 throw new Error("Unexpected operator.")
         }

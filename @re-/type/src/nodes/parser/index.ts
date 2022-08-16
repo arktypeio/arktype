@@ -1,6 +1,5 @@
 export * from "./tree.js"
 export * from "./core.js"
-export * from "./scanner.js"
 export * from "./naive.js"
 export * from "./tokens.js"
 export * from "./state.js"

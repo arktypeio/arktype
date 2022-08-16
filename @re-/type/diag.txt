@@ -1,191 +1,23 @@
-src/__tests__/references.test.ts(122,31): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(122,38): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(122,43): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(122,50): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(122,55): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/references.test.ts(122,60): error TS2322: Type 'string' is not assignable to type 'never'.
-src/__tests__/space/declare.test.ts(37,9): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/meta.test.ts(83,13): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/meta.test.ts(88,9): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/meta.test.ts(95,13): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/type.test.ts(9,13): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/type.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/type.test.ts(30,13): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/type.test.ts(108,17): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/space/validation.test.ts(46,13): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/bound.test.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/bound.test.ts(31,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/bound.test.ts(37,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/bound.test.ts(43,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/bound.test.ts(49,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/bound.test.ts(55,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/bound.test.ts(61,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/list.test.ts(15,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/list.test.ts(21,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/list.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/optional.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/optional.test.ts(33,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/optional.test.ts(42,25): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/optional.test.ts(51,21): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(68,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(76,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(84,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(92,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(100,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(108,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(116,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(124,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/parenthesized.test.ts(132,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/str.test.ts(20,13): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/__tests__/str.test.ts(23,9): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/bound/parse.ts(10,5): error TS2305: Module '"../../parser/index.js"' has no exported member 'Lexer'.
-src/nodes/nonTerminal/bound/parse.ts(118,26): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/bound/parse.ts(120,26): error TS2713: Cannot access 'T.WithRoot' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'WithRoot' in 'T' with 'T["WithRoot"]'?
-src/nodes/nonTerminal/bound/parse.ts(125,26): error TS2713: Cannot access 'T.WithRoot' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'WithRoot' in 'T' with 'T["WithRoot"]'?
-src/nodes/nonTerminal/bound/parse.ts(127,16): error TS2713: Cannot access 'T.IsPrefixable' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'IsPrefixable' in 'T' with 'T["IsPrefixable"]'?
-src/nodes/nonTerminal/bound/parse.ts(129,22): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/nonTerminal/bound/parse.ts(135,22): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/nonTerminal/bound/parse.ts(136,18): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/nonTerminal/bound/parse.ts(139,26): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/bound/parse.ts(142,18): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/nonTerminal/bound/parse.ts(145,22): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/nonTerminal/bound/parse.ts(154,22): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/nonTerminal/bound/parse.ts(155,18): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/nonTerminal/bound/parse.ts(158,26): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/bound/parse.ts(167,19): error TS2339: Property 'lookaheadIn' does not exist on type 'typeof State'.
-src/nodes/nonTerminal/bound/parse.ts(169,26): error TS2339: Property 'lookaheadIn' does not exist on type 'typeof State'.
-src/nodes/nonTerminal/bound/parse.ts(176,18): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/nodes/parser/state".State' has no exported member 'WithLookaheadAndRoot'.
-src/nodes/nonTerminal/bound/parse.ts(184,18): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/nodes/parser/state".State' has no exported member 'WithLookaheadAndRoot'.
-src/nodes/nonTerminal/bound/parse.ts(219,11): error TS2339: Property 'bounds' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(220,28): error TS2339: Property 'root' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(221,50): error TS2339: Property 'root' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(223,13): error TS2304: Cannot find name 'isDoubleBoundCandidate'.
-src/nodes/nonTerminal/bound/parse.ts(223,38): error TS2339: Property 'bounds' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(225,19): error TS2339: Property 'root' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(226,39): error TS2339: Property 'bounds' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(231,19): error TS2339: Property 'root' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(232,39): error TS2339: Property 'bounds' does not exist on type 'WithRoot<Node>'.
-src/nodes/nonTerminal/bound/parse.ts(243,23): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/nodes/nonTerminal/bound/parse".Bound' has no exported member 'RawDouble'.
-src/nodes/nonTerminal/bound/parse.ts(251,59): error TS2554: Expected 1 arguments, but got 2.
-src/nodes/nonTerminal/branch/__tests__/intersection.test.ts(21,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/intersection.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/__tests__/union.test.ts(39,21): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/branch/intersection.ts(3,23): error TS2307: Cannot find module '../../parser/scanner.js' or its corresponding type declarations.
-src/nodes/nonTerminal/branch/intersection.ts(13,41): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/branch/intersection.ts(13,56): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/nonTerminal/branch/intersection.ts(21,16): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(22,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(22,63): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(24,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(24,49): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(26,11): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(27,27): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(31,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(32,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(32,49): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(33,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(33,24): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/intersection.ts(34,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(4,23): error TS2307: Cannot find module '../../parser/scanner.js' or its corresponding type declarations.
-src/nodes/nonTerminal/branch/union.ts(35,41): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/branch/union.ts(35,56): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/nonTerminal/branch/union.ts(44,16): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(45,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(45,49): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(47,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(47,42): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(49,11): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(50,27): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(54,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(57,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(57,42): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(58,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(58,24): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/branch/union.ts(59,15): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/group.ts(2,23): error TS2307: Cannot find module '../parser/scanner.js' or its corresponding type declarations.
-src/nodes/nonTerminal/group.ts(6,45): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/group.ts(6,60): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/nonTerminal/group.ts(14,11): error TS2339: Property 'groups' does not exist on type 'V'.
-src/nodes/nonTerminal/group.ts(14,25): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/group.ts(15,11): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/group.ts(16,27): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/nonTerminal/group.ts(24,46): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/group.ts(26,22): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/nonTerminal/group.ts(32,22): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/nonTerminal/group.ts(35,36): error TS2339: Property 'groups' does not exist on type 'V'.
-src/nodes/nonTerminal/group.ts(40,11): error TS2339: Property 'branches' does not exist on type 'V'.
-src/nodes/nonTerminal/group.ts(41,31): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/nonTerminal/list.ts(3,23): error TS2307: Cannot find module '../parser/scanner.js' or its corresponding type declarations.
-src/nodes/nonTerminal/list.ts(9,11): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/list.ts(9,33): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/list.ts(10,31): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/nonTerminal/list.ts(13,41): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/nonTerminal/list.ts(13,56): error TS2713: Cannot access 'T.SetRoot' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'SetRoot' in 'T' with 'T["SetRoot"]'?
-src/nodes/nonTerminal/optional.ts(3,23): error TS2307: Cannot find module '../parser/scanner.js' or its corresponding type declarations.
-src/nodes/nonTerminal/optional.ts(8,15): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/nonTerminal/optional.ts(13,11): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/optional.ts(13,37): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/nonTerminal/optional.ts(14,31): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/nonTerminal/struct/__tests__/record.test.ts(142,21): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/nonTerminal/struct/__tests__/tuple.test.ts(30,25): error TS2578: Unused '@ts-expect-error' directive.
+src/nodes/parser/core.ts(50,58): error TS2345: Argument of type 'V' is not assignable to parameter of type 'WithRoot<Node>'.
+  Type 'V' is not assignable to type '{ l: { root: Node; }; }'.
+    The types of 'l.root' are incompatible between these types.
+      Type 'Node | undefined' is not assignable to type 'Node'.
+        Type 'undefined' is not assignable to type 'Node'.
 src/nodes/parser/index.ts(3,15): error TS2307: Cannot find module './scanner.js' or its corresponding type declarations.
 src/nodes/str.ts(24,9): error TS2322: Type 'Node | undefined' is not assignable to type 'Node'.
   Type 'undefined' is not assignable to type 'Node'.
-src/nodes/terminal/__tests__/bigintLiteral.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/numberLiteral.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/numberLiteral.test.ts(30,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/regex.test.ts(12,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/stringLiteral.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/stringLiteral.test.ts(30,17): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/stringLiteral.test.ts(37,21): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/__tests__/stringLiteral.test.ts(45,21): error TS2578: Unused '@ts-expect-error' directive.
-src/nodes/terminal/terminal.ts(6,5): error TS2305: Module '"../parser/index.js"' has no exported member 'Lexer'.
-src/nodes/terminal/terminal.ts(41,27): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/terminal/terminal.ts(44,19): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/terminal/terminal.ts(45,25): error TS2713: Cannot access 'T.SetRoot' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'SetRoot' in 'T' with 'T["SetRoot"]'?
-src/nodes/terminal/terminal.ts(48,19): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/terminal/terminal.ts(51,27): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/terminal/terminal.ts(62,27): error TS2713: Cannot access 'T.Base' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Base' in 'T' with 'T["Base"]'?
-src/nodes/terminal/terminal.ts(67,19): error TS2713: Cannot access 'T.From' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'From' in 'T' with 'T["From"]'?
-src/nodes/terminal/terminal.ts(67,36): error TS2713: Cannot access 'T.SetRoot' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'SetRoot' in 'T' with 'T["SetRoot"]'?
-src/nodes/terminal/terminal.ts(68,19): error TS2713: Cannot access 'T.Error' because 'T' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Error' in 'T' with 'T["Error"]'?
-src/nodes/terminal/terminal.ts(71,31): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(72,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(72,38): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(73,40): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(74,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(74,38): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(81,15): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(82,15): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(84,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(85,19): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(87,22): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(88,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(89,19): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(91,48): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(92,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(92,46): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(93,48): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(94,15): error TS2339: Property 'root' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(94,46): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(95,22): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(99,23): error TS2339: Property 'scanner' does not exist on type 'V'.
-src/nodes/terminal/terminal.ts(102,31): error TS2339: Property 'scanner' does not exist on type 'V'.
 Files:              255
-Lines:            65914
-Nodes:           181744
-Identifiers:      61859
-Symbols:          94399
-Types:            45023
-Instantiations:  256116
-Memory used:    150468K
+Lines:            66021
+Nodes:           182176
+Identifiers:      62053
+Symbols:         109146
+Types:            57549
+Instantiations:  301381
+Memory used:    158018K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.46s
-Bind time:        0.17s
-Check time:       1.39s
+Parse time:       0.41s
+Bind time:        0.14s
+Check time:       1.48s
 Emit time:        0.00s
-Total time:       2.01s
+Total time:       2.02s

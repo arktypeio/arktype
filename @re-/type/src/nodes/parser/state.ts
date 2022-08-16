@@ -117,11 +117,12 @@ export namespace State {
         R: ""
     }
 
-    export type WithRoot<Root extends Parse.Node = Parse.Node> = V & {
-        l: {
-            root: Root
+    export type WithRoot<Root extends Parse.Node | undefined = Parse.Node> =
+        V & {
+            l: {
+                root: Root
+            }
         }
-    }
 
     // TODO: Better way to differentiate runtime and type utilities
     export type With<Values> = V & Values
