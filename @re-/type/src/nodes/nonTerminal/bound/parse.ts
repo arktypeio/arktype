@@ -276,17 +276,18 @@ export namespace Bound {
             : false
         : true
 
-    const isUnpairedLeftBound = (bounds: State) =>
-        !!bounds.left && !bounds.right
+    export const isUnpairedLeftBound = (bounds: State) =>
+        "left" in bounds && !("right" in bounds)
 
-    type IsUnpairedLeftBound<Bounds extends State> = "left" extends keyof Bounds
-        ? "rightToken" extends keyof Bounds
-            ? false
-            : true
-        : false
+    export type IsUnpairedLeftBound<Bounds extends State> =
+        "left" extends keyof Bounds
+            ? "right" extends keyof Bounds
+                ? false
+                : true
+            : false
 
-    const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
-    type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
+    export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
+    export type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
 
     type UnboundableMessage<Root extends string> =
         `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`

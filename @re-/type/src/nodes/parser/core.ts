@@ -45,7 +45,7 @@ export namespace Core {
     }
 
     type Loop<S extends State.T, Dict> = S extends State.Suffixable
-        ? Suffix<S>
+        ? SuffixLoop<S>
         : Loop<Next<S, Dict>, Dict>
 
     const next = (s: State.V, ctx: Context): State.V =>
@@ -181,14 +181,29 @@ export namespace Core {
         throw new Error(`Unexpected suffix token '${s.l.nextSuffix}'.`)
     }
 
-    export type Suffix<S extends State.Suffix> =
+    export type SuffixLoop<S extends State.Suffix> =
         S["L"]["nextSuffix"] extends "END"
-            ? S["L"]["root"]
-            : S["L"]["nextSuffix"] extends "?"
+            ? ExtractFinalizedRoot<S["L"]>
+            : SuffixLoop<NextSuffix<S>>
+
+    export type NextSuffix<S extends State.Suffix> =
+        S["L"]["nextSuffix"] extends "?"
             ? S["R"] extends ""
-                ? [S["L"]["root"], "?"]
-                : ErrorToken<`Suffix '?' is only valid at the end of a definition.`>
+                ? State.SuffixFrom<{
+                      L: {
+                          bounds: S["L"]["bounds"]
+                          root: [S["L"]["root"], "?"]
+                          nextSuffix: "END"
+                      }
+                      R: ""
+                  }>
+                : State.ErrorFrom<`Suffix '?' is only valid at the end of a definition.`>
             : S["L"]["nextSuffix"] extends Bound.Token
-            ? Suffix<Bound.ParseRight<S, S["L"]["nextSuffix"]>>
-            : ErrorToken<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
+            ? Bound.ParseRight<S, S["L"]["nextSuffix"]>
+            : State.ErrorFrom<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
+
+    export type ExtractFinalizedRoot<L extends Left.Suffix> =
+        Bound.IsUnpairedLeftBound<L["bounds"]> extends true
+            ? ErrorToken<Bound.UnpairedLeftBoundMessage>
+            : L["root"]
 }
