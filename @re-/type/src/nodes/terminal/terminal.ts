@@ -72,7 +72,7 @@ export namespace Terminal {
               L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
               R: Rest
           }>
-        : State.ErrorFrom<UnterminatedEnclosedMessage<S["R"], Enclosing>>
+        : State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 
     const throwUnterminatedEnclosed: State.OnInputEndFn = (
         scanner,
@@ -138,7 +138,7 @@ export namespace Terminal {
         Dict
     > = IsResolvableUnenclosed<Token, Dict> extends true
         ? State.From<{ L: Left.SetRoot<S["L"], Token>; R: Unscanned }>
-        : State.ErrorFrom<UnresolvableMessage<Token>>
+        : State.Error<UnresolvableMessage<Token>>
 
     type UnresolvableMessage<Token extends string> =
         `'${Token}' is not a builtin type and does not exist in your space.`

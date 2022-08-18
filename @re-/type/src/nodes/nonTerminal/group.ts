@@ -30,7 +30,7 @@ export namespace Group {
               branches: Top
               root: Branches.MergeAll<L["branches"], L["root"]>
           }>
-        : Left.ErrorFrom<`Unexpected ).`>
+        : Left.Error<`Unexpected ).`>
 
     export const reduceClose = (s: State.WithRoot) => {
         const previousBranches = s.l.groups.pop()

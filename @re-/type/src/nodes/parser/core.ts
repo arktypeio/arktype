@@ -67,7 +67,7 @@ export namespace Core {
             : lookahead === " "
             ? base(s, ctx)
             : lookahead === "END"
-            ? State.errorFrom(expressionExpectedMessage)
+            ? State.error(expressionExpectedMessage)
             : Terminal.unenclosedBase(s, ctx)
     }
 
@@ -82,7 +82,7 @@ export namespace Core {
             : Next extends " "
             ? Base<State.ScanTo<S, Rest>, Dict>
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
-        : State.ErrorFrom<ExpressionExpectedMessage>
+        : State.Error<ExpressionExpectedMessage>
 
     const operator = (s: State.WithRoot, ctx: Context): State.V => {
         const lookahead = s.r.shift()
@@ -102,7 +102,7 @@ export namespace Core {
             ? Bound.parse(s, lookahead)
             : lookahead === " "
             ? operator(s, ctx)
-            : State.errorFrom(unexpectedCharacterMessage(lookahead))
+            : State.error(unexpectedCharacterMessage(lookahead))
     }
 
     type Operator<S extends State.T> = S["R"] extends Scan<
@@ -123,7 +123,7 @@ export namespace Core {
             ? Bound.Parse<S, Lookahead, Unscanned>
             : Lookahead extends " "
             ? Operator<State.ScanTo<S, Unscanned>>
-            : State.ErrorFrom<UnexpectedCharacterMessage<Lookahead>>
+            : State.Error<UnexpectedCharacterMessage<Lookahead>>
         : State.From<{ L: TransitionToSuffix<S["L"], "END">; R: "" }>
 
     const unexpectedCharacterMessage = <Char extends string>(
@@ -141,7 +141,7 @@ export namespace Core {
         firstSuffix: Left.SuffixToken
     ) => {
         if (s.l.groups.length) {
-            return State.errorFrom(unclosedGroupMessage)
+            return State.error(unclosedGroupMessage)
         }
         s.l.nextSuffix = firstSuffix
         return Branches.mergeAll(s) as State.SuffixV
@@ -158,7 +158,7 @@ export namespace Core {
               root: Branches.MergeAll<L["branches"], L["root"]>
               nextSuffix: FirstSuffix
           }>
-        : Left.ErrorFrom<UnclosedGroupMessage>
+        : Left.Error<UnclosedGroupMessage>
 
     export const suffix = (
         s: State.SuffixV,
@@ -197,10 +197,10 @@ export namespace Core {
                       }
                       R: ""
                   }>
-                : State.ErrorFrom<`Suffix '?' is only valid at the end of a definition.`>
+                : State.Error<`Suffix '?' is only valid at the end of a definition.`>
             : S["L"]["nextSuffix"] extends Bound.Token
             ? Bound.ParseRight<S, S["L"]["nextSuffix"]>
-            : State.ErrorFrom<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
+            : State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
 
     export type ExtractFinalizedRoot<L extends Left.Suffix> =
         Bound.IsUnpairedLeftBound<L["bounds"]> extends true

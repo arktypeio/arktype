@@ -21,7 +21,7 @@ export namespace List {
         Unscanned extends string
     > = Unscanned extends Scan<"]", infer Remaining>
         ? State.From<{ L: List.Reduce<S["L"]>; R: Remaining }>
-        : State.ErrorFrom<IncompleteTokenMessage>
+        : State.Error<IncompleteTokenMessage>
 
     const incompleteTokenMessage = `Missing expected ']'.`
 

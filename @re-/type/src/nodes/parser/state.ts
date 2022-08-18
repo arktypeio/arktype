@@ -1,5 +1,5 @@
 import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
-import { Base as Parse } from "../base/index.js"
+import { Base, Base as Parse } from "../base/index.js"
 import { Branches } from "../nonTerminal/branch/branch.js"
 import { Bound } from "../nonTerminal/index.js"
 import { ErrorToken } from "./tokens.js"
@@ -27,6 +27,11 @@ export namespace Left {
         bounds: Bound.State
         root: unknown
         nextSuffix: SuffixToken
+    }
+
+    export type SuffixV = V & {
+        root: Parse.Node
+        nextSuffix: Left.SuffixToken
     }
 
     export type SuffixFrom<S extends Suffix> = S
@@ -72,7 +77,7 @@ export namespace Left {
         root: Node
     }>
 
-    export type ErrorFrom<Message extends string> = From<{
+    export type Error<Message extends string> = From<{
         bounds: {}
         groups: []
         branches: {}
@@ -99,10 +104,8 @@ export namespace State {
         }
     }
 
-    export type ValidatedSuffixV = SuffixV & {
-        l: {
-            root: Parse.Node
-        }
+    export type SuffixVWith<P extends Partial<Left.SuffixV>> = SuffixV & {
+        l: P
     }
 
     export type Suffix = {
@@ -138,12 +141,12 @@ export namespace State {
         R: Unscanned
     }>
 
-    export const errorFrom = (message: string) => {
-        throw Error(message)
+    export const error = (message: string) => {
+        throw new Parse.Parsing.ParseError(message)
     }
 
-    export type ErrorFrom<Message extends string> = {
-        L: Left.ErrorFrom<Message>
+    export type Error<Message extends string> = {
+        L: Left.Error<Message>
         R: ""
     }
 
