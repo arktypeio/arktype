@@ -11,6 +11,7 @@ import {
     Left,
     Scan,
     State,
+    SuffixToken,
     tokenSet,
     Tree
 } from "../../parser/index.js"
@@ -26,8 +27,7 @@ import { SingleBoundDefinition, SingleBoundNode } from "./single.js"
 export namespace Bound {
     export type T = {
         left?: Bound.Left
-        bounded?: BoundableT
-        rightToken?: Bound.Token
+        right?: Bound.Right
     }
 
     export type V = {
@@ -51,12 +51,14 @@ export namespace Bound {
         "<=": 1
     })
 
+    type TwoCharComparator = "<=" | "==" | ">="
+
     const singleCharBoundTokens = tokenSet({
         "<": 1,
         ">": 1
     })
 
-    type SingleCharBoundToken = keyof typeof singleCharBoundTokens
+    export type SingleCharComparator = keyof typeof singleCharBoundTokens
 
     export type Left = [NumberLiteralDefinition, DoubleBoundToken]
 
@@ -88,9 +90,9 @@ export namespace Bound {
         Start extends Bound.Char,
         Unscanned extends string
     > = Unscanned extends Scan<"=", infer Rest>
-        ? Reduce<S["L"], `${Start}=`, Rest>
-        : Start extends SingleCharBoundToken
-        ? Reduce<S["L"], Start, Unscanned>
+        ? State.From<{ L: Reduce<S["L"], `${Start}=`>; R: Rest }>
+        : Start extends SingleCharComparator
+        ? State.From<{ L: Reduce<S["L"], Start>; R: Unscanned }>
         : State.Error<SingleEqualsMessage>
 
     const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
@@ -133,14 +135,10 @@ export namespace Bound {
 
     export type Reduce<
         L extends Left.T,
-        T extends Token,
-        Unscanned extends string
-    > = L extends Left.WithRoot<NumberLiteralDefinition>
-        ? State.From<{ L: ReduceLeft<L, T>; R: Unscanned }>
-        : Finalize<{
-              L: ReduceRight<Core.FinalizeExpression<L>, T>
-              R: Unscanned
-          }>
+        Comparator extends Token
+    > = L extends Left.RootOf<NumberLiteralDefinition>
+        ? ReduceLeft<L, Comparator>
+        : Core.TransitionToSuffix<L, Comparator>
 
     const reduceLeft = (
         s: State.WithRoot<NumberLiteralNode>,
@@ -182,29 +180,48 @@ export namespace Bound {
         s.l.root = undefined as any
     }
 
-    type ReduceRight<
-        L extends Left.T,
-        T extends Bound.Token
-    > = L["done"] extends true
-        ? // If expression finalization results in an error, just return right away
-          L
-        : "rightToken" extends keyof L["bounds"]
-        ? Left.Error<MultipleRightBoundsMessage>
-        : // TODO: We need to merge before we check this
-        L["root"] extends BoundableT
-        ? RightTokenIsValid<L["bounds"], T> extends true
-            ? // TODO: Maybe have a suffix state?
-              Left.From<{
-                  bounds: L["bounds"] & {
-                      bounded: L["root"]
-                      rightToken: T
+    type ValueWithSuffix<
+        Value extends NumberLiteralDefinition,
+        NextSuffix extends "?",
+        Unscanned extends string
+    > = `${Value}${NextSuffix}${Unscanned}`
+
+    export type ParseRight<
+        S extends State.Suffix,
+        T extends Token
+    > = S["R"] extends ValueWithSuffix<
+        infer Value,
+        infer NextSuffix,
+        infer Unscanned
+    >
+        ? State.SuffixFrom<{
+              L: ReduceRight<S, T, Value, NextSuffix>
+              R: Unscanned
+          }>
+        : S["R"] extends NumberLiteralDefinition
+        ? State.SuffixFrom<{
+              L: ReduceRight<S, T, S["R"], "">
+              R: ""
+          }>
+        : State.Error<`Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (got ${S["R"]}).`>
+
+    export type ReduceRight<
+        S extends State.Suffix,
+        T extends Token,
+        Value extends NumberLiteralDefinition,
+        NextSuffix extends Left.SuffixToken
+    > = S["L"]["root"] extends BoundableT
+        ? RightTokenIsValid<S["L"]["bounds"], T> extends true
+            ? Left.SuffixFrom<{
+                  bounds: {
+                      left: S["L"]["bounds"]["left"]
+                      right: [T, Value]
                   }
-                  groups: []
-                  branches: {}
-                  root: undefined
+                  root: S["L"]["root"]
+                  nextSuffix: NextSuffix
               }>
             : Left.Error<InvalidDoubleBoundMessage<T>>
-        : Left.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
+        : Left.Error<UnboundableMessage<Tree.ToString<S["L"]["root"]>>>
 
     const multipleRightBoundsMessage = `Definitions may have at most one right bound.`
     type MultipleRightBoundsMessage = typeof multipleRightBoundsMessage
@@ -229,29 +246,6 @@ export namespace Bound {
             s.l.root = s.l.bounds.bounded
         }
     }
-
-    type SuffixesWithRightBound<
-        N extends NumberLiteralDefinition,
-        Finalizing extends "" | "?"
-    > = `${N}${Finalizing}`
-
-    export type Finalize<S extends State.T> = {} extends S["L"]["bounds"]
-        ? S
-        : IsUnpairedLeftBound<S["L"]["bounds"]> extends true
-        ? State.Error<UnpairedLeftBoundMessage>
-        : S["R"] extends SuffixesWithRightBound<infer N, infer Finalizing>
-        ? Core.Finalize<{
-              L: {
-                  bounds: {}
-                  groups: []
-                  branches: {}
-                  root: S["L"]["bounds"]["bounded"]
-              }
-              R: Finalizing
-          }>
-        : // TODO: Update error message
-          State.Error<NonNumericBoundMessage<Tree.ToString<S["R"]>>>
-
     const isUnpairedLeftBound = (bounds: V) =>
         !!bounds.left && !bounds.rightToken
 

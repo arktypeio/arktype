@@ -17,8 +17,18 @@ export namespace Left {
         groups: Branches.TypeState[]
         branches: Branches.TypeState
         root: unknown
-        done?: true
+        nextSuffix?: SuffixToken
     }
+
+    export type SuffixToken = "" | "!" | "?" | Bound.Token
+
+    export type Suffix = {
+        bounds: Bound.T
+        root: unknown
+        nextSuffix: SuffixToken
+    }
+
+    export type SuffixFrom<S extends Suffix> = S
 
     export const initial = {
         bounds: {},
@@ -48,15 +58,11 @@ export namespace Left {
         ? true
         : false
 
-    export type Finalize<Root> = From<{
-        bounds: {}
-        groups: []
-        branches: {}
-        root: Root
-        done: true
-    }>
-
     export type WithRoot<Node> = SetRoot<T, Node>
+
+    export type RootOf<Node> = {
+        root: Node
+    }
 
     export type SetRoot<L extends T, Node> = From<{
         bounds: L["bounds"]
@@ -65,7 +71,13 @@ export namespace Left {
         root: Node
     }>
 
-    export type Error<Message extends string> = Finalize<ErrorToken<Message>>
+    export type Error<Message extends string> = From<{
+        bounds: {}
+        groups: []
+        branches: {}
+        root: ErrorToken<Message>
+        nextSuffix: ""
+    }>
 }
 
 export namespace State {
@@ -78,6 +90,13 @@ export namespace State {
         L: Left.T
         R: string
     }
+
+    export type Suffix = {
+        L: Left.Suffix
+        R: string
+    }
+
+    export type SuffixFrom<S extends Suffix> = S
 
     export const initialize = (def: string): V => {
         const scanner = new Scanner(def)
@@ -93,17 +112,11 @@ export namespace State {
         R: Def
     }>
 
-    export type Final = {
+    export type Suffixable = {
         L: {
-            root: unknown
-            done: true
+            nextSuffix: string
         }
     }
-
-    export type Finalize<Root> = From<{
-        L: Left.Finalize<Root>
-        R: ""
-    }>
 
     export type From<S extends T> = S
 
