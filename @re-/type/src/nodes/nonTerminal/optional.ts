@@ -10,6 +10,7 @@ export namespace Optional {
             )
         }
         s.l.root = new OptionalNode(s.l.root, ctx)
+        return s
     }
 }
 

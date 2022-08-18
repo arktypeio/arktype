@@ -34,6 +34,7 @@ export namespace Branches {
         if (Union.isMergeable(s)) {
             Union.merge(s)
         }
+        return s
     }
 
     export type MergeExpression<

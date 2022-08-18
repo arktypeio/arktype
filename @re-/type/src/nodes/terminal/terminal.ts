@@ -61,6 +61,7 @@ export namespace Terminal {
                 enclosed as StringLiteralDefinition
             )
         }
+        return s
     }
 
     export type EnclosedBase<
@@ -71,7 +72,7 @@ export namespace Terminal {
               L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
               R: Rest
           }>
-        : State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
+        : State.ErrorFrom<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 
     const throwUnterminatedEnclosed: State.OnInputEndFn = (
         scanner,
@@ -91,6 +92,7 @@ export namespace Terminal {
     export const unenclosedBase = (s: State.V, ctx: Base.Parsing.Context) => {
         const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
         s.l.root = unenclosedToNode(token, ctx)
+        return s
     }
 
     export type UnenclosedBase<
@@ -136,7 +138,7 @@ export namespace Terminal {
         Dict
     > = IsResolvableUnenclosed<Token, Dict> extends true
         ? State.From<{ L: Left.SetRoot<S["L"], Token>; R: Unscanned }>
-        : State.Error<UnresolvableMessage<Token>>
+        : State.ErrorFrom<UnresolvableMessage<Token>>
 
     type UnresolvableMessage<Token extends string> =
         `'${Token}' is not a builtin type and does not exist in your space.`

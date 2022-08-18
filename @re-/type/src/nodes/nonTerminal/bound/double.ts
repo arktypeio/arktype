@@ -16,8 +16,8 @@ export type DoubleBoundValidationError = {
 }
 
 export type DoubleBoundDefinition = {
-    lower: [number, Bound.DoubleBoundToken]
-    upper: [Bound.DoubleBoundToken, number]
+    left: [number, Bound.DoubleBoundToken]
+    right: [Bound.DoubleBoundToken, number]
 }
 
 export class DoubleBoundNode extends NonTerminal<BoundableV> {
@@ -36,24 +36,24 @@ export class DoubleBoundNode extends NonTerminal<BoundableV> {
          * number>=5
          * number<10
          */
-        const invertedLeftToken = this.bounds.lower[1] === "<" ? ">" : ">="
+        const invertedLeftToken = this.bounds.left[1] === "<" ? ">" : ">="
         this.checkLower = createBoundChecker(
             invertedLeftToken,
-            this.bounds.lower[0]
+            this.bounds.left[0]
         )
         this.checkUpper = createBoundChecker(
-            this.bounds.upper[0],
-            this.bounds.upper[1]
+            this.bounds.right[0],
+            this.bounds.right[1]
         )
     }
 
     toString() {
         return (
-            this.bounds.lower[0] +
-            this.bounds.lower[1] +
+            this.bounds.left[0] +
+            this.bounds.left[1] +
             this.children.toString() +
-            this.bounds.upper[0] +
-            this.bounds.upper[1]
+            this.bounds.right[0] +
+            this.bounds.right[1]
         )
     }
 
@@ -65,7 +65,7 @@ export class DoubleBoundNode extends NonTerminal<BoundableV> {
         if (!this.checkLower(evaluated)) {
             const error: DoubleBoundValidationError = {
                 bounds: this.bounds,
-                cause: "lower",
+                cause: "left",
                 evaluated,
                 value: args.value as BoundableValue
             }
@@ -75,7 +75,7 @@ export class DoubleBoundNode extends NonTerminal<BoundableV> {
         if (!this.checkUpper(evaluated)) {
             const error: DoubleBoundValidationError = {
                 bounds: this.bounds,
-                cause: "upper",
+                cause: "right",
                 evaluated,
                 value: args.value as BoundableValue
             }

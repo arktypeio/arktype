@@ -6,24 +6,25 @@ import { ErrorToken } from "./tokens.js"
 
 export namespace Left {
     export type V = {
-        bounds: Bound.V
+        bounds: Bound.State
         groups: Branches.ValueState[]
         branches: Branches.ValueState
         root: Parse.Node | undefined
+        nextSuffix?: SuffixToken
     }
 
     export type T = {
-        bounds: Bound.T
+        bounds: Bound.State
         groups: Branches.TypeState[]
         branches: Branches.TypeState
         root: unknown
         nextSuffix?: SuffixToken
     }
 
-    export type SuffixToken = "" | "!" | "?" | Bound.Token
+    export type SuffixToken = "END" | "?" | Bound.Token
 
     export type Suffix = {
-        bounds: Bound.T
+        bounds: Bound.State
         root: unknown
         nextSuffix: SuffixToken
     }
@@ -71,12 +72,12 @@ export namespace Left {
         root: Node
     }>
 
-    export type Error<Message extends string> = From<{
+    export type ErrorFrom<Message extends string> = From<{
         bounds: {}
         groups: []
         branches: {}
         root: ErrorToken<Message>
-        nextSuffix: ""
+        nextSuffix: "END"
     }>
 }
 
@@ -91,6 +92,19 @@ export namespace State {
         R: string
     }
 
+    export type SuffixV = V & {
+        l: {
+            root: Parse.Node
+            nextSuffix: Left.SuffixToken
+        }
+    }
+
+    export type ValidatedSuffixV = SuffixV & {
+        l: {
+            root: Parse.Node
+        }
+    }
+
     export type Suffix = {
         L: Left.Suffix
         R: string
@@ -98,19 +112,18 @@ export namespace State {
 
     export type SuffixFrom<S extends Suffix> = S
 
-    export const initialize = (def: string): V => {
-        const scanner = new Scanner(def)
-        // TODO: Lexer.shiftBase(scanner)
-        return {
-            l: Left.initial,
-            r: scanner
-        }
-    }
+    export const initialize = (def: string): V => ({
+        l: Left.initial,
+        r: new Scanner(def)
+    })
 
     export type Initialize<Def extends string> = From<{
         L: Left.Initial
         R: Def
     }>
+
+    export const isSuffixable = (s: State.V): s is State.SuffixV =>
+        s.l.nextSuffix !== undefined
 
     export type Suffixable = {
         L: {
@@ -125,8 +138,12 @@ export namespace State {
         R: Unscanned
     }>
 
-    export type Error<Message extends string> = {
-        L: Left.Error<Message>
+    export const errorFrom = (message: string) => {
+        throw Error(message)
+    }
+
+    export type ErrorFrom<Message extends string> = {
+        L: Left.ErrorFrom<Message>
         R: ""
     }
 
@@ -160,21 +177,22 @@ export namespace State {
         }
 
         shift() {
-            return this.chars[this.i++]
+            return this.chars[this.i++] ?? "END"
         }
 
         get lookahead() {
-            return this.chars[this.i]
+            return this.chars[this.i] ?? "END"
         }
 
         shiftUntil(condition: UntilCondition, opts?: ShiftUntilOptions) {
             let shifted = opts?.shiftTo ?? ""
-            while (this.lookahead && !condition(this, shifted)) {
+            while (!condition(this, shifted)) {
+                if (this.lookahead === "END") {
+                    return opts?.onInputEnd?.(this, shifted) ?? shifted
+                }
                 shifted += this.shift()
             }
-            if (!this.lookahead) {
-                return opts?.onInputEnd?.(this, shifted) ?? shifted
-            }
+
             if (opts?.inclusive) {
                 shifted += this.shift()
             }

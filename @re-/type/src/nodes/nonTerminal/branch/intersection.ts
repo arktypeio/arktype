@@ -16,6 +16,7 @@ export namespace Intersection {
             s.l.branches.intersection.addMember(s.l.root)
         }
         s.l.root = undefined as any
+        return s
     }
 
     export type Reduce<L extends Left.T> = Left.From<{
@@ -37,6 +38,7 @@ export namespace Intersection {
         s.l.branches.intersection.addMember(s.l.root)
         s.l.root = s.l.branches.intersection
         s.l.branches.intersection = undefined as any
+        return s
     }
 }
 

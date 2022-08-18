@@ -13,6 +13,7 @@ export namespace List {
             throw new Error(incompleteTokenMessage)
         }
         s.l.root = new ListNode(s.l.root, ctx)
+        return s
     }
 
     export type ShiftReduce<
@@ -20,7 +21,7 @@ export namespace List {
         Unscanned extends string
     > = Unscanned extends Scan<"]", infer Remaining>
         ? State.From<{ L: List.Reduce<S["L"]>; R: Remaining }>
-        : State.Error<IncompleteTokenMessage>
+        : State.ErrorFrom<IncompleteTokenMessage>
 
     const incompleteTokenMessage = `Missing expected ']'.`
 

@@ -26,9 +26,10 @@ export type Scan<
 > = `${First}${Unscanned}`
 
 export namespace Core {
-    export const parse = (def: string, ctx: Context) => {
-        const S = State.initialize(def)
-        return loop(S, ctx)
+    export const parse = (def: string, ctx: Context): Base.Node => {
+        const s = State.initialize(def)
+        base(s, ctx)
+        return loop(s, ctx)
     }
 
     export type Parse<Def extends string, Dict> = Loop<
@@ -36,21 +37,19 @@ export namespace Core {
         Dict
     >
 
-    const loop = (S: State.V, ctx: Context) => {
-        while (S.r.lookahead !== undefined) {
-            next(S, ctx)
+    const loop = (s: State.V, ctx: Context): Base.Node => {
+        while (!State.isSuffixable(s)) {
+            next(s, ctx)
         }
-        return S.l.root
+        return suffix(s, ctx)
     }
 
     type Loop<S extends State.T, Dict> = S extends State.Suffixable
         ? Suffix<S>
         : Loop<Next<S, Dict>, Dict>
 
-    const next = (s: State.V, ctx: Context) =>
-        s.l.root === undefined
-            ? base(s, ctx)
-            : operator(s as State.WithRoot, ctx)
+    const next = (s: State.V, ctx: Context): State.V =>
+        s.l.root ? operator(s as State.WithRoot, ctx) : base(s, ctx)
 
     type Next<S extends State.T, Dict> = S["L"]["root"] extends undefined
         ? Base<S, Dict>
@@ -59,19 +58,17 @@ export namespace Core {
     const expressionExpectedMessage = `Expected an expression.`
     type ExpressionExpectedMessage = typeof expressionExpectedMessage
 
-    const base = (s: State.V, ctx: Context): void => {
+    const base = (s: State.V, ctx: Context): State.V => {
         const lookahead = s.r.shift()
-        if (lookahead === "(") {
-            Group.reduceOpen(s)
-        } else if (inTokenSet(lookahead, enclosedBaseStartChars)) {
-            Terminal.enclosedBase(s, lookahead)
-        } else if (lookahead === " ") {
-            base(s, ctx)
-        } else if (lookahead === undefined) {
-            throw new Error(expressionExpectedMessage)
-        } else {
-            Terminal.unenclosedBase(s, ctx)
-        }
+        return lookahead === "("
+            ? Group.reduceOpen(s)
+            : inTokenSet(lookahead, enclosedBaseStartChars)
+            ? Terminal.enclosedBase(s, lookahead)
+            : lookahead === " "
+            ? base(s, ctx)
+            : lookahead === "END"
+            ? State.errorFrom(expressionExpectedMessage)
+            : Terminal.unenclosedBase(s, ctx)
     }
 
     export type Base<S extends State.T, Dict> = S["R"] extends Scan<
@@ -85,32 +82,27 @@ export namespace Core {
             : Next extends " "
             ? Base<State.ScanTo<S, Rest>, Dict>
             : Terminal.UnenclosedBase<S, Next, Rest, Dict>
-        : State.Error<ExpressionExpectedMessage>
+        : State.ErrorFrom<ExpressionExpectedMessage>
 
-    const operator = (s: State.WithRoot, ctx: Context): void => {
+    const operator = (s: State.WithRoot, ctx: Context): State.V => {
         const lookahead = s.r.shift()
-        // TODO: Test perf vs if block
-        switch (lookahead) {
-            case undefined:
-                return finalize(s, ctx)
-            case "?":
-                return finalize(s, ctx)
-            case "[":
-                return List.shiftReduce(s, ctx)
-            case "|":
-                return Union.reduce(s, ctx)
-            case "&":
-                return Intersection.reduce(s, ctx)
-            case ")":
-                return Group.reduceClose(s)
-            case " ":
-                return operator(s, ctx)
-            default:
-                if (inTokenSet(lookahead, Bound.chars)) {
-                    return Bound.shiftReduce(s, lookahead)
-                }
-                throw new Error(unexpectedCharacterMessage(lookahead))
-        }
+        return lookahead === "END"
+            ? transitionToSuffix(s, "END")
+            : lookahead === "?"
+            ? transitionToSuffix(s, "?")
+            : lookahead === "["
+            ? List.shiftReduce(s, ctx)
+            : lookahead === "|"
+            ? Union.reduce(s, ctx)
+            : lookahead === "&"
+            ? Intersection.reduce(s, ctx)
+            : lookahead === ")"
+            ? Group.reduceClose(s)
+            : inTokenSet(lookahead, Bound.chars)
+            ? Bound.parse(s, lookahead)
+            : lookahead === " "
+            ? operator(s, ctx)
+            : State.errorFrom(unexpectedCharacterMessage(lookahead))
     }
 
     type Operator<S extends State.T> = S["R"] extends Scan<
@@ -128,11 +120,11 @@ export namespace Core {
             : Lookahead extends ")"
             ? State.From<{ L: Group.ReduceClose<S["L"]>; R: Unscanned }>
             : Lookahead extends Bound.Char
-            ? Bound.ShiftReduce<S, Lookahead, Unscanned>
+            ? Bound.Parse<S, Lookahead, Unscanned>
             : Lookahead extends " "
             ? Operator<State.ScanTo<S, Unscanned>>
-            : State.Error<UnexpectedCharacterMessage<Lookahead>>
-        : State.From<{ L: TransitionToSuffix<S["L"], "">; R: "" }>
+            : State.ErrorFrom<UnexpectedCharacterMessage<Lookahead>>
+        : State.From<{ L: TransitionToSuffix<S["L"], "END">; R: "" }>
 
     const unexpectedCharacterMessage = <Char extends string>(
         char: Char
@@ -141,19 +133,19 @@ export namespace Core {
     type UnexpectedCharacterMessage<Char extends string> =
         `Unexpected character '${Char}'.`
 
-    export const unenclosedGroupMessage = "Missing )."
-    type UnclosedGroupMessage = typeof unenclosedGroupMessage
+    export const unclosedGroupMessage = "Missing )."
+    type UnclosedGroupMessage = typeof unclosedGroupMessage
 
-    const finalize = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
+    export const transitionToSuffix = (
+        s: State.WithRoot,
+        firstSuffix: Left.SuffixToken
+    ) => {
         if (s.l.groups.length) {
-            throw new Error(unenclosedGroupMessage)
+            return State.errorFrom(unclosedGroupMessage)
         }
-        Branches.mergeAll(s)
-        Bound.finalize(s)
-        applyFinalizer(s, ctx)
+        s.l.nextSuffix = firstSuffix
+        return Branches.mergeAll(s) as State.SuffixV
     }
-
-    type Z = Parse<"number<7", {}>
 
     export type TransitionToSuffix<
         L extends Left.T,
@@ -166,29 +158,37 @@ export namespace Core {
               root: Branches.MergeAll<L["branches"], L["root"]>
               nextSuffix: FirstSuffix
           }>
-        : Left.Error<UnclosedGroupMessage>
+        : Left.ErrorFrom<UnclosedGroupMessage>
 
-    const applyFinalizer = (s: State.WithRoot, ctx: Base.Parsing.Context) => {
-        if (s.r.lookahead === undefined) {
-            return
+    export const suffix = (
+        s: State.SuffixV,
+        ctx: Base.Parsing.Context
+    ): Base.Node => {
+        if (s.l.nextSuffix === "END") {
+            return s.l.root
         }
-        if (s.r.lookahead === "?") {
-            s.l.root = new OptionalNode(s.l.root, ctx)
+        if (s.l.nextSuffix === "?") {
+            if (s.r.lookahead === "END") {
+                return new OptionalNode(s.l.root, ctx)
+            }
+            throw new Error(
+                `Suffix '?' is only valid at the end of a definition.`
+            )
         }
+        if (inTokenSet(s.l.nextSuffix, Bound.tokens)) {
+            return suffix(Bound.parseRight(s, s.l.nextSuffix, ctx), ctx)
+        }
+        throw new Error(`Unexpected suffix token '${s.l.nextSuffix}'.`)
     }
 
-    /**
-     * An empty string indicates S["L"]["Root"] is ready to return, and
-     * therefore should contain either the tree resulting from a valid parse
-     * of the full input or an error.
-     */
-    export type Suffix<S extends State.Suffix> = S["L"]["nextSuffix"] extends ""
-        ? S["L"]["root"]
-        : S["L"]["nextSuffix"] extends "?"
-        ? S["R"] extends ""
-            ? [S["L"]["root"], "?"]
-            : ErrorToken<`Suffix '?' is only valid at the end of a definition.`>
-        : S["L"]["nextSuffix"] extends Bound.Token
-        ? Suffix<Bound.ParseRight<S, S["L"]["nextSuffix"]>>
-        : ErrorToken<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
+    export type Suffix<S extends State.Suffix> =
+        S["L"]["nextSuffix"] extends "END"
+            ? S["L"]["root"]
+            : S["L"]["nextSuffix"] extends "?"
+            ? S["R"] extends ""
+                ? [S["L"]["root"], "?"]
+                : ErrorToken<`Suffix '?' is only valid at the end of a definition.`>
+            : S["L"]["nextSuffix"] extends Bound.Token
+            ? Suffix<Bound.ParseRight<S, S["L"]["nextSuffix"]>>
+            : ErrorToken<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
 }

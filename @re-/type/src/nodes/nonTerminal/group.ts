@@ -12,6 +12,7 @@ export namespace Group {
     export const reduceOpen = (s: State.V) => {
         s.l.groups.push(s.l.branches)
         s.l.branches = {}
+        return s
     }
 
     type PopGroup<
@@ -29,7 +30,7 @@ export namespace Group {
               branches: Top
               root: Branches.MergeAll<L["branches"], L["root"]>
           }>
-        : Left.Error<`Unexpected ).`>
+        : Left.ErrorFrom<`Unexpected ).`>
 
     export const reduceClose = (s: State.WithRoot) => {
         const previousBranches = s.l.groups.pop()
@@ -38,5 +39,6 @@ export namespace Group {
         }
         Branches.mergeAll(s)
         s.l.branches = previousBranches
+        return s
     }
 }

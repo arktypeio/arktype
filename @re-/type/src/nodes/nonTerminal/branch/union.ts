@@ -41,6 +41,7 @@ export namespace Union {
             s.l.branches.union.addMember(s.l.root)
         }
         s.l.root = undefined as any
+        return s
     }
 
     export type Reduce<L extends Left.T> = Left.From<{
@@ -64,6 +65,7 @@ export namespace Union {
         s.l.branches.union.addMember(s.l.root)
         s.l.root = s.l.branches.union
         s.l.branches.union = undefined as any
+        return s
     }
 }
 
