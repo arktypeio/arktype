@@ -1,17 +1,15 @@
-src/nodes/str.ts(24,9): error TS2322: Type 'Node | undefined' is not assignable to type 'Node'.
-  Type 'undefined' is not assignable to type 'Node'.
 Files:              255
-Lines:            66072
-Nodes:           182455
-Identifiers:      62132
-Symbols:         108326
-Types:            57126
-Instantiations:  299075
-Memory used:    156416K
+Lines:            66113
+Nodes:           182848
+Identifiers:      62308
+Symbols:         108309
+Types:            57118
+Instantiations:  298442
+Memory used:    155634K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.42s
-Bind time:        0.15s
-Check time:       1.35s
+Parse time:       0.49s
+Bind time:        0.17s
+Check time:       1.66s
 Emit time:        0.00s
-Total time:       1.91s
+Total time:       2.32s
