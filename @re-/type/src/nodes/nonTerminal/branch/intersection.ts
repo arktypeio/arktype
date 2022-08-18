@@ -19,7 +19,7 @@ export namespace Intersection {
         return s
     }
 
-    export type Reduce<L extends Left.T> = Left.From<{
+    export type Reduce<L extends Left.T.Base> = Left.From<{
         bounds: L["bounds"]
         groups: L["groups"]
         branches: PushRoot<L["branches"], L["root"]>

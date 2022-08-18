@@ -49,11 +49,12 @@ export namespace Terminal {
         s: State.V,
         enclosing: EnclosedBaseStartChar
     ) => {
-        const enclosed = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
-            inclusive: true,
-            onInputEnd: throwUnterminatedEnclosed,
-            shiftTo: enclosing
-        })
+        const enclosed =
+            enclosing +
+            s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
+                inclusive: true,
+                onInputEnd: throwUnterminatedEnclosed
+            })
         if (enclosing === "/") {
             s.l.root = regexLiteralToNode(enclosed as RegexLiteralDefinition)
         } else {

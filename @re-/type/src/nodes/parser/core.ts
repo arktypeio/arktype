@@ -9,21 +9,17 @@ import {
     Union
 } from "../nonTerminal/index.js"
 import { Terminal } from "../terminal/index.js"
-import { Left, State } from "./state.js"
+import { Scanner, T } from "./core/scanner.js"
 import {
     EnclosedBaseStartChar,
     enclosedBaseStartChars,
     ErrorToken,
     inTokenSet,
     SuffixToken
-} from "./tokens.js"
+} from "./core/tokens.js"
+import { Left, State } from "./state.js"
 
 export type Context = Base.Parsing.Context
-
-export type Scan<
-    First extends string,
-    Unscanned extends string
-> = `${First}${Unscanned}`
 
 export namespace Core {
     export const parse = (def: string, ctx: Context): Base.Node => {
@@ -148,7 +144,7 @@ export namespace Core {
     }
 
     export type TransitionToSuffix<
-        L extends Left.T,
+        L extends Left.T.Base,
         FirstSuffix extends Left.SuffixToken
     > = L["groups"] extends []
         ? Left.From<{

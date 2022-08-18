@@ -27,7 +27,10 @@ export namespace List {
 
     type IncompleteTokenMessage = typeof incompleteTokenMessage
 
-    export type Reduce<L extends Left.T> = Left.SetRoot<L, [L["root"], "[]"]>
+    export type Reduce<L extends Left.T.Base> = Left.SetRoot<
+        L,
+        [L["root"], "[]"]
+    >
 
     export type Node<Child> = [Child, "[]"]
 }

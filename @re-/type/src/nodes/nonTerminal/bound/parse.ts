@@ -118,7 +118,7 @@ export namespace Bound {
             : Core.transitionToSuffix(s, token)
 
     export type Reduce<
-        L extends Left.T,
+        L extends Left.T.Base,
         Comparator extends Token
     > = L extends Left.RootOf<NumberLiteralDefinition<infer BoundingValue>>
         ? ReduceLeft<L, Comparator, BoundingValue>
@@ -144,7 +144,7 @@ export namespace Bound {
             : State.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
 
     type ReduceLeft<
-        L extends Left.T,
+        L extends Left.T.Base,
         T extends Token,
         BoundingValue extends number
     > = Left.IsPrefixable<L> extends true

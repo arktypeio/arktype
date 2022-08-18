@@ -2,7 +2,7 @@ import { Left, State } from "../parser/index.js"
 import { Branches } from "./branch/index.js"
 
 export namespace Group {
-    export type ReduceOpen<L extends Left.T> = Left.From<{
+    export type ReduceOpen<L extends Left.T.Base> = Left.From<{
         bounds: L["bounds"]
         groups: [...L["groups"], L["branches"]]
         branches: {}
@@ -20,17 +20,15 @@ export namespace Group {
         Top extends Branches.TypeState
     > = [...Stack, Top]
 
-    export type ReduceClose<L extends Left.T> = L["groups"] extends PopGroup<
-        infer Stack,
-        infer Top
-    >
-        ? Left.From<{
-              bounds: L["bounds"]
-              groups: Stack
-              branches: Top
-              root: Branches.MergeAll<L["branches"], L["root"]>
-          }>
-        : Left.Error<`Unexpected ).`>
+    export type ReduceClose<L extends Left.T.Base> =
+        L["groups"] extends PopGroup<infer Stack, infer Top>
+            ? Left.From<{
+                  bounds: L["bounds"]
+                  groups: Stack
+                  branches: Top
+                  root: Branches.MergeAll<L["branches"], L["root"]>
+              }>
+            : Left.Error<`Unexpected ).`>
 
     export const reduceClose = (s: State.WithRoot) => {
         const previousBranches = s.l.groups.pop()
