@@ -1,4 +1,4 @@
-import { Base } from "../../base/index.js.js"
+import { Base } from "../../parser/index.js.js"
 import { TerminalNode } from "../node.js"
 
 export type PrimitiveLiteralValue = string | number | bigint

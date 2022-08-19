@@ -1,4 +1,4 @@
-import { RegexNode } from "../../obj/regex.js.js.js"
+import { RegexNode } from "../../../../obj/terminal/index.js"
 
 export type RegexLiteralDefinition = `/${string}/`
 

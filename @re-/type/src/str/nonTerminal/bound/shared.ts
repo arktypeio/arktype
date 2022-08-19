@@ -1,4 +1,4 @@
-import { Base } from "../../base/index.js"
+import { Base } from "../../parser/index.js"
 import type { Bound } from "./parse.js"
 
 export type BoundChecker = (y: number) => boolean

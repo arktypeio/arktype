@@ -1,6 +1,6 @@
-import { Create, References, Validation } from "../base/features/index.js.js"
-import { Node } from "../base/parse/node.js.js"
-import { defToString } from "../base/utils.js.js"
+import { Create, References, Validation } from "../parser/features/index.js.js"
+import { Node } from "../parser/parse/node.js.js"
+import { defToString } from "../parser/utils.js.js"
 
 export abstract class TerminalNode<DefType = string> extends Node {
     constructor(public def: DefType) {

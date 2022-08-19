@@ -1,4 +1,4 @@
-import { Base } from "../base/index.js"
+import { Base } from "../parser/index.js"
 
 export type ParseChildren = Base.Node | Base.Node[]
 

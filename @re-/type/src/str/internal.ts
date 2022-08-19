@@ -1,1 +1,1 @@
-export * as Base from "./base/index.js"
+export * from "./parser/index.js"

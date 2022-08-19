@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
-import { Base } from "../../base/index.js"
-import { Left, State } from "../../base/index.js"
+import { Base } from "../../parser/index.js"
+import { Left, State } from "../../parser/index.js"
 import { NonTerminal } from "../nonTerminal/nonTerminal.js.js.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"

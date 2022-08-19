@@ -1,5 +1,5 @@
-import { Left, Scan, State } from "../base/index.js"
 import { Base } from "../internal.js"
+import { Left, Scan, State } from "../parser/index.js"
 import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 

@@ -1,6 +1,12 @@
 // TODO: Remove
 /* eslint-disable max-lines */
-import { Base } from "../../base/index.js"
+import {
+    Keyword,
+    literalToNumber,
+    NumberLiteralDefinition,
+    NumberLiteralNode
+} from "../../nodes/terminal/index.js"
+import { Base } from "../../parser/index.js"
 import {
     boundChars,
     boundTokens,
@@ -12,13 +18,7 @@ import {
     SuffixToken,
     tokenSet,
     Tree
-} from "../../base/index.js"
-import {
-    Keyword,
-    literalToNumber,
-    NumberLiteralDefinition,
-    NumberLiteralNode
-} from "../../nodes/terminal/index.js"
+} from "../../parser/index.js"
 import { DoubleBoundDefinition, DoubleBoundNode } from "./double.js"
 import { BoundableV, isBoundable } from "./shared.js.js.js.js"
 import { SingleBoundNode } from "./single.js"

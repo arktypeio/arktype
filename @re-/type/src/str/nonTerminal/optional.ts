@@ -1,5 +1,5 @@
-import { Base } from "../base/index.js"
-import { Expression, State } from "../base/index.js"
+import { Base } from "../parser/index.js"
+import { Expression, State } from "../parser/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace Optional {

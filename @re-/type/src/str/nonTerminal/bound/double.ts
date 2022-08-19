@@ -1,4 +1,4 @@
-import { Base } from "../../base/index.js"
+import { Base } from "../../parser/index.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Bound } from "./parse.js"
 import {

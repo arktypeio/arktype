@@ -1,7 +1,7 @@
 import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
 import { Root } from "../../root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "../../space.js"
-import { Base } from "../base/index.js"
+import { Base } from "../parser/index.js"
 import { Str } from "../str.js"
 import { NonTerminal } from "./nonTerminal/nonTerminal.js.js"
 

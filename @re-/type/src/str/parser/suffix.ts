@@ -1,6 +1,6 @@
 import { Base } from "../../index.js"
 import { Bound } from "../../nonTerminal/index.js"
-import { SuffixToken } from "./tokens.js.js.js"
+import { SuffixToken } from "./tokens.js.js.js.js"
 
 type SuffixLeft = {
     root: Base.Node

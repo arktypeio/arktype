@@ -1,6 +1,6 @@
 import { WithPropValue } from "@re-/tools"
 import { Root } from "../../root.js"
-import { Base } from "../base/index.js.js"
+import { Base } from "../parser/index.js.js"
 import { TerminalNode } from "./node.js"
 
 export namespace AliasType {

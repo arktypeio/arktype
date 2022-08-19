@@ -5,8 +5,8 @@ import {
     Left,
     Scan,
     State
-} from "../base/index.js"
-import { Base } from "../base/index.js.js"
+} from "../parser/index.js"
+import { Base } from "../parser/index.js.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
