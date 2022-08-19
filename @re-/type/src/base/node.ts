@@ -1,10 +1,9 @@
-import type { StructuredNonTerminal } from "../../nonTerminal/index.js"
-import { Create, Validation } from "../features/index.js"
-import { References } from "../features/references.js"
-import { stringifyValue } from "../utils.js"
+import type { StructuredNonTerminal } from "../obj/index.js"
+import type { Create, References, Validate } from "./base.js"
+import { stringifyValue } from "./utils.js"
 
 export abstract class Node {
-    abstract allows(args: Validation.Args): boolean
+    abstract allows(args: Validate.Args): boolean
     abstract generate(args: Create.Args): unknown
     /** Mutates collected by adding references as keys */
     abstract collectReferences(
@@ -26,7 +25,7 @@ export abstract class Node {
         return "structureReferences" in this
     }
 
-    addUnassignable(args: Validation.Args) {
+    addUnassignable(args: Validate.Args) {
         args.errors.add(
             args.ctx.path,
             `${stringifyValue(

@@ -1,4 +1,3 @@
-import { Base } from "../base/index.js"
 import {
     Bound,
     Branches,
@@ -9,7 +8,14 @@ import {
     Union
 } from "../nonTerminal/index.js"
 import { Terminal } from "../terminal/index.js"
-import { Expression, Scanner, State, Suffix, Tokens } from "./core/index.js"
+import { Base } from "./base/index.js"
+import {
+    Expression,
+    Scanner,
+    State,
+    Suffix,
+    Tokens
+} from "./core/index.js.js.js"
 
 export type Context = Base.Parsing.Context
 

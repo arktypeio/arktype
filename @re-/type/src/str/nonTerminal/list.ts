@@ -1,13 +1,10 @@
-import { BoundableNode } from "../affix/bound/index.js"
-import { Base } from "../base/index.js"
-import { NonTerminal } from "../nonTerminal/nonTerminal.js"
-import { Left, Scan, State } from "../parser/index.js"
+import { Left, Scan, State } from "../base/index.js"
+import { Base } from "../internal.js"
+import { BoundableNode } from "./bound/index.js"
+import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
-    export const shiftReduce = (
-        s: State.WithRoot,
-        ctx: Base.Parsing.Context
-    ) => {
+    export const shiftReduce = (s: State.WithRoot, ctx: Base.Parse.Context) => {
         const next = s.r.shift()
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
@@ -40,7 +37,7 @@ export class ListNode extends NonTerminal implements BoundableNode {
         return this.children.toString() + "[]"
     }
 
-    allows(args: Base.Validation.Args) {
+    allows(args: Base.Validate.Args) {
         if (!Array.isArray(args.value)) {
             this.addUnassignable(args)
             return false
@@ -53,7 +50,7 @@ export class ListNode extends NonTerminal implements BoundableNode {
                 value: itemValue,
                 ctx: {
                     ...args.ctx,
-                    path: Base.pathAdd(args.ctx.path, itemIndex)
+                    path: Base.Utils.pathAdd(args.ctx.path, itemIndex)
                 }
             })
             if (!itemIsAllowed) {

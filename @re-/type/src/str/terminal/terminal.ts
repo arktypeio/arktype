@@ -1,4 +1,3 @@
-import { Base } from "../base/index.js"
 import {
     BaseTerminatingChar,
     baseTerminatingChars,
@@ -6,7 +5,8 @@ import {
     Left,
     Scan,
     State
-} from "../parser/index.js"
+} from "../base/index.js"
+import { Base } from "../base/index.js.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {

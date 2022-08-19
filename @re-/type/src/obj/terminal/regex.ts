@@ -6,7 +6,7 @@ export class RegexNode extends TerminalNode<RegExp> {
         return def instanceof RegExp
     }
 
-    allows(args: Base.Validation.Args) {
+    allows(args: Base.Validate.Args) {
         if (typeof args.value !== "string") {
             args.errors.add(
                 "",

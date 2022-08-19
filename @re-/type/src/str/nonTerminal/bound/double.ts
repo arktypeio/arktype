@@ -1,12 +1,12 @@
 import { Base } from "../../base/index.js"
-import { NonTerminal } from "../../nonTerminal/nonTerminal.js"
+import { NonTerminal } from "../nonTerminal.js"
 import { Bound } from "./parse.js"
 import {
     BoundableV,
     BoundableValue,
     BoundChecker,
     createBoundChecker
-} from "./shared.js"
+} from "./shared.js.js.js.js"
 
 export type DoubleBoundValidationError = {
     bounds: DoubleBoundDefinition

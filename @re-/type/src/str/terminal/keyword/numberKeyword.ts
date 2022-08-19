@@ -1,5 +1,5 @@
-import { BoundableNode } from "../../affix/bound/index.js"
-import { Base } from "../../base/index.js"
+import { BoundableNode } from "../../../affix/bound/index.js.js"
+import { Base } from "../../base/index.js.js"
 import { TerminalNode } from "../node.js"
 
 abstract class BaseNumberKeyword extends TerminalNode implements BoundableNode {

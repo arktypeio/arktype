@@ -1,6 +1,5 @@
 import { ClassOf, InstanceOf } from "@re-/tools"
-import { Base } from "../../index.js"
-import { Expression } from "./expression.js"
+import { Base } from "../../base/index.js"
 import { Scanner } from "./scanner.js"
 import { SuffixToken } from "./tokens.js"
 
@@ -19,7 +18,7 @@ export class State<Left extends BaseLeft> {
     }
 
     error(message: string) {
-        throw new Base.Parsing.ParseError(message)
+        throw new Base.Parse.ParseError(message)
     }
 
     rootIs = <NodeClass extends ClassOf<Base.Node>>(

@@ -1,6 +1,6 @@
 import { Base } from "../../base/index.js"
-import { NonTerminal } from "../../nonTerminal/nonTerminal.js"
-import { Expression, State } from "../../parser/index.js"
+import { Expression, State } from "../../base/index.js"
+import { NonTerminal } from "../nonTerminal/nonTerminal.js.js.js"
 import { Branches } from "./branch.js"
 
 export namespace Intersection {

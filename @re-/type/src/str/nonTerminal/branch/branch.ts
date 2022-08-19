@@ -1,4 +1,4 @@
-import { State } from "../../parser/index.js"
+import { State } from "../../base/index.js"
 import { Intersection, IntersectionNode } from "./intersection.js"
 import { Union, UnionNode } from "./union.js"
 

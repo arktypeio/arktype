@@ -1,6 +1,4 @@
 import { isRecursible, toString } from "@re-/tools"
-import { Create, Validation } from "./features/index.js"
-import { Parsing } from "./parse/parsing.js"
 
 export const pathAdd = (...subpaths: (string | number)[]) =>
     subpaths.filter((_) => _ !== "").join("/")
@@ -48,9 +46,3 @@ export const stringifyValue = (value: unknown) =>
 
 export const stringifyPathContext = (path: string) =>
     path ? ` at path ${path}` : ""
-
-export type TypeOptions = {
-    parse?: Parsing.Options
-    validate?: Validation.Options
-    generate?: Create.Options
-}

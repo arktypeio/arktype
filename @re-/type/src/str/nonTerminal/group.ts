@@ -1,4 +1,4 @@
-import { Expression, State } from "../parser/index.js"
+import { Expression, State } from "../base/index.js"
 import { Branches } from "./branch/index.js"
 
 export namespace Group {

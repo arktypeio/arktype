@@ -13,7 +13,7 @@ export class TupleNode extends StructuredNonTerminal {
         return Array.isArray(def)
     }
 
-    allows(args: Base.Validation.Args) {
+    allows(args: Base.Validate.Args) {
         if (!Array.isArray(args.value)) {
             this.addUnassignable(args)
             return false

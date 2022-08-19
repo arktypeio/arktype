@@ -1,6 +1,6 @@
-import { Base } from "../base/index.js"
 import { ListNode, OptionalNode } from "../nonTerminal/index.js"
 import { Terminal } from "../terminal/index.js"
+import { Base } from "./base/index.js"
 import { Core } from "./core.js"
 
 export namespace Naive {

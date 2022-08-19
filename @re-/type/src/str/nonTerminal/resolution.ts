@@ -3,7 +3,7 @@ import { Root } from "../../root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "../../space.js"
 import { Base } from "../base/index.js"
 import { Str } from "../str.js"
-import { NonTerminal } from "./nonTerminal.js"
+import { NonTerminal } from "./nonTerminal/nonTerminal.js.js"
 
 export namespace ResolutionType {
     export type Validate<

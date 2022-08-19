@@ -12,15 +12,15 @@ import {
     SuffixToken,
     tokenSet,
     Tree
-} from "../../parser/index.js"
+} from "../../base/index.js"
 import {
     Keyword,
     literalToNumber,
     NumberLiteralDefinition,
     NumberLiteralNode
-} from "../../terminal/index.js"
+} from "../../nodes/terminal/index.js"
 import { DoubleBoundDefinition, DoubleBoundNode } from "./double.js"
-import { BoundableV, isBoundable } from "./shared.js"
+import { BoundableV, isBoundable } from "./shared.js.js.js.js"
 import { SingleBoundNode } from "./single.js"
 
 export namespace Bound {

@@ -26,14 +26,14 @@ export namespace RecordType {
 type RecordLike = Record<string, unknown>
 
 export const isArgValueRecordLike = (
-    args: Base.Validation.Args
-): args is Base.Validation.Args<RecordLike> =>
+    args: Base.Validate.Args
+): args is Base.Validate.Args<RecordLike> =>
     typeof args.value === "object" &&
     args.value !== null &&
     !Array.isArray(args.value)
 
 export class RecordNode extends StructuredNonTerminal {
-    allows(args: Base.Validation.Args) {
+    allows(args: Base.Validate.Args) {
         if (!isArgValueRecordLike(args)) {
             this.addUnassignable(args)
             return false
@@ -55,7 +55,7 @@ export class RecordNode extends StructuredNonTerminal {
         return propValidationResults.allSeenKeysAllowed
     }
 
-    private allowsProps(args: Base.Validation.Args<Record<string, unknown>>) {
+    private allowsProps(args: Base.Validate.Args<Record<string, unknown>>) {
         const result = {
             unseenValueKeys: new Set(Object.keys(args.value)),
             allSeenKeysAllowed: true
