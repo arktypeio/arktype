@@ -1,12 +1,12 @@
 import { WithPropValue } from "@re-/tools"
+import { Core } from "../../core/index.js"
 import { Root } from "../../root.js"
-import { Base } from "../parser/index.js.js"
 import { TerminalNode } from "./node.js"
 
 export namespace AliasType {
     export type Infer<
         Def extends keyof Ctx["dict"],
-        Ctx extends Base.Parsing.InferenceContext
+        Ctx extends Core.Parse.InferenceContext
     > = "onResolve" extends keyof Ctx["meta"]
         ? Def extends "$resolution"
             ? BaseOf<Def, Ctx>
@@ -19,12 +19,12 @@ export namespace AliasType {
 
     type BaseOf<
         Def extends keyof Ctx["dict"],
-        Ctx extends Base.Parsing.InferenceContext
+        Ctx extends Core.Parse.InferenceContext
     > = Root.Infer<Ctx["dict"][Def], Ctx & { seen: { [K in Def]: true } }>
 
     type OnResolveOf<
         Def extends keyof Ctx["dict"],
-        Ctx extends Base.Parsing.InferenceContext
+        Ctx extends Core.Parse.InferenceContext
     > = Root.Infer<
         Ctx["meta"]["onResolve"],
         {
@@ -36,7 +36,7 @@ export namespace AliasType {
 
     type OnCycleOf<
         Def extends keyof Ctx["dict"],
-        Ctx extends Base.Parsing.InferenceContext
+        Ctx extends Core.Parse.InferenceContext
     > = Root.Infer<
         Ctx["meta"]["onCycle"],
         {
@@ -48,11 +48,11 @@ export namespace AliasType {
 }
 
 export class AliasNode extends TerminalNode {
-    static matches(def: string, ctx: Base.Parsing.Context) {
+    static matches(def: string, ctx: Core.Parse.Context) {
         return !!ctx.space && def in ctx.space.dictionary
     }
 
-    constructor(def: string, private ctx: Base.Parsing.Context) {
+    constructor(def: string, private ctx: Core.Parse.Context) {
         super(def)
     }
 
@@ -60,11 +60,11 @@ export class AliasNode extends TerminalNode {
         return this.ctx.space!.resolutions[this.def]
     }
 
-    allows(args: Base.Validation.Args): boolean {
+    allows(args: Core.Validate.Args): boolean {
         return this.resolution.allows(args)
     }
 
-    generate(args: Base.Create.Args): unknown {
+    generate(args: Core.Create.Args): unknown {
         return this.resolution.generate(args)
     }
 }

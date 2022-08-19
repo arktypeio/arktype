@@ -1,7 +1,7 @@
-import { Base } from "../../base/index.js"
+import { Core } from "../../core/index.js"
 import { ListNode, OptionalNode } from "../nonTerminal/index.js"
 import { Terminal } from "../terminal/index.js"
-import { Core } from "./core.js"
+import { Parse } from "./main.js"
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -16,19 +16,19 @@ export type TryParse<Def extends string, Dict> = Def extends `${infer Child}?`
     ? Child extends `${infer Item}[]`
         ? Terminal.IsResolvableName<Item, Dict> extends true
             ? [[Item, "[]"], "?"]
-            : Core.Parse<Def, Dict>
+            : Parse<Def, Dict>
         : Terminal.IsResolvableName<Child, Dict> extends true
         ? [Child, "?"]
-        : Core.Parse<Def, Dict>
+        : Parse<Def, Dict>
     : Def extends `${infer Child}[]`
     ? Terminal.IsResolvableName<Child, Dict> extends true
         ? [Child, "[]"]
-        : Core.Parse<Def, Dict>
+        : Parse<Def, Dict>
     : Terminal.IsResolvableName<Def, Dict> extends true
     ? Def
-    : Core.Parse<Def, Dict>
+    : Parse<Def, Dict>
 
-export const tryParse = (def: string, ctx: Base.Parse.Context) => {
+export const tryParse = (def: string, ctx: Core.Parse.Context) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
@@ -38,7 +38,7 @@ export const tryParse = (def: string, ctx: Base.Parse.Context) => {
     return tryParseList(def, ctx)
 }
 
-const tryParseList = (def: string, ctx: Base.Parse.Context) => {
+const tryParseList = (def: string, ctx: Core.Parse.Context) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = Terminal.toNodeIfResolvableIdentifier(
             def.slice(0, -2),

@@ -1,6 +1,6 @@
 import { Evaluate } from "@re-/tools"
 import { Root } from "../../../root.js"
-import { Base } from "../../base/index.js"
+import { Core } from "../../core/index.js"
 import { OptionalNode } from "../optional.js"
 import { StructuredNonTerminal } from "./structuredNonTerminal.js"
 
@@ -9,7 +9,7 @@ export namespace RecordType {
 
     export type Infer<
         Def,
-        Ctx extends Base.Parsing.InferenceContext,
+        Ctx extends Core.Parsing.InferenceContext,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends `${string}?` ? K : never
         }[keyof Def],
@@ -26,14 +26,14 @@ export namespace RecordType {
 type RecordLike = Record<string, unknown>
 
 export const isArgValueRecordLike = (
-    args: Base.Validate.Args
-): args is Base.Validate.Args<RecordLike> =>
+    args: Core.Validate.Args
+): args is Core.Validate.Args<RecordLike> =>
     typeof args.value === "object" &&
     args.value !== null &&
     !Array.isArray(args.value)
 
 export class RecordNode extends StructuredNonTerminal {
-    allows(args: Base.Validate.Args) {
+    allows(args: Core.Validate.Args) {
         if (!isArgValueRecordLike(args)) {
             this.addUnassignable(args)
             return false
@@ -55,13 +55,13 @@ export class RecordNode extends StructuredNonTerminal {
         return propValidationResults.allSeenKeysAllowed
     }
 
-    private allowsProps(args: Base.Validate.Args<Record<string, unknown>>) {
+    private allowsProps(args: Core.Validate.Args<Record<string, unknown>>) {
         const result = {
             unseenValueKeys: new Set(Object.keys(args.value)),
             allSeenKeysAllowed: true
         }
         for (const [propKey, propNode] of this.entries) {
-            const pathWithProp = Base.pathAdd(args.ctx.path, propKey)
+            const pathWithProp = Core.pathAdd(args.ctx.path, propKey)
             if (propKey in args.value) {
                 const propIsAllowed = propNode.allows({
                     ...args,
@@ -86,7 +86,7 @@ export class RecordNode extends StructuredNonTerminal {
         return result
     }
 
-    generate(args: Base.Create.Args) {
+    generate(args: Core.Create.Args) {
         const result: Record<string, unknown> = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
@@ -97,7 +97,7 @@ export class RecordNode extends StructuredNonTerminal {
                 ...args,
                 ctx: {
                     ...args.ctx,
-                    path: Base.pathAdd(args.ctx.path, propKey)
+                    path: Core.pathAdd(args.ctx.path, propKey)
                 }
             })
         }

@@ -1,13 +1,13 @@
 import { isEmpty } from "@re-/tools"
-import { Base } from "../../index.js"
-import { Bound, Branches } from "../../nonTerminal/index.js"
+import { Core } from "../../core/index.js"
+import { Bound, Branches } from "../nonTerminal/index.js"
 import { ErrorToken, SuffixToken } from "./tokens.js"
 
 type ExpressionLeft = {
     bounds: Bound.State
     groups: Branches.ValueState[]
     branches: Branches.ValueState
-    root: Base.Node | undefined
+    root: Core.Node | undefined
     nextSuffix: SuffixToken | undefined
 }
 

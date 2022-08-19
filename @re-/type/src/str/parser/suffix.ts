@@ -1,9 +1,9 @@
-import { Base } from "../../index.js"
-import { Bound } from "../../nonTerminal/index.js"
-import { SuffixToken } from "./tokens.js.js.js.js"
+import { Core } from "../../core/index.js"
+import { Bound } from "../nonTerminal/index.js"
+import { SuffixToken } from "./tokens.js"
 
 type SuffixLeft = {
-    root: Base.Node
+    root: Core.Node
     bounds: Bound.State
     nextSuffix: SuffixToken
 }

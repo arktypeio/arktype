@@ -1,12 +1,5 @@
-import {
-    BaseTerminatingChar,
-    baseTerminatingChars,
-    EnclosedBaseStartChar,
-    Left,
-    Scan,
-    State
-} from "../parser/index.js"
-import { Base } from "../parser/index.js.js"
+import { Core } from "../base.js"
+import { Scanner, State, Tokens, UntilCondition } from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
@@ -24,7 +17,7 @@ import {
 export namespace Terminal {
     const unterminatedEnclosedMessage = <
         Fragment extends string,
-        Enclosing extends EnclosedBaseStartChar
+        Enclosing extends Tokens.EnclosedBaseStartChar
     >(
         fragment: Fragment,
         enclosing: Enclosing
@@ -33,12 +26,12 @@ export namespace Terminal {
 
     type UnterminatedEnclosedMessage<
         Fragment extends string,
-        Enclosing extends EnclosedBaseStartChar
+        Enclosing extends Tokens.EnclosedBaseStartChar
     > = `${Fragment} requires a closing ${Enclosing}.`
 
     const untilLookaheadIsClosing: Record<
-        EnclosedBaseStartChar,
-        State.UntilCondition
+        Tokens.EnclosedBaseStartChar,
+        UntilCondition
     > = {
         "'": (scanner) => scanner.lookahead === `'`,
         '"': (scanner) => scanner.lookahead === `"`,
@@ -90,7 +83,7 @@ export namespace Terminal {
     const lookaheadIsBaseTerminating: State.UntilCondition = (scanner) =>
         scanner.lookahead in baseTerminatingChars
 
-    export const unenclosedBase = (s: State.V, ctx: Base.Parsing.Context) => {
+    export const unenclosedBase = (s: State.V, ctx: Core.Parsing.Context) => {
         const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
         s.l.root = unenclosedToNode(token, ctx)
         return s
@@ -109,7 +102,7 @@ export namespace Terminal {
 
     export const toNodeIfResolvableIdentifier = (
         token: string,
-        ctx: Base.Parsing.Context
+        ctx: Core.Parsing.Context
     ) => {
         if (Keyword.matches(token)) {
             return Keyword.parse(token)
@@ -118,7 +111,7 @@ export namespace Terminal {
         }
     }
 
-    const unenclosedToNode = (token: string, ctx: Base.Parsing.Context) => {
+    const unenclosedToNode = (token: string, ctx: Core.Parsing.Context) => {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(token, ctx)
         if (possibleIdentifierNode) {
             return possibleIdentifierNode
@@ -167,7 +160,7 @@ export namespace Terminal {
 
 export type InferTerminalStr<
     Token extends string,
-    Ctx extends Base.Parsing.InferenceContext
+    Ctx extends Core.Parsing.InferenceContext
 > = Token extends Keyword.Definition
     ? Keyword.Types[Token]
     : Token extends keyof Ctx["dict"]

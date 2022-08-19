@@ -1,4 +1,4 @@
-import { Base } from "../../base/index.js"
+import { Core } from "../../core/index.js"
 import { StructuredNonTerminal } from "./structuredNonTerminal.js"
 
 export namespace TupleType {
@@ -13,7 +13,7 @@ export class TupleNode extends StructuredNonTerminal {
         return Array.isArray(def)
     }
 
-    allows(args: Base.Validate.Args) {
+    allows(args: Core.Validate.Args) {
         if (!Array.isArray(args.value)) {
             this.addUnassignable(args)
             return false
@@ -32,7 +32,7 @@ export class TupleNode extends StructuredNonTerminal {
                 value: args.value[itemIndex as any],
                 ctx: {
                     ...args.ctx,
-                    path: Base.pathAdd(args.ctx.path, itemIndex)
+                    path: Core.pathAdd(args.ctx.path, itemIndex)
                 }
             })
             if (!itemIsAllowed) {
@@ -42,7 +42,7 @@ export class TupleNode extends StructuredNonTerminal {
         return allItemsAllowed
     }
 
-    generate(args: Base.Create.Args) {
+    generate(args: Core.Create.Args) {
         const result: unknown[] = []
         for (const [itemIndex, itemNode] of this.entries) {
             result.push(
@@ -50,7 +50,7 @@ export class TupleNode extends StructuredNonTerminal {
                     ...args,
                     ctx: {
                         ...args.ctx,
-                        path: Base.pathAdd(args.ctx.path, itemIndex)
+                        path: Core.pathAdd(args.ctx.path, itemIndex)
                     }
                 })
             )

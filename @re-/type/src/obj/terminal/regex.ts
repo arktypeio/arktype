@@ -1,4 +1,4 @@
-import { Base } from "../../base/index.js"
+import { Core } from "../../core/index.js"
 import { TerminalNode } from "../node.js"
 
 export class RegexNode extends TerminalNode<RegExp> {
@@ -6,11 +6,11 @@ export class RegexNode extends TerminalNode<RegExp> {
         return def instanceof RegExp
     }
 
-    allows(args: Base.Validate.Args) {
+    allows(args: Core.Validate.Args) {
         if (typeof args.value !== "string") {
             args.errors.add(
                 "",
-                `Non-string value ${Base.stringifyValue(
+                `Non-string value ${Core.stringifyValue(
                     args.value
                 )} cannot satisfy regex definitions.`
             )
@@ -19,7 +19,7 @@ export class RegexNode extends TerminalNode<RegExp> {
         if (!this.def.test(args.value)) {
             args.errors.add(
                 "",
-                `${Base.stringifyValue(
+                `${Core.stringifyValue(
                     args.value
                 )} does not match expression ${this.toString()}.`
             )
@@ -29,7 +29,7 @@ export class RegexNode extends TerminalNode<RegExp> {
     }
 
     generate() {
-        throw new Base.Create.UngeneratableError(
+        throw new Core.Create.UngeneratableError(
             `/${this.def.source}/`,
             "Regex generation is unsupported."
         )

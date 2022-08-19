@@ -1,11 +1,19 @@
 import { ClassOf, InstanceOf } from "@re-/tools"
-import { Base } from "../../base/index.js"
+import { Core } from "../../core/index.js"
 import { Scanner } from "./scanner.js"
 import { SuffixToken } from "./tokens.js"
 
 type BaseLeft = {
-    root?: Base.Node
+    root?: Core.Node
     nextSuffix?: SuffixToken
+}
+
+type ExpressionLeft = {
+    bounds: Bound.State
+    groups: Branches.ValueState[]
+    branches: Branches.ValueState
+    root: Core.Node | undefined
+    nextSuffix: SuffixToken | undefined
 }
 
 export class State<Left extends BaseLeft> {
@@ -18,10 +26,10 @@ export class State<Left extends BaseLeft> {
     }
 
     error(message: string) {
-        throw new Base.Parse.ParseError(message)
+        throw new Core.Parse.ParseError(message)
     }
 
-    rootIs = <NodeClass extends ClassOf<Base.Node>>(
+    rootIs = <NodeClass extends ClassOf<Core.Node>>(
         nodeClass: NodeClass
     ): this is State<Left & { root: InstanceOf<NodeClass> }> =>
         this.l.root instanceof nodeClass

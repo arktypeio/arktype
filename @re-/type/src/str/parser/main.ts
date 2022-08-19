@@ -1,3 +1,4 @@
+import { Core } from "../../core/index.js"
 import {
     Bound,
     Branches,
@@ -8,23 +9,20 @@ import {
     Union
 } from "../nonTerminal/index.js"
 import { Terminal } from "../terminal/index.js"
-import { Expression, Scanner, State, Suffix, Tokens } from "./core/index.js"
-import { Base } from "./index.js"
+import { Expression, Scanner, State, Suffix, Tokens } from "./index.js"
 
-export type Context = Base.Parsing.Context
-
-export const parse = (def: string, ctx: Context): Base.Node => {
+export const parse = (def: string, ctx: Core.Parse.Context): Core.Node => {
     const s = new State(def, new Expression())
     base(s, ctx)
     return loop(s, ctx)
 }
 
 export type Parse<Def extends string, Dict> = Loop<
-    Base<State.From<Expression.Initial, Def>, Dict>,
+    Core<State.From<Expression.Initial, Def>, Dict>,
     Dict
 >
 
-const loop = (s: State<Expression>, ctx: Context): Base.Node => {
+const loop = (s: State<Expression>, ctx: Core.Parse.Context): Core.Node => {
     while (!s.l.isSuffixable()) {
         next(s, ctx)
     }
@@ -37,18 +35,23 @@ type Loop<S extends State.Of<Expression.T>, Dict> = Expression.IsSuffixable<
     ? SuffixLoop<S>
     : Loop<Next<S, Dict>, Dict>
 
-const next = (s: State<Expression>, ctx: Context): State<Expression> =>
-    s.l.root ? operator(s, ctx) : base(s, ctx)
+const next = (
+    s: State<Expression>,
+    ctx: Core.Parse.Context
+): State<Expression> => (s.l.root ? operator(s, ctx) : base(s, ctx))
 
 type Next<
     S extends State.Of<Expression.T>,
     Dict
-> = S["L"]["root"] extends undefined ? Base<S, Dict> : Operator<S>
+> = S["L"]["root"] extends undefined ? Core<S, Dict> : Operator<S>
 
 const expressionExpectedMessage = `Expected an expression.`
 type ExpressionExpectedMessage = typeof expressionExpectedMessage
 
-const base = (s: State<Expression>, ctx: Context): State<Expression> => {
+const base = (
+    s: State<Expression>,
+    ctx: Core.Parse.Context
+): State<Expression> => {
     const lookahead = s.r.shift()
     return lookahead === "("
         ? Group.reduceOpen(s)
@@ -61,7 +64,7 @@ const base = (s: State<Expression>, ctx: Context): State<Expression> => {
         : Terminal.unenclosedBase(s, ctx)
 }
 
-export type Base<
+export type Core<
     S extends State.Of<Expression.T>,
     Dict
 > = S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
@@ -70,11 +73,14 @@ export type Base<
         : Lookahead extends Tokens.EnclosedBaseStartChar
         ? Terminal.EnclosedBase<S, Lookahead>
         : Lookahead extends " "
-        ? Base<{ L: S["L"]; R: Unscanned }, Dict>
+        ? Core<{ L: S["L"]; R: Unscanned }, Dict>
         : Terminal.UnenclosedBase<S, Lookahead, Unscanned, Dict>
     : State.Error<ExpressionExpectedMessage>
 
-const operator = (s: State<Expression>, ctx: Context): State<Expression> => {
+const operator = (
+    s: State<Expression>,
+    ctx: Core.Parse.Context
+): State<Expression> => {
     const lookahead = s.r.shift()
     return lookahead === "END"
         ? transitionToSuffix(s, "END")
@@ -152,8 +158,8 @@ export type TransitionToSuffix<
 
 export const suffix = (
     s: State<Suffix>,
-    ctx: Base.Parsing.Context
-): Base.Node => {
+    ctx: Core.Parse.Context
+): Core.Node => {
     if (s.l.nextSuffix === "END") {
         return s.l.root
     }

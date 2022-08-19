@@ -1,10 +1,10 @@
-import { Base } from "../internal.js"
+import { Core } from "../base.js"
 import { Left, Scan, State } from "../parser/index.js"
 import { BoundableNode } from "./bound/index.js"
 import { NonTerminal } from "./nonTerminal.js"
 
 export namespace List {
-    export const shiftReduce = (s: State.WithRoot, ctx: Base.Parse.Context) => {
+    export const shiftReduce = (s: State.WithRoot, ctx: Core.Parse.Context) => {
         const next = s.r.shift()
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
@@ -37,7 +37,7 @@ export class ListNode extends NonTerminal implements BoundableNode {
         return this.children.toString() + "[]"
     }
 
-    allows(args: Base.Validate.Args) {
+    allows(args: Core.Validate.Args) {
         if (!Array.isArray(args.value)) {
             this.addUnassignable(args)
             return false
@@ -50,7 +50,7 @@ export class ListNode extends NonTerminal implements BoundableNode {
                 value: itemValue,
                 ctx: {
                     ...args.ctx,
-                    path: Base.Utils.pathAdd(args.ctx.path, itemIndex)
+                    path: Core.Utils.pathAdd(args.ctx.path, itemIndex)
                 }
             })
             if (!itemIsAllowed) {
