@@ -1,9 +1,9 @@
 import { NonTerminal } from "../../node/nonTerminal.js"
 import { Node } from "../common.js"
-import { State } from "../parser/index.js"
+import { left, state } from "../parser/index.js"
 
 export namespace Optional {
-    export const reduce = (s: State.withRoot, ctx: Node.Context) => {
+    export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
         if (s.r.lookahead !== undefined) {
             throw new Error(
                 `Suffix '?' is only valid at the end of a definition.`

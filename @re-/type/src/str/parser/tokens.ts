@@ -53,14 +53,3 @@ export const suffixTokens = tokenSet({
 export type ErrorToken<Message extends string> = `!${Message}`
 
 export type SuffixToken = keyof typeof suffixTokens
-
-// The operator tokens that are exactly one character and are not the first character of a longer token
-export const trivialSingleCharOperators = {
-    "|": 1,
-    "&": 1,
-    "?": 1,
-    ")": 1,
-    END: 1
-}
-
-export type TrivialSingleCharOperator = keyof typeof trivialSingleCharOperators

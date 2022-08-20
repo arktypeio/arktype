@@ -3,6 +3,7 @@ import {
     Left,
     OnInputEndFn,
     Scanner,
+    state,
     State,
     Tokens,
     UntilCondition
@@ -46,7 +47,7 @@ export namespace Terminal {
     }
 
     export const enclosedBase = (
-        s: State,
+        s: state,
         enclosing: Tokens.EnclosedBaseStartChar
     ) => {
         const enclosed =
@@ -66,7 +67,7 @@ export namespace Terminal {
     }
 
     export type EnclosedBase<
-        S extends State.Base,
+        S extends State,
         Enclosing extends Tokens.EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
         ? State.From<{
@@ -87,14 +88,14 @@ export namespace Terminal {
     const lookaheadIsBaseTerminating: UntilCondition = (scanner) =>
         scanner.lookahead in Tokens.baseTerminatingChars
 
-    export const unenclosedBase = (s: State, ctx: Node.Context) => {
+    export const unenclosedBase = (s: state, ctx: Node.Context) => {
         const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
         s.l.root = unenclosedToNode(token, ctx)
         return s
     }
 
     export type UnenclosedBase<
-        S extends State.Base,
+        S extends State,
         Fragment extends string,
         Unscanned extends string,
         Dict
@@ -130,7 +131,7 @@ export namespace Terminal {
     }
 
     type ValidateUnenclosed<
-        S extends State.Base,
+        S extends State,
         Token extends string,
         Unscanned extends string,
         Dict

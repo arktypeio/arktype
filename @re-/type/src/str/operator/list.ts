@@ -1,10 +1,10 @@
 import { NonTerminal } from "../../node/nonTerminal.js"
 import { Node } from "../common.js"
-import { Left, Scanner, State } from "../parser/index.js"
+import { Left, left, Scanner, State, state } from "../parser/index.js"
 import { BoundableNode } from "./bound/index.js"
 
 export namespace List {
-    export const shiftReduce = (s: State.withRoot, ctx: Node.Context) => {
+    export const shiftReduce = (s: state<left.withRoot>, ctx: Node.Context) => {
         const next = s.r.shift()
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
@@ -14,7 +14,7 @@ export namespace List {
     }
 
     export type ShiftReduce<
-        S extends State.Base,
+        S extends State,
         Unscanned extends string
     > = Unscanned extends Scanner.Shift<"]", infer Remaining>
         ? State.From<{ L: List.Reduce<S["L"]>; R: Remaining }>

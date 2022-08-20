@@ -1,4 +1,4 @@
-export class Scanner {
+export class scanner {
     private chars: string[]
     private i: number
 
@@ -38,9 +38,9 @@ export namespace Scanner {
     > = `${Lookahead}${Unscanned}`
 }
 
-export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
+export type UntilCondition = (scanner: scanner, shifted: string) => boolean
 
-export type OnInputEndFn = (scanner: Scanner, shifted: string) => string
+export type OnInputEndFn = (scanner: scanner, shifted: string) => string
 
 export type ShiftUntilOptions = {
     onInputEnd?: OnInputEndFn

@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
 import { Node } from "../../common.js"
-import { Left, State } from "../../parser/index.js"
+import { Left, left, state } from "../../parser/index.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"
 
@@ -30,7 +30,7 @@ export namespace Union {
         ]
     }
 
-    export const reduce = (s: State.withRoot, ctx: Node.Context) => {
+    export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
         if (Intersection.isMergeable(s)) {
             Intersection.merge(s)
         }
@@ -50,12 +50,12 @@ export namespace Union {
         root: undefined
     }>
 
-    export type Mergeable = State<{
+    export type Mergeable = state<{
         root: Node.Base
         branches: { union: UnionNode }
     }>
 
-    export const isMergeable = (s: State): s is Mergeable =>
+    export const isMergeable = (s: state): s is Mergeable =>
         s.l.root !== undefined && s.l.branches.intersection instanceof UnionNode
 
     export const merge = (s: Mergeable) => {

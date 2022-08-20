@@ -9,20 +9,14 @@ import {
 import { Node } from "../../common.js"
 import {
     Left,
-    Main,
+    left,
     Scanner,
+    state,
     State,
-    Suffix,
+    Tokens,
     Tree,
     UntilCondition
 } from "../../parser/index.js"
-import {
-    boundChars,
-    boundTokens,
-    inTokenSet,
-    SuffixToken,
-    tokenSet
-} from "../../parser/tokens.js"
 import { DoubleBoundDefinition, DoubleBoundNode } from "./double.js"
 import { BoundableNode, isBoundable } from "./shared.js"
 import { SingleBoundNode } from "./single.js"
@@ -33,9 +27,9 @@ export namespace Bound {
         right?: Bound.Right
     }
 
-    export const tokens = boundTokens
+    export const tokens = Tokens.boundTokens
 
-    export const chars = boundChars
+    export const chars = Tokens.boundChars
 
     export type Token = keyof typeof tokens
 
@@ -43,12 +37,12 @@ export namespace Bound {
 
     export type DoubleBoundToken = keyof typeof doubleBoundTokens
 
-    export const doubleBoundTokens = tokenSet({
+    export const doubleBoundTokens = Tokens.tokenSet({
         "<": 1,
         "<=": 1
     })
 
-    const singleCharBoundTokens = tokenSet({
+    const singleCharBoundTokens = Tokens.tokenSet({
         "<": 1,
         ">": 1
     })
@@ -69,11 +63,11 @@ export namespace Bound {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    export const parse = (s: State.withRoot, start: Bound.Char) => {
+    export const parse = (s: state<left.withRoot>, start: Bound.Char) => {
         if (s.r.lookahead === "=") {
             s.r.shift()
             reduce(s, `${start}${s.r.lookahead}`)
-        } else if (inTokenSet(start, singleCharBoundTokens)) {
+        } else if (Tokens.inTokenSet(start, singleCharBoundTokens)) {
             reduce(s, start)
         } else {
             throw new Error(singleEqualsMessage)
@@ -82,7 +76,7 @@ export namespace Bound {
     }
 
     export type Parse<
-        S extends State.Base,
+        S extends State,
         Start extends Bound.Char,
         Unscanned extends string
     > = Unscanned extends Scanner.Shift<"=", infer Rest>
@@ -116,20 +110,20 @@ export namespace Bound {
     ): NonPrefixLeftBoundMessage<BoundingValue, T> =>
         `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
-    export const reduce = (s: State.withRoot, token: Token) =>
+    export const reduce = (s: state<left.withRoot>, token: Token) =>
         s.hasRoot(NumberLiteralNode)
             ? reduceLeft(s, token)
-            : Main.transitionToSuffix(s, token)
+            : s.setNextSuffix(token)
 
     export type Reduce<
         L extends Left.Base,
         Comparator extends Token
     > = L extends Left.WithRoot<NumberLiteralDefinition<infer BoundingValue>>
         ? ReduceLeft<L, Comparator, BoundingValue>
-        : Main.TransitionToSuffix<L, Comparator>
+        : Left.SetNextSuffix<L, Comparator>
 
     const applyLeftBound = (
-        s: State.withRoot<NumberLiteralNode>,
+        s: state<left.withRoot<NumberLiteralNode>>,
         token: DoubleBoundToken
     ) => {
         s.l.bounds.left = [s.l.root.value, token]
@@ -138,14 +132,14 @@ export namespace Bound {
     }
 
     const reduceLeft = (
-        s: State.withRoot<NumberLiteralNode>,
+        s: state<left.withRoot<NumberLiteralNode>>,
         token: Bound.Token
     ) =>
         s.isPrefixable()
-            ? inTokenSet(token, doubleBoundTokens)
+            ? Tokens.inTokenSet(token, doubleBoundTokens)
                 ? applyLeftBound(s, token)
-                : s.error(invalidDoubleBoundMessage(token))
-            : s.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
+                : state.error(invalidDoubleBoundMessage(token))
+            : state.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
 
     type ReduceLeft<
         L extends Left.Base,
@@ -180,7 +174,7 @@ export namespace Bound {
         scanner.lookahead === "?"
 
     export const parseRight = (
-        s: State<Suffix>,
+        s: state<left.suffix>,
         token: Token,
         ctx: Node.Context
     ) => {
@@ -193,11 +187,11 @@ export namespace Bound {
                   nextSuffix,
                   ctx
               )
-            : s.error(rightBoundSuffixMessage(token, boundingValue))
+            : state.error(rightBoundSuffixMessage(token, boundingValue))
     }
 
     export type ParseRight<
-        S extends State.Of<Suffix.Base>,
+        S extends State.Of<Left.Suffix>,
         T extends Token
     > = S["R"] extends BoundingValueWithSuffix<
         infer Value,
@@ -222,49 +216,50 @@ export namespace Bound {
     > = `${BoundingValue}${NextSuffix}${Unscanned}`
 
     export const reduceRight = (
-        s: State<Suffix>,
+        s: state<left.suffix>,
         right: Right,
-        nextSuffix: SuffixToken,
+        nextSuffix: Tokens.SuffixToken,
         ctx: Node.Context
     ) =>
         hasBoundableRoot(s)
             ? hasLeftBound(s)
                 ? reduceDouble(s, right, nextSuffix, ctx)
                 : reduceSingle(s, right, nextSuffix, ctx)
-            : s.error(unboundableMessage(s.l.root.toString()))
+            : state.error(unboundableMessage(s.l.root.toString()))
 
     export type ReduceRight<
-        L extends Suffix.Base,
+        L extends Left.Suffix,
         R extends Right,
-        NextSuffix extends SuffixToken
+        NextSuffix extends Tokens.SuffixToken
     > = HasBoundableRoot<L> extends true
         ? HasLeftBound<L> extends true
             ? ReduceDouble<L, R, NextSuffix>
             : ReduceSingle<L, R, NextSuffix>
         : Left.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
 
-    type HasBoundableRoot<L extends Suffix.Base> = L["root"] extends BoundableT
+    type HasBoundableRoot<L extends Left.Suffix> = L["root"] extends BoundableT
         ? true
         : false
 
     const hasBoundableRoot = (
-        s: State<Suffix>
-    ): s is State<Suffix & { root: BoundableNode }> => isBoundable(s.l.root)
+        s: state<left.suffix>
+    ): s is state<left.suffix<{ root: BoundableNode }>> => isBoundable(s.l.root)
 
-    type HasLeftBound<L extends Suffix.Base> = "left" extends keyof L
+    type HasLeftBound<L extends Left.Suffix> = "left" extends keyof L
         ? true
         : false
 
     const hasLeftBound = (
-        s: State<Suffix>
-    ): s is State<Suffix & { bounds: Required<Bounds> }> => "left" in s.l.bounds
+        s: state<left.suffix>
+    ): s is state<left.suffix<{ bounds: Required<Bounds> }>> =>
+        "left" in s.l.bounds
 
     type ReduceDouble<
-        L extends Suffix.Base,
+        L extends Left.Suffix,
         R extends Right,
-        NextSuffix extends SuffixToken
+        NextSuffix extends Tokens.SuffixToken
     > = IsValidDoubleBound<R[0]> extends true
-        ? Suffix.From<{
+        ? Left.SuffixFrom<{
               bounds: {
                   left: L["bounds"]["left"]
                   right: R
@@ -275,9 +270,11 @@ export namespace Bound {
         : Left.Error<InvalidDoubleBoundMessage<R[0]>>
 
     const reduceDouble = (
-        s: State<Suffix & { root: BoundableNode; bounds: Required<Bounds> }>,
+        s: state<
+            left.suffix<{ root: BoundableNode; bounds: Required<Bounds> }>
+        >,
         right: Right,
-        nextSuffix: SuffixToken,
+        nextSuffix: Tokens.SuffixToken,
         ctx: Node.Context
     ) => {
         s.l.bounds.right = right
@@ -286,14 +283,14 @@ export namespace Bound {
             s.l.root = new DoubleBoundNode(s.l.root, s.l.bounds, ctx) as any
             return s
         }
-        return s.error(invalidDoubleBoundMessage(right[0]))
+        return state.error(invalidDoubleBoundMessage(right[0]))
     }
 
     type ReduceSingle<
-        L extends Suffix.Base,
+        L extends Left.Suffix,
         R extends Right,
-        NextSuffix extends SuffixToken
-    > = Suffix.From<{
+        NextSuffix extends Tokens.SuffixToken
+    > = Left.SuffixFrom<{
         bounds: {
             right: R
         }
@@ -303,9 +300,9 @@ export namespace Bound {
 
     //TODO: Try out types to stop casting to any?
     const reduceSingle = (
-        s: State<Suffix & { root: BoundableNode }>,
+        s: state<left.suffix<{ root: BoundableNode }>>,
         right: Right,
-        nextSuffix: SuffixToken,
+        nextSuffix: Tokens.SuffixToken,
         ctx: Node.Context
     ) => {
         s.l.bounds.right = right
@@ -317,7 +314,7 @@ export namespace Bound {
     const isValidDoubleBound = (
         bounds: Required<Bounds>
     ): bounds is DoubleBoundDefinition =>
-        inTokenSet(bounds.right[0], doubleBoundTokens)
+        Tokens.inTokenSet(bounds.right[0], doubleBoundTokens)
 
     type IsValidDoubleBound<RightToken extends Token> =
         RightToken extends DoubleBoundToken ? true : false

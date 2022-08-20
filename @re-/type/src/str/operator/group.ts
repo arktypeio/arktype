@@ -1,4 +1,4 @@
-import { Left, State } from "../parser/index.js"
+import { Left, left, state } from "../parser/index.js"
 import { Branches } from "./branch/index.js"
 
 export namespace Group {
@@ -9,7 +9,7 @@ export namespace Group {
         root: undefined
     }>
 
-    export const reduceOpen = (s: State) => {
+    export const reduceOpen = (s: state) => {
         s.l.groups.push(s.l.branches)
         s.l.branches = {}
         return s
@@ -32,7 +32,7 @@ export namespace Group {
           }>
         : Left.Error<`Unexpected ).`>
 
-    export const reduceClose = (s: State.withRoot) => {
+    export const reduceClose = (s: state<left.withRoot>) => {
         const previousBranches = s.l.groups.pop()
         if (previousBranches === undefined) {
             throw new Error(`Unexpected ).`)
