@@ -8,8 +8,7 @@ import {
 } from "../../base/index.js"
 import { Node } from "../../common.js"
 import {
-    Expression,
-    ExpressionWithRoot,
+    Left,
     Main,
     Scanner,
     State,
@@ -70,7 +69,7 @@ export namespace Bound {
         | Keyword.OfTypeString
         | [unknown, "[]"]
 
-    export const parse = (s: State<ExpressionWithRoot>, start: Bound.Char) => {
+    export const parse = (s: State.withRoot, start: Bound.Char) => {
         if (s.r.lookahead === "=") {
             s.r.shift()
             reduce(s, `${start}${s.r.lookahead}`)
@@ -83,13 +82,13 @@ export namespace Bound {
     }
 
     export type Parse<
-        S extends State.T,
+        S extends State.Base,
         Start extends Bound.Char,
         Unscanned extends string
     > = Unscanned extends Scanner.Shift<"=", infer Rest>
-        ? State.From<Reduce<S["L"], `${Start}=`>, Rest>
+        ? State.From<{ L: Reduce<S["L"], `${Start}=`>; R: Rest }>
         : Start extends SingleCharComparator
-        ? State.From<Reduce<S["L"], Start>, Unscanned>
+        ? State.From<{ L: Reduce<S["L"], Start>; R: Unscanned }>
         : State.Error<SingleEqualsMessage>
 
     const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
@@ -117,22 +116,20 @@ export namespace Bound {
     ): NonPrefixLeftBoundMessage<BoundingValue, T> =>
         `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
-    export const reduce = (s: State<ExpressionWithRoot>, token: Token) =>
+    export const reduce = (s: State.withRoot, token: Token) =>
         s.hasRoot(NumberLiteralNode)
             ? reduceLeft(s, token)
             : Main.transitionToSuffix(s, token)
 
     export type Reduce<
-        L extends Expression.T,
+        L extends Left.Base,
         Comparator extends Token
-    > = L extends Expression.WithRoot<
-        NumberLiteralDefinition<infer BoundingValue>
-    >
+    > = L extends Left.WithRoot<NumberLiteralDefinition<infer BoundingValue>>
         ? ReduceLeft<L, Comparator, BoundingValue>
         : Main.TransitionToSuffix<L, Comparator>
 
     const applyLeftBound = (
-        s: State<ExpressionWithRoot<NumberLiteralNode>>,
+        s: State.withRoot<NumberLiteralNode>,
         token: DoubleBoundToken
     ) => {
         s.l.bounds.left = [s.l.root.value, token]
@@ -141,7 +138,7 @@ export namespace Bound {
     }
 
     const reduceLeft = (
-        s: State<ExpressionWithRoot<NumberLiteralNode>>,
+        s: State.withRoot<NumberLiteralNode>,
         token: Bound.Token
     ) =>
         s.isPrefixable()
@@ -151,19 +148,19 @@ export namespace Bound {
             : s.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
 
     type ReduceLeft<
-        L extends Expression.T,
+        L extends Left.Base,
         T extends Token,
         BoundingValue extends number
-    > = Expression.IsPrefixable<L> extends true
+    > = Left.IsPrefixable<L> extends true
         ? T extends DoubleBoundToken
-            ? Expression.From<{
+            ? Left.From<{
                   groups: []
                   branches: {}
                   root: undefined
                   bounds: { left: [BoundingValue, T] }
               }>
-            : Expression.Error<InvalidDoubleBoundMessage<T>>
-        : Expression.Error<NonPrefixLeftBoundMessage<BoundingValue, T>>
+            : Left.Error<InvalidDoubleBoundMessage<T>>
+        : Left.Error<NonPrefixLeftBoundMessage<BoundingValue, T>>
 
     export type RightBoundSuffixMessage<
         T extends Token,
@@ -200,16 +197,22 @@ export namespace Bound {
     }
 
     export type ParseRight<
-        S extends State.Of<Expression.Suffix>,
+        S extends State.Of<Suffix.Base>,
         T extends Token
     > = S["R"] extends BoundingValueWithSuffix<
         infer Value,
         infer NextSuffix,
         infer Unscanned
     >
-        ? State.From<ReduceRight<S["L"], [T, Value], NextSuffix>, Unscanned>
+        ? State.From<{
+              L: ReduceRight<S["L"], [T, Value], NextSuffix>
+              R: Unscanned
+          }>
         : S["R"] extends NumberLiteralDefinition<infer BoundingValue>
-        ? State.From<ReduceRight<S["L"], [T, BoundingValue], "END">, "">
+        ? State.From<{
+              L: ReduceRight<S["L"], [T, BoundingValue], "END">
+              R: ""
+          }>
         : State.Error<RightBoundSuffixMessage<T, S["R"]>>
 
     type BoundingValueWithSuffix<
@@ -231,23 +234,24 @@ export namespace Bound {
             : s.error(unboundableMessage(s.l.root.toString()))
 
     export type ReduceRight<
-        L extends Expression.Suffix,
+        L extends Suffix.Base,
         R extends Right,
         NextSuffix extends SuffixToken
     > = HasBoundableRoot<L> extends true
         ? HasLeftBound<L> extends true
             ? ReduceDouble<L, R, NextSuffix>
             : ReduceSingle<L, R, NextSuffix>
-        : Expression.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
+        : Left.Error<UnboundableMessage<Tree.ToString<L["root"]>>>
 
-    type HasBoundableRoot<L extends Expression.Suffix> =
-        L["root"] extends BoundableT ? true : false
+    type HasBoundableRoot<L extends Suffix.Base> = L["root"] extends BoundableT
+        ? true
+        : false
 
     const hasBoundableRoot = (
         s: State<Suffix>
     ): s is State<Suffix & { root: BoundableNode }> => isBoundable(s.l.root)
 
-    type HasLeftBound<L extends Expression.Suffix> = "left" extends keyof L
+    type HasLeftBound<L extends Suffix.Base> = "left" extends keyof L
         ? true
         : false
 
@@ -256,11 +260,11 @@ export namespace Bound {
     ): s is State<Suffix & { bounds: Required<Bounds> }> => "left" in s.l.bounds
 
     type ReduceDouble<
-        L extends Expression.Suffix,
+        L extends Suffix.Base,
         R extends Right,
         NextSuffix extends SuffixToken
     > = IsValidDoubleBound<R[0]> extends true
-        ? Expression.SuffixFrom<{
+        ? Suffix.From<{
               bounds: {
                   left: L["bounds"]["left"]
                   right: R
@@ -268,7 +272,7 @@ export namespace Bound {
               root: L["root"]
               nextSuffix: NextSuffix
           }>
-        : Expression.Error<InvalidDoubleBoundMessage<R[0]>>
+        : Left.Error<InvalidDoubleBoundMessage<R[0]>>
 
     const reduceDouble = (
         s: State<Suffix & { root: BoundableNode; bounds: Required<Bounds> }>,
@@ -286,10 +290,10 @@ export namespace Bound {
     }
 
     type ReduceSingle<
-        L extends Expression.Suffix,
+        L extends Suffix.Base,
         R extends Right,
         NextSuffix extends SuffixToken
-    > = Expression.SuffixFrom<{
+    > = Suffix.From<{
         bounds: {
             right: R
         }

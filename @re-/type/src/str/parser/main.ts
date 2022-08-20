@@ -9,52 +9,42 @@ import {
     OptionalNode,
     Union
 } from "../operator/index.js"
-import {
-    Expression,
-    ExpressionWithRoot,
-    Scanner,
-    State,
-    Suffix,
-    Tokens
-} from "./index.js"
+import { Left, Scanner, State, Suffix, Tokens } from "./index.js"
 
 export const parse: Node.ParseFn<string> = (def, ctx) => {
-    const s = new State(def, new Expression())
+    const s = new State(def)
     base(s, ctx)
     return loop(s, ctx)
 }
 
 export type Parse<Def extends string, Dict> = Loop<
-    Node<State.From<Expression.Initial, Def>, Dict>,
+    Base<State.New<Def>, Dict>,
     Dict
 >
 
-const loop = (s: State<Expression>, ctx: Node.Context): Node.Base => {
+const loop = (s: State, ctx: Node.Context): Node.Base => {
     while (!s.isSuffixable()) {
         next(s, ctx)
     }
     return suffix(s, ctx)
 }
 
-type Loop<S extends State.Of<Expression.T>, Dict> = Expression.IsSuffixable<
-    S["L"]
-> extends true
+type Loop<S extends State.Base, Dict> = Left.IsSuffixable<S["L"]> extends true
     ? // @ts-ignore
       SuffixLoop<S>
     : Loop<Next<S, Dict>, Dict>
 
-const next = (s: State<Expression>, ctx: Node.Context): State<Expression> =>
+const next = (s: State, ctx: Node.Context): State =>
     s.hasRoot() ? operator(s, ctx) : base(s, ctx)
 
-type Next<
-    S extends State.Of<Expression.T>,
-    Dict
-> = S["L"]["root"] extends undefined ? Node<S, Dict> : Operator<S>
+type Next<S extends State.Base, Dict> = S["L"]["root"] extends undefined
+    ? Base<S, Dict>
+    : Operator<S>
 
 const expressionExpectedMessage = `Expected an expression.`
 type ExpressionExpectedMessage = typeof expressionExpectedMessage
 
-const base = (s: State<Expression>, ctx: Node.Context): State<Expression> => {
+const base = (s: State, ctx: Node.Context): State => {
     const lookahead = s.r.shift()
     return lookahead === "("
         ? Group.reduceOpen(s)
@@ -67,23 +57,20 @@ const base = (s: State<Expression>, ctx: Node.Context): State<Expression> => {
         : Terminal.unenclosedBase(s, ctx)
 }
 
-export type Node<
-    S extends State.Of<Expression.T>,
-    Dict
-> = S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
+export type Base<S extends State.Base, Dict> = S["R"] extends Scanner.Shift<
+    infer Lookahead,
+    infer Unscanned
+>
     ? Lookahead extends "("
-        ? State.From<Group.ReduceOpen<S["L"]>, Unscanned>
+        ? State.From<{ L: Group.ReduceOpen<S["L"]>; R: Unscanned }>
         : Lookahead extends Tokens.EnclosedBaseStartChar
         ? Terminal.EnclosedBase<S, Lookahead>
         : Lookahead extends " "
-        ? Node<{ L: S["L"]; R: Unscanned }, Dict>
+        ? Base<{ L: S["L"]; R: Unscanned }, Dict>
         : Terminal.UnenclosedBase<S, Lookahead, Unscanned, Dict>
     : State.Error<ExpressionExpectedMessage>
 
-const operator = (
-    s: State<ExpressionWithRoot>,
-    ctx: Node.Context
-): State<Expression> => {
+const operator = (s: State.withRoot, ctx: Node.Context): State => {
     const lookahead = s.r.shift()
     return lookahead === "END"
         ? transitionToSuffix(s, "END")
@@ -104,26 +91,26 @@ const operator = (
         : s.error(unexpectedCharacterMessage(lookahead))
 }
 
-type Operator<S extends State.Of<Expression.T>> = S["R"] extends Scanner.Shift<
+type Operator<S extends State.Base> = S["R"] extends Scanner.Shift<
     infer Lookahead,
     infer Unscanned
 >
     ? Lookahead extends "?"
-        ? State.From<TransitionToSuffix<S["L"], "?">, Unscanned>
+        ? State.From<{ L: TransitionToSuffix<S["L"], "?">; R: Unscanned }>
         : Lookahead extends "["
         ? List.ShiftReduce<S, Unscanned>
         : Lookahead extends "|"
-        ? State.From<Union.Reduce<S["L"]>, Unscanned>
+        ? State.From<{ L: Union.Reduce<S["L"]>; R: Unscanned }>
         : Lookahead extends "&"
-        ? State.From<Intersection.Reduce<S["L"]>, Unscanned>
+        ? State.From<{ L: Intersection.Reduce<S["L"]>; R: Unscanned }>
         : Lookahead extends ")"
-        ? State.From<Group.ReduceClose<S["L"]>, Unscanned>
+        ? State.From<{ L: Group.ReduceClose<S["L"]>; R: Unscanned }>
         : Lookahead extends Bound.Char
         ? Bound.Parse<S, Lookahead, Unscanned>
         : Lookahead extends " "
         ? Operator<{ L: S["L"]; R: Unscanned }>
         : State.Error<UnexpectedCharacterMessage<Lookahead>>
-    : State.From<TransitionToSuffix<S["L"], "END">, "">
+    : State.From<{ L: TransitionToSuffix<S["L"], "END">; R: "" }>
 
 const unexpectedCharacterMessage = <Char extends string>(
     char: Char
@@ -136,7 +123,7 @@ export const unclosedGroupMessage = "Missing )."
 type UnclosedGroupMessage = typeof unclosedGroupMessage
 
 export const transitionToSuffix = (
-    s: State<ExpressionWithRoot>,
+    s: State.withRoot,
     firstSuffix: Tokens.SuffixToken
 ) => {
     if (s.l.groups.length) {
@@ -147,17 +134,17 @@ export const transitionToSuffix = (
 }
 
 export type TransitionToSuffix<
-    L extends Expression.T,
+    L extends Left.Base,
     FirstSuffix extends Tokens.SuffixToken
 > = L["groups"] extends []
-    ? Expression.From<{
+    ? Left.From<{
           bounds: L["bounds"]
           groups: []
           branches: {}
           root: Branches.MergeAll<L["branches"], L["root"]>
           nextSuffix: FirstSuffix
       }>
-    : Expression.Error<UnclosedGroupMessage>
+    : Left.Error<UnclosedGroupMessage>
 
 export const suffix = (s: State<Suffix>, ctx: Node.Context): Node.Base => {
     if (s.l.nextSuffix === "END") {
@@ -175,28 +162,28 @@ export const suffix = (s: State<Suffix>, ctx: Node.Context): Node.Base => {
     throw new Error(`Unexpected suffix token '${s.l.nextSuffix}'.`)
 }
 
-export type SuffixLoop<S extends State.Of<Expression.Suffix>> =
+export type SuffixLoop<S extends State.Of<Suffix.Base>> =
     S["L"]["nextSuffix"] extends "END"
         ? ExtractFinalizedRoot<S["L"]>
         : SuffixLoop<NextSuffix<S>>
 
-export type NextSuffix<S extends State.Of<Expression.Suffix>> =
+export type NextSuffix<S extends State.Of<Suffix.Base>> =
     S["L"]["nextSuffix"] extends "?"
         ? S["R"] extends ""
-            ? State.From<
-                  Expression.SuffixFrom<{
+            ? State.From<{
+                  L: Suffix.From<{
                       bounds: S["L"]["bounds"]
                       root: [S["L"]["root"], "?"]
                       nextSuffix: "END"
-                  }>,
-                  ""
-              >
+                  }>
+                  R: ""
+              }>
             : State.Error<`Suffix '?' is only valid at the end of a definition.`>
         : S["L"]["nextSuffix"] extends Bound.Token
         ? Bound.ParseRight<S, S["L"]["nextSuffix"]>
         : State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
 
-export type ExtractFinalizedRoot<L extends Expression.Suffix> =
+export type ExtractFinalizedRoot<L extends Suffix.Base> =
     Bound.IsUnpairedLeftBound<L["bounds"]> extends true
         ? Tokens.ErrorToken<Bound.UnpairedLeftBoundMessage>
         : L["root"]

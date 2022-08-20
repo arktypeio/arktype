@@ -1,6 +1,6 @@
 import { Node } from "../common.js"
 import {
-    Expression,
+    Left,
     OnInputEndFn,
     Scanner,
     State,
@@ -46,7 +46,7 @@ export namespace Terminal {
     }
 
     export const enclosedBase = (
-        s: State<Expression>,
+        s: State,
         enclosing: Tokens.EnclosedBaseStartChar
     ) => {
         const enclosed =
@@ -66,13 +66,13 @@ export namespace Terminal {
     }
 
     export type EnclosedBase<
-        S extends State.T,
+        S extends State.Base,
         Enclosing extends Tokens.EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.From<
-              Expression.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>,
-              Rest
-          >
+        ? State.From<{
+              L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
+              R: Rest
+          }>
         : State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 
     const throwUnterminatedEnclosed: OnInputEndFn = (scanner, shifted) => {
@@ -87,14 +87,14 @@ export namespace Terminal {
     const lookaheadIsBaseTerminating: UntilCondition = (scanner) =>
         scanner.lookahead in Tokens.baseTerminatingChars
 
-    export const unenclosedBase = (s: State<Expression>, ctx: Node.Context) => {
+    export const unenclosedBase = (s: State, ctx: Node.Context) => {
         const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
         s.l.root = unenclosedToNode(token, ctx)
         return s
     }
 
     export type UnenclosedBase<
-        S extends State.T,
+        S extends State.Base,
         Fragment extends string,
         Unscanned extends string,
         Dict
@@ -130,12 +130,12 @@ export namespace Terminal {
     }
 
     type ValidateUnenclosed<
-        S extends State.T,
+        S extends State.Base,
         Token extends string,
         Unscanned extends string,
         Dict
     > = IsResolvableUnenclosed<Token, Dict> extends true
-        ? State.From<Expression.SetRoot<S["L"], Token>, Unscanned>
+        ? State.From<{ L: Left.SetRoot<S["L"], Token>; R: Unscanned }>
         : State.Error<UnresolvableMessage<Token>>
 
     type UnresolvableMessage<Token extends string> =

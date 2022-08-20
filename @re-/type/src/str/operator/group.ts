@@ -1,15 +1,15 @@
-import { Expression, ExpressionWithRoot, State } from "../parser/index.js"
+import { Left, State } from "../parser/index.js"
 import { Branches } from "./branch/index.js"
 
 export namespace Group {
-    export type ReduceOpen<L extends Expression.T> = Expression.From<{
+    export type ReduceOpen<L extends Left.Base> = Left.From<{
         bounds: L["bounds"]
         groups: [...L["groups"], L["branches"]]
         branches: {}
         root: undefined
     }>
 
-    export const reduceOpen = (s: State<Expression>) => {
+    export const reduceOpen = (s: State) => {
         s.l.groups.push(s.l.branches)
         s.l.branches = {}
         return s
@@ -20,17 +20,19 @@ export namespace Group {
         Top extends Branches.TypeState
     > = [...Stack, Top]
 
-    export type ReduceClose<L extends Expression.T> =
-        L["groups"] extends PopGroup<infer Stack, infer Top>
-            ? Expression.From<{
-                  bounds: L["bounds"]
-                  groups: Stack
-                  branches: Top
-                  root: Branches.MergeAll<L["branches"], L["root"]>
-              }>
-            : Expression.Error<`Unexpected ).`>
+    export type ReduceClose<L extends Left.Base> = L["groups"] extends PopGroup<
+        infer Stack,
+        infer Top
+    >
+        ? Left.From<{
+              bounds: L["bounds"]
+              groups: Stack
+              branches: Top
+              root: Branches.MergeAll<L["branches"], L["root"]>
+          }>
+        : Left.Error<`Unexpected ).`>
 
-    export const reduceClose = (s: State<ExpressionWithRoot>) => {
+    export const reduceClose = (s: State.withRoot) => {
         const previousBranches = s.l.groups.pop()
         if (previousBranches === undefined) {
             throw new Error(`Unexpected ).`)

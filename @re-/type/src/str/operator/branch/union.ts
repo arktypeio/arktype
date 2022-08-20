@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
 import { Node } from "../../common.js"
-import { Expression, ExpressionWithRoot, State } from "../../parser/index.js"
+import { Left, State } from "../../parser/index.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"
 
@@ -30,7 +30,7 @@ export namespace Union {
         ]
     }
 
-    export const reduce = (s: State<ExpressionWithRoot>, ctx: Node.Context) => {
+    export const reduce = (s: State.withRoot, ctx: Node.Context) => {
         if (Intersection.isMergeable(s)) {
             Intersection.merge(s)
         }
@@ -43,19 +43,17 @@ export namespace Union {
         return s
     }
 
-    export type Reduce<L extends Expression.T> = Expression.From<{
+    export type Reduce<L extends Left.Base> = Left.From<{
         bounds: L["bounds"]
         groups: L["groups"]
         branches: PushRoot<L["branches"], L["root"]>
         root: undefined
     }>
 
-    export type Mergeable = State<
-        Expression<{
-            root: Node.Base
-            branches: { union: UnionNode }
-        }>
-    >
+    export type Mergeable = State<{
+        root: Node.Base
+        branches: { union: UnionNode }
+    }>
 
     export const isMergeable = (s: State): s is Mergeable =>
         s.l.root !== undefined && s.l.branches.intersection instanceof UnionNode
