@@ -1,4 +1,4 @@
-import { Core } from "../core/index.js"
+import { Node } from "../common.js"
 import { Main, Naive, Tokens, Tree } from "./parser/index.js"
 
 export namespace Str {
@@ -13,13 +13,13 @@ export namespace Str {
 
     export type Infer<
         Def extends string,
-        Ctx extends Core.Parse.InferenceContext
+        Ctx extends Node.InferenceContext
     > = Tree.Infer<Parse<Def, Ctx["dict"]>, Ctx>
 
     export type References<Def extends string, Dict> = Tree.LeavesOf<
         Parse<Def, Dict>
     >
 
-    export const parse: Core.Parse.Fn<string> = (def, ctx) =>
+    export const parse: Node.ParseFn<string> = (def, ctx) =>
         Naive.tryParse(def, ctx) ?? Main.parse(def, ctx)
 }

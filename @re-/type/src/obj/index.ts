@@ -1,2 +1,2 @@
-export * from "./nonTerminal/index.js"
-export * from "./terminal/index.js"
+export * as Obj from "./obj.js"
+export * from "./objNode.js"

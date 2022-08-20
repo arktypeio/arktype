@@ -1,7 +1,6 @@
 export * from "./scanner.js"
 export * from "./state.js"
 export * from "./expression.js"
-export * from "./suffix.js"
 export * as Tokens from "./tokens.js"
 export * as Tree from "./tree.js"
 export * as Main from "./main.js"

@@ -6,12 +6,10 @@ import {
     Get,
     Merge
 } from "@re-/tools"
-import { Base, Root } from "./nodes/index.js"
-import {
-    ResolutionNode,
-    ResolutionType
-} from "./nodes/nonTerminal/resolution.js"
-import { Type, TypeFrom, TypeFunction, Validate } from "./type.js"
+import { Node } from "./common.js"
+import { ResolutionNode, ResolutionType } from "./resolution.js"
+import { Root } from "./root.js"
+import { Type, TypeFrom, TypeFunction, TypeOptions, Validate } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
     rawSpace(dictionary, options) as any
@@ -43,10 +41,10 @@ export class SpaceMeta implements SpaceMetaFrom<unknown, unknown> {
         this.resolutions = {}
     }
 
-    type(def: unknown, options?: Base.TypeOptions) {
+    type(def: unknown, options: TypeOptions = {}) {
         const root = Root.parse(
             def,
-            Base.Parsing.createContext(deepMerge(this.options, options), this)
+            Node.initializeContext(deepMerge(this.options, options), this)
         )
         return new Type(def, root, deepMerge(this.options, options)) as any
     }
@@ -76,7 +74,7 @@ export type CreateSpaceFn = <Dict, Meta>(
  * This allows users to provide alias-specific options without interfering
  * with type inference.
  */
-export const def = <Def>(def: Def, options?: Base.TypeOptions) =>
+export const def = <Def>(def: Def, options?: TypeOptions) =>
     ({
         $def: def,
         $opts: options
@@ -84,7 +82,7 @@ export const def = <Def>(def: Def, options?: Base.TypeOptions) =>
 
 export type DefWithOptions = {
     def: unknown
-    options: Base.TypeOptions | undefined
+    options: TypeOptions | undefined
 }
 
 export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
@@ -115,9 +113,9 @@ type MetaDefs<Dict, Meta> = {
 
 type ValidateSpaceOptions<Dict, Meta> = {
     parse?: Conform<Meta, MetaDefs<Dict, Meta>>
-} & Base.TypeOptions
+} & TypeOptions
 
-export type SpaceOptions = Base.TypeOptions
+export type SpaceOptions = TypeOptions
 
 export type SpaceDictionary = Record<string, unknown>
 

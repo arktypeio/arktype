@@ -1,0 +1,81 @@
+import { NonTerminal } from "../../node/nonTerminal.js"
+import { Node } from "../common.js"
+import {
+    Expression,
+    ExpressionWithRoot,
+    Scanner,
+    State
+} from "../parser/index.js"
+import { BoundableNode } from "./bound/index.js"
+
+export namespace List {
+    export const shiftReduce = (
+        s: State<ExpressionWithRoot>,
+        ctx: Node.Context
+    ) => {
+        const next = s.r.shift()
+        if (next !== "]") {
+            throw new Error(incompleteTokenMessage)
+        }
+        s.l.root = new ListNode(s.l.root, ctx)
+        return s
+    }
+
+    export type ShiftReduce<
+        S extends State.T,
+        Unscanned extends string
+    > = Unscanned extends Scanner.Shift<"]", infer Remaining>
+        ? State.From<List.Reduce<S["L"]>, Remaining>
+        : State.Error<IncompleteTokenMessage>
+
+    const incompleteTokenMessage = `Missing expected ']'.`
+
+    type IncompleteTokenMessage = typeof incompleteTokenMessage
+
+    export type Reduce<L extends Expression.T> = Expression.SetRoot<
+        L,
+        [L["root"], "[]"]
+    >
+
+    export type Node<Child> = [Child, "[]"]
+}
+
+export class ListNode extends NonTerminal implements BoundableNode {
+    toString() {
+        return this.children.toString() + "[]"
+    }
+
+    allows(args: Node.Allows.Args) {
+        if (!Array.isArray(args.value)) {
+            this.addUnassignable(args)
+            return false
+        }
+        let allItemsAllowed = true
+        let itemIndex = 0
+        for (const itemValue of args.value) {
+            const itemIsAllowed = this.children.allows({
+                ...args,
+                value: itemValue,
+                ctx: {
+                    ...args.ctx,
+                    path: Node.Utils.pathAdd(args.ctx.path, itemIndex)
+                }
+            })
+            if (!itemIsAllowed) {
+                allItemsAllowed = false
+            }
+            itemIndex++
+        }
+        return allItemsAllowed
+    }
+
+    create() {
+        return []
+    }
+
+    boundBy = "items"
+
+    toBound(value: unknown[]) {
+        return value.length
+    }
+}

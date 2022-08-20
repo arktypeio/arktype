@@ -6,16 +6,27 @@ import {
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { Base, Root } from "./nodes/index.js"
+import { Node } from "./common.js"
+import { Root } from "./root.js"
+import type { SpaceMeta } from "./space.js"
 
-export const type: TypeFunction = (definition, options) => {
-    const root = Root.parse(definition, Base.Parsing.createContext(options))
+export const type: TypeFunction = (
+    definition,
+    options = {},
+    space?: SpaceMeta
+) => {
+    const root = Root.parse(definition, Node.initializeContext(options, space))
     return new Type(definition, root, options) as any
+}
+
+export type TypeOptions = {
+    validate?: Node.Allows.Options
+    create?: Node.Create.Options
 }
 
 export type TypeFunction<Dict = {}, Meta = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
-    options?: Base.TypeOptions
+    options?: TypeOptions
 ) => TypeFrom<Def, Dict, Infer<Def, Dict, Meta>>
 
 export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
@@ -31,8 +42,8 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
 export class Type implements TypeFrom<unknown, unknown, unknown> {
     constructor(
         public definition: unknown,
-        public root: Base.Node,
-        public config: Base.TypeOptions = {}
+        public root: Node.Base,
+        public config: TypeOptions = {}
     ) {}
 
     get infer() {
@@ -43,8 +54,8 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
         return this.create()
     }
 
-    validate(value: unknown, options?: Base.Validation.Options) {
-        const args = Base.Validation.createArgs(
+    validate(value: unknown, options?: Node.Allows.Options) {
+        const args = Node.Allows.createArgs(
             value,
             options,
             this.config.validate
@@ -52,22 +63,18 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
         const customValidator =
             args.cfg.validator ?? args.ctx.modelCfg.validator ?? "default"
         if (customValidator !== "default") {
-            Base.Validation.customValidatorAllows(
-                customValidator,
-                this.root,
-                args
-            )
+            Node.Allows.customValidatorAllows(customValidator, this.root, args)
         } else {
             this.root.allows(args)
         }
         return args.errors.isEmpty()
             ? { data: value }
             : {
-                  error: new Base.Validation.ValidationError(args.errors)
+                  error: new Node.Allows.ValidationError(args.errors)
               }
     }
 
-    assert(value: unknown, options?: Base.Validation.Options) {
+    assert(value: unknown, options?: Node.Allows.Options) {
         const validationResult = this.validate(value, options)
         if (validationResult.error) {
             throw validationResult.error
@@ -75,51 +82,51 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
         return validationResult.data
     }
 
-    create(options?: Base.Create.Options) {
-        return this.root.generate(
-            Base.Create.createArgs(options, this.config.generate)
+    create(options?: Node.Create.Options) {
+        return this.root.create(
+            Node.Create.createArgs(options, this.config.create)
         )
     }
 
-    references(options: Base.References.Options = {}) {
+    references(options: Node.References.Options = {}) {
         return this.root.references(options) as any
     }
 }
 
-export type AssertOptions = Base.Validation.Options
+export type AssertOptions = Node.Allows.Options
 
 export type ValidateFunction<TypeedType> = (
     value: unknown,
-    options?: Base.Validation.Options
+    options?: Node.Allows.Options
 ) => ValidationResult<TypeedType>
 
 export type ValidationResult<TypeedType> = MutuallyExclusiveProps<
     { data: TypeedType },
     {
-        error: Base.Validation.ValidationError
+        error: Node.Allows.ValidationError
     }
 >
 
 export type AssertFunction<InferredType> = (
     value: unknown,
-    options?: Base.Validation.Options
+    options?: Node.Allows.Options
 ) => InferredType
 
 export type CreateFunction<InferredType> = (
-    options?: Base.Create.Options
+    options?: Node.Create.Options
 ) => InferredType
 
 export type ReferencesFunction<Def, Dict> = <
-    Options extends Base.References.Options = {}
+    Options extends Node.References.Options = {}
 >(
     options?: Options
 ) => Merge<
     {
-        filter: Base.References.FilterFunction<string>
+        filter: Node.References.FilterFunction<string>
         preserveStructure: false
     },
     Options
-> extends Base.References.Options<infer Filter, infer PreserveStructure>
+> extends Node.References.Options<infer Filter, infer PreserveStructure>
     ? TransformReferences<
           Root.References<Def, Dict, PreserveStructure>,
           Filter,
@@ -138,11 +145,11 @@ export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>
 export type References<
     Def,
     Dict,
-    Options extends Base.References.TypeOptions = {}
+    Options extends Node.References.TypeOptions = {}
 > = Merge<
     { filter: string; preserveStructure: false; format: "list" },
     Options
-> extends Base.References.TypeOptions<
+> extends Node.References.TypeOptions<
     infer Filter,
     infer PreserveStructure,
     infer Format
@@ -157,7 +164,7 @@ export type References<
 type TransformReferences<
     References,
     Filter extends string,
-    Format extends Base.References.TypeFormat
+    Format extends Node.References.TypeFormat
 > = References extends string[]
     ? FormatReferenceList<FilterReferenceList<References, Filter, []>, Format>
     : {
@@ -182,7 +189,7 @@ type FilterReferenceList<
 
 type FormatReferenceList<
     References extends string[],
-    Format extends Base.References.TypeFormat
+    Format extends Node.References.TypeFormat
 > = Format extends "tuple"
     ? References
     : Format extends "list"

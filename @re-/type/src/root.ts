@@ -1,35 +1,26 @@
-import { Base } from "./nodes/base/index.js"
-import { Struct } from "./nodes/nonTerminal/index.js"
-import {
-    matchesTerminalObj,
-    parseTerminalObj,
-    TerminalObj
-} from "./nodes/terminal/index.js"
-import { Str } from "./str.js"
+import { Node } from "./common.js"
+import { Obj } from "./obj/index.js"
+import { Str } from "./str/index.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []
         ? Def
         : Def extends string
         ? Str.Validate<Def, Dict>
-        : Def extends TerminalObj.Definition
-        ? Def
         : Def extends BadDefinitionType
         ? BadDefinitionTypeMessage
-        : Struct.Validate<Def, Dict>
+        : Obj.Validate<Def, Dict>
 
     export type Infer<
         Def,
-        Ctx extends Base.Parsing.InferenceContext
+        Ctx extends Node.InferenceContext
     > = unknown extends Def
         ? Def
         : Def extends string
         ? Str.Infer<Def, Ctx>
         : Def extends BadDefinitionType
         ? never
-        : Def extends TerminalObj.Definition
-        ? TerminalObj.Infer<Def>
-        : Struct.Infer<Def, Ctx>
+        : Obj.Infer<Def, Ctx>
 
     export type References<
         Def,
@@ -37,10 +28,8 @@ export namespace Root {
         PreserveStructure extends boolean
     > = Def extends string
         ? Str.References<Def, Dict>
-        : Def extends TerminalObj.Definition
-        ? TerminalObj.References<Def>
         : Def extends object
-        ? Struct.References<Def, Dict, PreserveStructure>
+        ? Obj.References<Def, Dict, PreserveStructure>
         : []
 
     export type BadDefinitionType =
@@ -56,19 +45,15 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
 
-    export const parse: Base.Parsing.ParseFn<unknown> = (def, ctx) => {
+    export const parse: Node.ParseFn<unknown> = (def, ctx) => {
         if (typeof def === "string") {
             return Str.parse(def, ctx)
         }
         if (typeof def === "object" && def !== null) {
-            if (matchesTerminalObj(def)) {
-                return parseTerminalObj(def)
-            }
-            return Struct.parse(def, ctx)
+            return Obj.parse(def, ctx)
         }
-        throw new Base.Parsing.ParseError(
-            BAD_DEF_TYPE_MESSAGE +
-                ` (got ${typeof def}${ctx.path ? ` at path ${ctx.path}` : ""}).`
+        throw new Node.ParseError(
+            BAD_DEF_TYPE_MESSAGE + ` (got ${typeof def}).`
         )
     }
 }

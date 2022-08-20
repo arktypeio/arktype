@@ -1,47 +1,39 @@
 import { ClassOf, InstanceOf } from "@re-/tools"
-import { Core } from "../../core/index.js"
+import { Node } from "../common.js"
+import { Expression } from "./expression.js"
 import { Scanner } from "./scanner.js"
-import { SuffixToken } from "./tokens.js"
 
-type BaseLeft = {
-    root?: Core.Node
-    nextSuffix?: SuffixToken
-}
-
-type ExpressionLeft = {
-    bounds: Bound.State
-    groups: Branches.ValueState[]
-    branches: Branches.ValueState
-    root: Core.Node | undefined
-    nextSuffix: SuffixToken | undefined
-}
-
-export class State<Left extends BaseLeft> {
-    l: Left
+export class State<L extends Expression = Expression> {
+    l: L
     r: Scanner
 
-    constructor(def: string, initial: Left) {
+    constructor(def: string, initial: L) {
         this.l = initial
         this.r = new Scanner(def)
     }
 
     error(message: string) {
-        throw new Core.Parse.ParseError(message)
+        throw new Node.ParseError(message)
     }
 
-    rootIs = <NodeClass extends ClassOf<Core.Node>>(
+    rootIs = <NodeClass extends ClassOf<Node.Base>>(
         nodeClass: NodeClass
-    ): this is State<Left & { root: InstanceOf<NodeClass> }> =>
+    ): this is State<Expression & { root: InstanceOf<NodeClass> }> =>
         this.l.root instanceof nodeClass
 }
 
 export namespace State {
-    export type Of<Left> = {
-        L: Left
+    export type T = {
+        L: Expression.T
         R: string
     }
 
-    export type From<L, R extends string> = {
+    export type Of<L extends Expression.T> = {
+        L: L
+        R: string
+    }
+
+    export type From<L extends Expression.T, R extends string> = {
         L: L
         R: R
     }

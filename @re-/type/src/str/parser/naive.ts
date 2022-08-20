@@ -1,6 +1,6 @@
-import { Core } from "../../core/index.js"
-import { ListNode, OptionalNode } from "../nonTerminal/index.js"
-import { Terminal } from "../terminal/index.js"
+import { Terminal } from "../base/index.js"
+import { Node } from "../common.js"
+import { ListNode, OptionalNode } from "../operator/index.js"
 import { Parse } from "./main.js"
 
 /**
@@ -28,7 +28,7 @@ export type TryParse<Def extends string, Dict> = Def extends `${infer Child}?`
     ? Def
     : Parse<Def, Dict>
 
-export const tryParse = (def: string, ctx: Core.Parse.Context) => {
+export const tryParse = (def: string, ctx: Node.Context) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
@@ -38,7 +38,7 @@ export const tryParse = (def: string, ctx: Core.Parse.Context) => {
     return tryParseList(def, ctx)
 }
 
-const tryParseList = (def: string, ctx: Core.Parse.Context) => {
+const tryParseList = (def: string, ctx: Node.Context) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = Terminal.toNodeIfResolvableIdentifier(
             def.slice(0, -2),

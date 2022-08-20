@@ -1,5 +1,5 @@
-import { Core } from "../../core/index.js"
-import { InferTerminalStr } from "../terminal/index.js"
+import { InferTerminalStr } from "../base/index.js"
+import { Node } from "../common.js"
 
 type ModifiedNode<Child, Token extends string> = [Child, Token]
 
@@ -13,7 +13,7 @@ export type ToString<T> = T extends string
     ? `${ToString<Left>}${Token}${ToString<Right>}`
     : ""
 
-export type Infer<T, Ctx extends Core.Parse.InferenceContext> = T extends string
+export type Infer<T, Ctx extends Node.InferenceContext> = T extends string
     ? InferTerminalStr<T, Ctx>
     : T extends [infer Child, "?"]
     ? Infer<Child, Ctx> | undefined
