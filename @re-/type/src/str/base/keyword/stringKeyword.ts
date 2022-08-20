@@ -1,9 +1,11 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { BoundableNode } from "../../../affix/bound/index.js.js"
-import { TerminalNode } from "../../../node/terminal.js"
-import { Base } from "../../parser/index.js.js"
+import { Node } from "../../common.js"
+import { BoundableNode } from "../../operator/bound/index.js"
 
-abstract class BaseStringKeyword extends TerminalNode implements BoundableNode {
+abstract class BaseStringKeyword
+    extends Node.TerminalNode
+    implements BoundableNode
+{
     allows(args: Node.Allows.Args) {
         if (typeof args.value === "string" && this.allowsString(args.value)) {
             return true

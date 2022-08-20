@@ -1,5 +1,12 @@
 import { Node } from "../common.js"
-import { Scanner, State, Tokens, UntilCondition } from "../parser/index.js"
+import {
+    Expression,
+    OnInputEndFn,
+    Scanner,
+    State,
+    Tokens,
+    UntilCondition
+} from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
 import { Keyword } from "./keyword/index.js"
 import {
@@ -39,8 +46,8 @@ export namespace Terminal {
     }
 
     export const enclosedBase = (
-        s: State.V,
-        enclosing: EnclosedBaseStartChar
+        s: State<Expression>,
+        enclosing: Tokens.EnclosedBaseStartChar
     ) => {
         const enclosed =
             enclosing +
@@ -49,7 +56,7 @@ export namespace Terminal {
                 onInputEnd: throwUnterminatedEnclosed
             })
         if (enclosing === "/") {
-            s.l.root = regexLiteralToNode(enclosed as RegexLiteralDefinition)
+            s.l.root = new RegexLiteralNode(enclosed as RegexLiteralDefinition)
         } else {
             s.l.root = new StringLiteralNode(
                 enclosed as StringLiteralDefinition
@@ -60,30 +67,27 @@ export namespace Terminal {
 
     export type EnclosedBase<
         S extends State.T,
-        Enclosing extends EnclosedBaseStartChar
+        Enclosing extends Tokens.EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.From<{
-              L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
-              R: Rest
-          }>
+        ? State.From<
+              Expression.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>,
+              Rest
+          >
         : State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 
-    const throwUnterminatedEnclosed: State.OnInputEndFn = (
-        scanner,
-        shifted
-    ) => {
+    const throwUnterminatedEnclosed: OnInputEndFn = (scanner, shifted) => {
         throw new Error(
             unterminatedEnclosedMessage(
                 shifted,
-                shifted[0] as EnclosedBaseStartChar
+                shifted[0] as Tokens.EnclosedBaseStartChar
             )
         )
     }
 
-    const lookaheadIsBaseTerminating: State.UntilCondition = (scanner) =>
-        scanner.lookahead in baseTerminatingChars
+    const lookaheadIsBaseTerminating: UntilCondition = (scanner) =>
+        scanner.lookahead in Tokens.baseTerminatingChars
 
-    export const unenclosedBase = (s: State.V, ctx: Node.Context) => {
+    export const unenclosedBase = (s: State<Expression>, ctx: Node.Context) => {
         const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
         s.l.root = unenclosedToNode(token, ctx)
         return s
@@ -94,8 +98,8 @@ export namespace Terminal {
         Fragment extends string,
         Unscanned extends string,
         Dict
-    > = Unscanned extends Scan<infer Next, infer Rest>
-        ? Next extends BaseTerminatingChar
+    > = Unscanned extends Scanner.Shift<infer Next, infer Rest>
+        ? Next extends Tokens.BaseTerminatingChar
             ? ValidateUnenclosed<S, Fragment, Unscanned, Dict>
             : UnenclosedBase<S, `${Fragment}${Next}`, Rest, Dict>
         : ValidateUnenclosed<S, Fragment, "", Dict>
@@ -131,7 +135,7 @@ export namespace Terminal {
         Unscanned extends string,
         Dict
     > = IsResolvableUnenclosed<Token, Dict> extends true
-        ? State.From<{ L: Left.SetRoot<S["L"], Token>; R: Unscanned }>
+        ? State.From<Expression.SetRoot<S["L"], Token>, Unscanned>
         : State.Error<UnresolvableMessage<Token>>
 
     type UnresolvableMessage<Token extends string> =
@@ -160,7 +164,7 @@ export namespace Terminal {
 
 export type InferTerminalStr<
     Token extends string,
-    Ctx extends Node.Parsing.InferenceContext
+    Ctx extends Node.InferenceContext
 > = Token extends Keyword.Definition
     ? Keyword.Types[Token]
     : Token extends keyof Ctx["dict"]

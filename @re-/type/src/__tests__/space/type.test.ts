@@ -7,7 +7,7 @@ describe("space", () => {
         assert(space({ a: "string" }).$root.infer.a).typed as string
         assert(() =>
             // @ts-expect-error
-            space({ a: "strig" }, { parse: { eager: true } })
+            space({ a: "strig" })
         ).throwsAndHasTypeError("Unable to determine the type of 'strig'.")
     })
     test("independent", () => {
@@ -18,8 +18,7 @@ describe("space", () => {
         assert(() =>
             space(
                 // @ts-expect-error
-                { a: "string", b: { c: "uhoh" } },
-                { parse: { eager: true } }
+                { a: "string", b: { c: "uhoh" } }
             )
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
@@ -28,7 +27,7 @@ describe("space", () => {
             .typed as string
         assert(() =>
             // @ts-expect-error
-            space({ a: "yikes", b: { c: "a" } }, { parse: { eager: true } })
+            space({ a: "yikes", b: { c: "a" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
     test("cyclic", () => {
@@ -55,10 +54,7 @@ describe("space", () => {
         )
     })
     test("cyclic eager", () => {
-        const cyclicEagerSpace = space(
-            { a: { b: "b" }, b: { a: "a" } },
-            { parse: { eager: true } }
-        )
+        const cyclicEagerSpace = space({ a: { b: "b" }, b: { a: "a" } })
         assert(cyclicEagerSpace.$root.infer.a).typed as {
             b: {
                 a: {
@@ -106,8 +102,7 @@ describe("space", () => {
         assert(() =>
             anotherCyclicSpace.$root.type(
                 // @ts-expect-error
-                { nested: { a: "a", b: "b", c: "c" } },
-                { parse: { eager: true } }
+                { nested: { a: "a", b: "b", c: "c" } }
             )
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })

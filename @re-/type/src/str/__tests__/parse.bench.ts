@@ -69,12 +69,6 @@ bench("validate tuple", () => {
     .median(`2.09us`)
     .type(`953 instantiations`)
 
-bench("validate regex", () => {
-    type(/.*/).validate("test")
-})
-    .median(`98.00ns`)
-    .type(`58 instantiations`)
-
 bench("parseUnion", () => {
     const result = type("string|number")
 })

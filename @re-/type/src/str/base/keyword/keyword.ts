@@ -65,7 +65,7 @@ type KeywordsByNodeType<NodeType> = {
 }[keyof KeywordsToNodes]
 
 type GetGeneratedType<Node extends KeywordNode> = ReturnType<
-    InstanceType<Node>["generate"]
+    InstanceType<Node>["create"]
 >
 
 export namespace Keyword {

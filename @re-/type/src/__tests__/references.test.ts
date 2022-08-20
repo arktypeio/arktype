@@ -10,13 +10,13 @@ describe("references", () => {
             expression: "string[]|integer?"
         },
         listed: ["-1n", "null", "string|boolean"],
-        regex: /.*/
+        regex: `/.*/`
     } as const
 
     type ObjectDef = typeof objectDef
 
     const expectedObjectDefReferences = narrow([
-        "/.*/" as `/${string}/`,
+        "/.*/",
         "-1n",
         "null",
         "string",
@@ -69,7 +69,7 @@ describe("references", () => {
                     expression: ["string", "integer"]
                 },
                 listed: [["-1n"], ["null"], ["string", "boolean"]],
-                regex: ["/.*/" as `/${string}/`]
+                regex: ["/.*/"]
             })
             type ExtractExpectedReferences<T> = Evaluate<{
                 [K in keyof T]: T[K] extends string[]

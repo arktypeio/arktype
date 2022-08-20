@@ -1,15 +1,43 @@
-Files:              255
-Lines:            66175
-Nodes:           183173
-Identifiers:      62444
-Symbols:         106780
-Types:            56551
-Instantiations:  300635
-Memory used:    162420K
+src/str/parser/main.ts(36,19): error TS2345: Argument of type 'State<Expression<{}, ExpressionValue>>' is not assignable to parameter of type 'State<Suffix>'.
+  Type 'Expression<{}, ExpressionValue>' is not assignable to type 'Suffix'.
+    Type 'ExpressionValue' is not assignable to type 'ExpressionValue & SuffixValue'.
+      Type 'ExpressionValue' is not assignable to type 'SuffixValue'.
+        Types of property 'root' are incompatible.
+          Type 'Base | undefined' is not assignable to type 'Base'.
+            Type 'undefined' is not assignable to type 'Base'.
+src/str/parser/main.ts(42,18): error TS2344: Type 'S' does not satisfy the constraint 'Of<Suffix>'.
+  Type 'Of<T>' is not assignable to type 'Of<Suffix>'.
+    Type 'T' is not assignable to type 'Suffix'.
+      Type 'T' is not assignable to type 'SuffixInput'.
+        Types of property 'nextSuffix' are incompatible.
+          Type '"END" | "<" | ">" | "?" | ">=" | "<=" | "==" | undefined' is not assignable to type '"END" | "<" | ">" | "?" | ">=" | "<=" | "=="'.
+            Type 'undefined' is not assignable to type '"END" | "<" | ">" | "?" | ">=" | "<=" | "=="'.
+src/str/parser/main.ts(46,25): error TS2345: Argument of type 'State<Expression<{}, ExpressionValue>>' is not assignable to parameter of type 'State<ExpressionWithRoot<Base>>'.
+src/str/parser/main.ts(58,5): error TS2322: Type 'void | State<Expression<{}, ExpressionValue>>' is not assignable to type 'State<Expression<{}, ExpressionValue>>'.
+  Type 'void' is not assignable to type 'State<Expression<{}, ExpressionValue>>'.
+src/str/parser/main.ts(87,5): error TS2322: Type 'void | State<Expression<{}, ExpressionValue>>' is not assignable to type 'State<Expression<{}, ExpressionValue>>'.
+  Type 'void' is not assignable to type 'State<Expression<{}, ExpressionValue>>'.
+src/str/parser/main.ts(145,30): error TS2345: Argument of type 'State<Expression<{}, ExpressionValue>>' is not assignable to parameter of type 'State<ExpressionWithRoot<Base>>'.
+  Type 'Expression<{}, ExpressionValue>' is not assignable to type 'ExpressionWithRoot<Base>'.
+    Type 'ExpressionValue' is not assignable to type 'ExpressionValue & { root: Base; }'.
+      Type 'ExpressionValue' is not assignable to type '{ root: Base; }'.
+        Types of property 'root' are incompatible.
+          Type 'Base | undefined' is not assignable to type 'Base'.
+            Type 'undefined' is not assignable to type 'Base'.
+src/str/parser/main.ts(172,23): error TS2345: Argument of type 'void | State<Suffix & { root: BoundableNode; }>' is not assignable to parameter of type 'State<Suffix>'.
+  Type 'void' is not assignable to type 'State<Suffix>'.
+Files:              251
+Lines:            65969
+Nodes:           182414
+Identifiers:      62209
+Symbols:         105115
+Types:            55382
+Instantiations:  302389
+Memory used:    157643K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.49s
-Bind time:        0.17s
-Check time:       1.53s
+Parse time:       0.48s
+Bind time:        0.18s
+Check time:       1.52s
 Emit time:        0.00s
-Total time:       2.19s
+Total time:       2.18s
