@@ -118,7 +118,7 @@ export namespace Bound {
         `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
     export const reduce = (s: State<ExpressionWithRoot>, token: Token) =>
-        s.rootIs(NumberLiteralNode)
+        s.hasRoot(NumberLiteralNode)
             ? reduceLeft(s, token)
             : Main.transitionToSuffix(s, token)
 
@@ -144,7 +144,7 @@ export namespace Bound {
         s: State<ExpressionWithRoot<NumberLiteralNode>>,
         token: Bound.Token
     ) =>
-        s.l.isPrefixable()
+        s.isPrefixable()
             ? inTokenSet(token, doubleBoundTokens)
                 ? applyLeftBound(s, token)
                 : s.error(invalidDoubleBoundMessage(token))

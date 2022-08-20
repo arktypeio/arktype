@@ -1,6 +1,6 @@
-import { ClassOf, InstanceOf } from "@re-/tools"
+import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
 import { Node } from "../common.js"
-import { Expression } from "./expression.js"
+import { Expression, Suffix } from "./expression.js"
 import { Scanner } from "./scanner.js"
 
 export class State<L extends Expression = Expression> {
@@ -12,14 +12,26 @@ export class State<L extends Expression = Expression> {
         this.r = new Scanner(def)
     }
 
-    error(message: string) {
+    error(message: string): never {
         throw new Node.ParseError(message)
     }
 
-    rootIs = <NodeClass extends ClassOf<Node.Base>>(
-        nodeClass: NodeClass
+    hasRoot = <NodeClass extends ClassOf<Node.Base> = ClassOf<Node.Base>>(
+        ofClass?: NodeClass
     ): this is State<Expression & { root: InstanceOf<NodeClass> }> =>
-        this.l.root instanceof nodeClass
+        ofClass ? this.l.root instanceof ofClass : this.l.root !== undefined
+
+    isPrefixable() {
+        return (
+            isEmpty(this.l.bounds) &&
+            isEmpty(this.l.branches) &&
+            !this.l.groups.length
+        )
+    }
+
+    isSuffixable(): this is State<Suffix> {
+        return this.l.nextSuffix !== undefined
+    }
 }
 
 export namespace State {

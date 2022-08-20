@@ -30,7 +30,7 @@ export type Parse<Def extends string, Dict> = Loop<
 >
 
 const loop = (s: State<Expression>, ctx: Node.Context): Node.Base => {
-    while (!s.l.isSuffixable()) {
+    while (!s.isSuffixable()) {
         next(s, ctx)
     }
     return suffix(s, ctx)
@@ -39,11 +39,12 @@ const loop = (s: State<Expression>, ctx: Node.Context): Node.Base => {
 type Loop<S extends State.Of<Expression.T>, Dict> = Expression.IsSuffixable<
     S["L"]
 > extends true
-    ? SuffixLoop<S>
+    ? // @ts-ignore
+      SuffixLoop<S>
     : Loop<Next<S, Dict>, Dict>
 
 const next = (s: State<Expression>, ctx: Node.Context): State<Expression> =>
-    s.l.root ? operator(s, ctx) : base(s, ctx)
+    s.hasRoot() ? operator(s, ctx) : base(s, ctx)
 
 type Next<
     S extends State.Of<Expression.T>,
@@ -135,7 +136,7 @@ export const unclosedGroupMessage = "Missing )."
 type UnclosedGroupMessage = typeof unclosedGroupMessage
 
 export const transitionToSuffix = (
-    s: State<Expression>,
+    s: State<ExpressionWithRoot>,
     firstSuffix: Tokens.SuffixToken
 ) => {
     if (s.l.groups.length) {

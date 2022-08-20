@@ -1,4 +1,3 @@
-import { isEmpty } from "@re-/tools"
 import { Node } from "../common.js"
 import { Bound, Branches } from "../operator/index.js"
 import { ErrorToken, SuffixToken } from "./tokens.js"
@@ -20,18 +19,6 @@ export class Expression<
     branches = {} as L["branches"]
     root = undefined as L["root"]
     nextSuffix = undefined as L["nextSuffix"]
-
-    isPrefixable() {
-        return (
-            isEmpty(this.bounds) &&
-            isEmpty(this.branches) &&
-            !this.groups.length
-        )
-    }
-
-    isSuffixable() {
-        return this.nextSuffix !== undefined
-    }
 }
 
 export type ExpressionWithRoot<Root extends Node.Base = Node.Base> =
