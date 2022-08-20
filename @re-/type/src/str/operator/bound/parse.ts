@@ -111,9 +111,7 @@ export namespace Bound {
         `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
     export const reduce = (s: state<left.withRoot>, token: Token) =>
-        s.hasRoot(NumberLiteralNode)
-            ? reduceLeft(s, token)
-            : s.setNextSuffix(token)
+        s.hasRoot(NumberLiteralNode) ? reduceLeft(s, token) : s.suffixed(token)
 
     export type Reduce<
         L extends Left.Base,

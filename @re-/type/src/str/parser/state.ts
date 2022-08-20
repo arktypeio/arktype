@@ -34,8 +34,13 @@ export class state<constraints extends Partial<left> = {}> {
         return this.l.nextSuffix !== undefined
     }
 
-    setNextSuffix(token: SuffixToken) {
+    suffixed(token: SuffixToken) {
         this.l.nextSuffix = token
+        return this
+    }
+
+    shifted() {
+        this.r.shift()
         return this
     }
 }

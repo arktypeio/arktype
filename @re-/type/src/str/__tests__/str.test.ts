@@ -1,15 +1,12 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../type.js"
+import { expressionExpectedMessage } from "../base/base.js"
 
 describe("str", () => {
     test("errors on empty string", () => {
         // @ts-expect-error
-        assert(() => type(""))
-            .throws.snap(`Error: Unable to determine the type of ''.`)
-            .type.errors.snap(
-                `Argument of type '""' is not assignable to parameter of type '"Expected an expression."'.`
-            )
+        assert(() => type("")).throwsAndHasTypeError(expressionExpectedMessage)
     })
     test("ignores whitespace between identifiers/operators", () => {
         const modelWithWhitespace = type("     string  | boolean    []   ")
@@ -19,10 +16,8 @@ describe("str", () => {
         assert(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError("Expected an operator (got l).")
-        // @ts-expect-error
-        assert(() => type("string | boolean[ ]")).throwsAndHasTypeError(
-            "Missing expected ']'."
+        ).throwsAndHasTypeError(
+            "'boo' is not a builtin type and does not exist in your space."
         )
     })
 })

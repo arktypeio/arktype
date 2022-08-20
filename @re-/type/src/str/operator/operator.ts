@@ -5,9 +5,9 @@ import { Bound, Group, Intersection, List, Union } from "./nodes.js"
 export const operator = (s: state<left.withRoot>, ctx: Node.Context): state => {
     const lookahead = s.r.shift()
     return lookahead === "END"
-        ? s.setNextSuffix("END")
+        ? s.suffixed("END")
         : lookahead === "?"
-        ? s.setNextSuffix("?")
+        ? s.suffixed("?")
         : lookahead === "["
         ? List.shiftReduce(s, ctx)
         : lookahead === "|"

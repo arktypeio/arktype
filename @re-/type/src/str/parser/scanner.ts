@@ -1,4 +1,6 @@
-export class scanner {
+import { TokenSet } from "./tokens.js"
+
+export class scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
 
@@ -8,11 +10,13 @@ export class scanner {
     }
 
     shift() {
-        return this.chars[this.i++] ?? "END"
+        // The value of i++ in this context is i's original value,
+        // so the returned char will be the same as lookahead
+        return (this.chars[this.i++] ?? "END") as Lookahead
     }
 
     get lookahead() {
-        return this.chars[this.i] ?? "END"
+        return (this.chars[this.i] ?? "END") as Lookahead
     }
 
     shiftUntil(condition: UntilCondition, opts?: ShiftUntilOptions) {
@@ -28,6 +32,16 @@ export class scanner {
             shifted += this.shift()
         }
         return shifted
+    }
+
+    lookaheadIs<Char extends Lookahead>(char: Char): this is scanner<Char> {
+        return this.lookahead === char
+    }
+
+    lookaheadIsIn<Tokens extends TokenSet>(
+        tokens: Tokens
+    ): this is scanner<Extract<keyof Tokens, string>> {
+        return this.lookahead in tokens
     }
 }
 
