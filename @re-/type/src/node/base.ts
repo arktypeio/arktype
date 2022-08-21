@@ -38,17 +38,12 @@ export abstract class Base {
 }
 
 export type InferenceContext = {
-    space: Space
-    seen: Record<string, true>
+    Space: Space
+    Seen: Record<string, true>
 }
 
 export namespace InferenceContext {
     export type From<Ctx extends InferenceContext> = Ctx
-
-    export type Initialize<S extends Space> = From<{
-        space: S
-        seen: {}
-    }>
 }
 
 export type ParseFn<DefType = unknown> = (def: DefType, ctx: Context) => Base

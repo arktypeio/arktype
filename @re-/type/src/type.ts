@@ -24,15 +24,21 @@ export type TypeOptions = {
     create?: Node.Create.Options
 }
 
-export type TypeFunction<S extends Space = { Dict: {}; Meta: {}; Tree: {} }> = <
+export type TypeFunction<S extends Space = { Resolutions: {}; Meta: {} }> = <
     Def
 >(
-    definition: Root.Validate<Def, S["Dict"]>,
+    definition: Root.Validate<Def, S["Resolutions"]>,
     options?: TypeOptions
 ) => TypeFrom<
     Def,
-    Root.Parse<Def, S["Dict"]>,
-    InferTree<Root.Parse<Def, S["Dict"]>, Node.InferenceContext.Initialize<S>>
+    Root.Parse<Def, S["Resolutions"]>,
+    InferTree<
+        Root.Parse<Def, S["Resolutions"]>,
+        Node.InferenceContext.From<{
+            Space: S
+            Seen: {}
+        }>
+    >
 >
 
 export type TypeFrom<Def, Tree, Inferred> = Evaluate<{
@@ -146,8 +152,8 @@ export type ReferencesFunction<Tree> = <
     : []
 
 export type Infer<Def, S extends Space> = InferTree<
-    Root.Parse<Def, S["Dict"]>,
-    Node.InferenceContext.Initialize<S>
+    Root.Parse<Def, S["Resolutions"]>,
+    Node.InferenceContext.From<{ Space: S; Seen: {} }>
 >
 
 export type InferTree<Tree, Ctx extends Node.InferenceContext> = Root.Infer<

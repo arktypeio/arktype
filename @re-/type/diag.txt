@@ -1,17 +1,15 @@
-src/__tests__/space/meta.test.ts(31,48): error TS2339: Property 'b' does not exist on type '{}'.
-src/__tests__/space/meta.test.ts(57,16): error TS2571: Object is of type 'unknown'.
 Files:              255
-Lines:            66073
-Nodes:           183151
-Identifiers:      62453
-Symbols:         120891
-Types:            64321
-Instantiations:  327650
-Memory used:    163566K
+Lines:            66077
+Nodes:           183177
+Identifiers:      62461
+Symbols:         122023
+Types:            64798
+Instantiations:  333660
+Memory used:    166426K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.43s
-Bind time:        0.13s
-Check time:       1.44s
+Parse time:       0.46s
+Bind time:        0.17s
+Check time:       1.47s
 Emit time:        0.00s
-Total time:       1.99s
+Total time:       2.10s

@@ -5,69 +5,59 @@ import { Root } from "../../root.js"
 
 export namespace AliasType {
     export type Infer<
-        Def extends keyof Ctx["space"]["Dict"],
+        Def extends keyof Ctx["Space"]["Resolutions"],
         Ctx extends Node.InferenceContext
-    > = "onResolve" extends keyof Ctx["space"]["Meta"]
+    > = "onResolve" extends keyof Ctx["Space"]["Meta"]
         ? Def extends "$resolution"
             ? BaseOf<Def, Ctx>
             : OnResolveOf<Def, Ctx>
-        : "onCycle" extends keyof Ctx["space"]["Meta"]
-        ? Def extends keyof Ctx["seen"]
+        : "onCycle" extends keyof Ctx["Space"]["Meta"]
+        ? Def extends keyof Ctx["Seen"]
             ? OnCycleOf<Def, Ctx>
             : BaseOf<Def, Ctx>
         : BaseOf<Def, Ctx>
 
     type BaseOf<
-        Def extends keyof Ctx["space"]["Dict"],
+        Def extends keyof Ctx["Space"]["Resolutions"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
-        Ctx["space"]["Tree"][Def],
-        Ctx & { seen: { [K in Def]: true } }
+        Ctx["Space"]["Resolutions"][Def],
+        Ctx & { Seen: { [K in Def]: true } }
     >
 
     type OnResolveOf<
-        Def extends keyof Ctx["space"]["Dict"],
+        Def extends keyof Ctx["Space"]["Resolutions"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
-        Ctx["space"]["Meta"]["onResolve"],
+        Ctx["Space"]["Meta"]["onResolve"],
         {
-            space: {
-                Dict: WithPropValue<
-                    Ctx["space"]["Dict"],
+            Space: {
+                Resolutions: WithPropValue<
+                    Ctx["Space"]["Resolutions"],
                     "$resolution",
-                    Ctx["space"]["Dict"][Def]
+                    Ctx["Space"]["Resolutions"][Def]
                 >
-                Meta: Ctx["space"]["Meta"]
-                Tree: WithPropValue<
-                    Ctx["space"]["Tree"],
-                    "$resolution",
-                    Ctx["space"]["Tree"][Def]
-                >
+                Meta: Ctx["Space"]["Meta"]
             }
-            seen: Ctx["seen"] & { [K in Def]: true }
+            Seen: Ctx["Seen"] & { [K in Def]: true }
         }
     >
 
     type OnCycleOf<
-        Def extends keyof Ctx["space"]["Dict"],
+        Def extends keyof Ctx["Space"]["Resolutions"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
-        Ctx["space"]["Meta"]["onCycle"],
+        Ctx["Space"]["Meta"]["onCycle"],
         {
-            space: {
-                Dict: WithPropValue<
-                    Ctx["space"]["Dict"],
+            Space: {
+                Resolutions: WithPropValue<
+                    Ctx["Space"]["Resolutions"],
                     "$cyclic",
-                    Ctx["space"]["Dict"][Def]
+                    Ctx["Space"]["Resolutions"][Def]
                 >
-                Meta: Ctx["space"]["Meta"]
-                Tree: WithPropValue<
-                    Ctx["space"]["Tree"],
-                    "$cyclic",
-                    Ctx["space"]["Tree"][Def]
-                >
+                Meta: Ctx["Space"]["Meta"]
             }
-            seen: {}
+            Seen: {}
         }
     >
 }

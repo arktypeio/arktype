@@ -9,6 +9,7 @@ import {
 import { Node } from "./common.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
+import { ErrorToken } from "./str/parser/tokens.js"
 import { Type, TypeFrom, TypeFunction, TypeOptions, Validate } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
@@ -64,10 +65,7 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
 export type CreateSpaceFn = <Dict, Meta = {}>(
     dictionary: ValidateDictionary<Dict>,
     options?: ValidateSpaceOptions<Dict, Meta>
-) => SpaceOutput<
-    // @ts-expect-error
-    ToSpace<ValidateDictionary<Dict>, Meta>
->
+) => SpaceOutput<ToSpace<ValidateDictionary<Dict>, Meta>>
 
 /**
  * Although this function claims to return Def, it actually returns an object
@@ -102,9 +100,8 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 }
 
 export type Space = {
-    Dict: unknown
+    Resolutions: unknown
     Meta: MetaDefinitions
-    Tree: unknown
 }
 
 export type ValidateDictionary<Dict> = {
@@ -112,7 +109,7 @@ export type ValidateDictionary<Dict> = {
 }
 
 // TODO: Implement runtime equivalent for these
-type MetaDefs<Dict, Meta> = {
+type ValidatedMetaDefs<Meta, Dict> = {
     onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "any" }>
     onResolve?: Root.Validate<
         Get<Meta, "onResolve">,
@@ -120,8 +117,16 @@ type MetaDefs<Dict, Meta> = {
     >
 }
 
+type ParseMetaDefs<Meta, Dict> = {
+    [K in keyof Meta]: K extends "onCycle"
+        ? Root.Parse<Meta[K], Dict & { $cyclic: "any" }>
+        : K extends "onResolve"
+        ? Root.Parse<Meta[K], Dict & { $resolution: "any" }>
+        : ErrorToken<`Unexpected meta key '${K & string}'.`>
+}
+
 type ValidateSpaceOptions<Dict, Meta> = {
-    parse?: Conform<Meta, MetaDefs<Dict, Meta>>
+    parse?: Conform<Meta, ValidatedMetaDefs<Meta, Dict>>
 } & TypeOptions
 
 export type SpaceOptions = TypeOptions
@@ -133,9 +138,8 @@ export type Parse<Dict> = {
 }
 
 export type ToSpace<Dict, Meta> = {
-    Dict: Dict
-    Meta: Meta
-    Tree: Parse<Dict>
+    Resolutions: Parse<Dict>
+    Meta: ParseMetaDefs<Meta, Dict>
 }
 
 export type SpaceOutput<S extends Space> = Evaluate<
@@ -145,30 +149,32 @@ export type SpaceOutput<S extends Space> = Evaluate<
 >
 
 export type SpaceMetaFrom<S extends Space> = {
-    infer: RootDictType<S>
+    infer: InferSpaceRoot<S>
     type: TypeFunction<S>
-    extend: ExtendFunction<S["Dict"]>
-    dictionary: S["Dict"]
+    extend: ExtendFunction<S["Resolutions"]>
+    dictionary: S["Resolutions"]
     options: SpaceOptions
 }
 
 export type SpaceTypes<S extends Space> = Evaluate<{
-    [Alias in keyof S["Dict"]]: TypeFrom<
-        S["Dict"][Alias],
-        Get<S["Tree"], Alias>,
-        Root.Infer<
-            Get<S["Tree"], Alias>,
-            { space: S; seen: { [K in Alias]: true } }
-        >
+    [Alias in keyof S["Resolutions"]]: TypeFrom<
+        Alias,
+        S["Resolutions"][Alias],
+        InferResolution<S, Alias>
     >
 }>
 
-export type RootDictType<S extends Space> = Evaluate<{
-    [Alias in keyof S["Dict"]]: Root.Infer<
-        S["Tree"][Alias],
-        { space: S; seen: { [K in Alias]: true } }
-    >
+export type InferSpaceRoot<S extends Space> = Evaluate<{
+    [Alias in keyof S["Resolutions"]]: InferResolution<S, Alias>
 }>
+
+export type InferResolution<
+    S extends Space,
+    Alias extends keyof S["Resolutions"]
+> = Root.Infer<
+    S["Resolutions"][Alias],
+    { Space: S; Seen: { [K in Alias]: true } }
+>
 
 export type MetaDefinitions = {
     onCycle?: unknown
@@ -179,9 +185,9 @@ export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
     options?: SpaceOptions
 ) => SpaceOutput<{
-    Dict: Merge<BaseDict, ExtensionDict>
+    Resolutions: Parse<Merge<BaseDict, ExtensionDict>>
+    // TODO: Fix
     Meta: {}
-    Tree: Parse<Merge<BaseDict, ExtensionDict>>
 }>
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
