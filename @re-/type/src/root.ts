@@ -11,26 +11,22 @@ export namespace Root {
         ? BadDefinitionTypeMessage
         : Obj.Validate<Def, Dict>
 
-    export type Infer<
-        Def,
-        Ctx extends Node.InferenceContext
-    > = unknown extends Def
-        ? Def
-        : Def extends string
-        ? Str.Infer<Def, Ctx>
-        : Def extends BadDefinitionType
-        ? never
-        : Obj.Infer<Def, Ctx>
+    export type Parse<Def, Dict> = Def extends string
+        ? Str.Parse<Def, Dict>
+        : Obj.Parse<Def, Dict>
+
+    export type Infer<Tree, Ctx extends Node.InferenceContext> = Tree extends
+        | string
+        | unknown[]
+        ? Str.Infer<Tree, Ctx>
+        : Obj.Infer<Tree, Ctx>
 
     export type References<
-        Def,
-        Dict,
+        Tree,
         PreserveStructure extends boolean
-    > = Def extends string
-        ? Str.References<Def, Dict>
-        : Def extends object
-        ? Obj.References<Def, Dict, PreserveStructure>
-        : []
+    > = Tree extends string | unknown[]
+        ? Str.References<Tree>
+        : Obj.References<Tree, PreserveStructure>
 
     export type BadDefinitionType =
         | undefined

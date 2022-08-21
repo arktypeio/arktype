@@ -43,6 +43,16 @@ export type InferenceContext = {
     seen: Record<string, true>
 }
 
+export namespace InferenceContext {
+    export type From<Ctx extends InferenceContext> = Ctx
+
+    export type Initialize<Dict, Meta extends MetaDefinitions> = From<{
+        dict: Dict
+        meta: Meta
+        seen: {}
+    }>
+}
+
 export type ParseFn<DefType = unknown> = (def: DefType, ctx: Context) => Base
 
 export class ParseError extends Error {}

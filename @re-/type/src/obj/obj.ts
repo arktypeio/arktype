@@ -8,36 +8,42 @@ export type Validate<Def, Dict> = {
     [K in keyof Def]: Root.Validate<Def[K], Dict>
 }
 
-export type Infer<Def, Ctx extends Node.InferenceContext> = Def extends
-    | unknown[]
-    | readonly unknown[]
+export type Parse<Def, Dict> = Def extends readonly unknown[] | unknown[]
+    ? {
+          readonly [I in keyof Def]: Root.Parse<Def[I], Dict>
+      }
+    : {
+          [K in keyof Def]: Root.Parse<Def[K], Dict>
+      }
+
+export type Infer<
+    Tree,
+    Ctx extends Node.InferenceContext
+> = Tree extends readonly unknown[]
     ? Evaluate<{
-          -readonly [I in keyof Def]: Root.Infer<Def[I], Ctx>
+          -readonly [I in keyof Tree]: Root.Infer<Tree[I], Ctx>
       }>
-    : Record.Infer<Def, Ctx>
+    : Record.Infer<Tree, Ctx>
 
 export type References<
-    Def extends object,
-    Dict,
+    Tree,
     PreserveStructure extends boolean
 > = PreserveStructure extends true
-    ? StructuredReferences<Def, Dict>
-    : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, [], Dict>
+    ? StructuredReferences<Tree>
+    : UnstructuredReferences<ListPossibleTypes<ValueOf<Tree>>, []>
 
 type UnstructuredReferences<
     Values extends unknown[],
-    Result extends unknown[],
-    Dict
+    Result extends unknown[]
 > = Values extends IterateType<unknown, infer Current, infer Remaining>
     ? UnstructuredReferences<
           Remaining,
-          [...Result, ...Root.References<Current, Dict, false>],
-          Dict
+          [...Result, ...Root.References<Current, false>]
       >
     : Result
 
-type StructuredReferences<Def extends object, Dict> = Evaluate<{
-    -readonly [K in keyof Def]: Root.References<Def[K], Dict, true>
+type StructuredReferences<Tree> = Evaluate<{
+    [K in keyof Tree]: Root.References<Tree[K], true>
 }>
 
 export const parse: Node.ParseFn<object> = (def, ctx) => {

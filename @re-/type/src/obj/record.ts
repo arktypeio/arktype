@@ -8,17 +8,17 @@ export namespace Record {
     export type Definition = Record<string, unknown>
 
     export type Infer<
-        Def,
+        Tree,
         Ctx extends Node.InferenceContext,
-        OptionalKey extends keyof Def = {
-            [K in keyof Def]: Def[K] extends `${string}?` ? K : never
-        }[keyof Def],
-        RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
+        OptionalKey extends keyof Tree = {
+            [K in keyof Tree]: Tree[K] extends [unknown, "?"] ? K : never
+        }[keyof Tree],
+        RequiredKey extends keyof Tree = Exclude<keyof Tree, OptionalKey>
     > = Evaluate<
         {
-            -readonly [K in RequiredKey]: Root.Infer<Def[K], Ctx>
+            -readonly [K in RequiredKey]: Root.Infer<Tree[K], Ctx>
         } & {
-            -readonly [K in OptionalKey]?: Root.Infer<Def[K], Ctx>
+            -readonly [K in OptionalKey]?: Root.Infer<Tree[K], Ctx>
         }
     >
 }

@@ -27,16 +27,25 @@ export type TypeOptions = {
 export type TypeFunction<Dict = {}, Meta = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
     options?: TypeOptions
-) => TypeFrom<Def, Dict, Infer<Def, Dict, Meta>>
+) => TypeFrom<
+    Def,
+    Root.Parse<Def, Dict>,
+    InferTree<
+        Root.Parse<Def, Dict>,
+        // @ts-expect-error
+        Node.InferenceContext.Initialize<Dict, Meta>
+    >
+>
 
-export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
+export type TypeFrom<Def, Tree, Inferred> = Evaluate<{
     definition: Def
     infer: Inferred
     validate: ValidateFunction<Inferred>
     assert: AssertFunction<Inferred>
     default: Inferred
+    tree: Tree
     create: CreateFunction<Inferred>
-    references: ReferencesFunction<Def, Dict>
+    references: ReferencesFunction<Tree>
 }>
 
 export class Type implements TypeFrom<unknown, unknown, unknown> {
@@ -52,6 +61,10 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
 
     get default() {
         return this.create()
+    }
+
+    get tree() {
+        return {}
     }
 
     validate(value: unknown, options?: Node.Allows.Options) {
@@ -116,7 +129,7 @@ export type CreateFunction<InferredType> = (
     options?: Node.Create.Options
 ) => InferredType
 
-export type ReferencesFunction<Def, Dict> = <
+export type ReferencesFunction<Tree> = <
     Options extends Node.References.Options = {}
 >(
     options?: Options
@@ -128,24 +141,35 @@ export type ReferencesFunction<Def, Dict> = <
     Options
 > extends Node.References.Options<infer Filter, infer PreserveStructure>
     ? TransformReferences<
-          Root.References<Def, Dict, PreserveStructure>,
+          Root.References<Tree, PreserveStructure>,
           Filter,
           "list"
       >
     : []
 
-export type Infer<Def, Dict = {}, Meta = {}> = Root.Infer<
-    Def,
+// TODO: Check how many types actually checking extends here contributes
+export type Infer<Def, Dict = {}, Meta = {}> = InferTree<
+    Root.Parse<Def, Dict>,
     // @ts-expect-error
-    { dict: Dict; meta: Meta; seen: {} }
+    Node.InferenceContext.Initialize<Dict, Meta>
+>
+
+export type InferTree<Tree, Ctx extends Node.InferenceContext> = Root.Infer<
+    Tree,
+    Ctx
 >
 
 export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>
 
 export type References<
     Def,
-    Dict,
+    Dict = {},
     Options extends Node.References.TypeOptions = {}
+> = ReferencesOfTree<Root.Parse<Def, Dict>, Options>
+
+export type ReferencesOfTree<
+    Tree,
+    Options extends Node.References.TypeOptions
 > = Merge<
     { filter: string; preserveStructure: false; format: "list" },
     Options
@@ -155,7 +179,7 @@ export type References<
     infer Format
 >
     ? TransformReferences<
-          Root.References<Def, Dict, PreserveStructure>,
+          Root.References<Tree, PreserveStructure>,
           Filter,
           Format
       >
