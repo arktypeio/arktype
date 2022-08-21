@@ -1,8 +1,9 @@
 import { diffSets, ElementOf, Exact, Get, Narrow, SetChange } from "@re-/tools"
 import {
     rawSpace,
-    SpaceFrom,
     SpaceOptions,
+    SpaceOutput,
+    ToSpace,
     ValidateDictionary
 } from "./space.js"
 import { Validate } from "./type.js"
@@ -91,7 +92,7 @@ export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
 >(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
     options?: SpaceOptions
-) => SpaceFrom<Dict, {}>
+) => SpaceOutput<ToSpace<Dict, {}>>
 
 export class DeclaredCompilationError extends Error {
     constructor(discrepancies: NonNullable<SetChange<string>>) {

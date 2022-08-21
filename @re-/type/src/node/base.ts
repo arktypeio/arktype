@@ -1,5 +1,5 @@
 import type { ObjNode } from "../obj/index.js"
-import type { MetaDefinitions, SpaceMeta } from "../space.js"
+import type { MetaDefinitions, Space, SpaceMeta } from "../space.js"
 import type { Type, TypeOptions } from "../type.js"
 import type { Allows, Create, References } from "./methods/index.js"
 import { stringifyValue } from "./utils.js"
@@ -38,17 +38,15 @@ export abstract class Base {
 }
 
 export type InferenceContext = {
-    dict: unknown
-    meta: MetaDefinitions
+    space: Space
     seen: Record<string, true>
 }
 
 export namespace InferenceContext {
     export type From<Ctx extends InferenceContext> = Ctx
 
-    export type Initialize<Dict, Meta extends MetaDefinitions> = From<{
-        dict: Dict
-        meta: Meta
+    export type Initialize<S extends Space> = From<{
+        space: S
         seen: {}
     }>
 }

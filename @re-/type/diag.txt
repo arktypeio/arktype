@@ -1,26 +1,17 @@
-src/__tests__/references.test.ts(121,21): error TS2345: Argument of type '{ its: never[]; easyAs: string[][]; }' is not assignable to parameter of type '{ a: never[]; b: never[]; c: { its: never[]; easyAs: never[]; }; }'.
-  Object literal may only specify known properties, and 'its' does not exist in type '{ a: never[]; b: never[]; c: { its: never[]; easyAs: never[]; }; }'.
-src/__tests__/space/creation.test.ts(27,13): error TS2741: Property 'description' is missing in type '{ length: number; }' but required in type '{ length: number; description: unknown; }'.
-src/__tests__/space/creation.test.ts(42,20): error TS2741: Property 'c' is missing in type '{}' but required in type '{ c: unknown; }'.
-src/__tests__/space/creation.test.ts(98,13): error TS2741: Property 'description' is missing in type '{ name: string; }' but required in type '{ name: string; description: unknown; }'.
 src/__tests__/space/meta.test.ts(31,48): error TS2339: Property 'b' does not exist on type '{}'.
-src/__tests__/space/validation.test.ts(126,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: unknown; }'.
-src/__tests__/space/validation.test.ts(132,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: unknown; }'.
-src/__tests__/space/validation.test.ts(137,13): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu: unknown; }'.
-src/str/__tests__/parse.bench.ts(122,7): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: unknown; }'.
-src/str/__tests__/parse.bench.ts(127,5): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu: unknown; }'.
+src/__tests__/space/meta.test.ts(57,16): error TS2571: Object is of type 'unknown'.
 Files:              255
-Lines:            66043
-Nodes:           182995
-Identifiers:      62427
-Symbols:         119622
-Types:            63062
-Instantiations:  309423
-Memory used:    156443K
+Lines:            66073
+Nodes:           183151
+Identifiers:      62453
+Symbols:         120891
+Types:            64321
+Instantiations:  327650
+Memory used:    163566K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.37s
-Bind time:        0.14s
-Check time:       1.42s
+Parse time:       0.43s
+Bind time:        0.13s
+Check time:       1.44s
 Emit time:        0.00s
-Total time:       1.93s
+Total time:       1.99s

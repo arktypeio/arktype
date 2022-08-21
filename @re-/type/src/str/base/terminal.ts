@@ -168,6 +168,6 @@ export type InferTerminalStr<
     Ctx extends Node.InferenceContext
 > = Token extends Keyword.Definition
     ? Keyword.Types[Token]
-    : Token extends keyof Ctx["dict"]
+    : Token extends keyof Ctx["space"]["Dict"]
     ? AliasType.Infer<Token, Ctx>
     : InferLiteral<Token>

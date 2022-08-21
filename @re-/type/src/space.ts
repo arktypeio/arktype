@@ -31,7 +31,7 @@ export const rawSpace = (
     return compiled as RawSpace
 }
 
-export class SpaceMeta implements SpaceMetaFrom<unknown, unknown> {
+export class SpaceMeta implements SpaceMetaFrom<any> {
     resolutions: Record<string, ResolutionNode>
 
     constructor(
@@ -61,10 +61,13 @@ export class SpaceMeta implements SpaceMetaFrom<unknown, unknown> {
     }
 }
 
-export type CreateSpaceFn = <Dict, Meta>(
+export type CreateSpaceFn = <Dict, Meta = {}>(
     dictionary: ValidateDictionary<Dict>,
     options?: ValidateSpaceOptions<Dict, Meta>
-) => SpaceFrom<ValidateDictionary<Dict>, Meta>
+) => SpaceOutput<
+    // @ts-expect-error
+    ToSpace<ValidateDictionary<Dict>, Meta>
+>
 
 /**
  * Although this function claims to return Def, it actually returns an object
@@ -98,6 +101,12 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
     }
 }
 
+export type Space = {
+    Dict: unknown
+    Meta: MetaDefinitions
+    Tree: unknown
+}
+
 export type ValidateDictionary<Dict> = {
     [Alias in keyof Dict]: ResolutionType.Validate<Alias, Dict>
 }
@@ -119,30 +128,46 @@ export type SpaceOptions = TypeOptions
 
 export type SpaceDictionary = Record<string, unknown>
 
-export type SpaceFrom<Dict, Meta> = Evaluate<
-    DictionaryToTypes<Dict, Meta> & {
-        $root: SpaceMetaFrom<Dict, Meta>
+export type Parse<Dict> = {
+    [Alias in keyof Dict]: Root.Parse<Dict[Alias], Dict>
+}
+
+export type ToSpace<Dict, Meta> = {
+    Dict: Dict
+    Meta: Meta
+    Tree: Parse<Dict>
+}
+
+export type SpaceOutput<S extends Space> = Evaluate<
+    SpaceTypes<S> & {
+        $root: SpaceMetaFrom<S>
     }
 >
 
-export type SpaceMetaFrom<Dict, Meta> = {
-    infer: RootDictType<Dict, Meta>
-    type: TypeFunction<Dict, Meta>
-    extend: ExtendFunction<Dict>
-    dictionary: Dict
+export type SpaceMetaFrom<S extends Space> = {
+    infer: RootDictType<S>
+    type: TypeFunction<S>
+    extend: ExtendFunction<S["Dict"]>
+    dictionary: S["Dict"]
     options: SpaceOptions
 }
 
-export type DictionaryToTypes<Dict, Meta> = Evaluate<{
-    [Alias in keyof Dict]: TypeFrom<
-        Dict[Alias],
-        Dict,
-        ResolutionType.Infer<Alias, Dict, Meta>
+export type SpaceTypes<S extends Space> = Evaluate<{
+    [Alias in keyof S["Dict"]]: TypeFrom<
+        S["Dict"][Alias],
+        Get<S["Tree"], Alias>,
+        Root.Infer<
+            Get<S["Tree"], Alias>,
+            { space: S; seen: { [K in Alias]: true } }
+        >
     >
 }>
 
-export type RootDictType<Dict, Meta> = Evaluate<{
-    [Alias in keyof Dict]: ResolutionType.Infer<Alias, Dict, Meta>
+export type RootDictType<S extends Space> = Evaluate<{
+    [Alias in keyof S["Dict"]]: Root.Infer<
+        S["Tree"][Alias],
+        { space: S; seen: { [K in Alias]: true } }
+    >
 }>
 
 export type MetaDefinitions = {
@@ -153,7 +178,11 @@ export type MetaDefinitions = {
 export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
     options?: SpaceOptions
-) => SpaceFrom<Merge<BaseDict, ExtensionDict>, {}>
+) => SpaceOutput<{
+    Dict: Merge<BaseDict, ExtensionDict>
+    Meta: {}
+    Tree: Parse<Merge<BaseDict, ExtensionDict>>
+}>
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
     [TypeName in keyof ExtensionDict]: Validate<

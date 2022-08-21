@@ -23,18 +23,6 @@ export namespace ResolutionType {
         >,
         Str.Validate<Extract<Dict[Alias], string>, Dict>
     >
-
-    export type Infer<
-        Alias extends keyof Dict,
-        Dict,
-        Meta
-    > = Dict[Alias] extends Node.Catch<string>
-        ? unknown
-        : Root.Infer<
-              Dict[Alias],
-              // @ts-expect-error
-              { dict: Dict; meta: Meta; seen: { [K in Alias]: true } }
-          >
 }
 
 export class ResolutionNode extends Node.NonTerminal {

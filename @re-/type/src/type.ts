@@ -8,7 +8,7 @@ import {
 } from "@re-/tools"
 import { Node } from "./common.js"
 import { Root } from "./root.js"
-import type { SpaceMeta } from "./space.js"
+import type { Space, SpaceMeta } from "./space.js"
 
 export const type: TypeFunction = (
     definition,
@@ -24,17 +24,15 @@ export type TypeOptions = {
     create?: Node.Create.Options
 }
 
-export type TypeFunction<Dict = {}, Meta = {}> = <Def>(
-    definition: Root.Validate<Def, Dict>,
+export type TypeFunction<S extends Space = { Dict: {}; Meta: {}; Tree: {} }> = <
+    Def
+>(
+    definition: Root.Validate<Def, S["Dict"]>,
     options?: TypeOptions
 ) => TypeFrom<
     Def,
-    Root.Parse<Def, Dict>,
-    InferTree<
-        Root.Parse<Def, Dict>,
-        // @ts-expect-error
-        Node.InferenceContext.Initialize<Dict, Meta>
-    >
+    Root.Parse<Def, S["Dict"]>,
+    InferTree<Root.Parse<Def, S["Dict"]>, Node.InferenceContext.Initialize<S>>
 >
 
 export type TypeFrom<Def, Tree, Inferred> = Evaluate<{
@@ -147,11 +145,9 @@ export type ReferencesFunction<Tree> = <
       >
     : []
 
-// TODO: Check how many types actually checking extends here contributes
-export type Infer<Def, Dict = {}, Meta = {}> = InferTree<
-    Root.Parse<Def, Dict>,
-    // @ts-expect-error
-    Node.InferenceContext.Initialize<Dict, Meta>
+export type Infer<Def, S extends Space> = InferTree<
+    Root.Parse<Def, S["Dict"]>,
+    Node.InferenceContext.Initialize<S>
 >
 
 export type InferTree<Tree, Ctx extends Node.InferenceContext> = Root.Infer<
