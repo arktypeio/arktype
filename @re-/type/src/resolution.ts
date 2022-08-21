@@ -141,7 +141,7 @@ type CheckResolutionForShallowCycleRecurse<
     Seen extends string[]
 > = Resolution extends string
     ? IterateReferencesForShallowCycle<
-          Str.References<Resolution, Dict>,
+          Str.References<Str.Parse<Resolution, Dict>>,
           Dict,
           Seen
       >

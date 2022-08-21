@@ -15,9 +15,12 @@ export namespace Root {
         ? Str.Parse<Def, Dict>
         : Obj.Parse<Def, Dict>
 
-    export type Infer<Tree, Ctx extends Node.InferenceContext> = Tree extends
-        | string
-        | unknown[]
+    export type Infer<
+        Tree,
+        Ctx extends Node.InferenceContext
+    > = unknown extends Tree
+        ? Tree
+        : Tree extends string | unknown[]
         ? Str.Infer<Tree, Ctx>
         : Obj.Infer<Tree, Ctx>
 

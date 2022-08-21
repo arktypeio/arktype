@@ -4,26 +4,23 @@ src/__tests__/space/creation.test.ts(27,13): error TS2741: Property 'description
 src/__tests__/space/creation.test.ts(42,20): error TS2741: Property 'c' is missing in type '{}' but required in type '{ c: unknown; }'.
 src/__tests__/space/creation.test.ts(98,13): error TS2741: Property 'description' is missing in type '{ name: string; }' but required in type '{ name: string; description: unknown; }'.
 src/__tests__/space/meta.test.ts(31,48): error TS2339: Property 'b' does not exist on type '{}'.
-src/__tests__/space/type.test.ts(93,16): error TS2589: Type instantiation is excessively deep and possibly infinite.
-src/__tests__/space/validation.test.ts(46,13): error TS2578: Unused '@ts-expect-error' directive.
 src/__tests__/space/validation.test.ts(126,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: unknown; }'.
 src/__tests__/space/validation.test.ts(132,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: unknown; }'.
 src/__tests__/space/validation.test.ts(137,13): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu: unknown; }'.
-src/resolution.ts(144,11): error TS2314: Generic type 'References' requires 1 type argument(s).
 src/str/__tests__/parse.bench.ts(122,7): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: unknown; }'.
 src/str/__tests__/parse.bench.ts(127,5): error TS2322: Type 'unknown' is not assignable to type '{ dejaVu: unknown; }'.
 Files:              255
-Lines:            66040
-Nodes:           182985
-Identifiers:      62423
-Symbols:         124045
-Types:            64551
-Instantiations:  330767
-Memory used:    159853K
+Lines:            66043
+Nodes:           182995
+Identifiers:      62427
+Symbols:         119622
+Types:            63062
+Instantiations:  309423
+Memory used:    156443K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.47s
-Bind time:        0.16s
-Check time:       1.71s
+Parse time:       0.37s
+Bind time:        0.14s
+Check time:       1.42s
 Emit time:        0.00s
-Total time:       2.34s
+Total time:       1.93s
