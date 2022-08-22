@@ -1,6 +1,6 @@
+import { Obj } from "./base/obj/index.js"
 import { Node } from "./common.js"
-import { Obj } from "./obj/index.js"
-import { Str } from "./str/index.js"
+import { Str } from "./str.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []

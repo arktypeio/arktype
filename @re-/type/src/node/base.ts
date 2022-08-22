@@ -1,4 +1,4 @@
-import type { ObjNode } from "../obj/index.js"
+import type { ObjNode } from "../base/obj/index.js"
 import type { MetaDefinitions, Space, SpaceMeta } from "../space.js"
 import type { Type, TypeOptions } from "../type.js"
 import type { Allows, Create, References } from "./methods/index.js"

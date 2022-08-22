@@ -7,9 +7,9 @@ import {
     Merge
 } from "@re-/tools"
 import { Node } from "./common.js"
+import { ErrorToken } from "./parser/tokens.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
-import { ErrorToken } from "./str/parser/tokens.js"
 import { Type, TypeFrom, TypeFunction, TypeOptions, Validate } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
