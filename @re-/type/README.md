@@ -23,7 +23,7 @@ Type-first validation from editor to runtime🧬
 
 (feel free to substitute `yarn`, `pnpm`, et al.)
 
-If you're using TypeScript, you'll need at least `4.4`.
+If you're using TypeScript, you'll need at least `4.5`.
 
 ## Getting Started
 

@@ -4,7 +4,8 @@ import {
     deepMerge,
     Evaluate,
     Get,
-    Merge
+    Merge,
+    Narrow
 } from "@re-/tools"
 import { Node } from "./common.js"
 import { ErrorToken } from "./parser/tokens.js"
@@ -75,11 +76,11 @@ export type CreateSpaceFn = <Dict, Meta = {}>(
  * This allows users to provide alias-specific options without interfering
  * with type inference.
  */
-export const def = <Def>(def: Def, options?: TypeOptions) =>
+export const def = <Def>(def: Narrow<Def>, options?: TypeOptions) =>
     ({
         $def: def,
         $opts: options
-    } as Def)
+    } as any as Def)
 
 export type DefWithOptions = {
     def: unknown
