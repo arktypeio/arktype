@@ -2,19 +2,17 @@ import { Node } from "../common.js"
 import { left, state } from "../parser/index.js"
 // TODO: Fix which files get imported
 
-export namespace Optional {
-    export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
-        if (s.r.lookahead !== undefined) {
-            throw new Error(
-                `Suffix '?' is only valid at the end of a definition.`
-            )
-        }
-        s.l.root = new OptionalNode(s.l.root, ctx)
-        return s
+export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
+    if (s.r.lookahead !== undefined) {
+        throw new Error(`Suffix '?' is only valid at the end of a definition.`)
     }
+    s.l.root = new node(s.l.root, ctx)
+    return s
 }
 
-export class OptionalNode extends Node.NonTerminal {
+export type Node<Child> = [Child, "?"]
+
+export class node extends Node.NonTerminal {
     toString() {
         return this.children.toString() + "?"
     }

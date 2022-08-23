@@ -1,6 +1,6 @@
 import { Terminal } from "../base/index.js"
 import { Node } from "../common.js"
-import { ListNode, OptionalNode } from "../operator/index.js"
+import { List, Optional } from "../operator/index.js"
 import { Parse } from "./main.js"
 
 /**
@@ -32,7 +32,7 @@ export const tryParse = (def: string, ctx: Node.Context) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
-            return new OptionalNode(possibleIdentifierNode, ctx)
+            return new Optional.node(possibleIdentifierNode, ctx)
         }
     }
     return tryParseList(def, ctx)
@@ -45,7 +45,7 @@ const tryParseList = (def: string, ctx: Node.Context) => {
             ctx
         )
         if (possibleIdentifierNode) {
-            return new ListNode(possibleIdentifierNode, ctx)
+            return new List.node(possibleIdentifierNode, ctx)
         }
     }
     return Terminal.toNodeIfResolvableIdentifier(def, ctx)

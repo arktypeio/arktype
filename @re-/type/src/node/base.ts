@@ -1,6 +1,6 @@
 import type { ObjNode } from "../base/obj/index.js"
-import type { MetaDefinitions, Space, SpaceMeta } from "../space.js"
-import type { Type, TypeOptions } from "../type.js"
+import type { Space, SpaceMeta } from "../space.js"
+import type { TypeOptions } from "../type.js"
 import type { Allows, Create, References } from "./methods/index.js"
 import { stringifyValue } from "./utils.js"
 

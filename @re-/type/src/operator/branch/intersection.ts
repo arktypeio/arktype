@@ -40,6 +40,8 @@ export namespace Intersection {
         s.l.branches.intersection = undefined as any
         return s
     }
+
+    export type Node<Left, Right> = [Left, "&", Right]
 }
 
 export class IntersectionNode extends Node.NonTerminal<Node.Base[]> {

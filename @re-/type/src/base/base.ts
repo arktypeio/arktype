@@ -1,5 +1,4 @@
 import { Node } from "../common.js"
-import { Group } from "../operator/index.js"
 import { Scanner, state, State, Tokens } from "../parser/index.js"
 import { GroupOpen, Terminal } from "./nodes.js"
 
@@ -23,7 +22,7 @@ export type Base<S extends State, Dict> = S["R"] extends Scanner.Shift<
     infer Unscanned
 >
     ? Lookahead extends "("
-        ? State.From<{ L: Group.ReduceOpen<S["L"]>; R: Unscanned }>
+        ? State.From<{ L: GroupOpen.Reduce<S["L"]>; R: Unscanned }>
         : Lookahead extends Tokens.EnclosedBaseStartChar
         ? Terminal.EnclosedBase<S, Lookahead>
         : Lookahead extends " "

@@ -43,6 +43,8 @@ export namespace Union {
         return s
     }
 
+    export type Node<Left, Right> = [Left, "|", Right]
+
     export type Reduce<L extends Left.Base> = Left.From<{
         bounds: L["bounds"]
         groups: L["groups"]

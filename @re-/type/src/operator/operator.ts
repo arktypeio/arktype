@@ -1,6 +1,6 @@
 import { Node } from "../common.js"
 import { left, Left, Scanner, state, State, Tokens } from "../parser/index.js"
-import { Bound, Group, Intersection, List, Union } from "./nodes.js"
+import { Bound, GroupClose, Intersection, List, Union } from "./nodes.js"
 
 export const operator = (s: state<left.withRoot>, ctx: Node.Context): state => {
     const lookahead = s.r.shift()
@@ -15,7 +15,7 @@ export const operator = (s: state<left.withRoot>, ctx: Node.Context): state => {
         : lookahead === "&"
         ? Intersection.reduce(s, ctx)
         : lookahead === ")"
-        ? Group.reduceClose(s)
+        ? GroupClose.reduce(s)
         : Tokens.inTokenSet(lookahead, Bound.chars)
         ? Bound.parse(s, lookahead)
         : lookahead === " "
@@ -36,8 +36,8 @@ export type Operator<S extends State> = S["R"] extends Scanner.Shift<
         : Lookahead extends "&"
         ? State.From<{ L: Intersection.Reduce<S["L"]>; R: Unscanned }>
         : Lookahead extends ")"
-        ? State.From<{ L: Group.ReduceClose<S["L"]>; R: Unscanned }>
-        : Lookahead extends Bound.Char
+        ? State.From<{ L: GroupClose.Reduce<S["L"]>; R: Unscanned }>
+        : Lookahead extends Bound.ComparatorChar
         ? Bound.Parse<S, Lookahead, Unscanned>
         : Lookahead extends " "
         ? Operator<{ L: S["L"]; R: Unscanned }>

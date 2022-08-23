@@ -5,7 +5,7 @@ import {
     Branches,
     Operator,
     operator,
-    OptionalNode
+    Optional
 } from "../operator/index.js"
 import { left, Left, State, state, Tokens } from "./index.js"
 
@@ -68,7 +68,7 @@ export const suffixLoop = (
     }
     if (s.l.nextSuffix === "?") {
         if (s.r.lookahead === "END") {
-            return new OptionalNode(s.l.root, ctx)
+            return new Optional.node(s.l.root, ctx)
         }
         throw new Error(`Suffix '?' is only valid at the end of a definition.`)
     }
@@ -95,7 +95,7 @@ export type NextSuffix<S extends State.Of<Left.Suffix>> =
                   R: ""
               }>
             : State.Error<`Suffix '?' is only valid at the end of a definition.`>
-        : S["L"]["nextSuffix"] extends Bound.Token
+        : S["L"]["nextSuffix"] extends Bound.Comparator
         ? Bound.ParseRight<S, S["L"]["nextSuffix"]>
         : State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
 

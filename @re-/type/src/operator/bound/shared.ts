@@ -1,9 +1,9 @@
 import { Node } from "../../common.js"
-import type { Bound } from "./parse.js"
+import type { Comparator } from "./parse.js"
 
 export type BoundChecker = (y: number) => boolean
 
-export const createBoundChecker = (token: Bound.Token, x: number) => {
+export const createBoundChecker = (token: Comparator, x: number) => {
     switch (token) {
         case "<=":
             return (y: number) => y <= x
@@ -16,7 +16,7 @@ export const createBoundChecker = (token: Bound.Token, x: number) => {
         case "==":
             return (y: number) => y === x
         default:
-            throw new Error(`Unexpected bound token ${token}.`)
+            throw new Error(`Unexpected comparator ${token}.`)
     }
 }
 

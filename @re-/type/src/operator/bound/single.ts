@@ -1,5 +1,5 @@
 import { Node } from "../../common.js"
-import { Bound } from "./parse.js"
+import { Comparator } from "./parse.js"
 import {
     BoundableNode,
     BoundableValue,
@@ -13,7 +13,7 @@ export type SingleBoundValidationError = {
     evaluated: number
 }
 
-export type SingleBoundDefinition = [Bound.Token, number]
+export type SingleBoundDefinition = [Comparator, number]
 
 export class SingleBoundNode extends Node.NonTerminal<BoundableNode> {
     bound: SingleBoundDefinition

@@ -1,5 +1,5 @@
 import { Node } from "../../common.js"
-import { Bound } from "./parse.js"
+import { DoubleBoundComparator } from "./parse.js"
 import {
     BoundableNode,
     BoundableValue,
@@ -15,8 +15,8 @@ export type DoubleBoundValidationError = {
 }
 
 export type DoubleBoundDefinition = {
-    left: [number, Bound.DoubleBoundToken]
-    right: [Bound.DoubleBoundToken, number]
+    left: [number, DoubleBoundComparator]
+    right: [DoubleBoundComparator, number]
 }
 
 export class DoubleBoundNode extends Node.NonTerminal<BoundableNode> {
