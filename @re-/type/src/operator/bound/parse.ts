@@ -253,11 +253,8 @@ type ReduceDouble<
     NextSuffix extends Tokens.SuffixToken
 > = IsValidDoubleBound<R[0]> extends true
     ? Left.SuffixFrom<{
-          bounds: {
-              left: L["bounds"]["left"]
-              right: R
-          }
-          root: L["root"]
+          bounds: {}
+          root: [...L["bounds"]["left"], L["root"], ...R]
           nextSuffix: NextSuffix
       }>
     : Left.Error<InvalidDoubleBoundMessage<R[0]>>
@@ -282,10 +279,8 @@ type ReduceSingle<
     R extends RightDefinition,
     NextSuffix extends Tokens.SuffixToken
 > = Left.SuffixFrom<{
-    bounds: {
-        right: R
-    }
-    root: L["root"]
+    bounds: {}
+    root: [L["root"], ...R]
     nextSuffix: NextSuffix
 }>
 

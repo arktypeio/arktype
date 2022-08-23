@@ -1,5 +1,5 @@
 import { Node } from "../common.js"
-import { Left, left, Scanner, State, state } from "../parser/index.js"
+import { Left, left, Scanner, State, state, Tree } from "../parser/index.js"
 import { BoundableNode } from "./bound/index.js"
 
 export const shiftReduce = (s: state<left.withRoot>, ctx: Node.Context) => {
@@ -22,9 +22,7 @@ const incompleteTokenMessage = `Missing expected ']'.`
 
 type IncompleteTokenMessage = typeof incompleteTokenMessage
 
-export type Reduce<L extends Left.Base> = Left.SetRoot<L, Node<L["root"]>>
-
-export type Node<Child> = [Child, "[]"]
+export type Reduce<L extends Left.Base> = Left.SetRoot<L, [L["root"], "[]"]>
 
 export class node extends Node.NonTerminal implements BoundableNode {
     toString() {

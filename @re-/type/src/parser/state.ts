@@ -191,7 +191,9 @@ export namespace Left {
 
     export type Suffixable = With<{ nextSuffix: SuffixToken }>
 
-    export type Suffix = With<SuffixInput>
+    export type Suffix<Constraints extends Partial<SuffixInput> = {}> = With<
+        SuffixInput & Constraints
+    >
 
     export type SuffixFrom<L extends SuffixInput> = Left.From<{
         bounds: L["bounds"]

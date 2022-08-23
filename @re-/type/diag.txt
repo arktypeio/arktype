@@ -1,15 +1,22 @@
+src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '[2, "null", "integer", "true", "boolean", "group", "user"]'.
+  Source has 6 element(s) but target requires 7.
+src/operator/bound/parse.ts(268,28): error TS2344: Type 'L["bounds"]["left"]' does not satisfy the constraint 'LeftDefinition'.
+  Type 'LeftDefinition | undefined' is not assignable to type '[number, "<" | "<="]'.
+    Type 'undefined' is not assignable to type '[number, "<" | "<="]'.
+src/operator/bound/parse.ts(294,22): error TS2344: Type 'L["root"]' does not satisfy the constraint 'BoundableT'.
+  Type 'L["root"]' is not assignable to type '[unknown, "[]"]'.
 Files:              253
-Lines:            66044
-Nodes:           183082
-Identifiers:      62441
-Symbols:         122726
-Types:            65893
-Instantiations:  338859
-Memory used:    168554K
+Lines:            66065
+Nodes:           183186
+Identifiers:      62479
+Symbols:         130290
+Types:            69990
+Instantiations:  347142
+Memory used:    168124K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.46s
-Bind time:        0.17s
-Check time:       1.61s
+Parse time:       0.41s
+Bind time:        0.14s
+Check time:       1.42s
 Emit time:        0.00s
-Total time:       2.24s
+Total time:       1.97s
