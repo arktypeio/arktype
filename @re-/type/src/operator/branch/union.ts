@@ -1,5 +1,5 @@
 import { TypeOfResult } from "@re-/tools"
-import { Node } from "../../common.js"
+import { Node } from "../../core.js"
 import { Left, left, state } from "../../parser/index.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"
@@ -53,7 +53,7 @@ export namespace Union {
     }>
 
     export type Mergeable = state<{
-        root: Node.Base
+        root: Node.node
         branches: { union: UnionNode }
     }>
 
@@ -68,8 +68,8 @@ export namespace Union {
     }
 }
 
-export class UnionNode extends Node.NonTerminal<Node.Base[]> {
-    addMember(node: Node.Base) {
+export class UnionNode extends Node.NonTerminal<Node.node[]> {
+    addMember(node: Node.node) {
         this.children.push(node)
     }
 

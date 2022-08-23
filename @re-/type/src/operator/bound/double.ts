@@ -1,4 +1,4 @@
-import { Node } from "../../common.js"
+import { Node } from "../../core.js"
 import { DoubleBoundComparator } from "./parse.js"
 import {
     BoundableNode,

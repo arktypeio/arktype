@@ -1,12 +1,12 @@
 // TODO: Remove
 /* eslint-disable max-lines */
+import { Node } from "../../core.js"
 import {
     Keyword,
     literalToNumber,
     NumberLiteralDefinition,
     NumberLiteralNode
-} from "../../base/index.js"
-import { Node } from "../../common.js"
+} from "../../operand/index.js"
 import {
     Left,
     left,

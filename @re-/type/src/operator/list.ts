@@ -1,13 +1,12 @@
-import { Node } from "../common.js"
-import { Left, left, Scanner, State, state, Tree } from "../parser/index.js"
+import { base, Left, left, Node, Scanner, State, state } from "../core.js"
 import { BoundableNode } from "./bound/index.js"
 
-export const shiftReduce = (s: state<left.withRoot>, ctx: Node.Context) => {
+export const shiftReduce = (s: state<left.withRoot>, ctx: base.Context) => {
     const next = s.r.shift()
     if (next !== "]") {
         throw new Error(incompleteTokenMessage)
     }
-    s.l.root = new node(s.l.root, ctx)
+    s.l.root = new base(s.l.root, ctx)
     return s
 }
 

@@ -7,7 +7,7 @@ import {
     Merge,
     Narrow
 } from "@re-/tools"
-import { Node } from "./common.js"
+import { Node } from "./core.js"
 import { ErrorToken } from "./parser/tokens.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"

@@ -1,8 +1,7 @@
-import { Node } from "../common.js"
-import { left, state } from "../parser/index.js"
+import { left, node, Node, state } from "./common.js"
 // TODO: Fix which files get imported
 
-export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
+export const reduce = (s: state<left.withRoot>, ctx: node.Context) => {
     if (s.r.lookahead !== undefined) {
         throw new Error(`Suffix '?' is only valid at the end of a definition.`)
     }
@@ -12,7 +11,7 @@ export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
 
 export type Node<Child> = [Child, "?"]
 
-export class node extends Node.NonTerminal {
+export class optional extends node.NonTerminal {
     toString() {
         return this.children.toString() + "?"
     }

@@ -1,5 +1,5 @@
-import { Obj } from "./base/obj/index.js"
-import { Node } from "./common.js"
+import { Node } from "./core.js"
+import { Obj } from "./operand/obj/index.js"
 import { Str } from "./str.js"
 
 export namespace Root {

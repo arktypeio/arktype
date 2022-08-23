@@ -1,5 +1,5 @@
-import { Left, left, state } from "../parser/index.js"
 import { Branches } from "./branch/index.js"
+import { Left, left, state } from "./common.js"
 
 type PopGroup<
     Stack extends Branches.TypeState[],

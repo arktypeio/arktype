@@ -1,4 +1,4 @@
-import { Node } from "../../common.js"
+import { Node } from "../../core.js"
 import { Left, left, state } from "../../parser/index.js"
 import { Branches } from "./branch.js"
 
@@ -26,7 +26,7 @@ export namespace Intersection {
     }>
 
     export type Mergeable = state<{
-        root: Node.Base
+        root: Node.node
         branches: { intersection: IntersectionNode }
     }>
 
@@ -44,8 +44,8 @@ export namespace Intersection {
     export type Node<Left, Right> = [Left, "&", Right]
 }
 
-export class IntersectionNode extends Node.NonTerminal<Node.Base[]> {
-    addMember(node: Node.Base) {
+export class IntersectionNode extends Node.NonTerminal<Node.node[]> {
+    addMember(node: Node.node) {
         this.children.push(node)
     }
 

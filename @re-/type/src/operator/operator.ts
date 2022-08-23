@@ -1,4 +1,4 @@
-import { Node } from "../common.js"
+import { Node } from "../core.js"
 import { left, Left, Scanner, state, State, Tokens } from "../parser/index.js"
 import { Bound, GroupClose, Intersection, List, Union } from "./nodes.js"
 
