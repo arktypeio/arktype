@@ -6,24 +6,29 @@ import {
 } from "./intersection.js"
 import { hasMergeableUnion, mergeUnion, union } from "./union.js"
 
-export type OpenBranch = [unknown, "|" | "&"]
-
-export type BranchState = {
-    union?: OpenBranch
-    intersection?: OpenBranch
-}
-
-export type branchState = {
+export type branches = {
     union?: union
     intersection?: intersection
 }
 
-export type MergeAll<B extends BranchState, Root> = MergeExpression<
+export type Branches = {
+    union?: OpenBranch<"|">
+    intersection?: OpenBranch<"&">
+}
+
+export type OpenBranch<Token extends BranchToken = BranchToken> = [
+    unknown,
+    Token
+]
+
+export type BranchToken = "|" | "&"
+
+export type MergeBranches<B extends Branches, Root> = MergeExpression<
     B["union"],
     MergeExpression<B["intersection"], Root>
 >
 
-export const mergeAll = (s: Operator.state) => {
+export const mergeBranches = (s: Operator.state) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }

@@ -50,6 +50,4 @@ export const suffixTokens = tokenSet({
     "?": 1
 })
 
-export type ErrorToken<Message extends string> = `!${Message}`
-
 export type SuffixToken = keyof typeof suffixTokens

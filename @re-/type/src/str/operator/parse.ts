@@ -1,5 +1,10 @@
 import { Bound } from "./bound/index.js"
-import { Branches } from "./branches/index.js"
+import {
+    ReduceIntersection,
+    reduceIntersection,
+    ReduceUnion,
+    reduceUnion
+} from "./branches/index.js"
 import { Node, Operator, Parser } from "./common.js"
 import { ReduceGroupClose, reduceGroupClose } from "./groupClose.js"
 import { ParseList, parseList } from "./list.js"
@@ -16,9 +21,9 @@ export const parseOperator = (
         : lookahead === "["
         ? parseList(s, ctx)
         : lookahead === "|"
-        ? Branches.reduceUnion(s, ctx)
+        ? reduceUnion(s, ctx)
         : lookahead === "&"
-        ? Branches.reduceIntersection(s, ctx)
+        ? reduceIntersection(s, ctx)
         : lookahead === ")"
         ? reduceGroupClose(s)
         : Parser.Tokens.inTokenSet(lookahead, Bound.chars)
@@ -39,12 +44,12 @@ export type ParseOperator<S extends Parser.State> =
             ? ParseList<S, Unscanned>
             : Lookahead extends "|"
             ? Parser.State.From<{
-                  L: Branches.ReduceUnion<S["L"]>
+                  L: ReduceUnion<S["L"]>
                   R: Unscanned
               }>
             : Lookahead extends "&"
             ? Parser.State.From<{
-                  L: Branches.ReduceIntersection<S["L"]>
+                  L: ReduceIntersection<S["L"]>
                   R: Unscanned
               }>
             : Lookahead extends ")"

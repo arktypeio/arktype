@@ -17,17 +17,15 @@ export type ParseList<
     S extends Parser.State,
     Unscanned extends string
 > = Unscanned extends Parser.Scanner.Shift<"]", infer Remaining>
-    ? Parser.State.From<{ L: ReduceList<S["L"]>; R: Remaining }>
+    ? Parser.State.From<{
+          L: Parser.Left.SetRoot<S["L"], [S["L"]["root"], "[]"]>
+          R: Remaining
+      }>
     : Parser.State.Error<IncompleteTokenMessage>
 
 const incompleteTokenMessage = `Missing expected ']'.`
 
 type IncompleteTokenMessage = typeof incompleteTokenMessage
-
-type ReduceList<L extends Parser.Left> = Parser.Left.SetRoot<
-    L,
-    [L["root"], "[]"]
->
 
 export type List<Child = unknown> = [Child, "[]"]
 

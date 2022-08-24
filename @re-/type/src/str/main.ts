@@ -37,7 +37,7 @@ export const transitionToSuffix = (s: Parser.state<Parser.left.suffixable>) => {
     if (s.l.groups.length) {
         return s.error(unclosedGroupMessage)
     }
-    return Operator.Branches.mergeAll(s) as Parser.state.suffix
+    return Operator.mergeBranches(s) as Parser.state.suffix
 }
 
 export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
@@ -45,7 +45,7 @@ export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
         ? Parser.State.From<{
               L: Parser.Left.SuffixFrom<{
                   leftBound: S["L"]["leftBound"]
-                  root: Operator.Branches.MergeAll<
+                  root: Operator.MergeBranches<
                       S["L"]["branches"],
                       S["L"]["root"]
                   >
@@ -81,7 +81,7 @@ export type SuffixLoop<S extends Parser.State.Of<Parser.Left.Suffix>> =
 
 export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
     S["L"]["nextSuffix"] extends "?"
-        ? Operator.FinalizeOptional<S>
+        ? Operator.ParseOptional<S>
         : S["L"]["nextSuffix"] extends Operator.Bound.Comparator
         ? Operator.Bound.ParseRight<S, S["L"]["nextSuffix"]>
         : Parser.State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
@@ -89,4 +89,4 @@ export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
 export type ExtractFinalizedRoot<L extends Parser.Left.Suffix> =
     L["leftBound"] extends undefined
         ? L["root"]
-        : Parser.Tokens.ErrorToken<Operator.Bound.UnpairedLeftBoundMessage>
+        : Node.ParseError<Operator.Bound.UnpairedLeftBoundMessage>

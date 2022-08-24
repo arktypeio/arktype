@@ -1,1 +1,3 @@
-export * as Branches from "./exports.js"
+export * from "./branches.js"
+export * from "./intersection.js"
+export * from "./union.js"

@@ -1,7 +1,7 @@
 import { Node, Operator, Parser } from "../common.js"
-import { BranchState, MergeExpression } from "./branch.js"
+import { Branches, MergeExpression } from "./branches.js"
 
-type PushRoot<B extends BranchState, Root> = {
+type PushRoot<B extends Branches, Root> = {
     union: B["union"]
     intersection: [MergeExpression<B["intersection"], Root>, "&"]
 }
@@ -29,9 +29,8 @@ export type StateWithMergeableIntersection = Parser.state<{
 }>
 
 export const hasMergeableIntersection = (
-    s: Parser.state
-): s is StateWithMergeableIntersection =>
-    s.l.root !== undefined && s.l.branches.intersection !== undefined
+    s: Parser.state.withRoot
+): s is StateWithMergeableIntersection => !!s.l.branches.intersection
 
 export const mergeIntersection = (s: StateWithMergeableIntersection) => {
     s.l.branches.intersection.addMember(s.l.root)

@@ -1,10 +1,7 @@
-import { Branches } from "./branches/index.js"
+import { Branches, MergeBranches, mergeBranches } from "./branches/index.js"
 import { Parser } from "./common.js"
 
-type PopGroup<
-    Stack extends Branches.BranchState[],
-    Top extends Branches.BranchState
-> = [...Stack, Top]
+type PopGroup<Stack extends Branches[], Top extends Branches> = [...Stack, Top]
 
 const unexpectedGroupCloseMessage = `Unexpected ).`
 type UnexpectedGroupCloseMessage = typeof unexpectedGroupCloseMessage
@@ -15,7 +12,7 @@ export type ReduceGroupClose<L extends Parser.Left> =
               leftBound: L["leftBound"]
               groups: Stack
               branches: Top
-              root: Branches.MergeAll<L["branches"], L["root"]>
+              root: MergeBranches<L["branches"], L["root"]>
           }>
         : Parser.Left.Error<UnexpectedGroupCloseMessage>
 
@@ -24,7 +21,7 @@ export const reduceGroupClose = (s: Parser.state<Parser.left.withRoot>) => {
     if (previousBranches === undefined) {
         return s.error(unexpectedGroupCloseMessage)
     }
-    Branches.mergeAll(s)
+    mergeBranches(s)
     s.l.branches = previousBranches
     return s
 }

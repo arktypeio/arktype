@@ -1,11 +1,10 @@
-// TODO: Remove imports like this
-import { Operator } from "../operator/index.js"
+import type { Operator } from "../operator/index.js"
 import { Node } from "./common.js"
-import { ErrorToken, SuffixToken } from "./tokens.js"
+import { SuffixToken } from "./tokens.js"
 
 type base = {
-    groups: Operator.Branches.branchState[]
-    branches: Operator.Branches.branchState
+    groups: Operator.branches[]
+    branches: Operator.branches
     root?: Node.base
     leftBound?: Operator.Bound.LeftDefinition
     nextSuffix?: SuffixToken
@@ -15,8 +14,8 @@ export type left<constraints extends Partial<base> = {}> = base & constraints
 
 type Base = {
     leftBound: Operator.Bound.LeftDefinition | undefined
-    groups: Operator.Branches.BranchState[]
-    branches: Operator.Branches.BranchState
+    groups: Operator.Branches[]
+    branches: Operator.Branches
     root: unknown
     nextSuffix?: SuffixToken
 }
@@ -75,7 +74,7 @@ export namespace Left {
         leftBound: undefined
         groups: []
         branches: {}
-        root: ErrorToken<Message>
+        root: Node.ParseError<Message>
         nextSuffix: "END"
     }>
 

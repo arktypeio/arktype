@@ -1,6 +1,6 @@
 import { Node, Operator, Parser } from "./common.js"
 
-export type FinalizeOptional<S extends Parser.State> = S["R"] extends ""
+export type ParseOptional<S extends Parser.State> = S["R"] extends ""
     ? Parser.State.From<{
           L: Parser.Left.SuffixFrom<{
               leftBound: S["L"]["leftBound"]

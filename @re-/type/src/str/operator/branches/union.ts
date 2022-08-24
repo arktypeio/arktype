@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
 import { Node, Operator, Parser, Utils } from "../common.js"
-import { BranchState, MergeExpression } from "./branch.js"
+import { Branches, MergeExpression } from "./branches.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
@@ -18,7 +18,7 @@ const preferredDefaults: PreferredDefaults = [
     { typeOf: "function" }
 ]
 
-type PushRoot<B extends BranchState, Root> = {
+type PushRoot<B extends Branches, Root> = {
     union: [
         MergeExpression<B["union"], MergeExpression<B["intersection"], Root>>,
         "|"
@@ -53,9 +53,8 @@ export type StateWithMergeableUnion = Parser.state<{
 }>
 
 export const hasMergeableUnion = (
-    s: Parser.state
-): s is StateWithMergeableUnion =>
-    s.l.root !== undefined && s.l.branches.union !== undefined
+    s: Parser.state.withRoot
+): s is StateWithMergeableUnion => !!s.l.branches.union
 
 export const mergeUnion = (s: StateWithMergeableUnion) => {
     s.l.branches.union.addMember(s.l.root)
