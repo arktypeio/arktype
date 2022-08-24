@@ -20,21 +20,19 @@ export class state<constraints extends Partial<left> = {}> {
     hasRoot<NodeClass extends ClassOf<Node.base> = ClassOf<Node.base>>(
         ofClass?: NodeClass
     ): this is state<{ root: InstanceOf<NodeClass> }> {
-        return ofClass
-            ? this.l.root instanceof ofClass
-            : this.l.root !== undefined
+        return ofClass ? this.l.root instanceof ofClass : !!this.l.root
     }
 
     isPrefixable() {
         return (
-            isEmpty(this.l.bounds) &&
+            !this.l.leftBound &&
             isEmpty(this.l.branches) &&
             !this.l.groups.length
         )
     }
 
     isSuffixable(): this is state<left.suffixable> {
-        return this.l.nextSuffix !== undefined
+        return !!this.l.nextSuffix
     }
 
     suffixed(token: SuffixToken) {

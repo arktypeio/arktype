@@ -12,7 +12,7 @@ type UnexpectedGroupCloseMessage = typeof unexpectedGroupCloseMessage
 export type ReduceGroupClose<L extends Parser.Left> =
     L["groups"] extends PopGroup<infer Stack, infer Top>
         ? Parser.Left.From<{
-              bounds: L["bounds"]
+              leftBound: L["leftBound"]
               groups: Stack
               branches: Top
               root: Branches.MergeAll<L["branches"], L["root"]>

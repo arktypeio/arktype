@@ -1,23 +1,15 @@
-src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '[2, "null", "integer", "true", "boolean", "group", "user"]'.
-  Source has 6 element(s) but target requires 7.
-src/str/operator/bound/parse.ts(224,44): error TS2503: Cannot find namespace 'Tree'.
-src/str/operator/bound/parse.ts(250,18): error TS2574: A rest element type must be an array type.
-src/str/operator/bound/single.ts(1,22): error TS2307: Cannot find module '../../../common.js' or its corresponding type declarations.
-src/str/operator/bound/single.ts(33,21): error TS2339: Property 'children' does not exist on type 'SingleBoundNode'.
-src/str/operator/bound/single.ts(38,19): error TS2339: Property 'children' does not exist on type 'SingleBoundNode'.
-src/str/operator/bound/single.ts(41,32): error TS2339: Property 'children' does not exist on type 'SingleBoundNode'.
 Files:              257
-Lines:            66077
-Nodes:           183327
-Identifiers:      62556
-Symbols:         125981
-Types:            67185
-Instantiations:  340598
-Memory used:    173076K
+Lines:            66063
+Nodes:           183156
+Identifiers:      62497
+Symbols:         128764
+Types:            70462
+Instantiations:  344761
+Memory used:    174504K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.44s
-Bind time:        0.17s
+Parse time:       0.42s
+Bind time:        0.15s
 Check time:       1.51s
 Emit time:        0.00s
-Total time:       2.12s
+Total time:       2.09s

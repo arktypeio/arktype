@@ -1,7 +1,7 @@
 import { Parser } from "./common.js"
 
 export type ReduceGroupOpen<L extends Parser.Left> = Parser.Left.From<{
-    bounds: L["bounds"]
+    leftBound: L["leftBound"]
     groups: [...L["groups"], L["branches"]]
     branches: {}
     root: undefined

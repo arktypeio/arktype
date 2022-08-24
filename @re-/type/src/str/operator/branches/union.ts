@@ -41,7 +41,7 @@ export const reduceUnion = (s: Operator.state, ctx: Node.context) => {
 export type Union<Left = unknown, Right = unknown> = [Left, "|", Right]
 
 export type ReduceUnion<L extends Parser.Left> = Parser.Left.From<{
-    bounds: L["bounds"]
+    leftBound: L["leftBound"]
     groups: L["groups"]
     branches: PushRoot<L["branches"], L["root"]>
     root: undefined

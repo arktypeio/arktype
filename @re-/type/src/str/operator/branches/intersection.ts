@@ -17,7 +17,7 @@ export const reduceIntersection = (s: Operator.state, ctx: Node.context) => {
 }
 
 export type ReduceIntersection<L extends Parser.Left> = Parser.Left.From<{
-    bounds: L["bounds"]
+    leftBound: L["leftBound"]
     groups: L["groups"]
     branches: PushRoot<L["branches"], L["root"]>
     root: undefined

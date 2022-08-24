@@ -3,7 +3,7 @@ import { Node, Operator, Parser } from "./common.js"
 export type FinalizeOptional<S extends Parser.State> = S["R"] extends ""
     ? Parser.State.From<{
           L: Parser.Left.SuffixFrom<{
-              bounds: S["L"]["bounds"]
+              leftBound: S["L"]["leftBound"]
               root: [S["L"]["root"], "?"]
               nextSuffix: "END"
           }>

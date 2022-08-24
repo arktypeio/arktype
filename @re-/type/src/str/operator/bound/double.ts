@@ -2,30 +2,31 @@ import {
     BoundableNode,
     BoundableValue,
     BoundChecker,
+    BoundValidationError,
     createBoundChecker,
     Node
 } from "./common.js"
-import { DoubleBoundComparator } from "./parse.js"
+import { BoundableT, DoubleBoundComparator } from "./parse.js"
 
-export type DoubleBoundValidationError = {
-    bounds: DoubleBoundDefinition
-    cause: keyof DoubleBoundDefinition
-    value: BoundableValue
-    evaluated: number
-}
+export type DoubleBoundLeft = [number, DoubleBoundComparator]
+export type DoubleBoundRight = [DoubleBoundComparator, number]
 
-export type DoubleBoundDefinition = {
-    left: [number, DoubleBoundComparator]
-    right: [DoubleBoundComparator, number]
-}
+export type DoubleBoundNode<
+    Bounded extends BoundableT = BoundableT,
+    LowerBound extends number = number,
+    LowerComparator extends DoubleBoundComparator = DoubleBoundComparator,
+    UpperComparator extends DoubleBoundComparator = DoubleBoundComparator,
+    UpperBound extends number = number
+> = [LowerBound, LowerComparator, Bounded, UpperComparator, UpperBound]
 
-export class DoubleBoundNode extends Node.NonTerminal<BoundableNode> {
+export class doubleBoundNode extends Node.NonTerminal<BoundableNode> {
     checkLower: BoundChecker
     checkUpper: BoundChecker
 
     constructor(
         child: BoundableNode,
-        private bounds: DoubleBoundDefinition,
+        private left: DoubleBoundLeft,
+        private right: DoubleBoundRight,
         ctx: Node.context
     ) {
         super(child, ctx)
@@ -35,24 +36,18 @@ export class DoubleBoundNode extends Node.NonTerminal<BoundableNode> {
          * number>=5
          * number<10
          */
-        const invertedLeftToken = this.bounds.left[1] === "<" ? ">" : ">="
-        this.checkLower = createBoundChecker(
-            invertedLeftToken,
-            this.bounds.left[0]
-        )
-        this.checkUpper = createBoundChecker(
-            this.bounds.right[0],
-            this.bounds.right[1]
-        )
+        const invertedLeftToken = this.left[1] === "<" ? ">" : ">="
+        this.checkLower = createBoundChecker(invertedLeftToken, this.left[0])
+        this.checkUpper = createBoundChecker(this.right[0], this.right[1])
     }
 
     toString() {
         return (
-            this.bounds.left[0] +
-            this.bounds.left[1] +
+            this.left[0] +
+            this.left[1] +
             this.children.toString() +
-            this.bounds.right[0] +
-            this.bounds.right[1]
+            this.right[0] +
+            this.right[1]
         )
     }
 
@@ -62,9 +57,9 @@ export class DoubleBoundNode extends Node.NonTerminal<BoundableNode> {
         }
         const evaluated = this.children.toBound(args.value)
         if (!this.checkLower(evaluated)) {
-            const error: DoubleBoundValidationError = {
-                bounds: this.bounds,
-                cause: "left",
+            const error: BoundValidationError = {
+                // bounds: this.bounds,
+                // cause: "left",
                 evaluated,
                 value: args.value as BoundableValue
             }
@@ -72,9 +67,9 @@ export class DoubleBoundNode extends Node.NonTerminal<BoundableNode> {
             return false
         }
         if (!this.checkUpper(evaluated)) {
-            const error: DoubleBoundValidationError = {
-                bounds: this.bounds,
-                cause: "right",
+            const error: BoundValidationError = {
+                // bounds: this.bounds,
+                // cause: "right",
                 evaluated,
                 value: args.value as BoundableValue
             }

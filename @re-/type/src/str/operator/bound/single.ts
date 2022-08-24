@@ -1,9 +1,9 @@
-import { Node } from "../../../common.js"
 import {
     BoundableNode,
     BoundableValue,
     BoundChecker,
-    createBoundChecker
+    createBoundChecker,
+    Node
 } from "./common.js"
 import { Comparator } from "./parse.js"
 

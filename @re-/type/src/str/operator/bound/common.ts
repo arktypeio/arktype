@@ -30,3 +30,10 @@ export type BoundableValue = number | string | unknown[]
 
 export const isBoundable = (node: Node.base): node is BoundableNode =>
     "toBound" in node
+
+export type BoundValidationError = {
+    // bound: DoubleBoundDefinition
+    // cause: keyof DoubleBoundDefinition
+    value: BoundableValue
+    evaluated: number
+}

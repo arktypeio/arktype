@@ -2,6 +2,7 @@ import { Node } from "./common.js"
 import * as Main from "./main.js"
 import * as Naive from "./naive.js"
 import { InferTerminal } from "./operand/index.js"
+import { Operator } from "./operator/index.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = Naive.TryParse<Def, Dict>
@@ -25,34 +26,15 @@ export namespace Str {
         ? Infer<Left, Ctx> & Infer<Right, Ctx>
         : T extends [infer Bounded, unknown, unknown]
         ? Infer<Bounded, Ctx>
-        : T extends [unknown, unknown, infer Bounded, unknown, unknown]
+        : T extends Operator.Bound.DoubleBoundNode<infer Bounded>
         ? Infer<Bounded, Ctx>
         : never
-
-    type ModifiedNode<Child = unknown, Token extends string = string> = [
-        Child,
-        Token
-    ]
-
-    type BranchNode<
-        Left = unknown,
-        Token extends string = string,
-        Right = unknown
-    > = [Left, Token, Right]
-
-    export type ToString<T> = T extends string
-        ? T
-        : T extends ModifiedNode<infer Child, infer Token>
-        ? `${ToString<Child>}${Token}`
-        : T extends BranchNode<infer Left, infer Token, infer Right>
-        ? `${ToString<Left>}${Token}${ToString<Right>}`
-        : ""
 
     export type References<T> = T extends [infer Child, unknown]
         ? References<Child>
         : T extends [infer Left, unknown, infer Right]
         ? [...References<Right>, ...References<Left>]
-        : T extends [unknown, unknown, infer Bounded, unknown, unknown]
+        : T extends Operator.Bound.DoubleBoundNode<infer Bounded>
         ? References<Bounded>
         : [T]
 

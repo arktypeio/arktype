@@ -44,7 +44,7 @@ export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
     S["L"]["groups"] extends []
         ? Parser.State.From<{
               L: Parser.Left.SuffixFrom<{
-                  bounds: S["L"]["bounds"]
+                  leftBound: S["L"]["leftBound"]
                   root: Operator.Branches.MergeAll<
                       S["L"]["branches"],
                       S["L"]["root"]
@@ -87,6 +87,6 @@ export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
         : Parser.State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
 
 export type ExtractFinalizedRoot<L extends Parser.Left.Suffix> =
-    Operator.Bound.IsUnpairedLeftBound<L["bounds"]> extends true
-        ? Parser.Tokens.ErrorToken<Operator.Bound.UnpairedLeftBoundMessage>
-        : L["root"]
+    L["leftBound"] extends undefined
+        ? L["root"]
+        : Parser.Tokens.ErrorToken<Operator.Bound.UnpairedLeftBoundMessage>
