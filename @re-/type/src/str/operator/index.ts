@@ -1,2 +1,1 @@
-export * from "./nodes.js"
-export * from "./operator.js"
+export * as Operator from "./exports.js"

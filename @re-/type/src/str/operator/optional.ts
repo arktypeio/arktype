@@ -1,14 +1,27 @@
-import { Node, Operator } from "./common.js"
+import { Node, Operator, Parser } from "./common.js"
 
-export const reduce = (s: Operator.state, ctx: Node.context) => {
+export type FinalizeOptional<S extends Parser.State> = S["R"] extends ""
+    ? Parser.State.From<{
+          L: Parser.Left.SuffixFrom<{
+              bounds: S["L"]["bounds"]
+              root: [S["L"]["root"], "?"]
+              nextSuffix: "END"
+          }>
+          R: ""
+      }>
+    : Parser.State.Error<NonTerminatingOptionalMessage>
+
+export const finalizeOptional = (s: Operator.state, ctx: Node.context) => {
     if (s.r.lookahead !== undefined) {
-        throw new Error(`Suffix '?' is only valid at the end of a definition.`)
+        throw new Error(nonTerminatingOptionalMessage)
     }
-    s.l.root = new optional(s.l.root, ctx)
-    return s
+    return new optional(s.l.root, ctx)
 }
 
-export type Optional<Child> = [Child, "?"]
+const nonTerminatingOptionalMessage = `Suffix '?' is only valid at the end of a definition.`
+type NonTerminatingOptionalMessage = typeof nonTerminatingOptionalMessage
+
+export type Optional<Child = unknown> = [Child, "?"]
 
 export class optional extends Node.NonTerminal {
     toString() {

@@ -1,7 +1,7 @@
-import { Node, Parser } from "./common.js"
+import { Node } from "./common.js"
 import * as Main from "./main.js"
 import * as Naive from "./naive.js"
-import { InferTerminalStr } from "./operand/terminal.js"
+import { InferTerminal } from "./operand/index.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = Naive.TryParse<Def, Dict>
@@ -14,7 +14,7 @@ export namespace Str {
         : Def
 
     export type Infer<T, Ctx extends Node.InferenceContext> = T extends string
-        ? InferTerminalStr<T, Ctx>
+        ? InferTerminal<T, Ctx>
         : T extends [infer Child, "?"]
         ? Infer<Child, Ctx> | undefined
         : T extends [infer Child, "[]"]

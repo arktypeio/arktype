@@ -1,5 +1,0 @@
-export * as List from "./list.js"
-export * as Optional from "./optional.js"
-export * from "./bound/index.js"
-export * from "./branch/index.js"
-export * as GroupClose from "./groupClose.js"

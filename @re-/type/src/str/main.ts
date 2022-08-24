@@ -1,14 +1,8 @@
 import { Node, Parser } from "./common.js"
 import { ParseOperand, parseOperand } from "./operand/index.js"
-import {
-    Bound,
-    Branches,
-    Operator,
-    operator,
-    Optional
-} from "./operator/index.js"
+import { Operator } from "./operator/index.js"
 
-export const parse: Parser.ParseFn<string> = (def, ctx) =>
+export const parse: Node.ParseFn<string> = (def, ctx) =>
     loop(parseOperand(new Parser.state(def), ctx), ctx)
 
 export type Parse<Def extends string, Dict> = Loop<
@@ -30,20 +24,20 @@ type Loop<S extends Parser.State, Dict> = S["L"]["nextSuffix"] extends string
     : Loop<Next<S, Dict>, Dict>
 
 const next = (s: Parser.state, ctx: Node.context): Parser.state =>
-    s.hasRoot() ? operator(s, ctx) : parseOperand(s, ctx)
+    s.hasRoot() ? Operator.parseOperator(s, ctx) : parseOperand(s, ctx)
 
 type Next<S extends Parser.State, Dict> = S["L"]["root"] extends undefined
     ? ParseOperand<S, Dict>
-    : Operator<S>
+    : Operator.ParseOperator<S>
 
 export const unclosedGroupMessage = "Missing )."
 type UnclosedGroupMessage = typeof unclosedGroupMessage
 
 export const transitionToSuffix = (s: Parser.state<Parser.left.suffixable>) => {
     if (s.l.groups.length) {
-        return Parser.state.error(unclosedGroupMessage)
+        return s.error(unclosedGroupMessage)
     }
-    return Branches.mergeAll(s) as Parser.state.suffix
+    return Operator.Branches.mergeAll(s) as Parser.state.suffix
 }
 
 export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
@@ -51,7 +45,10 @@ export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
         ? Parser.State.From<{
               L: Parser.Left.SuffixFrom<{
                   bounds: S["L"]["bounds"]
-                  root: Branches.MergeAll<S["L"]["branches"], S["L"]["root"]>
+                  root: Operator.Branches.MergeAll<
+                      S["L"]["branches"],
+                      S["L"]["root"]
+                  >
                   nextSuffix: S["L"]["nextSuffix"]
               }>
               R: S["R"]
@@ -66,15 +63,15 @@ export const suffixLoop = (
         return s.l.root
     }
     if (s.l.nextSuffix === "?") {
-        if (s.r.lookahead === "END") {
-            return new Optional.node(s.l.root, ctx)
-        }
-        throw new Error(`Suffix '?' is only valid at the end of a definition.`)
+        return Operator.finalizeOptional(s, ctx)
     }
-    if (Parser.Tokens.inTokenSet(s.l.nextSuffix, Bound.tokens)) {
-        return suffixLoop(Bound.parseRight(s, s.l.nextSuffix, ctx), ctx)
+    if (Parser.Tokens.inTokenSet(s.l.nextSuffix, Operator.Bound.tokens)) {
+        return suffixLoop(
+            Operator.Bound.parseRight(s, s.l.nextSuffix, ctx),
+            ctx
+        )
     }
-    throw new Error(`Unexpected suffix token '${s.l.nextSuffix}'.`)
+    return s.error(`Unexpected suffix token '${s.l.nextSuffix}'.`)
 }
 
 export type SuffixLoop<S extends Parser.State.Of<Parser.Left.Suffix>> =
@@ -84,21 +81,12 @@ export type SuffixLoop<S extends Parser.State.Of<Parser.Left.Suffix>> =
 
 export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
     S["L"]["nextSuffix"] extends "?"
-        ? S["R"] extends ""
-            ? Parser.State.From<{
-                  L: Parser.Left.SuffixFrom<{
-                      bounds: S["L"]["bounds"]
-                      root: [S["L"]["root"], "?"]
-                      nextSuffix: "END"
-                  }>
-                  R: ""
-              }>
-            : Parser.State.Error<`Suffix '?' is only valid at the end of a definition.`>
-        : S["L"]["nextSuffix"] extends Bound.Comparator
-        ? Bound.ParseRight<S, S["L"]["nextSuffix"]>
+        ? Operator.FinalizeOptional<S>
+        : S["L"]["nextSuffix"] extends Operator.Bound.Comparator
+        ? Operator.Bound.ParseRight<S, S["L"]["nextSuffix"]>
         : Parser.State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
 
 export type ExtractFinalizedRoot<L extends Parser.Left.Suffix> =
-    Bound.IsUnpairedLeftBound<L["bounds"]> extends true
-        ? Parser.Tokens.ErrorToken<Bound.UnpairedLeftBoundMessage>
+    Operator.Bound.IsUnpairedLeftBound<L["bounds"]> extends true
+        ? Parser.Tokens.ErrorToken<Operator.Bound.UnpairedLeftBoundMessage>
         : L["root"]

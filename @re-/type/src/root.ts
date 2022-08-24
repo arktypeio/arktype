@@ -1,5 +1,5 @@
-import { Node, Parser } from "./common.js"
-import { Obj } from "./str/operand/obj/index.js"
+import { Node } from "./node/index.js"
+import { Obj } from "./obj/index.js"
 import { Str } from "./str/str.js"
 
 export namespace Root {
@@ -42,14 +42,14 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
 
-    export const parse: Parser.ParseFn<unknown> = (def, ctx) => {
+    export const parse: Node.ParseFn<unknown> = (def, ctx) => {
         if (typeof def === "string") {
             return Str.parse(def, ctx)
         }
         if (typeof def === "object" && def !== null) {
             return Obj.parse(def, ctx)
         }
-        throw new Parser.ParseError(
+        throw new Node.parseError(
             BAD_DEF_TYPE_MESSAGE + ` (got ${typeof def}).`
         )
     }

@@ -1,7 +1,7 @@
 import { BoundableNode } from "./bound/index.js"
 import { Node, Parser, Utils } from "./common.js"
 
-export const shiftReduce = (
+export const parseList = (
     s: Parser.state<Parser.left.withRoot>,
     ctx: Node.context
 ) => {
@@ -9,27 +9,29 @@ export const shiftReduce = (
     if (next !== "]") {
         throw new Error(incompleteTokenMessage)
     }
-    s.l.root = new node(s.l.root, ctx)
+    s.l.root = new list(s.l.root, ctx)
     return s
 }
 
-export type ShiftReduce<
+export type ParseList<
     S extends Parser.State,
     Unscanned extends string
 > = Unscanned extends Parser.Scanner.Shift<"]", infer Remaining>
-    ? Parser.State.From<{ L: Reduce<S["L"]>; R: Remaining }>
+    ? Parser.State.From<{ L: ReduceList<S["L"]>; R: Remaining }>
     : Parser.State.Error<IncompleteTokenMessage>
 
 const incompleteTokenMessage = `Missing expected ']'.`
 
-export type IncompleteTokenMessage = typeof incompleteTokenMessage
+type IncompleteTokenMessage = typeof incompleteTokenMessage
 
-export type Reduce<L extends Parser.Left> = Parser.Left.SetRoot<
+type ReduceList<L extends Parser.Left> = Parser.Left.SetRoot<
     L,
     [L["root"], "[]"]
 >
 
-export class node extends Node.NonTerminal implements BoundableNode {
+export type List<Child = unknown> = [Child, "[]"]
+
+export class list extends Node.NonTerminal implements BoundableNode {
     toString() {
         return this.children.toString() + "[]"
     }

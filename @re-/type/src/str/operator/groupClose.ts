@@ -1,27 +1,28 @@
-import { Branches } from "./branch/index.js"
+import { Branches } from "./branches/index.js"
 import { Parser } from "./common.js"
 
 type PopGroup<
-    Stack extends Branches.TypeState[],
-    Top extends Branches.TypeState
+    Stack extends Branches.BranchState[],
+    Top extends Branches.BranchState
 > = [...Stack, Top]
 
-export type Reduce<L extends Parser.Left> = L["groups"] extends PopGroup<
-    infer Stack,
-    infer Top
->
-    ? Parser.Left.From<{
-          bounds: L["bounds"]
-          groups: Stack
-          branches: Top
-          root: Branches.MergeAll<L["branches"], L["root"]>
-      }>
-    : Parser.Left.Error<`Unexpected ).`>
+const unexpectedGroupCloseMessage = `Unexpected ).`
+type UnexpectedGroupCloseMessage = typeof unexpectedGroupCloseMessage
 
-export const reduce = (s: Parser.state<Parser.left.withRoot>) => {
+export type ReduceGroupClose<L extends Parser.Left> =
+    L["groups"] extends PopGroup<infer Stack, infer Top>
+        ? Parser.Left.From<{
+              bounds: L["bounds"]
+              groups: Stack
+              branches: Top
+              root: Branches.MergeAll<L["branches"], L["root"]>
+          }>
+        : Parser.Left.Error<UnexpectedGroupCloseMessage>
+
+export const reduceGroupClose = (s: Parser.state<Parser.left.withRoot>) => {
     const previousBranches = s.l.groups.pop()
     if (previousBranches === undefined) {
-        throw new Error(`Unexpected ).`)
+        return s.error(unexpectedGroupCloseMessage)
     }
     Branches.mergeAll(s)
     s.l.branches = previousBranches

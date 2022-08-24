@@ -1,12 +1,12 @@
 // TODO: Remove imports like this
-import { Bound, Branches } from "../operator/index.js"
+import { Operator } from "../operator/index.js"
 import { Node } from "./common.js"
 import { ErrorToken, SuffixToken } from "./tokens.js"
 
 type base = {
-    bounds: Bound.Bounds
-    groups: Branches.ValueState[]
-    branches: Branches.ValueState
+    bounds: Operator.Bound.Bounds
+    groups: Operator.Branches.branchState[]
+    branches: Operator.Branches.branchState
     root?: Node.base
     nextSuffix?: SuffixToken
 }
@@ -30,7 +30,7 @@ export namespace left {
     }
 
     type baseSuffix = {
-        bounds: Bound.Bounds
+        bounds: Operator.Bound.Bounds
         root: Node.base
         nextSuffix: SuffixToken
     }
@@ -40,9 +40,9 @@ export namespace left {
 }
 
 type Base = {
-    bounds: Bound.Bounds
-    groups: Branches.TypeState[]
-    branches: Branches.TypeState
+    bounds: Operator.Bound.Bounds
+    groups: Operator.Branches.BranchState[]
+    branches: Operator.Branches.BranchState
     root: unknown
     nextSuffix?: SuffixToken
 }
@@ -101,7 +101,7 @@ export namespace Left {
     export type WithRoot<Root> = With<{ root: Root }>
 
     type SuffixInput = {
-        bounds: Bound.Bounds
+        bounds: Operator.Bound.Bounds
         root: unknown
         nextSuffix: SuffixToken
     }

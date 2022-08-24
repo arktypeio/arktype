@@ -124,8 +124,8 @@ const reduceLeft = (
     s.isPrefixable()
         ? Parser.Tokens.inTokenSet(token, doubleBoundTokens)
             ? applyLeftBound(s, token)
-            : Parser.state.error(invalidDoubleBoundMessage(token))
-        : Parser.state.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
+            : s.error(invalidDoubleBoundMessage(token))
+        : s.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
 
 type ReduceLeft<
     L extends Parser.Left,
@@ -173,7 +173,7 @@ export const parseRight = (
               nextSuffix,
               ctx
           )
-        : Parser.state.error(rightBoundSuffixMessage(token, boundingValue))
+        : s.error(rightBoundSuffixMessage(token, boundingValue))
 }
 
 export type ParseRight<
@@ -211,7 +211,7 @@ export const reduceRight = (
         ? hasLeftBound(s)
             ? reduceDouble(s, right, nextSuffix, ctx)
             : reduceSingle(s, right, nextSuffix, ctx)
-        : Parser.state.error(unboundableMessage(s.l.root.toString()))
+        : s.error(unboundableMessage(s.l.root.toString()))
 
 export type ReduceRight<
     L extends Parser.Left.Suffix,
@@ -266,7 +266,7 @@ const reduceDouble = (
         s.l.root = new DoubleBoundNode(s.l.root, s.l.bounds, ctx) as any
         return s
     }
-    return Parser.state.error(invalidDoubleBoundMessage(right[0]))
+    return s.error(invalidDoubleBoundMessage(right[0]))
 }
 
 type ReduceSingle<

@@ -1,7 +1,10 @@
+import { Bound } from "./bound/index.js"
+import { Branches } from "./branches/index.js"
 import { Node, Operator, Parser } from "./common.js"
-import { Bound, GroupClose, Intersection, List, Union } from "./nodes.js"
+import { ReduceGroupClose, reduceGroupClose } from "./groupClose.js"
+import { ParseList, parseList } from "./list.js"
 
-export const operator = (
+export const parseOperator = (
     s: Operator.state,
     ctx: Node.context
 ): Parser.state => {
@@ -11,21 +14,21 @@ export const operator = (
         : lookahead === "?"
         ? s.suffixed("?")
         : lookahead === "["
-        ? List.shiftReduce(s, ctx)
+        ? parseList(s, ctx)
         : lookahead === "|"
-        ? Union.reduce(s, ctx)
+        ? Branches.reduceUnion(s, ctx)
         : lookahead === "&"
-        ? Intersection.reduce(s, ctx)
+        ? Branches.reduceIntersection(s, ctx)
         : lookahead === ")"
-        ? GroupClose.reduce(s)
+        ? reduceGroupClose(s)
         : Parser.Tokens.inTokenSet(lookahead, Bound.chars)
         ? Bound.parse(s, lookahead)
         : lookahead === " "
-        ? operator(s, ctx)
-        : Parser.state.error(unexpectedCharacterMessage(lookahead))
+        ? parseOperator(s, ctx)
+        : s.error(unexpectedCharacterMessage(lookahead))
 }
 
-export type Operator<S extends Parser.State> =
+export type ParseOperator<S extends Parser.State> =
     S["R"] extends Parser.Scanner.Shift<infer Lookahead, infer Unscanned>
         ? Lookahead extends "?"
             ? Parser.State.From<{
@@ -33,20 +36,26 @@ export type Operator<S extends Parser.State> =
                   R: Unscanned
               }>
             : Lookahead extends "["
-            ? List.ShiftReduce<S, Unscanned>
+            ? ParseList<S, Unscanned>
             : Lookahead extends "|"
-            ? Parser.State.From<{ L: Union.Reduce<S["L"]>; R: Unscanned }>
+            ? Parser.State.From<{
+                  L: Branches.ReduceUnion<S["L"]>
+                  R: Unscanned
+              }>
             : Lookahead extends "&"
             ? Parser.State.From<{
-                  L: Intersection.Reduce<S["L"]>
+                  L: Branches.ReduceIntersection<S["L"]>
                   R: Unscanned
               }>
             : Lookahead extends ")"
-            ? Parser.State.From<{ L: GroupClose.Reduce<S["L"]>; R: Unscanned }>
+            ? Parser.State.From<{
+                  L: ReduceGroupClose<S["L"]>
+                  R: Unscanned
+              }>
             : Lookahead extends Bound.ComparatorChar
             ? Bound.Parse<S, Lookahead, Unscanned>
             : Lookahead extends " "
-            ? Operator<{ L: S["L"]; R: Unscanned }>
+            ? ParseOperator<{ L: S["L"]; R: Unscanned }>
             : Parser.State.Error<UnexpectedCharacterMessage<Lookahead>>
         : Parser.State.From<{
               L: Parser.Left.SetNextSuffix<S["L"], "END">

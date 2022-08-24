@@ -6,7 +6,7 @@ import {
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { Node } from "./common.js"
+import { Node } from "./node/index.js"
 import { Root } from "./root.js"
 import type { Space, SpaceMeta } from "./space.js"
 

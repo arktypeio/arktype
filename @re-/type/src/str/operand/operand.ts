@@ -1,10 +1,19 @@
 import { Node, Parser } from "./common.js"
-import { ParseEnclosedBase, parseEnclosedBase } from "./enclosed/enclosed.js"
+import {
+    parseEnclosedBase,
+    ParseEnclosedBase,
+    RegexLiteralDefinition,
+    StringLiteralDefinition
+} from "./enclosed/index.js"
 import { reduceGroupOpen, ReduceGroupOpen } from "./groupOpen.js"
 import {
-    ParseUnenclosedBase,
-    parseUnenclosedBase
-} from "./unenclosed/unenclosed.js"
+    AliasType,
+    BigintLiteralDefinition,
+    Keyword,
+    NumberLiteralDefinition,
+    parseUnenclosedBase,
+    ParseUnenclosedBase
+} from "./unenclosed/index.js"
 
 export const expressionExpectedMessage = `Expected an expression.`
 type ExpressionExpectedMessage = typeof expressionExpectedMessage
@@ -39,3 +48,20 @@ export type ParseOperand<
         ? ParseOperand<{ L: S["L"]; R: Unscanned }, Dict>
         : ParseUnenclosedBase<S, Lookahead, Unscanned, Dict>
     : Parser.State.Error<ExpressionExpectedMessage>
+
+export type InferTerminal<
+    Token extends string,
+    Ctx extends Node.InferenceContext
+> = Token extends Keyword.Definition
+    ? Keyword.Types[Token]
+    : Token extends keyof Ctx["Space"]["Resolutions"]
+    ? AliasType.Infer<Token, Ctx>
+    : Token extends StringLiteralDefinition<infer Value>
+    ? Value
+    : Token extends RegexLiteralDefinition
+    ? string
+    : Token extends NumberLiteralDefinition<infer Value>
+    ? Value
+    : Token extends BigintLiteralDefinition<infer Value>
+    ? Value
+    : unknown
