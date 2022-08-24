@@ -1,9 +1,22 @@
-import { InferTerminalStr } from "../../operand/index.js"
-import type { ObjNode } from "../../operand/obj/index.js"
-import type { Space, SpaceMeta } from "../../space.js"
-import type { TypeOptions } from "../../type.js"
+import type { ObjNode } from "../operand/obj/index.js"
+import type { Space, SpaceMeta } from "../space.js"
+import type { TypeOptions } from "../type.js"
 import { stringifyValue } from "../utils.js"
 import type { Allows, Create, References } from "./traversal/index.js"
+
+export type context = TypeOptions & {
+    space?: SpaceMeta
+}
+
+// Space is passed through an internal-only param, so we add
+// it to the provided options to create a context.
+export const initializeContext = (
+    options: context,
+    space: SpaceMeta | undefined
+) => {
+    options.space = space
+    return options
+}
 
 export abstract class base {
     abstract allows(args: Allows.Args): boolean
@@ -38,24 +51,6 @@ export abstract class base {
     }
 }
 
-export type ParseFn<DefType = unknown> = (def: DefType, ctx: context) => base
-
-export class ParseError extends Error {}
-
-export type context = TypeOptions & {
-    space?: SpaceMeta
-}
-
-// Space is passed through an internal-only param, so we add
-// it to the provided options to create a context.
-export const initializeContext = (
-    options: context,
-    space: SpaceMeta | undefined
-) => {
-    options.space = space
-    return options
-}
-
 export type InferenceContext = {
     Space: Space
     Seen: Record<string, true>
@@ -64,5 +59,3 @@ export type InferenceContext = {
 export namespace InferenceContext {
     export type From<Ctx extends InferenceContext> = Ctx
 }
-
-export type Throw<Message extends string> = `!${Message}`

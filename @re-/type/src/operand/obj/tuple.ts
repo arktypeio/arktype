@@ -1,5 +1,4 @@
-import { Node } from "../../core.js"
-import { ObjNode } from "./objNode.js"
+import { Node, ObjNode, Utils } from "./common.js"
 
 export namespace TupleType {
     export type Definition = unknown[] | readonly unknown[]
@@ -32,7 +31,7 @@ export class TupleNode extends ObjNode {
                 value: args.value[itemIndex as any],
                 ctx: {
                     ...args.ctx,
-                    path: Node.Utils.pathAdd(args.ctx.path, itemIndex)
+                    path: Utils.pathAdd(args.ctx.path, itemIndex)
                 }
             })
             if (!itemIsAllowed) {
@@ -50,7 +49,7 @@ export class TupleNode extends ObjNode {
                     ...args,
                     ctx: {
                         ...args.ctx,
-                        path: Node.Utils.pathAdd(args.ctx.path, itemIndex)
+                        path: Utils.pathAdd(args.ctx.path, itemIndex)
                     }
                 })
             )

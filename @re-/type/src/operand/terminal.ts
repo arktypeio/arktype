@@ -1,14 +1,5 @@
-import { Node } from "../core.js"
-import {
-    Left,
-    OnInputEndFn,
-    Scanner,
-    state,
-    State,
-    Tokens,
-    UntilCondition
-} from "../parser/index.js"
 import { AliasNode, AliasType } from "./alias.js"
+import { Node, Parser } from "./common.js"
 import { Keyword } from "./keyword/index.js"
 import {
     BigintLiteralDefinition,
@@ -25,7 +16,7 @@ import {
 export namespace Terminal {
     const unterminatedEnclosedMessage = <
         Fragment extends string,
-        Enclosing extends Tokens.EnclosedBaseStartChar
+        Enclosing extends Parser.Tokens.EnclosedBaseStartChar
     >(
         fragment: Fragment,
         enclosing: Enclosing
@@ -34,12 +25,12 @@ export namespace Terminal {
 
     type UnterminatedEnclosedMessage<
         Fragment extends string,
-        Enclosing extends Tokens.EnclosedBaseStartChar
+        Enclosing extends Parser.Tokens.EnclosedBaseStartChar
     > = `${Fragment} requires a closing ${Enclosing}.`
 
     const untilLookaheadIsClosing: Record<
-        Tokens.EnclosedBaseStartChar,
-        UntilCondition
+        Parser.Tokens.EnclosedBaseStartChar,
+        Parser.scanner.UntilCondition
     > = {
         "'": (scanner) => scanner.lookahead === `'`,
         '"': (scanner) => scanner.lookahead === `"`,
@@ -47,8 +38,8 @@ export namespace Terminal {
     }
 
     export const enclosedBase = (
-        s: state,
-        enclosing: Tokens.EnclosedBaseStartChar
+        s: Parser.state,
+        enclosing: Parser.Tokens.EnclosedBaseStartChar
     ) => {
         const enclosed =
             enclosing +
@@ -67,47 +58,54 @@ export namespace Terminal {
     }
 
     export type EnclosedBase<
-        S extends State,
-        Enclosing extends Tokens.EnclosedBaseStartChar
+        S extends Parser.State,
+        Enclosing extends Parser.Tokens.EnclosedBaseStartChar
     > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-        ? State.From<{
-              L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
+        ? Parser.State.From<{
+              L: Parser.Left.SetRoot<
+                  S["L"],
+                  `${Enclosing}${Contents}${Enclosing}`
+              >
               R: Rest
           }>
-        : State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
+        : Parser.State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 
-    const throwUnterminatedEnclosed: OnInputEndFn = (scanner, shifted) => {
+    const throwUnterminatedEnclosed: Parser.scanner.OnInputEndFn = (
+        scanner,
+        shifted
+    ) => {
         throw new Error(
             unterminatedEnclosedMessage(
                 shifted,
-                shifted[0] as Tokens.EnclosedBaseStartChar
+                shifted[0] as Parser.Tokens.EnclosedBaseStartChar
             )
         )
     }
 
-    const lookaheadIsBaseTerminating: UntilCondition = (scanner) =>
-        scanner.lookahead in Tokens.baseTerminatingChars
+    const lookaheadIsBaseTerminating: Parser.scanner.UntilCondition = (
+        scanner
+    ) => scanner.lookahead in Parser.Tokens.baseTerminatingChars
 
-    export const unenclosedBase = (s: state, ctx: Node.Context) => {
+    export const unenclosedBase = (s: Parser.state, ctx: Node.context) => {
         const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
         s.l.root = unenclosedToNode(token, ctx)
         return s
     }
 
     export type UnenclosedBase<
-        S extends State,
+        S extends Parser.State,
         Fragment extends string,
         Unscanned extends string,
         Dict
-    > = Unscanned extends Scanner.Shift<infer Next, infer Rest>
-        ? Next extends Tokens.BaseTerminatingChar
+    > = Unscanned extends Parser.Scanner.Shift<infer Next, infer Rest>
+        ? Next extends Parser.Tokens.BaseTerminatingChar
             ? ValidateUnenclosed<S, Fragment, Unscanned, Dict>
             : UnenclosedBase<S, `${Fragment}${Next}`, Rest, Dict>
         : ValidateUnenclosed<S, Fragment, "", Dict>
 
     export const toNodeIfResolvableIdentifier = (
         token: string,
-        ctx: Node.Context
+        ctx: Node.context
     ) => {
         if (Keyword.matches(token)) {
             return Keyword.parse(token)
@@ -116,7 +114,7 @@ export namespace Terminal {
         }
     }
 
-    const unenclosedToNode = (token: string, ctx: Node.Context) => {
+    const unenclosedToNode = (token: string, ctx: Node.context) => {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(token, ctx)
         if (possibleIdentifierNode) {
             return possibleIdentifierNode
@@ -131,13 +129,16 @@ export namespace Terminal {
     }
 
     type ValidateUnenclosed<
-        S extends State,
+        S extends Parser.State,
         Token extends string,
         Unscanned extends string,
         Dict
     > = IsResolvableUnenclosed<Token, Dict> extends true
-        ? State.From<{ L: Left.SetRoot<S["L"], Token>; R: Unscanned }>
-        : State.Error<UnresolvableMessage<Token>>
+        ? Parser.State.From<{
+              L: Parser.Left.SetRoot<S["L"], Token>
+              R: Unscanned
+          }>
+        : Parser.State.Error<UnresolvableMessage<Token>>
 
     type UnresolvableMessage<Token extends string> =
         `'${Token}' is not a builtin type and does not exist in your space.`

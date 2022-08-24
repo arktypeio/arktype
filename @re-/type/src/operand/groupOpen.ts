@@ -1,13 +1,13 @@
-import { Left, state } from "../parser/index.js"
+import { Parser } from "./common.js"
 
-export type Reduce<L extends Left.Base> = Left.From<{
+export type ReduceGroupOpen<L extends Parser.Left> = Parser.Left.From<{
     bounds: L["bounds"]
     groups: [...L["groups"], L["branches"]]
     branches: {}
     root: undefined
 }>
 
-export const reduce = (s: state) => {
+export const reduceGroupOpen = (s: Parser.state) => {
     s.l.groups.push(s.l.branches)
     s.l.branches = {}
     return s

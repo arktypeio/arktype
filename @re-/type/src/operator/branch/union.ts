@@ -1,6 +1,5 @@
 import { TypeOfResult } from "@re-/tools"
-import { Node } from "../../core.js"
-import { Left, left, state } from "../../parser/index.js"
+import { Node, Operator, Parser, Utils } from "../common.js"
 import { Branches } from "./branch.js"
 import { Intersection } from "./intersection.js"
 
@@ -30,7 +29,7 @@ export namespace Union {
         ]
     }
 
-    export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
+    export const reduce = (s: Operator.state, ctx: Node.context) => {
         if (Intersection.isMergeable(s)) {
             Intersection.merge(s)
         }
@@ -45,19 +44,19 @@ export namespace Union {
 
     export type Node<Left, Right> = [Left, "|", Right]
 
-    export type Reduce<L extends Left.Base> = Left.From<{
+    export type Reduce<L extends Parser.Left> = Parser.Left.From<{
         bounds: L["bounds"]
         groups: L["groups"]
         branches: PushRoot<L["branches"], L["root"]>
         root: undefined
     }>
 
-    export type Mergeable = state<{
-        root: Node.node
+    export type Mergeable = Parser.state<{
+        root: Node.base
         branches: { union: UnionNode }
     }>
 
-    export const isMergeable = (s: state): s is Mergeable =>
+    export const isMergeable = (s: Parser.state): s is Mergeable =>
         s.l.root !== undefined && s.l.branches.intersection instanceof UnionNode
 
     export const merge = (s: Mergeable) => {
@@ -68,8 +67,8 @@ export namespace Union {
     }
 }
 
-export class UnionNode extends Node.NonTerminal<Node.node[]> {
-    addMember(node: Node.node) {
+export class UnionNode extends Node.NonTerminal<Node.base[]> {
+    addMember(node: Node.base) {
         this.children.push(node)
     }
 
@@ -88,7 +87,7 @@ export class UnionNode extends Node.NonTerminal<Node.node[]> {
             }
         }
         // If we haven't returned, all branches are invalid, so add an error
-        const summaryErrorMessage = `${Node.Utils.stringifyValue(
+        const summaryErrorMessage = `${Utils.stringifyValue(
             args.value
         )} is not assignable to any of ${this.toString()}.`
         if (args.cfg.verbose) {

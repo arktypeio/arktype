@@ -1,4 +1,4 @@
-import { left, state } from "../../parser/index.js"
+import { Operator } from "../common.js"
 import { Intersection, IntersectionNode } from "./intersection.js"
 import { Union, UnionNode } from "./union.js"
 
@@ -27,7 +27,7 @@ export namespace Branches {
         MergeExpression<B["intersection"], Root>
     >
 
-    export const mergeAll = (s: state<left.withRoot>) => {
+    export const mergeAll = (s: Operator.state) => {
         if (Intersection.isMergeable(s)) {
             Intersection.merge(s)
         }

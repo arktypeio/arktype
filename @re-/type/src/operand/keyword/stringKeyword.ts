@@ -1,6 +1,6 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { Node } from "../../core.js"
 import { BoundableNode } from "../../operator/bound/index.js"
+import { Node } from "../common.js"
 
 abstract class BaseStringKeyword
     extends Node.TerminalNode

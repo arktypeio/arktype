@@ -1,27 +1,33 @@
-import { base, Left, left, Node, Scanner, State, state } from "../core.js"
 import { BoundableNode } from "./bound/index.js"
+import { Node, Parser, Utils } from "./common.js"
 
-export const shiftReduce = (s: state<left.withRoot>, ctx: base.Context) => {
+export const shiftReduce = (
+    s: Parser.state<Parser.left.withRoot>,
+    ctx: Node.context
+) => {
     const next = s.r.shift()
     if (next !== "]") {
         throw new Error(incompleteTokenMessage)
     }
-    s.l.root = new base(s.l.root, ctx)
+    s.l.root = new node(s.l.root, ctx)
     return s
 }
 
 export type ShiftReduce<
-    S extends State,
+    S extends Parser.State,
     Unscanned extends string
-> = Unscanned extends Scanner.Shift<"]", infer Remaining>
-    ? State.From<{ L: Reduce<S["L"]>; R: Remaining }>
-    : State.Error<IncompleteTokenMessage>
+> = Unscanned extends Parser.Scanner.Shift<"]", infer Remaining>
+    ? Parser.State.From<{ L: Reduce<S["L"]>; R: Remaining }>
+    : Parser.State.Error<IncompleteTokenMessage>
 
 const incompleteTokenMessage = `Missing expected ']'.`
 
-type IncompleteTokenMessage = typeof incompleteTokenMessage
+export type IncompleteTokenMessage = typeof incompleteTokenMessage
 
-export type Reduce<L extends Left.Base> = Left.SetRoot<L, [L["root"], "[]"]>
+export type Reduce<L extends Parser.Left> = Parser.Left.SetRoot<
+    L,
+    [L["root"], "[]"]
+>
 
 export class node extends Node.NonTerminal implements BoundableNode {
     toString() {
@@ -41,7 +47,7 @@ export class node extends Node.NonTerminal implements BoundableNode {
                 value: itemValue,
                 ctx: {
                     ...args.ctx,
-                    path: Node.Utils.pathAdd(args.ctx.path, itemIndex)
+                    path: Utils.pathAdd(args.ctx.path, itemIndex)
                 }
             })
             if (!itemIsAllowed) {

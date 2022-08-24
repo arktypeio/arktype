@@ -1,5 +1,4 @@
-import { Node } from "../../core.js"
-import { Left, left, state } from "../../parser/index.js"
+import { Node, Operator, Parser } from "../common.js"
 import { Branches } from "./branch.js"
 
 export namespace Intersection {
@@ -8,7 +7,7 @@ export namespace Intersection {
         intersection: [Branches.MergeExpression<B["intersection"], Root>, "&"]
     }
 
-    export const reduce = (s: state<left.withRoot>, ctx: Node.Context) => {
+    export const reduce = (s: Operator.state, ctx: Node.context) => {
         if (!s.l.branches.intersection) {
             s.l.branches.intersection = new IntersectionNode([s.l.root], ctx)
         } else {
@@ -18,19 +17,19 @@ export namespace Intersection {
         return s
     }
 
-    export type Reduce<L extends Left.Base> = Left.From<{
+    export type Reduce<L extends Parser.Left> = Parser.Left.From<{
         bounds: L["bounds"]
         groups: L["groups"]
         branches: PushRoot<L["branches"], L["root"]>
         root: undefined
     }>
 
-    export type Mergeable = state<{
-        root: Node.node
+    export type Mergeable = Parser.state<{
+        root: Node.base
         branches: { intersection: IntersectionNode }
     }>
 
-    export const isMergeable = (s: state): s is Mergeable =>
+    export const isMergeable = (s: Parser.state): s is Mergeable =>
         s.l.root !== undefined &&
         s.l.branches.intersection instanceof IntersectionNode
 
@@ -44,8 +43,8 @@ export namespace Intersection {
     export type Node<Left, Right> = [Left, "&", Right]
 }
 
-export class IntersectionNode extends Node.NonTerminal<Node.node[]> {
-    addMember(node: Node.node) {
+export class IntersectionNode extends Node.NonTerminal<Node.base[]> {
+    addMember(node: Node.base) {
         this.children.push(node)
     }
 

@@ -1,4 +1,4 @@
-import { Node, Parser } from "./core.js"
+import { Node, Parser } from "./common.js"
 import { operand } from "./operand/index.js"
 import {
     Bound,

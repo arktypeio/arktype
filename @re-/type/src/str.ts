@@ -1,4 +1,7 @@
-import { Node, Parser } from "./core.js"
+import { Node, Parser } from "./common.js"
+import * as Main from "./main.js"
+import * as Naive from "./naive.js"
+import { InferTerminalStr } from "./operand/terminal.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = Naive.TryParse<Def, Dict>
@@ -6,7 +9,7 @@ export namespace Str {
     export type Validate<Def extends string, Dict> = Parse<
         Def,
         Dict
-    > extends Tokens.ErrorToken<infer Message>
+    > extends Parser.Tokens.ErrorToken<infer Message>
         ? Message
         : Def
 
@@ -45,6 +48,6 @@ export namespace Str {
         ? References<Bounded>
         : [T]
 
-    export const parse: Node.ParseFn<string> = (def, ctx) =>
+    export const parse: Parser.ParseFn<string> = (def, ctx) =>
         Naive.tryParse(def, ctx) ?? Main.parse(def, ctx)
 }

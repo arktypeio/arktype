@@ -1,11 +1,11 @@
-import { Node } from "../../core.js"
-import { DoubleBoundComparator } from "./parse.js"
 import {
     BoundableNode,
     BoundableValue,
     BoundChecker,
-    createBoundChecker
-} from "./shared.js"
+    createBoundChecker,
+    Node
+} from "./common.js"
+import { DoubleBoundComparator } from "./parse.js"
 
 export type DoubleBoundValidationError = {
     bounds: DoubleBoundDefinition
@@ -26,7 +26,7 @@ export class DoubleBoundNode extends Node.NonTerminal<BoundableNode> {
     constructor(
         child: BoundableNode,
         private bounds: DoubleBoundDefinition,
-        ctx: Node.Context
+        ctx: Node.context
     ) {
         super(child, ctx)
         /** We have to invert the first comparator in an expression like

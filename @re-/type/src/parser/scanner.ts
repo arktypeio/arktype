@@ -19,7 +19,10 @@ export class scanner<Lookahead extends string = string> {
         return (this.chars[this.i] ?? "END") as Lookahead
     }
 
-    shiftUntil(condition: UntilCondition, opts?: ShiftUntilOptions): string {
+    shiftUntil(
+        condition: scanner.UntilCondition,
+        opts?: scanner.ShiftUntilOptions
+    ): string {
         let shifted = ""
         while (!condition(this, shifted)) {
             if (this.lookahead === "END") {
@@ -45,18 +48,20 @@ export class scanner<Lookahead extends string = string> {
     }
 }
 
+export namespace scanner {
+    export type UntilCondition = (scanner: scanner, shifted: string) => boolean
+
+    export type OnInputEndFn = (scanner: scanner, shifted: string) => string
+
+    export type ShiftUntilOptions = {
+        onInputEnd?: OnInputEndFn
+        inclusive?: boolean
+    }
+}
+
 export namespace Scanner {
     export type Shift<
         Lookahead extends string,
         Unscanned extends string
     > = `${Lookahead}${Unscanned}`
-}
-
-export type UntilCondition = (scanner: scanner, shifted: string) => boolean
-
-export type OnInputEndFn = (scanner: scanner, shifted: string) => string
-
-export type ShiftUntilOptions = {
-    onInputEnd?: OnInputEndFn
-    inclusive?: boolean
 }

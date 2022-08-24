@@ -1,4 +1,4 @@
-import { Node } from "./core.js"
+import { Node } from "./common.js"
 import { Obj } from "./operand/obj/index.js"
 import { Str } from "./str.js"
 

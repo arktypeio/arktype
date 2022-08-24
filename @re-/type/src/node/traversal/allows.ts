@@ -1,6 +1,6 @@
 import { isDigits, uncapitalize } from "@re-/tools"
+import { defToString, stringifyValue } from "../../utils.js"
 import type { base } from "../base.js"
-import { defToString, stringifyValue } from "../utils.js.js"
 import * as Traverse from "./traverse.js"
 
 export type Args<Value = unknown> = {

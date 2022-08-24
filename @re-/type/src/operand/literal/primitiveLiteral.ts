@@ -1,4 +1,4 @@
-import { Node } from "../../core.js"
+import { Node } from "../common.js"
 
 export type PrimitiveLiteralValue = string | number | bigint
 

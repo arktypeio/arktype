@@ -1,17 +1,18 @@
-import { Node } from "../../core.js"
+export * from "../common.js"
 import { Root } from "../../root.js"
+import { Node, Utils } from "../common.js"
 
-export type ChildEntry<KeyType> = [KeyType, Node.node]
+export type ChildEntry<KeyType> = [KeyType, Node.base]
 
 export type StructuredReferences = {
     [K in string | number]: string[] | StructuredReferences
 }
 
-export abstract class ObjNode extends Node.NonTerminal<Node.node[]> {
+export abstract class ObjNode extends Node.NonTerminal<Node.base[]> {
     entries: ChildEntry<string>[]
 
-    constructor(private def: object, ctx: Node.Context) {
-        const children: Node.node[] = []
+    constructor(private def: object, ctx: Node.context) {
+        const children: Node.base[] = []
         const entries = Object.entries(def).map(
             ([k, childDef]): ChildEntry<string> => {
                 const propNode = Root.parse(childDef, ctx)
@@ -24,7 +25,7 @@ export abstract class ObjNode extends Node.NonTerminal<Node.node[]> {
     }
 
     toString() {
-        return Node.Utils.defToString(this.def)
+        return Utils.defToString(this.def)
     }
 
     structureReferences(opts: Node.References.Options) {

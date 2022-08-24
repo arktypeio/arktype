@@ -1,11 +1,11 @@
-import { Node } from "../../core.js"
-import { Comparator } from "./parse.js"
+import { Node } from "../../common.js"
 import {
     BoundableNode,
     BoundableValue,
     BoundChecker,
     createBoundChecker
-} from "./shared.js"
+} from "./common.js"
+import { Comparator } from "./parse.js"
 
 export type SingleBoundValidationError = {
     bound: SingleBoundDefinition

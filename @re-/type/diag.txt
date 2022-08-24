@@ -1,22 +1,208 @@
-src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type '[2, "null", "integer", "true", "boolean", "group", "user"]'.
-  Source has 6 element(s) but target requires 7.
-src/operator/bound/parse.ts(268,28): error TS2344: Type 'L["bounds"]["left"]' does not satisfy the constraint 'LeftDefinition'.
-  Type 'LeftDefinition | undefined' is not assignable to type '[number, "<" | "<="]'.
-    Type 'undefined' is not assignable to type '[number, "<" | "<="]'.
-src/operator/bound/parse.ts(294,22): error TS2344: Type 'L["root"]' does not satisfy the constraint 'BoundableT'.
-  Type 'L["root"]' is not assignable to type '[unknown, "[]"]'.
-Files:              253
-Lines:            66065
-Nodes:           183186
-Identifiers:      62479
-Symbols:         130290
-Types:            69990
-Instantiations:  347142
-Memory used:    168124K
+docs/snippets/declaration/declaration.ts(10,32): error TS2345: Argument of type '{ group: { title: { toString: ...; charAt: ...; charCodeAt: ...; concat: ...; indexOf: ...; lastIndexOf: ...; localeCompare: ...; match: ...; replace: ...; search: ...; slice: ...; split: ...; substring: ...; ... 36 more ...; [Symbol.iterator]: ...; }; members: { ...; }; }; user: { ...; }; }' is not assignable to parameter of type 'CheckDeclaredCompilation<{ group: { title: { toString: ...; charAt: ...; charCodeAt: ...; concat: ...; indexOf: ...; lastIndexOf: ...; localeCompare: ...; match: ...; replace: ...; search: ...; slice: ...; split: ...; substring: ...; ... 36 more ...; [Symbol.iterator]: ...; }; members: { ...; }; }; user: { ...; }; }...'.
+  The types of 'user.name.toString' are incompatible between these types.
+    Type 'unknown' is not assignable to type 'Validate<unknown, { group: { title: { toString: ...; charAt: ...; charCodeAt: ...; concat: ...; indexOf: ...; lastIndexOf: ...; localeCompare: ...; match: ...; replace: ...; search: ...; slice: ...; split: ...; substring: ...; ... 36 more ...; [Symbol.iterator]: ...; }; members: { ...; }; }; user: { ...; }; }>'.
+src/__tests__/parse.bench.ts(122,7): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; }'.
+src/__tests__/parse.bench.ts(126,24): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Object literal may only specify known properties, and 'dejaVu' does not exist in type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/parse.bench.ts(127,5): error TS2741: Property 'dejaVu' is missing in type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }' but required in type '{ dejaVu: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; }'.
+src/__tests__/references.test.ts(48,39): error TS2345: Argument of type '["user", "group", "boolean", "true", "integer", "null"]' is not assignable to parameter of type 'never[]'.
+  Type 'string' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
+src/__tests__/references.test.ts(54,40): error TS2322: Type 'string' is not assignable to type 'never'.
+src/__tests__/references.test.ts(54,45): error TS2322: Type 'string' is not assignable to type 'never'.
+src/__tests__/references.test.ts(58,39): error TS2345: Argument of type '["/.*/", "-1n", "null", "string", "boolean", "integer"]' is not assignable to parameter of type 'never[]'.
+  Type 'string' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
+src/__tests__/references.test.ts(82,39): error TS2345: Argument of type '{ strings: { keyword: ["boolean"]; expression: ["string", "integer"]; }; listed: [["-1n"], ["null"], ["string", "boolean"]]; regex: ["/.*/"]; }' is not assignable to parameter of type '{ readonly strings: { readonly keyword: { toString: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; [Symbol.iterator]: {}; }; readonly expression: { ...; }; }; reado...'.
+  The types of 'strings.keyword' are incompatible between these types.
+    Type '["boolean"]' is not assignable to type '{ toString: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; [Symbol.iterator]: {}; }'.
+src/__tests__/references.test.ts(90,50): error TS2322: Type 'string' is not assignable to type 'never'.
+src/__tests__/references.test.ts(90,61): error TS2322: Type 'string' is not assignable to type 'never'.
+src/__tests__/references.test.ts(100,53): error TS2322: Type 'string' is not assignable to type 'never'.
+src/__tests__/references.test.ts(121,21): error TS2740: Type 'never[]' is missing the following properties from type '{ toString: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; [Symbol.iterator]: {}; }': charAt, charCodeAt, localeCompare, match, and 36 more.
+src/__tests__/references.test.ts(155,19): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/__tests__/root.test.ts(21,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/root.test.ts(27,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/root.test.ts(31,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/root.test.ts(37,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/creation.test.ts(26,13): error TS2740: Type 'never[]' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': charAt, charCodeAt, localeCompare, match, and 36 more.
+src/__tests__/space/creation.test.ts(27,13): error TS2740: Type '{ length: number; }' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': [Symbol.iterator], charAt, charCodeAt, concat, and 43 more.
+src/__tests__/space/creation.test.ts(28,26): error TS2322: Type '{ circumference: number; type: string; }' is not assignable to type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Object literal may only specify known properties, and 'circumference' does not exist in type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/creation.test.ts(29,13): error TS2740: Type '{ length: number; }' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': [Symbol.iterator], charAt, charCodeAt, concat, and 43 more.
+src/__tests__/space/creation.test.ts(42,20): error TS2345: Argument of type '{ b: {}; }' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Object literal may only specify known properties, and 'b' does not exist in type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/creation.test.ts(98,30): error TS2322: Type '{ name: string; }' is not assignable to type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Object literal may only specify known properties, and 'name' does not exist in type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/creation.test.ts(99,13): error TS2740: Type 'never[]' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': charAt, charCodeAt, localeCompare, match, and 36 more.
+src/__tests__/space/declare.test.ts(13,31): error TS2345: Argument of type '{ group: { name: { toString: ...; charAt: ...; charCodeAt: ...; concat: ...; indexOf: ...; lastIndexOf: ...; localeCompare: ...; match: ...; replace: ...; search: ...; slice: ...; split: ...; substring: ...; ... 36 more ...; [Symbol.iterator]: ...; }; members: { ...; }; }; user: { ...; }; }' is not assignable to parameter of type 'CheckDeclaredCompilation<{ group: { name: { toString: ...; charAt: ...; charCodeAt: ...; concat: ...; indexOf: ...; lastIndexOf: ...; localeCompare: ...; match: ...; replace: ...; search: ...; slice: ...; split: ...; substring: ...; ... 36 more ...; [Symbol.iterator]: ...; }; members: { ...; }; }; user: { ...; }; },...'.
+  The types of 'user.name.toString' are incompatible between these types.
+    Type 'unknown' is not assignable to type 'Validate<unknown, { group: { name: { toString: ...; charAt: ...; charCodeAt: ...; concat: ...; indexOf: ...; lastIndexOf: ...; localeCompare: ...; match: ...; replace: ...; search: ...; slice: ...; split: ...; substring: ...; ... 36 more ...; [Symbol.iterator]: ...; }; members: { ...; }; }; user: { ...; }; }>'.
+src/__tests__/space/declare.test.ts(37,9): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/declare.test.ts(41,31): error TS2345: Argument of type '{ gottaDefineThis: { toString: unknown; charAt: unknown; charCodeAt: unknown; concat: unknown; indexOf: unknown; lastIndexOf: unknown; localeCompare: unknown; match: unknown; replace: unknown; search: unknown; slice: unknown; split: unknown; substring: unknown; toLowerCase: unknown; toLocaleLowerCase: unknown; toUpp...' is not assignable to parameter of type 'CheckDeclaredCompilation<{ gottaDefineThis: { toString: unknown; charAt: unknown; charCodeAt: unknown; concat: unknown; indexOf: unknown; lastIndexOf: unknown; localeCompare: unknown; match: unknown; replace: unknown; search: unknown; slice: unknown; split: unknown; substring: unknown; toLowerCase: unknown; toLocale...'.
+  The types of 'gottaDefineThis.toString' are incompatible between these types.
+    Type 'unknown' is not assignable to type 'Validate<unknown, { gottaDefineThis: { toString: unknown; charAt: unknown; charCodeAt: unknown; concat: unknown; indexOf: unknown; lastIndexOf: unknown; localeCompare: unknown; match: unknown; replace: unknown; search: unknown; slice: unknown; split: unknown; substring: unknown; toLowerCase: unknown; toLocaleLowerCa...'.
+src/__tests__/space/declare.test.ts(67,17): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/inheritableConfigs.test.ts(79,60): error TS2339: Property 'contents' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/inheritableConfigs.test.ts(82,56): error TS2339: Property 'contents' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/inheritableConfigs.test.ts(98,31): error TS2339: Property 'contents' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/meta.test.ts(25,36): error TS2339: Property 'b' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/meta.test.ts(28,36): error TS2339: Property 'a' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/meta.test.ts(31,36): error TS2339: Property 'b' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/meta.test.ts(56,48): error TS2339: Property 'wasResolved' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/meta.test.ts(57,48): error TS2339: Property 'resolvedType' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/meta.test.ts(83,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/meta.test.ts(88,9): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/meta.test.ts(95,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/type.test.ts(9,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/type.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/type.test.ts(29,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/type.test.ts(46,44): error TS2339: Property 'b' does not exist on type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/type.test.ts(104,17): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/validation.test.ts(41,9): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/validation.test.ts(46,13): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space/validation.test.ts(126,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; }'.
+src/__tests__/space/validation.test.ts(127,9): error TS2740: Type '{ dejaVu: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; }' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': [Symbol.iterator], charAt, charCodeAt, concat, and 44 more.
+src/__tests__/space/validation.test.ts(132,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; }'.
+src/__tests__/space/validation.test.ts(136,32): error TS2322: Type '{ dejaVu: {}; }' is not assignable to type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Object literal may only specify known properties, and 'dejaVu' does not exist in type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/__tests__/space/validation.test.ts(137,13): error TS2741: Property 'dejaVu' is missing in type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }' but required in type '{ dejaVu: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; }'.
+src/__tests__/str.test.ts(8,9): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/str.test.ts(17,13): error TS2578: Unused '@ts-expect-error' directive.
+src/main.ts(11,26): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/node/index"' has no exported member 'ParseFn'.
+src/main.ts(11,45): error TS7006: Parameter 'def' implicitly has an 'any' type.
+src/main.ts(11,50): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/main.ts(14,47): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/main.ts(15,5): error TS2304: Cannot find name 'Base'.
+src/main.ts(36,7): error TS2304: Cannot find name 'Base'.
+src/main.ts(42,39): error TS2304: Cannot find name 'state'.
+src/main.ts(42,45): error TS2503: Cannot find namespace 'left'.
+src/main.ts(44,16): error TS2304: Cannot find name 'state'.
+src/main.ts(46,36): error TS2304: Cannot find name 'state'.
+src/main.ts(46,42): error TS2503: Cannot find namespace 'left'.
+src/main.ts(49,42): error TS2304: Cannot find name 'State'.
+src/main.ts(49,48): error TS2503: Cannot find namespace 'Left'.
+src/main.ts(51,11): error TS2503: Cannot find namespace 'State'.
+src/main.ts(52,18): error TS2503: Cannot find namespace 'Left'.
+src/main.ts(59,11): error TS2503: Cannot find namespace 'State'.
+src/main.ts(61,31): error TS2304: Cannot find name 'state'.
+src/main.ts(61,37): error TS2503: Cannot find namespace 'left'.
+src/main.ts(61,56): error TS2503: Cannot find namespace 'node'.
+src/main.ts(61,71): error TS2304: Cannot find name 'node'.
+src/main.ts(67,33): error TS2339: Property 'node' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/operator/optional", { assert: { "resolution-mode": "import" } })'.
+src/main.ts(71,9): error TS2304: Cannot find name 'Tokens'.
+src/main.ts(77,34): error TS2503: Cannot find namespace 'State'.
+src/main.ts(77,43): error TS2503: Cannot find namespace 'Left'.
+src/main.ts(82,34): error TS2503: Cannot find namespace 'State'.
+src/main.ts(82,43): error TS2503: Cannot find namespace 'Left'.
+src/main.ts(85,15): error TS2503: Cannot find namespace 'State'.
+src/main.ts(86,22): error TS2503: Cannot find namespace 'Left'.
+src/main.ts(93,15): error TS2503: Cannot find namespace 'State'.
+src/main.ts(96,11): error TS2503: Cannot find namespace 'State'.
+src/main.ts(98,44): error TS2503: Cannot find namespace 'Left'.
+src/main.ts(100,11): error TS2503: Cannot find namespace 'Tokens'.
+src/naive.ts(1,26): error TS2307: Cannot find module '../base/index.js.js.js' or its corresponding type declarations.
+src/naive.ts(2,22): error TS2307: Cannot find module '../common.js.js.js' or its corresponding type declarations.
+src/naive.ts(3,32): error TS2307: Cannot find module '../operator/index.js.js.js' or its corresponding type declarations.
+src/operand/__tests__/bigintLiteral.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/__tests__/bigintLiteral.test.ts(55,44): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/bigintLiteral.test.ts(58,45): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(12,35): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(28,35): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(43,35): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(58,35): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(103,39): error TS2345: Argument of type '{}' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Type '{}' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': [Symbol.iterator], charAt, charCodeAt, concat, and 44 more.
+src/operand/__tests__/keyword.test.ts(119,35): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(134,35): error TS2345: Argument of type 'null' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(149,35): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(164,35): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(179,35): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/keyword.test.ts(283,39): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/numberLiteral.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/__tests__/numberLiteral.test.ts(30,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/__tests__/numberLiteral.test.ts(72,44): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/numberLiteral.test.ts(75,47): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/numberLiteral.test.ts(78,48): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/__tests__/regex.test.ts(12,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/__tests__/stringLiteral.test.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/__tests__/stringLiteral.test.ts(30,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/__tests__/stringLiteral.test.ts(37,21): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/__tests__/stringLiteral.test.ts(45,21): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/obj/__tests__/record.test.ts(108,56): error TS2322: Type 'number' is not assignable to type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/obj/__tests__/record.test.ts(108,62): error TS2322: Type 'number' is not assignable to type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operand/obj/__tests__/record.test.ts(142,21): error TS2578: Unused '@ts-expect-error' directive.
+src/operand/obj/__tests__/tuple.test.ts(30,25): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/list.test.ts(15,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/list.test.ts(21,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/list.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/list.test.ts(62,54): error TS2345: Argument of type 'never[]' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Type 'never[]' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': charAt, charCodeAt, localeCompare, match, and 36 more.
+src/operator/__tests__/optional.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/optional.test.ts(33,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/optional.test.ts(42,25): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/optional.test.ts(51,21): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/optional.test.ts(85,47): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operator/__tests__/optional.test.ts(90,22): error TS2345: Argument of type '{ required: string; }' is not assignable to parameter of type '{ optional: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; required: { ...; }; }'.
+  Property 'optional' is missing in type '{ required: string; }' but required in type '{ optional: { [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; ... 35 more ...; valueOf: {} & (() => Object); }; required: { ...; }; }'.
+src/operator/__tests__/parenthesized.test.ts(68,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(76,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(84,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(92,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(100,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(108,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(116,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(124,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/__tests__/parenthesized.test.ts(132,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/__tests__/bound.test.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/__tests__/bound.test.ts(31,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/__tests__/bound.test.ts(37,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/__tests__/bound.test.ts(43,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/__tests__/bound.test.ts(49,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/__tests__/bound.test.ts(55,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/__tests__/bound.test.ts(61,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/bound/parse.ts(224,44): error TS2503: Cannot find namespace 'Tree'.
+src/operator/bound/parse.ts(250,18): error TS2574: A rest element type must be an array type.
+src/operator/bound/single.ts(25,19): error TS2724: '"/home/ssalb/re-po/@re-/type/src/node/index"' has no exported member named 'Context'. Did you mean 'context'?
+src/operator/branch/__tests__/intersection.test.ts(21,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/branch/__tests__/intersection.test.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/branch/__tests__/union.test.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/branch/__tests__/union.test.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/branch/__tests__/union.test.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/branch/__tests__/union.test.ts(39,21): error TS2578: Unused '@ts-expect-error' directive.
+src/operator/branch/__tests__/union.test.ts(91,58): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operator/branch/__tests__/union.test.ts(93,59): error TS2345: Argument of type '{}' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Type '{}' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': [Symbol.iterator], charAt, charCodeAt, concat, and 44 more.
+src/operator/branch/__tests__/union.test.ts(96,61): error TS2345: Argument of type '{}' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+  Type '{}' is missing the following properties from type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }': [Symbol.iterator], charAt, charCodeAt, concat, and 44 more.
+src/operator/branch/__tests__/union.test.ts(97,66): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/operator/branch/__tests__/union.test.ts(105,72): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ [Symbol.iterator]: {}; charAt: {}; charCodeAt: {}; concat: {}; indexOf: {}; lastIndexOf: {}; localeCompare: {}; match: {}; replace: {}; search: {}; slice: {}; split: {}; substring: {}; toLowerCase: {}; toLocaleLowerCase: {}; ... 34 more ...; valueOf: {} & (() => Object); }'.
+src/resolution.ts(115,10): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/node/index"' has no exported member 'Throw'.
+src/root.ts(45,30): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/node/index"' has no exported member 'ParseFn'.
+src/root.ts(45,50): error TS7006: Parameter 'def' implicitly has an 'any' type.
+src/root.ts(45,55): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/root.ts(52,24): error TS2339: Property 'ParseError' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/node/index", { assert: { "resolution-mode": "import" } })'.
+src/str.ts(4,51): error TS2503: Cannot find namespace 'Naive'.
+src/str.ts(9,15): error TS2503: Cannot find namespace 'Tokens'.
+src/str.ts(14,11): error TS2304: Cannot find name 'InferTerminalStr'.
+src/str.ts(48,30): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/node/index"' has no exported member 'ParseFn'.
+src/str.ts(48,49): error TS7006: Parameter 'def' implicitly has an 'any' type.
+src/str.ts(48,54): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/str.ts(49,9): error TS2304: Cannot find name 'Naive'.
+src/str.ts(49,37): error TS2304: Cannot find name 'Main'.
+src/type.ts(58,27): error TS2694: Namespace '"/home/ssalb/re-po/@re-/type/src/node/index"' has no exported member 'node'.
+Files:              256
+Lines:            66072
+Nodes:           183232
+Identifiers:      62528
+Symbols:         113724
+Types:            42854
+Instantiations:  397312
+Memory used:    150463K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.41s
-Bind time:        0.14s
-Check time:       1.42s
+Parse time:       0.45s
+Bind time:        0.15s
+Check time:       1.36s
 Emit time:        0.00s
-Total time:       1.97s
+Total time:       1.96s

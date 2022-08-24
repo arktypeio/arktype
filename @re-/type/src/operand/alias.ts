@@ -1,5 +1,5 @@
 import { WithPropValue } from "@re-/tools"
-import { Node } from "../core.js"
+import { Node } from "../common.js"
 import { Root } from "../root.js"
 
 export namespace AliasType {
@@ -62,11 +62,11 @@ export namespace AliasType {
 }
 
 export class AliasNode extends Node.TerminalNode {
-    static matches(def: string, ctx: Node.Context) {
+    static matches(def: string, ctx: Node.context) {
         return !!ctx.space && def in ctx.space.dictionary
     }
 
-    constructor(def: string, private ctx: Node.Context) {
+    constructor(def: string, private ctx: Node.context) {
         super(def)
     }
 

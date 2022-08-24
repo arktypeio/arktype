@@ -1,8 +1,7 @@
 import { Evaluate } from "@re-/tools"
-import { Node } from "../../core.js"
-import { node } from "../../operator/optional.js"
+import { optional } from "../../operator/optional.js"
 import { Root } from "../../root.js"
-import { ObjNode } from "./objNode.js"
+import { Node, ObjNode, Utils } from "./common.js"
 
 export namespace Record {
     export type Definition = Record<string, unknown>
@@ -61,7 +60,7 @@ export class RecordNode extends ObjNode {
             allSeenKeysAllowed: true
         }
         for (const [propKey, propNode] of this.entries) {
-            const pathWithProp = Node.Utils.pathAdd(args.ctx.path, propKey)
+            const pathWithProp = Utils.pathAdd(args.ctx.path, propKey)
             if (propKey in args.value) {
                 const propIsAllowed = propNode.allows({
                     ...args,
@@ -74,7 +73,7 @@ export class RecordNode extends ObjNode {
                 if (!propIsAllowed) {
                     result.allSeenKeysAllowed = false
                 }
-            } else if (!(propNode instanceof node)) {
+            } else if (!(propNode instanceof optional)) {
                 args.errors.add(
                     pathWithProp,
                     `Required value of type ${propNode.toString()} was missing.`
@@ -90,14 +89,14 @@ export class RecordNode extends ObjNode {
         const result: Record<string, unknown> = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
-            if (propNode instanceof node) {
+            if (propNode instanceof optional) {
                 continue
             }
             result[propKey] = propNode.create({
                 ...args,
                 ctx: {
                     ...args.ctx,
-                    path: Node.Utils.pathAdd(args.ctx.path, propKey)
+                    path: Utils.pathAdd(args.ctx.path, propKey)
                 }
             })
         }

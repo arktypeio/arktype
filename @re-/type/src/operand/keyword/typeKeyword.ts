@@ -1,4 +1,4 @@
-import { Node } from "../../core.js"
+import { Node } from "../common.js"
 
 abstract class BaseTypeKeyword extends Node.TerminalNode {
     allows(args: Node.Allows.Args) {

@@ -1,5 +1,5 @@
-import { Node } from "../../core.js"
 import { BoundableNode } from "../../operator/bound/index.js"
+import { Node } from "../common.js"
 
 abstract class BaseNumberKeyword
     extends Node.TerminalNode

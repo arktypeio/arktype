@@ -6,7 +6,7 @@ import {
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { Node } from "./core.js"
+import { Node } from "./common.js"
 import { Root } from "./root.js"
 import type { Space, SpaceMeta } from "./space.js"
 
@@ -55,7 +55,7 @@ export type TypeFrom<Def, Tree, Inferred> = Evaluate<{
 export class Type implements TypeFrom<unknown, unknown, unknown> {
     constructor(
         public definition: unknown,
-        public root: Node.node,
+        public root: Node.base,
         public config: TypeOptions = {}
     ) {}
 
