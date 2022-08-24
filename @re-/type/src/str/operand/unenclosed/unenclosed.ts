@@ -20,9 +20,12 @@ export type ParseUnenclosedBase<
     Dict
 > = Unscanned extends Parser.Scanner.Shift<infer Next, infer Rest>
     ? Next extends Parser.Tokens.BaseTerminatingChar
-        ? ValidateUnenclosed<S, Fragment, Unscanned, Dict>
+        ? Parser.State.From<{
+              L: ReduceUnenclosed<S["L"], Fragment, Dict>
+              R: Unscanned
+          }>
         : ParseUnenclosedBase<S, `${Fragment}${Next}`, Rest, Dict>
-    : ValidateUnenclosed<S, Fragment, "", Dict>
+    : Parser.State.From<{ L: ReduceUnenclosed<S["L"], Fragment, Dict>; R: "" }>
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
@@ -49,17 +52,13 @@ const unenclosedToNode = (token: string, ctx: Node.context) => {
     throw new Error(unresolvableMessage(token))
 }
 
-type ValidateUnenclosed<
-    S extends Parser.State,
+type ReduceUnenclosed<
+    L extends Parser.Left,
     Token extends string,
-    Unscanned extends string,
     Dict
 > = IsResolvableUnenclosed<Token, Dict> extends true
-    ? Parser.State.From<{
-          L: Parser.Left.SetRoot<S["L"], Token>
-          R: Unscanned
-      }>
-    : Parser.State.Error<UnresolvableMessage<Token>>
+    ? Parser.Left.SetRoot<L, Token>
+    : Parser.Left.Error<UnresolvableMessage<Token>>
 
 type UnresolvableMessage<Token extends string> =
     `'${Token}' is not a builtin type and does not exist in your space.`

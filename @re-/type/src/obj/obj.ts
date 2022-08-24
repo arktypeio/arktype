@@ -1,6 +1,6 @@
 import { Evaluate, IterateType, ListPossibleTypes, ValueOf } from "@re-/tools"
-import { Root } from "../../../root.js"
-import { Node, Parser } from "./common.js"
+import { Root } from "../root.js"
+import { Node } from "./common.js"
 import { Record, RecordNode } from "./record.js"
 import { TupleNode } from "./tuple.js"
 
@@ -46,7 +46,7 @@ type StructuredReferences<Tree> = Evaluate<{
     [K in keyof Tree]: Root.References<Tree[K], true>
 }>
 
-export const parse: Parser.ParseFn<object> = (def, ctx) => {
+export const parse: Node.ParseFn<object> = (def, ctx) => {
     if (TupleNode.matches(def)) {
         return new TupleNode(def, ctx)
     }

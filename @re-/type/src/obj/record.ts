@@ -1,6 +1,6 @@
 import { Evaluate } from "@re-/tools"
-import { Root } from "../../../root.js"
-import { optional } from "../../operator/optional.js"
+import { Root } from "../root.js"
+import { optional } from "../str/operator/optional.js"
 import { Node, ObjNode, Utils } from "./common.js"
 
 export namespace Record {

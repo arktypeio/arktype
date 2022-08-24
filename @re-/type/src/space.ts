@@ -7,8 +7,7 @@ import {
     Merge,
     Narrow
 } from "@re-/tools"
-import { Node } from "./common.js"
-import { ErrorToken } from "./parser/tokens.js"
+import { Node } from "./node/index.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
 import { Type, TypeFrom, TypeFunction, TypeOptions, Validate } from "./type.js"
@@ -123,7 +122,7 @@ type ParseMetaDefs<Meta, Dict> = {
         ? Root.Parse<Meta[K], Dict & { $cyclic: "any" }>
         : K extends "onResolve"
         ? Root.Parse<Meta[K], Dict & { $resolution: "any" }>
-        : ErrorToken<`Unexpected meta key '${K & string}'.`>
+        : Node.ParseError<`Unexpected meta key '${K & string}'.`>
 }
 
 type ValidateSpaceOptions<Dict, Meta> = {

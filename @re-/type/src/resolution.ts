@@ -1,5 +1,5 @@
 import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
-import { Node, Parser } from "./common.js"
+import { Node } from "./node/index.js"
 import { Root } from "./root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "./space.js"
 import { Str } from "./str/str.js"
@@ -112,7 +112,7 @@ export class ResolutionNode extends Node.NonTerminal {
 //     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
-    Parser.Error<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
+    Node.ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
 
 type CheckResolutionForShallowCycle<
     Resolution,

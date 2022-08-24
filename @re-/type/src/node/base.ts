@@ -1,5 +1,4 @@
 import type { Space, SpaceMeta } from "../space.js"
-import type { ObjNode } from "../str/operand/obj/index.js"
 import type { TypeOptions } from "../type.js"
 import { stringifyValue } from "../utils.js"
 import type { Allows, Create, References } from "./traversal/index.js"
@@ -18,6 +17,12 @@ export const initializeContext = (
     return options
 }
 
+export type ParseFn<DefType = unknown> = (def: DefType, ctx: context) => base
+
+export class parseError extends Error {}
+
+export type ParseError<Message extends string> = `!${Message}`
+
 export abstract class base {
     abstract allows(args: Allows.Args): boolean
     abstract create(args: Create.Args): unknown
@@ -28,17 +33,12 @@ export abstract class base {
     ): void
     abstract toString(): string
 
-    references(opts: References.Options<string, boolean>) {
-        if (opts.preserveStructure && this.isObj()) {
-            return this.structureReferences(opts)
-        }
+    references(
+        opts: References.Options<string, boolean>
+    ): string[] | References.StructuredReferences {
         const collected = {}
         this.collectReferences(opts, collected)
         return Object.keys(collected)
-    }
-
-    isObj(): this is ObjNode {
-        return "structureReferences" in this
     }
 
     addUnassignable(args: Allows.Args) {
@@ -58,12 +58,4 @@ export type InferenceContext = {
 
 export namespace InferenceContext {
     export type From<Ctx extends InferenceContext> = Ctx
-}
-
-export namespace Base {
-    export type LeavesOf<T> = T extends [infer Child, string]
-        ? LeavesOf<Child>
-        : T extends [infer Left, string, infer Right]
-        ? [...LeavesOf<Right>, ...LeavesOf<Left>]
-        : [T]
 }

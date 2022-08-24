@@ -9,7 +9,7 @@ export namespace Str {
     export type Validate<Def extends string, Dict> = Parse<
         Def,
         Dict
-    > extends Parser.Error<infer Message>
+    > extends Node.ParseError<infer Message>
         ? Message
         : Def
 
@@ -56,6 +56,6 @@ export namespace Str {
         ? References<Bounded>
         : [T]
 
-    export const parse: Parser.ParseFn<string> = (def, ctx) =>
+    export const parse: Node.ParseFn<string> = (def, ctx) =>
         Naive.tryParse(def, ctx) ?? Main.parse(def, ctx)
 }

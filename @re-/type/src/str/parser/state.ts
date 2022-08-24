@@ -4,15 +4,6 @@ import { left, Left } from "./left.js"
 import { scanner } from "./scanner.js"
 import { SuffixToken } from "./tokens.js"
 
-export type ParseFn<DefType = unknown> = (
-    def: DefType,
-    ctx: Node.context
-) => Node.base
-
-export class ParseError extends Error {}
-
-export type Error<Message extends string> = `!${Message}`
-
 export class state<constraints extends Partial<left> = {}> {
     l: left<constraints>
     r: scanner
@@ -22,14 +13,17 @@ export class state<constraints extends Partial<left> = {}> {
         this.r = new scanner(def)
     }
 
-    static error(message: string): never {
-        throw new ParseError(message)
+    error(message: string): never {
+        throw new Node.parseError(message)
     }
 
-    hasRoot = <NodeClass extends ClassOf<Node.base> = ClassOf<Node.base>>(
+    hasRoot<NodeClass extends ClassOf<Node.base> = ClassOf<Node.base>>(
         ofClass?: NodeClass
-    ): this is state<{ root: InstanceOf<NodeClass> }> =>
-        ofClass ? this.l.root instanceof ofClass : this.l.root !== undefined
+    ): this is state<{ root: InstanceOf<NodeClass> }> {
+        return ofClass
+            ? this.l.root instanceof ofClass
+            : this.l.root !== undefined
+    }
 
     isPrefixable() {
         return (

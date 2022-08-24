@@ -11,6 +11,10 @@ export type Options<
     preserveStructure?: PreserveStructure
 }
 
+export type StructuredReferences = {
+    [K in string | number]: string[] | StructuredReferences
+}
+
 export type FilterFunction<Filter extends string> =
     | ((reference: string) => reference is Filter)
     | ((reference: string) => boolean)

@@ -21,7 +21,7 @@ export const parseOperand = (
         : s.r.lookahead === " "
         ? parseOperand(s.shifted(), ctx)
         : s.r.lookahead === "END"
-        ? Parser.state.error(expressionExpectedMessage)
+        ? s.error(expressionExpectedMessage)
         : parseUnenclosedBase(s, ctx)
 
 export type ParseOperand<

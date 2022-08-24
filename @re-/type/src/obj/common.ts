@@ -1,12 +1,10 @@
-export * from "../common.js"
-import { Root } from "../../../root.js"
-import { Node, Utils } from "../common.js"
+export * from "../node/index.js"
+export * as Utils from "../utils.js"
+import { Node } from "../node/index.js"
+import { Root } from "../root.js"
+import * as Utils from "../utils.js"
 
 export type ChildEntry<KeyType> = [KeyType, Node.base]
-
-export type StructuredReferences = {
-    [K in string | number]: string[] | StructuredReferences
-}
 
 export abstract class ObjNode extends Node.NonTerminal<Node.base[]> {
     entries: ChildEntry<string>[]
@@ -28,11 +26,14 @@ export abstract class ObjNode extends Node.NonTerminal<Node.base[]> {
         return Utils.defToString(this.def)
     }
 
-    structureReferences(opts: Node.References.Options) {
-        const references: StructuredReferences = {}
-        for (const [k, childNode] of this.entries) {
-            references[k] = childNode.references(opts)
+    override references(opts: Node.References.Options) {
+        if (opts.preserveStructure) {
+            const references: Node.References.StructuredReferences = {}
+            for (const [k, childNode] of this.entries) {
+                references[k] = childNode.references(opts)
+            }
+            return references
         }
-        return references
+        return super.references(opts)
     }
 }
