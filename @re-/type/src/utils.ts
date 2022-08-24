@@ -1,5 +1,5 @@
 import { isRecursible, toString } from "@re-/tools"
-
+// TODO: Get rid of utils
 export const pathAdd = (...subpaths: (string | number)[]) =>
     subpaths.filter((_) => _ !== "").join("/")
 

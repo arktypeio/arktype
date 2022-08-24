@@ -1,6 +1,6 @@
-import { Node } from "./common.js"
-import { Obj } from "./operand/obj/index.js"
-import { Str } from "./str.js"
+import { Node, Parser } from "./common.js"
+import { Obj } from "./str/operand/obj/index.js"
+import { Str } from "./str/str.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends string
@@ -42,14 +42,14 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
 
-    export const parse: Node.ParseFn<unknown> = (def, ctx) => {
+    export const parse: Parser.ParseFn<unknown> = (def, ctx) => {
         if (typeof def === "string") {
             return Str.parse(def, ctx)
         }
         if (typeof def === "object" && def !== null) {
             return Obj.parse(def, ctx)
         }
-        throw new Node.ParseError(
+        throw new Parser.ParseError(
             BAD_DEF_TYPE_MESSAGE + ` (got ${typeof def}).`
         )
     }

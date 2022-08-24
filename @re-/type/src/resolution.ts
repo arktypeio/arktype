@@ -2,7 +2,7 @@ import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
 import { Node, Parser } from "./common.js"
 import { Root } from "./root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "./space.js"
-import { Str } from "./str.js"
+import { Str } from "./str/str.js"
 
 export namespace ResolutionType {
     export type Validate<

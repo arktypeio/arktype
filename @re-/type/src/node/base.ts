@@ -1,5 +1,5 @@
-import type { ObjNode } from "../operand/obj/index.js"
 import type { Space, SpaceMeta } from "../space.js"
+import type { ObjNode } from "../str/operand/obj/index.js"
 import type { TypeOptions } from "../type.js"
 import { stringifyValue } from "../utils.js"
 import type { Allows, Create, References } from "./traversal/index.js"
@@ -58,4 +58,12 @@ export type InferenceContext = {
 
 export namespace InferenceContext {
     export type From<Ctx extends InferenceContext> = Ctx
+}
+
+export namespace Base {
+    export type LeavesOf<T> = T extends [infer Child, string]
+        ? LeavesOf<Child>
+        : T extends [infer Left, string, infer Right]
+        ? [...LeavesOf<Right>, ...LeavesOf<Left>]
+        : [T]
 }
