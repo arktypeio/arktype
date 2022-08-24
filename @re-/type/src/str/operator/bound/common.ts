@@ -21,19 +21,19 @@ export const createBoundChecker = (token: Comparator, x: number) => {
     }
 }
 
-export interface BoundableNode extends Node.base {
+export interface boundableNode extends Node.base {
     boundBy?: string
     toBound(value: unknown): number
 }
 
 export type BoundableValue = number | string | unknown[]
 
-export const isBoundable = (node: Node.base): node is BoundableNode =>
+export const isBoundable = (node: Node.base): node is boundableNode =>
     "toBound" in node
 
 export type BoundValidationError = {
-    // bound: DoubleBoundDefinition
-    // cause: keyof DoubleBoundDefinition
-    value: BoundableValue
-    evaluated: number
+    comparator: Comparator
+    limit: number
+    actual: number
+    source: BoundableValue
 }

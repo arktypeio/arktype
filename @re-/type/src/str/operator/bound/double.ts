@@ -1,5 +1,5 @@
 import {
-    BoundableNode,
+    boundableNode,
     BoundableValue,
     BoundChecker,
     BoundValidationError,
@@ -19,12 +19,13 @@ export type DoubleBoundNode<
     UpperBound extends number = number
 > = [LowerBound, LowerComparator, Bounded, UpperComparator, UpperBound]
 
-export class doubleBoundNode extends Node.NonTerminal<BoundableNode> {
+export class doubleBoundNode extends Node.NonTerminal<boundableNode> {
     checkLower: BoundChecker
     checkUpper: BoundChecker
+    normalizedLeft: [">" | ">=", number]
 
     constructor(
-        child: BoundableNode,
+        child: boundableNode,
         private left: DoubleBoundLeft,
         private right: DoubleBoundRight,
         ctx: Node.context
@@ -37,6 +38,7 @@ export class doubleBoundNode extends Node.NonTerminal<BoundableNode> {
          * number<10
          */
         const invertedLeftToken = this.left[1] === "<" ? ">" : ">="
+        this.normalizedLeft = [invertedLeftToken, this.left[0]]
         this.checkLower = createBoundChecker(invertedLeftToken, this.left[0])
         this.checkUpper = createBoundChecker(this.right[0], this.right[1])
     }
@@ -55,23 +57,23 @@ export class doubleBoundNode extends Node.NonTerminal<BoundableNode> {
         if (!this.children.allows(args)) {
             return false
         }
-        const evaluated = this.children.toBound(args.value)
-        if (!this.checkLower(evaluated)) {
+        const actual = this.children.toBound(args.value)
+        if (!this.checkLower(actual)) {
             const error: BoundValidationError = {
-                // bounds: this.bounds,
-                // cause: "left",
-                evaluated,
-                value: args.value as BoundableValue
+                comparator: this.normalizedLeft[0],
+                limit: this.normalizedLeft[1],
+                actual,
+                source: args.value as BoundableValue
             }
             args.errors.add(args.ctx.path, error)
             return false
         }
-        if (!this.checkUpper(evaluated)) {
+        if (!this.checkUpper(actual)) {
             const error: BoundValidationError = {
-                // bounds: this.bounds,
-                // cause: "right",
-                evaluated,
-                value: args.value as BoundableValue
+                comparator: this.right[0],
+                limit: this.right[1],
+                actual,
+                source: args.value as BoundableValue
             }
             args.errors.add(args.ctx.path, error)
             return false

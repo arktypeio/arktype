@@ -1,32 +1,27 @@
 import {
-    BoundableNode,
+    boundableNode,
     BoundableValue,
     BoundChecker,
+    BoundValidationError,
     createBoundChecker,
     Node
 } from "./common.js"
 import { Comparator } from "./parse.js"
 
-export type SingleBoundValidationError = {
-    bound: SingleBoundDefinition
-    value: BoundableValue
-    evaluated: number
-}
+export type SingleBoundNode = [Comparator, number]
 
-export type SingleBoundDefinition = [Comparator, number]
-
-export class SingleBoundNode extends Node.NonTerminal<BoundableNode> {
-    bound: SingleBoundDefinition
-    check: BoundChecker
+export class singleBoundNode extends Node.NonTerminal<boundableNode> {
+    bound: SingleBoundNode
+    checkBound: BoundChecker
 
     constructor(
-        child: BoundableNode,
-        bound: SingleBoundDefinition,
+        child: boundableNode,
+        bound: SingleBoundNode,
         ctx: Node.context
     ) {
         super(child, ctx)
         this.bound = [bound[0], bound[1]]
-        this.check = createBoundChecker(this.bound[0], this.bound[1])
+        this.checkBound = createBoundChecker(this.bound[0], this.bound[1])
     }
 
     toString() {
@@ -38,12 +33,13 @@ export class SingleBoundNode extends Node.NonTerminal<BoundableNode> {
         if (!this.children.allows(args)) {
             return false
         }
-        const evaluated = this.children.toBound(args.value)
-        if (!this.check(evaluated)) {
-            const error: SingleBoundValidationError = {
-                bound: this.bound,
-                evaluated,
-                value: args.value as BoundableValue
+        const actual = this.children.toBound(args.value)
+        if (!this.checkBound(actual)) {
+            const error: BoundValidationError = {
+                comparator: this.bound[0],
+                limit: this.bound[1],
+                actual,
+                source: args.value as BoundableValue
             }
             args.errors.add(args.ctx.path, error)
             return false

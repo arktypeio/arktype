@@ -7,7 +7,7 @@ import {
     NumberLiteralNode
 } from "../../operand/unenclosed/numberLiteral.js"
 import {
-    BoundableNode,
+    boundableNode,
     isBoundable,
     Node,
     NodeToString,
@@ -15,7 +15,7 @@ import {
     Parser
 } from "./common.js"
 import { DoubleBoundNode, doubleBoundNode, DoubleBoundRight } from "./double.js"
-import { SingleBoundNode } from "./single.js"
+import { singleBoundNode } from "./single.js"
 
 export const tokens = Parser.Tokens.boundTokens
 
@@ -227,7 +227,7 @@ export type ReduceRight<
 
 const hasBoundableRoot = (
     s: Parser.state<Parser.left.suffix>
-): s is Parser.state<Parser.left.suffix<{ root: BoundableNode }>> =>
+): s is Parser.state<Parser.left.suffix<{ root: boundableNode }>> =>
     isBoundable(s.l.root)
 
 const hasLeftBound = (
@@ -258,7 +258,7 @@ type ReduceDouble<
 
 const reduceDouble = (
     s: Parser.state<
-        Parser.left.suffix<{ root: BoundableNode; leftBound: LeftDefinition }>
+        Parser.left.suffix<{ root: boundableNode; leftBound: LeftDefinition }>
     >,
     right: RightDefinition,
     nextSuffix: Parser.Tokens.SuffixToken,
@@ -289,13 +289,13 @@ type ReduceSingle<
 
 //TODO: Try out types to stop casting to any?
 const reduceSingle = (
-    s: Parser.state.suffix<{ root: BoundableNode }>,
+    s: Parser.state.suffix<{ root: boundableNode }>,
     right: RightDefinition,
     nextSuffix: Parser.Tokens.SuffixToken,
     ctx: Node.context
 ) => {
     s.l.nextSuffix = nextSuffix
-    s.l.root = new SingleBoundNode(s.l.root, right, ctx) as any
+    s.l.root = new singleBoundNode(s.l.root, right, ctx) as any
     return s
 }
 
