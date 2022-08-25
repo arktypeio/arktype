@@ -5,6 +5,7 @@ import Terminal from "@mui/icons-material/Terminal"
 import { Button, Container, Grid, Stack, Typography } from "@mui/material"
 import React, { useState } from "react"
 import { StackBlitzDemo } from "../../docs/type/demos/index"
+import { MemoizedLoadingAnimation } from "./LoadingAnimation/LoadingAnimation"
 import * as Svgs from "./svg"
 
 type ToolSummaryData = {
@@ -19,6 +20,7 @@ type ToolSummaryProps = ToolSummaryData & {
     buttonColor: "primary" | "secondary"
     activeDemo: JSX.Element | null
     setActiveDemo: (demo: JSX.Element | null) => void
+    setLoading: (isLoading: boolean) => void
 }
 
 const toolSummaries: ToolSummaryData[] = [
@@ -40,6 +42,7 @@ export const ToolSummaries = () => {
     const { colorMode } = useColorMode()
     const buttonColor = colorMode === "dark" ? "secondary" : "primary"
     const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
+    const [loading, setLoading] = useState<boolean>(false)
     return (
         <Container maxWidth="xl">
             <Grid container direction="row">
@@ -49,12 +52,14 @@ export const ToolSummaries = () => {
                             {...summaryData}
                             buttonColor={buttonColor}
                             setActiveDemo={setActiveDemo}
+                            setLoading={setLoading}
                             activeDemo={activeDemo}
                         />
                     </Grid>
                 ))}
             </Grid>
-            {activeDemo}
+            {loading && <MemoizedLoadingAnimation />}
+            <span className={loading ? "hideComponent" : ""}>{activeDemo}</span>
         </Container>
     )
 }
@@ -133,6 +138,10 @@ const DemoButton = (props: ToolSummaryProps) => {
             variant="contained"
             sx={{ whiteSpace: "nowrap" }}
             onClick={() => {
+                setTimeout(() => {
+                    props.setLoading(false)
+                }, 2500)
+                props.setLoading(isActiveDemo ? false : true)
                 props.setActiveDemo(isActiveDemo ? null : props.demoElement!)
             }}
             endIcon={
