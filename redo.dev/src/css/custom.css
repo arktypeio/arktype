@@ -59,3 +59,7 @@
 .hideComponent {
     opacity: 0;
 }
+.demoContainer {
+    height: 100%;
+    position: relative;
+}

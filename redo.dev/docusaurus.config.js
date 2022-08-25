@@ -127,7 +127,10 @@ const config = {
                         }
                     }
                 ]
-            ]
+            ],
+            colorMode: {
+                respectPrefersColorScheme: true
+            }
         })
 }
 
