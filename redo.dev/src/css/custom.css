@@ -56,10 +56,3 @@
 .footer {
     background-color: #1b1b1b;
 }
-.hideComponent {
-    opacity: 0;
-}
-.demoContainer {
-    height: 100%;
-    position: relative;
-}

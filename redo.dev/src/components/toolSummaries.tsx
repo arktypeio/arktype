@@ -61,16 +61,15 @@ export const ToolSummaries = () => {
                     </Grid>
                 ))}
             </Grid>
-            <Container className="demoContainer">
+            <Container style={{ height: "100%", position: "relative" }}>
                 {loading && <MemoizedLoadingAnimation />}
-                <span className={loading ? "hideComponent" : ""} ref={ref}>
+                <span ref={ref} style={{ opacity: loading ? 0 : 100 }}>
                     {activeDemo}
                 </span>
             </Container>
         </Container>
     )
 }
-
 const ToolSummary = (props: ToolSummaryProps) => {
     return (
         <div className="text--center" style={{ marginBottom: "1em" }}>
@@ -151,7 +150,7 @@ const DemoButton = (props: ToolSummaryProps) => {
                 props.setLoading(isActiveDemo ? false : true)
                 props.setActiveDemo(isActiveDemo ? null : props.demoElement!)
                 setTimeout(() => {
-                    props.demoRef.current!.scrollIntoView({
+                    props.demoRef.current?.scrollIntoView({
                         behavior: "smooth",
                         block: "end"
                     })
