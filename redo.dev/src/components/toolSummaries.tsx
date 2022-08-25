@@ -21,7 +21,7 @@ type ToolSummaryProps = ToolSummaryData & {
     activeDemo: JSX.Element | null
     setActiveDemo: (demo: JSX.Element | null) => void
     setLoading: (isLoading: boolean) => void
-    demoRef: React.MutableRefObject<JSX.Element | null>
+    demoRef: React.MutableRefObject<null | HTMLSpanElement>
 }
 
 const toolSummaries: ToolSummaryData[] = [
@@ -44,7 +44,7 @@ export const ToolSummaries = () => {
     const buttonColor = colorMode === "dark" ? "secondary" : "primary"
     const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
     const [loading, setLoading] = useState<boolean>(false)
-    const ref = useRef<null | JSX.Element>(null)
+    const ref = useRef<null | HTMLSpanElement>(null)
     return (
         <Container maxWidth="xl">
             <Grid container direction="row">
@@ -151,7 +151,7 @@ const DemoButton = (props: ToolSummaryProps) => {
                 props.setLoading(isActiveDemo ? false : true)
                 props.setActiveDemo(isActiveDemo ? null : props.demoElement!)
                 setTimeout(() => {
-                    props.demoRef.current.scrollIntoView({
+                    props.demoRef.current!.scrollIntoView({
                         behavior: "smooth",
                         block: "end"
                     })
