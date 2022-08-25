@@ -1,9 +1,6 @@
-import { BoundableNode, Node } from "./common.js"
+import { BoundableNode, Node, terminalNode } from "./common.js"
 
-abstract class BaseNumberKeyword
-    extends Node.terminalNode
-    implements BoundableNode
-{
+abstract class BaseNumberKeyword extends terminalNode implements BoundableNode {
     allows(args: Node.Allows.Args) {
         if (typeof args.value === "number" && this.allowsNumber(args.value)) {
             return true

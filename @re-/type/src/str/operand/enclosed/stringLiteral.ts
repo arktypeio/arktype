@@ -1,4 +1,4 @@
-import { PrimitiveLiteralNode } from "../common.js"
+import { primitiveLiteralNode } from "../common.js"
 
 export type StringLiteralDefinition<Text extends string = string> =
     | `'${Text}'`
@@ -6,7 +6,7 @@ export type StringLiteralDefinition<Text extends string = string> =
 
 export type StringLiteralQuote = `'` | `"`
 
-export class StringLiteralNode extends PrimitiveLiteralNode<
+export class StringLiteralNode extends primitiveLiteralNode<
     StringLiteralDefinition,
     string
 > {

@@ -1,6 +1,6 @@
 import { WithPropValue } from "@re-/tools"
 import { Root } from "../../../root.js"
-import { Node } from "../common.js"
+import { Node, terminalNode } from "../common.js"
 
 export namespace Alias {
     export type Infer<
@@ -61,7 +61,7 @@ export namespace Alias {
     >
 }
 
-export class alias extends Node.terminalNode {
+export class alias extends terminalNode {
     static matches(def: string, ctx: Node.context) {
         return !!ctx.space && def in ctx.space.dictionary
     }

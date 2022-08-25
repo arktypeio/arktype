@@ -1,4 +1,4 @@
-import { PrimitiveLiteralNode } from "../common.js"
+import { primitiveLiteralNode } from "../common.js"
 
 export type NumberLiteralDefinition<Value extends number = number> = `${Value}`
 
@@ -15,7 +15,7 @@ export const literalToNumber = (def: NumberLiteralDefinition) => {
     return value
 }
 
-export class numberLiteralNode extends PrimitiveLiteralNode<
+export class numberLiteralNode extends primitiveLiteralNode<
     NumberLiteralDefinition,
     number
 > {

@@ -5,10 +5,36 @@ import { Node } from "../common.js"
 
 export type PrimitiveLiteralValue = string | number | bigint
 
-export abstract class PrimitiveLiteralNode<
+export abstract class terminalNode<
+    defType extends string = string
+> extends Node.base {
+    constructor(public def: defType) {
+        super()
+    }
+
+    get tree() {
+        return this.def
+    }
+
+    toString() {
+        return this.def
+    }
+
+    collectReferences(
+        args: Node.References.Options,
+        collected: Node.References.Collection
+    ) {
+        const reference = this.toString()
+        if (!args.filter || args.filter(reference)) {
+            collected[reference] = true
+        }
+    }
+}
+
+export abstract class primitiveLiteralNode<
     Def extends string,
     Value extends PrimitiveLiteralValue
-> extends Node.terminalNode {
+> extends terminalNode {
     constructor(public def: Def, public value: Value) {
         super(def)
     }
