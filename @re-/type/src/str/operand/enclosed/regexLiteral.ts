@@ -2,7 +2,7 @@ import { Node, Utils } from "../common.js"
 
 export type RegexLiteralDefinition = `/${string}/`
 
-export class RegexLiteralNode extends Node.TerminalNode<RegexLiteralDefinition> {
+export class RegexLiteralNode extends Node.terminalNode<RegexLiteralDefinition> {
     private regex: RegExp
 
     constructor(def: RegexLiteralDefinition) {

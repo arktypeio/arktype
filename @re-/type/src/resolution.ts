@@ -25,7 +25,7 @@ export namespace ResolutionType {
     >
 }
 
-export class ResolutionNode extends Node.NonTerminal {
+export class ResolutionNode extends Node.nonTerminal {
     def: unknown
 
     constructor(public alias: string, space: SpaceMeta) {

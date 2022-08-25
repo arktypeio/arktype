@@ -2,7 +2,7 @@ import { WithPropValue } from "@re-/tools"
 import { Root } from "../../../root.js"
 import { Node } from "../common.js"
 
-export namespace AliasType {
+export namespace Alias {
     export type Infer<
         Def extends keyof Ctx["Space"]["Resolutions"],
         Ctx extends Node.InferenceContext
@@ -61,7 +61,7 @@ export namespace AliasType {
     >
 }
 
-export class AliasNode extends Node.TerminalNode {
+export class alias extends Node.terminalNode {
     static matches(def: string, ctx: Node.context) {
         return !!ctx.space && def in ctx.space.dictionary
     }

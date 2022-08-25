@@ -6,7 +6,7 @@ import * as Utils from "../utils.js"
 
 export type ChildEntry<KeyType> = [KeyType, Node.base]
 
-export abstract class ObjNode extends Node.NonTerminal<Node.base[]> {
+export abstract class obj extends Node.nonTerminal<Node.base[]> {
     entries: ChildEntry<string>[]
 
     constructor(private def: object, ctx: Node.context) {

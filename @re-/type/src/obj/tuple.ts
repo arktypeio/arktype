@@ -1,4 +1,4 @@
-import { Node, ObjNode, Utils } from "./common.js"
+import { Node, obj, Utils } from "./common.js"
 
 export namespace TupleType {
     export type Definition = unknown[] | readonly unknown[]
@@ -7,9 +7,13 @@ export namespace TupleType {
 const lengthError = (def: TupleType.Definition, value: TupleType.Definition) =>
     `Tuple of length ${value.length} is not assignable to tuple of length ${def.length}.`
 
-export class TupleNode extends ObjNode {
+export class TupleNode extends obj {
     static matches(def: object): def is TupleType.Definition {
         return Array.isArray(def)
+    }
+
+    get tree() {
+        return this.children.map((_) => _.tree)
     }
 
     allows(args: Node.Allows.Args) {

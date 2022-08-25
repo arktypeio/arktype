@@ -25,7 +25,7 @@ export class state<constraints extends Partial<left> = {}> {
 
     isPrefixable() {
         return (
-            !this.l.leftBound &&
+            !this.l.lowerBound &&
             isEmpty(this.l.branches) &&
             !this.l.groups.length
         )

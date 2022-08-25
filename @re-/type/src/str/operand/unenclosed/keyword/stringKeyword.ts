@@ -2,7 +2,7 @@ import { isAlpha, isAlphaNumeric } from "@re-/tools"
 import { BoundableNode, Node } from "./common.js"
 
 abstract class BaseStringKeyword
-    extends Node.TerminalNode
+    extends Node.terminalNode
     implements BoundableNode
 {
     allows(args: Node.Allows.Args) {

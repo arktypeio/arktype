@@ -1,15 +1,16 @@
 import { base } from "./base.js"
-import { Allows, Create, References } from "./traversal/index.js"
+import { References } from "./traversal/index.js"
 
-export abstract class TerminalNode<
-    DefType extends string = string
+export abstract class terminalNode<
+    defType extends string = string
 > extends base {
-    constructor(public def: DefType) {
+    constructor(public def: defType) {
         super()
     }
 
-    abstract allows(args: Allows.Args): boolean
-    abstract create(args: Create.Args): unknown
+    get tree() {
+        return this.def
+    }
 
     toString() {
         return this.def

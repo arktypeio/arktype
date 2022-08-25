@@ -1,7 +1,7 @@
 import { Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { optional } from "../str/operator/optional.js"
-import { Node, ObjNode, Utils } from "./common.js"
+import { Node, obj, Utils } from "./common.js"
 
 export namespace Record {
     export type Definition = Record<string, unknown>
@@ -31,7 +31,13 @@ export const isArgValueRecordLike = (
     args.value !== null &&
     !Array.isArray(args.value)
 
-export class RecordNode extends ObjNode {
+export class RecordNode extends obj {
+    get tree() {
+        return Object.fromEntries(
+            this.entries.map(([prop, propNode]) => [prop, propNode.tree])
+        )
+    }
+
     allows(args: Node.Allows.Args) {
         if (!isArgValueRecordLike(args)) {
             this.addUnassignable(args)

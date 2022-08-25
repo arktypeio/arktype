@@ -42,7 +42,7 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
 
-    export const parse: Node.ParseFn<unknown> = (def, ctx) => {
+    export const parse: Node.parseFn<unknown> = (def, ctx) => {
         if (typeof def === "string") {
             return Str.parse(def, ctx)
         }

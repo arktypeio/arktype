@@ -1,6 +1,6 @@
 import { Node } from "./common.js"
 
-abstract class BaseTypeKeyword extends Node.TerminalNode {
+abstract class BaseTypeKeyword extends Node.terminalNode {
     allows(args: Node.Allows.Args) {
         if (this.allowsValue(args.value)) {
             return true

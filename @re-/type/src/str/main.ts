@@ -2,7 +2,7 @@ import { Node, Parser } from "./common.js"
 import { ParseOperand, parseOperand } from "./operand/index.js"
 import { Operator } from "./operator/index.js"
 
-export const parse: Node.ParseFn<string> = (def, ctx) =>
+export const parse: Node.parseFn<string> = (def, ctx) =>
     loop(parseOperand(new Parser.state(def), ctx), ctx)
 
 export type Parse<Def extends string, Dict> = Loop<
@@ -44,7 +44,7 @@ export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
     S["L"]["groups"] extends []
         ? Parser.State.From<{
               L: Parser.Left.SuffixFrom<{
-                  leftBound: S["L"]["leftBound"]
+                  lowerBound: S["L"]["lowerBound"]
                   root: Operator.MergeBranches<
                       S["L"]["branches"],
                       S["L"]["root"]
@@ -87,6 +87,6 @@ export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
         : Parser.State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
 
 export type ExtractFinalizedRoot<L extends Parser.Left.Suffix> =
-    L["leftBound"] extends undefined
+    L["lowerBound"] extends undefined
         ? L["root"]
         : Node.ParseError<Operator.Bound.UnpairedLeftBoundMessage>

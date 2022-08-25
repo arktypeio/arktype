@@ -24,20 +24,30 @@ export namespace Str {
         ? Infer<Left, Ctx> | Infer<Right, Ctx>
         : T extends [infer Left, "&", infer Right]
         ? Infer<Left, Ctx> & Infer<Right, Ctx>
-        : T extends [infer Bounded, unknown, unknown]
+        : T extends Operator.Bound.SingleBoundNode<infer Bounded>
         ? Infer<Bounded, Ctx>
         : T extends Operator.Bound.DoubleBoundNode<infer Bounded>
         ? Infer<Bounded, Ctx>
         : never
 
-    export type References<T> = T extends [infer Child, unknown]
+    type ModifierNode<Child = unknown, Token = string> = [Child, Token]
+
+    type BranchNode<Left = unknown, Right = unknown, Token = string> = [
+        Left,
+        Token,
+        Right
+    ]
+
+    export type References<T> = T extends ModifierNode<infer Child>
         ? References<Child>
-        : T extends [infer Left, unknown, infer Right]
+        : T extends BranchNode<infer Left, infer Right>
         ? [...References<Right>, ...References<Left>]
+        : T extends Operator.Bound.SingleBoundNode<infer Bounded>
+        ? References<Bounded>
         : T extends Operator.Bound.DoubleBoundNode<infer Bounded>
         ? References<Bounded>
         : [T]
 
-    export const parse: Node.ParseFn<string> = (def, ctx) =>
+    export const parse: Node.parseFn<string> = (def, ctx) =>
         Naive.tryParse(def, ctx) ?? Main.parse(def, ctx)
 }

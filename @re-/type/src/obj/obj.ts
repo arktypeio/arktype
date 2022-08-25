@@ -46,7 +46,7 @@ type StructuredReferences<Tree> = Evaluate<{
     [K in keyof Tree]: Root.References<Tree[K], true>
 }>
 
-export const parse: Node.ParseFn<object> = (def, ctx) => {
+export const parse: Node.parseFn<object> = (def, ctx) => {
     if (TupleNode.matches(def)) {
         return new TupleNode(def, ctx)
     }

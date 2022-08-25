@@ -6,14 +6,14 @@ type base = {
     groups: Operator.branches[]
     branches: Operator.branches
     root?: Node.base
-    leftBound?: Operator.Bound.LeftDefinition
+    lowerBound?: Operator.Bound.LowerBoundDefinition
     nextSuffix?: SuffixToken
 }
 
 export type left<constraints extends Partial<base> = {}> = base & constraints
 
 type Base = {
-    leftBound: Operator.Bound.LeftDefinition | undefined
+    lowerBound: Operator.Bound.LowerBoundDefinition | undefined
     groups: Operator.Branches[]
     branches: Operator.Branches
     root: unknown
@@ -38,7 +38,7 @@ export namespace left {
     }
 
     type baseSuffix = {
-        leftBound?: Operator.Bound.LeftDefinition
+        lowerBound?: Operator.Bound.LowerBoundDefinition
         root: Node.base
         nextSuffix: SuffixToken
     }
@@ -49,14 +49,14 @@ export namespace left {
 
 export namespace Left {
     export type New = From<{
-        leftBound: undefined
+        lowerBound: undefined
         groups: []
         branches: {}
         root: undefined
     }>
 
     export type IsPrefixable<L extends Base> = From<{
-        leftBound: undefined
+        lowerBound: undefined
         groups: []
         branches: {}
         root: any
@@ -71,7 +71,7 @@ export namespace Left {
     export type From<L extends Base> = L
 
     export type Error<Message extends string> = From<{
-        leftBound: undefined
+        lowerBound: undefined
         groups: []
         branches: {}
         root: Node.ParseError<Message>
@@ -79,7 +79,7 @@ export namespace Left {
     }>
 
     export type SetRoot<L extends Base, Node> = From<{
-        leftBound: L["leftBound"]
+        lowerBound: L["lowerBound"]
         groups: L["groups"]
         branches: L["branches"]
         root: Node
@@ -89,7 +89,7 @@ export namespace Left {
         L extends Base,
         Token extends SuffixToken
     > = From<{
-        leftBound: L["leftBound"]
+        lowerBound: L["lowerBound"]
         groups: L["groups"]
         branches: L["branches"]
         root: L["root"]
@@ -99,7 +99,7 @@ export namespace Left {
     export type WithRoot<Root> = With<{ root: Root }>
 
     type SuffixInput = {
-        leftBound: Operator.Bound.LeftDefinition | undefined
+        lowerBound: Operator.Bound.LowerBoundDefinition | undefined
         root: unknown
         nextSuffix: SuffixToken
     }
@@ -111,7 +111,7 @@ export namespace Left {
     >
 
     export type SuffixFrom<L extends SuffixInput> = Left.From<{
-        leftBound: L["leftBound"]
+        lowerBound: L["lowerBound"]
         groups: never
         branches: never
         root: L["root"]

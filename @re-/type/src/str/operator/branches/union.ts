@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
-import { Node, Operator, Parser, Utils } from "../common.js"
-import { Branches, MergeExpression } from "./branches.js"
+import { Node, operator, Operator, Parser, Utils } from "../common.js"
+import { Branches, childrenToTree, MergeExpression } from "./branches.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
@@ -41,7 +41,7 @@ export const reduceUnion = (s: Operator.state, ctx: Node.context) => {
 export type Union<Left = unknown, Right = unknown> = [Left, "|", Right]
 
 export type ReduceUnion<L extends Parser.Left> = Parser.Left.From<{
-    leftBound: L["leftBound"]
+    lowerBound: L["lowerBound"]
     groups: L["groups"]
     branches: PushRoot<L["branches"], L["root"]>
     root: undefined
@@ -63,13 +63,13 @@ export const mergeUnion = (s: StateWithMergeableUnion) => {
     return s
 }
 
-export class union extends Node.NonTerminal<Node.base[]> {
+export class union extends operator<Node.base[]> {
     addMember(node: Node.base) {
         this.children.push(node)
     }
 
-    toString() {
-        return this.children.map((_) => _.toString()).join("|")
+    get tree() {
+        return childrenToTree(this.children, "|")
     }
 
     allows(args: Node.Allows.Args) {

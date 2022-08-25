@@ -17,11 +17,13 @@ export const initializeContext = (
     return options
 }
 
-export type ParseFn<DefType = unknown> = (def: DefType, ctx: context) => base
+export type parseFn<DefType = unknown> = (def: DefType, ctx: context) => base
 
 export class parseError extends Error {}
 
 export type ParseError<Message extends string> = `!${Message}`
+
+export type ParseTree = string | ParseTree[] | { [K in string]: ParseTree }
 
 export abstract class base {
     abstract allows(args: Allows.Args): boolean
@@ -31,6 +33,7 @@ export abstract class base {
         opts: References.Options,
         collected: References.Collection
     ): void
+    abstract get tree(): ParseTree
     abstract toString(): string
 
     references(

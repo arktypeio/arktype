@@ -1,12 +1,12 @@
-import { base, context } from "./base.js"
+import { base, context, ParseTree } from "./base.js"
 import { References } from "./traversal/index.js"
 
-export type ParseChildren = base | base[]
+export type parseChildren = base | base[]
 
-export abstract class NonTerminal<
-    Children extends ParseChildren = base
+export abstract class nonTerminal<
+    children extends parseChildren = base
 > extends base {
-    constructor(protected children: Children, protected ctx: context) {
+    constructor(protected children: children, protected ctx: context) {
         super()
     }
 

@@ -7,7 +7,7 @@ import {
 } from "./enclosed/index.js"
 import { reduceGroupOpen, ReduceGroupOpen } from "./groupOpen.js"
 import {
-    AliasType,
+    Alias,
     BigintLiteralDefinition,
     Keyword,
     NumberLiteralDefinition,
@@ -55,7 +55,7 @@ export type InferTerminal<
 > = Token extends Keyword.Definition
     ? Keyword.Types[Token]
     : Token extends keyof Ctx["Space"]["Resolutions"]
-    ? AliasType.Infer<Token, Ctx>
+    ? Alias.Infer<Token, Ctx>
     : Token extends StringLiteralDefinition<infer Value>
     ? Value
     : Token extends RegexLiteralDefinition

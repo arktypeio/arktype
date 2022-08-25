@@ -1,5 +1,5 @@
-import { Node, Operator, Parser } from "../common.js"
-import { Branches, MergeExpression } from "./branches.js"
+import { Node, operator, Operator, Parser } from "../common.js"
+import { Branches, childrenToTree, MergeExpression } from "./branches.js"
 
 type PushRoot<B extends Branches, Root> = {
     union: B["union"]
@@ -17,7 +17,7 @@ export const reduceIntersection = (s: Operator.state, ctx: Node.context) => {
 }
 
 export type ReduceIntersection<L extends Parser.Left> = Parser.Left.From<{
-    leftBound: L["leftBound"]
+    lowerBound: L["lowerBound"]
     groups: L["groups"]
     branches: PushRoot<L["branches"], L["root"]>
     root: undefined
@@ -45,13 +45,13 @@ export type Intersection<Left = undefined, Right = undefined> = [
     Right
 ]
 
-export class intersection extends Node.NonTerminal<Node.base[]> {
+export class intersection extends operator<Node.base[]> {
     addMember(node: Node.base) {
         this.children.push(node)
     }
 
-    toString() {
-        return this.children.map((_) => _.toString()).join("&")
+    get tree() {
+        return childrenToTree(this.children, "&")
     }
 
     allows(args: Node.Allows.Args) {

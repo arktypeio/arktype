@@ -1,15 +1,18 @@
+src/obj/record.ts(34,14): error TS2515: Non-abstract class 'RecordNode' does not implement inherited abstract member 'tree' from class 'ObjNode'.
+src/obj/tuple.ts(10,14): error TS2515: Non-abstract class 'TupleNode' does not implement inherited abstract member 'tree' from class 'ObjNode'.
+src/resolution.ts(28,14): error TS2515: Non-abstract class 'ResolutionNode' does not implement inherited abstract member 'tree' from class 'NonTerminal<base>'.
 Files:              256
-Lines:            66060
-Nodes:           183168
-Identifiers:      62495
-Symbols:         129655
-Types:            70633
-Instantiations:  345971
-Memory used:    175819K
+Lines:            66107
+Nodes:           183324
+Identifiers:      62565
+Symbols:         130581
+Types:            70814
+Instantiations:  348200
+Memory used:    174900K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.40s
-Bind time:        0.15s
-Check time:       1.48s
+Parse time:       0.43s
+Bind time:        0.16s
+Check time:       1.59s
 Emit time:        0.00s
-Total time:       2.03s
+Total time:       2.19s

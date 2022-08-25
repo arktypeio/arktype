@@ -1,7 +1,7 @@
 import { BoundableNode, Node } from "./common.js"
 
 abstract class BaseNumberKeyword
-    extends Node.TerminalNode
+    extends Node.terminalNode
     implements BoundableNode
 {
     allows(args: Node.Allows.Args) {

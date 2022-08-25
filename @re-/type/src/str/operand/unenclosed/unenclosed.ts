@@ -1,8 +1,8 @@
 import { Node, Parser } from "../common.js"
-import { AliasNode, AliasType } from "./alias.js"
-import { BigintLiteralDefinition, BigintLiteralNode } from "./bigintLiteral.js"
+import { alias } from "./alias.js"
+import { BigintLiteralDefinition, bigintLiteralNode } from "./bigintLiteral.js"
 import { Keyword } from "./keyword/index.js"
-import { NumberLiteralDefinition, NumberLiteralNode } from "./numberLiteral.js"
+import { NumberLiteralDefinition, numberLiteralNode } from "./numberLiteral.js"
 
 const lookaheadIsBaseTerminating: Parser.scanner.UntilCondition = (scanner) =>
     scanner.lookahead in Parser.Tokens.baseTerminatingChars
@@ -33,8 +33,8 @@ export const toNodeIfResolvableIdentifier = (
 ) => {
     if (Keyword.matches(token)) {
         return Keyword.parse(token)
-    } else if (AliasNode.matches(token, ctx)) {
-        return new AliasNode(token, ctx)
+    } else if (alias.matches(token, ctx)) {
+        return new alias(token, ctx)
     }
 }
 
@@ -43,11 +43,11 @@ const unenclosedToNode = (token: string, ctx: Node.context) => {
     if (possibleIdentifierNode) {
         return possibleIdentifierNode
     }
-    if (NumberLiteralNode.matches(token)) {
-        return new NumberLiteralNode(token)
+    if (numberLiteralNode.matches(token)) {
+        return new numberLiteralNode(token)
     }
-    if (BigintLiteralNode.matches(token)) {
-        return new BigintLiteralNode(token)
+    if (bigintLiteralNode.matches(token)) {
+        return new bigintLiteralNode(token)
     }
     throw new Error(unresolvableMessage(token))
 }
@@ -79,6 +79,8 @@ type IsResolvableUnenclosed<Token, Dict> = IsResolvableName<
     Dict
 > extends true
     ? true
-    : Token extends NumberLiteralDefinition | BigintLiteralDefinition
+    : Token extends NumberLiteralDefinition
+    ? true
+    : Token extends BigintLiteralDefinition
     ? true
     : false

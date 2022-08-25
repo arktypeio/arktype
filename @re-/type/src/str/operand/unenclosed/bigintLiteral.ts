@@ -5,7 +5,7 @@ export type BigintLiteralDefinition<Value extends bigint = bigint> = `${Value}n`
 /** Matches a well-formatted integer expression followed by "n" */
 const BIGINT_MATCHER = /^-?(0|[1-9]\d*)n$/
 
-export class BigintLiteralNode extends PrimitiveLiteralNode<
+export class bigintLiteralNode extends PrimitiveLiteralNode<
     BigintLiteralDefinition,
     bigint
 > {

@@ -1,9 +1,9 @@
-import { Node, Operator, Parser } from "./common.js"
+import { Node, Operator, operator, Parser } from "./common.js"
 
 export type ParseOptional<S extends Parser.State> = S["R"] extends ""
     ? Parser.State.From<{
           L: Parser.Left.SuffixFrom<{
-              leftBound: S["L"]["leftBound"]
+              lowerBound: S["L"]["lowerBound"]
               root: [S["L"]["root"], "?"]
               nextSuffix: "END"
           }>
@@ -23,9 +23,9 @@ type NonTerminatingOptionalMessage = typeof nonTerminatingOptionalMessage
 
 export type Optional<Child = unknown> = [Child, "?"]
 
-export class optional extends Node.NonTerminal {
-    toString() {
-        return this.children.toString() + "?"
+export class optional extends operator {
+    get tree() {
+        return [this.children.tree, "?"]
     }
 
     allows(args: Node.Allows.Args) {

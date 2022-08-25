@@ -1,31 +1,43 @@
 import {
+    literalToNumber,
+    NumberLiteralDefinition
+} from "../../operand/index.js"
+import {
     boundableNode,
     BoundableValue,
-    BoundChecker,
-    BoundValidationError,
+    boundChecker,
+    boundValidationError,
     createBoundChecker,
-    Node
+    Node,
+    normalizedBound,
+    operator
 } from "./common.js"
 import { Comparator } from "./parse.js"
 
-export type SingleBoundNode = [Comparator, number]
+export type SingleBoundDefinition = [Comparator, NumberLiteralDefinition]
 
-export class singleBoundNode extends Node.NonTerminal<boundableNode> {
-    bound: SingleBoundNode
-    checkBound: BoundChecker
+export type SingleBoundNode<
+    Child = unknown,
+    Token extends Comparator = Comparator,
+    Value extends number = number
+> = [Child, Token, Value]
+
+export class singleBoundNode extends operator<boundableNode> {
+    bound: normalizedBound
+    checkBound: boundChecker
 
     constructor(
         child: boundableNode,
-        bound: SingleBoundNode,
+        private boundDef: SingleBoundDefinition,
         ctx: Node.context
     ) {
         super(child, ctx)
-        this.bound = [bound[0], bound[1]]
-        this.checkBound = createBoundChecker(this.bound[0], this.bound[1])
+        this.bound = [this.boundDef[0], literalToNumber(this.boundDef[1])]
+        this.checkBound = createBoundChecker(this.bound)
     }
 
-    toString() {
-        return this.children.toString() + this.bound[0] + this.bound[1]
+    get tree() {
+        return [this.children.tree, this.boundDef[0], this.boundDef[1]]
     }
 
     allows(args: Node.Allows.Args) {
@@ -35,7 +47,7 @@ export class singleBoundNode extends Node.NonTerminal<boundableNode> {
         }
         const actual = this.children.toBound(args.value)
         if (!this.checkBound(actual)) {
-            const error: BoundValidationError = {
+            const error: boundValidationError = {
                 comparator: this.bound[0],
                 limit: this.bound[1],
                 actual,

@@ -8,7 +8,7 @@ export type PrimitiveLiteralValue = string | number | bigint
 export abstract class PrimitiveLiteralNode<
     Def extends string,
     Value extends PrimitiveLiteralValue
-> extends Node.TerminalNode {
+> extends Node.terminalNode {
     constructor(public def: Def, public value: Value) {
         super(def)
     }

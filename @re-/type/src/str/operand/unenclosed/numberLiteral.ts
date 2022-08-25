@@ -15,7 +15,7 @@ export const literalToNumber = (def: NumberLiteralDefinition) => {
     return value
 }
 
-export class NumberLiteralNode extends PrimitiveLiteralNode<
+export class numberLiteralNode extends PrimitiveLiteralNode<
     NumberLiteralDefinition,
     number
 > {

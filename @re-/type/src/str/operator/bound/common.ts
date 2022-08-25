@@ -2,9 +2,11 @@ export * from "../common.js"
 import { Node } from "../common.js"
 import type { Comparator } from "./parse.js"
 
-export type BoundChecker = (y: number) => boolean
+export type boundChecker = (y: number) => boolean
 
-export const createBoundChecker = (token: Comparator, x: number) => {
+export type normalizedBound = [Comparator, number]
+
+export const createBoundChecker = ([token, x]: normalizedBound) => {
     switch (token) {
         case "<=":
             return (y: number) => y <= x
@@ -31,7 +33,7 @@ export type BoundableValue = number | string | unknown[]
 export const isBoundable = (node: Node.base): node is boundableNode =>
     "toBound" in node
 
-export type BoundValidationError = {
+export type boundValidationError = {
     comparator: Comparator
     limit: number
     actual: number

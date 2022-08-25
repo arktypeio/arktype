@@ -1,33 +1,44 @@
 import {
+    literalToNumber,
+    NumberLiteralDefinition
+} from "../../operand/index.js"
+import {
     boundableNode,
     BoundableValue,
-    BoundChecker,
-    BoundValidationError,
+    boundChecker,
+    boundValidationError,
     createBoundChecker,
-    Node
+    Node,
+    normalizedBound,
+    operator
 } from "./common.js"
 import { BoundableT, DoubleBoundComparator } from "./parse.js"
 
-export type DoubleBoundLeft = [number, DoubleBoundComparator]
-export type DoubleBoundRight = [DoubleBoundComparator, number]
+export type LowerBoundDefinition = [
+    NumberLiteralDefinition,
+    DoubleBoundComparator
+]
+export type UpperBoundDefinition = [
+    DoubleBoundComparator,
+    NumberLiteralDefinition
+]
 
 export type DoubleBoundNode<
     Bounded extends BoundableT = BoundableT,
-    LowerBound extends number = number,
-    LowerComparator extends DoubleBoundComparator = DoubleBoundComparator,
-    UpperComparator extends DoubleBoundComparator = DoubleBoundComparator,
-    UpperBound extends number = number
-> = [LowerBound, LowerComparator, Bounded, UpperComparator, UpperBound]
+    Lower extends LowerBoundDefinition = LowerBoundDefinition,
+    Upper extends UpperBoundDefinition = UpperBoundDefinition
+> = [Lower[0], Lower[1], Bounded, Upper[0], Upper[1]]
 
-export class doubleBoundNode extends Node.NonTerminal<boundableNode> {
-    checkLower: BoundChecker
-    checkUpper: BoundChecker
-    normalizedLeft: [">" | ">=", number]
+export class doubleBoundNode extends operator<boundableNode> {
+    lower: normalizedBound
+    upper: normalizedBound
+    checkLower: boundChecker
+    checkUpper: boundChecker
 
     constructor(
         child: boundableNode,
-        private left: DoubleBoundLeft,
-        private right: DoubleBoundRight,
+        private lowerDef: LowerBoundDefinition,
+        private upperDef: UpperBoundDefinition,
         ctx: Node.context
     ) {
         super(child, ctx)
@@ -37,20 +48,21 @@ export class doubleBoundNode extends Node.NonTerminal<boundableNode> {
          * number>=5
          * number<10
          */
-        const invertedLeftToken = this.left[1] === "<" ? ">" : ">="
-        this.normalizedLeft = [invertedLeftToken, this.left[0]]
-        this.checkLower = createBoundChecker(invertedLeftToken, this.left[0])
-        this.checkUpper = createBoundChecker(this.right[0], this.right[1])
+        const invertedLeftToken = lowerDef[1] === "<" ? ">" : ">="
+        this.lower = [invertedLeftToken, literalToNumber(this.lowerDef[0])]
+        this.upper = [upperDef[0], literalToNumber(upperDef[1])]
+        this.checkLower = createBoundChecker(this.lower)
+        this.checkUpper = createBoundChecker(this.upper)
     }
 
-    toString() {
-        return (
-            this.left[0] +
-            this.left[1] +
-            this.children.toString() +
-            this.right[0] +
-            this.right[1]
-        )
+    get tree() {
+        return [
+            this.lowerDef[0],
+            this.lowerDef[1],
+            this.children.tree,
+            this.upperDef[0],
+            this.upperDef[1]
+        ]
     }
 
     allows(args: Node.Allows.Args) {
@@ -59,9 +71,9 @@ export class doubleBoundNode extends Node.NonTerminal<boundableNode> {
         }
         const actual = this.children.toBound(args.value)
         if (!this.checkLower(actual)) {
-            const error: BoundValidationError = {
-                comparator: this.normalizedLeft[0],
-                limit: this.normalizedLeft[1],
+            const error: boundValidationError = {
+                comparator: this.lower[0],
+                limit: this.lower[1],
                 actual,
                 source: args.value as BoundableValue
             }
@@ -69,9 +81,9 @@ export class doubleBoundNode extends Node.NonTerminal<boundableNode> {
             return false
         }
         if (!this.checkUpper(actual)) {
-            const error: BoundValidationError = {
-                comparator: this.right[0],
-                limit: this.right[1],
+            const error: boundValidationError = {
+                comparator: this.upper[0],
+                limit: this.upper[1],
                 actual,
                 source: args.value as BoundableValue
             }
