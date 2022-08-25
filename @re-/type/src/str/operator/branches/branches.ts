@@ -43,11 +43,31 @@ export type MergeExpression<
     Expression
 > = B extends OpenBranch ? [...B, Expression] : Expression
 
-export const childrenToTree = (children: Node.base[], token: BranchToken) => {
-    // TODO: Make sure TS transpiles this to what we need
-    let tree: Node.ParseTree = children.at(-1)!.tree
-    for (let i = children.length - 2; i >= 0; i--) {
-        tree = [children[i].tree, token, tree]
+export abstract class branch extends Node.base {
+    constructor(protected children: Node.base[], protected ctx: Node.context) {
+        super()
     }
-    return tree as Node.ParseTree[]
+
+    abstract token: BranchToken
+
+    get tree() {
+        let tree = this.children[this.children.length - 1].tree
+        for (let i = this.children.length - 2; i >= 0; i--) {
+            tree = [this.children[i].tree, this.token, tree]
+        }
+        return tree as Operator.Tree
+    }
+
+    toString() {
+        return this.children.flatMap((_) => _.tree).join("")
+    }
+
+    collectReferences(
+        opts: Node.References.Options,
+        collected: Node.References.Collection
+    ) {
+        for (const child of this.children) {
+            child.collectReferences(opts, collected)
+        }
+    }
 }

@@ -4,16 +4,19 @@ import { stringifyValue } from "../utils.js"
 import type { Allows, Create, References } from "./traversal/index.js"
 
 export type context = TypeOptions & {
+    path: string[]
     space?: SpaceMeta
 }
 
 // Space is passed through an internal-only param, so we add
 // it to the provided options to create a context.
 export const initializeContext = (
-    options: context,
+    options: TypeOptions,
     space: SpaceMeta | undefined
 ) => {
-    options.space = space
+    const context = options as context
+    context.path = []
+    context.space = space
     return options
 }
 
@@ -23,8 +26,6 @@ export class parseError extends Error {}
 
 export type ParseError<Message extends string> = `!${Message}`
 
-export type ParseTree = string | ParseTree[] | { [K in string]: ParseTree }
-
 export abstract class base {
     abstract allows(args: Allows.Args): boolean
     abstract create(args: Create.Args): unknown
@@ -33,7 +34,7 @@ export abstract class base {
         opts: References.Options,
         collected: References.Collection
     ): void
-    abstract get tree(): ParseTree
+    abstract get tree(): unknown
     abstract toString(): string
 
     references(

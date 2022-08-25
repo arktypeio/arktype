@@ -1,5 +1,5 @@
 import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
-import { Node } from "./common.js"
+import { Node, strNode } from "../common.js"
 import { left, Left } from "./left.js"
 import { scanner } from "./scanner.js"
 import { SuffixToken } from "./tokens.js"
@@ -17,7 +17,7 @@ export class state<constraints extends Partial<left> = {}> {
         throw new Node.parseError(message)
     }
 
-    hasRoot<NodeClass extends ClassOf<Node.base> = ClassOf<Node.base>>(
+    hasRoot<NodeClass extends ClassOf<strNode> = ClassOf<strNode>>(
         ofClass?: NodeClass
     ): this is state<{ root: InstanceOf<NodeClass> }> {
         return ofClass ? this.l.root instanceof ofClass : !!this.l.root
@@ -51,7 +51,7 @@ export namespace state {
         left.suffix<Constraints>
     >
 
-    export type withRoot<Root extends Node.base = Node.base> = state<
+    export type withRoot<Root extends strNode = strNode> = state<
         left.withRoot<Root>
     >
 }

@@ -1,11 +1,11 @@
+import { Node, strNode } from "../common.js"
 import type { Operator } from "../operator/index.js"
-import { Node } from "./common.js"
 import { SuffixToken } from "./tokens.js"
 
 type base = {
     groups: Operator.branches[]
     branches: Operator.branches
-    root?: Node.base
+    root?: strNode
     lowerBound?: Operator.Bound.LowerBoundDefinition
     nextSuffix?: SuffixToken
 }
@@ -28,18 +28,18 @@ export namespace left {
         branches: {}
     }
 
-    export type withRoot<Root extends Node.base = Node.base> = {
+    export type withRoot<Root extends strNode = strNode> = {
         root: Root
     }
 
     export type suffixable = {
-        root: Node.base
+        root: strNode
         nextSuffix: SuffixToken
     }
 
     type baseSuffix = {
         lowerBound?: Operator.Bound.LowerBoundDefinition
-        root: Node.base
+        root: strNode
         nextSuffix: SuffixToken
     }
 

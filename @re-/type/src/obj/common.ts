@@ -2,28 +2,50 @@ export * from "../node/index.js"
 export * as Utils from "../utils.js"
 import { Node } from "../node/index.js"
 import { Root } from "../root.js"
-import * as Utils from "../utils.js"
 
 export type ChildEntry<KeyType> = [KeyType, Node.base]
 
-export abstract class obj extends Node.nonTerminal<Node.base[]> {
+export abstract class obj extends Node.base {
     entries: ChildEntry<string>[]
 
-    constructor(private def: object, ctx: Node.context) {
-        const children: Node.base[] = []
+    constructor(private def: object, private ctx: Node.context) {
+        super()
         const entries = Object.entries(def).map(
-            ([k, childDef]): ChildEntry<string> => {
-                const propNode = Root.parse(childDef, ctx)
-                children.push(propNode)
-                return [k, propNode]
-            }
+            ([k, childDef]): ChildEntry<string> => [
+                k,
+                Root.parse(childDef, { ...ctx, path: [...ctx.path, k] })
+            ]
         )
-        super(children, ctx)
         this.entries = entries
     }
 
     toString() {
-        return Utils.defToString(this.def)
+        const isArray = Array.isArray(this.def)
+        const indentation = "    ".repeat(this.ctx.path.length)
+        const nestedIndentation = indentation + "    "
+        let result = isArray ? "[" : "{"
+        for (let i = 0; i < this.entries.length; i++) {
+            result += "\n" + nestedIndentation
+            if (!isArray) {
+                result += this.entries[i][0] + ": "
+            }
+            result += this.entries[i][1].toString()
+            if (i !== this.entries.length - 1) {
+                result += ","
+            } else {
+                result += "\n"
+            }
+        }
+        return result + indentation + (isArray ? "]" : "}")
+    }
+
+    collectReferences(
+        opts: Node.References.Options<string, boolean>,
+        collected: Node.References.Collection
+    ) {
+        for (const entry of this.entries) {
+            entry[1].collectReferences(opts, collected)
+        }
     }
 
     override references(opts: Node.References.Options) {

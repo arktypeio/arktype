@@ -1,5 +1,5 @@
 export * from "../common.js"
-import { Node } from "../common.js"
+import { strNode } from "../common.js"
 import type { Comparator } from "./parse.js"
 
 export type boundChecker = (y: number) => boolean
@@ -23,14 +23,14 @@ export const createBoundChecker = ([token, x]: normalizedBound) => {
     }
 }
 
-export interface boundableNode extends Node.base {
+export interface boundableNode extends strNode {
     boundBy?: string
     toBound(value: unknown): number
 }
 
 export type BoundableValue = number | string | unknown[]
 
-export const isBoundable = (node: Node.base): node is boundableNode =>
+export const isBoundable = (node: strNode): node is boundableNode =>
     "toBound" in node
 
 export type boundValidationError = {

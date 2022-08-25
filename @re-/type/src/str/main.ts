@@ -1,4 +1,4 @@
-import { Node, Parser } from "./common.js"
+import { Node, Parser, strNode } from "./common.js"
 import { ParseOperand, parseOperand } from "./operand/index.js"
 import { Operator } from "./operator/index.js"
 
@@ -10,7 +10,7 @@ export type Parse<Def extends string, Dict> = Loop<
     Dict
 >
 
-const loop = (s: Parser.state, ctx: Node.context): Node.base => {
+const loop = (s: Parser.state, ctx: Node.context): strNode => {
     while (!s.isSuffixable()) {
         next(s, ctx)
     }
@@ -58,7 +58,7 @@ export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
 export const suffixLoop = (
     s: Parser.state.suffix,
     ctx: Node.context
-): Node.base => {
+): strNode => {
     if (s.l.nextSuffix === "END") {
         return s.l.root
     }

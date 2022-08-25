@@ -1,5 +1,5 @@
 import { boundableNode } from "./bound/index.js"
-import { Node, operator, Parser, Utils } from "./common.js"
+import { link, Node, Parser, Utils } from "./common.js"
 
 export const parseList = (
     s: Parser.state<Parser.left.withRoot>,
@@ -29,9 +29,9 @@ type IncompleteTokenMessage = typeof incompleteTokenMessage
 
 export type List<Child = unknown> = [Child, "[]"]
 
-export class list extends operator implements boundableNode {
+export class list extends link implements boundableNode {
     get tree() {
-        return [this.children.tree, "[]"]
+        return [this.child.tree, "[]"]
     }
 
     allows(args: Node.Allows.Args) {
@@ -42,7 +42,7 @@ export class list extends operator implements boundableNode {
         let allItemsAllowed = true
         let itemIndex = 0
         for (const itemValue of args.value) {
-            const itemIsAllowed = this.children.allows({
+            const itemIsAllowed = this.child.allows({
                 ...args,
                 value: itemValue,
                 ctx: {

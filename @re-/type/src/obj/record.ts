@@ -33,9 +33,11 @@ export const isArgValueRecordLike = (
 
 export class RecordNode extends obj {
     get tree() {
-        return Object.fromEntries(
-            this.entries.map(([prop, propNode]) => [prop, propNode.tree])
-        )
+        const result: Record<string, unknown> = {}
+        for (const [prop, propNode] of this.entries) {
+            result[prop] = propNode.tree
+        }
+        return result
     }
 
     allows(args: Node.Allows.Args) {

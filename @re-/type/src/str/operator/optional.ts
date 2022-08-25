@@ -1,4 +1,4 @@
-import { Node, Operator, operator, Parser } from "./common.js"
+import { link, Node, Operator, Parser } from "./common.js"
 
 export type ParseOptional<S extends Parser.State> = S["R"] extends ""
     ? Parser.State.From<{
@@ -23,16 +23,16 @@ type NonTerminatingOptionalMessage = typeof nonTerminatingOptionalMessage
 
 export type Optional<Child = unknown> = [Child, "?"]
 
-export class optional extends operator {
+export class optional extends link {
     get tree() {
-        return [this.children.tree, "?"]
+        return [this.child.tree, "?"]
     }
 
     allows(args: Node.Allows.Args) {
         if (args.value === undefined) {
             return true
         }
-        return this.children.allows(args)
+        return this.child.allows(args)
     }
 
     create() {

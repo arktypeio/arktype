@@ -13,7 +13,7 @@ export class TupleNode extends obj {
     }
 
     get tree() {
-        return this.children.map((_) => _.tree)
+        return this.entries.map(([, itemNode]) => itemNode.tree)
     }
 
     allows(args: Node.Allows.Args) {
@@ -21,10 +21,10 @@ export class TupleNode extends obj {
             this.addUnassignable(args)
             return false
         }
-        if (this.children.length !== args.value.length) {
+        if (this.entries.length !== args.value.length) {
             args.errors.add(
                 args.ctx.path,
-                lengthError(this.children, args.value)
+                lengthError(this.entries, args.value)
             )
             return false
         }

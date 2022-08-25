@@ -8,9 +8,9 @@ import {
     boundChecker,
     boundValidationError,
     createBoundChecker,
+    link,
     Node,
-    normalizedBound,
-    operator
+    normalizedBound
 } from "./common.js"
 import { BoundableT, DoubleBoundComparator } from "./parse.js"
 
@@ -29,7 +29,7 @@ export type DoubleBoundNode<
     Upper extends UpperBoundDefinition = UpperBoundDefinition
 > = [Lower[0], Lower[1], Bounded, Upper[0], Upper[1]]
 
-export class doubleBoundNode extends operator<boundableNode> {
+export class doubleBoundNode extends link<boundableNode> {
     lower: normalizedBound
     upper: normalizedBound
     checkLower: boundChecker
@@ -59,17 +59,17 @@ export class doubleBoundNode extends operator<boundableNode> {
         return [
             this.lowerDef[0],
             this.lowerDef[1],
-            this.children.tree,
+            this.child.tree,
             this.upperDef[0],
             this.upperDef[1]
         ]
     }
 
     allows(args: Node.Allows.Args) {
-        if (!this.children.allows(args)) {
+        if (!this.child.allows(args)) {
             return false
         }
-        const actual = this.children.toBound(args.value)
+        const actual = this.child.toBound(args.value)
         if (!this.checkLower(actual)) {
             const error: boundValidationError = {
                 comparator: this.lower[0],

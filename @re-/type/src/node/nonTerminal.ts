@@ -1,4 +1,4 @@
-import { base, context, ParseTree } from "./base.js"
+import { base, context } from "./base.js"
 import { References } from "./traversal/index.js"
 
 export type parseChildren = base | base[]

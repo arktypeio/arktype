@@ -8,9 +8,9 @@ import {
     boundChecker,
     boundValidationError,
     createBoundChecker,
+    link,
     Node,
-    normalizedBound,
-    operator
+    normalizedBound
 } from "./common.js"
 import { Comparator } from "./parse.js"
 
@@ -22,7 +22,7 @@ export type SingleBoundNode<
     Value extends number = number
 > = [Child, Token, Value]
 
-export class singleBoundNode extends operator<boundableNode> {
+export class singleBoundNode extends link<boundableNode> {
     bound: normalizedBound
     checkBound: boundChecker
 
@@ -37,15 +37,15 @@ export class singleBoundNode extends operator<boundableNode> {
     }
 
     get tree() {
-        return [this.children.tree, this.boundDef[0], this.boundDef[1]]
+        return [this.child.tree, this.boundDef[0], this.boundDef[1]]
     }
 
     allows(args: Node.Allows.Args) {
         // TODO update name of children to not be plural
-        if (!this.children.allows(args)) {
+        if (!this.child.allows(args)) {
             return false
         }
-        const actual = this.children.toBound(args.value)
+        const actual = this.child.toBound(args.value)
         if (!this.checkBound(actual)) {
             const error: boundValidationError = {
                 comparator: this.bound[0],
