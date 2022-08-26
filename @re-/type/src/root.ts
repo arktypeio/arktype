@@ -9,8 +9,10 @@ export namespace Root {
         ? BadDefinitionTypeMessage
         : Obj.Validate<Def, Dict>
 
+    export type StrRoot<Node> = { $str: Node }
+
     export type Parse<Def, Dict> = Def extends string
-        ? Str.Parse<Def, Dict>
+        ? StrRoot<Str.Parse<Def, Dict>>
         : Obj.Parse<Def, Dict>
 
     export type Infer<
@@ -18,15 +20,15 @@ export namespace Root {
         Ctx extends Node.InferenceContext
     > = unknown extends Tree
         ? Tree
-        : Tree extends string | unknown[]
-        ? Str.Infer<Tree, Ctx>
+        : Tree extends StrRoot<infer Root>
+        ? Str.Infer<Root, Ctx>
         : Obj.Infer<Tree, Ctx>
 
     export type References<
         Tree,
         PreserveStructure extends boolean
-    > = Tree extends string | unknown[]
-        ? Str.References<Tree>
+    > = Tree extends StrRoot<infer Root>
+        ? Str.References<Root>
         : Obj.References<Tree, PreserveStructure>
 
     export type BadDefinitionType =

@@ -8,20 +8,16 @@ export type Validate<Def, Dict> = {
     [K in keyof Def]: Root.Validate<Def[K], Dict>
 }
 
-export type Parse<Def, Dict> = Def extends readonly unknown[] | unknown[]
-    ? {
-          readonly [I in keyof Def]: Root.Parse<Def[I], Dict>
-      }
-    : {
-          [K in keyof Def]: Root.Parse<Def[K], Dict>
-      }
+export type Parse<Def, Dict> = {
+    [K in keyof Def]: Root.Parse<Def[K], Dict>
+}
 
 export type Infer<
     Tree,
     Ctx extends Node.InferenceContext
 > = Tree extends readonly unknown[]
     ? Evaluate<{
-          -readonly [I in keyof Tree]: Root.Infer<Tree[I], Ctx>
+          [I in keyof Tree]: Root.Infer<Tree[I], Ctx>
       }>
     : Record.Infer<Tree, Ctx>
 

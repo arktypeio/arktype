@@ -31,6 +31,7 @@ export namespace Alias {
         Ctx["Space"]["Meta"]["onResolve"],
         {
             Space: {
+                Dict: Ctx["Space"]["Dict"]
                 Resolutions: WithPropValue<
                     Ctx["Space"]["Resolutions"],
                     "$resolution",
@@ -49,6 +50,7 @@ export namespace Alias {
         Ctx["Space"]["Meta"]["onCycle"],
         {
             Space: {
+                Dict: Ctx["Space"]["Dict"]
                 Resolutions: WithPropValue<
                     Ctx["Space"]["Resolutions"],
                     "$cyclic",

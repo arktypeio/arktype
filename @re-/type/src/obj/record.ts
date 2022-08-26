@@ -10,14 +10,16 @@ export namespace Record {
         Tree,
         Ctx extends Node.InferenceContext,
         OptionalKey extends keyof Tree = {
-            [K in keyof Tree]: Tree[K] extends [unknown, "?"] ? K : never
+            [K in keyof Tree]: Tree[K] extends Root.StrRoot<[unknown, "?"]>
+                ? K
+                : never
         }[keyof Tree],
         RequiredKey extends keyof Tree = Exclude<keyof Tree, OptionalKey>
     > = Evaluate<
         {
-            -readonly [K in RequiredKey]: Root.Infer<Tree[K], Ctx>
+            [K in RequiredKey]: Root.Infer<Tree[K], Ctx>
         } & {
-            -readonly [K in OptionalKey]?: Root.Infer<Tree[K], Ctx>
+            [K in OptionalKey]?: Root.Infer<Tree[K], Ctx>
         }
     >
 }

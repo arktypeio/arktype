@@ -100,6 +100,7 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 }
 
 export type Space = {
+    Dict: unknown
     Resolutions: unknown
     Meta: MetaDefinitions
 }
@@ -138,6 +139,7 @@ export type Parse<Dict> = {
 }
 
 export type ToSpace<Dict, Meta> = {
+    Dict: Dict
     Resolutions: Parse<Dict>
     Meta: ParseMetaDefs<Meta, Dict>
 }
@@ -151,8 +153,8 @@ export type SpaceOutput<S extends Space> = Evaluate<
 export type SpaceMetaFrom<S extends Space> = {
     infer: InferSpaceRoot<S>
     type: TypeFunction<S>
-    extend: ExtendFunction<S["Resolutions"]>
-    dictionary: S["Resolutions"]
+    extend: ExtendFunction<S>
+    dictionary: S["Dict"]
     options: SpaceOptions
 }
 
@@ -181,14 +183,15 @@ export type MetaDefinitions = {
     onResolve?: unknown
 }
 
-export type ExtendFunction<BaseDict> = <ExtensionDict>(
-    dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
-    options?: SpaceOptions
-) => SpaceOutput<{
-    Resolutions: Parse<Merge<BaseDict, ExtensionDict>>
-    // TODO: Fix
-    Meta: {}
-}>
+export type ExtendFunction<S extends Space> = <ExtensionDict, ExtensionMeta>(
+    dictionary: ValidateDictionaryExtension<S["Dict"], ExtensionDict>,
+    options?: ValidateSpaceOptions<
+        Merge<S["Dict"], ExtensionDict>,
+        ExtensionMeta
+    >
+) => SpaceOutput<
+    ToSpace<Merge<S["Dict"], ExtensionDict>, Merge<S["Meta"], ExtensionMeta>>
+>
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
     [TypeName in keyof ExtensionDict]: Validate<

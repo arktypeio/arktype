@@ -24,9 +24,9 @@ export type TypeOptions = {
     create?: Node.Create.Options
 }
 
-export type TypeFunction<S extends Space = { Resolutions: {}; Meta: {} }> = <
-    Def
->(
+export type TypeFunction<
+    S extends Space = { Dict: {}; Resolutions: {}; Meta: {} }
+> = <Def>(
     definition: Root.Validate<Def, S["Resolutions"]>,
     options?: TypeOptions
 ) => TypeFrom<

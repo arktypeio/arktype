@@ -1,4 +1,5 @@
 import { assert } from "@re-/assert"
+import { narrow } from "@re-/tools"
 import { describe, test } from "mocha"
 import { space } from "../../index.js"
 
@@ -119,7 +120,7 @@ describe("validation", () => {
   c/8: {isA: "the duck goes quack"} is not assignable to any of a|b.
 `)
     })
-    const recursiveDict = { dejaVu: { dejaVu: "dejaVu?" } } as const
+    const recursiveDict = narrow({ dejaVu: { dejaVu: "dejaVu?" } })
     test("validates recursive objects", () => {
         const recursive = space(recursiveDict)
         type DejaVu = typeof recursive.$root.infer.dejaVu
