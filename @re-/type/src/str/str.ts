@@ -14,6 +14,8 @@ export namespace Str {
         ? Message
         : Def
 
+    export type Root<Node> = { $str: Node }
+
     export type Infer<T, Ctx extends Node.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>
         : T extends Operator.Optional

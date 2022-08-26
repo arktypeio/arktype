@@ -1,6 +1,7 @@
 import { Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { optional } from "../str/operator/optional.js"
+import { Str } from "../str/str.js"
 import { Node, obj, Utils } from "./common.js"
 
 export namespace Record {
@@ -10,7 +11,7 @@ export namespace Record {
         Tree,
         Ctx extends Node.InferenceContext,
         OptionalKey extends keyof Tree = {
-            [K in keyof Tree]: Tree[K] extends Root.StrRoot<[unknown, "?"]>
+            [K in keyof Tree]: Tree[K] extends Str.Root<[unknown, "?"]>
                 ? K
                 : never
         }[keyof Tree],

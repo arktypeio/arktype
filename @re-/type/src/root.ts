@@ -9,26 +9,22 @@ export namespace Root {
         ? BadDefinitionTypeMessage
         : Obj.Validate<Def, Dict>
 
-    export type StrRoot<Node> = { $str: Node }
-
     export type Parse<Def, Dict> = Def extends string
-        ? StrRoot<Str.Parse<Def, Dict>>
+        ? Str.Root<Str.Parse<Def, Dict>>
         : Obj.Parse<Def, Dict>
 
     export type Infer<
         Tree,
         Ctx extends Node.InferenceContext
-    > = unknown extends Tree
-        ? Tree
-        : Tree extends StrRoot<infer Root>
-        ? Str.Infer<Root, Ctx>
+    > = Tree extends Str.Root<infer Node>
+        ? Str.Infer<Node, Ctx>
         : Obj.Infer<Tree, Ctx>
 
     export type References<
         Tree,
         PreserveStructure extends boolean
-    > = Tree extends StrRoot<infer Root>
-        ? Str.References<Root>
+    > = Tree extends Str.Root<infer Node>
+        ? Str.References<Node>
         : Obj.References<Tree, PreserveStructure>
 
     export type BadDefinitionType =
@@ -40,9 +36,10 @@ export namespace Root {
         | Function
         | symbol
 
-    const BAD_DEF_TYPE_MESSAGE = "Type definitions must be strings or objects"
+    const badDefinitionTypeMessage =
+        "Type definitions must be strings or objects."
 
-    type BadDefinitionTypeMessage = typeof BAD_DEF_TYPE_MESSAGE
+    type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
 
     export const parse: Node.parseFn<unknown> = (def, ctx) => {
         if (typeof def === "string") {
@@ -52,7 +49,7 @@ export namespace Root {
             return Obj.parse(def, ctx)
         }
         throw new Node.parseError(
-            BAD_DEF_TYPE_MESSAGE + ` (got ${typeof def}).`
+            badDefinitionTypeMessage + ` (got ${typeof def}).`
         )
     }
 }
