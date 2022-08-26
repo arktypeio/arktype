@@ -1,36 +1,19 @@
-src/__tests__/parse.bench.ts(122,7): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: { dejaVu: ... | undefined; } | undefined; }'.
-src/__tests__/parse.bench.ts(126,24): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ dejaVu: ... | undefined; }'.
-src/__tests__/parse.bench.ts(127,5): error TS2322: Type '{ dejaVu: ... | undefined; } | undefined' is not assignable to type '{ dejaVu: { dejaVu: ... | undefined; } | undefined; }'.
-  Type 'undefined' is not assignable to type '{ dejaVu: { dejaVu: ... | undefined; } | undefined; }'.
-src/__tests__/space/creation.test.ts(27,13): error TS2741: Property 'description' is missing in type '{ length: number; }' but required in type '{ length: number; description: string | undefined; }'.
-src/__tests__/space/creation.test.ts(29,13): error TS2322: Type '{ length: number; }' is not assignable to type '{ length: number; description: string | undefined; } | { type: string; circumference: number; }'.
-  Property 'description' is missing in type '{ length: number; }' but required in type '{ length: number; description: string | undefined; }'.
-src/__tests__/space/creation.test.ts(42,20): error TS2741: Property 'c' is missing in type '{}' but required in type '{ c: { b: { c: ... | { c: ... | { b: ...; } | undefined; } | undefined; }; } | { c: ... | { b: ...; } | undefined; } | undefined; }'.
-src/__tests__/space/creation.test.ts(98,13): error TS2741: Property 'description' is missing in type '{ name: string; }' but required in type '{ description: string | undefined; name: string; }'.
-src/__tests__/space/extend.test.ts(36,22): error TS2322: Type 'string' is not assignable to type 'StrRoot<"boolean">'.
-src/__tests__/space/extend.test.ts(37,21): error TS2322: Type 'string' is not assignable to type 'StrRoot<"string">'.
-src/__tests__/space/extend.test.ts(37,38): error TS2322: Type 'string' is not assignable to type 'StrRoot<"string">'.
-src/__tests__/space/validation.test.ts(126,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ readonly dejaVu: { readonly dejaVu: ... | undefined; } | undefined; }'.
-src/__tests__/space/validation.test.ts(127,16): error TS2540: Cannot assign to 'dejaVu' because it is a read-only property.
-src/__tests__/space/validation.test.ts(132,15): error TS2741: Property 'dejaVu' is missing in type '{}' but required in type '{ readonly dejaVu: { readonly dejaVu: ... | undefined; } | undefined; }'.
-src/__tests__/space/validation.test.ts(136,21): error TS2540: Cannot assign to 'dejaVu' because it is a read-only property.
-src/__tests__/space/validation.test.ts(137,13): error TS2322: Type '{ readonly dejaVu: ... | undefined; } | undefined' is not assignable to type '{ readonly dejaVu: { readonly dejaVu: ... | undefined; } | undefined; }'.
-  Type 'undefined' is not assignable to type '{ readonly dejaVu: { readonly dejaVu: ... | undefined; } | undefined; }'.
-src/__tests__/space/validation.test.ts(141,17): error TS2540: Cannot assign to 'dejaVu' because it is a read-only property.
-src/str/operator/__tests__/optional.test.ts(90,22): error TS2345: Argument of type '{ required: string; }' is not assignable to parameter of type '{ optional: string | undefined; required: string; }'.
-  Property 'optional' is missing in type '{ required: string; }' but required in type '{ optional: string | undefined; required: string; }'.
+
+> @re-/type@2.0.5-alpha diag /home/ssalb/re-po/@re-/type
+> tsc --composite false --noEmit --diagnostics --incremental false
+
 Files:              253
-Lines:            66111
-Nodes:           183273
-Identifiers:      62546
-Symbols:         126229
-Types:            71349
-Instantiations:  342576
-Memory used:    174698K
+Lines:            66119
+Nodes:           183340
+Identifiers:      62566
+Symbols:         126280
+Types:            70744
+Instantiations:  340708
+Memory used:    168971K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.46s
-Bind time:        0.16s
-Check time:       1.71s
+Parse time:       0.45s
+Bind time:        0.14s
+Check time:       1.42s
 Emit time:        0.00s
-Total time:       2.33s
+Total time:       2.01s

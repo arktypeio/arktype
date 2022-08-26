@@ -33,7 +33,7 @@
         "benchBound": "ts-node ./src/nodes/nonTerminal/__tests__/bound.bench.ts",
         "benchCyclic": "ts-node ./src/__tests__/space/cyclic.bench.ts",
         "diag": "tsc --composite false --noEmit --diagnostics --incremental false",
-        "updateDiag": "pnpm diag > diag.txt"
+        "diagUp": "pnpm diag > diag.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
