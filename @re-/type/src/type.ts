@@ -112,26 +112,26 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
 
 export type AssertOptions = Node.Allows.Options
 
-export type ValidateFunction<TypeedType> = (
+export type ValidateFunction<Inferred> = (
     value: unknown,
     options?: Node.Allows.Options
-) => ValidationResult<TypeedType>
+) => ValidationResult<Inferred>
 
-export type ValidationResult<TypeedType> = MutuallyExclusiveProps<
-    { data: TypeedType },
+export type ValidationResult<Inferred> = MutuallyExclusiveProps<
+    { data: Inferred },
     {
         error: Node.Allows.ValidationError
     }
 >
 
-export type AssertFunction<InferredType> = (
+export type AssertFunction<Inferred> = (
     value: unknown,
     options?: Node.Allows.Options
-) => InferredType
+) => Inferred
 
-export type CreateFunction<InferredType> = (
+export type CreateFunction<Inferred> = (
     options?: Node.Create.Options
-) => InferredType
+) => Inferred
 
 export type ReferencesFunction<Tree> = <
     Options extends Node.References.Options = {}
