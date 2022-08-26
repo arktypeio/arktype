@@ -1,23 +1,15 @@
-src/node/exports.ts(2,15): error TS2307: Cannot find module './nonTerminal.js' or its corresponding type declarations.
-src/node/exports.ts(3,15): error TS2307: Cannot find module './terminal.js' or its corresponding type declarations.
-src/space.ts(30,47): error TS2339: Property 'def' does not exist on type 'ResolutionNode'.
-src/str/operand/enclosed/enclosed.ts(39,9): error TS2322: Type 'RegexLiteralNode' is not assignable to type 'strNode'.
-  Type 'RegexLiteralNode' is missing the following properties from type 'base': collectReferences, tree, references, addUnassignable
-src/str/operand/enclosed/regexLiteral.ts(5,44): error TS2339: Property 'terminalNode' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/node/exports", { assert: { "resolution-mode": "import" } })'.
-src/str/operand/enclosed/regexLiteral.ts(28,53): error TS2339: Property 'def' does not exist on type 'RegexLiteralNode'.
-src/str/operand/enclosed/regexLiteral.ts(37,18): error TS2339: Property 'def' does not exist on type 'RegexLiteralNode'.
 Files:              253
-Lines:            66161
-Nodes:           183601
-Identifiers:      62648
-Symbols:         130516
-Types:            70634
-Instantiations:  348139
-Memory used:    172058K
+Lines:            66163
+Nodes:           183539
+Identifiers:      62620
+Symbols:         135453
+Types:            76738
+Instantiations:  347695
+Memory used:    173405K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.45s
-Bind time:        0.15s
-Check time:       1.63s
+Parse time:       0.39s
+Bind time:        0.13s
+Check time:       1.60s
 Emit time:        0.00s
-Total time:       2.23s
+Total time:       2.12s

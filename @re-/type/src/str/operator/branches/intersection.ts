@@ -39,11 +39,7 @@ export const mergeIntersection = (s: StateWithMergeableIntersection) => {
     return s
 }
 
-export type Intersection<Left = undefined, Right = undefined> = [
-    Left,
-    "&",
-    Right
-]
+export type Intersection = [unknown, "&", unknown]
 
 export class intersection extends branch {
     addMember(node: strNode) {

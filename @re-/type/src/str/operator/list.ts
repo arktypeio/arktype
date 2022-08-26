@@ -27,7 +27,7 @@ const incompleteTokenMessage = `Missing expected ']'.`
 
 type IncompleteTokenMessage = typeof incompleteTokenMessage
 
-export type List<Child = unknown> = [Child, "[]"]
+export type List = [unknown, "[]"]
 
 export class list extends link implements boundableNode {
     get tree() {

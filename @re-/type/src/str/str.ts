@@ -16,18 +16,18 @@ export namespace Str {
 
     export type Infer<T, Ctx extends Node.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>
-        : T extends [infer Child, "?"]
-        ? Infer<Child, Ctx> | undefined
-        : T extends [infer Child, "[]"]
-        ? Infer<Child, Ctx>[]
-        : T extends [infer Left, "|", infer Right]
-        ? Infer<Left, Ctx> | Infer<Right, Ctx>
-        : T extends [infer Left, "&", infer Right]
-        ? Infer<Left, Ctx> & Infer<Right, Ctx>
-        : T extends Operator.Bound.SingleBoundNode<infer Bounded>
-        ? Infer<Bounded, Ctx>
-        : T extends Operator.Bound.DoubleBoundNode<infer Bounded>
-        ? Infer<Bounded, Ctx>
+        : T extends Operator.Optional
+        ? Infer<T[0], Ctx> | undefined
+        : T extends Operator.List
+        ? Infer<T[0], Ctx>[]
+        : T extends Operator.Union
+        ? Infer<T[0], Ctx> | Infer<T[2], Ctx>
+        : T extends Operator.Intersection
+        ? Infer<T[0], Ctx> & Infer<T[2], Ctx>
+        : T extends Operator.Bound.SingleBoundNode
+        ? Infer<T[0], Ctx>
+        : T extends Operator.Bound.DoubleBoundNode
+        ? Infer<T[2], Ctx>
         : never
 
     type ModifierNode<Child = unknown, Token = string> = [Child, Token]
@@ -41,11 +41,11 @@ export namespace Str {
     export type References<T> = T extends ModifierNode<infer Child>
         ? References<Child>
         : T extends BranchNode<infer Left, infer Right>
-        ? [...References<Right>, ...References<Left>]
-        : T extends Operator.Bound.SingleBoundNode<infer Bounded>
-        ? References<Bounded>
-        : T extends Operator.Bound.DoubleBoundNode<infer Bounded>
-        ? References<Bounded>
+        ? [...References<Left>, ...References<Right>]
+        : T extends Operator.Bound.SingleBoundNode
+        ? References<T[0]>
+        : T extends Operator.Bound.DoubleBoundNode
+        ? References<T[2]>
         : [T]
 
     export const parse: Node.parseFn<string> = (def, ctx) =>

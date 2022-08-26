@@ -21,7 +21,7 @@ export const finalizeOptional = (s: Operator.state, ctx: Node.context) => {
 const nonTerminatingOptionalMessage = `Suffix '?' is only valid at the end of a definition.`
 type NonTerminatingOptionalMessage = typeof nonTerminatingOptionalMessage
 
-export type Optional<Child = unknown> = [Child, "?"]
+export type Optional = [unknown, "?"]
 
 export class optional extends link {
     get tree() {

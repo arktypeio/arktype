@@ -16,11 +16,7 @@ import { Comparator } from "./parse.js"
 
 export type SingleBoundDefinition = [Comparator, NumberLiteralDefinition]
 
-export type SingleBoundNode<
-    Child = unknown,
-    Token extends Comparator = Comparator,
-    Value extends number = number
-> = [Child, Token, Value]
+export type SingleBoundNode = [unknown, Comparator, NumberLiteralDefinition]
 
 export class singleBoundNode extends link<boundableNode> {
     bound: normalizedBound

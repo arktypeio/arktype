@@ -14,7 +14,6 @@ import {
     Parser
 } from "./common.js"
 import {
-    DoubleBoundNode,
     doubleBoundNode,
     LowerBoundDefinition,
     UpperBoundDefinition
@@ -239,7 +238,7 @@ type ReduceDouble<
 > = Right extends UpperBoundDefinition
     ? Parser.Left.SuffixFrom<{
           lowerBound: undefined
-          root: DoubleBoundNode<L["root"], L["lowerBound"], Right>
+          root: [...L["lowerBound"], L["root"], ...Right]
           nextSuffix: NextSuffix
       }>
     : Parser.Left.Error<InvalidDoubleBoundMessage<Right[0]>>
