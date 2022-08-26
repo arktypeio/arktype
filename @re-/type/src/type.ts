@@ -47,7 +47,7 @@ export type TypeFrom<Def, Tree, Inferred> = Evaluate<{
     validate: ValidateFunction<Inferred>
     assert: AssertFunction<Inferred>
     default: Inferred
-    tree: Tree
+    tree: Evaluate<Tree>
     create: CreateFunction<Inferred>
     references: ReferencesFunction<Tree>
 }>

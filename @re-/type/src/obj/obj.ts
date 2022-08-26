@@ -8,9 +8,9 @@ export type Validate<Def, Dict> = {
     [K in keyof Def]: Root.Validate<Def[K], Dict>
 }
 
-export type Parse<Def, Dict> = {
+export type Parse<Def, Dict> = Evaluate<{
     [K in keyof Def]: Root.Parse<Def[K], Dict>
-}
+}>
 
 export type Infer<
     Tree,
