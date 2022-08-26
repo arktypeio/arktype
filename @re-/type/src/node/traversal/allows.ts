@@ -1,5 +1,5 @@
 import { isDigits, uncapitalize } from "@re-/tools"
-import { defToString, stringifyValue } from "../../utils.js"
+import { stringifyValue } from "../../utils.js"
 import type { base } from "../base.js"
 import * as Traverse from "./traverse.js"
 
@@ -53,9 +53,6 @@ export class ValidationError extends Error {
         this.paths = errors.all()
     }
 }
-
-export const buildUnassignableErrorMessage = (def: unknown, value: unknown) =>
-    `${stringifyValue(value)} is not assignable to ${defToString(def)}.`
 
 export const customValidatorAllows = (
     validator: CustomValidator,
