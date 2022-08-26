@@ -25,27 +25,45 @@ export namespace ResolutionType {
     >
 }
 
-export class ResolutionNode extends Node.nonTerminal {
-    def: unknown
+export class ResolutionNode extends Node.base {
+    public root: Node.base
+    public rootDef: unknown
+    private ctx: Node.context
 
     constructor(public alias: string, space: SpaceMeta) {
+        super()
         // If this is the first time we've seen the alias,
         // create a Node that will be used for future resolutions.
         const defAndOptions = getResolutionDefAndOptions(
             space.dictionary[alias]
         )
-        const ctx = Node.initializeContext(
+        this.ctx = Node.initializeContext(
             defAndOptions.options
                 ? deepMerge(space.options, defAndOptions.options)
                 : space.options,
             space
         )
-        super(Root.parse(defAndOptions.def, ctx), ctx)
-        this.def = defAndOptions.def
+        this.root = Root.parse(defAndOptions.def, this.ctx)
+        this.rootDef = defAndOptions.def
+    }
+
+    get tree() {
+        return this.root.tree
     }
 
     toString() {
-        return this.alias
+        return this.root.toString()
+    }
+
+    collectReferences(
+        opts: Node.References.Options<string, boolean>,
+        collected: Node.References.Collection
+    ) {
+        this.root.collectReferences(opts, collected)
+    }
+
+    references(opts: Node.References.Options<string, boolean>) {
+        return this.root.references(opts)
     }
 
     allows(args: Node.Allows.Args): boolean {
@@ -74,7 +92,7 @@ export class ResolutionNode extends Node.nonTerminal {
                 nextArgs
             )
         }
-        return this.children.allows(nextArgs)
+        return this.root.allows(nextArgs)
     }
 
     create(args: Node.Create.Args) {
@@ -88,7 +106,7 @@ export class ResolutionNode extends Node.nonTerminal {
             }
             throw new Node.Create.RequiredCycleError(this.alias, args.ctx.seen)
         }
-        return this.children.create(nextArgs)
+        return this.root.create(nextArgs)
     }
 
     private nextArgs<

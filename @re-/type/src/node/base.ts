@@ -17,7 +17,7 @@ export const initializeContext = (
     const context = options as context
     context.path = []
     context.space = space
-    return options
+    return context
 }
 
 export type parseFn<DefType = unknown> = (def: DefType, ctx: context) => base
