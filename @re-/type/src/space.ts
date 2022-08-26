@@ -27,7 +27,7 @@ export const rawSpace = (
     for (const alias of Object.keys(dictionary)) {
         const resolution = new ResolutionNode(alias, meta)
         meta.resolutions[alias] = resolution
-        compiled[alias] = new Type(resolution.def, resolution)
+        compiled[alias] = new Type(resolution.root, resolution)
     }
     return compiled as RawSpace
 }

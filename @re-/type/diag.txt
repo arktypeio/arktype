@@ -1,18 +1,23 @@
-src/obj/record.ts(34,14): error TS2515: Non-abstract class 'RecordNode' does not implement inherited abstract member 'tree' from class 'ObjNode'.
-src/obj/tuple.ts(10,14): error TS2515: Non-abstract class 'TupleNode' does not implement inherited abstract member 'tree' from class 'ObjNode'.
-src/resolution.ts(28,14): error TS2515: Non-abstract class 'ResolutionNode' does not implement inherited abstract member 'tree' from class 'NonTerminal<base>'.
-Files:              256
-Lines:            66107
-Nodes:           183324
-Identifiers:      62565
-Symbols:         130581
-Types:            70814
-Instantiations:  348200
-Memory used:    174900K
+src/node/exports.ts(2,15): error TS2307: Cannot find module './nonTerminal.js' or its corresponding type declarations.
+src/node/exports.ts(3,15): error TS2307: Cannot find module './terminal.js' or its corresponding type declarations.
+src/space.ts(30,47): error TS2339: Property 'def' does not exist on type 'ResolutionNode'.
+src/str/operand/enclosed/enclosed.ts(39,9): error TS2322: Type 'RegexLiteralNode' is not assignable to type 'strNode'.
+  Type 'RegexLiteralNode' is missing the following properties from type 'base': collectReferences, tree, references, addUnassignable
+src/str/operand/enclosed/regexLiteral.ts(5,44): error TS2339: Property 'terminalNode' does not exist on type 'typeof import("/home/ssalb/re-po/@re-/type/src/node/exports", { assert: { "resolution-mode": "import" } })'.
+src/str/operand/enclosed/regexLiteral.ts(28,53): error TS2339: Property 'def' does not exist on type 'RegexLiteralNode'.
+src/str/operand/enclosed/regexLiteral.ts(37,18): error TS2339: Property 'def' does not exist on type 'RegexLiteralNode'.
+Files:              253
+Lines:            66161
+Nodes:           183601
+Identifiers:      62648
+Symbols:         130516
+Types:            70634
+Instantiations:  348139
+Memory used:    172058K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.43s
-Bind time:        0.16s
-Check time:       1.59s
+Parse time:       0.45s
+Bind time:        0.15s
+Check time:       1.63s
 Emit time:        0.00s
-Total time:       2.19s
+Total time:       2.23s

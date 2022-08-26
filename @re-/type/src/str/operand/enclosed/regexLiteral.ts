@@ -1,8 +1,8 @@
-import { Node, Utils } from "../common.js"
+import { Node, terminalNode, Utils } from "../common.js"
 
 export type RegexLiteralDefinition = `/${string}/`
 
-export class RegexLiteralNode extends Node.terminalNode<RegexLiteralDefinition> {
+export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
     private regex: RegExp
 
     constructor(def: RegexLiteralDefinition) {
