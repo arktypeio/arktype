@@ -37,7 +37,6 @@ export class singleBoundNode extends link<boundableNode> {
     }
 
     allows(args: Node.Allows.Args) {
-        // TODO update name of children to not be plural
         if (!this.child.allows(args)) {
             return false
         }

@@ -17,20 +17,23 @@ export namespace Str {
 
     export type Root<Node> = Evaluate<[Node, ";"]>
 
-    export type Infer<T, Ctx extends Node.InferenceContext> = T extends string
-        ? InferTerminal<T, Ctx>
-        : T extends Operator.Optional
-        ? Infer<T[0], Ctx> | undefined
-        : T extends Operator.List
-        ? Infer<T[0], Ctx>[]
-        : T extends Operator.Union
-        ? Infer<T[0], Ctx> | Infer<T[2], Ctx>
-        : T extends Operator.Intersection
-        ? Infer<T[0], Ctx> & Infer<T[2], Ctx>
-        : T extends Operator.Bound.SingleBoundNode
-        ? Infer<T[0], Ctx>
-        : T extends Operator.Bound.DoubleBoundNode
-        ? Infer<T[2], Ctx>
+    export type Infer<
+        Tree,
+        Ctx extends Node.InferenceContext
+    > = Tree extends string
+        ? InferTerminal<Tree, Ctx>
+        : Tree extends Operator.Optional
+        ? Infer<Tree[0], Ctx> | undefined
+        : Tree extends Operator.List
+        ? Infer<Tree[0], Ctx>[]
+        : Tree extends Operator.Union
+        ? Infer<Tree[0], Ctx> | Infer<Tree[2], Ctx>
+        : Tree extends Operator.Intersection
+        ? Infer<Tree[0], Ctx> & Infer<Tree[2], Ctx>
+        : Tree extends Operator.Bound.SingleBoundNode
+        ? Infer<Tree[0], Ctx>
+        : Tree extends Operator.Bound.DoubleBoundNode
+        ? Infer<Tree[2], Ctx>
         : never
 
     type ModifierNode<Child = unknown, Token = string> = [Child, Token]
@@ -41,15 +44,15 @@ export namespace Str {
         Right
     ]
 
-    export type References<T> = T extends ModifierNode<infer Child>
+    export type References<Tree> = Tree extends ModifierNode<infer Child>
         ? References<Child>
-        : T extends BranchNode<infer Left, infer Right>
+        : Tree extends BranchNode<infer Left, infer Right>
         ? [...References<Left>, ...References<Right>]
-        : T extends Operator.Bound.SingleBoundNode
-        ? References<T[0]>
-        : T extends Operator.Bound.DoubleBoundNode
-        ? References<T[2]>
-        : [T]
+        : Tree extends Operator.Bound.SingleBoundNode
+        ? References<Tree[0]>
+        : Tree extends Operator.Bound.DoubleBoundNode
+        ? References<Tree[2]>
+        : [Tree]
 
     export const parse: Node.parseFn<string> = (def, ctx) =>
         Naive.tryParse(def, ctx) ?? Main.parse(def, ctx)
