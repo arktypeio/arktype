@@ -29,12 +29,17 @@ export type InferTuple<
     [I in keyof Tree]: Root.Infer<Tree[I], Ctx>
 }>
 
+export type ExtractPossibleTuple<Tree> = Tree extends Tuple ? Tree["[]"] : Tree
+
 export type References<
     Tree,
     PreserveStructure extends boolean
 > = PreserveStructure extends true
-    ? StructuredReferences<Tree extends Tuple ? Tree["[]"] : Tree>
-    : UnstructuredReferences<ListPossibleTypes<ValueOf<Tree>>, []>
+    ? StructuredReferences<ExtractPossibleTuple<Tree>>
+    : UnstructuredReferences<
+          ListPossibleTypes<ValueOf<ExtractPossibleTuple<Tree>>>,
+          []
+      >
 
 type UnstructuredReferences<
     Values extends unknown[],

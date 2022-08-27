@@ -15,18 +15,17 @@ export namespace Root {
         ? Str.Parse<Def, Dict>
         : Obj.Parse<Def, Dict>
 
-    export type Infer<Tree, Ctx extends Node.InferenceContext> = Tree extends
-        | string
-        | unknown[]
-        ? Str.Infer<Tree, Ctx>
-        : Obj.Infer<Tree, Ctx>
+    export type Infer<
+        Tree,
+        Ctx extends Node.InferenceContext
+    > = keyof Tree extends string ? Obj.Infer<Tree, Ctx> : Str.Infer<Tree, Ctx>
 
     export type References<
         Tree,
         PreserveStructure extends boolean
-    > = Tree extends string | unknown[]
-        ? Str.References<Tree>
-        : Obj.References<Tree, PreserveStructure>
+    > = keyof Tree extends string
+        ? Obj.References<Tree, PreserveStructure>
+        : Str.References<Tree>
 
     export type BadDefinitionType =
         | undefined
