@@ -1,7 +1,7 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { BoundableNode, Node, terminalNode } from "./common.js"
+import { boundableNode, Node, terminalNode } from "./common.js"
 
-abstract class BaseStringKeyword extends terminalNode implements BoundableNode {
+abstract class BaseStringKeyword extends terminalNode implements boundableNode {
     allows(args: Node.Allows.Args) {
         if (typeof args.value === "string" && this.allowsString(args.value)) {
             return true

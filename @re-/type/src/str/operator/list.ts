@@ -1,5 +1,5 @@
 import { pathAdd } from "@re-/tools"
-import { boundableNode } from "./bound/index.js"
+import { boundableNode } from "./bound/exports.js"
 import { link, Node, Parser } from "./common.js"
 
 export const parseList = (

@@ -1,2 +1,2 @@
 export * from "../../common.js"
-export type { boundableNode as BoundableNode } from "../../../operator/bound/index.js"
+export type { boundableNode } from "../../../operator/bound/exports.js"
