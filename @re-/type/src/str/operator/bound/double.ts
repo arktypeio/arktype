@@ -12,7 +12,7 @@ import {
     Node,
     normalizedBound
 } from "./common.js"
-import { DoubleBoundComparator } from "./parse.js"
+import { BoundableT, Comparator, DoubleBoundComparator } from "./parse.js"
 
 export type LowerBoundDefinition = [
     NumberLiteralDefinition,
@@ -25,9 +25,9 @@ export type UpperBoundDefinition = [
 
 export type DoubleBoundNode = [
     NumberLiteralDefinition,
-    DoubleBoundComparator,
+    Comparator,
     unknown,
-    DoubleBoundComparator,
+    Comparator,
     NumberLiteralDefinition
 ]
 

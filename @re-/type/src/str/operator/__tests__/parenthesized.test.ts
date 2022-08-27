@@ -35,22 +35,6 @@ describe("parenthesized", () => {
         const listOfUnionOfListsOfUnions = type(
             "((boolean|number)[]|(string|undefined)[])[]"
         )
-        assert(listOfUnionOfListsOfUnions.tree).typedValue([
-            [
-                [
-                    [["boolean", "|", "number"], "[]"],
-                    "|",
-                    [["string", "|", "undefined"], "[]"]
-                ],
-                "[]"
-            ],
-            ";"
-        ])
-    })
-    test("nested precedence", () => {
-        const listOfUnionOfListsOfUnions = type(
-            "((boolean|number)[]|(string|undefined)[])[]"
-        )
         assert(listOfUnionOfListsOfUnions.infer).typed as (
             | (boolean | number)[]
             | (string | undefined)[]

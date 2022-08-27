@@ -1,4 +1,4 @@
-import { Node, Parser, str, strNode } from "./common.js"
+import { Node, Parser, strNode } from "./common.js"
 import { ParseOperand, parseOperand } from "./operand/index.js"
 import { Operator } from "./operator/index.js"
 
@@ -60,7 +60,7 @@ export const suffixLoop = (
     ctx: Node.context
 ): strNode => {
     if (s.l.nextSuffix === "END") {
-        return new str(s.l.root, ctx, {})
+        return s.l.root
     }
     if (s.l.nextSuffix === "?") {
         return Operator.finalizeOptional(s, ctx)

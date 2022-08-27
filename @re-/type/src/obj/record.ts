@@ -1,6 +1,6 @@
 import { Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
-import { str } from "../str/common.js"
+import { optional } from "../str/operator/optional.js"
 import { Str } from "../str/str.js"
 import { Node, obj, Utils } from "./common.js"
 
@@ -65,10 +65,6 @@ export class RecordNode extends obj {
         return propValidationResults.allSeenKeysAllowed
     }
 
-    private propNodeIsOptional(node: Node.base) {
-        return node instanceof str && node.isOptional()
-    }
-
     private allowsProps(args: Node.Allows.Args<Record<string, unknown>>) {
         const result = {
             unseenValueKeys: new Set(Object.keys(args.value)),
@@ -88,7 +84,7 @@ export class RecordNode extends obj {
                 if (!propIsAllowed) {
                     result.allSeenKeysAllowed = false
                 }
-            } else if (!this.propNodeIsOptional(propNode)) {
+            } else if (!(propNode instanceof optional)) {
                 args.errors.add(
                     pathWithProp,
                     `Required value of type ${propNode.toString()} was missing.`
@@ -104,7 +100,7 @@ export class RecordNode extends obj {
         const result: Record<string, unknown> = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
-            if (this.propNodeIsOptional(propNode)) {
+            if (propNode instanceof optional) {
                 continue
             }
             result[propKey] = propNode.create({

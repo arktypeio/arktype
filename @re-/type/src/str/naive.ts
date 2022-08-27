@@ -1,4 +1,4 @@
-import { Node, str } from "./common.js"
+import { Node } from "./common.js"
 import { Parse } from "./main.js"
 import {
     IsResolvableName,
@@ -35,7 +35,7 @@ export const tryParse = (def: string, ctx: Node.context) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
-            return new str(possibleIdentifierNode, ctx, { optional: true })
+            return new Operator.optional(possibleIdentifierNode, ctx)
         }
     }
     return tryParseList(def, ctx)
@@ -48,16 +48,8 @@ const tryParseList = (def: string, ctx: Node.context) => {
             ctx
         )
         if (possibleIdentifierNode) {
-            return new str(
-                new Operator.list(possibleIdentifierNode, ctx),
-                ctx,
-                {}
-            )
+            return new Operator.list(possibleIdentifierNode, ctx)
         }
-        return
     }
-    const possibleIdentifierNode = toNodeIfResolvableIdentifier(def, ctx)
-    if (possibleIdentifierNode) {
-        return new str(possibleIdentifierNode, ctx, {})
-    }
+    return toNodeIfResolvableIdentifier(def, ctx)
 }
