@@ -13,7 +13,7 @@ export const user = type({
 export type User = typeof user.infer
 
 // Models can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { error, data } = user.validate({
+export const { error, data } = user.check({
     name: "Dan Abramov",
     browser: {
         kind: "Internet Explorer" // R.I.P.

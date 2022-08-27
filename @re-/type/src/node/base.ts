@@ -1,7 +1,6 @@
 import type { MetaDefinitions, Space, SpaceMeta } from "../space.js"
 import type { TypeOptions } from "../type.js"
-import { stringifyValue } from "../utils.js"
-import type { Allows, Create, References } from "./traversal/index.js"
+import { Allows, Create, References } from "./traversal/index.js"
 
 export type context = TypeOptions & {
     path: string[]
@@ -48,7 +47,7 @@ export abstract class base {
     addUnassignable(args: Allows.Args) {
         args.errors.add(
             args.ctx.path,
-            `${stringifyValue(
+            `${Allows.stringifyValue(
                 args.value
             )} is not assignable to ${this.toString()}.`
         )

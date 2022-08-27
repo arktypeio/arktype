@@ -2,9 +2,17 @@ import { Parser } from "../common.js"
 import { RegexLiteralDefinition, RegexLiteralNode } from "./regexLiteral.js"
 import { StringLiteralDefinition, StringLiteralNode } from "./stringLiteral.js"
 
+export const enclosedBaseStartChars = Parser.tokenSet({
+    "'": 1,
+    '"': 1,
+    "/": 1
+})
+
+export type EnclosedBaseStartChar = keyof typeof enclosedBaseStartChars
+
 const unterminatedEnclosedMessage = <
     Fragment extends string,
-    Enclosing extends Parser.Tokens.EnclosedBaseStartChar
+    Enclosing extends EnclosedBaseStartChar
 >(
     fragment: Fragment,
     enclosing: Enclosing
@@ -13,11 +21,11 @@ const unterminatedEnclosedMessage = <
 
 type UnterminatedEnclosedMessage<
     Fragment extends string,
-    Enclosing extends Parser.Tokens.EnclosedBaseStartChar
+    Enclosing extends EnclosedBaseStartChar
 > = `${Fragment} requires a closing ${Enclosing}.`
 
 const untilLookaheadIsClosing: Record<
-    Parser.Tokens.EnclosedBaseStartChar,
+    EnclosedBaseStartChar,
     Parser.scanner.UntilCondition
 > = {
     "'": (scanner) => scanner.lookahead === `'`,
@@ -27,7 +35,7 @@ const untilLookaheadIsClosing: Record<
 
 export const parseEnclosedBase = (
     s: Parser.state,
-    enclosing: Parser.Tokens.EnclosedBaseStartChar
+    enclosing: EnclosedBaseStartChar
 ) => {
     const enclosed =
         enclosing +
@@ -45,7 +53,7 @@ export const parseEnclosedBase = (
 
 export type ParseEnclosedBase<
     S extends Parser.State,
-    Enclosing extends Parser.Tokens.EnclosedBaseStartChar
+    Enclosing extends EnclosedBaseStartChar
 > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
     ? Parser.State.From<{
           L: Parser.Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
@@ -60,7 +68,7 @@ const throwUnterminatedEnclosed: Parser.scanner.OnInputEndFn = (
     throw new Error(
         unterminatedEnclosedMessage(
             shifted,
-            shifted[0] as Parser.Tokens.EnclosedBaseStartChar
+            shifted[0] as EnclosedBaseStartChar
         )
     )
 }

@@ -1,5 +1,7 @@
 import { Node, Parser } from "./common.js"
 import {
+    EnclosedBaseStartChar,
+    enclosedBaseStartChars,
     parseEnclosedBase,
     ParseEnclosedBase,
     RegexLiteralDefinition,
@@ -25,7 +27,7 @@ export const parseOperand = (
 ): Parser.state =>
     s.r.lookahead === "("
         ? reduceGroupOpen(s.shifted())
-        : s.r.lookaheadIsIn(Parser.Tokens.enclosedBaseStartChars)
+        : s.r.lookaheadIsIn(enclosedBaseStartChars)
         ? parseEnclosedBase(s, s.r.shift())
         : s.r.lookahead === " "
         ? parseOperand(s.shifted(), ctx)
@@ -42,7 +44,7 @@ export type ParseOperand<
               L: ReduceGroupOpen<S["L"]>
               R: Unscanned
           }>
-        : Lookahead extends Parser.Tokens.EnclosedBaseStartChar
+        : Lookahead extends EnclosedBaseStartChar
         ? ParseEnclosedBase<S, Lookahead>
         : Lookahead extends " "
         ? ParseOperand<{ L: S["L"]; R: Unscanned }, Dict>

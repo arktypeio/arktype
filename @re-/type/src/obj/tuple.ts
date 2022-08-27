@@ -1,4 +1,5 @@
-import { Node, obj, Utils } from "./common.js"
+import { pathAdd } from "@re-/tools"
+import { Node, obj } from "./common.js"
 
 export namespace TupleType {
     export type Definition = unknown[] | readonly unknown[]
@@ -35,7 +36,7 @@ export class TupleNode extends obj {
                 value: args.value[itemIndex as any],
                 ctx: {
                     ...args.ctx,
-                    path: Utils.pathAdd(args.ctx.path, itemIndex)
+                    path: pathAdd(args.ctx.path, itemIndex)
                 }
             })
             if (!itemIsAllowed) {
@@ -53,7 +54,7 @@ export class TupleNode extends obj {
                     ...args,
                     ctx: {
                         ...args.ctx,
-                        path: Utils.pathAdd(args.ctx.path, itemIndex)
+                        path: pathAdd(args.ctx.path, itemIndex)
                     }
                 })
             )

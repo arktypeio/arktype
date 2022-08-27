@@ -1,5 +1,6 @@
+import { pathAdd } from "@re-/tools"
 import { boundableNode } from "./bound/index.js"
-import { link, Node, Parser, Utils } from "./common.js"
+import { link, Node, Parser } from "./common.js"
 
 export const parseList = (
     s: Parser.state<Parser.left.withRoot>,
@@ -23,7 +24,7 @@ export type ParseList<
       }>
     : Parser.State.Error<IncompleteTokenMessage>
 
-const incompleteTokenMessage = `Missing expected ']'.`
+export const incompleteTokenMessage = `Missing expected ']'.`
 
 type IncompleteTokenMessage = typeof incompleteTokenMessage
 
@@ -47,7 +48,7 @@ export class list extends link implements boundableNode {
                 value: itemValue,
                 ctx: {
                     ...args.ctx,
-                    path: Utils.pathAdd(args.ctx.path, itemIndex)
+                    path: pathAdd(args.ctx.path, itemIndex)
                 }
             })
             if (!itemIsAllowed) {

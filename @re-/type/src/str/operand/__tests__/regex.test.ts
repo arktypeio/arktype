@@ -18,30 +18,28 @@ describe("regex", () => {
     })
     describe("validation", () => {
         test("matching string", () => {
-            assert(type("/.*/").validate("dursurdo").error).is(undefined)
+            assert(type("/.*/").check("dursurdo").error).is(undefined)
         })
         test("messy string", () => {
             assert(
-                type(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate("(b,c)=>eee")
-                    .error
+                type(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).check("(b,c)=>eee").error
             ).is(undefined)
         })
         describe("errors", () => {
             test("bad string", () => {
                 assert(
-                    type("/^[0-9]*$/").validate("durrrrrr").error?.message
+                    type("/^[0-9]*$/").check("durrrrrr").error?.message
                 ).snap(`"durrrrrr" does not match expression /^[0-9]*$/.`)
             })
             test("non-string", () => {
-                assert(type("/^[0-9]*$/").validate(5).error?.message).snap(
+                assert(type("/^[0-9]*$/").check(5).error?.message).snap(
                     `Non-string value 5 cannot satisfy regex definitions.`
                 )
             })
             test("messy string", () => {
                 assert(
-                    type(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate(
-                        "(b,c&d)=>eeef"
-                    ).error?.message
+                    type(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).check("(b,c&d)=>eeef")
+                        .error?.message
                 ).snap(
                     `"(b,c&d)=>eeef" does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
                 )

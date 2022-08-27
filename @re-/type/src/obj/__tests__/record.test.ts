@@ -9,8 +9,8 @@ describe("map", () => {
             assert(empty.infer).typed as {}
         })
         test("validation", () => {
-            assert(empty.validate({}).error).is(undefined)
-            assert(empty.validate([]).error?.message).snap(
+            assert(empty.check({}).error).is(undefined)
+            assert(empty.check([]).error?.message).snap(
                 `[] is not assignable to {}.`
             )
         })
@@ -34,13 +34,13 @@ describe("map", () => {
         })
         describe("validation", () => {
             test("standard", () => {
-                assert(
-                    shallow().validate({ a: "ok", b: 4.321, c: 67 }).error
-                ).is(undefined)
+                assert(shallow().check({ a: "ok", b: 4.321, c: 67 }).error).is(
+                    undefined
+                )
             })
             test("ignore extraneous keys", () => {
                 assert(
-                    shallow().validate(
+                    shallow().check(
                         {
                             a: "ok",
                             b: 4.321,
@@ -53,7 +53,7 @@ describe("map", () => {
                 ).is(undefined)
                 // Still errors on missing keys
                 assert(
-                    shallow().validate(
+                    shallow().check(
                         {
                             a: "ok",
                             c: 67,
@@ -67,12 +67,12 @@ describe("map", () => {
             describe("errors", () => {
                 test("bad value", () => {
                     assert(
-                        shallow().validate({ a: "ko", b: 123.4, c: 76 }).error
+                        shallow().check({ a: "ko", b: 123.4, c: 76 }).error
                             ?.message
                     ).snap(`At path c, 76 is not assignable to 67.`)
                 })
                 test("missing keys", () => {
-                    assert(shallow().validate({ a: "ok" }).error?.message)
+                    assert(shallow().check({ a: "ok" }).error?.message)
                         .snap(`Encountered errors at the following paths:
   b: Required value of type number was missing.
   c: Required value of type 67 was missing.
@@ -80,7 +80,7 @@ describe("map", () => {
                 })
                 test("extraneous keys", () => {
                     assert(
-                        shallow().validate({
+                        shallow().check({
                             a: "ok",
                             b: 4.321,
                             c: 67,
@@ -91,7 +91,7 @@ describe("map", () => {
                 })
                 test("missing and extraneous keys", () => {
                     assert(
-                        shallow().validate({
+                        shallow().check({
                             a: "ok",
                             d: "extraneous",
                             e: "x-ray-knee-us"
@@ -151,13 +151,13 @@ describe("map", () => {
         describe("validation", () => {
             test("standard", () => {
                 assert(
-                    nested().validate({ nested: { russian: "doll" } }).error
+                    nested().check({ nested: { russian: "doll" } }).error
                 ).is(undefined)
             })
             describe("errors", () => {
                 test("bad prop value", () => {
                     assert(
-                        nested().validate({ nested: { russian: "tortoise" } })
+                        nested().check({ nested: { russian: "tortoise" } })
                             .error?.message
                     ).snap(
                         `At path nested/russian, "tortoise" is not assignable to 'doll'.`
@@ -169,7 +169,7 @@ describe("map", () => {
                             a: { b: "string" },
                             c: { d: "number" },
                             e: { f: "object" }
-                        }).validate({
+                        }).check({
                             a: {},
                             c: { d: 20, y: "why?" },
                             e: { f: 0n }

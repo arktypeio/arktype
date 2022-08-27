@@ -1,5 +1,4 @@
 export * from "../node/index.js"
-export * as Utils from "../utils.js"
 import { Node } from "../node/index.js"
 import { Root } from "../root.js"
 

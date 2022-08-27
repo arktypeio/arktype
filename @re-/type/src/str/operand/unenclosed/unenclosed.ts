@@ -1,11 +1,16 @@
-import { Node, Parser } from "../common.js"
 import { alias } from "./alias.js"
 import { BigintLiteralDefinition, bigintLiteralNode } from "./bigintLiteral.js"
+import {
+    BaseTerminatingChar,
+    baseTerminatingChars,
+    Node,
+    Parser
+} from "./common.js"
 import { Keyword } from "./keyword/index.js"
 import { NumberLiteralDefinition, numberLiteralNode } from "./numberLiteral.js"
 
 const lookaheadIsBaseTerminating: Parser.scanner.UntilCondition = (scanner) =>
-    scanner.lookahead in Parser.Tokens.baseTerminatingChars
+    scanner.lookahead in baseTerminatingChars
 
 export const parseUnenclosedBase = (s: Parser.state, ctx: Node.context) => {
     const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
@@ -19,7 +24,7 @@ export type ParseUnenclosedBase<
     Unscanned extends string,
     Dict
 > = Unscanned extends Parser.Scanner.Shift<infer Next, infer Rest>
-    ? Next extends Parser.Tokens.BaseTerminatingChar
+    ? Next extends BaseTerminatingChar
         ? Parser.State.From<{
               L: ReduceUnenclosed<S["L"], Fragment, Dict>
               R: Unscanned

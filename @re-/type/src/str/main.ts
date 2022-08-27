@@ -65,7 +65,7 @@ export const suffixLoop = (
     if (s.l.nextSuffix === "?") {
         return Operator.finalizeOptional(s, ctx)
     }
-    if (Parser.Tokens.inTokenSet(s.l.nextSuffix, Operator.Bound.tokens)) {
+    if (Parser.inTokenSet(s.l.nextSuffix, Operator.Bound.comparators)) {
         return suffixLoop(
             Operator.Bound.parseRight(s, s.l.nextSuffix, ctx),
             ctx

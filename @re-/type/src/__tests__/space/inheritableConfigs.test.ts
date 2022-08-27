@@ -6,7 +6,7 @@ describe("inheritable configs", () => {
     describe("methods", () => {
         test("no config", () => {
             assert(
-                type({ name: "string" }).validate({
+                type({ name: "string" }).check({
                     name: "David Blass",
                     age: 28
                 }).error?.message
@@ -15,7 +15,7 @@ describe("inheritable configs", () => {
         test("ad hoc", () => {
             const user = type({ name: "string" })
             assert(
-                user.validate(
+                user.check(
                     { name: "David Blass", age: 28 },
                     { ignoreExtraneousKeys: true }
                 ).error
@@ -26,7 +26,7 @@ describe("inheritable configs", () => {
                 { name: "string" },
                 { validate: { ignoreExtraneousKeys: true } }
             )
-            assert(user.validate({ name: "David Blass", age: 28 }).error).is(
+            assert(user.check({ name: "David Blass", age: 28 }).error).is(
                 undefined
             )
         })
@@ -39,7 +39,7 @@ describe("inheritable configs", () => {
                 )
             })
             assert(
-                mySpace.user.validate({
+                mySpace.user.check({
                     name: "David Blass",
                     age: 28
                 }).error
@@ -53,7 +53,7 @@ describe("inheritable configs", () => {
                 }
             )
             assert(
-                mySpace.user.validate({
+                mySpace.user.check({
                     name: "David Blass",
                     age: 28
                 }).error

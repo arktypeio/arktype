@@ -7,12 +7,20 @@ import {
     BoundableValue,
     boundChecker,
     boundValidationError,
+    Comparator,
     createBoundChecker,
     link,
     Node,
-    normalizedBound
+    normalizedBound,
+    Parser
 } from "./common.js"
-import { BoundableT, Comparator, DoubleBoundComparator } from "./parse.js"
+
+export type DoubleBoundComparator = keyof typeof doubleBoundTokens
+
+export const doubleBoundTokens = Parser.tokenSet({
+    "<": 1,
+    "<=": 1
+})
 
 export type LowerBoundDefinition = [
     NumberLiteralDefinition,

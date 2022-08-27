@@ -37,32 +37,32 @@ describe("numberLiteral", () => {
     describe("validation", () => {
         test("whole", () => {
             const eight = type("8")
-            assert(eight.validate(8).error).is(undefined)
-            assert(eight.validate(8).error).is(undefined)
-            assert(eight.validate(8.000_001).error?.message).snap(
+            assert(eight.check(8).error).is(undefined)
+            assert(eight.check(8).error).is(undefined)
+            assert(eight.check(8.000_001).error?.message).snap(
                 "8.000001 is not assignable to 8."
             )
-            assert(eight.validate("8").error?.message).snap(
+            assert(eight.check("8").error?.message).snap(
                 `"8" is not assignable to 8.`
             )
         })
         test("decimal", () => {
             const goldenRatio = type("1.618")
-            assert(goldenRatio.validate(1.618).error).is(undefined)
-            assert(goldenRatio.validate(2).error?.message).snap(
+            assert(goldenRatio.check(1.618).error).is(undefined)
+            assert(goldenRatio.check(2).error?.message).snap(
                 "2 is not assignable to 1.618."
             )
-            assert(goldenRatio.validate("1.618").error?.message).snap(
+            assert(goldenRatio.check("1.618").error?.message).snap(
                 `"1.618" is not assignable to 1.618.`
             )
         })
         test("negative", () => {
             const unLeet = type("-13.37")
-            assert(unLeet.validate(-13.37).error).is(undefined)
-            assert(unLeet.validate(-14).error?.message).snap(
+            assert(unLeet.check(-13.37).error).is(undefined)
+            assert(unLeet.check(-14).error?.message).snap(
                 "-14 is not assignable to -13.37."
             )
-            assert(unLeet.validate("-13.37").error?.message).snap(
+            assert(unLeet.check("-13.37").error?.message).snap(
                 `"-13.37" is not assignable to -13.37.`
             )
         })

@@ -18,8 +18,8 @@ describe("custom validators", () => {
                 validate: { validator }
             }
         )
-        assert(palindrome.validate("step on no pets").error).equals(undefined)
-        assert(palindrome.validate("step on your cat").error?.paths).equals({
+        assert(palindrome.check("step on no pets").error).equals(undefined)
+        assert(palindrome.check("step on your cat").error?.paths).equals({
             "": `step on your cat is not a palindrome!`
         })
     })
@@ -27,8 +27,8 @@ describe("custom validators", () => {
         const mySpace = space({
             palindrome: def("string", { validate: { validator } })
         })
-        assert(mySpace.palindrome.validate("redivider").error).is(undefined)
-        assert(mySpace.palindrome.validate("predivider").error?.message).is(
+        assert(mySpace.palindrome.check("redivider").error).is(undefined)
+        assert(mySpace.palindrome.check("predivider").error?.message).is(
             `predivider is not a palindrome!`
         )
     })
@@ -37,8 +37,8 @@ describe("custom validators", () => {
             palindrome: def("string", { validate: { validator } }),
             yourPal: { name: "palindrome" }
         })
-        assert(mySpace.yourPal.validate({ name: "bob" }).error).is(undefined)
-        assert(mySpace.yourPal.validate({ name: "rob" }).error?.message).snap(
+        assert(mySpace.yourPal.check({ name: "bob" }).error).is(undefined)
+        assert(mySpace.yourPal.check({ name: "rob" }).error?.message).snap(
             `At path name, rob is not a palindrome!`
         )
     })
@@ -63,11 +63,11 @@ describe("custom validators", () => {
                 }
             }
         )
-        assert(mySpace.first.validate(1).error).is(undefined)
+        assert(mySpace.first.check(1).error).is(undefined)
         assert(() => mySpace.first.assert(2)).throws.snap(
             `Error: At path from/first, 2 FAILED TO BE 1.`
         )
-        assert(mySpace.$root.type("second").validate(1).error?.message).snap(
+        assert(mySpace.$root.type("second").check(1).error?.message).snap(
             `1 is not assignable to 2.`
         )
     })
@@ -87,8 +87,8 @@ describe("custom validators", () => {
                 }
             }
         })
-        assert(num.validate(7.43).error).is(undefined)
-        assert(num.validate("ssalbdivad").error?.message).snap(
+        assert(num.check(7.43).error).is(undefined)
+        assert(num.check("ssalbdivad").error?.message).snap(
             `"ssalbdivad" is not assignable to number.!!!`
         )
     })

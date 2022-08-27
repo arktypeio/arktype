@@ -41,7 +41,7 @@ export type TypeFunction<
 export type TypeFrom<Def, Tree, Inferred> = Evaluate<{
     definition: Def
     infer: Inferred
-    validate: ValidateFunction<Inferred>
+    check: ValidateFunction<Inferred>
     assert: AssertFunction<Inferred>
     default: Inferred
     tree: Evaluate<Tree>
@@ -68,7 +68,7 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
         return this.root.tree as any
     }
 
-    validate(value: unknown, options?: Node.Allows.Options) {
+    check(value: unknown, options?: Node.Allows.Options) {
         const args = Node.Allows.createArgs(
             value,
             options,
@@ -89,7 +89,7 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
     }
 
     assert(value: unknown, options?: Node.Allows.Options) {
-        const validationResult = this.validate(value, options)
+        const validationResult = this.check(value, options)
         if (validationResult.error) {
             throw validationResult.error
         }

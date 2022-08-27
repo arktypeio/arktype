@@ -26,7 +26,7 @@ export const parseOperator = (
         ? reduceIntersection(s, ctx)
         : lookahead === ")"
         ? reduceGroupClose(s)
-        : Parser.Tokens.inTokenSet(lookahead, Bound.chars)
+        : Parser.inTokenSet(lookahead, Bound.comparatorChars)
         ? Bound.parse(s, lookahead)
         : lookahead === " "
         ? parseOperator(s, ctx)

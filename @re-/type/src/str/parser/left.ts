@@ -1,6 +1,5 @@
-import { Node, strNode } from "../common.js"
 import type { Operator } from "../operator/index.js"
-import { SuffixToken } from "./tokens.js"
+import { Node, strNode, SuffixToken } from "./common.js"
 
 type base = {
     groups: Operator.branches[]

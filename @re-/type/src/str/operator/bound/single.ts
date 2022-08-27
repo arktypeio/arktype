@@ -7,12 +7,12 @@ import {
     BoundableValue,
     boundChecker,
     boundValidationError,
+    Comparator,
     createBoundChecker,
     link,
     Node,
     normalizedBound
 } from "./common.js"
-import { Comparator } from "./parse.js"
 
 export type SingleBoundDefinition = [Comparator, NumberLiteralDefinition]
 

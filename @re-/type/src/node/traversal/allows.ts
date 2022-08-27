@@ -1,5 +1,4 @@
-import { isDigits, uncapitalize } from "@re-/tools"
-import { stringifyValue } from "../../utils.js"
+import { isDigits, toString, uncapitalize } from "@re-/tools"
 import type { base } from "../base.js"
 import * as Traverse from "./traverse.js"
 
@@ -181,3 +180,8 @@ export class ErrorTree {
         }
     }
 }
+
+export const stringifyValue = (value: unknown) =>
+    toString(value, {
+        maxNestedStringLength: 50
+    })

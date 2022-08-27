@@ -1,4 +1,4 @@
-import { Node, terminalNode, Utils } from "../common.js"
+import { Node, terminalNode } from "../common.js"
 
 export type RegexLiteralDefinition = `/${string}/`
 
@@ -14,7 +14,7 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
         if (typeof args.value !== "string") {
             args.errors.add(
                 "",
-                `Non-string value ${Utils.stringifyValue(
+                `Non-string value ${Node.Allows.stringifyValue(
                     args.value
                 )} cannot satisfy regex definitions.`
             )
@@ -23,7 +23,7 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
         if (!this.regex.test(args.value)) {
             args.errors.add(
                 "",
-                `${Utils.stringifyValue(
+                `${Node.Allows.stringifyValue(
                     args.value
                 )} does not match expression ${this.def}.`
             )

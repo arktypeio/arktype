@@ -40,7 +40,7 @@ describe("snippets", () => {
         })
 
         // But enforce their original definition during validation
-        const { error } = employee.validate({
+        const { error } = employee.check({
             email: "david@redo.biz",
             about: {
                 age: 17,

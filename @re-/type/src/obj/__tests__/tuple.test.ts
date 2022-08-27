@@ -9,8 +9,8 @@ describe("tuple", () => {
             assert(empty().infer).typed as []
         })
         test("validation", () => {
-            assert(empty().validate([]).error).is(undefined)
-            assert(empty().validate({}).error?.message).snap(
+            assert(empty().check([]).error).is(undefined)
+            assert(empty().check({}).error?.message).snap(
                 `{} is not assignable to [].`
             )
         })
@@ -39,27 +39,22 @@ describe("tuple", () => {
         })
         describe("validation", () => {
             test("standard", () => {
-                assert(shallow().validate(["violin", 42, 6]).error).is(
-                    undefined
-                )
+                assert(shallow().check(["violin", 42, 6]).error).is(undefined)
             })
             describe("errors", () => {
                 test("bad item value", () => {
                     assert(
-                        shallow().validate(["violin", 42n, 6]).error?.message
+                        shallow().check(["violin", 42n, 6]).error?.message
                     ).snap(`At index 1, 42n is not assignable to number.`)
                 })
                 test("too short", () => {
-                    assert(
-                        shallow().validate(["violin", 42]).error?.message
-                    ).snap(
+                    assert(shallow().check(["violin", 42]).error?.message).snap(
                         `Tuple of length 2 is not assignable to tuple of length 3.`
                     )
                 })
                 test("too long", () => {
                     assert(
-                        shallow().validate(["violin", 42, 6, null]).error
-                            ?.message
+                        shallow().check(["violin", 42, 6, null]).error?.message
                     ).snap(
                         `Tuple of length 4 is not assignable to tuple of length 3.`
                     )
@@ -93,7 +88,7 @@ describe("tuple", () => {
         describe("validation", () => {
             test("standard", () => {
                 assert(
-                    nested().validate([
+                    nested().check([
                         "Cuckoo",
                         ["Swallow", "Oriole", "Condor"],
                         []
@@ -103,7 +98,7 @@ describe("tuple", () => {
             describe("errors", () => {
                 test("single", () => {
                     assert(
-                        nested().validate([
+                        nested().check([
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
                         ]).error?.message
@@ -113,7 +108,7 @@ describe("tuple", () => {
                 })
                 test("multiple", () => {
                     assert(
-                        nested().validate([
+                        nested().check([
                             "Clock",
                             ["Swallow", "Oriole", "Gondor"],
                             ["Too long"]

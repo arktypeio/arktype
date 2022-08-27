@@ -9,25 +9,25 @@ describe("parenthesized", () => {
     test("default precedence", () => {
         const unionWithList = type("boolean|number[]")
         assert(unionWithList.infer).typed as boolean | number[]
-        assert(unionWithList.validate(true).error).equals(undefined)
-        assert(unionWithList.validate([1, 2, 3]).error).equals(undefined)
-        assert(unionWithList.validate([true, false]).error?.message).snap(
+        assert(unionWithList.check(true).error).equals(undefined)
+        assert(unionWithList.check([1, 2, 3]).error).equals(undefined)
+        assert(unionWithList.check([true, false]).error?.message).snap(
             `[true, false] is not assignable to any of boolean|number[].`
         )
     })
     test("grouped precedence", () => {
         const listOfUnion = type("(boolean|number)[]")
         assert(listOfUnion.infer).typed as (boolean | number)[]
-        assert(listOfUnion.validate([]).error).equals(undefined)
-        assert(listOfUnion.validate([1]).error).equals(undefined)
-        assert(listOfUnion.validate([1, true]).error).equals(undefined)
-        assert(listOfUnion.validate(true).error?.message).snap(
+        assert(listOfUnion.check([]).error).equals(undefined)
+        assert(listOfUnion.check([1]).error).equals(undefined)
+        assert(listOfUnion.check([1, true]).error).equals(undefined)
+        assert(listOfUnion.check(true).error?.message).snap(
             `true is not assignable to boolean|number[].`
         )
-        assert(listOfUnion.validate(1).error?.message).snap(
+        assert(listOfUnion.check(1).error?.message).snap(
             `1 is not assignable to boolean|number[].`
         )
-        assert(listOfUnion.validate(["foo"]).error?.message).snap(
+        assert(listOfUnion.check(["foo"]).error?.message).snap(
             `At index 0, "foo" is not assignable to any of boolean|number.`
         )
     })
@@ -47,26 +47,23 @@ describe("parenthesized", () => {
             | (boolean | number)[]
             | (string | undefined)[]
         )[]
-        assert(listOfUnionOfListsOfUnions.validate([]).error).equals(undefined)
-        assert(listOfUnionOfListsOfUnions.validate([[1, true]]).error).equals(
+        assert(listOfUnionOfListsOfUnions.check([]).error).equals(undefined)
+        assert(listOfUnionOfListsOfUnions.check([[1, true]]).error).equals(
             undefined
         )
         assert(
-            listOfUnionOfListsOfUnions.validate([
-                [1],
-                ["foo", undefined],
-                [true]
-            ]).error
+            listOfUnionOfListsOfUnions.check([[1], ["foo", undefined], [true]])
+                .error
         ).equals(undefined)
         // TODO: Add precedence as a prop to determine when to parenthesize
         assert(
-            listOfUnionOfListsOfUnions.validate([undefined]).error?.message
+            listOfUnionOfListsOfUnions.check([undefined]).error?.message
         ).snap(
             `At index 0, undefined is not assignable to any of boolean|number[]|string|undefined[].`
         )
         // Can't mix items from each list
         assert(
-            listOfUnionOfListsOfUnions.validate([[false, "foo"]]).error?.message
+            listOfUnionOfListsOfUnions.check([[false, "foo"]]).error?.message
         ).snap(
             `At index 0, [false, "foo"] is not assignable to any of boolean|number[]|string|undefined[].`
         )

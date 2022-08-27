@@ -55,7 +55,7 @@ describe("def", () => {
             name: age,
             age: name
         }
-        assert(types.user.validate(validUserWithExtraKey).data).unknown.equals(
+        assert(types.user.check(validUserWithExtraKey).data).unknown.equals(
             validUserWithExtraKey
         ).typed as
             | {
@@ -66,7 +66,7 @@ describe("def", () => {
               }
             | undefined
         assert(
-            types.group.validate({
+            types.group.check({
                 members: [validUserWithExtraKey, invalidPropSwappedUser],
                 // No extraneous keys is not specified for group, so description is not allowed
                 description: "Typescript Devs"

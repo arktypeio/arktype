@@ -14,7 +14,7 @@ describe("validation", () => {
             fruit: "banana|apple"
         }).$root.type({ fruits: "fruit[]" })
         assert(
-            groceries.validate({
+            groceries.check({
                 fruits: [
                     { length: 10 },
                     { circumference: 4.832321, type: "Granny Smith" },
@@ -23,7 +23,7 @@ describe("validation", () => {
             }).error
         ).equals(undefined)
         assert(
-            groceries.validate({
+            groceries.check({
                 fruits: [
                     {
                         length: 5000,
@@ -55,7 +55,7 @@ describe("validation", () => {
             either: "a|b"
         }).$root.type({ a: "a", b: "b", c: "either[]" })
         assert(
-            bicycle.validate({
+            bicycle.check({
                 a: {
                     isA: true,
                     a: { isA: true },
@@ -69,7 +69,7 @@ describe("validation", () => {
             }).error
         ).equals(undefined)
         assert(
-            bicycle.validate({
+            bicycle.check({
                 a: {
                     isA: true,
                     a: {
@@ -126,7 +126,7 @@ describe("validation", () => {
         type DejaVu = typeof recursive.$root.infer.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
-        assert(recursive.dejaVu.validate(dejaVu).error).equals(undefined)
+        assert(recursive.dejaVu.check(dejaVu).error).equals(undefined)
     })
     test("validates deep objects", () => {
         const recursive = space(recursiveDict)
@@ -138,9 +138,9 @@ describe("validation", () => {
             current = current.dejaVu
             i++
         }
-        assert(recursive.dejaVu.validate(dejaVu).error).equals(undefined)
+        assert(recursive.dejaVu.check(dejaVu).error).equals(undefined)
         current.dejaVu = "whoops" as any
-        assert(recursive.dejaVu.validate(dejaVu).error?.message)
+        assert(recursive.dejaVu.check(dejaVu).error?.message)
             .snap(`At path dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu, "whoops" is not assignable to {
     dejaVu: dejaVu?
 }.`)

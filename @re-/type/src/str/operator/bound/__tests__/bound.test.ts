@@ -71,24 +71,22 @@ describe("bound", () => {
                 describe("valid", () => {
                     test("single-bounded", () => {
                         assert(
-                            type("string>4").validate(
-                                "longerThanFourCharacters"
-                            ).error
+                            type("string>4").check("longerThanFourCharacters")
+                                .error
                         ).is(undefined)
                     })
                     test("double-bounded", () => {
                         assert(
-                            type("-999<string<=4").validate("four").error
-                                ?.message
+                            type("-999<string<=4").check("four").error?.message
                         ).snap(undefined)
                     })
                 })
 
                 describe("invalid", () => {
                     test("single-bounded", () => {
-                        assert(
-                            type("string==1").validate("").error?.message
-                        ).snap(`[object Object]`)
+                        assert(type("string==1").check("").error?.message).snap(
+                            `[object Object]`
+                        )
                     })
                 })
             })
@@ -96,7 +94,7 @@ describe("bound", () => {
                 describe("valid", () => {
                     test("single-bounded", () => {
                         assert(
-                            type("any[]>=3").validate([
+                            type("any[]>=3").check([
                                 1,
                                 "two",
                                 { three: 3 },
@@ -105,7 +103,7 @@ describe("bound", () => {
                             ]).error
                         ).is(undefined)
                         assert(
-                            type("boolean[][]<4").validate([
+                            type("boolean[][]<4").check([
                                 [true, false, true],
                                 [true],
                                 []
@@ -114,7 +112,7 @@ describe("bound", () => {
                     })
                     test("double-bounded", () => {
                         assert(
-                            type("5<number[]<=10").validate([1, 2, 3, 4, 5, 6])
+                            type("5<number[]<=10").check([1, 2, 3, 4, 5, 6])
                                 .error?.message
                         ).snap(undefined)
                     })
@@ -122,18 +120,17 @@ describe("bound", () => {
                 describe("invalid", () => {
                     test("single-bounded", () => {
                         assert(
-                            type("any[]==1").validate([1, "foo"]).error?.message
+                            type("any[]==1").check([1, "foo"]).error?.message
                         ).snap(`[object Object]`)
                     })
                     test("bad inner type", () => {
                         assert(
-                            type("never[]==1").validate([1]).error?.message
+                            type("never[]==1").check([1]).error?.message
                         ).snap(`At index 0, 1 is not assignable to never.`)
                     })
                     test("bad inner type and length", () => {
-                        assert(
-                            type("0<never[]<2").validate([1, 2]).error?.message
-                        ).snap(`Encountered errors at the following paths:
+                        assert(type("0<never[]<2").check([1, 2]).error?.message)
+                            .snap(`Encountered errors at the following paths:
   0: 1 is not assignable to never.
   1: 2 is not assignable to never.
 `)
@@ -144,67 +141,65 @@ describe("bound", () => {
                 describe("edge cases", () => {
                     test("NaN", () => {
                         assert(
-                            type("number>=10").validate(Number.NaN).error
-                                ?.message
+                            type("number>=10").check(Number.NaN).error?.message
                         ).snap(`[object Object]`)
                         assert(
-                            type("number<=10").validate(Number.NaN).error
-                                ?.message
+                            type("number<=10").check(Number.NaN).error?.message
                         ).snap(`[object Object]`)
                     })
                     test("infinity", () => {
-                        assert(type("number>10").validate(Infinity).error).snap(
+                        assert(type("number>10").check(Infinity).error).snap(
                             undefined
                         )
                         assert(
-                            type("number>10").validate(-Infinity).error?.message
+                            type("number>10").check(-Infinity).error?.message
                         ).snap(`[object Object]`)
                     })
                 })
                 describe("valid", () => {
                     test("single-bounded", () => {
                         test("<=", () => {
-                            assert(type("number<=-5").validate(-5).error).is(
+                            assert(type("number<=-5").check(-5).error).is(
                                 undefined
                             )
-                            assert(type("number<=-5").validate(-1000).error).is(
+                            assert(type("number<=-5").check(-1000).error).is(
                                 undefined
                             )
                         })
                         test(">=", () => {
-                            assert(type("number>=5").validate(5).error).is(
+                            assert(type("number>=5").check(5).error).is(
                                 undefined
                             )
-                            assert(type("number>=5").validate(9999).error).is(
+                            assert(type("number>=5").check(9999).error).is(
                                 undefined
                             )
                         })
                         test("<", () => {
-                            assert(
-                                type("number<-999").validate(-1000).error
-                            ).is(undefined)
+                            assert(type("number<-999").check(-1000).error).is(
+                                undefined
+                            )
                         })
                         test(">", () => {
-                            assert(type("number>5").validate(7).error).is(
+                            assert(type("number>5").check(7).error).is(
                                 undefined
                             )
                         })
                         test("==", () => {
                             assert(
-                                type("number==5").validate(-5).error?.message
+                                type("number==5").check(-5).error?.message
                             ).snap(`Must be 5 (got -5).`)
                         })
                     })
                     describe("double-bounded", () => {
                         test("<", () => {
-                            assert(type("5<number<10").validate(7).error).is(
+                            assert(type("5<number<10").check(7).error).is(
                                 undefined
                             )
                         })
                         test("<=", () => {
-                            assert(
-                                type("5<=number<=9999").validate(5).error
-                            ).is(undefined)
+                            assert(type("5<=number<=9999").check(5).error).is(
+                                undefined
+                            )
                         })
                     })
                 })
@@ -213,61 +208,59 @@ describe("bound", () => {
                     describe("single-bounded", () => {
                         test("<=", () => {
                             assert(
-                                type("number<=5").validate(7).error?.message
+                                type("number<=5").check(7).error?.message
                             ).snap(`[object Object]`)
                         })
                         test(">=", () => {
                             assert(
-                                type("number>=-999").validate(-1000).error
-                                    ?.message
+                                type("number>=-999").check(-1000).error?.message
                             ).snap(`[object Object]`)
                         })
                         test("<", () => {
                             assert(
-                                type("number<5").validate(5).error?.message
+                                type("number<5").check(5).error?.message
                             ).snap(`[object Object]`)
                             assert(
-                                type("number<5").validate(9999).error?.message
+                                type("number<5").check(9999).error?.message
                             ).snap(`[object Object]`)
                         })
                         test(">", () => {
                             assert(
-                                type("number>-5").validate(-5).error?.message
+                                type("number>-5").check(-5).error?.message
                             ).snap(`[object Object]`)
                             assert(
-                                type("number>-5").validate(-1000).error?.message
+                                type("number>-5").check(-1000).error?.message
                             ).snap(`[object Object]`)
                         })
                         test("==", () => {
                             assert(
-                                type("number==5").validate(-5).error?.message
+                                type("number==5").check(-5).error?.message
                             ).snap(`[object Object]`)
                         })
                     })
                     describe("double-bounded", () => {
                         test("<", () => {
                             assert(
-                                type("5<number<10").validate(-9).error?.message
+                                type("5<number<10").check(-9).error?.message
                             ).snap(`Must be greater than 5 (got -9).`)
                             assert(
-                                type("5<number<10").validate(99).error?.message
+                                type("5<number<10").check(99).error?.message
                             ).snap(`Must be less than 10 (got 99).`)
                         })
                         test("<=", () => {
                             assert(
-                                type("5<=number<=9999").validate(4).error
-                                    ?.message
+                                type("5<=number<=9999").check(4).error?.message
                             ).snap(
                                 `Must be greater than or equal to 5 (got 4).`
                             )
                             assert(
-                                type("5<=number<=9999").validate(10000).error
+                                type("5<=number<=9999").check(10000).error
                                     ?.message
                             ).snap()
                         })
                         test("<= + <", () => {
                             assert(
-                                type("5<=number<9999").validate(9999).error
+                                type("5<=number<9999").check(9999).error
                                     ?.message
                             ).snap(`Must be less than 9999 (got 9999).`)
                         })

@@ -64,7 +64,7 @@ describe("space", () => {
                 }
             }
         }
-        assert(cyclicEagerSpace.a.validate({ b: {} }).error)
+        assert(cyclicEagerSpace.a.check({ b: {} }).error)
     })
     test("object list", () => {
         assert(space({ a: "string", b: [{ c: "a" }] }).$root.infer.b).typed as [
@@ -84,7 +84,7 @@ describe("space", () => {
             literal: string
         }
         assert(() =>
-            parseWithAnySpace.validate({ literal: "", alias: "" })
+            parseWithAnySpace.check({ literal: "", alias: "" })
         ).throws.snap(
             `Error: Unable to determine the type of 'myType' at path alias.`
         )

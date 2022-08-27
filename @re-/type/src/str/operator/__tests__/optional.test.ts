@@ -59,22 +59,22 @@ describe("optional", () => {
 
     describe("validation", () => {
         test("preserves original type", () => {
-            assert(type("false?").validate(false).error).is(undefined)
+            assert(type("false?").check(false).error).is(undefined)
         })
         test("allows undefined", () => {
-            assert(type("false?").validate(undefined).error).is(undefined)
+            assert(type("false?").check(undefined).error).is(undefined)
         })
         test("allows omission of key", () => {
             assert(
                 type({
                     required: "string",
                     optional: "string?"
-                }).validate({ required: "" }).error
+                }).check({ required: "" }).error
             ).is(undefined)
         })
         describe("errors", () => {
             test("bad inner type", () => {
-                assert(type("true?").validate(false).error?.message).snap(
+                assert(type("true?").check(false).error?.message).snap(
                     `false is not assignable to true.`
                 )
             })

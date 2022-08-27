@@ -24,7 +24,7 @@ export const fetchEmployee = () => {
     }
 }
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { error } = employee.validate(fetchEmployee())
+export const { error } = employee.check(fetchEmployee())
 
 // Output: "Encountered errors at the following paths:
 // {

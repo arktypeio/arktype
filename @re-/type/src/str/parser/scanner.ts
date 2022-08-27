@@ -1,4 +1,14 @@
-import { TokenSet } from "./tokens.js"
+import { Evaluate, Narrow } from "@re-/tools"
+
+export type TokenSet = Record<string, 1>
+
+export const tokenSet = <T extends TokenSet>(tokenSet: Narrow<T>) =>
+    tokenSet as Evaluate<T>
+
+export const inTokenSet = <Set extends TokenSet>(
+    token: string,
+    set: Set
+): token is Extract<keyof Set, string> => token in set
 
 export class scanner<Lookahead extends string = string> {
     private chars: string[]

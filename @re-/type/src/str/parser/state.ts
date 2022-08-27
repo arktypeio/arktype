@@ -1,8 +1,7 @@
 import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
-import { Node, strNode } from "../common.js"
+import { Node, strNode, SuffixToken } from "./common.js"
 import { left, Left } from "./left.js"
 import { scanner } from "./scanner.js"
-import { SuffixToken } from "./tokens.js"
 
 export class state<constraints extends Partial<left> = {}> {
     l: left<constraints>

@@ -1,7 +1,7 @@
-import { Evaluate } from "@re-/tools"
+import { Evaluate, pathAdd } from "@re-/tools"
 import { Root } from "../root.js"
 import { optional } from "../str/operator/optional.js"
-import { Node, obj, Utils } from "./common.js"
+import { Node, obj } from "./common.js"
 
 export namespace Record {
     export type Definition = Record<string, unknown>
@@ -68,7 +68,7 @@ export class RecordNode extends obj {
             allSeenKeysAllowed: true
         }
         for (const [propKey, propNode] of this.entries) {
-            const pathWithProp = Utils.pathAdd(args.ctx.path, propKey)
+            const pathWithProp = pathAdd(args.ctx.path, propKey)
             if (propKey in args.value) {
                 const propIsAllowed = propNode.allows({
                     ...args,
@@ -104,7 +104,7 @@ export class RecordNode extends obj {
                 ...args,
                 ctx: {
                     ...args.ctx,
-                    path: Utils.pathAdd(args.ctx.path, propKey)
+                    path: pathAdd(args.ctx.path, propKey)
                 }
             })
         }

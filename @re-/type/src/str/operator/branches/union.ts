@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
 import { Branches, MergeExpression } from "./branches.js"
-import { branch, Node, Operator, Parser, strNode, Utils } from "./common.js"
+import { branch, Node, Operator, Parser, strNode } from "./common.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
@@ -81,7 +81,7 @@ export class union extends branch {
             }
         }
         // If we haven't returned, all branches are invalid, so add an error
-        const summaryErrorMessage = `${Utils.stringifyValue(
+        const summaryErrorMessage = `${Node.Allows.stringifyValue(
             args.value
         )} is not assignable to any of ${this.toString()}.`
         if (args.cfg.verbose) {

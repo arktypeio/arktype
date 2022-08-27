@@ -14,14 +14,14 @@ describe("integration", () => {
     })
     describe("validation", () => {
         test("standard", () => {
-            assert(mixed().validate([true, { a: ["ok", [0]] }]).error).is(
+            assert(mixed().check([true, { a: ["ok", [0]] }]).error).is(
                 undefined
             )
         })
         describe("errors", () => {
             test("single", () => {
                 assert(
-                    mixed().validate([
+                    mixed().check([
                         true,
                         { a: ["ok", [[true, false]], "extraElement"] }
                     ]).error?.message
@@ -31,8 +31,7 @@ describe("integration", () => {
             })
             test("multiple", () => {
                 assert(
-                    mixed().validate([false, { a: [0, [0, 1, 2]] }]).error
-                        ?.message
+                    mixed().check([false, { a: [0, [0, 1, 2]] }]).error?.message
                 ).snap(`Encountered errors at the following paths:
   0: false is not assignable to true.
   1/a/0: 0 is not assignable to string.
