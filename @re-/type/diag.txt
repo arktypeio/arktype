@@ -3,17 +3,17 @@
 > tsc --composite false --noEmit --diagnostics --incremental false
 
 Files:              254
-Lines:            66091
-Nodes:           183203
-Identifiers:      62528
-Symbols:         129368
-Types:            74015
-Instantiations:  323757
-Memory used:    170850K
+Lines:            66087
+Nodes:           183176
+Identifiers:      62518
+Symbols:         129363
+Types:            74004
+Instantiations:  323721
+Memory used:    175791K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.42s
+Parse time:       0.45s
 Bind time:        0.16s
-Check time:       1.49s
+Check time:       1.66s
 Emit time:        0.00s
-Total time:       2.06s
+Total time:       2.27s

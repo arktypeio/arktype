@@ -8,11 +8,7 @@ export type Validate<Def, Dict> = {
     [K in keyof Def]: Root.Validate<Def[K], Dict>
 }
 
-export type Parse<Def, Dict> = Def extends readonly unknown[]
-    ? { "[]": ParseChildren<Def, Dict> }
-    : ParseChildren<Def, Dict>
-
-type ParseChildren<Def, Dict> = Evaluate<{
+export type Parse<Def, Dict> = Evaluate<{
     [K in keyof Def]: Root.Parse<Def[K], Dict>
 }>
 
