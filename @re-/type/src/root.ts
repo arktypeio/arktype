@@ -46,8 +46,8 @@ export namespace Root {
             ? Str.parse(def, ctx)
             : typeof def === "object" && def !== null
             ? Obj.parse(def, ctx)
-            : // TODO: Add context
-              Node.throwParseError(
-                  badDefinitionTypeMessage + ` (got ${typeof def}).`
+            : Node.throwParseError(
+                  badDefinitionTypeMessage +
+                      ` (got ${typeof def}${Node.ctxToString(ctx)}).`
               )
 }
