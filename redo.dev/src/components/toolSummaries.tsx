@@ -3,8 +3,9 @@ import Collapse from "@mui/icons-material/ExpandLess"
 import Expand from "@mui/icons-material/ExpandMore"
 import Terminal from "@mui/icons-material/Terminal"
 import { Button, Container, Grid, Stack, Typography } from "@mui/material"
-import React, { useState } from "react"
+import React, { useRef, useState } from "react"
 import { StackBlitzDemo } from "../../docs/type/demos/index"
+import { MemoizedLoadingAnimation } from "./LoadingAnimation/LoadingAnimation"
 import * as Svgs from "./svg"
 
 type ToolSummaryData = {
@@ -19,6 +20,8 @@ type ToolSummaryProps = ToolSummaryData & {
     buttonColor: "primary" | "secondary"
     activeDemo: JSX.Element | null
     setActiveDemo: (demo: JSX.Element | null) => void
+    setLoading: (isLoading: boolean) => void
+    demoRef: React.MutableRefObject<null | HTMLSpanElement>
 }
 
 const toolSummaries: ToolSummaryData[] = [
@@ -40,6 +43,8 @@ export const ToolSummaries = () => {
     const { colorMode } = useColorMode()
     const buttonColor = colorMode === "dark" ? "secondary" : "primary"
     const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
+    const [loading, setLoading] = useState<boolean>(false)
+    const ref = useRef<null | HTMLSpanElement>(null)
     return (
         <Container maxWidth="xl">
             <Grid container direction="row">
@@ -49,16 +54,22 @@ export const ToolSummaries = () => {
                             {...summaryData}
                             buttonColor={buttonColor}
                             setActiveDemo={setActiveDemo}
+                            setLoading={setLoading}
                             activeDemo={activeDemo}
+                            demoRef={ref}
                         />
                     </Grid>
                 ))}
             </Grid>
-            {activeDemo}
+            <Container style={{ height: "100%", position: "relative" }}>
+                {loading && <MemoizedLoadingAnimation />}
+                <span ref={ref} style={{ opacity: loading ? 0 : 100 }}>
+                    {activeDemo}
+                </span>
+            </Container>
         </Container>
     )
 }
-
 const ToolSummary = (props: ToolSummaryProps) => {
     return (
         <div className="text--center" style={{ marginBottom: "1em" }}>
@@ -133,7 +144,17 @@ const DemoButton = (props: ToolSummaryProps) => {
             variant="contained"
             sx={{ whiteSpace: "nowrap" }}
             onClick={() => {
+                setTimeout(() => {
+                    props.setLoading(false)
+                }, 3000)
+                props.setLoading(isActiveDemo ? false : true)
                 props.setActiveDemo(isActiveDemo ? null : props.demoElement!)
+                setTimeout(() => {
+                    props.demoRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "end"
+                    })
+                }, 1)
             }}
             endIcon={
                 <div style={{ display: "flex" }}>
