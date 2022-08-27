@@ -17,7 +17,7 @@ export abstract class link<Child extends strNode = strNode> extends Node.base {
     abstract get tree(): Operator.Tree
 
     toString() {
-        return this.tree.flatMap((_) => _).join("")
+        return (this.tree as string[]).flat(Infinity).join("")
     }
 
     collectReferences(

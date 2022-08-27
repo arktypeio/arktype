@@ -1,5 +1,5 @@
-import { Node, Operator, Parser, strNode } from "../common.js"
-import { branch, Branches, MergeExpression } from "./branches.js"
+import { Branches, MergeExpression } from "./branches.js"
+import { branch, Node, Operator, Parser, strNode } from "./common.js"
 
 type PushRoot<B extends Branches, Root> = {
     union: B["union"]

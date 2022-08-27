@@ -13,7 +13,7 @@ export class TupleNode extends obj {
     }
 
     get tree() {
-        return this.entries.map(([, itemNode]) => itemNode.tree)
+        return { "[]": this.entries.map(([, itemNode]) => itemNode.tree) }
     }
 
     allows(args: Node.Allows.Args) {

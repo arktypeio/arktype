@@ -65,7 +65,7 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
     }
 
     get tree() {
-        return {}
+        return this.root.tree as any
     }
 
     validate(value: unknown, options?: Node.Allows.Options) {

@@ -1,6 +1,6 @@
 import { TypeOfResult } from "@re-/tools"
-import { Node, Operator, Parser, strNode, Utils } from "../common.js"
-import { branch, Branches, MergeExpression } from "./branches.js"
+import { Branches, MergeExpression } from "./branches.js"
+import { branch, Node, Operator, Parser, strNode, Utils } from "./common.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
