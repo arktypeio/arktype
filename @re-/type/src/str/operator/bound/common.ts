@@ -1,6 +1,5 @@
 export * from "../common.js"
-import { Keyword } from "../../operand/index.js"
-import { Parser, strNode } from "../common.js"
+import { Parser } from "../common.js"
 
 export const comparators = Parser.tokenSet({
     "<": 1,
@@ -20,50 +19,23 @@ export const comparatorChars = Parser.tokenSet({
 
 export type ComparatorChar = keyof typeof comparatorChars
 
-export type boundChecker = (y: number) => boolean
+export const doubleBoundComparators = Parser.tokenSet({
+    "<=": 1,
+    "<": 1
+})
 
-export type normalizedBound = [Comparator, number]
+export type DoubleBoundComparator = keyof typeof doubleBoundComparators
 
-export const createBoundChecker = ([token, x]: normalizedBound) => {
-    switch (token) {
-        case "<=":
-            return (y: number) => y <= x
-        case ">=":
-            return (y: number) => y >= x
-        case "<":
-            return (y: number) => y < x
-        case ">":
-            return (y: number) => y > x
-        case "==":
-            return (y: number) => y === x
-        default:
-            throw new Error(`Unexpected comparator ${token}.`)
-    }
-}
+export type NormalizedLowerBoundComparator = ">=" | ">"
 
-/** A BoundableNode must be either:
- *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
- *    2. A string-typed keyword terminal (e.g. "alphanum" in "100<alphanum")
- *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
+/** We have to invert the first comparator in an expression like
+ * 5<=number<10
+ * so that it can be split into two expressions like
+ * number>=5
+ * number<10
  */
-export type BoundableNode =
-    | Keyword.OfTypeNumber
-    | Keyword.OfTypeString
-    | [unknown, "[]"]
+export const normalizeLowerBoundComparator = (token: DoubleBoundComparator) =>
+    token === "<" ? ">" : ">="
 
-export interface boundableNode extends strNode {
-    boundBy?: string
-    toBound(value: unknown): number
-}
-
-export type BoundableValue = number | string | unknown[]
-
-export const isBoundable = (node: strNode): node is boundableNode =>
-    "toBound" in node
-
-export type boundValidationError = {
-    comparator: Comparator
-    limit: number
-    actual: number
-    source: BoundableValue
-}
+export type NormalizeLowerBoundComparator<Token extends DoubleBoundComparator> =
+    Token extends "<" ? ">" : ">="

@@ -29,19 +29,11 @@ export namespace Str {
         ? TreeInfer<T[0], Ctx> | TreeInfer<T[2], Ctx>
         : T extends Operator.Intersection
         ? TreeInfer<T[0], Ctx> & TreeInfer<T[2], Ctx>
-        : T extends Operator.Bound.SingleBoundNode
-        ? TreeInfer<T[0], Ctx>
-        : T extends Operator.Bound.DoubleBoundNode
-        ? TreeInfer<T[2], Ctx>
-        : never
+        : TreeInfer<T[0], Ctx>
 
-    type ModifierNode<Child = unknown, Token = string> = [Child, Token]
+    type ModifierNode<Child = unknown> = [Child, unknown]
 
-    type BranchNode<Left = unknown, Right = unknown, Token = string> = [
-        Left,
-        Token,
-        Right
-    ]
+    type BranchNode<Left = unknown, Right = unknown> = [Left, string, Right]
 
     export type References<Def extends string, Dict> = TreeReferences<
         Parse<Def, Dict>
@@ -51,10 +43,8 @@ export namespace Str {
         ? TreeReferences<Child>
         : T extends BranchNode<infer Left, infer Right>
         ? [...TreeReferences<Left>, ...TreeReferences<Right>]
-        : T extends Operator.Bound.SingleBoundNode
+        : T extends unknown[]
         ? TreeReferences<T[0]>
-        : T extends Operator.Bound.DoubleBoundNode
-        ? TreeReferences<T[2]>
         : [T]
 
     export const parse: Node.parseFn<string> = (def, ctx) =>

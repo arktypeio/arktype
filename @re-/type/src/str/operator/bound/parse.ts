@@ -1,28 +1,31 @@
 // TODO: Remove
 /* eslint-disable max-lines */
 import {
+    literalToNumber,
     NumberLiteralDefinition,
     numberLiteralNode
 } from "../../operand/unenclosed/numberLiteral.js"
 import {
-    BoundableNode,
+    bound,
     boundableNode,
+    BoundableNode,
+    isBoundable,
+    LowerBoundDefinition,
+    SingleBoundDefinition,
+    UpperBoundDefinition
+} from "./bound.js"
+import {
     Comparator,
     ComparatorChar,
-    isBoundable,
+    DoubleBoundComparator,
+    doubleBoundComparators,
     Node,
     NodeToString,
+    normalizeLowerBoundComparator,
+    NormalizeLowerBoundComparator,
     Operator,
     Parser
 } from "./common.js"
-import {
-    DoubleBoundComparator,
-    doubleBoundNode,
-    doubleBoundTokens,
-    LowerBoundDefinition,
-    UpperBoundDefinition
-} from "./double.js"
-import { SingleBoundDefinition, singleBoundNode } from "./single.js"
 
 const singleCharComparator = Parser.tokenSet({
     "<": 1,
@@ -56,26 +59,26 @@ export type Parse<
 const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
 type SingleEqualsMessage = typeof singleEqualsMessage
 
-type InvalidDoubleBoundMessage<T extends Comparator> =
-    `Double-bound expressions must specify their bounds using < or <= (got ${T}).`
+type InvalidDoubleBoundMessage<Token extends Comparator> =
+    `Double-bound expressions must specify their bounds using < or <= (got ${Token}).`
 
-const invalidDoubleBoundMessage = <T extends Comparator>(
-    T: T
-): InvalidDoubleBoundMessage<T> =>
+const invalidDoubleBoundMessage = <Token extends Comparator>(
+    T: Token
+): InvalidDoubleBoundMessage<Token> =>
     `Double-bound expressions must specify their bounds using < or <= (got ${T}).`
 
 type NonPrefixLeftBoundMessage<
-    BoundingValue extends NumberLiteralDefinition,
+    BoundingValue extends number,
     T extends Comparator
 > = `Left bound '${BoundingValue}${T}...' must occur at the beginning of the definition.`
 
 const nonPrefixLeftBoundMessage = <
-    BoundingValue extends NumberLiteralDefinition,
-    T extends Comparator
+    BoundingValue extends number,
+    Token extends Comparator
 >(
     Value: BoundingValue,
-    T: T
-): NonPrefixLeftBoundMessage<BoundingValue, T> =>
+    T: Token
+): NonPrefixLeftBoundMessage<BoundingValue, Token> =>
     `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
 export const reduce = (s: Operator.state, token: Comparator) =>
@@ -84,15 +87,15 @@ export const reduce = (s: Operator.state, token: Comparator) =>
 export type Reduce<
     L extends Parser.Left,
     Token extends Comparator
-> = L extends { root: NumberLiteralDefinition }
-    ? ReduceLeft<L, Token>
+> = L extends { root: NumberLiteralDefinition<infer Value> }
+    ? ReduceLeft<L, Value, Token>
     : Parser.Left.SetNextSuffix<L, Token>
 
 const applyLeftBound = (
     s: Parser.state<Parser.left.withRoot<numberLiteralNode>>,
     token: DoubleBoundComparator
 ) => {
-    s.l.lowerBound = [s.l.root.def, token]
+    s.l.lowerBound = [normalizeLowerBoundComparator(token), s.l.root.value]
     s.l.root = undefined as any
     return s
 }
@@ -102,24 +105,25 @@ const reduceLeft = (
     token: Comparator
 ) =>
     s.isPrefixable()
-        ? Parser.inTokenSet(token, doubleBoundTokens)
+        ? Parser.inTokenSet(token, doubleBoundComparators)
             ? applyLeftBound(s, token)
             : s.error(invalidDoubleBoundMessage(token))
-        : s.error(nonPrefixLeftBoundMessage(s.l.root.def, token))
+        : s.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
 
 type ReduceLeft<
-    L extends Parser.Left.WithRoot<NumberLiteralDefinition>,
-    T extends Comparator
+    L extends Parser.Left,
+    Value extends number,
+    Token extends Comparator
 > = Parser.Left.IsPrefixable<L> extends true
-    ? T extends DoubleBoundComparator
+    ? Token extends DoubleBoundComparator
         ? Parser.Left.From<{
               groups: []
               branches: {}
               root: undefined
-              lowerBound: [L["root"], T]
+              lowerBound: [NormalizeLowerBoundComparator<Token>, Value]
           }>
-        : Parser.Left.Error<InvalidDoubleBoundMessage<T>>
-    : Parser.Left.Error<NonPrefixLeftBoundMessage<L["root"], T>>
+        : Parser.Left.Error<InvalidDoubleBoundMessage<Token>>
+    : Parser.Left.Error<NonPrefixLeftBoundMessage<Value, Token>>
 
 export type RightBoundSuffixMessage<
     T extends Comparator,
@@ -127,12 +131,12 @@ export type RightBoundSuffixMessage<
 > = `Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (got '${Suffix}').`
 
 export const rightBoundSuffixMessage = <
-    T extends Comparator,
+    Token extends Comparator,
     Suffix extends string
 >(
-    t: T,
+    t: Token,
     suffix: Suffix
-): RightBoundSuffixMessage<T, Suffix> =>
+): RightBoundSuffixMessage<Token, Suffix> =>
     `Right bound ${t} must be followed by a number literal and zero or more additional suffix tokens (got '${suffix}').`
 
 const untilNextSuffix: Parser.scanner.UntilCondition = (scanner) =>
@@ -146,31 +150,36 @@ export const parseRight = (
     const boundingValue = s.r.shiftUntil(untilNextSuffix)
     const nextSuffix = s.r.shift() as "?" | "END"
     return numberLiteralNode.matches(boundingValue)
-        ? reduceRight(s, [token, boundingValue], nextSuffix, ctx)
+        ? reduceRight(
+              s,
+              [token, literalToNumber(boundingValue)],
+              nextSuffix,
+              ctx
+          )
         : s.error(rightBoundSuffixMessage(token, boundingValue))
 }
 
 export type ParseRight<
     S extends Parser.State.Of<Parser.Left.Suffix>,
-    T extends Comparator
+    Token extends Comparator
 > = S["R"] extends BoundingValueWithSuffix<
     infer Value,
     infer NextSuffix,
     infer Unscanned
 >
     ? Parser.State.From<{
-          L: ReduceRight<S["L"], [T, Value], NextSuffix>
+          L: ReduceRight<S["L"], [Token, Value], NextSuffix>
           R: Unscanned
       }>
-    : S["R"] extends NumberLiteralDefinition
+    : S["R"] extends NumberLiteralDefinition<infer Value>
     ? Parser.State.From<{
-          L: ReduceRight<S["L"], [T, S["R"]], "END">
+          L: ReduceRight<S["L"], [Token, Value], "END">
           R: ""
       }>
-    : Parser.State.Error<RightBoundSuffixMessage<T, S["R"]>>
+    : Parser.State.Error<RightBoundSuffixMessage<Token, S["R"]>>
 
 type BoundingValueWithSuffix<
-    BoundingValue extends NumberLiteralDefinition,
+    BoundingValue extends number,
     NextSuffix extends "?",
     Unscanned extends string
 > = `${BoundingValue}${NextSuffix}${Unscanned}`
@@ -189,12 +198,12 @@ export const reduceRight = (
 
 export type ReduceRight<
     L extends Parser.Left.Suffix,
-    R extends SingleBoundDefinition,
+    RightBound extends SingleBoundDefinition,
     NextSuffix extends Parser.SuffixToken
 > = L extends { root: BoundableNode }
     ? L extends { lowerBound: LowerBoundDefinition }
-        ? ReduceDouble<L, R, NextSuffix>
-        : ReduceSingle<L, R, NextSuffix>
+        ? ReduceDouble<L, RightBound, NextSuffix>
+        : ReduceSingle<L, RightBound, NextSuffix>
     : Parser.Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
 
 const hasBoundableRoot = (
@@ -212,15 +221,15 @@ type ReduceDouble<
         root: BoundableNode
         lowerBound: LowerBoundDefinition
     }>,
-    Right extends SingleBoundDefinition,
+    RightBound extends SingleBoundDefinition,
     NextSuffix extends Parser.SuffixToken
-> = Right extends UpperBoundDefinition
+> = RightBound extends UpperBoundDefinition
     ? Parser.Left.SuffixFrom<{
           lowerBound: undefined
-          root: [...L["lowerBound"], L["root"], ...Right]
+          root: [L["root"], [L["lowerBound"], RightBound]]
           nextSuffix: NextSuffix
       }>
-    : Parser.Left.Error<InvalidDoubleBoundMessage<Right[0]>>
+    : Parser.Left.Error<InvalidDoubleBoundMessage<RightBound[0]>>
 
 const reduceDouble = (
     s: Parser.state<
@@ -235,12 +244,7 @@ const reduceDouble = (
 ) => {
     s.l.nextSuffix = nextSuffix
     if (isValidDoubleBoundRight(right)) {
-        s.l.root = new doubleBoundNode(
-            s.l.root,
-            s.l.lowerBound,
-            right,
-            ctx
-        ) as any
+        s.l.root = new bound(s.l.root, [s.l.lowerBound, right], ctx) as any
         return s
     }
     return s.error(invalidDoubleBoundMessage(right[0]))
@@ -252,7 +256,7 @@ type ReduceSingle<
     NextSuffix extends Parser.SuffixToken
 > = Parser.Left.SuffixFrom<{
     lowerBound: undefined
-    root: [L["root"], Bound[0], Bound[1]]
+    root: [L["root"], Bound]
     nextSuffix: NextSuffix
 }>
 
@@ -264,14 +268,14 @@ const reduceSingle = (
     ctx: Node.context
 ) => {
     s.l.nextSuffix = nextSuffix
-    s.l.root = new singleBoundNode(s.l.root, right, ctx) as any
+    s.l.root = new bound(s.l.root, [right], ctx) as any
     return s
 }
 
 const isValidDoubleBoundRight = (
     right: SingleBoundDefinition
-): right is UpperBoundDefinition =>
-    Parser.inTokenSet(right[0], doubleBoundTokens)
+): right is LowerBoundDefinition =>
+    Parser.inTokenSet(right[0], doubleBoundComparators)
 
 export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
 export type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
