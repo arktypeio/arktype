@@ -206,3 +206,6 @@ export type IsExactly<T, U> = T extends U
         ? false
         : true
     : false
+
+export const pathAdd = (...subpaths: (string | number)[]) =>
+    subpaths.filter((_) => _ !== "").join("/")

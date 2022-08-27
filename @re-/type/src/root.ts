@@ -41,15 +41,13 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
 
-    export const parse: Node.parseFn<unknown> = (def, ctx) => {
-        if (typeof def === "string") {
-            return Str.parse(def, ctx)
-        }
-        if (typeof def === "object" && def !== null) {
-            return Obj.parse(def, ctx)
-        }
-        throw new Node.parseError(
-            badDefinitionTypeMessage + ` (got ${typeof def}).`
-        )
-    }
+    export const parse: Node.parseFn<unknown> = (def, ctx) =>
+        typeof def === "string"
+            ? Str.parse(def, ctx)
+            : typeof def === "object" && def !== null
+            ? Obj.parse(def, ctx)
+            : // TODO: Add context
+              Node.throwParseError(
+                  badDefinitionTypeMessage + ` (got ${typeof def}).`
+              )
 }

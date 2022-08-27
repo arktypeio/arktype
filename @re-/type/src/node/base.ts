@@ -23,6 +23,10 @@ export type parseFn<DefType = unknown> = (def: DefType, ctx: context) => base
 
 export class parseError extends Error {}
 
+export const throwParseError = (message: string) => {
+    throw new parseError(message)
+}
+
 export type ParseError<Message extends string> = `!${Message}`
 
 export abstract class base {
