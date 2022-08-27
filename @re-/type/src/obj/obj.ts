@@ -8,24 +8,32 @@ export type Validate<Def, Dict> = {
     [K in keyof Def]: Root.Validate<Def[K], Dict>
 }
 
-export type Parse<Def, Dict> = Evaluate<{
+type Tuple = { "[]": readonly unknown[] }
+
+export type Parse<Def, Dict> = Def extends readonly unknown[]
+    ? { "[]": ParseChildren<Def, Dict> }
+    : ParseChildren<Def, Dict>
+
+type ParseChildren<Def, Dict> = Evaluate<{
     [K in keyof Def]: Root.Parse<Def[K], Dict>
 }>
 
-export type Infer<
-    Tree,
-    Ctx extends Node.InferenceContext
-> = Tree extends readonly unknown[]
-    ? Evaluate<{
-          [I in keyof Tree]: Root.Infer<Tree[I], Ctx>
-      }>
+export type Infer<Tree, Ctx extends Node.InferenceContext> = Tree extends Tuple
+    ? InferTuple<Tree["[]"], Ctx>
     : Record.Infer<Tree, Ctx>
+
+export type InferTuple<
+    Tree extends readonly unknown[],
+    Ctx extends Node.InferenceContext
+> = Evaluate<{
+    [I in keyof Tree]: Root.Infer<Tree[I], Ctx>
+}>
 
 export type References<
     Tree,
     PreserveStructure extends boolean
 > = PreserveStructure extends true
-    ? StructuredReferences<Tree>
+    ? StructuredReferences<Tree extends Tuple ? Tree["[]"] : Tree>
     : UnstructuredReferences<ListPossibleTypes<ValueOf<Tree>>, []>
 
 type UnstructuredReferences<

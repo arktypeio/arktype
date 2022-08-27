@@ -10,21 +10,20 @@ export namespace Root {
         : Obj.Validate<Def, Dict>
 
     export type Parse<Def, Dict> = Def extends string
-        ? Str.Root<Str.Parse<Def, Dict>>
+        ? Str.Parse<Def, Dict>
         : Obj.Parse<Def, Dict>
 
-    export type Infer<
-        Tree,
-        Ctx extends Node.InferenceContext
-    > = Tree extends Str.Root<infer Node>
-        ? Str.Infer<Node, Ctx>
+    export type Infer<Tree, Ctx extends Node.InferenceContext> = Tree extends
+        | string
+        | unknown[]
+        ? Str.Infer<Tree, Ctx>
         : Obj.Infer<Tree, Ctx>
 
     export type References<
         Tree,
         PreserveStructure extends boolean
-    > = Tree extends Str.Root<infer Node>
-        ? Str.References<Node>
+    > = Tree extends string | unknown[]
+        ? Str.References<Tree>
         : Obj.References<Tree, PreserveStructure>
 
     export type BadDefinitionType =
