@@ -3,6 +3,5 @@ scopes:
     - assert
     - type
     - node
-    - state
     - tools
     - redo.dev
