@@ -121,13 +121,16 @@ const config = {
                 [
                     "@docusaurus/preset-classic",
                     {
-                        googleAnalytics: {
-                            trackingID: "UA-173540201-1",
+                        gtag: {
+                            trackingID: "G-CR9TJ6QVM9",
                             anonymizeIP: true
                         }
                     }
                 ]
-            ]
+            ],
+            colorMode: {
+                respectPrefersColorScheme: true
+            }
         })
 }
 

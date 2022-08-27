@@ -1,5 +1,4 @@
 import { join, relative } from "node:path"
-import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 import {
     BindingNamedNode,
     Node,
@@ -10,6 +9,7 @@ import {
 } from "ts-morph"
 import { PackageJson } from "type-fest"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
+import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 
 const ignoreUnusedComment = "@ignore-unused"
 const rootDir = fromPackageRoot("@re-")
