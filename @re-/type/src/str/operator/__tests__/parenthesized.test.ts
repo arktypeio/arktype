@@ -58,6 +58,7 @@ describe("parenthesized", () => {
                 [true]
             ]).error
         ).equals(undefined)
+        // TODO: Add precedence as a prop to determine when to parenthesize
         assert(
             listOfUnionOfListsOfUnions.validate([undefined]).error?.message
         ).snap(
