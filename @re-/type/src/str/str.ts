@@ -1,4 +1,3 @@
-import { Evaluate } from "@re-/tools"
 import { Node } from "./common.js"
 import * as Main from "./main.js"
 import * as Naive from "./naive.js"
@@ -14,8 +13,6 @@ export namespace Str {
     > extends Node.ParseError<infer Message>
         ? Message
         : Def
-
-    export type Root<Node> = Evaluate<[Node, ";"]>
 
     export type Infer<T, Ctx extends Node.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>

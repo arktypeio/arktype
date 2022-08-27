@@ -111,18 +111,18 @@ export type ValidateDictionary<Dict> = {
 
 // TODO: Implement runtime equivalent for these
 type ValidatedMetaDefs<Meta, Dict> = {
-    onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "any" }>
+    onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "unknown" }>
     onResolve?: Root.Validate<
         Get<Meta, "onResolve">,
-        Dict & { $resolution: "any" }
+        Dict & { $resolution: "unknown" }
     >
 }
 
 type ParseMetaDefs<Meta, Dict> = {
     [K in keyof Meta]: K extends "onCycle"
-        ? Root.Parse<Meta[K], Dict & { $cyclic: "any" }>
+        ? Root.Parse<Meta[K], Dict & { $cyclic: "unknown" }>
         : K extends "onResolve"
-        ? Root.Parse<Meta[K], Dict & { $resolution: "any" }>
+        ? Root.Parse<Meta[K], Dict & { $resolution: "unknown" }>
         : Node.ParseError<`Unexpected meta key '${K & string}'.`>
 }
 

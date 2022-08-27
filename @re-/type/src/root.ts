@@ -3,7 +3,9 @@ import { Obj } from "./obj/index.js"
 import { Str } from "./str/str.js"
 
 export namespace Root {
-    export type Validate<Def, Dict> = Def extends string
+    export type Validate<Def, Dict> = Def extends []
+        ? Def
+        : Def extends string
         ? Str.Validate<Def, Dict>
         : Def extends BadDefinitionType
         ? BadDefinitionTypeMessage
