@@ -8,8 +8,6 @@ export type Validate<Def, Dict> = {
     [K in keyof Def]: Root.Validate<Def[K], Dict>
 }
 
-type Tuple = { "[]": readonly unknown[] }
-
 export type Parse<Def, Dict> = Def extends readonly unknown[]
     ? { "[]": ParseChildren<Def, Dict> }
     : ParseChildren<Def, Dict>
@@ -18,41 +16,42 @@ type ParseChildren<Def, Dict> = Evaluate<{
     [K in keyof Def]: Root.Parse<Def[K], Dict>
 }>
 
-export type Infer<Tree, Ctx extends Node.InferenceContext> = Tree extends Tuple
-    ? InferTuple<Tree["[]"], Ctx>
-    : Record.Infer<Tree, Ctx>
+export type Infer<
+    Def,
+    Ctx extends Node.InferenceContext
+> = Def extends readonly unknown[]
+    ? InferTuple<Def, Ctx>
+    : Record.Infer<Def, Ctx>
 
 export type InferTuple<
-    Tree extends readonly unknown[],
+    Def extends readonly unknown[],
     Ctx extends Node.InferenceContext
 > = Evaluate<{
-    [I in keyof Tree]: Root.Infer<Tree[I], Ctx>
+    [I in keyof Def]: Root.Infer<Def[I], Ctx>
 }>
 
-export type ExtractPossibleTuple<Tree> = Tree extends Tuple ? Tree["[]"] : Tree
-
 export type References<
-    Tree,
+    Def,
+    Dict,
     PreserveStructure extends boolean
 > = PreserveStructure extends true
-    ? StructuredReferences<ExtractPossibleTuple<Tree>>
-    : UnstructuredReferences<
-          ListPossibleTypes<ValueOf<ExtractPossibleTuple<Tree>>>,
-          []
-      >
+    ? StructuredReferences<Def, Dict>
+    : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, Dict, []>
 
 type UnstructuredReferences<
     Values extends unknown[],
+    Dict,
     Result extends unknown[]
 > = Values extends IterateType<unknown, infer Current, infer Remaining>
     ? UnstructuredReferences<
           Remaining,
-          [...Result, ...Root.References<Current, false>]
+          Dict,
+          [...Result, ...Root.References<Current, Dict, false>]
       >
     : Result
 
-type StructuredReferences<Tree> = Evaluate<{
-    [K in keyof Tree]: Root.References<Tree[K], true>
+type StructuredReferences<Def, Dict> = Evaluate<{
+    [K in keyof Def]: Root.References<Def[K], Dict, true>
 }>
 
 export const parse: Node.parseFn<object> = (def, ctx) => {

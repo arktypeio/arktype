@@ -4,7 +4,7 @@ import { Node, terminalNode } from "../common.js"
 
 export namespace Alias {
     export type Infer<
-        Def extends keyof Ctx["Resolutions"],
+        Def extends keyof Ctx["Dict"],
         Ctx extends Node.InferenceContext
     > = "onResolve" extends keyof Ctx["Meta"]
         ? Def extends "$resolution"
@@ -17,40 +17,29 @@ export namespace Alias {
         : BaseOf<Def, Ctx>
 
     type BaseOf<
-        Def extends keyof Ctx["Resolutions"],
+        Def extends keyof Ctx["Dict"],
         Ctx extends Node.InferenceContext
-    > = Root.Infer<
-        Ctx["Resolutions"][Def],
-        Ctx & { Seen: { [K in Def]: true } }
-    >
+    > = Root.Infer<Ctx["Dict"][Def], Ctx & { Seen: { [K in Def]: true } }>
 
     type OnResolveOf<
-        Def extends keyof Ctx["Resolutions"],
+        Def extends keyof Ctx["Dict"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
         Ctx["Meta"]["onResolve"],
         {
-            Resolutions: WithPropValue<
-                Ctx["Resolutions"],
-                "$resolution",
-                Ctx["Resolutions"][Def]
-            >
+            Dict: WithPropValue<Ctx["Dict"], "$resolution", Ctx["Dict"][Def]>
             Meta: Ctx["Meta"]
             Seen: Ctx["Seen"] & { [K in Def]: true }
         }
     >
 
     type OnCycleOf<
-        Def extends keyof Ctx["Resolutions"],
+        Def extends keyof Ctx["Dict"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
         Ctx["Meta"]["onCycle"],
         {
-            Resolutions: WithPropValue<
-                Ctx["Resolutions"],
-                "$cyclic",
-                Ctx["Resolutions"][Def]
-            >
+            Dict: WithPropValue<Ctx["Dict"], "$cyclic", Ctx["Dict"][Def]>
             Meta: Ctx["Meta"]
             Seen: {}
         }

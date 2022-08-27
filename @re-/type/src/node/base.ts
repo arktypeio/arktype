@@ -62,7 +62,7 @@ export abstract class base {
 }
 
 export type InferenceContext = {
-    Resolutions: unknown
+    Dict: unknown
     Meta: MetaDefinitions
     Seen: Record<string, true>
 }
@@ -71,7 +71,7 @@ export namespace InferenceContext {
     export type From<Ctx extends InferenceContext> = Ctx
 
     export type FromSpace<S extends Space> = From<{
-        Resolutions: S["Resolutions"]
+        Dict: S["Dict"]
         Meta: S["Meta"]
         Seen: {}
     }>

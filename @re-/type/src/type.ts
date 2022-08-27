@@ -8,7 +8,7 @@ import {
 } from "@re-/tools"
 import { Node } from "./node/index.js"
 import { Root } from "./root.js"
-import type { Space, SpaceMeta } from "./space.js"
+import { Space, SpaceMeta } from "./space.js"
 
 export const type: TypeFunction = (
     definition,
@@ -24,29 +24,20 @@ export type TypeOptions = {
     create?: Node.Create.Options
 }
 
-export type TypeFunction<
-    S extends Space = { Dict: {}; Resolutions: {}; Meta: {} }
-> = <Def>(
-    definition: Root.Validate<Def, S["Resolutions"]>,
+export type TypeFunction<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
+    definition: Root.Validate<Def, S["Dict"]>,
     options?: TypeOptions
-) => TypeFrom<
-    Def,
-    Root.Parse<Def, S["Resolutions"]>,
-    InferTree<
-        Root.Parse<Def, S["Resolutions"]>,
-        Node.InferenceContext.FromSpace<S>
-    >
->
+) => TypeFrom<Def, S["Dict"], Infer<Def, Node.InferenceContext.FromSpace<S>>>
 
-export type TypeFrom<Def, Tree, Inferred> = Evaluate<{
+export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     definition: Def
     infer: Inferred
     check: ValidateFunction<Inferred>
     assert: AssertFunction<Inferred>
     default: Inferred
-    tree: Evaluate<Tree>
+    tree: Root.Parse<Def, Dict>
     create: CreateFunction<Inferred>
-    references: ReferencesFunction<Tree>
+    references: ReferencesFunction<Def, Dict>
 }>
 
 export class Type implements TypeFrom<unknown, unknown, unknown> {
@@ -130,7 +121,7 @@ export type CreateFunction<Inferred> = (
     options?: Node.Create.Options
 ) => Inferred
 
-export type ReferencesFunction<Tree> = <
+export type ReferencesFunction<Def, Dict> = <
     Options extends Node.References.Options = {}
 >(
     options?: Options
@@ -142,33 +133,27 @@ export type ReferencesFunction<Tree> = <
     Options
 > extends Node.References.Options<infer Filter, infer PreserveStructure>
     ? TransformReferences<
-          Root.References<Tree, PreserveStructure>,
+          Root.References<Def, Dict, PreserveStructure>,
           Filter,
           "list"
       >
     : []
 
-export type Infer<Def, S extends Space> = InferTree<
-    Root.Parse<Def, S["Resolutions"]>,
-    Node.InferenceContext.FromSpace<S>
->
-
-export type InferTree<Tree, Ctx extends Node.InferenceContext> = Root.Infer<
-    Tree,
-    Ctx
+export type Infer<Def, S extends Space> = Root.Infer<
+    Def,
+    Node.InferenceContext.From<{
+        Dict: S["Dict"]
+        Meta: S["Meta"]
+        Seen: {}
+    }>
 >
 
 export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>
 
 export type References<
     Def,
-    Dict = {},
+    Dict,
     Options extends Node.References.TypeOptions = {}
-> = ReferencesOfTree<Root.Parse<Def, Dict>, Options>
-
-export type ReferencesOfTree<
-    Tree,
-    Options extends Node.References.TypeOptions
 > = Merge<
     { filter: string; preserveStructure: false; format: "list" },
     Options
@@ -178,7 +163,7 @@ export type ReferencesOfTree<
     infer Format
 >
     ? TransformReferences<
-          Root.References<Tree, PreserveStructure>,
+          Root.References<Def, Dict, PreserveStructure>,
           Filter,
           Format
       >

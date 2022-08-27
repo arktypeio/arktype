@@ -3,7 +3,6 @@ import {
     rawSpace,
     SpaceOptions,
     SpaceOutput,
-    ToSpace,
     ValidateDictionary
 } from "./space.js"
 import { Validate } from "./type.js"
@@ -92,7 +91,8 @@ export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
 >(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
     options?: SpaceOptions
-) => SpaceOutput<ToSpace<Dict, {}>>
+    // TODO: Fix????
+) => SpaceOutput<{ Dict: Dict; Meta: {} }>
 
 export class DeclaredCompilationError extends Error {
     constructor(discrepancies: NonNullable<SetChange<string>>) {

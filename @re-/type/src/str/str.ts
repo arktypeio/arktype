@@ -14,20 +14,25 @@ export namespace Str {
         ? Message
         : Def
 
-    export type Infer<T, Ctx extends Node.InferenceContext> = T extends string
+    export type Infer<
+        Def extends string,
+        Ctx extends Node.InferenceContext
+    > = TreeInfer<Parse<Def, Ctx["Dict"]>, Ctx>
+
+    type TreeInfer<T, Ctx extends Node.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>
         : T extends Operator.Optional
-        ? Infer<T[0], Ctx> | undefined
+        ? TreeInfer<T[0], Ctx> | undefined
         : T extends Operator.List
-        ? Infer<T[0], Ctx>[]
+        ? TreeInfer<T[0], Ctx>[]
         : T extends Operator.Union
-        ? Infer<T[0], Ctx> | Infer<T[2], Ctx>
+        ? TreeInfer<T[0], Ctx> | TreeInfer<T[2], Ctx>
         : T extends Operator.Intersection
-        ? Infer<T[0], Ctx> & Infer<T[2], Ctx>
+        ? TreeInfer<T[0], Ctx> & TreeInfer<T[2], Ctx>
         : T extends Operator.Bound.SingleBoundNode
-        ? Infer<T[0], Ctx>
+        ? TreeInfer<T[0], Ctx>
         : T extends Operator.Bound.DoubleBoundNode
-        ? Infer<T[2], Ctx>
+        ? TreeInfer<T[2], Ctx>
         : never
 
     type ModifierNode<Child = unknown, Token = string> = [Child, Token]
@@ -38,14 +43,18 @@ export namespace Str {
         Right
     ]
 
-    export type References<T> = T extends ModifierNode<infer Child>
-        ? References<Child>
+    export type References<Def extends string, Dict> = TreeReferences<
+        Parse<Def, Dict>
+    >
+
+    type TreeReferences<T> = T extends ModifierNode<infer Child>
+        ? TreeReferences<Child>
         : T extends BranchNode<infer Left, infer Right>
-        ? [...References<Left>, ...References<Right>]
+        ? [...TreeReferences<Left>, ...TreeReferences<Right>]
         : T extends Operator.Bound.SingleBoundNode
-        ? References<T[0]>
+        ? TreeReferences<T[0]>
         : T extends Operator.Bound.DoubleBoundNode
-        ? References<T[2]>
+        ? TreeReferences<T[2]>
         : [T]
 
     export const parse: Node.parseFn<string> = (def, ctx) =>

@@ -65,7 +65,8 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
 export type CreateSpaceFn = <Dict, Meta = {}>(
     dictionary: ValidateDictionary<Dict>,
     options?: ValidateSpaceOptions<Dict, Meta>
-) => SpaceOutput<ToSpace<ValidateDictionary<Dict>, Meta>>
+    // @ts-expect-error Constraining Meta interferes with our ability to validate it
+) => SpaceOutput<{ Dict: ValidateDictionary<Dict>; Meta: Meta }>
 
 /**
  * Although this function claims to return Def, it actually returns an object
@@ -101,13 +102,12 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 
 export type Space = {
     Dict: unknown
-    Resolutions: unknown
     Meta: MetaDefinitions
 }
 
-export type ValidateDictionary<Dict> = {
+export type ValidateDictionary<Dict> = Evaluate<{
     [Alias in keyof Dict]: ResolutionType.Validate<Alias, Dict>
-}
+}>
 
 // TODO: Implement runtime equivalent for these
 type ValidatedMetaDefs<Meta, Dict> = {
@@ -118,14 +118,6 @@ type ValidatedMetaDefs<Meta, Dict> = {
     >
 }
 
-type ParseMetaDefs<Meta, Dict> = {
-    [K in keyof Meta]: K extends "onCycle"
-        ? Root.Parse<Meta[K], Dict & { $cyclic: "unknown" }>
-        : K extends "onResolve"
-        ? Root.Parse<Meta[K], Dict & { $resolution: "unknown" }>
-        : Node.ParseError<`Unexpected meta key '${K & string}'.`>
-}
-
 type ValidateSpaceOptions<Dict, Meta> = {
     parse?: Conform<Meta, ValidatedMetaDefs<Meta, Dict>>
 } & TypeOptions
@@ -133,16 +125,6 @@ type ValidateSpaceOptions<Dict, Meta> = {
 export type SpaceOptions = TypeOptions
 
 export type SpaceDictionary = Record<string, unknown>
-
-export type Parse<Dict> = {
-    [Alias in keyof Dict]: Root.Parse<Dict[Alias], Dict>
-}
-
-export type ToSpace<Dict, Meta> = {
-    Dict: Dict
-    Resolutions: Parse<Dict>
-    Meta: ParseMetaDefs<Meta, Dict>
-}
 
 export type SpaceOutput<S extends Space> = Evaluate<
     SpaceTypes<S> & {
@@ -159,24 +141,24 @@ export type SpaceMetaFrom<S extends Space> = {
 }
 
 export type SpaceTypes<S extends Space> = Evaluate<{
-    [Alias in keyof S["Resolutions"]]: TypeFrom<
-        Alias,
-        S["Resolutions"][Alias],
+    [Alias in keyof S["Dict"]]: TypeFrom<
+        S["Dict"][Alias],
+        S["Dict"],
         InferResolution<S, Alias>
     >
 }>
 
 export type InferSpaceRoot<S extends Space> = Evaluate<{
-    [Alias in keyof S["Resolutions"]]: InferResolution<S, Alias>
+    [Alias in keyof S["Dict"]]: InferResolution<S, Alias>
 }>
 
 export type InferResolution<
     S extends Space,
-    Alias extends keyof S["Resolutions"]
+    Alias extends keyof S["Dict"]
 > = Root.Infer<
-    S["Resolutions"][Alias],
+    S["Dict"][Alias],
     {
-        Resolutions: S["Resolutions"]
+        Dict: S["Dict"]
         Meta: S["Meta"]
         Seen: { [K in Alias]: true }
     }
@@ -193,9 +175,10 @@ export type ExtendFunction<S extends Space> = <ExtensionDict, ExtensionMeta>(
         Merge<S["Dict"], ExtensionDict>,
         ExtensionMeta
     >
-) => SpaceOutput<
-    ToSpace<Merge<S["Dict"], ExtensionDict>, Merge<S["Meta"], ExtensionMeta>>
->
+) => SpaceOutput<{
+    Dict: Merge<S["Dict"], ExtensionDict>
+    Meta: Merge<S["Meta"], ExtensionMeta>
+}>
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
     [TypeName in keyof ExtensionDict]: Validate<
