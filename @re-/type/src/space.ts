@@ -175,7 +175,11 @@ export type InferResolution<
     Alias extends keyof S["Resolutions"]
 > = Root.Infer<
     S["Resolutions"][Alias],
-    { Space: S; Seen: { [K in Alias]: true } }
+    {
+        Resolutions: S["Resolutions"]
+        Meta: S["Meta"]
+        Seen: { [K in Alias]: true }
+    }
 >
 
 export type MetaDefinitions = {

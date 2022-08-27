@@ -4,60 +4,54 @@ import { Node, terminalNode } from "../common.js"
 
 export namespace Alias {
     export type Infer<
-        Def extends keyof Ctx["Space"]["Resolutions"],
+        Def extends keyof Ctx["Resolutions"],
         Ctx extends Node.InferenceContext
-    > = "onResolve" extends keyof Ctx["Space"]["Meta"]
+    > = "onResolve" extends keyof Ctx["Meta"]
         ? Def extends "$resolution"
             ? BaseOf<Def, Ctx>
             : OnResolveOf<Def, Ctx>
-        : "onCycle" extends keyof Ctx["Space"]["Meta"]
+        : "onCycle" extends keyof Ctx["Meta"]
         ? Def extends keyof Ctx["Seen"]
             ? OnCycleOf<Def, Ctx>
             : BaseOf<Def, Ctx>
         : BaseOf<Def, Ctx>
 
     type BaseOf<
-        Def extends keyof Ctx["Space"]["Resolutions"],
+        Def extends keyof Ctx["Resolutions"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
-        Ctx["Space"]["Resolutions"][Def],
+        Ctx["Resolutions"][Def],
         Ctx & { Seen: { [K in Def]: true } }
     >
 
     type OnResolveOf<
-        Def extends keyof Ctx["Space"]["Resolutions"],
+        Def extends keyof Ctx["Resolutions"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
-        Ctx["Space"]["Meta"]["onResolve"],
+        Ctx["Meta"]["onResolve"],
         {
-            Space: {
-                Dict: Ctx["Space"]["Dict"]
-                Resolutions: WithPropValue<
-                    Ctx["Space"]["Resolutions"],
-                    "$resolution",
-                    Ctx["Space"]["Resolutions"][Def]
-                >
-                Meta: Ctx["Space"]["Meta"]
-            }
+            Resolutions: WithPropValue<
+                Ctx["Resolutions"],
+                "$resolution",
+                Ctx["Resolutions"][Def]
+            >
+            Meta: Ctx["Meta"]
             Seen: Ctx["Seen"] & { [K in Def]: true }
         }
     >
 
     type OnCycleOf<
-        Def extends keyof Ctx["Space"]["Resolutions"],
+        Def extends keyof Ctx["Resolutions"],
         Ctx extends Node.InferenceContext
     > = Root.Infer<
-        Ctx["Space"]["Meta"]["onCycle"],
+        Ctx["Meta"]["onCycle"],
         {
-            Space: {
-                Dict: Ctx["Space"]["Dict"]
-                Resolutions: WithPropValue<
-                    Ctx["Space"]["Resolutions"],
-                    "$cyclic",
-                    Ctx["Space"]["Resolutions"][Def]
-                >
-                Meta: Ctx["Space"]["Meta"]
-            }
+            Resolutions: WithPropValue<
+                Ctx["Resolutions"],
+                "$cyclic",
+                Ctx["Resolutions"][Def]
+            >
+            Meta: Ctx["Meta"]
             Seen: {}
         }
     >

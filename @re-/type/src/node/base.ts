@@ -1,4 +1,4 @@
-import type { Space, SpaceMeta } from "../space.js"
+import type { MetaDefinitions, Space, SpaceMeta } from "../space.js"
 import type { TypeOptions } from "../type.js"
 import { stringifyValue } from "../utils.js"
 import type { Allows, Create, References } from "./traversal/index.js"
@@ -56,10 +56,17 @@ export abstract class base {
 }
 
 export type InferenceContext = {
-    Space: Space
+    Resolutions: unknown
+    Meta: MetaDefinitions
     Seen: Record<string, true>
 }
 
 export namespace InferenceContext {
     export type From<Ctx extends InferenceContext> = Ctx
+
+    export type FromSpace<S extends Space> = From<{
+        Resolutions: S["Resolutions"]
+        Meta: S["Meta"]
+        Seen: {}
+    }>
 }

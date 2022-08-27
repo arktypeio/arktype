@@ -54,7 +54,7 @@ export type InferTerminal<
     Ctx extends Node.InferenceContext
 > = Token extends Keyword.Definition
     ? Keyword.Types[Token]
-    : Token extends keyof Ctx["Space"]["Resolutions"]
+    : Token extends keyof Ctx["Resolutions"]
     ? Alias.Infer<Token, Ctx>
     : Token extends StringLiteralDefinition<infer Value>
     ? Value

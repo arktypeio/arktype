@@ -34,10 +34,7 @@ export type TypeFunction<
     Root.Parse<Def, S["Resolutions"]>,
     InferTree<
         Root.Parse<Def, S["Resolutions"]>,
-        Node.InferenceContext.From<{
-            Space: S
-            Seen: {}
-        }>
+        Node.InferenceContext.FromSpace<S>
     >
 >
 
@@ -153,7 +150,7 @@ export type ReferencesFunction<Tree> = <
 
 export type Infer<Def, S extends Space> = InferTree<
     Root.Parse<Def, S["Resolutions"]>,
-    Node.InferenceContext.From<{ Space: S; Seen: {} }>
+    Node.InferenceContext.FromSpace<S>
 >
 
 export type InferTree<Tree, Ctx extends Node.InferenceContext> = Root.Infer<
