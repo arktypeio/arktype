@@ -4,8 +4,8 @@ import { Parser } from "../common.js"
 export const comparators = Parser.tokenSet({
     "<": 1,
     ">": 1,
-    ">=": 1,
     "<=": 1,
+    ">=": 1,
     "==": 1
 })
 
@@ -34,8 +34,13 @@ export type NormalizedLowerBoundComparator = ">=" | ">"
  * number>=5
  * number<10
  */
-export const normalizeLowerBoundComparator = (token: DoubleBoundComparator) =>
-    token === "<" ? ">" : ">="
 
-export type NormalizeLowerBoundComparator<Token extends DoubleBoundComparator> =
-    Token extends "<" ? ">" : ">="
+export const invertedComparators = {
+    "<": ">",
+    ">": "<",
+    "<=": ">=",
+    ">=": "<=",
+    "==": "=="
+} as const
+
+export type InvertedComparators = typeof invertedComparators

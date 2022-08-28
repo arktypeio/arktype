@@ -8,7 +8,7 @@ export class state<constraints extends Partial<left> = {}> {
     r: scanner
 
     constructor(def: string) {
-        this.l = left.initial as left<constraints>
+        this.l = left.initialize() as left<constraints>
         this.r = new scanner(def)
     }
 

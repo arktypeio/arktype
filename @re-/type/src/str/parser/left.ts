@@ -22,10 +22,10 @@ type Base = {
 export type Left<Constraints extends Partial<Base> = {}> = Base & Constraints
 
 export namespace left {
-    export const initial: left = {
+    export const initialize = (): left => ({
         groups: [],
         branches: {}
-    }
+    })
 
     export type withRoot<Root extends strNode = strNode> = {
         root: Root

@@ -2,6 +2,7 @@ import { Keyword } from "../../operand/index.js"
 import {
     Comparator,
     DoubleBoundComparator,
+    invertedComparators,
     Node,
     NormalizedLowerBoundComparator,
     StrNode,
@@ -38,6 +39,21 @@ export class bound extends unary<boundableNode> {
 
     get tree(): Bound<StrNode> {
         return [this.child.tree, ...this.bounds]
+    }
+
+    override toString() {
+        const rightBoundToString =
+            this.bounds.length === 1
+                ? this.bounds[0].join("")
+                : this.bounds[1].join("")
+        let result = this.child.toString() + rightBoundToString
+        if (this.bounds.length === 2) {
+            const leftBoundToString = `${this.bounds[0][1]}${
+                invertedComparators[this.bounds[0][0]]
+            }`
+            result = leftBoundToString + result
+        }
+        return result
     }
 
     allows(args: Node.Allows.Args) {

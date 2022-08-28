@@ -20,10 +20,10 @@ import {
     ComparatorChar,
     DoubleBoundComparator,
     doubleBoundComparators,
+    InvertedComparators,
+    invertedComparators,
     Node,
     NodeToString,
-    normalizeLowerBoundComparator,
-    NormalizeLowerBoundComparator,
     Parser
 } from "./common.js"
 
@@ -34,17 +34,12 @@ const singleCharComparator = Parser.tokenSet({
 
 export type SingleCharComparator = keyof typeof singleCharComparator
 
-export const parse = (s: Parser.state.withRoot, start: ComparatorChar) => {
-    if (s.r.lookahead === "=") {
-        s.r.shift()
-        reduce(s, `${start}${s.r.lookahead}`)
-    } else if (Parser.inTokenSet(start, singleCharComparator)) {
-        reduce(s, start)
-    } else {
-        throw new Error(singleEqualsMessage)
-    }
-    return s
-}
+export const parse = (s: Parser.state.withRoot, start: ComparatorChar) =>
+    s.r.lookahead === "="
+        ? reduce(s.shifted(), `${start}=`)
+        : Parser.inTokenSet(start, singleCharComparator)
+        ? reduce(s, start)
+        : s.error(singleEqualsMessage)
 
 export type Parse<
     S extends Parser.State,
@@ -95,7 +90,7 @@ const applyLeftBound = (
     s: Parser.state<Parser.left.withRoot<numberLiteralNode>>,
     token: DoubleBoundComparator
 ) => {
-    s.l.lowerBound = [normalizeLowerBoundComparator(token), s.l.root.value]
+    s.l.lowerBound = [invertedComparators[token], s.l.root.value]
     s.l.root = undefined as any
     return s
 }
@@ -120,7 +115,7 @@ type ReduceLeft<
               groups: []
               branches: {}
               root: undefined
-              lowerBound: [NormalizeLowerBoundComparator<Token>, Value]
+              lowerBound: [InvertedComparators[Token], Value]
           }>
         : Parser.Left.Error<InvalidDoubleBoundMessage<Token>>
     : Parser.Left.Error<NonPrefixLeftBoundMessage<Value, Token>>
@@ -191,7 +186,7 @@ export const reduceRight = (
     ctx: Node.context
 ) =>
     hasBoundableRoot(s)
-        ? hasLeftBound(s)
+        ? hasLowerBound(s)
             ? reduceDouble(s, right, nextSuffix, ctx)
             : reduceSingle(s, right, nextSuffix, ctx)
         : s.error(unboundableMessage(s.l.root.toString()))
@@ -211,10 +206,10 @@ const hasBoundableRoot = (
 ): s is Parser.state<Parser.left.suffix<{ root: boundableNode }>> =>
     isBoundable(s.l.root)
 
-const hasLeftBound = (
+const hasLowerBound = (
     s: Parser.state.suffix
 ): s is Parser.state.suffix<{ lowerBound: LowerBoundDefinition }> =>
-    s.l.lowerBound !== undefined
+    !!s.l.lowerBound
 
 type ReduceDouble<
     L extends Parser.Left.Suffix<{
@@ -242,9 +237,10 @@ const reduceDouble = (
     nextSuffix: Parser.SuffixToken,
     ctx: Node.context
 ) => {
-    s.l.nextSuffix = nextSuffix
     if (isValidDoubleBoundRight(right)) {
         s.l.root = new bound(s.l.root, [s.l.lowerBound, right], ctx) as any
+        s.l.lowerBound = undefined as any
+        s.l.nextSuffix = nextSuffix
         return s
     }
     return s.error(invalidDoubleBoundMessage(right[0]))
@@ -267,8 +263,9 @@ const reduceSingle = (
     nextSuffix: Parser.SuffixToken,
     ctx: Node.context
 ) => {
-    s.l.nextSuffix = nextSuffix
     s.l.root = new bound(s.l.root, [right], ctx) as any
+    s.l.lowerBound = undefined
+    s.l.nextSuffix = nextSuffix
     return s
 }
 

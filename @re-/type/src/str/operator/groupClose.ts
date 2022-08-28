@@ -18,7 +18,7 @@ export type ReduceGroupClose<L extends Parser.Left> =
 
 export const reduceGroupClose = (s: Parser.state<Parser.left.withRoot>) => {
     const previousBranches = s.l.groups.pop()
-    if (previousBranches === undefined) {
+    if (!previousBranches) {
         return s.error(unexpectedGroupCloseMessage)
     }
     mergeBranches(s)
