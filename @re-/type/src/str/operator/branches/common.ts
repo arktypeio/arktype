@@ -1,6 +1,6 @@
 export * from "../common.js"
 
-import { Node, Operator } from "../common.js"
+import { Node, StrTree } from "../common.js"
 
 export type BranchToken = "|" | "&"
 
@@ -16,7 +16,7 @@ export abstract class branch extends Node.base {
         for (let i = this.children.length - 2; i >= 0; i--) {
             tree = [this.children[i].tree, this.token, tree]
         }
-        return tree as Operator.Tree
+        return tree as StrTree
     }
 
     toString() {

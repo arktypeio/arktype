@@ -32,7 +32,6 @@ export class bound extends link<boundableNode> {
         this.checkers = bounds.map((bound) => createBoundChecker(bound))
     }
 
-    // TODO: Update toString
     get tree() {
         return [this.child.tree, this.bounds]
     }

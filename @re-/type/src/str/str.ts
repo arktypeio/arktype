@@ -29,10 +29,13 @@ export namespace Str {
         ? TreeInfer<T[0], Ctx> | TreeInfer<T[2], Ctx>
         : T extends Operator.Intersection
         ? TreeInfer<T[0], Ctx> & TreeInfer<T[2], Ctx>
-        : TreeInfer<T[0], Ctx>
+        : // @ts-expect-error Must be a bound node, so we just infer from the first element.
+          TreeInfer<T[0], Ctx>
 
+    // Bound, Optional or List, all of which the child is the first element
     type ModifierNode<Child = unknown> = [Child, unknown]
 
+    // Union or Intersection
     type BranchNode<Left = unknown, Right = unknown> = [Left, string, Right]
 
     export type References<Def extends string, Dict> = TreeReferences<
@@ -43,8 +46,6 @@ export namespace Str {
         ? TreeReferences<Child>
         : T extends BranchNode<infer Left, infer Right>
         ? [...TreeReferences<Left>, ...TreeReferences<Right>]
-        : T extends unknown[]
-        ? TreeReferences<T[0]>
         : [T]
 
     export const parse: Node.parseFn<string> = (def, ctx) =>

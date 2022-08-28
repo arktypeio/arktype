@@ -14,7 +14,6 @@ describe("bound", () => {
             assert(type("object[]==1").infer).typed as object[]
         })
         test("double-bounded list", () => {
-            type("-7<=unknown[]<99").tree
             assert(type("-7<=unknown[]<99").infer).typed as unknown[]
         })
         test("parenthesized list", () => {

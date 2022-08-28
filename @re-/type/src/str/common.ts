@@ -12,6 +12,6 @@ export type NodeToString<T, Result extends string = ""> = T extends Iterate<
     ? `${Result}${T}`
     : Result
 
-export type StrTree = string | StrTree[]
+export type StrTree = string | number | StrTree[]
 
 export type strNode = Node.base & { tree: StrTree }

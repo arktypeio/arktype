@@ -1,12 +1,10 @@
 export * from "../common.js"
 export * as Parser from "../parser/index.js"
-import { Node, strNode } from "../common.js"
+import { Node, strNode, StrTree } from "../common.js"
 import * as Parser from "../parser/index.js"
 
 export namespace Operator {
     export type state = Parser.state<Parser.left.withRoot>
-
-    export type Tree = (string | Tree)[]
 }
 
 export abstract class link<Child extends strNode = strNode> extends Node.base {
@@ -14,7 +12,7 @@ export abstract class link<Child extends strNode = strNode> extends Node.base {
         super()
     }
 
-    abstract get tree(): Operator.Tree
+    abstract get tree(): StrTree[]
 
     toString() {
         return (this.tree as string[]).flat(Infinity).join("")
