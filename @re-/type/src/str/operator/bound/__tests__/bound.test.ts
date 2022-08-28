@@ -26,8 +26,33 @@ describe("parse", () => {
             ])
         })
     })
+    describe("double", () => {
+        test("<,<=", () => {
+            assert(type("-5<number<=5").tree).typedValue([
+                "number",
+                [">", -5],
+                ["<=", 5]
+            ])
+        })
+        test("<=,<", () => {
+            assert(type("-3.23<=number<4.654").tree).typedValue([
+                "number",
+                [">=", -3.23],
+                ["<", 4.654]
+            ])
+        })
+    })
 })
-
+describe("string", () => {
+    test("parse", () => {
+        assert(type("1<string<=5").tree).typedValue([
+            "string",
+            [">", 1],
+            ["<=", 5]
+        ])
+    })
+})
+describe("")
 describe("generation", () => {
     test("unsupported", () => {
         assert(() => type("1<number<5").create()).throws.snap(
