@@ -4,11 +4,11 @@ import { Node, StrNode } from "../common.js"
 export type BranchToken = "|" | "&"
 
 // Union or Intersection
-export type Branch<Left = unknown, Right = unknown, Token = unknown> = [
-    Left,
-    Token,
-    Right
-]
+export type Branch<
+    Left = unknown,
+    Right = unknown,
+    Token extends BranchToken = BranchToken
+> = [Left, Token, Right]
 
 export abstract class branch extends Node.base {
     constructor(protected children: Node.base[], protected ctx: Node.context) {

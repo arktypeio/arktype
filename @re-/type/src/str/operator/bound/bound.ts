@@ -5,7 +5,6 @@ import {
     Node,
     NormalizedLowerBoundComparator,
     strNode,
-    Unary,
     unary
 } from "./common.js"
 
@@ -22,7 +21,7 @@ export type BoundsDefinition =
 export type Bound<
     Child = unknown,
     Bounds extends BoundsDefinition = BoundsDefinition
-> = Unary<Child, Bounds>
+> = [Child, ...Bounds]
 
 export class bound extends unary<boundableNode> {
     checkers: boundChecker[]
