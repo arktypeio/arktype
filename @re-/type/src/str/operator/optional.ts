@@ -11,14 +11,13 @@ export type ParseOptional<S extends Parser.State> = S["R"] extends ""
       }>
     : Parser.State.Error<NonTerminatingOptionalMessage>
 
-export const finalizeOptional = (
-    s: Parser.state.withRoot,
-    ctx: Node.context
-) => {
-    if (s.r.lookahead !== undefined) {
+export const parseOptional = (s: Parser.state.suffix, ctx: Node.context) => {
+    if (s.r.lookahead !== "END") {
         throw new Error(nonTerminatingOptionalMessage)
     }
-    return new optional(s.l.root, ctx)
+    s.l.root = new optional(s.l.root, ctx)
+    s.l.nextSuffix = "END"
+    return s
 }
 
 const nonTerminatingOptionalMessage = `Suffix '?' is only valid at the end of a definition.`

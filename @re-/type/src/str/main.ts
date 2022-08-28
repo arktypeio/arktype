@@ -60,10 +60,10 @@ export const suffixLoop = (
     ctx: Node.context
 ): strNode => {
     if (s.l.nextSuffix === "END") {
-        return s.l.root
+        return finalize(s)
     }
     if (s.l.nextSuffix === "?") {
-        return Operator.finalizeOptional(s, ctx)
+        return finalize(Operator.parseOptional(s, ctx))
     }
     if (Parser.inTokenSet(s.l.nextSuffix, Operator.Bound.comparators)) {
         return suffixLoop(
@@ -71,12 +71,12 @@ export const suffixLoop = (
             ctx
         )
     }
-    return s.error(`Unexpected suffix token '${s.l.nextSuffix}'.`)
+    return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
 }
 
 export type SuffixLoop<S extends Parser.State.Of<Parser.Left.Suffix>> =
     S["L"]["nextSuffix"] extends "END"
-        ? ExtractFinalizedRoot<S["L"]>
+        ? Finalize<S["L"]>
         : SuffixLoop<NextSuffix<S>>
 
 export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
@@ -84,9 +84,18 @@ export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
         ? Operator.ParseOptional<S>
         : S["L"]["nextSuffix"] extends Operator.Bound.Comparator
         ? Operator.Bound.ParseRight<S, S["L"]["nextSuffix"]>
-        : Parser.State.Error<`Unexpected suffix token '${S["L"]["nextSuffix"]}'.`>
+        : Parser.State.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
 
-export type ExtractFinalizedRoot<L extends Parser.Left.Suffix> =
-    L["lowerBound"] extends undefined
-        ? L["root"]
-        : Node.ParseError<Operator.Bound.UnpairedLeftBoundMessage>
+const finalize = (s: Parser.state.suffix) =>
+    s.l.lowerBound ? s.error(Operator.Bound.unpairedLeftBoundMessage) : s.l.root
+
+type Finalize<L extends Parser.Left.Suffix> = L["lowerBound"] extends undefined
+    ? L["root"]
+    : Node.ParseError<Operator.Bound.UnpairedLeftBoundMessage>
+
+type UnexpectedSuffixMessage<Token extends string> =
+    `Unexpected suffix token '${Token}'.`
+
+const unexpectedSuffixMessage = <Token extends string>(
+    token: Token
+): UnexpectedSuffixMessage<Token> => `Unexpected suffix token '${token}'.`

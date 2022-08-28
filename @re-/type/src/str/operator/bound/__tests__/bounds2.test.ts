@@ -5,7 +5,24 @@ import { type } from "../../../../index.js"
 describe("parse", () => {
     describe("single", () => {
         test(">", () =>
-            assert(type("number>0").tree).typedValue(["number", [[">", 0]]]))
+            assert(type("number>0").tree).typedValue(["number", [">", 0]]))
+        test("<", () =>
+            assert(type("number<10").tree).typedValue(["number", ["<", 10]]))
+        test(">=", () =>
+            assert(type("number>=3.14159").tree).typedValue([
+                "number",
+                [">=", 3.14159]
+            ]))
+        test("<=", () =>
+            assert(type("number<=-49").tree).typedValue([
+                "number",
+                ["<=", -49]
+            ]))
+        test("==", () =>
+            assert(type("number==3211993").tree).typedValue([
+                "number",
+                ["==", 3211993]
+            ]))
     })
 })
 
