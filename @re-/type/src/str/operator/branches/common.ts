@@ -1,8 +1,14 @@
 export * from "../common.js"
-
-import { Node, StrTree } from "../common.js"
+import { Node, StrNode } from "../common.js"
 
 export type BranchToken = "|" | "&"
+
+// Union or Intersection
+export type Branch<Left = unknown, Right = unknown, Token = unknown> = [
+    Left,
+    Token,
+    Right
+]
 
 export abstract class branch extends Node.base {
     constructor(protected children: Node.base[], protected ctx: Node.context) {
@@ -16,7 +22,7 @@ export abstract class branch extends Node.base {
         for (let i = this.children.length - 2; i >= 0; i--) {
             tree = [this.children[i].tree, this.token, tree]
         }
-        return tree as StrTree
+        return tree as StrNode
     }
 
     toString() {

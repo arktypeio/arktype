@@ -3,15 +3,15 @@ import * as Node from "../node/exports.js"
 export * as Node from "../node/exports.js"
 export * as Parser from "./parser/index.js"
 
-export type NodeToString<T, Result extends string = ""> = T extends Iterate<
-    infer Next,
-    infer Rest
->
+export type NodeToString<
+    Node,
+    Result extends string = ""
+> = Node extends Iterate<infer Next, infer Rest>
     ? NodeToString<Rest, `${Result}${NodeToString<Next>}`>
-    : T extends string
-    ? `${Result}${T}`
+    : Node extends string
+    ? `${Result}${Node}`
     : Result
 
-export type StrTree = string | number | StrTree[]
+export type StrNode = string | number | StrNode[]
 
-export type strNode = Node.base & { tree: StrTree }
+export type strNode = Node.base & { tree: StrNode }

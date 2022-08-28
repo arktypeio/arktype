@@ -21,30 +21,24 @@ export namespace Str {
 
     type TreeInfer<T, Ctx extends Node.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>
-        : T extends Operator.Optional
-        ? TreeInfer<T[0], Ctx> | undefined
-        : T extends Operator.List
-        ? TreeInfer<T[0], Ctx>[]
-        : T extends Operator.Union
-        ? TreeInfer<T[0], Ctx> | TreeInfer<T[2], Ctx>
-        : T extends Operator.Intersection
-        ? TreeInfer<T[0], Ctx> & TreeInfer<T[2], Ctx>
+        : T extends Operator.Optional<infer Child>
+        ? TreeInfer<Child, Ctx> | undefined
+        : T extends Operator.List<infer Child>
+        ? TreeInfer<Child, Ctx>[]
+        : T extends Operator.Union<infer Left, infer Right>
+        ? TreeInfer<Left, Ctx> | TreeInfer<Right, Ctx>
+        : T extends Operator.Intersection<infer Left, infer Right>
+        ? TreeInfer<Left, Ctx> & TreeInfer<Right, Ctx>
         : // @ts-expect-error Must be a bound node, so we just infer from the first element.
           TreeInfer<T[0], Ctx>
-
-    // Bound, Optional or List, all of which the child is the first element
-    type ModifierNode<Child = unknown> = [Child, unknown]
-
-    // Union or Intersection
-    type BranchNode<Left = unknown, Right = unknown> = [Left, string, Right]
 
     export type References<Def extends string, Dict> = TreeReferences<
         Parse<Def, Dict>
     >
 
-    type TreeReferences<T> = T extends ModifierNode<infer Child>
+    type TreeReferences<T> = T extends Operator.Unary<infer Child>
         ? TreeReferences<Child>
-        : T extends BranchNode<infer Left, infer Right>
+        : T extends Operator.Branch<infer Left, infer Right>
         ? [...TreeReferences<Left>, ...TreeReferences<Right>]
         : [T]
 

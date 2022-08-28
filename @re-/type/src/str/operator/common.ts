@@ -1,18 +1,15 @@
 export * from "../common.js"
 export * as Parser from "../parser/index.js"
-import { Node, strNode, StrTree } from "../common.js"
-import * as Parser from "../parser/index.js"
+import { Node, strNode, StrNode } from "../common.js"
 
-export namespace Operator {
-    export type state = Parser.state<Parser.left.withRoot>
-}
+export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 
-export abstract class link<Child extends strNode = strNode> extends Node.base {
+export abstract class unary<Child extends strNode = strNode> extends Node.base {
     constructor(protected child: Child, protected ctx: Node.context) {
         super()
     }
 
-    abstract get tree(): StrTree[]
+    abstract get tree(): StrNode[]
 
     toString() {
         return (this.tree as string[]).flat(Infinity).join("")

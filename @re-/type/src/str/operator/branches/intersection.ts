@@ -1,12 +1,15 @@
-import { Branches, MergeExpression } from "./branches.js"
-import { branch, Node, Operator, Parser, strNode } from "./common.js"
+import { Branches, MergeExpression } from "./branch.js"
+import { Branch, branch, Node, Parser, strNode } from "./common.js"
 
 type PushRoot<B extends Branches, Root> = {
     union: B["union"]
     intersection: [MergeExpression<B["intersection"], Root>, "&"]
 }
 
-export const reduceIntersection = (s: Operator.state, ctx: Node.context) => {
+export const reduceIntersection = (
+    s: Parser.state.withRoot,
+    ctx: Node.context
+) => {
     if (!s.l.branches.intersection) {
         s.l.branches.intersection = new intersection([s.l.root], ctx)
     } else {
@@ -39,7 +42,11 @@ export const mergeIntersection = (s: StateWithMergeableIntersection) => {
     return s
 }
 
-export type Intersection = [unknown, "&", unknown]
+export type Intersection<Left = unknown, Right = unknown> = Branch<
+    Left,
+    Right,
+    "&"
+>
 
 export class intersection extends branch {
     addMember(node: strNode) {

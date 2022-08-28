@@ -2,10 +2,11 @@ import { Keyword } from "../../operand/index.js"
 import {
     Comparator,
     DoubleBoundComparator,
-    link,
     Node,
     NormalizedLowerBoundComparator,
-    strNode
+    strNode,
+    Unary,
+    unary
 } from "./common.js"
 
 export type SingleBoundDefinition = [Comparator, number]
@@ -18,9 +19,9 @@ export type BoundsDefinition =
     | [SingleBoundDefinition]
     | [LowerBoundDefinition, LowerBoundDefinition]
 
-export type Bound = [unknown, BoundsDefinition]
+export type Bound<Child = unknown> = Unary<Child, BoundsDefinition>
 
-export class bound extends link<boundableNode> {
+export class bound extends unary<boundableNode> {
     checkers: boundChecker[]
 
     constructor(

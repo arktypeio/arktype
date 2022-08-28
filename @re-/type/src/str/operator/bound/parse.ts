@@ -23,7 +23,6 @@ import {
     NodeToString,
     normalizeLowerBoundComparator,
     NormalizeLowerBoundComparator,
-    Operator,
     Parser
 } from "./common.js"
 
@@ -34,7 +33,7 @@ const singleCharComparator = Parser.tokenSet({
 
 export type SingleCharComparator = keyof typeof singleCharComparator
 
-export const parse = (s: Operator.state, start: ComparatorChar) => {
+export const parse = (s: Parser.state.withRoot, start: ComparatorChar) => {
     if (s.r.lookahead === "=") {
         s.r.shift()
         reduce(s, `${start}${s.r.lookahead}`)
@@ -81,7 +80,7 @@ const nonPrefixLeftBoundMessage = <
 ): NonPrefixLeftBoundMessage<BoundingValue, Token> =>
     `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
-export const reduce = (s: Operator.state, token: Comparator) =>
+export const reduce = (s: Parser.state.withRoot, token: Comparator) =>
     s.hasRoot(numberLiteralNode) ? reduceLeft(s, token) : s.suffixed(token)
 
 export type Reduce<

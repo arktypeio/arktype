@@ -1,4 +1,4 @@
-import { BranchToken, Operator } from "./common.js"
+import { BranchToken, Parser } from "./common.js"
 import {
     hasMergeableIntersection,
     intersection,
@@ -26,7 +26,7 @@ export type MergeBranches<B extends Branches, Root> = MergeExpression<
     MergeExpression<B["intersection"], Root>
 >
 
-export const mergeBranches = (s: Operator.state) => {
+export const mergeBranches = (s: Parser.state.withRoot) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }

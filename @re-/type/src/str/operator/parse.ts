@@ -5,12 +5,12 @@ import {
     ReduceUnion,
     reduceUnion
 } from "./branches/index.js"
-import { Node, Operator, Parser } from "./common.js"
+import { Node, Parser } from "./common.js"
 import { ReduceGroupClose, reduceGroupClose } from "./groupClose.js"
 import { ParseList, parseList } from "./list.js"
 
 export const parseOperator = (
-    s: Operator.state,
+    s: Parser.state.withRoot,
     ctx: Node.context
 ): Parser.state => {
     const lookahead = s.r.shift()
