@@ -52,7 +52,6 @@ describe("string", () => {
         ])
     })
 })
-describe("")
 describe("generation", () => {
     test("unsupported", () => {
         assert(() => type("1<number<5").create()).throws.snap(
