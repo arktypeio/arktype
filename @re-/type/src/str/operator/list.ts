@@ -1,6 +1,6 @@
 import { pathAdd } from "@re-/tools"
 import { boundableNode } from "./bound/exports.js"
-import { Node, Parser, unary, Unary } from "./common.js"
+import { Node, Parser, StrNode, Unary, unary } from "./common.js"
 
 export const parseList = (
     s: Parser.state<Parser.left.withRoot>,
@@ -31,7 +31,7 @@ type IncompleteTokenMessage = typeof incompleteTokenMessage
 export type List<Child = unknown> = Unary<Child, "[]">
 
 export class list extends unary implements boundableNode {
-    get tree() {
+    get tree(): List<StrNode> {
         return [this.child.tree, "[]"]
     }
 

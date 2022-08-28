@@ -1,4 +1,4 @@
-import { Node, Parser, unary, Unary } from "./common.js"
+import { Node, Parser, StrNode, Unary, unary } from "./common.js"
 
 export type ParseOptional<S extends Parser.State> = S["R"] extends ""
     ? Parser.State.From<{
@@ -27,7 +27,7 @@ type NonTerminatingOptionalMessage = typeof nonTerminatingOptionalMessage
 export type Optional<Child = unknown> = Unary<Child, "?">
 
 export class optional extends unary {
-    get tree() {
+    get tree(): Optional<StrNode> {
         return [this.child.tree, "?"]
     }
 

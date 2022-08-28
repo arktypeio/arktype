@@ -4,6 +4,7 @@ import {
     DoubleBoundComparator,
     Node,
     NormalizedLowerBoundComparator,
+    StrNode,
     strNode,
     unary
 } from "./common.js"
@@ -35,8 +36,8 @@ export class bound extends unary<boundableNode> {
         this.checkers = bounds.map((bound) => createBoundChecker(bound))
     }
 
-    get tree() {
-        return [this.child.tree, this.bounds]
+    get tree(): Bound<StrNode> {
+        return [this.child.tree, ...this.bounds]
     }
 
     allows(args: Node.Allows.Args) {

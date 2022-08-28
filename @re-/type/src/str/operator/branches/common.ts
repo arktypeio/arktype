@@ -3,7 +3,6 @@ import { Node, StrNode } from "../common.js"
 
 export type BranchToken = "|" | "&"
 
-// Union or Intersection
 export type Branch<
     Left = unknown,
     Right = unknown,
@@ -22,7 +21,7 @@ export abstract class branch extends Node.base {
         for (let i = this.children.length - 2; i >= 0; i--) {
             tree = [this.children[i].tree, this.token, tree]
         }
-        return tree as StrNode
+        return tree as Branch<StrNode, StrNode>
     }
 
     toString() {
