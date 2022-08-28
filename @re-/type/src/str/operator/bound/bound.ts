@@ -17,9 +17,12 @@ export type UpperBoundDefinition = [DoubleBoundComparator, number]
 
 export type BoundsDefinition =
     | [SingleBoundDefinition]
-    | [LowerBoundDefinition, LowerBoundDefinition]
+    | [LowerBoundDefinition, UpperBoundDefinition]
 
-export type Bound<Child = unknown> = Unary<Child, BoundsDefinition>
+export type Bound<
+    Child = unknown,
+    Bounds extends BoundsDefinition = BoundsDefinition
+> = Unary<Child, Bounds>
 
 export class bound extends unary<boundableNode> {
     checkers: boundChecker[]

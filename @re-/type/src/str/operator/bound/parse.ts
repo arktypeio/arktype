@@ -6,6 +6,7 @@ import {
     numberLiteralNode
 } from "../../operand/unenclosed/numberLiteral.js"
 import {
+    Bound,
     bound,
     boundableNode,
     BoundableNode,
@@ -225,7 +226,7 @@ type ReduceDouble<
 > = RightBound extends UpperBoundDefinition
     ? Parser.Left.SuffixFrom<{
           lowerBound: undefined
-          root: [L["root"], [L["lowerBound"], RightBound]]
+          root: Bound<L["root"], [L["lowerBound"], RightBound]>
           nextSuffix: NextSuffix
       }>
     : Parser.Left.Error<InvalidDoubleBoundMessage<RightBound[0]>>
@@ -251,11 +252,11 @@ const reduceDouble = (
 
 type ReduceSingle<
     L extends Parser.Left.Suffix,
-    Bound extends SingleBoundDefinition,
+    Single extends SingleBoundDefinition,
     NextSuffix extends Parser.SuffixToken
 > = Parser.Left.SuffixFrom<{
     lowerBound: undefined
-    root: [L["root"], Bound]
+    root: Bound<L["root"], [Single]>
     nextSuffix: NextSuffix
 }>
 
@@ -273,7 +274,7 @@ const reduceSingle = (
 
 const isValidDoubleBoundRight = (
     right: SingleBoundDefinition
-): right is LowerBoundDefinition =>
+): right is UpperBoundDefinition =>
     Parser.inTokenSet(right[0], doubleBoundComparators)
 
 export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
