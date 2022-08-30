@@ -127,9 +127,12 @@ export type BoundableValue = number | string | unknown[]
 export const isBoundable = (node: strNode): node is boundableNode =>
     "toBound" in node
 
-export type boundValidationError = {
-    comparator: Comparator
-    limit: number
-    actual: number
-    source: BoundableValue
-}
+export type boundValidationError = Node.Allows.ErrorData<
+    "BoundViolation",
+    {
+        comparator: Comparator
+        limit: number
+        size: number
+        units?: "characters" | "items"
+    }
+>

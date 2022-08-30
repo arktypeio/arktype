@@ -86,10 +86,15 @@ export const customValidatorAllows = (
     return true
 }
 
-export type ErrorData<Code extends string = string, Context = unknown> = {
+export type ErrorData<Code extends string = string, AdditionalContext = {}> = {
     path: string[]
     code: Code
-    context: Context
+    context: BaseErrorContext & AdditionalContext
+}
+
+export type BaseErrorContext = {
+    type: string
+    value: unknown
 }
 
 export type ErrorsByPath = Record<string, unknown>
