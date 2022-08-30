@@ -10,15 +10,17 @@ import {
     unary
 } from "./common.js"
 
-export type SingleBoundDefinition = [Comparator, number]
+export type BoundDefinition = [Comparator, number]
+
+export type SingleBoundDefinition = [BoundDefinition]
+
+export type DoubleBoundDefinition = [LowerBoundDefinition, UpperBoundDefinition]
 
 export type LowerBoundDefinition = [NormalizedLowerBoundComparator, number]
 
 export type UpperBoundDefinition = [DoubleBoundComparator, number]
 
-export type BoundsDefinition =
-    | [SingleBoundDefinition]
-    | [LowerBoundDefinition, UpperBoundDefinition]
+export type BoundsDefinition = SingleBoundDefinition | DoubleBoundDefinition
 
 export type Bound<
     Child = unknown,
@@ -88,7 +90,7 @@ export class bound extends unary<boundableNode> {
 
 export type boundChecker = (y: number) => boolean
 
-export const createBoundChecker = ([token, x]: SingleBoundDefinition) => {
+export const createBoundChecker = ([token, x]: BoundDefinition) => {
     switch (token) {
         case "<=":
             return (y: number) => y <= x

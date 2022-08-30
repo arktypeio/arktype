@@ -20,16 +20,19 @@ abstract class BaseNumberKeyword extends terminalNode implements boundableNode {
     }
 }
 
-export type NumberKeywordNode = typeof BaseNumberKeyword
-
-export class NumberKeyword extends BaseNumberKeyword {
+class NumberKeyword extends BaseNumberKeyword {
     allowsNumber() {
         return true
     }
 }
 
-export class IntegerKeyword extends BaseNumberKeyword {
+class IntegerKeyword extends BaseNumberKeyword {
     allowsNumber(value: number) {
         return Number.isInteger(value)
     }
+}
+
+export const numberKeywordsToNodes = {
+    number: NumberKeyword,
+    integer: IntegerKeyword
 }

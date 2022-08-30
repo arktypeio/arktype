@@ -19,6 +19,15 @@ export const type: TypeFunction = (
     return new Type(definition, root, options) as any
 }
 
+export const dynamic = type as DynamicTypeFunction
+
+export type DynamicTypeFunction = (
+    definition: unknown,
+    options?: TypeOptions
+) => DynamicType
+
+export type DynamicType = TypeFrom<unknown, {}, unknown>
+
 export type TypeOptions = {
     validate?: Node.Allows.Options
     create?: Node.Create.Options

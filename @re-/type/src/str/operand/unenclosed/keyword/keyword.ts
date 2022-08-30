@@ -1,72 +1,6 @@
-import {
-    IntegerKeyword,
-    NumberKeyword,
-    NumberKeywordNode
-} from "./numberKeyword.js"
-import {
-    AlphaKeyword,
-    AlphaNumKeyword,
-    EmailKeyword,
-    LowerKeyword,
-    StringKeyword,
-    StringKeywordNode,
-    UpperKeyword
-} from "./stringKeyword.js"
-import {
-    AnyKeyword,
-    BigintKeyword,
-    BooleanKeyword,
-    FalseKeyword,
-    FunctionKeyword,
-    NeverKeyword,
-    NullKeyword,
-    ObjectKeyword,
-    SymbolKeyword,
-    TrueKeyword,
-    UndefinedKeyword,
-    UnknownKeyword,
-    VoidKeyword
-} from "./typeKeyword.js"
-
-const keywordsToNodes = {
-    any: AnyKeyword,
-    bigint: BigintKeyword,
-    boolean: BooleanKeyword,
-    false: FalseKeyword,
-    function: FunctionKeyword,
-    never: NeverKeyword,
-    null: NullKeyword,
-    object: ObjectKeyword,
-    symbol: SymbolKeyword,
-    true: TrueKeyword,
-    undefined: UndefinedKeyword,
-    unknown: UnknownKeyword,
-    void: VoidKeyword,
-    // String-typed
-    string: StringKeyword,
-    email: EmailKeyword,
-    alpha: AlphaKeyword,
-    alphanum: AlphaNumKeyword,
-    lower: LowerKeyword,
-    upper: UpperKeyword,
-    // Number-typed
-    number: NumberKeyword,
-    integer: IntegerKeyword
-}
-
-type KeywordsToNodes = typeof keywordsToNodes
-
-type KeywordNode = KeywordsToNodes[keyof KeywordsToNodes]
-
-type KeywordsByNodeType<NodeType> = {
-    [K in keyof KeywordsToNodes]: KeywordsToNodes[K] extends NodeType
-        ? K
-        : never
-}[keyof KeywordsToNodes]
-
-type GetGeneratedType<Node extends KeywordNode> = ReturnType<
-    InstanceType<Node>["create"]
->
+import { numberKeywordsToNodes } from "./numberKeyword.js"
+import { stringKeywordsToNodes } from "./stringKeyword.js"
+import { typeKeywordsToNodes } from "./typeKeyword.js"
 
 export namespace Keyword {
     export type Definition = keyof KeywordsToNodes
@@ -75,14 +9,31 @@ export namespace Keyword {
         [K in Definition]: GetGeneratedType<KeywordsToNodes[K]>
     }
 
-    export type OfTypeNumber = KeywordsByNodeType<NumberKeywordNode>
+    export const nodes = {
+        ...typeKeywordsToNodes,
+        ...stringKeywordsToNodes,
+        ...numberKeywordsToNodes
+    }
 
-    export type OfTypeString = KeywordsByNodeType<StringKeywordNode>
+    export const numberNodes = numberKeywordsToNodes
 
-    export const matches = (def: string): def is Definition =>
-        def in keywordsToNodes
+    export type OfTypeNumber = keyof typeof numberKeywordsToNodes
+
+    export const stringNodes = stringKeywordsToNodes
+
+    export type OfTypeString = keyof typeof stringKeywordsToNodes
+
+    export const matches = (def: string): def is Definition => def in nodes
 
     export const parse = (def: Definition) => {
-        return new keywordsToNodes[def](def)
+        return new nodes[def](def)
     }
+
+    type KeywordsToNodes = typeof nodes
+
+    type KeywordNode = KeywordsToNodes[keyof KeywordsToNodes]
+
+    type GetGeneratedType<Node extends KeywordNode> = ReturnType<
+        InstanceType<Node>["create"]
+    >
 }

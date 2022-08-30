@@ -86,7 +86,7 @@ export const customValidatorAllows = (
     return true
 }
 
-export type ErrorsByPath = Record<string, string>
+export type ErrorsByPath = Record<string, unknown>
 
 export class ErrorBrancher {
     private branches: Record<string, ErrorTree> = {}
@@ -127,9 +127,8 @@ export class ErrorTree {
         return this.count === 0
     }
 
-    // TODO: Fix types
-    add(path: string, message: string | object) {
-        this.errors[path] = message as any
+    add(path: string, data: unknown) {
+        this.errors[path] = data
     }
 
     assign(errors: ErrorsByPath) {
@@ -162,19 +161,20 @@ export class ErrorTree {
         }
         const entries = Object.entries(this.errors)
         if (entries.length === 1) {
-            const [path, message] = entries[0]
+            const [path, data] = entries[0]
+            const message = toString(data)
             if (path) {
                 return `At ${
                     isDigits(path) ? "index" : "path"
-                } ${path}, ${uncapitalize(message)}`
+                } ${path}, ${toString(message)}`
             }
             return message
         } else {
             let aggregatedMessage =
                 "Encountered errors at the following paths:\n"
-            for (const [path, message] of entries) {
+            for (const [path, data] of entries) {
                 // Display root path (which is internally an empty string) as "/"
-                aggregatedMessage += `  ${path || "/"}: ${message}\n`
+                aggregatedMessage += `  ${path || "/"}: ${toString(data)}\n`
             }
             return aggregatedMessage
         }

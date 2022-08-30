@@ -11,7 +11,9 @@ export namespace Root {
         ? BadDefinitionTypeMessage
         : Obj.Validate<Def, Dict>
 
-    export type Parse<Def, Dict> = Def extends string
+    export type Parse<Def, Dict> = unknown extends Def
+        ? Def
+        : Def extends string
         ? Str.Parse<Def, Dict>
         : Obj.Parse<Def, Dict>
 

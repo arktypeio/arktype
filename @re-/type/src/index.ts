@@ -1,4 +1,4 @@
-export { type, type References, type Infer } from "./type.js"
+export { type, dynamic, type References, type Infer } from "./type.js"
 export { space, def } from "./space.js"
 export { declare } from "./declaration.js"
 export { Root } from "./root.js"

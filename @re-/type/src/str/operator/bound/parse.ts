@@ -6,13 +6,13 @@ import {
     numberLiteralNode
 } from "../../operand/unenclosed/numberLiteral.js"
 import {
-    Bound,
     bound,
-    boundableNode,
+    Bound,
     BoundableNode,
+    boundableNode,
+    BoundDefinition,
     isBoundable,
     LowerBoundDefinition,
-    SingleBoundDefinition,
     UpperBoundDefinition
 } from "./bound.js"
 import {
@@ -181,7 +181,7 @@ type BoundingValueWithSuffix<
 
 export const reduceRight = (
     s: Parser.state<Parser.left.suffix>,
-    right: SingleBoundDefinition,
+    right: BoundDefinition,
     nextSuffix: Parser.SuffixToken,
     ctx: Node.context
 ) =>
@@ -193,7 +193,7 @@ export const reduceRight = (
 
 export type ReduceRight<
     L extends Parser.Left.Suffix,
-    RightBound extends SingleBoundDefinition,
+    RightBound extends BoundDefinition,
     NextSuffix extends Parser.SuffixToken
 > = L extends { root: BoundableNode }
     ? L extends { lowerBound: LowerBoundDefinition }
@@ -216,7 +216,7 @@ type ReduceDouble<
         root: BoundableNode
         lowerBound: LowerBoundDefinition
     }>,
-    RightBound extends SingleBoundDefinition,
+    RightBound extends BoundDefinition,
     NextSuffix extends Parser.SuffixToken
 > = RightBound extends UpperBoundDefinition
     ? Parser.Left.SuffixFrom<{
@@ -233,7 +233,7 @@ const reduceDouble = (
             lowerBound: LowerBoundDefinition
         }>
     >,
-    right: SingleBoundDefinition,
+    right: BoundDefinition,
     nextSuffix: Parser.SuffixToken,
     ctx: Node.context
 ) => {
@@ -248,7 +248,7 @@ const reduceDouble = (
 
 type ReduceSingle<
     L extends Parser.Left.Suffix,
-    Single extends SingleBoundDefinition,
+    Single extends BoundDefinition,
     NextSuffix extends Parser.SuffixToken
 > = Parser.Left.SuffixFrom<{
     lowerBound: undefined
@@ -259,7 +259,7 @@ type ReduceSingle<
 //TODO: Try out types to stop casting to any?
 const reduceSingle = (
     s: Parser.state.suffix<{ root: boundableNode }>,
-    right: SingleBoundDefinition,
+    right: BoundDefinition,
     nextSuffix: Parser.SuffixToken,
     ctx: Node.context
 ) => {
@@ -270,7 +270,7 @@ const reduceSingle = (
 }
 
 const isValidDoubleBoundRight = (
-    right: SingleBoundDefinition
+    right: BoundDefinition
 ): right is UpperBoundDefinition =>
     Parser.inTokenSet(right[0], doubleBoundComparators)
 

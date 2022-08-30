@@ -12,7 +12,7 @@ abstract class BaseTypeKeyword extends terminalNode {
     abstract allowsValue(value: unknown): boolean
 }
 
-export class SymbolKeyword extends BaseTypeKeyword {
+class SymbolKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return typeof value === "symbol"
     }
@@ -22,7 +22,7 @@ export class SymbolKeyword extends BaseTypeKeyword {
     }
 }
 
-export class FunctionKeyword extends BaseTypeKeyword {
+class FunctionKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return typeof value === "function"
     }
@@ -32,7 +32,7 @@ export class FunctionKeyword extends BaseTypeKeyword {
     }
 }
 
-export class TrueKeyword extends BaseTypeKeyword {
+class TrueKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return value === true
     }
@@ -42,7 +42,7 @@ export class TrueKeyword extends BaseTypeKeyword {
     }
 }
 
-export class FalseKeyword extends BaseTypeKeyword {
+class FalseKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return value === false
     }
@@ -52,7 +52,7 @@ export class FalseKeyword extends BaseTypeKeyword {
     }
 }
 
-export class UndefinedKeyword extends BaseTypeKeyword {
+class UndefinedKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return value === undefined
     }
@@ -62,7 +62,7 @@ export class UndefinedKeyword extends BaseTypeKeyword {
     }
 }
 
-export class NullKeyword extends BaseTypeKeyword {
+class NullKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return value === null
     }
@@ -72,7 +72,7 @@ export class NullKeyword extends BaseTypeKeyword {
     }
 }
 
-export class AnyKeyword extends BaseTypeKeyword {
+class AnyKeyword extends BaseTypeKeyword {
     allowsValue() {
         return true
     }
@@ -82,7 +82,7 @@ export class AnyKeyword extends BaseTypeKeyword {
     }
 }
 
-export class UnknownKeyword extends BaseTypeKeyword {
+class UnknownKeyword extends BaseTypeKeyword {
     allowsValue() {
         return true
     }
@@ -92,7 +92,7 @@ export class UnknownKeyword extends BaseTypeKeyword {
     }
 }
 
-export class VoidKeyword extends BaseTypeKeyword {
+class VoidKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return value === undefined
     }
@@ -102,7 +102,7 @@ export class VoidKeyword extends BaseTypeKeyword {
     }
 }
 
-export class NeverKeyword extends BaseTypeKeyword {
+class NeverKeyword extends BaseTypeKeyword {
     allowsValue() {
         return false
     }
@@ -115,7 +115,7 @@ export class NeverKeyword extends BaseTypeKeyword {
     }
 }
 
-export class ObjectKeyword extends BaseTypeKeyword {
+class ObjectKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return typeof value === "object" && value !== null
     }
@@ -125,7 +125,7 @@ export class ObjectKeyword extends BaseTypeKeyword {
     }
 }
 
-export class BooleanKeyword extends BaseTypeKeyword {
+class BooleanKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return typeof value === "boolean"
     }
@@ -135,7 +135,7 @@ export class BooleanKeyword extends BaseTypeKeyword {
     }
 }
 
-export class BigintKeyword extends BaseTypeKeyword {
+class BigintKeyword extends BaseTypeKeyword {
     allowsValue(value: unknown) {
         return typeof value === "bigint"
     }
@@ -143,4 +143,20 @@ export class BigintKeyword extends BaseTypeKeyword {
     create(): bigint {
         return 0n
     }
+}
+
+export const typeKeywordsToNodes = {
+    any: AnyKeyword,
+    bigint: BigintKeyword,
+    boolean: BooleanKeyword,
+    false: FalseKeyword,
+    function: FunctionKeyword,
+    never: NeverKeyword,
+    null: NullKeyword,
+    object: ObjectKeyword,
+    symbol: SymbolKeyword,
+    true: TrueKeyword,
+    undefined: UndefinedKeyword,
+    unknown: UnknownKeyword,
+    void: VoidKeyword
 }

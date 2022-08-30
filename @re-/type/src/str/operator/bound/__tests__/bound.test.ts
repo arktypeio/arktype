@@ -1,6 +1,15 @@
 import { assert } from "@re-/assert"
+import * as fc from "fast-check"
 import { describe, test } from "mocha"
-import { type } from "../../../../index.js"
+import { dynamic, type } from "../../../../index.js"
+import { DoubleBoundDefinition, SingleBoundDefinition } from "../bound.js"
+import { invertedComparators } from "../common.js"
+import {
+    arbitraryComparator,
+    arbitraryDoubleComparator,
+    arbitraryLimit,
+    assertCheckResults
+} from "./common.js"
 
 describe("parse", () => {
     describe("single", () => {
@@ -52,6 +61,52 @@ describe("string", () => {
         ])
     })
 })
+describe("check", () => {
+    test("single", () => {
+        fc.assert(
+            fc.property(
+                arbitraryComparator,
+                arbitraryLimit,
+                (comparator, limit) => {
+                    const singleBound = dynamic(`number${comparator}${limit}`)
+                    const expectedBounds: SingleBoundDefinition = [
+                        [comparator, limit]
+                    ]
+                    assert(singleBound.tree).equals([
+                        "number",
+                        ...expectedBounds
+                    ])
+                    assertCheckResults(singleBound, expectedBounds)
+                }
+            )
+        )
+    })
+    test("double", () => {
+        fc.assert(
+            fc.property(
+                arbitraryLimit,
+                arbitraryDoubleComparator,
+                arbitraryDoubleComparator,
+                arbitraryLimit,
+                (lowerLimit, lowerComparator, upperComparator, upperLimit) => {
+                    const doubleBound = dynamic(
+                        `${lowerLimit}${lowerComparator}number${upperComparator}${upperLimit}`
+                    )
+                    const expectedBounds: DoubleBoundDefinition = [
+                        [invertedComparators[lowerComparator], lowerLimit],
+                        [upperComparator, upperLimit]
+                    ]
+                    assert(doubleBound.tree).equals([
+                        "number",
+                        ...expectedBounds
+                    ])
+                    assertCheckResults(doubleBound, expectedBounds)
+                }
+            )
+        )
+    })
+})
+
 describe("generation", () => {
     test("unsupported", () => {
         assert(() => type("1<number<5").create()).throws.snap(
