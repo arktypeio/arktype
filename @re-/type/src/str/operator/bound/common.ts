@@ -34,7 +34,6 @@ export type NormalizedLowerBoundComparator = ">=" | ">"
  * number>=5
  * number<10
  */
-
 export const invertedComparators = {
     "<": ">",
     ">": "<",
