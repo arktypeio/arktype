@@ -1,10 +1,10 @@
-import { isDigits, toString, uncapitalize } from "@re-/tools"
+import { isDigits, toString } from "@re-/tools"
 import type { base } from "../base.js"
 import * as Traverse from "./traverse.js"
 
 export type Args<Value = unknown> = {
     value: Value
-    errors: ErrorTree
+    errors: ErrorData[]
     cfg: Options
     ctx: Context
 }
@@ -16,7 +16,7 @@ export const createArgs = (
 ): Args => {
     const args = {
         value,
-        errors: new ErrorTree(),
+        errors: [],
         ctx: Traverse.createContext(modelOptions) as Context,
         cfg: options
     }
@@ -84,6 +84,12 @@ export const customValidatorAllows = (
         return false
     }
     return true
+}
+
+export type ErrorData<Code extends string = string, Context = unknown> = {
+    path: string[]
+    code: Code
+    context: Context
 }
 
 export type ErrorsByPath = Record<string, unknown>

@@ -51,13 +51,17 @@ export abstract class base {
         return Object.keys(collected)
     }
 
+    addAllowsError(args: Allows.Args, kind: string) {
+        args.errors.push({
+            kind,
+            path: args.ctx.path,
+            type: this.toString(),
+            value: args.value
+        })
+    }
+
     addUnassignable(args: Allows.Args) {
-        args.errors.add(
-            args.ctx.path,
-            `${Allows.stringifyValue(
-                args.value
-            )} is not assignable to ${this.toString()}.`
-        )
+        this.addAllowsError(args, "unassignable")
     }
 }
 

@@ -71,15 +71,23 @@ export class union extends branch {
     token = "|" as const
 
     allows(args: Node.Allows.Args) {
-        const unionErrors = args.errors.split(args.ctx.path)
+        const unionErrors: Node.Allows.ErrorData[] = []
         for (const branch of this.children) {
-            const branchErrors = unionErrors.branch(branch.toString())
+            const branchErrors: Node.Allows.ErrorData[] = []
             if (branch.allows({ ...args, errors: branchErrors })) {
                 // If any branch of a Union does not have errors,
                 // we can return right away since the whole definition is valid
                 return true
             }
+            unionErrors.push(branchErrors)
         }
+        args.errors.push({
+            kind: "union",
+            path: args.ctx.path,
+            type: this.toString(),
+            value: {}
+        })
+
         // If we haven't returned, all branches are invalid, so add an error
         const summaryErrorMessage = `${Node.Allows.stringifyValue(
             args.value
