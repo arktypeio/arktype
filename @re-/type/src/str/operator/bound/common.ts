@@ -43,3 +43,11 @@ export const invertedComparators = {
 } as const
 
 export type InvertedComparators = typeof invertedComparators
+
+export const comparatorToString: Record<Comparator, string> = {
+    "<": "less than",
+    ">": "greater than",
+    "<=": "less than or equal to",
+    ">=": "greater than or equal to",
+    "==": "exactly"
+}

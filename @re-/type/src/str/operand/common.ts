@@ -43,7 +43,7 @@ export abstract class primitiveLiteralNode<
         if (args.value === this.value) {
             return true
         }
-        this.addUnassignable(args)
+        this.unassignableError(args)
         return false
     }
 

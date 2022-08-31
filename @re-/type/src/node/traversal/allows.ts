@@ -98,17 +98,17 @@ export const stringifyValue = (value: unknown) =>
 
 export type BaseErrorContext = {
     path: Traverse.Path
-    type: string
+    definition: string
     tree: unknown
-    value: unknown
+    data: unknown
 }
 
 export const createBaseErrorContext = (
     node: base,
     args: Args
 ): BaseErrorContext => ({
-    type: node.toString(),
-    value: args.value,
+    definition: node.toString(),
+    data: args.value,
     path: args.ctx.path,
     tree: node.tree
 })
@@ -167,7 +167,7 @@ export type SupplementalErrorContext<Code extends ErrorCode> = Evaluate<
 export class CheckError extends Error {}
 
 export class ErrorResult extends Array<ErrorData> {
-    constructor(errors: ErrorData[]) {
+    constructor(...errors: ErrorData[]) {
         super(...errors)
     }
 

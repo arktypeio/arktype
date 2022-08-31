@@ -5,7 +5,7 @@ abstract class BaseTypeKeyword extends terminalNode {
         if (this.allowsValue(args.value)) {
             return true
         }
-        this.addUnassignable(args)
+        this.unassignableError(args)
         return false
     }
 

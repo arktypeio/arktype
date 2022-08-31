@@ -65,6 +65,8 @@ export const literalSerialize = (value: any): any => {
     if (typeof value === "object") {
         return value === null
             ? null
+            : Array.isArray(value)
+            ? value.map((v) => literalSerialize(v))
             : Object.fromEntries(
                   Object.entries(value).map(([k, v]) => [
                       k,

@@ -2,7 +2,11 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { dynamic, type } from "../../../../index.js"
-import { DoubleBoundDefinition, SingleBoundDefinition } from "../bound.js"
+import {
+    boundValidationError,
+    DoubleBoundDefinition,
+    SingleBoundDefinition
+} from "../bound.js"
 import { invertedComparators } from "../common.js"
 import {
     arbitraryComparator,
@@ -116,6 +120,59 @@ describe("bound", () => {
                 "string",
                 [">", 1],
                 ["<=", 5]
+            ])
+        })
+        test("check", () => {
+            const gte3 = type("string>=3")
+            assert(gte3.check("yes").errors).equals(undefined)
+            assert(
+                gte3.check("no").errors as any as [boundValidationError]
+            ).snap([
+                {
+                    code: `BoundViolation`,
+                    path: [],
+                    definition: `string>=3`,
+                    tree: [`string`, [`>=`, 3]],
+                    data: `no`,
+                    comparator: `>=`,
+                    limit: 3,
+                    size: 2,
+                    units: `characters`,
+                    message: `"no" must be greater than or equal to 3 characters (got 2).`
+                }
+            ])
+        })
+    })
+
+    describe("list", () => {
+        test("parse", () => {
+            assert(type("-343<=boolean[]<89").tree).typedValue([
+                ["boolean", "[]"],
+                [">=", -343],
+                ["<", 89]
+            ])
+        })
+        test("check", () => {
+            const twoNulls = type("null[]==2")
+            assert(twoNulls.check([null, null]).errors).equals(undefined)
+            assert(
+                twoNulls.check([null]).errors as any as [boundValidationError]
+            ).snap([
+                {
+                    code: `BoundViolation`,
+                    path: [],
+                    definition: `null[]==2`,
+                    tree: [
+                        [`null`, `[]`],
+                        [`==`, 2]
+                    ],
+                    data: [null],
+                    comparator: `==`,
+                    limit: 2,
+                    size: 1,
+                    units: `items`,
+                    message: `[null] must be exactly 2 items (got 1).`
+                }
             ])
         })
     })

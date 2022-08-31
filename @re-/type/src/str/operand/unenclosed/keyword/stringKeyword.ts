@@ -6,7 +6,7 @@ abstract class BaseStringKeyword extends terminalNode implements boundableNode {
         if (typeof args.value === "string" && this.allowsString(args.value)) {
             return true
         }
-        this.addUnassignable(args)
+        this.unassignableError(args)
         return false
     }
 

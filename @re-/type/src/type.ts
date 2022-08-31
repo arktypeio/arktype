@@ -84,7 +84,7 @@ export class Type implements DynamicType {
         }
         return args.errors.length
             ? {
-                  errors: new ErrorResult(args.errors)
+                  errors: new ErrorResult(...args.errors)
               }
             : { data: value }
     }

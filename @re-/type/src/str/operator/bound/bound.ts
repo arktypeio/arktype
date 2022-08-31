@@ -1,6 +1,7 @@
 import { Keyword } from "../../operand/index.js"
 import {
     Comparator,
+    comparatorToString,
     DoubleBoundComparator,
     invertedComparators,
     Node,
@@ -32,7 +33,7 @@ export class bound extends unary<boundableNode> {
 
     constructor(
         child: boundableNode,
-        private bounds: BoundsDefinition,
+        public readonly bounds: BoundsDefinition,
         ctx: Node.context
     ) {
         super(child, ctx)
@@ -66,12 +67,20 @@ export class bound extends unary<boundableNode> {
         let boundIndex = 0
         for (const checker of this.checkers) {
             if (!checker(size)) {
-                this.addAllowsError(args, "BoundViolation", {
-                    comparator: this.bounds[boundIndex][0],
-                    limit: this.bounds[boundIndex][1],
+                const [comparator, limit] = this.bounds[boundIndex]
+                const units = this.child.units
+                this.checkError(args, "BoundViolation", {
+                    comparator,
+                    limit,
                     size,
-                    units: this.child.units,
-                    message: `Bad bound.`
+                    units,
+                    message: boundViolationMessage(
+                        args.value,
+                        comparator,
+                        limit,
+                        units,
+                        size
+                    )
                 })
                 return false
             }
@@ -138,3 +147,14 @@ export type boundValidationError = Node.Allows.ErrorData<
         units?: BoundUnits
     }
 >
+
+export const boundViolationMessage = (
+    value: unknown,
+    comparator: Comparator,
+    limit: number,
+    units: BoundUnits | undefined,
+    size: number
+) =>
+    `${Node.Allows.stringifyValue(value)} must be ${
+        comparatorToString[comparator]
+    } ${limit}${units ? " " + units : ""} (got ${size}).`

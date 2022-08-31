@@ -51,7 +51,7 @@ export abstract class base {
         return Object.keys(collected)
     }
 
-    addAllowsError<Code extends Allows.ErrorCode>(
+    checkError<Code extends Allows.ErrorCode>(
         args: Allows.Args,
         code: Code,
         context: Allows.SupplementalErrorContext<Code>
@@ -59,15 +59,15 @@ export abstract class base {
         args.errors.push({
             code,
             path: args.ctx.path,
-            type: this.toString(),
+            definition: this.toString(),
             tree: this.tree,
-            value: args.value,
+            data: args.value,
             ...context
         })
     }
 
-    addUnassignable(args: Allows.Args) {
-        this.addAllowsError(args, "Unassignable", {
+    unassignableError(args: Allows.Args) {
+        this.checkError(args, "Unassignable", {
             message: `${Allows.stringifyValue(
                 args.value
             )} is not assignable to ${this.toString()}.`

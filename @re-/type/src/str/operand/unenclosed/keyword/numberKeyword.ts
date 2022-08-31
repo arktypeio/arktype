@@ -5,7 +5,7 @@ abstract class BaseNumberKeyword extends terminalNode implements boundableNode {
         if (typeof args.value === "number" && this.allowsNumber(args.value)) {
             return true
         }
-        this.addUnassignable(args)
+        this.unassignableError(args)
         return false
     }
 

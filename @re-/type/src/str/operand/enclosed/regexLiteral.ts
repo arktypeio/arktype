@@ -12,11 +12,11 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
 
     allows(args: Node.Allows.Args) {
         if (typeof args.value !== "string") {
-            this.addUnassignable(args)
+            this.unassignableError(args)
             return false
         }
         if (!this.regex.test(args.value)) {
-            this.addAllowsError(args, "RegexMismatch", {
+            this.checkError(args, "RegexMismatch", {
                 message: `'${args.value}' does not match expression ${this.def}.`
             })
             return false

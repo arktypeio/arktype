@@ -23,13 +23,13 @@ export class TupleNode extends obj {
 
     allows(args: Node.Allows.Args) {
         if (!Array.isArray(args.value)) {
-            this.addUnassignable(args)
+            this.unassignableError(args)
             return false
         }
         const definitionLength = this.entries.length
         const valueLength = args.value.length
         if (definitionLength !== valueLength) {
-            this.addAllowsError(args, "TupleLengthMismatch", {
+            this.checkError(args, "TupleLengthMismatch", {
                 message: `Tuple of length ${valueLength} is not assignable to tuple of length ${definitionLength}.`,
                 definitionLength,
                 valueLength

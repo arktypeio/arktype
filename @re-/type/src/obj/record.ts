@@ -42,7 +42,7 @@ export class RecordNode extends obj {
 
     allows(args: Node.Allows.Args) {
         if (!isArgValueRecordLike(args)) {
-            this.addUnassignable(args)
+            this.unassignableError(args)
             return false
         }
         const propValidationResults = this.allowsProps(args)
@@ -52,7 +52,7 @@ export class RecordNode extends obj {
             !args.ctx.modelCfg.ignoreExtraneousKeys
         ) {
             const keys = [...propValidationResults.unseenValueKeys]
-            this.addAllowsError(args, "ExtraneousKeys", {
+            this.checkError(args, "ExtraneousKeys", {
                 keys,
                 message: `Keys ${keys
                     .map((k) => `'${k}'`)
@@ -63,29 +63,21 @@ export class RecordNode extends obj {
         return propValidationResults.allSeenKeysAllowed
     }
 
+    // TODO: Should maybe not use set for perf?
     private allowsProps(args: Node.Allows.Args<Record<string, unknown>>) {
         const result = {
-            // TODO: Should maybe not use set for perf?
             unseenValueKeys: new Set(Object.keys(args.value)),
             allSeenKeysAllowed: true
         }
         for (const [propKey, propNode] of this.entries) {
-            const pathWithProp = [...args.ctx.path, propKey]
-            const propArgs: Node.Allows.Args = {
-                ...args,
-                value: args.value[propKey],
-                ctx: {
-                    ...args.ctx,
-                    path: pathWithProp
-                }
-            }
+            const propArgs = this.argsForProp(args, propKey)
             if (propKey in args.value) {
                 const propIsAllowed = propNode.allows(propArgs)
                 if (!propIsAllowed) {
                     result.allSeenKeysAllowed = false
                 }
             } else if (!(propNode instanceof optional)) {
-                propNode.addAllowsError(propArgs, "MissingKey", {
+                propNode.checkError(propArgs, "MissingKey", {
                     message: `Missing required value of type ${propNode.toString()}.`,
                     key: propKey
                 })
@@ -94,6 +86,20 @@ export class RecordNode extends obj {
             result.unseenValueKeys.delete(propKey)
         }
         return result
+    }
+
+    private argsForProp(
+        args: Node.Allows.Args<Record<string, unknown>>,
+        propKey: string
+    ): Node.Allows.Args {
+        return {
+            ...args,
+            value: args.value[propKey],
+            ctx: {
+                ...args.ctx,
+                path: [...args.ctx.path, propKey]
+            }
+        }
     }
 
     create(args: Node.Create.Args) {

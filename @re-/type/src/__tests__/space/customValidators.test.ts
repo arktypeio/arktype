@@ -3,7 +3,7 @@ import { describe, test } from "mocha"
 import { CustomValidator, def, space, type } from "../../index.js"
 
 describe("custom validators", () => {
-    const validator: CustomValidator = ({ value }) => {
+    const validator: CustomValidator = ({ data: value }) => {
         if (
             typeof value !== "string" ||
             value !== [...value].reverse().join("")
@@ -50,7 +50,12 @@ describe("custom validators", () => {
             },
             {
                 validate: {
-                    validator: ({ path, type, value, getOriginalErrors }) => {
+                    validator: ({
+                        path,
+                        definition: type,
+                        data: value,
+                        getOriginalErrors
+                    }) => {
                         if (type === "first") {
                             return value === 1
                                 ? undefined

@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { DynamicType } from "../../../../type.js"
 import { Keyword } from "../../../operand/index.js"
-import { BoundDefinition, boundValidationError } from "../bound.js"
+import { BoundsDefinition, boundViolationMessage } from "../bound.js"
 import {
     Comparator,
     comparators,
@@ -32,45 +32,51 @@ export const arbitraryComparator = fc.constantFrom(
 export const arbitraryDoubleComparator = fc.constantFrom(
     ...(Object.keys(doubleBoundComparators) as DoubleBoundComparator[])
 )
-const boundRange = { min: -1000, max: 1000 }
+const boundRange = { min: -1000, max: 1000, noNaN: true }
 export const arbitraryLimit = fc
     .oneof(fc.float(boundRange), fc.integer(boundRange))
     .map((limit) => Number.parseFloat(limit.toFixed(2)))
 
-const expectedCheckResult = (bounds: BoundDefinition[], actual: number) => {
-    for (const [comparator, limit] of bounds) {
-        const possibleExpectedError: boundValidationError = {
+const expectedCheckResult = (
+    expectedBounds: BoundsDefinition,
+    data: number
+) => {
+    for (const [comparator, limit] of expectedBounds) {
+        const possibleExpectedErrorMessage = boundViolationMessage(
+            data,
             comparator,
             limit,
-            actual,
-            source: actual
-        }
-        if (actual > limit && !comparator.includes(">")) {
-            return possibleExpectedError
-        } else if (actual < limit && !comparator.includes("<")) {
-            return possibleExpectedError
-        } else if (actual === limit && !comparator.includes("=")) {
-            return possibleExpectedError
+            undefined,
+            data
+        )
+        if (data > limit && !comparator.includes(">")) {
+            return possibleExpectedErrorMessage
+        } else if (data < limit && !comparator.includes("<")) {
+            return possibleExpectedErrorMessage
+        } else if (data === limit && !comparator.includes("=")) {
+            return possibleExpectedErrorMessage
         }
     }
 }
 
 const assertCheckResult = (
-    node: DynamicType,
-    bounds: BoundDefinition[],
-    actual: number
+    t: DynamicType,
+    expectedBounds: BoundsDefinition,
+    data: number
 ) => {
-    const actualError = node.check(actual).errors
-    assert(actualError).equals(expectedCheckResult(bounds, actual))
+    const actualError = t.check(data).errors
+    assert(actualError?.summary).equals(
+        expectedCheckResult(expectedBounds, data)
+    )
 }
 
 export const assertCheckResults = (
-    node: DynamicType,
-    bounds: BoundDefinition[]
+    t: DynamicType,
+    expectedBounds: BoundsDefinition
 ) => {
-    for (const bound of bounds) {
-        assertCheckResult(node, bounds, bound[1] - 1)
-        assertCheckResult(node, bounds, bound[1])
-        assertCheckResult(node, bounds, bound[1] + 1)
+    for (const bound of expectedBounds) {
+        assertCheckResult(t, expectedBounds, bound[1] - 1)
+        assertCheckResult(t, expectedBounds, bound[1])
+        assertCheckResult(t, expectedBounds, bound[1] + 1)
     }
 }
