@@ -1,4 +1,9 @@
-import { Node, Parser } from "./common.js"
+import {
+    ExpressionExpectedMessage,
+    expressionExpectedMessage,
+    Node,
+    Parser
+} from "./common.js"
 import {
     EnclosedBaseStartChar,
     enclosedBaseStartChars,
@@ -17,9 +22,6 @@ import {
     ParseUnenclosedBase
 } from "./unenclosed/index.js"
 
-export const expressionExpectedMessage = `Expected an expression.`
-type ExpressionExpectedMessage = typeof expressionExpectedMessage
-
 // TODO: Check setting variable ahead of time perf
 export const parseOperand = (
     s: Parser.state,
@@ -32,7 +34,7 @@ export const parseOperand = (
         : s.r.lookahead === " "
         ? parseOperand(s.shifted(), ctx)
         : s.r.lookahead === "END"
-        ? s.error(expressionExpectedMessage)
+        ? s.error(expressionExpectedMessage(""))
         : parseUnenclosedBase(s, ctx)
 
 export type ParseOperand<
@@ -48,8 +50,8 @@ export type ParseOperand<
         ? ParseEnclosedBase<S, Lookahead>
         : Lookahead extends " "
         ? ParseOperand<{ L: S["L"]; R: Unscanned }, Dict>
-        : ParseUnenclosedBase<S, Lookahead, Unscanned, Dict>
-    : Parser.State.Error<ExpressionExpectedMessage>
+        : ParseUnenclosedBase<S, "", S["R"], Dict>
+    : Parser.State.Error<ExpressionExpectedMessage<"">>
 
 export type InferTerminal<
     Token extends string,

@@ -19,7 +19,7 @@ describe("union", () => {
             test("bad reference", () => {
                 // @ts-expect-error
                 assert(() => type("number|sting")).throwsAndHasTypeError(
-                    "Unable to determine the type of 'sting'."
+                    "'sting' is not a builtin type and does not exist in your space."
                 )
             })
             test("double pipes", () => {

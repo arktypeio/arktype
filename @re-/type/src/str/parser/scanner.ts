@@ -47,6 +47,10 @@ export class scanner<Lookahead extends string = string> {
         return shifted
     }
 
+    get unscanned() {
+        return this.chars.slice(this.i, this.chars.length - 1).join("")
+    }
+
     lookaheadIs<Char extends Lookahead>(char: Char): this is scanner<Char> {
         return this.lookahead === char
     }

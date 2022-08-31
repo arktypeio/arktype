@@ -3,6 +3,8 @@ import { BigintLiteralDefinition, bigintLiteralNode } from "./bigintLiteral.js"
 import {
     BaseTerminatingChar,
     baseTerminatingChars,
+    ExpressionExpectedMessage,
+    expressionExpectedMessage,
     Node,
     Parser
 } from "./common.js"
@@ -14,7 +16,7 @@ const lookaheadIsBaseTerminating: Parser.scanner.UntilCondition = (scanner) =>
 
 export const parseUnenclosedBase = (s: Parser.state, ctx: Node.context) => {
     const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
-    s.l.root = unenclosedToNode(token, ctx)
+    s.l.root = unenclosedToNode(s, token, ctx)
     return s
 }
 
@@ -25,12 +27,9 @@ export type ParseUnenclosedBase<
     Dict
 > = Unscanned extends Parser.Scanner.Shift<infer Next, infer Rest>
     ? Next extends BaseTerminatingChar
-        ? Parser.State.From<{
-              L: ReduceUnenclosed<S["L"], Fragment, Dict>
-              R: Unscanned
-          }>
+        ? ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
         : ParseUnenclosedBase<S, `${Fragment}${Next}`, Rest, Dict>
-    : Parser.State.From<{ L: ReduceUnenclosed<S["L"], Fragment, Dict>; R: "" }>
+    : ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
@@ -43,7 +42,11 @@ export const toNodeIfResolvableIdentifier = (
     }
 }
 
-const unenclosedToNode = (token: string, ctx: Node.context) => {
+const unenclosedToNode = (
+    s: Parser.state,
+    token: string,
+    ctx: Node.context
+) => {
     const possibleIdentifierNode = toNodeIfResolvableIdentifier(token, ctx)
     if (possibleIdentifierNode) {
         return possibleIdentifierNode
@@ -54,16 +57,22 @@ const unenclosedToNode = (token: string, ctx: Node.context) => {
     if (bigintLiteralNode.matches(token)) {
         return new bigintLiteralNode(token)
     }
+    if (!token) {
+        throw new Error(expressionExpectedMessage(s.r.unscanned))
+    }
     throw new Error(unresolvableMessage(token))
 }
 
 type ReduceUnenclosed<
     L extends Parser.Left,
+    Unscanned extends string,
     Token extends string,
     Dict
 > = IsResolvableUnenclosed<Token, Dict> extends true
-    ? Parser.Left.SetRoot<L, Token>
-    : Parser.Left.Error<UnresolvableMessage<Token>>
+    ? Parser.State.From<{ L: Parser.Left.SetRoot<L, Token>; R: Unscanned }>
+    : Token extends ""
+    ? Parser.State.Error<ExpressionExpectedMessage<Unscanned>>
+    : Parser.State.Error<UnresolvableMessage<Token>>
 
 type UnresolvableMessage<Token extends string> =
     `'${Token}' is not a builtin type and does not exist in your space.`
