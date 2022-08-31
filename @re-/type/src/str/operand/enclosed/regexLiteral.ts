@@ -17,7 +17,7 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
         }
         if (!this.regex.test(args.value)) {
             this.addAllowsError(args, "RegexMismatch", {
-                defaultMessage: `'${args.value}' does not match expression ${this.def}.`
+                message: `'${args.value}' does not match expression ${this.def}.`
             })
             return false
         }

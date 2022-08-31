@@ -24,7 +24,7 @@ export const fetchEmployee = () => {
     }
 }
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { error } = employee.check(fetchEmployee())
+export const { errors } = employee.check(fetchEmployee())
 
 // Output: "Encountered errors at the following paths:
 // {
@@ -32,4 +32,4 @@ export const { error } = employee.check(fetchEmployee())
 //   about/age: '17 was less than 18.',
 //   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
 // }"
-console.log(error?.message ?? "Flawless. Obviously.")
+console.log(errors?.summary ?? "Flawless. Obviously.")

@@ -52,12 +52,12 @@ describe("stringLiteral", () => {
     })
     describe("validation", () => {
         test("matching literal", () => {
-            assert(type("'dursurdo'").check("dursurdo").error).is(undefined)
+            assert(type("'dursurdo'").check("dursurdo").errors).is(undefined)
         })
         describe("errors", () => {
             test("mismatched literal", () => {
                 assert(
-                    type("'dursurdo'").check("durrrrrr").error?.message
+                    type("'dursurdo'").check("durrrrrr").errors?.summary
                 ).snap(`"durrrrrr" is not assignable to 'dursurdo'.`)
             })
         })

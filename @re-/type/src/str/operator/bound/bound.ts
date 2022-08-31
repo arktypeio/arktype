@@ -71,7 +71,7 @@ export class bound extends unary<boundableNode> {
                     limit: this.bounds[boundIndex][1],
                     size,
                     units: this.child.units,
-                    defaultMessage: `Bad bound.`
+                    message: `Bad bound.`
                 })
                 return false
             }

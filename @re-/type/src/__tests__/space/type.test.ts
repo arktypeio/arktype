@@ -64,7 +64,7 @@ describe("space", () => {
                 }
             }
         }
-        assert(cyclicEagerSpace.a.check({ b: {} }).error)
+        assert(cyclicEagerSpace.a.check({ b: {} }).errors)
     })
     test("object list", () => {
         assert(space({ a: "string", b: [{ c: "a" }] }).$root.infer.b).typed as [

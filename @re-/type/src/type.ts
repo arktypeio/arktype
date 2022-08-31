@@ -7,6 +7,7 @@ import {
     MutuallyExclusiveProps
 } from "@re-/tools"
 import { Node } from "./node/index.js"
+import { ErrorResult } from "./node/traversal/allows.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
 
@@ -49,7 +50,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     references: ReferencesFunction<Def, Dict>
 }>
 
-export class Type implements TypeFrom<unknown, unknown, unknown> {
+export class Type implements DynamicType {
     constructor(
         public definition: unknown,
         public root: Node.base,
@@ -81,17 +82,17 @@ export class Type implements TypeFrom<unknown, unknown, unknown> {
         } else {
             this.root.allows(args)
         }
-        return args.errors.isEmpty()
-            ? { data: value }
-            : {
-                  error: new Node.Allows.ValidationError(args.errors)
+        return args.errors.length
+            ? {
+                  errors: new ErrorResult(args.errors)
               }
+            : { data: value }
     }
 
     assert(value: unknown, options?: Node.Allows.Options) {
         const validationResult = this.check(value, options)
-        if (validationResult.error) {
-            throw validationResult.error
+        if (validationResult.errors) {
+            throw new Node.Allows.CheckError(validationResult.errors.summary)
         }
         return validationResult.data
     }
@@ -117,7 +118,7 @@ export type ValidateFunction<Inferred> = (
 export type ValidationResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
-        error: Node.Allows.ValidationError
+        errors: ErrorResult
     }
 >
 

@@ -9,7 +9,7 @@ describe("inheritable configs", () => {
                 type({ name: "string" }).check({
                     name: "David Blass",
                     age: 28
-                }).error?.message
+                }).errors?.summary
             ).snap(`Keys 'age' were unexpected.`)
         })
         test("ad hoc", () => {
@@ -18,7 +18,7 @@ describe("inheritable configs", () => {
                 user.check(
                     { name: "David Blass", age: 28 },
                     { ignoreExtraneousKeys: true }
-                ).error
+                ).errors
             ).is(undefined)
         })
         test("type options", () => {
@@ -26,7 +26,7 @@ describe("inheritable configs", () => {
                 { name: "string" },
                 { validate: { ignoreExtraneousKeys: true } }
             )
-            assert(user.check({ name: "David Blass", age: 28 }).error).is(
+            assert(user.check({ name: "David Blass", age: 28 }).errors).is(
                 undefined
             )
         })
@@ -42,7 +42,7 @@ describe("inheritable configs", () => {
                 mySpace.user.check({
                     name: "David Blass",
                     age: 28
-                }).error
+                }).errors
             ).is(undefined)
         })
         test("space config", () => {
@@ -56,7 +56,7 @@ describe("inheritable configs", () => {
                 mySpace.user.check({
                     name: "David Blass",
                     age: 28
-                }).error
+                }).errors
             ).is(undefined)
         })
         test("precedence", () => {

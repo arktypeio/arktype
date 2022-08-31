@@ -64,7 +64,7 @@ export const customValidatorAllows = (
             ...customMessages.map((message) => ({
                 ...context,
                 code: "Custom",
-                defaultMessage: message
+                message
             }))
         )
         return false
@@ -90,33 +90,6 @@ export const getCustomErrorMessages = (
             return errors
         }
     })
-
-// export class ErrorTree {
-//     toString() {
-//         if (this.isEmpty()) {
-//             return ""
-//         }
-//         const entries = Object.entries(this.errors)
-//         if (entries.length === 1) {
-//             const [path, data] = entries[0]
-//             const message = toString(data)
-//             if (path) {
-//                 return `At ${
-//                     isDigits(path) ? "index" : "path"
-//                 } ${path}, ${toString(message)}`
-//             }
-//             return message
-//         } else {
-//             let aggregatedMessage =
-//                 "Encountered errors at the following paths:\n"
-//             for (const [path, data] of entries) {
-//                 // Display root path (which is internally an empty string) as "/"
-//                 aggregatedMessage += `  ${path || "/"}: ${toString(data)}\n`
-//             }
-//             return aggregatedMessage
-//         }
-//     }
-// }
 
 export const stringifyValue = (value: unknown) =>
     toString(value, {
@@ -146,7 +119,7 @@ export type ErrorData<
 > = Evaluate<
     {
         code: Code
-        defaultMessage: string
+        message: string
     } & BaseErrorContext &
         SupplementalContext
 >
@@ -190,3 +163,29 @@ type ErrorOptions = {
 export type SupplementalErrorContext<Code extends ErrorCode> = Evaluate<
     Omit<ErrorsByCode[Code], keyof BaseErrorContext>
 >
+
+export class CheckError extends Error {}
+
+export class ErrorResult extends Array<ErrorData> {
+    constructor(errors: ErrorData[]) {
+        super(...errors)
+    }
+
+    get summary() {
+        if (this.length === 1) {
+            const error = this[0]
+            if (error.path.length) {
+                return `At path ${error.path.join("/")}, ${error.message}`
+            }
+            return error.message
+        }
+        let aggregatedMessage = "Encountered errors at the following paths:\n"
+        for (const error of this) {
+            // Display root path as "/"
+            aggregatedMessage += `  ${
+                error.path.length ? error.path.join("/") : "/"
+            }: ${error.message}\n`
+        }
+        return aggregatedMessage
+    }
+}

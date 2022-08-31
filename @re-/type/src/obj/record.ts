@@ -54,7 +54,7 @@ export class RecordNode extends obj {
             const keys = [...propValidationResults.unseenValueKeys]
             this.addAllowsError(args, "ExtraneousKeys", {
                 keys,
-                defaultMessage: `Keys ${keys
+                message: `Keys ${keys
                     .map((k) => `'${k}'`)
                     .join(", ")} were unexpected.`
             })
@@ -86,7 +86,7 @@ export class RecordNode extends obj {
                 }
             } else if (!(propNode instanceof optional)) {
                 propNode.addAllowsError(propArgs, "MissingKey", {
-                    defaultMessage: `Missing required value of type ${propNode.toString()}.`,
+                    message: `Missing required value of type ${propNode.toString()}.`,
                     key: propKey
                 })
                 result.allSeenKeysAllowed = false

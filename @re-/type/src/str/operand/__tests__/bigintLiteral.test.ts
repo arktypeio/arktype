@@ -28,22 +28,23 @@ describe("bigintLiteral", () => {
         test("positive", () => {
             assert(
                 // Is prime :D
-                type("12345678910987654321n").check(12345678910987654321n).error
+                type("12345678910987654321n").check(12345678910987654321n)
+                    .errors
             ).is(undefined)
         })
         test("negative", () => {
             assert(
-                type("-18446744073709551616n").check(-BigInt(2 ** 64)).error
+                type("-18446744073709551616n").check(-BigInt(2 ** 64)).errors
             ).is(undefined)
         })
         describe("errors", () => {
             test("wrong value", () => {
-                assert(type("999n").check(1000n).error?.message).snap(
+                assert(type("999n").check(1000n).errors?.summary).snap(
                     `1000n is not assignable to 999n.`
                 )
             })
             test("non-bigint", () => {
-                assert(type("0n").check(0).error?.message).snap(
+                assert(type("0n").check(0).errors?.summary).snap(
                     `0 is not assignable to 0n.`
                 )
             })

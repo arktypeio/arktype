@@ -25,23 +25,24 @@ describe("list", () => {
     })
     describe("check", () => {
         test("empty", () => {
-            assert(list.check([]).error).is(undefined)
+            assert(list.check([]).errors).is(undefined)
         })
         test("singleton", () => {
-            assert(list.check(["@re-/type"]).error).is(undefined)
+            assert(list.check(["@re-/type"]).errors).is(undefined)
         })
         test("multiple", () => {
-            assert(list.check(["@re-/", "type"]).error).is(undefined)
+            assert(list.check(["@re-/", "type"]).errors).is(undefined)
         })
         describe("errors", () => {
             test("non-list", () => {
-                assert(list.check({}).error?.message).snap(
+                assert(list.check({}).errors?.summary).snap(
                     `{} is not assignable to string[].`
                 )
             })
             test("bad item", () => {
                 assert(
-                    list.check(["one", "two", 3, "four", "five"]).error?.message
+                    list.check(["one", "two", 3, "four", "five"]).errors
+                        ?.summary
                 ).snap(`At index 2, 3 is not assignable to string.`)
             })
         })

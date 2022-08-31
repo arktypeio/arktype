@@ -33,34 +33,36 @@ describe("intersection", () => {
     })
     describe("validation", () => {
         test("two types", () => {
-            assert(type("boolean&true").check(true).error).is(undefined)
+            assert(type("boolean&true").check(true).errors).is(undefined)
         })
         test("several types", () => {
             assert(
-                type("unknown&boolean&false").check(false).error?.message
+                type("unknown&boolean&false").check(false).errors?.summary
             ).is(undefined)
         })
         test("keyword specifiers", () => {
-            assert(type("integer&number").check(7).error?.message).is(undefined)
+            assert(type("integer&number").check(7).errors?.summary).is(
+                undefined
+            )
         })
         describe("errors", () => {
             test("empty intersection", () => {
-                assert(type("number&string").check("5").error?.message).snap(
+                assert(type("number&string").check("5").errors?.summary).snap(
                     `"5" is not assignable to number.`
                 )
             })
             test("two types", () => {
-                assert(type("boolean&true").check(false).error?.message).snap(
+                assert(type("boolean&true").check(false).errors?.summary).snap(
                     `false is not assignable to true.`
                 )
             })
             test("several types", () => {
                 assert(
-                    type("unknown&true&boolean").check(false).error?.message
+                    type("unknown&true&boolean").check(false).errors?.summary
                 ).snap(`false is not assignable to true.`)
             })
             test("bad keyword specifiers", () => {
-                assert(type("number&integer").check(7.5).error?.message).snap(
+                assert(type("number&integer").check(7.5).errors?.summary).snap(
                     `7.5 is not assignable to integer.`
                 )
             })

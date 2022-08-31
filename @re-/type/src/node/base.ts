@@ -68,7 +68,7 @@ export abstract class base {
 
     addUnassignable(args: Allows.Args) {
         this.addAllowsError(args, "Unassignable", {
-            defaultMessage: `${Allows.stringifyValue(
+            message: `${Allows.stringifyValue(
                 args.value
             )} is not assignable to ${this.toString()}.`
         })

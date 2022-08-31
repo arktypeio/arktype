@@ -30,7 +30,7 @@ export class TupleNode extends obj {
         const valueLength = args.value.length
         if (definitionLength !== valueLength) {
             this.addAllowsError(args, "TupleLengthMismatch", {
-                defaultMessage: `Tuple of length ${valueLength} is not assignable to tuple of length ${definitionLength}.`,
+                message: `Tuple of length ${valueLength} is not assignable to tuple of length ${definitionLength}.`,
                 definitionLength,
                 valueLength
             })

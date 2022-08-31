@@ -83,7 +83,7 @@ export class union extends branch {
         }
         // If we haven't returned, all branches are invalid, so add an error
         this.addAllowsError(args, "UnionError", {
-            defaultMessage: `${Node.Allows.stringifyValue(
+            message: `${Node.Allows.stringifyValue(
                 args.value
             )} is not assignable to any of ${this.toString()}.`,
             branches

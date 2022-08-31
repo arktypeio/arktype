@@ -12,7 +12,7 @@ describe("snippets", () => {
                 version?: number | undefined
             }
         }
-        assert(modelSnippet.error?.message).snap(
+        assert(modelSnippet.errors?.summary).snap(
             `At path browser/kind, "Internet Explorer" is not assignable to any of 'chrome'|'firefox'|'safari'.`
         )
     })
@@ -21,7 +21,7 @@ describe("snippets", () => {
         assert(spaceSnippet.models.package.infer).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
-        assert(spaceSnippet.error?.message)
+        assert(spaceSnippet.errors?.summary)
             .snap(`Encountered errors at the following paths:
   dependencies/0/contributors: Required value of type contributor[] was missing.
   contributors/0/email: "david@redodev" is not assignable to email.
@@ -40,7 +40,7 @@ describe("snippets", () => {
         })
 
         // But enforce their original definition during validation
-        const { error } = employee.check({
+        const { errors: error } = employee.check({
             email: "david@redo.biz",
             about: {
                 age: 17,
@@ -54,7 +54,7 @@ describe("snippets", () => {
                 bio: string
             }
         }
-        assert(error?.message).snap(`Encountered errors at the following paths:
+        assert(error?.summary).snap(`Encountered errors at the following paths:
       email: "david@redo.biz" does not match expression /[a-z]*@redo\\.dev/.
       about/age: Must be greater than or equal to 18 (got 17).
       about/bio: Must be less than or equal to 160 characters (got 220).

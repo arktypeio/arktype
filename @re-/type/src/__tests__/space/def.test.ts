@@ -70,7 +70,7 @@ describe("def", () => {
                 members: [validUserWithExtraKey, invalidPropSwappedUser],
                 // No extraneous keys is not specified for group, so description is not allowed
                 description: "Typescript Devs"
-            }).error?.message
+            }).errors?.summary
         ).snap(`Encountered errors at the following paths:
   members/1/name: 27 is not assignable to {
     first: string,

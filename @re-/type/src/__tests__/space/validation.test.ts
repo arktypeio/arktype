@@ -20,7 +20,7 @@ describe("validation", () => {
                     { circumference: 4.832321, type: "Granny Smith" },
                     { length: 15, description: "nice" }
                 ]
-            }).error
+            }).errors
         ).equals(undefined)
         assert(
             groceries.check({
@@ -32,7 +32,7 @@ describe("validation", () => {
                     },
                     { type: "Fuji" }
                 ]
-            }).error?.message
+            }).errors?.summary
         ).snap(`Encountered errors at the following paths:
   fruits/0: {length: 5000, description: "I'm a big banana!", peel: "slippery"} is not assignable to any of banana|apple.
   fruits/1: {type: "Fuji"} is not assignable to any of banana|apple.
@@ -66,7 +66,7 @@ describe("validation", () => {
                     { isA: false, a: { isA: true } },
                     { isA: true, b: { isA: false } }
                 ]
-            }).error
+            }).errors
         ).equals(undefined)
         assert(
             bicycle.check({
@@ -113,7 +113,7 @@ describe("validation", () => {
                     { isA: false },
                     { isA: "the duck goes quack" }
                 ]
-            }).error?.message
+            }).errors?.summary
         ).snap(`Encountered errors at the following paths:
   a/a/a/a/a/a/a/isA: false is not assignable to true.
   b/b/b/b/b/b/b/isA: true is not assignable to false.
@@ -126,7 +126,7 @@ describe("validation", () => {
         type DejaVu = typeof recursive.$root.infer.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
-        assert(recursive.dejaVu.check(dejaVu).error).equals(undefined)
+        assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
     })
     test("validates deep objects", () => {
         const recursive = space(recursiveDict)
@@ -138,9 +138,9 @@ describe("validation", () => {
             current = current.dejaVu
             i++
         }
-        assert(recursive.dejaVu.check(dejaVu).error).equals(undefined)
+        assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
         current.dejaVu = "whoops" as any
-        assert(recursive.dejaVu.check(dejaVu).error?.message)
+        assert(recursive.dejaVu.check(dejaVu).errors?.summary)
             .snap(`At path dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu, "whoops" is not assignable to {
     dejaVu: dejaVu?
 }.`)

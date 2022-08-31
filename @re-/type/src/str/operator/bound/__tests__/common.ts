@@ -60,7 +60,7 @@ const assertCheckResult = (
     bounds: BoundDefinition[],
     actual: number
 ) => {
-    const actualError = node.check(actual).error?.paths[""]
+    const actualError = node.check(actual).errors
     assert(actualError).equals(expectedCheckResult(bounds, actual))
 }
 

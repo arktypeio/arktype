@@ -18,17 +18,17 @@ describe("custom validators", () => {
                 validate: { validator }
             }
         )
-        assert(palindrome.check("step on no pets").error).equals(undefined)
-        assert(palindrome.check("step on your cat").error?.paths).equals({
-            "": `step on your cat is not a palindrome!`
-        })
+        assert(palindrome.check("step on no pets").errors).equals(undefined)
+        assert(palindrome.check("step on your cat").errors?.summary).equals(
+            `step on your cat is not a palindrome!`
+        )
     })
     test("model root", () => {
         const mySpace = space({
             palindrome: def("string", { validate: { validator } })
         })
-        assert(mySpace.palindrome.check("redivider").error).is(undefined)
-        assert(mySpace.palindrome.check("predivider").error?.message).is(
+        assert(mySpace.palindrome.check("redivider").errors).is(undefined)
+        assert(mySpace.palindrome.check("predivider").errors?.summary).is(
             `predivider is not a palindrome!`
         )
     })
@@ -37,8 +37,8 @@ describe("custom validators", () => {
             palindrome: def("string", { validate: { validator } }),
             yourPal: { name: "palindrome" }
         })
-        assert(mySpace.yourPal.check({ name: "bob" }).error).is(undefined)
-        assert(mySpace.yourPal.check({ name: "rob" }).error?.message).snap(
+        assert(mySpace.yourPal.check({ name: "bob" }).errors).is(undefined)
+        assert(mySpace.yourPal.check({ name: "rob" }).errors?.summary).snap(
             `At path name, rob is not a palindrome!`
         )
     })
@@ -50,45 +50,42 @@ describe("custom validators", () => {
             },
             {
                 validate: {
-                    validator: ({ def, value, getOriginalErrors }) => {
-                        if (def === "first") {
+                    validator: ({ path, type, value, getOriginalErrors }) => {
+                        if (type === "first") {
                             return value === 1
                                 ? undefined
-                                : {
-                                      "from/first": `${value} FAILED TO BE 1.`
-                                  }
+                                : `At path ${path.join(
+                                      "/"
+                                  )}, ${value} FAILED TO BE 1.`
                         }
-                        return getOriginalErrors()
+                        return getOriginalErrors().map((_) => _.message)
                     }
                 }
             }
         )
-        assert(mySpace.first.check(1).error).is(undefined)
+        assert(mySpace.first.check(1).errors).is(undefined)
         assert(() => mySpace.first.assert(2)).throws.snap(
-            `Error: At path from/first, 2 FAILED TO BE 1.`
+            `Error: At path first, 2 FAILED TO BE 1.`
         )
-        assert(mySpace.$root.type("second").check(1).error?.message).snap(
+        assert(mySpace.$root.type("second").check(1).errors?.summary).snap(
             `1 is not assignable to 2.`
         )
     })
     test("can access standard validation errors and ctx", () => {
         const num = type("number", {
             validate: {
-                validator: ({ getOriginalErrors, path }) => {
+                validator: ({ getOriginalErrors }) => {
                     const errorMessages = Object.values(getOriginalErrors())
                     if (errorMessages.length) {
-                        return {
-                            [path]: errorMessages
-                                .map((error) => `${error}!!!`)
-                                .join("")
-                        }
+                        return errorMessages.map(
+                            (error) => `${error.message}!!!`
+                        )
                     }
-                    return {}
                 }
             }
         })
-        assert(num.check(7.43).error).is(undefined)
-        assert(num.check("ssalbdivad").error?.message).snap(
+        assert(num.check(7.43).errors).is(undefined)
+        assert(num.check("ssalbdivad").errors?.summary).snap(
             `"ssalbdivad" is not assignable to number.!!!`
         )
     })

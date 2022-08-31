@@ -9,8 +9,8 @@ describe("map", () => {
             assert(empty.infer).typed as {}
         })
         test("validation", () => {
-            assert(empty.check({}).error).is(undefined)
-            assert(empty.check([]).error?.message).snap(
+            assert(empty.check({}).errors).is(undefined)
+            assert(empty.check([]).errors?.summary).snap(
                 `[] is not assignable to {}.`
             )
         })
@@ -34,7 +34,7 @@ describe("map", () => {
         })
         describe("validation", () => {
             test("standard", () => {
-                assert(shallow().check({ a: "ok", b: 4.321, c: 67 }).error).is(
+                assert(shallow().check({ a: "ok", b: 4.321, c: 67 }).errors).is(
                     undefined
                 )
             })
@@ -49,7 +49,7 @@ describe("map", () => {
                             e: "x-ray-knee-us"
                         },
                         { ignoreExtraneousKeys: true }
-                    ).error
+                    ).errors
                 ).is(undefined)
                 // Still errors on missing keys
                 assert(
@@ -61,18 +61,18 @@ describe("map", () => {
                         },
 
                         { ignoreExtraneousKeys: true }
-                    ).error?.message
+                    ).errors?.summary
                 ).snap(`At path b, required value of type number was missing.`)
             })
             describe("errors", () => {
                 test("bad value", () => {
                     assert(
-                        shallow().check({ a: "ko", b: 123.4, c: 76 }).error
-                            ?.message
+                        shallow().check({ a: "ko", b: 123.4, c: 76 }).errors
+                            ?.summary
                     ).snap(`At path c, 76 is not assignable to 67.`)
                 })
                 test("missing keys", () => {
-                    assert(shallow().check({ a: "ok" }).error?.message)
+                    assert(shallow().check({ a: "ok" }).errors?.summary)
                         .snap(`Encountered errors at the following paths:
   b: Required value of type number was missing.
   c: Required value of type 67 was missing.
@@ -86,7 +86,7 @@ describe("map", () => {
                             c: 67,
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).error?.message
+                        }).errors?.summary
                     ).snap(`Keys 'd', 'e' were unexpected.`)
                 })
                 test("missing and extraneous keys", () => {
@@ -95,7 +95,7 @@ describe("map", () => {
                             a: "ok",
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).error?.message
+                        }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
   b: Required value of type number was missing.
   c: Required value of type 67 was missing.
@@ -151,14 +151,14 @@ describe("map", () => {
         describe("validation", () => {
             test("standard", () => {
                 assert(
-                    nested().check({ nested: { russian: "doll" } }).error
+                    nested().check({ nested: { russian: "doll" } }).errors
                 ).is(undefined)
             })
             describe("errors", () => {
                 test("bad prop value", () => {
                     assert(
                         nested().check({ nested: { russian: "tortoise" } })
-                            .error?.message
+                            .errors?.summary
                     ).snap(
                         `At path nested/russian, "tortoise" is not assignable to 'doll'.`
                     )
@@ -173,7 +173,7 @@ describe("map", () => {
                             a: {},
                             c: { d: 20, y: "why?" },
                             e: { f: 0n }
-                        }).error?.message
+                        }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
   a/b: Required value of type string was missing.
   c: Keys 'y' were unexpected.
