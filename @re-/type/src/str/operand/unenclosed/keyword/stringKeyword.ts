@@ -16,9 +16,9 @@ abstract class BaseStringKeyword extends terminalNode implements boundableNode {
         return ""
     }
 
-    boundBy = "characters"
+    readonly units = "characters"
 
-    toBound(value: string) {
+    checkSize(value: string) {
         return value.length
     }
 }

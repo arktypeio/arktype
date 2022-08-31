@@ -51,22 +51,26 @@ export abstract class base {
         return Object.keys(collected)
     }
 
-    addAllowsError(
+    addAllowsError<Code extends Allows.ErrorCode>(
         args: Allows.Args,
-        code: string,
-        additionalContext: object = {}
+        code: Code,
+        context: Allows.CustomErrorContext<Code>
     ) {
         args.errors.push({
             code,
             path: args.ctx.path,
-            type: this.toString(),
+            definition: this.toString(),
             value: args.value,
-            ...additionalContext
+            ...context
         })
     }
 
     addUnassignable(args: Allows.Args) {
-        this.addAllowsError(args, "unassignable")
+        this.addAllowsError(args, "Unassignable", {
+            defaultMessage: `${Allows.stringifyValue(
+                args.value
+            )} is not assignable to ${this.toString()}.`
+        })
     }
 }
 

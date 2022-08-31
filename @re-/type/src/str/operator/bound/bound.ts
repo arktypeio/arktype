@@ -62,13 +62,16 @@ export class bound extends unary<boundableNode> {
         if (!this.child.allows(args)) {
             return false
         }
-        const actual = this.child.toBound(args.value)
+        const size = this.child.checkSize(args.value)
         let boundIndex = 0
         for (const checker of this.checkers) {
-            if (!checker(actual)) {
+            if (!checker(size)) {
                 this.addAllowsError(args, "BoundViolation", {
                     comparator: this.bounds[boundIndex][0],
-                    limit: this.bounds[boundIndex][1]
+                    limit: this.bounds[boundIndex][1],
+                    size,
+                    units: this.child.units,
+                    defaultMessage: `Bad bound.`
                 })
                 return false
             }
@@ -115,14 +118,16 @@ export type BoundableNode =
     | [unknown, "[]"]
 
 export interface boundableNode extends strNode {
-    boundBy?: string
-    toBound(value: unknown): number
+    checkSize(value: unknown): number
+    units?: BoundUnits
 }
 
 export type BoundableValue = number | string | unknown[]
 
 export const isBoundable = (node: strNode): node is boundableNode =>
-    "toBound" in node
+    "checkSize" in node
+
+export type BoundUnits = "characters" | "items"
 
 export type boundValidationError = Node.Allows.ErrorData<
     "BoundViolation",
@@ -130,6 +135,6 @@ export type boundValidationError = Node.Allows.ErrorData<
         comparator: Comparator
         limit: number
         size: number
-        units?: "characters" | "items"
+        units?: BoundUnits
     }
 >

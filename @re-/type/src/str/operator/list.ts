@@ -31,6 +31,8 @@ type IncompleteTokenMessage = typeof incompleteTokenMessage
 export type List<Child = unknown> = Unary<Child, "[]">
 
 export class list extends unary implements boundableNode {
+    bound() {}
+
     get tree(): List<StrNode> {
         return [this.child.tree, "[]"]
     }
@@ -63,9 +65,9 @@ export class list extends unary implements boundableNode {
         return []
     }
 
-    boundBy = "items"
+    readonly units = "items"
 
-    toBound(value: unknown[]) {
+    checkSize(value: unknown[]) {
         return value.length
     }
 }

@@ -1,4 +1,13 @@
-import { isDigits, toString } from "@re-/tools"
+import {
+    ElementOf,
+    Evaluate,
+    Get,
+    IntersectProps,
+    isDigits,
+    IterateType,
+    toString
+} from "@re-/tools"
+import { boundValidationError } from "../../str/operator/bound/bound.js"
 import type { base } from "../base.js"
 import * as Traverse from "./traverse.js"
 
@@ -85,13 +94,6 @@ export const customValidatorAllows = (
     }
     return true
 }
-
-export type ErrorData<Code extends string = string, AdditionalContext = {}> = {
-    path: string[]
-    code: Code
-    type: string
-    value: unknown
-} & AdditionalContext
 
 export type ErrorsByPath = Record<string, unknown>
 
@@ -192,3 +194,47 @@ export const stringifyValue = (value: unknown) =>
     toString(value, {
         maxNestedStringLength: 50
     })
+
+export type ErrorData<
+    Code extends ErrorCode = ErrorCode,
+    AdditionalContext = {}
+> = Evaluate<
+    {
+        code: Code
+        path: string[]
+        definition: string | object
+        value: unknown
+        defaultMessage: string
+    } & AdditionalContext
+>
+
+type unassignableError = ErrorData<"Unassignable">
+
+type RegisteredErrors = [boundValidationError, unassignableError]
+
+export type RegisteredError = ElementOf<RegisteredErrors>
+
+export type ErrorCode = RegisteredError["code"]
+
+type ExtractCodes<
+    Listed extends ErrorData[],
+    Result = {}
+> = Listed extends IterateType<ErrorData, infer Next, infer Rest>
+    ? ExtractCodes<
+          Rest,
+          Result & { [Code in Next["code"]]: Evaluate<Omit<Next, "code">> }
+      >
+    : Result
+
+export type ErrorsByCode = Evaluate<ExtractCodes<RegisteredErrors>>
+
+type ErrorOptions = {
+    [Code in ErrorCode]: {
+        disable?: boolean
+        message?: (context: ErrorsByCode[Code]) => string
+    }
+}
+
+export type CustomErrorContext<Code extends ErrorCode> = Evaluate<
+    Omit<ErrorsByCode[Code], "path" | "definition" | "value">
+>

@@ -15,7 +15,7 @@ abstract class BaseNumberKeyword extends terminalNode implements boundableNode {
         return 0
     }
 
-    toBound(value: number) {
+    checkSize(value: number) {
         return value
     }
 }
