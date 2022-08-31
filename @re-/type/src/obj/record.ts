@@ -1,4 +1,4 @@
-import { Evaluate, pathAdd } from "@re-/tools"
+import { Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { optional } from "../str/operator/optional.js"
 import { Node, obj } from "./common.js"
@@ -51,12 +51,13 @@ export class RecordNode extends obj {
             !args.cfg.ignoreExtraneousKeys &&
             !args.ctx.modelCfg.ignoreExtraneousKeys
         ) {
-            args.errors.add(
-                args.ctx.path,
-                `Keys ${[...propValidationResults.unseenValueKeys]
+            const keys = [...propValidationResults.unseenValueKeys]
+            this.addAllowsError(args, "ExtraneousKeys", {
+                keys,
+                defaultMessage: `Keys ${keys
                     .map((k) => `'${k}'`)
                     .join(", ")} were unexpected.`
-            )
+            })
             return false
         }
         return propValidationResults.allSeenKeysAllowed
@@ -64,28 +65,30 @@ export class RecordNode extends obj {
 
     private allowsProps(args: Node.Allows.Args<Record<string, unknown>>) {
         const result = {
+            // TODO: Should maybe not use set for perf?
             unseenValueKeys: new Set(Object.keys(args.value)),
             allSeenKeysAllowed: true
         }
         for (const [propKey, propNode] of this.entries) {
-            const pathWithProp = pathAdd(args.ctx.path, propKey)
+            const pathWithProp = [...args.ctx.path, propKey]
+            const propArgs: Node.Allows.Args = {
+                ...args,
+                value: args.value[propKey],
+                ctx: {
+                    ...args.ctx,
+                    path: pathWithProp
+                }
+            }
             if (propKey in args.value) {
-                const propIsAllowed = propNode.allows({
-                    ...args,
-                    value: args.value[propKey],
-                    ctx: {
-                        ...args.ctx,
-                        path: pathWithProp
-                    }
-                })
+                const propIsAllowed = propNode.allows(propArgs)
                 if (!propIsAllowed) {
                     result.allSeenKeysAllowed = false
                 }
             } else if (!(propNode instanceof optional)) {
-                args.errors.add(
-                    pathWithProp,
-                    `Required value of type ${propNode.toString()} was missing.`
-                )
+                propNode.addAllowsError(propArgs, "MissingKey", {
+                    defaultMessage: `Missing required value of type ${propNode.toString()}.`,
+                    key: propKey
+                })
                 result.allSeenKeysAllowed = false
             }
             result.unseenValueKeys.delete(propKey)
@@ -104,10 +107,24 @@ export class RecordNode extends obj {
                 ...args,
                 ctx: {
                     ...args.ctx,
-                    path: pathAdd(args.ctx.path, propKey)
+                    path: [...args.ctx.path, propKey]
                 }
             })
         }
         return result
     }
 }
+
+export type extraneousKeysError = Node.Allows.ErrorData<
+    "ExtraneousKeys",
+    {
+        keys: string[]
+    }
+>
+
+export type missingKeyError = Node.Allows.ErrorData<
+    "MissingKey",
+    {
+        key: string
+    }
+>

@@ -12,21 +12,13 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
 
     allows(args: Node.Allows.Args) {
         if (typeof args.value !== "string") {
-            args.errors.add(
-                "",
-                `Non-string value ${Node.Allows.stringifyValue(
-                    args.value
-                )} cannot satisfy regex definitions.`
-            )
+            this.addUnassignable(args)
             return false
         }
         if (!this.regex.test(args.value)) {
-            args.errors.add(
-                "",
-                `${Node.Allows.stringifyValue(
-                    args.value
-                )} does not match expression ${this.def}.`
-            )
+            this.addAllowsError(args, "RegexMismatch", {
+                defaultMessage: `'${args.value}' does not match expression ${this.def}.`
+            })
             return false
         }
         return true
@@ -39,3 +31,5 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
         )
     }
 }
+
+export type regexMismatchError = Node.Allows.ErrorData<"RegexMismatch", {}>

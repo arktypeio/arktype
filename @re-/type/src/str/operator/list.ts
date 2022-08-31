@@ -1,4 +1,3 @@
-import { pathAdd } from "@re-/tools"
 import { boundableNode } from "./bound/exports.js"
 import { Node, Parser, StrNode, Unary, unary } from "./common.js"
 
@@ -50,7 +49,7 @@ export class list extends unary implements boundableNode {
                 value: itemValue,
                 ctx: {
                     ...args.ctx,
-                    path: pathAdd(args.ctx.path, itemIndex)
+                    path: [...args.ctx.path, itemIndex]
                 }
             })
             if (!itemIsAllowed) {

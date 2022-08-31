@@ -1,12 +1,16 @@
-import { pathAdd } from "@re-/tools"
 import { Node, obj } from "./common.js"
 
 export namespace TupleType {
     export type Definition = unknown[] | readonly unknown[]
 }
 
-const lengthError = (def: TupleType.Definition, value: TupleType.Definition) =>
-    `Tuple of length ${value.length} is not assignable to tuple of length ${def.length}.`
+export type tupleLengthError = Node.Allows.ErrorData<
+    "TupleLengthMismatch",
+    {
+        definitionLength: number
+        valueLength: number
+    }
+>
 
 export class TupleNode extends obj {
     static matches(def: object): def is TupleType.Definition {
@@ -14,7 +18,7 @@ export class TupleNode extends obj {
     }
 
     get tree() {
-        return { "[]": this.entries.map(([, itemNode]) => itemNode.tree) }
+        return this.entries.map(([, itemNode]) => itemNode.tree)
     }
 
     allows(args: Node.Allows.Args) {
@@ -22,11 +26,14 @@ export class TupleNode extends obj {
             this.addUnassignable(args)
             return false
         }
-        if (this.entries.length !== args.value.length) {
-            args.errors.add(
-                args.ctx.path,
-                lengthError(this.entries, args.value)
-            )
+        const definitionLength = this.entries.length
+        const valueLength = args.value.length
+        if (definitionLength !== valueLength) {
+            this.addAllowsError(args, "TupleLengthMismatch", {
+                defaultMessage: `Tuple of length ${valueLength} is not assignable to tuple of length ${definitionLength}.`,
+                definitionLength,
+                valueLength
+            })
             return false
         }
         let allItemsAllowed = true
@@ -36,7 +43,7 @@ export class TupleNode extends obj {
                 value: args.value[itemIndex as any],
                 ctx: {
                     ...args.ctx,
-                    path: pathAdd(args.ctx.path, itemIndex)
+                    path: [...args.ctx.path, itemIndex]
                 }
             })
             if (!itemIsAllowed) {
@@ -54,7 +61,7 @@ export class TupleNode extends obj {
                     ...args,
                     ctx: {
                         ...args.ctx,
-                        path: pathAdd(args.ctx.path, itemIndex)
+                        path: [...args.ctx.path, itemIndex]
                     }
                 })
             )

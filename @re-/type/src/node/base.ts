@@ -54,12 +54,13 @@ export abstract class base {
     addAllowsError<Code extends Allows.ErrorCode>(
         args: Allows.Args,
         code: Code,
-        context: Allows.CustomErrorContext<Code>
+        context: Allows.SupplementalErrorContext<Code>
     ) {
         args.errors.push({
             code,
             path: args.ctx.path,
-            definition: this.toString(),
+            type: this.toString(),
+            tree: this.tree,
             value: args.value,
             ...context
         })

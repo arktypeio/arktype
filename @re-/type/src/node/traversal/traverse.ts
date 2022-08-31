@@ -1,5 +1,8 @@
+export type Segment = string | number
+export type Path = Segment[]
+
 export type Context<Cfg> = {
-    path: string[]
+    path: Path
     seen: string[]
     modelCfg: Cfg
 }

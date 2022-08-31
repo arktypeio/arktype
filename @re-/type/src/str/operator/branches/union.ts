@@ -71,37 +71,27 @@ export class union extends branch {
     token = "|" as const
 
     allows(args: Node.Allows.Args) {
-        const unionErrors: Node.Allows.ErrorData[] = []
-        for (const branch of this.children) {
+        const branches: Node.Allows.ErrorData[][] = []
+        for (const child of this.children) {
             const branchErrors: Node.Allows.ErrorData[] = []
-            if (branch.allows({ ...args, errors: branchErrors })) {
+            if (child.allows({ ...args, errors: branchErrors })) {
                 // If any branch of a Union does not have errors,
                 // we can return right away since the whole definition is valid
                 return true
             }
-            unionErrors.push(branchErrors)
+            branches.push(branchErrors)
         }
-        args.errors.push({
-            kind: "union",
-            path: args.ctx.path,
-            type: this.toString(),
-            value: {}
-        })
-
         // If we haven't returned, all branches are invalid, so add an error
-        const summaryErrorMessage = `${Node.Allows.stringifyValue(
-            args.value
-        )} is not assignable to any of ${this.toString()}.`
-        if (args.cfg.verbose) {
-            unionErrors.mergeAll(summaryErrorMessage)
-        } else {
-            args.errors.add(args.ctx.path, summaryErrorMessage)
-        }
+        this.addAllowsError(args, "UnionError", {
+            defaultMessage: `${Node.Allows.stringifyValue(
+                args.value
+            )} is not assignable to any of ${this.toString()}.`,
+            branches
+        })
         return false
     }
 
     create(args: Node.Create.Args) {
-        // These results are *literally* from the next generation...
         const nextGenResults = this.generateChildren(args)
         if (!nextGenResults.values.length) {
             this.throwAllMembersUngeneratableError(nextGenResults.errors, args)
@@ -151,3 +141,10 @@ export class union extends branch {
         )
     }
 }
+
+export type unionError = Node.Allows.ErrorData<
+    "UnionError",
+    {
+        branches: Node.Allows.ErrorData[][]
+    }
+>
