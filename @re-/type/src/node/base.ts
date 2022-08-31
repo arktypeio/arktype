@@ -51,12 +51,17 @@ export abstract class base {
         return Object.keys(collected)
     }
 
-    addAllowsError(args: Allows.Args, kind: string) {
+    addAllowsError(
+        args: Allows.Args,
+        code: string,
+        additionalContext: object = {}
+    ) {
         args.errors.push({
-            kind,
+            code,
             path: args.ctx.path,
             type: this.toString(),
-            value: args.value
+            value: args.value,
+            ...additionalContext
         })
     }
 

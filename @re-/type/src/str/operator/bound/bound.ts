@@ -66,13 +66,10 @@ export class bound extends unary<boundableNode> {
         let boundIndex = 0
         for (const checker of this.checkers) {
             if (!checker(actual)) {
-                const error: boundValidationError = {
+                this.addAllowsError(args, "BoundViolation", {
                     comparator: this.bounds[boundIndex][0],
-                    limit: this.bounds[boundIndex][1],
-                    actual,
-                    source: args.value as BoundableValue
-                }
-                args.errors.add(args.ctx.path, error)
+                    limit: this.bounds[boundIndex][1]
+                })
                 return false
             }
             boundIndex++
