@@ -1,12 +1,14 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { expressionExpectedMessage } from "../str/operand/operand.js"
+import { expressionExpectedMessage } from "../str/operand/common.js"
 import { type } from "../type.js"
 
 describe("str", () => {
     test("errors on empty string", () => {
         // @ts-expect-error
-        assert(() => type("")).throwsAndHasTypeError(expressionExpectedMessage)
+        assert(() => type("")).throwsAndHasTypeError(
+            expressionExpectedMessage("")
+        )
     })
     test("ignores whitespace between identifiers/operators", () => {
         const modelWithWhitespace = type("     string  | boolean    []   ")

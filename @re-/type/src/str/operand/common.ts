@@ -56,10 +56,10 @@ export const expressionExpectedMessage = <Unscanned extends string>(
     unscanned: Unscanned
 ) =>
     `Expected an expression${
-        unscanned ? ` before '${unscanned}'` : ""
+        unscanned ? ` (got '${unscanned}')` : ""
     }.` as ExpressionExpectedMessage<Unscanned>
 
 export type ExpressionExpectedMessage<Unscanned extends string> =
     `Expected an expression${Unscanned extends ""
         ? ""
-        : ` before '${Unscanned}'`}.`
+        : ` (got '${Unscanned}')`}.`
