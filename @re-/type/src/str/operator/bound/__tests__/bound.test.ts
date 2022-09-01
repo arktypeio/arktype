@@ -75,10 +75,13 @@ describe("bound", () => {
         })
         describe("errors", () => {
             test("non-prefix left bound", () => {
+                // TODO: ts-morph 4.8
                 // @ts-expect-error
-                assert(() => type("string|5<number")).throwsAndHasTypeError(
-                    nonPrefixLeftBoundMessage(5, "<")
-                )
+                assert(() => type("string|5<number"))
+                    .throws(nonPrefixLeftBoundMessage(5, "<"))
+                    .type.errors(
+                        nonPrefixLeftBoundMessage("${number}" as any, "<")
+                    )
             })
             test("single equals", () => {
                 // @ts-expect-error
