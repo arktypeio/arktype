@@ -148,6 +148,7 @@ export type RegisteredError = ElementOf<RegisteredErrors>
 
 export type ErrorCode = RegisteredError["code"]
 
+// TODO: More efficient way to centralize errors.
 type ExtractCodes<
     Listed extends ErrorData[],
     Result = {}
