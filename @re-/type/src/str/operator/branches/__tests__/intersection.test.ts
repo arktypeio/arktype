@@ -2,8 +2,6 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../index.js"
 
-// TODO: Add precedence union vs intersection
-
 describe("intersection", () => {
     describe("type", () => {
         test("two types", () => {

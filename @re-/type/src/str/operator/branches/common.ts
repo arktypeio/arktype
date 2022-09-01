@@ -17,11 +17,11 @@ export abstract class branch extends Node.base {
     abstract token: BranchToken
 
     get tree() {
-        let tree = this.children[this.children.length - 1].tree
-        for (let i = this.children.length - 2; i >= 0; i--) {
-            tree = [this.children[i].tree, this.token, tree]
+        let root = this.children[0].tree
+        for (let i = 1; i < this.children.length; i++) {
+            root = [root, this.token, this.children[i].tree]
         }
-        return tree as Branch<StrNode, StrNode>
+        return root as Branch<StrNode, StrNode>
     }
 
     toString() {
