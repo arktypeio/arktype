@@ -12,12 +12,11 @@ export type context = TypeOptions & {
 export const initializeContext = (
     options: TypeOptions,
     space: SpaceMeta | undefined
-) => {
-    const context = options as context
-    context.path = []
-    context.space = space
-    return context
-}
+) => ({
+    ...options,
+    space,
+    path: []
+})
 
 export type parseFn<DefType = unknown> = (def: DefType, ctx: context) => base
 

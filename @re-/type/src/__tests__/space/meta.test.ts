@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { space } from "../../index.js"
+import { unresolvableMessage } from "../../str/operand/index.js"
 
 describe("meta", () => {
     // TODO: Add tests for runtime behavior....
@@ -74,26 +75,26 @@ describe("meta", () => {
     })
     test("type error on bad meta key", () => {
         // @ts-expect-error
-        assert(space({}, { parse: { fake: "boolean" } })).type.errors.snap(
-            `Type '{ fake: string; }' is not assignable to type 'MetaDefs<unknown, { fake: string; }> & Options'.Object literal may only specify known properties, and 'fake' does not exist in type 'MetaDefs<unknown, { fake: string; }> & Options'.`
+        assert(space({}, { parse: { fake: "boolean" } })).type.errors(
+            `'fake' does not exist in type`
         )
     })
     test("errors on bad meta def", () => {
         assert(() =>
             // @ts-expect-error
             space({}, { parse: { onCycle: "fake" } })
-        ).throwsAndHasTypeError("'fake' does not exist in your space.")
+        ).type.errors(unresolvableMessage("fake"))
     })
     test("doesn't allow meta-only defs outside meta", () => {
         // @ts-expect-error
         assert(() => space({ a: "$cyclic" })).throwsAndHasTypeError(
-            "'$cyclic' does not exist in your space."
+            unresolvableMessage("$cyclic")
         )
     })
     test("doesn't allow key-specific meta references in other meta keys", () => {
         assert(() =>
             // @ts-expect-error
             space({}, { parse: { onCycle: "$resolution" } })
-        ).throwsAndHasTypeError("'$resolution' does not exist in your space.")
+        ).type.errors(unresolvableMessage("$resolution"))
     })
 })

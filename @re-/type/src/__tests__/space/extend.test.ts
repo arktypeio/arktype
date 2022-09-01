@@ -33,23 +33,25 @@ describe("extend space", () => {
     test("dictionary", () => {
         const extended = getExtendedSpace()
         assert(extended.$root.dictionary).snap({
-            $meta: { onCycle: `boolean` },
             user: { first: `string`, last: `string` },
             group: {
                 // @ts-expect-error (values returned from def() don't match their declared types by design)
                 $def: { members: `user[]` },
-                options: { validate: { ignoreExtraneousKeys: false } }
+                $opts: { validate: { ignoreExtraneousKeys: false } }
             },
             other: {
                 // @ts-expect-error
                 $def: { users: `user[]`, groups: `group[]` },
-                options: { validate: { ignoreExtraneousKeys: true } }
+                $opts: { validate: { ignoreExtraneousKeys: true } }
             }
         })
     })
     test("options", () => {
         const extended = getExtendedSpace()
         assert(extended.$root.options).snap({
+            parse: {
+                onCycle: "boolean"
+            },
             validate: {
                 ignoreExtraneousKeys: false,
                 // @ts-expect-error (can't serialize function)
@@ -62,9 +64,6 @@ describe("extend space", () => {
 const getExtendedSpace = () => {
     const mySpace = space(
         {
-            $meta: {
-                onCycle: "number"
-            },
             user: { name: "string" },
             group: def(
                 { members: "user[]" },
@@ -76,14 +75,14 @@ const getExtendedSpace = () => {
             )
         },
         {
+            parse: {
+                onCycle: "number"
+            },
             validate: { ignoreExtraneousKeys: true, validator: () => undefined }
         }
     )
     const extended = mySpace.$root.extend(
         {
-            $meta: {
-                onCycle: "boolean"
-            },
             user: { first: "string", last: "string" },
             other: def(
                 { users: "user[]", groups: "group[]" },
@@ -95,6 +94,9 @@ const getExtendedSpace = () => {
             )
         },
         {
+            parse: {
+                onCycle: "boolean"
+            },
             validate: {
                 ignoreExtraneousKeys: false
             }

@@ -4,14 +4,14 @@ import { describe, test } from "mocha"
 import { References, space, type } from "../index.js"
 
 describe("references", () => {
-    const objectDef = {
+    const objectDef = narrow({
         strings: {
             keyword: "boolean",
             expression: "string[]|integer?"
         },
         listed: ["-1n", "null", "string|boolean"],
         regex: `/.*/`
-    } as const
+    })
 
     type ObjectDef = typeof objectDef
 

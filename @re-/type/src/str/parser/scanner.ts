@@ -33,7 +33,7 @@ export class scanner<Lookahead extends string = string> {
         condition: scanner.UntilCondition,
         opts?: scanner.ShiftUntilOptions
     ): string {
-        let shifted = ""
+        let shifted = opts?.appendTo ?? ""
         while (!condition(this, shifted)) {
             if (this.lookahead === "END") {
                 return opts?.onInputEnd?.(this, shifted) ?? shifted
@@ -70,6 +70,7 @@ export namespace scanner {
     export type ShiftUntilOptions = {
         onInputEnd?: OnInputEndFn
         inclusive?: boolean
+        appendTo?: string
     }
 }
 

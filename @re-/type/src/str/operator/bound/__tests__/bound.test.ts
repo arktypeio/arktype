@@ -16,36 +16,39 @@ import {
 } from "./common.js"
 
 describe("bound", () => {
+    /*
+     * TODO: Until ts-morph's embedded TS version is >= 4.8, these will still be inferred as number
+     */
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
                 assert(type("number>0").tree).narrowedValue([
                     "number",
-                    [">", 0]
+                    [">", 0 as number]
                 ])
             })
             test("<", () => {
                 assert(type("number<10").tree).narrowedValue([
                     "number",
-                    ["<", 10]
+                    ["<", 10 as number]
                 ])
             })
             test(">=", () => {
                 assert(type("number>=3.14159").tree).narrowedValue([
                     "number",
-                    [">=", 3.14159]
+                    [">=", 3.14159 as number]
                 ])
             })
             test("<=", () => {
                 assert(type("number<=-49").tree).narrowedValue([
                     "number",
-                    ["<=", -49]
+                    ["<=", -49 as number]
                 ])
             })
             test("==", () => {
                 assert(type("number==3211993").tree).narrowedValue([
                     "number",
-                    ["==", 3211993]
+                    ["==", 3211993 as number]
                 ])
             })
         })
@@ -53,15 +56,15 @@ describe("bound", () => {
             test("<,<=", () => {
                 assert(type("-5<number<=5").tree).narrowedValue([
                     "number",
-                    [">", -5],
-                    ["<=", 5]
+                    [">", -5 as number],
+                    ["<=", 5 as number]
                 ])
             })
             test("<=,<", () => {
                 assert(type("-3.23<=number<4.654").tree).narrowedValue([
                     "number",
-                    [">=", -3.23],
-                    ["<", 4.654]
+                    [">=", -3.23 as number],
+                    ["<", 4.654 as number]
                 ])
             })
         })
@@ -124,8 +127,8 @@ describe("bound", () => {
         test("parse", () => {
             assert(type("1<string<=5").tree).narrowedValue([
                 "string",
-                [">", 1],
-                ["<=", 5]
+                [">", 1 as number],
+                ["<=", 5 as number]
             ])
         })
         test("check", () => {
@@ -154,8 +157,8 @@ describe("bound", () => {
         test("parse", () => {
             assert(type("-343<=boolean[]<89").tree).narrowedValue([
                 ["boolean", "[]"],
-                [">=", -343],
-                ["<", 89]
+                [">=", -343 as number],
+                ["<", 89 as number]
             ])
         })
         test("check", () => {

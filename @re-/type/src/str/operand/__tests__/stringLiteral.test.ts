@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../index.js"
+import { unterminatedEnclosedMessage } from "../index.js"
 
 describe("stringLiteral", () => {
     describe("type", () => {
@@ -23,29 +24,7 @@ describe("stringLiteral", () => {
             test("unclosed quotes", () => {
                 // @ts-expect-error
                 assert(() => type("'mismatched")).throwsAndHasTypeError(
-                    "'mismatched requires a closing '."
-                )
-            })
-            test("mismatched quotes", () => {
-                // @ts-expect-error
-                assert(() => type(`"mismatched'`)).throwsAndHasTypeError(
-                    /Unable to determine the type of[\S\s]*mismatched'/
-                )
-            })
-            test("extraneous single quotes", () => {
-                assert(() =>
-                    // @ts-expect-error
-                    type(`'this isn't allowed'`)
-                ).throwsAndHasTypeError(
-                    /Unable to determine the type of[\S\s]*allowed'/
-                )
-            })
-            test("nested double quote pair", () => {
-                assert(() =>
-                    // @ts-expect-error
-                    type(`"not "ok""`)
-                ).throwsAndHasTypeError(
-                    /Unable to determine the type of[\S\s]*ok/
+                    unterminatedEnclosedMessage("'mismatched", "'")
                 )
             })
         })

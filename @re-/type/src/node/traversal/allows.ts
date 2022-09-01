@@ -1,4 +1,10 @@
-import { ElementOf, Evaluate, IterateType, toString } from "@re-/tools"
+import {
+    ElementOf,
+    Evaluate,
+    IterateType,
+    toString,
+    uncapitalize
+} from "@re-/tools"
 import { extraneousKeysError, missingKeyError } from "../../obj/record.js"
 import { tupleLengthError } from "../../obj/tuple.js"
 import { regexMismatchError } from "../../str/operand/index.js"
@@ -32,7 +38,8 @@ export const createArgs = (
 export type Options = {
     ignoreExtraneousKeys?: boolean
     validator?: CustomValidator | "default"
-    verbose?: boolean
+    // TODO: Add verbose as an option for unions
+    // verbose?: boolean
 }
 
 export type Context = Traverse.Context<Options> & {
@@ -175,7 +182,9 @@ export class ErrorResult extends Array<ErrorData> {
         if (this.length === 1) {
             const error = this[0]
             if (error.path.length) {
-                return `At path ${error.path.join("/")}, ${error.message}`
+                return `At path ${error.path.join("/")}, ${uncapitalize(
+                    error.message
+                )}`
             }
             return error.message
         }

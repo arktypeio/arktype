@@ -61,16 +61,18 @@ const checkArgsForParam = (args: string[], param: string) => {
     return args[filterFlagIndex + 1]
 }
 
-export const literalSerialize = (value: any): any => {
+export const literalSerialize = (value: any, seen: unknown[] = []): any => {
     if (typeof value === "object") {
         return value === null
             ? null
+            : seen.includes(value)
+            ? "<cyclic>"
             : Array.isArray(value)
-            ? value.map((v) => literalSerialize(v))
+            ? value.map((v) => literalSerialize(v, [...seen, value]))
             : Object.fromEntries(
                   Object.entries(value).map(([k, v]) => [
                       k,
-                      literalSerialize(v)
+                      literalSerialize(v, [...seen, value])
                   ])
               )
     }

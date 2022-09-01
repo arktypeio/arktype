@@ -10,7 +10,7 @@ export const enclosedBaseStartChars = Parser.tokenSet({
 
 export type EnclosedBaseStartChar = keyof typeof enclosedBaseStartChars
 
-const unterminatedEnclosedMessage = <
+export const unterminatedEnclosedMessage = <
     Fragment extends string,
     Enclosing extends EnclosedBaseStartChar
 >(
@@ -37,12 +37,11 @@ export const parseEnclosedBase = (
     s: Parser.state,
     enclosing: EnclosedBaseStartChar
 ) => {
-    const enclosed =
-        enclosing +
-        s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
-            inclusive: true,
-            onInputEnd: throwUnterminatedEnclosed
-        })
+    const enclosed = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
+        appendTo: enclosing,
+        inclusive: true,
+        onInputEnd: throwUnterminatedEnclosed
+    })
     if (enclosing === "/") {
         s.l.root = new RegexLiteralNode(enclosed as RegexLiteralDefinition)
     } else {

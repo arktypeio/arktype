@@ -1,6 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../index.js"
+import { unresolvableMessage } from "../../str/operand/index.js"
+import { extraneousKeysError, missingKeyError } from "../record.js"
 
 describe("map", () => {
     describe("empty", () => {
@@ -29,7 +31,8 @@ describe("map", () => {
             assert(shallow().infer).typed as {
                 a: string
                 b: number
-                c: 67
+                // TODO: Update once ts-morph 4.8 is available
+                c: number
             }
         })
         describe("validation", () => {
@@ -62,7 +65,7 @@ describe("map", () => {
 
                         { ignoreExtraneousKeys: true }
                     ).errors?.summary
-                ).snap(`At path b, required value of type number was missing.`)
+                ).snap(`At path b, missing required value of type number.`)
             })
             describe("errors", () => {
                 test("bad value", () => {
@@ -72,11 +75,29 @@ describe("map", () => {
                     ).snap(`At path c, 76 is not assignable to 67.`)
                 })
                 test("missing keys", () => {
-                    assert(shallow().check({ a: "ok" }).errors?.summary)
-                        .snap(`Encountered errors at the following paths:
-  b: Required value of type number was missing.
-  c: Required value of type 67 was missing.
-`)
+                    assert(
+                        shallow().check({ a: "ok" })
+                            .errors as any as missingKeyError[]
+                    ).snap([
+                        {
+                            code: `MissingKey`,
+                            path: [`b`],
+                            definition: `number`,
+                            tree: `number`,
+                            data: undefined,
+                            message: `Missing required value of type number.`,
+                            key: `b`
+                        },
+                        {
+                            code: `MissingKey`,
+                            path: [`c`],
+                            definition: `67`,
+                            tree: `67`,
+                            data: undefined,
+                            message: `Missing required value of type 67.`,
+                            key: `c`
+                        }
+                    ])
                 })
                 test("extraneous keys", () => {
                     assert(
@@ -86,8 +107,28 @@ describe("map", () => {
                             c: 67,
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).errors?.summary
-                    ).snap(`Keys 'd', 'e' were unexpected.`)
+                        }).errors as any as extraneousKeysError[]
+                    ).snap([
+                        {
+                            code: `ExtraneousKeys`,
+                            path: [],
+                            definition: `{
+    a: string,
+    b: number,
+    c: 67
+}`,
+                            tree: { a: `string`, b: `number`, c: `67` },
+                            data: {
+                                a: `ok`,
+                                b: 4.321,
+                                c: 67,
+                                d: `extraneous`,
+                                e: `x-ray-knee-us`
+                            },
+                            keys: [`d`, `e`],
+                            message: `Keys 'd', 'e' were unexpected.`
+                        }
+                    ])
                 })
                 test("missing and extraneous keys", () => {
                     assert(
@@ -97,9 +138,9 @@ describe("map", () => {
                             e: "x-ray-knee-us"
                         }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
-  b: Required value of type number was missing.
-  c: Required value of type 67 was missing.
-  : Keys 'd', 'e' were unexpected.
+  b: Missing required value of type number.
+  c: Missing required value of type 67.
+  /: Keys 'd', 'e' were unexpected.
 `)
                 })
             })
@@ -123,28 +164,12 @@ describe("map", () => {
                     }
                 }
             })
-            test("removes readonly modifier", () => {
-                const readonlyDef = {
-                    a: "true",
-                    b: "false",
-                    c: { nested: "boolean" }
-                } as const
-                assert(type(readonlyDef).infer).typed as {
-                    a: true
-                    b: false
-                    c: {
-                        nested: boolean
-                    }
-                }
-            })
             describe("errors", () => {
                 test("invalid prop def", () => {
-                    // @ts-expect-error
-                    assert(() => type({ a: { b: "whoops" } }))
-                        .throws(
-                            "Unable to determine the type of 'whoops' at path a/b."
-                        )
-                        .type.errors("Unable to determine the type of 'whoops'")
+                    assert(() =>
+                        // @ts-expect-error
+                        type({ a: { b: "whoops" } })
+                    ).throwsAndHasTypeError(unresolvableMessage("whoops"))
                 })
             })
         })
@@ -175,7 +200,7 @@ describe("map", () => {
                             e: { f: 0n }
                         }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
-  a/b: Required value of type string was missing.
+  a/b: Missing required value of type string.
   c: Keys 'y' were unexpected.
   e/f: 0n is not assignable to object.
 `)

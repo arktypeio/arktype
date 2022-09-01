@@ -7,24 +7,25 @@ import { compile } from "./declaration/declaration.js"
 import { groupDef } from "./declaration/group.js"
 import { userDef } from "./declaration/user.js"
 
-describe("multifile", () => {
+// TODO: Update these tests to just be responsible for checking space is created consistently
+describe("declare", () => {
     test("compiles", () => {
         // Creates your space (or tells you which definition you forgot to include)
         const space = compile({ ...userDef, ...groupDef })
         assert(space.$root.infer.user.name).typed as string
         assert(space.$root.infer.user).type.toString.snap(
-            `{ name: string; groups: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }`
+            `{ groups: { name: string; members: { groups: { name: string; members: any[]; }[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: { groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; } | undefined; }`
         )
         assert(space.group.infer).type.toString.snap(
-            `{ name: string; members: { name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; }[]; }`
+            `{ name: string; members: { groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; }[]; }`
         )
         assert(space.user.infer.bestFriend).type.toString.snap(
-            `{ name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined`
+            `{ groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; } | undefined`
         )
         assert(
             space.$root.type({ foozler: "user", choozler: "group[]" }).infer
         ).type.toString.snap(
-            `{ foozler: { name: string; groups: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { name: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }; choozler: { name: string; members: { name: string; groups: { name: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; }`
+            `{ foozler: { groups: { name: string; members: { groups: { name: string; members: any[]; }[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: { groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; } | undefined; }; choozler: { name: string; members: { groups: { name: string; members: any[]; }[]; name: string; bestFriend?: any | undefined; }[]; }[]; }`
         )
     })
     test("single", () => {

@@ -53,25 +53,26 @@ describe("union", () => {
                 type("0|false|undefined|null|'zero'|void").check("zero").errors
             ).is(undefined)
         })
-        test("verbose validation", () => {
-            assert(
-                space({
-                    a: "b|c",
-                    b: "d|e",
-                    c: "f|g",
-                    d: "0",
-                    e: "1",
-                    f: "2",
-                    g: "3"
-                }).a.check(4, { verbose: true }).errors?.summary
-            ).snap(`4 is not assignable to any of b|c.
-b: 4 is not assignable to any of d|e.
-d: 4 is not assignable to 0.
-e: 4 is not assignable to 1.
-c: 4 is not assignable to any of f|g.
-f: 4 is not assignable to 2.
-g: 4 is not assignable to 3.`)
-        })
+        // TODO: Reenable verbose as a union-specific option
+        //         test("verbose validation", () => {
+        //             assert(
+        //                 space({
+        //                     a: "b|c",
+        //                     b: "d|e",
+        //                     c: "f|g",
+        //                     d: "0",
+        //                     e: "1",
+        //                     f: "2",
+        //                     g: "3"
+        //                 }).a.check(4, { verbose: true }).errors?.summary
+        //             ).snap(`4 is not assignable to any of b|c.
+        // b: 4 is not assignable to any of d|e.
+        // d: 4 is not assignable to 0.
+        // e: 4 is not assignable to 1.
+        // c: 4 is not assignable to any of f|g.
+        // f: 4 is not assignable to 2.
+        // g: 4 is not assignable to 3.`)
+        //         })
         describe("errors", () => {
             test("two types", () => {
                 assert(type("'yes'|'no'").check("maybe").errors?.summary).snap(

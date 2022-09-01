@@ -1,6 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../index.js"
+import { unresolvableMessage } from "../../str/operand/index.js"
+import { tupleLengthError } from "../tuple.js"
 
 describe("tuple", () => {
     describe("empty", () => {
@@ -22,18 +24,15 @@ describe("tuple", () => {
         const shallow = () => type(["string", "number", "6"])
         describe("type", () => {
             test("standard", () => {
-                assert(shallow().infer).typed as [string, number, 6]
+                // TODO: Infer as 6 once ts-morph supports TS 4.8
+                assert(shallow().infer).typed as [string, number, number]
             })
             describe("errors", () => {
                 test("invalid item definition", () => {
                     assert(() =>
                         // @ts-expect-error
                         type(["string", ["number", "boolean", "whoops"]])
-                    )
-                        .throws(
-                            "Unable to determine the type of 'whoops' at path 1/2."
-                        )
-                        .type.errors("Unable to determine the type of 'whoops'")
+                    ).throwsAndHasTypeError(unresolvableMessage("whoops"))
                 })
             })
         })
@@ -45,14 +44,29 @@ describe("tuple", () => {
                 test("bad item value", () => {
                     assert(
                         shallow().check(["violin", 42n, 6]).errors?.summary
-                    ).snap(`At index 1, 42n is not assignable to number.`)
+                    ).snap(`At path 1, 42n is not assignable to number.`)
                 })
                 test("too short", () => {
                     assert(
-                        shallow().check(["violin", 42]).errors?.summary
-                    ).snap(
-                        `Tuple of length 2 is not assignable to tuple of length 3.`
-                    )
+                        shallow().check(["violin", 42]).errors as any as [
+                            tupleLengthError
+                        ]
+                    ).snap([
+                        {
+                            code: `TupleLengthMismatch`,
+                            path: [],
+                            definition: `[
+    string,
+    number,
+    6
+]`,
+                            tree: [`string`, `number`, `6`],
+                            data: [`violin`, 42],
+                            message: `Tuple of length 2 is not assignable to tuple of length 3.`,
+                            definitionLength: 3,
+                            valueLength: 2
+                        }
+                    ])
                 })
                 test("too long", () => {
                     assert(
@@ -78,14 +92,6 @@ describe("tuple", () => {
                     []
                 ]
             })
-            test("removes readonly modifier", () => {
-                const readonlyDef = ["true", "false", ["boolean"]] as const
-                assert(type(readonlyDef).infer).typed as [
-                    true,
-                    false,
-                    [boolean]
-                ]
-            })
         })
         describe("validation", () => {
             test("standard", () => {
@@ -94,7 +100,7 @@ describe("tuple", () => {
                         "Cuckoo",
                         ["Swallow", "Oriole", "Condor"],
                         []
-                    ]).errors?.summary
+                    ]).errors
                 ).is(undefined)
             })
             describe("errors", () => {
@@ -117,8 +123,8 @@ describe("tuple", () => {
                         ]).errors?.summary
                     ).snap(`Encountered errors at the following paths:
   0: "Clock" is not assignable to 'Cuckoo'.
-  2: Tuple of length 1 is not assignable to tuple of length 0.
   1/2: "Gondor" is not assignable to 'Condor'.
+  2: Tuple of length 1 is not assignable to tuple of length 0.
 `)
                 })
             })

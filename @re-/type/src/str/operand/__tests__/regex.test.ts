@@ -29,11 +29,12 @@ describe("regex", () => {
             test("bad string", () => {
                 assert(
                     type("/^[0-9]*$/").check("durrrrrr").errors?.summary
-                ).snap(`"durrrrrr" does not match expression /^[0-9]*$/.`)
+                ).snap(`'durrrrrr' does not match expression /^[0-9]*$/.`)
             })
             test("non-string", () => {
+                // TODO: Improve subtype errors
                 assert(type("/^[0-9]*$/").check(5).errors?.summary).snap(
-                    `Non-string value 5 cannot satisfy regex definitions.`
+                    `5 is not assignable to /^[0-9]*$/.`
                 )
             })
             test("messy string", () => {
@@ -41,7 +42,7 @@ describe("regex", () => {
                     type(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).check("(b,c&d)=>eeef")
                         .errors?.summary
                 ).snap(
-                    `"(b,c&d)=>eeef" does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
+                    `'(b,c&d)=>eeef' does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
                 )
             })
         })
