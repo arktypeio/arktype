@@ -67,7 +67,7 @@ export const suffixLoop = (
     }
     if (Parser.inTokenSet(s.l.nextSuffix, Operator.Bound.comparators)) {
         return suffixLoop(
-            Operator.Bound.parseRight(s, s.l.nextSuffix, ctx),
+            Operator.Bound.parseSuffix(s, s.l.nextSuffix, ctx),
             ctx
         )
     }
@@ -83,7 +83,7 @@ export type NextSuffix<S extends Parser.State.Of<Parser.Left.Suffix>> =
     S["L"]["nextSuffix"] extends "?"
         ? Operator.ParseOptional<S>
         : S["L"]["nextSuffix"] extends Operator.Bound.Comparator
-        ? Operator.Bound.ParseRight<S, S["L"]["nextSuffix"]>
+        ? Operator.Bound.ParseSuffix<S, S["L"]["nextSuffix"]>
         : Parser.State.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
 
 const finalize = (s: Parser.state.suffix) =>

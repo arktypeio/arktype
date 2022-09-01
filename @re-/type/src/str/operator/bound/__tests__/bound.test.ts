@@ -7,7 +7,14 @@ import {
     DoubleBoundDefinition,
     SingleBoundDefinition
 } from "../bound.js"
-import { invertedComparators } from "../common.js"
+import { invalidDoubleBoundMessage, invertedComparators } from "../common.js"
+import { nonPrefixLeftBoundMessage } from "../left.js"
+import { singleEqualsMessage } from "../parse.js"
+import {
+    nonSuffixRightBoundMessage,
+    unboundableMessage,
+    unpairedLeftBoundMessage
+} from "../right.js"
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,
@@ -64,6 +71,50 @@ describe("bound", () => {
                     [">=", -3.23 as number],
                     ["<", 4.654 as number]
                 ])
+            })
+        })
+        describe("errors", () => {
+            test("non-prefix left bound", () => {
+                // @ts-expect-error
+                assert(() => type("string|5<number")).throwsAndHasTypeError(
+                    nonPrefixLeftBoundMessage(5, "<")
+                )
+            })
+            test("single equals", () => {
+                // @ts-expect-error
+                assert(() => type("string=5")).throwsAndHasTypeError(
+                    singleEqualsMessage
+                )
+            })
+            test("invalid left comparator", () => {
+                // @ts-expect-error
+                assert(() => type("3>number<5")).throwsAndHasTypeError(
+                    invalidDoubleBoundMessage(">")
+                )
+            })
+            test("invalid right double-bound comparator", () => {
+                // @ts-expect-error
+                assert(() => type("3<number==5")).throwsAndHasTypeError(
+                    invalidDoubleBoundMessage("==")
+                )
+            })
+            test("non-suffix right bound", () => {
+                // @ts-expect-error
+                assert(() => type("3<number<5|string")).throwsAndHasTypeError(
+                    nonSuffixRightBoundMessage("<", "5|string")
+                )
+            })
+            test("unpaired left", () => {
+                // @ts-expect-error
+                assert(() => type("3<number")).throwsAndHasTypeError(
+                    unpairedLeftBoundMessage
+                )
+            })
+            test("unboundable", () => {
+                // @ts-expect-error
+                assert(() => type("object|null>=10")).throwsAndHasTypeError(
+                    unboundableMessage("object|null")
+                )
             })
         })
     })

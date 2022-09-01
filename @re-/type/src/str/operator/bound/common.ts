@@ -51,3 +51,18 @@ export const comparatorToString: Record<Comparator, string> = {
     ">=": "greater than or equal to",
     "==": "exactly"
 }
+
+export const singleCharComparator = Parser.tokenSet({
+    "<": 1,
+    ">": 1
+})
+
+export type SingleCharComparator = keyof typeof singleCharComparator
+
+export type InvalidDoubleBoundMessage<Token extends Comparator> =
+    `Double-bound expressions must specify their bounds using < or <= (got ${Token}).`
+
+export const invalidDoubleBoundMessage = <Token extends Comparator>(
+    T: Token
+): InvalidDoubleBoundMessage<Token> =>
+    `Double-bound expressions must specify their bounds using < or <= (got ${T}).`
