@@ -10,7 +10,7 @@ describe("list", () => {
         list = init()
     })
     test("parse", () => {
-        assert(list.tree).typedValue(["string", "[]"])
+        assert(list.tree).narrowedValue(["string", "[]"])
     })
     describe("errors", () => {
         test("incomplete token", () => {
@@ -43,7 +43,7 @@ describe("list", () => {
                 assert(
                     list.check(["one", "two", 3, "four", "five"]).errors
                         ?.summary
-                ).snap(`At index 2, 3 is not assignable to string.`)
+                ).snap(`At path 2, 3 is not assignable to string.`)
             })
         })
     })

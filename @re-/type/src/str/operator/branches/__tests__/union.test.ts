@@ -25,21 +25,21 @@ describe("union", () => {
             test("double pipes", () => {
                 // @ts-expect-error
                 assert(() => type("boolean||null")).throwsAndHasTypeError(
-                    "Expected an expression after 'boolean|'."
+                    "Expected an expression (got '|null')."
                 )
             })
             test("ends with |", () => {
                 // @ts-expect-error
                 assert(() => type("boolean|")).throwsAndHasTypeError(
-                    "Expected an expression after 'boolean|'."
+                    "Expected an expression."
                 )
             })
-            test("long missing |", () => {
+            test("long missing union member", () => {
                 assert(() =>
                     // @ts-expect-error
                     type("boolean[]|(string|number|)|object")
                 ).throwsAndHasTypeError(
-                    "Expected an expression after 'string|number|'."
+                    "Expected an expression (got ')|object')."
                 )
             })
         })

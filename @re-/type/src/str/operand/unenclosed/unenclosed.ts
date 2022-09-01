@@ -77,7 +77,7 @@ type ReduceUnenclosed<
 type UnresolvableMessage<Token extends string> =
     `'${Token}' is not a builtin type and does not exist in your space.`
 
-const unresolvableMessage = <Token extends string>(
+export const unresolvableMessage = <Token extends string>(
     token: Token
 ): UnresolvableMessage<Token> =>
     `'${token}' is not a builtin type and does not exist in your space.`

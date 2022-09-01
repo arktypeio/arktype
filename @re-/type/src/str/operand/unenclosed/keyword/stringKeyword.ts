@@ -23,13 +23,13 @@ abstract class BaseStringKeyword extends terminalNode implements boundableNode {
     }
 }
 
-class StringKeyword extends BaseStringKeyword {
+export class StringKeyword extends BaseStringKeyword {
     allowsString() {
         return true
     }
 }
 
-class EmailKeyword extends BaseStringKeyword {
+export class EmailKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return /^(.+)@(.+)\.(.+)$/.test(value)
     }
@@ -39,25 +39,25 @@ class EmailKeyword extends BaseStringKeyword {
     }
 }
 
-class AlphaKeyword extends BaseStringKeyword {
+export class AlphaKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return isAlpha(value)
     }
 }
 
-class AlphaNumKeyword extends BaseStringKeyword {
+export class AlphaNumKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return isAlphaNumeric(value)
     }
 }
 
-class LowerKeyword extends BaseStringKeyword {
+export class LowerKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return value === value.toLowerCase()
     }
 }
 
-class UpperKeyword extends BaseStringKeyword {
+export class UpperKeyword extends BaseStringKeyword {
     allowsString(value: string) {
         return value === value.toUpperCase()
     }

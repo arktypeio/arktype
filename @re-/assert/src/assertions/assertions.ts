@@ -77,11 +77,15 @@ export class Assertions implements AssertionRecord {
             if (!typeData.type.expected) {
                 throw new Error(
                     `Unable to infer type at position ${this.ctx.position.char} on` +
-                        `line ${this.ctx.position.line} of ${this.ctx.position.file}.`
+                        ` line ${this.ctx.position.line} of ${this.ctx.position.file}.`
                 )
             }
             assertEquals(typeData.type.expected, typeData.type.actual)
         }
+    }
+
+    narrowedValue(expectedValue: unknown) {
+        return this.typedValue(expectedValue)
     }
 
     snap(...args: [expected: unknown]) {

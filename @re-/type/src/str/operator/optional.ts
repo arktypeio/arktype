@@ -20,7 +20,7 @@ export const parseOptional = (s: Parser.state.suffix, ctx: Node.context) => {
     return s
 }
 
-const nonTerminatingOptionalMessage = `Suffix '?' is only valid at the end of a definition.`
+export const nonTerminatingOptionalMessage = `Suffix '?' is only valid at the end of a definition.`
 type NonTerminatingOptionalMessage = typeof nonTerminatingOptionalMessage
 
 export type Optional<Child = unknown> = Unary<Child, "?">

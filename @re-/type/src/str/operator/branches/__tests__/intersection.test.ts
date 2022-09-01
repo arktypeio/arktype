@@ -20,13 +20,13 @@ describe("intersection", () => {
             test("bad reference", () => {
                 // @ts-expect-error
                 assert(() => type("boolean&tru")).throwsAndHasTypeError(
-                    "Unable to determine the type of 'tru'."
+                    "'tru' is not a builtin type and does not exist in your space."
                 )
             })
             test("double and", () => {
                 // @ts-expect-error
                 assert(() => type("boolean&&true")).throwsAndHasTypeError(
-                    "Unable to determine the type of ''."
+                    "Expected an expression (got '&true')."
                 )
             })
         })

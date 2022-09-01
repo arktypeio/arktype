@@ -20,13 +20,13 @@ abstract class BaseNumberKeyword extends terminalNode implements boundableNode {
     }
 }
 
-class NumberKeyword extends BaseNumberKeyword {
+export class NumberKeyword extends BaseNumberKeyword {
     allowsNumber() {
         return true
     }
 }
 
-class IntegerKeyword extends BaseNumberKeyword {
+export class IntegerKeyword extends BaseNumberKeyword {
     allowsNumber(value: number) {
         return Number.isInteger(value)
     }

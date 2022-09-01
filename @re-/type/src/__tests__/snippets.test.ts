@@ -23,14 +23,14 @@ describe("snippets", () => {
         )
         assert(spaceSnippet.errors?.summary)
             .snap(`Encountered errors at the following paths:
-  dependencies/0/contributors: Required value of type contributor[] was missing.
+  dependencies/0/contributors: Missing required value of type contributor[].
   contributors/0/email: "david@redodev" is not assignable to email.
 `)
     })
     test("constraints", () => {
         const employee = type({
             // Not a fan of regex? Don't worry, 'email' is a builtin type :)
-            email: `/[a-z]*@redo\.dev/`,
+            email: `/[a-z]*@redo.dev/`,
             about: {
                 // Single or double bound numeric types
                 age: "18<=integer<125",
@@ -55,10 +55,10 @@ describe("snippets", () => {
             }
         }
         assert(error?.summary).snap(`Encountered errors at the following paths:
-      email: "david@redo.biz" does not match expression /[a-z]*@redo\\.dev/.
-      about/age: Must be greater than or equal to 18 (got 17).
-      about/bio: Must be less than or equal to 160 characters (got 220).
-    `)
+  email: 'david@redo.biz' does not match expression /[a-z]*@redo.dev/.
+  about/age: 17 must be greater than or equal to 18.
+  about/bio: "I am very interesting.I am very interesting.I am ..." must be less than or equal to 160 characters (was 220).
+`)
     })
     // TODO: Add demo snippet test
 })

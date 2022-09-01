@@ -157,4 +157,4 @@ export const boundViolationMessage = (
 ) =>
     `${Node.Allows.stringifyValue(value)} must be ${
         comparatorToString[comparator]
-    } ${limit}${units ? " " + units : ""} (got ${size}).`
+    } ${limit}${units ? ` ${units} (was ${size})` : ""}.`

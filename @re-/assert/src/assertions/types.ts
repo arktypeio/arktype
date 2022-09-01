@@ -1,4 +1,4 @@
-import { Fn, IsAnyOrUnknown, ListComparisonMode } from "@re-/tools"
+import { Fn, IsAnyOrUnknown, ListComparisonMode, Narrow } from "@re-/tools"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertionsRoot : {}
@@ -109,6 +109,7 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
         "unknown"
     >
     typedValue: (expected: unknown) => undefined
+    narrowedValue: <Expected>(expected: Narrow<Expected>) => undefined
 }
 
 export type ExternalSnapshotArgs = {

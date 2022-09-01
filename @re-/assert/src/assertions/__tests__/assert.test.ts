@@ -1,4 +1,5 @@
 import { AssertionError, strict } from "node:assert"
+import { narrow } from "@re-/tools"
 import { describe, test } from "mocha"
 import { assert } from "../../index.js"
 const o = { re: "do" }
@@ -54,5 +55,15 @@ describe("Assertions", () => {
     test("value asserts don't exist on pure functional types", () => {
         // @ts-expect-error
         assert(() => {}).is
+    })
+    test("narrowedValue", () => {
+        assert(narrow({ a: "narrow" })).narrowedValue({ a: "narrow" })
+        strict.throws(
+            () => {
+                assert({ a: "narrow" }).narrowedValue({ a: "narrow" })
+            },
+            AssertionError,
+            "string"
+        )
     })
 })

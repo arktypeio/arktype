@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../index.js"
+import { nonTerminatingOptionalMessage } from "../exports.js"
 
 describe("optional", () => {
     describe("type", () => {
@@ -8,7 +9,10 @@ describe("optional", () => {
             assert(type("string?").infer).typed as string | undefined
         })
         test("adds undefined to non terminal", () => {
-            assert(type("(string|number[])?").infer).typed as string | undefined
+            assert(type("(string|number[])?").infer).typed as
+                | string
+                | number[]
+                | undefined
         })
         test("adds undefined to in-object type and makes it optional", () => {
             assert(
@@ -26,13 +30,13 @@ describe("optional", () => {
             test("bad inner type", () => {
                 // @ts-expect-error
                 assert(() => type("nonexistent?")).throwsAndHasTypeError(
-                    "Unable to determine the type of 'nonexistent'."
+                    "'nonexistent' is not a builtin type and does not exist in your space."
                 )
             })
             test("multiple consecutive", () => {
                 // @ts-expect-error
                 assert(() => type("boolean??")).throwsAndHasTypeError(
-                    "Modifier '?' is only valid at the end of a type definition."
+                    nonTerminatingOptionalMessage
                 )
             })
             test("multiple non-consecutive", () => {
@@ -42,17 +46,7 @@ describe("optional", () => {
                         // @ts-expect-error
                         b: "number?|string?"
                     })
-                ).throwsAndHasTypeError(
-                    "Modifier '?' is only valid at the end of a type definition."
-                )
-            })
-            test("within expression", () => {
-                assert(() =>
-                    // @ts-expect-error
-                    type("boolean?|string|number")
-                ).throwsAndHasTypeError(
-                    "Modifier '?' is only valid at the end of a type definition."
-                )
+                ).throwsAndHasTypeError(nonTerminatingOptionalMessage)
             })
         })
     })

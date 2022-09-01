@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { space } from "../../index.js"
+import { unresolvableMessage } from "../../str/operand/index.js"
 
 describe("space", () => {
     test("single", () => {
@@ -8,7 +9,7 @@ describe("space", () => {
         assert(() =>
             // @ts-expect-error
             space({ a: "strig" })
-        ).throwsAndHasTypeError("Unable to determine the type of 'strig'.")
+        ).throwsAndHasTypeError(unresolvableMessage("strig"))
     })
     test("independent", () => {
         assert(space({ a: "string", b: { c: "boolean" } }).$root.infer.b)
@@ -20,7 +21,7 @@ describe("space", () => {
                 // @ts-expect-error
                 { a: "string", b: { c: "uhoh" } }
             )
-        ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
+        ).throwsAndHasTypeError(unresolvableMessage("uhoh"))
     })
     test("interdependent", () => {
         assert(space({ a: "string", b: { c: "a" } }).$root.infer.b.c)
@@ -28,7 +29,7 @@ describe("space", () => {
         assert(() =>
             // @ts-expect-error
             space({ a: "yikes", b: { c: "a" } })
-        ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
+        ).throwsAndHasTypeError(unresolvableMessage("yikes"))
     })
     test("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
@@ -53,19 +54,6 @@ describe("space", () => {
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
-    test("cyclic eager", () => {
-        const cyclicEagerSpace = space({ a: { b: "b" }, b: { a: "a" } })
-        assert(cyclicEagerSpace.$root.infer.a).typed as {
-            b: {
-                a: {
-                    b: {
-                        a: any
-                    }
-                }
-            }
-        }
-        assert(cyclicEagerSpace.a.check({ b: {} }).errors)
-    })
     test("object list", () => {
         assert(space({ a: "string", b: [{ c: "a" }] }).$root.infer.b).typed as [
             {
@@ -74,20 +62,17 @@ describe("space", () => {
         ]
     })
     test("doesn't try to validate any as a dictionary", () => {
-        const parseWithAnySpace = space({} as any).$root.type({
-            literal: "string",
-            // @ts-ignore
-            alias: "myType"
-        })
-        assert(parseWithAnySpace.infer).typed as {
+        const parseWithAnySpace = () =>
+            space({} as any).$root.type({
+                literal: "string",
+                // @ts-ignore // TODO: Shouldn't complain
+                alias: "myType"
+            })
+        assert({} as ReturnType<typeof parseWithAnySpace>["infer"]).typed as {
             alias: unknown
             literal: string
         }
-        assert(() =>
-            parseWithAnySpace.check({ literal: "", alias: "" })
-        ).throws.snap(
-            `Error: Unable to determine the type of 'myType' at path alias.`
-        )
+        assert(parseWithAnySpace).throws(unresolvableMessage("myType"))
     })
     test("doesn't try to validate any as a dictionary member", () => {
         assert(space({ a: {} as any }).$root.type(["number", "a"]).infer)
@@ -104,6 +89,6 @@ describe("space", () => {
                 // @ts-expect-error
                 { nested: { a: "a", b: "b", c: "c" } }
             )
-        ).throwsAndHasTypeError("Unable to determine the type of 'c'")
+        ).throwsAndHasTypeError(unresolvableMessage("c"))
     })
 })

@@ -19,25 +19,31 @@ describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
-                assert(type("number>0").tree).typedValue(["number", [">", 0]])
+                assert(type("number>0").tree).narrowedValue([
+                    "number",
+                    [">", 0]
+                ])
             })
             test("<", () => {
-                assert(type("number<10").tree).typedValue(["number", ["<", 10]])
+                assert(type("number<10").tree).narrowedValue([
+                    "number",
+                    ["<", 10]
+                ])
             })
             test(">=", () => {
-                assert(type("number>=3.14159").tree).typedValue([
+                assert(type("number>=3.14159").tree).narrowedValue([
                     "number",
                     [">=", 3.14159]
                 ])
             })
             test("<=", () => {
-                assert(type("number<=-49").tree).typedValue([
+                assert(type("number<=-49").tree).narrowedValue([
                     "number",
                     ["<=", -49]
                 ])
             })
             test("==", () => {
-                assert(type("number==3211993").tree).typedValue([
+                assert(type("number==3211993").tree).narrowedValue([
                     "number",
                     ["==", 3211993]
                 ])
@@ -45,14 +51,14 @@ describe("bound", () => {
         })
         describe("double", () => {
             test("<,<=", () => {
-                assert(type("-5<number<=5").tree).typedValue([
+                assert(type("-5<number<=5").tree).narrowedValue([
                     "number",
                     [">", -5],
                     ["<=", 5]
                 ])
             })
             test("<=,<", () => {
-                assert(type("-3.23<=number<4.654").tree).typedValue([
+                assert(type("-3.23<=number<4.654").tree).narrowedValue([
                     "number",
                     [">=", -3.23],
                     ["<", 4.654]
@@ -116,7 +122,7 @@ describe("bound", () => {
 
     describe("string", () => {
         test("parse", () => {
-            assert(type("1<string<=5").tree).typedValue([
+            assert(type("1<string<=5").tree).narrowedValue([
                 "string",
                 [">", 1],
                 ["<=", 5]
@@ -138,7 +144,7 @@ describe("bound", () => {
                     limit: 3,
                     size: 2,
                     units: `characters`,
-                    message: `"no" must be greater than or equal to 3 characters (got 2).`
+                    message: `"no" must be greater than or equal to 3 characters (was 2).`
                 }
             ])
         })
@@ -146,7 +152,7 @@ describe("bound", () => {
 
     describe("list", () => {
         test("parse", () => {
-            assert(type("-343<=boolean[]<89").tree).typedValue([
+            assert(type("-343<=boolean[]<89").tree).narrowedValue([
                 ["boolean", "[]"],
                 [">=", -343],
                 ["<", 89]
@@ -171,7 +177,7 @@ describe("bound", () => {
                     limit: 2,
                     size: 1,
                     units: `items`,
-                    message: `[null] must be exactly 2 items (got 1).`
+                    message: `[null] must be exactly 2 items (was 1).`
                 }
             ])
         })
