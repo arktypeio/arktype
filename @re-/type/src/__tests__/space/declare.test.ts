@@ -7,26 +7,46 @@ import { compile } from "./declaration/declaration.js"
 import { groupDef } from "./declaration/group.js"
 import { userDef } from "./declaration/user.js"
 
-// TODO: Update these tests to just be responsible for checking space is created consistently
 describe("declare", () => {
     test("compiles", () => {
         // Creates your space (or tells you which definition you forgot to include)
         const space = compile({ ...userDef, ...groupDef })
-        assert(space.$root.infer.user.name).typed as string
-        assert(space.$root.infer.user).type.toString.snap(
-            `{ groups: { name: string; members: { groups: { name: string; members: any[]; }[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: { groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; } | undefined; }`
+        assert(space.$root.tree).narrowedValue({
+            group: {
+                name: "string",
+                members: ["user", "[]"]
+            },
+            user: {
+                name: "string",
+                bestFriend: ["user", "?"],
+                groups: ["group", "[]"]
+            }
+        })
+    })
+    test("meta", () => {
+        // Creates your space (or tells you which definition you forgot to include)
+        const space = compile(
+            { ...userDef, ...groupDef },
+            { parse: { onCycle: "'cycle'" } }
         )
-        assert(space.group.infer).type.toString.snap(
-            `{ name: string; members: { groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; }[]; }`
-        )
-        assert(space.user.infer.bestFriend).type.toString.snap(
-            `{ groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; } | undefined`
-        )
-        assert(
-            space.$root.type({ foozler: "user", choozler: "group[]" }).infer
-        ).type.toString.snap(
-            `{ foozler: { groups: { name: string; members: { groups: { name: string; members: any[]; }[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: { groups: { name: string; members: { groups: any[]; name: string; bestFriend?: any | undefined; }[]; }[]; name: string; bestFriend?: any | undefined; } | undefined; }; choozler: { name: string; members: { groups: { name: string; members: any[]; }[]; name: string; bestFriend?: any | undefined; }[]; }[]; }`
-        )
+        assert(space.$root.infer).typed as {
+            group: {
+                name: string
+                members: {
+                    name: string
+                    groups: "cycle"[]
+                    bestFriend?: "cycle" | undefined
+                }[]
+            }
+            user: {
+                name: string
+                groups: {
+                    name: string
+                    members: "cycle"[]
+                }[]
+                bestFriend?: "cycle" | undefined
+            }
+        }
     })
     test("single", () => {
         const { define, compile } = declare("gottaDefineThis")
@@ -40,9 +60,7 @@ describe("declare", () => {
             "'whoops' is not a builtin type and does not exist in your space."
         )
         const space = compile(gottaDefineThis)
-        assert(space.$root.type({ a: "gottaDefineThis" }).infer).typed as {
-            a: boolean
-        }
+        assert(space.$root.tree).narrowedValue({ gottaDefineThis: "boolean" })
     })
     test("errors on compile with declared type undefined", () => {
         const { define, compile } = declare(

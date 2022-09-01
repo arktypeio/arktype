@@ -1,9 +1,9 @@
 import { diffSets, ElementOf, Exact, Get, Narrow, SetChange } from "@re-/tools"
 import {
     rawSpace,
-    SpaceOptions,
     SpaceOutput,
-    ValidateDictionary
+    ValidateDictionary,
+    ValidateSpaceOptions
 } from "./space.js"
 import { Validate } from "./type.js"
 
@@ -87,12 +87,13 @@ type CheckDeclaredCompilation<Dict, DeclaredTypeNames extends string[]> = {
 }
 
 export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
-    Dict
+    Dict,
+    Meta = {}
 >(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
-    options?: SpaceOptions
-    // TODO: Fix????
-) => SpaceOutput<{ Dict: Dict; Meta: {} }>
+    options?: ValidateSpaceOptions<Dict, Meta>
+    // @ts-expect-error Constraining Meta interferes with our ability to validate it
+) => SpaceOutput<{ Dict: Dict; Meta: Meta }>
 
 export class DeclaredCompilationError extends Error {
     constructor(discrepancies: NonNullable<SetChange<string>>) {

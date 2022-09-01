@@ -31,7 +31,7 @@ describe("map", () => {
             assert(shallow().infer).typed as {
                 a: string
                 b: number
-                // TODO: Update once ts-morph 4.8 is available
+                // TODO: ts-morph 4.8
                 c: number
             }
         })

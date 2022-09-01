@@ -3,10 +3,8 @@ import { describe, test } from "mocha"
 import { type } from "../../../index.js"
 
 describe("bigintLiteral", () => {
+    // TODO: ts-morph 4.8
     describe("type", () => {
-        /*
-         * TODO: Until ts-morph's embedded TS version is >= 4.8, these will still be inferred as bigint
-         */
         test("positive", () => {
             // assert(model("999999999999999n").type).typed as 999999999999999n
             assert(type("999999999999999n").infer).typed as bigint

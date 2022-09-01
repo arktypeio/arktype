@@ -15,6 +15,12 @@ import { Type, TypeFrom, TypeFunction, TypeOptions, Validate } from "./type.js"
 export const space: CreateSpaceFn = (dictionary, options) =>
     rawSpace(dictionary, options) as any
 
+export type CreateSpaceFn = <Dict, Meta = {}>(
+    dictionary: ValidateDictionary<Dict>,
+    options?: ValidateSpaceOptions<Dict, Meta>
+    // @ts-expect-error Constraining Meta interferes with our ability to validate it
+) => SpaceOutput<{ Dict: ValidateDictionary<Dict>; Meta: Meta }>
+
 export type RawSpace = Record<string, any> & { $root: SpaceMeta }
 
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
@@ -60,13 +66,16 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
     get infer() {
         return chainableNoOpProxy
     }
-}
 
-export type CreateSpaceFn = <Dict, Meta = {}>(
-    dictionary: ValidateDictionary<Dict>,
-    options?: ValidateSpaceOptions<Dict, Meta>
-    // @ts-expect-error Constraining Meta interferes with our ability to validate it
-) => SpaceOutput<{ Dict: ValidateDictionary<Dict>; Meta: Meta }>
+    get tree() {
+        return Object.fromEntries(
+            Object.entries(this.resolutions).map(([alias, resolution]) => [
+                alias,
+                resolution.tree
+            ])
+        )
+    }
+}
 
 /**
  * Although this function claims to return Def, it actually returns an object
@@ -118,7 +127,7 @@ type ValidatedMetaDefs<Meta, Dict> = {
     >
 }
 
-type ValidateSpaceOptions<Dict, Meta> = {
+export type ValidateSpaceOptions<Dict, Meta> = {
     parse?: Conform<Meta, ValidatedMetaDefs<Meta, Dict>>
 } & TypeOptions
 
@@ -134,6 +143,7 @@ export type SpaceOutput<S extends Space> = Evaluate<
 
 export type SpaceMetaFrom<S extends Space> = {
     infer: InferSpaceRoot<S>
+    tree: Root.Parse<S["Dict"], S["Dict"]>
     type: TypeFunction<S>
     extend: ExtendFunction<S>
     dictionary: S["Dict"]

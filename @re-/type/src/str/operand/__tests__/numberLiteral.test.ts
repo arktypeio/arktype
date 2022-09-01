@@ -3,9 +3,7 @@ import { describe, test } from "mocha"
 import { type } from "../../../index.js"
 
 describe("numberLiteral", () => {
-    /*
-     * TODO: Until ts-morph's embedded TS version is >= 4.8, these will still be inferred as number
-     */
+    // TODO: ts-morph 4.8
     describe("type", () => {
         test("whole", () => {
             // assert(model("4").type).typed as 4

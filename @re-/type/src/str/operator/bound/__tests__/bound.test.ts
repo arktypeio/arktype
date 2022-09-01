@@ -16,9 +16,7 @@ import {
 } from "./common.js"
 
 describe("bound", () => {
-    /*
-     * TODO: Until ts-morph's embedded TS version is >= 4.8, these will still be inferred as number
-     */
+    // TODO: ts-morph 4.8
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
