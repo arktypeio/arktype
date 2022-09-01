@@ -10,10 +10,17 @@ import {
 import { Node } from "./node/index.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
-import { Type, TypeFrom, TypeFunction, TypeOptions, Validate } from "./type.js"
+import {
+    DynamicType,
+    Type,
+    TypeFrom,
+    TypeFunction,
+    TypeOptions,
+    Validate
+} from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
-    rawSpace(dictionary, options) as any
+    dynamicSpace(dictionary, options) as any
 
 export type CreateSpaceFn = <Dict, Meta = {}>(
     dictionary: ValidateDictionary<Dict>,
@@ -21,10 +28,12 @@ export type CreateSpaceFn = <Dict, Meta = {}>(
     // @ts-expect-error Constraining Meta interferes with our ability to validate it
 ) => SpaceOutput<{ Dict: ValidateDictionary<Dict>; Meta: Meta }>
 
-export type RawSpace = Record<string, any> & { $root: SpaceMeta }
+export type DynamicSpace = Record<string, DynamicType> & {
+    $root: SpaceMetaFrom<{ Dict: any; Meta: {} }>
+}
 
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
-export const rawSpace = (
+export const dynamicSpace = (
     dictionary: SpaceDictionary,
     options: SpaceOptions = {}
 ) => {
@@ -35,7 +44,7 @@ export const rawSpace = (
         meta.resolutions[alias] = resolution
         compiled[alias] = new Type(resolution.root, resolution)
     }
-    return compiled as RawSpace
+    return compiled as DynamicSpace
 }
 
 export class SpaceMeta implements SpaceMetaFrom<any> {
@@ -57,7 +66,7 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
     }
 
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions) {
-        return rawSpace(
+        return dynamicSpace(
             { ...this.dictionary, ...extensions },
             deepMerge(this.options, overrides)
         ) as any

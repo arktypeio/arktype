@@ -1,6 +1,6 @@
 import { diffSets, ElementOf, Exact, Get, Narrow, SetChange } from "@re-/tools"
 import {
-    rawSpace,
+    dynamicSpace,
     SpaceOutput,
     ValidateDictionary,
     ValidateSpaceOptions
@@ -14,7 +14,7 @@ export const declare: DeclareFn = (...names) => ({
         if (discrepancies) {
             throw new DeclaredCompilationError(discrepancies)
         }
-        return rawSpace(dict, options) as any
+        return dynamicSpace(dict, options) as any
     }
 })
 
@@ -60,7 +60,7 @@ type CreateDeclaredDefineFunction = <
 const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
     (declaredTypeNames, definedTypeName) => (definition) => {
         // Dummy create for validation
-        rawSpace(
+        dynamicSpace(
             Object.fromEntries(
                 declaredTypeNames.map((typeName) => [typeName, "unknown"])
             )

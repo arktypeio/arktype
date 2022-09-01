@@ -65,7 +65,7 @@ describe("space", () => {
         const parseWithAnySpace = () =>
             space({} as any).$root.type({
                 literal: "string",
-                // @ts-ignore // TODO: Shouldn't complain
+                // @ts-expect-error Still complains about unknown keys
                 alias: "myType"
             })
         assert({} as ReturnType<typeof parseWithAnySpace>["infer"]).typed as {

@@ -1,5 +1,5 @@
 export { type, dynamic, type References, type Infer } from "./type.js"
-export { space, def } from "./space.js"
+export { space, def, dynamicSpace } from "./space.js"
 export { declare } from "./declaration.js"
 export { Root } from "./root.js"
 export type { CustomValidator } from "./node/traversal/allows.js"
