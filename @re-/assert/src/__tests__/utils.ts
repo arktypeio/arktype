@@ -19,16 +19,13 @@ export const runThenGetContents = (
     try {
         if (precache) {
             RE_ASSERT_CMD += ` --precache --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
-            shell(
-                `npx --no ts-node ${testFileCopyPath} --reassertTestPreCached`,
-                {
-                    env: {
-                        RE_ASSERT_CMD
-                    }
+            shell(`npx ts-node ${testFileCopyPath} --reassertTestPreCached`, {
+                env: {
+                    RE_ASSERT_CMD
                 }
-            )
+            })
         } else {
-            shell(`npx --no ts-node ${testFileCopyPath}`, {
+            shell(`npx ts-node ${testFileCopyPath}`, {
                 env: { RE_ASSERT_CMD }
             })
         }

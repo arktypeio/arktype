@@ -24,7 +24,7 @@ if (process.argv[reassertArgIndex + 1] === "bench") {
     let exitCode = 0
     for (const path of benchFilePaths) {
         try {
-            shell(`npx --no ts-node ${path}`, {
+            shell(`npx ts-node ${path}`, {
                 env: {
                     RE_ASSERT_CMD: process.argv
                         .slice(reassertArgIndex + 1)
