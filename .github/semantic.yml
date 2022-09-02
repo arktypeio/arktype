@@ -1,8 +1,7 @@
 titleOnly: true
 scopes:
     - assert
-    - model
+    - type
     - node
-    - state
     - tools
     - redo.dev

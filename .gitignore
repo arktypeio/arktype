@@ -1,6 +1,7 @@
 dist
 node_modules
 temp
+tmp
 *.temp.*
 *.log
 *.tsbuildinfo

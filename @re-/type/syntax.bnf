@@ -1,0 +1,70 @@
+<definition> ::= <expression> <suffixes>
+
+<expression> ::= <modified_expression> | <branched_expression> | <grouped_expression> | <base_type>
+<suffixes> ::= "?"? 
+
+<modified_expression> ::= <list_expression> | <bound_expression>
+<list_expression> ::= <expression> "[]"
+<bound_expression> ::= <left_bound_expression> | <right_bound_expression> | <double_bound_expression>
+
+<bound> ::= <number_literal>
+<boundable> ::= <number_keyword> | <string_keyword> | <list_expression>
+<comparator> ::= ">" | "<" | ">=" | "<=" | "=="
+
+<left_bound_expression> ::= <bound> <comparator> <boundable>
+<right_bound_expression> ::= <boundable> <comparator> <bound> 
+
+<double_bound_expression> ::= <bound> <comparator> <boundable> <comparator> <bound>
+
+<branched_expression> ::= <expression> <branch_operator> <expression>
+<branch_operator> ::= "|" | "&"
+
+<grouped_expression> ::= "(" <expression> ")"
+
+<base_type> ::= <identifier> | <literal>
+<identifier> ::= <keyword> | <alias>
+<keyword> ::= <string_keyword> | <number_keyword> | <type_keyword>
+<alias> ::= <initial_name_char> <trailing_name_char>*
+<literal> ::= <string_literal> | <number_literal> | <bigint_literal> | <regex_literal>
+
+<string_keyword> ::= "string" | "email" | "alpha" | "alphanum" | "upper" | "lower"
+<number_keyword> ::= "number" | "integer"
+<type_keyword> ::= "any" | "bigint" | "boolean" | "false" | "function" | "never" | "null" 
+                | "object" | "symbol" | "true" | "undefined" | "unknown" | "void" 
+
+<string_literal> ::= <single_quoted_literal> | <double_quoted_literal>
+
+<single_quoted_literal> ::= "'" <non_single_quote>* "'"
+<non_single_quote> ::= <non_enclosing_symbol> | "\"" | "/"
+
+<double_quoted_literal> ::= "\"" <non_double_quote>* "\""
+<non_double_quote> ::= <non_enclosing_char> | "'" | "/"
+
+<regex_literal> ::= "/" <non_forward_slash>+ "/"
+<non_forward_slash> ::= <non_enclosing_char> | "\"" | "'"
+
+<number_literal> ::= <integer> | <number_with_decimal>
+
+<bigint_literal> ::= <integer> "n"
+
+<integer> ::= "0" | ("-"? <positive_integer>)
+<number_with_decimal> ::= "-"? <non_negative_integer> <decimal_suffix>
+
+<non_negative_integer> ::= "0" | <positive_integer>
+<positive_integer> ::= <non_zero_digit> <digit>*
+<decimal_suffix> ::= "." <digit>+
+
+<initial_name_char> ::= <letter> | "_"
+<trailing_name_char> ::= <initial_name_char> | <digit>
+<alphanum_char> ::= <letter> | <digit>
+
+<letter> ::= [a-z] | [A-Z]
+
+<digit> ::= "0" | <non_zero_digit>
+
+<non_zero_digit> ::= [1-9]
+
+<non_enclosing_symbol> ::= "|" | "!" | "#" | "$" | "%" | "&" | "(" | ")" | "*" | "+" | "," | "_" 
+        | "." | ":" | ";" | ">" | "=" | "<" | "?" | "@" | "[" | "\\" | "]" | "^" | "-" | "`" | "{" | "}" | "~" | " "
+
+<non_enclosing_char> ::= <alphanum_char> | <non_enclosing_symbol>

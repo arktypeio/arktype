@@ -2,16 +2,18 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
+    "eslint.codeActionsOnSave.rules": [
+        "import/order",
+        "sort-imports",
+        "unicorn/prefer-node-protocol"
+    ],
     "typescript.tsdk": "../../node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
-    "eslint.options": {
-        "overrideConfig": {
-            "rules": {
-                "@typescript-eslint/no-empty-function": "off",
-                "@typescript-eslint/no-empty-interface": "off",
-                "no-empty": "off",
-                "prefer-const": "off"
-            }
-        }
+    "mochaExplorer.nodeArgv": [
+        "--loader=ts-node/esm",
+        "--no-warnings=ExperimentalWarning"
+    ],
+    "mochaExplorer.env": {
+        "RE_ASSERT_CMD": "--skipTypes"
     }
 }

@@ -1,34 +1,40 @@
 import { fileURLToPath } from "node:url"
 import { caller } from "@re-/node"
-import { ListPossibleTypes } from "@re-/tools"
-import { getReAssertConfig, ReAssertConfig } from "./common.js"
-import { TypeAssertions } from "./type/index.js"
-import { ValueAssertion, valueAssertions } from "./value/index.js"
+import { Assertions, ValueAssertion } from "./assertions/index.js"
+import {
+    fixVitestPos,
+    getReAssertConfig,
+    isVitest,
+    ReAssertConfig,
+    SourcePosition
+} from "./common.js"
 
-export type AvailableAssertions<T> = ValueAssertion<
-    ListPossibleTypes<T>,
-    true
-> &
-    TypeAssertions
+export type AvailableAssertions<T> = ValueAssertion<T, true>
 
 export type AssertionResult<T> = AvailableAssertions<T>
 
-export type Assertion = <T>(value: T) => AssertionResult<T>
+export type AssertFn = <T>(value: T) => AssertionResult<T>
 
 export type AssertionContext = {
-    allowTypeAssertions: boolean
-    returnsCount: number
+    actual: unknown
     originalAssertedValue: unknown
-    args: unknown[]
-    config: ReAssertConfig
+    assertedFnArgs: unknown[]
+    cfg: ReAssertConfig
+    isReturn: boolean
+    allowRegex: boolean
+    position: SourcePosition
+    defaultExpected?: unknown
 }
 
 // @ts-ignore
-export const assert: Assertion = (
+export const assert: AssertFn = (
     value: unknown,
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
-    const position = caller()
+    let position = caller()
+    if (isVitest()) {
+        position = fixVitestPos(position)
+    }
     if (!/\.(c|m)?tsx?$/.test(position.file)) {
         throw new Error(
             `Assert cannot be called from outside a TypeScript source file (got '${position.file}'). `
@@ -37,15 +43,14 @@ export const assert: Assertion = (
     if (position.file.startsWith("file:///")) {
         position.file = fileURLToPath(position.file)
     }
-    const config: AssertionContext = {
-        allowTypeAssertions: true,
-        returnsCount: 0,
+    const ctx: AssertionContext = {
+        actual: value,
+        isReturn: false,
+        allowRegex: false,
         originalAssertedValue: value,
-        args: [],
-        config: { ...getReAssertConfig(), ...internalConfigHooks }
+        assertedFnArgs: [],
+        position,
+        cfg: { ...getReAssertConfig(), ...internalConfigHooks }
     }
-    return Object.assign(
-        new TypeAssertions(position, config),
-        valueAssertions(position, value, config)
-    )
+    return new Assertions(ctx)
 }

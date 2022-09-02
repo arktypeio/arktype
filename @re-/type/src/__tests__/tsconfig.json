@@ -1,0 +1,9 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "diagnostics": true,
+        "noEmit": true,
+        "composite": false,
+        "incremental": false
+    }
+}

@@ -1,6 +1,0 @@
-export * from "./str.js"
-export * from "./optional.js"
-export * from "./keyword/typeKeyword.js"
-export * from "./bound.js"
-export * from "./intersection.js"
-export * from "./alias.js"

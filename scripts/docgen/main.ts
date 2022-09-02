@@ -1,20 +1,29 @@
 import { basename } from "node:path"
 import { stdout } from "node:process"
-import { fromPackageRoot } from "@re-/node"
 import { DocGenConfig } from "./config.js"
 import { extractRepo } from "./extract.js"
 import { createWriteFilesConsumer } from "./snippets/writeFilesConsumer.js"
 import { writeRepo } from "./write.js"
+import { fromPackageRoot } from "@re-/node"
 
 const fromRedoDevDir = (...segments: string[]) =>
     fromPackageRoot("redo.dev", ...segments)
 
+const fromTypeDocsDir = (...segments: string[]) =>
+    fromRedoDevDir("docs", "type", ...segments)
+
+const fromTypeDemosDir = (...segments: string[]) =>
+    fromTypeDocsDir("demos", ...segments)
+
+const fromTypePackageRoot = (...segments: string[]) =>
+    fromPackageRoot("@re-", "type", ...segments)
+
 export const config: DocGenConfig = {
     packages: [
         {
-            path: "@re-/model",
+            path: "@re-/type",
             api: {
-                outDir: fromRedoDevDir("docs", "model", "api")
+                outDir: fromTypeDocsDir("api")
             },
             snippets: {
                 sources: [
@@ -22,16 +31,16 @@ export const config: DocGenConfig = {
                         path: "docs/snippets/"
                     }
                 ],
-                targets: ["README.md"],
+                targets: [
+                    fromTypePackageRoot("README.md"),
+                    fromTypeDemosDir(
+                        "stackblitzGenerators",
+                        "createStackblitzDemo.ts"
+                    )
+                ],
                 consumers: [
                     createWriteFilesConsumer({
-                        rootOutDir: fromRedoDevDir(
-                            "docs",
-                            "model",
-                            "demos",
-                            "static",
-                            "generated"
-                        ),
+                        rootOutDir: fromTypeDemosDir("static", "generated"),
                         transformRelativePath: (path) =>
                             `${basename(path)}.raw`,
                         transformJsImports: (snippet) =>

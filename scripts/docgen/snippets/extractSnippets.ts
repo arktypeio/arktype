@@ -1,4 +1,4 @@
-import { walkPaths } from "@re-/node"
+import { fromPackageRoot, readFile, walkPaths } from "@re-/node"
 import { readFileSync, statSync } from "node:fs"
 import { relative } from "node:path"
 import { Project } from "ts-morph"
@@ -45,25 +45,21 @@ export const extractPackageSnippets = ({
             ? walkPaths(source.path, { excludeDirs: true })
             : [source.path]
         for (const path of paths) {
-            const fileKey = relative(packageMetadata.rootDir, path)
+            const fileKey = relative(fromPackageRoot(), path)
             const ctx = {
                 packageMetadata,
                 transforms: addDefaultsToTransformOptions(source.transforms)
             }
             const fileText = TS_FILE_REGEX.test(path)
                 ? getTransformedText(path, ctx, project)
-                : readFileSync(path, { encoding: "utf8" })
-
+                : readFile(path)
             packageSnippets[fileKey] = extractSnippetsFromFile(fileText)
         }
     }
     return packageSnippets
 }
 
-export type FileSnippets = {
-    all: Snippet
-    byLabel: LabeledSnippets
-}
+export type FileSnippets = LabeledSnippets
 
 const extractSnippetsFromFile = (sourceFileText: string): FileSnippets => {
     const byLabel = extractLabeledSnippets(sourceFileText)
@@ -72,7 +68,7 @@ const extractSnippetsFromFile = (sourceFileText: string): FileSnippets => {
         all: {
             text
         },
-        byLabel
+        ...byLabel
     }
 }
 

@@ -1,7 +1,8 @@
 import {
     ElementOf,
     FilterFunction,
-    Iteration,
+    Iterate,
+    IterateType,
     List,
     ListPossibleTypes,
     Stringifiable
@@ -28,11 +29,6 @@ export const isNumeric = (s: any) => numericRegex.test(s)
 
 export const isInteger = (s: any) => integerRegex.test(s)
 
-export type AsNumberOptions = {
-    asFloat?: boolean
-    assert?: boolean
-}
-
 export type StringOrNumberFrom<
     K,
     Original = K & (string | number)
@@ -42,23 +38,17 @@ export type StringOrNumberFrom<
     ? Value | Original
     : Original
 
-export const asNumber = <Options extends AsNumberOptions>(
-    s: any,
-    options?: Options
-): number | (Options["assert"] extends true ? never : null) => {
+export const toNumber = (s: string): number => {
+    // By default, parseFloat allows values like "5.7blah",
+    // so we ensure the value is a well-formatted number first.
     if (isNumeric(s)) {
-        const parsable = String(s)
-        const asFloat = options?.asFloat ?? parsable.includes(".")
-        const parser = asFloat ? Number.parseFloat : Number.parseInt
-        const result = parser(parsable)
-        if (!Number.isNaN(result)) {
-            return result
+        const asFloat = Number.parseFloat(s)
+        if (!Number.isNaN(asFloat)) {
+            return asFloat
         }
     }
-    if (options?.assert) {
-        throw new Error(`'${s}' cannot be converted to a number.`)
-    }
-    return null as any
+
+    throw new Error(`'${s}' cannot be converted to a number.`)
 }
 
 export const isAlphaNumeric = (s: string) => alphaNumericRegex.test(s)
@@ -151,7 +141,7 @@ type SpliterateRecurse<
     Delimiters extends string[],
     IncludeDelimiters extends boolean,
     PreviousDelimiters extends string[]
-> = Delimiters extends Iteration<
+> = Delimiters extends IterateType<
     string,
     infer CurrentDelimiter,
     infer RemainingDelimiters
@@ -176,8 +166,8 @@ type SpliterateRecurse<
 
 type UnpackNestedTuples<
     T extends List,
-    Result extends any[] = []
-> = T extends Iteration<unknown, infer Current, infer Remaining>
+    Result extends unknown[] = []
+> = T extends Iterate<infer Current, infer Remaining>
     ? Current extends List
         ? [...UnpackNestedTuples<Current>, ...UnpackNestedTuples<Remaining>]
         : [Current, ...UnpackNestedTuples<Remaining>]
@@ -187,7 +177,7 @@ export type Join<
     Segments extends Stringifiable[],
     Delimiter extends string,
     Result extends string = ""
-> = Segments extends Iteration<Stringifiable, infer Segment, infer Remaining>
+> = Segments extends IterateType<Stringifiable, infer Segment, infer Remaining>
     ? Join<
           Remaining,
           Delimiter,
@@ -205,3 +195,10 @@ export type StringifyPossibleTypes<
     U extends Stringifiable,
     Delimiter extends string = ", "
 > = Join<ListPossibleTypes<U>, Delimiter>
+
+export type ListChars<
+    S extends string,
+    Result extends string[] = []
+> = S extends `${infer Char}${infer Remaining}`
+    ? ListChars<Remaining, [...Result, Char]>
+    : Result
