@@ -36,7 +36,5 @@ export class RegexMismatchDiagnostic extends Node.Allows
     .Diagnostic<"RegexMismatch"> {
     readonly code = "RegexMismatch"
 
-    get message() {
-        return `'${this.data}' does not match expression ${this.type}.`
-    }
+    message = `'${this.data}' does not match expression ${this.type}.`
 }

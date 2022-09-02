@@ -122,6 +122,7 @@ export class RecordNode extends obj {
 
 export class ExtraneousKeysDiagnostic extends Node.Allows
     .Diagnostic<"ExtraneousKeys"> {
+    public message: string
     readonly code = "ExtraneousKeys"
     constructor(
         args: Node.Allows.Args,
@@ -129,10 +130,7 @@ export class ExtraneousKeysDiagnostic extends Node.Allows
         public keys: string[]
     ) {
         super(args, node)
-    }
-
-    get message() {
-        return `Keys ${this.keys
+        this.message = `Keys ${keys
             .map((k) => `'${k}'`)
             .join(", ")} were unexpected.`
     }
@@ -140,6 +138,7 @@ export class ExtraneousKeysDiagnostic extends Node.Allows
 
 export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
     readonly code = "MissingKey"
+    public message: string
 
     constructor(
         args: Node.Allows.Args,
@@ -147,9 +146,6 @@ export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
         public key: string
     ) {
         super(args, propNode)
-    }
-
-    get message() {
-        return `Missing required value of type ${this.type}.`
+        this.message = `Missing required value of type ${this.type}.`
     }
 }

@@ -138,6 +138,7 @@ export class union extends branch {
 
 export class UnionDiagnostic extends Node.Allows.Diagnostic<"Union"> {
     readonly code = "Union"
+    public message: string
 
     constructor(
         args: Node.Allows.Args,
@@ -145,10 +146,7 @@ export class UnionDiagnostic extends Node.Allows.Diagnostic<"Union"> {
         public branches: Node.Allows.Diagnostics[]
     ) {
         super(args, node)
-    }
-
-    get message() {
-        return `${Node.Allows.stringifyValue(
+        this.message = `${Node.Allows.stringifyValue(
             this.data
         )} is not assignable to any of ${this.type}.`
     }

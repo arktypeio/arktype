@@ -150,9 +150,7 @@ export class ValidationError extends Error {}
 export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
     readonly code = "Unassignable"
 
-    get message() {
-        return `${stringifyValue(this.data)} is not assignable to ${this.type}.`
-    }
+    message = `${stringifyValue(this.data)} is not assignable to ${this.type}.`
 }
 
 export class CustomDiagnostic extends Diagnostic<"Custom"> {
