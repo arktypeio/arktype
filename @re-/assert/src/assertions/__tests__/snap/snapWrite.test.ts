@@ -10,9 +10,9 @@ describe("inline snap write", () => {
     test("dynamic", () => {
         const actual = runThenGetContents(snapshotTemplate)
         strict.equal(actual, expectedOutput)
-    }).timeout(10000)
+    }).timeout(30000)
     test("precache", () => {
         const actual = runThenGetContents(snapshotTemplate, { precache: true })
         strict.equal(actual, expectedOutput)
-    }).timeout(10000)
+    }).timeout(30000)
 })
