@@ -54,7 +54,7 @@ if (testCmd === "node") {
     }
     runTestsCmd += `node --loader ts-node/esm --test `
 } else {
-    runTestsCmd += `npx --no ${testCmd} `
+    runTestsCmd += `npx ${testCmd} `
 }
 
 const reassertArgs = [...process.argv.slice(0, cmdFlagIndex), "--precache"]
