@@ -1,5 +1,14 @@
 # @re-/assert
 
+## 0.4.3
+
+### Patch Changes
+
+-   11f7cf6c: @re-/type 2.0.
+-   Updated dependencies [11f7cf6c]
+    -   @re-/node@2.2.3
+    -   @re-/tools@2.2.2
+
 ## 0.4.2
 
 ### Patch Changes
