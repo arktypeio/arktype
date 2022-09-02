@@ -1,5 +1,13 @@
 # @re-/type
 
+## 2.0.6-alpha
+
+### Patch Changes
+
+-   79d1f8e7: @re-/type 2.0.
+-   Updated dependencies [79d1f8e7]
+    -   @re-/tools@2.2.1
+
 ## 2.0.5-alpha
 
 ### Patch Changes
