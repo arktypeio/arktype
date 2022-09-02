@@ -63,7 +63,8 @@ describe("tuple", () => {
                             data: [`violin`, 42],
                             message: `Tuple of length 2 is not assignable to tuple of length 3.`,
                             expectedLength: 3,
-                            actualLength: 2
+                            actualLength: 2,
+                            options: undefined
                         }
                     ])
                 })

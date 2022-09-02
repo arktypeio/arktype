@@ -198,7 +198,8 @@ describe("bound", () => {
                     limit: 3,
                     size: 2,
                     units: `characters`,
-                    message: `"no" must be greater than or equal to 3 characters (was 2).`
+                    message: `"no" must be greater than or equal to 3 characters (was 2).`,
+                    options: undefined
                 }
             ])
         })

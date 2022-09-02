@@ -140,15 +140,13 @@ export abstract class Diagnostic<
     path: Traverse.Path
     type: string
     data: unknown
-    options?: BaseDiagnosticOptions<Code> & AdditionalOptions
+    options: (BaseDiagnosticOptions<Code> & AdditionalOptions) | undefined
 
     constructor(public readonly code: Code, args: Args, node: base) {
         this.path = args.ctx.path
         this.data = args.value
         this.type = node.toString()
-        if (args.cfg.diagnostics?.[this.code]) {
-            this.options = args.cfg.diagnostics?.[this.code] as any
-        }
+        this.options = args.cfg.diagnostics?.[this.code] as any
     }
 
     abstract message: string

@@ -59,7 +59,8 @@ describe("map", () => {
                             type: `number`,
                             data: undefined,
                             message: `Missing required value of type number.`,
-                            key: `b`
+                            key: `b`,
+                            options: undefined
                         },
                         {
                             code: `MissingKey`,
@@ -67,7 +68,8 @@ describe("map", () => {
                             type: `67`,
                             data: undefined,
                             message: `Missing required value of type 67.`,
-                            key: `c`
+                            key: `c`,
+                            options: undefined
                         }
                     ])
                 })
