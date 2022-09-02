@@ -5,7 +5,9 @@ abstract class BaseTypeKeyword extends terminalNode {
         if (this.allowsValue(args.value)) {
             return true
         }
-        this.unassignableError(args)
+        args.diagnostics.push(
+            new Node.Allows.UnassignableDiagnostic(args, this)
+        )
         return false
     }
 

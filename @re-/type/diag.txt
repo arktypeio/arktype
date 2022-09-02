@@ -2,18 +2,18 @@
 > @re-/type@2.0.5-alpha diag /home/ssalb/re-po/@re-/type
 > tsc --composite false --noEmit --diagnostics --incremental false
 
-Files:              390
-Lines:            70752
-Nodes:           195337
-Identifiers:      66780
-Symbols:         123816
-Types:            61795
-Instantiations:  350567
-Memory used:    161890K
+Files:              393
+Lines:            70889
+Nodes:           195919
+Identifiers:      66949
+Symbols:         123418
+Types:            62073
+Instantiations:  314790
+Memory used:    162632K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.44s
+Parse time:       0.48s
 Bind time:        0.15s
-Check time:       1.49s
+Check time:       1.46s
 Emit time:        0.00s
 Total time:       2.09s

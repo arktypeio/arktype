@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../index.js"
 import { unresolvableMessage } from "../../str/operand/index.js"
-import { extraneousKeysError, missingKeyError } from "../record.js"
+import { ExtraneousKeysDiagnostic, MissingKeyDiagnostic } from "../record.js"
 
 describe("map", () => {
     describe("empty", () => {
@@ -77,13 +77,12 @@ describe("map", () => {
                 test("missing keys", () => {
                     assert(
                         shallow().check({ a: "ok" })
-                            .errors as any as missingKeyError[]
+                            .errors as any as MissingKeyDiagnostic[]
                     ).snap([
                         {
                             code: `MissingKey`,
                             path: [`b`],
-                            definition: `number`,
-                            tree: `number`,
+                            type: `number`,
                             data: undefined,
                             message: `Missing required value of type number.`,
                             key: `b`
@@ -91,8 +90,7 @@ describe("map", () => {
                         {
                             code: `MissingKey`,
                             path: [`c`],
-                            definition: `67`,
-                            tree: `67`,
+                            type: `67`,
                             data: undefined,
                             message: `Missing required value of type 67.`,
                             key: `c`
@@ -107,17 +105,16 @@ describe("map", () => {
                             c: 67,
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).errors as any as extraneousKeysError[]
+                        }).errors as any as ExtraneousKeysDiagnostic[]
                     ).snap([
                         {
                             code: `ExtraneousKeys`,
                             path: [],
-                            definition: `{
+                            type: `{
     a: string,
     b: number,
     c: 67
 }`,
-                            tree: { a: `string`, b: `number`, c: `67` },
                             data: {
                                 a: `ok`,
                                 b: 4.321,

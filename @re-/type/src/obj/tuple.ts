@@ -20,11 +20,16 @@ export class TupleNode extends obj {
             )
             return false
         }
-        const typeLength = this.entries.length
-        const valueLength = args.value.length
-        if (typeLength !== valueLength) {
+        const expectedLength = this.entries.length
+        const actualLength = args.value.length
+        if (expectedLength !== actualLength) {
             args.diagnostics.push(
-                new TupleLengthDiagnostic(args, this, typeLength, valueLength)
+                new TupleLengthDiagnostic(
+                    args,
+                    this,
+                    expectedLength,
+                    actualLength
+                )
             )
             return false
         }
@@ -73,13 +78,13 @@ export class TupleLengthDiagnostic extends Node.Allows
     constructor(
         args: Node.Allows.Args,
         node: Node.base,
-        public typeLength: number,
-        public valueLength: number
+        public expectedLength: number,
+        public actualLength: number
     ) {
         super(args, node)
     }
 
     get message() {
-        return `Tuple of length ${this.valueLength} is not assignable to tuple of length ${this.typeLength}.`
+        return `Tuple of length ${this.actualLength} is not assignable to tuple of length ${this.expectedLength}.`
     }
 }

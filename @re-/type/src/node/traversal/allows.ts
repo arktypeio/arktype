@@ -51,45 +51,41 @@ export type CustomValidatorArgs = Evaluate<
     }
 >
 
-// export const customValidatorAllows = (
-//     validator: CustomValidator,
-//     node: base,
-//     args: Args
-// ): boolean => {
-//     const context = createBaseErrorContext(node, args)
-//     const result = getCustomErrorMessages(validator, node, args, context)
-//     const customMessages = typeof result === "string" ? [result] : result
-//     if (Array.isArray(customMessages)) {
-//         args.diagnostics.push(
-//             ...customMessages.map((message) => ({
-//                 ...context,
-//                 code: "Custom",
-//                 message
-//             }))
-//         )
-//         return false
-//     }
-//     return true
-// }
+export const customValidatorAllows = (
+    validator: CustomValidator,
+    node: base,
+    args: Args
+): boolean => {
+    const context = createBaseErrorContext(node, args)
+    const result = getCustomErrorMessages(validator, node, args, context)
+    const customMessages = typeof result === "string" ? [result] : result
+    if (Array.isArray(customMessages)) {
+        for (const message of customMessages) {
+            args.diagnostics.push(new CustomDiagnostic(args, node, message))
+        }
+        return false
+    }
+    return true
+}
 
-// export const getCustomErrorMessages = (
-//     validator: CustomValidator,
-//     node: base,
-//     args: Args,
-//     context: BaseErrorContext
-// ) =>
-//     validator({
-//         ...context,
-//         getOriginalErrors: () => {
-//             const errors: ErrorData[] = []
-//             node.allows({
-//                 ...args,
-//                 cfg: { ...args.cfg, validator: "default" },
-//                 diagnostics: errors
-//             })
-//             return errors
-//         }
-//     })
+export const getCustomErrorMessages = (
+    validator: CustomValidator,
+    node: base,
+    args: Args,
+    context: BaseErrorContext
+) =>
+    validator({
+        ...context,
+        getOriginalErrors: () => {
+            const diagnostics = new Diagnostics()
+            node.allows({
+                ...args,
+                cfg: { ...args.cfg, validator: "default" },
+                diagnostics
+            })
+            return diagnostics
+        }
+    })
 
 export const stringifyValue = (value: unknown) =>
     toString(value, {
@@ -148,6 +144,8 @@ export abstract class Diagnostic<Code extends string> {
 
     abstract message: string
 }
+
+export class ValidationError extends Error {}
 
 export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
     readonly code = "Unassignable"

@@ -38,7 +38,9 @@ export class list extends unary implements boundableNode {
 
     allows(args: Node.Allows.Args) {
         if (!Array.isArray(args.value)) {
-            this.unassignableError(args)
+            args.diagnostics.push(
+                new Node.Allows.UnassignableDiagnostic(args, this)
+            )
             return false
         }
         let allItemsAllowed = true

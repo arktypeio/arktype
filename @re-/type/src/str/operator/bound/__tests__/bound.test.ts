@@ -3,7 +3,7 @@ import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { dynamic, type } from "../../../../index.js"
 import {
-    boundValidationError,
+    BoundViolationDiagnostic,
     DoubleBoundDefinition,
     SingleBoundDefinition
 } from "../bound.js"
@@ -187,13 +187,12 @@ describe("bound", () => {
             const gte3 = type("string>=3")
             assert(gte3.check("yes").errors).equals(undefined)
             assert(
-                gte3.check("no").errors as any as [boundValidationError]
+                gte3.check("no").errors as any as BoundViolationDiagnostic[]
             ).snap([
                 {
                     code: `BoundViolation`,
                     path: [],
-                    definition: `string>=3`,
-                    tree: [`string`, [`>=`, 3]],
+                    type: `string>=3`,
                     data: `no`,
                     comparator: `>=`,
                     limit: 3,
@@ -216,25 +215,9 @@ describe("bound", () => {
         test("check", () => {
             const twoNulls = type("null[]==2")
             assert(twoNulls.check([null, null]).errors).equals(undefined)
-            assert(
-                twoNulls.check([null]).errors as any as [boundValidationError]
-            ).snap([
-                {
-                    code: `BoundViolation`,
-                    path: [],
-                    definition: `null[]==2`,
-                    tree: [
-                        [`null`, `[]`],
-                        [`==`, 2]
-                    ],
-                    data: [null],
-                    comparator: `==`,
-                    limit: 2,
-                    size: 1,
-                    units: `items`,
-                    message: `[null] must be exactly 2 items (was 1).`
-                }
-            ])
+            assert(twoNulls.check([null]).errors?.summary).snap(
+                `[null] must be exactly 2 items (was 1).`
+            )
         })
     })
 

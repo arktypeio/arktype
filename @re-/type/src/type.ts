@@ -92,7 +92,9 @@ export class Type implements DynamicType {
     assert(value: unknown, options?: Node.Allows.Options) {
         const validationResult = this.check(value, options)
         if (validationResult.errors) {
-            throw new Node.Allows.CheckError(validationResult.errors.summary)
+            throw new Node.Allows.ValidationError(
+                validationResult.errors.summary
+            )
         }
         return validationResult.data
     }

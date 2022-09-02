@@ -43,7 +43,9 @@ export abstract class primitiveLiteralNode<
         if (args.value === this.value) {
             return true
         }
-        this.unassignableError(args)
+        args.diagnostics.push(
+            new Node.Allows.UnassignableDiagnostic(args, this)
+        )
         return false
     }
 
