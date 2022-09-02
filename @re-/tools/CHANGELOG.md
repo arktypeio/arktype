@@ -1,5 +1,11 @@
 # @re-/tools
 
+## 2.2.1
+
+### Patch Changes
+
+-   79d1f8e7: @re-/type 2.0.
+
 ## 2.2.0
 
 ### Minor Changes
