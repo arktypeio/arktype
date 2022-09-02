@@ -60,5 +60,5 @@ describe("snippets", () => {
   about/bio: "I am very interesting.I am very interesting.I am ..." must be less than or equal to 160 characters (was 220).
 `)
     })
-    // TODO: Add demo snippet test
+    // TODO: Reuse more from actual snippets
 })

@@ -114,7 +114,7 @@ export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
 }
 
 export type OptionsByDiagnostic = {
-    [Code in keyof DiagnosticsByCode]?: BaseDiagnosticOptions<Code> &
+    [Code in DiagnosticCode]?: BaseDiagnosticOptions<Code> &
         DiagnosticsByCode[Code]["options"]
 }
 
@@ -129,7 +129,9 @@ export type DiagnosticsByCode = {
     Union: UnionDiagnostic
 }
 
-export type RegisteredDiagnostic = DiagnosticsByCode[keyof DiagnosticsByCode]
+export type DiagnosticCode = keyof DiagnosticsByCode
+
+export type RegisteredDiagnostic = DiagnosticsByCode[DiagnosticCode]
 
 export abstract class Diagnostic<
     Code extends keyof DiagnosticsByCode,
@@ -155,11 +157,14 @@ export abstract class Diagnostic<
 export class ValidationError extends Error {}
 
 export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
+    public message: string
+
     constructor(args: Args, node: base) {
         super("Unassignable", args, node)
+        this.message = `${stringifyValue(this.data)} is not assignable to ${
+            this.type
+        }.`
     }
-
-    message = `${stringifyValue(this.data)} is not assignable to ${this.type}.`
 }
 
 export class CustomDiagnostic extends Diagnostic<"Custom"> {
@@ -169,6 +174,18 @@ export class CustomDiagnostic extends Diagnostic<"Custom"> {
 }
 
 export class Diagnostics extends Array<RegisteredDiagnostic> {
+    push(...diagnostics: RegisteredDiagnostic[]) {
+        for (const diagnostic of diagnostics) {
+            if (diagnostic.options?.message) {
+                diagnostic.message = diagnostic.options.message(
+                    diagnostic as any
+                )
+            }
+            this[this.length] = diagnostic
+        }
+        return this.length
+    }
+
     get summary() {
         if (this.length === 1) {
             const error = this[0]
