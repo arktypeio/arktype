@@ -1,7 +1,7 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
-import { chainableNoOpProxy, Fn, toString } from "@re-/tools"
+import { chainableNoOpProxy, Fn } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { assertEquals, literalSerialize } from "../common.js"
 import {

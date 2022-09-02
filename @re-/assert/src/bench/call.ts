@@ -4,12 +4,7 @@ import {
     compareToBaseline,
     queueBaselineUpdateIfNeeded as queueBaselineUpdateIfNeeded
 } from "./baseline.js"
-import {
-    BenchableFunction,
-    BenchContext,
-    InternalBenchOptions,
-    UntilOptions
-} from "./bench.js"
+import { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import {
     createTimeComparison,
     createTimeMeasure,
@@ -111,7 +106,7 @@ export class BenchAssertions<
                 this.ctx.options.fakeCallMs === "count"
                     ? this.lastCallTimes!.length
                     : this.ctx.options.fakeCallMs
-            this.lastCallTimes = this.lastCallTimes!.map((_) => fakeMs)
+            this.lastCallTimes = this.lastCallTimes!.map(() => fakeMs)
         }
     }
 
