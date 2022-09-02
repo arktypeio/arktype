@@ -95,7 +95,7 @@ describe("references", () => {
             const bigintLiteralReferences = type(objectDef).references({
                 filter: (reference): reference is `${number}n` =>
                     isNumeric(reference.slice(0, -1)) &&
-                    reference.at(-1) === "n"
+                    reference.slice(-1) === "n"
             })
             assert(bigintLiteralReferences).equals(["-1n"], {
                 listComparison: "permutable"
