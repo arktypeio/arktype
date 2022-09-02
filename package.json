@@ -19,7 +19,7 @@
         "pre-commit": "pretty-quick --staged",
         "unused": "ts-node ./scripts/runUnusedExports.ts",
         "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-pages",
-        "ci:publish": "pnpm changeset publish"
+        "ci:publish": "ts-node ./scripts/publish.ts"
     },
     "devDependencies": {
         "@re-/assert": "link:./@re-/assert",
