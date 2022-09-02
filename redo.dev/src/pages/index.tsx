@@ -2,9 +2,8 @@ import { useColorMode } from "@docusaurus/theme-common"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
-
 import React from "react"
-import { AnimatedLogo, getTheme, ToolSummaries } from "../components"
+import { getTheme, Svg, ToolSummaries } from "../components"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
@@ -21,7 +20,7 @@ const Contents = () => {
                     background: "#1b1b1b"
                 }}
             >
-                <AnimatedLogo style={{ height: 120 }} />
+                <Svg.AnimatedLogo style={{ height: 120 }} />
                 <Typography
                     component="h2"
                     variant="h5"

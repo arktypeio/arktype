@@ -1,4 +1,5 @@
-import { Evaluate, Iteration, KeyValuate } from "./common.js"
+import { Get, Iterate } from "./common.js"
+import { Evaluate } from "./evaluate.js"
 
 export const merge = <Objs extends unknown[]>(...objs: Objs) =>
     pairwiseMerge(objs, shallowMerge) as MergeAll<Objs>
@@ -12,8 +13,7 @@ export type Merge<Base, Merged> = Evaluate<
         ExtractMergeable<Merged>
 >
 
-export type MergeAll<Types, Result = {}> = Types extends Iteration<
-    unknown,
+export type MergeAll<Types, Result = {}> = Types extends Iterate<
     infer Current,
     infer Remaining
 >
@@ -29,12 +29,11 @@ export type DeepMerge<Base, Merged> = Base | Merged extends Mergeable
               ? DeepMerge<Base[K], Merged[K]>
               : K extends keyof Merged
               ? Merged[K]
-              : KeyValuate<Base, K>
+              : Get<Base, K>
       }
     : Merged
 
-export type DeepMergeAll<Types, Result = {}> = Types extends Iteration<
-    unknown,
+export type DeepMergeAll<Types, Result = {}> = Types extends Iterate<
     infer Current,
     infer Remaining
 >

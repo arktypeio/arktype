@@ -1,6 +1,0 @@
-import { define } from "./declaration"
-
-export const groupDef = define.group({
-    title: "string",
-    members: "user[]"
-})

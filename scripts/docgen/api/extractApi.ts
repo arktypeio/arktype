@@ -8,7 +8,7 @@ import {
     SyntaxKind
 } from "ts-morph"
 import { PackageJson } from "type-fest"
-import { getEntryPointsToRelativeDtsPaths } from "../utils.js"
+import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 export type ApiEntryPoint = {
     subpath: string

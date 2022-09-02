@@ -24,9 +24,7 @@
     },
     "scripts": {
         "build": "pnpm ts-node ../../scripts/build.ts",
-        "test": "pnpm ts-node ./src/cli.ts mocha",
-        "bench": "pnpm ts-node ./test/bench/test.bench.ts",
-        "tnt": "pnpm ts-node ./src/cli.ts mocha --skipTypes"
+        "test": "pnpm ts-node ./src/cli.ts --cmd mocha"
     },
     "bin": {
         "reassert": "./cli.cjs"
@@ -35,6 +33,8 @@
         "@re-/node": "workspace:*",
         "@re-/tools": "workspace:*",
         "micro-memoize": "4.0.10",
-        "ts-morph": "15.1.0"
+        "ts-morph": "15.1.0",
+        "source-map-js": "1.0.2",
+        "convert-source-map": "1.8.0"
     }
 }

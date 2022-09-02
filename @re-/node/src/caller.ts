@@ -57,31 +57,28 @@ export const formatFilePath = (
 }
 
 export const caller = (options: CallerOfOptions = {}): SourcePosition => {
-    let { upStackBy = 0 } = options
-    const { formatPath, skip, methodName } = options
-    if (!methodName) {
+    let upStackBy = options.upStackBy ?? 0
+    if (!options.methodName) {
         upStackBy = 3
     }
     let match: SourcePosition | undefined
     while (!match) {
         const location = getCurrentLine({
-            method: methodName,
+            method: options.methodName,
             frames: upStackBy
         })
         if (!location || isDeepStrictEqual(location, nonexistentCurrentLine)) {
             throw new Error(
-                `No caller of '${methodName}' matches given options: ${JSON.stringify(
-                    options,
-                    null,
-                    4
-                )}.`
+                `No caller of '${
+                    options.methodName
+                }' matches given options: ${JSON.stringify(options, null, 4)}.`
             )
         }
         const candidate = {
             ...location,
-            file: formatFilePath(location.file, formatPath ?? {})
+            file: formatFilePath(location.file, options.formatPath ?? {})
         }
-        if (skip?.(candidate)) {
+        if (options.skip?.(candidate)) {
             upStackBy++
         } else {
             match = candidate

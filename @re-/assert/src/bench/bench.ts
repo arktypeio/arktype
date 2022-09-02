@@ -1,37 +1,40 @@
 import { caller } from "@re-/node"
 import { chainableNoOpProxy } from "@re-/tools"
 import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
-import { AssertionName, BenchAssertions } from "./call.js"
-import { BenchTypeAssertions, createBenchTypeAssertions } from "./type.js"
+import { BenchAssertions, TimeAssertionName } from "./call.js"
+import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
 
-export interface UntilOptions {
+export type UntilOptions = {
     ms?: number
     count?: number
 }
 
-export interface BaseBenchOptions {
+export type BaseBenchOptions = {
     until?: UntilOptions
 }
 
-export interface BenchOptions extends BaseBenchOptions {
+export type BenchOptions = BaseBenchOptions & {
     hooks?: {
         beforeCall?: () => void
         afterCall?: () => void
     }
 }
 
-export interface BenchContext {
+export type InternalBenchOptions = BenchOptions & {
+    fakeCallMs?: number | "count"
+}
+
+export type BenchContext = {
     name: string
-    options: BenchOptions
-    config: ReAssertConfig
+    options: InternalBenchOptions
+    cfg: ReAssertConfig
     benchCallPosition: SourcePosition
     lastSnapCallPosition: SourcePosition | undefined
-    isTypeAssertion: boolean
     isAsync: boolean
 }
 
-export interface BenchAssertionContext extends BenchContext {
-    kind: AssertionName
+export type BenchAssertionContext = BenchContext & {
+    kind: TimeAssertionName | "type"
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>
@@ -47,17 +50,25 @@ export const bench = <Fn extends BenchableFunction>(
     const ctx: BenchContext = {
         name,
         options,
-        config: getReAssertConfig(),
+        cfg: getReAssertConfig(),
         benchCallPosition: caller(),
-        isTypeAssertion: false,
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
     }
-    if (ctx.config.matcher && !ctx.config.matcher.test(name)) {
-        // If a matcher was provided via --only and it does not match, ignore all checks
-        return chainableNoOpProxy
+    if (ctx.cfg.benchMatcher) {
+        if (
+            typeof ctx.cfg.benchMatcher === "string" &&
+            !name.includes(ctx.cfg.benchMatcher)
+        ) {
+            return chainableNoOpProxy
+        } else if (
+            ctx.cfg.benchMatcher instanceof RegExp &&
+            !ctx.cfg.benchMatcher.test(name)
+        ) {
+            return chainableNoOpProxy
+        }
     }
     const assertions = new BenchAssertions(fn, ctx)
-    Object.assign(assertions, createBenchTypeAssertions(ctx))
+    Object.assign(assertions, createBenchTypeAssertion(ctx))
     return assertions as any
 }

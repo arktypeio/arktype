@@ -19,9 +19,7 @@ In other words, you can finally get back to doing what you love.
 
 We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@re-/model](@re-/model): Type-first validation from editor to runtime 🧬
--   @re-/state: Self-validating states from simple shapes 🧮
--   @re-/test: Web testing that writes itself 🤖
+-   [@re-/type](@re-/type): Type-first validation from editor to runtime 🧬
 
 You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
 

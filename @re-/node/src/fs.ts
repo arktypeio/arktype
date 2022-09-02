@@ -41,6 +41,7 @@ export const rewriteJson = (path: string, transform: JsonTransformer) =>
     writeJson(path, transform(readJson(path)))
 
 export type WalkOptions = {
+    ignoreDirsMatching?: RegExp
     excludeFiles?: boolean
     excludeDirs?: boolean
     exclude?: (path: string) => boolean
@@ -51,6 +52,9 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
     readdirSync(dir).reduce((paths, item) => {
         const path = join(dir, item)
         const isDir = lstatSync(path).isDirectory()
+        if (isDir && options.ignoreDirsMatching?.test(path)) {
+            return paths
+        }
         const excludeCurrent =
             (options.excludeDirs && isDir) ||
             (options.excludeFiles && !isDir) ||

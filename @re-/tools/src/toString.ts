@@ -1,3 +1,6 @@
+/* eslint-disable max-statements */
+/* eslint-disable max-lines-per-function */
+// TODO: Remove
 import { isRecursible } from "./common.js"
 import { isAlphaNumeric } from "./stringUtils.js"
 

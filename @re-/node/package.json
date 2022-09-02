@@ -24,7 +24,7 @@
     },
     "scripts": {
         "build": "pnpm ts-node ../../scripts/build.ts",
-        "test": "reassert mocha"
+        "test": "reassert --cmd mocha"
     },
     "dependencies": {
         "get-current-line": "6.6.0"

@@ -1,29 +1,51 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { basename, join } from "node:path"
 import { version, versions } from "node:process"
-import { fileName, requireResolve, shell } from "@re-/node"
+import { fileName, findPackageRoot, shell, walkPaths } from "@re-/node"
 import { cacheAssertions, cleanupAssertions } from "./type/index.js"
 
 let runTestsCmd = ""
-const runnerArgIndex = process.argv.findIndex((arg) =>
+const reassertArgIndex = process.argv.findIndex((arg) =>
     /.*cli\.c?(j|t)s$/.test(arg)
 )
-if (runnerArgIndex === -1) {
+if (reassertArgIndex === -1) {
     throw new Error(
         `Unable to parse @re-/assert CLI args '${process.argv.join(
             " "
         )}' (expected to find a reference to ${fileName()}).`
     )
 }
-const runner = process.argv[runnerArgIndex + 1]
-if (runner !== "jest" && runner !== "mocha" && runner !== "node") {
-    throw new Error(
-        `A runner must be specified via "reassert <runner> <opts?>"` +
-            `where runner is either jest, mocha, or node.`
-    )
+
+if (process.argv[reassertArgIndex + 1] === "bench") {
+    const packageRoot = findPackageRoot(process.cwd())
+    const benchFilePaths = walkPaths(join(packageRoot, "src"), {
+        include: (path) => basename(path).includes(".bench.")
+    })
+    let exitCode = 0
+    for (const path of benchFilePaths) {
+        try {
+            shell(`npx ts-node ${path}`, {
+                env: {
+                    RE_ASSERT_CMD: process.argv
+                        .slice(reassertArgIndex + 1)
+                        .join(" ")
+                }
+            })
+        } catch {
+            exitCode = 1
+        }
+    }
+    process.exit(exitCode)
 }
-if (runner === "node") {
+
+const cmdFlagIndex = process.argv.indexOf("--cmd")
+if (cmdFlagIndex === -1 || cmdFlagIndex === process.argv.length - 1) {
+    throw new Error(`Must provide a runner command, e.g. 'reassert --cmd jest'`)
+}
+
+const testCmd = process.argv.slice(cmdFlagIndex + 1).join(" ")
+
+if (testCmd === "node") {
     const nodeMajorVersion = Number.parseInt(versions.node.split(".")[0])
     if (nodeMajorVersion < 18) {
         throw new Error(
@@ -32,35 +54,12 @@ if (runner === "node") {
     }
     runTestsCmd += `node --loader ts-node/esm --test `
 } else {
-    let runnerIndexPath: string
-    try {
-        runnerIndexPath = requireResolve(runner)
-    } catch (error) {
-        throw new Error(
-            `To use @re-/assert's ${runner} runner, ${runner} must be resolvable in your environment.`,
-            {
-                cause: error instanceof Error ? error : undefined
-            }
-        )
-    }
-    const runnerBinPath = join(
-        dirname(runnerIndexPath),
-        ...(runner === "jest" ? ["..", "bin", "jest.js"] : ["bin", "mocha.js"])
-    )
-    if (!existsSync(runnerBinPath)) {
-        throw new Error(
-            `Resolved ${runner} to '${runnerIndexPath}' but was unable to find ` +
-                `an executable at the expected location ('${runnerBinPath}').`
-        )
-    }
-    runTestsCmd += `node ${runnerBinPath} `
+    runTestsCmd += `npx ${testCmd} `
 }
 
-const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
+const reassertArgs = [...process.argv.slice(0, cmdFlagIndex), "--precache"]
 
-const skipTypes = runnerArgs.includes("--skipTypes")
-
-runTestsCmd += runnerArgs
+const skipTypes = reassertArgs.includes("--skipTypes")
 
 let processError: unknown
 
@@ -78,15 +77,15 @@ try {
             `✅ @re-/assert: Finished caching type assertions in ${cacheSeconds} seconds.\n`
         )
     }
-    console.log(`⏳ @re-/assert: Using ${runner} to run your tests...`)
+    console.log(`⏳ @re-/assert: Using ${testCmd} to run your tests...`)
     const runnerStart = Date.now()
     shell(runTestsCmd, {
         stdio: "inherit",
-        env: { RE_ASSERT_CMD: runTestsCmd }
+        env: { RE_ASSERT_CMD: reassertArgs.join(" ") }
     })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(
-        `✅ @re-/assert: ${runner} completed in ${runnerSeconds} seconds.\n`
+        `✅ @re-/assert: ${testCmd} completed in ${runnerSeconds} seconds.\n`
     )
 } catch (error) {
     processError = error

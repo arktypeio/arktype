@@ -1,10 +1,10 @@
 import { join } from "node:path"
-import { fromHere, readPackageJson } from "@re-/node"
 import { Project } from "ts-morph"
 import { PackageJson } from "type-fest"
 import { ApiEntryPoint, extractPackageApi } from "./api/index.js"
 import { DocGenConfig } from "./config.js"
 import { extractPackageSnippets, PackageSnippets } from "./snippets/index.js"
+import { fromHere, readPackageJson } from "@re-/node"
 
 const REPO_ROOT = fromHere("..", "..")
 
