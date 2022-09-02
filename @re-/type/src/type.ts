@@ -7,7 +7,7 @@ import {
     MutuallyExclusiveProps
 } from "@re-/tools"
 import { Node } from "./node/index.js"
-import { ErrorResult } from "./node/traversal/allows.js"
+import { Diagnostics } from "./node/traversal/allows.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
 
@@ -82,9 +82,9 @@ export class Type implements DynamicType {
         } else {
             this.root.allows(args)
         }
-        return args.errors.length
+        return args.diagnostics.length
             ? {
-                  errors: new ErrorResult(...args.errors)
+                  errors: new Diagnostics(...args.diagnostics)
               }
             : { data: value }
     }
@@ -118,7 +118,7 @@ export type ValidateFunction<Inferred> = (
 export type ValidationResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
-        errors: ErrorResult
+        errors: Diagnostics
     }
 >
 

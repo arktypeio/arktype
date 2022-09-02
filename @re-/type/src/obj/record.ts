@@ -42,7 +42,9 @@ export class RecordNode extends obj {
 
     allows(args: Node.Allows.Args) {
         if (!isArgValueRecordLike(args)) {
-            this.unassignableError(args)
+            args.diagnostics.push(
+                new Node.Allows.UnassignableDiagnostic(args, this)
+            )
             return false
         }
         const propValidationResults = this.allowsProps(args)
@@ -51,13 +53,11 @@ export class RecordNode extends obj {
             !args.cfg.ignoreExtraneousKeys &&
             !args.ctx.modelCfg.ignoreExtraneousKeys
         ) {
-            const keys = [...propValidationResults.unseenValueKeys]
-            this.checkError(args, "ExtraneousKeys", {
-                keys,
-                message: `Keys ${keys
-                    .map((k) => `'${k}'`)
-                    .join(", ")} were unexpected.`
-            })
+            args.diagnostics.push(
+                new ExtraneousKeysDiagnostic(args, this, [
+                    ...propValidationResults.unseenValueKeys
+                ])
+            )
             return false
         }
         return propValidationResults.allSeenKeysAllowed
@@ -77,10 +77,9 @@ export class RecordNode extends obj {
                     result.allSeenKeysAllowed = false
                 }
             } else if (!(propNode instanceof optional)) {
-                propNode.checkError(propArgs, "MissingKey", {
-                    message: `Missing required value of type ${propNode.toString()}.`,
-                    key: propKey
-                })
+                args.diagnostics.push(
+                    new MissingKeyDiagnostic(propArgs, propNode, propKey)
+                )
                 result.allSeenKeysAllowed = false
             }
             result.unseenValueKeys.delete(propKey)
@@ -121,16 +120,36 @@ export class RecordNode extends obj {
     }
 }
 
-export type extraneousKeysError = Node.Allows.ErrorData<
-    "ExtraneousKeys",
-    {
-        keys: string[]
+export class ExtraneousKeysDiagnostic extends Node.Allows
+    .Diagnostic<"ExtraneousKeys"> {
+    readonly code = "ExtraneousKeys"
+    constructor(
+        args: Node.Allows.Args,
+        node: Node.base,
+        public keys: string[]
+    ) {
+        super(args, node)
     }
->
 
-export type missingKeyError = Node.Allows.ErrorData<
-    "MissingKey",
-    {
-        key: string
+    get message() {
+        return `Keys ${this.keys
+            .map((k) => `'${k}'`)
+            .join(", ")} were unexpected.`
     }
->
+}
+
+export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
+    readonly code = "MissingKey"
+
+    constructor(
+        args: Node.Allows.Args,
+        propNode: Node.base,
+        public key: string
+    ) {
+        super(args, propNode)
+    }
+
+    get message() {
+        return `Missing required value of type ${this.type}.`
+    }
+}

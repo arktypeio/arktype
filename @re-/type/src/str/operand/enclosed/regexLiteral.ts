@@ -12,13 +12,13 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
 
     allows(args: Node.Allows.Args) {
         if (typeof args.value !== "string") {
-            this.unassignableError(args)
+            args.diagnostics.push(
+                new Node.Allows.UnassignableDiagnostic(args, this)
+            )
             return false
         }
         if (!this.regex.test(args.value)) {
-            this.checkError(args, "RegexMismatch", {
-                message: `'${args.value}' does not match expression ${this.def}.`
-            })
+            args.diagnostics.push(new RegexMismatchDiagnostic(args, this))
             return false
         }
         return true
@@ -32,4 +32,11 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
     }
 }
 
-export type regexMismatchError = Node.Allows.ErrorData<"RegexMismatch", {}>
+export class RegexMismatchDiagnostic extends Node.Allows
+    .Diagnostic<"RegexMismatch"> {
+    readonly code = "RegexMismatch"
+
+    get message() {
+        return `'${this.data}' does not match expression ${this.type}.`
+    }
+}

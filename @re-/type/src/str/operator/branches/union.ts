@@ -71,23 +71,17 @@ export class union extends branch {
     token = "|" as const
 
     allows(args: Node.Allows.Args) {
-        const branches: Node.Allows.ErrorData[][] = []
+        const unionDiagnostics: Node.Allows.Diagnostics[] = []
         for (const child of this.children) {
-            const branchErrors: Node.Allows.ErrorData[] = []
-            if (child.allows({ ...args, errors: branchErrors })) {
+            const branchDiagnostics = new Node.Allows.Diagnostics()
+            if (child.allows({ ...args, diagnostics: branchDiagnostics })) {
                 // If any branch of a Union does not have errors,
                 // we can return right away since the whole definition is valid
                 return true
             }
-            branches.push(branchErrors)
+            unionDiagnostics.push(branchDiagnostics)
         }
-        // If we haven't returned, all branches are invalid, so add an error
-        this.checkError(args, "UnionError", {
-            message: `${Node.Allows.stringifyValue(
-                args.value
-            )} is not assignable to any of ${this.toString()}.`,
-            branches
-        })
+        args.diagnostics.push(new UnionDiagnostic(args, this, unionDiagnostics))
         return false
     }
 
@@ -142,9 +136,20 @@ export class union extends branch {
     }
 }
 
-export type unionError = Node.Allows.ErrorData<
-    "UnionError",
-    {
-        branches: Node.Allows.ErrorData[][]
+export class UnionDiagnostic extends Node.Allows.Diagnostic<"Union"> {
+    readonly code = "Union"
+
+    constructor(
+        args: Node.Allows.Args,
+        node: Node.base,
+        public branches: Node.Allows.Diagnostics[]
+    ) {
+        super(args, node)
     }
->
+
+    get message() {
+        return `${Node.Allows.stringifyValue(
+            this.data
+        )} is not assignable to any of ${this.type}.`
+    }
+}

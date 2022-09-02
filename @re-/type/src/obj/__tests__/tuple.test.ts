@@ -2,7 +2,6 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../index.js"
 import { unresolvableMessage } from "../../str/operand/index.js"
-import { tupleLengthError } from "../tuple.js"
 
 describe("tuple", () => {
     describe("empty", () => {

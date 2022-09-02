@@ -49,29 +49,6 @@ export abstract class base {
         this.collectReferences(opts, collected)
         return Object.keys(collected)
     }
-
-    checkError<Code extends Allows.ErrorCode>(
-        args: Allows.Args,
-        code: Code,
-        context: Allows.SupplementalErrorContext<Code>
-    ) {
-        args.errors.push({
-            code,
-            path: args.ctx.path,
-            definition: this.toString(),
-            tree: this.tree,
-            data: args.value,
-            ...context
-        })
-    }
-
-    unassignableError(args: Allows.Args) {
-        this.checkError(args, "Unassignable", {
-            message: `${Allows.stringifyValue(
-                args.value
-            )} is not assignable to ${this.toString()}.`
-        })
-    }
 }
 
 export type InferenceContext = {

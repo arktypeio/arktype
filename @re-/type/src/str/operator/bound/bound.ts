@@ -68,20 +68,16 @@ export class bound extends unary<boundableNode> {
         for (const checker of this.checkers) {
             if (!checker(size)) {
                 const [comparator, limit] = this.bounds[boundIndex]
-                const units = this.child.units
-                this.checkError(args, "BoundViolation", {
-                    comparator,
-                    limit,
-                    size,
-                    units,
-                    message: boundViolationMessage(
-                        args.value,
+                args.diagnostics.push(
+                    new BoundViolationDiagnostic(
+                        args,
+                        this,
                         comparator,
                         limit,
-                        units,
-                        size
+                        size,
+                        this.child.units
                     )
-                })
+                )
                 return false
             }
             boundIndex++
@@ -138,15 +134,31 @@ export const isBoundable = (node: strNode): node is boundableNode =>
 
 export type BoundUnits = "characters" | "items"
 
-export type boundValidationError = Node.Allows.ErrorData<
-    "BoundViolation",
-    {
-        comparator: Comparator
-        limit: number
-        size: number
-        units?: BoundUnits
+export class BoundViolationDiagnostic extends Node.Allows
+    .Diagnostic<"BoundViolation"> {
+    readonly code = "BoundViolation"
+
+    constructor(
+        args: Node.Allows.Args,
+        node: Node.base,
+        public comparator: Comparator,
+        public limit: number,
+        public size: number,
+        public units: BoundUnits | undefined
+    ) {
+        super(args, node)
     }
->
+
+    get message() {
+        return boundViolationMessage(
+            this.data,
+            this.comparator,
+            this.limit,
+            this.units,
+            this.size
+        )
+    }
+}
 
 export const boundViolationMessage = (
     value: unknown,

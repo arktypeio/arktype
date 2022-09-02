@@ -1,21 +1,18 @@
-import {
-    ElementOf,
-    Evaluate,
-    IterateType,
-    toString,
-    uncapitalize
-} from "@re-/tools"
-import { extraneousKeysError, missingKeyError } from "../../obj/record.js"
-import { tupleLengthError } from "../../obj/tuple.js"
-import { regexMismatchError } from "../../str/operand/index.js"
-import { boundValidationError } from "../../str/operator/bound/bound.js"
-import { unionError } from "../../str/operator/exports.js"
+import { Evaluate, toString, uncapitalize } from "@re-/tools"
+import type {
+    ExtraneousKeysDiagnostic,
+    MissingKeyDiagnostic
+} from "../../obj/record.js"
+import type { TupleLengthDiagnostic } from "../../obj/tuple.js"
+import type { RegexMismatchDiagnostic } from "../../str/operand/index.js"
+import type { BoundViolationDiagnostic } from "../../str/operator/bound/bound.js"
+import type { UnionDiagnostic } from "../../str/operator/exports.js"
 import type { base } from "../base.js"
 import * as Traverse from "./traverse.js"
 
 export type Args<Value = unknown> = {
     value: Value
-    errors: ErrorData[]
+    diagnostics: Diagnostics
     cfg: Options
     ctx: Context
 }
@@ -27,7 +24,7 @@ export const createArgs = (
 ): Args => {
     const args = {
         value,
-        errors: [],
+        diagnostics: new Diagnostics(),
         ctx: Traverse.createContext(modelOptions) as Context,
         cfg: options
     }
@@ -38,8 +35,6 @@ export const createArgs = (
 export type Options = {
     ignoreExtraneousKeys?: boolean
     validator?: CustomValidator | "default"
-    // TODO: Add verbose as an option for unions
-    // verbose?: boolean
 }
 
 export type Context = Traverse.Context<Options> & {
@@ -52,51 +47,49 @@ export type CustomValidator = (
 
 export type CustomValidatorArgs = Evaluate<
     BaseErrorContext & {
-        getOriginalErrors: () => ErrorData[]
+        getOriginalErrors: () => Diagnostics
     }
 >
 
-export type customError = ErrorData<"Custom">
+// export const customValidatorAllows = (
+//     validator: CustomValidator,
+//     node: base,
+//     args: Args
+// ): boolean => {
+//     const context = createBaseErrorContext(node, args)
+//     const result = getCustomErrorMessages(validator, node, args, context)
+//     const customMessages = typeof result === "string" ? [result] : result
+//     if (Array.isArray(customMessages)) {
+//         args.diagnostics.push(
+//             ...customMessages.map((message) => ({
+//                 ...context,
+//                 code: "Custom",
+//                 message
+//             }))
+//         )
+//         return false
+//     }
+//     return true
+// }
 
-export const customValidatorAllows = (
-    validator: CustomValidator,
-    node: base,
-    args: Args
-): boolean => {
-    const context = createBaseErrorContext(node, args)
-    const result = getCustomErrorMessages(validator, node, args, context)
-    const customMessages = typeof result === "string" ? [result] : result
-    if (Array.isArray(customMessages)) {
-        args.errors.push(
-            ...customMessages.map((message) => ({
-                ...context,
-                code: "Custom",
-                message
-            }))
-        )
-        return false
-    }
-    return true
-}
-
-export const getCustomErrorMessages = (
-    validator: CustomValidator,
-    node: base,
-    args: Args,
-    context: BaseErrorContext
-) =>
-    validator({
-        ...context,
-        getOriginalErrors: () => {
-            const errors: ErrorData[] = []
-            node.allows({
-                ...args,
-                cfg: { ...args.cfg, validator: "default" },
-                errors
-            })
-            return errors
-        }
-    })
+// export const getCustomErrorMessages = (
+//     validator: CustomValidator,
+//     node: base,
+//     args: Args,
+//     context: BaseErrorContext
+// ) =>
+//     validator({
+//         ...context,
+//         getOriginalErrors: () => {
+//             const errors: ErrorData[] = []
+//             node.allows({
+//                 ...args,
+//                 cfg: { ...args.cfg, validator: "default" },
+//                 diagnostics: errors
+//             })
+//             return errors
+//         }
+//     })
 
 export const stringifyValue = (value: unknown) =>
     toString(value, {
@@ -120,65 +113,59 @@ export const createBaseErrorContext = (
     tree: node.tree
 })
 
-export type ErrorData<
-    Code extends string = string,
-    SupplementalContext = {}
-> = Evaluate<
-    {
-        code: Code
-        message: string
-    } & BaseErrorContext &
-        SupplementalContext
->
-
-type unassignableError = ErrorData<"Unassignable">
-
-type RegisteredErrors = [
-    boundValidationError,
-    unassignableError,
-    tupleLengthError,
-    missingKeyError,
-    extraneousKeysError,
-    regexMismatchError,
-    unionError,
-    customError
-]
-
-export type RegisteredError = ElementOf<RegisteredErrors>
-
-export type ErrorCode = RegisteredError["code"]
-
-// TODO: More efficient way to centralize errors.
-type ExtractCodes<
-    Listed extends ErrorData[],
-    Result = {}
-> = Listed extends IterateType<ErrorData, infer Next, infer Rest>
-    ? ExtractCodes<
-          Rest,
-          Result & { [Code in Next["code"]]: Evaluate<Omit<Next, "code">> }
-      >
-    : Result
-
-export type ErrorsByCode = Evaluate<ExtractCodes<RegisteredErrors>>
-
-type ErrorOptions = {
-    [Code in ErrorCode]: {
+export type ErrorOptions = {
+    [Code in keyof DiagnosticsByCode]: {
         disable?: boolean
-        message?: (context: ErrorsByCode[Code]) => string
+        message?: (context: DiagnosticsByCode[Code]) => string
     }
 }
 
-export type SupplementalErrorContext<Code extends ErrorCode> = Evaluate<
-    Omit<ErrorsByCode[Code], keyof BaseErrorContext>
->
+export type DiagnosticsByCode = {
+    Unassignable: UnassignableDiagnostic
+    BoundViolation: BoundViolationDiagnostic
+    ExtraneousKeys: ExtraneousKeysDiagnostic
+    MissingKey: MissingKeyDiagnostic
+    Custom: CustomDiagnostic
+    RegexMismatch: RegexMismatchDiagnostic
+    TupleLength: TupleLengthDiagnostic
+    Union: UnionDiagnostic
+}
 
-export class CheckError extends Error {}
+export type RegisteredDiagnostic = DiagnosticsByCode[keyof DiagnosticsByCode]
 
-export class ErrorResult extends Array<ErrorData> {
-    constructor(...errors: ErrorData[]) {
-        super(...errors)
+export abstract class Diagnostic<Code extends string> {
+    path: Traverse.Path
+    type: string
+    data: unknown
+
+    constructor(args: Args, node: base) {
+        this.path = args.ctx.path
+        this.data = args.value
+        this.type = node.toString()
     }
 
+    abstract readonly code: Code
+
+    abstract message: string
+}
+
+export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
+    readonly code = "Unassignable"
+
+    get message() {
+        return `${stringifyValue(this.data)} is not assignable to ${this.type}.`
+    }
+}
+
+export class CustomDiagnostic extends Diagnostic<"Custom"> {
+    readonly code = "Custom"
+
+    constructor(args: Args, node: base, public message: string) {
+        super(args, node)
+    }
+}
+
+export class Diagnostics extends Array<RegisteredDiagnostic> {
     get summary() {
         if (this.length === 1) {
             const error = this[0]

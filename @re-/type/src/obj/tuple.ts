@@ -4,14 +4,6 @@ export namespace TupleType {
     export type Definition = unknown[] | readonly unknown[]
 }
 
-export type tupleLengthError = Node.Allows.ErrorData<
-    "TupleLengthMismatch",
-    {
-        definitionLength: number
-        valueLength: number
-    }
->
-
 export class TupleNode extends obj {
     static matches(def: object): def is TupleType.Definition {
         return Array.isArray(def)
@@ -23,19 +15,23 @@ export class TupleNode extends obj {
 
     allows(args: Node.Allows.Args) {
         if (!Array.isArray(args.value)) {
-            this.unassignableError(args)
+            args.diagnostics.push(
+                new Node.Allows.UnassignableDiagnostic(args, this)
+            )
             return false
         }
-        const definitionLength = this.entries.length
+        const typeLength = this.entries.length
         const valueLength = args.value.length
-        if (definitionLength !== valueLength) {
-            this.checkError(args, "TupleLengthMismatch", {
-                message: `Tuple of length ${valueLength} is not assignable to tuple of length ${definitionLength}.`,
-                definitionLength,
-                valueLength
-            })
+        if (typeLength !== valueLength) {
+            args.diagnostics.push(
+                new TupleLengthDiagnostic(args, this, typeLength, valueLength)
+            )
             return false
         }
+        return this.allowsItems(args as Node.Allows.Args<unknown[]>)
+    }
+
+    private allowsItems(args: Node.Allows.Args<unknown[]>) {
         let allItemsAllowed = true
         for (const [itemIndex, itemNode] of this.entries) {
             const itemIsAllowed = itemNode.allows({
@@ -67,5 +63,23 @@ export class TupleNode extends obj {
             )
         }
         return result
+    }
+}
+
+export class TupleLengthDiagnostic extends Node.Allows
+    .Diagnostic<"TupleLength"> {
+    readonly code = "TupleLength"
+
+    constructor(
+        args: Node.Allows.Args,
+        node: Node.base,
+        public typeLength: number,
+        public valueLength: number
+    ) {
+        super(args, node)
+    }
+
+    get message() {
+        return `Tuple of length ${this.valueLength} is not assignable to tuple of length ${this.typeLength}.`
     }
 }
