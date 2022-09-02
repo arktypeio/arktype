@@ -37,12 +37,20 @@ describe("extend space", () => {
             group: {
                 // @ts-expect-error (values returned from def() don't match their declared types by design)
                 $def: { members: `user[]` },
-                $opts: { validate: { ignoreExtraneousKeys: false } }
+                $opts: {
+                    validate: {
+                        diagnostics: { ExtraneousKeys: { enable: true } }
+                    }
+                }
             },
             other: {
                 // @ts-expect-error
                 $def: { users: `user[]`, groups: `group[]` },
-                $opts: { validate: { ignoreExtraneousKeys: true } }
+                $opts: {
+                    validate: {
+                        diagnostics: { ExtraneousKeys: { enable: false } }
+                    }
+                }
             }
         })
     })
@@ -53,7 +61,7 @@ describe("extend space", () => {
                 onCycle: "boolean"
             },
             validate: {
-                ignoreExtraneousKeys: false,
+                diagnostics: { ExtraneousKeys: { enable: true } },
                 // @ts-expect-error (can't serialize function)
                 validator: `<function validator>`
             }
@@ -69,7 +77,7 @@ const getExtendedSpace = () => {
                 { members: "user[]" },
                 {
                     validate: {
-                        ignoreExtraneousKeys: false
+                        diagnostics: { ExtraneousKeys: { enable: true } }
                     }
                 }
             )
@@ -78,7 +86,10 @@ const getExtendedSpace = () => {
             parse: {
                 onCycle: "number"
             },
-            validate: { ignoreExtraneousKeys: true, validator: () => undefined }
+            validate: {
+                diagnostics: { ExtraneousKeys: { enable: false } },
+                validator: () => undefined
+            }
         }
     )
     const extended = mySpace.$root.extend(
@@ -88,7 +99,7 @@ const getExtendedSpace = () => {
                 { users: "user[]", groups: "group[]" },
                 {
                     validate: {
-                        ignoreExtraneousKeys: true
+                        diagnostics: { ExtraneousKeys: { enable: false } }
                     }
                 }
             )
@@ -98,7 +109,7 @@ const getExtendedSpace = () => {
                 onCycle: "boolean"
             },
             validate: {
-                ignoreExtraneousKeys: false
+                diagnostics: { ExtraneousKeys: { enable: true } }
             }
         }
     )

@@ -9,55 +9,65 @@ describe("inheritable configs", () => {
                 type({ name: "string" }).check({
                     name: "David Blass",
                     age: 28
-                }).errors?.summary
-            ).snap(`Keys 'age' were unexpected.`)
+                }).errors
+            ).is(undefined)
         })
         test("ad hoc", () => {
             const user = type({ name: "string" })
             assert(
                 user.check(
                     { name: "David Blass", age: 28 },
-                    { ignoreExtraneousKeys: true }
-                ).errors
-            ).is(undefined)
+                    { diagnostics: { ExtraneousKeys: { enable: true } } }
+                ).errors?.summary
+            ).snap(`Keys 'age' were unexpected.`)
         })
         test("type options", () => {
             const user = type(
                 { name: "string" },
-                { validate: { ignoreExtraneousKeys: true } }
+                {
+                    validate: {
+                        diagnostics: { ExtraneousKeys: { enable: true } }
+                    }
+                }
             )
-            assert(user.check({ name: "David Blass", age: 28 }).errors).is(
-                undefined
-            )
+            assert(
+                user.check({ name: "David Blass", age: 28 }).errors?.summary
+            ).equals(`Keys 'age' were unexpected.`)
         })
 
         test("def config in space", () => {
             const mySpace = space({
                 user: def(
                     { name: "string" },
-                    { validate: { ignoreExtraneousKeys: true } }
+                    {
+                        validate: {
+                            diagnostics: { ExtraneousKeys: { enable: true } }
+                        }
+                    }
                 )
             })
             assert(
                 mySpace.user.check({
                     name: "David Blass",
                     age: 28
-                }).errors
-            ).is(undefined)
+                }).errors?.summary
+            ).equals(`Keys 'age' were unexpected.`)
         })
         test("space config", () => {
             const mySpace = space(
                 { user: { name: "string" } },
                 {
-                    validate: { ignoreExtraneousKeys: true }
+                    validate: {
+                        diagnostics: { ExtraneousKeys: { enable: true } }
+                    }
                 }
             )
             assert(
                 mySpace.user.check({
                     name: "David Blass",
                     age: 28
-                }).errors
-            ).is(undefined)
+                }).errors?.summary
+            ).equals(`Keys 'age' were unexpected.`)
         })
         test("precedence", () => {
             const nesting = space(

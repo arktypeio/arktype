@@ -33,8 +33,8 @@ export const createArgs = (
 }
 
 export type Options = {
-    ignoreExtraneousKeys?: boolean
     validator?: CustomValidator | "default"
+    diagnostics?: OptionsByDiagnostic
 }
 
 export type Context = Traverse.Context<Options> & {
@@ -109,11 +109,13 @@ export const createBaseErrorContext = (
     tree: node.tree
 })
 
-export type ErrorOptions = {
-    [Code in keyof DiagnosticsByCode]: {
-        disable?: boolean
-        message?: (context: DiagnosticsByCode[Code]) => string
-    }
+export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
+    message?: (context: DiagnosticsByCode[Code]) => string
+}
+
+export type OptionsByDiagnostic = {
+    [Code in keyof DiagnosticsByCode]?: BaseDiagnosticOptions<Code> &
+        DiagnosticsByCode[Code]["options"]
 }
 
 export type DiagnosticsByCode = {
@@ -129,18 +131,23 @@ export type DiagnosticsByCode = {
 
 export type RegisteredDiagnostic = DiagnosticsByCode[keyof DiagnosticsByCode]
 
-export abstract class Diagnostic<Code extends string> {
+export abstract class Diagnostic<
+    Code extends keyof DiagnosticsByCode,
+    AdditionalOptions = {}
+> {
     path: Traverse.Path
     type: string
     data: unknown
+    options?: BaseDiagnosticOptions<Code> & AdditionalOptions
 
-    constructor(args: Args, node: base) {
+    constructor(public readonly code: Code, args: Args, node: base) {
         this.path = args.ctx.path
         this.data = args.value
         this.type = node.toString()
+        if (args.cfg.diagnostics?.[this.code]) {
+            this.options = args.cfg.diagnostics?.[this.code] as any
+        }
     }
-
-    abstract readonly code: Code
 
     abstract message: string
 }
@@ -148,16 +155,16 @@ export abstract class Diagnostic<Code extends string> {
 export class ValidationError extends Error {}
 
 export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
-    readonly code = "Unassignable"
+    constructor(args: Args, node: base) {
+        super("Unassignable", args, node)
+    }
 
     message = `${stringifyValue(this.data)} is not assignable to ${this.type}.`
 }
 
 export class CustomDiagnostic extends Diagnostic<"Custom"> {
-    readonly code = "Custom"
-
     constructor(args: Args, node: base, public message: string) {
-        super(args, node)
+        super("Custom", args, node)
     }
 }
 

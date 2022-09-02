@@ -34,7 +34,9 @@ export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
 
 export class RegexMismatchDiagnostic extends Node.Allows
     .Diagnostic<"RegexMismatch"> {
-    readonly code = "RegexMismatch"
+    constructor(args: Node.Allows.Args, node: RegexLiteralNode) {
+        super("RegexMismatch", args, node)
+    }
 
     message = `'${this.data}' does not match expression ${this.type}.`
 }

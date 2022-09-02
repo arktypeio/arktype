@@ -41,32 +41,6 @@ describe("map", () => {
                     undefined
                 )
             })
-            test("ignore extraneous keys", () => {
-                assert(
-                    shallow().check(
-                        {
-                            a: "ok",
-                            b: 4.321,
-                            c: 67,
-                            d: "extraneous",
-                            e: "x-ray-knee-us"
-                        },
-                        { ignoreExtraneousKeys: true }
-                    ).errors
-                ).is(undefined)
-                // Still errors on missing keys
-                assert(
-                    shallow().check(
-                        {
-                            a: "ok",
-                            c: 67,
-                            d: "extraneous"
-                        },
-
-                        { ignoreExtraneousKeys: true }
-                    ).errors?.summary
-                ).snap(`At path b, missing required value of type number.`)
-            })
             describe("errors", () => {
                 test("bad value", () => {
                     assert(
@@ -99,13 +73,20 @@ describe("map", () => {
                 })
                 test("extraneous keys", () => {
                     assert(
-                        shallow().check({
-                            a: "ok",
-                            b: 4.321,
-                            c: 67,
-                            d: "extraneous",
-                            e: "x-ray-knee-us"
-                        }).errors as any as ExtraneousKeysDiagnostic[]
+                        shallow().check(
+                            {
+                                a: "ok",
+                                b: 4.321,
+                                c: 67,
+                                d: "extraneous",
+                                e: "x-ray-knee-us"
+                            },
+                            {
+                                diagnostics: {
+                                    ExtraneousKeys: { enable: true }
+                                }
+                            }
+                        ).errors as any as ExtraneousKeysDiagnostic[]
                     ).snap([
                         {
                             code: `ExtraneousKeys`,
@@ -123,17 +104,27 @@ describe("map", () => {
                                 e: `x-ray-knee-us`
                             },
                             keys: [`d`, `e`],
-                            message: `Keys 'd', 'e' were unexpected.`
+                            message: `Keys 'd', 'e' were unexpected.`,
+                            options: {
+                                enable: true
+                            }
                         }
                     ])
                 })
                 test("missing and extraneous keys", () => {
                     assert(
-                        shallow().check({
-                            a: "ok",
-                            d: "extraneous",
-                            e: "x-ray-knee-us"
-                        }).errors?.summary
+                        shallow().check(
+                            {
+                                a: "ok",
+                                d: "extraneous",
+                                e: "x-ray-knee-us"
+                            },
+                            {
+                                diagnostics: {
+                                    ExtraneousKeys: { enable: true }
+                                }
+                            }
+                        ).errors?.summary
                     ).snap(`Encountered errors at the following paths:
   b: Missing required value of type number.
   c: Missing required value of type 67.
@@ -198,7 +189,6 @@ describe("map", () => {
                         }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
   a/b: Missing required value of type string.
-  c: Keys 'y' were unexpected.
   e/f: 0n is not assignable to object.
 `)
                 })

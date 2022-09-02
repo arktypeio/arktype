@@ -71,7 +71,7 @@ export class union extends branch {
     token = "|" as const
 
     allows(args: Node.Allows.Args) {
-        const unionDiagnostics: Node.Allows.Diagnostics[] = []
+        const unionDiagnostics: DiagnosticBranchEntry[] = []
         for (const child of this.children) {
             const branchDiagnostics = new Node.Allows.Diagnostics()
             if (child.allows({ ...args, diagnostics: branchDiagnostics })) {
@@ -79,7 +79,7 @@ export class union extends branch {
                 // we can return right away since the whole definition is valid
                 return true
             }
-            unionDiagnostics.push(branchDiagnostics)
+            unionDiagnostics.push([child.toString(), branchDiagnostics])
         }
         args.diagnostics.push(new UnionDiagnostic(args, this, unionDiagnostics))
         return false
@@ -136,18 +136,29 @@ export class union extends branch {
     }
 }
 
-export class UnionDiagnostic extends Node.Allows.Diagnostic<"Union"> {
-    readonly code = "Union"
+export type DiagnosticBranchEntry = [string, Node.Allows.Diagnostics]
+
+export class UnionDiagnostic extends Node.Allows.Diagnostic<
+    "Union",
+    { expand?: boolean }
+> {
     public message: string
 
     constructor(
         args: Node.Allows.Args,
         node: Node.base,
-        public branches: Node.Allows.Diagnostics[]
+        public branches: DiagnosticBranchEntry[]
     ) {
-        super(args, node)
+        super("Union", args, node)
         this.message = `${Node.Allows.stringifyValue(
             this.data
-        )} is not assignable to any of ${this.type}.`
+        )} is not assignable to any of ${this.type}${
+            this.options?.expand ? ":" : "."
+        }`
+        if (this.options?.expand) {
+            for (const [type, diagnostics] of this.branches) {
+                this.message += `\n${type}: ${diagnostics.summary}`
+            }
+        }
     }
 }

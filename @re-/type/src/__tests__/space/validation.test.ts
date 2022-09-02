@@ -8,7 +8,7 @@ describe("validation", () => {
         const groceries = space({
             banana: {
                 length: "number",
-                description: "string?"
+                description: "string"
             },
             apple: { circumference: "number", type: "string" },
             fruit: "banana|apple"
@@ -16,7 +16,7 @@ describe("validation", () => {
         assert(
             groceries.check({
                 fruits: [
-                    { length: 10 },
+                    { length: 10, description: "ripe" },
                     { circumference: 4.832321, type: "Granny Smith" },
                     { length: 15, description: "nice" }
                 ]
@@ -27,27 +27,27 @@ describe("validation", () => {
                 fruits: [
                     {
                         length: 5000,
-                        description: "I'm a big banana!",
-                        peel: "slippery"
+                        type: "slippery"
                     },
-                    { type: "Fuji" }
+                    { circumference: 3.14159, description: "Fuji" }
                 ]
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
-  fruits/0: {length: 5000, description: "I'm a big banana!", peel: "slippery"} is not assignable to any of banana|apple.
-  fruits/1: {type: "Fuji"} is not assignable to any of banana|apple.
+  fruits/0: {length: 5000, type: "slippery"} is not assignable to any of banana|apple.
+  fruits/1: {circumference: 3.14159, description: "Fuji"} is not assignable to any of banana|apple.
 `)
     })
-    // test("errors on shallow cycle", () => {
-    //     // @ts-expect-error
-    //     assert(() => space({ a: "a" })).throwsAndHasTypeError(
-    //         `Error: a references a shallow cycle: a=>a.`
-    //     )
-    //     assert(() =>
-    //         // @ts-expect-error
-    //         space({ a: "b", b: "c", c: "a|b|c" })
-    //     ).throwsAndHasTypeError(`a references a shallow cycle: a=>b=>c=>a`)
-    // })
+    // TODO: Reenable
+    test.skip("errors on shallow cycle", () => {
+        // @ts-expect-error
+        assert(() => space({ a: "a" })).throwsAndHasTypeError(
+            `Error: a references a shallow cycle: a=>a.`
+        )
+        assert(() =>
+            // @ts-expect-error
+            space({ a: "b", b: "c", c: "a|b|c" })
+        ).throwsAndHasTypeError(`a references a shallow cycle: a=>b=>c=>a`)
+    })
     test("cyclic space", () => {
         const bicycle = space({
             a: { a: "a?", b: "b?", isA: "true" },

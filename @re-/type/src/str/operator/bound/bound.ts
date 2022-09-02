@@ -136,7 +136,6 @@ export type BoundUnits = "characters" | "items"
 
 export class BoundViolationDiagnostic extends Node.Allows
     .Diagnostic<"BoundViolation"> {
-    readonly code = "BoundViolation"
     public message: string
 
     constructor(
@@ -147,7 +146,7 @@ export class BoundViolationDiagnostic extends Node.Allows
         public size: number,
         public units: BoundUnits | undefined
     ) {
-        super(args, node)
+        super("BoundViolation", args, node)
         this.message = boundViolationMessage(
             this.data,
             this.comparator,

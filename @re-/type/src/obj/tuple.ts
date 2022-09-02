@@ -73,7 +73,6 @@ export class TupleNode extends obj {
 
 export class TupleLengthDiagnostic extends Node.Allows
     .Diagnostic<"TupleLength"> {
-    readonly code = "TupleLength"
     public message: string
 
     constructor(
@@ -82,7 +81,7 @@ export class TupleLengthDiagnostic extends Node.Allows
         public expectedLength: number,
         public actualLength: number
     ) {
-        super(args, node)
+        super("TupleLength", args, node)
         this.message = `Tuple of length ${actualLength} is not assignable to tuple of length ${expectedLength}.`
     }
 }

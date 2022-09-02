@@ -50,8 +50,8 @@ export class RecordNode extends obj {
         const propValidationResults = this.allowsProps(args)
         if (
             propValidationResults.unseenValueKeys.size &&
-            !args.cfg.ignoreExtraneousKeys &&
-            !args.ctx.modelCfg.ignoreExtraneousKeys
+            (args.cfg.diagnostics?.ExtraneousKeys?.enable ||
+                args.ctx.modelCfg.diagnostics?.ExtraneousKeys?.enable)
         ) {
             args.diagnostics.push(
                 new ExtraneousKeysDiagnostic(args, this, [
@@ -120,16 +120,18 @@ export class RecordNode extends obj {
     }
 }
 
-export class ExtraneousKeysDiagnostic extends Node.Allows
-    .Diagnostic<"ExtraneousKeys"> {
+export class ExtraneousKeysDiagnostic extends Node.Allows.Diagnostic<
+    "ExtraneousKeys",
+    { enable?: boolean }
+> {
     public message: string
-    readonly code = "ExtraneousKeys"
+
     constructor(
         args: Node.Allows.Args,
         node: Node.base,
         public keys: string[]
     ) {
-        super(args, node)
+        super("ExtraneousKeys", args, node)
         this.message = `Keys ${keys
             .map((k) => `'${k}'`)
             .join(", ")} were unexpected.`
@@ -137,7 +139,6 @@ export class ExtraneousKeysDiagnostic extends Node.Allows
 }
 
 export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
-    readonly code = "MissingKey"
     public message: string
 
     constructor(
@@ -145,7 +146,7 @@ export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
         propNode: Node.base,
         public key: string
     ) {
-        super(args, propNode)
+        super("MissingKey", args, propNode)
         this.message = `Missing required value of type ${this.type}.`
     }
 }
