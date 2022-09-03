@@ -11,7 +11,7 @@
         "build-pages": "pnpm --filter 'redo.dev' build",
         "docgen": "ts-node ./scripts/docgen.ts && pnpm build-pages",
         "typecheck-tests": "tsc -p tsconfig.references.json",
-        "test-repo-scripts": "cd scripts && mocha **/*.test.ts",
+        "test-repo-scripts": "ts-node ./scripts/testScripts.ts",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
