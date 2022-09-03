@@ -1,5 +1,5 @@
 export * from "../common.js"
-export * as Parser from "../parser/index.js"
+export * from "../parser/index.js"
 import { Node, strNode, StrNode } from "../common.js"
 
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]

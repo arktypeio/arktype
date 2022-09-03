@@ -35,11 +35,6 @@ export const assert: AssertFn = (
     if (isVitest()) {
         position = fixVitestPos(position)
     }
-    if (!/\.(c|m)?tsx?$/.test(position.file)) {
-        throw new Error(
-            `Assert cannot be called from outside a TypeScript source file (got '${position.file}'). `
-        )
-    }
     if (position.file.startsWith("file:///")) {
         position.file = fileURLToPath(position.file)
     }
