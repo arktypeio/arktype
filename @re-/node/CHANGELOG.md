@@ -1,5 +1,11 @@
 # @re-/node
 
+## 2.2.4
+
+### Patch Changes
+
+-   56c7cf5c: Fix CJS build.
+
 ## 2.2.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
     "name": "@re-/type",
-    "version": "2.0.7-alpha",
+    "version": "2.0.8-alpha",
     "description": "One definition from editor to runtime🧬",
     "author": {
         "name": "David Blass",
