@@ -1,5 +1,14 @@
 # @re-/assert
 
+## 0.4.4
+
+### Patch Changes
+
+-   56c7cf5c: Fix CJS build.
+-   Updated dependencies [56c7cf5c]
+    -   @re-/node@2.2.4
+    -   @re-/tools@2.2.3
+
 ## 0.4.3
 
 ### Patch Changes

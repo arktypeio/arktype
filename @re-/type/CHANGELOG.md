@@ -1,5 +1,14 @@
 # @re-/type
 
+## 2.0.8-alpha
+
+### Patch Changes
+
+-   56c7cf5c: Fix CJS build.
+-   e835a743: Fix CJS build.
+-   Updated dependencies [56c7cf5c]
+    -   @re-/tools@2.2.3
+
 ## 2.0.7-alpha
 
 ### Patch Changes
