@@ -19,7 +19,7 @@ export const getTransformedText = (
         )
         for (const declaration of importDeclarations) {
             const specifier = declaration.getModuleSpecifier()
-            if (specifier.getLiteralText().endsWith("src/index.js")) {
+            if (specifier.getLiteralText().endsWith("../index.js")) {
                 specifier.replaceWithText(`"${ctx.packageMetadata.name}"`)
             }
         }
