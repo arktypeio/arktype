@@ -33,8 +33,8 @@ Modify any of these examples in our live editor to see the types and validation 
 
 [Try it out.](https://redo.dev/type/intro#start-quick-%EF%B8%8F)
 
-```ts @blockFrom:@re-/type/docs/snippets/type.ts
-import { type } from "@re-/type"
+```ts @blockFrom:@re-/type/src/__snippets__/type.ts
+import { type } from "../index.js"
 
 // Define a type...
 export const user = type({
@@ -66,8 +66,8 @@ if (errors) {
 
 [Try it out.](https://redo.dev/type/spaces)
 
-```ts @blockFrom:@re-/type/docs/snippets/space.ts
-import { space } from "@re-/type"
+```ts @blockFrom:@re-/type/src/__snippets__/space.ts
+import { space } from "../index.js"
 
 // Spaces are collections of models that can reference each other.
 export const models = space({
@@ -105,42 +105,43 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 
 [Try it out.](https://redo.dev/type/declarations)
 
-`index.ts`
+`declaration.ts`
 
-```ts @blockFrom:@re-/type/docs/snippets/declaration/declaration.ts
-import { declare } from "@re-/type"
+```ts @blockFrom:@re-/type/src/__snippets__/declaration/declaration.ts
+import { declare } from "../../index.js"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
+```
 
+`compilation.ts`
+
+```ts @blockFrom:@re-/type/src/__snippets__/declaration/compilation.ts
+import { compile } from "./declaration.js"
 import { groupDef } from "./group.js"
 import { userDef } from "./user.js"
 
 // Creates your space (or tells you which definition you forgot to include)
-export const mySpace = compile({ ...userDef, ...groupDef })
+export const types = compile({ ...userDef, ...groupDef })
 
 // Mouse over "Group" to see the inferred type...
-export type Group = typeof mySpace.group.infer
+export type Group = typeof types.group.infer
 
-export const fetchGroupData = () => {
-    return {
-        title: "Type Enjoyers",
-        members: [
-            {
-                name: "Devin Aldai",
-                grapes: []
-            }
-        ]
-    }
-}
-
-// Try changing the definitions in "group.ts"/"user.ts" or the data in "fetchGroupData"!
-export const { errors: error } = mySpace.group.check(fetchGroupData())
+// Try changing the definitions in "group.ts"/"user.ts" or the data checked here!
+export const { errors } = types.group.check({
+    title: "Type Enjoyers",
+    members: [
+        {
+            name: "Devin Aldai",
+            grapes: []
+        }
+    ]
+})
 ```
 
 `user.ts`
 
-```ts @blockFrom:@re-/type/docs/snippets/declaration/user.ts
+```ts @blockFrom:@re-/type/src/__snippets__/declaration/user.ts
 import { define } from "./declaration.js"
 
 export const userDef = define.user({
@@ -152,7 +153,7 @@ export const userDef = define.user({
 
 `group.ts`
 
-```ts @blockFrom:@re-/type/docs/snippets/declaration/group.ts
+```ts @blockFrom:@re-/type/src/__snippets__/declaration/group.ts
 import { define } from "./declaration.js"
 
 export const groupDef = define.group({
@@ -167,10 +168,10 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://redo.dev/type/constraints)
 
-```ts @blockFrom:@re-/type/docs/snippets/constraints.ts
-import { type } from "@re-/type"
+```ts @blockFrom:@re-/type/src/__snippets__/constraints.ts
+import { type } from "../index.js"
 
-const employee = type({
+export const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {
@@ -182,26 +183,17 @@ const employee = type({
 })
 
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
-type Employee = typeof employee.infer
+export type Employee = typeof employee.infer
 
-export const fetchEmployee = () => {
-    return {
-        email: "david@redo.biz",
-        about: {
-            age: 17,
-            bio: "I am very interesting.".repeat(5)
-        }
-    }
-}
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { errors } = employee.check(fetchEmployee())
+export const { errors } = employee.check({
+    email: "david@redo.biz",
+    about: {
+        age: 17,
+        bio: "I am very interesting.".repeat(5)
+    }
+})
 
-// Output: "Encountered errors at the following paths:
-// {
-//   email: ''david@redo.biz' is not assignable to /[a-z]*@redo.dev/.',
-//   about/age: '17 was less than 18.',
-//   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
-// }"
 console.log(errors?.summary ?? "Flawless. Obviously.")
 ```
 
