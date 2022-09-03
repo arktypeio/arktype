@@ -1,4 +1,4 @@
-import { type } from "@re-/type"
+import { type } from "../index"
 
 // Define a type...
 export const user = type({
