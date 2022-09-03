@@ -13,10 +13,10 @@ Hello.
 
 ```ts
 //@snipLine:line
-import { model } from "@re-/model"
+import { type } from "@re-/type"
 
 //@snipStatement:employee
-const employee = model({
+const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo.dev/`,
     about: {

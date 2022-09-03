@@ -1,6 +1,15 @@
 export * from "../common.js"
-import { comparators } from "../operator/bound/common.js"
 import { tokenSet } from "./scanner.js"
+
+export const comparators = tokenSet({
+    "<": 1,
+    ">": 1,
+    "<=": 1,
+    ">=": 1,
+    "==": 1
+})
+
+export type Comparator = keyof typeof comparators
 
 export const suffixTokens = tokenSet({
     ...comparators,

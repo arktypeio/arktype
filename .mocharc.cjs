@@ -12,6 +12,10 @@ if (process.platform === "win32") {
 }
 
 module.exports = {
-    spec: "./src/**/*.test.ts",
+    spec: [
+        "./src/**/*.test.ts",
+        "./@re-/*/src/**/*.test.ts",
+        "./scripts/**/*.test.ts"
+    ],
     "node-option": ["loader=ts-node/esm", "no-warnings=ExperimentalWarning"]
 }
