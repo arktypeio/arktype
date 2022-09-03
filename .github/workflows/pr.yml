@@ -27,9 +27,6 @@ jobs:
             - name: Test
               run: pnpm test
 
-            - name: Bench
-              run: pnpm bench
-
             - name: Website
               run: pnpm build-pages
 

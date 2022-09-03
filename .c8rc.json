@@ -1,4 +1,7 @@
 {
     "checkCoverage": true,
-    "lines": 90
+    "lines": 98,
+    "all": true,
+    "src": "src",
+    "extension": ".ts"
 }

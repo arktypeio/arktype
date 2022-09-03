@@ -1,15 +1,8 @@
 export * from "../common.js"
+import type { Comparator } from "../../parser/exports.js"
 import { Parser } from "../common.js"
-
-export const comparators = Parser.tokenSet({
-    "<": 1,
-    ">": 1,
-    "<=": 1,
-    ">=": 1,
-    "==": 1
-})
-
-export type Comparator = keyof typeof comparators
+export { comparators } from "../../parser/exports.js"
+export type { Comparator } from "../../parser/exports.js"
 
 export const comparatorChars = Parser.tokenSet({
     "<": 1,

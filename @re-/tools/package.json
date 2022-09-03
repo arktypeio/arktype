@@ -24,7 +24,8 @@
     },
     "scripts": {
         "build": "pnpm ts-node ../../scripts/build.ts",
-        "test": "reassert --cmd mocha"
+        "test": "c8 reassert --cmd mocha",
+        "testBuild": "ts-node ../../scripts/testBuild.ts"
     },
     "devDependencies": {
         "@re-/assert": "link:../assert"

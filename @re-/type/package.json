@@ -27,6 +27,7 @@
         "typecheck": "tsc --noEmit",
         "test": "c8 reassert --cmd mocha",
         "tnt": "reassert --skipTypes --cmd mocha",
+        "testBuild": "ts-node ../../scripts/testBuild.ts",
         "bench": "reassert bench",
         "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
         "benchParse": "ts-node ./src/nodes/__tests__/parse.bench.ts",

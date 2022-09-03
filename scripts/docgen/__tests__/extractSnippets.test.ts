@@ -1,4 +1,4 @@
-import { join } from "node:path"
+import { relative } from "node:path"
 import { describe, test } from "mocha"
 import { Project } from "ts-morph"
 import { PackageJson } from "type-fest"
@@ -6,10 +6,10 @@ import { DocGenSnippetExtractionConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
 import { extractPackageSnippets } from "../snippets/extractSnippets.js"
 import { assert } from "@re-/assert"
-import { fromHere, readPackageJson } from "@re-/node"
+import { fromHere, fromPackageRoot, readPackageJson } from "@re-/node"
 
-const rootDir = fromHere("..", "..")
-const packageJsonData: PackageJson = readPackageJson(rootDir)
+const repoRoot = fromPackageRoot()
+const packageJsonData: PackageJson = readPackageJson(repoRoot)
 const testFilesFolder = fromHere("testFiles")
 const testFile = fromHere("testFile.md")
 const sources: DocGenSnippetExtractionConfig[] = [
@@ -23,7 +23,7 @@ const sources: DocGenSnippetExtractionConfig[] = [
 const packageMetadata: PackageMetadata = {
     name: "testData",
     version: "0.0.1",
-    rootDir,
+    rootDir: repoRoot,
     packageJsonData
 }
 const project = new Project()
@@ -33,9 +33,11 @@ const snippets = extractPackageSnippets({
     packageMetadata
 })
 const SNIP_REGEX = /@snip(Start|End|Line)/
-const TEST_FILE_KEY = join("docgen", "test", "testFile.md")
-const FOLDER_MD_FILE_KEY = join("docgen", "test", "testFiles", "test.md")
-const FOLDER_TS_FILE_KEY = join("docgen", "test", "testFiles", "test.ts")
+const getFileKey = (...pathFromHere: string[]) =>
+    relative(repoRoot, fromHere(...pathFromHere))
+const TEST_FILE_KEY = getFileKey("testFile.md")
+const FOLDER_MD_FILE_KEY = getFileKey("testFiles", "test.md")
+const FOLDER_TS_FILE_KEY = getFileKey("testFiles", "test.ts")
 
 describe("Extracts snippets from file path", () => {
     test("adds file from filePath", () => {
@@ -43,7 +45,7 @@ describe("Extracts snippets from file path", () => {
     })
     test("@snipLine", () => {
         assert(snippets[TEST_FILE_KEY]["line"].text).snap(
-            `import { model } from "@re-/model"`
+            `import { type } from "@re-/type"`
         )
     })
     test("@snipStart - @snipEnd", () => {
@@ -60,7 +62,7 @@ describe("Extracts snippets from Folder", () => {
             `labore et dolore magna aliqua. Nam libero justo laoreet sit. Rutrum tellus pellentesque eu tincidunt tortor`
         )
         assert(snippets[FOLDER_TS_FILE_KEY].commentStatement.text).snap(
-            `// But a model can also validate your data at runtime...`
+            `// But a type can also validate your data at runtime...`
         )
     })
 })

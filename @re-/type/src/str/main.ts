@@ -1,6 +1,7 @@
-import { Node, Parser, strNode } from "./common.js"
+import { Node, strNode } from "./common.js"
 import { ParseOperand, parseOperand } from "./operand/index.js"
 import { Operator } from "./operator/index.js"
+import { Parser } from "./parser/index.js"
 
 export const parse: Node.parseFn<string> = (def, ctx) =>
     loop(parseOperand(new Parser.state(def), ctx), ctx)

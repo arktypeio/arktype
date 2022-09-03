@@ -28,7 +28,7 @@ export const config: DocGenConfig = {
             snippets: {
                 sources: [
                     {
-                        path: "docs/snippets/"
+                        path: "src/__snippets__"
                     }
                 ],
                 targets: [
