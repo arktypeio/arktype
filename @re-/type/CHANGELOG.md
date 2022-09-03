@@ -1,5 +1,11 @@
 # @re-/type
 
+## 2.0.9-alpha
+
+### Patch Changes
+
+-   3b3d5630: docs: fix demo relative import
+
 ## 2.0.8-alpha
 
 ### Patch Changes
