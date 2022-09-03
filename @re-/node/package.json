@@ -1,6 +1,6 @@
 {
     "name": "@re-/node",
-    "version": "2.2.3",
+    "version": "2.2.4",
     "description": "Node-based utilities, scripts, and configs for Redo packages ⚙️",
     "author": {
         "name": "David Blass",
