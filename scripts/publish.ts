@@ -1,6 +1,5 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { packageRoots } from "./common.js"
 import {
     fromPackageRoot,
     readFile,
@@ -9,7 +8,11 @@ import {
     writeFile
 } from "@re-/node"
 
-export const cleanupNonDistributed = (outRoot: string) => {
+const repoRoot = fromPackageRoot()
+const packageNames = ["assert", "node", "tools", "type"]
+const packageRoots = packageNames.map((_) => join(repoRoot, "@re-", _))
+
+const cleanupNonDistributed = (outRoot: string) => {
     const nonDistributedDirs = walkPaths(outRoot, {
         include: (path) =>
             path.endsWith("__tests__") || path.endsWith("__snippets__")

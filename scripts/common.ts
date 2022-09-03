@@ -1,7 +1,6 @@
 import { join, relative } from "node:path"
 import {
     findPackageRoot,
-    fromPackageRoot,
     readPackageJson,
     walkPaths
 } from "../@re-/node/src/index.js"
@@ -20,7 +19,3 @@ export const inFiles = walkPaths(srcRoot, {
     excludeDirs: true
 })
 export const isProd = process.argv.includes("--prod") || !!process.env.CI
-
-export const repoRoot = fromPackageRoot()
-export const packageNames = ["assert", "node", "tools", "type"]
-export const packageRoots = packageNames.map((_) => join(repoRoot, "@re-", _))
