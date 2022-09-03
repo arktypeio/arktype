@@ -24,7 +24,7 @@
     },
     "scripts": {
         "build": "pnpm ts-node ../../scripts/build.ts",
-        "test": "c8 pnpm ts-node ./src/cli.ts --cmd mocha"
+        "test": "pnpm ts-node ./src/cli.ts --cmd mocha"
     },
     "bin": {
         "reassert": "./cli.cjs"
