@@ -1,7 +1,7 @@
 import { space } from "../index.js"
 
-// Spaces are collections of models that can reference each other.
-export const models = space({
+// Spaces are collections of types that can reference each other.
+export const types = space({
     package: {
         name: "string",
         dependencies: "package[]",
@@ -14,8 +14,8 @@ export const models = space({
     }
 })
 
-// Cyclic models are inferred to arbitrary depth...
-export type Package = typeof models.package.infer
+// Cyclic types are inferred to arbitrary depth...
+export type Package = typeof types.package.infer
 
 // And can validate cyclic data.
 export const readPackageData = () => ({
@@ -27,4 +27,4 @@ export const readPackageData = () => ({
 // `Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
 //   contributors/0/email: "david@redodev" is not assignable to email.`
-export const { errors } = models.package.check(readPackageData())
+export const { errors } = types.package.check(readPackageData())

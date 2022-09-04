@@ -11,27 +11,22 @@ populateDemo(${dataObject})`
 }
 
 type DemoAdapter = [importFromDemo: string, dataFromImports: string]
+
 const demoAdapters: Record<EmbedId, DemoAdapter> = {
     type: [
-        `import {fetchUser, error, user} from "./type"`,
-        `{data: fetchUser(), error, definition: user.definition}`
+        `import { user, fetchUser, errors } from "./type"`,
+        `{ definition: user.definition, data: fetchUser(), error: errors.summary }`
     ],
     space: [
-        `import {readPackageData, getValidatedPackageData, redo} from "./space"
-let error
-try{
-    getValidatedPackageData()
-}catch(e){
-    error = e
-}`,
-        "{data: readPackageData(), definition: redo.inputs.dictionary, error }"
+        `import { types, readPackageData, errors } from "./space"`,
+        "{ definition: types.$root.dictionary, data: readPackageData(), error: errors.summary }"
     ],
     constraints: [
-        `import {employee, fetchEmployee, error} from "./constraints"`,
-        "{data: fetchEmployee(), definition: employee.definition, error }"
+        `import { employee, queryEmployee, errors } from "./constraints"`,
+        "{ definition: employee.definition, data: queryEmployee(), error: errors.summary }"
     ],
     declaration: [
-        `import {mySpace, fetchGroupData, error } from "./declaration"`,
-        "{data: fetchGroupData(), definition: mySpace.inputs.dictionary, error}"
+        `import { types, getGroupsForCurrentUser, errors } from "./declaration"`,
+        "{ definition: types.$root.dictionary, data: getGroupsForCurrentUser(), error: errors.summary }"
     ]
 }
