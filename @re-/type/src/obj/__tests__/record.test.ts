@@ -4,7 +4,7 @@ import { type } from "../../index.js"
 import { unresolvableMessage } from "../../str/operand/index.js"
 import { ExtraneousKeysDiagnostic, MissingKeyDiagnostic } from "../record.js"
 
-describe("map", () => {
+describe("record", () => {
     describe("empty", () => {
         const empty = type({})
         test("type", () => {

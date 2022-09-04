@@ -49,13 +49,13 @@ export class RecordNode extends obj {
         }
         const propValidationResults = this.allowsProps(args)
         if (
-            propValidationResults.unseenValueKeys.size &&
+            propValidationResults.extraneousValueKeys.size &&
             (args.cfg.diagnostics?.ExtraneousKeys?.enable ||
                 args.ctx.modelCfg.diagnostics?.ExtraneousKeys?.enable)
         ) {
             args.diagnostics.push(
                 new ExtraneousKeysDiagnostic(args, this, [
-                    ...propValidationResults.unseenValueKeys
+                    ...propValidationResults.extraneousValueKeys
                 ])
             )
             return false
@@ -66,7 +66,7 @@ export class RecordNode extends obj {
     // TODO: Should maybe not use set for perf?
     private allowsProps(args: Node.Allows.Args<Record<string, unknown>>) {
         const result = {
-            unseenValueKeys: new Set(Object.keys(args.value)),
+            extraneousValueKeys: new Set(Object.keys(args.value)),
             allSeenKeysAllowed: true
         }
         for (const [propKey, propNode] of this.entries) {
@@ -82,7 +82,7 @@ export class RecordNode extends obj {
                 )
                 result.allSeenKeysAllowed = false
             }
-            result.unseenValueKeys.delete(propKey)
+            result.extraneousValueKeys.delete(propKey)
         }
         return result
     }

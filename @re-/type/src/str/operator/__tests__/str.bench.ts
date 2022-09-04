@@ -1,5 +1,5 @@
 import { bench } from "@re-/assert"
-import { space, type } from "../index.js"
+import { type } from "../../../index.js"
 
 bench("validate undefined", () => {
     type("string?").check(undefined)
@@ -20,54 +20,6 @@ bench("parse deeep", () => {
 bench("parse and validate deeep", () => {
     type(deepStringDef as any).check("test")
 }).median(`6.13us`)
-
-bench("validate map", () => {
-    type({
-        a: "string?",
-        b: "number?",
-        c: { nested: "boolean?" }
-    }).check({
-        a: "okay",
-        b: 5,
-        c: { nested: true }
-    })
-})
-    .median(`1.55us`)
-    .type(`525 instantiations`)
-
-bench("validate map extraneous", () => {
-    type({
-        a: "string?",
-        b: "number?",
-        c: { nested: "boolean?" }
-    }).check({
-        a: "okay",
-        b: 5,
-        c: { nested: true },
-        d: true,
-        e: true,
-        f: {},
-        g: true
-    })
-}).median(`1.63us`)
-
-bench("validate map bad", () => {
-    type({
-        a: "string?",
-        b: "number?",
-        c: { nested: "boolean?" }
-    }).check({
-        a: 5,
-        b: 5,
-        c: { nested: true }
-    })
-}).median(`2.05us`)
-
-bench("validate tuple", () => {
-    type(["string?", "number?", ["boolean?"]]).check(["okay", 5, [true]])
-})
-    .median(`1.75us`)
-    .type(`903 instantiations`)
 
 bench("parseUnion", () => {
     const result = type("string|number")
@@ -104,29 +56,8 @@ bench("parse then validate large union miss", () => {
     type("1|2|3|4|5|6|7|8|9").check(10)
 }).median(`5.67us`)
 
-bench("errors at paths", () => {
-    type({
-        a: "string|number",
-        b: "boolean?",
-        c: { nested: ["undefined|null", "bigint"] }
-    }).check({ a: [], b: "hi", c: { nested: [true, 5] } })
-}).median(`7.88us`)
-
 bench("list type", () => {
     type("string[]").check(["hi", "there", "we're", "strings", 5])
 })
     .median(`1.14us`)
     .type(`126 instantiations`)
-
-const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })
-const dejaVu: typeof recursive.$root.infer.dejaVu = {}
-let i = 0
-let current = dejaVu
-while (i < 50) {
-    current.dejaVu = { dejaVu: {} }
-    current = current.dejaVu
-    i++
-}
-bench("validate recursive", () => {
-    recursive.dejaVu.check(dejaVu)
-}).median(`77.57us`)

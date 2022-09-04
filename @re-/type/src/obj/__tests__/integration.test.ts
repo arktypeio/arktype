@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../index.js"
 
-describe("integration", () => {
+describe("obj integration", () => {
     const mixed = () => type(["true", { a: ["string", ["number|boolean[]"]] }])
     test("type", () => {
         assert(mixed().infer).typed as [
