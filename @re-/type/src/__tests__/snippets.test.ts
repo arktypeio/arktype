@@ -17,7 +17,7 @@ describe("snippets", () => {
     })
     test("space", async () => {
         const spaceSnippet = await import("../__snippets__/space.js")
-        assert(spaceSnippet.models.package.infer).type.toString.snap(
+        assert(spaceSnippet.types.package.infer).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
         assert(spaceSnippet.errors?.summary)
@@ -46,7 +46,7 @@ describe("snippets", () => {
     })
     test("declaration", async () => {
         const declarationSnippet = await import(
-            "../__snippets__/declaration/compilation.js"
+            "../__snippets__/declaration/declaration.js"
         )
         assert(
             declarationSnippet.types.group.infer.members[0].groups[0].members[0]

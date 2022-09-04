@@ -1,7 +1,7 @@
 import sdk from "@stackblitz/sdk"
 
 export type EmbedId = "type" | "space" | "constraints" | "declaration"
-export type AddonFile = "user" | "group"
+export type AddonFile = "user" | "group" | "names"
 export type DemoProps = {
     embedId: EmbedId
     addonFiles?: AddonFile[]
