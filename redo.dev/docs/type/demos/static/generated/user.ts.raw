@@ -1,4 +1,4 @@
-import { define } from "./declaration"
+import { define } from "./names"
 
 export const userDef = define.user({
     name: "string",

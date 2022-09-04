@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "build": "pnpm --filter '@re-/*' build",
-        "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm build-pages",
+        "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm build-pages && pnpm docgen",
         "test": "pnpm typecheck-tests && pnpm -r test && pnpm -r testBuild && pnpm test-repo-scripts",
         "lint": "eslint --max-warnings=0 .",
         "build-pages": "pnpm --filter 'redo.dev' build",

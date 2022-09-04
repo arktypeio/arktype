@@ -12,13 +12,15 @@ export const user = type({
 // Infer it...
 export type User = typeof user.infer
 
-// Models can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { errors, data } = user.check({
+export const fetchUser = () => ({
     name: "Dan Abramov",
     browser: {
         kind: "Internet Explorer" // R.I.P.
     }
 })
+
+// Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+export const { errors, data } = user.check(fetchUser())
 
 if (errors) {
     // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."

@@ -48,13 +48,15 @@ export const user = type({
 // Infer it...
 export type User = typeof user.infer
 
-// Models can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { errors, data } = user.check({
+export const fetchUser = () => ({
     name: "Dan Abramov",
     browser: {
         kind: "Internet Explorer" // R.I.P.
     }
 })
+
+// Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+export const { errors, data } = user.check(fetchUser())
 
 if (errors) {
     // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
@@ -69,8 +71,8 @@ if (errors) {
 ```ts @blockFrom:@re-/type/src/__snippets__/space.ts
 import { space } from "@re-/type"
 
-// Spaces are collections of models that can reference each other.
-export const models = space({
+// Spaces are collections of types that can reference each other.
+export const types = space({
     package: {
         name: "string",
         dependencies: "package[]",
@@ -83,8 +85,8 @@ export const models = space({
     }
 })
 
-// Cyclic models are inferred to arbitrary depth...
-export type Package = typeof models.package.infer
+// Cyclic types are inferred to arbitrary depth...
+export type Package = typeof types.package.infer
 
 // And can validate cyclic data.
 export const readPackageData = () => ({
@@ -96,7 +98,7 @@ export const readPackageData = () => ({
 // `Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
 //   contributors/0/email: "david@redodev" is not assignable to email.`
-export const { errors } = models.package.check(readPackageData())
+export const { errors } = types.package.check(readPackageData())
 ```
 
 ### Definitions that split ✂️
@@ -105,20 +107,20 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 
 [Try it out.](https://redo.dev/type/declarations)
 
-`declaration.ts`
+`names.ts`
 
-```ts @blockFrom:@re-/type/src/__snippets__/declaration/declaration.ts
+```ts @blockFrom:@re-/type/src/__snippets__/declaration/names.ts
 import { declare } from "@re-/type"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 ```
 
-`compilation.ts`
+`declaration.ts`
 
-```ts @blockFrom:@re-/type/src/__snippets__/declaration/compilation.ts
-import { compile } from "./declaration.js"
+```ts @blockFrom:@re-/type/src/__snippets__/declaration/declaration.ts
 import { groupDef } from "./group.js"
+import { compile } from "./names.js"
 import { userDef } from "./user.js"
 
 // Creates your space (or tells you which definition you forgot to include)
@@ -127,8 +129,7 @@ export const types = compile({ ...userDef, ...groupDef })
 // Mouse over "Group" to see the inferred type...
 export type Group = typeof types.group.infer
 
-// Try changing the definitions in "group.ts"/"user.ts" or the data checked here!
-export const { errors } = types.group.check({
+export const getGroupsForCurrentUser = () => ({
     title: "Type Enjoyers",
     members: [
         {
@@ -137,12 +138,15 @@ export const { errors } = types.group.check({
         }
     ]
 })
+
+// Try changing the definitions in "group.ts"/"user.ts" or the data in "getGroupsForCurrentUser"
+export const { errors } = types.group.check(getGroupsForCurrentUser())
 ```
 
 `user.ts`
 
 ```ts @blockFrom:@re-/type/src/__snippets__/declaration/user.ts
-import { define } from "./declaration.js"
+import { define } from "./names.js"
 
 export const userDef = define.user({
     name: "string",
@@ -154,7 +158,7 @@ export const userDef = define.user({
 `group.ts`
 
 ```ts @blockFrom:@re-/type/src/__snippets__/declaration/group.ts
-import { define } from "./declaration.js"
+import { define } from "./names.js"
 
 export const groupDef = define.group({
     title: "string",
@@ -172,7 +176,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 import { type } from "@re-/type"
 
 export const employee = type({
-    // Not a fan of regex? Don't worry, 'email' is a builtin type :)
+    // Not a fan of regex? Don't worry, 'email' is a builtin type.
     email: `/[a-z]*@redo.dev/`,
     about: {
         // Single or double bound numeric types
@@ -185,8 +189,7 @@ export const employee = type({
 // Subtypes like 'email' and 'integer' become 'string' and 'number'
 export type Employee = typeof employee.infer
 
-// The error messages are so nice you might be tempted to break your code more often ;)
-export const { errors } = employee.check({
+export const queryEmployee = () => ({
     email: "david@redo.biz",
     about: {
         age: 17,
@@ -194,6 +197,13 @@ export const { errors } = employee.check({
     }
 })
 
+// The error messages are so nice you might be tempted to break your code more often ;)
+export const { errors } = employee.check(queryEmployee())
+
+// Encountered errors at the following paths:
+//   email: 'david@redo.biz' does not match expression /[a-z]*@redo.dev/.
+//   about/age: 17 must be greater than or equal to 18.
+//   about/bio: "I am very interesting.I am very interesting.I am ..." must be less than or equal to 80 characters (was 110).
 console.log(errors?.summary ?? "Flawless. Obviously.")
 ```
 
