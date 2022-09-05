@@ -3,19 +3,15 @@ import { describe, test } from "mocha"
 import { type } from "../../../index.js"
 
 describe("numberLiteral", () => {
-    // TODO: ts-morph 4.8
     describe("type", () => {
         test("whole", () => {
-            // assert(model("4").type).typed as 4
-            assert(type("4").infer).typed as number
+            assert(type("4").infer).typed as 4
         })
         test("decimal", () => {
-            // assert(model("1.234").type).typed as 1.234
-            assert(type("1.234").infer).typed as number
+            assert(type("1.234").infer).typed as 1.234
         })
         test("negative", () => {
-            // assert(model("-5.7").type).typed as -5.7
-            assert(type("-5.7").infer).typed as number
+            assert(type("-5.7").infer).typed as -5.7
         })
         describe("errors", () => {
             test("multiple decimals", () => {

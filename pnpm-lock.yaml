@@ -69,16 +69,16 @@ importers:
       '@re-/node': workspace:*
       '@re-/tools': workspace:*
       convert-source-map: 1.8.0
-      micro-memoize: 4.0.10
+      micro-memoize: 4.0.11
       source-map-js: 1.0.2
-      ts-morph: 15.1.0
+      ts-morph: 16.0.0
     dependencies:
       '@re-/node': link:../node
       '@re-/tools': link:../tools
       convert-source-map: 1.8.0
-      micro-memoize: 4.0.10
+      micro-memoize: 4.0.11
       source-map-js: 1.0.2
-      ts-morph: 15.1.0
+      ts-morph: 16.0.0
 
   '@re-/node':
     specifiers:
@@ -3874,15 +3874,6 @@ packages:
     engines: {node: '>=10.13.0'}
     dev: false
 
-  /@ts-morph/common/0.16.0:
-    resolution: {integrity: sha512-SgJpzkTgZKLKqQniCjLaE3c2L2sdL7UShvmTmPBejAKd2OKV/yfMpQ2IWpAuA+VY5wy7PkSUaEObIqEK6afFuw==}
-    dependencies:
-      fast-glob: 3.2.11
-      minimatch: 5.1.0
-      mkdirp: 1.0.4
-      path-browserify: 1.0.1
-    dev: false
-
   /@ts-morph/common/0.17.0:
     resolution: {integrity: sha512-RMSSvSfs9kb0VzkvQ2NWobwnj7TxCA9vI/IjR9bDHqgAyVbu2T0DN4wiKVqomyDWqO7dPr/tErSfq7urQ1Q37g==}
     dependencies:
@@ -3890,7 +3881,6 @@ packages:
       minimatch: 5.1.0
       mkdirp: 1.0.4
       path-browserify: 1.0.1
-    dev: true
 
   /@tsconfig/node10/1.0.9:
     resolution: {integrity: sha512-jNsYVVxU8v5g43Erja32laIDHXeoNvFEpX33OK4d6hljo3jDhCBDhx5dhCCTMWUojscpAagGiRkBKxpdl9fxqA==}
@@ -5230,15 +5220,8 @@ packages:
     engines: {node: '>=6'}
     dev: false
 
-  /code-block-writer/11.0.0:
-    resolution: {integrity: sha512-GEqWvEWWsOvER+g9keO4ohFoD3ymwyCnqY3hoTr7GZipYFwEhMHJw+TtV0rfgRhNImM6QWZGO2XYjlJVyYT62w==}
-    dependencies:
-      tslib: 2.3.1
-    dev: false
-
   /code-block-writer/11.0.3:
     resolution: {integrity: sha512-NiujjUFB4SwScJq2bwbYUtXbZhBSlY6vYzm++3Q6oC+U+injTqfPYFK8wS9COOmb2lueqp0ZRB4nK1VYeHgNyw==}
-    dev: true
 
   /collapse-white-space/1.0.6:
     resolution: {integrity: sha512-jEovNnrhMuqyCcjfEJA56v0Xq8SkIoPKDyaHahwo3POf4qcSXqMYuwNcOTzp74vTsR9Tn08z4MxWqAhcekogkQ==}
@@ -8708,8 +8691,8 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /micro-memoize/4.0.10:
-    resolution: {integrity: sha512-rk0OlvEQkShjbr2EvGn1+GdCsgLDgABQyM9ZV6VoHNU7hiNM+eSOkjGWhiNabU/XWiEalWbjNQrNO+zcqd+pEA==}
+  /micro-memoize/4.0.11:
+    resolution: {integrity: sha512-CjxsaYe4j43df32DtzzNCwanPqZjZDwuQAZilsCYpa2ZVtSPDjHXbTlR4gsEZRyO9/twHs0b7HLjvy/sowl7sA==}
     dev: false
 
   /micromark-core-commonmark/1.0.6:
@@ -11474,19 +11457,11 @@ packages:
     resolution: {integrity: sha512-rvuRbTarPXmMb79SmzEp8aqXNKcK+y0XaB298IXueQ8I2PsrATcPBCSPyK/dDNa2iWOhKlfNnOjdAOTBU/nkFA==}
     dev: false
 
-  /ts-morph/15.1.0:
-    resolution: {integrity: sha512-RBsGE2sDzUXFTnv8Ba22QfeuKbgvAGJFuTN7HfmIRUkgT/NaVLfDM/8OFm2NlFkGlWEXdpW5OaFIp1jvqdDuOg==}
-    dependencies:
-      '@ts-morph/common': 0.16.0
-      code-block-writer: 11.0.0
-    dev: false
-
   /ts-morph/16.0.0:
     resolution: {integrity: sha512-jGNF0GVpFj0orFw55LTsQxVYEUOCWBAbR5Ls7fTYE5pQsbW18ssTb/6UXx/GYAEjS+DQTp8VoTw0vqYMiaaQuw==}
     dependencies:
       '@ts-morph/common': 0.17.0
       code-block-writer: 11.0.3
-    dev: true
 
   /ts-node/10.9.1_5iwu3acsyy4q7c6vz7ybcxsow4:
     resolution: {integrity: sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==}
@@ -11563,10 +11538,6 @@ packages:
   /tslib/1.14.1:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
     dev: true
-
-  /tslib/2.3.1:
-    resolution: {integrity: sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw==}
-    dev: false
 
   /tslib/2.4.0:
     resolution: {integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==}

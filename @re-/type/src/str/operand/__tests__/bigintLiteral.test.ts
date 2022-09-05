@@ -3,15 +3,12 @@ import { describe, test } from "mocha"
 import { type } from "../../../index.js"
 
 describe("bigintLiteral", () => {
-    // TODO: ts-morph 4.8
     describe("type", () => {
         test("positive", () => {
-            // assert(model("999999999999999n").type).typed as 999999999999999n
-            assert(type("999999999999999n").infer).typed as bigint
+            assert(type("999999999999999n").infer).typed as 999999999999999n
         })
         test("negative", () => {
-            // assert(model("-1n").type).typed as -1n
-            assert(type("-1n").infer).typed as bigint
+            assert(type("-1n").infer).typed as -1n
         })
         describe("errors", () => {
             test("decimal", () => {

@@ -24,8 +24,7 @@ describe("tuple", () => {
         const shallow = () => type(["string", "number", "6"])
         describe("type", () => {
             test("standard", () => {
-                // TODO: ts-morph 4.8
-                assert(shallow().infer).typed as [string, number, number]
+                assert(shallow().infer).typed as [string, number, 6]
             })
             describe("errors", () => {
                 test("invalid item definition", () => {

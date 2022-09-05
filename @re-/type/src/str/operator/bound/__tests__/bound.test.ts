@@ -23,37 +23,36 @@ import {
 } from "./common.js"
 
 describe("bound", () => {
-    // TODO: ts-morph 4.8
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
                 assert(type("number>0").tree).narrowedValue([
                     "number",
-                    [">", 0 as number]
+                    [">", 0]
                 ])
             })
             test("<", () => {
                 assert(type("number<10").tree).narrowedValue([
                     "number",
-                    ["<", 10 as number]
+                    ["<", 10]
                 ])
             })
             test(">=", () => {
                 assert(type("number>=3.14159").tree).narrowedValue([
                     "number",
-                    [">=", 3.14159 as number]
+                    [">=", 3.14159]
                 ])
             })
             test("<=", () => {
                 assert(type("number<=-49").tree).narrowedValue([
                     "number",
-                    ["<=", -49 as number]
+                    ["<=", -49]
                 ])
             })
             test("==", () => {
                 assert(type("number==3211993").tree).narrowedValue([
                     "number",
-                    ["==", 3211993 as number]
+                    ["==", 3211993]
                 ])
             })
         })
@@ -61,27 +60,24 @@ describe("bound", () => {
             test("<,<=", () => {
                 assert(type("-5<number<=5").tree).narrowedValue([
                     "number",
-                    [">", -5 as number],
-                    ["<=", 5 as number]
+                    [">", -5],
+                    ["<=", 5]
                 ])
             })
             test("<=,<", () => {
                 assert(type("-3.23<=number<4.654").tree).narrowedValue([
                     "number",
-                    [">=", -3.23 as number],
-                    ["<", 4.654 as number]
+                    [">=", -3.23],
+                    ["<", 4.654]
                 ])
             })
         })
         describe("errors", () => {
             test("non-prefix left bound", () => {
-                // TODO: ts-morph 4.8
                 // @ts-expect-error
-                assert(() => type("string|5<number"))
-                    .throws(nonPrefixLeftBoundMessage(5, "<"))
-                    .type.errors(
-                        nonPrefixLeftBoundMessage("${number}" as any, "<")
-                    )
+                assert(() => type("string|5<number")).throwsAndHasTypeError(
+                    nonPrefixLeftBoundMessage(5, "<")
+                )
             })
             test("single equals", () => {
                 // @ts-expect-error
@@ -179,8 +175,8 @@ describe("bound", () => {
         test("parse", () => {
             assert(type("1<string<=5").tree).narrowedValue([
                 "string",
-                [">", 1 as number],
-                ["<=", 5 as number]
+                [">", 1],
+                ["<=", 5]
             ])
         })
         test("check", () => {
@@ -209,8 +205,8 @@ describe("bound", () => {
         test("parse", () => {
             assert(type("-343<=boolean[]<89").tree).narrowedValue([
                 ["boolean", "[]"],
-                [">=", -343 as number],
-                ["<", 89 as number]
+                [">=", -343],
+                ["<", 89]
             ])
         })
         test("check", () => {

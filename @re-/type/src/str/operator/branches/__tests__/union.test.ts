@@ -9,7 +9,7 @@ describe("union", () => {
         })
         test("several types", () => {
             assert(type("false|null|undefined|0|''").infer).typed as
-                | number
+                | 0
                 | false
                 | ""
                 | null

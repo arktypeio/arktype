@@ -31,8 +31,7 @@ describe("record", () => {
             assert(shallow().infer).typed as {
                 a: string
                 b: number
-                // TODO: ts-morph 4.8
-                c: number
+                c: 67
             }
         })
         describe("validation", () => {
