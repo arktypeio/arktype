@@ -23,23 +23,6 @@ import {
     Parser
 } from "./common.js"
 
-export type NonSuffixRightBoundMessage<
-    T extends Comparator,
-    Suffix extends string
-> = `Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (got '${Suffix}').`
-
-export const nonSuffixRightBoundMessage = <
-    Token extends Comparator,
-    Suffix extends string
->(
-    t: Token,
-    suffix: Suffix
-): NonSuffixRightBoundMessage<Token, Suffix> =>
-    `Right bound ${t} must be followed by a number literal and zero or more additional suffix tokens (got '${suffix}').`
-
-const untilNextSuffix: Parser.scanner.UntilCondition = (scanner) =>
-    scanner.lookahead === "?"
-
 export const parseSuffix = (
     s: Parser.state<Parser.left.suffix>,
     token: Comparator,
@@ -159,7 +142,6 @@ type ReduceSingle<
     nextSuffix: NextSuffix
 }>
 
-//TODO: Try out types to stop casting to any?
 const reduceSingle = (
     s: Parser.state.suffix<{ root: boundableNode }>,
     right: BoundDefinition,
@@ -178,11 +160,30 @@ const isValidDoubleBoundRight = (
     Parser.inTokenSet(right[0], doubleBoundComparators)
 
 export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
+
 export type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
 
 type UnboundableMessage<Root extends string> =
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
+
 export const unboundableMessage = <Root extends string>(
     Root: Root
 ): UnboundableMessage<Root> =>
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
+
+export type NonSuffixRightBoundMessage<
+    T extends Comparator,
+    Suffix extends string
+> = `Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (got '${Suffix}').`
+
+export const nonSuffixRightBoundMessage = <
+    Token extends Comparator,
+    Suffix extends string
+>(
+    t: Token,
+    suffix: Suffix
+): NonSuffixRightBoundMessage<Token, Suffix> =>
+    `Right bound ${t} must be followed by a number literal and zero or more additional suffix tokens (got '${suffix}').`
+
+const untilNextSuffix: Parser.scanner.UntilCondition = (scanner) =>
+    scanner.lookahead === "?"

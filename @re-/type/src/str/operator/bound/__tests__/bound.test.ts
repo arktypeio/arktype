@@ -28,31 +28,31 @@ describe("bound", () => {
             test(">", () => {
                 assert(type("number>0").tree).narrowedValue([
                     "number",
-                    [">", 0]
+                    [[">", 0]]
                 ])
             })
             test("<", () => {
                 assert(type("number<10").tree).narrowedValue([
                     "number",
-                    ["<", 10]
+                    [["<", 10]]
                 ])
             })
             test(">=", () => {
                 assert(type("number>=3.14159").tree).narrowedValue([
                     "number",
-                    [">=", 3.14159]
+                    [[">=", 3.14159]]
                 ])
             })
             test("<=", () => {
                 assert(type("number<=-49").tree).narrowedValue([
                     "number",
-                    ["<=", -49]
+                    [["<=", -49]]
                 ])
             })
             test("==", () => {
                 assert(type("number==3211993").tree).narrowedValue([
                     "number",
-                    ["==", 3211993]
+                    [["==", 3211993]]
                 ])
             })
         })
@@ -60,15 +60,19 @@ describe("bound", () => {
             test("<,<=", () => {
                 assert(type("-5<number<=5").tree).narrowedValue([
                     "number",
-                    [">", -5],
-                    ["<=", 5]
+                    [
+                        [">", -5],
+                        ["<=", 5]
+                    ]
                 ])
             })
             test("<=,<", () => {
                 assert(type("-3.23<=number<4.654").tree).narrowedValue([
                     "number",
-                    [">=", -3.23],
-                    ["<", 4.654]
+                    [
+                        [">=", -3.23],
+                        ["<", 4.654]
+                    ]
                 ])
             })
         })
@@ -133,7 +137,7 @@ describe("bound", () => {
                         ]
                         assert(singleBound.tree).equals([
                             "number",
-                            ...expectedBounds
+                            expectedBounds
                         ])
                         assertCheckResults(singleBound, expectedBounds)
                     }
@@ -162,7 +166,7 @@ describe("bound", () => {
                         ]
                         assert(doubleBound.tree).equals([
                             "number",
-                            ...expectedBounds
+                            expectedBounds
                         ])
                         assertCheckResults(doubleBound, expectedBounds)
                     }
@@ -175,8 +179,10 @@ describe("bound", () => {
         test("parse", () => {
             assert(type("1<string<=5").tree).narrowedValue([
                 "string",
-                [">", 1],
-                ["<=", 5]
+                [
+                    [">", 1],
+                    ["<=", 5]
+                ]
             ])
         })
         test("check", () => {
@@ -205,8 +211,10 @@ describe("bound", () => {
         test("parse", () => {
             assert(type("-343<=boolean[]<89").tree).narrowedValue([
                 ["boolean", "[]"],
-                [">=", -343],
-                ["<", 89]
+                [
+                    [">=", -343],
+                    ["<", 89]
+                ]
             ])
         })
         test("check", () => {

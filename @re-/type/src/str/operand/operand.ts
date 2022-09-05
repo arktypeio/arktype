@@ -22,7 +22,6 @@ import {
     ParseUnenclosedBase
 } from "./unenclosed/index.js"
 
-// TODO: Check setting variable ahead of time perf
 export const parseOperand = (
     s: Parser.state,
     ctx: Node.context

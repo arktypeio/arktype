@@ -2,6 +2,10 @@ import { Iterate } from "@re-/tools"
 import * as Node from "../node/exports.js"
 export * as Node from "../node/exports.js"
 
+export type constrainable<constraints> = {
+    constraints: constraints
+}
+
 export type NodeToString<
     Node,
     Result extends string = ""

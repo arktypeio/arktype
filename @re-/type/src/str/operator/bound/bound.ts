@@ -1,3 +1,4 @@
+import { Evaluate } from "@re-/tools"
 import { Keyword } from "../../operand/index.js"
 import {
     Comparator,
@@ -26,7 +27,7 @@ export type BoundsDefinition = SingleBoundDefinition | DoubleBoundDefinition
 export type Bound<
     Child = unknown,
     Bounds extends BoundsDefinition = BoundsDefinition
-> = [Child, ...Bounds]
+> = Evaluate<[Child, Bounds]>
 
 export class bound extends unary<boundableNode> {
     checkers: boundChecker[]
@@ -41,7 +42,7 @@ export class bound extends unary<boundableNode> {
     }
 
     get tree(): Bound<StrNode> {
-        return [this.child.tree, ...this.bounds]
+        return [this.child.tree, this.bounds]
     }
 
     override toString() {
@@ -94,6 +95,23 @@ export class bound extends unary<boundableNode> {
 }
 
 export type boundChecker = (y: number) => boolean
+
+export const checkBound = (value: number, [token, limit]: BoundDefinition) => {
+    switch (token) {
+        case "<=":
+            return value <= limit
+        case ">=":
+            return value >= limit
+        case "<":
+            return value < limit
+        case ">":
+            return value > limit
+        case "==":
+            return value === limit
+        default:
+            throw new Error(`Unexpected comparator ${token}.`)
+    }
+}
 
 export const createBoundChecker = ([token, x]: BoundDefinition) => {
     switch (token) {
@@ -148,7 +166,6 @@ export class BoundViolationDiagnostic extends Node.Allows
     ) {
         super("BoundViolation", args, node)
         this.message = boundViolationMessage(
-            this.data,
             this.comparator,
             this.limit,
             this.units,
@@ -158,12 +175,11 @@ export class BoundViolationDiagnostic extends Node.Allows
 }
 
 export const boundViolationMessage = (
-    value: unknown,
     comparator: Comparator,
     limit: number,
     units: BoundUnits | undefined,
     size: number
 ) =>
-    `${Node.Allows.stringifyValue(value)} must be ${
-        comparatorToString[comparator]
-    } ${limit}${units ? ` ${units} (was ${size})` : ""}.`
+    `Must be ${comparatorToString[comparator]} ${limit} ${
+        units ? `${units} ` : ""
+    }(got ${size}).`
