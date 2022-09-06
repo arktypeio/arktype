@@ -48,6 +48,9 @@ export const appendBenchUpdate = (
     update: QueuedUpdate,
     benchData: BenchHistory[]
 ) => {
+    if (update.snapFunctionName === "snap") {
+        return
+    }
     const currentResult = createResultObject(update)
     if (!currentResult) {
         return
@@ -78,7 +81,11 @@ export const findDuplicateBenchNames = (
     update: QueuedUpdate,
     queuedUpdates: QueuedUpdate[]
 ) => {
-    if (duplicateBenchNames[update.baselineName!]) {
+    if (
+        duplicateBenchNames[update.baselineName!] ||
+        !update.baselineName ||
+        update.snapFunctionName === "snap"
+    ) {
         return
     }
     const duplicates = queuedUpdates.filter(
