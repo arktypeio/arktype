@@ -147,6 +147,6 @@ export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
         public key: string
     ) {
         super("MissingKey", args, propNode)
-        this.message = `Missing required value of type ${this.type}.`
+        this.message = `Missing required value of type ${this.definition}.`
     }
 }

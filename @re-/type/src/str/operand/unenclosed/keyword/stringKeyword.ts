@@ -11,9 +11,23 @@ export type stringConstraints = {
     bounds?: BoundsDefinition
 }
 
-export type regexConstraint = {
-    description: string
-    expression: RegExp
+export class RegexMismatchDiagnostic extends Node.Allows
+    .Diagnostic<"RegexMismatch"> {
+    constructor(args: Node.Allows.Args, definition: string) {
+        super("RegexMismatch", args, definition)
+    }
+
+    message = `'${this.data}' does not match expression ${this.definition}.`
+}
+
+export class regexConstraint extends Node.constraint<RegExp, string> {
+    check(args: Node.Allows.Args<string>) {
+        if (!this.definition.test(args.value)) {
+            return args.diagnostics.push(
+                new RegexMismatchDiagnostic(args, `/${this.definition}/`)
+            )
+        }
+    }
 }
 
 export class stringNode
@@ -31,15 +45,12 @@ export class stringNode
             )
             return false
         }
-        if (this.constraints.regex) {
-            if (!this.constraints.regex.expression.test(args.value)) {
-                return false
-            }
-        }
         if (this.constraints.bounds) {
             for (const bound of this.constraints.bounds) {
                 if (!checkBound(args.value.length, bound)) {
-                    args.diagnostics.push(new BoundViolationDiagnostic())
+                    args.diagnostics.push(
+                        new BoundViolationDiagnostic(args, this)
+                    )
                 }
             }
         }

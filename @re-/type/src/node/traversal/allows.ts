@@ -138,14 +138,16 @@ export abstract class Diagnostic<
     AdditionalOptions = {}
 > {
     path: Traverse.Path
-    type: string
     data: unknown
     options: (BaseDiagnosticOptions<Code> & AdditionalOptions) | undefined
 
-    constructor(public readonly code: Code, args: Args, node: base) {
+    constructor(
+        public readonly code: Code,
+        args: Args,
+        public definition: string
+    ) {
         this.path = args.ctx.path
         this.data = args.value
-        this.type = node.toString()
         this.options = args.cfg.diagnostics?.[this.code] as any
     }
 
@@ -160,7 +162,7 @@ export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
     constructor(args: Args, node: base) {
         super("Unassignable", args, node)
         this.message = `${stringifyValue(this.data)} is not assignable to ${
-            this.type
+            this.definition
         }.`
     }
 }

@@ -54,7 +54,7 @@ describe("tuple", () => {
                         {
                             code: `TupleLength`,
                             path: [],
-                            type: `[
+                            definition: `[
     string,
     number,
     6

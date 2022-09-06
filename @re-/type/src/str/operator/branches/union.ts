@@ -152,7 +152,7 @@ export class UnionDiagnostic extends Node.Allows.Diagnostic<
         super("Union", args, node)
         this.message = `${Node.Allows.stringifyValue(
             this.data
-        )} is not assignable to any of ${this.type}${
+        )} is not assignable to any of ${this.definition}${
             this.options?.expand ? ":" : "."
         }`
         if (this.options?.expand) {

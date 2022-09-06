@@ -55,7 +55,7 @@ describe("record", () => {
                         {
                             code: `MissingKey`,
                             path: [`b`],
-                            type: `number`,
+                            definition: `number`,
                             data: undefined,
                             message: `Missing required value of type number.`,
                             key: `b`,
@@ -64,7 +64,7 @@ describe("record", () => {
                         {
                             code: `MissingKey`,
                             path: [`c`],
-                            type: `67`,
+                            definition: `67`,
                             data: undefined,
                             message: `Missing required value of type 67.`,
                             key: `c`,
@@ -92,7 +92,7 @@ describe("record", () => {
                         {
                             code: `ExtraneousKeys`,
                             path: [],
-                            type: `{
+                            definition: `{
     a: string,
     b: number,
     c: 67
