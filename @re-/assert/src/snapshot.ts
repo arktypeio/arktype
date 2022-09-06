@@ -5,10 +5,10 @@ import { fromCwd, readJson, requireResolve, shell, writeJson } from "@re-/node"
 import { toString } from "@re-/tools"
 import { CallExpression, Node, SourceFile, SyntaxKind, ts } from "ts-morph"
 import {
-    appendBenchUpdate,
+    assertNoDuplicateBenchNames,
     BenchHistory,
-    findDuplicateBenchNames,
-    logDuplicateNames
+    updateIsBench,
+    upsertBenchResult
 } from "./bench/benchHistory.js"
 import {
     getFileKey,
@@ -184,10 +184,10 @@ const writeUpdates = () => {
     if (!queuedUpdates.length) {
         return
     }
+    assertNoDuplicateBenchNames(queuedUpdates)
     const benchData: BenchHistory[] = existsSync(path) ? readJson(path) : []
     for (const update of queuedUpdates) {
-        findDuplicateBenchNames(update, queuedUpdates)
-        appendBenchUpdate(update, benchData)
+        updateIsBench(update) && upsertBenchResult(update, benchData)
         const originalArgs = update.snapCall.getArguments()
         const previousValue = originalArgs.length
             ? originalArgs[0].getText()
@@ -210,7 +210,6 @@ const writeUpdates = () => {
 process.on("exit", () => {
     try {
         writeUpdates()
-        logDuplicateNames()
     } catch (e) {
         console.error(e)
         throw e

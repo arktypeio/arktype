@@ -1,100 +1,100 @@
+import { relative } from "node:path"
+import { fromCwd, fromPackageRoot } from "@re-/node"
 import { QueuedUpdate } from "../snapshot.js"
-import { TimeAssertionName } from "./call.js"
 
 export type BenchResult = {
     timestamp: string
-    result: Record<TimeAssertionName | "type", any>
+    result: Record<string, any>
 }
 export type BenchHistory = {
     name: string
+    file: string
     results: BenchResult[]
 }
 
-let previousResults: any
-let previousBenchName = ""
-const timestamp = new Date().toDateString()
-const createResultObject = ({
-    baselineName,
-    snapFunctionName,
-    value
-}: QueuedUpdate): BenchResult | undefined => {
-    if (previousBenchName === baselineName) {
-        if (snapFunctionName !== "mark") {
-            previousResults.slice(-1)[0].result[snapFunctionName] = value
-        } else {
-            previousResults = {
-                ...previousResults[0].result,
-                ...value
-            }
-        }
-        return
-    } else {
-        let result: Record<string, any> = {}
-        if (snapFunctionName !== "mark") {
-            result[snapFunctionName] = value
-        } else {
-            result = value
-        }
-        return {
-            timestamp,
-            result
-        }
-    }
-}
-const getMatchingBenchEntry = (benchName: string, benchData: BenchHistory[]) =>
-    Object.entries(benchData).filter((entry) => entry[1].name === benchName)
-
-export const appendBenchUpdate = (
-    update: QueuedUpdate,
+const timestamp = new Date().toLocaleString()
+export const upsertBenchResult = (
+    { baselineName, snapFunctionName, value, position }: BenchUpdate,
     benchData: BenchHistory[]
 ) => {
-    if (update.snapFunctionName === "snap") {
-        return
-    }
-    const currentResult = createResultObject(update)
-    if (!currentResult) {
-        return
-    }
-    const matchedEntries = getMatchingBenchEntry(
-        update.baselineName!,
-        benchData
+    const file = relative(fromCwd(), position.file)
+    const matchingBenchHistory = benchData.find(
+        (data) => data.name === baselineName && data.file === file
     )
-    previousBenchName = update.baselineName!
-    if (matchedEntries.length) {
-        matchedEntries[0][1].results.push(currentResult)
-        previousResults = matchedEntries[0][1].results
+    const currentResult =
+        snapFunctionName === "mark" ? value : { [snapFunctionName]: value }
+    if (matchingBenchHistory) {
+        updateExistingBenchResult(matchingBenchHistory, currentResult)
     } else {
         benchData.push({
-            name: update.baselineName!,
-            results: [currentResult]
+            name: baselineName,
+            file,
+            results: [
+                {
+                    timestamp,
+                    result: currentResult
+                }
+            ]
         })
-        previousResults = benchData.slice(-1)[0].results
     }
 }
-
-const duplicateBenchNames: Record<string, boolean> = {}
-export const logDuplicateNames = () =>
-    Object.keys(duplicateBenchNames).forEach((name) =>
-        console.error(`❌ duplicate bench name found: "${name}"`)
-    )
-export const findDuplicateBenchNames = (
-    update: QueuedUpdate,
-    queuedUpdates: QueuedUpdate[]
+const updateExistingBenchResult = (
+    matchingBenchHistory: BenchHistory,
+    currentResult: BenchResult
 ) => {
     if (
-        duplicateBenchNames[update.baselineName!] ||
-        !update.baselineName ||
-        update.snapFunctionName === "snap"
+        timestamp ===
+        matchingBenchHistory.results[matchingBenchHistory.results.length - 1]
+            .timestamp
     ) {
-        return
+        Object.assign(
+            matchingBenchHistory.results[
+                matchingBenchHistory.results.length - 1
+            ].result,
+            currentResult
+        )
+    } else {
+        matchingBenchHistory.results.push({
+            timestamp,
+            result: currentResult
+        })
     }
-    const duplicates = queuedUpdates.filter(
-        (_) =>
-            _.baselineName === update.baselineName &&
-            _.snapCall.getStartLineNumber() !==
-                update.snapCall.getStartLineNumber()
-    )
-    if (duplicates.length) {
-        duplicateBenchNames[update.baselineName!] = true
+}
+type BenchUpdate = QueuedUpdate & { baselineName: string }
+export const updateIsBench = (update: QueuedUpdate): update is BenchUpdate =>
+    update.baselineName !== undefined
+
+export const assertNoDuplicateBenchNames = (queuedUpdates: QueuedUpdate[]) => {
+    const duplicatedNames: string[] = []
+    const benchNamesToLineAppearances: Record<string, number[]> = {}
+    for (const update of queuedUpdates) {
+        const name = update.baselineName
+        if (!name) {
+            return
+        }
+        //snapCall refers to the entire bench call so chained snap calls result in the same line number
+        const benchCallLine = update.snapCall.getStartLineNumber()
+        if (name in benchNamesToLineAppearances) {
+            if (!benchNamesToLineAppearances[name].includes(benchCallLine)) {
+                if (!duplicatedNames.includes(name)) {
+                    duplicatedNames.push(name)
+                }
+                benchNamesToLineAppearances[name].push(benchCallLine)
+            }
+        } else {
+            benchNamesToLineAppearances[name] = [benchCallLine]
+        }
+    }
+
+    if (duplicatedNames.length) {
+        const duplicateBenchNamesMessage = duplicatedNames.reduce(
+            (message, name) => {
+                return `${message}\n ${name} found on lines: ${benchNamesToLineAppearances[
+                    name
+                ].join(",")}`
+            },
+            `❌ duplicate bench names found in file ${queuedUpdates[0].position.file}:`
+        )
+        throw new Error(duplicateBenchNamesMessage)
     }
 }
