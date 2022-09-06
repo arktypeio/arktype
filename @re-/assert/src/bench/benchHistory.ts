@@ -1,5 +1,5 @@
 import { relative } from "node:path"
-import { fromCwd, fromPackageRoot } from "@re-/node"
+import { fromCwd } from "@re-/node"
 import { QueuedUpdate } from "../snapshot.js"
 
 export type BenchResult = {

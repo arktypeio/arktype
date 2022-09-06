@@ -5,7 +5,7 @@ import { bench } from "../../index.js"
 const fakeCallOptions = { until: { count: 2 }, fakeCallMs: "count" }
 
 bench(
-    "bench call single stat",
+    "bench call single stat median",
     () => {
         return "boofoozoo".includes("foo")
     },

@@ -1,0 +1,64 @@
+[
+    {
+        "name": "bench call single stat median",
+        "file": "src/bench/__tests__/benchTemplate.ts.temp.ts",
+        "results": [
+            {
+                "timestamp": "9/6/2022, 4:09:37 PM",
+                "result": {
+                    "median": "2.00ms"
+                }
+            }
+        ]
+    },
+    {
+        "name": "bench call single stat",
+        "file": "src/bench/__tests__/benchTemplate.ts.temp.ts",
+        "results": [
+            {
+                "timestamp": "9/6/2022, 4:09:37 PM",
+                "result": {
+                    "mean": "2.00ms"
+                }
+            }
+        ]
+    },
+    {
+        "name": "bench call mark",
+        "file": "src/bench/__tests__/benchTemplate.ts.temp.ts",
+        "results": [
+            {
+                "timestamp": "9/6/2022, 4:09:37 PM",
+                "result": {
+                    "mean": "2.00ms",
+                    "median": "2.00ms"
+                }
+            }
+        ]
+    },
+    {
+        "name": "bench type",
+        "file": "src/bench/__tests__/benchTemplate.ts.temp.ts",
+        "results": [
+            {
+                "timestamp": "9/6/2022, 4:09:37 PM",
+                "result": {
+                    "type": "51255 instantiations"
+                }
+            }
+        ]
+    },
+    {
+        "name": "bench call and type",
+        "file": "src/bench/__tests__/benchTemplate.ts.temp.ts",
+        "results": [
+            {
+                "timestamp": "9/6/2022, 4:09:37 PM",
+                "result": {
+                    "mean": "2.00ms",
+                    "type": "51255 instantiations"
+                }
+            }
+        ]
+    }
+]
