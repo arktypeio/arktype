@@ -202,7 +202,7 @@ const writeUpdates = () => {
             ...new Set(queuedUpdates.map((update) => update.file.getFilePath()))
         ]
         shell(`node ${prettierBin} --write ${updatedPaths.join(" ")}`)
-    } catch (e) {
+    } catch {
         // If prettier is unavailable, do nothing.
     }
     writeJson(path, benchData)
