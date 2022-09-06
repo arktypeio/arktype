@@ -1,9 +1,15 @@
 import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
-import { readJson, requireResolve, shell, writeJson } from "@re-/node"
+import { fromCwd, readJson, requireResolve, shell, writeJson } from "@re-/node"
 import { toString } from "@re-/tools"
 import { CallExpression, Node, SourceFile, SyntaxKind, ts } from "ts-morph"
+import {
+    appendBenchUpdate,
+    BenchHistory,
+    findDuplicateBenchNames,
+    logDuplicateNames
+} from "./bench/benchHistory.js"
 import {
     getFileKey,
     getReAssertConfig,
@@ -15,6 +21,7 @@ import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
 export interface SnapshotArgs {
     position: SourcePosition
     serializedValue: unknown
+    value: unknown
     snapFunctionName?: string
     baselineName?: string
 }
@@ -103,6 +110,7 @@ export const findCallExpressionAncestor = (
 export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
+    value,
     snapFunctionName = "snap",
     baselineName
 }: SnapshotArgs) => {
@@ -117,7 +125,9 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
         file,
         position,
         snapCall,
+        snapFunctionName,
         newArgText,
+        value,
         baselineName
     })
 }
@@ -157,22 +167,27 @@ export const getSnapshotByName = (
     return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
 
-type QueuedUpdate = {
+export type QueuedUpdate = {
     file: SourceFile
     position: SourcePosition
     snapCall: CallExpression
+    snapFunctionName: string
     newArgText: string
+    value: any
     baselineName: string | undefined
 }
-
 const queuedUpdates: QueuedUpdate[] = []
+const path = join(fromCwd(), "benchHistory.json")
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
-process.on("exit", () => {
+const writeUpdates = () => {
     if (!queuedUpdates.length) {
         return
     }
+    const benchData: BenchHistory[] = existsSync(path) ? readJson(path) : []
     for (const update of queuedUpdates) {
+        findDuplicateBenchNames(update, queuedUpdates)
+        appendBenchUpdate(update, benchData)
         const originalArgs = update.snapCall.getArguments()
         const previousValue = originalArgs.length
             ? originalArgs[0].getText()
@@ -187,8 +202,18 @@ process.on("exit", () => {
             ...new Set(queuedUpdates.map((update) => update.file.getFilePath()))
         ]
         shell(`node ${prettierBin} --write ${updatedPaths.join(" ")}`)
-    } catch {
+    } catch (e) {
         // If prettier is unavailable, do nothing.
+    }
+    writeJson(path, benchData)
+}
+process.on("exit", () => {
+    try {
+        writeUpdates()
+        logDuplicateNames()
+    } catch (e) {
+        console.error(e)
+        throw e
     }
 })
 
