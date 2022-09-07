@@ -94,7 +94,8 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
-                    serializedValue: this.serializedActual
+                    serializedValue: this.serializedActual,
+                    value: this.actual
                 }
                 if (this.ctx.cfg.precached) {
                     writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
@@ -118,6 +119,7 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSnapshot)) {
                 updateExternalSnapshot({
                     serializedValue: this.serializedActual,
+                    value: this.actual,
                     position: caller(),
                     name: args.id,
                     customPath: args.path

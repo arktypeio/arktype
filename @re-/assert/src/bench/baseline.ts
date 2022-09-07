@@ -21,6 +21,7 @@ export const queueBaselineUpdateIfNeeded = (
     queueInlineSnapshotWriteOnProcessExit({
         position: ctx.lastSnapCallPosition,
         serializedValue,
+        value: updated,
         snapFunctionName: ctx.kind,
         baselineName: ctx.name
     })
@@ -48,7 +49,7 @@ export const compareToBaseline = (
 }
 
 const handlePositiveDelta = (formattedDelta: string, ctx: BenchContext) => {
-    const message = `'${ctx.name}' exceeded baseline by ${formattedDelta} (treshold is ${ctx.cfg.benchPercentThreshold}%).`
+    const message = `'${ctx.name}' exceeded baseline by ${formattedDelta} (threshold is ${ctx.cfg.benchPercentThreshold}%).`
     console.error(`📈 ${message}`)
     if (ctx.cfg.benchErrorOnThresholdExceeded) {
         process.exitCode = 1
