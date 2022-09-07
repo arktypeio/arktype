@@ -27,9 +27,9 @@ type RecordLike = Record<string, unknown>
 export const isArgValueRecordLike = (
     args: Node.Allows.Args
 ): args is Node.Allows.Args<RecordLike> =>
-    typeof args.value === "object" &&
-    args.value !== null &&
-    !Array.isArray(args.value)
+    typeof args.data === "object" &&
+    args.data !== null &&
+    !Array.isArray(args.data)
 
 export class RecordNode extends obj {
     get tree() {
@@ -66,12 +66,12 @@ export class RecordNode extends obj {
     // TODO: Should maybe not use set for perf?
     private allowsProps(args: Node.Allows.Args<Record<string, unknown>>) {
         const result = {
-            extraneousValueKeys: new Set(Object.keys(args.value)),
+            extraneousValueKeys: new Set(Object.keys(args.data)),
             allSeenKeysAllowed: true
         }
         for (const [propKey, propNode] of this.entries) {
             const propArgs = this.argsForProp(args, propKey)
-            if (propKey in args.value) {
+            if (propKey in args.data) {
                 const propIsAllowed = propNode.allows(propArgs)
                 if (!propIsAllowed) {
                     result.allSeenKeysAllowed = false
@@ -93,7 +93,7 @@ export class RecordNode extends obj {
     ): Node.Allows.Args {
         return {
             ...args,
-            value: args.value[propKey],
+            data: args.data[propKey],
             ctx: {
                 ...args.ctx,
                 path: [...args.ctx.path, propKey]

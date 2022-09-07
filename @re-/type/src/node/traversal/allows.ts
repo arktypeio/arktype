@@ -10,20 +10,20 @@ import type { UnionDiagnostic } from "../../str/operator/exports.js"
 import type { base } from "../base.js"
 import * as Traverse from "./traverse.js"
 
-export type Args<Value = unknown> = {
-    value: Value
+export type Args<Data = unknown> = {
+    data: Data
     diagnostics: Diagnostics
     cfg: Options
     ctx: Context
 }
 
 export const createArgs = (
-    value: unknown,
+    data: unknown,
     options: Options = {},
     modelOptions: Options = {}
 ): Args => {
     const args = {
-        value,
+        data,
         diagnostics: new Diagnostics(),
         ctx: Traverse.createContext(modelOptions) as Context,
         cfg: options
@@ -61,7 +61,9 @@ export const customValidatorAllows = (
     const customMessages = typeof result === "string" ? [result] : result
     if (Array.isArray(customMessages)) {
         for (const message of customMessages) {
-            args.diagnostics.push(new CustomDiagnostic(args, node, message))
+            args.diagnostics.push(
+                new CustomDiagnostic(node.toString(), args, message)
+            )
         }
         return false
     }
@@ -87,8 +89,8 @@ export const getCustomErrorMessages = (
         }
     })
 
-export const stringifyValue = (value: unknown) =>
-    toString(value, {
+export const stringifyData = (data: unknown) =>
+    toString(data, {
         maxNestedStringLength: 50
     })
 
@@ -104,7 +106,7 @@ export const createBaseErrorContext = (
     args: Args
 ): BaseErrorContext => ({
     definition: node.toString(),
-    data: args.value,
+    data: args.data,
     path: args.ctx.path,
     tree: node.tree
 })
@@ -141,13 +143,9 @@ export abstract class Diagnostic<
     data: unknown
     options: (BaseDiagnosticOptions<Code> & AdditionalOptions) | undefined
 
-    constructor(
-        public readonly code: Code,
-        args: Args,
-        public definition: string
-    ) {
+    constructor(public readonly code: Code, public type: string, args: Args) {
         this.path = args.ctx.path
-        this.data = args.value
+        this.data = args.data
         this.options = args.cfg.diagnostics?.[this.code] as any
     }
 
@@ -159,17 +157,17 @@ export class ValidationError extends Error {}
 export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
     public message: string
 
-    constructor(args: Args, node: base) {
-        super("Unassignable", args, node)
-        this.message = `${stringifyValue(this.data)} is not assignable to ${
-            this.definition
+    constructor(type: string, args: Args) {
+        super("Unassignable", type, args)
+        this.message = `${stringifyData(this.data)} is not assignable to ${
+            this.type
         }.`
     }
 }
 
 export class CustomDiagnostic extends Diagnostic<"Custom"> {
-    constructor(args: Args, node: base, public message: string) {
-        super("Custom", args, node)
+    constructor(type: string, args: Args, public message: string) {
+        super("Custom", type, args)
     }
 }
 

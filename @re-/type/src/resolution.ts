@@ -68,17 +68,17 @@ export class ResolutionNode extends Node.base {
 
     allows(args: Node.Allows.Args): boolean {
         const nextArgs = this.nextArgs(args, this.ctx.validate)
-        if (typeof args.value === "object" && args.value !== null) {
+        if (typeof args.data === "object" && args.data !== null) {
             if (
-                args.ctx.checkedValuesByAlias[this.alias]?.includes(args.value)
+                args.ctx.checkedValuesByAlias[this.alias]?.includes(args.data)
             ) {
                 // If we've already seen this value, it must not have any errors or else we wouldn't be here
                 return true
             }
             if (!args.ctx.checkedValuesByAlias[this.alias]) {
-                nextArgs.ctx.checkedValuesByAlias[this.alias] = [args.value]
+                nextArgs.ctx.checkedValuesByAlias[this.alias] = [args.data]
             } else {
-                nextArgs.ctx.checkedValuesByAlias[this.alias].push(args.value)
+                nextArgs.ctx.checkedValuesByAlias[this.alias].push(args.data)
             }
         }
         const customValidator =

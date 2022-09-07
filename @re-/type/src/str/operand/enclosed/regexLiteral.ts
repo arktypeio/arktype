@@ -1,33 +1,39 @@
-import { Node, terminalNode } from "../common.js"
+import { Node } from "../common.js"
 
 export type RegexLiteralDefinition = `/${string}/`
 
-export class RegexLiteralNode extends terminalNode<RegexLiteralDefinition> {
-    private regex: RegExp
+export class RegexMismatchDiagnostic extends Node.Allows
+    .Diagnostic<"RegexMismatch"> {
+    message
 
-    constructor(def: RegexLiteralDefinition) {
-        super(def)
-        this.regex = new RegExp(def.slice(1, -1))
+    constructor(
+        type: string,
+        args: Node.Allows.Args,
+        public description: string
+    ) {
+        super("RegexMismatch", type, args)
+        this.message = `'${this.data}' must ${description}.`
+    }
+}
+
+export class regexConstraint extends Node.constraint<string, string> {
+    constructor(
+        definition: string,
+        public matcher: RegExp,
+        description = `match expression /${matcher.source}/`
+    ) {
+        super(definition, description)
     }
 
-    allows(args: Node.Allows.Args) {
-        if (typeof args.value !== "string") {
+    check(args: Node.Allows.Args<string>) {
+        if (!this.matcher.test(args.data)) {
             args.diagnostics.push(
-                new Node.Allows.UnassignableDiagnostic(args, this)
+                new RegexMismatchDiagnostic(
+                    this.definition,
+                    args,
+                    this.description
+                )
             )
-            return false
         }
-        if (!this.regex.test(args.value)) {
-            args.diagnostics.push(new RegexMismatchDiagnostic(args, this))
-            return false
-        }
-        return true
-    }
-
-    create() {
-        throw new Node.Create.UngeneratableError(
-            this.def,
-            "Regex generation is unsupported."
-        )
     }
 }

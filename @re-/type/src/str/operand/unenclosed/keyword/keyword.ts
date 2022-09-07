@@ -25,15 +25,11 @@ export namespace Keyword {
 
     export const matches = (def: string): def is Definition => def in nodes
 
-    export const parse = (def: Definition) => {
-        return new nodes[def](def)
-    }
+    export const parse = (def: Definition) => nodes[def]
 
     type KeywordsToNodes = typeof nodes
 
     type KeywordNode = KeywordsToNodes[keyof KeywordsToNodes]
 
-    type GetGeneratedType<Node extends KeywordNode> = ReturnType<
-        InstanceType<Node>["create"]
-    >
+    type GetGeneratedType<N extends KeywordNode> = ReturnType<N["create"]>
 }

@@ -31,7 +31,7 @@ export class optional extends unary {
     }
 
     allows(args: Node.Allows.Args) {
-        if (args.value === undefined) {
+        if (args.data === undefined) {
             return true
         }
         return this.child.allows(args)

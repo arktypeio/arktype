@@ -194,7 +194,7 @@ describe("bound", () => {
                 {
                     code: `BoundViolation`,
                     path: [],
-                    definition: `string>=3`,
+                    type: `string>=3`,
                     data: `no`,
                     comparator: `>=`,
                     limit: 3,

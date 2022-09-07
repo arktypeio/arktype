@@ -64,15 +64,15 @@ export class bound extends unary<boundableNode> {
         if (!this.child.allows(args)) {
             return false
         }
-        const size = this.child.checkSize(args.value)
+        const size = this.child.checkSize(args.data)
         let boundIndex = 0
         for (const checker of this.checkers) {
             if (!checker(size)) {
                 const [comparator, limit] = this.bounds[boundIndex]
                 args.diagnostics.push(
                     new BoundViolationDiagnostic(
+                        this.toString(),
                         args,
-                        this,
                         comparator,
                         limit,
                         size,
@@ -96,19 +96,48 @@ export class bound extends unary<boundableNode> {
 
 export type boundChecker = (y: number) => boolean
 
-export const checkBound = (value: number, [token, limit]: BoundDefinition) => {
+export type boundableData = number | string | unknown[]
+
+export class boundConstraint extends Node.constraint<
+    BoundDefinition,
+    boundableData
+> {
+    comparator: Comparator
+    limit: number
+
+    constructor(definition: BoundDefinition, description: string) {
+        super(definition, description)
+        this.comparator = definition[0]
+        this.limit = definition[1]
+    }
+
+    check(args: Node.Allows.Args<boundableData>) {
+        const size =
+            typeof args.data === "number" ? args.data : args.data.length
+        if (!isWithinBound(this.definition, size)) {
+            args.diagnostics.push(new BoundViolationDiagnostic())
+        }
+    }
+}
+
+export const isWithinBound = (
+    [token, limit]: BoundDefinition,
+    size: number
+) => {
     switch (token) {
         case "<=":
-            return value <= limit
+            return size <= limit
         case ">=":
-            return value >= limit
+            return size >= limit
         case "<":
-            return value < limit
+            return size < limit
         case ">":
-            return value > limit
+            return size > limit
         case "==":
-            return value === limit
+            return size === limit
         default:
+            // TODO: Does this work?
+            // c8 ignore next
             throw new Error(`Unexpected comparator ${token}.`)
     }
 }
@@ -157,14 +186,14 @@ export class BoundViolationDiagnostic extends Node.Allows
     public message: string
 
     constructor(
+        type: string,
         args: Node.Allows.Args,
-        node: Node.base,
         public comparator: Comparator,
         public limit: number,
         public size: number,
         public units: BoundUnits | undefined
     ) {
-        super("BoundViolation", args, node)
+        super("BoundViolation", type, args)
         this.message = boundViolationMessage(
             this.comparator,
             this.limit,

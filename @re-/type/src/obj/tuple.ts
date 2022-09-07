@@ -14,14 +14,14 @@ export class TupleNode extends obj {
     }
 
     allows(args: Node.Allows.Args) {
-        if (!Array.isArray(args.value)) {
+        if (!Array.isArray(args.data)) {
             args.diagnostics.push(
                 new Node.Allows.UnassignableDiagnostic(args, this)
             )
             return false
         }
         const expectedLength = this.entries.length
-        const actualLength = args.value.length
+        const actualLength = args.data.length
         if (expectedLength !== actualLength) {
             args.diagnostics.push(
                 new TupleLengthDiagnostic(
@@ -41,7 +41,7 @@ export class TupleNode extends obj {
         for (const [itemIndex, itemNode] of this.entries) {
             const itemIsAllowed = itemNode.allows({
                 ...args,
-                value: args.value[itemIndex as any],
+                data: args.data[itemIndex as any],
                 ctx: {
                     ...args.ctx,
                     path: [...args.ctx.path, itemIndex]

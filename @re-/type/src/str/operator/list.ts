@@ -37,18 +37,16 @@ export class list extends unary implements boundableNode {
     }
 
     allows(args: Node.Allows.Args) {
-        if (!Array.isArray(args.value)) {
-            args.diagnostics.push(
-                new Node.Allows.UnassignableDiagnostic(args, this)
-            )
+        if (!Array.isArray(args.data)) {
+            new Node.Allows.UnassignableDiagnostic(this.toString(), args)
             return false
         }
         let allItemsAllowed = true
         let itemIndex = 0
-        for (const itemValue of args.value) {
+        for (const itemValue of args.data) {
             const itemIsAllowed = this.child.allows({
                 ...args,
-                value: itemValue,
+                data: itemValue,
                 ctx: {
                     ...args.ctx,
                     path: [...args.ctx.path, itemIndex]

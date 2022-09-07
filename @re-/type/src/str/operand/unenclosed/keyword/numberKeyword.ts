@@ -2,11 +2,11 @@ import { boundableNode, Node, terminalNode } from "./common.js"
 
 abstract class BaseNumberKeyword extends terminalNode implements boundableNode {
     allows(args: Node.Allows.Args) {
-        if (typeof args.value === "number" && this.allowsNumber(args.value)) {
+        if (typeof args.data === "number" && this.allowsNumber(args.data)) {
             return true
         }
         args.diagnostics.push(
-            new Node.Allows.UnassignableDiagnostic(args, this)
+            new Node.Allows.UnassignableDiagnostic(this.toString(), args)
         )
         return false
     }
@@ -35,6 +35,6 @@ export class IntegerKeyword extends BaseNumberKeyword {
 }
 
 export const numberKeywordsToNodes = {
-    number: NumberKeyword,
-    integer: IntegerKeyword
+    number: new NumberKeyword("number"),
+    integer: new IntegerKeyword("integer")
 }

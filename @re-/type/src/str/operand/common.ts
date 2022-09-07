@@ -40,11 +40,11 @@ export abstract class primitiveLiteralNode<
     }
 
     allows(args: Node.Allows.Args) {
-        if (args.value === this.value) {
+        if (args.data === this.value) {
             return true
         }
         args.diagnostics.push(
-            new Node.Allows.UnassignableDiagnostic(args, this)
+            new Node.Allows.UnassignableDiagnostic(this.toString(), args)
         )
         return false
     }

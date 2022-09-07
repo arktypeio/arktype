@@ -2,11 +2,11 @@ import { Node, terminalNode } from "./common.js"
 
 abstract class BaseTypeKeyword extends terminalNode {
     allows(args: Node.Allows.Args) {
-        if (this.allowsValue(args.value)) {
+        if (this.allowsValue(args.data)) {
             return true
         }
         args.diagnostics.push(
-            new Node.Allows.UnassignableDiagnostic(args, this)
+            new Node.Allows.UnassignableDiagnostic(this.toString(), args)
         )
         return false
     }
@@ -15,6 +15,10 @@ abstract class BaseTypeKeyword extends terminalNode {
 }
 
 export class SymbolKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("symbol")
+    }
+
     allowsValue(value: unknown) {
         return typeof value === "symbol"
     }
@@ -25,6 +29,10 @@ export class SymbolKeyword extends BaseTypeKeyword {
 }
 
 export class FunctionKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("function")
+    }
+
     allowsValue(value: unknown) {
         return typeof value === "function"
     }
@@ -35,6 +43,10 @@ export class FunctionKeyword extends BaseTypeKeyword {
 }
 
 export class TrueKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("true")
+    }
+
     allowsValue(value: unknown) {
         return value === true
     }
@@ -45,6 +57,10 @@ export class TrueKeyword extends BaseTypeKeyword {
 }
 
 export class FalseKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("false")
+    }
+
     allowsValue(value: unknown) {
         return value === false
     }
@@ -55,6 +71,10 @@ export class FalseKeyword extends BaseTypeKeyword {
 }
 
 export class UndefinedKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("undefined")
+    }
+
     allowsValue(value: unknown) {
         return value === undefined
     }
@@ -65,6 +85,10 @@ export class UndefinedKeyword extends BaseTypeKeyword {
 }
 
 export class NullKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("null")
+    }
+
     allowsValue(value: unknown) {
         return value === null
     }
@@ -75,6 +99,10 @@ export class NullKeyword extends BaseTypeKeyword {
 }
 
 export class AnyKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("any")
+    }
+
     allowsValue() {
         return true
     }
@@ -85,6 +113,10 @@ export class AnyKeyword extends BaseTypeKeyword {
 }
 
 export class UnknownKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("unknown")
+    }
+
     allowsValue() {
         return true
     }
@@ -95,6 +127,10 @@ export class UnknownKeyword extends BaseTypeKeyword {
 }
 
 export class VoidKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("void")
+    }
+
     allowsValue(value: unknown) {
         return value === undefined
     }
@@ -105,6 +141,10 @@ export class VoidKeyword extends BaseTypeKeyword {
 }
 
 export class NeverKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("never")
+    }
+
     allowsValue() {
         return false
     }
@@ -118,6 +158,10 @@ export class NeverKeyword extends BaseTypeKeyword {
 }
 
 export class ObjectKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("object")
+    }
+
     allowsValue(value: unknown) {
         return typeof value === "object" && value !== null
     }
@@ -128,6 +172,10 @@ export class ObjectKeyword extends BaseTypeKeyword {
 }
 
 export class BooleanKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("boolean")
+    }
+
     allowsValue(value: unknown) {
         return typeof value === "boolean"
     }
@@ -138,6 +186,10 @@ export class BooleanKeyword extends BaseTypeKeyword {
 }
 
 export class BigintKeyword extends BaseTypeKeyword {
+    constructor() {
+        super("bigint")
+    }
+
     allowsValue(value: unknown) {
         return typeof value === "bigint"
     }
@@ -148,17 +200,17 @@ export class BigintKeyword extends BaseTypeKeyword {
 }
 
 export const typeKeywordsToNodes = {
-    any: AnyKeyword,
-    bigint: BigintKeyword,
-    boolean: BooleanKeyword,
-    false: FalseKeyword,
-    function: FunctionKeyword,
-    never: NeverKeyword,
-    null: NullKeyword,
-    object: ObjectKeyword,
-    symbol: SymbolKeyword,
-    true: TrueKeyword,
-    undefined: UndefinedKeyword,
-    unknown: UnknownKeyword,
-    void: VoidKeyword
+    any: new AnyKeyword(),
+    bigint: new BigintKeyword(),
+    boolean: new BooleanKeyword(),
+    false: new FalseKeyword(),
+    function: new FunctionKeyword(),
+    never: new NeverKeyword(),
+    null: new NullKeyword(),
+    object: new ObjectKeyword(),
+    symbol: new SymbolKeyword(),
+    true: new TrueKeyword(),
+    undefined: new UndefinedKeyword(),
+    unknown: new UnknownKeyword(),
+    void: new VoidKeyword()
 }

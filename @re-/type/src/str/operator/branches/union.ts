@@ -81,7 +81,9 @@ export class union extends branch {
             }
             unionDiagnostics.push([child.toString(), branchDiagnostics])
         }
-        args.diagnostics.push(new UnionDiagnostic(args, this, unionDiagnostics))
+        args.diagnostics.push(
+            new UnionDiagnostic(this.toString(), args, unionDiagnostics)
+        )
         return false
     }
 
@@ -145,14 +147,14 @@ export class UnionDiagnostic extends Node.Allows.Diagnostic<
     public message: string
 
     constructor(
+        type: string,
         args: Node.Allows.Args,
-        node: Node.base,
         public branches: DiagnosticBranchEntry[]
     ) {
-        super("Union", args, node)
-        this.message = `${Node.Allows.stringifyValue(
+        super("Union", type, args)
+        this.message = `${Node.Allows.stringifyData(
             this.data
-        )} is not assignable to any of ${this.definition}${
+        )} is not assignable to any of ${this.type}${
             this.options?.expand ? ":" : "."
         }`
         if (this.options?.expand) {

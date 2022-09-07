@@ -1,58 +1,33 @@
-import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import {
-    BoundsDefinition,
-    BoundViolationDiagnostic,
-    checkBound
-} from "../../../operator/bound/bound.js"
+import { alphaNumericRegex, alphaOnlyRegex } from "@re-/tools"
+import { boundConstraint } from "../../../operator/bound/bound.js"
+import { regexConstraint } from "../../enclosed/index.js"
 import { constrainable, Node, terminalNode } from "./common.js"
 
-export type stringConstraints = {
-    regex?: regexConstraint
-    bounds?: BoundsDefinition
-}
-
-export class RegexMismatchDiagnostic extends Node.Allows
-    .Diagnostic<"RegexMismatch"> {
-    constructor(args: Node.Allows.Args, definition: string) {
-        super("RegexMismatch", args, definition)
-    }
-
-    message = `'${this.data}' does not match expression ${this.definition}.`
-}
-
-export class regexConstraint extends Node.constraint<RegExp, string> {
-    check(args: Node.Allows.Args<string>) {
-        if (!this.definition.test(args.value)) {
-            return args.diagnostics.push(
-                new RegexMismatchDiagnostic(args, `/${this.definition}/`)
-            )
-        }
-    }
-}
+export type stringConstraint = regexConstraint | boundConstraint
 
 export class stringNode
     extends terminalNode
-    implements constrainable<stringConstraints>
+    implements constrainable<stringConstraint>
 {
-    constructor(def: string, public constraints: stringConstraints) {
+    constructor(def: string, public constraints: stringConstraint[]) {
         super(def)
     }
 
+    private dataIsString(
+        args: Node.Allows.Args
+    ): args is Node.Allows.Args<string> {
+        return typeof args.data === "string"
+    }
+
     allows(args: Node.Allows.Args) {
-        if (typeof args.value !== "string") {
+        if (!this.dataIsString(args)) {
             args.diagnostics.push(
-                new Node.Allows.UnassignableDiagnostic(args, this)
+                new Node.Allows.UnassignableDiagnostic(this.toString(), args)
             )
             return false
         }
-        if (this.constraints.bounds) {
-            for (const bound of this.constraints.bounds) {
-                if (!checkBound(args.value.length, bound)) {
-                    args.diagnostics.push(
-                        new BoundViolationDiagnostic(args, this)
-                    )
-                }
-            }
+        for (const constraint of this.constraints) {
+            constraint.check(args)
         }
         return true
     }
@@ -60,59 +35,35 @@ export class stringNode
     create() {
         return ""
     }
-
-    readonly units = "characters"
-
-    checkSize(value: string) {
-        return value.length
-    }
 }
 
-// export class StringKeyword extends BaseStringKeyword {
-//     allowsString() {
-//         return true
-//     }
-// }
-
-// export class EmailKeyword extends BaseStringKeyword {
-//     allowsString(value: string) {
-//         return /^(.+)@(.+)\.(.+)$/.test(value)
-//     }
-
-//     override create() {
-//         return "david@redo.dev"
-//     }
-// }
-
-// export class AlphaKeyword extends BaseStringKeyword {
-//     allowsString(value: string) {
-//         return isAlpha(value)
-//     }
-// }
-
-// export class AlphaNumKeyword extends BaseStringKeyword {
-//     allowsString(value: string) {
-//         return isAlphaNumeric(value)
-//     }
-// }
-
-// export class LowerKeyword extends BaseStringKeyword {
-//     allowsString(value: string) {
-//         return value === value.toLowerCase()
-//     }
-// }
-
-// export class UpperKeyword extends BaseStringKeyword {
-//     allowsString(value: string) {
-//         return value === value.toUpperCase()
-//     }
-// }
-
-// export const stringKeywordsToNodes = {
-//     string: StringKeyword,
-//     email: EmailKeyword,
-//     alpha: AlphaKeyword,
-//     alphanum: AlphaNumKeyword,
-//     lower: LowerKeyword,
-//     upper: UpperKeyword
-// }
+export const stringKeywordsToNodes = {
+    string: new stringNode("string", []),
+    email: new stringNode("email", [
+        new regexConstraint("email", /^(.+)@(.+)\.(.+)$/, "be a valid email")
+    ]),
+    alpha: new stringNode("alpha", [
+        new regexConstraint("alpha", alphaOnlyRegex, "include only letters")
+    ]),
+    alphanumeric: new stringNode("alphanumeric", [
+        new regexConstraint(
+            "alphanumeric",
+            alphaNumericRegex,
+            "include only letters and numbers"
+        )
+    ]),
+    lower: new stringNode("lower", [
+        new regexConstraint(
+            "lower",
+            /^[a-z]*$/,
+            "include only lowercase letters"
+        )
+    ]),
+    upper: new stringNode("upper", [
+        new regexConstraint(
+            "upper",
+            /^[A-Z]*$/,
+            "include only uppercase letters"
+        )
+    ])
+}
