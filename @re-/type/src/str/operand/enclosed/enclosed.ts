@@ -60,6 +60,17 @@ export type ParseEnclosedBase<
       }>
     : Parser.State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 
+// export type ParseUnenclosedBase2<
+//     S extends Parser.State,
+//     Fragment extends string,
+//     Unscanned extends string,
+//     Dict
+// > = Unscanned extends Parser.Scanner.Shift<infer Next, infer Rest>
+//     ? Next extends BaseTerminatingChar
+//         ? ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
+//         : ParseUnenclosedBase<S, `${Fragment}${Next}`, Rest, Dict>
+//     : ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
+
 const throwUnterminatedEnclosed: Parser.scanner.OnInputEndFn = (
     scanner,
     shifted
