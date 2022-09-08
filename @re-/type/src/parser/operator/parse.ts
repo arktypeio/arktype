@@ -11,7 +11,7 @@ import { ParseList, parseList } from "./list.js"
 
 export const parseOperator = (
     s: Parser.state.withRoot,
-    ctx: Node.context
+    ctx: Nodes.context
 ): Parser.state => {
     const lookahead = s.r.shift()
     return lookahead === "END"

@@ -5,7 +5,7 @@ import { Node, terminalNode } from "../../../parser/operand/common.js"
 export namespace Alias {
     export type Infer<
         Def extends keyof Ctx["Dict"],
-        Ctx extends Node.InferenceContext
+        Ctx extends Nodes.InferenceContext
     > = "onResolve" extends keyof Ctx["Meta"]
         ? Def extends "$resolution"
             ? BaseOf<Def, Ctx>
@@ -18,12 +18,12 @@ export namespace Alias {
 
     type BaseOf<
         Def extends keyof Ctx["Dict"],
-        Ctx extends Node.InferenceContext
+        Ctx extends Nodes.InferenceContext
     > = Root.Infer<Ctx["Dict"][Def], Ctx & { Seen: { [K in Def]: true } }>
 
     type OnResolveOf<
         Def extends keyof Ctx["Dict"],
-        Ctx extends Node.InferenceContext
+        Ctx extends Nodes.InferenceContext
     > = Root.Infer<
         Ctx["Meta"]["onResolve"],
         {
@@ -35,7 +35,7 @@ export namespace Alias {
 
     type OnCycleOf<
         Def extends keyof Ctx["Dict"],
-        Ctx extends Node.InferenceContext
+        Ctx extends Nodes.InferenceContext
     > = Root.Infer<
         Ctx["Meta"]["onCycle"],
         {
@@ -47,11 +47,11 @@ export namespace Alias {
 }
 
 export class alias extends terminalNode {
-    static matches(def: string, ctx: Node.context) {
+    static matches(def: string, ctx: Nodes.context) {
         return !!ctx.space && def in ctx.space.dictionary
     }
 
-    constructor(def: string, private ctx: Node.context) {
+    constructor(def: string, private ctx: Nodes.context) {
         super(def)
     }
 
@@ -59,11 +59,11 @@ export class alias extends terminalNode {
         return this.ctx.space!.resolutions[this.def]
     }
 
-    allows(args: Node.Allows.Args): boolean {
+    allows(args: Nodes.Allows.Args): boolean {
         return this.resolution.allows(args)
     }
 
-    create(args: Node.Create.Args): unknown {
+    create(args: Nodes.Create.Args): unknown {
         return this.resolution.create(args)
     }
 }

@@ -24,7 +24,7 @@ import {
 
 export const parseOperand = (
     s: Parser.state,
-    ctx: Node.context
+    ctx: Nodes.context
 ): Parser.state =>
     s.r.lookahead === "("
         ? reduceGroupOpen(s.shifted())
@@ -54,7 +54,7 @@ export type ParseOperand<
 
 export type InferTerminal<
     Token extends string,
-    Ctx extends Node.InferenceContext
+    Ctx extends Nodes.InferenceContext
 > = Token extends Keyword.Definition
     ? Keyword.Types[Token]
     : Token extends keyof Ctx["Dict"]

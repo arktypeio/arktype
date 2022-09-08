@@ -13,7 +13,7 @@ export class state<constraints extends Partial<left> = {}> {
     }
 
     error(message: string): never {
-        throw new Node.parseError(message)
+        throw new Nodes.parseError(message)
     }
 
     hasRoot<NodeClass extends ClassOf<strNode> = ClassOf<strNode>>(

@@ -7,10 +7,10 @@ export class union extends branch {
 
     token = "|" as const
 
-    allows(args: Node.Allows.Args) {
+    allows(args: Nodes.Allows.Args) {
         const unionDiagnostics: DiagnosticBranchEntry[] = []
         for (const child of this.children) {
-            const branchDiagnostics = new Node.Allows.Diagnostics()
+            const branchDiagnostics = new Nodes.Allows.Diagnostics()
             if (child.allows({ ...args, diagnostics: branchDiagnostics })) {
                 // If any branch of a Union does not have errors,
                 // we can return right away since the whole definition is valid
@@ -24,7 +24,7 @@ export class union extends branch {
         return false
     }
 
-    create(args: Node.Create.Args) {
+    create(args: Nodes.Create.Args) {
         const nextGenResults = this.generateChildren(args)
         if (!nextGenResults.values.length) {
             this.throwAllMembersUngeneratableError(nextGenResults.errors, args)
@@ -44,7 +44,7 @@ export class union extends branch {
         )
     }
 
-    private generateChildren(args: Node.Create.Args) {
+    private generateChildren(args: Nodes.Create.Args) {
         const results = {
             values: [] as unknown[],
             errors: [] as string[]
@@ -53,7 +53,7 @@ export class union extends branch {
             try {
                 results.values.push(node.create(args))
             } catch (error) {
-                if (error instanceof Node.Create.UngeneratableError) {
+                if (error instanceof Nodes.Create.UngeneratableError) {
                     results.errors.push(error.message)
                 } else {
                     throw error
@@ -65,9 +65,9 @@ export class union extends branch {
 
     private throwAllMembersUngeneratableError(
         errors: string[],
-        args: Node.Create.Args
+        args: Nodes.Create.Args
     ) {
-        throw new Node.Create.UngeneratableError(
+        throw new Nodes.Create.UngeneratableError(
             this.toString(),
             "None of the definitions can be generated" +
                 (args.cfg.verbose ? `:\n${errors.join("\n")}` : ".")
@@ -75,9 +75,9 @@ export class union extends branch {
     }
 }
 
-export type DiagnosticBranchEntry = [string, Node.Allows.Diagnostics]
+export type DiagnosticBranchEntry = [string, Nodes.Allows.Diagnostics]
 
-export class UnionDiagnostic extends Node.Allows.Diagnostic<
+export class UnionDiagnostic extends Nodes.Allows.Diagnostic<
     "Union",
     { expand?: boolean }
 > {
@@ -85,7 +85,7 @@ export class UnionDiagnostic extends Node.Allows.Diagnostic<
 
     constructor(
         public type: string,
-        args: Node.Allows.Args,
+        args: Nodes.Allows.Args,
         public branches: DiagnosticBranchEntry[]
     ) {
         super("Union", args)

@@ -11,10 +11,10 @@ export class TupleNode extends obj<TupleDefinition> {
         return this.entries.map(([, itemNode]) => itemNode.tree)
     }
 
-    allows(args: Node.Allows.Args) {
+    allows(args: Nodes.Allows.Args) {
         if (!Array.isArray(args.data)) {
             args.diagnostics.push(
-                new Node.Allows.UnassignableDiagnostic(this.toString(), args)
+                new Nodes.Allows.UnassignableDiagnostic(this.toString(), args)
             )
             return false
         }
@@ -26,10 +26,10 @@ export class TupleNode extends obj<TupleDefinition> {
             )
             return false
         }
-        return this.allowsItems(args as Node.Allows.Args<unknown[]>)
+        return this.allowsItems(args as Nodes.Allows.Args<unknown[]>)
     }
 
-    private allowsItems(args: Node.Allows.Args<unknown[]>) {
+    private allowsItems(args: Nodes.Allows.Args<unknown[]>) {
         let allItemsAllowed = true
         for (const [itemIndex, itemNode] of this.entries) {
             const itemIsAllowed = itemNode.allows({
@@ -47,7 +47,7 @@ export class TupleNode extends obj<TupleDefinition> {
         return allItemsAllowed
     }
 
-    create(args: Node.Create.Args) {
+    create(args: Nodes.Create.Args) {
         const result: unknown[] = []
         for (const [itemIndex, itemNode] of this.entries) {
             result.push(
@@ -64,12 +64,12 @@ export class TupleNode extends obj<TupleDefinition> {
     }
 }
 
-export class TupleLengthDiagnostic extends Node.Allows
+export class TupleLengthDiagnostic extends Nodes.Allows
     .Diagnostic<"TupleLength"> {
     public message: string
 
     constructor(
-        args: Node.Allows.Args,
+        args: Nodes.Allows.Args,
         public expectedLength: number,
         public actualLength: number
     ) {

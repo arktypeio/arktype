@@ -3,7 +3,7 @@ import { Node, Parser, StrNode, Unary, unary } from "./common.js"
 
 export const parseList = (
     s: Parser.state<Parser.left.withRoot>,
-    ctx: Node.context
+    ctx: Nodes.context
 ) => {
     const next = s.r.shift()
     if (next !== "]") {
@@ -36,9 +36,9 @@ export class list extends unary implements boundableNode {
         return [this.child.tree, "[]"]
     }
 
-    allows(args: Node.Allows.Args) {
+    allows(args: Nodes.Allows.Args) {
         if (!Array.isArray(args.data)) {
-            new Node.Allows.UnassignableDiagnostic(this.toString(), args)
+            new Nodes.Allows.UnassignableDiagnostic(this.toString(), args)
             return false
         }
         let allItemsAllowed = true

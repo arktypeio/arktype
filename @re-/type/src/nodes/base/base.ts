@@ -1,6 +1,8 @@
-import type { MetaDefinitions, Space, SpaceMeta } from "../space.js"
-import type { TypeOptions } from "../type.js"
-import { Allows, Create, References } from "./traversal/index.js"
+import type { MetaDefinitions, Space, SpaceMeta } from "../../space.js"
+import type { TypeOptions } from "../../type.js"
+import { Allows } from "./traversal/allows.js"
+import { Create } from "./traversal/create.js"
+import { References } from "./traversal/references.js"
 
 export type context = TypeOptions & {
     path: string[]

@@ -4,8 +4,10 @@ import { Node, strNode, StrNode } from "../common.js"
 
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 
-export abstract class unary<Child extends strNode = strNode> extends Node.base {
-    constructor(protected child: Child, protected ctx: Node.context) {
+export abstract class unary<
+    Child extends strNode = strNode
+> extends Nodes.base {
+    constructor(protected child: Child, protected ctx: Nodes.context) {
         super()
     }
 
@@ -16,8 +18,8 @@ export abstract class unary<Child extends strNode = strNode> extends Node.base {
     }
 
     collectReferences(
-        opts: Node.References.Options,
-        collected: Node.References.Collection
+        opts: Nodes.References.Options,
+        collected: Nodes.References.Collection
     ) {
         this.child.collectReferences(opts, collected)
     }

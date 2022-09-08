@@ -11,7 +11,7 @@ export type ParseOptional<S extends Parser.State> = S["R"] extends ""
       }>
     : Parser.State.Error<NonTerminatingOptionalMessage>
 
-export const parseOptional = (s: Parser.state.suffix, ctx: Node.context) => {
+export const parseOptional = (s: Parser.state.suffix, ctx: Nodes.context) => {
     if (s.r.lookahead !== "END") {
         throw new Error(nonTerminatingOptionalMessage)
     }
@@ -30,7 +30,7 @@ export class optional extends unary {
         return [this.child.tree, "?"]
     }
 
-    allows(args: Node.Allows.Args) {
+    allows(args: Nodes.Allows.Args) {
         if (args.data === undefined) {
             return true
         }

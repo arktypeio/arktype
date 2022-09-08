@@ -14,14 +14,14 @@ export type Parse<Def, Dict> = Evaluate<{
 
 export type Infer<
     Def,
-    Ctx extends Node.InferenceContext
+    Ctx extends Nodes.InferenceContext
 > = Def extends readonly unknown[]
     ? InferTuple<Def, Ctx>
     : Record.Infer<Def, Ctx>
 
 export type InferTuple<
     Def extends readonly unknown[],
-    Ctx extends Node.InferenceContext
+    Ctx extends Nodes.InferenceContext
 > = Evaluate<{
     [I in keyof Def]: Root.Infer<Def[I], Ctx>
 }>
@@ -50,7 +50,7 @@ type StructuredReferences<Def, Dict> = Evaluate<{
     [K in keyof Def]: Root.References<Def[K], Dict, true>
 }>
 
-export const parse: Node.parseFn<object> = (def, ctx) => {
+export const parse: Nodes.parseFn<object> = (def, ctx) => {
     if (TupleNode.matches(def)) {
         return new TupleNode(def, ctx)
     }

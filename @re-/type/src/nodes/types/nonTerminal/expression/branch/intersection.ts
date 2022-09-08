@@ -11,7 +11,7 @@ export class intersection extends branch {
 
     token = "&" as const
 
-    allows(args: Node.Allows.Args) {
+    allows(args: Nodes.Allows.Args) {
         for (const branch of this.children) {
             if (!branch.allows(args)) {
                 return false
@@ -21,7 +21,7 @@ export class intersection extends branch {
     }
 
     create() {
-        throw new Node.Create.UngeneratableError(
+        throw new Nodes.Create.UngeneratableError(
             this.toString(),
             "Intersection generation is unsupported."
         )

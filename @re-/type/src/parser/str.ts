@@ -1,4 +1,3 @@
-import { Node } from "./common.js"
 import * as Main from "./main.js"
 import * as Naive from "./naive.js"
 import { InferTerminal } from "./operand/index.js"
@@ -10,16 +9,16 @@ export namespace Str {
     export type Validate<Def extends string, Dict> = Parse<
         Def,
         Dict
-    > extends Node.ParseError<infer Message>
+    > extends Nodes.ParseError<infer Message>
         ? Message
         : Def
 
     export type Infer<
         Def extends string,
-        Ctx extends Node.InferenceContext
+        Ctx extends Nodes.InferenceContext
     > = TreeInfer<Parse<Def, Ctx["Dict"]>, Ctx>
 
-    type TreeInfer<T, Ctx extends Node.InferenceContext> = T extends string
+    type TreeInfer<T, Ctx extends Nodes.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>
         : T extends Operator.Optional<infer Child>
         ? TreeInfer<Child, Ctx> | undefined
@@ -45,6 +44,6 @@ export namespace Str {
         ? TreeReferences<Child>
         : [T]
 
-    export const parse: Node.parseFn<string> = (def, ctx) =>
+    export const parse: Nodes.parseFn<string> = (def, ctx) =>
         Naive.tryParse(def, ctx) ?? Main.parse(def, ctx)
 }

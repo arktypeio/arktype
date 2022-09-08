@@ -31,7 +31,7 @@ export type TryParse<Def extends string, Dict> = Def extends `${infer Child}?`
     ? Def
     : Parse<Def, Dict>
 
-export const tryParse = (def: string, ctx: Node.context) => {
+export const tryParse = (def: string, ctx: Nodes.context) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
@@ -41,7 +41,7 @@ export const tryParse = (def: string, ctx: Node.context) => {
     return tryParseList(def, ctx)
 }
 
-const tryParseList = (def: string, ctx: Node.context) => {
+const tryParseList = (def: string, ctx: Nodes.context) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(
             def.slice(0, -2),

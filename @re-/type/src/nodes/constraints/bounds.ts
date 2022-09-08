@@ -1,12 +1,12 @@
 import { Evaluate } from "@re-/tools"
 import { Keyword } from "../../operand/index.js"
+import { Allows } from "../base/traversal/allows.js"
 import {
     Comparator,
     comparatorToString,
     constraint,
     DoubleBoundComparator,
     invertedComparators,
-    Node,
     NormalizedLowerBoundComparator,
     strNode,
     StrNode
@@ -46,13 +46,8 @@ export type boundableData = number | string | unknown[]
 export const isConstrained = (tree: StrNode): tree is [StrNode, StrNode[]] =>
     Array.isArray(tree) && Array.isArray(tree[1])
 
-export class boundsConstraint extends constraint<
-    BoundsDefinition,
-    boundableData
-> {
-    constructor(definition: BoundsDefinition) {
-        super(definition)
-    }
+export class boundsConstraint {
+    constructor(public definition: BoundsDefinition) {}
 
     boundTree(root: StrNode) {
         return isConstrained(root)
@@ -75,7 +70,7 @@ export class boundsConstraint extends constraint<
         return result
     }
 
-    check(args: Node.Allows.Args<boundableData>) {
+    check(args: Allows.Args<boundableData>) {
         const size =
             typeof args.data === "number" ? args.data : args.data.length
         for (const [comparator, limit] of this.definition) {
@@ -125,13 +120,12 @@ export type BoundUnits = "characters" | "items"
 
 export type BoundKind = "string" | "number" | "array"
 
-export class BoundViolationDiagnostic extends Node.Allows
-    .Diagnostic<"BoundViolation"> {
+export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"> {
     message: string
     kind: BoundKind
 
     constructor(
-        args: Node.Allows.Args,
+        args: Allows.Args,
         public comparator: Comparator,
         public limit: number,
         public size: number

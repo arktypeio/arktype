@@ -73,7 +73,7 @@ export namespace Left {
         lowerBound: undefined
         groups: []
         branches: {}
-        root: Node.ParseError<Message>
+        root: Nodes.ParseError<Message>
         nextSuffix: "END"
     }>
 

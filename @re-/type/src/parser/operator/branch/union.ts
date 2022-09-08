@@ -31,7 +31,7 @@ type PushRoot<B extends Branches, Root> = {
     ]
 }
 
-export const reduceUnion = (s: Parser.state.withRoot, ctx: Node.context) => {
+export const reduceUnion = (s: Parser.state.withRoot, ctx: Nodes.context) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }

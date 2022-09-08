@@ -1,4 +1,4 @@
-import { typeNode } from "../type.js.js.js"
+import { typeNode } from "../type.js"
 
 export class neverNode extends typeNode {
     toString() {
@@ -10,7 +10,7 @@ export class neverNode extends typeNode {
     }
 
     create(): never {
-        throw new Node.Create.UngeneratableError(
+        throw new Nodes.Create.UngeneratableError(
             "never",
             "never is ungeneratable by definition."
         )

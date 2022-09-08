@@ -1,10 +1,10 @@
 export abstract class typeNode extends terminalNode {
-    allows(args: Node.Allows.Args) {
+    allows(args: Nodes.Allows.Args) {
         if (this.allowsValue(args.data)) {
             return true
         }
         args.diagnostics.push(
-            new Node.Allows.UnassignableDiagnostic(this.toString(), args)
+            new Nodes.Allows.UnassignableDiagnostic(this.toString(), args)
         )
         return false
     }

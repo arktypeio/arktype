@@ -2,12 +2,12 @@ export * from "../nodes/index.js"
 import { Node } from "../nodes/index.js"
 import { Root } from "../root.js"
 
-export type ChildEntry<KeyType> = [KeyType, Node.base]
+export type ChildEntry<KeyType> = [KeyType, Nodes.base]
 
-export abstract class obj<defType extends object> extends Node.base {
+export abstract class obj<defType extends object> extends Nodes.base {
     entries: ChildEntry<string>[]
 
-    constructor(protected definition: defType, private ctx: Node.context) {
+    constructor(protected definition: defType, private ctx: Nodes.context) {
         super()
         const entries = Object.entries(definition).map(
             ([k, childDef]): ChildEntry<string> => [
@@ -39,17 +39,17 @@ export abstract class obj<defType extends object> extends Node.base {
     }
 
     collectReferences(
-        opts: Node.References.Options<string, boolean>,
-        collected: Node.References.Collection
+        opts: Nodes.References.Options<string, boolean>,
+        collected: Nodes.References.Collection
     ) {
         for (const entry of this.entries) {
             entry[1].collectReferences(opts, collected)
         }
     }
 
-    override references(opts: Node.References.Options) {
+    override references(opts: Nodes.References.Options) {
         if (opts.preserveStructure) {
-            const references: Node.References.StructuredReferences = {}
+            const references: Nodes.References.StructuredReferences = {}
             for (const [k, childNode] of this.entries) {
                 references[k] = childNode.references(opts)
             }

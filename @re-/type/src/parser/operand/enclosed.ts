@@ -1,7 +1,10 @@
-import { Parser } from "../common.js"
-import { stringNode } from "../unenclosed/keyword/typeKeyword.js"
-import { regexConstraint } from "./regexLiteral.js"
-import { StringLiteralDefinition, StringLiteralNode } from "./stringLiteral.js"
+import { Parser } from "./common.js"
+import { regexConstraint } from "./enclosed/regexLiteral.js"
+import {
+    StringLiteralDefinition,
+    StringLiteralNode
+} from "./enclosed/stringLiteral.js"
+import { stringNode } from "./unenclosed/keyword/typeKeyword.js"
 
 export const enclosedBaseStartChars = Parser.tokenSet({
     "'": 1,

@@ -1,3 +1,5 @@
+import { boundableNode, boundsConstraint } from "../../../constraints/bounds.js"
+import { regexConstraint } from "../../../constraints/regex.js"
 import { typeNode } from "./type.js"
 
 export class stringNode extends typeNode implements boundableNode {
@@ -13,8 +15,8 @@ export class stringNode extends typeNode implements boundableNode {
 
     allowsValue(data: unknown) {
         if (typeof data === "string") {
-            this?.regex?.check(data)
-            this?.bounds?.check()
+            // this?.regex?.check(data)
+            // this?.bounds?.check()
         }
         return typeof data === "string"
     }

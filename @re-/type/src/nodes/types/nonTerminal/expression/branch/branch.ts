@@ -9,8 +9,11 @@ export type Branch<
     Token extends BranchToken = BranchToken
 > = [Left, Token, Right]
 
-export abstract class branch extends Node.base {
-    constructor(protected children: Node.base[], protected ctx: Node.context) {
+export abstract class branch extends Nodes.base {
+    constructor(
+        protected children: Nodes.base[],
+        protected ctx: Nodes.context
+    ) {
         super()
     }
 
@@ -29,8 +32,8 @@ export abstract class branch extends Node.base {
     }
 
     collectReferences(
-        opts: Node.References.Options,
-        collected: Node.References.Collection
+        opts: Nodes.References.Options,
+        collected: Nodes.References.Collection
     ) {
         for (const child of this.children) {
             child.collectReferences(opts, collected)

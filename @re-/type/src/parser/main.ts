@@ -3,7 +3,7 @@ import { ParseOperand, parseOperand } from "./operand/index.js"
 import { Operator } from "./operator/index.js"
 import { Parser } from "./parser/index.js"
 
-export const parse: Node.parseFn<string> = (def, ctx) =>
+export const parse: Nodes.parseFn<string> = (def, ctx) =>
     loop(parseOperand(new Parser.state(def), ctx), ctx)
 
 export type Parse<Def extends string, Dict> = Loop<
@@ -11,7 +11,7 @@ export type Parse<Def extends string, Dict> = Loop<
     Dict
 >
 
-const loop = (s: Parser.state, ctx: Node.context): strNode => {
+const loop = (s: Parser.state, ctx: Nodes.context): strNode => {
     while (!s.isSuffixable()) {
         next(s, ctx)
     }
@@ -24,7 +24,7 @@ type Loop<S extends Parser.State, Dict> = S["L"]["nextSuffix"] extends string
       SuffixLoop<TransitionToSuffix<S>>
     : Loop<Next<S, Dict>, Dict>
 
-const next = (s: Parser.state, ctx: Node.context): Parser.state =>
+const next = (s: Parser.state, ctx: Nodes.context): Parser.state =>
     s.hasRoot() ? Operator.parseOperator(s, ctx) : parseOperand(s, ctx)
 
 type Next<S extends Parser.State, Dict> = S["L"]["root"] extends undefined
@@ -58,7 +58,7 @@ export type TransitionToSuffix<S extends Parser.State<Parser.Left.Suffixable>> =
 
 export const suffixLoop = (
     s: Parser.state.suffix,
-    ctx: Node.context
+    ctx: Nodes.context
 ): strNode => {
     if (s.l.nextSuffix === "END") {
         return finalize(s)
@@ -92,7 +92,7 @@ const finalize = (s: Parser.state.suffix) =>
 
 type Finalize<L extends Parser.Left.Suffix> = L["lowerBound"] extends undefined
     ? L["root"]
-    : Node.ParseError<Operator.Bound.UnpairedLeftBoundMessage>
+    : Nodes.ParseError<Operator.Bound.UnpairedLeftBoundMessage>
 
 type UnexpectedSuffixMessage<Token extends string> =
     `Unexpected suffix token '${Token}'.`

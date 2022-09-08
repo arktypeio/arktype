@@ -1,4 +1,4 @@
-import { Node } from "./nodes/index.js"
+import { Nodes } from "./nodes/index.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./parser/str/str.js"
 
@@ -19,7 +19,7 @@ export namespace Root {
 
     export type Infer<
         Def,
-        Ctx extends Node.InferenceContext
+        Ctx extends Nodes.InferenceContext
     > = unknown extends Def
         ? Def
         : Def extends string
@@ -48,13 +48,13 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
 
-    export const parse: Node.parseFn<unknown> = (def, ctx) =>
+    export const parse: Nodes.parseFn<unknown> = (def, ctx) =>
         typeof def === "string"
             ? Str.parse(def, ctx)
             : typeof def === "object" && def !== null
             ? Obj.parse(def, ctx)
-            : Node.throwParseError(
+            : Nodes.throwParseError(
                   badDefinitionTypeMessage +
-                      ` (got ${typeof def}${Node.ctxToString(ctx)}).`
+                      ` (got ${typeof def}${Nodes.ctxToString(ctx)}).`
               )
 }

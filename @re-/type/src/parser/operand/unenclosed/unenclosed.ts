@@ -14,7 +14,7 @@ import { NumberLiteralDefinition, numberLiteralNode } from "./numberLiteral.js"
 const lookaheadIsBaseTerminating: Parser.scanner.UntilCondition = (scanner) =>
     scanner.lookahead in baseTerminatingChars
 
-export const parseUnenclosedBase = (s: Parser.state, ctx: Node.context) => {
+export const parseUnenclosedBase = (s: Parser.state, ctx: Nodes.context) => {
     const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
     s.l.root = unenclosedToNode(s, token, ctx)
     return s
@@ -33,7 +33,7 @@ export type ParseUnenclosedBase<
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
-    ctx: Node.context
+    ctx: Nodes.context
 ) => {
     if (Keyword.matches(token)) {
         return Keyword.parse(token)
@@ -45,7 +45,7 @@ export const toNodeIfResolvableIdentifier = (
 const unenclosedToNode = (
     s: Parser.state,
     token: string,
-    ctx: Node.context
+    ctx: Nodes.context
 ) => {
     const possibleIdentifierNode = toNodeIfResolvableIdentifier(token, ctx)
     if (possibleIdentifierNode) {
