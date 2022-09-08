@@ -4,20 +4,21 @@ import {
     numberLiteralNode
 } from "../../operand/unenclosed/numberLiteral.js"
 import {
-    bound,
     Bound,
-    BoundableNode,
     boundableNode,
+    BoundableNode,
     BoundDefinition,
+    boundsConstraint,
     isBoundable,
     LowerBoundDefinition,
     UpperBoundDefinition
 } from "./bound.js"
 import {
     Comparator,
+    constrainableNode,
     doubleBoundComparators,
-    InvalidDoubleBoundMessage,
     invalidDoubleBoundMessage,
+    InvalidDoubleBoundMessage,
     Node,
     NodeToString,
     Parser
@@ -115,7 +116,7 @@ type ReduceDouble<
 const reduceDouble = (
     s: Parser.state<
         Parser.left.suffix<{
-            root: boundableNode
+            root: constrainable
             lowerBound: LowerBoundDefinition
         }>
     >,
@@ -143,12 +144,12 @@ type ReduceSingle<
 }>
 
 const reduceSingle = (
-    s: Parser.state.suffix<{ root: boundableNode }>,
+    s: Parser.state.suffix<{ root: constrainableNode<boundsConstraint> }>,
     right: BoundDefinition,
     nextSuffix: Parser.SuffixToken,
     ctx: Node.context
 ) => {
-    s.l.root = new bound(s.l.root, [right], ctx) as any
+    s.l.root.constraints.push(new boundsConstraint([right]))
     s.l.lowerBound = undefined
     s.l.nextSuffix = nextSuffix
     return s

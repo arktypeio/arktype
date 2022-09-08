@@ -22,12 +22,7 @@ export class TupleNode extends obj<TupleDefinition> {
         const actualLength = args.data.length
         if (expectedLength !== actualLength) {
             args.diagnostics.push(
-                new TupleLengthDiagnostic(
-                    this.definition,
-                    args,
-                    expectedLength,
-                    actualLength
-                )
+                new TupleLengthDiagnostic(args, expectedLength, actualLength)
             )
             return false
         }
@@ -74,7 +69,6 @@ export class TupleLengthDiagnostic extends Node.Allows
     public message: string
 
     constructor(
-        public type: TupleDefinition,
         args: Node.Allows.Args,
         public expectedLength: number,
         public actualLength: number

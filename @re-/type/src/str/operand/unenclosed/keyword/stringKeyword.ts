@@ -1,13 +1,13 @@
 import { alphaNumericRegex, alphaOnlyRegex } from "@re-/tools"
-import { boundConstraint } from "../../../operator/bound/bound.js"
+import { boundsConstraint } from "../../../operator/bound/bound.js"
 import { regexConstraint } from "../../enclosed/index.js"
-import { constrainable, Node, terminalNode } from "./common.js"
+import { Node, terminalNode } from "./common.js"
 
-export type stringConstraint = regexConstraint | boundConstraint
+export type stringConstraint = regexConstraint | boundsConstraint
 
 export class stringNode
     extends terminalNode
-    implements constrainable<stringConstraint>
+    implements Node.constrainable<stringConstraint>
 {
     constructor(def: string, public constraints: stringConstraint[]) {
         super(def)

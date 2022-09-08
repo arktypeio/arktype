@@ -2,10 +2,6 @@ import { Iterate } from "@re-/tools"
 import * as Node from "../node/exports.js"
 export * as Node from "../node/exports.js"
 
-export type constrainable<constraint> = {
-    constraints: constraint[]
-}
-
 export type NodeToString<
     Node,
     Result extends string = ""
@@ -18,3 +14,24 @@ export type NodeToString<
 export type StrNode = string | number | StrNode[]
 
 export type strNode = Node.base & { tree: StrNode }
+
+export class constraints<Value> extends Array<constraint<unknown, Value>> {
+    check(args: Node.Allows.Args<Value>) {
+        for (const constraint of this) {
+            constraint.check(args)
+        }
+    }
+}
+
+export abstract class constraint<Def, Value> {
+    constructor(public definition: Def, public description: string) {}
+
+    abstract check(args: Node.Allows.Args<Value>): void
+}
+
+export type constrainable<c extends constraint<unknown, unknown>> = {
+    constraints: c[]
+}
+
+export type constrainableNode<c extends constraint<unknown, unknown>> =
+    strNode & constrainable<c>

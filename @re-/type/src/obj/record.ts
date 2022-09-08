@@ -78,11 +78,7 @@ export class RecordNode extends obj<RecordLike> {
                 }
             } else if (!(propNode instanceof optional)) {
                 args.diagnostics.push(
-                    new MissingKeyDiagnostic(
-                        propNode.toString(),
-                        propArgs,
-                        propKey
-                    )
+                    new MissingKeyDiagnostic(propArgs, propKey)
                 )
                 result.allSeenKeysAllowed = false
             }
@@ -132,21 +128,15 @@ export class ExtraneousKeysDiagnostic extends Node.Allows.Diagnostic<
 
     constructor(args: Node.Allows.Args, public keys: string[]) {
         super("ExtraneousKeys", args)
-        this.message = `Keys ${keys
-            .map((k) => `'${k}'`)
-            .join(", ")} were unexpected.`
+        this.message = `Keys ${keys.join(", ")} were unexpected.`
     }
 }
 
 export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
     public message: string
 
-    constructor(
-        public type: string,
-        args: Node.Allows.Args,
-        public key: string
-    ) {
+    constructor(args: Node.Allows.Args, public key: string) {
         super("MissingKey", args)
-        this.message = `Missing required value of type ${type}.`
+        this.message = `${key} is required.`
     }
 }
