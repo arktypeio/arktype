@@ -31,7 +31,7 @@ export const isArgValueRecordLike = (
     args.data !== null &&
     !Array.isArray(args.data)
 
-export class RecordNode extends obj {
+export class RecordNode extends obj<RecordLike> {
     get tree() {
         const result: Record<string, unknown> = {}
         for (const [prop, propNode] of this.entries) {
@@ -43,7 +43,7 @@ export class RecordNode extends obj {
     allows(args: Node.Allows.Args) {
         if (!isArgValueRecordLike(args)) {
             args.diagnostics.push(
-                new Node.Allows.UnassignableDiagnostic(args, this)
+                new Node.Allows.UnassignableDiagnostic(this.toString(), args)
             )
             return false
         }
@@ -54,7 +54,7 @@ export class RecordNode extends obj {
                 args.ctx.modelCfg.diagnostics?.ExtraneousKeys?.enable)
         ) {
             args.diagnostics.push(
-                new ExtraneousKeysDiagnostic(args, this, [
+                new ExtraneousKeysDiagnostic(args, [
                     ...propValidationResults.extraneousValueKeys
                 ])
             )
@@ -78,7 +78,11 @@ export class RecordNode extends obj {
                 }
             } else if (!(propNode instanceof optional)) {
                 args.diagnostics.push(
-                    new MissingKeyDiagnostic(propArgs, propNode, propKey)
+                    new MissingKeyDiagnostic(
+                        propNode.toString(),
+                        propArgs,
+                        propKey
+                    )
                 )
                 result.allSeenKeysAllowed = false
             }
@@ -126,12 +130,8 @@ export class ExtraneousKeysDiagnostic extends Node.Allows.Diagnostic<
 > {
     public message: string
 
-    constructor(
-        args: Node.Allows.Args,
-        node: Node.base,
-        public keys: string[]
-    ) {
-        super("ExtraneousKeys", args, node)
+    constructor(args: Node.Allows.Args, public keys: string[]) {
+        super("ExtraneousKeys", args)
         this.message = `Keys ${keys
             .map((k) => `'${k}'`)
             .join(", ")} were unexpected.`
@@ -142,11 +142,11 @@ export class MissingKeyDiagnostic extends Node.Allows.Diagnostic<"MissingKey"> {
     public message: string
 
     constructor(
+        public type: string,
         args: Node.Allows.Args,
-        propNode: Node.base,
         public key: string
     ) {
-        super("MissingKey", args, propNode)
-        this.message = `Missing required value of type ${this.definition}.`
+        super("MissingKey", args)
+        this.message = `Missing required value of type ${type}.`
     }
 }

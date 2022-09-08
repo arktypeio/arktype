@@ -1,11 +1,9 @@
 import { Node, obj } from "./common.js"
 
-export namespace TupleType {
-    export type Definition = unknown[] | readonly unknown[]
-}
+export type TupleDefinition = unknown[] | readonly unknown[]
 
-export class TupleNode extends obj {
-    static matches(def: object): def is TupleType.Definition {
+export class TupleNode extends obj<TupleDefinition> {
+    static matches(def: object): def is TupleDefinition {
         return Array.isArray(def)
     }
 
@@ -16,7 +14,7 @@ export class TupleNode extends obj {
     allows(args: Node.Allows.Args) {
         if (!Array.isArray(args.data)) {
             args.diagnostics.push(
-                new Node.Allows.UnassignableDiagnostic(args, this)
+                new Node.Allows.UnassignableDiagnostic(this.toString(), args)
             )
             return false
         }
@@ -25,8 +23,8 @@ export class TupleNode extends obj {
         if (expectedLength !== actualLength) {
             args.diagnostics.push(
                 new TupleLengthDiagnostic(
+                    this.definition,
                     args,
-                    this,
                     expectedLength,
                     actualLength
                 )
@@ -76,12 +74,12 @@ export class TupleLengthDiagnostic extends Node.Allows
     public message: string
 
     constructor(
+        public type: TupleDefinition,
         args: Node.Allows.Args,
-        node: Node.base,
         public expectedLength: number,
         public actualLength: number
     ) {
-        super("TupleLength", args, node)
-        this.message = `Tuple of length ${actualLength} is not assignable to tuple of length ${expectedLength}.`
+        super("TupleLength", args)
+        this.message = `Tuple must have length ${expectedLength} (got ${actualLength}).`
     }
 }

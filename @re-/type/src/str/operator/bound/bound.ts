@@ -70,14 +70,7 @@ export class bound extends unary<boundableNode> {
             if (!checker(size)) {
                 const [comparator, limit] = this.bounds[boundIndex]
                 args.diagnostics.push(
-                    new BoundViolationDiagnostic(
-                        this.toString(),
-                        args,
-                        comparator,
-                        limit,
-                        size,
-                        this.child.units
-                    )
+                    new BoundViolationDiagnostic(args, comparator, limit, size)
                 )
                 return false
             }
@@ -102,20 +95,17 @@ export class boundConstraint extends Node.constraint<
     BoundDefinition,
     boundableData
 > {
-    comparator: Comparator
-    limit: number
-
     constructor(definition: BoundDefinition, description: string) {
         super(definition, description)
-        this.comparator = definition[0]
-        this.limit = definition[1]
     }
 
     check(args: Node.Allows.Args<boundableData>) {
         const size =
             typeof args.data === "number" ? args.data : args.data.length
         if (!isWithinBound(this.definition, size)) {
-            args.diagnostics.push(new BoundViolationDiagnostic())
+            args.diagnostics.push(
+                new BoundViolationDiagnostic(args, ...this.definition, size)
+            )
         }
     }
 }
@@ -181,24 +171,31 @@ export const isBoundable = (node: strNode): node is boundableNode =>
 
 export type BoundUnits = "characters" | "items"
 
+export type BoundKind = "string" | "number" | "array"
+
 export class BoundViolationDiagnostic extends Node.Allows
     .Diagnostic<"BoundViolation"> {
-    public message: string
+    message: string
+    kind: BoundKind
 
     constructor(
-        type: string,
         args: Node.Allows.Args,
         public comparator: Comparator,
         public limit: number,
-        public size: number,
-        public units: BoundUnits | undefined
+        public size: number
     ) {
-        super("BoundViolation", type, args)
+        super("BoundViolation", args)
+        this.kind =
+            typeof args.data === "string"
+                ? "string"
+                : typeof args.data === "number"
+                ? "number"
+                : "array"
         this.message = boundViolationMessage(
             this.comparator,
             this.limit,
-            this.units,
-            this.size
+            this.size,
+            this.kind
         )
     }
 }
@@ -206,9 +203,9 @@ export class BoundViolationDiagnostic extends Node.Allows
 export const boundViolationMessage = (
     comparator: Comparator,
     limit: number,
-    units: BoundUnits | undefined,
-    size: number
+    size: number,
+    kind: BoundKind
 ) =>
     `Must be ${comparatorToString[comparator]} ${limit} ${
-        units ? `${units} ` : ""
+        kind === "string" ? "characters " : kind === "array" ? "items " : ""
     }(got ${size}).`

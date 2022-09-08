@@ -61,9 +61,7 @@ export const customValidatorAllows = (
     const customMessages = typeof result === "string" ? [result] : result
     if (Array.isArray(customMessages)) {
         for (const message of customMessages) {
-            args.diagnostics.push(
-                new CustomDiagnostic(node.toString(), args, message)
-            )
+            args.diagnostics.push(new CustomDiagnostic(args, message))
         }
         return false
     }
@@ -143,10 +141,10 @@ export abstract class Diagnostic<
     data: unknown
     options: (BaseDiagnosticOptions<Code> & AdditionalOptions) | undefined
 
-    constructor(public readonly code: Code, public type: string, args: Args) {
+    constructor(public readonly code: Code, args: Args) {
         this.path = args.ctx.path
         this.data = args.data
-        this.options = args.cfg.diagnostics?.[this.code] as any
+        this.options = args.cfg.diagnostics?.[code] as any
     }
 
     abstract message: string
@@ -157,17 +155,17 @@ export class ValidationError extends Error {}
 export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
     public message: string
 
-    constructor(type: string, args: Args) {
-        super("Unassignable", type, args)
-        this.message = `${stringifyData(this.data)} is not assignable to ${
-            this.type
-        }.`
+    constructor(public type: string, args: Args) {
+        super("Unassignable", args)
+        this.message = `${stringifyData(
+            this.data
+        )} is not assignable to ${type}.`
     }
 }
 
 export class CustomDiagnostic extends Diagnostic<"Custom"> {
-    constructor(type: string, args: Args, public message: string) {
-        super("Custom", type, args)
+    constructor(args: Args, public message: string) {
+        super("Custom", args)
     }
 }
 

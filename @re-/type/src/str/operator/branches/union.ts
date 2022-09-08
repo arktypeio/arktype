@@ -147,11 +147,11 @@ export class UnionDiagnostic extends Node.Allows.Diagnostic<
     public message: string
 
     constructor(
-        type: string,
+        public type: string,
         args: Node.Allows.Args,
         public branches: DiagnosticBranchEntry[]
     ) {
-        super("Union", type, args)
+        super("Union", args)
         this.message = `${Node.Allows.stringifyData(
             this.data
         )} is not assignable to any of ${this.type}${

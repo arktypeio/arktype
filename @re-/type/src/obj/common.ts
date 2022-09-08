@@ -4,12 +4,12 @@ import { Root } from "../root.js"
 
 export type ChildEntry<KeyType> = [KeyType, Node.base]
 
-export abstract class obj extends Node.base {
+export abstract class obj<defType extends object> extends Node.base {
     entries: ChildEntry<string>[]
 
-    constructor(private def: object, private ctx: Node.context) {
+    constructor(protected definition: defType, private ctx: Node.context) {
         super()
-        const entries = Object.entries(def).map(
+        const entries = Object.entries(definition).map(
             ([k, childDef]): ChildEntry<string> => [
                 k,
                 Root.parse(childDef, { ...ctx, path: [...ctx.path, k] })
@@ -19,7 +19,7 @@ export abstract class obj extends Node.base {
     }
 
     toString() {
-        const isArray = Array.isArray(this.def)
+        const isArray = Array.isArray(this.definition)
         const indentation = "    ".repeat(this.ctx.path.length)
         const nestedIndentation = indentation + "    "
         let result = isArray ? "[" : "{"
