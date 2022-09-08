@@ -1,6 +1,6 @@
 import { Parser } from "../common.js"
-import { stringNode } from "../unenclosed/keyword/stringKeyword.js"
-import { regexConstraint, RegexLiteralDefinition } from "./regexLiteral.js"
+import { stringNode } from "../unenclosed/keyword/typeKeyword.js"
+import { regexConstraint } from "./regexLiteral.js"
 import { StringLiteralDefinition, StringLiteralNode } from "./stringLiteral.js"
 
 export const enclosedBaseStartChars = Parser.tokenSet({
@@ -44,13 +44,13 @@ export const parseEnclosedBase = (
         onInputEnd: throwUnterminatedEnclosed
     })
     if (enclosing === "/") {
-        s.l.root = new stringNode(enclosed, [
+        s.l.root = new stringNode(
             new regexConstraint(
                 enclosed,
                 new RegExp(enclosed.slice(1, -1)),
                 `match expression ${enclosed}`
             )
-        ])
+        )
     } else {
         s.l.root = new StringLiteralNode(enclosed as StringLiteralDefinition)
     }

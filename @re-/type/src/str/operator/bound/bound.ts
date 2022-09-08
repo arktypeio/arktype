@@ -8,7 +8,8 @@ import {
     invertedComparators,
     Node,
     NormalizedLowerBoundComparator,
-    strNode
+    strNode,
+    StrNode
 } from "./common.js"
 
 export type BoundDefinition = [Comparator, number]
@@ -42,18 +43,18 @@ export type BoundableNode =
 
 export type boundableData = number | string | unknown[]
 
-export const isConstrained = (tree: unknown): tree is [unknown, unknown[]] =>
+export const isConstrained = (tree: StrNode): tree is [StrNode, StrNode[]] =>
     Array.isArray(tree) && Array.isArray(tree[1])
 
 export class boundsConstraint extends constraint<
     BoundsDefinition,
     boundableData
 > {
-    constructor(definition: BoundsDefinition, description: string) {
-        super(definition, description)
+    constructor(definition: BoundsDefinition) {
+        super(definition)
     }
 
-    boundTree(root: unknown) {
+    boundTree(root: StrNode) {
         return isConstrained(root)
             ? [root[0], [...root[1], ...this.definition]]
             : [root, this.definition]
@@ -111,15 +112,14 @@ export const isWithinBound = (
     }
 }
 
-export interface boundableNode extends strNode {
-    checkSize(value: unknown): number
-    units?: BoundUnits
+export type boundableNode = strNode & {
+    bounds: boundsConstraint | undefined
 }
 
 export type BoundableValue = number | string | unknown[]
 
 export const isBoundable = (node: strNode): node is boundableNode =>
-    "checkSize" in node
+    "bounds" in node
 
 export type BoundUnits = "characters" | "items"
 

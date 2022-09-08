@@ -15,29 +15,21 @@ import {
 } from "./bound.js"
 import {
     Comparator,
-    constrainableNode,
     doubleBoundComparators,
     invalidDoubleBoundMessage,
     InvalidDoubleBoundMessage,
-    Node,
     NodeToString,
     Parser
 } from "./common.js"
 
 export const parseSuffix = (
     s: Parser.state<Parser.left.suffix>,
-    token: Comparator,
-    ctx: Node.context
+    token: Comparator
 ) => {
     const boundingValue = s.r.shiftUntil(untilNextSuffix)
     const nextSuffix = s.r.shift() as "?" | "END"
     return numberLiteralNode.matches(boundingValue)
-        ? reduceRight(
-              s,
-              [token, literalToNumber(boundingValue)],
-              nextSuffix,
-              ctx
-          )
+        ? reduceRight(s, [token, literalToNumber(boundingValue)], nextSuffix)
         : s.error(nonSuffixRightBoundMessage(token, boundingValue))
 }
 
@@ -69,13 +61,12 @@ type BoundingValueWithSuffix<
 export const reduceRight = (
     s: Parser.state<Parser.left.suffix>,
     right: BoundDefinition,
-    nextSuffix: Parser.SuffixToken,
-    ctx: Node.context
+    nextSuffix: Parser.SuffixToken
 ) =>
     hasBoundableRoot(s)
         ? hasLowerBound(s)
-            ? reduceDouble(s, right, nextSuffix, ctx)
-            : reduceSingle(s, right, nextSuffix, ctx)
+            ? reduceDouble(s, right, nextSuffix)
+            : reduceSingle(s, right, nextSuffix)
         : s.error(unboundableMessage(s.l.root.toString()))
 
 export type ReduceRight<
@@ -116,16 +107,15 @@ type ReduceDouble<
 const reduceDouble = (
     s: Parser.state<
         Parser.left.suffix<{
-            root: constrainable
+            root: boundableNode
             lowerBound: LowerBoundDefinition
         }>
     >,
     right: BoundDefinition,
-    nextSuffix: Parser.SuffixToken,
-    ctx: Node.context
+    nextSuffix: Parser.SuffixToken
 ) => {
     if (isValidDoubleBoundRight(right)) {
-        s.l.root = new bound(s.l.root, [s.l.lowerBound, right], ctx) as any
+        s.l.root.bounds = new boundsConstraint([s.l.lowerBound, right])
         s.l.lowerBound = undefined as any
         s.l.nextSuffix = nextSuffix
         return s
@@ -144,12 +134,11 @@ type ReduceSingle<
 }>
 
 const reduceSingle = (
-    s: Parser.state.suffix<{ root: constrainableNode<boundsConstraint> }>,
+    s: Parser.state.suffix<{ root: boundableNode }>,
     right: BoundDefinition,
-    nextSuffix: Parser.SuffixToken,
-    ctx: Node.context
+    nextSuffix: Parser.SuffixToken
 ) => {
-    s.l.root.constraints.push(new boundsConstraint([right]))
+    s.l.root.bounds = new boundsConstraint([right])
     s.l.lowerBound = undefined
     s.l.nextSuffix = nextSuffix
     return s

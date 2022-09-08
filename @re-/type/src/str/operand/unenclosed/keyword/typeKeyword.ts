@@ -1,6 +1,11 @@
+import {
+    boundableNode,
+    boundsConstraint
+} from "../../../operator/bound/bound.js"
+import { regexConstraint } from "../../index.js"
 import { Node, terminalNode } from "./common.js"
 
-abstract class BaseTypeKeyword extends terminalNode {
+abstract class typeNode extends terminalNode {
     allows(args: Node.Allows.Args) {
         if (this.allowsValue(args.data)) {
             return true
@@ -14,9 +19,9 @@ abstract class BaseTypeKeyword extends terminalNode {
     abstract allowsValue(value: unknown): boolean
 }
 
-export class SymbolKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("symbol")
+export class symbolNode extends typeNode {
+    toString() {
+        return "symbol"
     }
 
     allowsValue(value: unknown) {
@@ -28,9 +33,9 @@ export class SymbolKeyword extends BaseTypeKeyword {
     }
 }
 
-export class FunctionKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("function")
+export class functionNode extends typeNode {
+    toString() {
+        return "function"
     }
 
     allowsValue(value: unknown) {
@@ -42,9 +47,9 @@ export class FunctionKeyword extends BaseTypeKeyword {
     }
 }
 
-export class TrueKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("true")
+export class trueNode extends typeNode {
+    toString() {
+        return "true"
     }
 
     allowsValue(value: unknown) {
@@ -56,9 +61,9 @@ export class TrueKeyword extends BaseTypeKeyword {
     }
 }
 
-export class FalseKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("false")
+export class falseNode extends typeNode {
+    toString() {
+        return "false"
     }
 
     allowsValue(value: unknown) {
@@ -70,9 +75,9 @@ export class FalseKeyword extends BaseTypeKeyword {
     }
 }
 
-export class UndefinedKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("undefined")
+export class undefinedNode extends typeNode {
+    toString() {
+        return "undefined"
     }
 
     allowsValue(value: unknown) {
@@ -84,9 +89,9 @@ export class UndefinedKeyword extends BaseTypeKeyword {
     }
 }
 
-export class NullKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("null")
+export class nullNode extends typeNode {
+    toString() {
+        return "null"
     }
 
     allowsValue(value: unknown) {
@@ -98,9 +103,9 @@ export class NullKeyword extends BaseTypeKeyword {
     }
 }
 
-export class AnyKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("any")
+export class anyNode extends typeNode {
+    toString() {
+        return "any"
     }
 
     allowsValue() {
@@ -112,11 +117,10 @@ export class AnyKeyword extends BaseTypeKeyword {
     }
 }
 
-export class UnknownKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("unknown")
+export class unknownNode extends typeNode {
+    toString() {
+        return "unknown"
     }
-
     allowsValue() {
         return true
     }
@@ -126,23 +130,21 @@ export class UnknownKeyword extends BaseTypeKeyword {
     }
 }
 
-export class VoidKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("void")
+export class voidNode extends typeNode {
+    toString() {
+        return "void"
     }
 
     allowsValue(value: unknown) {
         return value === undefined
     }
 
-    create(): void {
-        return undefined
-    }
+    create(): void {}
 }
 
-export class NeverKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("never")
+export class neverNode extends typeNode {
+    toString() {
+        return "never"
     }
 
     allowsValue() {
@@ -157,9 +159,9 @@ export class NeverKeyword extends BaseTypeKeyword {
     }
 }
 
-export class ObjectKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("object")
+export class objectNode extends typeNode {
+    toString() {
+        return "object"
     }
 
     allowsValue(value: unknown) {
@@ -171,9 +173,9 @@ export class ObjectKeyword extends BaseTypeKeyword {
     }
 }
 
-export class BooleanKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("boolean")
+export class booleanNode extends typeNode {
+    toString() {
+        return "boolean"
     }
 
     allowsValue(value: unknown) {
@@ -185,9 +187,9 @@ export class BooleanKeyword extends BaseTypeKeyword {
     }
 }
 
-export class BigintKeyword extends BaseTypeKeyword {
-    constructor() {
-        super("bigint")
+export class bigintNode extends typeNode {
+    toString() {
+        return "bigint"
     }
 
     allowsValue(value: unknown) {
@@ -199,18 +201,58 @@ export class BigintKeyword extends BaseTypeKeyword {
     }
 }
 
+export class numberNode extends typeNode implements boundableNode {
+    bounds: boundsConstraint | undefined = undefined
+
+    toString() {
+        return "number"
+    }
+
+    allowsValue(value: unknown) {
+        return typeof value === "number"
+    }
+
+    create(): string {
+        return ""
+    }
+}
+
+export class stringNode extends typeNode implements boundableNode {
+    bounds: boundsConstraint | undefined = undefined
+
+    constructor(private regex?: regexConstraint) {
+        super()
+    }
+
+    toString() {
+        return this.regex?.definition ?? "string"
+    }
+
+    allowsValue(data: unknown) {
+        if (typeof data === "string") {
+            this?.regex?.check(data)
+            this?.bounds?.check()
+        }
+        return typeof data === "string"
+    }
+
+    create(): string {
+        return ""
+    }
+}
+
 export const typeKeywordsToNodes = {
-    any: new AnyKeyword(),
-    bigint: new BigintKeyword(),
-    boolean: new BooleanKeyword(),
-    false: new FalseKeyword(),
-    function: new FunctionKeyword(),
-    never: new NeverKeyword(),
-    null: new NullKeyword(),
-    object: new ObjectKeyword(),
-    symbol: new SymbolKeyword(),
-    true: new TrueKeyword(),
-    undefined: new UndefinedKeyword(),
-    unknown: new UnknownKeyword(),
-    void: new VoidKeyword()
+    any: new anyNode(),
+    bigint: new bigintNode(),
+    boolean: new booleanNode(),
+    false: new falseNode(),
+    function: new functionNode(),
+    never: new neverNode(),
+    null: new nullNode(),
+    object: new objectNode(),
+    symbol: new symbolNode(),
+    true: new trueNode(),
+    undefined: new undefinedNode(),
+    unknown: new unknownNode(),
+    void: new voidNode()
 }

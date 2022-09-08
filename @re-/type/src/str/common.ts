@@ -24,7 +24,7 @@ export class constraints<Value> extends Array<constraint<unknown, Value>> {
 }
 
 export abstract class constraint<Def, Value> {
-    constructor(public definition: Def, public description: string) {}
+    constructor(public definition: Def) {}
 
     abstract check(args: Node.Allows.Args<Value>): void
 }

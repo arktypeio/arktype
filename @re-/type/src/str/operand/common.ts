@@ -5,19 +5,9 @@ import { Node } from "../common.js"
 
 export type PrimitiveLiteralValue = string | number | bigint
 
-export abstract class terminalNode<
-    defType extends string = string
-> extends Node.base {
-    constructor(public def: defType) {
-        super()
-    }
-
+export abstract class terminalNode extends Node.base {
     get tree() {
-        return this.def
-    }
-
-    toString() {
-        return this.def
+        return this.toString()
     }
 
     collectReferences(
@@ -32,11 +22,10 @@ export abstract class terminalNode<
 }
 
 export abstract class primitiveLiteralNode<
-    Def extends string,
     Value extends PrimitiveLiteralValue
 > extends terminalNode {
-    constructor(public def: Def, public value: Value) {
-        super(def)
+    constructor(public value: Value) {
+        super()
     }
 
     allows(args: Node.Allows.Args) {

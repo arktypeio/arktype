@@ -15,16 +15,16 @@ export const literalToNumber = (def: NumberLiteralDefinition) => {
     return value
 }
 
-export class numberLiteralNode extends primitiveLiteralNode<
-    NumberLiteralDefinition,
-    number
-> {
+export class numberLiteralNode extends primitiveLiteralNode<number> {
     static matches(def: string): def is NumberLiteralDefinition {
         return NUMBER_MATCHER.test(def)
     }
 
-    constructor(def: NumberLiteralDefinition) {
-        const value = def.includes(".") ? parseFloat(def) : parseInt(def)
-        super(def, value)
+    constructor(definition: NumberLiteralDefinition) {
+        super(parseFloat(definition))
+    }
+
+    toString() {
+        return `${this.value}`
     }
 }
