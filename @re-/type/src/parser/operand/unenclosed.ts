@@ -1,5 +1,8 @@
-import { alias } from "../../../nodes/types/terminal/alias.js"
-import { BigintLiteralDefinition, bigintLiteralNode } from "./bigintLiteral.js"
+import { alias } from "../../nodes/types/terminal/alias.js"
+import {
+    BigintLiteralDefinition,
+    bigintLiteralNode
+} from "./unenclosed/bigintLiteral.js"
 import {
     BaseTerminatingChar,
     baseTerminatingChars,
@@ -7,9 +10,12 @@ import {
     expressionExpectedMessage,
     Node,
     Parser
-} from "./common.js"
-import { Keyword } from "./keyword/index.js"
-import { NumberLiteralDefinition, numberLiteralNode } from "./numberLiteral.js"
+} from "./unenclosed/common.js"
+import { Keyword } from "./unenclosed/keyword/index.js"
+import {
+    NumberLiteralDefinition,
+    numberLiteralNode
+} from "./unenclosed/numberLiteral.js"
 
 const lookaheadIsBaseTerminating: Parser.scanner.UntilCondition = (scanner) =>
     scanner.lookahead in baseTerminatingChars

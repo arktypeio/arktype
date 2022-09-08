@@ -1,5 +1,5 @@
 import { Base } from "../../nodes/base.js"
-import { LowerBoundDefinition } from "../../nodes/constraints/bounds.js"
+import type { Bounds } from "../../nodes/constraints/bounds.js"
 import type { Operator } from "../operator/index.js"
 import { strNode, SuffixToken } from "./common.js"
 
@@ -7,7 +7,7 @@ type leftBase = {
     groups: Operator.branches[]
     branches: Operator.branches
     root?: strNode
-    lowerBound?: LowerBoundDefinition
+    lowerBound?: Bounds.LowerBoundDefinition
     nextSuffix?: SuffixToken
 }
 
@@ -15,7 +15,7 @@ export type left<constraints extends Partial<leftBase> = {}> = leftBase &
     constraints
 
 type LeftBase = {
-    lowerBound: LowerBoundDefinition | undefined
+    lowerBound: Bounds.LowerBoundDefinition | undefined
     groups: Operator.Branches[]
     branches: Operator.Branches
     root: unknown
@@ -41,7 +41,7 @@ export namespace left {
     }
 
     type baseSuffix = {
-        lowerBound?: LowerBoundDefinition
+        lowerBound?: Bounds.LowerBoundDefinition
         root: strNode
         nextSuffix: SuffixToken
     }
@@ -103,7 +103,7 @@ export namespace Left {
     export type WithRoot<Root> = With<{ root: Root }>
 
     type SuffixInput = {
-        lowerBound: LowerBoundDefinition | undefined
+        lowerBound: Bounds.LowerBoundDefinition | undefined
         root: unknown
         nextSuffix: SuffixToken
     }

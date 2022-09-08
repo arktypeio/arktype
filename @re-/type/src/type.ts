@@ -9,6 +9,7 @@ import {
 import { Base } from "./nodes/base.js"
 import { Allows } from "./nodes/traversal/allows.js"
 import { Create } from "./nodes/traversal/create.js"
+import { References } from "./nodes/traversal/references.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
 
@@ -142,7 +143,7 @@ export type ReferencesFunction<Def, Dict> = <
 
 export type Infer<Def, S extends Space> = Root.Infer<
     Def,
-    InferenceContext.From<{
+    Base.InferenceContext.From<{
         Dict: S["Dict"]
         Meta: S["Meta"]
         Seen: {}
@@ -151,7 +152,7 @@ export type Infer<Def, S extends Space> = Root.Infer<
 
 export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>
 
-export type References<
+export type ReferencesOf<
     Def,
     Dict,
     Options extends References.TypeOptions = {}
@@ -173,7 +174,7 @@ export type References<
 type TransformReferences<
     References,
     Filter extends string,
-    Format extends Nodes.References.TypeFormat
+    Format extends References.TypeFormat
 > = References extends string[]
     ? FormatReferenceList<FilterReferenceList<References, Filter, []>, Format>
     : {
@@ -198,7 +199,7 @@ type FilterReferenceList<
 
 type FormatReferenceList<
     References extends string[],
-    Format extends Nodes.References.TypeFormat
+    Format extends References.TypeFormat
 > = Format extends "tuple"
     ? References
     : Format extends "list"

@@ -1,5 +1,6 @@
-export * from "../../../../../parser/operator/common.js"
 import { Node, StrNode } from "../../../../../parser/operator/common.js"
+import { Base } from "../../../../base.js"
+import { References } from "../../../../traversal/references.js"
 
 export type BranchToken = "|" | "&"
 
@@ -9,11 +10,8 @@ export type Branch<
     Token extends BranchToken = BranchToken
 > = [Left, Token, Right]
 
-export abstract class branch extends Nodes.base {
-    constructor(
-        protected children: Nodes.base[],
-        protected ctx: Nodes.context
-    ) {
+export abstract class branch extends Base.node {
+    constructor(protected children: Base.node[], protected ctx: Base.context) {
         super()
     }
 
@@ -32,8 +30,8 @@ export abstract class branch extends Nodes.base {
     }
 
     collectReferences(
-        opts: Nodes.References.Options,
-        collected: Nodes.References.Collection
+        opts: References.Options,
+        collected: References.Collection
     ) {
         for (const child of this.children) {
             child.collectReferences(opts, collected)
