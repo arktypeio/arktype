@@ -1,10 +1,9 @@
-export * from "../common.js"
-import type { Comparator } from "../../parser/exports.js"
-import { Parser } from "../common.js"
-export { comparators } from "../../parser/exports.js"
-export type { Comparator } from "../../parser/exports.js"
+import { Comparator } from "../../parser/common.js"
+import { scanner } from "../../parser/scanner.js"
 
-export const comparatorChars = Parser.tokenSet({
+export type { Comparator } from "../../parser/common.js"
+
+export const comparatorChars = scanner.tokens({
     "<": 1,
     ">": 1,
     "=": 1
@@ -12,7 +11,7 @@ export const comparatorChars = Parser.tokenSet({
 
 export type ComparatorChar = keyof typeof comparatorChars
 
-export const doubleBoundComparators = Parser.tokenSet({
+export const doubleBoundComparators = scanner.tokens({
     "<=": 1,
     "<": 1
 })
@@ -45,7 +44,7 @@ export const comparatorToString: Record<Comparator, string> = {
     "==": "exactly"
 }
 
-export const singleCharComparator = Parser.tokenSet({
+export const singleCharComparator = scanner.tokens({
     "<": 1,
     ">": 1
 })

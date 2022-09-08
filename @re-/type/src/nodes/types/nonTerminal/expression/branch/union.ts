@@ -13,11 +13,11 @@ export class union extends branch {
 
     token = "|" as const
 
-    allows(args: Allows.Args) {
+    check(args: Allows.Args) {
         const unionDiagnostics: DiagnosticBranchEntry[] = []
         for (const child of this.children) {
             const branchDiagnostics = new Allows.Diagnostics()
-            if (child.allows({ ...args, diagnostics: branchDiagnostics })) {
+            if (child.check({ ...args, diagnostics: branchDiagnostics })) {
                 // If any branch of a Union does not have errors,
                 // we can return right away since the whole definition is valid
                 return true

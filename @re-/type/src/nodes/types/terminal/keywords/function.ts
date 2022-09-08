@@ -5,8 +5,8 @@ export class functionNode extends typeNode {
         return "function"
     }
 
-    allowsValue(value: unknown) {
-        return typeof value === "function"
+    allowsValue(data: unknown) {
+        return typeof data === "function"
     }
 
     create(): Function {

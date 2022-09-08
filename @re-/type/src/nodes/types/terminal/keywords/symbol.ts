@@ -5,8 +5,8 @@ export class symbolNode extends typeNode {
         return "symbol"
     }
 
-    allowsValue(value: unknown) {
-        return typeof value === "symbol"
+    allowsValue(data: unknown) {
+        return typeof data === "symbol"
     }
 
     create(): symbol {

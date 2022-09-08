@@ -10,7 +10,7 @@ export abstract class literalNode<
         super()
     }
 
-    allows(args: Allows.Args) {
+    check(args: Allows.Args) {
         if (args.data === this.value) {
             return true
         }

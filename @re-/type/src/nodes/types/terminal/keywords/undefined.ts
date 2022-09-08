@@ -5,8 +5,8 @@ export class undefinedNode extends typeNode {
         return "undefined"
     }
 
-    allowsValue(value: unknown) {
-        return value === undefined
+    allowsValue(data: unknown) {
+        return data === undefined
     }
 
     create(): undefined {

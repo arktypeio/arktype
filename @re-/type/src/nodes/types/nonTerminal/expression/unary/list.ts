@@ -12,7 +12,7 @@ export class list extends unary implements boundableNode {
         return [this.child.tree, "[]"]
     }
 
-    allows(args: Allows.Args) {
+    check(args: Allows.Args) {
         if (!Array.isArray(args.data)) {
             new Allows.UnassignableDiagnostic(this.toString(), args)
             return false
@@ -20,7 +20,7 @@ export class list extends unary implements boundableNode {
         let allItemsAllowed = true
         let itemIndex = 0
         for (const itemValue of args.data) {
-            const itemIsAllowed = this.child.allows({
+            const itemIsAllowed = this.child.check({
                 ...args,
                 data: itemValue,
                 ctx: {

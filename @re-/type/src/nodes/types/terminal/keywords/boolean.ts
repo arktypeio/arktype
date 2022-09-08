@@ -1,12 +1,12 @@
-import { typeNode } from "../type.js"
+import { typeNode } from "./type.js"
 
 export class booleanNode extends typeNode {
     toString() {
         return "boolean"
     }
 
-    allowsValue(value: unknown) {
-        return typeof value === "boolean"
+    allowsValue(data: unknown) {
+        return typeof data === "boolean"
     }
 
     create(): boolean {

@@ -1,10 +1,8 @@
-import {
-    Branch,
-    branch,
-    Node,
-    Parser,
-    strNode
-} from "../../../nodes/types/nonTerminal/expression/branch/branch.js"
+import { Base } from "../../../nodes/base.js"
+import { intersection } from "../../../nodes/types/nonTerminal/expression/branch/intersection.js"
+import { strNode } from "../../common.js"
+import { Left } from "../../parser/left.js"
+import { parserState } from "../../parser/state.js"
 import { Branches, MergeExpression } from "./branch.js"
 
 type PushRoot<B extends Branches, Root> = {
@@ -13,8 +11,8 @@ type PushRoot<B extends Branches, Root> = {
 }
 
 export const reduceIntersection = (
-    s: Parser.state.withRoot,
-    ctx: Nodes.context
+    s: parserState.withRoot,
+    ctx: Base.context
 ) => {
     if (!s.l.branches.intersection) {
         s.l.branches.intersection = new intersection([s.l.root], ctx)
@@ -25,23 +23,23 @@ export const reduceIntersection = (
     return s
 }
 
-export type ReduceIntersection<L extends Parser.Left> = Parser.Left.From<{
+export type ReduceIntersection<L extends Left> = Left.From<{
     lowerBound: L["lowerBound"]
     groups: L["groups"]
     branches: PushRoot<L["branches"], L["root"]>
     root: undefined
 }>
 
-export type StateWithMergeableIntersection = Parser.state<{
+export type stateWithMergeableIntersection = parserState<{
     root: strNode
     branches: { intersection: intersection }
 }>
 
 export const hasMergeableIntersection = (
-    s: Parser.state.withRoot
-): s is StateWithMergeableIntersection => !!s.l.branches.intersection
+    s: parserState.withRoot
+): s is stateWithMergeableIntersection => !!s.l.branches.intersection
 
-export const mergeIntersection = (s: StateWithMergeableIntersection) => {
+export const mergeIntersection = (s: stateWithMergeableIntersection) => {
     s.l.branches.intersection.addMember(s.l.root)
     s.l.root = s.l.branches.intersection
     s.l.branches.intersection = undefined as any

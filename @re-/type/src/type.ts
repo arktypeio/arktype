@@ -78,7 +78,7 @@ export class Type implements DynamicType {
         if (customValidator !== "default") {
             Allows.customValidatorAllows(customValidator, this.root, args)
         } else {
-            this.root.allows(args)
+            this.root.check(args)
         }
         return args.diagnostics.length
             ? {

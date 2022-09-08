@@ -5,8 +5,8 @@ export class nullNode extends typeNode {
         return "null"
     }
 
-    allowsValue(value: unknown) {
-        return value === null
+    allowsValue(data: unknown) {
+        return data === null
     }
 
     create(): null {

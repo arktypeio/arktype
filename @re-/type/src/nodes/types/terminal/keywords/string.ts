@@ -25,3 +25,34 @@ export class stringNode extends typeNode implements boundableNode {
         return ""
     }
 }
+
+export const stringKeywords = {
+    string: new stringNode(),
+    email: new stringNode(
+        new regexConstraint("email", /^(.+)@(.+)\.(.+)$/, "be a valid email")
+    ),
+    alpha: new stringNode(
+        new regexConstraint("alpha", /^[A-Za-z]+$/, "include only letters")
+    ),
+    alphanumeric: new stringNode(
+        new regexConstraint(
+            "alphanumeric",
+            /^[\dA-Za-z]+$/,
+            "include only letters and digits"
+        )
+    ),
+    lower: new stringNode(
+        new regexConstraint(
+            "lower",
+            /^[a-z]*$/,
+            "include only lowercase letters"
+        )
+    ),
+    upper: new stringNode(
+        new regexConstraint(
+            "upper",
+            /^[A-Z]*$/,
+            "include only uppercase letters"
+        )
+    )
+}

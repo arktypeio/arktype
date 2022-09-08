@@ -1,4 +1,5 @@
-import { typeNode } from "../type.js"
+import { Create } from "../../../traversal/create.js"
+import { typeNode } from "./type.js"
 
 export class neverNode extends typeNode {
     toString() {
@@ -10,7 +11,7 @@ export class neverNode extends typeNode {
     }
 
     create(): never {
-        throw new Nodes.Create.UngeneratableError(
+        throw new Create.UngeneratableError(
             "never",
             "never is ungeneratable by definition."
         )

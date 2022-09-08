@@ -1,11 +1,8 @@
-import { TypeOfResult } from "@re-/tools"
-import {
-    Branch,
-    branch,
-    Node,
-    Parser,
-    strNode
-} from "../../../nodes/types/nonTerminal/expression/branch/branch.js"
+import { Base } from "../../../nodes/base.js"
+import { union } from "../../../nodes/types/nonTerminal/expression/branch/union.js"
+import { strNode } from "../../common.js"
+import { Left } from "../../parser/left.js"
+import { parserState } from "../../parser/state.js"
 import { Branches, MergeExpression } from "./branch.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 
@@ -16,7 +13,7 @@ type PushRoot<B extends Branches, Root> = {
     ]
 }
 
-export const reduceUnion = (s: Parser.state.withRoot, ctx: Nodes.context) => {
+export const reduceUnion = (s: parserState.withRoot, ctx: Base.context) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }
@@ -29,23 +26,23 @@ export const reduceUnion = (s: Parser.state.withRoot, ctx: Nodes.context) => {
     return s
 }
 
-export type ReduceUnion<L extends Parser.Left> = Parser.Left.From<{
+export type ReduceUnion<L extends Left> = Left.From<{
     lowerBound: L["lowerBound"]
     groups: L["groups"]
     branches: PushRoot<L["branches"], L["root"]>
     root: undefined
 }>
 
-export type StateWithMergeableUnion = Parser.state<{
+export type stateWithMergeableUnion = parserState<{
     root: strNode
     branches: { union: union }
 }>
 
 export const hasMergeableUnion = (
-    s: Parser.state.withRoot
-): s is StateWithMergeableUnion => !!s.l.branches.union
+    s: parserState.withRoot
+): s is stateWithMergeableUnion => !!s.l.branches.union
 
-export const mergeUnion = (s: StateWithMergeableUnion) => {
+export const mergeUnion = (s: stateWithMergeableUnion) => {
     s.l.branches.union.addMember(s.l.root)
     s.l.root = s.l.branches.union
     s.l.branches.union = undefined as any

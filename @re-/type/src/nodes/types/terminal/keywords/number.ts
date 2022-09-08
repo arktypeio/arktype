@@ -8,8 +8,8 @@ export class numberNode extends typeNode implements boundableNode {
         return "number"
     }
 
-    allowsValue(value: unknown) {
-        return typeof value === "number"
+    allowsValue(data: unknown) {
+        return typeof data === "number"
     }
 
     create(): string {

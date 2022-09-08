@@ -79,7 +79,7 @@ export namespace Allows {
             ...context,
             getOriginalErrors: () => {
                 const diagnostics = new Diagnostics()
-                node.allows({
+                node.check({
                     ...args,
                     cfg: { ...args.cfg, validator: "default" },
                     diagnostics

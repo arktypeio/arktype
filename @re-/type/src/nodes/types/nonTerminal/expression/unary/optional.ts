@@ -9,11 +9,11 @@ export class optional extends unary {
         return [this.child.tree, "?"]
     }
 
-    allows(args: Allows.Args) {
+    check(args: Allows.Args) {
         if (args.data === undefined) {
             return true
         }
-        return this.child.allows(args)
+        return this.child.check(args)
     }
 
     create() {

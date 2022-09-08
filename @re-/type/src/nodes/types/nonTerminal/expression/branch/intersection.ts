@@ -16,9 +16,9 @@ export class intersection extends branch {
 
     token = "&" as const
 
-    allows(args: Allows.Args) {
+    check(args: Allows.Args) {
         for (const branch of this.children) {
-            if (!branch.allows(args)) {
+            if (!branch.check(args)) {
                 return false
             }
         }

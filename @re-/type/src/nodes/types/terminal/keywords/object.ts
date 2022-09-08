@@ -1,12 +1,12 @@
-import { typeNode } from "../type.js"
+import { typeNode } from "./type.js"
 
 export class objectNode extends typeNode {
     toString() {
         return "object"
     }
 
-    allowsValue(value: unknown) {
-        return typeof value === "object" && value !== null
+    allowsValue(data: unknown) {
+        return typeof data === "object" && data !== null
     }
 
     create(): object {

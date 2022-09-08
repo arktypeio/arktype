@@ -3,7 +3,7 @@ export class trueNode extends typeNode {
         return "true"
     }
 
-    allowsValue(value: unknown) {
+    allowsValue(data: unknown) {
         return value === true
     }
 
@@ -17,7 +17,7 @@ export class falseNode extends typeNode {
         return "false"
     }
 
-    allowsValue(value: unknown) {
+    allowsValue(data: unknown) {
         return value === false
     }
 

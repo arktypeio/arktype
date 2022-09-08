@@ -1,3 +1,4 @@
+import { Base } from "./nodes/base.js"
 import { Nodes } from "./nodes/index.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./parser/str/str.js"
@@ -48,7 +49,7 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
 
-    export const parse: Nodes.parseFn<unknown> = (def, ctx) =>
+    export const parse: Base.parseFn<unknown> = (def, ctx) =>
         typeof def === "string"
             ? Str.parse(def, ctx)
             : typeof def === "object" && def !== null

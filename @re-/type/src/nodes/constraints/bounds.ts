@@ -13,77 +13,63 @@ import {
 
 export type Bounds = Bounds.Single | Bounds.Double
 
-export namespace Bounds {
-    export type Single = [[Comparator, number]]
+export type Single = [[Comparator, number]]
 
-    export type Double = [Lower, Upper]
+export type Double = [Lower, Upper]
 
-    export type Lower = [NormalizedLowerBoundComparator, number]
+export type Lower = [NormalizedLowerBoundComparator, number]
 
-    export type Upper = [DoubleBoundComparator, number]
+export type Upper = [DoubleBoundComparator, number]
 
-    export type Apply<Child = unknown, Def extends Bounds = Bounds> = Evaluate<
-        [Child, Def]
-    >
+export type Apply<Child = unknown, Def extends Bounds = Bounds> = Evaluate<
+    [Child, Def]
+>
 
-    export type boundChecker = (y: number) => boolean
+export type boundChecker = (y: number) => boolean
 
-    /** A BoundableNode must be either:
-     *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
-     *    2. A string-typed keyword terminal (e.g. "alphanum" in "100<alphanum")
-     *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
-     */
-    export type BoundableNode =
-        | Keyword.OfTypeNumber
-        | Keyword.OfTypeString
-        | [unknown, "[]"]
+/** A BoundableNode must be either:
+ *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
+ *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100<alphanumeric")
+ *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
+ */
+export type BoundableNode =
+    | Keyword.OfTypeNumber
+    | Keyword.OfTypeString
+    | [unknown, "[]"]
 
-    export type boundableData = number | string | unknown[]
+export type boundableData = number | string | unknown[]
 
-    export type BoundableValue = number | string | unknown[]
+export const isBoundable = (node: strNode): node is boundableNode =>
+    "bounds" in node
 
-    export const isBoundable = (node: strNode): node is boundableNode =>
-        "bounds" in node
+export type BoundUnits = "characters" | "items"
 
-    export type BoundUnits = "characters" | "items"
+export type BoundKind = "string" | "number" | "array"
 
-    export type BoundKind = "string" | "number" | "array"
+export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"> {
+    message: string
+    kind: BoundKind
 
-    export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"> {
-        message: string
-        kind: BoundKind
-
-        constructor(
-            args: Allows.Args,
-            public comparator: Comparator,
-            public limit: number,
-            public size: number
-        ) {
-            super("BoundViolation", args)
-            this.kind =
-                typeof args.data === "string"
-                    ? "string"
-                    : typeof args.data === "number"
-                    ? "number"
-                    : "array"
-            this.message = boundViolationMessage(
-                this.comparator,
-                this.limit,
-                this.size,
-                this.kind
-            )
-        }
+    constructor(
+        args: Allows.Args,
+        public comparator: Comparator,
+        public limit: number,
+        public size: number
+    ) {
+        super("BoundViolation", args)
+        this.kind =
+            typeof args.data === "string"
+                ? "string"
+                : typeof args.data === "number"
+                ? "number"
+                : "array"
+        this.message = boundViolationMessage(
+            this.comparator,
+            this.limit,
+            this.size,
+            this.kind
+        )
     }
-
-    export const boundViolationMessage = (
-        comparator: Comparator,
-        limit: number,
-        size: number,
-        kind: BoundKind
-    ) =>
-        `Must be ${comparatorToString[comparator]} ${limit} ${
-            kind === "string" ? "characters " : kind === "array" ? "items " : ""
-        }(got ${size}).`
 }
 
 export class bounds {
@@ -123,6 +109,16 @@ export class bounds {
         }
     }
 }
+
+export const boundViolationMessage = (
+    comparator: Comparator,
+    limit: number,
+    size: number,
+    kind: BoundKind
+) =>
+    `Must be ${comparatorToString[comparator]} ${limit} ${
+        kind === "string" ? "characters " : kind === "array" ? "items " : ""
+    }(got ${size}).`
 
 const isConstrained = (tree: StrNode): tree is [StrNode, StrNode[]] =>
     Array.isArray(tree) && Array.isArray(tree[1])

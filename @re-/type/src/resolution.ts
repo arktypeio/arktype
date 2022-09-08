@@ -1,5 +1,5 @@
 import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
-import { Nodes } from "./nodes/index.js"
+import { Base } from "./nodes/base.js"
 import { Str } from "./parser/str/str.js"
 import { Root } from "./root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "./space.js"
@@ -25,7 +25,7 @@ export namespace ResolutionType {
     >
 }
 
-export class ResolutionNode extends Nodes.base {
+export class ResolutionNode extends Base.node {
     public root: Nodes.base
     public rootDef: unknown
     private ctx: Nodes.context
@@ -66,7 +66,7 @@ export class ResolutionNode extends Nodes.base {
         return this.root.references(opts)
     }
 
-    allows(args: Nodes.Allows.Args): boolean {
+    check(args: Nodes.Allows.Args): boolean {
         const nextArgs = this.nextArgs(args, this.ctx.validate)
         if (typeof args.data === "object" && args.data !== null) {
             if (

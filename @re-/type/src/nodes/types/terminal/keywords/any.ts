@@ -1,4 +1,4 @@
-import { typeNode } from "../type.js"
+import { typeNode } from "./type.js"
 
 export class anyNode extends typeNode {
     toString() {
