@@ -1,31 +1,24 @@
+import { Base } from "../../nodes/base.js"
+import { RegexLiteralDefinition } from "../../nodes/constraints/regex.js"
+import { BigintLiteralDefinition } from "../../nodes/types/terminal/literals/bigint.js"
+import { NumberLiteralDefinition } from "../../nodes/types/terminal/literals/number.js"
+import { StringLiteralDefinition } from "../../nodes/types/terminal/literals/string.js"
+import { Scanner, scanner } from "../parser/scanner.js"
+import { ParserState, parserState } from "../parser/state.js"
 import {
     ExpressionExpectedMessage,
-    expressionExpectedMessage,
-    Node,
-    Parser
+    expressionExpectedMessage
 } from "./common.js"
 import {
     EnclosedBaseStartChar,
     enclosedBaseStartChars,
     parseEnclosedBase,
-    ParseEnclosedBase,
-    RegexLiteralDefinition,
-    StringLiteralDefinition
-} from "./enclosed/index.js"
-import { reduceGroupOpen, ReduceGroupOpen } from "./groupOpen.js"
-import {
-    Alias,
-    BigintLiteralDefinition,
-    Keyword,
-    NumberLiteralDefinition,
-    parseUnenclosedBase,
-    ParseUnenclosedBase
-} from "./unenclosed/index.js"
+    ParseEnclosedBase
+} from "./enclosed.js"
+import { ReduceGroupOpen, reduceGroupOpen } from "./groupOpen.js"
+import { ParseUnenclosedBase, parseUnenclosedBase } from "./unenclosed.js"
 
-export const parseOperand = (
-    s: Parser.state,
-    ctx: Nodes.context
-): Parser.state =>
+export const parseOperand = (s: parserState, ctx: Base.context): parserState =>
     s.r.lookahead === "("
         ? reduceGroupOpen(s.shifted())
         : s.r.lookaheadIsIn(enclosedBaseStartChars)
@@ -37,11 +30,11 @@ export const parseOperand = (
         : parseUnenclosedBase(s, ctx)
 
 export type ParseOperand<
-    S extends Parser.State,
+    S extends ParserState,
     Dict
-> = S["R"] extends Parser.Scanner.Shift<infer Lookahead, infer Unscanned>
+> = S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
     ? Lookahead extends "("
-        ? Parser.State.From<{
+        ? ParserState.From<{
               L: ReduceGroupOpen<S["L"]>
               R: Unscanned
           }>
@@ -50,11 +43,11 @@ export type ParseOperand<
         : Lookahead extends " "
         ? ParseOperand<{ L: S["L"]; R: Unscanned }, Dict>
         : ParseUnenclosedBase<S, "", S["R"], Dict>
-    : Parser.State.Error<ExpressionExpectedMessage<"">>
+    : ParserState.Error<ExpressionExpectedMessage<"">>
 
 export type InferTerminal<
     Token extends string,
-    Ctx extends Nodes.InferenceContext
+    Ctx extends Base.InferenceContext
 > = Token extends Keyword.Definition
     ? Keyword.Types[Token]
     : Token extends keyof Ctx["Dict"]

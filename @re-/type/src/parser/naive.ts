@@ -1,10 +1,11 @@
 import { Base } from "../nodes/base.js"
+import { list } from "../nodes/types/nonTerminal/expression/unary/list.js"
+import { optional } from "../nodes/types/nonTerminal/expression/unary/optional.js"
 import { FullParse } from "./full.js"
 import {
     IsResolvableName,
     toNodeIfResolvableIdentifier
-} from "./operand/index.js"
-import { Operator } from "./operator/index.js"
+} from "./operand/unenclosed.js"
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -38,7 +39,7 @@ export const tryNaiveParse = (def: string, ctx: Base.context) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryNaiveParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
-            return new Operator.optional(possibleIdentifierNode, ctx)
+            return new optional(possibleIdentifierNode, ctx)
         }
     }
     return tryNaiveParseList(def, ctx)
@@ -51,7 +52,7 @@ const tryNaiveParseList = (def: string, ctx: Base.context) => {
             ctx
         )
         if (possibleIdentifierNode) {
-            return new Operator.list(possibleIdentifierNode, ctx)
+            return new list(possibleIdentifierNode, ctx)
         }
     }
     return toNodeIfResolvableIdentifier(def, ctx)

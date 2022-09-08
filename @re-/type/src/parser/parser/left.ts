@@ -7,7 +7,7 @@ type leftBase = {
     groups: Operator.branches[]
     branches: Operator.branches
     root?: strNode
-    lowerBound?: Bounds.LowerBoundDefinition
+    lowerBound?: Bounds.Lower
     nextSuffix?: SuffixToken
 }
 
@@ -15,7 +15,7 @@ export type left<constraints extends Partial<leftBase> = {}> = leftBase &
     constraints
 
 type LeftBase = {
-    lowerBound: Bounds.LowerBoundDefinition | undefined
+    lowerBound: Bounds.Lower | undefined
     groups: Operator.Branches[]
     branches: Operator.Branches
     root: unknown
@@ -41,7 +41,7 @@ export namespace left {
     }
 
     type baseSuffix = {
-        lowerBound?: Bounds.LowerBoundDefinition
+        lowerBound?: Bounds.Lower
         root: strNode
         nextSuffix: SuffixToken
     }
@@ -103,7 +103,7 @@ export namespace Left {
     export type WithRoot<Root> = With<{ root: Root }>
 
     type SuffixInput = {
-        lowerBound: Bounds.LowerBoundDefinition | undefined
+        lowerBound: Bounds.Lower | undefined
         root: unknown
         nextSuffix: SuffixToken
     }

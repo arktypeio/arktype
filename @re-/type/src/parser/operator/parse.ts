@@ -2,13 +2,12 @@ import { Base } from "../../nodes/base.js"
 import { Left } from "../parser/left.js"
 import { scanner, Scanner } from "../parser/scanner.js"
 import { parserState, ParserState } from "../parser/state.js"
-import { Bound } from "./bound/index.js"
+import { ComparatorChar, comparatorChars } from "./bound/common.js"
 import {
     ReduceIntersection,
-    reduceIntersection,
-    ReduceUnion,
-    reduceUnion
-} from "./branch/index.js"
+    reduceIntersection
+} from "./branch/intersection.js"
+import { ReduceUnion, reduceUnion } from "./branch/union.js"
 import { ReduceGroupClose, reduceGroupClose } from "./groupClose.js"
 import { ParseList, parseList } from "./list.js"
 
@@ -29,7 +28,7 @@ export const parseOperator = (
         ? reduceIntersection(s, ctx)
         : lookahead === ")"
         ? reduceGroupClose(s)
-        : scanner.inTokenSet(lookahead, Bound.comparatorChars)
+        : scanner.inTokenSet(lookahead, comparatorChars)
         ? Bound.parse(s, lookahead)
         : lookahead === " "
         ? parseOperator(s, ctx)
@@ -62,7 +61,7 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
               L: ReduceGroupClose<S["L"]>
               R: Unscanned
           }>
-        : Lookahead extends Bound.ComparatorChar
+        : Lookahead extends ComparatorChar
         ? Bound.Parse<S, Lookahead, Unscanned>
         : Lookahead extends " "
         ? ParseOperator<{ L: S["L"]; R: Unscanned }>

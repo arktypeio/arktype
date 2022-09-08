@@ -1,9 +1,9 @@
-import { boundableNode, boundsConstraint } from "../../../constraints/bounds.js"
+import { boundableNode, bounds } from "../../../constraints/bounds.js"
 import { regexConstraint } from "../../../constraints/regex.js"
 import { typeNode } from "./type.js"
 
 export class stringNode extends typeNode implements boundableNode {
-    bounds: boundsConstraint | undefined = undefined
+    bounds: bounds | undefined = undefined
 
     constructor(private regex?: regexConstraint) {
         super()

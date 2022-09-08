@@ -1,3 +1,7 @@
+import { StrNode } from "../../../../../parser/common.js"
+import { Allows } from "../../../../traversal/allows.js"
+import { Unary, unary } from "./unary.js"
+
 export type Optional<Child = unknown> = Unary<Child, "?">
 
 export class optional extends unary {

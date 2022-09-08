@@ -1,18 +1,15 @@
-import {
-    BranchToken,
-    Parser
-} from "../../../nodes/types/nonTerminal/expression/branch/branch.js"
-import {
-    hasMergeableIntersection,
-    intersection,
-    mergeIntersection
-} from "./intersection.js"
-import { hasMergeableUnion, mergeUnion, union } from "./union.js"
+import { intersection } from "../../../nodes/types/nonTerminal/expression/branch/intersection.js"
+import { union } from "../../../nodes/types/nonTerminal/expression/branch/union.js"
+import { parserState } from "../../parser/state.js"
+import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
+import { hasMergeableUnion, mergeUnion } from "./union.js"
 
 export type branches = {
     union?: union
     intersection?: intersection
 }
+
+export type BranchToken = "|" | "&"
 
 export type Branches = {
     union?: OpenBranch<"|">
@@ -29,7 +26,7 @@ export type MergeBranches<B extends Branches, Root> = MergeExpression<
     MergeExpression<B["intersection"], Root>
 >
 
-export const mergeBranches = (s: Parser.state.withRoot) => {
+export const mergeBranches = (s: parserState.withRoot) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }

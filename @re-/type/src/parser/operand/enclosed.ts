@@ -1,12 +1,14 @@
-import { Parser } from "./common.js"
-import { regexConstraint } from "./enclosed/regexLiteral.js"
+import { regexConstraint } from "../../nodes/constraints/regex.js"
+import { stringNode } from "../../nodes/types/terminal/keywords/string.js"
 import {
     StringLiteralDefinition,
     StringLiteralNode
-} from "./enclosed/stringLiteral.js"
-import { stringNode } from "./unenclosed/keyword/typeKeyword.js"
+} from "../../nodes/types/terminal/literals/string.js"
+import { Left } from "../parser/left.js"
+import { scanner } from "../parser/scanner.js"
+import { ParserState, parserState } from "../parser/state.js"
 
-export const enclosedBaseStartChars = Parser.tokenSet({
+export const enclosedBaseStartChars = scanner.tokens({
     "'": 1,
     '"': 1,
     "/": 1
@@ -30,7 +32,7 @@ type UnterminatedEnclosedMessage<
 
 const untilLookaheadIsClosing: Record<
     EnclosedBaseStartChar,
-    Parser.scanner.UntilCondition
+    scanner.UntilCondition
 > = {
     "'": (scanner) => scanner.lookahead === `'`,
     '"': (scanner) => scanner.lookahead === `"`,
@@ -38,7 +40,7 @@ const untilLookaheadIsClosing: Record<
 }
 
 export const parseEnclosedBase = (
-    s: Parser.state,
+    s: parserState,
     enclosing: EnclosedBaseStartChar
 ) => {
     const enclosed = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
@@ -61,19 +63,16 @@ export const parseEnclosedBase = (
 }
 
 export type ParseEnclosedBase<
-    S extends Parser.State,
+    S extends ParserState,
     Enclosing extends EnclosedBaseStartChar
 > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
-    ? Parser.State.From<{
-          L: Parser.Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
+    ? ParserState.From<{
+          L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
           R: Rest
       }>
-    : Parser.State.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
+    : ParserState.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 
-const throwUnterminatedEnclosed: Parser.scanner.OnInputEndFn = (
-    scanner,
-    shifted
-) => {
+const throwUnterminatedEnclosed: scanner.OnInputEndFn = (scanner, shifted) => {
     throw new Error(
         unterminatedEnclosedMessage(
             shifted,

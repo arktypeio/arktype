@@ -1,3 +1,9 @@
+import { TypeOfResult } from "@re-/tools"
+import { strNode } from "../../../../../parser/common.js"
+import { Allows } from "../../../../traversal/allows.js"
+import { Create } from "../../../../traversal/create.js"
+import { branch, Branch } from "./branch.js"
+
 export type Union<Left = unknown, Right = unknown> = Branch<Left, Right, "|">
 
 export class union extends branch {
@@ -7,10 +13,10 @@ export class union extends branch {
 
     token = "|" as const
 
-    allows(args: Nodes.Allows.Args) {
+    allows(args: Allows.Args) {
         const unionDiagnostics: DiagnosticBranchEntry[] = []
         for (const child of this.children) {
-            const branchDiagnostics = new Nodes.Allows.Diagnostics()
+            const branchDiagnostics = new Allows.Diagnostics()
             if (child.allows({ ...args, diagnostics: branchDiagnostics })) {
                 // If any branch of a Union does not have errors,
                 // we can return right away since the whole definition is valid
@@ -24,7 +30,7 @@ export class union extends branch {
         return false
     }
 
-    create(args: Nodes.Create.Args) {
+    create(args: Create.Args) {
         const nextGenResults = this.generateChildren(args)
         if (!nextGenResults.values.length) {
             this.throwAllMembersUngeneratableError(nextGenResults.errors, args)
@@ -44,7 +50,7 @@ export class union extends branch {
         )
     }
 
-    private generateChildren(args: Nodes.Create.Args) {
+    private generateChildren(args: Create.Args) {
         const results = {
             values: [] as unknown[],
             errors: [] as string[]
@@ -53,7 +59,7 @@ export class union extends branch {
             try {
                 results.values.push(node.create(args))
             } catch (error) {
-                if (error instanceof Nodes.Create.UngeneratableError) {
+                if (error instanceof Create.UngeneratableError) {
                     results.errors.push(error.message)
                 } else {
                     throw error
@@ -65,9 +71,9 @@ export class union extends branch {
 
     private throwAllMembersUngeneratableError(
         errors: string[],
-        args: Nodes.Create.Args
+        args: Create.Args
     ) {
-        throw new Nodes.Create.UngeneratableError(
+        throw new Create.UngeneratableError(
             this.toString(),
             "None of the definitions can be generated" +
                 (args.cfg.verbose ? `:\n${errors.join("\n")}` : ".")
@@ -75,9 +81,9 @@ export class union extends branch {
     }
 }
 
-export type DiagnosticBranchEntry = [string, Nodes.Allows.Diagnostics]
+export type DiagnosticBranchEntry = [string, Allows.Diagnostics]
 
-export class UnionDiagnostic extends Nodes.Allows.Diagnostic<
+export class UnionDiagnostic extends Allows.Diagnostic<
     "Union",
     { expand?: boolean }
 > {
@@ -85,11 +91,11 @@ export class UnionDiagnostic extends Nodes.Allows.Diagnostic<
 
     constructor(
         public type: string,
-        args: Nodes.Allows.Args,
+        args: Allows.Args,
         public branches: DiagnosticBranchEntry[]
     ) {
         super("Union", args)
-        this.message = `${Node.Allows.stringifyData(
+        this.message = `${Allows.stringifyData(
             this.data
         )} is not assignable to any of ${this.type}${
             this.options?.expand ? ":" : "."
@@ -101,3 +107,18 @@ export class UnionDiagnostic extends Nodes.Allows.Diagnostic<
         }
     }
 }
+
+type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
+
+const preferredDefaults: PreferredDefaults = [
+    { value: undefined },
+    { value: null },
+    { value: false },
+    { value: true },
+    { typeOf: "number" },
+    { typeOf: "string" },
+    { typeOf: "bigint" },
+    { typeOf: "object" },
+    { typeOf: "symbol" },
+    { typeOf: "function" }
+]

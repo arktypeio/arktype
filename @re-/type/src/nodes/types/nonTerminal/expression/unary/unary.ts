@@ -1,9 +1,11 @@
+import { StrNode, strNode } from "../../../../../parser/common.js"
+import { Base } from "../../../../base.js"
+import { References } from "../../../../traversal/references.js"
+
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 
-export abstract class unary<
-    Child extends strNode = strNode
-> extends Nodes.base {
-    constructor(protected child: Child, protected ctx: Nodes.context) {
+export abstract class unary<Child extends strNode = strNode> extends Base.node {
+    constructor(protected child: Child, protected ctx: Base.context) {
         super()
     }
 
@@ -14,8 +16,8 @@ export abstract class unary<
     }
 
     collectReferences(
-        opts: Nodes.References.Options,
-        collected: Nodes.References.Collection
+        opts: References.Options,
+        collected: References.Collection
     ) {
         this.child.collectReferences(opts, collected)
     }

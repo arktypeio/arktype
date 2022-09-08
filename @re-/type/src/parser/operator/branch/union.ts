@@ -9,21 +9,6 @@ import {
 import { Branches, MergeExpression } from "./branch.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 
-type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
-
-const preferredDefaults: PreferredDefaults = [
-    { value: undefined },
-    { value: null },
-    { value: false },
-    { value: true },
-    { typeOf: "number" },
-    { typeOf: "string" },
-    { typeOf: "bigint" },
-    { typeOf: "object" },
-    { typeOf: "symbol" },
-    { typeOf: "function" }
-]
-
 type PushRoot<B extends Branches, Root> = {
     union: [
         MergeExpression<B["union"], MergeExpression<B["intersection"], Root>>,

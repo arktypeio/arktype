@@ -1,6 +1,11 @@
+import { StrNode } from "../../../../../parser/common.js"
+import { boundableNode } from "../../../../constraints/bounds.js"
+import { Allows } from "../../../../traversal/allows.js"
+import { Unary, unary } from "./unary.js"
+
 export type List<Child = unknown> = Unary<Child, "[]">
 
-export class list extends unary implements Bound.boundableNode {
+export class list extends unary implements boundableNode {
     bound() {}
 
     get tree(): List<StrNode> {

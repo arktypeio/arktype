@@ -1,7 +1,11 @@
 import { Base } from "../nodes/base.js"
+import { Bounds } from "../nodes/constraints/bounds.js"
 import { strNode } from "./common.js"
-import { ParseOperand, parseOperand } from "./operand/index.js"
-import { Operator } from "./operator/index.js"
+import { parseOperand, ParseOperand } from "./operand/operand.js"
+import { MergeBranches, mergeBranches } from "./operator/branch/branch.js"
+import { ParseOptional, parseOptional } from "./operator/optional.js"
+import { ParseOperator, parseOperator } from "./operator/parse.js"
+import { Comparator, comparators } from "./parser/common.js"
 import { Left, left } from "./parser/left.js"
 import { scanner } from "./parser/scanner.js"
 import { ParserState, parserState } from "./parser/state.js"
@@ -28,11 +32,11 @@ type Loop<S extends ParserState, Dict> = S["L"]["nextSuffix"] extends string
     : Loop<Next<S, Dict>, Dict>
 
 const next = (s: parserState, ctx: Base.context): parserState =>
-    s.hasRoot() ? Operator.parseOperator(s, ctx) : parseOperand(s, ctx)
+    s.hasRoot() ? parseOperator(s, ctx) : parseOperand(s, ctx)
 
 type Next<S extends ParserState, Dict> = S["L"]["root"] extends undefined
     ? ParseOperand<S, Dict>
-    : Operator.ParseOperator<S>
+    : ParseOperator<S>
 
 export const unclosedGroupMessage = "Missing )."
 type UnclosedGroupMessage = typeof unclosedGroupMessage
@@ -41,7 +45,7 @@ const transitionToSuffix = (s: parserState<left.suffixable>) => {
     if (s.l.groups.length) {
         return s.error(unclosedGroupMessage)
     }
-    return Operator.mergeBranches(s) as parserState.suffix
+    return mergeBranches(s) as parserState.suffix
 }
 
 type TransitionToSuffix<S extends ParserState<Left.Suffixable>> =
@@ -49,10 +53,7 @@ type TransitionToSuffix<S extends ParserState<Left.Suffixable>> =
         ? ParserState.From<{
               L: Left.SuffixFrom<{
                   lowerBound: S["L"]["lowerBound"]
-                  root: Operator.MergeBranches<
-                      S["L"]["branches"],
-                      S["L"]["root"]
-                  >
+                  root: MergeBranches<S["L"]["branches"], S["L"]["root"]>
                   nextSuffix: S["L"]["nextSuffix"]
               }>
               R: S["R"]
@@ -64,13 +65,10 @@ const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
         return finalize(s)
     }
     if (s.l.nextSuffix === "?") {
-        return finalize(Operator.parseOptional(s, ctx))
+        return finalize(parseOptional(s, ctx))
     }
-    if (scanner.inTokenSet(s.l.nextSuffix, Operator.Bound.comparators)) {
-        return suffixLoop(
-            Operator.Bound.parseSuffix(s, s.l.nextSuffix, ctx),
-            ctx
-        )
+    if (scanner.inTokenSet(s.l.nextSuffix, comparators)) {
+        return suffixLoop(Bounds.parseSuffix(s, s.l.nextSuffix, ctx), ctx)
     }
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
 }
@@ -82,17 +80,17 @@ type SuffixLoop<S extends ParserState.Of<Left.Suffix>> =
 
 type NextSuffix<S extends ParserState.Of<Left.Suffix>> =
     S["L"]["nextSuffix"] extends "?"
-        ? Operator.ParseOptional<S>
-        : S["L"]["nextSuffix"] extends Operator.Bound.Comparator
-        ? Operator.Bound.ParseSuffix<S, S["L"]["nextSuffix"]>
+        ? ParseOptional<S>
+        : S["L"]["nextSuffix"] extends Comparator
+        ? Bound.ParseSuffix<S, S["L"]["nextSuffix"]>
         : ParserState.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
 
 const finalize = (s: parserState.suffix) =>
-    s.l.lowerBound ? s.error(Operator.Bound.unpairedLeftBoundMessage) : s.l.root
+    s.l.lowerBound ? s.error(Bound.unpairedLeftBoundMessage) : s.l.root
 
 type Finalize<L extends Left.Suffix> = L["lowerBound"] extends undefined
     ? L["root"]
-    : Base.ParseError<Operator.Bound.UnpairedLeftBoundMessage>
+    : Base.ParseError<Bound.UnpairedLeftBoundMessage>
 
 type UnexpectedSuffixMessage<Token extends string> =
     `Unexpected suffix token '${Token}'.`

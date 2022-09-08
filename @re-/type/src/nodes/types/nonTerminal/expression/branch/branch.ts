@@ -1,4 +1,4 @@
-import { Node, StrNode } from "../../../../../parser/operator/common.js"
+import { StrNode } from "../../../../../parser/common.js"
 import { Base } from "../../../../base.js"
 import { References } from "../../../../traversal/references.js"
 

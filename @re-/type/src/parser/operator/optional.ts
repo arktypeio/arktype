@@ -1,8 +1,7 @@
 import { Base } from "../../nodes/base.js"
-import { Allows } from "../../nodes/traversal/allows.js"
+import { optional } from "../../nodes/types/nonTerminal/expression/unary/optional.js"
 import { Left } from "../parser/left.js"
 import { parserState, ParserState } from "../parser/state.js"
-import { StrNode, Unary, unary } from "./common.js"
 
 export type ParseOptional<S extends ParserState> = S["R"] extends ""
     ? ParserState.From<{

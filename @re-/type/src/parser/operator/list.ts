@@ -1,10 +1,7 @@
 import { Base } from "../../nodes/base.js"
-import { Bounds } from "../../nodes/constraints/bounds.js"
-import { Allows } from "../../nodes/traversal/allows.js"
 import { Left, left } from "../parser/left.js"
 import { Scanner } from "../parser/scanner.js"
 import { ParserState, parserState } from "../parser/state.js"
-import { StrNode, Unary, unary } from "./common.js"
 
 export const parseList = (s: parserState<left.withRoot>, ctx: Base.context) => {
     const next = s.r.shift()
