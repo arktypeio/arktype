@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { expressionExpectedMessage } from "../str/operand/common.js"
+import { expressionExpectedMessage } from "../parser/str/operand/common.js"
 import { type } from "../type.js"
 
 describe("str", () => {

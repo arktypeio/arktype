@@ -7,7 +7,7 @@ import {
     Merge,
     Narrow
 } from "@re-/tools"
-import { Node } from "./node/index.js"
+import { Node } from "./nodes/index.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
 import {

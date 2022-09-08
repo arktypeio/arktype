@@ -1,5 +1,0 @@
-export * from "./alias.js"
-export * from "./bigintLiteral.js"
-export * from "./numberLiteral.js"
-export * from "./unenclosed.js"
-export * from "./keyword/index.js"

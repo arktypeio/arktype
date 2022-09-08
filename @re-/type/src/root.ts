@@ -1,6 +1,6 @@
-import { Node } from "./node/index.js"
+import { Node } from "./nodes/index.js"
 import { Obj } from "./obj/index.js"
-import { Str } from "./str/str.js"
+import { Str } from "./parser/str/str.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []

@@ -6,8 +6,8 @@ import {
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { Node } from "./node/index.js"
-import { Diagnostics } from "./node/traversal/allows.js"
+import { Node } from "./nodes/index.js"
+import { Diagnostics } from "./nodes/traversal/allows.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
 
