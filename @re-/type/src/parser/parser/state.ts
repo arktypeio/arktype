@@ -1,9 +1,10 @@
 import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
-import { Node, strNode, SuffixToken } from "./common.js"
+import { Base } from "../../nodes/base.js"
+import { strNode, SuffixToken } from "./common.js"
 import { left, Left } from "./left.js"
 import { scanner } from "./scanner.js"
 
-export class state<constraints extends Partial<left> = {}> {
+export class parserState<constraints extends Partial<left> = {}> {
     l: left<constraints>
     r: scanner
 
@@ -13,12 +14,12 @@ export class state<constraints extends Partial<left> = {}> {
     }
 
     error(message: string): never {
-        throw new Nodes.parseError(message)
+        throw new Base.parseError(message)
     }
 
     hasRoot<NodeClass extends ClassOf<strNode> = ClassOf<strNode>>(
         ofClass?: NodeClass
-    ): this is state<{ root: InstanceOf<NodeClass> }> {
+    ): this is parserState<{ root: InstanceOf<NodeClass> }> {
         return ofClass ? this.l.root instanceof ofClass : !!this.l.root
     }
 
@@ -30,7 +31,7 @@ export class state<constraints extends Partial<left> = {}> {
         )
     }
 
-    isSuffixable(): this is state<left.suffixable> {
+    isSuffixable(): this is parserState<left.suffixable> {
         return !!this.l.nextSuffix
     }
 
@@ -45,22 +46,21 @@ export class state<constraints extends Partial<left> = {}> {
     }
 }
 
-export namespace state {
-    export type suffix<Constraints extends Partial<left.suffix> = {}> = state<
-        left.suffix<Constraints>
-    >
+export namespace parserState {
+    export type suffix<Constraints extends Partial<left.suffix> = {}> =
+        parserState<left.suffix<Constraints>>
 
-    export type withRoot<Root extends strNode = strNode> = state<
+    export type withRoot<Root extends strNode = strNode> = parserState<
         left.withRoot<Root>
     >
 }
 
-export type State<Constraints extends Partial<Left> = {}> = {
+export type ParserState<Constraints extends Partial<Left> = {}> = {
     L: Left & Constraints
     R: string
 }
 
-export namespace State {
+export namespace ParserState {
     export type New<Def extends string> = From<{
         L: Left.New
         R: Def
@@ -76,7 +76,7 @@ export namespace State {
         R: string
     }
 
-    export type From<S extends State> = S
+    export type From<S extends ParserState> = S
 
     export type Error<Message extends string> = {
         L: Left.Error<Message>

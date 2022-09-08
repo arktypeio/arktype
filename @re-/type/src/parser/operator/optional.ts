@@ -1,17 +1,21 @@
-import { Node, Parser, StrNode, Unary, unary } from "./common.js"
+import { Base } from "../../nodes/base.js"
+import { Allows } from "../../nodes/traversal/allows.js"
+import { Left } from "../parser/left.js"
+import { parserState, ParserState } from "../parser/state.js"
+import { StrNode, Unary, unary } from "./common.js"
 
-export type ParseOptional<S extends Parser.State> = S["R"] extends ""
-    ? Parser.State.From<{
-          L: Parser.Left.SuffixFrom<{
+export type ParseOptional<S extends ParserState> = S["R"] extends ""
+    ? ParserState.From<{
+          L: Left.SuffixFrom<{
               lowerBound: S["L"]["lowerBound"]
               root: [S["L"]["root"], "?"]
               nextSuffix: "END"
           }>
           R: ""
       }>
-    : Parser.State.Error<NonTerminatingOptionalMessage>
+    : ParserState.Error<NonTerminatingOptionalMessage>
 
-export const parseOptional = (s: Parser.state.suffix, ctx: Nodes.context) => {
+export const parseOptional = (s: parserState.suffix, ctx: Base.context) => {
     if (s.r.lookahead !== "END") {
         throw new Error(nonTerminatingOptionalMessage)
     }
@@ -30,7 +34,7 @@ export class optional extends unary {
         return [this.child.tree, "?"]
     }
 
-    allows(args: Nodes.Allows.Args) {
+    allows(args: Allows.Args) {
         if (args.data === undefined) {
             return true
         }

@@ -7,7 +7,7 @@ import {
     Merge,
     Narrow
 } from "@re-/tools"
-import { Nodes } from "./nodes/index.js"
+import { Base } from "./nodes/base.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
 import {
@@ -60,7 +60,7 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
     type(def: unknown, options: TypeOptions = {}) {
         const root = Root.parse(
             def,
-            Nodes.initializeContext(deepMerge(this.options, options), this)
+            Base.initializeContext(deepMerge(this.options, options), this)
         )
         return new Type(def, root, deepMerge(this.options, options)) as any
     }

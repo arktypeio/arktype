@@ -1,5 +1,5 @@
-import { Node } from "./common.js"
-import { Parse } from "./main.js"
+import { Base } from "../nodes/base.js"
+import { FullParse } from "./full.js"
 import {
     IsResolvableName,
     toNodeIfResolvableIdentifier
@@ -15,33 +15,36 @@ import { Operator } from "./operator/index.js"
  * Hence, this repetitive (but efficient) shallow parse that decides whether to
  * delegate parsing in a single pass.
  */
-export type TryParse<Def extends string, Dict> = Def extends `${infer Child}?`
+export type TryNaiveParse<
+    Def extends string,
+    Dict
+> = Def extends `${infer Child}?`
     ? Child extends `${infer Item}[]`
         ? IsResolvableName<Item, Dict> extends true
             ? [[Item, "[]"], "?"]
-            : Parse<Def, Dict>
+            : FullParse<Def, Dict>
         : IsResolvableName<Child, Dict> extends true
         ? [Child, "?"]
-        : Parse<Def, Dict>
+        : FullParse<Def, Dict>
     : Def extends `${infer Child}[]`
     ? IsResolvableName<Child, Dict> extends true
         ? [Child, "[]"]
-        : Parse<Def, Dict>
+        : FullParse<Def, Dict>
     : IsResolvableName<Def, Dict> extends true
     ? Def
-    : Parse<Def, Dict>
+    : FullParse<Def, Dict>
 
-export const tryParse = (def: string, ctx: Nodes.context) => {
+export const tryNaiveParse = (def: string, ctx: Base.context) => {
     if (def.endsWith("?")) {
-        const possibleIdentifierNode = tryParseList(def.slice(0, -1), ctx)
+        const possibleIdentifierNode = tryNaiveParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
             return new Operator.optional(possibleIdentifierNode, ctx)
         }
     }
-    return tryParseList(def, ctx)
+    return tryNaiveParseList(def, ctx)
 }
 
-const tryParseList = (def: string, ctx: Nodes.context) => {
+const tryNaiveParseList = (def: string, ctx: Base.context) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(
             def.slice(0, -2),

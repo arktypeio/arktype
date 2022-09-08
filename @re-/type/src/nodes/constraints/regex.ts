@@ -1,4 +1,4 @@
-import { Allows } from "../base/traversal/allows.js"
+import { Allows } from "../traversal/allows.js"
 
 export type RegexLiteralDefinition = `/${string}/`
 

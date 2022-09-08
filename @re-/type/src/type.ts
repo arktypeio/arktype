@@ -6,8 +6,9 @@ import {
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { InferenceContext, initializeContext } from "./nodes/base/base.js"
-import { Allows, Create } from "./nodes/base/exports.js"
+import { Base } from "./nodes/base.js"
+import { Allows } from "./nodes/traversal/allows.js"
+import { Create } from "./nodes/traversal/create.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
 
@@ -16,7 +17,7 @@ export const type: TypeFunction = (
     options = {},
     space?: SpaceMeta
 ) => {
-    const root = Root.parse(definition, initializeContext(options, space))
+    const root = Root.parse(definition, Base.initializeContext(options, space))
     return new Type(definition, root, options) as any
 }
 
@@ -37,7 +38,7 @@ export type TypeOptions = {
 export type TypeFunction<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
     definition: Root.Validate<Def, S["Dict"]>,
     options?: TypeOptions
-) => TypeFrom<Def, S["Dict"], Infer<Def, InferenceContext.FromSpace<S>>>
+) => TypeFrom<Def, S["Dict"], Infer<Def, Base.InferenceContext.FromSpace<S>>>
 
 export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     definition: Def
@@ -53,7 +54,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
 export class Type implements DynamicType {
     constructor(
         public definition: unknown,
-        public root: Nodes.base,
+        public root: Base.node,
         public config: TypeOptions = {}
     ) {}
 
@@ -101,8 +102,6 @@ export class Type implements DynamicType {
         return this.root.references(options) as any
     }
 }
-
-export type AssertOptions = Allows.Options
 
 export type ValidateFunction<Inferred> = (
     value: unknown,

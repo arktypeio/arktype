@@ -1,6 +1,6 @@
 import { Evaluate } from "@re-/tools"
 import { Keyword } from "../../operand/index.js"
-import { Allows } from "../base/traversal/allows.js"
+import { Allows } from "../traversal/allows.js"
 import {
     Comparator,
     comparatorToString,

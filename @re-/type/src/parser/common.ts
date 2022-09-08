@@ -1,5 +1,5 @@
 import { Iterate } from "@re-/tools"
-import type { base } from "../nodes/base/base.js"
+import type { Base } from "../nodes/base.js"
 
 export type NodeToString<
     Node,
@@ -12,4 +12,4 @@ export type NodeToString<
 
 export type StrNode = string | number | StrNode[]
 
-export type strNode = base & { tree: StrNode }
+export type strNode = Base.node & { tree: StrNode }

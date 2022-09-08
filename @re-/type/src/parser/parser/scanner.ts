@@ -1,15 +1,5 @@
 import { Evaluate, Narrow } from "@re-/tools"
 
-export type TokenSet = Record<string, 1>
-
-export const tokenSet = <T extends TokenSet>(tokenSet: Narrow<T>) =>
-    tokenSet as Evaluate<T>
-
-export const inTokenSet = <Set extends TokenSet>(
-    token: string,
-    set: Set
-): token is Extract<keyof Set, string> => token in set
-
 export class scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
@@ -55,7 +45,7 @@ export class scanner<Lookahead extends string = string> {
         return this.lookahead === char
     }
 
-    lookaheadIsIn<Tokens extends TokenSet>(
+    lookaheadIsIn<Tokens extends scanner.tokenSet>(
         tokens: Tokens
     ): this is scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens
@@ -72,6 +62,16 @@ export namespace scanner {
         inclusive?: boolean
         appendTo?: string
     }
+
+    export type tokenSet = Record<string, 1>
+
+    export const tokens = <T extends tokenSet>(tokenSet: Narrow<T>) =>
+        tokenSet as Evaluate<T>
+
+    export const inTokenSet = <Set extends tokenSet>(
+        token: string,
+        set: Set
+    ): token is Extract<keyof Set, string> => token in set
 }
 
 export namespace Scanner {

@@ -1,24 +1,25 @@
-import * as Main from "./main.js"
-import * as Naive from "./naive.js"
+import { Base } from "../nodes/base.js"
+import { fullParse } from "./full.js"
+import { tryNaiveParse, TryNaiveParse } from "./naive.js"
 import { InferTerminal } from "./operand/index.js"
 import { Operator } from "./operator/index.js"
 
 export namespace Str {
-    export type Parse<Def extends string, Dict> = Naive.TryParse<Def, Dict>
+    export type Parse<Def extends string, Dict> = TryNaiveParse<Def, Dict>
 
     export type Validate<Def extends string, Dict> = Parse<
         Def,
         Dict
-    > extends Nodes.ParseError<infer Message>
+    > extends Base.ParseError<infer Message>
         ? Message
         : Def
 
     export type Infer<
         Def extends string,
-        Ctx extends Nodes.InferenceContext
+        Ctx extends Base.InferenceContext
     > = TreeInfer<Parse<Def, Ctx["Dict"]>, Ctx>
 
-    type TreeInfer<T, Ctx extends Nodes.InferenceContext> = T extends string
+    type TreeInfer<T, Ctx extends Base.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>
         : T extends Operator.Optional<infer Child>
         ? TreeInfer<Child, Ctx> | undefined
@@ -44,6 +45,6 @@ export namespace Str {
         ? TreeReferences<Child>
         : [T]
 
-    export const parse: Nodes.parseFn<string> = (def, ctx) =>
-        Naive.tryParse(def, ctx) ?? Main.parse(def, ctx)
+    export const parse: Base.parseFn<string> = (def, ctx) =>
+        tryNaiveParse(def, ctx) ?? fullParse(def, ctx)
 }

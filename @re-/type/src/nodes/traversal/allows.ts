@@ -1,13 +1,13 @@
 import { Evaluate, toString, uncapitalize } from "@re-/tools"
-import type { RegexMismatchDiagnostic } from "../../../parser/operand/index.js"
-import type { BoundViolationDiagnostic } from "../../constraints/bounds.js"
-import type { UnionDiagnostic } from "../../types/nonTerminal/expression/branch/union.js"
+import type { Base } from "../base.js"
+import type { BoundViolationDiagnostic } from "../constraints/bounds.js"
+import type { RegexMismatchDiagnostic } from "../constraints/regex.js"
+import type { UnionDiagnostic } from "../types/nonTerminal/expression/branch/union.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic
-} from "../../types/nonTerminal/obj/record.js"
-import type { TupleLengthDiagnostic } from "../../types/nonTerminal/obj/tuple.js"
-import type { base } from "../base.js"
+} from "../types/nonTerminal/obj/record.js"
+import type { TupleLengthDiagnostic } from "../types/nonTerminal/obj/tuple.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {
@@ -54,7 +54,7 @@ export namespace Allows {
 
     export const customValidatorAllows = (
         validator: CustomValidator,
-        node: base,
+        node: Base.node,
         args: Args
     ): boolean => {
         const context = createBaseErrorContext(node, args)
@@ -71,7 +71,7 @@ export namespace Allows {
 
     export const getCustomErrorMessages = (
         validator: CustomValidator,
-        node: base,
+        node: Base.node,
         args: Args,
         context: BaseErrorContext
     ) =>
@@ -101,7 +101,7 @@ export namespace Allows {
     }
 
     export const createBaseErrorContext = (
-        node: base,
+        node: Base.node,
         args: Args
     ): BaseErrorContext => ({
         definition: node.toString(),

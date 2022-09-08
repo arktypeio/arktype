@@ -1,10 +1,12 @@
+import { Base } from "../../nodes/base.js"
+import { Allows } from "../../nodes/traversal/allows.js"
+import { Left, left } from "../parser/left.js"
+import { Scanner } from "../parser/scanner.js"
+import { ParserState, parserState } from "../parser/state.js"
 import { boundableNode } from "./bound/exports.js"
-import { Node, Parser, StrNode, Unary, unary } from "./common.js"
+import { StrNode, Unary, unary } from "./common.js"
 
-export const parseList = (
-    s: Parser.state<Parser.left.withRoot>,
-    ctx: Nodes.context
-) => {
+export const parseList = (s: parserState<left.withRoot>, ctx: Base.context) => {
     const next = s.r.shift()
     if (next !== "]") {
         throw new Error(incompleteTokenMessage)
@@ -14,14 +16,14 @@ export const parseList = (
 }
 
 export type ParseList<
-    S extends Parser.State,
+    S extends ParserState,
     Unscanned extends string
-> = Unscanned extends Parser.Scanner.Shift<"]", infer Remaining>
-    ? Parser.State.From<{
-          L: Parser.Left.SetRoot<S["L"], [S["L"]["root"], "[]"]>
+> = Unscanned extends Scanner.Shift<"]", infer Remaining>
+    ? ParserState.From<{
+          L: Left.SetRoot<S["L"], [S["L"]["root"], "[]"]>
           R: Remaining
       }>
-    : Parser.State.Error<IncompleteTokenMessage>
+    : ParserState.Error<IncompleteTokenMessage>
 
 export const incompleteTokenMessage = `Missing expected ']'.`
 
@@ -36,9 +38,9 @@ export class list extends unary implements boundableNode {
         return [this.child.tree, "[]"]
     }
 
-    allows(args: Nodes.Allows.Args) {
+    allows(args: Allows.Args) {
         if (!Array.isArray(args.data)) {
-            new Nodes.Allows.UnassignableDiagnostic(this.toString(), args)
+            new Allows.UnassignableDiagnostic(this.toString(), args)
             return false
         }
         let allItemsAllowed = true

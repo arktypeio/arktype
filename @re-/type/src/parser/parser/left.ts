@@ -1,25 +1,29 @@
+import { Base } from "../../nodes/base.js"
+import { LowerBoundDefinition } from "../../nodes/constraints/bounds.js"
 import type { Operator } from "../operator/index.js"
-import { Node, strNode, SuffixToken } from "./common.js"
+import { strNode, SuffixToken } from "./common.js"
 
-type base = {
+type leftBase = {
     groups: Operator.branches[]
     branches: Operator.branches
     root?: strNode
-    lowerBound?: Operator.Bound.LowerBoundDefinition
+    lowerBound?: LowerBoundDefinition
     nextSuffix?: SuffixToken
 }
 
-export type left<constraints extends Partial<base> = {}> = base & constraints
+export type left<constraints extends Partial<leftBase> = {}> = leftBase &
+    constraints
 
-type Base = {
-    lowerBound: Operator.Bound.LowerBoundDefinition | undefined
+type LeftBase = {
+    lowerBound: LowerBoundDefinition | undefined
     groups: Operator.Branches[]
     branches: Operator.Branches
     root: unknown
     nextSuffix?: SuffixToken
 }
 
-export type Left<Constraints extends Partial<Base> = {}> = Base & Constraints
+export type Left<Constraints extends Partial<LeftBase> = {}> = LeftBase &
+    Constraints
 
 export namespace left {
     export const initialize = (): left => ({
@@ -37,7 +41,7 @@ export namespace left {
     }
 
     type baseSuffix = {
-        lowerBound?: Operator.Bound.LowerBoundDefinition
+        lowerBound?: LowerBoundDefinition
         root: strNode
         nextSuffix: SuffixToken
     }
@@ -54,7 +58,7 @@ export namespace Left {
         root: undefined
     }>
 
-    export type IsPrefixable<L extends Base> = From<{
+    export type IsPrefixable<L extends LeftBase> = From<{
         lowerBound: undefined
         groups: []
         branches: {}
@@ -65,19 +69,20 @@ export namespace Left {
 }
 
 export namespace Left {
-    export type With<Constraints extends Partial<Base>> = Base & Constraints
+    export type With<Constraints extends Partial<LeftBase>> = LeftBase &
+        Constraints
 
-    export type From<L extends Base> = L
+    export type From<L extends LeftBase> = L
 
     export type Error<Message extends string> = From<{
         lowerBound: undefined
         groups: []
         branches: {}
-        root: Nodes.ParseError<Message>
+        root: Base.ParseError<Message>
         nextSuffix: "END"
     }>
 
-    export type SetRoot<L extends Base, Node> = From<{
+    export type SetRoot<L extends LeftBase, Node> = From<{
         lowerBound: L["lowerBound"]
         groups: L["groups"]
         branches: L["branches"]
@@ -85,7 +90,7 @@ export namespace Left {
     }>
 
     export type SetNextSuffix<
-        L extends Base,
+        L extends LeftBase,
         Token extends SuffixToken
     > = From<{
         lowerBound: L["lowerBound"]
@@ -98,7 +103,7 @@ export namespace Left {
     export type WithRoot<Root> = With<{ root: Root }>
 
     type SuffixInput = {
-        lowerBound: Operator.Bound.LowerBoundDefinition | undefined
+        lowerBound: LowerBoundDefinition | undefined
         root: unknown
         nextSuffix: SuffixToken
     }

@@ -1,7 +1,7 @@
 export * from "../common.js"
-import { tokenSet } from "./scanner.js"
+import { scanner } from "./scanner.js"
 
-export const comparators = tokenSet({
+export const comparators = scanner.tokens({
     "<": 1,
     ">": 1,
     "<=": 1,
@@ -11,7 +11,7 @@ export const comparators = tokenSet({
 
 export type Comparator = keyof typeof comparators
 
-export const suffixTokens = tokenSet({
+export const suffixTokens = scanner.tokens({
     ...comparators,
     END: 1,
     "?": 1
