@@ -1,9 +1,16 @@
 import {
+    boundableNode,
+    BoundableNode,
+    bounds,
+    Bounds,
+    isBoundable
+} from "../../../nodes/constraints/bounds.js"
+import {
     literalToNumber,
     NumberLiteralDefinition,
     numberLiteralNode
 } from "../../../nodes/types/terminal/literals/number.js"
-import { SuffixToken } from "../../parser/common.js"
+import { NodeToString, SuffixToken } from "../../parser/common.js"
 import { Left, left } from "../../parser/left.js"
 import { scanner } from "../../parser/scanner.js"
 import { parserState, ParserState } from "../../parser/state.js"
@@ -49,7 +56,7 @@ type BoundingValueWithSuffix<
 
 export const reduceRight = (
     s: parserState<left.suffix>,
-    right: BoundDefinition,
+    right: Bounds.Any,
     nextSuffix: SuffixToken
 ) =>
     hasBoundableRoot(s)
@@ -60,10 +67,10 @@ export const reduceRight = (
 
 export type ReduceRight<
     L extends Left.Suffix,
-    RightBound extends BoundDefinition,
-    NextSuffix extends Parser.SuffixToken
+    RightBound extends Bounds.Any,
+    NextSuffix extends SuffixToken
 > = L extends { root: BoundableNode }
-    ? L extends { lowerBound: LowerBoundDefinition }
+    ? L extends { lowerBound: Bounds.Lower }
         ? ReduceDouble<L, RightBound, NextSuffix>
         : ReduceSingle<L, RightBound, NextSuffix>
     : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
@@ -75,20 +82,19 @@ const hasBoundableRoot = (
 
 const hasLowerBound = (
     s: parserState.suffix
-): s is parserState.suffix<{ lowerBound: LowerBoundDefinition }> =>
-    !!s.l.lowerBound
+): s is parserState.suffix<{ lowerBound: Bounds.Lower }> => !!s.l.lowerBound
 
 type ReduceDouble<
     L extends Left.Suffix<{
         root: BoundableNode
-        lowerBound: LowerBoundDefinition
+        lowerBound: Bounds.Lower
     }>,
-    RightBound extends BoundDefinition,
+    RightBound extends Bounds.Any,
     NextSuffix extends SuffixToken
-> = RightBound extends UpperBoundDefinition
+> = RightBound extends Bounds.Upper
     ? Left.SuffixFrom<{
           lowerBound: undefined
-          root: Bound<L["root"], [L["lowerBound"], RightBound]>
+          root: Bounds.Apply<L["root"], [L["lowerBound"], RightBound]>
           nextSuffix: NextSuffix
       }>
     : Left.Error<InvalidDoubleBoundMessage<RightBound[0]>>
@@ -97,14 +103,14 @@ const reduceDouble = (
     s: parserState<
         left.suffix<{
             root: boundableNode
-            lowerBound: LowerBoundDefinition
+            lowerBound: Bounds.Lower
         }>
     >,
-    right: BoundDefinition,
+    right: Bounds.Any,
     nextSuffix: SuffixToken
 ) => {
     if (isValidDoubleBoundRight(right)) {
-        s.l.root.bounds = new boundsConstraint([s.l.lowerBound, right])
+        s.l.root.bounds = new bounds([s.l.lowerBound, right])
         s.l.lowerBound = undefined as any
         s.l.nextSuffix = nextSuffix
         return s
@@ -114,29 +120,27 @@ const reduceDouble = (
 
 type ReduceSingle<
     L extends Left.Suffix,
-    Single extends BoundDefinition,
+    Single extends Bounds.Any,
     NextSuffix extends SuffixToken
 > = Left.SuffixFrom<{
     lowerBound: undefined
-    root: Bound<L["root"], [Single]>
+    root: Bounds.Apply<L["root"], [Single]>
     nextSuffix: NextSuffix
 }>
 
 const reduceSingle = (
     s: parserState.suffix<{ root: boundableNode }>,
-    right: BoundDefinition,
+    right: Bounds.Any,
     nextSuffix: SuffixToken
 ) => {
-    s.l.root.bounds = new boundsConstraint([right])
+    s.l.root.bounds = new bounds([right])
     s.l.lowerBound = undefined
     s.l.nextSuffix = nextSuffix
     return s
 }
 
-const isValidDoubleBoundRight = (
-    right: BoundDefinition
-): right is UpperBoundDefinition =>
-    Parser.inTokenSet(right[0], doubleBoundComparators)
+const isValidDoubleBoundRight = (right: Bounds.Any): right is Bounds.Upper =>
+    scanner.inTokenSet(right[0], doubleBoundComparators)
 
 export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
 

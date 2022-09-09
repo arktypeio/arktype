@@ -1,6 +1,10 @@
 import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
 import { Base } from "./nodes/base.js"
-import { Str } from "./parser/str/str.js"
+import { Allows } from "./nodes/traversal/allows.js"
+import { Create } from "./nodes/traversal/create.js"
+import { References } from "./nodes/traversal/references.js"
+import { Traverse } from "./nodes/traversal/traverse.js"
+import { Str } from "./parser/str.js"
 import { Root } from "./root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "./space.js"
 
@@ -26,9 +30,9 @@ export namespace ResolutionType {
 }
 
 export class ResolutionNode extends Base.node {
-    public root: Nodes.base
+    public root: Base.node
     public rootDef: unknown
-    private ctx: Nodes.context
+    private ctx: Base.context
 
     constructor(public alias: string, space: SpaceMeta) {
         super()
@@ -37,7 +41,7 @@ export class ResolutionNode extends Base.node {
         const defAndOptions = getResolutionDefAndOptions(
             space.dictionary[alias]
         )
-        this.ctx = Nodes.initializeContext(
+        this.ctx = Base.initializeContext(
             defAndOptions.options
                 ? deepMerge(space.options, defAndOptions.options)
                 : space.options,
@@ -56,17 +60,17 @@ export class ResolutionNode extends Base.node {
     }
 
     collectReferences(
-        opts: Nodes.References.Options<string, boolean>,
-        collected: Nodes.References.Collection
+        opts: References.Options<string, boolean>,
+        collected: References.Collection
     ) {
         this.root.collectReferences(opts, collected)
     }
 
-    references(opts: Nodes.References.Options<string, boolean>) {
+    references(opts: References.Options<string, boolean>) {
         return this.root.references(opts)
     }
 
-    check(args: Nodes.Allows.Args): boolean {
+    check(args: Allows.Args): boolean {
         const nextArgs = this.nextArgs(args, this.ctx.validate)
         if (typeof args.data === "object" && args.data !== null) {
             if (
@@ -86,16 +90,12 @@ export class ResolutionNode extends Base.node {
             nextArgs.ctx.modelCfg.validator ??
             "default"
         if (customValidator !== "default") {
-            return Nodes.Allows.customValidatorAllows(
-                customValidator,
-                this,
-                nextArgs
-            )
+            return Allows.customValidatorAllows(customValidator, this, nextArgs)
         }
-        return this.root.allows(nextArgs)
+        return this.root.check(nextArgs)
     }
 
-    create(args: Nodes.Create.Args) {
+    create(args: Create.Args) {
         const nextArgs = this.nextArgs(args, this.ctx.create)
         if (args.ctx.seen.includes(this.alias)) {
             const onRequiredCycle =
@@ -104,14 +104,14 @@ export class ResolutionNode extends Base.node {
             if (onRequiredCycle) {
                 return onRequiredCycle
             }
-            throw new Nodes.Create.RequiredCycleError(this.alias, args.ctx.seen)
+            throw new Create.RequiredCycleError(this.alias, args.ctx.seen)
         }
         return this.root.create(nextArgs)
     }
 
     private nextArgs<
         Args extends {
-            ctx: Nodes.Traverse.Context<any>
+            ctx: Traverse.Context<any>
             cfg: any
         }
     >(args: Args, aliasCfg: any): Args {
@@ -130,7 +130,7 @@ export class ResolutionNode extends Base.node {
 //     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
-    Nodes.ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
+    Base.ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
 
 type CheckResolutionForShallowCycle<
     Resolution,

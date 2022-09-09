@@ -1,29 +1,31 @@
 import { Evaluate } from "@re-/tools"
-import { Keyword } from "../../operand/index.js"
-import { Allows } from "../traversal/allows.js"
+import { StrNode, strNode } from "../../parser/common.js"
 import {
-    Comparator,
     comparatorToString,
     DoubleBoundComparator,
     invertedComparators,
-    NormalizedLowerBoundComparator,
-    strNode,
-    StrNode
-} from "./common.js"
+    NormalizedLowerBoundComparator
+} from "../../parser/operator/bound/common.js"
+import { Comparator } from "../../parser/parser/common.js"
+import { Allows } from "../traversal/allows.js"
 
 export type Bounds = Bounds.Single | Bounds.Double
 
-export type Single = [[Comparator, number]]
+export namespace Bounds {
+    export type Any = [Comparator, number]
 
-export type Double = [Lower, Upper]
+    export type Lower = [NormalizedLowerBoundComparator, number]
 
-export type Lower = [NormalizedLowerBoundComparator, number]
+    export type Upper = [DoubleBoundComparator, number]
 
-export type Upper = [DoubleBoundComparator, number]
+    export type Single = [Any]
 
-export type Apply<Child = unknown, Def extends Bounds = Bounds> = Evaluate<
-    [Child, Def]
->
+    export type Double = [Lower, Upper]
+
+    export type Apply<Child = unknown, Def extends Bounds = Bounds> = Evaluate<
+        [Child, Def]
+    >
+}
 
 export type boundChecker = (y: number) => boolean
 
@@ -32,10 +34,7 @@ export type boundChecker = (y: number) => boolean
  *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100<alphanumeric")
  *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
  */
-export type BoundableNode =
-    | Keyword.OfTypeNumber
-    | Keyword.OfTypeString
-    | [unknown, "[]"]
+export type BoundableNode = ["string" | "number", unknown[]] | [unknown, "[]"]
 
 export type boundableData = number | string | unknown[]
 

@@ -1,4 +1,7 @@
-import { numberLiteralNode } from "../../operand/unenclosed/numberLiteral.js"
+import { numberLiteralNode } from "../../../nodes/types/terminal/literals/number.js"
+import { Left, left } from "../../parser/left.js"
+import { scanner } from "../../parser/scanner.js"
+import { parserState } from "../../parser/state.js"
 import {
     Comparator,
     DoubleBoundComparator,
@@ -6,8 +9,7 @@ import {
     InvalidDoubleBoundMessage,
     invalidDoubleBoundMessage,
     InvertedComparators,
-    invertedComparators,
-    Parser
+    invertedComparators
 } from "./common.js"
 
 type NonPrefixLeftBoundMessage<
@@ -25,7 +27,7 @@ export const nonPrefixLeftBoundMessage = <
     `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
 const applyLeftBound = (
-    s: Parser.state<Parser.left.withRoot<numberLiteralNode>>,
+    s: parserState<left.withRoot<numberLiteralNode>>,
     token: DoubleBoundComparator
 ) => {
     s.l.lowerBound = [invertedComparators[token], s.l.root.value]
@@ -34,26 +36,26 @@ const applyLeftBound = (
 }
 
 export const reduceLeft = (
-    s: Parser.state<Parser.left.withRoot<numberLiteralNode>>,
+    s: parserState<left.withRoot<numberLiteralNode>>,
     token: Comparator
 ) =>
     s.isPrefixable()
-        ? Parser.inTokenSet(token, doubleBoundComparators)
+        ? scanner.inTokenSet(token, doubleBoundComparators)
             ? applyLeftBound(s, token)
             : s.error(invalidDoubleBoundMessage(token))
         : s.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
 
 export type ReduceLeft<
-    L extends Parser.Left,
+    L extends Left,
     Value extends number,
     Token extends Comparator
-> = Parser.Left.IsPrefixable<L> extends true
+> = Left.IsPrefixable<L> extends true
     ? Token extends DoubleBoundComparator
-        ? Parser.Left.From<{
+        ? Left.From<{
               groups: []
               branches: {}
               root: undefined
               lowerBound: [InvertedComparators[Token], Value]
           }>
-        : Parser.Left.Error<InvalidDoubleBoundMessage<Token>>
-    : Parser.Left.Error<NonPrefixLeftBoundMessage<Value, Token>>
+        : Left.Error<InvalidDoubleBoundMessage<Token>>
+    : Left.Error<NonPrefixLeftBoundMessage<Value, Token>>

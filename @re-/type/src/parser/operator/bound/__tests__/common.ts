@@ -1,11 +1,15 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
-import { DynamicType } from "../../../../../type.js"
-import { Keyword } from "../../../operand/index.js"
-import { BoundsDefinition, boundViolationMessage } from "../bound.js"
+import {
+    Bounds,
+    boundViolationMessage
+} from "../../../../nodes/constraints/bounds.js"
+import { Keyword } from "../../../../nodes/types/terminal/keywords/keyword.js"
+import { stringKeywords } from "../../../../nodes/types/terminal/keywords/string.js"
+import { DynamicType } from "../../../../type.js"
+import { comparators } from "../../../parser/common.js"
 import {
     Comparator,
-    comparators,
     DoubleBoundComparator,
     doubleBoundComparators
 } from "../common.js"
@@ -18,9 +22,8 @@ export const arbitraryKeywordList = fc.constantFrom(
 export const arbitraryNumberKeyword = fc.constantFrom(
     ...keysOf(Keyword.numberNodes)
 )
-export const arbitraryStringKeyword = fc.constantFrom(
-    ...keysOf(Keyword.numberNodes)
-)
+export const arbitraryStringKeyword = fc.constantFrom(...keysOf(stringKeywords))
+
 export const aribtraryBoundable = fc.oneof(
     arbitraryNumberKeyword,
     arbitraryStringKeyword,
@@ -32,21 +35,18 @@ export const arbitraryComparator = fc.constantFrom(
 export const arbitraryDoubleComparator = fc.constantFrom(
     ...(Object.keys(doubleBoundComparators) as DoubleBoundComparator[])
 )
+
 const boundRange = { min: -1000, max: 1000, noNaN: true }
+
 export const arbitraryLimit = fc
     .oneof(fc.float(boundRange), fc.integer(boundRange))
     .map((limit) => Number.parseFloat(limit.toFixed(2)))
 
-const expectedCheckResult = (
-    expectedBounds: BoundsDefinition,
-    data: number
-) => {
+const expectedCheckResult = (expectedBounds: Bounds, data: number) => {
     for (const [comparator, limit] of expectedBounds) {
         const possibleExpectedErrorMessage = boundViolationMessage(
-            data,
             comparator,
             limit,
-            undefined,
             data
         )
         if (data > limit && !comparator.includes(">")) {
@@ -61,7 +61,7 @@ const expectedCheckResult = (
 
 const assertCheckResult = (
     t: DynamicType,
-    expectedBounds: BoundsDefinition,
+    expectedBounds: Bounds,
     data: number
 ) => {
     const actualError = t.check(data).errors
@@ -70,10 +70,7 @@ const assertCheckResult = (
     )
 }
 
-export const assertCheckResults = (
-    t: DynamicType,
-    expectedBounds: BoundsDefinition
-) => {
+export const assertCheckResults = (t: DynamicType, expectedBounds: Bounds) => {
     for (const bound of expectedBounds) {
         assertCheckResult(t, expectedBounds, bound[1] - 1)
         assertCheckResult(t, expectedBounds, bound[1])

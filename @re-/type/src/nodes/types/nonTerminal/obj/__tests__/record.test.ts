@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../index.js"
-import { unresolvableMessage } from "../../parser/str/operand/index.js"
+import { type } from "../../../../../index.js"
+import { unresolvableMessage } from "../../../../../parser/operand/unenclosed.js"
 import { ExtraneousKeysDiagnostic, MissingKeyDiagnostic } from "../record.js"
 
 describe("record", () => {
@@ -51,26 +51,7 @@ describe("record", () => {
                     assert(
                         shallow().check({ a: "ok" })
                             .errors as any as MissingKeyDiagnostic[]
-                    ).snap([
-                        {
-                            code: `MissingKey`,
-                            path: [`b`],
-                            type: `number`,
-                            data: undefined,
-                            message: `Missing required value of type number.`,
-                            key: `b`,
-                            options: undefined
-                        },
-                        {
-                            code: `MissingKey`,
-                            path: [`c`],
-                            type: `67`,
-                            data: undefined,
-                            message: `Missing required value of type 67.`,
-                            key: `c`,
-                            options: undefined
-                        }
-                    ])
+                    ).snap()
                 })
                 test("extraneous keys", () => {
                     assert(
@@ -88,29 +69,7 @@ describe("record", () => {
                                 }
                             }
                         ).errors as any as ExtraneousKeysDiagnostic[]
-                    ).snap([
-                        {
-                            code: `ExtraneousKeys`,
-                            path: [],
-                            type: `{
-    a: string,
-    b: number,
-    c: 67
-}`,
-                            data: {
-                                a: `ok`,
-                                b: 4.321,
-                                c: 67,
-                                d: `extraneous`,
-                                e: `x-ray-knee-us`
-                            },
-                            keys: [`d`, `e`],
-                            message: `Keys 'd', 'e' were unexpected.`,
-                            options: {
-                                enable: true
-                            }
-                        }
-                    ])
+                    ).snap()
                 })
                 test("missing and extraneous keys", () => {
                     assert(

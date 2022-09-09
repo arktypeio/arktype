@@ -1,4 +1,6 @@
-import { Node, obj } from "./common.js"
+import { Allows } from "../../../traversal/allows.js"
+import { Create } from "../../../traversal/create.js"
+import { obj } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
 
@@ -11,10 +13,10 @@ export class TupleNode extends obj<TupleDefinition> {
         return this.entries.map(([, itemNode]) => itemNode.tree)
     }
 
-    allows(args: Nodes.Allows.Args) {
+    check(args: Allows.Args) {
         if (!Array.isArray(args.data)) {
             args.diagnostics.push(
-                new Nodes.Allows.UnassignableDiagnostic(this.toString(), args)
+                new Allows.UnassignableDiagnostic(this.toString(), args)
             )
             return false
         }
@@ -26,13 +28,13 @@ export class TupleNode extends obj<TupleDefinition> {
             )
             return false
         }
-        return this.allowsItems(args as Nodes.Allows.Args<unknown[]>)
+        return this.allowsItems(args as Allows.Args<unknown[]>)
     }
 
-    private allowsItems(args: Nodes.Allows.Args<unknown[]>) {
+    private allowsItems(args: Allows.Args<unknown[]>) {
         let allItemsAllowed = true
         for (const [itemIndex, itemNode] of this.entries) {
-            const itemIsAllowed = itemNode.allows({
+            const itemIsAllowed = itemNode.check({
                 ...args,
                 data: args.data[itemIndex as any],
                 ctx: {
@@ -47,7 +49,7 @@ export class TupleNode extends obj<TupleDefinition> {
         return allItemsAllowed
     }
 
-    create(args: Nodes.Create.Args) {
+    create(args: Create.Args) {
         const result: unknown[] = []
         for (const [itemIndex, itemNode] of this.entries) {
             result.push(
@@ -64,12 +66,11 @@ export class TupleNode extends obj<TupleDefinition> {
     }
 }
 
-export class TupleLengthDiagnostic extends Nodes.Allows
-    .Diagnostic<"TupleLength"> {
+export class TupleLengthDiagnostic extends Allows.Diagnostic<"TupleLength"> {
     public message: string
 
     constructor(
-        args: Nodes.Allows.Args,
+        args: Allows.Args,
         public expectedLength: number,
         public actualLength: number
     ) {

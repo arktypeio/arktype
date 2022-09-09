@@ -1,7 +1,6 @@
 import { Base } from "./nodes/base.js"
-import { Nodes } from "./nodes/index.js"
-import { Obj } from "./obj/index.js"
-import { Str } from "./parser/str/str.js"
+import { Obj } from "./nodes/types/nonTerminal/obj/index.js"
+import { Str } from "./parser/str.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []
@@ -20,7 +19,7 @@ export namespace Root {
 
     export type Infer<
         Def,
-        Ctx extends Nodes.InferenceContext
+        Ctx extends Base.InferenceContext
     > = unknown extends Def
         ? Def
         : Def extends string
@@ -54,8 +53,8 @@ export namespace Root {
             ? Str.parse(def, ctx)
             : typeof def === "object" && def !== null
             ? Obj.parse(def, ctx)
-            : Nodes.throwParseError(
+            : Base.throwParseError(
                   badDefinitionTypeMessage +
-                      ` (got ${typeof def}${Nodes.ctxToString(ctx)}).`
+                      ` (got ${typeof def}${Base.ctxToString(ctx)}).`
               )
 }

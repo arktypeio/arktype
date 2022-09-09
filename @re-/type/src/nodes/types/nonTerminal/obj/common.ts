@@ -1,13 +1,13 @@
-export * from "../nodes/index.js"
-import { Node } from "../nodes/index.js"
-import { Root } from "../root.js"
+import { Root } from "../../../../root.js"
+import { Base } from "../../../base.js"
+import { References } from "../../../traversal/references.js"
 
-export type ChildEntry<KeyType> = [KeyType, Nodes.base]
+export type ChildEntry<KeyType> = [KeyType, Base.node]
 
-export abstract class obj<defType extends object> extends Nodes.base {
+export abstract class obj<defType extends object> extends Base.node {
     entries: ChildEntry<string>[]
 
-    constructor(protected definition: defType, private ctx: Nodes.context) {
+    constructor(protected definition: defType, private ctx: Base.context) {
         super()
         const entries = Object.entries(definition).map(
             ([k, childDef]): ChildEntry<string> => [
@@ -39,17 +39,17 @@ export abstract class obj<defType extends object> extends Nodes.base {
     }
 
     collectReferences(
-        opts: Nodes.References.Options<string, boolean>,
-        collected: Nodes.References.Collection
+        opts: References.Options<string, boolean>,
+        collected: References.Collection
     ) {
         for (const entry of this.entries) {
             entry[1].collectReferences(opts, collected)
         }
     }
 
-    override references(opts: Nodes.References.Options) {
+    override references(opts: References.Options) {
         if (opts.preserveStructure) {
-            const references: Nodes.References.StructuredReferences = {}
+            const references: References.StructuredReferences = {}
             for (const [k, childNode] of this.entries) {
                 references[k] = childNode.references(opts)
             }

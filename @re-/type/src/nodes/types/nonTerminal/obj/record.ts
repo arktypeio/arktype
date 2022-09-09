@@ -1,14 +1,17 @@
 import { Evaluate } from "@re-/tools"
-import { optional } from "../parser/str/operator/optional.js"
-import { Root } from "../root.js"
-import { Node, obj } from "./common.js"
+import { Root } from "../../../../root.js"
+import { Base } from "../../../base.js"
+import { Allows } from "../../../traversal/allows.js"
+import { Create } from "../../../traversal/create.js"
+import { optional } from "../expression/unary/optional.js"
+import { obj } from "./common.js"
 
 export namespace Record {
     export type Definition = Record<string, unknown>
 
     export type Infer<
         Def,
-        Ctx extends Nodes.InferenceContext,
+        Ctx extends Base.InferenceContext,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends `${string}?` ? K : never
         }[keyof Def],
@@ -25,8 +28,8 @@ export namespace Record {
 type RecordLike = Record<string, unknown>
 
 export const isArgValueRecordLike = (
-    args: Nodes.Allows.Args
-): args is Nodes.Allows.Args<RecordLike> =>
+    args: Allows.Args
+): args is Allows.Args<RecordLike> =>
     typeof args.data === "object" &&
     args.data !== null &&
     !Array.isArray(args.data)
@@ -40,10 +43,10 @@ export class RecordNode extends obj<RecordLike> {
         return result
     }
 
-    allows(args: Nodes.Allows.Args) {
+    check(args: Allows.Args) {
         if (!isArgValueRecordLike(args)) {
             args.diagnostics.push(
-                new Nodes.Allows.UnassignableDiagnostic(this.toString(), args)
+                new Allows.UnassignableDiagnostic(this.toString(), args)
             )
             return false
         }
@@ -64,7 +67,7 @@ export class RecordNode extends obj<RecordLike> {
     }
 
     // TODO: Should maybe not use set for perf?
-    private allowsProps(args: Nodes.Allows.Args<Record<string, unknown>>) {
+    private allowsProps(args: Allows.Args<Record<string, unknown>>) {
         const result = {
             extraneousValueKeys: new Set(Object.keys(args.data)),
             allSeenKeysAllowed: true
@@ -72,7 +75,7 @@ export class RecordNode extends obj<RecordLike> {
         for (const [propKey, propNode] of this.entries) {
             const propArgs = this.argsForProp(args, propKey)
             if (propKey in args.data) {
-                const propIsAllowed = propNode.allows(propArgs)
+                const propIsAllowed = propNode.check(propArgs)
                 if (!propIsAllowed) {
                     result.allSeenKeysAllowed = false
                 }
@@ -88,9 +91,9 @@ export class RecordNode extends obj<RecordLike> {
     }
 
     private argsForProp(
-        args: Nodes.Allows.Args<Record<string, unknown>>,
+        args: Allows.Args<Record<string, unknown>>,
         propKey: string
-    ): Nodes.Allows.Args {
+    ): Allows.Args {
         return {
             ...args,
             data: args.data[propKey],
@@ -101,7 +104,7 @@ export class RecordNode extends obj<RecordLike> {
         }
     }
 
-    create(args: Nodes.Create.Args) {
+    create(args: Create.Args) {
         const result: Record<string, unknown> = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
@@ -120,23 +123,22 @@ export class RecordNode extends obj<RecordLike> {
     }
 }
 
-export class ExtraneousKeysDiagnostic extends Nodes.Allows.Diagnostic<
+export class ExtraneousKeysDiagnostic extends Allows.Diagnostic<
     "ExtraneousKeys",
     { enable?: boolean }
 > {
     public message: string
 
-    constructor(args: Nodes.Allows.Args, public keys: string[]) {
+    constructor(args: Allows.Args, public keys: string[]) {
         super("ExtraneousKeys", args)
         this.message = `Keys ${keys.join(", ")} were unexpected.`
     }
 }
 
-export class MissingKeyDiagnostic extends Nodes.Allows
-    .Diagnostic<"MissingKey"> {
+export class MissingKeyDiagnostic extends Allows.Diagnostic<"MissingKey"> {
     public message: string
 
-    constructor(args: Nodes.Allows.Args, public key: string) {
+    constructor(args: Allows.Args, public key: string) {
         super("MissingKey", args)
         this.message = `${key} is required.`
     }

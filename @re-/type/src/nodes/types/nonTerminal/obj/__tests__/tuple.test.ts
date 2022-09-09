@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../index.js"
-import { unresolvableMessage } from "../../parser/str/operand/index.js"
+import { type } from "../../../../../index.js"
+import { unresolvableMessage } from "../../../../../parser/operand/unenclosed.js"
 import { TupleLengthDiagnostic } from "../tuple.js"
 
 describe("tuple", () => {
@@ -50,22 +50,7 @@ describe("tuple", () => {
                         shallow().check(["violin", 42]).errors as any as [
                             TupleLengthDiagnostic
                         ]
-                    ).snap([
-                        {
-                            code: `TupleLength`,
-                            path: [],
-                            type: `[
-    string,
-    number,
-    6
-]`,
-                            data: [`violin`, 42],
-                            message: `Tuple of length 2 is not assignable to tuple of length 3.`,
-                            expectedLength: 3,
-                            actualLength: 2,
-                            options: undefined
-                        }
-                    ])
+                    ).snap()
                 })
                 test("too long", () => {
                     assert(

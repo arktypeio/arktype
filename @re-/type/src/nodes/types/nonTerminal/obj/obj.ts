@@ -1,6 +1,6 @@
 import { Evaluate, IterateType, ListPossibleTypes, ValueOf } from "@re-/tools"
-import { Root } from "../root.js"
-import { Node } from "./common.js"
+import { Root } from "../../../../root.js"
+import { Base } from "../../../base.js"
 import { Record, RecordNode } from "./record.js"
 import { TupleNode } from "./tuple.js"
 
@@ -14,14 +14,14 @@ export type Parse<Def, Dict> = Evaluate<{
 
 export type Infer<
     Def,
-    Ctx extends Nodes.InferenceContext
+    Ctx extends Base.InferenceContext
 > = Def extends readonly unknown[]
     ? InferTuple<Def, Ctx>
     : Record.Infer<Def, Ctx>
 
 export type InferTuple<
     Def extends readonly unknown[],
-    Ctx extends Nodes.InferenceContext
+    Ctx extends Base.InferenceContext
 > = Evaluate<{
     [I in keyof Def]: Root.Infer<Def[I], Ctx>
 }>
@@ -50,7 +50,7 @@ type StructuredReferences<Def, Dict> = Evaluate<{
     [K in keyof Def]: Root.References<Def[K], Dict, true>
 }>
 
-export const parse: Nodes.parseFn<object> = (def, ctx) => {
+export const parse: Base.parseFn<object> = (def, ctx) => {
     if (TupleNode.matches(def)) {
         return new TupleNode(def, ctx)
     }
