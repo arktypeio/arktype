@@ -21,15 +21,22 @@ import {
     InvalidDoubleBoundMessage
 } from "./common.js"
 
-export const parseSuffix = (s: parserState<left.suffix>, token: Comparator) => {
+export const parseSuffixBound = (
+    s: parserState<left.suffix>,
+    token: Comparator
+) => {
     const boundingValue = s.r.shiftUntil(untilNextSuffix)
     const nextSuffix = s.r.shift() as "?" | "END"
     return numberLiteralNode.matches(boundingValue)
-        ? reduceRight(s, [token, literalToNumber(boundingValue)], nextSuffix)
+        ? reduceRightBound(
+              s,
+              [token, literalToNumber(boundingValue)],
+              nextSuffix
+          )
         : s.error(nonSuffixRightBoundMessage(token, boundingValue))
 }
 
-export type ParseSuffix<
+export type ParseSuffixBound<
     S extends ParserState.Of<Left.Suffix>,
     Token extends Comparator
 > = S["R"] extends BoundingValueWithSuffix<
@@ -38,12 +45,12 @@ export type ParseSuffix<
     infer Unscanned
 >
     ? ParserState.From<{
-          L: ReduceRight<S["L"], [Token, Value], NextSuffix>
+          L: ReduceRightBound<S["L"], [Token, Value], NextSuffix>
           R: Unscanned
       }>
     : S["R"] extends NumberLiteralDefinition<infer Value>
     ? ParserState.From<{
-          L: ReduceRight<S["L"], [Token, Value], "END">
+          L: ReduceRightBound<S["L"], [Token, Value], "END">
           R: ""
       }>
     : ParserState.Error<NonSuffixRightBoundMessage<Token, S["R"]>>
@@ -54,7 +61,7 @@ type BoundingValueWithSuffix<
     Unscanned extends string
 > = `${BoundingValue}${NextSuffix}${Unscanned}`
 
-export const reduceRight = (
+export const reduceRightBound = (
     s: parserState<left.suffix>,
     right: Bounds.Any,
     nextSuffix: SuffixToken
@@ -65,7 +72,7 @@ export const reduceRight = (
             : reduceSingle(s, right, nextSuffix)
         : s.error(unboundableMessage(s.l.root.toString()))
 
-export type ReduceRight<
+export type ReduceRightBound<
     L extends Left.Suffix,
     RightBound extends Bounds.Any,
     NextSuffix extends SuffixToken

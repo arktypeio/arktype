@@ -1,7 +1,12 @@
 import { Base } from "../nodes/base.js"
-import { Bounds } from "../nodes/constraints/bounds.js"
 import { strNode } from "./common.js"
 import { parseOperand, ParseOperand } from "./operand/operand.js"
+import {
+    ParseSuffixBound,
+    parseSuffixBound,
+    UnpairedLeftBoundMessage,
+    unpairedLeftBoundMessage
+} from "./operator/bound/right.js"
 import { MergeBranches, mergeBranches } from "./operator/branch/branch.js"
 import { ParseOptional, parseOptional } from "./operator/optional.js"
 import { ParseOperator, parseOperator } from "./operator/parse.js"
@@ -68,7 +73,7 @@ const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
         return finalize(parseOptional(s, ctx))
     }
     if (scanner.inTokenSet(s.l.nextSuffix, comparators)) {
-        return suffixLoop(Bounds.parseSuffix(s, s.l.nextSuffix, ctx), ctx)
+        return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
     }
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
 }
@@ -82,15 +87,15 @@ type NextSuffix<S extends ParserState.Of<Left.Suffix>> =
     S["L"]["nextSuffix"] extends "?"
         ? ParseOptional<S>
         : S["L"]["nextSuffix"] extends Comparator
-        ? Bound.ParseSuffix<S, S["L"]["nextSuffix"]>
+        ? ParseSuffixBound<S, S["L"]["nextSuffix"]>
         : ParserState.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
 
 const finalize = (s: parserState.suffix) =>
-    s.l.lowerBound ? s.error(Bound.unpairedLeftBoundMessage) : s.l.root
+    s.l.lowerBound ? s.error(unpairedLeftBoundMessage) : s.l.root
 
 type Finalize<L extends Left.Suffix> = L["lowerBound"] extends undefined
     ? L["root"]
-    : Base.ParseError<Bound.UnpairedLeftBoundMessage>
+    : Base.ParseError<UnpairedLeftBoundMessage>
 
 type UnexpectedSuffixMessage<Token extends string> =
     `Unexpected suffix token '${Token}'.`

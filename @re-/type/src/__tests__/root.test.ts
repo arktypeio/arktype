@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { dynamic, dynamicSpace, type } from "../index.js"
-import { unresolvableMessage } from "../parser/str/operand/index.js"
+import { unresolvableMessage } from "../parser/operand/unenclosed.js"
 
 describe("root definition", () => {
     describe("dynamic", () => {

@@ -1,11 +1,11 @@
 import { Base } from "../../nodes/base.js"
 import type { Bounds } from "../../nodes/constraints/bounds.js"
-import type { Operator } from "../operator/index.js"
+import { Branches, branches } from "../operator/branch/branch.js"
 import { strNode, SuffixToken } from "./common.js"
 
 type leftBase = {
-    groups: Operator.branches[]
-    branches: Operator.branches
+    groups: branches[]
+    branches: branches
     root?: strNode
     lowerBound?: Bounds.Lower
     nextSuffix?: SuffixToken
@@ -16,8 +16,8 @@ export type left<constraints extends Partial<leftBase> = {}> = leftBase &
 
 type LeftBase = {
     lowerBound: Bounds.Lower | undefined
-    groups: Operator.Branches[]
-    branches: Operator.Branches
+    groups: Branches[]
+    branches: Branches
     root: unknown
     nextSuffix?: SuffixToken
 }

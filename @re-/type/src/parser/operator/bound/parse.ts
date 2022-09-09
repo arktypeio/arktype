@@ -13,30 +13,30 @@ import {
 } from "./common.js"
 import { ReduceLeft, reduceLeft } from "./left.js"
 
-export const parse = (s: parserState.withRoot, start: ComparatorChar) =>
+export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
     s.r.lookahead === "="
-        ? reduce(s.shifted(), `${start}=`)
+        ? reduceBound(s.shifted(), `${start}=`)
         : scanner.inTokenSet(start, singleCharComparator)
-        ? reduce(s, start)
+        ? reduceBound(s, start)
         : s.error(singleEqualsMessage)
 
-export type Parse<
+export type ParseBound<
     S extends ParserState,
     Start extends ComparatorChar,
     Unscanned extends string
 > = Unscanned extends Scanner.Shift<"=", infer Rest>
-    ? ParserState.From<{ L: Reduce<S["L"], `${Start}=`>; R: Rest }>
+    ? ParserState.From<{ L: ReduceBound<S["L"], `${Start}=`>; R: Rest }>
     : Start extends SingleCharComparator
-    ? ParserState.From<{ L: Reduce<S["L"], Start>; R: Unscanned }>
+    ? ParserState.From<{ L: ReduceBound<S["L"], Start>; R: Unscanned }>
     : ParserState.Error<SingleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
 type SingleEqualsMessage = typeof singleEqualsMessage
 
-export const reduce = (s: parserState.withRoot, token: Comparator) =>
+export const reduceBound = (s: parserState.withRoot, token: Comparator) =>
     s.hasRoot(numberLiteralNode) ? reduceLeft(s, token) : s.suffixed(token)
 
-export type Reduce<L extends Left, Token extends Comparator> = L extends {
+export type ReduceBound<L extends Left, Token extends Comparator> = L extends {
     root: NumberLiteralDefinition<infer Value>
 }
     ? ReduceLeft<L, Value, Token>

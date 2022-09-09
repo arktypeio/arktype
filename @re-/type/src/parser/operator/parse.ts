@@ -3,6 +3,7 @@ import { Left } from "../parser/left.js"
 import { scanner, Scanner } from "../parser/scanner.js"
 import { parserState, ParserState } from "../parser/state.js"
 import { ComparatorChar, comparatorChars } from "./bound/common.js"
+import { ParseBound, parseBound } from "./bound/parse.js"
 import {
     ReduceIntersection,
     reduceIntersection
@@ -29,7 +30,7 @@ export const parseOperator = (
         : lookahead === ")"
         ? reduceGroupClose(s)
         : scanner.inTokenSet(lookahead, comparatorChars)
-        ? Bound.parse(s, lookahead)
+        ? parseBound(s, lookahead)
         : lookahead === " "
         ? parseOperator(s, ctx)
         : s.error(unexpectedCharacterMessage(lookahead))
@@ -62,7 +63,7 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
               R: Unscanned
           }>
         : Lookahead extends ComparatorChar
-        ? Bound.Parse<S, Lookahead, Unscanned>
+        ? ParseBound<S, Lookahead, Unscanned>
         : Lookahead extends " "
         ? ParseOperator<{ L: S["L"]; R: Unscanned }>
         : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>

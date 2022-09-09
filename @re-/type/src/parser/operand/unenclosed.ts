@@ -1,5 +1,6 @@
 import { Base } from "../../nodes/base.js"
 import { alias } from "../../nodes/types/terminal/alias.js"
+import { Keyword } from "../../nodes/types/terminal/keywords/keyword.js"
 import {
     BigintLiteralDefinition,
     bigintLiteralNode

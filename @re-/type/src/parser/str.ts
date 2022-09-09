@@ -1,4 +1,5 @@
 import { Base } from "../nodes/base.js"
+import { Bounds } from "../nodes/constraints/bounds.js"
 import { Branch } from "../nodes/types/nonTerminal/expression/branch/branch.js"
 import { Intersection } from "../nodes/types/nonTerminal/expression/branch/intersection.js"
 import { Union } from "../nodes/types/nonTerminal/expression/branch/union.js"

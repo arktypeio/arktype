@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { ElementOf, Evaluate, isNumeric, narrow } from "@re-/tools"
 import { describe, test } from "mocha"
-import { References, space, type } from "../index.js"
+import { ReferencesOf, space, type } from "../index.js"
 
 describe("references", () => {
     const objectDef = narrow({
@@ -131,11 +131,11 @@ describe("references", () => {
     describe("type", () => {
         describe("format", () => {
             test("default (list)", () => {
-                const actual = {} as References<ObjectDef, {}>
+                const actual = {} as ReferencesOf<ObjectDef, {}>
                 assert(actual).typed as ExpectedObjectDefReferenceList
             })
             test("tuple", () => {
-                const actual = {} as References<
+                const actual = {} as ReferencesOf<
                     "string|number[]|boolean&true?",
                     {},
                     { format: "tuple" }
@@ -143,7 +143,7 @@ describe("references", () => {
                 assert(actual).typed as ["string", "number", "boolean", "true"]
             })
             test("union", () => {
-                const actual = {} as References<
+                const actual = {} as ReferencesOf<
                     ObjectDef,
                     {},
                     { format: "union" }
@@ -152,7 +152,7 @@ describe("references", () => {
             })
         })
         test("filters", () => {
-            const referencesContainingI = {} as References<
+            const referencesContainingI = {} as ReferencesOf<
                 ObjectDef,
                 {},
                 { filter: `${string}i${string}`; format: "union" }

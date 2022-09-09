@@ -4,7 +4,7 @@ export class trueNode extends typeNode {
     }
 
     allowsValue(data: unknown) {
-        return value === true
+        return data === true
     }
 
     create(): true {

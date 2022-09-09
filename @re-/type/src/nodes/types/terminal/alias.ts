@@ -66,11 +66,11 @@ export class alias extends terminalNode {
         return this.ctx.space!.resolutions[this.def]
     }
 
-    check(args: Allows.Args): boolean {
-        return this.resolution.allows(args)
+    check(args: Allows.Args) {
+        return this.resolution.check(args)
     }
 
-    create(args: Create.Args): unknown {
+    create(args: Create.Args) {
         return this.resolution.create(args)
     }
 }
