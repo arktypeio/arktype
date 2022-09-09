@@ -4,6 +4,7 @@ import { basename, dirname, isAbsolute, join } from "node:path"
 import { fromCwd, readJson, requireResolve, shell, writeJson } from "@re-/node"
 import { toString } from "@re-/tools"
 import { CallExpression, Node, SourceFile, SyntaxKind, ts } from "ts-morph"
+import { BenchFormat, getBenchFormat } from "./bench/benchFormat.js"
 import {
     assertNoDuplicateBenchNames,
     BenchHistory,
@@ -18,14 +19,19 @@ import {
 } from "./common.js"
 import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
 
+export type BenchFormat = {
+    noInline?: boolean
+    noExternal?: boolean
+}
+
 export interface SnapshotArgs {
     position: SourcePosition
     serializedValue: unknown
     value: unknown
     snapFunctionName?: string
     baselineName?: string
+    benchFormat?: BenchFormat
 }
-
 export interface ExternalSnapshotArgs extends SnapshotArgs {
     name: string
     customPath: string | undefined
@@ -180,7 +186,7 @@ const queuedUpdates: QueuedUpdate[] = []
 const path = join(fromCwd(), "benchHistory.json")
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
-const writeUpdates = () => {
+const writeUpdates = (benchFormat: BenchFormat) => {
     if (!queuedUpdates.length) {
         return
     }
@@ -205,11 +211,12 @@ const writeUpdates = () => {
     } catch {
         // If prettier is unavailable, do nothing.
     }
-    writeJson(path, benchData)
+    !benchFormat.noExternal && writeJson(path, benchData)
 }
 process.on("exit", () => {
     try {
-        writeUpdates()
+        const format: BenchFormat = getBenchFormat()
+        writeUpdates(format)
     } catch (e) {
         console.error(e)
         throw e

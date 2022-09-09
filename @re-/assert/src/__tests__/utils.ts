@@ -13,7 +13,7 @@ export const runThenGetContents = (
     { precache, includeBenches }: RunThenGetContentsOptions = {}
 ) => {
     const testFileCopyPath = templatePath + ".temp.ts"
-    let RE_ASSERT_CMD = includeBenches ? "--bench" : ""
+    let RE_ASSERT_CMD = includeBenches ? "--bench --no-external" : ""
     copyFileSync(templatePath, testFileCopyPath)
     let testFileContents
     try {
