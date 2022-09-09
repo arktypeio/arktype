@@ -47,7 +47,8 @@ const expectedCheckResult = (expectedBounds: Bounds, data: number) => {
         const possibleExpectedErrorMessage = boundViolationMessage(
             comparator,
             limit,
-            data
+            data,
+            "number"
         )
         if (data > limit && !comparator.includes(">")) {
             return possibleExpectedErrorMessage
