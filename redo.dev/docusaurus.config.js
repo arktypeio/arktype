@@ -46,7 +46,7 @@ const config = {
             }
         ],
         [
-            "@docusaurus/preset-classic",
+            "@docusaurus/plugin-google-gtag",
             {
                 gtag: {
                     trackingID: "G-CR9TJ6QVM9",
