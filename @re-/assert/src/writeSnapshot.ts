@@ -94,7 +94,7 @@ const defaultFormat: BenchFormat = {
     noInline: false
 }
 
-const path = join(fromCwd(), "benchHistory.json")
+const benchHistoryPath = join(fromCwd(), "benchHistory.json")
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
 export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
@@ -102,7 +102,9 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
         return
     }
     assertNoDuplicateBenchNames(queuedUpdates)
-    const benchData: BenchHistory[] = existsSync(path) ? readJson(path) : []
+    const benchData: BenchHistory[] = existsSync(benchHistoryPath)
+        ? readJson(benchHistoryPath)
+        : []
     const benchFormat = queuedUpdates[0].benchFormat ?? defaultFormat
     for (const update of queuedUpdates) {
         updateIsBench(update) && upsertBenchResult(update, benchData)
@@ -115,7 +117,7 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
     }
     runPrettierIfAvailable(queuedUpdates)
     if (!benchFormat.noExternal) {
-        writeJson(path, benchData)
+        writeJson(benchHistoryPath, benchData)
     }
 }
 

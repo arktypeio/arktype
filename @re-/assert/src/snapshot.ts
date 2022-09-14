@@ -64,6 +64,7 @@ export const getSnapshotByName = (
     const snapshotPath = resolveSnapshotPath(file, customPath)
     return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
+
 export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
@@ -101,6 +102,14 @@ export type QueuedUpdate = {
     baselineName: string | undefined
     benchFormat: BenchFormat
 }
+
+/**
+ * Each time we encounter a snapshot that needs to be initialized
+ * or updated, we push its context to the global queuedUpdates variable.
+ * Then, on process exit, we call writeUpdates which handles updating all
+ * of the affected source (for inline snaps) or JSON (for external snaps or
+ * bench history) files.
+ **/
 const queuedUpdates: QueuedUpdate[] = []
 
 process.on("exit", () => {
