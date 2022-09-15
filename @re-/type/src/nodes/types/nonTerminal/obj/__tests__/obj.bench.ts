@@ -12,8 +12,8 @@ bench("validate map", () => {
         c: { nested: true }
     })
 })
-    .median(`1.55us`)
-    .type(`525 instantiations`)
+    .median(`1.37us`)
+    .type(`530 instantiations`)
 
 bench("validate map extraneous", () => {
     type({
@@ -29,7 +29,7 @@ bench("validate map extraneous", () => {
         f: {},
         g: true
     })
-}).median(`1.63us`)
+}).median(`1.54us`)
 
 bench("validate map bad", () => {
     type({
@@ -41,13 +41,13 @@ bench("validate map bad", () => {
         b: 5,
         c: { nested: true }
     })
-}).median(`2.05us`)
+}).median(`1.93us`)
 
 bench("validate tuple", () => {
     type(["string?", "number?", ["boolean?"]]).check(["okay", 5, [true]])
 })
-    .median(`1.75us`)
-    .type(`903 instantiations`)
+    .median(`1.44us`)
+    .type(`931 instantiations`)
 
 bench("errors at paths", () => {
     type({
@@ -55,4 +55,4 @@ bench("errors at paths", () => {
         b: "boolean?",
         c: { nested: ["undefined|null", "bigint"] }
     }).check({ a: [], b: "hi", c: { nested: [true, 5] } })
-}).median(`7.88us`)
+}).median(`7.35us`)

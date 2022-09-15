@@ -19,22 +19,22 @@ while (i < 50) {
 }
 bench("validate recursive", () => {
     recursive.dejaVu.check(dejaVu)
-}).median(`77.57us`)
+}).median(`68.80us`)
 
 bench("cyclic(10)", () => {
     const cyclic10Space = space(cyclic10)
 })
-    .median(`16.00us`)
-    .type(`2053 instantiations`)
+    .median(`14.32us`)
+    .type(`1490 instantiations`)
 
 bench("cyclic(100)", () => {
     const cyclic100Space = space(cyclic100)
 })
-    .median(`186.09us`)
-    .type(`9189 instantiations`)
+    .median(`169.08us`)
+    .type(`8626 instantiations`)
 
 bench("cyclic(500)", () => {
     const cyclic500Space = space(cyclic500)
 })
-    .median(`1.08ms`)
-    .type(`41531 instantiations`)
+    .median(`917.90us`)
+    .type(`40968 instantiations`)
