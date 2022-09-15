@@ -123,6 +123,9 @@ const config = {
                     }
                 ],
                 copyright: `Copyright © ${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
+            },
+            colorMode: {
+                defaultMode: "light"
             }
         })
 }
