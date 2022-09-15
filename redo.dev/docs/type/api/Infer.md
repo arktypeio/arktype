@@ -11,7 +11,7 @@ undefined
 ```ts
 export declare type Infer<Def, S extends Space> = Root.Infer<
     Def,
-    Node.InferenceContext.From<{
+    Base.InferenceContext.From<{
         Dict: S["Dict"]
         Meta: S["Meta"]
         Seen: {}

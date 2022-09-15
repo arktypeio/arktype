@@ -6,11 +6,10 @@
     "scripts": {
         "build": "pnpm --filter '@re-/*' build",
         "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
-        "test": "pnpm typecheck-tests && pnpm -r test && pnpm -r testBuild && pnpm test-repo-scripts",
+        "test": "pnpm -r test && pnpm -r testBuild && pnpm test-repo-scripts",
         "lint": "eslint --max-warnings=0 .",
         "build-pages": "pnpm --filter 'redo.dev' build",
         "docgen": "ts-node ./scripts/docgen.ts && pnpm build-pages",
-        "typecheck-tests": "tsc -p tsconfig.references.json",
         "test-repo-scripts": "ts-node ./scripts/testScripts.ts",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",

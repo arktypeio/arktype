@@ -1,4 +1,4 @@
-# References
+# ReferencesOf
 
 ## tags
 
@@ -9,10 +9,10 @@ undefined
 ## text
 
 ```ts
-export declare type References<
+export declare type ReferencesOf<
     Def,
     Dict,
-    Options extends Node.References.TypeOptions = {}
+    Options extends References.TypeOptions = {}
 > = Merge<
     {
         filter: string
@@ -20,7 +20,7 @@ export declare type References<
         format: "list"
     },
     Options
-> extends Node.References.TypeOptions<
+> extends References.TypeOptions<
     infer Filter,
     infer PreserveStructure,
     infer Format
