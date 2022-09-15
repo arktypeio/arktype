@@ -25,7 +25,10 @@ export const getTheme = ({ isDark }: ThemeConfigOptions) =>
                 main: "#FF7518"
             },
             info: {
-                main: "#9932CC"
+                main: "#264bcf"
+            },
+            background: {
+                default: isDark ? "#242424" : "#fff"
             }
         },
         typography: {

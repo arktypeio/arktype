@@ -44,6 +44,13 @@ const config = {
                 path: "docs/assert",
                 routeBasePath: "assert"
             }
+        ],
+        [
+            "@docusaurus/plugin-google-gtag",
+            {
+                trackingID: "G-CR9TJ6QVM9",
+                anonymizeIP: true
+            }
         ]
     ],
     themeConfig:
@@ -117,19 +124,8 @@ const config = {
                 ],
                 copyright: `Copyright © ${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
             },
-            presets: [
-                [
-                    "@docusaurus/preset-classic",
-                    {
-                        gtag: {
-                            trackingID: "G-CR9TJ6QVM9",
-                            anonymizeIP: true
-                        }
-                    }
-                ]
-            ],
             colorMode: {
-                respectPrefersColorScheme: true
+                defaultMode: "light"
             }
         })
 }

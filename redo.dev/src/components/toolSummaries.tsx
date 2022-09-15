@@ -1,8 +1,14 @@
-import { useColorMode } from "@docusaurus/theme-common"
 import Collapse from "@mui/icons-material/ExpandLess"
 import Expand from "@mui/icons-material/ExpandMore"
 import Terminal from "@mui/icons-material/Terminal"
-import { Button, Container, Grid, Stack, Typography } from "@mui/material"
+import {
+    Button,
+    Container,
+    Grid,
+    Stack,
+    Typography,
+    useTheme
+} from "@mui/material"
 import React, { useRef, useState } from "react"
 import { StackBlitzDemo } from "../../docs/type/demos/index"
 import { MemoizedLoadingAnimation } from "./LoadingAnimation/LoadingAnimation"
@@ -17,7 +23,7 @@ type ToolSummaryData = {
 }
 
 type ToolSummaryProps = ToolSummaryData & {
-    buttonColor: "primary" | "secondary"
+    buttonColor: "info"
     activeDemo: JSX.Element | null
     setActiveDemo: (demo: JSX.Element | null) => void
     setLoading: (isLoading: boolean) => void
@@ -40,8 +46,6 @@ const toolSummaries: ToolSummaryData[] = [
 ]
 
 export const ToolSummaries = () => {
-    const { colorMode } = useColorMode()
-    const buttonColor = colorMode === "dark" ? "secondary" : "primary"
     const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
     const [loading, setLoading] = useState<boolean>(false)
     const ref = useRef<null | HTMLSpanElement>(null)
@@ -52,7 +56,7 @@ export const ToolSummaries = () => {
                     <Grid item key={index} xs={12} md={6}>
                         <ToolSummary
                             {...summaryData}
-                            buttonColor={buttonColor}
+                            buttonColor={"info"}
                             setActiveDemo={setActiveDemo}
                             setLoading={setLoading}
                             activeDemo={activeDemo}
@@ -81,13 +85,14 @@ const ToolSummary = (props: ToolSummaryProps) => {
 }
 
 const ToolText = (props: ToolSummaryProps) => {
+    const theme = useTheme()
     return (
         <>
             <Typography
                 component="h3"
                 variant="h5"
                 fontWeight="700"
-                color="primary"
+                color={theme.palette.info.main}
             >
                 {`${props.name}${props.comingSoon ? " (coming soon)" : ""}`}
             </Typography>

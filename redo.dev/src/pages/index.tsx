@@ -30,7 +30,7 @@ const Contents = () => {
                     {siteConfig.tagline}
                 </Typography>
             </header>
-            <main style={{ background: isDark ? "#242424" : "white" }}>
+            <main style={{ background: "background.default" }}>
                 <ToolSummaries />
             </main>
         </ThemeProvider>
