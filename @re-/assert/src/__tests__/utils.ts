@@ -1,19 +1,27 @@
 import { copyFileSync, rmSync } from "node:fs"
 import { fromHere, readFile, shell } from "@re-/node"
+import { BenchFormat } from "../writeSnapshot.js"
 
 const PATH_TO_TEST_ASSERTIONS_DIR = fromHere(".reassert")
 
 export type RunThenGetContentsOptions = {
     precache?: boolean
     includeBenches?: boolean
+    benchFormat?: BenchFormat
 }
 
 export const runThenGetContents = (
     templatePath: string,
-    { precache, includeBenches }: RunThenGetContentsOptions = {}
+    { precache, includeBenches, benchFormat }: RunThenGetContentsOptions = {}
 ) => {
     const testFileCopyPath = templatePath + ".temp.ts"
-    let RE_ASSERT_CMD = includeBenches ? "--bench" : ""
+    let RE_ASSERT_CMD = includeBenches ? " --bench" : ""
+    if (benchFormat?.noExternal) {
+        RE_ASSERT_CMD += " --no-external"
+    }
+    if (benchFormat?.noInline) {
+        RE_ASSERT_CMD += " --no-inline"
+    }
     copyFileSync(templatePath, testFileCopyPath)
     let testFileContents
     try {

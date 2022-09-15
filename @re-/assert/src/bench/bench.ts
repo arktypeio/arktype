@@ -1,6 +1,7 @@
 import { caller } from "@re-/node"
 import { chainableNoOpProxy } from "@re-/tools"
 import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
+import { BenchFormat } from "../writeSnapshot.js"
 import { BenchAssertions, TimeAssertionName } from "./call.js"
 import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
 
@@ -18,6 +19,7 @@ export type BenchOptions = BaseBenchOptions & {
         beforeCall?: () => void
         afterCall?: () => void
     }
+    benchFormat?: BenchFormat
 }
 
 export type InternalBenchOptions = BenchOptions & {
