@@ -1,7 +1,7 @@
 import { Allows } from "../../../traversal/allows.js"
 import { terminalNode } from "../terminal.js"
 
-export type PrimitiveLiteralValue = string | number | bigint
+export type PrimitiveLiteralValue = string | number | bigint | boolean
 
 export abstract class literalNode<
     Value extends PrimitiveLiteralValue

@@ -1,27 +1,7 @@
-export class trueNode extends typeNode {
+import { literalNode } from "./literal.js"
+
+export class booleanLiteralNode extends literalNode<boolean> {
     toString() {
-        return "true"
-    }
-
-    allowsValue(data: unknown) {
-        return data === true
-    }
-
-    create(): true {
-        return true
-    }
-}
-
-export class falseNode extends typeNode {
-    toString() {
-        return "false"
-    }
-
-    allowsValue(data: unknown) {
-        return value === false
-    }
-
-    create(): false {
-        return false
+        return this.value ? "true" : "false"
     }
 }

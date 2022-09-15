@@ -2,6 +2,7 @@ import { Base } from "../../nodes/base.js"
 import { alias } from "../../nodes/types/terminal/alias.js"
 import { Keyword } from "../../nodes/types/terminal/keywords/keyword.js"
 import { bigintLiteralNode } from "../../nodes/types/terminal/literals/bigint.js"
+import { booleanLiteralNode } from "../../nodes/types/terminal/literals/boolean.js"
 import { numberLiteralNode } from "../../nodes/types/terminal/literals/number.js"
 import { Left } from "../parser/left.js"
 import { scanner, Scanner } from "../parser/scanner.js"
@@ -36,13 +37,12 @@ export type ParseUnenclosedBase<
 export const toNodeIfResolvableIdentifier = (
     token: string,
     ctx: Base.context
-) => {
-    if (Keyword.matches(token)) {
-        return Keyword.parse(token)
-    } else if (alias.matches(token, ctx)) {
-        return new alias(token, ctx)
-    }
-}
+) =>
+    Keyword.matches(token)
+        ? Keyword.parse(token)
+        : alias.matches(token, ctx)
+        ? new alias(token, ctx)
+        : undefined
 
 /**
  * The goal of the number literal and bigint literal regular expressions is to:
@@ -63,7 +63,10 @@ export type NumberLiteralDefinition<Value extends number = number> = `${Value}`
  *    3. If the value includes a decimal, its last digit may not be 0
  *    4. The value may not be "-0"
  */
-const NUMBER_MATCHER = /^(?!^-0$)(-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?)$/
+const NUMBER_MATCHER = /^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
+
+export const isNumberLiteral = (def: string): def is NumberLiteralDefinition =>
+    NUMBER_MATCHER.test(def)
 
 /**
  *  Matches a well-formatted bigint expression according to the following rules:
@@ -73,7 +76,10 @@ const NUMBER_MATCHER = /^(?!^-0$)(-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?)$/
  */
 export type BigintLiteralDefinition<Value extends bigint = bigint> = `${Value}n`
 
-const BIGINT_MATCHER = /^(0|(?:-?[1-9]\d*))n$/
+const BIGINT_MATCHER = /^0|(?:-?[1-9]\d*)n$/
+
+export const isBigintLiteral = (def: string): def is BigintLiteralDefinition =>
+    BIGINT_MATCHER.test(def)
 
 export const literalToNumber = (def: NumberLiteralDefinition) => {
     const value = parseFloat(def)
@@ -85,22 +91,25 @@ export const literalToNumber = (def: NumberLiteralDefinition) => {
     return value
 }
 
-const unenclosedToNode = (s: parserState, token: string, ctx: Base.context) => {
-    const possibleIdentifierNode = toNodeIfResolvableIdentifier(token, ctx)
-    if (possibleIdentifierNode) {
-        return possibleIdentifierNode
-    }
-    if (numberLiteralNode.matches(token)) {
-        return new numberLiteralNode(token)
-    }
-    if (bigintLiteralNode.matches(token)) {
-        return new bigintLiteralNode(token)
-    }
-    if (!token) {
-        throw new Error(expressionExpectedMessage(s.r.unscanned))
-    }
-    throw new Error(unresolvableMessage(token))
-}
+export const toNodeIfLiteral = (token: string) =>
+    isNumberLiteral(token)
+        ? new numberLiteralNode(literalToNumber(token))
+        : isBigintLiteral(token)
+        ? new bigintLiteralNode(BigInt(token.slice(0, -1)))
+        : token === "true"
+        ? new booleanLiteralNode(true)
+        : token === "false"
+        ? new booleanLiteralNode(false)
+        : undefined
+
+const unenclosedToNode = (s: parserState, token: string, ctx: Base.context) =>
+    toNodeIfResolvableIdentifier(token, ctx) ??
+    toNodeIfLiteral(token) ??
+    s.error(
+        token === ""
+            ? expressionExpectedMessage(s.r.unscanned)
+            : unresolvableMessage(token)
+    )
 
 type ReduceUnenclosed<
     L extends Left,
