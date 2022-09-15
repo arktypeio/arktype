@@ -2,6 +2,10 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { dynamic, type } from "../../../../index.js"
+import {
+    Bounds,
+    BoundViolationDiagnostic
+} from "../../../../nodes/constraints/bounds.js"
 import { invalidDoubleBoundMessage, invertedComparators } from "../common.js"
 import { nonPrefixLeftBoundMessage } from "../left.js"
 import { singleEqualsMessage } from "../parse.js"
@@ -10,11 +14,7 @@ import {
     unboundableMessage,
     unpairedLeftBoundMessage
 } from "../right.js"
-import {
-    BoundViolationDiagnostic,
-    DoubleBoundDefinition,
-    SingleBoundDefinition
-} from "./bound.js"
+
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,
@@ -132,9 +132,7 @@ describe("bound", () => {
                         const singleBound = dynamic(
                             `number${comparator}${limit}`
                         )
-                        const expectedBounds: SingleBoundDefinition = [
-                            [comparator, limit]
-                        ]
+                        const expectedBounds: Bounds = [[comparator, limit]]
                         assert(singleBound.tree).equals([
                             "number",
                             expectedBounds
@@ -160,7 +158,7 @@ describe("bound", () => {
                         const doubleBound = dynamic(
                             `${lowerLimit}${lowerComparator}number${upperComparator}${upperLimit}`
                         )
-                        const expectedBounds: DoubleBoundDefinition = [
+                        const expectedBounds: Bounds = [
                             [invertedComparators[lowerComparator], lowerLimit],
                             [upperComparator, upperLimit]
                         ]
@@ -194,12 +192,11 @@ describe("bound", () => {
                 {
                     code: `BoundViolation`,
                     path: [],
-                    type: `string>=3`,
                     data: `no`,
+                    kind: "number",
                     comparator: `>=`,
                     limit: 3,
                     size: 2,
-                    units: `characters`,
                     message: `"no" must be greater than or equal to 3 characters (was 2).`,
                     options: undefined
                 }

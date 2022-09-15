@@ -4,6 +4,7 @@ import { booleanNode } from "./boolean.js"
 import { functionNode } from "./function.js"
 import { neverNode } from "./never.js"
 import { nullNode } from "./null.js"
+import { numberKeywords } from "./number.js"
 import { objectNode } from "./object.js"
 import { stringKeywords } from "./string.js"
 import { symbolNode } from "./symbol.js"
@@ -30,7 +31,8 @@ export namespace Keyword {
         undefined: new undefinedNode(),
         unknown: new unknownNode(),
         void: new voidNode(),
-        ...stringKeywords
+        ...stringKeywords,
+        ...numberKeywords
     }
 
     export const matches = (def: string): def is Definition => def in nodes

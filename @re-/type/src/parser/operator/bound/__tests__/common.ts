@@ -5,6 +5,7 @@ import {
     boundViolationMessage
 } from "../../../../nodes/constraints/bounds.js"
 import { Keyword } from "../../../../nodes/types/terminal/keywords/keyword.js"
+import { numberKeywords } from "../../../../nodes/types/terminal/keywords/number.js"
 import { stringKeywords } from "../../../../nodes/types/terminal/keywords/string.js"
 import { DynamicType } from "../../../../type.js"
 import { comparators } from "../../../parser/common.js"
@@ -19,9 +20,7 @@ const keysOf = (o: object) => Object.keys(o)
 export const arbitraryKeywordList = fc.constantFrom(
     ...keysOf(Keyword.nodes).map((_) => `${_}[]`)
 )
-export const arbitraryNumberKeyword = fc.constantFrom(
-    ...keysOf(Keyword.numberNodes)
-)
+export const arbitraryNumberKeyword = fc.constantFrom(...keysOf(numberKeywords))
 export const arbitraryStringKeyword = fc.constantFrom(...keysOf(stringKeywords))
 
 export const aribtraryBoundable = fc.oneof(

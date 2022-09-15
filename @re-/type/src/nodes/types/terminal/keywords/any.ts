@@ -5,7 +5,7 @@ export class anyNode extends typeNode {
         return "any"
     }
 
-    allowsValue() {
+    allows() {
         return true
     }
 

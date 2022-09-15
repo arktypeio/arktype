@@ -5,7 +5,7 @@ export class booleanNode extends typeNode {
         return "boolean"
     }
 
-    allowsValue(data: unknown) {
+    allows(data: unknown) {
         return typeof data === "boolean"
     }
 

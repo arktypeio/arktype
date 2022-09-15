@@ -4,7 +4,7 @@ export class unknownNode extends typeNode {
     toString() {
         return "unknown"
     }
-    allowsValue() {
+    allows() {
         return true
     }
 

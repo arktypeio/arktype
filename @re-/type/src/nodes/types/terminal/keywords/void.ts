@@ -5,7 +5,7 @@ export class voidNode extends typeNode {
         return "void"
     }
 
-    allowsValue(data: unknown) {
+    allows(data: unknown) {
         return data === undefined
     }
 

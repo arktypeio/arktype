@@ -5,7 +5,7 @@ export class bigintNode extends typeNode {
         return "bigint"
     }
 
-    allowsValue(data: unknown) {
+    allows(data: unknown) {
         return typeof data === "bigint"
     }
 

@@ -6,10 +6,10 @@ import {
     isBoundable
 } from "../../../nodes/constraints/bounds.js"
 import {
-    literalToNumber,
+    isNumberLiteral,
     NumberLiteralDefinition,
-    numberLiteralNode
-} from "../../../nodes/types/terminal/literals/number.js"
+    numberLiteralToValue
+} from "../../operand/unenclosed.js"
 import { NodeToString, SuffixToken } from "../../parser/common.js"
 import { Left, left } from "../../parser/left.js"
 import { scanner } from "../../parser/scanner.js"
@@ -27,10 +27,10 @@ export const parseSuffixBound = (
 ) => {
     const boundingValue = s.r.shiftUntil(untilNextSuffix)
     const nextSuffix = s.r.shift() as "?" | "END"
-    return numberLiteralNode.matches(boundingValue)
+    return isNumberLiteral(boundingValue)
         ? reduceRightBound(
               s,
-              [token, literalToNumber(boundingValue)],
+              [token, numberLiteralToValue(boundingValue)],
               nextSuffix
           )
         : s.error(nonSuffixRightBoundMessage(token, boundingValue))

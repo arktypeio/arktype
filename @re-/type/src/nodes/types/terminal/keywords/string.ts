@@ -1,8 +1,8 @@
 import { boundableNode, bounds } from "../../../constraints/bounds.js"
-import { regexConstraint } from "../../../constraints/regex.js"
-import { typeNode } from "./type.js"
+import { Allows } from "../../../traversal/allows.js"
+import { terminalNode } from "../terminal.js"
 
-export class stringNode extends typeNode implements boundableNode {
+export class stringNode extends terminalNode implements boundableNode {
     bounds: bounds | undefined = undefined
 
     constructor(private regex?: regexConstraint) {
@@ -13,16 +13,41 @@ export class stringNode extends typeNode implements boundableNode {
         return this.regex?.definition ?? "string"
     }
 
-    allowsValue(data: unknown) {
-        if (typeof data === "string") {
+    check(args: Allows.Args) {
+        if (typeof args.data === "string") {
             // this?.regex?.check(data)
             // this?.bounds?.check()
         }
-        return typeof data === "string"
+        return typeof args.data === "string"
     }
 
-    create(): string {
+    create() {
         return ""
+    }
+}
+
+export class RegexMismatchDiagnostic extends Allows.Diagnostic<"RegexMismatch"> {
+    message
+
+    constructor(args: Allows.Args, public description: string) {
+        super("RegexMismatch", args)
+        this.message = `'${this.data}' must ${description}.`
+    }
+}
+
+export class regexConstraint {
+    constructor(
+        public definition: string,
+        public matcher: RegExp,
+        public description = `match expression /${matcher.source}/`
+    ) {}
+
+    check(args: Allows.Args<string>) {
+        if (!this.matcher.test(args.data)) {
+            args.diagnostics.push(
+                new RegexMismatchDiagnostic(args, this.description)
+            )
+        }
     }
 }
 

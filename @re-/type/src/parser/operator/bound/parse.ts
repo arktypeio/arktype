@@ -1,7 +1,5 @@
-import {
-    NumberLiteralDefinition,
-    numberLiteralNode
-} from "../../../nodes/types/terminal/literals/number.js"
+import { numberLiteralNode } from "../../../nodes/types/terminal/literals/number.js"
+import { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import { Left } from "../../parser/left.js"
 import { scanner, Scanner } from "../../parser/scanner.js"
 import { parserState, ParserState } from "../../parser/state.js"

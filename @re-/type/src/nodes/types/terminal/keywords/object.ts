@@ -5,7 +5,7 @@ export class objectNode extends typeNode {
         return "object"
     }
 
-    allowsValue(data: unknown) {
+    allows(data: unknown) {
         return typeof data === "object" && data !== null
     }
 

@@ -3,7 +3,7 @@ import { terminalNode } from "../terminal.js"
 
 export abstract class typeNode extends terminalNode {
     check(args: Allows.Args) {
-        if (this.allowsValue(args.data)) {
+        if (this.allows(args.data)) {
             return true
         }
         args.diagnostics.push(
@@ -12,5 +12,5 @@ export abstract class typeNode extends terminalNode {
         return false
     }
 
-    abstract allowsValue(data: unknown): boolean
+    abstract allows(data: unknown): boolean
 }

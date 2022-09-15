@@ -6,7 +6,7 @@ export class neverNode extends typeNode {
         return "never"
     }
 
-    allowsValue() {
+    allows() {
         return false
     }
 

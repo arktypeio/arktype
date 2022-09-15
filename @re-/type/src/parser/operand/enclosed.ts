@@ -1,9 +1,8 @@
-import { regexConstraint } from "../../nodes/constraints/regex.js"
-import { stringNode } from "../../nodes/types/terminal/keywords/string.js"
 import {
-    StringLiteralDefinition,
-    StringLiteralNode
-} from "../../nodes/types/terminal/literals/string.js"
+    regexConstraint,
+    stringNode
+} from "../../nodes/types/terminal/keywords/string.js"
+import { StringLiteralNode } from "../../nodes/types/terminal/literals/string.js"
 import { Left } from "../parser/left.js"
 import { scanner } from "../parser/scanner.js"
 import { ParserState, parserState } from "../parser/state.js"
@@ -15,6 +14,14 @@ export const enclosedBaseStartChars = scanner.tokens({
 })
 
 export type EnclosedBaseStartChar = keyof typeof enclosedBaseStartChars
+
+export type RegexLiteralDefinition = `/${string}/`
+
+export type StringLiteralDefinition<Text extends string = string> =
+    | `'${Text}'`
+    | `"${Text}"`
+
+export type StringLiteralQuote = `'` | `"`
 
 export const unterminatedEnclosedMessage = <
     Fragment extends string,

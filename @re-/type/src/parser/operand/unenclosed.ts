@@ -47,8 +47,7 @@ export const toNodeIfResolvableIdentifier = (
 /**
  * The goal of the number literal and bigint literal regular expressions is to:
  *
- *   1. Ensure definitions form a bijection with the values they represent
- *      (https://en.wikipedia.org/wiki/Bijection).
+ *   1. Ensure definitions form a bijection with the values they represent.
  *   2. Attempt to mirror TypeScript's own format for stringification of numeric
  *      values such that the regex should match a given definition if any only if
  *      a precise literal type will be inferred (in TS4.8+).
@@ -81,7 +80,7 @@ const BIGINT_MATCHER = /^0|(?:-?[1-9]\d*)n$/
 export const isBigintLiteral = (def: string): def is BigintLiteralDefinition =>
     BIGINT_MATCHER.test(def)
 
-export const literalToNumber = (def: NumberLiteralDefinition) => {
+export const numberLiteralToValue = (def: NumberLiteralDefinition) => {
     const value = parseFloat(def)
     if (Number.isNaN(value)) {
         throw new Error(
@@ -91,9 +90,12 @@ export const literalToNumber = (def: NumberLiteralDefinition) => {
     return value
 }
 
+export type BooleanLiteralDefinition<Value extends boolean = boolean> =
+    `${Value}`
+
 export const toNodeIfLiteral = (token: string) =>
     isNumberLiteral(token)
-        ? new numberLiteralNode(literalToNumber(token))
+        ? new numberLiteralNode(numberLiteralToValue(token))
         : isBigintLiteral(token)
         ? new bigintLiteralNode(BigInt(token.slice(0, -1)))
         : token === "true"
@@ -144,5 +146,7 @@ type IsResolvableUnenclosed<Token, Dict> = IsResolvableName<
     : Token extends NumberLiteralDefinition
     ? true
     : Token extends BigintLiteralDefinition
+    ? true
+    : Token extends BooleanLiteralDefinition
     ? true
     : false
