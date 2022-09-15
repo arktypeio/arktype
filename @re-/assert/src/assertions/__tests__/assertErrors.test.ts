@@ -257,6 +257,6 @@ describe("assertion errors", () => {
 
     test("stack starts from test file", () => {
         const e = getThrownError(() => assert(1 + 1).equals(3))
-        strict.match(e.stack!.split("\n")[0], new RegExp(fileName()))
+        strict.match(e.stack!.split("\n")[1], new RegExp(fileName()))
     })
 })

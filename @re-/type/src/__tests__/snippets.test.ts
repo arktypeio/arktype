@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 
 describe("snippets", () => {
-    test("model", async () => {
+    test("type", async () => {
         const modelSnippet = await import("../__snippets__/type.js")
         assert(modelSnippet.user.infer).typed as {
             name: string
@@ -12,7 +12,7 @@ describe("snippets", () => {
             }
         }
         assert(modelSnippet.errors?.summary).snap(
-            `At path browser/kind, "Internet Explorer" is not assignable to any of 'chrome'|'firefox'|'safari'.`
+            `At path browser/kind, "Internet Explorer" is not assignable to any of "chrome"|"firefox"|"safari".`
         )
     })
     test("space", async () => {
@@ -22,8 +22,8 @@ describe("snippets", () => {
         )
         assert(spaceSnippet.errors?.summary)
             .snap(`Encountered errors at the following paths:
-  dependencies/0/contributors: Missing required value of type contributor[].
-  contributors/0/email: "david@redodev" is not assignable to email.
+  dependencies/0/contributors: contributors is required.
+  contributors/0/email: 'david@redodev' must be a valid email.
 `)
     })
     test("constraints", async () => {
@@ -32,9 +32,9 @@ describe("snippets", () => {
         )
         assert(constraintsSnippet.errors?.summary)
             .snap(`Encountered errors at the following paths:
-  email: 'david@redo.biz' does not match expression /[a-z]*@redo.dev/.
-  about/age: 17 must be greater than or equal to 18.
-  about/bio: "I am very interesting.I am very interesting.I am ..." must be less than or equal to 80 characters (was 110).
+  email: 'david@redo.biz' must match expression /[a-z]*@redo.dev/.
+  about/age: Must be at least 18 (got 17).
+  about/bio: Must be at most 80 characters (got 110).
 `)
         assert(constraintsSnippet.employee.infer).typed as {
             email: string

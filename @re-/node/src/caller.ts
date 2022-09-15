@@ -7,8 +7,11 @@ export type GetCallStackOptions = {
     offset?: number
 }
 
-export const getCallStack = ({ offset = 0 }: GetCallStackOptions = {}) =>
-    getFramesFromError(new Error()).slice(2 + offset)
+export const getCallStack = ({ offset = 0 }: GetCallStackOptions = {}) => {
+    const frames = getFramesFromError(new Error())
+    frames.splice(1, 1 + offset)
+    return frames
+}
 
 export interface LinePosition {
     line: number

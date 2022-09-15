@@ -67,7 +67,8 @@ describe("caller", () => {
 
     test("getCallStack", () => {
         const stack = getCallStack()
-        assert(stack[0].includes(fileName())).is(true)
+        assert(stack[0]).equals("Error")
+        assert(stack[1].includes(fileName())).is(true)
         assert(stack.length - getCallStack({ offset: 1 }).length).equals(1)
     })
 })

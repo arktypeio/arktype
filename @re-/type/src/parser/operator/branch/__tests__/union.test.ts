@@ -154,10 +154,10 @@ g: 4 is not assignable to 3.`)
                 undefined
             )
             assert(
-                unionOfLiteralsOfUnions.check("yes|no'|'true|false'").errors
+                unionOfLiteralsOfUnions.check("yes|no'|'true|false").errors
                     ?.summary
             ).snap(
-                `"yes|no'|'true|false'" is not assignable to any of 'yes|no'|'true|false'.`
+                `"yes|no'|'true|false" is not assignable to any of "yes|no"|"true|false".`
             )
         })
     })

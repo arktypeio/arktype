@@ -5,24 +5,23 @@ import { terminalNode } from "../terminal.js"
 export class stringNode extends terminalNode implements boundableNode {
     bounds: bounds | undefined = undefined
 
-    constructor(private regex?: regexConstraint) {
+    constructor(
+        private definition: string,
+        private regexConstraints: regexConstraint[]
+    ) {
         super()
-    }
-
-    private baseToString() {
-        return this.regex?.definition ?? "string"
     }
 
     toString() {
         return this.bounds
-            ? this.bounds.boundString(this.baseToString())
-            : this.baseToString()
+            ? this.bounds.boundString(this.definition)
+            : this.definition
     }
 
     override get tree() {
         return this.bounds
-            ? this.bounds.boundTree(this.baseToString())
-            : this.baseToString()
+            ? this.bounds.boundTree(this.definition)
+            : this.definition
     }
 
     check(args: Allows.Args) {
@@ -31,12 +30,19 @@ export class stringNode extends terminalNode implements boundableNode {
             args.diagnostics.push(
                 new Allows.UnassignableDiagnostic(this.toString(), args)
             )
-            return false
+            return
         }
-        // TODO: Ensure multiple errors at path is ok
-        this.regex?.check(args as Allows.Args<string>)
+        for (const { description, matcher } of this.regexConstraints) {
+            if (!matcher.test(args.data)) {
+                args.diagnostics.push(
+                    new RegexMismatchDiagnostic(
+                        args,
+                        description ?? `match expression /${matcher.source}/`
+                    )
+                )
+            }
+        }
         this.bounds?.check(args as Allows.Args<string>)
-        return true
     }
 
     create() {
@@ -53,51 +59,68 @@ export class RegexMismatchDiagnostic extends Allows.Diagnostic<"RegexMismatch"> 
     }
 }
 
-export class regexConstraint {
-    constructor(
-        public definition: string,
-        public matcher: RegExp,
-        public description = `match expression /${matcher.source}/`
-    ) {}
+export type regexConstraint = {
+    matcher: RegExp
+    description?: string
+}
 
-    check(args: Allows.Args<string>) {
-        if (!this.matcher.test(args.data)) {
-            args.diagnostics.push(
-                new RegexMismatchDiagnostic(args, this.description)
-            )
-        }
+export class stringKeywordNode extends stringNode {
+    constructor() {
+        super("string", [])
     }
 }
 
+export class emailKeywordNode extends stringNode {
+    constructor() {
+        super("email", [
+            { matcher: /^(.+)@(.+)\.(.+)$/, description: "be a valid email" }
+        ])
+    }
+}
+export class alphaKeywordNode extends stringNode {
+    constructor() {
+        super("alpha", [
+            { matcher: /^[A-Za-z]+$/, description: "include only letters" }
+        ])
+    }
+}
+export class alphanumericKeywordNode extends stringNode {
+    constructor() {
+        super("alphanumeric", [
+            {
+                matcher: /^[\dA-Za-z]+$/,
+                description: "include only letters and digits"
+            }
+        ])
+    }
+}
+export class lowerKeywordNode extends stringNode {
+    constructor() {
+        super("lower", [
+            {
+                matcher: /^[a-z]*$/,
+                description: "include only lowercase letters"
+            }
+        ])
+    }
+}
+export class upperKeywordNode extends stringNode {
+    constructor() {
+        super("upper", [
+            {
+                matcher: /^[A-Z]*$/,
+                description: "include only uppercase letters"
+            }
+        ])
+    }
+}
 export const stringKeywords = {
-    string: new stringNode(),
-    email: new stringNode(
-        new regexConstraint("email", /^(.+)@(.+)\.(.+)$/, "be a valid email")
-    ),
-    alpha: new stringNode(
-        new regexConstraint("alpha", /^[A-Za-z]+$/, "include only letters")
-    ),
-    alphanumeric: new stringNode(
-        new regexConstraint(
-            "alphanumeric",
-            /^[\dA-Za-z]+$/,
-            "include only letters and digits"
-        )
-    ),
-    lower: new stringNode(
-        new regexConstraint(
-            "lower",
-            /^[a-z]*$/,
-            "include only lowercase letters"
-        )
-    ),
-    upper: new stringNode(
-        new regexConstraint(
-            "upper",
-            /^[A-Z]*$/,
-            "include only uppercase letters"
-        )
-    )
+    string: stringKeywordNode,
+    email: emailKeywordNode,
+    alpha: alphaKeywordNode,
+    alphanumeric: alphanumericKeywordNode,
+    lower: lowerKeywordNode,
+    upper: upperKeywordNode
 }
 
 export type StringKeyword = keyof typeof stringKeywords
