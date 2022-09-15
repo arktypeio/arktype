@@ -1,4 +1,5 @@
 import { strict } from "node:assert"
+import { fileName } from "@re-/node"
 import { describe, test } from "mocha"
 import { assert } from "../../index.js"
 
@@ -241,5 +242,21 @@ describe("assertion errors", () => {
             strict.AssertionError,
             "specific"
         )
+    })
+
+    const getThrownError = (f: () => void) => {
+        try {
+            f()
+        } catch (e) {
+            if (e instanceof Error) {
+                return e
+            }
+        }
+        throw new Error("Expected function to throw an error.")
+    }
+
+    test("stack starts from test file", () => {
+        const e = getThrownError(() => assert(1 + 1).equals(3))
+        strict.match(e.stack!.split("\n")[0], new RegExp(fileName()))
     })
 })

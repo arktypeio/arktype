@@ -77,7 +77,7 @@ g: 4 is not assignable to 3.`)
         describe("errors", () => {
             test("two types", () => {
                 assert(type("'yes'|'no'").check("maybe").errors?.summary).snap(
-                    `"maybe" is not assignable to any of 'yes'|'no'.`
+                    `"maybe" is not assignable to any of "yes"|"no".`
                 )
             })
             test("several types", () => {
@@ -125,13 +125,14 @@ g: 4 is not assignable to 3.`)
             assert(created).unknown.equals(false)
         })
     })
+
     describe("integration", () => {
         test("union of literals", () => {
             const unionOfLiterals = type("'yes'|'no'|'maybe'")
             assert(unionOfLiterals.infer).typed as "yes" | "no" | "maybe"
             assert(unionOfLiterals.check("no").errors).equals(undefined)
             assert(unionOfLiterals.check("yes|no|maybe").errors?.summary).snap(
-                `"yes|no|maybe" is not assignable to any of 'yes'|'no'|'maybe'.`
+                `"yes|no|maybe" is not assignable to any of "yes"|"no"|"maybe".`
             )
         })
         test("literal of union", () => {

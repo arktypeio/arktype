@@ -3,7 +3,8 @@ import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
 import { chainableNoOpProxy, Fn } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
-import { assertEquals, literalSerialize } from "../common.js"
+import { assertEquals } from "../assertEquals.js"
+import { literalSerialize } from "../common.js"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit,
@@ -68,12 +69,12 @@ export class Assertions implements AssertionRecord {
         return this
     }
     equals(expected: unknown, options?: EqualsOptions) {
-        assertEquals(expected, this.actual, options)
+        assertEquals(expected, this.actual, { ...this.ctx, options })
         return this
     }
 
     typedValue(expectedValue: unknown) {
-        assertEquals(expectedValue, this.actual)
+        assertEquals(expectedValue, this.actual, this.ctx)
         if (!this.ctx.cfg.skipTypes) {
             const typeData = getTypeDataAtPos(this.ctx.position)
             if (!typeData.type.expected) {
@@ -82,7 +83,7 @@ export class Assertions implements AssertionRecord {
                         ` line ${this.ctx.position.line} of ${this.ctx.position.file}.`
                 )
             }
-            assertEquals(typeData.type.expected, typeData.type.actual)
+            assertEquals(typeData.type.expected, typeData.type.actual, this.ctx)
         }
     }
 
@@ -107,7 +108,7 @@ export class Assertions implements AssertionRecord {
                 }
             }
         } else {
-            assertEquals(expectedSerialized, this.serializedActual)
+            assertEquals(expectedSerialized, this.serializedActual, this.ctx)
         }
         return this
     }
@@ -130,7 +131,7 @@ export class Assertions implements AssertionRecord {
                 })
             }
         } else {
-            assertEquals(expectedSnapshot, this.serializedActual)
+            assertEquals(expectedSnapshot, this.serializedActual, this.ctx)
         }
         return this
     }
@@ -157,7 +158,7 @@ export class Assertions implements AssertionRecord {
             if (this.ctx.allowRegex) {
                 assertEqualOrMatching(expected, this.actual)
             } else {
-                assertEquals(expected, this.actual)
+                assertEquals(expected, this.actual, this.ctx)
             }
             return this
         }

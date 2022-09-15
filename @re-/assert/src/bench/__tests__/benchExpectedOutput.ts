@@ -38,7 +38,7 @@ type MakeComplexType<S extends string> = ListPossibleTypes<
 
 bench("bench type", () => {
     return [] as any as MakeComplexType<"!">
-}).type(`51255 instantiations`)
+}).type(`45763 instantiations`)
 
 bench(
     "bench call and type",
@@ -48,4 +48,4 @@ bench(
     fakeCallOptions
 )
     .mean(`2.00ms`)
-    .type(`51255 instantiations`)
+    .type(`45763 instantiations`)

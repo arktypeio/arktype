@@ -1,7 +1,7 @@
 import { platform } from "node:os"
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { caller } from "../index.js"
+import { caller, fileName, getCallStack } from "../index.js"
 import { callMeFromDir, callPipeSeperated } from "./fromDir/reflectedFromDir.js"
 import { callMe, callMeAnonymous } from "./reflected.js"
 
@@ -63,5 +63,11 @@ describe("caller", () => {
         const middle = () => inner()
         const outer = () => middle()
         assert(outer().method).equals("outer")
+    })
+
+    test("getCallStack", () => {
+        const stack = getCallStack()
+        assert(stack[0].includes(fileName())).is(true)
+        assert(stack.length - getCallStack({ offset: 1 }).length).equals(1)
     })
 })

@@ -50,22 +50,23 @@ export const parseEnclosedBase = (
     s: parserState,
     enclosing: EnclosedBaseStartChar
 ) => {
-    const enclosed = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
+    const definition = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
         appendTo: enclosing,
         inclusive: true,
         onInputEnd: throwUnterminatedEnclosed
     })
-    if (enclosing === "/") {
-        s.l.root = new stringNode(
-            new regexConstraint(
-                enclosed,
-                new RegExp(enclosed.slice(1, -1)),
-                `match expression ${enclosed}`
-            )
-        )
-    } else {
-        s.l.root = new StringLiteralNode(enclosed as StringLiteralDefinition)
-    }
+    const enclosedText = definition.slice(1, -1)
+    s.l.root =
+        enclosing === "/"
+            ? new stringNode(
+                  new regexConstraint(
+                      definition,
+                      new RegExp(enclosedText),
+                      `match expression ${definition}`
+                  )
+              )
+            : new StringLiteralNode(enclosedText)
+
     return s
 }
 

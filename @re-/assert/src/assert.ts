@@ -1,13 +1,8 @@
 import { fileURLToPath } from "node:url"
-import { caller } from "@re-/node"
+import { caller, getCallStack } from "@re-/node"
 import { Assertions, ValueAssertion } from "./assertions/index.js"
-import {
-    fixVitestPos,
-    getReAssertConfig,
-    isVitest,
-    ReAssertConfig,
-    SourcePosition
-} from "./common.js"
+import { getReAssertConfig, ReAssertConfig, SourcePosition } from "./common.js"
+import { fixVitestPos, isVitest } from "./vitest.js"
 
 export type AvailableAssertions<T> = ValueAssertion<T, true>
 
@@ -24,6 +19,7 @@ export type AssertionContext = {
     allowRegex: boolean
     position: SourcePosition
     defaultExpected?: unknown
+    assertionStack: string
 }
 
 // @ts-ignore
@@ -45,7 +41,8 @@ export const assert: AssertFn = (
         originalAssertedValue: value,
         assertedFnArgs: [],
         position,
-        cfg: { ...getReAssertConfig(), ...internalConfigHooks }
+        cfg: { ...getReAssertConfig(), ...internalConfigHooks },
+        assertionStack: getCallStack({ offset: 1 }).join("\n")
     }
     return new Assertions(ctx)
 }
