@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../index.js"
+import { type } from "../../../type.js"
 
 describe("keyword", () => {
     describe("boolean", () => {
@@ -237,7 +237,7 @@ describe("keyword", () => {
             )
         })
         test("alphanum", () => {
-            const alphaNumeric = type("alphanum")
+            const alphaNumeric = type("alphanumeric")
             assert(alphaNumeric.infer).typed as string
             assert(alphaNumeric.check("aBc123").errors).is(undefined)
             assert(alphaNumeric.check("aBc+123").errors?.summary).snap(

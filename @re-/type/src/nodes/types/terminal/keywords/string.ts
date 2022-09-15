@@ -81,3 +81,5 @@ export const stringKeywords = {
         )
     )
 }
+
+export type StringKeyword = keyof typeof stringKeywords

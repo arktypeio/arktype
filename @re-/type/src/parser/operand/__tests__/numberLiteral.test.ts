@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../index.js"
+import { type } from "../../../type.js"
+import { unresolvableMessage } from "../unenclosed.js"
 
 describe("numberLiteral", () => {
     describe("type", () => {
@@ -17,13 +18,13 @@ describe("numberLiteral", () => {
             test("multiple decimals", () => {
                 // @ts-expect-error
                 assert(() => type("127.0.0.1")).throwsAndHasTypeError(
-                    "'127.0.0.1' is not a builtin type and does not exist in your space."
+                    unresolvableMessage("127.0.0.1")
                 )
             })
             test("with alpha", () => {
                 // @ts-expect-error
                 assert(() => type("13three7")).throwsAndHasTypeError(
-                    "'13three7' is not a builtin type and does not exist in your space."
+                    unresolvableMessage("13three7")
                 )
             })
         })

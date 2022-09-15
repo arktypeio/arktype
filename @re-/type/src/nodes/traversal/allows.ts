@@ -1,13 +1,13 @@
 import { Evaluate, toString, uncapitalize } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { BoundViolationDiagnostic } from "../constraints/bounds.js"
-import type { RegexMismatchDiagnostic } from "../constraints/regex.js"
 import type { UnionDiagnostic } from "../types/nonTerminal/expression/branch/union.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic
 } from "../types/nonTerminal/obj/record.js"
 import type { TupleLengthDiagnostic } from "../types/nonTerminal/obj/tuple.js"
+import { RegexMismatchDiagnostic } from "../types/terminal/keywords/string.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {

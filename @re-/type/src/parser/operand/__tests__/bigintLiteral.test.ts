@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../index.js"
+import { unresolvableMessage } from "../unenclosed.js"
 
 describe("bigintLiteral", () => {
     describe("type", () => {
@@ -14,7 +15,7 @@ describe("bigintLiteral", () => {
             test("decimal", () => {
                 // @ts-expect-error
                 assert(() => type("99999.99n")).throwsAndHasTypeError(
-                    "'99999.99n' is not a builtin type and does not exist in your space."
+                    unresolvableMessage("99999.99n")
                 )
             })
         })

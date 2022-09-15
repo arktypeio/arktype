@@ -37,3 +37,5 @@ export const numberKeywords: Record<
     number: new numberNode(),
     integer: new numberNode("integer")
 }
+
+export type NumberKeyword = keyof typeof numberKeywords
