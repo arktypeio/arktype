@@ -1,8 +1,5 @@
-import {
-    regexConstraint,
-    stringNode
-} from "../../nodes/types/terminal/keywords/string.js"
-import { StringLiteralNode } from "../../nodes/types/terminal/literals/string.js"
+import { stringNode } from "../../nodes/types/terminal/keywords/string.js"
+import { literalNode } from "../../nodes/types/terminal/literal.js"
 import { Left } from "../parser/left.js"
 import { scanner } from "../parser/scanner.js"
 import { ParserState, parserState } from "../parser/state.js"
@@ -58,14 +55,13 @@ export const parseEnclosedBase = (
     const enclosedText = definition.slice(1, -1)
     s.l.root =
         enclosing === "/"
-            ? new stringNode(
-                  new regexConstraint(
-                      definition,
-                      new RegExp(enclosedText),
-                      `match expression ${definition}`
-                  )
-              )
-            : new StringLiteralNode(enclosedText)
+            ? new stringNode(definition, [
+                  {
+                      matcher: new RegExp(enclosedText),
+                      description: `match expression ${definition}`
+                  }
+              ])
+            : new literalNode(enclosedText)
 
     return s
 }

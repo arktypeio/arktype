@@ -1,9 +1,7 @@
 import { Base } from "../../nodes/base.js"
 import { alias } from "../../nodes/types/terminal/alias.js"
 import { Keyword } from "../../nodes/types/terminal/keywords/keyword.js"
-import { bigintLiteralNode } from "../../nodes/types/terminal/literals/bigint.js"
-import { booleanLiteralNode } from "../../nodes/types/terminal/literals/boolean.js"
-import { numberLiteralNode } from "../../nodes/types/terminal/literals/number.js"
+import { literalNode } from "../../nodes/types/terminal/literal.js"
 import { Left } from "../parser/left.js"
 import { scanner, Scanner } from "../parser/scanner.js"
 import { parserState, ParserState } from "../parser/state.js"
@@ -95,13 +93,13 @@ export type BooleanLiteralDefinition<Value extends boolean = boolean> =
 
 export const toNodeIfLiteral = (token: string) =>
     isNumberLiteral(token)
-        ? new numberLiteralNode(numberLiteralToValue(token))
+        ? new literalNode(numberLiteralToValue(token))
         : isBigintLiteral(token)
-        ? new bigintLiteralNode(BigInt(token.slice(0, -1)))
+        ? new literalNode(BigInt(token.slice(0, -1)))
         : token === "true"
-        ? new booleanLiteralNode(true)
+        ? new literalNode(true)
         : token === "false"
-        ? new booleanLiteralNode(false)
+        ? new literalNode(false)
         : undefined
 
 const unenclosedToNode = (s: parserState, token: string, ctx: Base.context) =>

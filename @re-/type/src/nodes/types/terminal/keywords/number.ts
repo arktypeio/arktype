@@ -34,7 +34,7 @@ export class numberNode extends terminalNode implements boundableNode {
         for (const { allows, description } of this.numericConstraints) {
             if (!allows(args.data)) {
                 args.diagnostics.push(
-                    new Allows.UnassignableDiagnostic(this.toString(), args)
+                    new NumberSubtypeDiagnostic(args, description)
                 )
             }
         }
@@ -65,7 +65,7 @@ export class integerKeywordNode extends numberNode {
 
 export type numericConstraint = {
     allows: (data: number) => boolean
-    description?: string
+    description: string
 }
 
 export const numberKeywords = {
@@ -74,3 +74,12 @@ export const numberKeywords = {
 }
 
 export type NumberKeyword = keyof typeof numberKeywords
+
+export class NumberSubtypeDiagnostic extends Allows.Diagnostic<"NumberSubtype"> {
+    message
+
+    constructor(args: Allows.Args, public description: string) {
+        super("NumberSubtype", args)
+        this.message = `'${this.data}' must ${description}.`
+    }
+}

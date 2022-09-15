@@ -7,6 +7,7 @@ import type {
     MissingKeyDiagnostic
 } from "../types/nonTerminal/obj/record.js"
 import type { TupleLengthDiagnostic } from "../types/nonTerminal/obj/tuple.js"
+import { NumberSubtypeDiagnostic } from "../types/terminal/keywords/number.js"
 import { RegexMismatchDiagnostic } from "../types/terminal/keywords/string.js"
 import { Traverse } from "./traverse.js"
 
@@ -125,6 +126,7 @@ export namespace Allows {
         ExtraneousKeys: ExtraneousKeysDiagnostic
         MissingKey: MissingKeyDiagnostic
         Custom: CustomDiagnostic
+        NumberSubtype: NumberSubtypeDiagnostic
         RegexMismatch: RegexMismatchDiagnostic
         TupleLength: TupleLengthDiagnostic
         Union: UnionDiagnostic

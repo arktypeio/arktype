@@ -1,13 +1,25 @@
-import { Allows } from "../../../traversal/allows.js"
-import { terminalNode } from "../terminal.js"
+import { Allows } from "../../traversal/allows.js"
+import { terminalNode } from "./terminal.js"
 
 export type PrimitiveLiteralValue = string | number | bigint | boolean
 
-export abstract class literalNode<
+export class literalNode<
     Value extends PrimitiveLiteralValue
 > extends terminalNode {
+    public definition: string
+
     constructor(public value: Value) {
         super()
+        this.definition =
+            typeof value === "string"
+                ? `"${this.value}"`
+                : typeof value === "bigint"
+                ? `${this.value}n`
+                : String(this.value)
+    }
+
+    toString() {
+        return this.definition
     }
 
     check(args: Allows.Args) {

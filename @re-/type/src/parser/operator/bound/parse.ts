@@ -1,4 +1,4 @@
-import { numberLiteralNode } from "../../../nodes/types/terminal/literals/number.js"
+import { literalNode } from "../../../nodes/types/terminal/literal.js"
 import { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import { Left } from "../../parser/left.js"
 import { scanner, Scanner } from "../../parser/scanner.js"
@@ -32,7 +32,9 @@ export const singleEqualsMessage = `= is not a valid comparator. Use == to check
 type SingleEqualsMessage = typeof singleEqualsMessage
 
 export const reduceBound = (s: parserState.withRoot, token: Comparator) =>
-    s.hasRoot(numberLiteralNode) ? reduceLeft(s, token) : s.suffixed(token)
+    s.hasRoot(literalNode) && typeof s.l.root.value === "number"
+        ? reduceLeft(s, token)
+        : s.suffixed(token)
 
 export type ReduceBound<L extends Left, Token extends Comparator> = L extends {
     root: NumberLiteralDefinition<infer Value>
