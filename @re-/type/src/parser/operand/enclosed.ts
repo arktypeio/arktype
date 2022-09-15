@@ -71,7 +71,12 @@ export type ParseEnclosedBase<
     Enclosing extends EnclosedBaseStartChar
 > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
     ? ParserState.From<{
-          L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
+          L: Left.SetRoot<
+              S["L"],
+              Enclosing extends "/"
+                  ? `${Enclosing}${Contents}${Enclosing}`
+                  : `"${Contents}"`
+          >
           R: Rest
       }>
     : ParserState.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>

@@ -1,5 +1,7 @@
 import { boundableNode, bounds } from "../../../constraints/bounds.js"
+import { ConstraintGenerationError } from "../../../constraints/common.js"
 import { Allows } from "../../../traversal/allows.js"
+import { Create } from "../../../traversal/create.js"
 import { terminalNode } from "../terminal.js"
 
 export class numberNode extends terminalNode implements boundableNode {
@@ -42,6 +44,9 @@ export class numberNode extends terminalNode implements boundableNode {
     }
 
     create() {
+        if (this.bounds) {
+            throw new ConstraintGenerationError(this.toString())
+        }
         return 0
     }
 }

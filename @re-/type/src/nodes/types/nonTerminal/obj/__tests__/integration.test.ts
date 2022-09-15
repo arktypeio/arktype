@@ -25,9 +25,7 @@ describe("obj integration", () => {
                         true,
                         { a: ["ok", [[true, false]], "extraElement"] }
                     ]).errors?.summary
-                ).snap(
-                    `At path 1/a, tuple of length 3 is not assignable to tuple of length 2.`
-                )
+                ).snap(`At path 1/a, tuple must have length 2 (got 3).`)
             })
             test("multiple", () => {
                 assert(
@@ -36,7 +34,7 @@ describe("obj integration", () => {
                 ).snap(`Encountered errors at the following paths:
   0: false is not assignable to true.
   1/a/0: 0 is not assignable to string.
-  1/a/1: Tuple of length 3 is not assignable to tuple of length 1.
+  1/a/1: Tuple must have length 1 (got 3).
 `)
             })
         })

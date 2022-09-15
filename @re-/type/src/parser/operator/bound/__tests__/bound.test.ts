@@ -14,7 +14,6 @@ import {
     unboundableMessage,
     unpairedLeftBoundMessage
 } from "../right.js"
-
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,
@@ -193,12 +192,12 @@ describe("bound", () => {
                     code: `BoundViolation`,
                     path: [],
                     data: `no`,
-                    kind: "number",
+                    options: undefined,
                     comparator: `>=`,
                     limit: 3,
                     size: 2,
-                    message: `"no" must be greater than or equal to 3 characters (was 2).`,
-                    options: undefined
+                    kind: `string`,
+                    message: `Must be at least 3 characters (got 2).`
                 }
             ])
         })
@@ -218,7 +217,7 @@ describe("bound", () => {
             const twoNulls = type("null[]==2")
             assert(twoNulls.check([null, null]).errors).equals(undefined)
             assert(twoNulls.check([null]).errors?.summary).snap(
-                `[null] must be exactly 2 items (was 1).`
+                `Must be exactly 2 items (got 1).`
             )
         })
     })
@@ -226,7 +225,7 @@ describe("bound", () => {
     describe("generation", () => {
         test("unsupported", () => {
             assert(() => type("1<number<5").create()).throws.snap(
-                `Error: Unable to generate a value for '1<number<5': Bound generation is unsupported.`
+                `Error: Unable to generate a value for '1<number<5': Constrained generation is not yet supported.`
             )
         })
     })

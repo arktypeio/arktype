@@ -37,7 +37,7 @@ describe("stringLiteral", () => {
             test("mismatched literal", () => {
                 assert(
                     type("'dursurdo'").check("durrrrrr").errors?.summary
-                ).snap(`"durrrrrr" is not assignable to 'dursurdo'.`)
+                ).snap(`"durrrrrr" is not assignable to "dursurdo".`)
             })
         })
     })

@@ -65,9 +65,7 @@ describe("tuple", () => {
                 test("too long", () => {
                     assert(
                         shallow().check(["violin", 42, 6, null]).errors?.summary
-                    ).snap(
-                        `Tuple of length 4 is not assignable to tuple of length 3.`
-                    )
+                    ).snap(`Tuple must have length 3 (got 4).`)
                 })
             })
         })
@@ -104,9 +102,7 @@ describe("tuple", () => {
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
                         ]).errors?.summary
-                    ).snap(
-                        `Tuple of length 2 is not assignable to tuple of length 3.`
-                    )
+                    ).snap(`Tuple must have length 3 (got 2).`)
                 })
                 test("multiple", () => {
                     assert(
@@ -116,9 +112,9 @@ describe("tuple", () => {
                             ["Too long"]
                         ]).errors?.summary
                     ).snap(`Encountered errors at the following paths:
-  0: "Clock" is not assignable to 'Cuckoo'.
-  1/2: "Gondor" is not assignable to 'Condor'.
-  2: Tuple of length 1 is not assignable to tuple of length 0.
+  0: "Clock" is not assignable to "Cuckoo".
+  1/2: "Gondor" is not assignable to "Condor".
+  2: Tuple must have length 0 (got 1).
 `)
                 })
             })

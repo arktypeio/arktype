@@ -118,9 +118,9 @@ describe("record", () => {
                             }
                         ).errors?.summary
                     ).snap(`Encountered errors at the following paths:
-  b: Missing required value of type number.
-  c: Missing required value of type 67.
-  /: Keys 'd', 'e' were unexpected.
+  b: b is required.
+  c: c is required.
+  /: Keys d, e were unexpected.
 `)
                 })
             })
@@ -165,7 +165,7 @@ describe("record", () => {
                         nested().check({ nested: { russian: "tortoise" } })
                             .errors?.summary
                     ).snap(
-                        `At path nested/russian, "tortoise" is not assignable to 'doll'.`
+                        `At path nested/russian, "tortoise" is not assignable to "doll".`
                     )
                 })
                 test("multiple", () => {
@@ -180,7 +180,7 @@ describe("record", () => {
                             e: { f: 0n }
                         }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
-  a/b: Missing required value of type string.
+  a/b: b is required.
   e/f: 0n is not assignable to object.
 `)
                 })

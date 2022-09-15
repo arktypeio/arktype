@@ -12,7 +12,9 @@ export class literalNode<
         super()
         this.definition =
             typeof value === "string"
-                ? `"${this.value}"`
+                ? value.includes(`"`)
+                    ? `'${this.value}'`
+                    : `"${this.value}"`
                 : typeof value === "bigint"
                 ? `${this.value}n`
                 : String(this.value)

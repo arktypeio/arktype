@@ -109,8 +109,8 @@ export class bounds {
                 args.diagnostics.push(
                     new BoundViolationDiagnostic(args, comparator, limit, size)
                 )
+                return
             }
-            return
         }
     }
 }

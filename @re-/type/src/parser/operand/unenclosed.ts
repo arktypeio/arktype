@@ -73,7 +73,7 @@ export const isNumberLiteral = (def: string): def is NumberLiteralDefinition =>
  */
 export type BigintLiteralDefinition<Value extends bigint = bigint> = `${Value}n`
 
-const BIGINT_MATCHER = /^0|(?:-?[1-9]\d*)n$/
+const BIGINT_MATCHER = /^(?:0|(?:-?[1-9]\d*))n$/
 
 export const isBigintLiteral = (def: string): def is BigintLiteralDefinition =>
     BIGINT_MATCHER.test(def)

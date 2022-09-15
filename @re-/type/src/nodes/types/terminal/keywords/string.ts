@@ -1,4 +1,5 @@
 import { boundableNode, bounds } from "../../../constraints/bounds.js"
+import { ConstraintGenerationError } from "../../../constraints/common.js"
 import { Allows } from "../../../traversal/allows.js"
 import { terminalNode } from "../terminal.js"
 
@@ -46,6 +47,9 @@ export class stringNode extends terminalNode implements boundableNode {
     }
 
     create() {
+        if (this.regexConstraints.length || this.bounds) {
+            throw new ConstraintGenerationError(this.toString())
+        }
         return ""
     }
 }

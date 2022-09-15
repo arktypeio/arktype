@@ -225,7 +225,7 @@ describe("keyword", () => {
             assert(email.infer).typed as string
             assert(email.check("david@redo.dev").errors).is(undefined)
             assert(email.check("david@redo@dev").errors?.summary).snap(
-                `"david@redo@dev" is not assignable to email.`
+                `'david@redo@dev' must be a valid email.`
             )
         })
         test("alpha", () => {
@@ -233,7 +233,7 @@ describe("keyword", () => {
             assert(alpha.infer).typed as string
             assert(alpha.check("aBc").errors).is(undefined)
             assert(alpha.check("a B c").errors?.summary).snap(
-                `"a B c" is not assignable to alpha.`
+                `'a B c' must include only letters.`
             )
         })
         test("alphanum", () => {
@@ -241,37 +241,25 @@ describe("keyword", () => {
             assert(alphaNumeric.infer).typed as string
             assert(alphaNumeric.check("aBc123").errors).is(undefined)
             assert(alphaNumeric.check("aBc+123").errors?.summary).snap(
-                `"aBc+123" is not assignable to alphanum.`
+                `'aBc+123' must include only letters and digits.`
             )
         })
         test("lower", () => {
             const lowercase = type("lower")
             assert(lowercase.infer).typed as string
-            assert(lowercase.check("as long as no uppercase").errors).is(
-                undefined
-            )
+            assert(lowercase.check("alllowercase").errors).is(undefined)
             assert(lowercase.check("whoOps").errors?.summary).snap(
-                `"whoOps" is not assignable to lower.`
+                `'whoOps' must include only lowercase letters.`
             )
         })
         test("upper", () => {
             const uppercase = type("upper")
             assert(uppercase.infer).typed as string
-            assert(uppercase.check("AS LONG AS NO LOWERCASE").errors).is(
-                undefined
-            )
+            assert(uppercase.check("ALLUPPERCASE").errors).is(undefined)
             assert(uppercase.check("WHOoPS").errors?.summary).snap(
-                `"WHOoPS" is not assignable to upper.`
+                `'WHOoPS' must include only uppercase letters.`
             )
         })
-        // test("char", () => {
-        //     const character = model("char")
-        //     assert(character.type).typed as string
-        //     assert(character.validate("!").error).is(undefined)
-        //     assert(character.validate(":(").error?.message).snap(
-        //         `":(" is not assignable to char.`
-        //     )
-        // })
     })
     describe("number", () => {
         describe("number", () => {
@@ -298,13 +286,13 @@ describe("keyword", () => {
                 assert(integer.infer).typed as number
                 assert(integer.check(5).errors).is(undefined)
                 assert(integer.check(5.0001).errors?.summary).snap(
-                    `5.0001 is not assignable to integer.`
+                    `'5.0001' must must be an integer.`
                 )
                 assert(integer.check(Infinity).errors?.summary).snap(
-                    `Infinity is not assignable to integer.`
+                    `'Infinity' must must be an integer.`
                 )
                 assert(integer.check(NaN).errors?.summary).snap(
-                    `NaN is not assignable to integer.`
+                    `'NaN' must must be an integer.`
                 )
             })
         })

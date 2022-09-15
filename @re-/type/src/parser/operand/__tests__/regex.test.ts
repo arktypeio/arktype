@@ -30,7 +30,7 @@ describe("regex", () => {
             test("bad string", () => {
                 assert(
                     type("/^[0-9]*$/").check("durrrrrr").errors?.summary
-                ).snap(`'durrrrrr' does not match expression /^[0-9]*$/.`)
+                ).snap(`'durrrrrr' must match expression /^[0-9]*$/.`)
             })
             test("non-string", () => {
                 // TODO: Improve subtype errors
@@ -43,7 +43,7 @@ describe("regex", () => {
                     type(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).check("(b,c&d)=>eeef")
                         .errors?.summary
                 ).snap(
-                    `'(b,c&d)=>eeef' does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
+                    `'(b,c&d)=>eeef' must match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
                 )
             })
         })
@@ -51,7 +51,7 @@ describe("regex", () => {
     describe("generation", () => {
         test("unsupported", () => {
             assert(() => type("/.*/").create()).throws.snap(
-                `Error: Unable to generate a value for '/.*/': Regex generation is unsupported.`
+                `Error: Unable to generate a value for '/.*/': Constrained generation is not yet supported.`
             )
         })
     })

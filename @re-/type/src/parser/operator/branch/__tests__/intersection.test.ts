@@ -61,7 +61,7 @@ describe("intersection", () => {
             })
             test("bad keyword specifiers", () => {
                 assert(type("number&integer").check(7.5).errors?.summary).snap(
-                    `7.5 is not assignable to integer.`
+                    `'7.5' must must be an integer.`
                 )
             })
         })

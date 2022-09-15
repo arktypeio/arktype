@@ -64,8 +64,8 @@ const assertCheckResult = (
     expectedBounds: Bounds,
     data: number
 ) => {
-    const actualError = t.check(data).errors
-    assert(actualError?.summary).equals(
+    const actualErrors = t.check(data).errors
+    assert(actualErrors?.summary).equals(
         expectedCheckResult(expectedBounds, data)
     )
 }
