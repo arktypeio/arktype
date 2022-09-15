@@ -48,46 +48,35 @@ export class RecordNode extends obj<RecordLike> {
             args.diagnostics.push(
                 new Allows.UnassignableDiagnostic(this.toString(), args)
             )
-            return false
+            return
         }
-        const propValidationResults = this.allowsProps(args)
+        const extraneousValueKeys = this.allowsProps(args)
         if (
-            propValidationResults.extraneousValueKeys.size &&
+            extraneousValueKeys.size &&
             (args.cfg.diagnostics?.ExtraneousKeys?.enable ||
                 args.ctx.modelCfg.diagnostics?.ExtraneousKeys?.enable)
         ) {
             args.diagnostics.push(
-                new ExtraneousKeysDiagnostic(args, [
-                    ...propValidationResults.extraneousValueKeys
-                ])
+                new ExtraneousKeysDiagnostic(args, [...extraneousValueKeys])
             )
-            return false
         }
-        return propValidationResults.allSeenKeysAllowed
     }
 
     // TODO: Should maybe not use set for perf?
     private allowsProps(args: Allows.Args<Record<string, unknown>>) {
-        const result = {
-            extraneousValueKeys: new Set(Object.keys(args.data)),
-            allSeenKeysAllowed: true
-        }
+        const extraneousValueKeys = new Set(Object.keys(args.data))
         for (const [propKey, propNode] of this.entries) {
             const propArgs = this.argsForProp(args, propKey)
             if (propKey in args.data) {
-                const propIsAllowed = propNode.check(propArgs)
-                if (!propIsAllowed) {
-                    result.allSeenKeysAllowed = false
-                }
+                propNode.check(propArgs)
             } else if (!(propNode instanceof optional)) {
                 args.diagnostics.push(
                     new MissingKeyDiagnostic(propArgs, propKey)
                 )
-                result.allSeenKeysAllowed = false
             }
-            result.extraneousValueKeys.delete(propKey)
+            extraneousValueKeys.delete(propKey)
         }
-        return result
+        return extraneousValueKeys
     }
 
     private argsForProp(

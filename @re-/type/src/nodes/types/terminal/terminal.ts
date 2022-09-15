@@ -1,8 +1,9 @@
+import { StrNode } from "../../../parser/common.js"
 import { Base } from "../../base.js"
 import { References } from "../../traversal/references.js"
 
 export abstract class terminalNode extends Base.node {
-    get tree() {
+    get tree(): StrNode {
         return this.toString()
     }
 

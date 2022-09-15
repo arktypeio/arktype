@@ -18,11 +18,8 @@ export class intersection extends branch {
 
     check(args: Allows.Args) {
         for (const branch of this.children) {
-            if (!branch.check(args)) {
-                return false
-            }
+            branch.check(args)
         }
-        return true
     }
 
     create() {

@@ -17,17 +17,15 @@ export class union extends branch {
         const unionDiagnostics: DiagnosticBranchEntry[] = []
         for (const child of this.children) {
             const branchDiagnostics = new Allows.Diagnostics()
-            if (child.check({ ...args, diagnostics: branchDiagnostics })) {
-                // If any branch of a Union does not have errors,
-                // we can return right away since the whole definition is valid
-                return true
+            child.check({ ...args, diagnostics: branchDiagnostics })
+            if (!branchDiagnostics.length) {
+                return
             }
             unionDiagnostics.push([child.toString(), branchDiagnostics])
         }
         args.diagnostics.push(
             new UnionDiagnostic(this.toString(), args, unionDiagnostics)
         )
-        return false
     }
 
     create(args: Create.Args) {

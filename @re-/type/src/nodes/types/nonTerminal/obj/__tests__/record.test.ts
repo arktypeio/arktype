@@ -55,12 +55,16 @@ describe("record", () => {
                         {
                             code: `MissingKey`,
                             path: [`b`],
+                            data: undefined,
+                            options: undefined,
                             key: `b`,
                             message: `b is required.`
                         },
                         {
                             code: `MissingKey`,
                             path: [`c`],
+                            data: undefined,
+                            options: undefined,
                             key: `c`,
                             message: `c is required.`
                         }

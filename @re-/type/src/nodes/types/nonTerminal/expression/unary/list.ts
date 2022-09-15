@@ -17,10 +17,9 @@ export class list extends unary implements boundableNode {
             new Allows.UnassignableDiagnostic(this.toString(), args)
             return false
         }
-        let allItemsAllowed = true
         let itemIndex = 0
         for (const itemValue of args.data) {
-            const itemIsAllowed = this.child.check({
+            this.child.check({
                 ...args,
                 data: itemValue,
                 ctx: {
@@ -28,12 +27,8 @@ export class list extends unary implements boundableNode {
                     path: [...args.ctx.path, itemIndex]
                 }
             })
-            if (!itemIsAllowed) {
-                allItemsAllowed = false
-            }
             itemIndex++
         }
-        return allItemsAllowed
     }
 
     create() {

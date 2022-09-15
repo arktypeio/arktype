@@ -55,6 +55,7 @@ describe("tuple", () => {
                             code: `TupleLength`,
                             path: [],
                             data: [`violin`, 42],
+                            options: undefined,
                             expectedLength: 3,
                             actualLength: 2,
                             message: `Tuple must have length 3 (got 2).`

@@ -70,7 +70,7 @@ export class ResolutionNode extends Base.node {
         return this.root.references(opts)
     }
 
-    check(args: Allows.Args): boolean {
+    check(args: Allows.Args) {
         const nextArgs = this.nextArgs(args, this.ctx.validate)
         if (typeof args.data === "object" && args.data !== null) {
             if (
@@ -90,9 +90,11 @@ export class ResolutionNode extends Base.node {
             nextArgs.ctx.modelCfg.validator ??
             "default"
         if (customValidator !== "default") {
-            return Allows.customValidatorAllows(customValidator, this, nextArgs)
+            // TODO: Check custom validator format.
+            Allows.customValidatorAllows(customValidator, this, nextArgs)
+            return
         }
-        return this.root.check(nextArgs)
+        this.root.check(nextArgs)
     }
 
     create(args: Create.Args) {

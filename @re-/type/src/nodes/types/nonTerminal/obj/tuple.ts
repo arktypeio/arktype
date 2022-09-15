@@ -18,7 +18,7 @@ export class TupleNode extends obj<TupleDefinition> {
             args.diagnostics.push(
                 new Allows.UnassignableDiagnostic(this.toString(), args)
             )
-            return false
+            return
         }
         const expectedLength = this.entries.length
         const actualLength = args.data.length
@@ -26,15 +26,14 @@ export class TupleNode extends obj<TupleDefinition> {
             args.diagnostics.push(
                 new TupleLengthDiagnostic(args, expectedLength, actualLength)
             )
-            return false
+            return
         }
-        return this.allowsItems(args as Allows.Args<unknown[]>)
+        this.allowsItems(args as Allows.Args<unknown[]>)
     }
 
     private allowsItems(args: Allows.Args<unknown[]>) {
-        let allItemsAllowed = true
         for (const [itemIndex, itemNode] of this.entries) {
-            const itemIsAllowed = itemNode.check({
+            itemNode.check({
                 ...args,
                 data: args.data[itemIndex as any],
                 ctx: {
@@ -42,11 +41,7 @@ export class TupleNode extends obj<TupleDefinition> {
                     path: [...args.ctx.path, itemIndex]
                 }
             })
-            if (!itemIsAllowed) {
-                allItemsAllowed = false
-            }
         }
-        return allItemsAllowed
     }
 
     create(args: Create.Args) {

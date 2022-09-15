@@ -9,16 +9,34 @@ export class stringNode extends terminalNode implements boundableNode {
         super()
     }
 
-    toString() {
+    private baseToString() {
         return this.regex?.definition ?? "string"
     }
 
+    toString() {
+        return this.bounds
+            ? this.bounds.boundString(this.baseToString())
+            : this.baseToString()
+    }
+
+    override get tree() {
+        return this.bounds
+            ? this.bounds.boundTree(this.baseToString())
+            : this.baseToString()
+    }
+
     check(args: Allows.Args) {
-        if (typeof args.data === "string") {
-            // this?.regex?.check(data)
-            // this?.bounds?.check()
+        if (typeof args.data !== "string") {
+            // TODO: Improve error message to indicate subtype
+            args.diagnostics.push(
+                new Allows.UnassignableDiagnostic(this.toString(), args)
+            )
+            return false
         }
-        return typeof args.data === "string"
+        // TODO: Ensure multiple errors at path is ok
+        this.regex?.check(args as Allows.Args<string>)
+        this.bounds?.check(args as Allows.Args<string>)
+        return true
     }
 
     create() {

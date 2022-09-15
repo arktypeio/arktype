@@ -38,7 +38,7 @@ export namespace Base {
     export type ParseError<Message extends string> = `!${Message}`
 
     export abstract class node {
-        abstract check(args: Allows.Args): boolean
+        abstract check(args: Allows.Args): void
         abstract create(args: Create.Args): unknown
         /** Mutates collected by adding references as keys */
         abstract collectReferences(
