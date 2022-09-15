@@ -51,7 +51,20 @@ describe("record", () => {
                     assert(
                         shallow().check({ a: "ok" })
                             .errors as any as MissingKeyDiagnostic[]
-                    ).snap()
+                    ).snap([
+                        {
+                            code: `MissingKey`,
+                            path: [`b`],
+                            key: `b`,
+                            message: `b is required.`
+                        },
+                        {
+                            code: `MissingKey`,
+                            path: [`c`],
+                            key: `c`,
+                            message: `c is required.`
+                        }
+                    ])
                 })
                 test("extraneous keys", () => {
                     assert(
@@ -69,7 +82,22 @@ describe("record", () => {
                                 }
                             }
                         ).errors as any as ExtraneousKeysDiagnostic[]
-                    ).snap()
+                    ).snap([
+                        {
+                            code: `ExtraneousKeys`,
+                            path: [],
+                            data: {
+                                a: `ok`,
+                                b: 4.321,
+                                c: 67,
+                                d: `extraneous`,
+                                e: `x-ray-knee-us`
+                            },
+                            options: { enable: true },
+                            keys: [`d`, `e`],
+                            message: `Keys d, e were unexpected.`
+                        }
+                    ])
                 })
                 test("missing and extraneous keys", () => {
                     assert(

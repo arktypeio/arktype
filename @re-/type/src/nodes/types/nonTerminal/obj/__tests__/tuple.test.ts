@@ -50,7 +50,16 @@ describe("tuple", () => {
                         shallow().check(["violin", 42]).errors as any as [
                             TupleLengthDiagnostic
                         ]
-                    ).snap()
+                    ).snap([
+                        {
+                            code: `TupleLength`,
+                            path: [],
+                            data: [`violin`, 42],
+                            expectedLength: 3,
+                            actualLength: 2,
+                            message: `Tuple must have length 3 (got 2).`
+                        }
+                    ])
                 })
                 test("too long", () => {
                     assert(
