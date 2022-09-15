@@ -9,6 +9,7 @@ import ConvertSourceMap from "convert-source-map"
 import { default as memoize } from "micro-memoize"
 import { SourceMapConsumer } from "source-map-js"
 import type { EqualsOptions } from "./assertions/index.js"
+import { BenchFormat } from "./writeSnapshot.js"
 
 export type LinePosition = {
     line: number
@@ -30,6 +31,7 @@ export const positionToString = (position: SourcePosition) =>
 
 export interface ReAssertConfig extends Required<ReAssertJson> {
     updateSnapshots: boolean
+    benchFormat: BenchFormat
     benchMatcher: RegExp | string | undefined
     cacheDir: string
     assertionCacheFile: string
@@ -166,6 +168,10 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     return {
         updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
         skipTypes: argsToCheck.includes("--skipTypes"),
+        benchFormat: {
+            noInline: argsToCheck.includes("--no-inline"),
+            noExternal: argsToCheck.includes("--no-external")
+        },
         benchMatcher: getMatcher(argsToCheck),
         tsconfig,
         precached: argsToCheck.includes("--precache"),

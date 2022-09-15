@@ -1,73 +1,19 @@
-import { randomUUID } from "node:crypto"
-import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
-import { readJson, requireResolve, shell, writeJson } from "@re-/node"
+import { readJson } from "@re-/node"
 import { toString } from "@re-/tools"
-import { CallExpression, Node, SourceFile, SyntaxKind, ts } from "ts-morph"
-import {
-    getFileKey,
-    getReAssertConfig,
-    positionToString,
-    SourcePosition
-} from "./common.js"
+import { CallExpression, SourceFile, SyntaxKind, ts } from "ts-morph"
+
+import { positionToString, SourcePosition } from "./common.js"
 import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
+import { BenchFormat, writeUpdates } from "./writeSnapshot.js"
 
 export interface SnapshotArgs {
     position: SourcePosition
     serializedValue: unknown
+    value: unknown
+    benchFormat: BenchFormat
     snapFunctionName?: string
     baselineName?: string
-}
-
-export interface ExternalSnapshotArgs extends SnapshotArgs {
-    name: string
-    customPath: string | undefined
-}
-
-/** Writes the update and position to cacheDir, which will eventually be read and copied to the source
- * file by a cleanup process after all tests have completed.
- */
-export const writeInlineSnapshotUpdateToCacheDir = ({
-    position,
-    serializedValue
-}: SnapshotArgs) => {
-    writeJson(
-        join(getReAssertConfig().snapCacheDir, `snap-${randomUUID()}.json`),
-        {
-            position,
-            serializedValue
-        }
-    )
-}
-
-export const writeCachedInlineSnapshotUpdates = () => {
-    const config = getReAssertConfig()
-    if (!existsSync(config.snapCacheDir)) {
-        throw new Error(
-            `Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
-        )
-    }
-    for (const updateFile of readdirSync(config.snapCacheDir)) {
-        if (/snap.*\.json$/.test(updateFile)) {
-            let snapshotData: SnapshotArgs | undefined
-            try {
-                snapshotData = readJson(join(config.snapCacheDir, updateFile))
-            } catch {
-                // If we can't read the snapshot, log an error and move onto the next update
-                console.error(
-                    `Unable to read snapshot data from expected location ${updateFile}.`
-                )
-            }
-            if (snapshotData) {
-                try {
-                    queueInlineSnapshotWriteOnProcessExit(snapshotData)
-                } catch (error) {
-                    // If writeInlineSnapshotToFile throws an error, log it and move on to the next update
-                    console.error(String(error))
-                }
-            }
-        }
-    }
 }
 
 export const findCallExpressionAncestor = (
@@ -100,11 +46,32 @@ export const findCallExpressionAncestor = (
     return matchingCall
 }
 
+export const resolveSnapshotPath = (
+    testFile: string,
+    customPath: string | undefined
+) => {
+    if (customPath && isAbsolute(customPath)) {
+        return customPath
+    }
+    return join(dirname(testFile), customPath ?? "assert.snapshots.json")
+}
+
+export const getSnapshotByName = (
+    file: string,
+    name: string,
+    customPath: string | undefined
+) => {
+    const snapshotPath = resolveSnapshotPath(file, customPath)
+    return readJson(snapshotPath)?.[basename(file)]?.[name]
+}
+
 export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
+    value,
     snapFunctionName = "snap",
-    baselineName
+    baselineName,
+    benchFormat
 }: SnapshotArgs) => {
     const project = getDefaultTsMorphProject()
     const file = project.getSourceFileOrThrow(position.file)
@@ -117,109 +84,39 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
         file,
         position,
         snapCall,
+        snapFunctionName,
         newArgText,
-        baselineName
+        value,
+        baselineName,
+        benchFormat
     })
 }
 
-export const resolveSnapshotPath = (
-    testFile: string,
-    customPath: string | undefined
-) => {
-    if (customPath && isAbsolute(customPath)) {
-        return customPath
-    }
-    return join(dirname(testFile), customPath ?? "assert.snapshots.json")
-}
-
-export const updateExternalSnapshot = ({
-    serializedValue: value,
-    position,
-    name,
-    customPath
-}: ExternalSnapshotArgs) => {
-    const snapshotPath = resolveSnapshotPath(position.file, customPath)
-    const snapshotData = readJson(snapshotPath) ?? {}
-    const fileKey = basename(position.file)
-    snapshotData[fileKey] = {
-        ...snapshotData[fileKey],
-        [name]: value
-    }
-    writeJson(snapshotPath, snapshotData)
-}
-
-export const getSnapshotByName = (
-    file: string,
-    name: string,
-    customPath: string | undefined
-) => {
-    const snapshotPath = resolveSnapshotPath(file, customPath)
-    return readJson(snapshotPath)?.[basename(file)]?.[name]
-}
-
-type QueuedUpdate = {
+export type QueuedUpdate = {
     file: SourceFile
     position: SourcePosition
     snapCall: CallExpression
+    snapFunctionName: string
     newArgText: string
+    value: any
     baselineName: string | undefined
+    benchFormat: BenchFormat
 }
 
+/**
+ * Each time we encounter a snapshot that needs to be initialized
+ * or updated, we push its context to the global queuedUpdates variable.
+ * Then, on process exit, we call writeUpdates which handles updating all
+ * of the affected source (for inline snaps) or JSON (for external snaps or
+ * bench history) files.
+ **/
 const queuedUpdates: QueuedUpdate[] = []
 
-// Waiting until process exit to write snapshots avoids invalidating existing source positions
 process.on("exit", () => {
-    if (!queuedUpdates.length) {
-        return
-    }
-    for (const update of queuedUpdates) {
-        const originalArgs = update.snapCall.getArguments()
-        const previousValue = originalArgs.length
-            ? originalArgs[0].getText()
-            : undefined
-        writeUpdateToFile(originalArgs, update)
-        summarizeSnapUpdate(originalArgs, update, previousValue)
-    }
     try {
-        const prettierPath = requireResolve("prettier")
-        const prettierBin = join(dirname(prettierPath), "bin-prettier.js")
-        const updatedPaths = [
-            ...new Set(queuedUpdates.map((update) => update.file.getFilePath()))
-        ]
-        shell(`node ${prettierBin} --write ${updatedPaths.join(" ")}`)
-    } catch {
-        // If prettier is unavailable, do nothing.
+        writeUpdates(queuedUpdates)
+    } catch (e) {
+        console.error(e)
+        throw e
     }
 })
-
-const writeUpdateToFile = (
-    originalArgs: Node<ts.Node>[],
-    update: QueuedUpdate
-) => {
-    for (const originalArg of originalArgs) {
-        update.snapCall.removeArgument(originalArg)
-    }
-    update.snapCall.addArgument(update.newArgText)
-    update.file.saveSync()
-}
-
-const summarizeSnapUpdate = (
-    originalArgs: Node<ts.Node>[],
-    update: QueuedUpdate,
-    previousValue: string | undefined
-) => {
-    let updateSummary = `${
-        originalArgs.length ? "🆙  Updated" : "📸  Established"
-    } `
-    updateSummary += update.baselineName
-        ? `baseline '${update.baselineName}' `
-        : `snap on line ${update.position.line} of ${getFileKey(
-              update.file.getFilePath()
-          )} `
-    updateSummary += previousValue
-        ? `from ${previousValue} to `
-        : `${update.baselineName ? "at" : "as"} `
-
-    updateSummary += update.newArgText
-    console.log(updateSummary)
-}

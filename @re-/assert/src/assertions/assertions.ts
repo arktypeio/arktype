@@ -7,11 +7,13 @@ import { assertEquals, literalSerialize } from "../common.js"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit,
-    SnapshotArgs,
-    updateExternalSnapshot,
-    writeInlineSnapshotUpdateToCacheDir
+    SnapshotArgs
 } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/index.js"
+import {
+    updateExternalSnapshot,
+    writeInlineSnapshotUpdateToCacheDir
+} from "../writeSnapshot.js"
 import {
     AnyValueAssertion,
     EqualsOptions,
@@ -94,7 +96,9 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
-                    serializedValue: this.serializedActual
+                    serializedValue: this.serializedActual,
+                    value: this.actual,
+                    benchFormat: this.ctx.cfg.benchFormat
                 }
                 if (this.ctx.cfg.precached) {
                     writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
@@ -118,9 +122,11 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSnapshot)) {
                 updateExternalSnapshot({
                     serializedValue: this.serializedActual,
+                    value: this.actual,
                     position: caller(),
                     name: args.id,
-                    customPath: args.path
+                    customPath: args.path,
+                    benchFormat: this.ctx.cfg.benchFormat
                 })
             }
         } else {
