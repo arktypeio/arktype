@@ -38,6 +38,10 @@ export type boundChecker = (y: number) => boolean
  */
 export type BoundableNode = NumberKeyword | StringKeyword | [unknown, "[]"]
 
+export type boundableNode = strNode & {
+    bounds: bounds | undefined
+}
+
 export type boundableData = number | string | unknown[]
 
 export const isBoundable = (node: strNode): node is boundableNode =>
@@ -141,8 +145,4 @@ const isWithinBound = (comparator: Comparator, limit: number, size: number) => {
             // c8 ignore next
             throw new Error(`Unexpected comparator ${comparator}.`)
     }
-}
-
-export type boundableNode = strNode & {
-    bounds: bounds | undefined
 }
