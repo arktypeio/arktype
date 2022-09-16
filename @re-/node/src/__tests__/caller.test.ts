@@ -1,4 +1,5 @@
 import { platform } from "node:os"
+import { basename } from "node:path"
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { caller, fileName, getCallStack } from "../index.js"
@@ -68,7 +69,7 @@ describe("caller", () => {
     test("getCallStack", () => {
         const stack = getCallStack()
         assert(stack[0]).equals("Error")
-        assert(stack[1].includes(fileName())).is(true)
+        assert(stack[1].includes(basename(fileName()))).is(true)
         assert(stack.length - getCallStack({ offset: 1 }).length).equals(1)
     })
 })
