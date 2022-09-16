@@ -1,8 +1,12 @@
 import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
-import { Node } from "./node/index.js"
+import { Base } from "./nodes/base.js"
+import { Allows } from "./nodes/traversal/allows.js"
+import { Create } from "./nodes/traversal/create.js"
+import { References } from "./nodes/traversal/references.js"
+import { Traverse } from "./nodes/traversal/traverse.js"
+import { Str } from "./parser/str.js"
 import { Root } from "./root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "./space.js"
-import { Str } from "./str/str.js"
 
 export namespace ResolutionType {
     export type Validate<
@@ -25,10 +29,10 @@ export namespace ResolutionType {
     >
 }
 
-export class ResolutionNode extends Node.base {
-    public root: Node.base
+export class ResolutionNode extends Base.node {
+    public root: Base.node
     public rootDef: unknown
-    private ctx: Node.context
+    private ctx: Base.context
 
     constructor(public alias: string, space: SpaceMeta) {
         super()
@@ -37,7 +41,7 @@ export class ResolutionNode extends Node.base {
         const defAndOptions = getResolutionDefAndOptions(
             space.dictionary[alias]
         )
-        this.ctx = Node.initializeContext(
+        this.ctx = Base.initializeContext(
             defAndOptions.options
                 ? deepMerge(space.options, defAndOptions.options)
                 : space.options,
@@ -56,29 +60,29 @@ export class ResolutionNode extends Node.base {
     }
 
     collectReferences(
-        opts: Node.References.Options<string, boolean>,
-        collected: Node.References.Collection
+        opts: References.Options<string, boolean>,
+        collected: References.Collection
     ) {
         this.root.collectReferences(opts, collected)
     }
 
-    references(opts: Node.References.Options<string, boolean>) {
+    references(opts: References.Options<string, boolean>) {
         return this.root.references(opts)
     }
 
-    allows(args: Node.Allows.Args): boolean {
+    check(args: Allows.Args) {
         const nextArgs = this.nextArgs(args, this.ctx.validate)
-        if (typeof args.value === "object" && args.value !== null) {
+        if (typeof args.data === "object" && args.data !== null) {
             if (
-                args.ctx.checkedValuesByAlias[this.alias]?.includes(args.value)
+                args.ctx.checkedValuesByAlias[this.alias]?.includes(args.data)
             ) {
                 // If we've already seen this value, it must not have any errors or else we wouldn't be here
                 return true
             }
             if (!args.ctx.checkedValuesByAlias[this.alias]) {
-                nextArgs.ctx.checkedValuesByAlias[this.alias] = [args.value]
+                nextArgs.ctx.checkedValuesByAlias[this.alias] = [args.data]
             } else {
-                nextArgs.ctx.checkedValuesByAlias[this.alias].push(args.value)
+                nextArgs.ctx.checkedValuesByAlias[this.alias].push(args.data)
             }
         }
         const customValidator =
@@ -86,16 +90,14 @@ export class ResolutionNode extends Node.base {
             nextArgs.ctx.modelCfg.validator ??
             "default"
         if (customValidator !== "default") {
-            return Node.Allows.customValidatorAllows(
-                customValidator,
-                this,
-                nextArgs
-            )
+            // TODO: Check custom validator format.
+            Allows.customValidatorAllows(customValidator, this, nextArgs)
+            return
         }
-        return this.root.allows(nextArgs)
+        this.root.check(nextArgs)
     }
 
-    create(args: Node.Create.Args) {
+    create(args: Create.Args) {
         const nextArgs = this.nextArgs(args, this.ctx.create)
         if (args.ctx.seen.includes(this.alias)) {
             const onRequiredCycle =
@@ -104,14 +106,14 @@ export class ResolutionNode extends Node.base {
             if (onRequiredCycle) {
                 return onRequiredCycle
             }
-            throw new Node.Create.RequiredCycleError(this.alias, args.ctx.seen)
+            throw new Create.RequiredCycleError(this.alias, args.ctx.seen)
         }
         return this.root.create(nextArgs)
     }
 
     private nextArgs<
         Args extends {
-            ctx: Node.Traverse.Context<any>
+            ctx: Traverse.Context<any>
             cfg: any
         }
     >(args: Args, aliasCfg: any): Args {
@@ -130,7 +132,7 @@ export class ResolutionNode extends Node.base {
 //     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
-    Node.ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
+    Base.ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
 
 type CheckResolutionForShallowCycle<
     Resolution,

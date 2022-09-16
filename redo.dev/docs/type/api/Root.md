@@ -24,7 +24,7 @@ export declare namespace Root {
         : Obj.Parse<Def, Dict>
     export type Infer<
         Def,
-        Ctx extends Node.InferenceContext
+        Ctx extends Base.InferenceContext
     > = unknown extends Def
         ? Def
         : Def extends string
@@ -48,7 +48,7 @@ export declare namespace Root {
     const badDefinitionTypeMessage =
         "Type definitions must be strings or objects."
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
-    export const parse: Node.parseFn<unknown>
+    export const parse: Base.parseFn<unknown>
     export {}
 }
 ```

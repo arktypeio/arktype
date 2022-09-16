@@ -8,7 +8,7 @@ describe("diagnostics", () => {
             type("3<number<5").check(0, {
                 diagnostics: {
                     BoundViolation: {
-                        message: ({ comparator, limit, data }) =>
+                        message: ({ data, comparator, limit }) =>
                             `${data} not ${comparator}${limit}`
                     }
                 }

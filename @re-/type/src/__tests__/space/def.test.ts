@@ -73,13 +73,13 @@ describe("def", () => {
                 description: "Typescript Devs"
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
-  members/0: Keys 'age' were unexpected.
+  members/0: Keys age were unexpected.
   members/1/name: 27 is not assignable to {
     first: string,
     last: string
 }.
-  members/1: Keys 'age' were unexpected.
-  /: Keys 'description' were unexpected.
+  members/1: Keys age were unexpected.
+  /: Keys description were unexpected.
 `)
     })
 })
