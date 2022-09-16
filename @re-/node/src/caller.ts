@@ -1,8 +1,17 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { isDeepStrictEqual } from "node:util"
-// @ts-ignore Can't resolve these types yet with NodeNext
-import getCurrentLine from "get-current-line"
+import getCurrentLine, { getFramesFromError } from "get-current-line"
+
+export type GetCallStackOptions = {
+    offset?: number
+}
+
+export const getCallStack = ({ offset = 0 }: GetCallStackOptions = {}) => {
+    const frames = getFramesFromError(new Error())
+    frames.splice(1, 1 + offset)
+    return frames
+}
 
 export interface LinePosition {
     line: number

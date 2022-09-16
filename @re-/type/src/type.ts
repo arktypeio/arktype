@@ -6,8 +6,10 @@ import {
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
-import { Node } from "./node/index.js"
-import { Diagnostics } from "./node/traversal/allows.js"
+import { Base } from "./nodes/base.js"
+import { Allows } from "./nodes/traversal/allows.js"
+import { Create } from "./nodes/traversal/create.js"
+import { References } from "./nodes/traversal/references.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
 
@@ -16,7 +18,7 @@ export const type: TypeFunction = (
     options = {},
     space?: SpaceMeta
 ) => {
-    const root = Root.parse(definition, Node.initializeContext(options, space))
+    const root = Root.parse(definition, Base.initializeContext(options, space))
     return new Type(definition, root, options) as any
 }
 
@@ -30,14 +32,14 @@ export type DynamicTypeFunction = (
 export type DynamicType = TypeFrom<unknown, {}, unknown>
 
 export type TypeOptions = {
-    validate?: Node.Allows.Options
-    create?: Node.Create.Options
+    validate?: Allows.Options
+    create?: Create.Options
 }
 
 export type TypeFunction<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
     definition: Root.Validate<Def, S["Dict"]>,
     options?: TypeOptions
-) => TypeFrom<Def, S["Dict"], Infer<Def, Node.InferenceContext.FromSpace<S>>>
+) => TypeFrom<Def, S["Dict"], Infer<Def, Base.InferenceContext.FromSpace<S>>>
 
 export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     definition: Def
@@ -53,7 +55,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
 export class Type implements DynamicType {
     constructor(
         public definition: unknown,
-        public root: Node.base,
+        public root: Base.node,
         public config: TypeOptions = {}
     ) {}
 
@@ -69,81 +71,69 @@ export class Type implements DynamicType {
         return this.root.tree as any
     }
 
-    check(value: unknown, options?: Node.Allows.Options) {
-        const args = Node.Allows.createArgs(
-            value,
-            options,
-            this.config.validate
-        )
+    check(value: unknown, options?: Allows.Options) {
+        const args = Allows.createArgs(value, options, this.config.validate)
         const customValidator =
             args.cfg.validator ?? args.ctx.modelCfg.validator ?? "default"
         if (customValidator !== "default") {
-            Node.Allows.customValidatorAllows(customValidator, this.root, args)
+            Allows.customValidatorAllows(customValidator, this.root, args)
         } else {
-            this.root.allows(args)
+            this.root.check(args)
         }
         return args.diagnostics.length
             ? {
-                  errors: new Diagnostics(...args.diagnostics)
+                  errors: new Allows.Diagnostics(...args.diagnostics)
               }
             : { data: value }
     }
 
-    assert(value: unknown, options?: Node.Allows.Options) {
+    assert(value: unknown, options?: Allows.Options) {
         const validationResult = this.check(value, options)
         if (validationResult.errors) {
-            throw new Node.Allows.ValidationError(
-                validationResult.errors.summary
-            )
+            throw new Allows.ValidationError(validationResult.errors.summary)
         }
         return validationResult.data
     }
 
-    create(options?: Node.Create.Options) {
-        return this.root.create(
-            Node.Create.createArgs(options, this.config.create)
-        )
+    create(options?: Create.Options) {
+        return this.root.create(Create.createArgs(options, this.config.create))
     }
 
-    references(options: Node.References.Options = {}) {
+    references(options: References.Options = {}) {
         return this.root.references(options) as any
     }
 }
 
-export type AssertOptions = Node.Allows.Options
-
 export type ValidateFunction<Inferred> = (
     value: unknown,
-    options?: Node.Allows.Options
+    options?: Allows.Options
 ) => ValidationResult<Inferred>
 
 export type ValidationResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
-        errors: Diagnostics
+        errors: Allows.Diagnostics
     }
 >
 
 export type AssertFunction<Inferred> = (
     value: unknown,
-    options?: Node.Allows.Options
+    options?: Allows.Options
 ) => Inferred
 
-export type CreateFunction<Inferred> = (
-    options?: Node.Create.Options
-) => Inferred
+export type CreateFunction<Inferred> = (options?: Create.Options) => Inferred
 
 export type ReferencesFunction<Def, Dict> = <
-    Options extends Node.References.Options = {}
+    Options extends References.Options = {}
 >(
     options?: Options
 ) => Merge<
     {
-        filter: Node.References.FilterFunction<string>
+        filter: References.FilterFunction<string>
         preserveStructure: false
     },
     Options
-> extends Node.References.Options<infer Filter, infer PreserveStructure>
+> extends References.Options<infer Filter, infer PreserveStructure>
     ? TransformReferences<
           Root.References<Def, Dict, PreserveStructure>,
           Filter,
@@ -153,7 +143,7 @@ export type ReferencesFunction<Def, Dict> = <
 
 export type Infer<Def, S extends Space> = Root.Infer<
     Def,
-    Node.InferenceContext.From<{
+    Base.InferenceContext.From<{
         Dict: S["Dict"]
         Meta: S["Meta"]
         Seen: {}
@@ -162,14 +152,14 @@ export type Infer<Def, S extends Space> = Root.Infer<
 
 export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>
 
-export type References<
+export type ReferencesOf<
     Def,
     Dict,
-    Options extends Node.References.TypeOptions = {}
+    Options extends References.TypeOptions = {}
 > = Merge<
     { filter: string; preserveStructure: false; format: "list" },
     Options
-> extends Node.References.TypeOptions<
+> extends References.TypeOptions<
     infer Filter,
     infer PreserveStructure,
     infer Format
@@ -184,7 +174,7 @@ export type References<
 type TransformReferences<
     References,
     Filter extends string,
-    Format extends Node.References.TypeFormat
+    Format extends References.TypeFormat
 > = References extends string[]
     ? FormatReferenceList<FilterReferenceList<References, Filter, []>, Format>
     : {
@@ -209,7 +199,7 @@ type FilterReferenceList<
 
 type FormatReferenceList<
     References extends string[],
-    Format extends Node.References.TypeFormat
+    Format extends References.TypeFormat
 > = Format extends "tuple"
     ? References
     : Format extends "list"

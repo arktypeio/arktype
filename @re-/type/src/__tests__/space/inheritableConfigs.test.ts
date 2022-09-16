@@ -19,7 +19,7 @@ describe("inheritable configs", () => {
                     { name: "David Blass", age: 28 },
                     { diagnostics: { ExtraneousKeys: { enable: true } } }
                 ).errors?.summary
-            ).snap(`Keys 'age' were unexpected.`)
+            ).snap(`Keys age were unexpected.`)
         })
         test("type options", () => {
             const user = type(
@@ -32,7 +32,7 @@ describe("inheritable configs", () => {
             )
             assert(
                 user.check({ name: "David Blass", age: 28 }).errors?.summary
-            ).equals(`Keys 'age' were unexpected.`)
+            ).equals(`Keys age were unexpected.`)
         })
 
         test("def config in space", () => {
@@ -51,7 +51,7 @@ describe("inheritable configs", () => {
                     name: "David Blass",
                     age: 28
                 }).errors?.summary
-            ).equals(`Keys 'age' were unexpected.`)
+            ).equals(`Keys age were unexpected.`)
         })
         test("space config", () => {
             const mySpace = space(
@@ -67,7 +67,7 @@ describe("inheritable configs", () => {
                     name: "David Blass",
                     age: 28
                 }).errors?.summary
-            ).equals(`Keys 'age' were unexpected.`)
+            ).equals(`Keys age were unexpected.`)
         })
         test("precedence", () => {
             const nesting = space(
