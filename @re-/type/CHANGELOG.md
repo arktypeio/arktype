@@ -1,5 +1,11 @@
 # @re-/type
 
+## 2.0.10-alpha
+
+### Patch Changes
+
+-   913aba3c: Improve subtype validation error messages.
+
 ## 2.0.9-alpha
 
 ### Patch Changes

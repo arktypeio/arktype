@@ -1,5 +1,13 @@
 # @re-/assert
 
+## 0.4.5
+
+### Patch Changes
+
+-   913aba3c: Omit internal assert frames from stack traces.
+-   Updated dependencies [913aba3c]
+    -   @re-/node@2.3.0
+
 ## 0.4.4
 
 ### Patch Changes
