@@ -1,5 +1,11 @@
 # @re-/node
 
+## 2.3.0
+
+### Minor Changes
+
+-   913aba3c: Add a utility for extracting the current call stack.
+
 ## 2.2.4
 
 ### Patch Changes
