@@ -97,6 +97,15 @@ export const lettersAfterFirstToLower = (word: string) =>
         start: 1
     })
 
+const vowels = {
+    a: 1,
+    e: 1,
+    i: 1,
+    o: 1,
+    u: 1
+}
+export const startsWithVowel = (s: string) => s[0].toLowerCase() in vowels
+
 export const capsCase = (words: string[]) =>
     words.map((word) => capitalize(lettersAfterFirstToLower(word))).join("")
 
