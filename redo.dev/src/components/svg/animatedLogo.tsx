@@ -11,7 +11,7 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
         palette: { secondary, error, success }
     } = useTheme()
     const pathAnimationContext: PathAnimationContext = {
-        nextStart: frameStartTime(1) + PATH_ANIMATION_DURATION
+        nextStart: animatePathStartTime(0)
     }
     return (
         <motion.svg style={style} viewBox="0 0 1823 576">
@@ -60,7 +60,10 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
                     }}
                     animate={{
                         fill: [
+                            TRANSPARENT,
                             error.main,
+                            TRANSPARENT,
+                            TRANSPARENT,
                             TRANSPARENT,
                             TRANSPARENT,
                             TRANSPARENT,
@@ -80,9 +83,12 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
                     animate={{
                         fill: [
                             TRANSPARENT,
+                            TRANSPARENT,
+                            TRANSPARENT,
+                            TRANSPARENT,
                             secondary.main,
-                            secondary.main,
-                            secondary.main,
+                            TRANSPARENT,
+                            TRANSPARENT,
                             success.main
                         ]
                     }}
@@ -117,18 +123,14 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
  */
 const PRIMARY_DARK = "#264bcf"
 const TRANSPARENT = "#1b1b1b00"
-const INITIAL_DELAY = 0.5
-const ANIMATION_SECONDS = 2
-const FRAMES = 5
+const INITIAL_DELAY = 0.2
+const ANIMATION_SECONDS = 2.5
+const FRAMES = 8
 const FRAME_SECONDS = ANIMATION_SECONDS / FRAMES
-const PATH_DRAW_FRAMES = 3
-const PATH_COUNT = 3
-const PATH_ANIMATION_DURATION =
-    // Speed up path draw so that we can add an initial delay
-    (PATH_DRAW_FRAMES * FRAME_SECONDS) / (PATH_COUNT + 2)
+const PATH_DRAW_SECONDS = FRAME_SECONDS * 2
 
-const frameStartTime = (frameIndex: number) =>
-    INITIAL_DELAY + frameIndex * FRAME_SECONDS
+const animatePathStartTime = (order: number) =>
+    INITIAL_DELAY + ANIMATION_SECONDS + order * PATH_DRAW_SECONDS
 
 type PathAnimationContext = {
     nextStart: number
@@ -141,13 +143,13 @@ const createPathAnimationProps = (
     const props = {
         transition: {
             delay: context.nextStart,
-            duration: PATH_ANIMATION_DURATION
+            duration: FRAME_SECONDS
         },
         animate: {
             stroke: [TRANSPARENT, color],
             pathLength: [0, 1]
         }
     }
-    context.nextStart += PATH_ANIMATION_DURATION
+    context.nextStart += FRAME_SECONDS
     return props
 }
