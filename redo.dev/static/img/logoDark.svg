@@ -15,7 +15,7 @@
       <path id="dMain" d="m1042 524.5c115.5-6.018 205.7-113.8 203.2-243-2.486-129.2-96.73-232.5-212.4-233"
          stroke="#264bcf" />
       <path id="oArrow" d="m1743 73.4h-88.82v88.82" stroke="#ffc40c" stroke-linejoin="round" />
-      <circle id="colonTop" cx="1031" cy="225" r="36" fill="#c80815" />
-      <circle id="colonBottom" cx="1033" cy="392.1" r="36" fill="#c80815" />
+      <circle id="colonTop" cx="1031" cy="225" r="36" fill="#00ad43" />
+      <circle id="colonBottom" cx="1033" cy="392.1" r="36" fill="#00ad43" />
    </g>
 </svg>

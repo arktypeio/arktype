@@ -19,10 +19,10 @@ export const getTheme = ({ isDark }: ThemeConfigOptions) =>
                 main: "#c80815"
             },
             success: {
-                main: "#00AD43"
+                main: "#00ad43"
             },
             warning: {
-                main: "#FF7518"
+                main: "#ff7518"
             },
             info: {
                 main: "#264bcf"
