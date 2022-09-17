@@ -127,10 +127,9 @@ const INITIAL_DELAY = 0.2
 const ANIMATION_SECONDS = 2.5
 const FRAMES = 8
 const FRAME_SECONDS = ANIMATION_SECONDS / FRAMES
-const PATH_DRAW_SECONDS = FRAME_SECONDS * 2
 
 const animatePathStartTime = (order: number) =>
-    INITIAL_DELAY + ANIMATION_SECONDS + order * PATH_DRAW_SECONDS
+    INITIAL_DELAY + ANIMATION_SECONDS + order * FRAME_SECONDS
 
 type PathAnimationContext = {
     nextStart: number
