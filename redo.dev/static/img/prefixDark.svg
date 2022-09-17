@@ -10,7 +10,7 @@
             stroke="#264bcf" stroke-linejoin="round" />
         <path id="eLine" d="m600 225h235" stroke="#ffc40c" />
 
-        <circle id="colonTop" cx="1031" cy="225" r="36" fill="#c80815" />
-        <circle id="colonBottom" cx="1033" cy="392.1" r="36" fill="#c80815" />
+        <circle id="colonTop" cx="1031" cy="225" r="36" fill="#00ad43" />
+        <circle id="colonBottom" cx="1033" cy="392.1" r="36" fill="#00ad43" />
     </g>
 </svg>
