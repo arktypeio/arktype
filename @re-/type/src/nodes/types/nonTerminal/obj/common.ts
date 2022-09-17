@@ -1,6 +1,8 @@
 import { Root } from "../../../../root.js"
 import { Base } from "../../../base.js"
+import { Allows } from "../../../traversal/allows.js"
 import { References } from "../../../traversal/references.js"
+import { KeywordDiagnostic } from "../../terminal/keywords/common.js"
 
 export type ChildEntry<KeyType> = [KeyType, Base.node]
 
@@ -56,5 +58,33 @@ export abstract class obj<defType extends object> extends Base.node {
             return references
         }
         return super.references(opts)
+    }
+}
+
+export type ObjectKind = "array" | "dictionary"
+
+export const checkObjectRoot = <Kind extends ObjectKind>(
+    args: Allows.Args,
+    kind: Kind
+): args is Allows.Args<
+    Kind extends "array" ? unknown[] : Record<string, unknown>
+> => {
+    if (typeof args.data !== "object" || args.data === null) {
+        args.diagnostics.push(new KeywordDiagnostic("object", args))
+        return false
+    }
+    if ((kind === "array") !== Array.isArray(args.data)) {
+        args.diagnostics.push(new ObjectKindDiagnostic(kind, args))
+        return false
+    }
+    return true
+}
+
+export class ObjectKindDiagnostic extends Allows.Diagnostic<"ObjectKind"> {
+    public message: string
+
+    constructor(public type: ObjectKind, args: Allows.Args) {
+        super("ObjectKind", args)
+        this.message = `Must ${type === "dictionary" ? "not " : ""}be an array.`
     }
 }

@@ -93,11 +93,9 @@ export class UnionDiagnostic extends Allows.Diagnostic<
         public branches: DiagnosticBranchEntry[]
     ) {
         super("Union", args)
-        this.message = `${Allows.stringifyData(
+        this.message = `Must be one of ${this.type} (got ${Allows.stringifyData(
             this.data
-        )} is not assignable to any of ${this.type}${
-            this.options?.expand ? ":" : "."
-        }`
+        )})${this.options?.expand ? ":" : "."}`
         if (this.options?.expand) {
             for (const [type, diagnostics] of this.branches) {
                 this.message += `\n${type}: ${diagnostics.summary}`

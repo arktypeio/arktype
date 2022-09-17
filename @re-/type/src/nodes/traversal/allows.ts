@@ -2,13 +2,17 @@ import { Evaluate, toString, uncapitalize } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { BoundViolationDiagnostic } from "../constraints/bounds.js"
 import type { UnionDiagnostic } from "../types/nonTerminal/expression/branch/union.js"
+import type { ObjectKindDiagnostic } from "../types/nonTerminal/obj/common.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic
-} from "../types/nonTerminal/obj/record.js"
+} from "../types/nonTerminal/obj/dictionary.js"
 import type { TupleLengthDiagnostic } from "../types/nonTerminal/obj/tuple.js"
-import { NumberSubtypeDiagnostic } from "../types/terminal/keywords/number.js"
-import { RegexMismatchDiagnostic } from "../types/terminal/keywords/string.js"
+import { KeywordDiagnostic } from "../types/terminal/keywords/common.js"
+import type { Keyword } from "../types/terminal/keywords/keyword.js"
+import type { NumberSubtypeDiagnostic } from "../types/terminal/keywords/number.js"
+import type { RegexMismatchDiagnostic } from "../types/terminal/keywords/string.js"
+import type { LiteralDiagnostic } from "../types/terminal/literal.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {
@@ -121,7 +125,9 @@ export namespace Allows {
     }
 
     export type DiagnosticsByCode = {
-        Unassignable: UnassignableDiagnostic
+        Literal: LiteralDiagnostic
+        Keyword: KeywordDiagnostic
+        ObjectKind: ObjectKindDiagnostic
         BoundViolation: BoundViolationDiagnostic
         ExtraneousKeys: ExtraneousKeysDiagnostic
         MissingKey: MissingKeyDiagnostic
@@ -155,22 +161,20 @@ export namespace Allows {
 
     export class ValidationError extends Error {}
 
-    export class UnassignableDiagnostic extends Diagnostic<"Unassignable"> {
-        public message: string
-
-        constructor(public type: string, args: Args) {
-            super("Unassignable", args)
-            this.message = `${stringifyData(
-                this.data
-            )} is not assignable to ${type}.`
-        }
-    }
+    export type TypeSetName = Keyword.Definition | "array"
 
     export class CustomDiagnostic extends Diagnostic<"Custom"> {
         constructor(args: Args, public message: string) {
             super("Custom", args)
         }
     }
+
+    const pathToString = (path: Traverse.Path) =>
+        path.length === 0
+            ? "/"
+            : path.length === 1 && typeof path[0] === "number"
+            ? `Item ${path[0]}`
+            : path.join("/")
 
     export class Diagnostics extends Array<RegisteredDiagnostic> {
         push(...diagnostics: RegisteredDiagnostic[]) {
@@ -189,7 +193,7 @@ export namespace Allows {
             if (this.length === 1) {
                 const error = this[0]
                 if (error.path.length) {
-                    return `At path ${error.path.join("/")}, ${uncapitalize(
+                    return `${pathToString(error.path)} ${uncapitalize(
                         error.message
                     )}`
                 }
@@ -198,10 +202,9 @@ export namespace Allows {
             let aggregatedMessage =
                 "Encountered errors at the following paths:\n"
             for (const error of this) {
-                // Display root path as "/"
-                aggregatedMessage += `  ${
-                    error.path.length ? error.path.join("/") : "/"
-                }: ${error.message}\n`
+                aggregatedMessage += `  ${pathToString(error.path)}: ${
+                    error.message
+                }\n`
             }
             return aggregatedMessage
         }

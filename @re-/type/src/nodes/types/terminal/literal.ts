@@ -12,7 +12,8 @@ export class literalNode<
         super()
         this.definition =
             typeof value === "string"
-                ? value.includes(`"`)
+                ? // TODO: Is this right?
+                  value.includes(`"`)
                     ? `'${this.value}'`
                     : `"${this.value}"`
                 : typeof value === "bigint"
@@ -25,16 +26,24 @@ export class literalNode<
     }
 
     check(args: Allows.Args) {
-        if (args.data === this.value) {
-            return true
+        if (args.data !== this.value) {
+            args.diagnostics.push(new LiteralDiagnostic(this.toString(), args))
         }
-        args.diagnostics.push(
-            new Allows.UnassignableDiagnostic(this.toString(), args)
-        )
         return false
     }
 
     create() {
         return this.value
+    }
+}
+
+export class LiteralDiagnostic extends Allows.Diagnostic<"Literal"> {
+    public message: string
+
+    constructor(public type: string, args: Allows.Args) {
+        super("Literal", args)
+        this.message = `Must be ${type} (got ${Allows.stringifyData(
+            this.data
+        )}).`
     }
 }

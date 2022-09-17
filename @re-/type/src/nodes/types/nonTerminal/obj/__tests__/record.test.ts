@@ -2,7 +2,10 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../index.js"
 import { unresolvableMessage } from "../../../../../parser/operand/unenclosed.js"
-import { ExtraneousKeysDiagnostic, MissingKeyDiagnostic } from "../record.js"
+import {
+    ExtraneousKeysDiagnostic,
+    MissingKeyDiagnostic
+} from "../dictionary.js"
 
 describe("record", () => {
     describe("empty", () => {

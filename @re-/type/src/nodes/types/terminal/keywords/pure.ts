@@ -1,9 +1,10 @@
 import { Allows } from "../../../traversal/allows.js"
 import { Create } from "../../../traversal/create.js"
 import { terminalNode } from "../terminal.js"
+import { KeywordDiagnostic } from "./common.js"
 
 /**
- *  pureNodes are simple, context-free terminalNodes that represent a single type.
+ *  pureNodes are context-free terminalNodes that represent a single type.
  *  In the interest of performance, all pureNode subclasses are instantiated as singletons,
  *  so it is critical that each of their methods (check, create etc.) behave deterministically
  *  without regard to their location in the parse tree and free from constraints that apply to
@@ -28,13 +29,9 @@ export abstract class pureNode extends terminalNode {
     }
 
     check(args: Allows.Args) {
-        if (this.allows(args.data)) {
-            return true
+        if (!this.allows(args.data)) {
+            args.diagnostics.push(new KeywordDiagnostic(this.keyword, args))
         }
-        args.diagnostics.push(
-            new Allows.UnassignableDiagnostic(this.keyword, args)
-        )
-        return false
     }
 
     abstract allows(data: unknown): boolean

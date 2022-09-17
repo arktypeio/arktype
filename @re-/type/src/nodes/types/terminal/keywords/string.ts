@@ -2,6 +2,7 @@ import { boundableNode, bounds } from "../../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../../constraints/common.js"
 import { Allows } from "../../../traversal/allows.js"
 import { terminalNode } from "../terminal.js"
+import { KeywordDiagnostic } from "./common.js"
 
 export class stringNode extends terminalNode implements boundableNode {
     bounds: bounds | undefined = undefined
@@ -27,10 +28,7 @@ export class stringNode extends terminalNode implements boundableNode {
 
     check(args: Allows.Args) {
         if (typeof args.data !== "string") {
-            // TODO: Improve error message to indicate subtype
-            args.diagnostics.push(
-                new Allows.UnassignableDiagnostic(this.toString(), args)
-            )
+            args.diagnostics.push(new KeywordDiagnostic("string", args))
             return
         }
         for (const { description, matcher } of this.regexConstraints) {

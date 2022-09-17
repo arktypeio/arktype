@@ -1,10 +1,12 @@
 import { InstanceOf } from "@re-/tools"
 import { numberKeywords } from "./number.js"
-import { pureKeywords } from "./pure.js"
+import { PureKeyword, pureKeywords } from "./pure.js"
 import { stringKeywords } from "./string.js"
 
 export namespace Keyword {
     export type Definition = keyof KeywordsToNodes
+
+    export type TypeKeyword = PureKeyword | "string" | "number"
 
     export type Types = {
         [K in Definition]: GetGeneratedType<InstanceOf<KeywordsToNodes[K]>>

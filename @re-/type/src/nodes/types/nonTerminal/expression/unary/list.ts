@@ -1,6 +1,7 @@
 import { boundableNode, bounds } from "../../../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../../../constraints/common.js"
 import { Allows } from "../../../../traversal/allows.js"
+import { checkObjectRoot } from "../../obj/index.js"
 import { Unary, unary } from "./unary.js"
 
 export type List<Child = unknown> = Unary<Child, "[]">
@@ -21,13 +22,10 @@ export class list extends unary implements boundableNode {
     }
 
     check(args: Allows.Args) {
-        if (!Array.isArray(args.data)) {
-            args.diagnostics.push(
-                new Allows.UnassignableDiagnostic(this.toString(), args)
-            )
+        if (!checkObjectRoot(args, "array")) {
             return
         }
-        this.bounds?.check(args as Allows.Args<unknown[]>)
+        this.bounds?.check(args)
         let itemIndex = 0
         for (const itemValue of args.data) {
             this.child.check({

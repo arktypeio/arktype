@@ -4,9 +4,9 @@ import { Base } from "../../../base.js"
 import { Allows } from "../../../traversal/allows.js"
 import { Create } from "../../../traversal/create.js"
 import { optional } from "../expression/unary/optional.js"
-import { obj } from "./common.js"
+import { checkObjectRoot, obj } from "./common.js"
 
-export namespace Record {
+export namespace Dictionary {
     export type Definition = Record<string, unknown>
 
     export type Infer<
@@ -25,16 +25,16 @@ export namespace Record {
     >
 }
 
-type RecordLike = Record<string, unknown>
+type DictionaryLike = Record<string, unknown>
 
 export const isArgValueRecordLike = (
     args: Allows.Args
-): args is Allows.Args<RecordLike> =>
+): args is Allows.Args<DictionaryLike> =>
     typeof args.data === "object" &&
     args.data !== null &&
     !Array.isArray(args.data)
 
-export class RecordNode extends obj<RecordLike> {
+export class DictionaryNode extends obj<DictionaryLike> {
     get tree() {
         const result: Record<string, unknown> = {}
         for (const [prop, propNode] of this.entries) {
@@ -44,10 +44,7 @@ export class RecordNode extends obj<RecordLike> {
     }
 
     check(args: Allows.Args) {
-        if (!isArgValueRecordLike(args)) {
-            args.diagnostics.push(
-                new Allows.UnassignableDiagnostic(this.toString(), args)
-            )
+        if (!checkObjectRoot(args, "dictionary")) {
             return
         }
         const extraneousValueKeys = this.allowsProps(args)
@@ -63,7 +60,7 @@ export class RecordNode extends obj<RecordLike> {
     }
 
     // TODO: Should maybe not use set for perf?
-    private allowsProps(args: Allows.Args<Record<string, unknown>>) {
+    private allowsProps(args: Allows.Args<DictionaryLike>) {
         const extraneousValueKeys = new Set(Object.keys(args.data))
         for (const [propKey, propNode] of this.entries) {
             const propArgs = this.argsForProp(args, propKey)
@@ -80,7 +77,7 @@ export class RecordNode extends obj<RecordLike> {
     }
 
     private argsForProp(
-        args: Allows.Args<Record<string, unknown>>,
+        args: Allows.Args<DictionaryLike>,
         propKey: string
     ): Allows.Args {
         return {
@@ -94,7 +91,7 @@ export class RecordNode extends obj<RecordLike> {
     }
 
     create(args: Create.Args) {
-        const result: Record<string, unknown> = {}
+        const result: DictionaryLike = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
             if (propNode instanceof optional) {

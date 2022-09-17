@@ -1,7 +1,7 @@
 import { Evaluate, IterateType, ListPossibleTypes, ValueOf } from "@re-/tools"
 import { Root } from "../../../../root.js"
 import { Base } from "../../../base.js"
-import { Record, RecordNode } from "./record.js"
+import { Dictionary, DictionaryNode } from "./dictionary.js"
 import { TupleNode } from "./tuple.js"
 
 export type Validate<Def, Dict> = {
@@ -17,7 +17,7 @@ export type Infer<
     Ctx extends Base.InferenceContext
 > = Def extends readonly unknown[]
     ? InferTuple<Def, Ctx>
-    : Record.Infer<Def, Ctx>
+    : Dictionary.Infer<Def, Ctx>
 
 export type InferTuple<
     Def extends readonly unknown[],
@@ -54,5 +54,5 @@ export const parse: Base.parseFn<object> = (def, ctx) => {
     if (TupleNode.matches(def)) {
         return new TupleNode(def, ctx)
     }
-    return new RecordNode(def as Record.Definition, ctx)
+    return new DictionaryNode(def as Dictionary.Definition, ctx)
 }

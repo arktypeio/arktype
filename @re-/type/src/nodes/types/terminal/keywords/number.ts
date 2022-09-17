@@ -2,6 +2,7 @@ import { boundableNode, bounds } from "../../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../../constraints/common.js"
 import { Allows } from "../../../traversal/allows.js"
 import { terminalNode } from "../terminal.js"
+import { KeywordDiagnostic } from "./common.js"
 
 export class numberNode extends terminalNode implements boundableNode {
     bounds: bounds | undefined = undefined
@@ -27,9 +28,7 @@ export class numberNode extends terminalNode implements boundableNode {
 
     check(args: Allows.Args) {
         if (typeof args.data !== "number") {
-            args.diagnostics.push(
-                new Allows.UnassignableDiagnostic(this.toString(), args)
-            )
+            args.diagnostics.push(new KeywordDiagnostic("number", args))
             return
         }
         for (const { allows, description } of this.numericConstraints) {

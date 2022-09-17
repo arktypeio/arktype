@@ -1,6 +1,6 @@
 import { Allows } from "../../../traversal/allows.js"
 import { Create } from "../../../traversal/create.js"
-import { obj } from "./common.js"
+import { checkObjectRoot, obj } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
 
@@ -14,10 +14,7 @@ export class TupleNode extends obj<TupleDefinition> {
     }
 
     check(args: Allows.Args) {
-        if (!Array.isArray(args.data)) {
-            args.diagnostics.push(
-                new Allows.UnassignableDiagnostic(this.toString(), args)
-            )
+        if (!checkObjectRoot(args, "array")) {
             return
         }
         const expectedLength = this.entries.length
@@ -28,7 +25,7 @@ export class TupleNode extends obj<TupleDefinition> {
             )
             return
         }
-        this.allowsItems(args as Allows.Args<unknown[]>)
+        this.allowsItems(args)
     }
 
     private allowsItems(args: Allows.Args<unknown[]>) {
@@ -70,6 +67,6 @@ export class TupleLengthDiagnostic extends Allows.Diagnostic<"TupleLength"> {
         public actualLength: number
     ) {
         super("TupleLength", args)
-        this.message = `Tuple must have length ${expectedLength} (got ${actualLength}).`
+        this.message = `Must have length ${expectedLength} (got ${actualLength}).`
     }
 }
