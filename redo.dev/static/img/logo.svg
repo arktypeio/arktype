@@ -10,8 +10,8 @@
             stroke="#162b79" stroke-linejoin="round" />
         <path id="eLine" d="m600 225h235" stroke="#ffc40c" />
 
-        <circle id="colonTop" cx="1031" cy="225" r="36" fill="#c80815" />
-        <circle id="colonBottom" cx="1033" cy="392.1" r="36" fill="#c80815" />
+        <circle id="colonTop" cx="1031" cy="225" r="36" fill="#00ad43" />
+        <circle id="colonBottom" cx="1033" cy="392.1" r="36" fill="#00ad43" />
         <path id="dMain" d="m1042 524.5c115.5-6.018 205.7-113.8 203.2-243-2.486-129.2-96.73-232.5-212.4-233"
             stroke="#162b79" />
         <path id="oMain"
