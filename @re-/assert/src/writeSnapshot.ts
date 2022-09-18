@@ -139,9 +139,9 @@ const summarizeSnapUpdate = (
     } `
     updateSummary += update.baselineName
         ? `baseline '${update.baselineName}' `
-        : `snap on line ${update.position.line} of ${getFileKey(
-              update.file.getFilePath()
-          )} `
+        : `snap at ${getFileKey(update.file.getFilePath())}:${
+              update.position.line
+          } `
     updateSummary += previousValue
         ? `from ${previousValue} to `
         : `${update.baselineName ? "at" : "as"} `

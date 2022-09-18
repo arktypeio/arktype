@@ -192,6 +192,7 @@ describe("bound", () => {
                     code: `BoundViolation`,
                     path: [],
                     data: `no`,
+                    options: `<undefined>`,
                     comparator: `>=`,
                     limit: 3,
                     size: 2,
