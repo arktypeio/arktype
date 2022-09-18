@@ -35,7 +35,7 @@ describe("regex", () => {
             test("non-string", () => {
                 // TODO: Improve subtype errors
                 assert(type("/^[0-9]*$/").check(5).errors?.summary).snap(
-                    `5 is not assignable to /^[0-9]*$/.`
+                    `Must be a string (got number).`
                 )
             })
             test("messy string", () => {

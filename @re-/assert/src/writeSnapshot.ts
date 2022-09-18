@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { fromCwd, readJson, requireResolve, shell, writeJson } from "@re-/node"
+import { toString } from "@re-/tools"
 import { Node, ts } from "ts-morph"
 import {
     assertNoDuplicateBenchNames,
@@ -84,7 +85,7 @@ export const writeInlineSnapshotUpdateToCacheDir = ({
         join(getReAssertConfig().snapCacheDir, `snap-${randomUUID()}.json`),
         {
             position,
-            serializedValue
+            serializedValue: toString(serializedValue)
         }
     )
 }

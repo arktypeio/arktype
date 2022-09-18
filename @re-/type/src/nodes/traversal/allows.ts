@@ -8,7 +8,7 @@ import type {
     MissingKeyDiagnostic
 } from "../types/nonTerminal/obj/dictionary.js"
 import type { TupleLengthDiagnostic } from "../types/nonTerminal/obj/tuple.js"
-import { KeywordDiagnostic } from "../types/terminal/keywords/common.js"
+import type { KeywordDiagnostic } from "../types/terminal/keywords/common.js"
 import type { Keyword } from "../types/terminal/keywords/keyword.js"
 import type { NumberSubtypeDiagnostic } from "../types/terminal/keywords/number.js"
 import type { RegexMismatchDiagnostic } from "../types/terminal/keywords/string.js"

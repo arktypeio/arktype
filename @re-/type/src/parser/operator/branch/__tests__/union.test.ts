@@ -66,23 +66,23 @@ describe("union", () => {
                     g: "3"
                 }).a.check(4, { diagnostics: { Union: { expand: true } } })
                     .errors?.summary
-            ).snap(`4 is not assignable to any of b|c:
-b: 4 is not assignable to any of d|e:
-d: 4 is not assignable to 0.
-e: 4 is not assignable to 1.
-c: 4 is not assignable to any of f|g:
-f: 4 is not assignable to 2.
-g: 4 is not assignable to 3.`)
+            ).snap(`Must be one of b|c (got 4):
+b: Must be one of d|e (got 4):
+d: Must be 0 (got 4).
+e: Must be 1 (got 4).
+c: Must be one of f|g (got 4):
+f: Must be 2 (got 4).
+g: Must be 3 (got 4).`)
         })
         describe("errors", () => {
             test("two types", () => {
                 assert(type("'yes'|'no'").check("maybe").errors?.summary).snap(
-                    `"maybe" is not assignable to any of "yes"|"no".`
+                    `Must be one of "yes"|"no" (got "maybe").`
                 )
             })
             test("several types", () => {
                 assert(type("2|4|6|8").check(5).errors?.summary).snap(
-                    `5 is not assignable to any of 2|4|6|8.`
+                    `Must be one of 2|4|6|8 (got 5).`
                 )
             })
         })
@@ -132,7 +132,7 @@ g: 4 is not assignable to 3.`)
             assert(unionOfLiterals.infer).typed as "yes" | "no" | "maybe"
             assert(unionOfLiterals.check("no").errors).equals(undefined)
             assert(unionOfLiterals.check("yes|no|maybe").errors?.summary).snap(
-                `"yes|no|maybe" is not assignable to any of "yes"|"no"|"maybe".`
+                `Must be one of "yes"|"no"|"maybe" (got "yes|no|maybe").`
             )
         })
         test("literal of union", () => {
@@ -142,7 +142,7 @@ g: 4 is not assignable to 3.`)
                 undefined
             )
             assert(literalOfUnion.check("yes").errors?.summary).snap(
-                `"yes" is not assignable to "yes|no|maybe".`
+                `Must be "yes|no|maybe" (got "yes").`
             )
         })
         test("union of literals of unions", () => {
@@ -157,7 +157,7 @@ g: 4 is not assignable to 3.`)
                 unionOfLiteralsOfUnions.check("yes|no'|'true|false").errors
                     ?.summary
             ).snap(
-                `"yes|no'|'true|false" is not assignable to any of "yes|no"|"true|false".`
+                `Must be one of "yes|no"|"true|false" (got "yes|no'|'true|false").`
             )
         })
     })

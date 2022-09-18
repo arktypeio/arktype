@@ -46,18 +46,18 @@ describe("intersection", () => {
         describe("errors", () => {
             test("empty intersection", () => {
                 assert(type("number&string").check("5").errors?.summary).snap(
-                    `"5" is not assignable to number.`
+                    `Must be a number (got string).`
                 )
             })
             test("two types", () => {
                 assert(type("boolean&true").check(false).errors?.summary).snap(
-                    `false is not assignable to true.`
+                    `Must be true (got false).`
                 )
             })
             test("several types", () => {
                 assert(
                     type("unknown&true&boolean").check(false).errors?.summary
-                ).snap(`false is not assignable to true.`)
+                ).snap(`Must be true (got false).`)
             })
             test("bad keyword specifiers", () => {
                 assert(type("number&integer").check(7.5).errors?.summary).snap(

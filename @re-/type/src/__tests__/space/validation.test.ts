@@ -33,8 +33,8 @@ describe("validation", () => {
                 ]
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
-  fruits/0: {length: 5000, type: "slippery"} is not assignable to any of banana|apple.
-  fruits/1: {circumference: 3.14159, description: "Fuji"} is not assignable to any of banana|apple.
+  fruits/0: Must be one of banana|apple (got {length: 5000, type: "slippery"}).
+  fruits/1: Must be one of banana|apple (got {circumference: 3.14159, description: "Fuji"}).
 `)
     })
     // TODO: Reenable
@@ -115,9 +115,9 @@ describe("validation", () => {
                 ]
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
-  a/a/a/a/a/a/a/isA: false is not assignable to true.
-  b/b/b/b/b/b/b/isA: true is not assignable to false.
-  c/8: {isA: "the duck goes quack"} is not assignable to any of a|b.
+  a/a/a/a/a/a/a/isA: Must be true (got false).
+  b/b/b/b/b/b/b/isA: Must be false (got true).
+  c/8: Must be one of a|b (got {isA: "the duck goes quack"}).
 `)
     })
     const recursiveDict = narrow({ dejaVu: { dejaVu: "dejaVu?" } })
@@ -140,9 +140,8 @@ describe("validation", () => {
         }
         assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
         current.dejaVu = "whoops" as any
-        assert(recursive.dejaVu.check(dejaVu).errors?.summary)
-            .snap(`At path dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu, "whoops" is not assignable to {
-    dejaVu: dejaVu?
-}.`)
+        assert(recursive.dejaVu.check(dejaVu).errors?.summary).snap(
+            `dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu must be an object (got string).`
+        )
     })
 })

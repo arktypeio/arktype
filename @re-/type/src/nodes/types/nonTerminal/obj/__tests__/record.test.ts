@@ -16,7 +16,7 @@ describe("record", () => {
         test("validation", () => {
             assert(empty.check({}).errors).is(undefined)
             assert(empty.check([]).errors?.summary).snap(
-                `[] is not assignable to {}.`
+                `Must not be an array.`
             )
         })
         test("generation", () => {
@@ -48,7 +48,7 @@ describe("record", () => {
                     assert(
                         shallow().check({ a: "ko", b: 123.4, c: 76 }).errors
                             ?.summary
-                    ).snap(`At path c, 76 is not assignable to 67.`)
+                    ).snap(`c must be 67 (got 76).`)
                 })
                 test("missing keys", () => {
                     assert(
@@ -58,16 +58,12 @@ describe("record", () => {
                         {
                             code: `MissingKey`,
                             path: [`b`],
-                            data: undefined,
-                            options: undefined,
                             key: `b`,
                             message: `b is required.`
                         },
                         {
                             code: `MissingKey`,
                             path: [`c`],
-                            data: undefined,
-                            options: undefined,
                             key: `c`,
                             message: `c is required.`
                         }
@@ -167,9 +163,7 @@ describe("record", () => {
                     assert(
                         nested().check({ nested: { russian: "tortoise" } })
                             .errors?.summary
-                    ).snap(
-                        `At path nested/russian, "tortoise" is not assignable to "doll".`
-                    )
+                    ).snap(`nested/russian must be "doll" (got "tortoise").`)
                 })
                 test("multiple", () => {
                     assert(
@@ -184,7 +178,7 @@ describe("record", () => {
                         }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
   a/b: b is required.
-  e/f: 0n is not assignable to object.
+  e/f: Must be an object (got bigint).
 `)
                 })
             })

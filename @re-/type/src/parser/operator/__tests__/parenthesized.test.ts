@@ -12,7 +12,7 @@ describe("parenthesized", () => {
         assert(unionWithList.check(true).errors).equals(undefined)
         assert(unionWithList.check([1, 2, 3]).errors).equals(undefined)
         assert(unionWithList.check([true, false]).errors?.summary).snap(
-            `[true, false] is not assignable to any of boolean|number[].`
+            `Must be one of boolean|number[] (got [true, false]).`
         )
     })
     test("grouped precedence", () => {
@@ -22,13 +22,13 @@ describe("parenthesized", () => {
         assert(listOfUnion.check([1]).errors).equals(undefined)
         assert(listOfUnion.check([1, true]).errors).equals(undefined)
         assert(listOfUnion.check(true).errors?.summary).snap(
-            `true is not assignable to boolean|number[].`
+            `Must be an object (got boolean).`
         )
         assert(listOfUnion.check(1).errors?.summary).snap(
-            `1 is not assignable to boolean|number[].`
+            `Must be an object (got number).`
         )
         assert(listOfUnion.check(["foo"]).errors?.summary).snap(
-            `At path 0, "foo" is not assignable to any of boolean|number.`
+            `Item 0 must be one of boolean|number (got "foo").`
         )
     })
     test("nested precedence", () => {
@@ -59,13 +59,13 @@ describe("parenthesized", () => {
         assert(
             listOfUnionOfListsOfUnions.check([undefined]).errors?.summary
         ).snap(
-            `At path 0, undefined is not assignable to any of boolean|number[]|string|undefined[].`
+            `Item 0 must be one of boolean|number[]|string|undefined[] (got undefined).`
         )
         // Can't mix items from each list
         assert(
             listOfUnionOfListsOfUnions.check([[false, "foo"]]).errors?.summary
         ).snap(
-            `At path 0, [false, "foo"] is not assignable to any of boolean|number[]|string|undefined[].`
+            `Item 0 must be one of boolean|number[]|string|undefined[] (got [false, "foo"]).`
         )
     })
     describe("errors", () => {

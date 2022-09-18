@@ -15,7 +15,7 @@ describe("keyword", () => {
             assert(b.check(true).errors).is(undefined)
             assert(b.check(false).errors).is(undefined)
             assert(b.check(0).errors?.summary).snap(
-                `0 is not assignable to boolean.`
+                `Must be a boolean (got number).`
             )
         })
     })
@@ -30,7 +30,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(t.check(true).errors).is(undefined)
             assert(t.check(false).errors?.summary).snap(
-                `false is not assignable to true.`
+                `Must be true (got false).`
             )
         })
     })
@@ -45,7 +45,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(f.check(false).errors).is(undefined)
             assert(f.check(true).errors?.summary).snap(
-                `true is not assignable to false.`
+                `Must be false (got true).`
             )
         })
     })
@@ -60,7 +60,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(b.check(999n).errors).is(undefined)
             assert(b.check(999).errors?.summary).snap(
-                `999 is not assignable to bigint.`
+                `Must be a bigint (got number).`
             )
         })
     })
@@ -75,7 +75,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(s.check(Symbol("")).errors).is(undefined)
             assert(s.check("@").errors?.summary).snap(
-                `"@" is not assignable to symbol.`
+                `Must be a symbol (got string).`
             )
         })
     })
@@ -90,7 +90,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(f.check(() => ({})).errors).is(undefined)
             assert(f.check({}).errors?.summary).snap(
-                `{} is not assignable to function.`
+                `Must be a function (got object).`
             )
         })
     })
@@ -106,7 +106,7 @@ describe("keyword", () => {
             assert(o.check([]).errors).is(undefined)
             assert(o.check({}).errors).is(undefined)
             assert(o.check(null).errors?.summary).snap(
-                `null is not assignable to object.`
+                `Must be an object (got null).`
             )
         })
     })
@@ -121,7 +121,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(u.check(undefined).errors).is(undefined)
             assert(u.check(null).errors?.summary).snap(
-                `null is not assignable to undefined.`
+                `Must be undefined (got null).`
             )
         })
     })
@@ -136,7 +136,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(n.check(null).errors).is(undefined)
             assert(n.check(undefined).errors?.summary).snap(
-                `undefined is not assignable to null.`
+                `Must be null (got undefined).`
             )
         })
     })
@@ -151,7 +151,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(v.check(undefined).errors).is(undefined)
             assert(v.check(null).errors?.summary).snap(
-                `null is not assignable to void.`
+                `Must be a void (got null).`
             )
         })
     })
@@ -197,10 +197,10 @@ describe("keyword", () => {
         })
         test("validation", () => {
             assert(n.check("sometimes").errors?.summary).snap(
-                `"sometimes" is not assignable to never.`
+                `Must be never (got string).`
             )
             assert(n.check(undefined).errors?.summary).snap(
-                `undefined is not assignable to never.`
+                `Must be never (got undefined).`
             )
         })
     })
@@ -216,7 +216,7 @@ describe("keyword", () => {
             test("validation", () => {
                 assert(s.check("KEKW").errors).is(undefined)
                 assert(s.check(["whoops"]).errors?.summary).snap(
-                    `["whoops"] is not assignable to string.`
+                    `Must be a string (got object).`
                 )
             })
         })
@@ -274,7 +274,7 @@ describe("keyword", () => {
                 assert(n.check(-83).errors).is(undefined)
                 assert(n.check(0.999).errors).is(undefined)
                 assert(n.check("42").errors?.summary).snap(
-                    `"42" is not assignable to number.`
+                    `Must be a number (got string).`
                 )
                 assert(n.check(Infinity).errors).is(undefined)
                 assert(n.check(NaN).errors).is(undefined)

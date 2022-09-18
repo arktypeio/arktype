@@ -12,7 +12,7 @@ describe("snippets", () => {
             }
         }
         assert(modelSnippet.errors?.summary).snap(
-            `At path browser/kind, "Internet Explorer" is not assignable to any of "chrome"|"firefox"|"safari".`
+            `browser/kind must be one of "chrome"|"firefox"|"safari" (got "Internet Explorer").`
         )
     })
     test("space", async () => {

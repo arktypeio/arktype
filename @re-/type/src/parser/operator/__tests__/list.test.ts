@@ -35,15 +35,13 @@ describe("list", () => {
         })
         describe("errors", () => {
             test("non-list", () => {
-                assert(list.check({}).errors?.summary).snap(
-                    `{} is not assignable to string[].`
-                )
+                assert(list.check({}).errors?.summary).snap(`Must be an array.`)
             })
             test("bad item", () => {
                 assert(
                     list.check(["one", "two", 3, "four", "five"]).errors
                         ?.summary
-                ).snap(`At path 2, 3 is not assignable to string.`)
+                ).snap(`Item 2 must be a string (got number).`)
             })
         })
     })

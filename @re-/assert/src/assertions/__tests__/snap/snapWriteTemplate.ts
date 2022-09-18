@@ -17,4 +17,6 @@ assert(5, { updateSnapshots: true }).snap(6)
 
 assert(undefined).snap()
 
+assert({ a: undefined }).snap()
+
 isPrecached && cleanupAssertions()

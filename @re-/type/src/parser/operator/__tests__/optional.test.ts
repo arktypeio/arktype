@@ -69,7 +69,7 @@ describe("optional", () => {
         describe("errors", () => {
             test("bad inner type", () => {
                 assert(type("true?").check(false).errors?.summary).snap(
-                    `false is not assignable to true.`
+                    `Must be true (got false).`
                 )
             })
         })
