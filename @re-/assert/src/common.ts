@@ -1,8 +1,7 @@
 import { existsSync } from "node:fs"
-import { platform } from "node:os"
 import { join, relative, resolve } from "node:path"
-import { ensureDir, readJson, shell } from "@re-/node"
-import { default as memoize } from "micro-memoize"
+import { ensureDir, readJson } from "@re-/node"
+import { getCmdFromPid } from "./util.js"
 import { BenchFormat } from "./writeSnapshot.js"
 
 export type LinePosition = {
@@ -23,7 +22,7 @@ export type SourcePosition = LinePosition & {
 export const positionToString = (position: SourcePosition) =>
     `line ${position.line}, character ${position.char} at path '${position.file}'`
 
-export interface ReAssertConfig extends Required<ReAssertJson> {
+export type ReAssertConfig = Required<ReAssertJson> & {
     updateSnapshots: boolean
     benchFormat: BenchFormat
     benchMatcher: RegExp | string | undefined
@@ -33,7 +32,7 @@ export interface ReAssertConfig extends Required<ReAssertJson> {
     skipTypes: boolean
 }
 
-interface ReAssertJson {
+type ReAssertJson = {
     tsconfig?: string | undefined
     precached?: boolean
     preserveCache?: boolean
@@ -42,7 +41,7 @@ interface ReAssertJson {
     benchErrorOnThresholdExceeded?: boolean
 }
 
-interface ReJson {
+type ReJson = {
     assert?: ReAssertJson
 }
 
@@ -57,28 +56,43 @@ const checkArgsForParam = (args: string[], param: string) => {
     return args[filterFlagIndex + 1]
 }
 
-export const literalSerialize = (value: any, seen: unknown[] = []): any => {
-    if (typeof value === "object") {
-        return value === null
-            ? null
-            : seen.includes(value)
-            ? "<cyclic>"
-            : Array.isArray(value)
-            ? value.map((v) => literalSerialize(v, [...seen, value]))
-            : Object.fromEntries(
-                  Object.entries(value).map(([k, v]) => [
-                      k,
-                      literalSerialize(v, [...seen, value])
-                  ])
-              )
-    }
-    if (typeof value === "symbol") {
-        return `<symbol ${value.description ?? "(anonymous)"}>`
-    }
-    if (typeof value === "function") {
-        return `<function ${value.name ?? "(anonymous)"}>`
-    }
-    return value
+export const getFileKey = (path: string) => relative(".", path)
+
+// TODO: Improve this type
+export type Serialized<T> = T extends undefined | symbol | bigint | Function
+    ? string
+    : T extends number | string | boolean
+    ? T
+    : { [K in keyof T]: Serialized<T[K]> }
+
+export const literalSerialize = <T>(
+    value: T,
+    seen: unknown[] = []
+): Serialized<T> => {
+    const result =
+        typeof value === "object"
+            ? value === null
+                ? null
+                : seen.includes(value)
+                ? "<cyclic>"
+                : Array.isArray(value)
+                ? value.map((v) => literalSerialize(v, [...seen, value]))
+                : Object.fromEntries(
+                      Object.entries(value).map(([k, v]) => [
+                          k,
+                          literalSerialize(v, [...seen, value])
+                      ])
+                  )
+            : typeof value === "symbol"
+            ? `<symbol ${value.description ?? "(anonymous)"}>`
+            : typeof value === "function"
+            ? `<function ${value.name ?? "(anonymous)"}>`
+            : typeof value === "undefined"
+            ? "<undefined>"
+            : typeof value === "bigint"
+            ? `<bigint ${value}>`
+            : value
+    return result as Serialized<T>
 }
 
 const getArgsToCheck = () => {
@@ -115,7 +129,13 @@ const getMatcher = (argsToCheck: string[]) => {
     }
 }
 
-export const getReAssertConfig = memoize((): ReAssertConfig => {
+let cachedConfig: ReAssertConfig | undefined
+
+// eslint-disable-next-line max-lines-per-function
+export const getReAssertConfig = (): ReAssertConfig => {
+    if (cachedConfig) {
+        return cachedConfig
+    }
     const reJson: ReJson = existsSync("re.json") ? readJson("re.json") : {}
     const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
     const reAssertJson: ReAssertJson = reJson.assert ?? {}
@@ -144,30 +164,4 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         benchErrorOnThresholdExceeded: false,
         ...reAssertJson
     }
-})
-
-export const getFileKey = (path: string) => relative(".", path)
-
-export const getCmdFromPid = (pid: number) =>
-    platform() === "win32" ? getCmdFromWindowsPid(pid) : getCmdFromPosixPid(pid)
-
-const getCmdFromWindowsPid = (pid: number) => {
-    const output = shell(
-        `wmic.exe path Win32_Process where handle='${pid}' get commandline`,
-        { stdio: "pipe" }
-    ).toString()
-    if (output.includes("No Instance(s) Available.")) {
-        return undefined
-    }
-    return output
-}
-
-const getCmdFromPosixPid = (pid: number) => {
-    const output = shell(`xargs -0 < /proc/${pid}/cmdline`, {
-        stdio: "pipe"
-    }).toString()
-    if (output.includes("No such file or directory")) {
-        return undefined
-    }
-    return output
 }

@@ -15,8 +15,8 @@ assert({ re: "dew" }, { updateSnapshots: true }).snap({ re: `dew` })
 // @ts-ignore (using internal updateSnapshots hook)
 assert(5, { updateSnapshots: true }).snap(5)
 
-assert(undefined).snap(undefined)
+assert(undefined).snap(`<undefined>`)
 
-assert({ a: undefined }).snap({ a: undefined })
+assert({ a: undefined }).snap({ a: `<undefined>` })
 
 isPrecached && cleanupAssertions()

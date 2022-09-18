@@ -21,7 +21,6 @@ export const queueBaselineUpdateIfNeeded = (
     queueInlineSnapshotWriteOnProcessExit({
         position: ctx.lastSnapCallPosition,
         serializedValue,
-        value: updated,
         snapFunctionName: ctx.kind,
         baselineName: ctx.name,
         benchFormat: ctx.cfg.benchFormat

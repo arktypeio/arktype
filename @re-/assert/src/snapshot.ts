@@ -2,15 +2,13 @@ import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson } from "@re-/node"
 import { toString } from "@re-/tools"
 import { CallExpression, SourceFile, SyntaxKind, ts } from "ts-morph"
-
 import { positionToString, SourcePosition } from "./common.js"
 import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
 import { BenchFormat, writeUpdates } from "./writeSnapshot.js"
 
-export interface SnapshotArgs {
+export type SnapshotArgs = {
     position: SourcePosition
     serializedValue: unknown
-    value: unknown
     benchFormat: BenchFormat
     snapFunctionName?: string
     baselineName?: string
@@ -68,7 +66,6 @@ export const getSnapshotByName = (
 export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
-    value,
     snapFunctionName = "snap",
     baselineName,
     benchFormat
@@ -78,7 +75,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
     const newArgText = toString(serializedValue, {
         quote: "backtick",
-        nonAlphaNumKeyQuote: "double"
+        nonAlphaNumKeyQuote: "single"
     }).replace(`\\`, `\\\\`)
     queuedUpdates.push({
         file,
@@ -86,7 +83,6 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
         snapCall,
         snapFunctionName,
         newArgText,
-        value,
         baselineName,
         benchFormat
     })
@@ -98,7 +94,6 @@ export type QueuedUpdate = {
     snapCall: CallExpression
     snapFunctionName: string
     newArgText: string
-    value: any
     baselineName: string | undefined
     benchFormat: BenchFormat
 }
@@ -109,6 +104,10 @@ export type QueuedUpdate = {
  * Then, on process exit, we call writeUpdates which handles updating all
  * of the affected source (for inline snaps) or JSON (for external snaps or
  * bench history) files.
+ *
+ * NOTE: In precache mode, instead of pushing updates here directly, we
+ * serialize the queued updates to snap files. Then, after all tests have
+ * completed, all updates are written as part of cleanup.
  **/
 const queuedUpdates: QueuedUpdate[] = []
 

@@ -91,6 +91,7 @@ export class Assertions implements AssertionRecord {
         return this.typedValue(expectedValue)
     }
 
+    // Use variadic args to distinguish undefined being passed explicitly from no args
     snap(...args: [expected: unknown]) {
         const expectedSerialized = this.serialize(args[0])
         if (!args.length || this.ctx.cfg.updateSnapshots) {
@@ -98,7 +99,6 @@ export class Assertions implements AssertionRecord {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
                     serializedValue: this.serializedActual,
-                    value: this.actual,
                     benchFormat: this.ctx.cfg.benchFormat
                 }
                 if (this.ctx.cfg.precached) {
@@ -123,7 +123,6 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSnapshot)) {
                 updateExternalSnapshot({
                     serializedValue: this.serializedActual,
-                    value: this.actual,
                     position: caller(),
                     name: args.id,
                     customPath: args.path,

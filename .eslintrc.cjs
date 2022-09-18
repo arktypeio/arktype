@@ -34,6 +34,10 @@ module.exports = defineConfig({
         curly: "warn",
         eqeqeq: "warn",
         "no-param-reassign": "warn",
+        "@typescript-eslint/no-unused-vars": [
+            "warn",
+            { ignoreRestSiblings: true }
+        ],
         "@typescript-eslint/default-param-last": "warn",
         /**
          * Conventions

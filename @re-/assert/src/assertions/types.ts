@@ -1,4 +1,5 @@
 import { Fn, IsAnyOrUnknown, ListComparisonMode, Narrow } from "@re-/tools"
+import { Serialized } from "../common.js"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertionsRoot : {}
@@ -95,7 +96,7 @@ export type TypeAssertionProps = {
 
 export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
     is: (value: T) => NextAssertions<AllowTypeAssertions>
-    snap: (value?: T) => NextAssertions<AllowTypeAssertions>
+    snap: (value?: Serialized<T>) => NextAssertions<AllowTypeAssertions>
     snapToFile: (
         args: ExternalSnapshotArgs
     ) => NextAssertions<AllowTypeAssertions>

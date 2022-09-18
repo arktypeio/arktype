@@ -14,27 +14,25 @@ export type BenchHistory = {
 
 const timestamp = new Date().toLocaleString()
 export const upsertBenchResult = (
-    { baselineName, snapFunctionName, value, position }: BenchUpdate,
+    { baselineName, snapFunctionName, position, newArgText }: BenchUpdate,
     benchData: BenchHistory[]
 ) => {
     const file = relative(fromCwd(), position.file)
     const matchingBenchHistory = benchData.find(
         (data) => data.name === baselineName && data.file === file
     )
-    const currentResult =
-        snapFunctionName === "mark" ? value : { [snapFunctionName]: value }
+    // TODO: Improve bench history format: https://github.com/re-do/re-po/issues/459
+    const currentResult = {
+        timestamp,
+        result: { [snapFunctionName]: newArgText }
+    }
     if (matchingBenchHistory) {
         updateExistingBenchResult(matchingBenchHistory, currentResult)
     } else {
         benchData.push({
             name: baselineName,
             file,
-            results: [
-                {
-                    timestamp,
-                    result: currentResult
-                }
-            ]
+            results: [currentResult]
         })
     }
 }
