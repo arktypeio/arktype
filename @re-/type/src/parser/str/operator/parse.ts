@@ -1,4 +1,4 @@
-import type { parseContext } from "../common.js"
+import type { parseContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import { scanner } from "../state/scanner.js"

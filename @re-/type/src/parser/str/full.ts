@@ -1,4 +1,5 @@
-import type { parseContext, ParseError, parseFn, strNode } from "./common.js"
+import type { strNode } from "../../nodes/common.js"
+import type { parseContext, ParseError, parseFn } from "../common.js"
 import type { ParseOperand } from "./operand/operand.js"
 import { parseOperand } from "./operand/operand.js"
 import type {

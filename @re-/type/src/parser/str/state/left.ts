@@ -1,5 +1,6 @@
+import type { strNode } from "../../../nodes/common.js"
 import type { Bounds } from "../../../nodes/constraints/bounds.js"
-import type { ParseError, strNode } from "../common.js"
+import type { ParseError } from "../../common.js"
 import type { Branches, branches } from "../operator/branch/branch.js"
 import type { Scanner } from "./scanner.js"
 

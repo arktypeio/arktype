@@ -1,11 +1,11 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
-import { dynamic, type } from "../../../../index.js"
+import { dynamic, type } from "../../../../../index.js"
 import type {
     Bounds,
     BoundViolationDiagnostic
-} from "../../../../nodes/constraints/bounds.js"
+} from "../../../../../nodes/constraints/bounds.js"
 import { invalidDoubleBoundMessage, invertedComparators } from "../common.js"
 import { nonPrefixLeftBoundMessage } from "../left.js"
 import { singleEqualsMessage } from "../parse.js"

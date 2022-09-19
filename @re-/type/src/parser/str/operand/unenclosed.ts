@@ -1,7 +1,7 @@
 import { alias } from "../../../nodes/terminal/alias.js"
 import { Keyword } from "../../../nodes/terminal/keywords/keyword.js"
 import { literalNode } from "../../../nodes/terminal/literal.js"
-import type { parseContext } from "../common.js"
+import type { parseContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { scanner, Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"

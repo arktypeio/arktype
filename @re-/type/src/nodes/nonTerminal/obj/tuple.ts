@@ -3,6 +3,7 @@ import type { Root } from "../../../parser/root.js"
 import { Allows } from "../../allows.js"
 import type { Base } from "../../base.js"
 import type { Create } from "../../create.js"
+import type { RootInfer } from "../../root.js"
 import { checkObjectRoot, obj } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
@@ -11,7 +12,7 @@ export type InferTuple<
     Def extends readonly unknown[],
     Ctx extends Base.InferenceContext
 > = Evaluate<{
-    [I in keyof Def]: Root.Infer<Def[I], Ctx>
+    [I in keyof Def]: RootInfer<Def[I], Ctx>
 }>
 
 export class TupleNode extends obj<TupleDefinition> {

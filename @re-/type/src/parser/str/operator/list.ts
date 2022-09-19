@@ -1,5 +1,5 @@
-import { list } from "../../nodes/nonTerminal/expression/unary/list.js"
-import type { parseContext } from "../common.js"
+import { list } from "../../../nodes/nonTerminal/expression/unary/list.js"
+import type { parseContext } from "../../common.js"
 import type { Left, left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"

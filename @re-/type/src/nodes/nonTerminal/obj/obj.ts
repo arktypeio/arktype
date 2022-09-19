@@ -7,6 +7,7 @@ import type {
 import type { parseFn } from "../../../parser/common.js"
 import type { Root } from "../../../parser/root.js"
 import type { Base } from "../../base.js"
+import type { RootReferences } from "../../root.js"
 import type { Dictionary } from "./dictionary.js"
 import { DictionaryNode } from "./dictionary.js"
 import type { InferTuple } from "./tuple.js"
@@ -44,12 +45,12 @@ export namespace Obj {
         ? UnstructuredReferences<
               Remaining,
               Dict,
-              [...Result, ...Root.References<Current, Dict, false>]
+              [...Result, ...RootReferences<Current, Dict, false>]
           >
         : Result
 
     type StructuredReferences<Def, Dict> = Evaluate<{
-        [K in keyof Def]: Root.References<Def[K], Dict, true>
+        [K in keyof Def]: RootReferences<Def[K], Dict, true>
     }>
 
     export const parse: parseFn<object> = (def, ctx) => {

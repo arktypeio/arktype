@@ -1,10 +1,10 @@
+import type { NodeToString } from "../../../../nodes/common.js"
 import type {
     boundableNode,
     BoundableNode,
     Bounds
-} from "../../../nodes/constraints/bounds.js"
-import { bounds, isBoundable } from "../../../nodes/constraints/bounds.js"
-import type { NodeToString } from "../../common.js"
+} from "../../../../nodes/constraints/bounds.js"
+import { bounds, isBoundable } from "../../../../nodes/constraints/bounds.js"
 import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import {
     isNumberLiteral,

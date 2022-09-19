@@ -1,6 +1,5 @@
 import type { Evaluate } from "@re-/tools"
-// TODO: Fix backwards imports from parser
-import type { StrNode, strNode } from "../../parser/str/common.js"
+// TODO: Fix parser imports
 import type {
     DoubleBoundComparator,
     NormalizedLowerBoundComparator
@@ -11,6 +10,7 @@ import {
 } from "../../parser/str/operator/bound/common.js"
 import type { Scanner } from "../../parser/str/state/scanner.js"
 import { Allows } from "../allows.js"
+import type { StrNode, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminal/keywords/number.js"
 import type { StringKeyword } from "../terminal/keywords/string.js"
 

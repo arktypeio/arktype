@@ -1,4 +1,4 @@
-import type { literalNode } from "../../../nodes/terminal/literal.js"
+import type { literalNode } from "../../../../nodes/terminal/literal.js"
 import type { Left, left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
 import { scanner } from "../../state/scanner.js"
