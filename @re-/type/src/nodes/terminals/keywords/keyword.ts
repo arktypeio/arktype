@@ -27,5 +27,5 @@ export namespace Keyword {
 
     type KeywordNode = InstanceOf<KeywordsToNodes[keyof KeywordsToNodes]>
 
-    type GetGeneratedType<N extends KeywordNode> = ReturnType<N["create"]>
+    type GetGeneratedType<N extends KeywordNode> = ReturnType<N["generate"]>
 }

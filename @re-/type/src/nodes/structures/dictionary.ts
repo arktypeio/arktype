@@ -1,8 +1,8 @@
 import type { Evaluate } from "@re-/tools"
 import { Allows } from "../allows.js"
 import type { Base } from "../base.js"
-import type { Create } from "../create.js"
 import { optional } from "../expressions/unaries/optional.js"
+import type { Generate } from "../generate.js"
 import type { RootInfer } from "../root.js"
 import { checkObjectRoot, structure } from "./common.js"
 
@@ -90,14 +90,14 @@ export class DictionaryNode extends structure<DictionaryLike> {
         }
     }
 
-    create(args: Create.Args) {
+    generate(args: Generate.Args) {
         const result: DictionaryLike = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
             if (propNode instanceof optional) {
                 continue
             }
-            result[propKey] = propNode.create({
+            result[propKey] = propNode.generate({
                 ...args,
                 ctx: {
                     ...args.ctx,

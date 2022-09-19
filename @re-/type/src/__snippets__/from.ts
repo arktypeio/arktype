@@ -24,9 +24,8 @@ const user = type({
 const newUser = user({ name: "David" })
 
 const user2 = type([
-    "$io",
-    { name: "string", age: "number?" },
     { first: "string", last: "string", age: "number?" },
+    { name: "string", age: "number?" },
     // Keys whose type does not change (and eventually those that can be auto-converted) should be optional to return
     ({ name }) => {
         const [first, last] = name.split(" ")

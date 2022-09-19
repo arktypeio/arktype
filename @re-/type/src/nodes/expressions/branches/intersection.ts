@@ -1,6 +1,6 @@
 import type { Allows } from "../../allows.js"
 import type { strNode } from "../../common.js"
-import { Create } from "../../create.js"
+import { Generate } from "../../generate.js"
 import type { Branch } from "./branch.js"
 import { branch } from "./branch.js"
 
@@ -23,8 +23,8 @@ export class intersection extends branch {
         }
     }
 
-    create() {
-        throw new Create.UngeneratableError(
+    generate() {
+        throw new Generate.UngeneratableError(
             this.toString(),
             "Intersection generation is unsupported."
         )

@@ -1,7 +1,7 @@
 import type { TypeOfResult } from "@re-/tools"
 import { Allows } from "../../allows.js"
 import type { strNode } from "../../common.js"
-import { Create } from "../../create.js"
+import { Generate } from "../../generate.js"
 import type { Branch } from "./branch.js"
 import { branch } from "./branch.js"
 
@@ -29,7 +29,7 @@ export class union extends branch {
         )
     }
 
-    create(args: Create.Args) {
+    generate(args: Generate.Args) {
         const nextGenResults = this.generateChildren(args)
         if (!nextGenResults.values.length) {
             this.throwAllMembersUngeneratableError(nextGenResults.errors, args)
@@ -49,16 +49,16 @@ export class union extends branch {
         )
     }
 
-    private generateChildren(args: Create.Args) {
+    private generateChildren(args: Generate.Args) {
         const results = {
             values: [] as unknown[],
             errors: [] as string[]
         }
         for (const node of this.children) {
             try {
-                results.values.push(node.create(args))
+                results.values.push(node.generate(args))
             } catch (error) {
-                if (error instanceof Create.UngeneratableError) {
+                if (error instanceof Generate.UngeneratableError) {
                     results.errors.push(error.message)
                 } else {
                     throw error
@@ -70,9 +70,9 @@ export class union extends branch {
 
     private throwAllMembersUngeneratableError(
         errors: string[],
-        args: Create.Args
+        args: Generate.Args
     ) {
-        throw new Create.UngeneratableError(
+        throw new Generate.UngeneratableError(
             this.toString(),
             "None of the definitions can be generated" +
                 (args.cfg.verbose ? `:\n${errors.join("\n")}` : ".")

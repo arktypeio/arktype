@@ -17,7 +17,7 @@ export class optional extends unary {
         return this.child.check(args)
     }
 
-    create() {
+    generate() {
         return undefined
     }
 }

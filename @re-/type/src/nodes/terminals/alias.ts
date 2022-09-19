@@ -1,7 +1,7 @@
 import type { WithPropValue } from "@re-/tools"
 import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
-import type { Create } from "../create.js"
+import type { Generate } from "../generate.js"
 import type { RootInfer } from "../root.js"
 import { terminalNode } from "./terminal.js"
 
@@ -54,23 +54,19 @@ export class alias extends terminalNode {
         return !!ctx.space && def in ctx.space.dictionary
     }
 
-    constructor(private def: string, private ctx: Base.context) {
-        super()
-    }
-
     toString() {
-        return this.def
+        return this.definition
     }
 
     get resolution() {
-        return this.ctx.space!.resolutions[this.def]
+        return this.context.space!.resolutions[this.definition]
     }
 
     check(args: Allows.Args) {
         return this.resolution.check(args)
     }
 
-    create(args: Create.Args) {
-        return this.resolution.create(args)
+    generate(args: Generate.Args) {
+        return this.resolution.generate(args)
     }
 }

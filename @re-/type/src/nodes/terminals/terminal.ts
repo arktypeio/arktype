@@ -1,10 +1,9 @@
 import { Base } from "../base.js"
-import type { StrNode } from "../common.js"
 import type { References } from "../references.js"
 
-export abstract class terminalNode extends Base.node {
-    get tree(): StrNode {
-        return this.toString()
+export abstract class terminalNode extends Base.node<string> {
+    get tree() {
+        return this.definition
     }
 
     collectReferences(

@@ -8,7 +8,7 @@ import type {
 import { chainableNoOpProxy } from "@re-/tools"
 import { Allows } from "./nodes/allows.js"
 import type { Base } from "./nodes/base.js"
-import { Create } from "./nodes/create.js"
+import { Generate } from "./nodes/generate.js"
 import type { References } from "./nodes/references.js"
 import type { RootInfer, RootReferences } from "./nodes/root.js"
 import type { ParseOptions } from "./parser/common.js"
@@ -37,7 +37,7 @@ export type DynamicType = TypeFrom<unknown, {}, unknown>
 export type TypeOptions = {
     parse?: ParseOptions
     validate?: Allows.Options
-    create?: Create.Options
+    generate?: Generate.Options
 }
 
 export type TypeFunction<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
@@ -99,8 +99,10 @@ export class Type implements DynamicType {
         return validationResult.data
     }
 
-    create(options?: Create.Options) {
-        return this.root.create(Create.createArgs(options, this.config.create))
+    create(options?: Generate.Options) {
+        return this.root.generate(
+            Generate.createArgs(options, this.config.generate)
+        )
     }
 
     references(options: References.Options = {}) {
@@ -125,7 +127,7 @@ export type AssertFunction<Inferred> = (
     options?: Allows.Options
 ) => Inferred
 
-export type CreateFunction<Inferred> = (options?: Create.Options) => Inferred
+export type CreateFunction<Inferred> = (options?: Generate.Options) => Inferred
 
 export type ReferencesFunction<Def, Dict> = <
     Options extends References.Options = {}

@@ -41,7 +41,7 @@ export class list extends unary implements boundableNode {
         }
     }
 
-    create() {
+    generate() {
         if (this.bounds) {
             throw new ConstraintGenerationError(this.toString())
         }

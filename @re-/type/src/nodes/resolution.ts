@@ -1,34 +1,32 @@
 import { deepMerge } from "@re-/tools"
-// TODO: Is this okay to import here?
 import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { SpaceMeta } from "../space.js"
 import { getResolutionDefAndOptions } from "../space.js"
 import { Allows } from "./allows.js"
 import { Base } from "./base.js"
-import { Create } from "./create.js"
+import { Generate } from "./generate.js"
 import type { References } from "./references.js"
 import type { Traverse } from "./traverse.js"
 
 export class ResolutionNode extends Base.node {
     public root: Base.node
     public rootDef: unknown
-    private ctx: Base.context
 
     constructor(public alias: string, space: SpaceMeta) {
-        super()
         // If this is the first time we've seen the alias,
         // create a Node that will be used for future resolutions.
         const defAndOptions = getResolutionDefAndOptions(
             space.dictionary[alias]
         )
-        this.ctx = initializeParseContext(
+        const context = initializeParseContext(
             defAndOptions.options
                 ? deepMerge(space.options, defAndOptions.options)
                 : space.options,
             space
         )
-        this.root = Root.parse(defAndOptions.def, this.ctx)
+        super(alias, context)
+        this.root = Root.parse(defAndOptions.def, context)
         this.rootDef = defAndOptions.def
     }
 
@@ -52,7 +50,7 @@ export class ResolutionNode extends Base.node {
     }
 
     check(args: Allows.Args) {
-        const nextArgs = this.nextArgs(args, this.ctx.validate)
+        const nextArgs = this.nextArgs(args, this.context.validate)
         if (typeof args.data === "object" && args.data !== null) {
             if (
                 args.ctx.checkedValuesByAlias[this.alias]?.includes(args.data)
@@ -78,8 +76,8 @@ export class ResolutionNode extends Base.node {
         this.root.check(nextArgs)
     }
 
-    create(args: Create.Args) {
-        const nextArgs = this.nextArgs(args, this.ctx.create)
+    generate(args: Generate.Args) {
+        const nextArgs = this.nextArgs(args, this.context.generate)
         if (args.ctx.seen.includes(this.alias)) {
             const onRequiredCycle =
                 nextArgs.cfg.onRequiredCycle ??
@@ -87,9 +85,9 @@ export class ResolutionNode extends Base.node {
             if (onRequiredCycle) {
                 return onRequiredCycle
             }
-            throw new Create.RequiredCycleError(this.alias, args.ctx.seen)
+            throw new Generate.RequiredCycleError(this.alias, args.ctx.seen)
         }
-        return this.root.create(nextArgs)
+        return this.root.generate(nextArgs)
     }
 
     private nextArgs<

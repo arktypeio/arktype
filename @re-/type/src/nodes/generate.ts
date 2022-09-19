@@ -1,6 +1,6 @@
 import { Traverse } from "./traverse.js"
 
-export namespace Create {
+export namespace Generate {
     export type Args = {
         cfg: Options
         ctx: Traverse.Context<Options>

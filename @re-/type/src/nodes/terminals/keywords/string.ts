@@ -44,7 +44,7 @@ export class stringNode extends terminalNode implements boundableNode {
         this.bounds?.check(args as Allows.Args<string>)
     }
 
-    create() {
+    generate() {
         if (this.regexConstraints.length || this.bounds) {
             throw new ConstraintGenerationError(this.toString())
         }

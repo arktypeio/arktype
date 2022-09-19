@@ -1,5 +1,5 @@
 import type { Allows } from "../../allows.js"
-import { Create } from "../../create.js"
+import { Generate } from "../../generate.js"
 import { terminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"
 
@@ -46,7 +46,7 @@ export class anyNode extends pureNode {
         return true
     }
 
-    create(): any {
+    generate(): any {
         return undefined
     }
 }
@@ -60,7 +60,7 @@ export class bigintNode extends pureNode {
         return typeof data === "bigint"
     }
 
-    create(): bigint {
+    generate(): bigint {
         return 0n
     }
 }
@@ -74,7 +74,7 @@ export class booleanNode extends pureNode {
         return typeof data === "boolean"
     }
 
-    create(): boolean {
+    generate(): boolean {
         return false
     }
 }
@@ -88,7 +88,7 @@ export class functionNode extends pureNode {
         return typeof data === "function"
     }
 
-    create(): Function {
+    generate(): Function {
         return Function()
     }
 }
@@ -102,8 +102,8 @@ export class neverNode extends pureNode {
         return false
     }
 
-    create(): never {
-        throw new Create.UngeneratableError(
+    generate(): never {
+        throw new Generate.UngeneratableError(
             "never",
             "never is ungeneratable by definition."
         )
@@ -119,7 +119,7 @@ export class nullNode extends pureNode {
         return data === null
     }
 
-    create(): null {
+    generate(): null {
         return null
     }
 }
@@ -133,7 +133,7 @@ export class objectNode extends pureNode {
         return typeof data === "object" && data !== null
     }
 
-    create(): object {
+    generate(): object {
         return {}
     }
 }
@@ -147,7 +147,7 @@ export class symbolNode extends pureNode {
         return typeof data === "symbol"
     }
 
-    create(): symbol {
+    generate(): symbol {
         return Symbol()
     }
 }
@@ -161,7 +161,7 @@ export class undefinedNode extends pureNode {
         return data === undefined
     }
 
-    create(): undefined {
+    generate(): undefined {
         return undefined
     }
 }
@@ -175,7 +175,7 @@ export class unknownNode extends pureNode {
         return true
     }
 
-    create(): unknown {
+    generate(): unknown {
         return undefined
     }
 }
@@ -189,7 +189,7 @@ export class voidNode extends pureNode {
         return data === undefined
     }
 
-    create(): void {}
+    generate(): void {}
 }
 
 export const pureKeywords = {

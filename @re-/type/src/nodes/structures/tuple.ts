@@ -1,7 +1,7 @@
 import type { Evaluate } from "@re-/tools"
 import { Allows } from "../allows.js"
 import type { Base } from "../base.js"
-import type { Create } from "../create.js"
+import type { Generate } from "../generate.js"
 import type { RootInfer } from "../root.js"
 import { checkObjectRoot, structure } from "./common.js"
 
@@ -47,11 +47,11 @@ export class TupleNode extends structure<TupleDefinition> {
         }
     }
 
-    create(args: Create.Args) {
+    generate(args: Generate.Args) {
         const result: unknown[] = []
         for (const [itemIndex, itemNode] of this.entries) {
             result.push(
-                itemNode.create({
+                itemNode.generate({
                     ...args,
                     ctx: {
                         ...args.ctx,

@@ -41,7 +41,7 @@ export class numberNode extends terminalNode implements boundableNode {
         this.bounds?.check(args as Allows.Args<number>)
     }
 
-    create() {
+    generate() {
         if (this.bounds) {
             throw new ConstraintGenerationError(this.toString())
         }

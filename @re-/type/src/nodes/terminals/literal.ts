@@ -1,4 +1,5 @@
 import { Allows } from "../allows.js"
+import type { Base } from "../base.js"
 import { terminalNode } from "./terminal.js"
 
 export type PrimitiveLiteralValue = string | number | bigint | boolean
@@ -6,19 +7,16 @@ export type PrimitiveLiteralValue = string | number | bigint | boolean
 export class literalNode<
     Value extends PrimitiveLiteralValue
 > extends terminalNode {
-    public definition: string
-
-    constructor(public value: Value) {
-        super()
-        this.definition =
+    constructor(public value: Value, context: Base.context) {
+        const definition =
             typeof value === "string"
-                ? // TODO: Is this right?
-                  value.includes(`"`)
-                    ? `'${this.value}'`
-                    : `"${this.value}"`
+                ? value.includes(`"`)
+                    ? `'${value}'`
+                    : `"${value}"`
                 : typeof value === "bigint"
-                ? `${this.value}n`
-                : String(this.value)
+                ? `${value}n`
+                : String(value)
+        super(definition, context)
     }
 
     toString() {
@@ -32,7 +30,7 @@ export class literalNode<
         return false
     }
 
-    create() {
+    generate() {
         return this.value
     }
 }

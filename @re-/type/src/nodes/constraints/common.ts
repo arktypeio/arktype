@@ -1,4 +1,4 @@
-import { Create } from "../create.js"
+import { Generate } from "../generate.js"
 
 export type Constrained<
     Child = unknown,
@@ -10,7 +10,7 @@ export type PossiblyConstrained<
     Constraints extends unknown[] = unknown[]
 > = Child | Constrained<Child, Constraints>
 
-export class ConstraintGenerationError extends Create.UngeneratableError {
+export class ConstraintGenerationError extends Generate.UngeneratableError {
     constructor(definition: string) {
         super(definition, "Constrained generation is not yet supported.")
     }
