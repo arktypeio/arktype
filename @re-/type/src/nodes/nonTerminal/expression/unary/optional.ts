@@ -1,6 +1,7 @@
-import { StrNode } from "../../../../parser/common.js"
-import { Allows } from "../../../allows.js"
-import { Unary, unary } from "./unary.js"
+import type { StrNode } from "../../../../parser/common.js"
+import type { Allows } from "../../../allows.js"
+import type { Unary } from "./unary.js"
+import { unary } from "./unary.js"
 
 export type Optional<Child = unknown> = Unary<Child, "?">
 

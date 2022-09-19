@@ -1,19 +1,15 @@
-import {
+import type {
     CallExpression,
     Node,
     Project,
     Signature,
     SourceFile,
-    SyntaxKind,
-    ts,
     Type
 } from "ts-morph"
-import {
-    getFileKey,
-    getReAssertConfig,
-    LinePositionRange
-} from "../../common.js"
-import { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
+import { SyntaxKind, ts } from "ts-morph"
+import type { LinePositionRange } from "../../common.js"
+import { getFileKey, getReAssertConfig } from "../../common.js"
+import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
 export type AssertionData = {
     location: LinePositionRange

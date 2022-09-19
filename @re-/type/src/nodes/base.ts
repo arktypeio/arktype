@@ -1,8 +1,8 @@
 import type { parseContext, ParseOptions } from "../parser/common.js"
 import type { Space } from "../space.js"
-import { Allows } from "./allows.js"
-import { Create } from "./create.js"
-import { References } from "./references.js"
+import type { Allows } from "./allows.js"
+import type { Create } from "./create.js"
+import type { References } from "./references.js"
 
 export namespace Base {
     export type context = parseContext

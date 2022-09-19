@@ -1,13 +1,16 @@
-import { literalNode } from "../../../nodes/terminal/literal.js"
-import { Left, left } from "../../state/left.js"
-import { Scanner, scanner } from "../../state/scanner.js"
-import { parserState } from "../../state/state.js"
-import {
+import type { literalNode } from "../../../nodes/terminal/literal.js"
+import type { Left, left } from "../../state/left.js"
+import type { Scanner } from "../../state/scanner.js"
+import { scanner } from "../../state/scanner.js"
+import type { parserState } from "../../state/state.js"
+import type {
     DoubleBoundComparator,
-    doubleBoundComparators,
     InvalidDoubleBoundMessage,
+    InvertedComparators
+} from "./common.js"
+import {
+    doubleBoundComparators,
     invalidDoubleBoundMessage,
-    InvertedComparators,
     invertedComparators
 } from "./common.js"
 

@@ -1,21 +1,22 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@re-/node"
-import { chainableNoOpProxy, Fn } from "@re-/tools"
-import { AssertionContext } from "../assert.js"
+import type { Fn } from "@re-/tools"
+import { chainableNoOpProxy } from "@re-/tools"
+import type { AssertionContext } from "../assert.js"
 import { assertEquals } from "../assertEquals.js"
 import { literalSerialize } from "../common.js"
+import type { SnapshotArgs } from "../snapshot.js"
 import {
     getSnapshotByName,
-    queueInlineSnapshotWriteOnProcessExit,
-    SnapshotArgs
+    queueInlineSnapshotWriteOnProcessExit
 } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/index.js"
 import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
 } from "../writeSnapshot.js"
-import {
+import type {
     AnyValueAssertion,
     EqualsOptions,
     ExternalSnapshotArgs

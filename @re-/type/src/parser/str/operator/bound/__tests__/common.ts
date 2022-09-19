@@ -1,15 +1,15 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
-import {
-    Bounds,
-    boundViolationMessage
-} from "../../../../nodes/constraints/bounds.js"
+import type { Bounds } from "../../../../nodes/constraints/bounds.js"
+import { boundViolationMessage } from "../../../../nodes/constraints/bounds.js"
 import { Keyword } from "../../../../nodes/terminal/keywords/keyword.js"
 import { numberKeywords } from "../../../../nodes/terminal/keywords/number.js"
 import { stringKeywords } from "../../../../nodes/terminal/keywords/string.js"
-import { DynamicType } from "../../../../type.js"
-import { Scanner, scanner } from "../../../state/scanner.js"
-import { DoubleBoundComparator, doubleBoundComparators } from "../common.js"
+import type { DynamicType } from "../../../../type.js"
+import type { Scanner } from "../../../state/scanner.js"
+import { scanner } from "../../../state/scanner.js"
+import type { DoubleBoundComparator } from "../common.js"
+import { doubleBoundComparators } from "../common.js"
 
 const keysOf = (o: object) => Object.keys(o)
 

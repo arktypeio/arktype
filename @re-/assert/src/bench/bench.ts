@@ -1,9 +1,12 @@
 import { caller } from "@re-/node"
 import { chainableNoOpProxy } from "@re-/tools"
-import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
-import { BenchFormat } from "../writeSnapshot.js"
-import { BenchAssertions, TimeAssertionName } from "./call.js"
-import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
+import type { ReAssertConfig, SourcePosition } from "../common.js"
+import { getReAssertConfig } from "../common.js"
+import type { BenchFormat } from "../writeSnapshot.js"
+import type { TimeAssertionName } from "./call.js"
+import { BenchAssertions } from "./call.js"
+import type { BenchTypeAssertions } from "./type.js"
+import { createBenchTypeAssertion } from "./type.js"
 
 export type UntilOptions = {
     ms?: number

@@ -1,5 +1,5 @@
 import { Allows } from "../../allows.js"
-import { boundableNode, bounds } from "../../constraints/bounds.js"
+import type { boundableNode, bounds } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/common.js"
 import { terminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"

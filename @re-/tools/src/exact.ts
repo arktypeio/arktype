@@ -1,10 +1,10 @@
-import {
+import type {
     IsAnyOrUnknown,
     NonObject,
     Recursible,
     Stringifiable
 } from "./common.js"
-import { StringifyPossibleTypes } from "./stringUtils.js"
+import type { StringifyPossibleTypes } from "./stringUtils.js"
 
 export type Exact<Compare, Base> = IsAnyOrUnknown<Compare> extends true
     ? Base

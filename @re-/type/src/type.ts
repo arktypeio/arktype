@@ -1,19 +1,20 @@
-import {
-    chainableNoOpProxy,
+import type {
     ElementOf,
     Evaluate,
     IterateType,
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
+import { chainableNoOpProxy } from "@re-/tools"
 import { Allows } from "./nodes/allows.js"
-import { Base } from "./nodes/base.js"
+import type { Base } from "./nodes/base.js"
 import { Create } from "./nodes/create.js"
-import { References } from "./nodes/references.js"
-import { RootInfer, RootReferences } from "./nodes/root.js"
-import { initializeParseContext, ParseOptions } from "./parser/common.js"
+import type { References } from "./nodes/references.js"
+import type { RootInfer, RootReferences } from "./nodes/root.js"
+import type { ParseOptions } from "./parser/common.js"
+import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
-import { Space, SpaceMeta } from "./space.js"
+import type { Space, SpaceMeta } from "./space.js"
 
 export const type: TypeFunction = (
     definition,

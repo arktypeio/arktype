@@ -1,13 +1,14 @@
 import { deepMerge } from "@re-/tools"
 // TODO: Is this okay to import here?
-import { initializeParseContext, parseContext } from "../parser/common.js"
+import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
-import { getResolutionDefAndOptions, SpaceMeta } from "../space.js"
+import type { SpaceMeta } from "../space.js"
+import { getResolutionDefAndOptions } from "../space.js"
 import { Allows } from "./allows.js"
 import { Base } from "./base.js"
 import { Create } from "./create.js"
-import { References } from "./references.js"
-import { Traverse } from "./traverse.js"
+import type { References } from "./references.js"
+import type { Traverse } from "./traverse.js"
 
 export class ResolutionNode extends Base.node {
     public root: Base.node

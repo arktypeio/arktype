@@ -1,16 +1,20 @@
-import { parseContext } from "../common.js"
-import { Left } from "../state/left.js"
-import { scanner, Scanner } from "../state/scanner.js"
-import { parserState, ParserState } from "../state/state.js"
-import { ComparatorChar, comparatorChars } from "./bound/common.js"
-import { ParseBound, parseBound } from "./bound/parse.js"
-import {
-    ReduceIntersection,
-    reduceIntersection
-} from "./branch/intersection.js"
-import { ReduceUnion, reduceUnion } from "./branch/union.js"
-import { ReduceGroupClose, reduceGroupClose } from "./groupClose.js"
-import { ParseList, parseList } from "./list.js"
+import type { parseContext } from "../common.js"
+import type { Left } from "../state/left.js"
+import type { Scanner } from "../state/scanner.js"
+import { scanner } from "../state/scanner.js"
+import type { parserState, ParserState } from "../state/state.js"
+import type { ComparatorChar } from "./bound/common.js"
+import { comparatorChars } from "./bound/common.js"
+import type { ParseBound } from "./bound/parse.js"
+import { parseBound } from "./bound/parse.js"
+import type { ReduceIntersection } from "./branch/intersection.js"
+import { reduceIntersection } from "./branch/intersection.js"
+import type { ReduceUnion } from "./branch/union.js"
+import { reduceUnion } from "./branch/union.js"
+import type { ReduceGroupClose } from "./groupClose.js"
+import { reduceGroupClose } from "./groupClose.js"
+import type { ParseList } from "./list.js"
+import { parseList } from "./list.js"
 
 export const parseOperator = (
     s: parserState.withRoot,

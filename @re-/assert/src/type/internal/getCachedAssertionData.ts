@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { readJson } from "@re-/node"
-import { ReAssertConfig } from "../../common.js"
+import type { ReAssertConfig } from "../../common.js"
 
 export const getCachedAssertionData = (config: ReAssertConfig) => {
     if (!existsSync(config.assertionCacheFile)) {

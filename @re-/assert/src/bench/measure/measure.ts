@@ -1,5 +1,7 @@
-import { stringifyTimeMeasure, TimeUnit } from "./time.js"
-import { stringifyTypeMeasure, TYPE_UNITS, TypeUnit } from "./types.js"
+import type { TimeUnit } from "./time.js"
+import { stringifyTimeMeasure } from "./time.js"
+import type { TypeUnit } from "./types.js"
+import { stringifyTypeMeasure, TYPE_UNITS } from "./types.js"
 
 type MeasureUnit = TimeUnit | TypeUnit
 

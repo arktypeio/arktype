@@ -1,5 +1,5 @@
 import { toNumber } from "@re-/tools"
-import { Measure, MeasureComparison } from "./measure.js"
+import type { Measure, MeasureComparison } from "./measure.js"
 
 const TIME_UNIT_RATIOS = Object.freeze({
     ns: 0.000_001,

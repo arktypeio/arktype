@@ -1,5 +1,6 @@
 import { toNumber } from "../stringUtils.js"
-import { deepEquals, ListComparisonMode } from "./diff.js"
+import type { ListComparisonMode } from "./diff.js"
+import { deepEquals } from "./diff.js"
 
 export type UnorderedDiffMode = Exclude<ListComparisonMode, "ordered">
 

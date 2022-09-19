@@ -1,4 +1,5 @@
-import { Scanner, scanner } from "../../state/scanner.js"
+import type { Scanner } from "../../state/scanner.js"
+import { scanner } from "../../state/scanner.js"
 
 export const comparatorChars = scanner.tokens({
     "<": 1,

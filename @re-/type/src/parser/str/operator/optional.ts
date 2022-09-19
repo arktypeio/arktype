@@ -1,7 +1,7 @@
 import { optional } from "../../nodes/nonTerminal/expression/unary/optional.js"
-import { parseContext } from "../common.js"
-import { Left } from "../state/left.js"
-import { parserState, ParserState } from "../state/state.js"
+import type { parseContext } from "../common.js"
+import type { Left } from "../state/left.js"
+import type { parserState, ParserState } from "../state/state.js"
 
 export type ParseOptional<S extends ParserState> = S["R"] extends ""
     ? ParserState.From<{

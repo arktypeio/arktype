@@ -1,4 +1,4 @@
-import { Allows } from "../../allows.js"
+import type { Allows } from "../../allows.js"
 import { Create } from "../../create.js"
 import { terminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"

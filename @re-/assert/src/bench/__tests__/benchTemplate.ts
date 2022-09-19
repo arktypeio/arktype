@@ -1,5 +1,5 @@
-import { ListPossibleTypes, StringReplace } from "@re-/tools"
-import { Type } from "ts-morph"
+import type { ListPossibleTypes, StringReplace } from "@re-/tools"
+import type { Type } from "ts-morph"
 import { bench } from "../../index.js"
 
 const fakeCallOptions = {

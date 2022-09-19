@@ -1,13 +1,7 @@
 import { join, relative } from "node:path"
-import {
-    BindingNamedNode,
-    Node,
-    Project,
-    SourceFile,
-    SyntaxKind,
-    ts
-} from "ts-morph"
-import { PackageJson } from "type-fest"
+import type { BindingNamedNode, Node, SourceFile, ts } from "ts-morph"
+import { Project, SyntaxKind } from "ts-morph"
+import type { PackageJson } from "type-fest"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 

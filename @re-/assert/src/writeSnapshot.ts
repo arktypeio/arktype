@@ -2,19 +2,18 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { fromCwd, readJson, requireResolve, shell, writeJson } from "@re-/node"
-import { Node, ts } from "ts-morph"
+import type { Node, ts } from "ts-morph"
+import type { BenchHistory } from "./bench/benchHistory.js"
 import {
     assertNoDuplicateBenchNames,
-    BenchHistory,
     updateIsBench,
     upsertBenchResult
 } from "./bench/benchHistory.js"
 import { getFileKey, getReAssertConfig } from "./common.js"
+import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import {
-    QueuedUpdate,
     queueInlineSnapshotWriteOnProcessExit,
-    resolveSnapshotPath,
-    SnapshotArgs
+    resolveSnapshotPath
 } from "./snapshot.js"
 
 export type BenchFormat = {

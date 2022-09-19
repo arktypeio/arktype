@@ -1,5 +1,6 @@
 import { ts } from "ts-morph"
-import { positionToString, SourcePosition } from "../common.js"
+import type { SourcePosition } from "../common.js"
+import { positionToString } from "../common.js"
 import { getDefaultTsMorphProject } from "./getTsMorphProject.js"
 
 export const getTsNodeAtPosition = (position: SourcePosition) => {

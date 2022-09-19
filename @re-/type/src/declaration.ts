@@ -1,11 +1,12 @@
-import { diffSets, ElementOf, Exact, Get, Narrow, SetChange } from "@re-/tools"
-import {
-    dynamicSpace,
+import type { ElementOf, Exact, Get, Narrow, SetChange } from "@re-/tools"
+import { diffSets } from "@re-/tools"
+import type {
     SpaceOutput,
     ValidateDictionary,
     ValidateSpaceOptions
 } from "./space.js"
-import { Validate } from "./type.js"
+import { dynamicSpace } from "./space.js"
+import type { Validate } from "./type.js"
 
 export const declare: DeclareFn = (...names) => ({
     define: createDeclaredDefineFunctionMap(names) as any,

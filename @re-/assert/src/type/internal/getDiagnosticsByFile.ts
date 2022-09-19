@@ -1,4 +1,4 @@
-import { ts } from "ts-morph"
+import type { ts } from "ts-morph"
 import { getFileKey } from "../../common.js"
 import { getDefaultTsMorphProject } from "../getTsMorphProject.js"
 

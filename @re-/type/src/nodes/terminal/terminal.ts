@@ -1,6 +1,6 @@
-import { StrNode } from "../../parser/str/common.js"
+import type { StrNode } from "../../parser/str/common.js"
 import { Base } from "../base.js"
-import { References } from "../references.js"
+import type { References } from "../references.js"
 
 export abstract class terminalNode extends Base.node {
     get tree(): StrNode {

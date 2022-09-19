@@ -1,8 +1,7 @@
-import { parseContext } from "../../../parser/common.js"
 import { Root } from "../../../parser/root.js"
 import { Allows } from "../../allows.js"
 import { Base } from "../../base.js"
-import { References } from "../../references.js"
+import type { References } from "../../references.js"
 import { KeywordDiagnostic } from "../../terminal/keywords/common.js"
 
 export type ChildEntry<KeyType> = [KeyType, Base.node]

@@ -1,9 +1,11 @@
 import { join } from "node:path"
 import { Project } from "ts-morph"
-import { PackageJson } from "type-fest"
-import { ApiEntryPoint, extractPackageApi } from "./api/index.js"
-import { DocGenConfig } from "./config.js"
-import { extractPackageSnippets, PackageSnippets } from "./snippets/index.js"
+import type { PackageJson } from "type-fest"
+import type { ApiEntryPoint } from "./api/index.js"
+import { extractPackageApi } from "./api/index.js"
+import type { DocGenConfig } from "./config.js"
+import type { PackageSnippets } from "./snippets/index.js"
+import { extractPackageSnippets } from "./snippets/index.js"
 import { fromHere, readPackageJson } from "@re-/node"
 
 const REPO_ROOT = fromHere("..", "..")

@@ -1,6 +1,8 @@
 import { useTheme } from "@mui/material"
-import { motion, SVGMotionProps } from "framer-motion"
-import React, { CSSProperties } from "react"
+import type { SVGMotionProps } from "framer-motion"
+import { motion } from "framer-motion"
+import type { CSSProperties } from "react"
+import React from "react"
 
 export type AnimatedLogoProps = {
     style?: CSSProperties

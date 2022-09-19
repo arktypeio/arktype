@@ -1,7 +1,7 @@
-import { ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
-import { ParseError } from "./common.js"
-import { Root } from "./root.js"
-import { Str } from "./str/str.js"
+import type { ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
+import type { ParseError } from "./common.js"
+import type { Root } from "./root.js"
+import type { Str } from "./str/str.js"
 
 export namespace ResolutionType {
     export type Validate<

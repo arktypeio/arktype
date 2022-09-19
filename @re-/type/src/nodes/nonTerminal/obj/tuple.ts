@@ -1,8 +1,8 @@
-import { Evaluate } from "@re-/tools"
-import { Root } from "../../../parser/root.js"
+import type { Evaluate } from "@re-/tools"
+import type { Root } from "../../../parser/root.js"
 import { Allows } from "../../allows.js"
-import { Base } from "../../base.js"
-import { Create } from "../../create.js"
+import type { Base } from "../../base.js"
+import type { Create } from "../../create.js"
 import { checkObjectRoot, obj } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]

@@ -1,8 +1,8 @@
 import { union } from "../../../../nodes/nonTerminal/expression/branch/union.js"
-import { parseContext, strNode } from "../../common.js"
-import { Left } from "../../state/left.js"
-import { parserState } from "../../state/state.js"
-import { Branches, MergeExpression } from "./branch.js"
+import type { parseContext, strNode } from "../../common.js"
+import type { Left } from "../../state/left.js"
+import type { parserState } from "../../state/state.js"
+import type { Branches, MergeExpression } from "./branch.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 
 type PushRoot<B extends Branches, Root> = {

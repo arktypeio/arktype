@@ -1,5 +1,5 @@
-import { Fn, IsAnyOrUnknown, ListComparisonMode, Narrow } from "@re-/tools"
-import { Serialized } from "../common.js"
+import type { Fn, IsAnyOrUnknown, ListComparisonMode, Narrow } from "@re-/tools"
+import type { Serialized } from "../common.js"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertionsRoot : {}

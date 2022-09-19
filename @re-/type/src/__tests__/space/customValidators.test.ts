@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { CustomValidator, def, space, type } from "../../index.js"
+import type { CustomValidator } from "../../index.js"
+import { def, space, type } from "../../index.js"
 
 describe("custom validators", () => {
     const validator: CustomValidator = ({ data: value }) => {

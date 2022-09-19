@@ -1,9 +1,16 @@
-import { Evaluate, IterateType, ListPossibleTypes, ValueOf } from "@re-/tools"
-import { parseFn } from "../../../parser/common.js"
-import { Root } from "../../../parser/root.js"
-import { Base } from "../../base.js"
-import { Dictionary, DictionaryNode } from "./dictionary.js"
-import { InferTuple, TupleNode } from "./tuple.js"
+import type {
+    Evaluate,
+    IterateType,
+    ListPossibleTypes,
+    ValueOf
+} from "@re-/tools"
+import type { parseFn } from "../../../parser/common.js"
+import type { Root } from "../../../parser/root.js"
+import type { Base } from "../../base.js"
+import type { Dictionary } from "./dictionary.js"
+import { DictionaryNode } from "./dictionary.js"
+import type { InferTuple } from "./tuple.js"
+import { TupleNode } from "./tuple.js"
 
 export namespace Obj {
     export type Validate<Def, Dict> = {

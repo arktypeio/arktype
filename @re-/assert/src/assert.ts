@@ -1,7 +1,9 @@
 import { fileURLToPath } from "node:url"
 import { caller, getCallStack } from "@re-/node"
-import { Assertions, ValueAssertion } from "./assertions/index.js"
-import { getReAssertConfig, ReAssertConfig, SourcePosition } from "./common.js"
+import type { ValueAssertion } from "./assertions/index.js"
+import { Assertions } from "./assertions/index.js"
+import type { ReAssertConfig, SourcePosition } from "./common.js"
+import { getReAssertConfig } from "./common.js"
 import { fixVitestPos, isVitest } from "./vitest.js"
 
 export type AvailableAssertions<T> = ValueAssertion<T, true>

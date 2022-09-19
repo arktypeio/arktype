@@ -1,16 +1,16 @@
 import { caller } from "@re-/node"
-import { Node, Project, SourceFile, SyntaxKind, ts } from "ts-morph"
+import type { Node, Project, SourceFile, ts } from "ts-morph"
+import { SyntaxKind } from "ts-morph"
 import { findCallExpressionAncestor } from "../snapshot.js"
 import { forceCreateTsMorphProject } from "../type/index.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import { BenchContext } from "./bench.js"
-import {
-    createTypeComparison,
+import type { BenchContext } from "./bench.js"
+import type {
     MeasureComparison,
-    stringifyTypeMeasure,
     TypeString,
     TypeUnit
 } from "./measure/index.js"
+import { createTypeComparison, stringifyTypeMeasure } from "./measure/index.js"
 
 export type BenchTypeAssertions = {
     type: (instantiations?: TypeString) => void

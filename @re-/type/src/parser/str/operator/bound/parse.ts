@@ -1,14 +1,13 @@
 import { literalNode } from "../../../nodes/terminal/literal.js"
-import { NumberLiteralDefinition } from "../../operand/unenclosed.js"
-import { Left } from "../../state/left.js"
-import { scanner, Scanner } from "../../state/scanner.js"
-import { parserState, ParserState } from "../../state/state.js"
-import {
-    ComparatorChar,
-    SingleCharComparator,
-    singleCharComparator
-} from "./common.js"
-import { ReduceLeft, reduceLeft } from "./left.js"
+import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
+import type { Left } from "../../state/left.js"
+import type { Scanner } from "../../state/scanner.js"
+import { scanner } from "../../state/scanner.js"
+import type { parserState, ParserState } from "../../state/state.js"
+import type { ComparatorChar, SingleCharComparator } from "./common.js"
+import { singleCharComparator } from "./common.js"
+import type { ReduceLeft } from "./left.js"
+import { reduceLeft } from "./left.js"
 
 export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
     s.r.lookahead === "="

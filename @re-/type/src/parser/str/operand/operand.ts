@@ -1,29 +1,27 @@
-import { Base } from "../../../nodes/base.js"
-import { Alias } from "../../../nodes/terminal/alias.js"
-import { Keyword } from "../../../nodes/terminal/keywords/keyword.js"
-import { parseContext } from "../common.js"
-import { Scanner } from "../state/scanner.js"
-import { ParserState, parserState } from "../state/state.js"
-import {
-    ExpressionExpectedMessage,
-    expressionExpectedMessage
-} from "./common.js"
-import {
+import type { Base } from "../../../nodes/base.js"
+import type { Alias } from "../../../nodes/terminal/alias.js"
+import type { Keyword } from "../../../nodes/terminal/keywords/keyword.js"
+import type { parseContext } from "../common.js"
+import type { Scanner } from "../state/scanner.js"
+import type { ParserState, parserState } from "../state/state.js"
+import type { ExpressionExpectedMessage } from "./common.js"
+import { expressionExpectedMessage } from "./common.js"
+import type {
     EnclosedBaseStartChar,
-    enclosedBaseStartChars,
-    parseEnclosedBase,
     ParseEnclosedBase,
     RegexLiteralDefinition,
     StringLiteralDefinition
 } from "./enclosed.js"
-import { ReduceGroupOpen, reduceGroupOpen } from "./groupOpen.js"
-import {
+import { enclosedBaseStartChars, parseEnclosedBase } from "./enclosed.js"
+import type { ReduceGroupOpen } from "./groupOpen.js"
+import { reduceGroupOpen } from "./groupOpen.js"
+import type {
     BigintLiteralDefinition,
     BooleanLiteralDefinition,
     NumberLiteralDefinition,
-    ParseUnenclosedBase,
-    parseUnenclosedBase
+    ParseUnenclosedBase
 } from "./unenclosed.js"
+import { parseUnenclosedBase } from "./unenclosed.js"
 
 export const parseOperand = (s: parserState, ctx: parseContext): parserState =>
     s.r.lookahead === "("

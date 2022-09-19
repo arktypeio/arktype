@@ -1,5 +1,6 @@
-import { ElementOf, toNumber } from "@re-/tools"
-import { Measure, MeasureComparison } from "./measure.js"
+import type { ElementOf } from "@re-/tools"
+import { toNumber } from "@re-/tools"
+import type { Measure, MeasureComparison } from "./measure.js"
 
 export const TYPE_UNITS = ["instantiations"] as const
 

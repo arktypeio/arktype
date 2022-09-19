@@ -1,25 +1,19 @@
-import {
-    chainableNoOpProxy,
-    Conform,
-    deepMerge,
-    Evaluate,
-    Get,
-    Merge,
-    Narrow
-} from "@re-/tools"
+import type { Conform, Evaluate, Get, Merge, Narrow } from "@re-/tools"
+import { chainableNoOpProxy, deepMerge } from "@re-/tools"
 import { ResolutionNode } from "./nodes/resolution.js"
-import { RootInfer } from "./nodes/root.js"
-import { initializeParseContext, ParseOptions } from "./parser/common.js"
-import { ResolutionType } from "./parser/resolution.js"
+import type { RootInfer } from "./nodes/root.js"
+import type { ParseOptions } from "./parser/common.js"
+import { initializeParseContext } from "./parser/common.js"
+import type { ResolutionType } from "./parser/resolution.js"
 import { Root } from "./parser/root.js"
-import {
+import type {
     DynamicType,
-    Type,
     TypeFrom,
     TypeFunction,
     TypeOptions,
     Validate
 } from "./type.js"
+import { Type } from "./type.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
     dynamicSpace(dictionary, options) as any

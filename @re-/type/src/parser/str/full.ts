@@ -1,17 +1,25 @@
-import { parseContext, ParseError, parseFn, strNode } from "./common.js"
-import { parseOperand, ParseOperand } from "./operand/operand.js"
-import {
+import type { parseContext, ParseError, parseFn, strNode } from "./common.js"
+import type { ParseOperand } from "./operand/operand.js"
+import { parseOperand } from "./operand/operand.js"
+import type {
     ParseSuffixBound,
+    UnpairedLeftBoundMessage
+} from "./operator/bound/right.js"
+import {
     parseSuffixBound,
-    UnpairedLeftBoundMessage,
     unpairedLeftBoundMessage
 } from "./operator/bound/right.js"
-import { MergeBranches, mergeBranches } from "./operator/branch/branch.js"
-import { ParseOptional, parseOptional } from "./operator/optional.js"
-import { ParseOperator, parseOperator } from "./operator/parse.js"
-import { Left, left } from "./state/left.js"
-import { Scanner, scanner } from "./state/scanner.js"
-import { ParserState, parserState } from "./state/state.js"
+import type { MergeBranches } from "./operator/branch/branch.js"
+import { mergeBranches } from "./operator/branch/branch.js"
+import type { ParseOptional } from "./operator/optional.js"
+import { parseOptional } from "./operator/optional.js"
+import type { ParseOperator } from "./operator/parse.js"
+import { parseOperator } from "./operator/parse.js"
+import type { Left, left } from "./state/left.js"
+import type { Scanner } from "./state/scanner.js"
+import { scanner } from "./state/scanner.js"
+import type { ParserState } from "./state/state.js"
+import { parserState } from "./state/state.js"
 
 export const fullParse: parseFn<string> = (def, ctx) =>
     loop(parseOperand(new parserState(def), ctx), ctx)

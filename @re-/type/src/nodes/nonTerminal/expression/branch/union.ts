@@ -1,8 +1,9 @@
-import { TypeOfResult } from "@re-/tools"
+import type { TypeOfResult } from "@re-/tools"
 import type { strNode } from "../../../../parser/str/common.js"
 import { Allows } from "../../../allows.js"
 import { Create } from "../../../create.js"
-import { branch, Branch } from "./branch.js"
+import type { Branch } from "./branch.js"
+import { branch } from "./branch.js"
 
 export type Union<Left = unknown, Right = unknown> = Branch<Left, Right, "|">
 

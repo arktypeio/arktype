@@ -1,8 +1,8 @@
 import { list } from "../../nodes/nonTerminal/expression/unary/list.js"
-import { parseContext } from "../common.js"
-import { Left, left } from "../state/left.js"
-import { Scanner } from "../state/scanner.js"
-import { ParserState, parserState } from "../state/state.js"
+import type { parseContext } from "../common.js"
+import type { Left, left } from "../state/left.js"
+import type { Scanner } from "../state/scanner.js"
+import type { ParserState, parserState } from "../state/state.js"
 
 export const parseList = (s: parserState<left.withRoot>, ctx: parseContext) => {
     const next = s.r.shift()

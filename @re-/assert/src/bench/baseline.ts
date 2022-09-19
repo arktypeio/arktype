@@ -1,7 +1,8 @@
 import { literalSerialize } from "../common.js"
 import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.js"
-import { BenchAssertionContext, BenchContext } from "./bench.js"
-import { MeasureComparison, stringifyMeasure } from "./measure/index.js"
+import type { BenchAssertionContext, BenchContext } from "./bench.js"
+import type { MeasureComparison } from "./measure/index.js"
+import { stringifyMeasure } from "./measure/index.js"
 
 export const queueBaselineUpdateIfNeeded = (
     updated: string | object,

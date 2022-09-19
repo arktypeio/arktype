@@ -1,13 +1,13 @@
 import { join } from "node:path"
-import {
+import type {
     ExportedDeclarations,
     JSDoc,
     JSDocableNode,
     Project,
-    SourceFile,
-    SyntaxKind
+    SourceFile
 } from "ts-morph"
-import { PackageJson } from "type-fest"
+import { SyntaxKind } from "ts-morph"
+import type { PackageJson } from "type-fest"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 export type ApiEntryPoint = {

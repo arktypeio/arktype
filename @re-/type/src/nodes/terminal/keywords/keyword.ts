@@ -1,6 +1,7 @@
-import { InstanceOf } from "@re-/tools"
+import type { InstanceOf } from "@re-/tools"
 import { numberKeywords } from "./number.js"
-import { PureKeyword, pureKeywords } from "./pure.js"
+import type { PureKeyword } from "./pure.js"
+import { pureKeywords } from "./pure.js"
 import { stringKeywords } from "./string.js"
 
 export namespace Keyword {

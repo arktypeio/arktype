@@ -2,7 +2,7 @@ import { existsSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
 import { ensureDir, readJson } from "@re-/node"
 import { getCmdFromPid } from "./util.js"
-import { BenchFormat } from "./writeSnapshot.js"
+import type { BenchFormat } from "./writeSnapshot.js"
 
 export type LinePosition = {
     line: number

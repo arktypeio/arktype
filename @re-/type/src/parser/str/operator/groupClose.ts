@@ -1,6 +1,7 @@
-import { Left } from "../state/left.js"
-import { parserState } from "../state/state.js"
-import { Branches, mergeBranches, MergeBranches } from "./branch/branch.js"
+import type { Left } from "../state/left.js"
+import type { parserState } from "../state/state.js"
+import type { Branches, MergeBranches } from "./branch/branch.js"
+import { mergeBranches } from "./branch/branch.js"
 
 type PopGroup<Stack extends Branches[], Top extends Branches> = [...Stack, Top]
 

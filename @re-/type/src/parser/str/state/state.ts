@@ -1,7 +1,11 @@
-import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
-import { parseError, strNode } from "../common.js"
-import { left, Left } from "./left.js"
-import { Scanner, scanner } from "./scanner.js"
+import type { ClassOf, InstanceOf } from "@re-/tools"
+import { isEmpty } from "@re-/tools"
+import type { strNode } from "../common.js"
+import { parseError } from "../common.js"
+import type { Left } from "./left.js"
+import { left } from "./left.js"
+import type { Scanner } from "./scanner.js"
+import { scanner } from "./scanner.js"
 
 export class parserState<constraints extends Partial<left> = {}> {
     l: left<constraints>

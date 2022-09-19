@@ -1,6 +1,6 @@
 import { writePackageApi } from "./api/writeApi.js"
-import { DocGenConfig } from "./config.js"
-import { PackageExtractionData } from "./extract.js"
+import type { DocGenConfig } from "./config.js"
+import type { PackageExtractionData } from "./extract.js"
 import { writePackageSnippets } from "./snippets/writeSnippets.js"
 
 export type WriteApiContext = {

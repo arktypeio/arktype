@@ -1,6 +1,6 @@
-import { parseContext, StrNode, strNode } from "../../../../parser/common.js"
+import type { StrNode, strNode } from "../../../../parser/str/common.js"
 import { Base } from "../../../base.js"
-import { References } from "../../../references.js"
+import type { References } from "../../../references.js"
 
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 

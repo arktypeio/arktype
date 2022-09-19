@@ -1,6 +1,6 @@
 import { basename } from "node:path"
 import { stdout } from "node:process"
-import { DocGenConfig } from "./config.js"
+import type { DocGenConfig } from "./config.js"
 import { extractRepo } from "./extract.js"
 import { createWriteFilesConsumer } from "./snippets/writeFilesConsumer.js"
 import { writeRepo } from "./write.js"

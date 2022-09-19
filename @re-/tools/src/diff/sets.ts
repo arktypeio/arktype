@@ -1,11 +1,10 @@
-import { ElementOf, List } from "../common.js"
+import type { ElementOf, List } from "../common.js"
 import { deepEquals } from "./diff.js"
+import type { SetChange, UnorderedDiffState } from "./unordered.js"
 import {
     findDeepEqualIndices,
     findFirstDeepEqualIndex,
-    SetChange,
-    toDiffSetsResult,
-    UnorderedDiffState
+    toDiffSetsResult
 } from "./unordered.js"
 
 type DiffSetsState = UnorderedDiffState & {

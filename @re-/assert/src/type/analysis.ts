@@ -1,8 +1,8 @@
 import { default as memoize } from "micro-memoize"
 import { getFileKey, getReAssertConfig } from "../common.js"
 import { getDefaultTsMorphProject } from "./getTsMorphProject.js"
+import type { AssertionData } from "./internal/index.js"
 import {
-    AssertionData,
     getAssertionsInFile,
     getCachedAssertionData,
     getDiagnosticsByFile

@@ -1,6 +1,6 @@
-import { Str } from "../parser/str/str.js"
-import { Base } from "./base.js"
-import { Obj } from "./nonTerminal/obj/index.js"
+import type { Str } from "../parser/str/str.js"
+import type { Base } from "./base.js"
+import type { Obj } from "./nonTerminal/obj/index.js"
 
 export type RootInfer<
     Def,

@@ -2,7 +2,7 @@ import { toString } from "@re-/tools"
 // @ts-ignore
 import ConvertSourceMap from "convert-source-map"
 import { SourceMapConsumer } from "source-map-js"
-import { SourcePosition } from "./common.js"
+import type { SourcePosition } from "./common.js"
 
 export const isVitest = () => "__vitest_worker__" in globalThis
 

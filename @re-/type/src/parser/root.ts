@@ -1,5 +1,6 @@
 import { Obj } from "../nodes/nonTerminal/obj/index.js"
-import { parseFn, throwParseError } from "./common.js"
+import type { parseFn } from "./common.js"
+import { throwParseError } from "./common.js"
 import { Str } from "./str/str.js"
 
 export namespace Root {

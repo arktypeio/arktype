@@ -1,14 +1,13 @@
 import { Box } from "@mui/material"
 import React, { useEffect } from "react"
+import type { AddonFile, DemoProps } from "./stackblitzGenerators/index"
 import {
-    AddonFile,
     buildStackblitzIndexText,
     contentsByAddonFile,
     contentsByEmbedId,
     createStackblitzDemo,
     defaultStaticFiles,
-    DEMO_ELEMENT_ID,
-    DemoProps
+    DEMO_ELEMENT_ID
 } from "./stackblitzGenerators/index"
 
 const getAddonFiles = (addonFiles: AddonFile[]) => {

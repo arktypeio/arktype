@@ -1,7 +1,8 @@
 import type { strNode } from "../../../../parser/str/common.js"
-import { Allows } from "../../../allows.js"
+import type { Allows } from "../../../allows.js"
 import { Create } from "../../../create.js"
-import { Branch, branch } from "./branch.js"
+import type { Branch } from "./branch.js"
+import { branch } from "./branch.js"
 
 export type Intersection<Left = unknown, Right = unknown> = Branch<
     Left,

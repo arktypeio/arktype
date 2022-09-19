@@ -4,14 +4,15 @@ import {
     compareToBaseline,
     queueBaselineUpdateIfNeeded as queueBaselineUpdateIfNeeded
 } from "./baseline.js"
-import { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
+import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
+import type { TimeString } from "./measure/index.js"
 import {
     createTimeComparison,
     createTimeMeasure,
-    stringifyTimeMeasure,
-    TimeString
+    stringifyTimeMeasure
 } from "./measure/index.js"
-import { BenchTypeAssertions, createBenchTypeAssertion } from "./type.js"
+import type { BenchTypeAssertions } from "./type.js"
+import { createBenchTypeAssertion } from "./type.js"
 
 export type StatName = keyof typeof stats
 

@@ -1,4 +1,4 @@
-import { Path } from "./common.js"
+import type { Path } from "./common.js"
 
 export namespace Traverse {
     export type Context<Cfg> = {

@@ -1,6 +1,7 @@
-import { parseFn, throwParseError } from "../../../parser/common.js"
+import type { parseFn } from "../../../parser/common.js"
+import { throwParseError } from "../../../parser/common.js"
 import { scanner } from "../../../parser/str/state/scanner.js"
-import { Base } from "../../base.js"
+import type { Base } from "../../base.js"
 
 export const metaTokens = scanner.tokens({
     $io: 1

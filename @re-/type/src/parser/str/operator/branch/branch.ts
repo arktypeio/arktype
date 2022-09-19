@@ -1,6 +1,6 @@
-import { intersection } from "../../../../nodes/nonTerminal/expression/branch/intersection.js"
-import { union } from "../../../../nodes/nonTerminal/expression/branch/union.js"
-import { parserState } from "../../state/state.js"
+import type { intersection } from "../../../../nodes/nonTerminal/expression/branch/intersection.js"
+import type { union } from "../../../../nodes/nonTerminal/expression/branch/union.js"
+import type { parserState } from "../../state/state.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 import { hasMergeableUnion, mergeUnion } from "./union.js"
 

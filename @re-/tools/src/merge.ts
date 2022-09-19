@@ -1,5 +1,5 @@
-import { Get, Iterate } from "./common.js"
-import { Evaluate } from "./evaluate.js"
+import type { Get, Iterate } from "./common.js"
+import type { Evaluate } from "./evaluate.js"
 
 export const merge = <Objs extends unknown[]>(...objs: Objs) =>
     pairwiseMerge(objs, shallowMerge) as MergeAll<Objs>

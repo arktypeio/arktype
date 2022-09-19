@@ -1,4 +1,4 @@
-import { CastWithExclusion } from "./common.js"
+import type { CastWithExclusion } from "./common.js"
 
 export type Narrowable = string | boolean | number | bigint
 

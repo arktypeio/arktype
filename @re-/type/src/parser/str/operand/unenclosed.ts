@@ -1,16 +1,15 @@
 import { alias } from "../../../nodes/terminal/alias.js"
 import { Keyword } from "../../../nodes/terminal/keywords/keyword.js"
 import { literalNode } from "../../../nodes/terminal/literal.js"
-import { parseContext } from "../common.js"
-import { Left } from "../state/left.js"
-import { scanner, Scanner } from "../state/scanner.js"
-import { parserState, ParserState } from "../state/state.js"
-import {
+import type { parseContext } from "../common.js"
+import type { Left } from "../state/left.js"
+import type { scanner, Scanner } from "../state/scanner.js"
+import type { parserState, ParserState } from "../state/state.js"
+import type {
     BaseTerminatingChar,
-    baseTerminatingChars,
-    ExpressionExpectedMessage,
-    expressionExpectedMessage
+    ExpressionExpectedMessage
 } from "./common.js"
+import { baseTerminatingChars, expressionExpectedMessage } from "./common.js"
 
 const lookaheadIsBaseTerminating: scanner.UntilCondition = (scanner) =>
     scanner.lookahead in baseTerminatingChars

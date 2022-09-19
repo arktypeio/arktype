@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { dynamic, type } from "../../../../index.js"
-import {
+import type {
     Bounds,
     BoundViolationDiagnostic
 } from "../../../../nodes/constraints/bounds.js"

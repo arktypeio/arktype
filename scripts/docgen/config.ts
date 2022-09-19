@@ -1,4 +1,4 @@
-import {
+import type {
     PackageSnippets,
     SnippetTransformToggleOptions
 } from "./snippets/extractSnippets.js"

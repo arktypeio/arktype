@@ -1,9 +1,9 @@
-import {
-    getFileKey,
+import type {
     LinePosition,
     LinePositionRange,
     SourcePosition
 } from "../common.js"
+import { getFileKey } from "../common.js"
 import { getAssertionsByFile } from "./analysis.js"
 
 const isPositionWithinRange = (

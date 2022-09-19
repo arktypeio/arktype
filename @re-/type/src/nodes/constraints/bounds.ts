@@ -1,16 +1,18 @@
-import { Evaluate } from "@re-/tools"
+import type { Evaluate } from "@re-/tools"
 // TODO: Fix backwards imports from parser
-import { StrNode, strNode } from "../../parser/str/common.js"
-import {
-    comparatorToString,
+import type { StrNode, strNode } from "../../parser/str/common.js"
+import type {
     DoubleBoundComparator,
-    invertedComparators,
     NormalizedLowerBoundComparator
 } from "../../parser/str/operator/bound/common.js"
-import { Scanner } from "../../parser/str/state/scanner.js"
+import {
+    comparatorToString,
+    invertedComparators
+} from "../../parser/str/operator/bound/common.js"
+import type { Scanner } from "../../parser/str/state/scanner.js"
 import { Allows } from "../allows.js"
-import { NumberKeyword } from "../terminal/keywords/number.js"
-import { StringKeyword } from "../terminal/keywords/string.js"
+import type { NumberKeyword } from "../terminal/keywords/number.js"
+import type { StringKeyword } from "../terminal/keywords/string.js"
 
 export type Bounds = Bounds.Single | Bounds.Double
 

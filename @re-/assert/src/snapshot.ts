@@ -1,10 +1,13 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson } from "@re-/node"
 import { toString } from "@re-/tools"
-import { CallExpression, SourceFile, SyntaxKind, ts } from "ts-morph"
-import { positionToString, SourcePosition } from "./common.js"
+import type { CallExpression, SourceFile, ts } from "ts-morph"
+import { SyntaxKind } from "ts-morph"
+import type { SourcePosition } from "./common.js"
+import { positionToString } from "./common.js"
 import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
-import { BenchFormat, writeUpdates } from "./writeSnapshot.js"
+import type { BenchFormat } from "./writeSnapshot.js"
+import { writeUpdates } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {
     position: SourcePosition

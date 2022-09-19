@@ -1,24 +1,21 @@
-import {
+import type {
     boundableNode,
     BoundableNode,
-    bounds,
-    Bounds,
-    isBoundable
+    Bounds
 } from "../../../nodes/constraints/bounds.js"
-import { NodeToString } from "../../common.js"
+import { bounds, isBoundable } from "../../../nodes/constraints/bounds.js"
+import type { NodeToString } from "../../common.js"
+import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import {
     isNumberLiteral,
-    NumberLiteralDefinition,
     numberLiteralToValue
 } from "../../operand/unenclosed.js"
-import { Left, left } from "../../state/left.js"
-import { Scanner, scanner } from "../../state/scanner.js"
-import { parserState, ParserState } from "../../state/state.js"
-import {
-    doubleBoundComparators,
-    invalidDoubleBoundMessage,
-    InvalidDoubleBoundMessage
-} from "./common.js"
+import type { Left, left } from "../../state/left.js"
+import type { Scanner } from "../../state/scanner.js"
+import { scanner } from "../../state/scanner.js"
+import type { parserState, ParserState } from "../../state/state.js"
+import type { InvalidDoubleBoundMessage } from "./common.js"
+import { doubleBoundComparators, invalidDoubleBoundMessage } from "./common.js"
 
 export const parseSuffixBound = (
     s: parserState<left.suffix>,

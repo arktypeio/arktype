@@ -1,8 +1,8 @@
-import { WithPropValue } from "@re-/tools"
-import { Allows } from "../allows.js"
-import { Base } from "../base.js"
-import { Create } from "../create.js"
-import { RootInfer } from "../root.js"
+import type { WithPropValue } from "@re-/tools"
+import type { Allows } from "../allows.js"
+import type { Base } from "../base.js"
+import type { Create } from "../create.js"
+import type { RootInfer } from "../root.js"
 import { terminalNode } from "./terminal.js"
 
 export namespace Alias {

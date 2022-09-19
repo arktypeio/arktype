@@ -1,5 +1,5 @@
-import { Iterate } from "@re-/tools"
-import { Base } from "../../nodes/base.js"
+import type { Iterate } from "@re-/tools"
+import type { Base } from "../../nodes/base.js"
 export * from "../common.js"
 
 export type NodeToString<

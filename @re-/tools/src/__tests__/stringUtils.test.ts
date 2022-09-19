@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
+import type { ListChars } from "../index.js"
 import {
     camelCase,
     capitalize,
@@ -11,7 +12,6 @@ import {
     isInteger,
     isNumeric,
     lettersAfterFirstToLower,
-    ListChars,
     toNumber,
     transformSubstring
 } from "../index.js"

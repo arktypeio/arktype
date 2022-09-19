@@ -1,6 +1,6 @@
 import { startsWithVowel } from "@re-/tools"
 import { Allows } from "../../allows.js"
-import { Keyword } from "./keyword.js"
+import type { Keyword } from "./keyword.js"
 
 // These keywords should not be preceded by an article (e.g. 'must be null' is preferable to 'must be a null')
 const DESCRIPTIVE_KEYWORDS: Partial<Record<Keyword.TypeKeyword, 1>> = {

@@ -1,5 +1,5 @@
 import { strict } from "node:assert"
-import { AssertionContext } from "../assert.js"
+import type { AssertionContext } from "../assert.js"
 
 export const callAssertedFunction = (
     asserted: Function,

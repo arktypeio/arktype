@@ -1,8 +1,9 @@
-import { Allows } from "../../../allows.js"
-import { boundableNode, bounds } from "../../../constraints/bounds.js"
+import type { Allows } from "../../../allows.js"
+import type { boundableNode, bounds } from "../../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../../constraints/common.js"
 import { checkObjectRoot } from "../../obj/index.js"
-import { Unary, unary } from "./unary.js"
+import type { Unary } from "./unary.js"
+import { unary } from "./unary.js"
 
 export type List<Child = unknown> = Unary<Child, "[]">
 

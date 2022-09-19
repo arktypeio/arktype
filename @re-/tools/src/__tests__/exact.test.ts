@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { Exact } from "../index.js"
+import type { Exact } from "../index.js"
 
 describe("exact", () => {
     test("base", () => {

@@ -1,4 +1,4 @@
-import { Evaluate, Narrow } from "@re-/tools"
+import type { Evaluate, Narrow } from "@re-/tools"
 
 export class scanner<Lookahead extends string = string> {
     private chars: string[]

@@ -1,7 +1,9 @@
 import { assert } from "@re-/assert"
-import { ElementOf, Evaluate, isNumeric, narrow } from "@re-/tools"
+import type { ElementOf, Evaluate } from "@re-/tools"
+import { isNumeric, narrow } from "@re-/tools"
 import { describe, test } from "mocha"
-import { ReferencesOf, space, type } from "../index.js"
+import type { ReferencesOf } from "../index.js"
+import { space, type } from "../index.js"
 
 describe("references", () => {
     const objectDef = narrow({

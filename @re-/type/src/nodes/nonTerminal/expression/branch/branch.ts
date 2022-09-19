@@ -1,6 +1,6 @@
 import type { StrNode } from "../../../../parser/str/common.js"
 import { Base } from "../../../base.js"
-import { References } from "../../../references.js"
+import type { References } from "../../../references.js"
 
 export type BranchToken = "|" | "&"
 

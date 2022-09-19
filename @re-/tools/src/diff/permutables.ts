@@ -1,10 +1,6 @@
-import { ElementOf, List } from "../common.js"
-import {
-    findFirstDeepEqualIndex,
-    SetChange,
-    toDiffSetsResult,
-    UnorderedDiffState
-} from "./unordered.js"
+import type { ElementOf, List } from "../common.js"
+import type { SetChange, UnorderedDiffState } from "./unordered.js"
+import { findFirstDeepEqualIndex, toDiffSetsResult } from "./unordered.js"
 
 export const diffPermutables = <Base extends List, Compare extends List>(
     base: Base,

@@ -1,6 +1,7 @@
 import { AssertionError, strict } from "node:assert"
-import { diff, DiffOptions, isRecursible, toString } from "@re-/tools"
-import { AssertionContext } from "./assert.js"
+import type { DiffOptions } from "@re-/tools"
+import { diff, isRecursible, toString } from "@re-/tools"
+import type { AssertionContext } from "./assert.js"
 
 export type AssertEqualsContext = AssertionContext & {
     options?: DiffOptions

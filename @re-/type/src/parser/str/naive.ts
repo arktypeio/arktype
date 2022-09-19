@@ -1,11 +1,9 @@
 import { list } from "../../nodes/nonTerminal/expression/unary/list.js"
 import { optional } from "../../nodes/nonTerminal/expression/unary/optional.js"
-import { parseContext } from "../common.js"
-import { FullParse } from "./full.js"
-import {
-    IsResolvableName,
-    toNodeIfResolvableIdentifier
-} from "./operand/unenclosed.js"
+import type { parseContext } from "../common.js"
+import type { FullParse } from "./full.js"
+import type { IsResolvableName } from "./operand/unenclosed.js"
+import { toNodeIfResolvableIdentifier } from "./operand/unenclosed.js"
 
 /**
  * Try to parse the definition from right to left using the most common syntax.

@@ -1,6 +1,6 @@
 import { relative } from "node:path"
 import { fromCwd } from "@re-/node"
-import { QueuedUpdate } from "../snapshot.js"
+import type { QueuedUpdate } from "../snapshot.js"
 
 export type BenchResult = {
     timestamp: string
