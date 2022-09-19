@@ -55,6 +55,10 @@ export namespace Root {
             ? Obj.parse(def, ctx)
             : Base.throwParseError(
                   badDefinitionTypeMessage +
-                      ` (got ${typeof def}${Base.ctxToString(ctx)}).`
+                      ` (got ${typeof def}${
+                          ctx.path.length
+                              ? " at path " + ctx.path.join("/")
+                              : ""
+                      }).`
               )
 }

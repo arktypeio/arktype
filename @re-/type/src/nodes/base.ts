@@ -32,9 +32,6 @@ export namespace Base {
         throw new parseError(message)
     }
 
-    export const ctxToString = (ctx: context) =>
-        ctx.path.length ? ` at path ${ctx.path.join("/")}` : ""
-
     export type ParseError<Message extends string> = `!${Message}`
 
     export abstract class node {

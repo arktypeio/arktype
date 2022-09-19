@@ -1,7 +1,6 @@
-export namespace Traverse {
-    export type Segment = string | number
-    export type Path = Segment[]
+import { Path } from "../common.js"
 
+export namespace Traverse {
     export type Context<Cfg> = {
         path: Path
         seen: string[]

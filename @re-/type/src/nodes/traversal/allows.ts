@@ -1,5 +1,6 @@
 import { Evaluate, toString, uncapitalize } from "@re-/tools"
 import type { Base } from "../base.js"
+import { Path, pathToString } from "../common.js"
 import type { BoundViolationDiagnostic } from "../constraints/bounds.js"
 import type { UnionDiagnostic } from "../types/nonTerminal/expression/branch/union.js"
 import type { ObjectKindDiagnostic } from "../types/nonTerminal/obj/common.js"
@@ -99,7 +100,7 @@ export namespace Allows {
         })
 
     export type BaseErrorContext = {
-        path: Traverse.Path
+        path: Path
         definition: string
         tree: unknown
         data: unknown
@@ -146,7 +147,7 @@ export namespace Allows {
         Code extends keyof DiagnosticsByCode,
         AdditionalOptions = {}
     > {
-        path: Traverse.Path
+        path: Path
         data: unknown
         options: (BaseDiagnosticOptions<Code> & AdditionalOptions) | undefined
 
@@ -168,13 +169,6 @@ export namespace Allows {
             super("Custom", args)
         }
     }
-
-    const pathToString = (path: Traverse.Path) =>
-        path.length === 0
-            ? "/"
-            : path.length === 1 && typeof path[0] === "number"
-            ? `Item ${path[0]}`
-            : path.join("/")
 
     export class Diagnostics extends Array<RegisteredDiagnostic> {
         push(...diagnostics: RegisteredDiagnostic[]) {

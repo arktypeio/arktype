@@ -1,14 +1,20 @@
+import { Evaluate } from "@re-/tools"
+import { Root } from "../../../../root.js"
+import { Base } from "../../../base.js"
 import { Allows } from "../../../traversal/allows.js"
 import { Create } from "../../../traversal/create.js"
 import { checkObjectRoot, obj } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
 
-export class TupleNode extends obj<TupleDefinition> {
-    static matches(def: object): def is TupleDefinition {
-        return Array.isArray(def)
-    }
+export type InferTuple<
+    Def extends readonly unknown[],
+    Ctx extends Base.InferenceContext
+> = Evaluate<{
+    [I in keyof Def]: Root.Infer<Def[I], Ctx>
+}>
 
+export class TupleNode extends obj<TupleDefinition> {
     get tree() {
         return this.entries.map(([, itemNode]) => itemNode.tree)
     }
