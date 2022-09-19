@@ -1,6 +1,5 @@
 import type { Allows } from "../allows.js"
 import { Base } from "../base.js"
-import { Create } from "../create.js"
 
 export type IoParameters<In, Out> = [
     In: In,

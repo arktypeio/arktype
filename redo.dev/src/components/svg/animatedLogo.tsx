@@ -13,7 +13,7 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
         palette: { secondary, error, success }
     } = useTheme()
     const pathAnimationContext: PathAnimationContext = {
-        nextStart: animatePathStartTime(0)
+        nextStart: INITIAL_DELAY + STOPLIGHT_ANIMATION_SECONDS
     }
     return (
         <motion.svg style={style} viewBox="0 0 1823 576">
@@ -58,7 +58,7 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
                     r="36"
                     transition={{
                         delay: INITIAL_DELAY,
-                        duration: ANIMATION_SECONDS
+                        duration: STOPLIGHT_ANIMATION_SECONDS
                     }}
                     animate={{
                         fill: [
@@ -80,7 +80,7 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
                     r="36"
                     transition={{
                         delay: INITIAL_DELAY,
-                        duration: ANIMATION_SECONDS
+                        duration: STOPLIGHT_ANIMATION_SECONDS
                     }}
                     animate={{
                         fill: [
@@ -126,12 +126,9 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
 const PRIMARY_DARK = "#264bcf"
 const TRANSPARENT = "#1b1b1b00"
 const INITIAL_DELAY = 0.2
-const ANIMATION_SECONDS = 2.5
+const STOPLIGHT_ANIMATION_SECONDS = 2.25
 const FRAMES = 8
-const FRAME_SECONDS = ANIMATION_SECONDS / FRAMES
-
-const animatePathStartTime = (order: number) =>
-    INITIAL_DELAY + ANIMATION_SECONDS + order * FRAME_SECONDS
+const FRAME_SECONDS = STOPLIGHT_ANIMATION_SECONDS / FRAMES
 
 type PathAnimationContext = {
     nextStart: number
