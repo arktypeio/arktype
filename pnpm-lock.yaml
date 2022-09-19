@@ -134,7 +134,6 @@ importers:
       raw-loader: 4.0.2
       react: 17.0.2
       react-dom: 17.0.2
-      redo.dev: 'link:'
       ts-node: 10.9.1
       typescript: 4.8.0-beta
     dependencies:
@@ -155,7 +154,6 @@ importers:
       raw-loader: 4.0.2
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
-      redo.dev: 'link:'
     devDependencies:
       '@docusaurus/module-type-aliases': 2.1.0_sfoxds7t5ydpegc3knd667wn6m
       '@docusaurus/types': 2.1.0_sfoxds7t5ydpegc3knd667wn6m
