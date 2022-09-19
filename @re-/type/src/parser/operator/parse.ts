@@ -1,7 +1,7 @@
 import { Base } from "../../nodes/base.js"
-import { Left } from "../parser/left.js"
-import { scanner, Scanner } from "../parser/scanner.js"
-import { parserState, ParserState } from "../parser/state.js"
+import { Left } from "../state/left.js"
+import { scanner, Scanner } from "../state/scanner.js"
+import { parserState, ParserState } from "../state/state.js"
 import { ComparatorChar, comparatorChars } from "./bound/common.js"
 import { ParseBound, parseBound } from "./bound/parse.js"
 import {

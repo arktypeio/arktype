@@ -6,7 +6,7 @@ import {
     invertedComparators,
     NormalizedLowerBoundComparator
 } from "../../parser/operator/bound/common.js"
-import { Comparator } from "../../parser/parser/common.js"
+import { Scanner } from "../../parser/state/scanner.js"
 import { Allows } from "../traversal/allows.js"
 import { NumberKeyword } from "../types/terminal/keywords/number.js"
 import { StringKeyword } from "../types/terminal/keywords/string.js"
@@ -14,7 +14,7 @@ import { StringKeyword } from "../types/terminal/keywords/string.js"
 export type Bounds = Bounds.Single | Bounds.Double
 
 export namespace Bounds {
-    export type Any = [Comparator, number]
+    export type Any = [Scanner.Comparator, number]
 
     export type Lower = [NormalizedLowerBoundComparator, number]
 
@@ -57,7 +57,7 @@ export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"
 
     constructor(
         args: Allows.Args,
-        public comparator: Comparator,
+        public comparator: Scanner.Comparator,
         public limit: number,
         public size: number
     ) {
@@ -116,7 +116,7 @@ export class bounds {
 }
 
 export const boundViolationMessage = (
-    comparator: Comparator,
+    comparator: Scanner.Comparator,
     limit: number,
     size: number,
     kind: BoundKind
@@ -128,7 +128,11 @@ export const boundViolationMessage = (
 const isConstrained = (tree: StrNode): tree is [StrNode, StrNode[]] =>
     Array.isArray(tree) && Array.isArray(tree[1])
 
-const isWithinBound = (comparator: Comparator, limit: number, size: number) => {
+const isWithinBound = (
+    comparator: Scanner.Comparator,
+    limit: number,
+    size: number
+) => {
     switch (comparator) {
         case "<=":
             return size <= limit

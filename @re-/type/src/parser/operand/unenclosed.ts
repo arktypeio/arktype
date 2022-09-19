@@ -2,9 +2,9 @@ import { Base } from "../../nodes/base.js"
 import { alias } from "../../nodes/types/terminal/alias.js"
 import { Keyword } from "../../nodes/types/terminal/keywords/keyword.js"
 import { literalNode } from "../../nodes/types/terminal/literal.js"
-import { Left } from "../parser/left.js"
-import { scanner, Scanner } from "../parser/scanner.js"
-import { parserState, ParserState } from "../parser/state.js"
+import { Left } from "../state/left.js"
+import { scanner, Scanner } from "../state/scanner.js"
+import { parserState, ParserState } from "../state/state.js"
 import {
     BaseTerminatingChar,
     baseTerminatingChars,

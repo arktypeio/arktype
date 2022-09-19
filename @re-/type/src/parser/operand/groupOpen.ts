@@ -1,5 +1,5 @@
-import { Left } from "../parser/left.js"
-import { parserState } from "../parser/state.js"
+import { Left } from "../state/left.js"
+import { parserState } from "../state/state.js"
 
 export type ReduceGroupOpen<L extends Left> = Left.From<{
     lowerBound: L["lowerBound"]

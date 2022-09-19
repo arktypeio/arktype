@@ -1,8 +1,8 @@
 import { Base } from "../../nodes/base.js"
 import { Alias } from "../../nodes/types/terminal/alias.js"
 import { Keyword } from "../../nodes/types/terminal/keywords/keyword.js"
-import { Scanner } from "../parser/scanner.js"
-import { ParserState, parserState } from "../parser/state.js"
+import { Scanner } from "../state/scanner.js"
+import { ParserState, parserState } from "../state/state.js"
 import {
     ExpressionExpectedMessage,
     expressionExpectedMessage

@@ -1,10 +1,9 @@
 import { literalNode } from "../../../nodes/types/terminal/literal.js"
 import { NumberLiteralDefinition } from "../../operand/unenclosed.js"
-import { Left } from "../../parser/left.js"
-import { scanner, Scanner } from "../../parser/scanner.js"
-import { parserState, ParserState } from "../../parser/state.js"
+import { Left } from "../../state/left.js"
+import { scanner, Scanner } from "../../state/scanner.js"
+import { parserState, ParserState } from "../../state/state.js"
 import {
-    Comparator,
     ComparatorChar,
     SingleCharComparator,
     singleCharComparator
@@ -31,12 +30,18 @@ export type ParseBound<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
 type SingleEqualsMessage = typeof singleEqualsMessage
 
-export const reduceBound = (s: parserState.withRoot, token: Comparator) =>
+export const reduceBound = (
+    s: parserState.withRoot,
+    token: Scanner.Comparator
+) =>
     s.hasRoot(literalNode) && typeof s.l.root.value === "number"
         ? reduceLeft(s, token)
         : s.suffixed(token)
 
-export type ReduceBound<L extends Left, Token extends Comparator> = L extends {
+export type ReduceBound<
+    L extends Left,
+    Token extends Scanner.Comparator
+> = L extends {
     root: NumberLiteralDefinition<infer Value>
 }
     ? ReduceLeft<L, Value, Token>

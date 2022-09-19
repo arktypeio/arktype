@@ -1,8 +1,8 @@
 import { Base } from "../../../nodes/base.js"
 import { intersection } from "../../../nodes/types/nonTerminal/expression/branch/intersection.js"
 import { strNode } from "../../common.js"
-import { Left } from "../../parser/left.js"
-import { parserState } from "../../parser/state.js"
+import { Left } from "../../state/left.js"
+import { parserState } from "../../state/state.js"
 import { Branches, MergeExpression } from "./branch.js"
 
 type PushRoot<B extends Branches, Root> = {

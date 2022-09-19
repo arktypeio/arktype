@@ -1,8 +1,8 @@
 import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
 import { Base } from "../../nodes/base.js"
-import { strNode, SuffixToken } from "./common.js"
+import { strNode } from "../common.js"
 import { left, Left } from "./left.js"
-import { scanner } from "./scanner.js"
+import { Scanner, scanner } from "./scanner.js"
 
 export class parserState<constraints extends Partial<left> = {}> {
     l: left<constraints>
@@ -35,7 +35,7 @@ export class parserState<constraints extends Partial<left> = {}> {
         return !!this.l.nextSuffix
     }
 
-    suffixed(token: SuffixToken) {
+    suffixed(token: Scanner.Suffix) {
         this.l.nextSuffix = token
         return this
     }

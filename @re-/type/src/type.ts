@@ -32,6 +32,7 @@ export type DynamicTypeFunction = (
 export type DynamicType = TypeFrom<unknown, {}, unknown>
 
 export type TypeOptions = {
+    parse?: Base.ParseOptions
     validate?: Allows.Options
     create?: Create.Options
 }

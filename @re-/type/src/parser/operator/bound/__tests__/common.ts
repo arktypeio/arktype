@@ -8,12 +8,8 @@ import { Keyword } from "../../../../nodes/types/terminal/keywords/keyword.js"
 import { numberKeywords } from "../../../../nodes/types/terminal/keywords/number.js"
 import { stringKeywords } from "../../../../nodes/types/terminal/keywords/string.js"
 import { DynamicType } from "../../../../type.js"
-import { comparators } from "../../../parser/common.js"
-import {
-    Comparator,
-    DoubleBoundComparator,
-    doubleBoundComparators
-} from "../common.js"
+import { Scanner, scanner } from "../../../state/scanner.js"
+import { DoubleBoundComparator, doubleBoundComparators } from "../common.js"
 
 const keysOf = (o: object) => Object.keys(o)
 
@@ -29,7 +25,7 @@ export const aribtraryBoundable = fc.oneof(
     arbitraryKeywordList
 )
 export const arbitraryComparator = fc.constantFrom(
-    ...(Object.keys(comparators) as Comparator[])
+    ...(Object.keys(scanner.comparators) as Scanner.Comparator[])
 )
 export const arbitraryDoubleComparator = fc.constantFrom(
     ...(Object.keys(doubleBoundComparators) as DoubleBoundComparator[])

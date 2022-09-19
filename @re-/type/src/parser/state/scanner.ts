@@ -72,6 +72,20 @@ export namespace scanner {
         token: string,
         set: Set
     ): token is Extract<keyof Set, string> => token in set
+
+    export const comparators = tokens({
+        "<": 1,
+        ">": 1,
+        "<=": 1,
+        ">=": 1,
+        "==": 1
+    })
+
+    export const suffixes = scanner.tokens({
+        ...comparators,
+        END: 1,
+        "?": 1
+    })
 }
 
 export namespace Scanner {
@@ -79,4 +93,8 @@ export namespace Scanner {
         Lookahead extends string,
         Unscanned extends string
     > = `${Lookahead}${Unscanned}`
+
+    export type Comparator = keyof typeof scanner.comparators
+
+    export type Suffix = keyof typeof scanner.suffixes
 }

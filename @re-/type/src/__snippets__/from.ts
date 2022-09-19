@@ -1,5 +1,4 @@
 //import { type } from "../index.js"
-
 import { narrow, Narrow } from "@re-/tools"
 
 const type = {} as any

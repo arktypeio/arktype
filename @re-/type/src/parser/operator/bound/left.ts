@@ -1,9 +1,8 @@
 import { literalNode } from "../../../nodes/types/terminal/literal.js"
-import { Left, left } from "../../parser/left.js"
-import { scanner } from "../../parser/scanner.js"
-import { parserState } from "../../parser/state.js"
+import { Left, left } from "../../state/left.js"
+import { Scanner, scanner } from "../../state/scanner.js"
+import { parserState } from "../../state/state.js"
 import {
-    Comparator,
     DoubleBoundComparator,
     doubleBoundComparators,
     InvalidDoubleBoundMessage,
@@ -14,12 +13,12 @@ import {
 
 type NonPrefixLeftBoundMessage<
     BoundingValue extends number,
-    T extends Comparator
+    T extends Scanner.Comparator
 > = `Left bound '${BoundingValue}${T}...' must occur at the beginning of the definition.`
 
 export const nonPrefixLeftBoundMessage = <
     BoundingValue extends number,
-    Token extends Comparator
+    Token extends Scanner.Comparator
 >(
     Value: BoundingValue,
     T: Token
@@ -37,7 +36,7 @@ const applyLeftBound = (
 
 export const reduceLeft = (
     s: parserState<left.withRoot<literalNode<number>>>,
-    token: Comparator
+    token: Scanner.Comparator
 ) =>
     s.isPrefixable()
         ? scanner.inTokenSet(token, doubleBoundComparators)
@@ -48,7 +47,7 @@ export const reduceLeft = (
 export type ReduceLeft<
     L extends Left,
     Value extends number,
-    Token extends Comparator
+    Token extends Scanner.Comparator
 > = Left.IsPrefixable<L> extends true
     ? Token extends DoubleBoundComparator
         ? Left.From<{

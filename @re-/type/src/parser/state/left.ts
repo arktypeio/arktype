@@ -1,14 +1,15 @@
 import { Base } from "../../nodes/base.js"
 import type { Bounds } from "../../nodes/constraints/bounds.js"
+import { strNode } from "../common.js"
 import { Branches, branches } from "../operator/branch/branch.js"
-import { strNode, SuffixToken } from "./common.js"
+import type { Scanner } from "./scanner.js"
 
 type leftBase = {
     groups: branches[]
     branches: branches
     root?: strNode
     lowerBound?: Bounds.Lower
-    nextSuffix?: SuffixToken
+    nextSuffix?: Scanner.Suffix
 }
 
 export type left<constraints extends Partial<leftBase> = {}> = leftBase &
@@ -19,7 +20,7 @@ type LeftBase = {
     groups: Branches[]
     branches: Branches
     root: unknown
-    nextSuffix?: SuffixToken
+    nextSuffix?: Scanner.Suffix
 }
 
 export type Left<Constraints extends Partial<LeftBase> = {}> = LeftBase &
@@ -37,13 +38,13 @@ export namespace left {
 
     export type suffixable = {
         root: strNode
-        nextSuffix: SuffixToken
+        nextSuffix: Scanner.Suffix
     }
 
     type baseSuffix = {
         lowerBound?: Bounds.Lower
         root: strNode
-        nextSuffix: SuffixToken
+        nextSuffix: Scanner.Suffix
     }
 
     export type suffix<constraints extends Partial<baseSuffix> = {}> =
@@ -91,7 +92,7 @@ export namespace Left {
 
     export type SetNextSuffix<
         L extends LeftBase,
-        Token extends SuffixToken
+        Token extends Scanner.Suffix
     > = From<{
         lowerBound: L["lowerBound"]
         groups: L["groups"]
@@ -105,10 +106,10 @@ export namespace Left {
     type SuffixInput = {
         lowerBound: Bounds.Lower | undefined
         root: unknown
-        nextSuffix: SuffixToken
+        nextSuffix: Scanner.Suffix
     }
 
-    export type Suffixable = With<{ nextSuffix: SuffixToken }>
+    export type Suffixable = With<{ nextSuffix: Scanner.Suffix }>
 
     export type Suffix<Constraints extends Partial<SuffixInput> = {}> = With<
         SuffixInput & Constraints

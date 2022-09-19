@@ -1,7 +1,4 @@
-import { Comparator } from "../../parser/common.js"
-import { scanner } from "../../parser/scanner.js"
-
-export type { Comparator } from "../../parser/common.js"
+import { Scanner, scanner } from "../../state/scanner.js"
 
 export const comparatorChars = scanner.tokens({
     "<": 1,
@@ -36,7 +33,7 @@ export const invertedComparators = {
 
 export type InvertedComparators = typeof invertedComparators
 
-export const comparatorToString: Record<Comparator, string> = {
+export const comparatorToString: Record<Scanner.Comparator, string> = {
     "<": "less than",
     ">": "greater than",
     "<=": "at most",
@@ -51,10 +48,10 @@ export const singleCharComparator = scanner.tokens({
 
 export type SingleCharComparator = keyof typeof singleCharComparator
 
-export type InvalidDoubleBoundMessage<Token extends Comparator> =
+export type InvalidDoubleBoundMessage<Token extends Scanner.Comparator> =
     `Double-bound expressions must specify their bounds using < or <= (got ${Token}).`
 
-export const invalidDoubleBoundMessage = <Token extends Comparator>(
+export const invalidDoubleBoundMessage = <Token extends Scanner.Comparator>(
     T: Token
 ): InvalidDoubleBoundMessage<Token> =>
     `Double-bound expressions must specify their bounds using < or <= (got ${T}).`

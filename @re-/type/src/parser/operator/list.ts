@@ -1,8 +1,8 @@
 import { Base } from "../../nodes/base.js"
 import { list } from "../../nodes/types/nonTerminal/expression/unary/list.js"
-import { Left, left } from "../parser/left.js"
-import { Scanner } from "../parser/scanner.js"
-import { ParserState, parserState } from "../parser/state.js"
+import { Left, left } from "../state/left.js"
+import { Scanner } from "../state/scanner.js"
+import { ParserState, parserState } from "../state/state.js"
 
 export const parseList = (s: parserState<left.withRoot>, ctx: Base.context) => {
     const next = s.r.shift()

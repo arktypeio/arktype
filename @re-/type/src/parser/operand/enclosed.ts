@@ -1,8 +1,8 @@
 import { stringNode } from "../../nodes/types/terminal/keywords/string.js"
 import { literalNode } from "../../nodes/types/terminal/literal.js"
-import { Left } from "../parser/left.js"
-import { scanner } from "../parser/scanner.js"
-import { ParserState, parserState } from "../parser/state.js"
+import { Left } from "../state/left.js"
+import { scanner } from "../state/scanner.js"
+import { ParserState, parserState } from "../state/state.js"
 
 export const enclosedBaseStartChars = scanner.tokens({
     "'": 1,

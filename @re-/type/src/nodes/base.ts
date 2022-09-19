@@ -1,4 +1,4 @@
-import type { MetaDefinitions, Space, SpaceMeta } from "../space.js"
+import type { Space, SpaceMeta } from "../space.js"
 import type { TypeOptions } from "../type.js"
 import { Allows } from "./traversal/allows.js"
 import { Create } from "./traversal/create.js"
@@ -57,9 +57,14 @@ export namespace Base {
         }
     }
 
+    export type ParseOptions = {
+        onCycle?: unknown
+        onResolve?: unknown
+    }
+
     export type InferenceContext = {
         Dict: unknown
-        Meta: MetaDefinitions
+        Meta: ParseOptions
         Seen: Record<string, true>
     }
 

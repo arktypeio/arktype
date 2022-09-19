@@ -62,7 +62,6 @@ describe("extend space", () => {
             },
             validate: {
                 diagnostics: { ExtraneousKeys: { enable: true } },
-                // @ts-expect-error (can't serialize function)
                 validator: `<function validator>`
             }
         })

@@ -1,5 +1,5 @@
 import { comparatorChars } from "../operator/bound/common.js"
-import { scanner } from "../parser/scanner.js"
+import { scanner } from "../state/scanner.js"
 
 export const expressionExpectedMessage = <Unscanned extends string>(
     unscanned: Unscanned

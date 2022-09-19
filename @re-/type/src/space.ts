@@ -120,7 +120,7 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 
 export type Space = {
     Dict: unknown
-    Meta: MetaDefinitions
+    Meta: Base.ParseOptions
 }
 
 export type ValidateDictionary<Dict> = Evaluate<{
@@ -182,11 +182,6 @@ export type InferResolution<
         Seen: { [K in Alias]: true }
     }
 >
-
-export type MetaDefinitions = {
-    onCycle?: unknown
-    onResolve?: unknown
-}
 
 export type ExtendFunction<S extends Space> = <ExtensionDict, ExtensionMeta>(
     dictionary: ValidateDictionaryExtension<S["Dict"], ExtensionDict>,

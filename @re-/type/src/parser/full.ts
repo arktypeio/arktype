@@ -10,10 +10,9 @@ import {
 import { MergeBranches, mergeBranches } from "./operator/branch/branch.js"
 import { ParseOptional, parseOptional } from "./operator/optional.js"
 import { ParseOperator, parseOperator } from "./operator/parse.js"
-import { Comparator, comparators } from "./parser/common.js"
-import { Left, left } from "./parser/left.js"
-import { scanner } from "./parser/scanner.js"
-import { ParserState, parserState } from "./parser/state.js"
+import { Left, left } from "./state/left.js"
+import { Scanner, scanner } from "./state/scanner.js"
+import { ParserState, parserState } from "./state/state.js"
 
 export const fullParse: Base.parseFn<string> = (def, ctx) =>
     loop(parseOperand(new parserState(def), ctx), ctx)
@@ -72,7 +71,7 @@ const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
     if (s.l.nextSuffix === "?") {
         return finalize(parseOptional(s, ctx))
     }
-    if (scanner.inTokenSet(s.l.nextSuffix, comparators)) {
+    if (scanner.inTokenSet(s.l.nextSuffix, scanner.comparators)) {
         return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
     }
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
@@ -86,7 +85,7 @@ type SuffixLoop<S extends ParserState.Of<Left.Suffix>> =
 type NextSuffix<S extends ParserState.Of<Left.Suffix>> =
     S["L"]["nextSuffix"] extends "?"
         ? ParseOptional<S>
-        : S["L"]["nextSuffix"] extends Comparator
+        : S["L"]["nextSuffix"] extends Scanner.Comparator
         ? ParseSuffixBound<S, S["L"]["nextSuffix"]>
         : ParserState.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
 
