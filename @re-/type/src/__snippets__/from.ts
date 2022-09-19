@@ -1,3 +1,4 @@
+// @ts-nocheck TODO: Add a real snippet here
 //import { type } from "../index.js"
 import { narrow, Narrow } from "@re-/tools"
 
