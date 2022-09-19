@@ -1,4 +1,4 @@
-import { union } from "../../../nodes/nonTerminal/expression/branch/union.js"
+import { union } from "../../../../nodes/nonTerminal/expression/branch/union.js"
 import { parseContext, strNode } from "../../common.js"
 import { Left } from "../../state/left.js"
 import { parserState } from "../../state/state.js"

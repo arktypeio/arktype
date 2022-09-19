@@ -1,6 +1,6 @@
 import { Evaluate, IterateType, ListPossibleTypes, ValueOf } from "@re-/tools"
 import { parseFn } from "../../../parser/common.js"
-import { Root } from "../../../root.js"
+import { Root } from "../../../parser/root.js"
 import { Base } from "../../base.js"
 import { Dictionary, DictionaryNode } from "./dictionary.js"
 import { InferTuple, TupleNode } from "./tuple.js"

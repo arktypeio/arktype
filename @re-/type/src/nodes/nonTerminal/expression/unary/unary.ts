@@ -5,7 +5,7 @@ import { References } from "../../../references.js"
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 
 export abstract class unary<Child extends strNode = strNode> extends Base.node {
-    constructor(protected child: Child, protected ctx: parseContext) {
+    constructor(protected child: Child, protected ctx: Base.context) {
         super()
     }
 

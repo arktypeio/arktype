@@ -1,12 +1,13 @@
 import { Evaluate } from "@re-/tools"
-import { StrNode, strNode } from "../../parser/common.js"
+// TODO: Fix backwards imports from parser
+import { StrNode, strNode } from "../../parser/str/common.js"
 import {
     comparatorToString,
     DoubleBoundComparator,
     invertedComparators,
     NormalizedLowerBoundComparator
-} from "../../parser/operator/bound/common.js"
-import { Scanner } from "../../parser/state/scanner.js"
+} from "../../parser/str/operator/bound/common.js"
+import { Scanner } from "../../parser/str/state/scanner.js"
 import { Allows } from "../allows.js"
 import { NumberKeyword } from "../terminal/keywords/number.js"
 import { StringKeyword } from "../terminal/keywords/string.js"

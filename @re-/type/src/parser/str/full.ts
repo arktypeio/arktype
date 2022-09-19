@@ -1,4 +1,3 @@
-import { Base } from "../nodes/base.js"
 import { parseContext, ParseError, parseFn, strNode } from "./common.js"
 import { parseOperand, ParseOperand } from "./operand/operand.js"
 import {

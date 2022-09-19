@@ -114,7 +114,7 @@
     },
     {
         "name": "validate undefined",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -127,7 +127,7 @@
     },
     {
         "name": "validate string",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -139,7 +139,7 @@
     },
     {
         "name": "parse deeep",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -151,7 +151,7 @@
     },
     {
         "name": "parse and validate deeep",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -163,7 +163,7 @@
     },
     {
         "name": "parseUnion",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -176,7 +176,7 @@
     },
     {
         "name": "validate small union second",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -188,7 +188,7 @@
     },
     {
         "name": "validate small union first",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -200,7 +200,7 @@
     },
     {
         "name": "parse large union",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -213,7 +213,7 @@
     },
     {
         "name": "parse then validate large union",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -225,7 +225,7 @@
     },
     {
         "name": "parse then validate large union first",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -237,7 +237,7 @@
     },
     {
         "name": "parse then validate large union miss",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -249,7 +249,7 @@
     },
     {
         "name": "list type",
-        "file": "src/parser/operator/__tests__/str.bench.ts",
+        "file": "src/parser/str/operator/__tests__/str.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:22:35 PM",
@@ -262,7 +262,7 @@
     },
     {
         "name": "single-bounded",
-        "file": "src/parser/operator/bound/__tests__/bound.bench.ts",
+        "file": "src/parser/str/operator/bound/__tests__/bound.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:23:18 PM",
@@ -275,7 +275,7 @@
     },
     {
         "name": "double-bounded",
-        "file": "src/parser/operator/bound/__tests__/bound.bench.ts",
+        "file": "src/parser/str/operator/bound/__tests__/bound.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:23:18 PM",
@@ -288,7 +288,7 @@
     },
     {
         "name": "single-bounded list",
-        "file": "src/parser/operator/bound/__tests__/bound.bench.ts",
+        "file": "src/parser/str/operator/bound/__tests__/bound.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:23:18 PM",
@@ -301,7 +301,7 @@
     },
     {
         "name": "parenthesized list",
-        "file": "src/parser/operator/bound/__tests__/bound.bench.ts",
+        "file": "src/parser/str/operator/bound/__tests__/bound.bench.ts",
         "results": [
             {
                 "timestamp": "9/15/2022, 7:23:18 PM",

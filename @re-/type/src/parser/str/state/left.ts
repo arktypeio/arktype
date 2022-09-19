@@ -1,4 +1,4 @@
-import type { Bounds } from "../../nodes/constraints/bounds.js"
+import type { Bounds } from "../../../nodes/constraints/bounds.js"
 import { ParseError, strNode } from "../common.js"
 import { Branches, branches } from "../operator/branch/branch.js"
 import type { Scanner } from "./scanner.js"

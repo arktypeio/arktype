@@ -39,6 +39,7 @@ module.exports = defineConfig({
             { ignoreRestSiblings: true }
         ],
         "@typescript-eslint/default-param-last": "warn",
+        "@typescript-eslint/consistent-type-imports": "warn",
         /**
          * Conventions
          */

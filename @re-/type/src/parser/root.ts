@@ -1,7 +1,6 @@
-import { Base } from "./nodes/base.js"
-import { Obj } from "./nodes/nonTerminal/obj/index.js"
-import { parseFn, throwParseError } from "./parser/common.js"
-import { Str } from "./parser/str.js"
+import { Obj } from "../nodes/nonTerminal/obj/index.js"
+import { parseFn, throwParseError } from "./common.js"
+import { Str } from "./str/str.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []
@@ -17,23 +16,6 @@ export namespace Root {
         : Def extends string
         ? Str.Parse<Def, Dict>
         : Obj.Parse<Def, Dict>
-
-    export type Infer<
-        Def,
-        Ctx extends Base.InferenceContext
-    > = unknown extends Def
-        ? Def
-        : Def extends string
-        ? Str.Infer<Def, Ctx>
-        : Obj.Infer<Def, Ctx>
-
-    export type References<
-        Def,
-        Dict,
-        PreserveStructure extends boolean
-    > = Def extends string
-        ? Str.References<Def, Dict>
-        : Obj.References<Def, Dict, PreserveStructure>
 
     export type BadDefinitionType =
         | undefined

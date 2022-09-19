@@ -1,9 +1,8 @@
 import { WithPropValue } from "@re-/tools"
-import { parseContext } from "../../parser/common.js"
-import { Root } from "../../root.js"
 import { Allows } from "../allows.js"
 import { Base } from "../base.js"
 import { Create } from "../create.js"
+import { RootInfer } from "../root.js"
 import { terminalNode } from "./terminal.js"
 
 export namespace Alias {
@@ -23,12 +22,12 @@ export namespace Alias {
     type BaseOf<
         Def extends keyof Ctx["Dict"],
         Ctx extends Base.InferenceContext
-    > = Root.Infer<Ctx["Dict"][Def], Ctx & { Seen: { [K in Def]: true } }>
+    > = RootInfer<Ctx["Dict"][Def], Ctx & { Seen: { [K in Def]: true } }>
 
     type OnResolveOf<
         Def extends keyof Ctx["Dict"],
         Ctx extends Base.InferenceContext
-    > = Root.Infer<
+    > = RootInfer<
         Ctx["Meta"]["onResolve"],
         {
             Dict: WithPropValue<Ctx["Dict"], "$resolution", Ctx["Dict"][Def]>
@@ -40,7 +39,7 @@ export namespace Alias {
     type OnCycleOf<
         Def extends keyof Ctx["Dict"],
         Ctx extends Base.InferenceContext
-    > = Root.Infer<
+    > = RootInfer<
         Ctx["Meta"]["onCycle"],
         {
             Dict: WithPropValue<Ctx["Dict"], "$cyclic", Ctx["Dict"][Def]>
@@ -51,11 +50,11 @@ export namespace Alias {
 }
 
 export class alias extends terminalNode {
-    static matches(def: string, ctx: parseContext) {
+    static matches(def: string, ctx: Base.context) {
         return !!ctx.space && def in ctx.space.dictionary
     }
 
-    constructor(private def: string, private ctx: parseContext) {
+    constructor(private def: string, private ctx: Base.context) {
         super()
     }
 

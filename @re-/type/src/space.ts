@@ -7,9 +7,11 @@ import {
     Merge,
     Narrow
 } from "@re-/tools"
+import { ResolutionNode } from "./nodes/resolution.js"
+import { RootInfer } from "./nodes/root.js"
 import { initializeParseContext, ParseOptions } from "./parser/common.js"
-import { ResolutionNode, ResolutionType } from "./resolution.js"
-import { Root } from "./root.js"
+import { ResolutionType } from "./parser/resolution.js"
+import { Root } from "./parser/root.js"
 import {
     DynamicType,
     Type,
@@ -174,7 +176,7 @@ export type InferSpaceRoot<S extends Space> = Evaluate<{
 export type InferResolution<
     S extends Space,
     Alias extends keyof S["Dict"]
-> = Root.Infer<
+> = RootInfer<
     S["Dict"][Alias],
     {
         Dict: S["Dict"]

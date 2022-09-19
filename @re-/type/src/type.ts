@@ -10,8 +10,9 @@ import { Allows } from "./nodes/allows.js"
 import { Base } from "./nodes/base.js"
 import { Create } from "./nodes/create.js"
 import { References } from "./nodes/references.js"
+import { RootInfer, RootReferences } from "./nodes/root.js"
 import { initializeParseContext, ParseOptions } from "./parser/common.js"
-import { Root } from "./root.js"
+import { Root } from "./parser/root.js"
 import { Space, SpaceMeta } from "./space.js"
 
 export const type: TypeFunction = (
@@ -137,13 +138,13 @@ export type ReferencesFunction<Def, Dict> = <
     Options
 > extends References.Options<infer Filter, infer PreserveStructure>
     ? TransformReferences<
-          Root.References<Def, Dict, PreserveStructure>,
+          RootReferences<Def, Dict, PreserveStructure>,
           Filter,
           "list"
       >
     : []
 
-export type Infer<Def, S extends Space> = Root.Infer<
+export type Infer<Def, S extends Space> = RootInfer<
     Def,
     Base.InferenceContext.From<{
         Dict: S["Dict"]
@@ -167,7 +168,7 @@ export type ReferencesOf<
     infer Format
 >
     ? TransformReferences<
-          Root.References<Def, Dict, PreserveStructure>,
+          RootReferences<Def, Dict, PreserveStructure>,
           Filter,
           Format
       >

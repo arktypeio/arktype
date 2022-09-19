@@ -1,5 +1,5 @@
 import { parseFn, throwParseError } from "../../../parser/common.js"
-import { scanner } from "../../../parser/state/scanner.js"
+import { scanner } from "../../../parser/str/state/scanner.js"
 import { Base } from "../../base.js"
 
 export const metaTokens = scanner.tokens({

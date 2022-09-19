@@ -1,6 +1,6 @@
-import { list } from "../nodes/nonTerminal/expression/unary/list.js"
-import { optional } from "../nodes/nonTerminal/expression/unary/optional.js"
-import { parseContext } from "./common.js"
+import { list } from "../../nodes/nonTerminal/expression/unary/list.js"
+import { optional } from "../../nodes/nonTerminal/expression/unary/optional.js"
+import { parseContext } from "../common.js"
 import { FullParse } from "./full.js"
 import {
     IsResolvableName,

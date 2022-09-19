@@ -1,5 +1,5 @@
 import { TypeOfResult } from "@re-/tools"
-import { strNode } from "../../../../parser/common.js"
+import type { strNode } from "../../../../parser/str/common.js"
 import { Allows } from "../../../allows.js"
 import { Create } from "../../../create.js"
 import { branch, Branch } from "./branch.js"

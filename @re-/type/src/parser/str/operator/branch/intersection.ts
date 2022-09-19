@@ -1,4 +1,4 @@
-import { intersection } from "../../../nodes/nonTerminal/expression/branch/intersection.js"
+import { intersection } from "../../../../nodes/nonTerminal/expression/branch/intersection.js"
 import { parseContext, strNode } from "../../common.js"
 import { Left } from "../../state/left.js"
 import { parserState } from "../../state/state.js"

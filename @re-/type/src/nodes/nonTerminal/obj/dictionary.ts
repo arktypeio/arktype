@@ -1,5 +1,5 @@
 import { Evaluate } from "@re-/tools"
-import { Root } from "../../../root.js"
+import { Root } from "../../../parser/root.js"
 import { Allows } from "../../allows.js"
 import { Base } from "../../base.js"
 import { Create } from "../../create.js"
