@@ -1,6 +1,6 @@
-import { Str } from "./parse/str.js"
-import { Base } from "./traverse/base.js"
-import { Obj } from "./traverse/types/nonTerminal/obj/index.js"
+import { Base } from "./nodes/base.js"
+import { Obj } from "./nodes/nonTerminal/obj/index.js"
+import { Str } from "./parser/str.js"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []

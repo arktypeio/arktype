@@ -7,9 +7,9 @@ import {
     Merge,
     Narrow
 } from "@re-/tools"
+import { Base } from "./nodes/base.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
-import { Base } from "./traverse/base.js"
 import {
     DynamicType,
     Type,

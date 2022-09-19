@@ -1,12 +1,12 @@
 import { deepMerge, ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
-import { Str } from "./parse/str.js"
+import { Allows } from "./nodes/allows.js"
+import { Base } from "./nodes/base.js"
+import { Create } from "./nodes/create.js"
+import { References } from "./nodes/references.js"
+import { Traverse } from "./nodes/traverse.js"
+import { Str } from "./parser/str.js"
 import { Root } from "./root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "./space.js"
-import { Allows } from "./traverse/allows.js"
-import { Base } from "./traverse/base.js"
-import { Create } from "./traverse/create.js"
-import { References } from "./traverse/references.js"
-import { Traverse } from "./traverse/traverse.js"
 
 export namespace ResolutionType {
     export type Validate<

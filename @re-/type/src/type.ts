@@ -6,12 +6,12 @@ import {
     Merge,
     MutuallyExclusiveProps
 } from "@re-/tools"
+import { Allows } from "./nodes/allows.js"
+import { Base } from "./nodes/base.js"
+import { Create } from "./nodes/create.js"
+import { References } from "./nodes/references.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
-import { Allows } from "./traverse/allows.js"
-import { Base } from "./traverse/base.js"
-import { Create } from "./traverse/create.js"
-import { References } from "./traverse/references.js"
 
 export const type: TypeFunction = (
     definition,
