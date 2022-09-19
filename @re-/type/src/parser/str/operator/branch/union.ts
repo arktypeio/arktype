@@ -1,5 +1,5 @@
 import type { strNode } from "../../../../nodes/common.js"
-import { union } from "../../../../nodes/expression/branch/union.js"
+import { union } from "../../../../nodes/expressions/branches/union.js"
 import type { parseContext } from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"

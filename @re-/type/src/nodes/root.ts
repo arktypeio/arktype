@@ -1,6 +1,6 @@
 import type { Str } from "../parser/str/str.js"
 import type { Base } from "./base.js"
-import type { Structure } from "./structure/index.js"
+import type { Structure } from "./structures/index.js"
 
 export type RootInfer<
     Def,

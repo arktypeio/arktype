@@ -1,6 +1,6 @@
 import type { Base } from "../../../nodes/base.js"
-import type { Alias } from "../../../nodes/terminal/alias.js"
-import type { Keyword } from "../../../nodes/terminal/keywords/keyword.js"
+import type { Alias } from "../../../nodes/terminals/alias.js"
+import type { Keyword } from "../../../nodes/terminals/keywords/keyword.js"
 import type { parseContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"

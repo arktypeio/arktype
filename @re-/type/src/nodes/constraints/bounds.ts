@@ -11,8 +11,8 @@ import {
 import type { Scanner } from "../../parser/str/state/scanner.js"
 import { Allows } from "../allows.js"
 import type { StrNode, strNode } from "../common.js"
-import type { NumberKeyword } from "../terminal/keywords/number.js"
-import type { StringKeyword } from "../terminal/keywords/string.js"
+import type { NumberKeyword } from "../terminals/keywords/number.js"
+import type { StringKeyword } from "../terminals/keywords/string.js"
 
 export type Bounds = Bounds.Single | Bounds.Double
 

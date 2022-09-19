@@ -4,18 +4,18 @@ import type { Base } from "./base.js"
 import type { Path } from "./common.js"
 import { pathToString } from "./common.js"
 import type { BoundViolationDiagnostic } from "./constraints/bounds.js"
-import type { UnionDiagnostic } from "./expression/branch/union.js"
-import type { ObjectKindDiagnostic } from "./structure/common.js"
+import type { UnionDiagnostic } from "./expressions/branches/union.js"
+import type { ObjectKindDiagnostic } from "./structures/common.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic
-} from "./structure/dictionary.js"
-import type { TupleLengthDiagnostic } from "./structure/tuple.js"
-import type { KeywordDiagnostic } from "./terminal/keywords/common.js"
-import type { Keyword } from "./terminal/keywords/keyword.js"
-import type { NumberSubtypeDiagnostic } from "./terminal/keywords/number.js"
-import type { RegexMismatchDiagnostic } from "./terminal/keywords/string.js"
-import type { LiteralDiagnostic } from "./terminal/literal.js"
+} from "./structures/dictionary.js"
+import type { TupleLengthDiagnostic } from "./structures/tuple.js"
+import type { KeywordDiagnostic } from "./terminals/keywords/common.js"
+import type { Keyword } from "./terminals/keywords/keyword.js"
+import type { NumberSubtypeDiagnostic } from "./terminals/keywords/number.js"
+import type { RegexMismatchDiagnostic } from "./terminals/keywords/string.js"
+import type { LiteralDiagnostic } from "./terminals/literal.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {

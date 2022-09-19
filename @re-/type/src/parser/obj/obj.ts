@@ -1,11 +1,15 @@
 import type { Evaluate } from "@re-/tools"
-import type { Dictionary } from "../../nodes/structure/dictionary.js"
-import { DictionaryNode } from "../../nodes/structure/dictionary.js"
-import { TupleNode } from "../../nodes/structure/tuple.js"
+import type { Dictionary } from "../../nodes/structures/dictionary.js"
+import { DictionaryNode } from "../../nodes/structures/dictionary.js"
+import { TupleNode } from "../../nodes/structures/tuple.js"
 import type { parseFn } from "../common.js"
 import type { Root } from "../root.js"
 
 export namespace Obj {
+    export type Validate<Def, Dict> = {
+        [K in keyof Def]: Root.Validate<Def[K], Dict>
+    }
+
     export type Parse<Def, Dict> = Evaluate<{
         [K in keyof Def]: Root.Parse<Def[K], Dict>
     }>

@@ -1,4 +1,4 @@
-import { list } from "../../../nodes/expression/unary/list.js"
+import { list } from "../../../nodes/expressions/unaries/list.js"
 import type { parseContext } from "../../common.js"
 import type { Left, left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"

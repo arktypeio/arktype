@@ -41,8 +41,4 @@ export namespace Structure {
     type StructuredReferences<Def, Dict> = Evaluate<{
         [K in keyof Def]: RootReferences<Def[K], Dict, true>
     }>
-
-    export type Validate<Def, Dict> = {
-        [K in keyof Def]: Root.Validate<Def[K], Dict>
-    }
 }

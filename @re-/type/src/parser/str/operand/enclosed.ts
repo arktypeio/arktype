@@ -1,5 +1,5 @@
-import { stringNode } from "../../../nodes/terminal/keywords/string.js"
-import { literalNode } from "../../../nodes/terminal/literal.js"
+import { stringNode } from "../../../nodes/terminals/keywords/string.js"
+import { literalNode } from "../../../nodes/terminals/literal.js"
 import type { Left } from "../state/left.js"
 import { scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"

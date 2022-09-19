@@ -2,7 +2,7 @@ import type { Evaluate } from "@re-/tools"
 import { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import type { Create } from "../create.js"
-import { optional } from "../expression/unary/optional.js"
+import { optional } from "../expressions/unaries/optional.js"
 import type { RootInfer } from "../root.js"
 import { checkObjectRoot, obj } from "./common.js"
 

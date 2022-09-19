@@ -1,5 +1,5 @@
-import type { intersection } from "../../../../nodes/expression/branch/intersection.js"
-import type { union } from "../../../../nodes/expression/branch/union.js"
+import type { intersection } from "../../../../nodes/expressions/branches/intersection.js"
+import type { union } from "../../../../nodes/expressions/branches/union.js"
 import type { parserState } from "../../state/state.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 import { hasMergeableUnion, mergeUnion } from "./union.js"
