@@ -5,6 +5,7 @@ import {
     Bounds,
     isBoundable
 } from "../../../nodes/constraints/bounds.js"
+import { AddConstraints } from "../../../nodes/constraints/common.js"
 import {
     isNumberLiteral,
     NumberLiteralDefinition,
@@ -101,7 +102,7 @@ type ReduceDouble<
 > = RightBound extends Bounds.Upper
     ? Left.SuffixFrom<{
           lowerBound: undefined
-          root: Bounds.Apply<L["root"], [L["lowerBound"], RightBound]>
+          root: AddConstraints<L["root"], [L["lowerBound"], RightBound]>
           nextSuffix: NextSuffix
       }>
     : Left.Error<InvalidDoubleBoundMessage<RightBound[0]>>
@@ -131,7 +132,7 @@ type ReduceSingle<
     NextSuffix extends SuffixToken
 > = Left.SuffixFrom<{
     lowerBound: undefined
-    root: Bounds.Apply<L["root"], [Single]>
+    root: AddConstraints<L["root"], [Single]>
     nextSuffix: NextSuffix
 }>
 
@@ -161,6 +162,7 @@ export const unboundableMessage = <Root extends string>(
 ): UnboundableMessage<Root> =>
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
 
+// TODO: Update this error message to account for additional suffix tokens like modulo
 export type NonSuffixRightBoundMessage<
     T extends Comparator,
     Suffix extends string

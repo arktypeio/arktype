@@ -10,6 +10,7 @@ import { Comparator } from "../../parser/parser/common.js"
 import { Allows } from "../traversal/allows.js"
 import { NumberKeyword } from "../types/terminal/keywords/number.js"
 import { StringKeyword } from "../types/terminal/keywords/string.js"
+import { AddConstraints, Constrained } from "./common.js"
 
 export type Bounds = Bounds.Single | Bounds.Double
 
@@ -23,10 +24,6 @@ export namespace Bounds {
     export type Single = [Any]
 
     export type Double = [Lower, Upper]
-
-    export type Apply<Child = unknown, Def extends Bounds = Bounds> = Evaluate<
-        [Child, Def]
-    >
 }
 
 export type boundChecker = (y: number) => boolean

@@ -8,6 +8,7 @@ import {
     unpairedLeftBoundMessage
 } from "./operator/bound/right.js"
 import { MergeBranches, mergeBranches } from "./operator/branch/branch.js"
+import { ParseModulo, parseModulo } from "./operator/modulo.js"
 import { ParseOptional, parseOptional } from "./operator/optional.js"
 import { ParseOperator, parseOperator } from "./operator/parse.js"
 import { Comparator, comparators } from "./parser/common.js"
@@ -75,6 +76,9 @@ const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
     if (scanner.inTokenSet(s.l.nextSuffix, comparators)) {
         return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
     }
+    if (s.l.nextSuffix === "%") {
+        return suffixLoop(parseModulo(s, ctx), ctx)
+    }
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
 }
 
@@ -88,6 +92,8 @@ type NextSuffix<S extends ParserState.Of<Left.Suffix>> =
         ? ParseOptional<S>
         : S["L"]["nextSuffix"] extends Comparator
         ? ParseSuffixBound<S, S["L"]["nextSuffix"]>
+        : S["L"]["nextSuffix"] extends "%"
+        ? ParseModulo<S>
         : ParserState.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
 
 const finalize = (s: parserState.suffix) =>

@@ -11,6 +11,7 @@ import {
 import { ReduceUnion, reduceUnion } from "./branch/union.js"
 import { ReduceGroupClose, reduceGroupClose } from "./groupClose.js"
 import { ParseList, parseList } from "./list.js"
+import { ParseModulo } from "./modulo.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
@@ -31,6 +32,8 @@ export const parseOperator = (
         ? reduceGroupClose(s)
         : scanner.inTokenSet(lookahead, comparatorChars)
         ? parseBound(s, lookahead)
+        : lookahead === "%"
+        ? s.suffixed("%")
         : lookahead === " "
         ? parseOperator(s, ctx)
         : s.error(unexpectedCharacterMessage(lookahead))
@@ -64,6 +67,11 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
           }>
         : Lookahead extends ComparatorChar
         ? ParseBound<S, Lookahead, Unscanned>
+        : Lookahead extends "%"
+        ? ParserState.From<{
+              L: Left.SetNextSuffix<S["L"], "%">
+              R: Unscanned
+          }>
         : Lookahead extends " "
         ? ParseOperator<{ L: S["L"]; R: Unscanned }>
         : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>
