@@ -10,6 +10,7 @@ import { Allows } from "./nodes/allows.js"
 import { Base } from "./nodes/base.js"
 import { Create } from "./nodes/create.js"
 import { References } from "./nodes/references.js"
+import { initializeParseContext, ParseOptions } from "./parser/common.js"
 import { Root } from "./root.js"
 import { Space, SpaceMeta } from "./space.js"
 
@@ -18,7 +19,7 @@ export const type: TypeFunction = (
     options = {},
     space?: SpaceMeta
 ) => {
-    const root = Root.parse(definition, Base.initializeContext(options, space))
+    const root = Root.parse(definition, initializeParseContext(options, space))
     return new Type(definition, root, options) as any
 }
 
@@ -32,7 +33,7 @@ export type DynamicTypeFunction = (
 export type DynamicType = TypeFrom<unknown, {}, unknown>
 
 export type TypeOptions = {
-    parse?: Base.ParseOptions
+    parse?: ParseOptions
     validate?: Allows.Options
     create?: Create.Options
 }

@@ -1,5 +1,5 @@
 import { Base } from "../nodes/base.js"
-import { strNode } from "./common.js"
+import { parseContext, ParseError, parseFn, strNode } from "./common.js"
 import { parseOperand, ParseOperand } from "./operand/operand.js"
 import {
     ParseSuffixBound,
@@ -14,7 +14,7 @@ import { Left, left } from "./state/left.js"
 import { Scanner, scanner } from "./state/scanner.js"
 import { ParserState, parserState } from "./state/state.js"
 
-export const fullParse: Base.parseFn<string> = (def, ctx) =>
+export const fullParse: parseFn<string> = (def, ctx) =>
     loop(parseOperand(new parserState(def), ctx), ctx)
 
 export type FullParse<Def extends string, Dict> = Loop<
@@ -22,7 +22,7 @@ export type FullParse<Def extends string, Dict> = Loop<
     Dict
 >
 
-const loop = (s: parserState, ctx: Base.context): strNode => {
+const loop = (s: parserState, ctx: parseContext): strNode => {
     while (!s.isSuffixable()) {
         next(s, ctx)
     }
@@ -35,7 +35,7 @@ type Loop<S extends ParserState, Dict> = S["L"]["nextSuffix"] extends string
       SuffixLoop<TransitionToSuffix<S>>
     : Loop<Next<S, Dict>, Dict>
 
-const next = (s: parserState, ctx: Base.context): parserState =>
+const next = (s: parserState, ctx: parseContext): parserState =>
     s.hasRoot() ? parseOperator(s, ctx) : parseOperand(s, ctx)
 
 type Next<S extends ParserState, Dict> = S["L"]["root"] extends undefined
@@ -64,7 +64,7 @@ type TransitionToSuffix<S extends ParserState<Left.Suffixable>> =
           }>
         : ParserState.Error<UnclosedGroupMessage>
 
-const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
+const suffixLoop = (s: parserState.suffix, ctx: parseContext): strNode => {
     if (s.l.nextSuffix === "END") {
         return finalize(s)
     }
@@ -94,7 +94,7 @@ const finalize = (s: parserState.suffix) =>
 
 type Finalize<L extends Left.Suffix> = L["lowerBound"] extends undefined
     ? L["root"]
-    : Base.ParseError<UnpairedLeftBoundMessage>
+    : ParseError<UnpairedLeftBoundMessage>
 
 type UnexpectedSuffixMessage<Token extends string> =
     `Unexpected suffix token '${Token}'.`

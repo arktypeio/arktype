@@ -1,3 +1,4 @@
+import { parseContext } from "../../../parser/common.js"
 import { Root } from "../../../root.js"
 import { Allows } from "../../allows.js"
 import { Base } from "../../base.js"
@@ -9,7 +10,7 @@ export type ChildEntry<KeyType> = [KeyType, Base.node]
 export abstract class obj<defType extends object> extends Base.node {
     entries: ChildEntry<string>[]
 
-    constructor(protected definition: defType, private ctx: Base.context) {
+    constructor(protected definition: defType, private ctx: parseContext) {
         super()
         const entries = Object.entries(definition).map(
             ([k, childDef]): ChildEntry<string> => [

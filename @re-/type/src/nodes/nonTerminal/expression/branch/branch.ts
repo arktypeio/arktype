@@ -1,4 +1,4 @@
-import { StrNode } from "../../../../parser/common.js"
+import { parseContext, StrNode } from "../../../../parser/common.js"
 import { Base } from "../../../base.js"
 import { References } from "../../../references.js"
 
@@ -11,7 +11,7 @@ export type Branch<
 > = [Left, Token, Right]
 
 export abstract class branch extends Base.node {
-    constructor(protected children: Base.node[], protected ctx: Base.context) {
+    constructor(protected children: Base.node[], protected ctx: parseContext) {
         super()
     }
 

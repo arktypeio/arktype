@@ -7,7 +7,7 @@ import {
     Merge,
     Narrow
 } from "@re-/tools"
-import { Base } from "./nodes/base.js"
+import { initializeParseContext, ParseOptions } from "./parser/common.js"
 import { ResolutionNode, ResolutionType } from "./resolution.js"
 import { Root } from "./root.js"
 import {
@@ -60,7 +60,7 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
     type(def: unknown, options: TypeOptions = {}) {
         const root = Root.parse(
             def,
-            Base.initializeContext(deepMerge(this.options, options), this)
+            initializeParseContext(deepMerge(this.options, options), this)
         )
         return new Type(def, root, deepMerge(this.options, options)) as any
     }
@@ -120,7 +120,7 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 
 export type Space = {
     Dict: unknown
-    Meta: Base.ParseOptions
+    Meta: ParseOptions
 }
 
 export type ValidateDictionary<Dict> = Evaluate<{

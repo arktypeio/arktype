@@ -4,6 +4,11 @@ import { Base } from "./nodes/base.js"
 import { Create } from "./nodes/create.js"
 import { References } from "./nodes/references.js"
 import { Traverse } from "./nodes/traverse.js"
+import {
+    initializeParseContext,
+    parseContext,
+    ParseError
+} from "./parser/common.js"
 import { Str } from "./parser/str.js"
 import { Root } from "./root.js"
 import { getResolutionDefAndOptions, SpaceMeta } from "./space.js"
@@ -32,7 +37,7 @@ export namespace ResolutionType {
 export class ResolutionNode extends Base.node {
     public root: Base.node
     public rootDef: unknown
-    private ctx: Base.context
+    private ctx: parseContext
 
     constructor(public alias: string, space: SpaceMeta) {
         super()
@@ -41,7 +46,7 @@ export class ResolutionNode extends Base.node {
         const defAndOptions = getResolutionDefAndOptions(
             space.dictionary[alias]
         )
-        this.ctx = Base.initializeContext(
+        this.ctx = initializeParseContext(
             defAndOptions.options
                 ? deepMerge(space.options, defAndOptions.options)
                 : space.options,
@@ -132,7 +137,7 @@ export class ResolutionNode extends Base.node {
 //     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
 type ShallowCycleError<Seen extends string[]> =
-    Base.ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
+    ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
 
 type CheckResolutionForShallowCycle<
     Resolution,

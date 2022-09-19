@@ -1,11 +1,11 @@
-import { StrNode, strNode } from "../../../../parser/common.js"
+import { parseContext, StrNode, strNode } from "../../../../parser/common.js"
 import { Base } from "../../../base.js"
 import { References } from "../../../references.js"
 
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 
 export abstract class unary<Child extends strNode = strNode> extends Base.node {
-    constructor(protected child: Child, protected ctx: Base.context) {
+    constructor(protected child: Child, protected ctx: parseContext) {
         super()
     }
 

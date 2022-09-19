@@ -1,6 +1,6 @@
-import { Base } from "../nodes/base.js"
 import { list } from "../nodes/nonTerminal/expression/unary/list.js"
 import { optional } from "../nodes/nonTerminal/expression/unary/optional.js"
+import { parseContext } from "./common.js"
 import { FullParse } from "./full.js"
 import {
     IsResolvableName,
@@ -35,7 +35,7 @@ export type TryNaiveParse<
     ? Def
     : FullParse<Def, Dict>
 
-export const tryNaiveParse = (def: string, ctx: Base.context) => {
+export const tryNaiveParse = (def: string, ctx: parseContext) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryNaiveParseList(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
@@ -45,7 +45,7 @@ export const tryNaiveParse = (def: string, ctx: Base.context) => {
     return tryNaiveParseList(def, ctx)
 }
 
-const tryNaiveParseList = (def: string, ctx: Base.context) => {
+const tryNaiveParseList = (def: string, ctx: parseContext) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(
             def.slice(0, -2),

@@ -1,6 +1,5 @@
-import { Base } from "../../nodes/base.js"
 import type { Bounds } from "../../nodes/constraints/bounds.js"
-import { strNode } from "../common.js"
+import { ParseError, strNode } from "../common.js"
 import { Branches, branches } from "../operator/branch/branch.js"
 import type { Scanner } from "./scanner.js"
 
@@ -79,7 +78,7 @@ export namespace Left {
         lowerBound: undefined
         groups: []
         branches: {}
-        root: Base.ParseError<Message>
+        root: ParseError<Message>
         nextSuffix: "END"
     }>
 

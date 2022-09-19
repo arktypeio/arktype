@@ -1,6 +1,5 @@
-import { Base } from "../../../nodes/base.js"
 import { union } from "../../../nodes/nonTerminal/expression/branch/union.js"
-import { strNode } from "../../common.js"
+import { parseContext, strNode } from "../../common.js"
 import { Left } from "../../state/left.js"
 import { parserState } from "../../state/state.js"
 import { Branches, MergeExpression } from "./branch.js"
@@ -13,7 +12,7 @@ type PushRoot<B extends Branches, Root> = {
     ]
 }
 
-export const reduceUnion = (s: parserState.withRoot, ctx: Base.context) => {
+export const reduceUnion = (s: parserState.withRoot, ctx: parseContext) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }

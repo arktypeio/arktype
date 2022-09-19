@@ -6,6 +6,7 @@ import { Union } from "../nodes/nonTerminal/expression/branch/union.js"
 import { List } from "../nodes/nonTerminal/expression/unary/list.js"
 import { Optional } from "../nodes/nonTerminal/expression/unary/optional.js"
 import { Unary } from "../nodes/nonTerminal/expression/unary/unary.js"
+import { ParseError, parseFn } from "./common.js"
 import { fullParse } from "./full.js"
 import { tryNaiveParse, TryNaiveParse } from "./naive.js"
 import { InferTerminal } from "./operand/operand.js"
@@ -16,7 +17,7 @@ export namespace Str {
     export type Validate<Def extends string, Dict> = Parse<
         Def,
         Dict
-    > extends Base.ParseError<infer Message>
+    > extends ParseError<infer Message>
         ? Message
         : Def
 
@@ -51,6 +52,6 @@ export namespace Str {
         ? TreeReferences<Child>
         : [T]
 
-    export const parse: Base.parseFn<string> = (def, ctx) =>
+    export const parse: parseFn<string> = (def, ctx) =>
         tryNaiveParse(def, ctx) ?? fullParse(def, ctx)
 }

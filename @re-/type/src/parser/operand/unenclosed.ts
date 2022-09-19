@@ -2,6 +2,7 @@ import { Base } from "../../nodes/base.js"
 import { alias } from "../../nodes/terminal/alias.js"
 import { Keyword } from "../../nodes/terminal/keywords/keyword.js"
 import { literalNode } from "../../nodes/terminal/literal.js"
+import { parseContext } from "../common.js"
 import { Left } from "../state/left.js"
 import { scanner, Scanner } from "../state/scanner.js"
 import { parserState, ParserState } from "../state/state.js"
@@ -15,7 +16,7 @@ import {
 const lookaheadIsBaseTerminating: scanner.UntilCondition = (scanner) =>
     scanner.lookahead in baseTerminatingChars
 
-export const parseUnenclosedBase = (s: parserState, ctx: Base.context) => {
+export const parseUnenclosedBase = (s: parserState, ctx: parseContext) => {
     const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
     s.l.root = unenclosedToNode(s, token, ctx)
     return s
@@ -34,7 +35,7 @@ export type ParseUnenclosedBase<
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
-    ctx: Base.context
+    ctx: parseContext
 ) =>
     Keyword.matches(token)
         ? Keyword.parse(token)
@@ -102,7 +103,7 @@ export const toNodeIfLiteral = (token: string) =>
         ? new literalNode(false)
         : undefined
 
-const unenclosedToNode = (s: parserState, token: string, ctx: Base.context) =>
+const unenclosedToNode = (s: parserState, token: string, ctx: parseContext) =>
     toNodeIfResolvableIdentifier(token, ctx) ??
     toNodeIfLiteral(token) ??
     s.error(

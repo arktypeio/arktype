@@ -1,6 +1,5 @@
 import { ClassOf, InstanceOf, isEmpty } from "@re-/tools"
-import { Base } from "../../nodes/base.js"
-import { strNode } from "../common.js"
+import { parseError, strNode } from "../common.js"
 import { left, Left } from "./left.js"
 import { Scanner, scanner } from "./scanner.js"
 
@@ -14,7 +13,7 @@ export class parserState<constraints extends Partial<left> = {}> {
     }
 
     error(message: string): never {
-        throw new Base.parseError(message)
+        throw new parseError(message)
     }
 
     hasRoot<NodeClass extends ClassOf<strNode> = ClassOf<strNode>>(

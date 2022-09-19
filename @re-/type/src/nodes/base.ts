@@ -1,39 +1,10 @@
-import type { Space, SpaceMeta } from "../space.js"
-import type { TypeOptions } from "../type.js"
+import type { ParseOptions } from "../parser/common.js"
+import type { Space } from "../space.js"
 import { Allows } from "./allows.js"
 import { Create } from "./create.js"
 import { References } from "./references.js"
 
 export namespace Base {
-    export type context = TypeOptions & {
-        path: string[]
-        space?: SpaceMeta
-    }
-
-    // Space is passed through an internal-only param, so we add
-    // it to the provided options to create a context.
-    export const initializeContext = (
-        options: TypeOptions,
-        space: SpaceMeta | undefined
-    ) => ({
-        ...options,
-        space,
-        path: []
-    })
-
-    export type parseFn<DefType = unknown> = (
-        def: DefType,
-        ctx: context
-    ) => node
-
-    export class parseError extends Error {}
-
-    export const throwParseError = (message: string) => {
-        throw new parseError(message)
-    }
-
-    export type ParseError<Message extends string> = `!${Message}`
-
     export abstract class node {
         abstract check(args: Allows.Args): void
         abstract create(args: Create.Args): unknown
@@ -52,11 +23,6 @@ export namespace Base {
             this.collectReferences(opts, collected)
             return Object.keys(collected)
         }
-    }
-
-    export type ParseOptions = {
-        onCycle?: unknown
-        onResolve?: unknown
     }
 
     export type InferenceContext = {

@@ -1,6 +1,5 @@
-import { Base } from "../../../nodes/base.js"
 import { intersection } from "../../../nodes/nonTerminal/expression/branch/intersection.js"
-import { strNode } from "../../common.js"
+import { parseContext, strNode } from "../../common.js"
 import { Left } from "../../state/left.js"
 import { parserState } from "../../state/state.js"
 import { Branches, MergeExpression } from "./branch.js"
@@ -12,7 +11,7 @@ type PushRoot<B extends Branches, Root> = {
 
 export const reduceIntersection = (
     s: parserState.withRoot,
-    ctx: Base.context
+    ctx: parseContext
 ) => {
     if (!s.l.branches.intersection) {
         s.l.branches.intersection = new intersection([s.l.root], ctx)

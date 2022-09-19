@@ -1,3 +1,4 @@
+import { parseFn, throwParseError } from "../../../parser/common.js"
 import { scanner } from "../../../parser/state/scanner.js"
 import { Base } from "../../base.js"
 
@@ -12,10 +13,10 @@ export type MetaDefinition = [MetaToken, ...unknown[]]
 export const isMetaDefinition = (def: unknown[]): def is MetaDefinition =>
     (def[0] as any) in metaTokens
 
-export const parseMetaDefinition: Base.parseFn<MetaDefinition> = (
+export const parseMetaDefinition: parseFn<MetaDefinition> = (
     [token, ...args],
     ctx
 ) =>
     token === "$io"
         ? ({} as Base.node)
-        : Base.throwParseError(`Unexpected meta token '${token}'.`)
+        : throwParseError(`Unexpected meta token '${token}'.`)

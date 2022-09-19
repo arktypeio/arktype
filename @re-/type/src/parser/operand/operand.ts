@@ -1,6 +1,7 @@
 import { Base } from "../../nodes/base.js"
 import { Alias } from "../../nodes/terminal/alias.js"
 import { Keyword } from "../../nodes/terminal/keywords/keyword.js"
+import { parseContext } from "../common.js"
 import { Scanner } from "../state/scanner.js"
 import { ParserState, parserState } from "../state/state.js"
 import {
@@ -24,7 +25,7 @@ import {
     parseUnenclosedBase
 } from "./unenclosed.js"
 
-export const parseOperand = (s: parserState, ctx: Base.context): parserState =>
+export const parseOperand = (s: parserState, ctx: parseContext): parserState =>
     s.r.lookahead === "("
         ? reduceGroupOpen(s.shifted())
         : s.r.lookaheadIsIn(enclosedBaseStartChars)

@@ -1,5 +1,6 @@
 import { Base } from "./nodes/base.js"
 import { Obj } from "./nodes/nonTerminal/obj/index.js"
+import { parseFn, throwParseError } from "./parser/common.js"
 import { Str } from "./parser/str.js"
 
 export namespace Root {
@@ -48,12 +49,12 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
 
-    export const parse: Base.parseFn<unknown> = (def, ctx) =>
+    export const parse: parseFn = (def, ctx) =>
         typeof def === "string"
             ? Str.parse(def, ctx)
             : typeof def === "object" && def !== null
             ? Obj.parse(def, ctx)
-            : Base.throwParseError(
+            : throwParseError(
                   badDefinitionTypeMessage +
                       ` (got ${typeof def}${
                           ctx.path.length

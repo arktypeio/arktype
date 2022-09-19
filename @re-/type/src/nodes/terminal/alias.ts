@@ -1,4 +1,5 @@
 import { WithPropValue } from "@re-/tools"
+import { parseContext } from "../../parser/common.js"
 import { Root } from "../../root.js"
 import { Allows } from "../allows.js"
 import { Base } from "../base.js"
@@ -50,11 +51,11 @@ export namespace Alias {
 }
 
 export class alias extends terminalNode {
-    static matches(def: string, ctx: Base.context) {
+    static matches(def: string, ctx: parseContext) {
         return !!ctx.space && def in ctx.space.dictionary
     }
 
-    constructor(private def: string, private ctx: Base.context) {
+    constructor(private def: string, private ctx: parseContext) {
         super()
     }
 

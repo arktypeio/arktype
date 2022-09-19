@@ -1,4 +1,4 @@
-import { Base } from "../../nodes/base.js"
+import { parseContext } from "../common.js"
 import { Left } from "../state/left.js"
 import { scanner, Scanner } from "../state/scanner.js"
 import { parserState, ParserState } from "../state/state.js"
@@ -14,7 +14,7 @@ import { ParseList, parseList } from "./list.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
-    ctx: Base.context
+    ctx: parseContext
 ): parserState => {
     const lookahead = s.r.shift()
     return lookahead === "END"

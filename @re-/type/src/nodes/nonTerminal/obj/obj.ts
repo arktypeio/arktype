@@ -1,4 +1,5 @@
 import { Evaluate, IterateType, ListPossibleTypes, ValueOf } from "@re-/tools"
+import { parseFn } from "../../../parser/common.js"
 import { Root } from "../../../root.js"
 import { Base } from "../../base.js"
 import { Dictionary, DictionaryNode } from "./dictionary.js"
@@ -44,7 +45,7 @@ export namespace Obj {
         [K in keyof Def]: Root.References<Def[K], Dict, true>
     }>
 
-    export const parse: Base.parseFn<object> = (def, ctx) => {
+    export const parse: parseFn<object> = (def, ctx) => {
         if (Array.isArray(def)) {
             return new TupleNode(def, ctx)
         }

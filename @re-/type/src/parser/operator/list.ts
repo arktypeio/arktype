@@ -1,10 +1,10 @@
-import { Base } from "../../nodes/base.js"
 import { list } from "../../nodes/nonTerminal/expression/unary/list.js"
+import { parseContext } from "../common.js"
 import { Left, left } from "../state/left.js"
 import { Scanner } from "../state/scanner.js"
 import { ParserState, parserState } from "../state/state.js"
 
-export const parseList = (s: parserState<left.withRoot>, ctx: Base.context) => {
+export const parseList = (s: parserState<left.withRoot>, ctx: parseContext) => {
     const next = s.r.shift()
     if (next !== "]") {
         throw new Error(incompleteTokenMessage)
