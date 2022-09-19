@@ -73,6 +73,7 @@ export namespace scanner {
         set: Set
     ): token is Extract<keyof Set, string> => token in set
 
+    // TODO: Can these be moved to Bounds somehow?
     export const comparators = tokens({
         "<": 1,
         ">": 1,
