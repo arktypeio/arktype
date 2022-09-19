@@ -6,7 +6,7 @@ import { KeywordDiagnostic } from "../terminals/keywords/common.js"
 
 export type ChildEntry<KeyType> = [KeyType, Base.node]
 
-export abstract class obj<defType extends object> extends Base.node {
+export abstract class structure<defType extends object> extends Base.node {
     entries: ChildEntry<string>[]
 
     constructor(protected definition: defType, private ctx: Base.context) {

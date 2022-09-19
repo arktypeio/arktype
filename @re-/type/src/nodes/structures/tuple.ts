@@ -3,7 +3,7 @@ import { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import type { Create } from "../create.js"
 import type { RootInfer } from "../root.js"
-import { checkObjectRoot, obj } from "./common.js"
+import { checkObjectRoot, structure } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
 
@@ -14,7 +14,7 @@ export type InferTuple<
     [I in keyof Def]: RootInfer<Def[I], Ctx>
 }>
 
-export class TupleNode extends obj<TupleDefinition> {
+export class TupleNode extends structure<TupleDefinition> {
     get tree() {
         return this.entries.map(([, itemNode]) => itemNode.tree)
     }
