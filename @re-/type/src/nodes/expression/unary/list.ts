@@ -1,7 +1,7 @@
-import type { Allows } from "../../../allows.js"
-import type { boundableNode, bounds } from "../../../constraints/bounds.js"
-import { ConstraintGenerationError } from "../../../constraints/common.js"
-import { checkObjectRoot } from "../../obj/index.js"
+import type { Allows } from "../../allows.js"
+import type { boundableNode, bounds } from "../../constraints/bounds.js"
+import { ConstraintGenerationError } from "../../constraints/common.js"
+import { checkObjectRoot } from "../../structure/index.js"
 import type { Unary } from "./unary.js"
 import { unary } from "./unary.js"
 

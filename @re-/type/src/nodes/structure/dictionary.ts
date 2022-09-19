@@ -1,10 +1,9 @@
 import type { Evaluate } from "@re-/tools"
-import type { Root } from "../../../parser/root.js"
-import { Allows } from "../../allows.js"
-import type { Base } from "../../base.js"
-import type { Create } from "../../create.js"
-import type { RootInfer } from "../../root.js"
+import { Allows } from "../allows.js"
+import type { Base } from "../base.js"
+import type { Create } from "../create.js"
 import { optional } from "../expression/unary/optional.js"
+import type { RootInfer } from "../root.js"
 import { checkObjectRoot, obj } from "./common.js"
 
 export namespace Dictionary {

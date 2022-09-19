@@ -1,6 +1,6 @@
-import type { Allows } from "../../../allows.js"
-import type { strNode } from "../../../common.js"
-import { Create } from "../../../create.js"
+import type { Allows } from "../../allows.js"
+import type { strNode } from "../../common.js"
+import { Create } from "../../create.js"
 import type { Branch } from "./branch.js"
 import { branch } from "./branch.js"
 

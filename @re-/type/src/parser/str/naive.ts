@@ -1,5 +1,5 @@
-import { list } from "../../nodes/nonTerminal/expression/unary/list.js"
-import { optional } from "../../nodes/nonTerminal/expression/unary/optional.js"
+import { list } from "../../nodes/expression/unary/list.js"
+import { optional } from "../../nodes/expression/unary/optional.js"
 import type { parseContext } from "../common.js"
 import type { FullParse } from "./full.js"
 import type { IsResolvableName } from "./operand/unenclosed.js"

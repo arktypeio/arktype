@@ -1,6 +1,6 @@
-import { Base } from "../../../base.js"
-import type { StrNode, strNode } from "../../../common.js"
-import type { References } from "../../../references.js"
+import { Base } from "../../base.js"
+import type { StrNode, strNode } from "../../common.js"
+import type { References } from "../../references.js"
 
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 

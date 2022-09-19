@@ -4,24 +4,13 @@ import type {
     ListPossibleTypes,
     ValueOf
 } from "@re-/tools"
-import type { parseFn } from "../../../parser/common.js"
-import type { Root } from "../../../parser/root.js"
-import type { Base } from "../../base.js"
-import type { RootReferences } from "../../root.js"
+import type { Root } from "../../parser/root.js"
+import type { Base } from "../base.js"
+import type { RootReferences } from "../root.js"
 import type { Dictionary } from "./dictionary.js"
-import { DictionaryNode } from "./dictionary.js"
 import type { InferTuple } from "./tuple.js"
-import { TupleNode } from "./tuple.js"
 
-export namespace Obj {
-    export type Validate<Def, Dict> = {
-        [K in keyof Def]: Root.Validate<Def[K], Dict>
-    }
-
-    export type Parse<Def, Dict> = Evaluate<{
-        [K in keyof Def]: Root.Parse<Def[K], Dict>
-    }>
-
+export namespace Structure {
     export type Infer<
         Def,
         Ctx extends Base.InferenceContext
@@ -53,10 +42,7 @@ export namespace Obj {
         [K in keyof Def]: RootReferences<Def[K], Dict, true>
     }>
 
-    export const parse: parseFn<object> = (def, ctx) => {
-        if (Array.isArray(def)) {
-            return new TupleNode(def, ctx)
-        }
-        return new DictionaryNode(def as Dictionary.Definition, ctx)
+    export type Validate<Def, Dict> = {
+        [K in keyof Def]: Root.Validate<Def[K], Dict>
     }
 }

@@ -5,10 +5,9 @@
     "eslint.codeActionsOnSave.rules": [
         "import/order",
         "sort-imports",
-        "unicorn/prefer-node-protocol"
+        "unicorn/prefer-node-protocol",
+        "@typescript-eslint/consistent-type-imports"
     ],
-    "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.enablePromptUseWorkspaceTsdk": true,
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"

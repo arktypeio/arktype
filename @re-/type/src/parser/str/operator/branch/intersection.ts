@@ -1,5 +1,5 @@
 import type { strNode } from "../../../../nodes/common.js"
-import { intersection } from "../../../../nodes/nonTerminal/expression/branch/intersection.js"
+import { intersection } from "../../../../nodes/expression/branch/intersection.js"
 import type { parseContext } from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"

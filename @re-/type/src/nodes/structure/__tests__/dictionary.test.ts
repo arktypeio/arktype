@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../index.js"
-import { unresolvableMessage } from "../../../../parser/str/operand/unenclosed.js"
+import { type } from "../../../index.js"
+import { unresolvableMessage } from "../../../parser/str/operand/unenclosed.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic

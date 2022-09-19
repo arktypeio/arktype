@@ -1,5 +1,5 @@
-import type { Allows } from "../../../allows.js"
-import type { StrNode } from "../../../common.js"
+import type { Allows } from "../../allows.js"
+import type { StrNode } from "../../common.js"
 import type { Unary } from "./unary.js"
 import { unary } from "./unary.js"
 

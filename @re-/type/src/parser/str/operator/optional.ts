@@ -1,4 +1,4 @@
-import { optional } from "../../../nodes/nonTerminal/expression/unary/optional.js"
+import { optional } from "../../../nodes/expression/unary/optional.js"
 import type { parseContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { parserState, ParserState } from "../state/state.js"

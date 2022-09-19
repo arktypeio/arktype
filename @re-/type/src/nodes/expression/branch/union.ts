@@ -1,7 +1,7 @@
 import type { TypeOfResult } from "@re-/tools"
-import { Allows } from "../../../allows.js"
-import type { strNode } from "../../../common.js"
-import { Create } from "../../../create.js"
+import { Allows } from "../../allows.js"
+import type { strNode } from "../../common.js"
+import { Create } from "../../create.js"
 import type { Branch } from "./branch.js"
 import { branch } from "./branch.js"
 

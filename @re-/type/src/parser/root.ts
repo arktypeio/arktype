@@ -1,4 +1,4 @@
-import { Obj } from "../nodes/nonTerminal/obj/index.js"
+import { Structure } from "../nodes/structure/index.js"
 import type { parseFn } from "./common.js"
 import { throwParseError } from "./common.js"
 import { Str } from "./str/str.js"
@@ -10,13 +10,13 @@ export namespace Root {
         ? Str.Validate<Def, Dict>
         : Def extends BadDefinitionType
         ? BadDefinitionTypeMessage
-        : Obj.Validate<Def, Dict>
+        : Structure.Validate<Def, Dict>
 
     export type Parse<Def, Dict> = unknown extends Def
         ? Def
         : Def extends string
         ? Str.Parse<Def, Dict>
-        : Obj.Parse<Def, Dict>
+        : StructureParse<Def, Dict>
 
     export type BadDefinitionType =
         | undefined
@@ -36,7 +36,7 @@ export namespace Root {
         typeof def === "string"
             ? Str.parse(def, ctx)
             : typeof def === "object" && def !== null
-            ? Obj.parse(def, ctx)
+            ? Structure.parse(def, ctx)
             : throwParseError(
                   badDefinitionTypeMessage +
                       ` (got ${typeof def}${

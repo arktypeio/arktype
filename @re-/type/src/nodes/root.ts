@@ -1,6 +1,6 @@
 import type { Str } from "../parser/str/str.js"
 import type { Base } from "./base.js"
-import type { Obj } from "./nonTerminal/obj/index.js"
+import type { Structure } from "./structure/index.js"
 
 export type RootInfer<
     Def,
@@ -9,7 +9,7 @@ export type RootInfer<
     ? Def
     : Def extends string
     ? Str.Infer<Def, Ctx>
-    : Obj.Infer<Def, Ctx>
+    : Structure.Infer<Def, Ctx>
 
 export type RootReferences<
     Def,
@@ -17,4 +17,4 @@ export type RootReferences<
     PreserveStructure extends boolean
 > = Def extends string
     ? Str.References<Def, Dict>
-    : Obj.References<Def, Dict, PreserveStructure>
+    : Structure.References<Def, Dict, PreserveStructure>

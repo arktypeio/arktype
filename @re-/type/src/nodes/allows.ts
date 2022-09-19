@@ -4,13 +4,13 @@ import type { Base } from "./base.js"
 import type { Path } from "./common.js"
 import { pathToString } from "./common.js"
 import type { BoundViolationDiagnostic } from "./constraints/bounds.js"
-import type { UnionDiagnostic } from "./nonTerminal/expression/branch/union.js"
-import type { ObjectKindDiagnostic } from "./nonTerminal/obj/common.js"
+import type { UnionDiagnostic } from "./expression/branch/union.js"
+import type { ObjectKindDiagnostic } from "./structure/common.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic
-} from "./nonTerminal/obj/dictionary.js"
-import type { TupleLengthDiagnostic } from "./nonTerminal/obj/tuple.js"
+} from "./structure/dictionary.js"
+import type { TupleLengthDiagnostic } from "./structure/tuple.js"
 import type { KeywordDiagnostic } from "./terminal/keywords/common.js"
 import type { Keyword } from "./terminal/keywords/keyword.js"
 import type { NumberSubtypeDiagnostic } from "./terminal/keywords/number.js"
