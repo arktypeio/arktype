@@ -21,7 +21,7 @@ export type StructConstructorArgs<KeyType extends string | number> = [
 ]
 
 const nodeToDefinition = (node: Base.node) => node.definition
-const nodeToTree = (node: Base.node) => node.ast
+const nodeToAst = (node: Base.node) => node.ast
 
 export abstract class struct<
     KeyType extends string | number
@@ -30,7 +30,7 @@ export abstract class struct<
 
     constructor(...[nodes, context]: StructConstructorArgs<KeyType>) {
         const definition = mapValues(nodes, nodeToDefinition)
-        const ast = mapValues(nodes, nodeToTree)
+        const ast = mapValues(nodes, nodeToAst)
         super(definition, ast, context)
         this.entries = Object.entries(nodes) as ChildEntry<KeyType>[]
     }

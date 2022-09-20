@@ -82,11 +82,11 @@ export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"
 
 export const applyBound = (node: boundableNode, bounds: bounds) => {
     node.bounds = bounds
-    applyBoundsToTree(node, bounds.definition)
+    applyBoundsToAst(node, bounds.definition)
     applyBoundsToDefinition(node, bounds.definition)
 }
 
-const applyBoundsToTree = (node: boundableNode, definition: Bounds) => {
+const applyBoundsToAst = (node: boundableNode, definition: Bounds) => {
     node.ast = isConstrained(node.ast)
         ? [node.ast[0], [...node.ast[1], ...definition]]
         : [node.ast, definition]

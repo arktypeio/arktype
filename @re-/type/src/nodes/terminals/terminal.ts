@@ -6,7 +6,7 @@ export type TerminalConstructorArgs = [
     context: Base.context
 ]
 
-export abstract class terminalNode extends Base.node<string> {
+export abstract class terminalNode extends Base.node<string, string> {
     constructor(...[definition, context]: TerminalConstructorArgs) {
         super(definition, definition, context)
     }

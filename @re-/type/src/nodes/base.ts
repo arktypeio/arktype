@@ -9,17 +9,17 @@ export namespace Base {
 
     export type Input = [node: node, mapper: (data: unknown) => unknown]
 
-    export type ConstructorArgs<Definition = unknown, Tree = unknown> = [
+    export type ConstructorArgs<Definition = unknown, Ast = unknown> = [
         definition: Definition,
-        ast: Tree,
+        ast: Ast,
         context: context
     ]
-    export abstract class node<Definition = unknown, Tree = unknown> {
+    export abstract class node<Definition = unknown, Ast = unknown> {
         input?: Input
 
         constructor(
             public definition: Definition,
-            public ast: Tree,
+            public ast: Ast,
             public context: context
         ) {}
 
@@ -30,7 +30,6 @@ export namespace Base {
             opts: References.Options,
             collected: References.Collection
         ): void
-        abstract toString(): string
 
         references(
             opts: References.Options<string, boolean>
@@ -38,6 +37,12 @@ export namespace Base {
             const collected = {}
             this.collectReferences(opts, collected)
             return Object.keys(collected)
+        }
+
+        definitionIsKeyOf<Obj extends Record<string, unknown>>(
+            obj: Obj
+        ): this is node<keyof Obj> {
+            return this.definition in obj
         }
     }
 

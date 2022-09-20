@@ -6,13 +6,19 @@ import { terminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"
 
 export class stringNode extends terminalNode implements boundableNode {
+    regexConstraint?: regexConstraint
     bounds?: bounds
 
-    constructor(
-        private regexConstraints: regexConstraint[],
-        ...rest: TerminalConstructorArgs
-    ) {
-        super(...rest)
+    constructor(...args: TerminalConstructorArgs) {
+        super(...args)
+        if (this.definitionIsKeyOf(subtypes)) {
+            this.regexConstraint = subtypes[this.definition]
+        } else if (this.definition.match("/.*/")) {
+            this.regexConstraint = {
+                matcher: new RegExp(this.definition.slice(1, -1)),
+                description: `match expression ${this.definition}`
+            }
+        }
     }
 
     check(args: Allows.Args) {
@@ -20,21 +26,20 @@ export class stringNode extends terminalNode implements boundableNode {
             args.diagnostics.push(new KeywordDiagnostic("string", args))
             return
         }
-        for (const { description, matcher } of this.regexConstraints) {
-            if (!matcher.test(args.data)) {
-                args.diagnostics.push(
-                    new RegexMismatchDiagnostic(
-                        args,
-                        description ?? `match expression /${matcher.source}/`
-                    )
+        if (this.regexConstraint?.matcher.test(args.data)) {
+            args.diagnostics.push(
+                new RegexMismatchDiagnostic(
+                    args,
+                    this.regexConstraint.description ??
+                        `match expression /${this.regexConstraint.matcher.source}/`
                 )
-            }
+            )
         }
         this.bounds?.check(args as Allows.Args<string>)
     }
 
     generate() {
-        if (this.regexConstraints.length || this.bounds) {
+        if (this.regexConstraint || this.bounds) {
             throw new ConstraintGenerationError(this.toString())
         }
         return ""
@@ -46,6 +51,7 @@ export class RegexMismatchDiagnostic extends Allows.Diagnostic<"RegexMismatch"> 
 
     constructor(args: Allows.Args, public description: string) {
         super("RegexMismatch", args)
+        // TODO: Combine versions of this diagnostic
         this.message = `'${this.data}' must ${description}.`
     }
 }
@@ -55,63 +61,33 @@ export type regexConstraint = {
     description?: string
 }
 
-export class stringKeywordNode extends stringNode {
-    constructor() {
-        super("string", [])
+export const subtypes: Record<
+    Exclude<StringKeyword, "string">,
+    regexConstraint
+> = {
+    email: { matcher: /^(.+)@(.+)\.(.+)$/, description: "be a valid email" },
+    alpha: { matcher: /^[A-Za-z]+$/, description: "include only letters" },
+    alphanumeric: {
+        matcher: /^[\dA-Za-z]+$/,
+        description: "include only letters and digits"
+    },
+    lowercase: {
+        matcher: /^[a-z]*$/,
+        description: "include only lowercase letters"
+    },
+    uppercase: {
+        matcher: /^[A-Z]*$/,
+        description: "include only uppercase letters"
     }
 }
 
-export class emailKeywordNode extends stringNode {
-    constructor() {
-        super("email", [
-            { matcher: /^(.+)@(.+)\.(.+)$/, description: "be a valid email" }
-        ])
-    }
-}
-export class alphaKeywordNode extends stringNode {
-    constructor() {
-        super("alpha", [
-            { matcher: /^[A-Za-z]+$/, description: "include only letters" }
-        ])
-    }
-}
-export class alphanumericKeywordNode extends stringNode {
-    constructor() {
-        super("alphanumeric", [
-            {
-                matcher: /^[\dA-Za-z]+$/,
-                description: "include only letters and digits"
-            }
-        ])
-    }
-}
-export class lowerKeywordNode extends stringNode {
-    constructor() {
-        super("lower", [
-            {
-                matcher: /^[a-z]*$/,
-                description: "include only lowercase letters"
-            }
-        ])
-    }
-}
-export class upperKeywordNode extends stringNode {
-    constructor() {
-        super("upper", [
-            {
-                matcher: /^[A-Z]*$/,
-                description: "include only uppercase letters"
-            }
-        ])
-    }
-}
 export const stringKeywords = {
-    string: stringKeywordNode,
-    email: emailKeywordNode,
-    alpha: alphaKeywordNode,
-    alphanumeric: alphanumericKeywordNode,
-    lower: lowerKeywordNode,
-    upper: upperKeywordNode
+    string: stringNode,
+    email: stringNode,
+    alpha: stringNode,
+    alphanumeric: stringNode,
+    lowercase: stringNode,
+    uppercase: stringNode
 }
 
 export type StringKeyword = keyof typeof stringKeywords

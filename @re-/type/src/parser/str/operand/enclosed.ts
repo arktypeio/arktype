@@ -56,12 +56,7 @@ export const parseEnclosedBase = (
     const enclosedText = definition.slice(1, -1)
     s.l.root =
         enclosing === "/"
-            ? new stringNode(definition, [
-                  {
-                      matcher: new RegExp(enclosedText),
-                      description: `match expression ${definition}`
-                  }
-              ])
+            ? new stringNode(definition)
             : new literalNode(enclosedText)
 
     return s

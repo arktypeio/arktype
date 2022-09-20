@@ -1,6 +1,7 @@
 import { Allows } from "../../allows.js"
 import type { boundableNode, bounds } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/common.js"
+import type { TerminalConstructorArgs } from "../terminal.js"
 import { terminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"
 
@@ -8,22 +9,10 @@ export class numberNode extends terminalNode implements boundableNode {
     bounds: bounds | undefined = undefined
 
     constructor(
-        private definition: string,
-        private numericConstraints: numericConstraint[]
+        private numericConstraints: numericConstraint[],
+        ...args: TerminalConstructorArgs
     ) {
-        super()
-    }
-
-    toString() {
-        return this.bounds
-            ? this.bounds.boundString(this.definition)
-            : this.definition
-    }
-
-    override get ast() {
-        return this.bounds
-            ? this.bounds.boundTree(this.definition)
-            : this.definition
+        super(...args)
     }
 
     check(args: Allows.Args) {
@@ -49,31 +38,14 @@ export class numberNode extends terminalNode implements boundableNode {
     }
 }
 
-export class numberKeywordNode extends numberNode {
-    constructor() {
-        super("number", [])
-    }
-}
-
-export class integerKeywordNode extends numberNode {
-    constructor() {
-        super("integer", [
-            {
-                allows: (data) => Number.isInteger(data),
-                description: "must be an integer"
-            }
-        ])
-    }
-}
-
 export type numericConstraint = {
     allows: (data: number) => boolean
     description: string
 }
 
 export const numberKeywords = {
-    number: numberKeywordNode,
-    integer: integerKeywordNode
+    number: numberNode,
+    integer: numberNode
 }
 
 export type NumberKeyword = keyof typeof numberKeywords
