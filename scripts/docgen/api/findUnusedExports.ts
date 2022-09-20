@@ -108,17 +108,26 @@ type UnusedFileExportsContext = {
 }
 
 const getUnusedExportedNamespaceDescendants = (
-    namespace: ModuleDeclaration
+    namespace: ModuleDeclaration,
+    context: UnusedFileExportsContext
 ): string[] => {
     const unusedExports: string[] = []
     const declarations = [
         ...namespace.getExportedDeclarations().values()
     ].flatMap((_) => _)
     for (const declaration of declarations) {
-        if (getExportReferences(declaration).length === 1) {
-            if (!("getName" in declaration)) {
-                return throwMissingMethodError("getName")
-            }
+        if (!("getName" in declaration)) {
+            return throwMissingMethodError("getName")
+        }
+        const references = getExportReferences(declaration)
+        const hasIgnoreComment = checkForIgnoreUnusedComment(
+            declaration.getName() ?? "Anonymous",
+            declaration,
+            context,
+            references.length
+        )
+
+        if (references.length === 1 && !hasIgnoreComment) {
             unusedExports.push(declaration.getName() ?? "Anonymous")
         }
     }
@@ -142,7 +151,10 @@ const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
             }
             if (declaration.isKind(SyntaxKind.ModuleDeclaration)) {
                 unusedExportsInFile.push(
-                    ...getUnusedExportedNamespaceDescendants(declaration)
+                    ...getUnusedExportedNamespaceDescendants(
+                        declaration,
+                        context
+                    )
                 )
             }
             const references = getExportReferences(declaration)
