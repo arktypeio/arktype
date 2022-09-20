@@ -109,6 +109,7 @@ const shouldIgnoreDeclaration = (
     context: UnusedFileExportsContext
 ) => {
     const { sourceFile, apiExports } = context
+
     if (declaration.isKind(SyntaxKind.ExportSpecifier)) {
         return true
     }
@@ -118,6 +119,7 @@ const shouldIgnoreDeclaration = (
     if (exportAllRenamedRegex.test(declaration.getText())) {
         return true
     }
+
     const publicApiExport = apiExports.find(
         (apiExport) => apiExport.path === findPackageRoot(context.file)
     )
