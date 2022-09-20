@@ -2,7 +2,6 @@ import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
 import {
     ExportedDeclarations,
-    ModuleDeclaration,
     Node,
     Project,
     SourceFile,
@@ -23,7 +22,7 @@ const project = new Project({
 })
 
 const unusedExports: Record<string, string[]> = {}
-const ignorePaths: string[] = [join("docs", "snippets")]
+const ignorePaths: string[] = [join("src", "__snippets__")]
 const exportAllRenamedRegex = /\* as /
 
 export const findUnusedExports = () => {
@@ -45,12 +44,72 @@ export const findUnusedExports = () => {
     return unusedExports
 }
 
+type UnusedFileExportsContext = {
+    sourceFile: SourceFile
+    apiExports: ApiExports[]
+    file: string
+}
+
+const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
+    const exportedDeclarations = context.sourceFile.getExportedDeclarations()
+    return findUnusedDeclarations(exportedDeclarations, context)
+}
+
+const findUnusedDeclarations = (
+    exportedDeclarations: ReadonlyMap<string, ExportedDeclarations[]>,
+    context: UnusedFileExportsContext
+) => {
+    const unusedExportsInFile: string[] = []
+
+    for (const [name, declarations] of exportedDeclarations) {
+        const references = declarations.flatMap((declaration) => {
+            if (shouldIgnoreDeclaration(name, declaration, context)) {
+                return []
+            }
+            if (declaration.isKind(SyntaxKind.ModuleDeclaration)) {
+                const exportedDeclationsInNamespace =
+                    declaration.getExportedDeclarations()
+                unusedExportsInFile.push(
+                    ...findUnusedDeclarations(
+                        exportedDeclationsInNamespace,
+                        context
+                    )
+                )
+            }
+            const references = getExportReferences(declaration)
+            if (
+                checkForIgnoreUnusedComment(
+                    name,
+                    declaration,
+                    context,
+                    references.length
+                )
+            ) {
+                return []
+            }
+            return references
+        })
+        if (references.length === 1) {
+            unusedExportsInFile.push(name)
+        }
+    }
+    return unusedExportsInFile
+}
+
+const getExportReferences = (node: ExportedDeclarations) => {
+    if (!("findReferences" in node)) {
+        return throwMissingMethodError("findReferences")
+    }
+    return node.findReferences().flatMap((ref) => ref.getReferences())
+}
+
 const shouldIgnoreDeclaration = (
     name: string,
     declaration: Node<ts.Node>,
     context: UnusedFileExportsContext
 ) => {
     const { sourceFile, apiExports } = context
+
     if (declaration.isKind(SyntaxKind.ExportSpecifier)) {
         return true
     }
@@ -60,6 +119,7 @@ const shouldIgnoreDeclaration = (
     if (exportAllRenamedRegex.test(declaration.getText())) {
         return true
     }
+
     const publicApiExport = apiExports.find(
         (apiExport) => apiExport.path === findPackageRoot(context.file)
     )
@@ -101,70 +161,6 @@ const checkForIgnoreUnusedComment = (
     return false
 }
 
-type UnusedFileExportsContext = {
-    sourceFile: SourceFile
-    apiExports: ApiExports[]
-    file: string
-}
-
-const getUnusedExportedNamespaceDescendants = (
-    namespace: ModuleDeclaration
-): string[] => {
-    const unusedExports: string[] = []
-    const declarations = [
-        ...namespace.getExportedDeclarations().values()
-    ].flatMap((_) => _)
-    for (const declaration of declarations) {
-        if (getExportReferences(declaration).length === 1) {
-            if (!("getName" in declaration)) {
-                return throwMissingMethodError("getName")
-            }
-            unusedExports.push(declaration.getName() ?? "Anonymous")
-        }
-    }
-    return unusedExports
-}
-
-const getExportReferences = (node: ExportedDeclarations) => {
-    if (!("findReferences" in node)) {
-        return throwMissingMethodError("findReferences")
-    }
-    return node.findReferences().flatMap((ref) => ref.getReferences())
-}
-
-const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
-    const unusedExportsInFile: string[] = []
-    const exportedDeclarations = context.sourceFile.getExportedDeclarations()
-    for (const [name, declarations] of exportedDeclarations) {
-        const references = declarations.flatMap((declaration) => {
-            if (shouldIgnoreDeclaration(name, declaration, context)) {
-                return []
-            }
-            if (declaration.isKind(SyntaxKind.ModuleDeclaration)) {
-                unusedExportsInFile.push(
-                    ...getUnusedExportedNamespaceDescendants(declaration)
-                )
-            }
-            const references = getExportReferences(declaration)
-            if (
-                checkForIgnoreUnusedComment(
-                    name,
-                    declaration,
-                    context,
-                    references.length
-                )
-            ) {
-                return []
-            }
-            return references
-        })
-        if (references.length === 1) {
-            unusedExportsInFile.push(name)
-        }
-    }
-    return unusedExportsInFile
-}
-
 const throwMissingMethodError = (fnName: string) => {
     throw Error(`Expected to find ${fnName} method!`)
 }
@@ -183,19 +179,6 @@ export const logUnusedExportsToConsole = (
         }
     }
 }
-
-const getEntryPointExports = (sourceFile: SourceFile, packageRoot: string) =>
-    sourceFile
-        .getExportDeclarations()
-        .filter((declaration) => !exportAllRegex.test(declaration.getText()))
-        .map((declaration) => {
-            return {
-                path: packageRoot,
-                exportedDeclarations: declaration
-                    .getNamedExports()
-                    .map((namedExport) => namedExport.getName())
-            }
-        })
 
 export type ApiExports = {
     path: string
@@ -220,3 +203,16 @@ export const getPublicApiExports = (project: Project): ApiExports[] => {
     }
     return apiExports
 }
+
+const getEntryPointExports = (sourceFile: SourceFile, packageRoot: string) =>
+    sourceFile
+        .getExportDeclarations()
+        .filter((declaration) => !exportAllRegex.test(declaration.getText()))
+        .map((declaration) => {
+            return {
+                path: packageRoot,
+                exportedDeclarations: declaration
+                    .getNamedExports()
+                    .map((namedExport) => namedExport.getName())
+            }
+        })
