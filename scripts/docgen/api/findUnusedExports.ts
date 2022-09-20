@@ -1,6 +1,7 @@
 import { join, relative } from "node:path"
 import {
-    BindingNamedNode,
+    ExportedDeclarations,
+    ModuleDeclaration,
     Node,
     Project,
     SourceFile,
@@ -13,7 +14,7 @@ import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 
 const ignoreUnusedComment = "@ignore-unused"
 const rootDir = fromPackageRoot("@re-")
-const publicApis = ["assert", "model"]
+const publicApis = ["assert", "type"]
 const exportAllRegex = /export \*/
 
 const project = new Project({
@@ -104,21 +105,43 @@ type UnusedFileExportsContext = {
     apiExports: ApiExports[]
     file: string
 }
-
+const getUnusedExportedNamespaceDescendants = (
+    namespace: ModuleDeclaration
+): string[] => {
+    const unusedExports: string[] = []
+    const declarations = [
+        ...namespace.getExportedDeclarations().values()
+    ].flatMap((_) => _)
+    for (const declaration of declarations) {
+        if (getExportReferences(declaration).length === 1) {
+            if (!("getName" in declaration)) {
+                return throwMissingMethodError("getName")
+            }
+            unusedExports.push(declaration.getName() ?? "Anonymous")
+        }
+    }
+    return unusedExports
+}
+const getExportReferences = (node: ExportedDeclarations) => {
+    if (!("findReferences" in node)) {
+        return throwMissingMethodError("findReferences")
+    }
+    return node.findReferences().flatMap((ref) => ref.getReferences())
+}
 const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
-    const unusedExportsInFile = []
-    for (const [
-        name,
-        declarations
-    ] of context.sourceFile.getExportedDeclarations()) {
+    const unusedExportsInFile: string[] = []
+    const exportedDeclarations = context.sourceFile.getExportedDeclarations()
+    for (const [name, declarations] of exportedDeclarations) {
         const references = declarations.flatMap((declaration) => {
             if (shouldIgnoreDeclaration(name, declaration, context)) {
                 return []
             }
-            const references = (declaration as any as BindingNamedNode)
-                .findReferences()
-                .flatMap((ref) => ref.getReferences())
-
+            if (declaration.isKind(SyntaxKind.ModuleDeclaration)) {
+                unusedExportsInFile.push(
+                    ...getUnusedExportedNamespaceDescendants(declaration)
+                )
+            }
+            const references = getExportReferences(declaration)
             if (
                 checkForIgnoreUnusedComment(
                     name,
@@ -136,6 +159,10 @@ const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
         }
     }
     return unusedExportsInFile
+}
+
+const throwMissingMethodError = (fnName: string) => {
+    throw Error(`Expected to find ${fnName} method!`)
 }
 
 export const logUnusedExportsToConsole = (
@@ -176,13 +203,23 @@ export const getPublicApiExports = (project: Project): ApiExports[] => {
     for (const publicApi of publicApis) {
         const packageRoot = join(rootDir, publicApi)
         const packageJsonData: PackageJson = readPackageJson(packageRoot)
-        const entryPoints = getEntryPointsToRelativeDtsPaths(packageJsonData)
-        const pathToSourceFile = join(packageRoot, ...entryPoints[0])
-        const sourceFile = project.addSourceFileAtPath(pathToSourceFile)
+        try {
+            const entryPoints =
+                getEntryPointsToRelativeDtsPaths(packageJsonData)
+            const pathToSourceFile = join(packageRoot, ...entryPoints[0])
+            const sourceFile = project.addSourceFileAtPath(pathToSourceFile)
 
-        const entryPointExports = getEntryPointExports(sourceFile, packageRoot)
-        if (entryPointExports.length) {
-            apiExports.push(...entryPointExports)
+            const entryPointExports = getEntryPointExports(
+                sourceFile,
+                packageRoot
+            )
+            if (entryPointExports.length) {
+                apiExports.push(...entryPointExports)
+            }
+        } catch (e) {
+            throw new Error(
+                `${e}\n Likely a problem with package.root - ${packageRoot}`
+            )
         }
     }
     return apiExports
