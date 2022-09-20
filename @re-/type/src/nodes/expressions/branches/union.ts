@@ -1,6 +1,6 @@
 import type { TypeOfResult } from "@re-/tools"
 import { Allows } from "../../allows.js"
-import type { strNode } from "../../common.js"
+import type { Base } from "../../base.js"
 import { Generate } from "../../generate.js"
 import type { Branch } from "./branch.js"
 import { branch } from "./branch.js"
@@ -8,11 +8,9 @@ import { branch } from "./branch.js"
 export type Union<Left = unknown, Right = unknown> = Branch<Left, Right, "|">
 
 export class union extends branch {
-    addMember(node: strNode) {
-        this.children.push(node)
+    constructor(children: Base.node[], context: Base.context) {
+        super("|", children, context)
     }
-
-    token = "|" as const
 
     check(args: Allows.Args) {
         const unionDiagnostics: DiagnosticBranchEntry[] = []

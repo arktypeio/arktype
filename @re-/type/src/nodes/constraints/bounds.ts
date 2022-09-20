@@ -42,7 +42,7 @@ export type boundChecker = (y: number) => boolean
 export type BoundableNode = NumberKeyword | StringKeyword | [unknown, "[]"]
 
 export type boundableNode = strNode & {
-    bounds: bounds | undefined
+    bounds?: bounds
 }
 
 export type boundableData = number | string | unknown[]
@@ -80,29 +80,34 @@ export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"
     }
 }
 
+export const applyBound = (node: boundableNode, bounds: bounds) => {
+    node.bounds = bounds
+    applyBoundsToTree(node, bounds.definition)
+    applyBoundsToDefinition(node, bounds.definition)
+}
+
+const applyBoundsToTree = (node: boundableNode, definition: Bounds) => {
+    node.tree = isConstrained(node.tree)
+        ? [node.tree[0], [...node.tree[1], ...definition]]
+        : [node.tree, definition]
+}
+
+const applyBoundsToDefinition = (node: boundableNode, definition: Bounds) => {
+    const rightBoundToString =
+        definition.length === 1
+            ? definition[0].join("")
+            : definition[1].join("")
+    node.definition += rightBoundToString
+    if (definition.length === 2) {
+        const leftBoundToString = `${definition[0][1]}${
+            invertedComparators[definition[0][0]]
+        }`
+        node.definition = leftBoundToString + node.definition
+    }
+}
+
 export class bounds {
     constructor(public definition: Bounds) {}
-
-    boundTree(root: StrNode) {
-        return isConstrained(root)
-            ? [root[0], [...root[1], ...this.definition]]
-            : [root, this.definition]
-    }
-
-    boundString(s: string) {
-        const rightBoundToString =
-            this.definition.length === 1
-                ? this.definition[0].join("")
-                : this.definition[1].join("")
-        let result = s + rightBoundToString
-        if (this.definition.length === 2) {
-            const leftBoundToString = `${this.definition[0][1]}${
-                invertedComparators[this.definition[0][0]]
-            }`
-            result = leftBoundToString + result
-        }
-        return result
-    }
 
     check(args: Allows.Args<boundableData>) {
         const size =

@@ -1,29 +1,18 @@
 import { Allows } from "../../allows.js"
 import type { boundableNode, bounds } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/common.js"
+import type { TerminalConstructorArgs } from "../terminal.js"
 import { terminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"
 
 export class stringNode extends terminalNode implements boundableNode {
-    bounds: bounds | undefined = undefined
+    bounds?: bounds
 
     constructor(
-        private definition: string,
-        private regexConstraints: regexConstraint[]
+        private regexConstraints: regexConstraint[],
+        ...rest: TerminalConstructorArgs
     ) {
-        super()
-    }
-
-    toString() {
-        return this.bounds
-            ? this.bounds.boundString(this.definition)
-            : this.definition
-    }
-
-    override get tree() {
-        return this.bounds
-            ? this.bounds.boundTree(this.definition)
-            : this.definition
+        super(...rest)
     }
 
     check(args: Allows.Args) {

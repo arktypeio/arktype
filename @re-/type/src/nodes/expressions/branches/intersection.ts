@@ -1,5 +1,5 @@
 import type { Allows } from "../../allows.js"
-import type { strNode } from "../../common.js"
+import type { Base } from "../../base.js"
 import { Generate } from "../../generate.js"
 import type { Branch } from "./branch.js"
 import { branch } from "./branch.js"
@@ -11,11 +11,9 @@ export type Intersection<Left = unknown, Right = unknown> = Branch<
 >
 
 export class intersection extends branch {
-    addMember(node: strNode) {
-        this.children.push(node)
+    constructor(children: Base.node[], context: Base.context) {
+        super("&", children, context)
     }
-
-    token = "&" as const
 
     check(args: Allows.Args) {
         for (const branch of this.children) {

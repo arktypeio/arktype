@@ -25,13 +25,10 @@ export class ResolutionNode extends Base.node {
                 : space.options,
             space
         )
-        super(alias, context)
-        this.root = Root.parse(defAndOptions.def, context)
+        const root = Root.parse(defAndOptions.def, context)
+        super(alias, root.tree, context)
+        this.root = root
         this.rootDef = defAndOptions.def
-    }
-
-    get tree() {
-        return this.root.tree
     }
 
     toString() {

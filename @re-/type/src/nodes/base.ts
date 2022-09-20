@@ -11,12 +11,17 @@ export namespace Base {
 
     export type ConstructorArgs<DefType = unknown> = [
         definition: DefType,
+        tree: unknown,
         context: context
     ]
     export abstract class node<DefType = unknown> {
         input?: Input
 
-        constructor(public definition: DefType, public context: context) {}
+        constructor(
+            public definition: DefType,
+            public tree: unknown,
+            public context: context
+        ) {}
 
         abstract check(args: Allows.Args): void
         abstract generate(args: Generate.Args): unknown
@@ -25,7 +30,6 @@ export namespace Base {
             opts: References.Options,
             collected: References.Collection
         ): void
-        abstract get tree(): unknown
         abstract toString(): string
 
         references(

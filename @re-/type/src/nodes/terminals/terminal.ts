@@ -1,8 +1,17 @@
 import { Base } from "../base.js"
 import type { References } from "../references.js"
 
+export type TerminalConstructorArgs = [
+    definition: string,
+    context: Base.context
+]
+
 export abstract class terminalNode extends Base.node<string> {
-    get tree() {
+    constructor(...[definition, context]: TerminalConstructorArgs) {
+        super(definition, definition, context)
+    }
+
+    toString() {
         return this.definition
     }
 

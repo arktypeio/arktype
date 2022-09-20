@@ -4,7 +4,11 @@ import type {
     BoundableNode,
     Bounds
 } from "../../../../nodes/constraints/bounds.js"
-import { bounds, isBoundable } from "../../../../nodes/constraints/bounds.js"
+import {
+    applyBound,
+    bounds,
+    isBoundable
+} from "../../../../nodes/constraints/bounds.js"
 import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import {
     isNumberLiteral,
@@ -113,7 +117,7 @@ const reduceDouble = (
     nextSuffix: Scanner.Suffix
 ) => {
     if (isValidDoubleBoundRight(right)) {
-        s.l.root.bounds = new bounds([s.l.lowerBound, right])
+        applyBound(s.l.root, new bounds([s.l.lowerBound, right]))
         s.l.lowerBound = undefined as any
         s.l.nextSuffix = nextSuffix
         return s
@@ -136,7 +140,7 @@ const reduceSingle = (
     right: Bounds.Any,
     nextSuffix: Scanner.Suffix
 ) => {
-    s.l.root.bounds = new bounds([right])
+    applyBound(s.l.root, new bounds([right]))
     s.l.lowerBound = undefined
     s.l.nextSuffix = nextSuffix
     return s

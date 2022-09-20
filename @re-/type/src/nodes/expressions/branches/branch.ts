@@ -1,5 +1,5 @@
 import { Base } from "../../base.js"
-import type { StrNode } from "../../common.js"
+import type { strNode } from "../../common.js"
 import type { References } from "../../references.js"
 
 export type BranchToken = "|" | "&"
@@ -12,20 +12,24 @@ export type Branch<
 
 export abstract class branch extends Base.node {
     constructor(
+        protected token: BranchToken,
         protected children: Base.node[],
-        ...args: Base.ConstructorArgs<string>
+        context: Base.context
     ) {
-        super(...args)
+        const definition = children
+            .map(({ definition }) => definition)
+            .join(token)
+        let tree = children[0].tree
+        for (let i = 1; i < children.length; i++) {
+            tree = [tree, token, children[i].tree]
+        }
+        super(definition, tree, context)
     }
 
-    abstract token: BranchToken
-
-    get tree() {
-        let root = this.children[0].tree
-        for (let i = 1; i < this.children.length; i++) {
-            root = [root, this.token, this.children[i].tree]
-        }
-        return root as Branch<StrNode, StrNode>
+    addMember(node: strNode) {
+        this.children.push(node)
+        this.definition += this.token + node.definition
+        this.tree = [this.tree, this.token, node.tree]
     }
 
     toString() {

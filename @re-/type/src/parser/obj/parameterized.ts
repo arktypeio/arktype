@@ -17,7 +17,7 @@ export const isParameterizedDefinition = (
 
 export const parseParameterizedDefinition: parseFn<ParameterizedDefinition> = (
     [token, ...args],
-    ctx
+    context
 ) =>
     token === "$io"
         ? ({} as Base.node)
