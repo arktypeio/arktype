@@ -1,5 +1,6 @@
+import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
-import type { BindingNamedNode, Node, SourceFile, ts } from "ts-morph"
+import type { ExportedDeclarations, Node, SourceFile, ts } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
 import type { PackageJson } from "type-fest"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
@@ -7,15 +8,15 @@ import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 
 const ignoreUnusedComment = "@ignore-unused"
 const rootDir = fromPackageRoot("@re-")
-const publicApis = ["assert", "model"]
+const publicApis = ["assert", "type"]
 const exportAllRegex = /export \*/
 
 const project = new Project({
     tsConfigFilePath: fromPackageRoot("tsconfig.references.json")
 })
-const unusedExports: Record<string, string[]> = {}
-const ignorePaths: string[] = [join("docs", "snippets")]
 
+const unusedExports: Record<string, string[]> = {}
+const ignorePaths: string[] = [join("src", "__snippets__")]
 const exportAllRenamedRegex = /\* as /
 
 export const findUnusedExports = () => {
@@ -37,12 +38,72 @@ export const findUnusedExports = () => {
     return unusedExports
 }
 
+type UnusedFileExportsContext = {
+    sourceFile: SourceFile
+    apiExports: ApiExports[]
+    file: string
+}
+
+const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
+    const exportedDeclarations = context.sourceFile.getExportedDeclarations()
+    return findUnusedDeclarations(exportedDeclarations, context)
+}
+
+const findUnusedDeclarations = (
+    exportedDeclarations: ReadonlyMap<string, ExportedDeclarations[]>,
+    context: UnusedFileExportsContext
+) => {
+    const unusedExportsInFile: string[] = []
+
+    for (const [name, declarations] of exportedDeclarations) {
+        const references = declarations.flatMap((declaration) => {
+            if (shouldIgnoreDeclaration(name, declaration, context)) {
+                return []
+            }
+            if (declaration.isKind(SyntaxKind.ModuleDeclaration)) {
+                const exportedDeclationsInNamespace =
+                    declaration.getExportedDeclarations()
+                unusedExportsInFile.push(
+                    ...findUnusedDeclarations(
+                        exportedDeclationsInNamespace,
+                        context
+                    )
+                )
+            }
+            const references = getExportReferences(declaration)
+            if (
+                checkForIgnoreUnusedComment(
+                    name,
+                    declaration,
+                    context,
+                    references.length
+                )
+            ) {
+                return []
+            }
+            return references
+        })
+        if (references.length === 1) {
+            unusedExportsInFile.push(name)
+        }
+    }
+    return unusedExportsInFile
+}
+
+const getExportReferences = (node: ExportedDeclarations) => {
+    if (!("findReferences" in node)) {
+        return throwMissingMethodError("findReferences")
+    }
+    return node.findReferences().flatMap((ref) => ref.getReferences())
+}
+
 const shouldIgnoreDeclaration = (
     name: string,
     declaration: Node<ts.Node>,
     context: UnusedFileExportsContext
 ) => {
     const { sourceFile, apiExports } = context
+
     if (declaration.isKind(SyntaxKind.ExportSpecifier)) {
         return true
     }
@@ -52,6 +113,7 @@ const shouldIgnoreDeclaration = (
     if (exportAllRenamedRegex.test(declaration.getText())) {
         return true
     }
+
     const publicApiExport = apiExports.find(
         (apiExport) => apiExport.path === findPackageRoot(context.file)
     )
@@ -93,43 +155,8 @@ const checkForIgnoreUnusedComment = (
     return false
 }
 
-type UnusedFileExportsContext = {
-    sourceFile: SourceFile
-    apiExports: ApiExports[]
-    file: string
-}
-
-const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
-    const unusedExportsInFile = []
-    for (const [
-        name,
-        declarations
-    ] of context.sourceFile.getExportedDeclarations()) {
-        const references = declarations.flatMap((declaration) => {
-            if (shouldIgnoreDeclaration(name, declaration, context)) {
-                return []
-            }
-            const references = (declaration as any as BindingNamedNode)
-                .findReferences()
-                .flatMap((ref) => ref.getReferences())
-
-            if (
-                checkForIgnoreUnusedComment(
-                    name,
-                    declaration,
-                    context,
-                    references.length
-                )
-            ) {
-                return []
-            }
-            return references
-        })
-        if (references.length === 1) {
-            unusedExportsInFile.push(name)
-        }
-    }
-    return unusedExportsInFile
+const throwMissingMethodError = (fnName: string) => {
+    throw Error(`Expected to find ${fnName} method!`)
 }
 
 export const logUnusedExportsToConsole = (
@@ -147,6 +174,30 @@ export const logUnusedExportsToConsole = (
     }
 }
 
+export type ApiExports = {
+    path: string
+    exportedDeclarations: string[]
+}
+
+export const getPublicApiExports = (project: Project): ApiExports[] => {
+    const apiExports: ApiExports[] = []
+    for (const publicApi of publicApis) {
+        const packageRoot = join(rootDir, publicApi)
+        if (!existsSync(packageRoot)) {
+            throw new Error(`${packageRoot} does not exist.`)
+        }
+        const packageJsonData: PackageJson = readPackageJson(packageRoot)
+        const entryPoints = getEntryPointsToRelativeDtsPaths(packageJsonData)
+        const pathToSourceFile = join(packageRoot, ...entryPoints[0])
+        const sourceFile = project.addSourceFileAtPath(pathToSourceFile)
+        const entryPointExports = getEntryPointExports(sourceFile, packageRoot)
+        if (entryPointExports.length) {
+            apiExports.push(...entryPointExports)
+        }
+    }
+    return apiExports
+}
+
 const getEntryPointExports = (sourceFile: SourceFile, packageRoot: string) =>
     sourceFile
         .getExportDeclarations()
@@ -159,25 +210,3 @@ const getEntryPointExports = (sourceFile: SourceFile, packageRoot: string) =>
                     .map((namedExport) => namedExport.getName())
             }
         })
-
-export type ApiExports = {
-    path: string
-    exportedDeclarations: string[]
-}
-
-export const getPublicApiExports = (project: Project): ApiExports[] => {
-    const apiExports: ApiExports[] = []
-    for (const publicApi of publicApis) {
-        const packageRoot = join(rootDir, publicApi)
-        const packageJsonData: PackageJson = readPackageJson(packageRoot)
-        const entryPoints = getEntryPointsToRelativeDtsPaths(packageJsonData)
-        const pathToSourceFile = join(packageRoot, ...entryPoints[0])
-        const sourceFile = project.addSourceFileAtPath(pathToSourceFile)
-
-        const entryPointExports = getEntryPointExports(sourceFile, packageRoot)
-        if (entryPointExports.length) {
-            apiExports.push(...entryPointExports)
-        }
-    }
-    return apiExports
-}
