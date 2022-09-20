@@ -1,4 +1,3 @@
-import { default as memoize } from "micro-memoize"
 import { Project } from "ts-morph"
 import { getReAssertConfig } from "../common.js"
 
@@ -27,6 +26,10 @@ export const forceCreateTsMorphProject = ({
     return project
 }
 
-export const getDefaultTsMorphProject = memoize(() => {
-    return forceCreateTsMorphProject({ addFiles: true })
-})
+let __projectCache: undefined | Project
+export const getDefaultTsMorphProject = () => {
+    if (!__projectCache) {
+        __projectCache = forceCreateTsMorphProject({ addFiles: true })
+    }
+    return __projectCache
+}

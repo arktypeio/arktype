@@ -32,7 +32,6 @@
     "dependencies": {
         "@re-/node": "workspace:*",
         "@re-/tools": "workspace:*",
-        "micro-memoize": "4.0.11",
         "ts-morph": "16.0.0",
         "source-map-js": "1.0.2",
         "convert-source-map": "1.8.0"

@@ -69,14 +69,12 @@ importers:
       '@re-/node': workspace:*
       '@re-/tools': workspace:*
       convert-source-map: 1.8.0
-      micro-memoize: 4.0.11
       source-map-js: 1.0.2
       ts-morph: 16.0.0
     dependencies:
       '@re-/node': link:../node
       '@re-/tools': link:../tools
       convert-source-map: 1.8.0
-      micro-memoize: 4.0.11
       source-map-js: 1.0.2
       ts-morph: 16.0.0
 
@@ -8689,10 +8687,6 @@ packages:
   /methods/1.1.2:
     resolution: {integrity: sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==}
     engines: {node: '>= 0.6'}
-    dev: false
-
-  /micro-memoize/4.0.11:
-    resolution: {integrity: sha512-CjxsaYe4j43df32DtzzNCwanPqZjZDwuQAZilsCYpa2ZVtSPDjHXbTlR4gsEZRyO9/twHs0b7HLjvy/sowl7sA==}
     dev: false
 
   /micromark-core-commonmark/1.0.6:
