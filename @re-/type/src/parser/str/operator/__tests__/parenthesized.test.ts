@@ -35,7 +35,7 @@ describe("parenthesized", () => {
         const listOfUnionOfListsOfUnions = type(
             "((boolean|number)[]|(string|undefined)[])[]"
         )
-        assert(listOfUnionOfListsOfUnions.tree).narrowedValue([
+        assert(listOfUnionOfListsOfUnions.ast).narrowedValue([
             [
                 [["boolean", "|", "number"], "[]"],
                 "|",

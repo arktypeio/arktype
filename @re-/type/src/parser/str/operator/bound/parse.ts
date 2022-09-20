@@ -1,8 +1,8 @@
+import { inKeySet } from "@re-/tools"
 import { literalNode } from "../../../../nodes/terminals/literal.js"
 import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import type { Left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
-import { scanner } from "../../state/scanner.js"
 import type { parserState, ParserState } from "../../state/state.js"
 import type { ComparatorChar, SingleCharComparator } from "./common.js"
 import { singleCharComparator } from "./common.js"
@@ -12,7 +12,7 @@ import { reduceLeft } from "./left.js"
 export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
     s.r.lookahead === "="
         ? reduceBound(s.shifted(), `${start}=`)
-        : scanner.inTokenSet(start, singleCharComparator)
+        : inKeySet(start, singleCharComparator)
         ? reduceBound(s, start)
         : s.error(singleEqualsMessage)
 

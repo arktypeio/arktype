@@ -4,14 +4,15 @@ import type { References } from "../../references.js"
 
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 
-export abstract class unary<
-    Child extends strNode = strNode
-> extends Base.node<string> {
-    constructor(protected child: Child, ...args: Base.ConstructorArgs<string>) {
-        super(...args)
-    }
+export type UnaryConstructorArgs = [child: strNode, context: Base.context]
 
-    abstract get tree(): StrNode[]
+export abstract class unary extends Base.node<string, StrNode> {
+    protected child: strNode
+
+    constructor(token: string, ...[child, context]: UnaryConstructorArgs) {
+        super(`${child.definition}${token}`, [child.ast, token], context)
+        this.child = child
+    }
 
     toString() {
         return this.definition

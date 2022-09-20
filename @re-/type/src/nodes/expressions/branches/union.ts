@@ -1,15 +1,14 @@
 import type { TypeOfResult } from "@re-/tools"
 import { Allows } from "../../allows.js"
-import type { Base } from "../../base.js"
 import { Generate } from "../../generate.js"
-import type { Branch } from "./branch.js"
+import type { Branch, BranchConstructorArgs } from "./branch.js"
 import { branch } from "./branch.js"
 
 export type Union<Left = unknown, Right = unknown> = Branch<Left, Right, "|">
 
 export class union extends branch {
-    constructor(children: Base.node[], context: Base.context) {
-        super("|", children, context)
+    constructor(...args: BranchConstructorArgs) {
+        super("|", ...args)
     }
 
     check(args: Allows.Args) {

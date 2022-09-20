@@ -20,7 +20,7 @@ export class numberNode extends terminalNode implements boundableNode {
             : this.definition
     }
 
-    override get tree() {
+    override get ast() {
         return this.bounds
             ? this.bounds.boundTree(this.definition)
             : this.definition

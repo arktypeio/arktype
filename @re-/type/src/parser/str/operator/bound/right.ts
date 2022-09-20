@@ -1,3 +1,4 @@
+import { inKeySet } from "@re-/tools"
 import type { NodeToString } from "../../../../nodes/common.js"
 import type {
     boundableNode,
@@ -15,8 +16,7 @@ import {
     numberLiteralToValue
 } from "../../operand/unenclosed.js"
 import type { Left, left } from "../../state/left.js"
-import type { Scanner } from "../../state/scanner.js"
-import { scanner } from "../../state/scanner.js"
+import type { Scanner, scanner } from "../../state/scanner.js"
 import type { parserState, ParserState } from "../../state/state.js"
 import type { InvalidDoubleBoundMessage } from "./common.js"
 import { doubleBoundComparators, invalidDoubleBoundMessage } from "./common.js"
@@ -147,7 +147,7 @@ const reduceSingle = (
 }
 
 const isValidDoubleBoundRight = (right: Bounds.Any): right is Bounds.Upper =>
-    scanner.inTokenSet(right[0], doubleBoundComparators)
+    inKeySet(right[0], doubleBoundComparators)
 
 export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
 

@@ -1,3 +1,4 @@
+import { inKeySet } from "@re-/tools"
 import type { literalNode } from "../../../../nodes/terminals/literal.js"
 import type { Left, left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
@@ -42,7 +43,7 @@ export const reduceLeft = (
     token: Scanner.Comparator
 ) =>
     s.isPrefixable()
-        ? scanner.inTokenSet(token, doubleBoundComparators)
+        ? inKeySet(token, doubleBoundComparators)
             ? applyLeftBound(s, token)
             : s.error(invalidDoubleBoundMessage(token))
         : s.error(nonPrefixLeftBoundMessage(s.l.root.value, token))

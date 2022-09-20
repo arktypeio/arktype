@@ -1,5 +1,6 @@
 import { Generate } from "../generate.js"
 
+// TODO: Come up with a better way to organize constraints, since most will only apply to one node
 export type Constrained<
     Child = unknown,
     Constraints extends unknown[] = unknown[]

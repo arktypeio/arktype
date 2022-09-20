@@ -1,28 +1,43 @@
-import { Root } from "../../parser/root.js"
+import type {
+    Evaluate,
+    IterateType,
+    ListPossibleTypes,
+    ValueOf
+} from "@re-/tools"
+import { mapValues } from "@re-/tools"
 import { Allows } from "../allows.js"
 import { Base } from "../base.js"
 import type { References } from "../references.js"
+import type { RootReferences } from "../root.js"
 import { KeywordDiagnostic } from "../terminals/keywords/common.js"
+import type { Dictionary } from "./dictionary.js"
+import type { InferTuple } from "./tuple.js"
 
 export type ChildEntry<KeyType> = [KeyType, Base.node]
 
-export abstract class structure<defType extends object> extends Base.node {
-    entries: ChildEntry<string>[]
+export type StructConstructorArgs<KeyType extends string | number> = [
+    nodes: Record<KeyType, Base.node>,
+    context: Base.context
+]
 
-    constructor(protected definition: defType, private ctx: Base.context) {
-        super()
-        const entries = Object.entries(definition).map(
-            ([k, childDef]): ChildEntry<string> => [
-                k,
-                Root.parse(childDef, { ...ctx, path: [...ctx.path, k] })
-            ]
-        )
-        this.entries = entries
+const nodeToDefinition = (node: Base.node) => node.definition
+const nodeToTree = (node: Base.node) => node.ast
+
+export abstract class struct<
+    KeyType extends string | number
+> extends Base.node {
+    entries: ChildEntry<KeyType>[]
+
+    constructor(...[nodes, context]: StructConstructorArgs<KeyType>) {
+        const definition = mapValues(nodes, nodeToDefinition)
+        const ast = mapValues(nodes, nodeToTree)
+        super(definition, ast, context)
+        this.entries = Object.entries(nodes) as ChildEntry<KeyType>[]
     }
 
     toString() {
         const isArray = Array.isArray(this.definition)
-        const indentation = "    ".repeat(this.ctx.path.length)
+        const indentation = "    ".repeat(this.context.path.length)
         const nestedIndentation = indentation + "    "
         let result = isArray ? "[" : "{"
         for (let i = 0; i < this.entries.length; i++) {
@@ -87,4 +102,37 @@ export class ObjectKindDiagnostic extends Allows.Diagnostic<"ObjectKind"> {
         super("ObjectKind", args)
         this.message = `Must ${type === "dictionary" ? "not " : ""}be an array.`
     }
+}
+
+export namespace Struct {
+    export type Infer<
+        Def,
+        Ctx extends Base.InferenceContext
+    > = Def extends readonly unknown[]
+        ? InferTuple<Def, Ctx>
+        : Dictionary.Infer<Def, Ctx>
+
+    export type References<
+        Def,
+        Dict,
+        PreserveStructure extends boolean
+    > = PreserveStructure extends true
+        ? StructuredReferences<Def, Dict>
+        : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, Dict, []>
+
+    type UnstructuredReferences<
+        Values extends unknown[],
+        Dict,
+        Result extends unknown[]
+    > = Values extends IterateType<unknown, infer Current, infer Remaining>
+        ? UnstructuredReferences<
+              Remaining,
+              Dict,
+              [...Result, ...RootReferences<Current, Dict, false>]
+          >
+        : Result
+
+    type StructuredReferences<Def, Dict> = Evaluate<{
+        [K in keyof Def]: RootReferences<Def[K], Dict, true>
+    }>
 }

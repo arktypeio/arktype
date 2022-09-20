@@ -4,7 +4,7 @@ import type { Base } from "../base.js"
 import { optional } from "../expressions/unaries/optional.js"
 import type { Generate } from "../generate.js"
 import type { RootInfer } from "../root.js"
-import { checkObjectRoot, structure } from "./common.js"
+import { checkObjectRoot, struct } from "./struct.js"
 
 export namespace Dictionary {
     export type Definition = Record<string, unknown>
@@ -34,15 +34,7 @@ export const isArgValueRecordLike = (
     args.data !== null &&
     !Array.isArray(args.data)
 
-export class DictionaryNode extends structure<DictionaryLike> {
-    get tree() {
-        const result: Record<string, unknown> = {}
-        for (const [prop, propNode] of this.entries) {
-            result[prop] = propNode.tree
-        }
-        return result
-    }
-
+export class DictionaryNode extends struct<string> {
     check(args: Allows.Args) {
         if (!checkObjectRoot(args, "dictionary")) {
             return

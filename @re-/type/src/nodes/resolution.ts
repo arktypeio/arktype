@@ -26,7 +26,7 @@ export class ResolutionNode extends Base.node {
             space
         )
         const root = Root.parse(defAndOptions.def, context)
-        super(alias, root.tree, context)
+        super(alias, root.ast, context)
         this.root = root
         this.rootDef = defAndOptions.def
     }

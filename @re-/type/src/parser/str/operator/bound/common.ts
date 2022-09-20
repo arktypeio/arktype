@@ -1,7 +1,8 @@
+import { keySet } from "@re-/tools"
 import type { Scanner } from "../../state/scanner.js"
 import { scanner } from "../../state/scanner.js"
 
-export const comparatorChars = scanner.tokens({
+export const comparatorChars = keySet({
     "<": 1,
     ">": 1,
     "=": 1
@@ -9,7 +10,7 @@ export const comparatorChars = scanner.tokens({
 
 export type ComparatorChar = keyof typeof comparatorChars
 
-export const doubleBoundComparators = scanner.tokens({
+export const doubleBoundComparators = keySet({
     "<=": 1,
     "<": 1
 })
@@ -42,7 +43,7 @@ export const comparatorToString: Record<Scanner.Comparator, string> = {
     "==": "exactly"
 }
 
-export const singleCharComparator = scanner.tokens({
+export const singleCharComparator = keySet({
     "<": 1,
     ">": 1
 })

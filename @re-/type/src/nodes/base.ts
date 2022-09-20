@@ -9,17 +9,17 @@ export namespace Base {
 
     export type Input = [node: node, mapper: (data: unknown) => unknown]
 
-    export type ConstructorArgs<DefType = unknown> = [
-        definition: DefType,
-        tree: unknown,
+    export type ConstructorArgs<Definition = unknown, Tree = unknown> = [
+        definition: Definition,
+        ast: Tree,
         context: context
     ]
-    export abstract class node<DefType = unknown> {
+    export abstract class node<Definition = unknown, Tree = unknown> {
         input?: Input
 
         constructor(
-            public definition: DefType,
-            public tree: unknown,
+            public definition: Definition,
+            public ast: Tree,
             public context: context
         ) {}
 

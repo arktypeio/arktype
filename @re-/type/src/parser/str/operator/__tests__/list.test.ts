@@ -10,7 +10,7 @@ describe("list", () => {
         list = init()
     })
     test("parse", () => {
-        assert(list.tree).narrowedValue(["string", "[]"])
+        assert(list.ast).narrowedValue(["string", "[]"])
     })
     describe("errors", () => {
         test("incomplete token", () => {

@@ -25,31 +25,31 @@ describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
-                assert(type("number>0").tree).narrowedValue([
+                assert(type("number>0").ast).narrowedValue([
                     "number",
                     [[">", 0]]
                 ])
             })
             test("<", () => {
-                assert(type("number<10").tree).narrowedValue([
+                assert(type("number<10").ast).narrowedValue([
                     "number",
                     [["<", 10]]
                 ])
             })
             test(">=", () => {
-                assert(type("number>=3.14159").tree).narrowedValue([
+                assert(type("number>=3.14159").ast).narrowedValue([
                     "number",
                     [[">=", 3.14159]]
                 ])
             })
             test("<=", () => {
-                assert(type("number<=-49").tree).narrowedValue([
+                assert(type("number<=-49").ast).narrowedValue([
                     "number",
                     [["<=", -49]]
                 ])
             })
             test("==", () => {
-                assert(type("number==3211993").tree).narrowedValue([
+                assert(type("number==3211993").ast).narrowedValue([
                     "number",
                     [["==", 3211993]]
                 ])
@@ -57,7 +57,7 @@ describe("bound", () => {
         })
         describe("double", () => {
             test("<,<=", () => {
-                assert(type("-5<number<=5").tree).narrowedValue([
+                assert(type("-5<number<=5").ast).narrowedValue([
                     "number",
                     [
                         [">", -5],
@@ -66,7 +66,7 @@ describe("bound", () => {
                 ])
             })
             test("<=,<", () => {
-                assert(type("-3.23<=number<4.654").tree).narrowedValue([
+                assert(type("-3.23<=number<4.654").ast).narrowedValue([
                     "number",
                     [
                         [">=", -3.23],
@@ -132,7 +132,7 @@ describe("bound", () => {
                             `number${comparator}${limit}`
                         )
                         const expectedBounds: Bounds = [[comparator, limit]]
-                        assert(singleBound.tree).equals([
+                        assert(singleBound.ast).equals([
                             "number",
                             expectedBounds
                         ])
@@ -161,7 +161,7 @@ describe("bound", () => {
                             [invertedComparators[lowerComparator], lowerLimit],
                             [upperComparator, upperLimit]
                         ]
-                        assert(doubleBound.tree).equals([
+                        assert(doubleBound.ast).equals([
                             "number",
                             expectedBounds
                         ])
@@ -174,7 +174,7 @@ describe("bound", () => {
 
     describe("string", () => {
         test("parse", () => {
-            assert(type("1<string<=5").tree).narrowedValue([
+            assert(type("1<string<=5").ast).narrowedValue([
                 "string",
                 [
                     [">", 1],
@@ -205,7 +205,7 @@ describe("bound", () => {
 
     describe("list", () => {
         test("parse", () => {
-            assert(type("-343<=boolean[]<89").tree).narrowedValue([
+            assert(type("-343<=boolean[]<89").ast).narrowedValue([
                 ["boolean", "[]"],
                 [
                     [">=", -343],

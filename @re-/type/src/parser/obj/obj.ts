@@ -1,7 +1,7 @@
 import type { Evaluate } from "@re-/tools"
-import type { Dictionary } from "../../nodes/structures/dictionary.js"
-import { DictionaryNode } from "../../nodes/structures/dictionary.js"
-import { TupleNode } from "../../nodes/structures/tuple.js"
+import type { Dictionary } from "../../nodes/structs/dictionary.js"
+import { DictionaryNode } from "../../nodes/structs/dictionary.js"
+import { TupleNode } from "../../nodes/structs/tuple.js"
 import type { parseFn } from "../common.js"
 import type { Root } from "../root.js"
 import {

@@ -8,7 +8,7 @@ describe("root definition", () => {
         test("allows uninferred types", () => {
             const dynamicStringArray = dynamic("str" + "ing[" + "]")
             assert(dynamicStringArray.infer).typed as unknown
-            assert(dynamicStringArray.tree).equals(["string", "[]"])
+            assert(dynamicStringArray.ast).equals(["string", "[]"])
         })
         test("allows uninferred spaces", () => {
             const s = dynamicSpace({
@@ -24,7 +24,7 @@ describe("root definition", () => {
                 s.$root.type({ a: "st" })
             }).throws(unresolvableMessage("st"))
             // Runtime nodes created correctly
-            assert(s.$root.tree).equals({ a: ["string", "[]"], b: ["a", "?"] })
+            assert(s.$root.ast).equals({ a: ["string", "[]"], b: ["a", "?"] })
         })
     })
     describe("bad def types", () => {

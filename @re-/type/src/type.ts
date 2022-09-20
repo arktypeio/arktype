@@ -51,7 +51,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     check: ValidateFunction<Inferred>
     assert: AssertFunction<Inferred>
     default: Inferred
-    tree: Root.Parse<Def, Dict>
+    ast: Root.Parse<Def, Dict>
     create: CreateFunction<Inferred>
     references: ReferencesFunction<Def, Dict>
 }>
@@ -71,8 +71,8 @@ export class Type implements DynamicType {
         return this.create()
     }
 
-    get tree() {
-        return this.root.tree as any
+    get ast() {
+        return this.root.ast as any
     }
 
     check(value: unknown, options?: Allows.Options) {

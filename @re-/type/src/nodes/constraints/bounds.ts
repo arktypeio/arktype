@@ -87,9 +87,9 @@ export const applyBound = (node: boundableNode, bounds: bounds) => {
 }
 
 const applyBoundsToTree = (node: boundableNode, definition: Bounds) => {
-    node.tree = isConstrained(node.tree)
-        ? [node.tree[0], [...node.tree[1], ...definition]]
-        : [node.tree, definition]
+    node.ast = isConstrained(node.ast)
+        ? [node.ast[0], [...node.ast[1], ...definition]]
+        : [node.ast, definition]
 }
 
 const applyBoundsToDefinition = (node: boundableNode, definition: Bounds) => {
@@ -133,8 +133,8 @@ export const boundViolationMessage = (
         kind === "string" ? "characters " : kind === "array" ? "items " : ""
     }(got ${size}).`
 
-const isConstrained = (tree: StrNode): tree is [StrNode, StrNode[]] =>
-    Array.isArray(tree) && Array.isArray(tree[1])
+const isConstrained = (ast: StrNode): ast is [StrNode, StrNode[]] =>
+    Array.isArray(ast) && Array.isArray(ast[1])
 
 const isWithinBound = (
     comparator: Scanner.Comparator,

@@ -1,4 +1,5 @@
-import type { Evaluate, Narrow } from "@re-/tools"
+import type { KeySet } from "@re-/tools"
+import { keySet } from "@re-/tools"
 
 export class scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -9,9 +10,8 @@ export class scanner<Lookahead extends string = string> {
         this.i = 0
     }
 
+    /** Get lookahead and advance scanner by one */
     shift() {
-        // The value of i++ in this context is i's original value,
-        // so the returned char will be the same as lookahead
         return (this.chars[this.i++] ?? "END") as Lookahead
     }
 
@@ -45,7 +45,7 @@ export class scanner<Lookahead extends string = string> {
         return this.lookahead === char
     }
 
-    lookaheadIsIn<Tokens extends scanner.tokenSet>(
+    lookaheadIsIn<Tokens extends KeySet>(
         tokens: Tokens
     ): this is scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens
@@ -63,18 +63,8 @@ export namespace scanner {
         appendTo?: string
     }
 
-    export type tokenSet = Record<string, 1>
-
-    export const tokens = <T extends tokenSet>(tokenSet: Narrow<T>) =>
-        tokenSet as Evaluate<T>
-
-    export const inTokenSet = <Set extends tokenSet>(
-        token: string,
-        set: Set
-    ): token is Extract<keyof Set, string> => token in set
-
     // TODO: Can these be moved to Bounds somehow?
-    export const comparators = tokens({
+    export const comparators = keySet({
         "<": 1,
         ">": 1,
         "<=": 1,
@@ -82,7 +72,7 @@ export namespace scanner {
         "==": 1
     })
 
-    export const suffixes = scanner.tokens({
+    export const suffixes = keySet({
         ...comparators,
         END: 1,
         "?": 1

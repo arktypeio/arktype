@@ -1,9 +1,9 @@
+import { keySet } from "@re-/tools"
 import type { Base } from "../../nodes/base.js"
 import type { parseFn } from "../common.js"
 import { throwParseError } from "../common.js"
-import { scanner } from "../str/state/scanner.js"
 
-export const parameterSetIds = scanner.tokens({
+export const parameterSetIds = keySet({
     $io: 1
 })
 

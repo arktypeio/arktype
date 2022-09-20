@@ -72,11 +72,11 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
         return chainableNoOpProxy
     }
 
-    get tree() {
+    get ast() {
         return Object.fromEntries(
             Object.entries(this.resolutions).map(([alias, resolution]) => [
                 alias,
-                resolution.tree
+                resolution.ast
             ])
         )
     }
@@ -148,7 +148,7 @@ export type SpaceOutput<S extends Space> = Evaluate<
 
 export type SpaceMetaFrom<S extends Space> = {
     infer: InferSpaceRoot<S>
-    tree: Root.Parse<S["Dict"], S["Dict"]>
+    ast: Root.Parse<S["Dict"], S["Dict"]>
     type: TypeFunction<S>
     extend: ExtendFunction<S>
     dictionary: S["Dict"]

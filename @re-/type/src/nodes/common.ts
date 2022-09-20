@@ -22,4 +22,4 @@ export type NodeToString<
 
 export type StrNode = string | number | StrNode[]
 
-export type strNode = Base.node & { tree: StrNode }
+export type strNode = Base.node & { ast: StrNode }

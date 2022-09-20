@@ -27,7 +27,6 @@ export class literalNode<
         if (args.data !== this.value) {
             args.diagnostics.push(new LiteralDiagnostic(this.toString(), args))
         }
-        return false
     }
 
     generate() {

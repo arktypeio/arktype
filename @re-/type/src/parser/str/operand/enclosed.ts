@@ -1,10 +1,11 @@
+import { keySet } from "@re-/tools"
 import { stringNode } from "../../../nodes/terminals/keywords/string.js"
 import { literalNode } from "../../../nodes/terminals/literal.js"
 import type { Left } from "../state/left.js"
-import { scanner } from "../state/scanner.js"
+import type { scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 
-export const enclosedBaseStartChars = scanner.tokens({
+export const enclosedBaseStartChars = keySet({
     "'": 1,
     '"': 1,
     "/": 1

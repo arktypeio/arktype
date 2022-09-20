@@ -11,7 +11,7 @@ describe("declare", () => {
     test("compiles", () => {
         // Creates your space (or tells you which definition you forgot to include)
         const space = compile({ ...userDef, ...groupDef })
-        assert(space.$root.tree).narrowedValue({
+        assert(space.$root.ast).narrowedValue({
             group: {
                 name: "string",
                 members: ["user", "[]"]
@@ -60,7 +60,7 @@ describe("declare", () => {
             "'whoops' is not a builtin type and does not exist in your space."
         )
         const space = compile(gottaDefineThis)
-        assert(space.$root.tree).narrowedValue({ gottaDefineThis: "boolean" })
+        assert(space.$root.ast).narrowedValue({ gottaDefineThis: "boolean" })
     })
     test("errors on compile with declared type undefined", () => {
         const { define, compile } = declare(

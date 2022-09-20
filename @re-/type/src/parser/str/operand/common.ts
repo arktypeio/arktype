@@ -1,3 +1,4 @@
+import { keySet } from "@re-/tools"
 import { comparatorChars } from "../operator/bound/common.js"
 import { scanner } from "../state/scanner.js"
 
@@ -13,7 +14,7 @@ export type ExpressionExpectedMessage<Unscanned extends string> =
         ? ""
         : ` (got '${Unscanned}')`}.`
 
-export const baseTerminatingChars = scanner.tokens({
+export const baseTerminatingChars = keySet({
     ...comparatorChars,
     "?": 1,
     "|": 1,

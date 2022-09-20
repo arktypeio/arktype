@@ -1,8 +1,8 @@
 import type { Allows } from "../../allows.js"
 import type { boundableNode, bounds } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/common.js"
-import { checkObjectRoot } from "../../structures/index.js"
-import type { Unary } from "./unary.js"
+import { checkObjectRoot } from "../../structs/struct.js"
+import type { Unary, UnaryConstructorArgs } from "./unary.js"
 import { unary } from "./unary.js"
 
 export type List<Child = unknown> = Unary<Child, "[]">
@@ -10,16 +10,8 @@ export type List<Child = unknown> = Unary<Child, "[]">
 export class list extends unary implements boundableNode {
     bounds: bounds | undefined = undefined
 
-    override toString() {
-        const listToString = super.toString()
-        return this.bounds
-            ? this.bounds.boundString(listToString)
-            : listToString
-    }
-
-    get tree() {
-        const listNode = [this.child.tree, "[]"]
-        return this.bounds ? this.bounds.boundTree(listNode) : listNode
+    constructor(...args: UnaryConstructorArgs) {
+        super("[]", ...args)
     }
 
     check(args: Allows.Args) {
