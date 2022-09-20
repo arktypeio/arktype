@@ -4,6 +4,7 @@ import type {
     ListPossibleTypes,
     ValueOf
 } from "@re-/tools"
+import type { Root } from "../../parser/root.js"
 import type { Base } from "../base.js"
 import type { RootReferences } from "../root.js"
 import type { Dictionary } from "./dictionary.js"

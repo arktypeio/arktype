@@ -9,8 +9,14 @@ export namespace Base {
 
     export type Input = [node: node, mapper: (data: unknown) => unknown]
 
-    export abstract class node {
+    export type ConstructorArgs<DefType = unknown> = [
+        definition: DefType,
+        context: context
+    ]
+    export abstract class node<DefType = unknown> {
         input?: Input
+
+        constructor(public definition: DefType, public context: context) {}
 
         abstract check(args: Allows.Args): void
         abstract generate(args: Generate.Args): unknown

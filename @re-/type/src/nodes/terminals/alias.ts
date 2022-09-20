@@ -54,10 +54,6 @@ export class alias extends terminalNode {
         return !!ctx.space && def in ctx.space.dictionary
     }
 
-    constructor(private definition: string, private context: Base.context) {
-        super()
-    }
-
     toString() {
         return this.definition
     }
