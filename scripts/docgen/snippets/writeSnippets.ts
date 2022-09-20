@@ -1,4 +1,6 @@
 import { existsSync } from "node:fs"
+import type { DocGenPackageConfig, DocGenSnippetConsumer } from "../config.js"
+import type { PackageExtractionData } from "../extract.js"
 import {
     fromPackageRoot,
     readFile,
@@ -6,8 +8,6 @@ import {
     shell,
     writeFile
 } from "@re-/node"
-import { DocGenPackageConfig, DocGenSnippetConsumer } from "../config.js"
-import { PackageExtractionData } from "../extract.js"
 
 export type WriteSnippetsContext = {
     packageConfig: DocGenPackageConfig

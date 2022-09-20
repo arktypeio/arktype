@@ -26,7 +26,12 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["**/dist/**", "**/snippets/**", "**/*js"],
+    ignorePatterns: [
+        "**/dist/**",
+        "**/__snippets__/**",
+        "**/*js",
+        "**/generated/**"
+    ],
     rules: {
         /**
          * General restrictions
@@ -79,6 +84,15 @@ module.exports = defineConfig({
             }
         ],
         /**
+         * Keep functions and files concise and readable
+         */
+        "max-statements": ["warn", 16],
+        "max-lines-per-function": [
+            "warn",
+            { max: 32, skipComments: true, skipBlankLines: true }
+        ],
+        "max-lines": ["warn", 256],
+        /**
          * Allow more flexible typing
          */
         "@typescript-eslint/ban-ts-comment": "off",
@@ -106,19 +120,17 @@ module.exports = defineConfig({
             excludedFiles: ["**/__tests__/**"],
             rules: {
                 /**
-                 * Keep functions and files concise and readable
-                 */
-                "max-statements": ["warn", 16],
-                "max-lines-per-function": [
-                    "warn",
-                    { max: 32, skipComments: true, skipBlankLines: true }
-                ],
-                "max-lines": ["warn", 256],
-                /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
                  * so no need to worry about checking imports beyond what TypeScript does by default.
                  **/
                 "import/no-extraneous-dependencies": "warn"
+            }
+        },
+        {
+            files: ["**/*.test.ts"],
+            rules: {
+                // Does not play well with "describe" blocks
+                "max-lines-per-function": "off"
             }
         },
         {

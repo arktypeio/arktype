@@ -2,7 +2,6 @@ import { inKeySet } from "@re-/tools"
 import type { literalNode } from "../../../../nodes/terminals/literal.js"
 import type { Left, left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
-import { scanner } from "../../state/scanner.js"
 import type { parserState } from "../../state/state.js"
 import type {
     DoubleBoundComparator,

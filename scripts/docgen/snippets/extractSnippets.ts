@@ -1,10 +1,10 @@
-import { fromPackageRoot, readFile, walkPaths } from "@re-/node"
-import { readFileSync, statSync } from "node:fs"
+import { statSync } from "node:fs"
 import { relative } from "node:path"
-import { Project } from "ts-morph"
-import { DocGenSnippetExtractionConfig } from "../config.js"
-import { PackageMetadata } from "../extract.js"
+import type { Project } from "ts-morph"
+import type { DocGenSnippetExtractionConfig } from "../config.js"
+import type { PackageMetadata } from "../extract.js"
 import { getTransformedText } from "./transformFileText.js"
+import { fromPackageRoot, readFile, walkPaths } from "@re-/node"
 
 /** Represents paths mapped to snippet data for a file */
 export type PackageSnippets = Record<string, FileSnippets>

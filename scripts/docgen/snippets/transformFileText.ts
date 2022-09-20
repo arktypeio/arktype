@@ -1,6 +1,7 @@
-import { Project, SourceFile, SyntaxKind } from "ts-morph"
-import { PackageMetadata } from "../extract.js"
-import { SnippetTransformToggles } from "./index.js"
+import type { Project } from "ts-morph"
+import { SourceFile, SyntaxKind } from "ts-morph"
+import type { PackageMetadata } from "../extract.js"
+import type { SnippetTransformToggles } from "./index.js"
 
 export type ExtractFileSnippetContext = {
     packageMetadata: PackageMetadata
