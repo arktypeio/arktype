@@ -10,23 +10,24 @@ import type { References } from "./references.js"
 import type { Traverse } from "./traverse.js"
 
 export class ResolutionNode extends Base.node {
+    private context: Base.context
     public root: Base.node
     public rootDef: unknown
 
     constructor(public alias: string, space: SpaceMeta) {
+        super()
         // If this is the first time we've seen the alias,
         // create a Node that will be used for future resolutions.
         const defAndOptions = getResolutionDefAndOptions(
             space.dictionary[alias]
         )
-        const context = initializeParseContext(
+        this.context = initializeParseContext(
             defAndOptions.options
                 ? deepMerge(space.options, defAndOptions.options)
                 : space.options,
             space
         )
-        super(alias, context)
-        this.root = Root.parse(defAndOptions.def, context)
+        this.root = Root.parse(defAndOptions.def, this.context)
         this.rootDef = defAndOptions.def
     }
 

@@ -13,9 +13,9 @@ export type Branch<
 export abstract class branch extends Base.node {
     constructor(
         protected children: Base.node[],
-        ...args: Base.ConstructorArgs<string>
+        protected context: Base.context
     ) {
-        super(...args)
+        super()
     }
 
     abstract token: BranchToken
