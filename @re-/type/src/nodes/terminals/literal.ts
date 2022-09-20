@@ -1,12 +1,23 @@
 import { Allows } from "../allows.js"
 import type { Base } from "../base.js"
-import { terminalNode } from "./terminal.js"
+import { TerminalNode } from "./terminal.js"
+
+export type StringLiteralDefinition<Text extends string = string> =
+    | `'${Text}'`
+    | `"${Text}"`
+
+export type NumberLiteralDefinition<Value extends number = number> = `${Value}`
+
+export type BigintLiteralDefinition<Value extends bigint = bigint> = `${Value}n`
+
+export type BooleanLiteralDefinition<Value extends boolean = boolean> =
+    `${Value}`
 
 export type PrimitiveLiteralValue = string | number | bigint | boolean
 
-export class literalNode<
+export class LiteralNode<
     Value extends PrimitiveLiteralValue
-> extends terminalNode {
+> extends TerminalNode {
     constructor(public value: Value, context: Base.context) {
         const definition =
             typeof value === "string"

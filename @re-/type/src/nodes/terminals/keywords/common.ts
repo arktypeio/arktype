@@ -1,5 +1,7 @@
+import type { ValueOf } from "@re-/tools"
 import { startsWithVowel } from "@re-/tools"
 import { Allows } from "../../allows.js"
+import type { TerminalNode } from "../terminal.js"
 import type { Keyword } from "./keyword.js"
 
 // These keywords should not be preceded by an article (e.g. 'must be null' is preferable to 'must be a null')

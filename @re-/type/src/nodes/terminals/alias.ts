@@ -3,7 +3,7 @@ import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import type { Generate } from "../generate.js"
 import type { RootInfer } from "../root.js"
-import { terminalNode } from "./terminal.js"
+import { TerminalNode } from "./terminal.js"
 
 export namespace Alias {
     export type Infer<
@@ -49,7 +49,7 @@ export namespace Alias {
     >
 }
 
-export class alias extends terminalNode {
+export class Alias extends TerminalNode {
     static matches(def: string, ctx: Base.context) {
         return !!ctx.space && def in ctx.space.dictionary
     }

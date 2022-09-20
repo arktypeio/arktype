@@ -1,5 +1,5 @@
 import { inKeySet } from "@re-/tools"
-import { literalNode } from "../../../../nodes/terminals/literal.js"
+import { LiteralNode } from "../../../../nodes/terminals/literal.js"
 import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import type { Left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
@@ -33,7 +33,7 @@ export const reduceBound = (
     s: parserState.withRoot,
     token: Scanner.Comparator
 ) =>
-    s.hasRoot(literalNode) && typeof s.l.root.value === "number"
+    s.hasRoot(LiteralNode) && typeof s.l.root.value === "number"
         ? reduceLeft(s, token)
         : s.suffixed(token)
 

@@ -1,6 +1,11 @@
-import { alias } from "../../../nodes/terminals/alias.js"
+import { Alias } from "../../../nodes/terminals/alias.js"
 import { Keyword } from "../../../nodes/terminals/keywords/keyword.js"
-import { literalNode } from "../../../nodes/terminals/literal.js"
+import type {
+    BigintLiteralDefinition,
+    BooleanLiteralDefinition,
+    NumberLiteralDefinition
+} from "../../../nodes/terminals/literal.js"
+import { LiteralNode } from "../../../nodes/terminals/literal.js"
 import type { parseContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { scanner, Scanner } from "../state/scanner.js"
@@ -37,8 +42,8 @@ export const toNodeIfResolvableIdentifier = (
 ) =>
     Keyword.matches(token)
         ? Keyword.parse(token)
-        : alias.matches(token, ctx)
-        ? new alias(token, ctx)
+        : Alias.matches(token, ctx)
+        ? new Alias(token, ctx)
         : undefined
 
 /**
@@ -49,8 +54,6 @@ export const toNodeIfResolvableIdentifier = (
  *      values such that the regex should match a given definition if any only if
  *      a precise literal type will be inferred (in TS4.8+).
  */
-
-export type NumberLiteralDefinition<Value extends number = number> = `${Value}`
 
 /**
  *  Matches a well-formatted numeric expression according to the following rules:
@@ -70,8 +73,6 @@ export const isNumberLiteral = (def: string): def is NumberLiteralDefinition =>
  *    2. The value may not be "-0"
  *    3. The literal character "n" terminates the definition and must immediately succeed the integer from 1.
  */
-export type BigintLiteralDefinition<Value extends bigint = bigint> = `${Value}n`
-
 const BIGINT_MATCHER = /^(?:0|(?:-?[1-9]\d*))n$/
 
 export const isBigintLiteral = (def: string): def is BigintLiteralDefinition =>
@@ -87,18 +88,15 @@ export const numberLiteralToValue = (def: NumberLiteralDefinition) => {
     return value
 }
 
-export type BooleanLiteralDefinition<Value extends boolean = boolean> =
-    `${Value}`
-
 export const toNodeIfLiteral = (token: string) =>
     isNumberLiteral(token)
-        ? new literalNode(numberLiteralToValue(token))
+        ? new LiteralNode(numberLiteralToValue(token))
         : isBigintLiteral(token)
-        ? new literalNode(BigInt(token.slice(0, -1)))
+        ? new LiteralNode(BigInt(token.slice(0, -1)))
         : token === "true"
-        ? new literalNode(true)
+        ? new LiteralNode(true)
         : token === "false"
-        ? new literalNode(false)
+        ? new LiteralNode(false)
         : undefined
 
 const unenclosedToNode = (s: parserState, token: string, ctx: parseContext) =>

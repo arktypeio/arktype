@@ -2,10 +2,13 @@ import { Allows } from "../../allows.js"
 import type { boundableNode, bounds } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/common.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
-import { terminalNode } from "../terminal.js"
+import { TerminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"
 
-export class stringNode extends terminalNode implements boundableNode {
+export type RegexLiteralDefinition = `/${string}/`
+export type StringTypedDefinition = StringKeyword | RegexLiteralDefinition
+
+export class StringNode extends TerminalNode implements boundableNode {
     regexConstraint?: regexConstraint
     bounds?: bounds
 
@@ -82,12 +85,12 @@ export const subtypes: Record<
 }
 
 export const stringKeywords = {
-    string: stringNode,
-    email: stringNode,
-    alpha: stringNode,
-    alphanumeric: stringNode,
-    lowercase: stringNode,
-    uppercase: stringNode
+    string: StringNode,
+    email: StringNode,
+    alpha: StringNode,
+    alphanumeric: StringNode,
+    lowercase: StringNode,
+    uppercase: StringNode
 }
 
 export type StringKeyword = keyof typeof stringKeywords

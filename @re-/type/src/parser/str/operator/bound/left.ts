@@ -1,5 +1,5 @@
 import { inKeySet } from "@re-/tools"
-import type { literalNode } from "../../../../nodes/terminals/literal.js"
+import type { LiteralNode } from "../../../../nodes/terminals/literal.js"
 import type { Left, left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
 import type { parserState } from "../../state/state.js"
@@ -29,7 +29,7 @@ export const nonPrefixLeftBoundMessage = <
     `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
 const applyLeftBound = (
-    s: parserState<left.withRoot<literalNode<number>>>,
+    s: parserState<left.withRoot<LiteralNode<number>>>,
     token: DoubleBoundComparator
 ) => {
     s.l.lowerBound = [invertedComparators[token], s.l.root.value]
@@ -38,7 +38,7 @@ const applyLeftBound = (
 }
 
 export const reduceLeft = (
-    s: parserState<left.withRoot<literalNode<number>>>,
+    s: parserState<left.withRoot<LiteralNode<number>>>,
     token: Scanner.Comparator
 ) =>
     s.isPrefixable()

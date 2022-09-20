@@ -1,6 +1,6 @@
 import { keySet } from "@re-/tools"
-import { stringNode } from "../../../nodes/terminals/keywords/string.js"
-import { literalNode } from "../../../nodes/terminals/literal.js"
+import { StringNode } from "../../../nodes/terminals/keywords/string.js"
+import { LiteralNode } from "../../../nodes/terminals/literal.js"
 import type { Left } from "../state/left.js"
 import type { scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
@@ -12,12 +12,6 @@ export const enclosedBaseStartChars = keySet({
 })
 
 export type EnclosedBaseStartChar = keyof typeof enclosedBaseStartChars
-
-export type RegexLiteralDefinition = `/${string}/`
-
-export type StringLiteralDefinition<Text extends string = string> =
-    | `'${Text}'`
-    | `"${Text}"`
 
 export type StringLiteralQuote = `'` | `"`
 
@@ -56,9 +50,8 @@ export const parseEnclosedBase = (
     const enclosedText = definition.slice(1, -1)
     s.l.root =
         enclosing === "/"
-            ? new stringNode(definition)
-            : new literalNode(enclosedText)
-
+            ? new StringNode(definition)
+            : new LiteralNode(enclosedText)
     return s
 }
 

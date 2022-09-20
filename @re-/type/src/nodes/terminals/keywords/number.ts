@@ -2,10 +2,10 @@ import { Allows } from "../../allows.js"
 import type { boundableNode, bounds } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/common.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
-import { terminalNode } from "../terminal.js"
+import { TerminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"
 
-export class numberNode extends terminalNode implements boundableNode {
+export class NumberNode extends TerminalNode implements boundableNode {
     bounds: bounds | undefined = undefined
 
     constructor(
@@ -44,8 +44,8 @@ export type numericConstraint = {
 }
 
 export const numberKeywords = {
-    number: numberNode,
-    integer: numberNode
+    number: NumberNode,
+    integer: NumberNode
 }
 
 export type NumberKeyword = keyof typeof numberKeywords
