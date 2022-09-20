@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
 import {
     ExportedDeclarations,
@@ -20,9 +21,9 @@ const exportAllRegex = /export \*/
 const project = new Project({
     tsConfigFilePath: fromPackageRoot("tsconfig.references.json")
 })
+
 const unusedExports: Record<string, string[]> = {}
 const ignorePaths: string[] = [join("docs", "snippets")]
-
 const exportAllRenamedRegex = /\* as /
 
 export const findUnusedExports = () => {
@@ -105,6 +106,7 @@ type UnusedFileExportsContext = {
     apiExports: ApiExports[]
     file: string
 }
+
 const getUnusedExportedNamespaceDescendants = (
     namespace: ModuleDeclaration
 ): string[] => {
@@ -122,12 +124,14 @@ const getUnusedExportedNamespaceDescendants = (
     }
     return unusedExports
 }
+
 const getExportReferences = (node: ExportedDeclarations) => {
     if (!("findReferences" in node)) {
         return throwMissingMethodError("findReferences")
     }
     return node.findReferences().flatMap((ref) => ref.getReferences())
 }
+
 const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
     const unusedExportsInFile: string[] = []
     const exportedDeclarations = context.sourceFile.getExportedDeclarations()
@@ -202,24 +206,16 @@ export const getPublicApiExports = (project: Project): ApiExports[] => {
     const apiExports: ApiExports[] = []
     for (const publicApi of publicApis) {
         const packageRoot = join(rootDir, publicApi)
+        if (!existsSync(packageRoot)) {
+            throw new Error(`${packageRoot} does not exist.`)
+        }
         const packageJsonData: PackageJson = readPackageJson(packageRoot)
-        try {
-            const entryPoints =
-                getEntryPointsToRelativeDtsPaths(packageJsonData)
-            const pathToSourceFile = join(packageRoot, ...entryPoints[0])
-            const sourceFile = project.addSourceFileAtPath(pathToSourceFile)
-
-            const entryPointExports = getEntryPointExports(
-                sourceFile,
-                packageRoot
-            )
-            if (entryPointExports.length) {
-                apiExports.push(...entryPointExports)
-            }
-        } catch (e) {
-            throw new Error(
-                `${e}\n Likely a problem with package.root - ${packageRoot}`
-            )
+        const entryPoints = getEntryPointsToRelativeDtsPaths(packageJsonData)
+        const pathToSourceFile = join(packageRoot, ...entryPoints[0])
+        const sourceFile = project.addSourceFileAtPath(pathToSourceFile)
+        const entryPointExports = getEntryPointExports(sourceFile, packageRoot)
+        if (entryPointExports.length) {
+            apiExports.push(...entryPointExports)
         }
     }
     return apiExports
