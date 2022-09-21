@@ -1,13 +1,13 @@
 import { inKeySet } from "@re-/tools"
 import type { NodeToString } from "../../../../nodes/common.js"
 import type {
-    boundableNode,
+    BoundableAst,
     BoundableNode,
     Bounds
 } from "../../../../nodes/constraints/bounds.js"
 import {
     applyBound,
-    bounds,
+    BoundsConstraint,
     isBoundable
 } from "../../../../nodes/constraints/bounds.js"
 import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
@@ -63,7 +63,7 @@ type BoundingValueWithSuffix<
 
 export const reduceRightBound = (
     s: parserState<left.suffix>,
-    right: Bounds.Any,
+    right: Bounds.Bound,
     nextSuffix: Scanner.Suffix
 ) =>
     hasBoundableRoot(s)
@@ -74,9 +74,9 @@ export const reduceRightBound = (
 
 export type ReduceRightBound<
     L extends Left.Suffix,
-    RightBound extends Bounds.Any,
+    RightBound extends Bounds.Bound,
     NextSuffix extends Scanner.Suffix
-> = L extends { root: BoundableNode }
+> = L extends { root: BoundableAst }
     ? L extends { lowerBound: Bounds.Lower }
         ? ReduceDouble<L, RightBound, NextSuffix>
         : ReduceSingle<L, RightBound, NextSuffix>
@@ -84,7 +84,7 @@ export type ReduceRightBound<
 
 const hasBoundableRoot = (
     s: parserState<left.suffix>
-): s is parserState<left.suffix<{ root: boundableNode }>> =>
+): s is parserState<left.suffix<{ root: BoundableNode }>> =>
     isBoundable(s.l.root)
 
 const hasLowerBound = (
@@ -93,10 +93,10 @@ const hasLowerBound = (
 
 type ReduceDouble<
     L extends Left.Suffix<{
-        root: BoundableNode
+        root: BoundableAst
         lowerBound: Bounds.Lower
     }>,
-    RightBound extends Bounds.Any,
+    RightBound extends Bounds.Bound,
     NextSuffix extends Scanner.Suffix
 > = RightBound extends Bounds.Upper
     ? Left.SuffixFrom<{
@@ -109,15 +109,15 @@ type ReduceDouble<
 const reduceDouble = (
     s: parserState<
         left.suffix<{
-            root: boundableNode
+            root: BoundableNode
             lowerBound: Bounds.Lower
         }>
     >,
-    right: Bounds.Any,
+    right: Bounds.Bound,
     nextSuffix: Scanner.Suffix
 ) => {
     if (isValidDoubleBoundRight(right)) {
-        applyBound(s.l.root, new bounds([s.l.lowerBound, right]))
+        applyBound(s.l.root, new BoundsConstraint([s.l.lowerBound, right]))
         s.l.lowerBound = undefined as any
         s.l.nextSuffix = nextSuffix
         return s
@@ -127,7 +127,7 @@ const reduceDouble = (
 
 type ReduceSingle<
     L extends Left.Suffix,
-    Single extends Bounds.Any,
+    Single extends Bounds.Bound,
     NextSuffix extends Scanner.Suffix
 > = Left.SuffixFrom<{
     lowerBound: undefined
@@ -136,17 +136,17 @@ type ReduceSingle<
 }>
 
 const reduceSingle = (
-    s: parserState.suffix<{ root: boundableNode }>,
-    right: Bounds.Any,
+    s: parserState.suffix<{ root: BoundableNode }>,
+    right: Bounds.Bound,
     nextSuffix: Scanner.Suffix
 ) => {
-    applyBound(s.l.root, new bounds([right]))
+    applyBound(s.l.root, new BoundsConstraint([right]))
     s.l.lowerBound = undefined
     s.l.nextSuffix = nextSuffix
     return s
 }
 
-const isValidDoubleBoundRight = (right: Bounds.Any): right is Bounds.Upper =>
+const isValidDoubleBoundRight = (right: Bounds.Bound): right is Bounds.Upper =>
     inKeySet(right[0], doubleBoundComparators)
 
 export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`

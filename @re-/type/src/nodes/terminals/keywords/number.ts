@@ -1,12 +1,15 @@
 import { Allows } from "../../allows.js"
-import type { boundableNode, bounds } from "../../constraints/bounds.js"
-import { ConstraintGenerationError } from "../../constraints/common.js"
+import type {
+    BoundableNode,
+    BoundsConstraint
+} from "../../constraints/bounds.js"
+import { ConstraintGenerationError } from "../../constraints/constraint.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
 import { TerminalNode } from "../terminal.js"
 import { KeywordDiagnostic } from "./common.js"
 
-export class NumberNode extends TerminalNode implements boundableNode {
-    bounds: bounds | undefined = undefined
+export class NumberNode extends TerminalNode implements BoundableNode {
+    bounds: BoundsConstraint | undefined = undefined
 
     constructor(
         private numericConstraints: numericConstraint[],

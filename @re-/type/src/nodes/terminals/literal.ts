@@ -36,7 +36,13 @@ export class LiteralNode<
 
     check(args: Allows.Args) {
         if (args.data !== this.value) {
-            args.diagnostics.push(new LiteralDiagnostic(this.toString(), args))
+            args.diagnostics.push(
+                new Allows.Diagnostic(
+                    "Literal",
+                    args,
+                    `Must be ${this.definition}`
+                )
+            )
         }
     }
 

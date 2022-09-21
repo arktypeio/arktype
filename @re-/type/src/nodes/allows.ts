@@ -3,19 +3,7 @@ import { toString, uncapitalize } from "@re-/tools"
 import type { Base } from "./base.js"
 import type { Path } from "./common.js"
 import { pathToString } from "./common.js"
-import type { BoundViolationDiagnostic } from "./constraints/bounds.js"
-import type { UnionDiagnostic } from "./expressions/branches/union.js"
-import type {
-    ExtraneousKeysDiagnostic,
-    MissingKeyDiagnostic
-} from "./structs/dictionary.js"
-import type { ObjectKindDiagnostic } from "./structs/struct.js"
-import type { TupleLengthDiagnostic } from "./structs/tuple.js"
-import type { KeywordDiagnostic } from "./terminals/keywords/common.js"
 import type { Keyword } from "./terminals/keywords/keyword.js"
-import type { NumberSubtypeDiagnostic } from "./terminals/keywords/number.js"
-import type { RegexMismatchDiagnostic } from "./terminals/keywords/string.js"
-import type { LiteralDiagnostic } from "./terminals/literal.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {
@@ -55,7 +43,7 @@ export namespace Allows {
     ) => undefined | string | string[]
 
     export type CustomValidatorArgs = Evaluate<
-        BaseErrorContext & {
+        BaseDiagnosticContext & {
             getOriginalErrors: () => Diagnostics
         }
     >
@@ -65,7 +53,7 @@ export namespace Allows {
         node: Base.node,
         args: Args
     ): boolean => {
-        const context = createBaseErrorContext(node, args)
+        const context = createBaseDiagnosticContext(node, args)
         const result = getCustomErrorMessages(validator, node, args, context)
         const customMessages = typeof result === "string" ? [result] : result
         if (Array.isArray(customMessages)) {
@@ -81,7 +69,7 @@ export namespace Allows {
         validator: CustomValidator,
         node: Base.node,
         args: Args,
-        context: BaseErrorContext
+        context: BaseDiagnosticContext
     ) =>
         validator({
             ...context,
@@ -101,76 +89,72 @@ export namespace Allows {
             maxNestedStringLength: 50
         })
 
-    export type BaseErrorContext = {
-        path: Path
-        definition: string
-        ast: unknown
-        data: unknown
+    export type BaseDiagnosticOptions<
+        Code extends DiagnosticCode = DiagnosticCode
+    > = {
+        message?: (context: DiagnosticCustomizationsByCode[Code]) => string
+        includeActual?: boolean
     }
 
-    export const createBaseErrorContext = (
-        node: Base.node,
-        args: Args
-    ): BaseErrorContext => ({
-        definition: node.toString(),
-        data: args.data,
-        path: args.ctx.path,
-        ast: node.ast
-    })
-
-    export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
-        message?: (context: DiagnosticsByCode[Code]) => string
+    type OptionsByDiagnostic = {
+        [Code in DiagnosticCode]?: "options" extends keyof DiagnosticCustomizationsByCode[Code]
+            ? BaseDiagnosticOptions<Code> &
+                  DiagnosticCustomizationsByCode[Code]["options"]
+            : BaseDiagnosticOptions<Code>
     }
 
-    export type OptionsByDiagnostic = {
-        [Code in DiagnosticCode]?: BaseDiagnosticOptions<Code> &
-            DiagnosticsByCode[Code]["options"]
+    type BaseDiagnosticContextInput = { reason: string; actual?: unknown }
+
+    type ContextInputByDiagnostic = {
+        [Code in DiagnosticCode]: "context" extends keyof DiagnosticCustomizationsByCode[Code]
+            ? BaseDiagnosticContextInput &
+                  DiagnosticCustomizationsByCode[Code]["context"]
+            : BaseDiagnosticContextInput
     }
 
-    export type DiagnosticsByCode = {
-        Literal: LiteralDiagnostic
-        Keyword: KeywordDiagnostic
-        ObjectKind: ObjectKindDiagnostic
-        BoundViolation: BoundViolationDiagnostic
-        ExtraneousKeys: ExtraneousKeysDiagnostic
-        MissingKey: MissingKeyDiagnostic
-        Custom: CustomDiagnostic
-        NumberSubtype: NumberSubtypeDiagnostic
-        RegexMismatch: RegexMismatchDiagnostic
-        TupleLength: TupleLengthDiagnostic
-        Union: UnionDiagnostic
+    export type DiagnosticCustomizationsByCode = {
+        literal: {}
+        keyword: {}
+        objectKind: {}
+        bounds: {}
+        extraneousKeys: {}
+        missingKey: {}
+        regex: {}
+        tupleLength: {}
+        union: {}
     }
 
-    export type DiagnosticCode = keyof DiagnosticsByCode
+    export type DiagnosticCode = keyof DiagnosticCustomizationsByCode
 
-    export type RegisteredDiagnostic = DiagnosticsByCode[DiagnosticCode]
+    export type RegisteredDiagnostic = Diagnostic<DiagnosticCode>
 
-    export abstract class Diagnostic<
-        Code extends keyof DiagnosticsByCode,
-        AdditionalOptions = {}
-    > {
+    export class Diagnostic<Code extends DiagnosticCode> {
+        message: string
         path: Path
         data: unknown
-        options: (BaseDiagnosticOptions<Code> & AdditionalOptions) | undefined
+        options: OptionsByDiagnostic[Code]
 
-        constructor(public readonly code: Code, args: Args) {
+        constructor(
+            public readonly code: Code,
+            public definition: unknown,
+            args: Args,
+            context: ContextInputByDiagnostic[Code]
+        ) {
             this.path = args.ctx.path
             this.data = args.data
-            this.options = args.cfg.diagnostics?.[code] as any
+            this.options = args.cfg.diagnostics?.[code] ?? {}
+            this.message = `${context.reason}${
+                this.options?.includeActual
+                    ? ` (got ${context.actual ?? stringifyData(args.data)})`
+                    : ""
+            }.`
+            Object.assign(this, context)
         }
-
-        abstract message: string
     }
 
     export class ValidationError extends Error {}
 
     export type TypeSetName = Keyword.Definition | "array"
-
-    export class CustomDiagnostic extends Diagnostic<"Custom"> {
-        constructor(args: Args, public message: string) {
-            super("Custom", args)
-        }
-    }
 
     export class Diagnostics extends Array<RegisteredDiagnostic> {
         push(...diagnostics: RegisteredDiagnostic[]) {

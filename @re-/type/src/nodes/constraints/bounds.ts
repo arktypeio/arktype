@@ -13,41 +13,33 @@ import { Allows } from "../allows.js"
 import type { StrNode, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminals/keywords/number.js"
 import type { StringKeyword } from "../terminals/keywords/string.js"
-
-export type Bounds = Bounds.Single | Bounds.Double
+import type { Constraint } from "./constraint.js"
 
 export namespace Bounds {
-    export type Any = [Scanner.Comparator, number]
+    export type Ast = Single | Double
+
+    export type Bound = [Scanner.Comparator, number]
 
     export type Lower = [NormalizedLowerBoundComparator, number]
 
     export type Upper = [DoubleBoundComparator, number]
 
-    export type Single = [Any]
+    export type Single = [Bound]
 
     export type Double = [Lower, Upper]
 
-    export type Apply<Child = unknown, Def extends Bounds = Bounds> = Evaluate<
-        [Child, Def]
-    >
+    export type Apply<Child, Bounds extends Ast> = Evaluate<[Child, Bounds]>
 }
 
-export type boundChecker = (y: number) => boolean
+export type BoundableAst = NumberKeyword | StringKeyword | [unknown, "[]"]
 
-/** A BoundableNode must be either:
- *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
- *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100<alphanumeric")
- *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
- */
-export type BoundableNode = NumberKeyword | StringKeyword | [unknown, "[]"]
-
-export type boundableNode = strNode & {
-    bounds?: bounds
+export type BoundableNode = strNode & {
+    bounds?: BoundsConstraint
 }
 
-export type boundableData = number | string | unknown[]
+export type BoundableData = number | string | unknown[]
 
-export const isBoundable = (node: strNode): node is boundableNode =>
+export const isBoundable = (node: strNode): node is BoundableNode =>
     "bounds" in node
 
 export type BoundUnits = "characters" | "items"
@@ -80,39 +72,37 @@ export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"
     }
 }
 
-export const applyBound = (node: boundableNode, bounds: bounds) => {
+export const applyBound = (node: BoundableNode, bounds: BoundsConstraint) => {
     node.bounds = bounds
-    applyBoundsToAst(node, bounds.definition)
-    applyBoundsToDefinition(node, bounds.definition)
+    applyBoundsToAst(node, bounds.ast)
+    applyBoundsToDefinition(node, bounds.ast)
 }
 
-const applyBoundsToAst = (node: boundableNode, definition: Bounds) => {
+const applyBoundsToAst = (node: BoundableNode, ast: Bounds.Ast) => {
     node.ast = isConstrained(node.ast)
-        ? [node.ast[0], [...node.ast[1], ...definition]]
-        : [node.ast, definition]
+        ? [node.ast[0], [...node.ast[1], ...ast]]
+        : [node.ast, ast]
 }
 
-const applyBoundsToDefinition = (node: boundableNode, definition: Bounds) => {
+const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
     const rightBoundToString =
-        definition.length === 1
-            ? definition[0].join("")
-            : definition[1].join("")
+        ast.length === 1 ? ast[0].join("") : ast[1].join("")
     node.definition += rightBoundToString
-    if (definition.length === 2) {
-        const leftBoundToString = `${definition[0][1]}${
-            invertedComparators[definition[0][0]]
+    if (ast.length === 2) {
+        const leftBoundToString = `${ast[0][1]}${
+            invertedComparators[ast[0][0]]
         }`
         node.definition = leftBoundToString + node.definition
     }
 }
 
-export class bounds {
-    constructor(public definition: Bounds) {}
+export class BoundsConstraint implements Constraint {
+    constructor(public ast: Bounds.Ast) {}
 
-    check(args: Allows.Args<boundableData>) {
+    check(args: Allows.Args<BoundableData>) {
         const size =
             typeof args.data === "number" ? args.data : args.data.length
-        for (const [comparator, limit] of this.definition) {
+        for (const [comparator, limit] of this.ast) {
             if (!isWithinBound(comparator, limit, size)) {
                 args.diagnostics.push(
                     new BoundViolationDiagnostic(args, comparator, limit, size)

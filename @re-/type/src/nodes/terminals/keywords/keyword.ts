@@ -33,8 +33,6 @@ export type TypeKeyword = keyof typeof typeKeywords
 
 export type Definition = keyof KeywordsToNodes
 
-export type TypeKeyword = TypeKeyword | "string" | "number"
-
 export type Types = {
     [K in Definition]: GetGeneratedType<InstanceOf<KeywordsToNodes[K]>>
 }

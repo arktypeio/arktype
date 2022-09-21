@@ -1,5 +1,5 @@
 import type { Base } from "../../nodes/base.js"
-import type { Constrained } from "../../nodes/constraints/common.js"
+import type { ConstrainedAst } from "../../nodes/constraints/constraint.js"
 import type { Branch } from "../../nodes/expressions/branches/branch.js"
 import type { Intersection } from "../../nodes/expressions/branches/intersection.js"
 import type { Union } from "../../nodes/expressions/branches/union.js"
@@ -37,7 +37,7 @@ export namespace Str {
         ? TreeInfer<Left, Ctx> | TreeInfer<Right, Ctx>
         : T extends Intersection<infer Left, infer Right>
         ? TreeInfer<Left, Ctx> & TreeInfer<Right, Ctx>
-        : T extends Constrained<infer Child>
+        : T extends ConstrainedAst<infer Child>
         ? TreeInfer<Child, Ctx>
         : unknown
 
@@ -49,7 +49,7 @@ export namespace Str {
         ? TreeReferences<Child>
         : T extends Branch<infer Left, infer Right>
         ? [...TreeReferences<Left>, ...TreeReferences<Right>]
-        : T extends Constrained<infer Child>
+        : T extends ConstrainedAst<infer Child>
         ? TreeReferences<Child>
         : [T]
 
