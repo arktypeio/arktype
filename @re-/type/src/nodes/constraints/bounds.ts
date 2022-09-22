@@ -12,7 +12,7 @@ import type { Scanner } from "../../parser/str/state/scanner.js"
 import type { Allows } from "../allows.js"
 import type { StrNode, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminals/keywords/number.js"
-import type { StringKeyword } from "../terminals/keywords/string.js"
+import type { StringTypedKeyword } from "../terminals/keywords/string.js"
 import type { Constraint } from "./constraint.js"
 
 export namespace Bounds {
@@ -31,7 +31,7 @@ export namespace Bounds {
     export type Apply<Child, Bounds extends Ast> = Evaluate<[Child, Bounds]>
 }
 
-export type BoundableAst = NumberKeyword | StringKeyword | [unknown, "[]"]
+export type BoundableAst = NumberKeyword | StringTypedKeyword | [unknown, "[]"]
 
 export type BoundableNode = strNode & {
     bounds?: BoundConstraint

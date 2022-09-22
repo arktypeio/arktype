@@ -1,4 +1,4 @@
-import { inKeySet } from "@re-/tools"
+import { isKeyOf } from "@re-/tools"
 import type { parseContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
@@ -34,7 +34,7 @@ export const parseOperator = (
         ? reduceIntersection(s, ctx)
         : lookahead === ")"
         ? reduceGroupClose(s)
-        : inKeySet(lookahead, comparatorChars)
+        : isKeyOf(lookahead, comparatorChars)
         ? parseBound(s, lookahead)
         : lookahead === " "
         ? parseOperator(s, ctx)

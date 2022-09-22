@@ -1,7 +1,7 @@
 import { AssertionError } from "node:assert"
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { inKeySet, keySet } from "../index.js"
+import { isKeyOf, keySet } from "../index.js"
 
 const throwBadPresenceResultError = (
     key: string | number,
@@ -20,12 +20,12 @@ describe("keySet", () => {
     test("string", () => {
         const a = "a" as "a" | "b"
         const b = "b" as "a" | "b"
-        if (inKeySet(a, keys)) {
+        if (isKeyOf(a, keys)) {
             assert(a).typed as "a"
         } else {
             throwBadPresenceResultError("a", true)
         }
-        if (inKeySet(b, keys)) {
+        if (isKeyOf(b, keys)) {
             throwBadPresenceResultError("b", false)
         } else {
             assert(b).typed as "b"
@@ -34,12 +34,12 @@ describe("keySet", () => {
     test("number", () => {
         const one = 1 as 1 | 2
         const two = 2 as 1 | 2
-        if (inKeySet(one, keys)) {
+        if (isKeyOf(one, keys)) {
             assert(one).typed as 1
         } else {
             throwBadPresenceResultError(1, true)
         }
-        if (inKeySet(two, keys)) {
+        if (isKeyOf(two, keys)) {
             throwBadPresenceResultError(2, false)
         } else {
             assert(two).typed as 2

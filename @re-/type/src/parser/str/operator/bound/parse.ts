@@ -1,4 +1,4 @@
-import { inKeySet } from "@re-/tools"
+import { isKeyOf } from "@re-/tools"
 import { LiteralNode } from "../../../../nodes/terminals/literal.js"
 import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
 import type { Left } from "../../state/left.js"
@@ -12,7 +12,7 @@ import { reduceLeft } from "./left.js"
 export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
     s.r.lookahead === "="
         ? reduceBound(s.shifted(), `${start}=`)
-        : inKeySet(start, singleCharComparator)
+        : isKeyOf(start, singleCharComparator)
         ? reduceBound(s, start)
         : s.error(singleEqualsMessage)
 

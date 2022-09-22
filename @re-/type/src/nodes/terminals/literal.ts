@@ -36,7 +36,10 @@ export class LiteralNode<
 
     check(args: Allows.Args) {
         if (args.data !== this.value) {
-            args.diagnostics.add("literal", this.definition, args, {
+            args.diagnostics.add("literal", args, {
+                definition: this.definition,
+                data: args.data,
+                value: this.value,
                 reason: `Must be ${this.definition}`
             })
         }
@@ -46,3 +49,8 @@ export class LiteralNode<
         return this.value
     }
 }
+
+export type LiteralDiagnostic = Allows.DefineDiagnostic<
+    "literal",
+    { definition: string; data: unknown; value: PrimitiveLiteralValue }
+>

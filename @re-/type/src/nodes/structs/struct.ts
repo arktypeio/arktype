@@ -1,5 +1,6 @@
 import type {
     Evaluate,
+    IsAnyOrUnknown,
     IterateType,
     ListPossibleTypes,
     ValueOf
@@ -9,7 +10,7 @@ import type { Allows } from "../allows.js"
 import { Base } from "../base.js"
 import type { References } from "../references.js"
 import type { RootReferences } from "../root.js"
-import type { Dictionary } from "./dictionary.js"
+import type { InferDictionary } from "./dictionary.js"
 import type { InferTuple, TupleDefinition } from "./tuple.js"
 
 type StructKey = string | number
@@ -75,37 +76,53 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
     }
 }
 
-export type StructKind = "array" | "dictionary"
+export type ObjectKind = "array" | "dictionary"
 
-export const checkObjectRoot = <Definition>(
+export type StructureOfResult = ObjectKind | "non-object"
+
+export type StrucutureOf<Data> = IsAnyOrUnknown<Data> extends true
+    ? StructureOfResult
+    : Data extends object
+    ? Data extends readonly unknown[]
+        ? "array"
+        : "dictionary"
+    : "non-object"
+
+export const structureOf = <Data>(data: Data) =>
+    (typeof data !== "object" || data === null
+        ? "non-object"
+        : Array.isArray(data)
+        ? "array"
+        : "dictionary") as StrucutureOf<Data>
+
+export const checkObjectRoot = <Definition extends object>(
     definition: Definition,
     args: Allows.Args
 ): args is Allows.Args<
     Definition extends TupleDefinition ? unknown[] : Record<string, unknown>
 > => {
-    const expected: StructKind = Array.isArray(definition)
-        ? "array"
-        : "dictionary"
-    if (typeof args.data !== "object" || args.data === null) {
-        args.diagnostics.add("structure", definition, args, {
-            reason: `Must be ${
-                expected === "dictionary" ? "an object" : "an array"
-            }`,
-            kind: expected
-        })
-        return false
-    }
-    if ((expected === "array") !== Array.isArray(args.data)) {
-        args.diagnostics.add("structure", {}, args, {
-            reason: `Must ${
-                expected === "dictionary" ? "not " : ""
-            }be an array`,
-            kind: expected
+    const expectedStructure = structureOf(definition) as ObjectKind
+    const actualStructure = structureOf(args.data)
+    if (expectedStructure !== actualStructure) {
+        const expectedStructureDescription =
+            expectedStructure === "array" ? "an array" : "a non-array object"
+        args.diagnostics.add("structure", args, {
+            reason: `Must be ${expectedStructureDescription}`,
+            expected: expectedStructure,
+            actual: actualStructure
         })
         return false
     }
     return true
 }
+
+export type StructureDiagnostic = Allows.DefineDiagnostic<
+    "structure",
+    {
+        expected: ObjectKind
+        actual: StructureOfResult
+    }
+>
 
 export namespace Struct {
     export type Infer<
@@ -113,7 +130,7 @@ export namespace Struct {
         Ctx extends Base.InferenceContext
     > = Def extends readonly unknown[]
         ? InferTuple<Def, Ctx>
-        : Dictionary.Infer<Def, Ctx>
+        : InferDictionary<Def, Ctx>
 
     export type References<
         Def,

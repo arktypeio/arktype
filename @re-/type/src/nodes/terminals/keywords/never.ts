@@ -1,14 +1,11 @@
 import type { Allows } from "../../allows.js"
 import { Generate } from "../../generate.js"
 import { TerminalNode } from "../terminal.js"
+import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NeverNode extends TerminalNode {
     check(args: Allows.Args) {
-        args.diagnostics.add("keyword", args, {
-            definition: "never",
-            data: args.data,
-            reason: "Never allowed"
-        })
+        addTypeKeywordDiagnostic(args, "never", "Never allowed")
     }
 
     generate(): never {

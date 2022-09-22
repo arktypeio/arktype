@@ -1,20 +1,19 @@
-import type {
-    Evaluate,
-    JsBuiltinTypes,
-    JsTypeName,
-    Stringifiable
-} from "@re-/tools"
+import type { Evaluate, JsBuiltinTypes, JsTypeName } from "@re-/tools"
 import { toString, uncapitalize } from "@re-/tools"
-import type { Scanner } from "../parser/str/state/scanner.js"
 import type { Base } from "./base.js"
 import type { Path } from "./common.js"
 import { pathToString } from "./common.js"
-import type {
-    BoundDiagnostic as BoundDiagnostic,
-    BoundKind
-} from "./constraints/bounds.js"
+import type { BoundDiagnostic as BoundDiagnostic } from "./constraints/bounds.js"
 import type { UnionDiagnostic } from "./expressions/branches/union.js"
-import type { KeywordDiagnostic } from "./terminals/keywords/keyword.js"
+import type {
+    ExtraneousKeysDiagnostic,
+    MissingKeyDiagnostic
+} from "./structs/dictionary.js"
+import type { StructureDiagnostic } from "./structs/struct.js"
+import type { TupleLengthDiagnostic } from "./structs/tuple.js"
+import type { KeywordTypeDiagnostic } from "./terminals/keywords/common.js"
+import type { RegexDiagnostic } from "./terminals/keywords/string.js"
+import type { LiteralDiagnostic } from "./terminals/literal.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {
@@ -130,38 +129,14 @@ export namespace Allows {
     }
 
     export type RegisteredDiagnostics = {
-        keyword: KeywordDiagnostic
-        // literal: {}
-        // structure: {
-        //     context: {
-        //         kind: StructKind
-        //     }
-        // }
+        keyword: KeywordTypeDiagnostic
+        literal: LiteralDiagnostic
+        structure: StructureDiagnostic
         bound: BoundDiagnostic
-        // extraneousKeys: {
-        //     options: {
-        //         enabled: boolean
-        //     }
-        //     context: {
-        //         keys: string[]
-        //     }
-        // }
-        // missingKey: {
-        //     context: {
-        //         key: string
-        //     }
-        // }
-        // regex: {
-        //     context: {
-        //         expression: RegExp
-        //     }
-        // }
-        // tupleLength: {
-        //     context: {
-        //         expected: number
-        //         actual: number
-        //     }
-        // }
+        extraneousKeys: ExtraneousKeysDiagnostic
+        missingKey: MissingKeyDiagnostic
+        regex: RegexDiagnostic
+        tupleLength: TupleLengthDiagnostic
         union: UnionDiagnostic
     }
 

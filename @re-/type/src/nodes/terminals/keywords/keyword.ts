@@ -1,4 +1,5 @@
 import type { InstanceOf } from "@re-/tools"
+import { isKeyOf } from "@re-/tools"
 import type { Allows } from "../../allows.js"
 import { AnyNode } from "./any.js"
 import { BigintNode } from "./bigint.js"
@@ -6,9 +7,11 @@ import { BooleanNode } from "./boolean.js"
 import { FunctionNode } from "./function.js"
 import { NeverNode } from "./never.js"
 import { NullNode } from "./null.js"
+import type { NumberSubtypeKeyword } from "./number.js"
 import { numberKeywords, NumberNode } from "./number.js"
 import { ObjectNode } from "./object.js"
-import { stringKeywords, StringNode } from "./string.js"
+import type { StringSubtypeDefinition, StringSubtypeKeyword } from "./string.js"
+import { StringNode, stringTypedKeywords } from "./string.js"
 import { SymbolNode } from "./symbol.js"
 import { UndefinedNode } from "./undefined.js"
 import { UnknownNode } from "./unknown.js"
@@ -32,24 +35,22 @@ export const typeKeywords = {
 
 export type TypeKeyword = keyof typeof typeKeywords
 
+export type SubtypeKeyword = StringSubtypeKeyword | NumberSubtypeKeyword
+
+export type SubtypeDefinition = StringSubtypeDefinition | NumberSubtypeKeyword
+
 export type KeywordDefinition = keyof KeywordsToNodes
 
 export type KeywordTypes = {
     [K in KeywordDefinition]: GetGeneratedType<InstanceOf<KeywordsToNodes[K]>>
 }
 
-export type KeywordDiagnostic = Allows.DefineDiagnostic<
-    "keyword",
-    {
-        definition: KeywordDefinition
-        parentKeyword?: TypeKeyword
-        data: unknown
-    }
->
+export type InferKeyword<Definition extends KeywordDefinition> =
+    KeywordTypes[Definition]
 
 export const keywordNodes = {
     ...typeKeywords,
-    ...stringKeywords,
+    ...stringTypedKeywords,
     ...numberKeywords
 }
 

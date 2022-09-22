@@ -4,7 +4,7 @@ import type { Bounds } from "../../../../../nodes/constraints/bounds.js"
 import { boundToString } from "../../../../../nodes/constraints/bounds.js"
 import { Keyword } from "../../../../../nodes/terminals/keywords/keyword.js"
 import { numberKeywords } from "../../../../../nodes/terminals/keywords/number.js"
-import { stringKeywords } from "../../../../../nodes/terminals/keywords/string.js"
+import { stringTypedKeywords } from "../../../../../nodes/terminals/keywords/string.js"
 import type { DynamicType } from "../../../../../type.js"
 import type { Scanner } from "../../../state/scanner.js"
 import { scanner } from "../../../state/scanner.js"
@@ -17,7 +17,9 @@ export const arbitraryKeywordList = fc.constantFrom(
     ...keysOf(Keyword.nodes).map((_) => `${_}[]`)
 )
 export const arbitraryNumberKeyword = fc.constantFrom(...keysOf(numberKeywords))
-export const arbitraryStringKeyword = fc.constantFrom(...keysOf(stringKeywords))
+export const arbitraryStringKeyword = fc.constantFrom(
+    ...keysOf(stringTypedKeywords)
+)
 
 export const aribtraryBoundable = fc.oneof(
     arbitraryNumberKeyword,

@@ -7,18 +7,19 @@ import type { Constraint } from "../../constraints/constraint.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
 import { TerminalNode } from "../terminal.js"
+import { addTypeKeywordDiagnostic } from "./common.js"
 
-export type RegexLiteralDefinition = `/${string}/`
-export type StringTypedDefinition = StringKeyword | RegexLiteralDefinition
-
-export class StringNode extends TerminalNode implements BoundableNode {
+export class StringNode
+    extends TerminalNode<StringTypedDefinition>
+    implements BoundableNode
+{
     regex?: RegexConstraint
     bounds?: BoundConstraint
 
-    constructor(...args: TerminalConstructorArgs) {
+    constructor(...args: TerminalConstructorArgs<StringTypedDefinition>) {
         super(...args)
-        if (this.definitionIsKeyOf(subtypes)) {
-            this.regex = subtypes[this.definition]
+        if (this.definitionIsKeyOf(stringSubtypes)) {
+            this.regex = stringSubtypes[this.definition]
         } else if (this.definition.match("/.*/")) {
             this.regex = new RegexConstraint(
                 new RegExp(this.definition.slice(1, -1)),
@@ -30,12 +31,16 @@ export class StringNode extends TerminalNode implements BoundableNode {
 
     check(args: Allows.Args) {
         if (!Allows.dataIsOfType(args, "string")) {
-            args.diagnostics.add("keyword", args, {
-                definition: this.definition,
-                parentKeyword:
-                    this.definition === "string" ? undefined : "string",
-                reason: "Must be a string"
-            })
+            if (this.definition === "string") {
+                addTypeKeywordDiagnostic(args, "string", "Must be a string")
+            } else {
+                addTypeKeywordDiagnostic(
+                    args,
+                    this.definition,
+                    "Must be a string",
+                    "string"
+                )
+            }
             return
         }
         this.regex?.check(args)
@@ -51,18 +56,23 @@ export class StringNode extends TerminalNode implements BoundableNode {
 }
 
 export class RegexConstraint implements Constraint {
+    private context: RegexDiagnostic["context"]
+
     constructor(
         public expression: RegExp,
-        public definition: string,
-        public description: string
-    ) {}
+        definition: StringSubtypeDefinition,
+        description: string
+    ) {
+        this.context = {
+            definition,
+            expression,
+            reason: description
+        }
+    }
 
     check(args: Allows.Args<string>) {
-        if (this.expression.test(args.data)) {
-            args.diagnostics.add("regex", this.definition, args, {
-                expression: this.expression,
-                reason: this.description
-            })
+        if (!this.context.expression.test(args.data)) {
+            args.diagnostics.add("regex", args, this.context)
         }
     }
 }
@@ -70,13 +80,13 @@ export class RegexConstraint implements Constraint {
 export type RegexDiagnostic = Allows.DefineDiagnostic<
     "regex",
     {
-        definition: ""
+        definition: StringSubtypeDefinition
         expression: RegExp
     }
 >
 
-export const subtypes: Record<
-    Exclude<StringKeyword, "string">,
+export const stringSubtypes: Record<
+    Exclude<StringTypedKeyword, "string">,
     RegexConstraint
 > = {
     email: new RegexConstraint(
@@ -106,7 +116,7 @@ export const subtypes: Record<
     )
 }
 
-export const stringKeywords = {
+export const stringTypedKeywords = {
     string: StringNode,
     email: StringNode,
     alpha: StringNode,
@@ -115,4 +125,13 @@ export const stringKeywords = {
     uppercase: StringNode
 }
 
-export type StringKeyword = keyof typeof stringKeywords
+export type StringTypedKeyword = keyof typeof stringTypedKeywords
+
+export type StringSubtypeKeyword = keyof typeof stringSubtypes
+
+export type StringSubtypeDefinition =
+    | StringSubtypeKeyword
+    | RegexLiteralDefinition
+
+export type RegexLiteralDefinition = `/${string}/`
+export type StringTypedDefinition = StringTypedKeyword | RegexLiteralDefinition

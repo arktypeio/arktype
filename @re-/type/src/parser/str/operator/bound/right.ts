@@ -1,4 +1,4 @@
-import { inKeySet } from "@re-/tools"
+import { isKeyOf } from "@re-/tools"
 import type { NodeToString } from "../../../../nodes/common.js"
 import type {
     BoundableAst,
@@ -147,7 +147,7 @@ const reduceSingle = (
 }
 
 const isValidDoubleBoundRight = (right: Bounds.Bound): right is Bounds.Upper =>
-    inKeySet(right[0], doubleBoundComparators)
+    isKeyOf(right[0], doubleBoundComparators)
 
 export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
 

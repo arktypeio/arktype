@@ -1,4 +1,4 @@
-import { inKeySet } from "@re-/tools"
+import { isKeyOf } from "@re-/tools"
 import type { strNode } from "../../nodes/common.js"
 import type { parseContext, ParseError, parseFn } from "../common.js"
 import type { ParseOperand } from "./operand/operand.js"
@@ -80,7 +80,7 @@ const suffixLoop = (s: parserState.suffix, ctx: parseContext): strNode => {
     if (s.l.nextSuffix === "?") {
         return finalize(parseOptional(s, ctx))
     }
-    if (inKeySet(s.l.nextSuffix, scanner.comparators)) {
+    if (isKeyOf(s.l.nextSuffix, scanner.comparators)) {
         return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
     }
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))

@@ -22,7 +22,9 @@ export class TupleNode extends struct<number> {
         const expected = this.entries.length
         const actual = args.data.length
         if (expected !== actual) {
-            args.diagnostics.add("tupleLength", this.definition, args, {
+            args.diagnostics.add("tupleLength", args, {
+                definition: this.definition,
+                data: args.data,
                 expected,
                 actual,
                 reason: `Length must be ${expected}`
@@ -61,3 +63,13 @@ export class TupleNode extends struct<number> {
         return result
     }
 }
+
+export type TupleLengthDiagnostic = Allows.DefineDiagnostic<
+    "tupleLength",
+    {
+        definition: TupleDefinition
+        data: unknown[]
+        expected: number
+        actual: number
+    }
+>

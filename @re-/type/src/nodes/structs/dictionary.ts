@@ -1,4 +1,4 @@
-import type { Evaluate } from "@re-/tools"
+import type { Dictionary, Evaluate } from "@re-/tools"
 import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import { optional } from "../expressions/unaries/optional.js"
@@ -6,67 +6,56 @@ import type { Generate } from "../generate.js"
 import type { RootInfer } from "../root.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
-export namespace Dictionary {
-    export type Definition = Record<string, unknown>
-
-    export type Infer<
-        Def,
-        Ctx extends Base.InferenceContext,
-        OptionalKey extends keyof Def = {
-            [K in keyof Def]: Def[K] extends `${string}?` ? K : never
-        }[keyof Def],
-        RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
-    > = Evaluate<
-        {
-            [K in RequiredKey]: RootInfer<Def[K], Ctx>
-        } & {
-            [K in OptionalKey]?: RootInfer<Def[K], Ctx>
-        }
-    >
-}
-
-type DictionaryLike = Record<string, unknown>
-
-export const isArgValueRecordLike = (
-    args: Allows.Args
-): args is Allows.Args<DictionaryLike> =>
-    typeof args.data === "object" &&
-    args.data !== null &&
-    !Array.isArray(args.data)
+export type InferDictionary<
+    Def,
+    Ctx extends Base.InferenceContext,
+    OptionalKey extends keyof Def = {
+        [K in keyof Def]: Def[K] extends `${string}?` ? K : never
+    }[keyof Def],
+    RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
+> = Evaluate<
+    {
+        [K in RequiredKey]: RootInfer<Def[K], Ctx>
+    } & {
+        [K in OptionalKey]?: RootInfer<Def[K], Ctx>
+    }
+>
 
 export class DictionaryNode extends struct<string> {
     check(args: Allows.Args) {
         if (!checkObjectRoot(this.definition, args)) {
             return
         }
-        const uncheckedData = { ...args.data }
+        const checkExtraneous =
+            args.cfg.diagnostics?.extraneousKeys?.enabled ||
+            args.ctx.modelCfg.diagnostics?.extraneousKeys?.enabled
+        const uncheckedData = checkExtraneous ? { ...args.data } : {}
         for (const [key, propNode] of this.entries) {
             const propArgs = this.argsForProp(args, key)
             if (key in args.data) {
                 propNode.check(propArgs)
             } else if (!(propNode instanceof optional)) {
-                args.diagnostics.add("missingKey", propNode, args, {
+                args.diagnostics.add("missingKey", args, {
                     reason: `${key} is required`,
+                    definition: propNode.definition,
                     key
                 })
             }
             delete uncheckedData[key]
         }
         const extraneousKeys = Object.keys(uncheckedData)
-        if (
-            extraneousKeys.length &&
-            (args.cfg.diagnostics?.extraneousKeys?.enabled ||
-                args.ctx.modelCfg.diagnostics?.extraneousKeys?.enabled)
-        ) {
-            args.diagnostics.add("extraneousKeys", this.definition, args, {
-                reason: `Keys ${extraneousKeys.join(", ")} were unexpected`,
-                keys: extraneousKeys
+        if (extraneousKeys.length) {
+            args.diagnostics.add("extraneousKeys", args, {
+                definition: this.definition,
+                data: args.data,
+                keys: extraneousKeys,
+                reason: `Keys ${extraneousKeys.join(", ")} were unexpected`
             })
         }
     }
 
     private argsForProp(
-        args: Allows.Args<DictionaryLike>,
+        args: Allows.Args<Dictionary>,
         propKey: string
     ): Allows.Args {
         return {
@@ -80,7 +69,7 @@ export class DictionaryNode extends struct<string> {
     }
 
     generate(args: Generate.Args) {
-        const result: DictionaryLike = {}
+        const result: Dictionary = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
             if (propNode instanceof optional) {
@@ -97,3 +86,23 @@ export class DictionaryNode extends struct<string> {
         return result
     }
 }
+
+export type ExtraneousKeysDiagnostic = Allows.DefineDiagnostic<
+    "extraneousKeys",
+    {
+        definition: Dictionary
+        data: Dictionary
+        keys: string[]
+    },
+    {
+        enabled: boolean
+    }
+>
+
+export type MissingKeyDiagnostic = Allows.DefineDiagnostic<
+    "missingKey",
+    {
+        definition: Base.RootDefinition
+        key: string
+    }
+>

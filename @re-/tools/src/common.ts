@@ -18,6 +18,8 @@ export type JsBuiltinTypes = {
 
 export type JsTypeName = keyof JsBuiltinTypes
 
+export type Dictionary<PropType = unknown> = Record<string, PropType>
+
 export type ElementOf<T extends List> = T extends List<infer Item>
     ? Item
     : never

@@ -1,7 +1,7 @@
 import { Base } from "../base.js"
 import type { References } from "../references.js"
 import type { Alias } from "./alias.js"
-import type { Keyword } from "./keywords/keyword.js"
+import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
 import type { RegexLiteralDefinition } from "./keywords/string.js"
 import type {
     BigintLiteralDefinition,
@@ -15,8 +15,10 @@ export type TerminalConstructorArgs<Definition extends string = string> = [
     context: Base.context
 ]
 
-export abstract class TerminalNode extends Base.node<string, string> {
-    constructor(...[definition, context]: TerminalConstructorArgs) {
+export abstract class TerminalNode<
+    Definition extends string = string
+> extends Base.node<Definition> {
+    constructor(...[definition, context]: TerminalConstructorArgs<Definition>) {
         super(definition, definition, context)
     }
 
@@ -38,8 +40,8 @@ export abstract class TerminalNode extends Base.node<string, string> {
 export type InferTerminal<
     Token extends string,
     Ctx extends Base.InferenceContext
-> = Token extends Keyword.Definition
-    ? Keyword.Types[Token]
+> = Token extends KeywordDefinition
+    ? InferKeyword<Token>
     : Token extends keyof Ctx["Dict"]
     ? Alias.Infer<Token, Ctx>
     : Token extends StringLiteralDefinition<infer Value>

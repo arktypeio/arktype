@@ -1,14 +1,11 @@
 import type { Allows } from "../../allows.js"
 import { TerminalNode } from "../terminal.js"
+import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NullNode extends TerminalNode {
     check(args: Allows.Args) {
         if (args.data !== null) {
-            args.diagnostics.add("keyword", args, {
-                definition: "null",
-                data: args.data,
-                reason: "Must be null"
-            })
+            addTypeKeywordDiagnostic(args, "null", "Must be null")
         }
     }
 

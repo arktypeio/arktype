@@ -14,7 +14,13 @@ export namespace Base {
         ast: Ast,
         context: context
     ]
-    export abstract class node<Definition = unknown, Ast = unknown> {
+
+    export type RootDefinition = string | object
+
+    export abstract class node<
+        Definition extends RootDefinition = RootDefinition,
+        Ast = unknown
+    > {
         input?: Input
 
         constructor(
@@ -41,7 +47,7 @@ export namespace Base {
 
         definitionIsKeyOf<Obj extends Record<string, unknown>>(
             obj: Obj
-        ): this is node<keyof Obj> {
+        ): this is node<Extract<keyof Obj, string>> {
             return this.definition in obj
         }
     }

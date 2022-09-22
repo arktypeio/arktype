@@ -1,3 +1,4 @@
+import type { Key } from "./common.js"
 import type { Evaluate } from "./evaluate.js"
 import type { Narrow } from "./narrow.js"
 
@@ -9,7 +10,7 @@ export type KeySet = Record<KeySetKey, 1>
 export const keySet = <T extends KeySet>(keySet: Narrow<T>) =>
     keySet as Evaluate<T>
 
-export const inKeySet = <Set extends KeySet>(
-    key: KeySetKey,
-    set: Set
-): key is Extract<keyof Set, KeySetKey> => key in set
+export const isKeyOf = <Obj, K extends Key>(
+    key: K,
+    obj: Obj
+): key is Extract<keyof Obj, K> => key in obj

@@ -1,14 +1,11 @@
 import type { Allows } from "../../allows.js"
 import { TerminalNode } from "../terminal.js"
+import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class UndefinedNode extends TerminalNode {
     check(args: Allows.Args) {
         if (args.data !== undefined) {
-            args.diagnostics.add("keyword", args, {
-                definition: "undefined",
-                data: args.data,
-                reason: "Must be undefined"
-            })
+            addTypeKeywordDiagnostic(args, "undefined", "Must be undefined")
         }
     }
 
