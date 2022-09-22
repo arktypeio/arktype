@@ -21,7 +21,7 @@ export class KeywordDiagnostic extends Allows.Diagnostic<"keyword"> {
         } else {
             reason += `a ${keyword}`
         }
-        reason += ` (got ${args.data === null ? "null" : typeof args.data}).`
+        reason += ` (was ${args.data === null ? "null" : typeof args.data}).`
         super("keyword", keyword, args, { reason })
         this.message = reason
     }

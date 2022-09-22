@@ -51,9 +51,9 @@ export const singleCharComparator = keySet({
 export type SingleCharComparator = keyof typeof singleCharComparator
 
 export type InvalidDoubleBoundMessage<Token extends Scanner.Comparator> =
-    `Double-bound expressions must specify their bounds using < or <= (got ${Token}).`
+    `Double-bound expressions must specify their bounds using < or <= (was ${Token}).`
 
 export const invalidDoubleBoundMessage = <Token extends Scanner.Comparator>(
     T: Token
 ): InvalidDoubleBoundMessage<Token> =>
-    `Double-bound expressions must specify their bounds using < or <= (got ${T}).`
+    `Double-bound expressions must specify their bounds using < or <= (was ${T}).`

@@ -35,30 +35,30 @@ describe("numberLiteral", () => {
             assert(eight.check(8).errors).is(undefined)
             assert(eight.check(8).errors).is(undefined)
             assert(eight.check(8.000_001).errors?.summary).snap(
-                `Must be 8 (got 8.000001).`
+                `Must be 8 (was 8.000001).`
             )
             assert(eight.check("8").errors?.summary).snap(
-                `Must be 8 (got "8").`
+                `Must be 8 (was "8").`
             )
         })
         test("decimal", () => {
             const goldenRatio = type("1.618")
             assert(goldenRatio.check(1.618).errors).is(undefined)
             assert(goldenRatio.check(2).errors?.summary).snap(
-                `Must be 1.618 (got 2).`
+                `Must be 1.618 (was 2).`
             )
             assert(goldenRatio.check("1.618").errors?.summary).snap(
-                `Must be 1.618 (got "1.618").`
+                `Must be 1.618 (was "1.618").`
             )
         })
         test("negative", () => {
             const unLeet = type("-13.37")
             assert(unLeet.check(-13.37).errors).is(undefined)
             assert(unLeet.check(-14).errors?.summary).snap(
-                `Must be -13.37 (got -14).`
+                `Must be -13.37 (was -14).`
             )
             assert(unLeet.check("-13.37").errors?.summary).snap(
-                `Must be -13.37 (got "-13.37").`
+                `Must be -13.37 (was "-13.37").`
             )
         })
     })

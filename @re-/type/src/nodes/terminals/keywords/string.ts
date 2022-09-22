@@ -1,4 +1,4 @@
-import type { Allows } from "../../allows.js"
+import { Allows } from "../../allows.js"
 import type {
     BoundableNode,
     BoundsConstraint
@@ -32,7 +32,7 @@ export class StringNode extends TerminalNode implements BoundableNode {
     }
 
     check(args: Allows.Args) {
-        if (typeof args.data !== "string") {
+        if (!Allows.dataIsOfType(args, "string")) {
             args.diagnostics.add("keyword", "string", args, {
                 base: this.definition === "string" ? undefined : "string",
                 reason: "Must be a string"
@@ -40,7 +40,7 @@ export class StringNode extends TerminalNode implements BoundableNode {
             return
         }
         this.regex?.check(args)
-        this.bounds?.check(args as Allows.Args<string>)
+        this.bounds?.check(args)
     }
 
     generate() {
@@ -50,14 +50,6 @@ export class StringNode extends TerminalNode implements BoundableNode {
         return ""
     }
 }
-
-type Z = "5<foobar" extends ModuloValueWithSingleCharacterSuffix<
-    number,
-    "<",
-    string
->
-    ? "matched"
-    : "didn't match"
 
 export class RegexConstraint extends Constraint {
     constructor(public expression: RegExp, ...rest: ConstraintConstructorArgs) {

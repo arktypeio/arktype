@@ -37,7 +37,7 @@ describe("stringLiteral", () => {
             test("mismatched literal", () => {
                 assert(
                     type("'dursurdo'").check("durrrrrr").errors?.summary
-                ).snap(`Must be "dursurdo" (got "durrrrrr").`)
+                ).snap(`Must be "dursurdo" (was "durrrrrr").`)
             })
         })
     })

@@ -12,7 +12,7 @@ describe("snippets", () => {
             }
         }
         assert(modelSnippet.errors?.summary).snap(
-            `browser/kind must be one of "chrome"|"firefox"|"safari" (got "Internet Explorer").`
+            `browser/kind must be one of "chrome"|"firefox"|"safari" (was "Internet Explorer").`
         )
     })
     test("space", async () => {
@@ -33,8 +33,8 @@ describe("snippets", () => {
         assert(constraintsSnippet.errors?.summary)
             .snap(`Encountered errors at the following paths:
   email: 'david@redo.biz' must match expression /[a-z]*@redo.dev/.
-  about/age: Must be at least 18 (got 17).
-  about/bio: Must be at most 80 characters (got 110).
+  about/age: Must be at least 18 (was 17).
+  about/bio: Must be at most 80 characters (was 110).
 `)
         assert(constraintsSnippet.employee.infer).typed as {
             email: string

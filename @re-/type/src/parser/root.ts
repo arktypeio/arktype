@@ -39,7 +39,7 @@ export namespace Root {
             ? Obj.parse(def, ctx)
             : throwParseError(
                   badDefinitionTypeMessage +
-                      ` (got ${typeof def}${
+                      ` (was ${typeof def}${
                           ctx.path.length
                               ? " at path " + ctx.path.join("/")
                               : ""

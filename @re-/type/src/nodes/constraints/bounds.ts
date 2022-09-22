@@ -13,7 +13,8 @@ import { Allows } from "../allows.js"
 import type { StrNode, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminals/keywords/number.js"
 import type { StringKeyword } from "../terminals/keywords/string.js"
-import type { Constraint } from "./constraint.js"
+import type { ConstraintConstructorArgs } from "./constraint.js"
+import { Constraint } from "./constraint.js"
 
 export namespace Bounds {
     export type Ast = Single | Double
@@ -57,13 +58,8 @@ export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"
         public size: number
     ) {
         super("BoundViolation", args)
-        this.kind =
-            typeof args.data === "string"
-                ? "string"
-                : typeof args.data === "number"
-                ? "number"
-                : "array"
-        this.message = boundViolationMessage(
+
+        this.message = describeBound(
             this.comparator,
             this.limit,
             this.size,
@@ -96,32 +92,50 @@ const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
     }
 }
 
-export class BoundsConstraint implements Constraint {
-    constructor(public ast: Bounds.Ast) {}
+export class BoundsConstraint extends Constraint {
+    constructor(public ast: Bounds.Ast, ...rest: ConstraintConstructorArgs) {
+        super(...rest)
+    }
 
     check(args: Allows.Args<BoundableData>) {
-        const size =
+        const actual =
             typeof args.data === "number" ? args.data : args.data.length
         for (const [comparator, limit] of this.ast) {
-            if (!isWithinBound(comparator, limit, size)) {
-                args.diagnostics.push(
-                    new BoundViolationDiagnostic(args, comparator, limit, size)
-                )
+            if (!isWithinBound(comparator, limit, actual)) {
+                const kind: BoundKind =
+                    typeof args.data === "string"
+                        ? "string"
+                        : typeof args.data === "number"
+                        ? "number"
+                        : "array"
+                args.diagnostics.add("bound", `${comparator}${limit}`, args, {
+                    comparator,
+                    limit,
+                    kind,
+                    actual,
+                    reason: describeBound(comparator, limit, kind)
+                })
                 return
             }
         }
     }
 }
 
-export const boundViolationMessage = (
+export type BoundDiagnosticContext = {
+    comparator: Scanner.Comparator
+    limit: number
+    actual: number
+    kind: BoundKind
+}
+
+export const describeBound = (
     comparator: Scanner.Comparator,
     limit: number,
-    size: number,
     kind: BoundKind
 ) =>
     `Must be ${comparatorToString[comparator]} ${limit} ${
         kind === "string" ? "characters " : kind === "array" ? "items " : ""
-    }(got ${size}).`
+    }`
 
 const isConstrained = (ast: StrNode): ast is [StrNode, StrNode[]] =>
     Array.isArray(ast) && Array.isArray(ast[1])

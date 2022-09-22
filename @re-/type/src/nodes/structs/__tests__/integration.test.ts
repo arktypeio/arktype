@@ -25,16 +25,16 @@ describe("obj integration", () => {
                         true,
                         { a: ["ok", [[true, false]], "extraElement"] }
                     ]).errors?.summary
-                ).snap(`1/a must have length 2 (got 3).`)
+                ).snap(`1/a must have length 2 (was 3).`)
             })
             test("multiple", () => {
                 assert(
                     mixed().check([false, { a: [0, [0, 1, 2]] }]).errors
                         ?.summary
                 ).snap(`Encountered errors at the following paths:
-  0: Must be true (got false).
-  1/a/0: Must be a string (got number).
-  1/a/1: Must have length 1 (got 3).
+  0: Must be true (was false).
+  1/a/0: Must be a string (was number).
+  1/a/1: Must have length 1 (was 3).
 `)
             })
         })

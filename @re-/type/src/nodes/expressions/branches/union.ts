@@ -1,4 +1,4 @@
-import type { TypeOfResult } from "@re-/tools"
+import type { JsTypeName } from "@re-/tools"
 import { Allows } from "../../allows.js"
 import { Generate } from "../../generate.js"
 import type { Branch, BranchConstructorArgs } from "./branch.js"
@@ -12,18 +12,44 @@ export class union extends branch {
     }
 
     check(args: Allows.Args) {
-        const unionDiagnostics: DiagnosticBranchEntry[] = []
+        const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
         for (const child of this.children) {
             const branchDiagnostics = new Allows.Diagnostics()
             child.check({ ...args, diagnostics: branchDiagnostics })
             if (!branchDiagnostics.length) {
                 return
             }
-            unionDiagnostics.push([child.toString(), branchDiagnostics])
+            branchDiagnosticsEntries.push([child.toString(), branchDiagnostics])
         }
-        args.diagnostics.push(
-            new UnionDiagnostic(this.toString(), args, unionDiagnostics)
+        args.diagnostics.add(
+            "union",
+            this.definition,
+            args,
+            this.createUnionDiagnosticContext(args, branchDiagnosticsEntries)
         )
+    }
+
+    private createUnionDiagnosticContext(
+        args: Allows.Args,
+        branchDiagnosticsEntries: BranchDiagnosticsEntry[]
+    ): Allows.ContextInputByDiagnostic["union"] {
+        const explainBranches =
+            args.cfg.diagnostics?.union?.explainBranches ||
+            args.ctx.modelCfg.diagnostics?.union?.explainBranches
+        let reason = `Must be one of ${
+            this.definition
+        } (was ${Allows.stringifyData(args.data)})${
+            explainBranches ? ":" : "."
+        }`
+        if (explainBranches) {
+            for (const [
+                branchDefinition,
+                branchDiagnostics
+            ] of branchDiagnosticsEntries) {
+                reason += `\n${branchDefinition}: ${branchDiagnostics.summary}`
+            }
+        }
+        return { reason, branchDiagnosticsEntries }
     }
 
     generate(args: Generate.Args) {
@@ -77,32 +103,9 @@ export class union extends branch {
     }
 }
 
-export type DiagnosticBranchEntry = [string, Allows.Diagnostics]
+export type BranchDiagnosticsEntry = [string, Allows.Diagnostics]
 
-export class UnionDiagnostic extends Allows.Diagnostic<
-    "Union",
-    { expand?: boolean }
-> {
-    public message: string
-
-    constructor(
-        public type: string,
-        args: Allows.Args,
-        public branches: DiagnosticBranchEntry[]
-    ) {
-        super("Union", args)
-        this.message = `Must be one of ${this.type} (got ${Allows.stringifyData(
-            this.data
-        )})${this.options?.expand ? ":" : "."}`
-        if (this.options?.expand) {
-            for (const [type, diagnostics] of this.branches) {
-                this.message += `\n${type}: ${diagnostics.summary}`
-            }
-        }
-    }
-}
-
-type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
+type PreferredDefaults = ({ value: any } | { typeOf: JsTypeName })[]
 
 const preferredDefaults: PreferredDefaults = [
     { value: undefined },

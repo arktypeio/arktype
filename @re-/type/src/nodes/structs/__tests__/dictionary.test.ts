@@ -48,7 +48,7 @@ describe("dictionary", () => {
                     assert(
                         shallow().check({ a: "ko", b: 123.4, c: 76 }).errors
                             ?.summary
-                    ).snap(`c must be 67 (got 76).`)
+                    ).snap(`c must be 67 (was 76).`)
                 })
                 test("missing keys", () => {
                     assert(
@@ -167,7 +167,7 @@ describe("dictionary", () => {
                     assert(
                         nested().check({ nested: { russian: "tortoise" } })
                             .errors?.summary
-                    ).snap(`nested/russian must be "doll" (got "tortoise").`)
+                    ).snap(`nested/russian must be "doll" (was "tortoise").`)
                 })
                 test("multiple", () => {
                     assert(
@@ -182,7 +182,7 @@ describe("dictionary", () => {
                         }).errors?.summary
                     ).snap(`Encountered errors at the following paths:
   a/b: b is required.
-  e/f: Must be an object (got bigint).
+  e/f: Must be an object (was bigint).
 `)
                 })
             })

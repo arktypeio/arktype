@@ -25,7 +25,7 @@ describe("union", () => {
             test("double pipes", () => {
                 // @ts-expect-error
                 assert(() => type("boolean||null")).throwsAndHasTypeError(
-                    "Expected an expression (got '|null')."
+                    "Expected an expression (was '|null')."
                 )
             })
             test("ends with |", () => {
@@ -39,7 +39,7 @@ describe("union", () => {
                     // @ts-expect-error
                     type("boolean[]|(string|number|)|object")
                 ).throwsAndHasTypeError(
-                    "Expected an expression (got ')|object')."
+                    "Expected an expression (was ')|object')."
                 )
             })
         })
@@ -66,23 +66,23 @@ describe("union", () => {
                     g: "3"
                 }).a.check(4, { diagnostics: { Union: { expand: true } } })
                     .errors?.summary
-            ).snap(`Must be one of b|c (got 4):
-b: Must be one of d|e (got 4):
-d: Must be 0 (got 4).
-e: Must be 1 (got 4).
-c: Must be one of f|g (got 4):
-f: Must be 2 (got 4).
-g: Must be 3 (got 4).`)
+            ).snap(`Must be one of b|c (was 4):
+b: Must be one of d|e (was 4):
+d: Must be 0 (was 4).
+e: Must be 1 (was 4).
+c: Must be one of f|g (was 4):
+f: Must be 2 (was 4).
+g: Must be 3 (was 4).`)
         })
         describe("errors", () => {
             test("two types", () => {
                 assert(type("'yes'|'no'").check("maybe").errors?.summary).snap(
-                    `Must be one of "yes"|"no" (got "maybe").`
+                    `Must be one of "yes"|"no" (was "maybe").`
                 )
             })
             test("several types", () => {
                 assert(type("2|4|6|8").check(5).errors?.summary).snap(
-                    `Must be one of 2|4|6|8 (got 5).`
+                    `Must be one of 2|4|6|8 (was 5).`
                 )
             })
         })
@@ -132,7 +132,7 @@ g: Must be 3 (got 4).`)
             assert(unionOfLiterals.infer).typed as "yes" | "no" | "maybe"
             assert(unionOfLiterals.check("no").errors).equals(undefined)
             assert(unionOfLiterals.check("yes|no|maybe").errors?.summary).snap(
-                `Must be one of "yes"|"no"|"maybe" (got "yes|no|maybe").`
+                `Must be one of "yes"|"no"|"maybe" (was "yes|no|maybe").`
             )
         })
         test("literal of union", () => {
@@ -142,7 +142,7 @@ g: Must be 3 (got 4).`)
                 undefined
             )
             assert(literalOfUnion.check("yes").errors?.summary).snap(
-                `Must be "yes|no|maybe" (got "yes").`
+                `Must be "yes|no|maybe" (was "yes").`
             )
         })
         test("union of literals of unions", () => {
@@ -157,7 +157,7 @@ g: Must be 3 (got 4).`)
                 unionOfLiteralsOfUnions.check("yes|no'|'true|false").errors
                     ?.summary
             ).snap(
-                `Must be one of "yes|no"|"true|false" (got "yes|no'|'true|false").`
+                `Must be one of "yes|no"|"true|false" (was "yes|no'|'true|false").`
             )
         })
     })

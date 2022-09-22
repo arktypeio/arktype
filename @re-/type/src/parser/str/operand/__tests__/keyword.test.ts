@@ -15,7 +15,7 @@ describe("keyword", () => {
             assert(b.check(true).errors).is(undefined)
             assert(b.check(false).errors).is(undefined)
             assert(b.check(0).errors?.summary).snap(
-                `Must be a boolean (got number).`
+                `Must be a boolean (was number).`
             )
         })
     })
@@ -30,7 +30,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(t.check(true).errors).is(undefined)
             assert(t.check(false).errors?.summary).snap(
-                `Must be true (got false).`
+                `Must be true (was false).`
             )
         })
     })
@@ -45,7 +45,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(f.check(false).errors).is(undefined)
             assert(f.check(true).errors?.summary).snap(
-                `Must be false (got true).`
+                `Must be false (was true).`
             )
         })
     })
@@ -60,7 +60,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(b.check(999n).errors).is(undefined)
             assert(b.check(999).errors?.summary).snap(
-                `Must be a bigint (got number).`
+                `Must be a bigint (was number).`
             )
         })
     })
@@ -75,7 +75,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(s.check(Symbol("")).errors).is(undefined)
             assert(s.check("@").errors?.summary).snap(
-                `Must be a symbol (got string).`
+                `Must be a symbol (was string).`
             )
         })
     })
@@ -90,7 +90,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(f.check(() => ({})).errors).is(undefined)
             assert(f.check({}).errors?.summary).snap(
-                `Must be a function (got object).`
+                `Must be a function (was object).`
             )
         })
     })
@@ -106,7 +106,7 @@ describe("keyword", () => {
             assert(o.check([]).errors).is(undefined)
             assert(o.check({}).errors).is(undefined)
             assert(o.check(null).errors?.summary).snap(
-                `Must be an object (got null).`
+                `Must be an object (was null).`
             )
         })
     })
@@ -121,7 +121,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(u.check(undefined).errors).is(undefined)
             assert(u.check(null).errors?.summary).snap(
-                `Must be undefined (got null).`
+                `Must be undefined (was null).`
             )
         })
     })
@@ -136,7 +136,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(n.check(null).errors).is(undefined)
             assert(n.check(undefined).errors?.summary).snap(
-                `Must be null (got undefined).`
+                `Must be null (was undefined).`
             )
         })
     })
@@ -151,7 +151,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(v.check(undefined).errors).is(undefined)
             assert(v.check(null).errors?.summary).snap(
-                `Must be a void (got null).`
+                `Must be a void (was null).`
             )
         })
     })
@@ -197,10 +197,10 @@ describe("keyword", () => {
         })
         test("validation", () => {
             assert(n.check("sometimes").errors?.summary).snap(
-                `Must be never (got string).`
+                `Must be never (was string).`
             )
             assert(n.check(undefined).errors?.summary).snap(
-                `Must be never (got undefined).`
+                `Must be never (was undefined).`
             )
         })
     })
@@ -216,7 +216,7 @@ describe("keyword", () => {
             test("validation", () => {
                 assert(s.check("KEKW").errors).is(undefined)
                 assert(s.check(["whoops"]).errors?.summary).snap(
-                    `Must be a string (got object).`
+                    `Must be a string (was object).`
                 )
             })
         })
@@ -274,7 +274,7 @@ describe("keyword", () => {
                 assert(n.check(-83).errors).is(undefined)
                 assert(n.check(0.999).errors).is(undefined)
                 assert(n.check("42").errors?.summary).snap(
-                    `Must be a number (got string).`
+                    `Must be a number (was string).`
                 )
                 assert(n.check(Infinity).errors).is(undefined)
                 assert(n.check(NaN).errors).is(undefined)

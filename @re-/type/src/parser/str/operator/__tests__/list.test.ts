@@ -41,7 +41,7 @@ describe("list", () => {
                 assert(
                     list.check(["one", "two", 3, "four", "five"]).errors
                         ?.summary
-                ).snap(`Item 2 must be a string (got number).`)
+                ).snap(`Item 2 must be a string (was number).`)
             })
         })
     })

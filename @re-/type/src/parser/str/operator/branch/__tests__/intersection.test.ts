@@ -24,7 +24,7 @@ describe("intersection", () => {
             test("double and", () => {
                 // @ts-expect-error
                 assert(() => type("boolean&&true")).throwsAndHasTypeError(
-                    "Expected an expression (got '&true')."
+                    "Expected an expression (was '&true')."
                 )
             })
         })
@@ -46,18 +46,18 @@ describe("intersection", () => {
         describe("errors", () => {
             test("empty intersection", () => {
                 assert(type("number&string").check("5").errors?.summary).snap(
-                    `Must be a number (got string).`
+                    `Must be a number (was string).`
                 )
             })
             test("two types", () => {
                 assert(type("boolean&true").check(false).errors?.summary).snap(
-                    `Must be true (got false).`
+                    `Must be true (was false).`
                 )
             })
             test("several types", () => {
                 assert(
                     type("unknown&true&boolean").check(false).errors?.summary
-                ).snap(`Must be true (got false).`)
+                ).snap(`Must be true (was false).`)
             })
             test("bad keyword specifiers", () => {
                 assert(type("number&integer").check(7.5).errors?.summary).snap(

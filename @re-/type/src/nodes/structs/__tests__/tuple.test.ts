@@ -41,7 +41,7 @@ describe("tuple", () => {
                 test("bad item value", () => {
                     assert(
                         shallow().check(["violin", 42n, 6]).errors?.summary
-                    ).snap(`1 must be a number (got bigint).`)
+                    ).snap(`1 must be a number (was bigint).`)
                 })
                 test("too short", () => {
                     assert(
@@ -56,14 +56,14 @@ describe("tuple", () => {
                             options: `<undefined>`,
                             expectedLength: 3,
                             actualLength: 2,
-                            message: `Must have length 3 (got 2).`
+                            message: `Must have length 3 (was 2).`
                         }
                     ])
                 })
                 test("too long", () => {
                     assert(
                         shallow().check(["violin", 42, 6, null]).errors?.summary
-                    ).snap(`Must have length 3 (got 4).`)
+                    ).snap(`Must have length 3 (was 4).`)
                 })
             })
         })
@@ -100,7 +100,7 @@ describe("tuple", () => {
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
                         ]).errors?.summary
-                    ).snap(`Must have length 3 (got 2).`)
+                    ).snap(`Must have length 3 (was 2).`)
                 })
                 test("multiple", () => {
                     assert(
@@ -110,9 +110,9 @@ describe("tuple", () => {
                             ["Too long"]
                         ]).errors?.summary
                     ).snap(`Encountered errors at the following paths:
-  0: Must be "Cuckoo" (got "Clock").
-  1/2: Must be "Condor" (got "Gondor").
-  2: Must have length 0 (got 1).
+  0: Must be "Cuckoo" (was "Clock").
+  1/2: Must be "Condor" (was "Gondor").
+  2: Must have length 0 (was 1).
 `)
                 })
             })

@@ -12,7 +12,7 @@ describe("parenthesized", () => {
         assert(unionWithList.check(true).errors).equals(undefined)
         assert(unionWithList.check([1, 2, 3]).errors).equals(undefined)
         assert(unionWithList.check([true, false]).errors?.summary).snap(
-            `Must be one of boolean|number[] (got [true, false]).`
+            `Must be one of boolean|number[] (was [true, false]).`
         )
     })
     test("grouped precedence", () => {
@@ -22,13 +22,13 @@ describe("parenthesized", () => {
         assert(listOfUnion.check([1]).errors).equals(undefined)
         assert(listOfUnion.check([1, true]).errors).equals(undefined)
         assert(listOfUnion.check(true).errors?.summary).snap(
-            `Must be an object (got boolean).`
+            `Must be an object (was boolean).`
         )
         assert(listOfUnion.check(1).errors?.summary).snap(
-            `Must be an object (got number).`
+            `Must be an object (was number).`
         )
         assert(listOfUnion.check(["foo"]).errors?.summary).snap(
-            `Item 0 must be one of boolean|number (got "foo").`
+            `Item 0 must be one of boolean|number (was "foo").`
         )
     })
     test("nested precedence", () => {
@@ -59,13 +59,13 @@ describe("parenthesized", () => {
         assert(
             listOfUnionOfListsOfUnions.check([undefined]).errors?.summary
         ).snap(
-            `Item 0 must be one of boolean|number[]|string|undefined[] (got undefined).`
+            `Item 0 must be one of boolean|number[]|string|undefined[] (was undefined).`
         )
         // Can't mix items from each list
         assert(
             listOfUnionOfListsOfUnions.check([[false, "foo"]]).errors?.summary
         ).snap(
-            `Item 0 must be one of boolean|number[]|string|undefined[] (got [false, "foo"]).`
+            `Item 0 must be one of boolean|number[]|string|undefined[] (was [false, "foo"]).`
         )
     })
     describe("errors", () => {
@@ -73,7 +73,7 @@ describe("parenthesized", () => {
             assert(() => {
                 // @ts-expect-error
                 type("()").infer
-            }).throwsAndHasTypeError("Expected an expression (got ')').")
+            }).throwsAndHasTypeError("Expected an expression (was ')').")
         })
         test("unmatched (", () => {
             assert(() => {
@@ -91,7 +91,7 @@ describe("parenthesized", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")").infer
-            }).throwsAndHasTypeError("Expected an expression (got ')').")
+            }).throwsAndHasTypeError("Expected an expression (was ')').")
         })
         test("lone (", () => {
             assert(() => {
@@ -116,13 +116,13 @@ describe("parenthesized", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")number(")
-            }).throwsAndHasTypeError("Expected an expression (got ')number(').")
+            }).throwsAndHasTypeError("Expected an expression (was ')number(').")
         })
         test("misplaced )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(number|)")
-            }).throwsAndHasTypeError("Expected an expression (got ')').")
+            }).throwsAndHasTypeError("Expected an expression (was ')').")
         })
     })
 })

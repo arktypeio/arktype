@@ -197,7 +197,7 @@ describe("bound", () => {
                     limit: 3,
                     size: 2,
                     kind: `string`,
-                    message: `Must be at least 3 characters (got 2).`
+                    message: `Must be at least 3 characters (was 2).`
                 }
             ])
         })
@@ -217,7 +217,7 @@ describe("bound", () => {
             const twoNulls = type("null[]==2")
             assert(twoNulls.check([null, null]).errors).equals(undefined)
             assert(twoNulls.check([null]).errors?.summary).snap(
-                `Must be exactly 2 items (got 1).`
+                `Must be exactly 2 items (was 1).`
             )
         })
     })

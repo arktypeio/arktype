@@ -67,7 +67,7 @@ describe("custom validators", () => {
         assert(mySpace.first.check(1).errors).is(undefined)
         assert(() => mySpace.first.assert(2)).throws(`2 FAILED TO BE 1.`)
         assert(mySpace.$root.type("second").check(1).errors?.summary).snap(
-            `Must be 2 (got 1).`
+            `Must be 2 (was 1).`
         )
     })
     test("can access standard validation errors and ctx", () => {
@@ -85,7 +85,7 @@ describe("custom validators", () => {
         })
         assert(num.check(7.43).errors).is(undefined)
         assert(num.check("ssalbdivad").errors?.summary).snap(
-            `Must be a number (got string).!!!`
+            `Must be a number (was string).!!!`
         )
     })
 })

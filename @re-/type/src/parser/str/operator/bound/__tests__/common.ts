@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import type { Bounds } from "../../../../../nodes/constraints/bounds.js"
-import { boundViolationMessage } from "../../../../../nodes/constraints/bounds.js"
+import { describeBound } from "../../../../../nodes/constraints/bounds.js"
 import { Keyword } from "../../../../../nodes/terminals/keywords/keyword.js"
 import { numberKeywords } from "../../../../../nodes/terminals/keywords/number.js"
 import { stringKeywords } from "../../../../../nodes/terminals/keywords/string.js"
@@ -39,7 +39,7 @@ export const arbitraryLimit = fc
 
 const expectedCheckResult = (expectedBounds: Bounds, data: number) => {
     for (const [comparator, limit] of expectedBounds) {
-        const possibleExpectedErrorMessage = boundViolationMessage(
+        const possibleExpectedErrorMessage = describeBound(
             comparator,
             limit,
             data,

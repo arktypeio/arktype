@@ -33,8 +33,8 @@ describe("validation", () => {
                 ]
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
-  fruits/0: Must be one of banana|apple (got {length: 5000, type: "slippery"}).
-  fruits/1: Must be one of banana|apple (got {circumference: 3.14159, description: "Fuji"}).
+  fruits/0: Must be one of banana|apple (was {length: 5000, type: "slippery"}).
+  fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description: "Fuji"}).
 `)
     })
     // TODO: Reenable
@@ -115,9 +115,9 @@ describe("validation", () => {
                 ]
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
-  a/a/a/a/a/a/a/isA: Must be true (got false).
-  b/b/b/b/b/b/b/isA: Must be false (got true).
-  c/8: Must be one of a|b (got {isA: "the duck goes quack"}).
+  a/a/a/a/a/a/a/isA: Must be true (was false).
+  b/b/b/b/b/b/b/isA: Must be false (was true).
+  c/8: Must be one of a|b (was {isA: "the duck goes quack"}).
 `)
     })
     const recursiveDict = narrow({ dejaVu: { dejaVu: "dejaVu?" } })
@@ -141,7 +141,7 @@ describe("validation", () => {
         assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
         current.dejaVu = "whoops" as any
         assert(recursive.dejaVu.check(dejaVu).errors?.summary).snap(
-            `dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu must be an object (got string).`
+            `dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu must be an object (was string).`
         )
     })
 })

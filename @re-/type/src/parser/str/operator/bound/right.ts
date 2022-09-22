@@ -164,7 +164,7 @@ export const unboundableMessage = <Root extends string>(
 export type NonSuffixRightBoundMessage<
     T extends Scanner.Comparator,
     Suffix extends string
-> = `Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (got '${Suffix}').`
+> = `Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (was '${Suffix}').`
 
 export const nonSuffixRightBoundMessage = <
     Token extends Scanner.Comparator,
@@ -173,7 +173,7 @@ export const nonSuffixRightBoundMessage = <
     t: Token,
     suffix: Suffix
 ): NonSuffixRightBoundMessage<Token, Suffix> =>
-    `Right bound ${t} must be followed by a number literal and zero or more additional suffix tokens (got '${suffix}').`
+    `Right bound ${t} must be followed by a number literal and zero or more additional suffix tokens (was '${suffix}').`
 
 const untilNextSuffix: scanner.UntilCondition = (scanner) =>
     scanner.lookahead === "?"

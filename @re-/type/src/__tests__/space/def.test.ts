@@ -74,7 +74,7 @@ describe("def", () => {
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
   members/0: Keys age were unexpected.
-  members/1/name: Must be an object (got number).
+  members/1/name: Must be an object (was number).
   members/1: Keys age were unexpected.
   /: Keys description were unexpected.
 `)

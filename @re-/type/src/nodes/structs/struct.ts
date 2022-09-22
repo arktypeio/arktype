@@ -91,7 +91,7 @@ export const checkObjectRoot = <Definition>(
             reason: `Must be ${
                 expected === "dictionary" ? "an object" : "an array"
             }`,
-            expected
+            kind: expected
         })
         return false
     }
@@ -100,7 +100,7 @@ export const checkObjectRoot = <Definition>(
             reason: `Must ${
                 expected === "dictionary" ? "not " : ""
             }be an array`,
-            expected
+            kind: expected
         })
         return false
     }

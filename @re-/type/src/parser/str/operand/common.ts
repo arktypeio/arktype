@@ -6,13 +6,13 @@ export const expressionExpectedMessage = <Unscanned extends string>(
     unscanned: Unscanned
 ) =>
     `Expected an expression${
-        unscanned ? ` (got '${unscanned}')` : ""
+        unscanned ? ` (was '${unscanned}')` : ""
     }.` as ExpressionExpectedMessage<Unscanned>
 
 export type ExpressionExpectedMessage<Unscanned extends string> =
     `Expected an expression${Unscanned extends ""
         ? ""
-        : ` (got '${Unscanned}')`}.`
+        : ` (was '${Unscanned}')`}.`
 
 export const baseTerminatingChars = keySet({
     ...comparatorChars,

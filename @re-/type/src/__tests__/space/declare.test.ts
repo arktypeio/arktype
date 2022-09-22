@@ -59,7 +59,7 @@ describe("declare", () => {
         assert(() => define.gottaDefineThis("whoops")).throwsAndHasTypeError(
             "'whoops' is not a builtin type and does not exist in your space."
         )
-        const space = compile(gottaDefineThis)
+        const space = compile(wastaDefineThis)
         assert(space.$root.ast).narrowedValue({ gottaDefineThis: "boolean" })
     })
     test("errors on compile with declared type undefined", () => {
@@ -71,7 +71,7 @@ describe("declare", () => {
             a: "string"
         })
         // @ts-expect-error
-        assert(() => compile(gottaDefineThis))
+        assert(() => compile(wastaDefineThis))
             .throws("Declared types 'gottaDefineThisToo' were never defined.")
             .type.errors("Property 'gottaDefineThisToo' is missing")
     })

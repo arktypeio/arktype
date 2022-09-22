@@ -5,9 +5,18 @@ export type WithPropValue<Obj, Prop extends string | number, Value> = Evaluate<
     Omit<Obj, Prop> & { [K in Prop]: Value }
 >
 
-const typeOfResult = typeof ({} as unknown)
+export type JsBuiltinTypes = {
+    bigint: bigint
+    boolean: boolean
+    function: Function
+    number: number
+    object: object | null
+    string: string
+    symbol: symbol
+    undefined: undefined
+}
 
-export type TypeOfResult = typeof typeOfResult
+export type JsTypeName = keyof JsBuiltinTypes
 
 export type ElementOf<T extends List> = T extends List<infer Item>
     ? Item

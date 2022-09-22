@@ -1,8 +1,16 @@
-import type { Evaluate } from "@re-/tools"
+import type {
+    Evaluate,
+    JsBuiltinTypes,
+    JsTypeName,
+    Stringifiable
+} from "@re-/tools"
 import { toString, uncapitalize } from "@re-/tools"
+import type { Scanner } from "../parser/str/state/scanner.js"
 import type { Base } from "./base.js"
 import type { Path } from "./common.js"
 import { pathToString } from "./common.js"
+import type { BoundDiagnosticContext, BoundKind } from "./constraints/bounds.js"
+import type { BranchDiagnosticsEntry } from "./expressions/branches/union.js"
 import type { StructKind } from "./structs/struct.js"
 import type { Keyword, TypeKeyword } from "./terminals/keywords/keyword.js"
 import { Traverse } from "./traverse.js"
@@ -38,6 +46,11 @@ export namespace Allows {
     export type Context = Traverse.Context<Options> & {
         checkedValuesByAlias: Record<string, object[]>
     }
+
+    export const dataIsOfType = <TypeName extends JsTypeName>(
+        args: Allows.Args,
+        typeName: TypeName
+    ): args is Args<JsBuiltinTypes[TypeName]> => typeof args.data === typeName
 
     export type CustomValidator = (
         args: CustomValidatorArgs
@@ -94,7 +107,7 @@ export namespace Allows {
         Code extends DiagnosticCode = DiagnosticCode
     > = {
         message?: (context: DiagnosticCustomizationsByCode[Code]) => string
-        includeActual?: boolean
+        includeDataInMessage?: boolean
     }
 
     type OptionsByDiagnostic = {
@@ -104,9 +117,11 @@ export namespace Allows {
             : BaseDiagnosticOptions<Code>
     }
 
-    type BaseDiagnosticContextInput = { reason: string }
+    type BaseDiagnosticContextInput = {
+        reason: string
+    }
 
-    type ContextInputByDiagnostic = {
+    export type ContextInputByDiagnostic = {
         [Code in DiagnosticCode]: "context" extends keyof DiagnosticCustomizationsByCode[Code]
             ? BaseDiagnosticContextInput &
                   DiagnosticCustomizationsByCode[Code]["context"]
@@ -122,10 +137,12 @@ export namespace Allows {
         literal: {}
         structure: {
             context: {
-                expected: StructKind
+                kind: StructKind
             }
         }
-        bound: {}
+        bound: {
+            context: BoundDiagnosticContext
+        }
         extraneousKeys: {
             options: {
                 enabled: boolean
@@ -150,7 +167,14 @@ export namespace Allows {
                 actual: number
             }
         }
-        union: {}
+        union: {
+            options: {
+                explainBranches: boolean
+            }
+            context: {
+                branchDiagnosticsEntries: BranchDiagnosticsEntry[]
+            }
+        }
         intersection: {}
     }
 
@@ -182,8 +206,13 @@ export namespace Allows {
             this.data = args.data
             this.options = args.cfg.diagnostics?.[code] ?? {}
             this.message = `${context.reason}${
-                this.options?.includeActual
+                this.options?.includeDataInMessage
                     ? ` (was ${
+                          // If we have a context item named "actual", use that
+                          // in place of data. This is useful in cases where it
+                          // is not the data itself but some property of the
+                          // data that resulted in the diagnostic, e.g. the
+                          // length of an array.
                           (context as any)?.actual ?? stringifyData(args.data)
                       })`
                     : ""
