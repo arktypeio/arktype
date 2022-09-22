@@ -1,4 +1,3 @@
-import { Evaluate } from "@re-/tools"
 import { StrNode, strNode } from "../../parser/common.js"
 import {
     comparatorToString,
@@ -10,7 +9,7 @@ import { Comparator } from "../../parser/parser/common.js"
 import { Allows } from "../traversal/allows.js"
 import { NumberKeyword } from "../types/terminal/keywords/number.js"
 import { StringKeyword } from "../types/terminal/keywords/string.js"
-import { AddConstraints, Constrained } from "./common.js"
+import { PossiblyConstrained } from "./common.js"
 
 export type Bounds = Bounds.Single | Bounds.Double
 
@@ -33,7 +32,9 @@ export type boundChecker = (y: number) => boolean
  *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100<alphanumeric")
  *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
  */
-export type BoundableNode = NumberKeyword | StringKeyword | [unknown, "[]"]
+export type BoundableNode = PossiblyConstrained<
+    NumberKeyword | StringKeyword | [unknown, "[]"]
+>
 
 export type boundableNode = strNode & {
     bounds: bounds | undefined

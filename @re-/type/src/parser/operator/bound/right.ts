@@ -11,7 +11,12 @@ import {
     NumberLiteralDefinition,
     numberLiteralToValue
 } from "../../operand/unenclosed.js"
-import { NodeToString, SuffixToken } from "../../parser/common.js"
+import {
+    NodeToString,
+    SuffixToken,
+    UnexpectedSuffixMessage,
+    unexpectedSuffixMessage
+} from "../../parser/common.js"
 import { Left, left } from "../../parser/left.js"
 import { scanner } from "../../parser/scanner.js"
 import { parserState, ParserState } from "../../parser/state.js"
@@ -34,7 +39,9 @@ export const parseSuffixBound = (
               [token, numberLiteralToValue(boundingValue)],
               nextSuffix
           )
-        : s.error(nonSuffixRightBoundMessage(token, boundingValue))
+        : s.error(
+              unexpectedSuffixMessage(token, s.r.unscanned, "a number literal")
+          )
 }
 
 export type ParseSuffixBound<
@@ -54,7 +61,9 @@ export type ParseSuffixBound<
           L: ReduceRightBound<S["L"], [Token, Value], "END">
           R: ""
       }>
-    : ParserState.Error<NonSuffixRightBoundMessage<Token, S["R"]>>
+    : ParserState.Error<
+          UnexpectedSuffixMessage<Token, S["R"], "a number literal">
+      >
 
 type BoundingValueWithSuffix<
     BoundingValue extends number,
@@ -161,21 +170,6 @@ export const unboundableMessage = <Root extends string>(
     Root: Root
 ): UnboundableMessage<Root> =>
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
-
-// TODO: Update this error message to account for additional suffix tokens like modulo
-export type NonSuffixRightBoundMessage<
-    T extends Comparator,
-    Suffix extends string
-> = `Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (got '${Suffix}').`
-
-export const nonSuffixRightBoundMessage = <
-    Token extends Comparator,
-    Suffix extends string
->(
-    t: Token,
-    suffix: Suffix
-): NonSuffixRightBoundMessage<Token, Suffix> =>
-    `Right bound ${t} must be followed by a number literal and zero or more additional suffix tokens (got '${suffix}').`
 
 const untilNextSuffix: scanner.UntilCondition = (scanner) =>
     scanner.lookahead === "?"

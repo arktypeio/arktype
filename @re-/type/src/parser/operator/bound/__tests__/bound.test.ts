@@ -6,14 +6,11 @@ import {
     Bounds,
     BoundViolationDiagnostic
 } from "../../../../nodes/constraints/bounds.js"
+import { unexpectedSuffixMessage } from "../../../parser/common.js"
 import { invalidDoubleBoundMessage, invertedComparators } from "../common.js"
 import { nonPrefixLeftBoundMessage } from "../left.js"
 import { singleEqualsMessage } from "../parse.js"
-import {
-    nonSuffixRightBoundMessage,
-    unboundableMessage,
-    unpairedLeftBoundMessage
-} from "../right.js"
+import { unboundableMessage, unpairedLeftBoundMessage } from "../right.js"
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,
@@ -103,7 +100,7 @@ describe("bound", () => {
             test("non-suffix right bound", () => {
                 // @ts-expect-error
                 assert(() => type("3<number<5|string")).throwsAndHasTypeError(
-                    nonSuffixRightBoundMessage("<", "5|string")
+                    unexpectedSuffixMessage("<", "5|string")
                 )
             })
             test("unpaired left", () => {

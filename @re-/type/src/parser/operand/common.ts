@@ -20,7 +20,8 @@ export const baseTerminatingChars = scanner.tokens({
     "&": 1,
     ")": 1,
     "[": 1,
-    " ": 1
+    " ": 1,
+    "%": 1
 })
 
 export type BaseTerminatingChar = keyof typeof baseTerminatingChars
