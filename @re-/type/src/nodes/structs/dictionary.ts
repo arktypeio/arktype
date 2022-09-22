@@ -1,5 +1,5 @@
 import type { Evaluate } from "@re-/tools"
-import { Allows } from "../allows.js"
+import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import { optional } from "../expressions/unaries/optional.js"
 import type { Generate } from "../generate.js"
@@ -36,36 +36,33 @@ export const isArgValueRecordLike = (
 
 export class DictionaryNode extends struct<string> {
     check(args: Allows.Args) {
-        if (!checkObjectRoot(args, "dictionary")) {
+        if (!checkObjectRoot(this.definition, args)) {
             return
         }
-        const extraneousValueKeys = this.allowsProps(args)
-        if (
-            extraneousValueKeys.size &&
-            (args.cfg.diagnostics?.ExtraneousKeys?.enable ||
-                args.ctx.modelCfg.diagnostics?.ExtraneousKeys?.enable)
-        ) {
-            args.diagnostics.push(
-                new ExtraneousKeysDiagnostic(args, [...extraneousValueKeys])
-            )
-        }
-    }
-
-    // TODO: Should maybe not use set for perf?
-    private allowsProps(args: Allows.Args<DictionaryLike>) {
-        const extraneousValueKeys = new Set(Object.keys(args.data))
-        for (const [propKey, propNode] of this.entries) {
-            const propArgs = this.argsForProp(args, propKey)
-            if (propKey in args.data) {
+        const uncheckedData = { ...args.data }
+        for (const [key, propNode] of this.entries) {
+            const propArgs = this.argsForProp(args, key)
+            if (key in args.data) {
                 propNode.check(propArgs)
             } else if (!(propNode instanceof optional)) {
-                args.diagnostics.push(
-                    new MissingKeyDiagnostic(propArgs, propKey)
-                )
+                args.diagnostics.add("missingKey", propNode, args, {
+                    reason: `${key} is required`,
+                    key
+                })
             }
-            extraneousValueKeys.delete(propKey)
+            delete uncheckedData[key]
         }
-        return extraneousValueKeys
+        const extraneousKeys = Object.keys(uncheckedData)
+        if (
+            extraneousKeys.length &&
+            (args.cfg.diagnostics?.extraneousKeys?.enabled ||
+                args.ctx.modelCfg.diagnostics?.extraneousKeys?.enabled)
+        ) {
+            args.diagnostics.add("extraneousKeys", this.definition, args, {
+                reason: `Keys ${extraneousKeys.join(", ")} were unexpected`,
+                keys: extraneousKeys
+            })
+        }
     }
 
     private argsForProp(
@@ -98,26 +95,5 @@ export class DictionaryNode extends struct<string> {
             })
         }
         return result
-    }
-}
-
-export class ExtraneousKeysDiagnostic extends Allows.Diagnostic<
-    "ExtraneousKeys",
-    { enable?: boolean }
-> {
-    public message: string
-
-    constructor(args: Allows.Args, public keys: string[]) {
-        super("ExtraneousKeys", args)
-        this.message = `Keys ${keys.join(", ")} were unexpected.`
-    }
-}
-
-export class MissingKeyDiagnostic extends Allows.Diagnostic<"MissingKey"> {
-    public message: string
-
-    constructor(args: Allows.Args, public key: string) {
-        super("MissingKey", args)
-        this.message = `${key} is required.`
     }
 }

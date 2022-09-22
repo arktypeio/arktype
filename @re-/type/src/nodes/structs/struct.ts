@@ -4,35 +4,34 @@ import type {
     ListPossibleTypes,
     ValueOf
 } from "@re-/tools"
-import { mapValues } from "@re-/tools"
-import { Allows } from "../allows.js"
+import { transform } from "@re-/tools"
+import type { Allows } from "../allows.js"
 import { Base } from "../base.js"
 import type { References } from "../references.js"
 import type { RootReferences } from "../root.js"
-import { KeywordDiagnostic } from "../terminals/keywords/common.js"
 import type { Dictionary } from "./dictionary.js"
-import type { InferTuple } from "./tuple.js"
+import type { InferTuple, TupleDefinition } from "./tuple.js"
 
-export type ChildEntry<KeyType> = [KeyType, Base.node]
+type StructKey = string | number
 
-export type StructConstructorArgs<KeyType extends string | number> = [
-    nodes: Record<KeyType, Base.node>,
+export type StructConstructorArgs<KeyType extends StructKey> = [
+    entries: [KeyType, Base.node][],
     context: Base.context
 ]
 
-const nodeToDefinition = (node: Base.node) => node.definition
-const nodeToAst = (node: Base.node) => node.ast
+export abstract class struct<KeyType extends StructKey> extends Base.node<
+    KeyType extends number ? unknown[] : Record<string, unknown>
+> {
+    entries: [KeyType, Base.node][]
 
-export abstract class struct<
-    KeyType extends string | number
-> extends Base.node {
-    entries: ChildEntry<KeyType>[]
-
-    constructor(...[nodes, context]: StructConstructorArgs<KeyType>) {
-        const definition = mapValues(nodes, nodeToDefinition)
-        const ast = mapValues(nodes, nodeToAst)
+    constructor(...[entries, context]: StructConstructorArgs<KeyType>) {
+        const definition = transform(entries, ([, [k, child]]) => [
+            k,
+            child.definition
+        ])
+        const ast = transform(entries, ([, [k, child]]) => [k, child.ast])
         super(definition, ast, context)
-        this.entries = Object.entries(nodes) as ChildEntry<KeyType>[]
+        this.entries = entries
     }
 
     toString() {
@@ -76,32 +75,36 @@ export abstract class struct<
     }
 }
 
-export type ObjectKind = "array" | "dictionary"
+export type StructKind = "array" | "dictionary"
 
-export const checkObjectRoot = <Kind extends ObjectKind>(
-    args: Allows.Args,
-    kind: Kind
+export const checkObjectRoot = <Definition>(
+    definition: Definition,
+    args: Allows.Args
 ): args is Allows.Args<
-    Kind extends "array" ? unknown[] : Record<string, unknown>
+    Definition extends TupleDefinition ? unknown[] : Record<string, unknown>
 > => {
+    const expected: StructKind = Array.isArray(definition)
+        ? "array"
+        : "dictionary"
     if (typeof args.data !== "object" || args.data === null) {
-        args.diagnostics.push(new KeywordDiagnostic("object", args))
+        args.diagnostics.add("structure", definition, args, {
+            reason: `Must be ${
+                expected === "dictionary" ? "an object" : "an array"
+            }`,
+            expected
+        })
         return false
     }
-    if ((kind === "array") !== Array.isArray(args.data)) {
-        args.diagnostics.push(new ObjectKindDiagnostic(kind, args))
+    if ((expected === "array") !== Array.isArray(args.data)) {
+        args.diagnostics.add("structure", {}, args, {
+            reason: `Must ${
+                expected === "dictionary" ? "not " : ""
+            }be an array`,
+            expected
+        })
         return false
     }
     return true
-}
-
-export class ObjectKindDiagnostic extends Allows.Diagnostic<"ObjectKind"> {
-    public message: string
-
-    constructor(public type: ObjectKind, args: Allows.Args) {
-        super("ObjectKind", args)
-        this.message = `Must ${type === "dictionary" ? "not " : ""}be an array.`
-    }
 }
 
 export namespace Struct {

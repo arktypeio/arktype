@@ -1,6 +1,23 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { mapValues, mutateValues } from "../index.js"
+import { mapValues, mutateValues, transform } from "../index.js"
+
+describe("transform", () => {
+    test("to dict", () => {
+        const stringified = transform([0, 1], ([k, v]) => [
+            "$" + String(k),
+            !!v
+        ])
+        assert(stringified).equals({ $0: false, $1: true }).typed as Record<
+            string,
+            boolean
+        >
+    })
+    test("to array", () => {
+        const stringified = transform({ a: 0, b: 1 }, ([k, v]) => [v, k])
+        assert(stringified).equals(["a", "b"]).typed as ("a" | "b")[]
+    })
+})
 
 describe("mapValues", () => {
     test("dict", () => {
@@ -26,12 +43,6 @@ describe("mapValues", () => {
             string,
             string
         ]
-    })
-    test("doesn't mutate", () => {
-        const original = { a: 1, b: 2 }
-        const incremented = mapValues(original, (v) => v + 1)
-        assert(incremented).equals({ a: 2, b: 3 })
-        assert(original).equals({ a: 1, b: 2 })
     })
 })
 

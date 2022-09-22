@@ -1,11 +1,9 @@
-import type { ValueOf } from "@re-/tools"
 import { startsWithVowel } from "@re-/tools"
 import { Allows } from "../../allows.js"
-import type { TerminalNode } from "../terminal.js"
-import type { Keyword } from "./keyword.js"
+import type { TypeKeyword } from "./keyword.js"
 
 // These keywords should not be preceded by an article (e.g. 'must be null' is preferable to 'must be a null')
-const DESCRIPTIVE_KEYWORDS: Partial<Record<Keyword.TypeKeyword, 1>> = {
+const DESCRIPTIVE_KEYWORDS: Partial<Record<TypeKeyword, 1>> = {
     any: 1,
     never: 1,
     null: 1,
@@ -13,20 +11,18 @@ const DESCRIPTIVE_KEYWORDS: Partial<Record<Keyword.TypeKeyword, 1>> = {
     unknown: 1
 }
 
-export class KeywordDiagnostic extends Allows.Diagnostic<"Keyword"> {
-    public message: string
-
-    constructor(public type: Keyword.TypeKeyword, args: Allows.Args) {
-        super("Keyword", args)
-        let message = "Must be "
-        if (type in DESCRIPTIVE_KEYWORDS) {
-            message += type
-        } else if (startsWithVowel(type)) {
-            message += `an ${type}`
+export class KeywordDiagnostic extends Allows.Diagnostic<"keyword"> {
+    constructor(keyword: TypeKeyword, args: Allows.Args) {
+        let reason = "Must be "
+        if (keyword in DESCRIPTIVE_KEYWORDS) {
+            reason += keyword
+        } else if (startsWithVowel(keyword)) {
+            reason += `an ${keyword}`
         } else {
-            message += `a ${type}`
+            reason += `a ${keyword}`
         }
-        message += ` (got ${args.data === null ? "null" : typeof args.data}).`
-        this.message = message
+        reason += ` (got ${args.data === null ? "null" : typeof args.data}).`
+        super("keyword", keyword, args, { reason })
+        this.message = reason
     }
 }

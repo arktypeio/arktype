@@ -1,4 +1,4 @@
-import { Allows } from "../allows.js"
+import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import { TerminalNode } from "./terminal.js"
 
@@ -36,28 +36,13 @@ export class LiteralNode<
 
     check(args: Allows.Args) {
         if (args.data !== this.value) {
-            args.diagnostics.push(
-                new Allows.Diagnostic(
-                    "Literal",
-                    args,
-                    `Must be ${this.definition}`
-                )
-            )
+            args.diagnostics.add("literal", this.definition, args, {
+                reason: `Must be ${this.definition}`
+            })
         }
     }
 
     generate() {
         return this.value
-    }
-}
-
-export class LiteralDiagnostic extends Allows.Diagnostic<"Literal"> {
-    public message: string
-
-    constructor(public type: string, args: Allows.Args) {
-        super("Literal", args)
-        this.message = `Must be ${type} (got ${Allows.stringifyData(
-            this.data
-        )}).`
     }
 }

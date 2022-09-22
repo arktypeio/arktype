@@ -3,7 +3,8 @@ import { toString, uncapitalize } from "@re-/tools"
 import type { Base } from "./base.js"
 import type { Path } from "./common.js"
 import { pathToString } from "./common.js"
-import type { Keyword } from "./terminals/keywords/keyword.js"
+import type { StructKind } from "./structs/struct.js"
+import type { Keyword, TypeKeyword } from "./terminals/keywords/keyword.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {
@@ -99,11 +100,11 @@ export namespace Allows {
     type OptionsByDiagnostic = {
         [Code in DiagnosticCode]?: "options" extends keyof DiagnosticCustomizationsByCode[Code]
             ? BaseDiagnosticOptions<Code> &
-                  DiagnosticCustomizationsByCode[Code]["options"]
+                  Partial<DiagnosticCustomizationsByCode[Code]["options"]>
             : BaseDiagnosticOptions<Code>
     }
 
-    type BaseDiagnosticContextInput = { reason: string; actual?: unknown }
+    type BaseDiagnosticContextInput = { reason: string }
 
     type ContextInputByDiagnostic = {
         [Code in DiagnosticCode]: "context" extends keyof DiagnosticCustomizationsByCode[Code]
@@ -113,39 +114,78 @@ export namespace Allows {
     }
 
     export type DiagnosticCustomizationsByCode = {
+        keyword: {
+            context: {
+                base?: TypeKeyword
+            }
+        }
         literal: {}
-        keyword: {}
-        objectKind: {}
-        bounds: {}
-        extraneousKeys: {}
-        missingKey: {}
-        regex: {}
-        tupleLength: {}
+        structure: {
+            context: {
+                expected: StructKind
+            }
+        }
+        bound: {}
+        extraneousKeys: {
+            options: {
+                enabled: boolean
+            }
+            context: {
+                keys: string[]
+            }
+        }
+        missingKey: {
+            context: {
+                key: string
+            }
+        }
+        regex: {
+            context: {
+                expression: RegExp
+            }
+        }
+        tupleLength: {
+            context: {
+                expected: number
+                actual: number
+            }
+        }
         union: {}
+        intersection: {}
     }
 
     export type DiagnosticCode = keyof DiagnosticCustomizationsByCode
 
     export type RegisteredDiagnostic = Diagnostic<DiagnosticCode>
 
+    export type DiagnosticArgs<Code extends DiagnosticCode> = [
+        code: Code,
+        definition: unknown,
+        args: Args,
+        context: ContextInputByDiagnostic[Code]
+    ]
+
     export class Diagnostic<Code extends DiagnosticCode> {
+        readonly code: Code
+        definition: unknown
         message: string
         path: Path
         data: unknown
         options: OptionsByDiagnostic[Code]
 
         constructor(
-            public readonly code: Code,
-            public definition: unknown,
-            args: Args,
-            context: ContextInputByDiagnostic[Code]
+            ...[code, definition, args, context]: DiagnosticArgs<Code>
         ) {
+            this.code = code
             this.path = args.ctx.path
+            this.definition = definition
             this.data = args.data
             this.options = args.cfg.diagnostics?.[code] ?? {}
             this.message = `${context.reason}${
                 this.options?.includeActual
-                    ? ` (got ${context.actual ?? stringifyData(args.data)})`
+                    ? ` (was ${
+                          (context as any)?.actual ?? stringifyData(args.data)
+                      })`
                     : ""
             }.`
             Object.assign(this, context)
@@ -157,16 +197,12 @@ export namespace Allows {
     export type TypeSetName = Keyword.Definition | "array"
 
     export class Diagnostics extends Array<RegisteredDiagnostic> {
-        push(...diagnostics: RegisteredDiagnostic[]) {
-            for (const diagnostic of diagnostics) {
-                if (diagnostic.options?.message) {
-                    diagnostic.message = diagnostic.options.message(
-                        diagnostic as any
-                    )
-                }
-                this[this.length] = diagnostic
+        add<Code extends DiagnosticCode>(...args: DiagnosticArgs<Code>) {
+            const diagnostic = new Diagnostic(...args)
+            if (diagnostic.options?.message) {
+                diagnostic.message = diagnostic.options.message(diagnostic)
             }
-            return this.length
+            this.push(diagnostic)
         }
 
         get summary() {

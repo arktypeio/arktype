@@ -1,29 +1,29 @@
-import { Allows } from "../../allows.js"
-import { Base } from "../../base.js"
+import type { Allows } from "../../allows.js"
 import type {
     BoundableNode,
     BoundsConstraint
 } from "../../constraints/bounds.js"
 import type { ConstraintConstructorArgs } from "../../constraints/constraint.js"
-import { Constraint } from "../../constraints/constraint.js"
-import { ConstraintGenerationError } from "../../constraints/constraint.js"
+import {
+    Constraint,
+    ConstraintGenerationError
+} from "../../constraints/constraint.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
 import { TerminalNode } from "../terminal.js"
-import { KeywordDiagnostic } from "./common.js"
 
 export type RegexLiteralDefinition = `/${string}/`
 export type StringTypedDefinition = StringKeyword | RegexLiteralDefinition
 
 export class StringNode extends TerminalNode implements BoundableNode {
-    regexConstraint?: RegexConstraint
+    regex?: RegexConstraint
     bounds?: BoundsConstraint
 
     constructor(...args: TerminalConstructorArgs) {
         super(...args)
         if (this.definitionIsKeyOf(subtypes)) {
-            this.regexConstraint = subtypes[this.definition]
+            this.regex = subtypes[this.definition]
         } else if (this.definition.match("/.*/")) {
-            this.regexConstraint = new RegexConstraint(
+            this.regex = new RegexConstraint(
                 new RegExp(this.definition.slice(1, -1)),
                 this.definition,
                 `match expression ${this.definition}`
@@ -33,33 +33,43 @@ export class StringNode extends TerminalNode implements BoundableNode {
 
     check(args: Allows.Args) {
         if (typeof args.data !== "string") {
-            args.diagnostics.push(new KeywordDiagnostic("string", args))
+            args.diagnostics.add("keyword", "string", args, {
+                base: this.definition === "string" ? undefined : "string",
+                reason: "Must be a string"
+            })
             return
         }
-
+        this.regex?.check(args)
         this.bounds?.check(args as Allows.Args<string>)
     }
 
     generate() {
-        if (this.regexConstraint || this.bounds) {
+        if (this.regex || this.bounds) {
             throw new ConstraintGenerationError(this.toString())
         }
         return ""
     }
 }
 
+type Z = "5<foobar" extends ModuloValueWithSingleCharacterSuffix<
+    number,
+    "<",
+    string
+>
+    ? "matched"
+    : "didn't match"
+
 export class RegexConstraint extends Constraint {
-    constructor(public regex: RegExp, ...rest: ConstraintConstructorArgs) {
+    constructor(public expression: RegExp, ...rest: ConstraintConstructorArgs) {
         super(rest)
     }
 
     check(args: Allows.Args<string>) {
-        if (this.regex.test(args.data)) {
-            args.diagnostics.push(
-                new Allows.Diagnostic("regex", this.definition, args, {
-                    reason: this.description
-                })
-            )
+        if (this.expression.test(args.data)) {
+            args.diagnostics.add("regex", this.definition, args, {
+                expression: this.expression,
+                reason: this.description
+            })
         }
     }
 }

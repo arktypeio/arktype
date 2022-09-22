@@ -1,5 +1,5 @@
 import type { Evaluate } from "@re-/tools"
-import { Allows } from "../allows.js"
+import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import type { Generate } from "../generate.js"
 import type { RootInfer } from "../root.js"
@@ -16,15 +16,17 @@ export type InferTuple<
 
 export class TupleNode extends struct<number> {
     check(args: Allows.Args) {
-        if (!checkObjectRoot(args, "array")) {
+        if (!checkObjectRoot(this.definition, args)) {
             return
         }
-        const expectedLength = this.entries.length
-        const actualLength = args.data.length
-        if (expectedLength !== actualLength) {
-            args.diagnostics.push(
-                new TupleLengthDiagnostic(args, expectedLength, actualLength)
-            )
+        const expected = this.entries.length
+        const actual = args.data.length
+        if (expected !== actual) {
+            args.diagnostics.add("tupleLength", this.definition, args, {
+                expected,
+                actual,
+                reason: `Length must be ${expected}`
+            })
             return
         }
         this.allowsItems(args)
@@ -57,18 +59,5 @@ export class TupleNode extends struct<number> {
             )
         }
         return result
-    }
-}
-
-export class TupleLengthDiagnostic extends Allows.Diagnostic<"TupleLength"> {
-    public message: string
-
-    constructor(
-        args: Allows.Args,
-        public expectedLength: number,
-        public actualLength: number
-    ) {
-        super("TupleLength", args)
-        this.message = `Must have length ${expectedLength} (got ${actualLength}).`
     }
 }
