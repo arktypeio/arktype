@@ -80,7 +80,7 @@ export class Type implements DynamicType {
         const customValidator =
             args.cfg.validator ?? args.ctx.modelCfg.validator ?? "default"
         if (customValidator !== "default") {
-            Allows.customValidatorAllows(customValidator, this.root, args)
+            Allows.checkCustomValidator(customValidator, this.root, args)
         } else {
             this.root.check(args)
         }

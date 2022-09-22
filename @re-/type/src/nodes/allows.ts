@@ -53,38 +53,62 @@ export namespace Allows {
         typeName: TypeName
     ): args is Args<JsBuiltinTypes[TypeName]> => typeof args.data === typeName
 
+    export type CustomDiagnosticResult = {
+        id: string
+        reason: string
+        additionalContext?: Record<string, unknown>
+    }
+
     export type CustomValidator = (
         args: CustomValidatorArgs
-    ) => undefined | string | string[]
+    ) =>
+        | undefined
+        | string
+        | string[]
+        | CustomDiagnosticResult
+        | CustomDiagnosticResult[]
+
+    export type CustomDiagnosticContext = {
+        definition: Base.RootDefinition
+        data: unknown
+        path: Path
+    }
 
     export type CustomValidatorArgs = Evaluate<
-        BaseDiagnosticContext & {
+        CustomDiagnosticContext & {
             getOriginalErrors: () => Diagnostics
         }
     >
 
-    export const customValidatorAllows = (
+    export const checkCustomValidator = (
         validator: CustomValidator,
         node: Base.node,
         args: Args
-    ): boolean => {
-        const context = createBaseDiagnosticContext(node, args)
-        const result = getCustomErrorMessages(validator, node, args, context)
-        const customMessages = typeof result === "string" ? [result] : result
-        if (Array.isArray(customMessages)) {
-            for (const message of customMessages) {
-                args.diagnostics.push(new CustomDiagnostic(args, message))
-            }
-            return false
+    ) => {
+        const context: CustomDiagnosticContext = {
+            definition: node.definition,
+            data: args.data,
+            path: args.ctx.path
         }
-        return true
+        const result = getCustomValidationResult(validator, context, node, args)
+        if (result === undefined) {
+            return
+        }
+        const resultsList = !Array.isArray(result) ? [result] : result
+        for (const messageOrCustomResult of resultsList) {
+            const resultEntry: CustomDiagnosticResult =
+                typeof messageOrCustomResult === "string"
+                    ? { id: "anonymous", reason: messageOrCustomResult }
+                    : messageOrCustomResult
+            args.diagnostics.add("custom", args, resultEntry)
+        }
     }
 
-    export const getCustomErrorMessages = (
+    const getCustomValidationResult = (
         validator: CustomValidator,
+        context: CustomDiagnosticContext,
         node: Base.node,
-        args: Args,
-        context: BaseDiagnosticContext
+        args: Args
     ) =>
         validator({
             ...context,
@@ -104,10 +128,8 @@ export namespace Allows {
             maxNestedStringLength: 50
         })
 
-    export type BaseDiagnosticOptions<
-        Code extends DiagnosticCode = DiagnosticCode
-    > = {
-        message?: (context: RegisteredDiagnostics[Code]) => string
+    export type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
+        message?: (context: Diagnostic<Code>) => string
         includeDataInMessage?: boolean
     }
 
@@ -128,7 +150,13 @@ export namespace Allows {
         options: Evaluate<BaseDiagnosticOptions<Code> & Options>
     }
 
+    export type CustomDiagnostic = DefineDiagnostic<
+        "custom",
+        Omit<CustomDiagnosticResult, "reason">
+    >
+
     export type RegisteredDiagnostics = {
+        custom: CustomDiagnostic
         keyword: KeywordTypeDiagnostic
         literal: LiteralDiagnostic
         structure: StructureDiagnostic
@@ -164,10 +192,9 @@ export namespace Allows {
         constructor(...[code, args, context]: DiagnosticArgs<Code>) {
             this.code = code
             this.path = args.ctx.path
-            this.context = context as DiagnosticContext<Code>
+            this.context = context
             // TODO: Figure out how to reconcile this and other context sources (cfg vs ctx.modelCfg?)
-            this.options = (args.cfg.diagnostics?.[code] ??
-                {}) as DiagnosticOptions<Code>
+            this.options = args.cfg.diagnostics?.[code] ?? {}
             this.message = `${context.reason}${
                 this.options?.includeDataInMessage
                     ? ` (was ${
@@ -176,7 +203,9 @@ export namespace Allows {
                           // is not the data itself but some property of the
                           // data that resulted in the diagnostic, e.g. the
                           // length of an array.
-                          (context as any)?.actual ?? stringifyData(args.data)
+                          "actual" in context
+                              ? context.actual
+                              : stringifyData(args.data)
                       })`
                     : ""
             }.`
@@ -189,7 +218,9 @@ export namespace Allows {
         add<Code extends DiagnosticCode>(...args: DiagnosticArgs<Code>) {
             const diagnostic = new Diagnostic(...args)
             if (diagnostic.options?.message) {
-                diagnostic.message = diagnostic.options.message(diagnostic)
+                diagnostic.message = diagnostic.options.message(
+                    diagnostic as any
+                )
             }
             this.push(diagnostic)
         }

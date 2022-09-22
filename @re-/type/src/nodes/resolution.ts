@@ -67,7 +67,7 @@ export class ResolutionNode extends Base.node {
             "default"
         if (customValidator !== "default") {
             // TODO: Check custom validator format.
-            Allows.customValidatorAllows(customValidator, this, nextArgs)
+            Allows.checkCustomValidator(customValidator, this, nextArgs)
             return
         }
         this.root.check(nextArgs)
