@@ -1,13 +1,10 @@
 import { Allows } from "../../allows.js"
 import type {
     BoundableNode,
-    BoundsConstraint
+    BoundConstraint
 } from "../../constraints/bounds.js"
-import type { ConstraintConstructorArgs } from "../../constraints/constraint.js"
-import {
-    Constraint,
-    ConstraintGenerationError
-} from "../../constraints/constraint.js"
+import type { Constraint } from "../../constraints/constraint.js"
+import { ConstraintGenerationError } from "../../constraints/constraint.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
 import { TerminalNode } from "../terminal.js"
 
@@ -16,7 +13,7 @@ export type StringTypedDefinition = StringKeyword | RegexLiteralDefinition
 
 export class StringNode extends TerminalNode implements BoundableNode {
     regex?: RegexConstraint
-    bounds?: BoundsConstraint
+    bounds?: BoundConstraint
 
     constructor(...args: TerminalConstructorArgs) {
         super(...args)
@@ -33,8 +30,10 @@ export class StringNode extends TerminalNode implements BoundableNode {
 
     check(args: Allows.Args) {
         if (!Allows.dataIsOfType(args, "string")) {
-            args.diagnostics.add("keyword", "string", args, {
-                base: this.definition === "string" ? undefined : "string",
+            args.diagnostics.add("keyword", args, {
+                definition: this.definition,
+                parentKeyword:
+                    this.definition === "string" ? undefined : "string",
                 reason: "Must be a string"
             })
             return
@@ -51,10 +50,12 @@ export class StringNode extends TerminalNode implements BoundableNode {
     }
 }
 
-export class RegexConstraint extends Constraint {
-    constructor(public expression: RegExp, ...rest: ConstraintConstructorArgs) {
-        super(rest)
-    }
+export class RegexConstraint implements Constraint {
+    constructor(
+        public expression: RegExp,
+        public definition: string,
+        public description: string
+    ) {}
 
     check(args: Allows.Args<string>) {
         if (this.expression.test(args.data)) {
@@ -65,6 +66,14 @@ export class RegexConstraint extends Constraint {
         }
     }
 }
+
+export type RegexDiagnostic = Allows.DefineDiagnostic<
+    "regex",
+    {
+        definition: ""
+        expression: RegExp
+    }
+>
 
 export const subtypes: Record<
     Exclude<StringKeyword, "string">,

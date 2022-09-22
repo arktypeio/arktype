@@ -7,7 +7,7 @@ import type {
 } from "../../../../nodes/constraints/bounds.js"
 import {
     applyBound,
-    BoundsConstraint,
+    BoundConstraint,
     isBoundable
 } from "../../../../nodes/constraints/bounds.js"
 import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
@@ -117,7 +117,7 @@ const reduceDouble = (
     nextSuffix: Scanner.Suffix
 ) => {
     if (isValidDoubleBoundRight(right)) {
-        applyBound(s.l.root, new BoundsConstraint([s.l.lowerBound, right]))
+        applyBound(s.l.root, new BoundConstraint([s.l.lowerBound, right]))
         s.l.lowerBound = undefined as any
         s.l.nextSuffix = nextSuffix
         return s
@@ -140,7 +140,7 @@ const reduceSingle = (
     right: Bounds.Bound,
     nextSuffix: Scanner.Suffix
 ) => {
-    applyBound(s.l.root, new BoundsConstraint([right]))
+    applyBound(s.l.root, new BoundConstraint([right]))
     s.l.lowerBound = undefined
     s.l.nextSuffix = nextSuffix
     return s

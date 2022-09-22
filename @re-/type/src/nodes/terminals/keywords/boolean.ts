@@ -4,7 +4,9 @@ import { TerminalNode } from "../terminal.js"
 export class BooleanNode extends TerminalNode {
     check(args: Allows.Args) {
         if (typeof args.data !== "boolean") {
-            args.diagnostics.add("keyword", "boolean", args, {
+            args.diagnostics.add("keyword", args, {
+                definition: "boolean",
+                data: args.data,
                 reason: "Must be boolean"
             })
         }

@@ -4,7 +4,9 @@ import { TerminalNode } from "../terminal.js"
 export class NullNode extends TerminalNode {
     check(args: Allows.Args) {
         if (args.data !== null) {
-            args.diagnostics.add("keyword", "null", args, {
+            args.diagnostics.add("keyword", args, {
+                definition: "null",
+                data: args.data,
                 reason: "Must be null"
             })
         }

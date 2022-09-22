@@ -4,7 +4,9 @@ import { TerminalNode } from "../terminal.js"
 export class BigintNode extends TerminalNode {
     check(args: Allows.Args) {
         if (typeof args.data !== "bigint") {
-            args.diagnostics.add("keyword", "bigint", args, {
+            args.diagnostics.add("keyword", args, {
+                definition: "bigint",
+                data: args.data,
                 reason: "Must be a bigint"
             })
         }

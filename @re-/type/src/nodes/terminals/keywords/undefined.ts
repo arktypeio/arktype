@@ -4,7 +4,9 @@ import { TerminalNode } from "../terminal.js"
 export class UndefinedNode extends TerminalNode {
     check(args: Allows.Args) {
         if (args.data !== undefined) {
-            args.diagnostics.add("keyword", "undefined", args, {
+            args.diagnostics.add("keyword", args, {
+                definition: "undefined",
+                data: args.data,
                 reason: "Must be undefined"
             })
         }

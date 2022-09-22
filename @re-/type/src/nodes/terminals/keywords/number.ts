@@ -1,24 +1,28 @@
 import type { Allows } from "../../allows.js"
 import type {
     BoundableNode,
-    BoundsConstraint
+    BoundConstraint
 } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
 import { TerminalNode } from "../terminal.js"
 
 export class NumberNode extends TerminalNode implements BoundableNode {
-    bounds: BoundsConstraint | undefined = undefined
+    bounds: BoundConstraint | undefined = undefined
 
     check(args: Allows.Args) {
         if (typeof args.data !== "number") {
-            args.diagnostics.add("keyword", "number", args, {
+            args.diagnostics.add("keyword", args, {
+                definition: "number",
+                data: args.data,
                 reason: "Must be a number"
             })
             return
         }
-        if (this.definition === "integer" && Number.isInteger(args.data)) {
-            args.diagnostics.add("keyword", "integer", args, {
-                base: "number",
+        if (this.definition === "integer" && !Number.isInteger(args.data)) {
+            args.diagnostics.add("keyword", args, {
+                definition: "integer",
+                parentKeyword: "number",
+                data: args.data,
                 reason: "Must be an integer"
             })
         }
@@ -31,11 +35,6 @@ export class NumberNode extends TerminalNode implements BoundableNode {
         }
         return 0
     }
-}
-
-export type numericConstraint = {
-    allows: (data: number) => boolean
-    description: string
 }
 
 export const numberKeywords = {

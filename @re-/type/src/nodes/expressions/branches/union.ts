@@ -32,10 +32,13 @@ export class union extends branch {
     private createUnionDiagnosticContext(
         args: Allows.Args,
         branchDiagnosticsEntries: BranchDiagnosticsEntry[]
-    ): Allows.ContextInputByDiagnostic["union"] {
+    ): Allows.DiagnosticContext<"union"> {
+        // TODO: Better way to get active options
         const explainBranches =
             args.cfg.diagnostics?.union?.explainBranches ||
             args.ctx.modelCfg.diagnostics?.union?.explainBranches
+        // TODO: Better default error messages for union
+        // https://github.com/re-do/re-po/issues/472
         let reason = `Must be one of ${
             this.definition
         } (was ${Allows.stringifyData(args.data)})${
@@ -102,6 +105,18 @@ export class union extends branch {
         )
     }
 }
+
+export type UnionDiagnostic = Allows.DefineDiagnostic<
+    "union",
+    {
+        definition: string
+        data: unknown
+        branchDiagnosticsEntries: BranchDiagnosticsEntry[]
+    },
+    {
+        explainBranches: boolean
+    }
+>
 
 export type BranchDiagnosticsEntry = [string, Allows.Diagnostics]
 

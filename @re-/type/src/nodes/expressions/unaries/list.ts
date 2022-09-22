@@ -1,7 +1,7 @@
 import type { Allows } from "../../allows.js"
 import type {
     BoundableNode,
-    BoundsConstraint
+    BoundConstraint
 } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
 import { checkObjectRoot } from "../../structs/struct.js"
@@ -11,7 +11,7 @@ import { unary } from "./unary.js"
 export type List<Child = unknown> = Unary<Child, "[]">
 
 export class list extends unary implements BoundableNode {
-    bounds: BoundsConstraint | undefined = undefined
+    bounds: BoundConstraint | undefined = undefined
 
     constructor(...args: UnaryConstructorArgs) {
         super("[]", ...args)

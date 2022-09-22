@@ -9,10 +9,12 @@ import type { Scanner } from "../parser/str/state/scanner.js"
 import type { Base } from "./base.js"
 import type { Path } from "./common.js"
 import { pathToString } from "./common.js"
-import type { BoundDiagnosticContext, BoundKind } from "./constraints/bounds.js"
-import type { BranchDiagnosticsEntry } from "./expressions/branches/union.js"
-import type { StructKind } from "./structs/struct.js"
-import type { Keyword, TypeKeyword } from "./terminals/keywords/keyword.js"
+import type {
+    BoundDiagnostic as BoundDiagnostic,
+    BoundKind
+} from "./constraints/bounds.js"
+import type { UnionDiagnostic } from "./expressions/branches/union.js"
+import type { KeywordDiagnostic } from "./terminals/keywords/keyword.js"
 import { Traverse } from "./traverse.js"
 
 export namespace Allows {
@@ -106,105 +108,91 @@ export namespace Allows {
     export type BaseDiagnosticOptions<
         Code extends DiagnosticCode = DiagnosticCode
     > = {
-        message?: (context: DiagnosticCustomizationsByCode[Code]) => string
+        message?: (context: RegisteredDiagnostics[Code]) => string
         includeDataInMessage?: boolean
     }
 
     type OptionsByDiagnostic = {
-        [Code in DiagnosticCode]?: "options" extends keyof DiagnosticCustomizationsByCode[Code]
-            ? BaseDiagnosticOptions<Code> &
-                  Partial<DiagnosticCustomizationsByCode[Code]["options"]>
-            : BaseDiagnosticOptions<Code>
+        [Code in DiagnosticCode]?: RegisteredDiagnostics[Code]["options"]
     }
 
-    type BaseDiagnosticContextInput = {
+    type BaseDiagnosticContext = {
         reason: string
     }
 
-    export type ContextInputByDiagnostic = {
-        [Code in DiagnosticCode]: "context" extends keyof DiagnosticCustomizationsByCode[Code]
-            ? BaseDiagnosticContextInput &
-                  DiagnosticCustomizationsByCode[Code]["context"]
-            : BaseDiagnosticContextInput
+    export type DefineDiagnostic<
+        Code extends DiagnosticCode,
+        Context extends Record<string, unknown>,
+        Options extends Record<string, unknown> = {}
+    > = {
+        context: Evaluate<BaseDiagnosticContext & Context>
+        options: Evaluate<BaseDiagnosticOptions<Code> & Options>
     }
 
-    export type DiagnosticCustomizationsByCode = {
-        keyword: {
-            context: {
-                base?: TypeKeyword
-            }
-        }
-        literal: {}
-        structure: {
-            context: {
-                kind: StructKind
-            }
-        }
-        bound: {
-            context: BoundDiagnosticContext
-        }
-        extraneousKeys: {
-            options: {
-                enabled: boolean
-            }
-            context: {
-                keys: string[]
-            }
-        }
-        missingKey: {
-            context: {
-                key: string
-            }
-        }
-        regex: {
-            context: {
-                expression: RegExp
-            }
-        }
-        tupleLength: {
-            context: {
-                expected: number
-                actual: number
-            }
-        }
-        union: {
-            options: {
-                explainBranches: boolean
-            }
-            context: {
-                branchDiagnosticsEntries: BranchDiagnosticsEntry[]
-            }
-        }
-        intersection: {}
+    export type RegisteredDiagnostics = {
+        keyword: KeywordDiagnostic
+        // literal: {}
+        // structure: {
+        //     context: {
+        //         kind: StructKind
+        //     }
+        // }
+        bound: BoundDiagnostic
+        // extraneousKeys: {
+        //     options: {
+        //         enabled: boolean
+        //     }
+        //     context: {
+        //         keys: string[]
+        //     }
+        // }
+        // missingKey: {
+        //     context: {
+        //         key: string
+        //     }
+        // }
+        // regex: {
+        //     context: {
+        //         expression: RegExp
+        //     }
+        // }
+        // tupleLength: {
+        //     context: {
+        //         expected: number
+        //         actual: number
+        //     }
+        // }
+        union: UnionDiagnostic
     }
 
-    export type DiagnosticCode = keyof DiagnosticCustomizationsByCode
+    export type DiagnosticContext<Code extends DiagnosticCode> =
+        RegisteredDiagnostics[Code]["context"]
 
-    export type RegisteredDiagnostic = Diagnostic<DiagnosticCode>
+    export type DiagnosticOptions<Code extends DiagnosticCode> =
+        RegisteredDiagnostics[Code]["options"]
+
+    export type DiagnosticCode = keyof RegisteredDiagnostics
 
     export type DiagnosticArgs<Code extends DiagnosticCode> = [
         code: Code,
-        definition: unknown,
         args: Args,
-        context: ContextInputByDiagnostic[Code]
+        context: DiagnosticContext<Code>
     ]
 
     export class Diagnostic<Code extends DiagnosticCode> {
         readonly code: Code
-        definition: unknown
         message: string
         path: Path
-        data: unknown
-        options: OptionsByDiagnostic[Code]
+        context: DiagnosticContext<Code>
+        options: DiagnosticOptions<Code>
 
-        constructor(
-            ...[code, definition, args, context]: DiagnosticArgs<Code>
-        ) {
+        constructor(...[code, args, context]: DiagnosticArgs<Code>) {
             this.code = code
             this.path = args.ctx.path
-            this.definition = definition
-            this.data = args.data
-            this.options = args.cfg.diagnostics?.[code] ?? {}
+            this.context = context as DiagnosticContext<Code>
+            // TODO: Figure out how to reconcile this and other context sources (cfg vs ctx.modelCfg?)
+            this.options = (args.cfg.diagnostics?.[code] ??
+                {}) as DiagnosticOptions<Code>
             this.message = `${context.reason}${
                 this.options?.includeDataInMessage
                     ? ` (was ${
@@ -217,15 +205,12 @@ export namespace Allows {
                       })`
                     : ""
             }.`
-            Object.assign(this, context)
         }
     }
 
     export class ValidationError extends Error {}
 
-    export type TypeSetName = Keyword.Definition | "array"
-
-    export class Diagnostics extends Array<RegisteredDiagnostic> {
+    export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         add<Code extends DiagnosticCode>(...args: DiagnosticArgs<Code>) {
             const diagnostic = new Diagnostic(...args)
             if (diagnostic.options?.message) {

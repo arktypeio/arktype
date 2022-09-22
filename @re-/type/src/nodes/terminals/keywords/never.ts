@@ -4,8 +4,10 @@ import { TerminalNode } from "../terminal.js"
 
 export class NeverNode extends TerminalNode {
     check(args: Allows.Args) {
-        args.diagnostics.add("keyword", "never", args, {
-            reason: "Is never allowed"
+        args.diagnostics.add("keyword", args, {
+            definition: "never",
+            data: args.data,
+            reason: "Never allowed"
         })
     }
 

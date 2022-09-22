@@ -1,4 +1,5 @@
 import type { InstanceOf } from "@re-/tools"
+import type { Allows } from "../../allows.js"
 import { AnyNode } from "./any.js"
 import { BigintNode } from "./bigint.js"
 import { BooleanNode } from "./boolean.js"
@@ -31,21 +32,31 @@ export const typeKeywords = {
 
 export type TypeKeyword = keyof typeof typeKeywords
 
-export type Definition = keyof KeywordsToNodes
+export type KeywordDefinition = keyof KeywordsToNodes
 
-export type Types = {
-    [K in Definition]: GetGeneratedType<InstanceOf<KeywordsToNodes[K]>>
+export type KeywordTypes = {
+    [K in KeywordDefinition]: GetGeneratedType<InstanceOf<KeywordsToNodes[K]>>
 }
 
-export const nodes = {
+export type KeywordDiagnostic = Allows.DefineDiagnostic<
+    "keyword",
+    {
+        definition: KeywordDefinition
+        parentKeyword?: TypeKeyword
+        data: unknown
+    }
+>
+
+export const keywordNodes = {
     ...typeKeywords,
     ...stringKeywords,
     ...numberKeywords
 }
 
-export const matches = (def: string): def is Definition => def in nodes
+export const matchesKeyword = (def: string): def is KeywordDefinition =>
+    def in keywordNodes
 
-type KeywordsToNodes = typeof nodes
+type KeywordsToNodes = typeof keywordNodes
 
 export type KeywordNode = InstanceOf<KeywordsToNodes[keyof KeywordsToNodes]>
 

@@ -9,12 +9,11 @@ import {
     invertedComparators
 } from "../../parser/str/operator/bound/common.js"
 import type { Scanner } from "../../parser/str/state/scanner.js"
-import { Allows } from "../allows.js"
+import type { Allows } from "../allows.js"
 import type { StrNode, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminals/keywords/number.js"
 import type { StringKeyword } from "../terminals/keywords/string.js"
-import type { ConstraintConstructorArgs } from "./constraint.js"
-import { Constraint } from "./constraint.js"
+import type { Constraint } from "./constraint.js"
 
 export namespace Bounds {
     export type Ast = Single | Double
@@ -35,7 +34,7 @@ export namespace Bounds {
 export type BoundableAst = NumberKeyword | StringKeyword | [unknown, "[]"]
 
 export type BoundableNode = strNode & {
-    bounds?: BoundsConstraint
+    bounds?: BoundConstraint
 }
 
 export type BoundableData = number | string | unknown[]
@@ -47,28 +46,7 @@ export type BoundUnits = "characters" | "items"
 
 export type BoundKind = "string" | "number" | "array"
 
-export class BoundViolationDiagnostic extends Allows.Diagnostic<"BoundViolation"> {
-    message: string
-    kind: BoundKind
-
-    constructor(
-        args: Allows.Args,
-        public comparator: Scanner.Comparator,
-        public limit: number,
-        public size: number
-    ) {
-        super("BoundViolation", args)
-
-        this.message = describeBound(
-            this.comparator,
-            this.limit,
-            this.size,
-            this.kind
-        )
-    }
-}
-
-export const applyBound = (node: BoundableNode, bounds: BoundsConstraint) => {
+export const applyBound = (node: BoundableNode, bounds: BoundConstraint) => {
     node.bounds = bounds
     applyBoundsToAst(node, bounds.ast)
     applyBoundsToDefinition(node, bounds.ast)
@@ -92,10 +70,8 @@ const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
     }
 }
 
-export class BoundsConstraint extends Constraint {
-    constructor(public ast: Bounds.Ast, ...rest: ConstraintConstructorArgs) {
-        super(...rest)
-    }
+export class BoundConstraint implements Constraint {
+    constructor(public ast: Bounds.Ast) {}
 
     check(args: Allows.Args<BoundableData>) {
         const actual =
@@ -108,12 +84,12 @@ export class BoundsConstraint extends Constraint {
                         : typeof args.data === "number"
                         ? "number"
                         : "array"
-                args.diagnostics.add("bound", `${comparator}${limit}`, args, {
+                args.diagnostics.add("bound", args, {
                     comparator,
                     limit,
                     kind,
                     actual,
-                    reason: describeBound(comparator, limit, kind)
+                    reason: boundToString(comparator, limit, kind)
                 })
                 return
             }
@@ -121,14 +97,18 @@ export class BoundsConstraint extends Constraint {
     }
 }
 
-export type BoundDiagnosticContext = {
-    comparator: Scanner.Comparator
-    limit: number
-    actual: number
-    kind: BoundKind
-}
+export type BoundDiagnostic = Allows.DefineDiagnostic<
+    "bound",
+    {
+        comparator: Scanner.Comparator
+        data: BoundableData
+        limit: number
+        size: number
+        kind: BoundKind
+    }
+>
 
-export const describeBound = (
+export const boundToString = (
     comparator: Scanner.Comparator,
     limit: number,
     kind: BoundKind
