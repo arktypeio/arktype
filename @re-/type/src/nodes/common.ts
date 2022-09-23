@@ -20,6 +20,6 @@ export type NodeToString<
     ? `${Result}${Node}`
     : Result
 
-export type StrNode = string | number | StrNode[]
+export type StrAst = string | number | StrAst[]
 
-export type strNode = Base.node & { ast: StrNode }
+export type strNode = Base.node & { ast: StrAst }

@@ -6,11 +6,11 @@ import type { Union } from "../../nodes/expressions/branches/union.js"
 import type { List } from "../../nodes/expressions/unaries/list.js"
 import type { Optional } from "../../nodes/expressions/unaries/optional.js"
 import type { Unary } from "../../nodes/expressions/unaries/unary.js"
+import type { InferTerminal } from "../../nodes/terminals/terminal.js"
 import type { ParseError, parseFn } from "../common.js"
 import { fullParse } from "./full.js"
 import type { TryNaiveParse } from "./naive.js"
 import { tryNaiveParse } from "./naive.js"
-import type { InferTerminal } from "./operand/operand.js"
 
 export namespace Str {
     export type Parse<Def extends string, Dict> = TryNaiveParse<Def, Dict>
@@ -53,6 +53,6 @@ export namespace Str {
         ? TreeReferences<Child>
         : [T]
 
-    export const parse: parseFn<string> = (def, ctx) =>
-        tryNaiveParse(def, ctx) ?? fullParse(def, ctx)
+    export const parse: parseFn<string> = (def, context) =>
+        tryNaiveParse(def, context) ?? fullParse(def, context)
 }

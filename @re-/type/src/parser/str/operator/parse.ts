@@ -19,7 +19,7 @@ import { parseList } from "./list.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
-    ctx: parseContext
+    context: parseContext
 ): parserState => {
     const lookahead = s.r.shift()
     return lookahead === "END"
@@ -27,17 +27,17 @@ export const parseOperator = (
         : lookahead === "?"
         ? s.suffixed("?")
         : lookahead === "["
-        ? parseList(s, ctx)
+        ? parseList(s, context)
         : lookahead === "|"
-        ? reduceUnion(s, ctx)
+        ? reduceUnion(s, context)
         : lookahead === "&"
-        ? reduceIntersection(s, ctx)
+        ? reduceIntersection(s, context)
         : lookahead === ")"
         ? reduceGroupClose(s)
         : isKeyOf(lookahead, comparatorChars)
         ? parseBound(s, lookahead)
         : lookahead === " "
-        ? parseOperator(s, ctx)
+        ? parseOperator(s, context)
         : s.error(unexpectedCharacterMessage(lookahead))
 }
 

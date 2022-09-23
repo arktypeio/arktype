@@ -10,7 +10,7 @@ import {
     BoundConstraint,
     isBoundable
 } from "../../../../nodes/constraints/bounds.js"
-import type { NumberLiteralDefinition } from "../../operand/unenclosed.js"
+import type { NumberLiteralDefinition } from "../../../../nodes/terminals/literal.js"
 import {
     isNumberLiteral,
     numberLiteralToValue

@@ -10,16 +10,19 @@ import { reduceGroupOpen } from "./groupOpen.js"
 import type { ParseUnenclosedBase } from "./unenclosed.js"
 import { parseUnenclosedBase } from "./unenclosed.js"
 
-export const parseOperand = (s: parserState, ctx: parseContext): parserState =>
+export const parseOperand = (
+    s: parserState,
+    context: parseContext
+): parserState =>
     s.r.lookahead === "("
         ? reduceGroupOpen(s.shifted())
         : s.r.lookaheadIsIn(enclosedBaseStartChars)
-        ? parseEnclosedBase(s, s.r.shift())
+        ? parseEnclosedBase(s, s.r.shift(), context)
         : s.r.lookahead === " "
-        ? parseOperand(s.shifted(), ctx)
+        ? parseOperand(s.shifted(), context)
         : s.r.lookahead === "END"
         ? s.error(expressionExpectedMessage(""))
-        : parseUnenclosedBase(s, ctx)
+        : parseUnenclosedBase(s, context)
 
 export type ParseOperand<
     S extends ParserState,

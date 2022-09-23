@@ -1,5 +1,5 @@
 import { Base } from "../../base.js"
-import type { strNode } from "../../common.js"
+import type { StrAst, strNode } from "../../common.js"
 import type { References } from "../../references.js"
 
 export type Branch<
@@ -10,7 +10,7 @@ export type Branch<
 
 export type BranchConstructorArgs = [children: strNode[], context: Base.context]
 
-export abstract class branch extends Base.node {
+export abstract class branch extends Base.node<string, StrAst> {
     protected children: strNode[]
 
     constructor(

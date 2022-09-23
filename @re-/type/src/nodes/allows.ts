@@ -12,6 +12,7 @@ import type {
 import type { StructureDiagnostic } from "./structs/struct.js"
 import type { TupleLengthDiagnostic } from "./structs/tuple.js"
 import type { KeywordTypeDiagnostic } from "./terminals/keywords/common.js"
+import type { NumberSubtypeDiagnostic } from "./terminals/keywords/number.js"
 import type { RegexDiagnostic } from "./terminals/keywords/string.js"
 import type { LiteralDiagnostic } from "./terminals/literal.js"
 import { Traverse } from "./traverse.js"
@@ -21,7 +22,7 @@ export namespace Allows {
         data: Data
         diagnostics: Diagnostics
         cfg: Options
-        ctx: Context
+        context: Context
     }
 
     export const createArgs = (
@@ -32,10 +33,10 @@ export namespace Allows {
         const args = {
             data,
             diagnostics: new Diagnostics(),
-            ctx: Traverse.createContext(modelOptions) as Context,
+            context: Traverse.createContext(modelOptions) as Context,
             cfg: options
         }
-        args.ctx.checkedValuesByAlias = {}
+        args.context.checkedValuesByAlias = {}
         return args
     }
 
@@ -88,7 +89,7 @@ export namespace Allows {
         const context: CustomDiagnosticContext = {
             definition: node.definition,
             data: args.data,
-            path: args.ctx.path
+            path: args.context.path
         }
         const result = getCustomValidationResult(validator, context, node, args)
         if (result === undefined) {
@@ -164,12 +165,18 @@ export namespace Allows {
         extraneousKeys: ExtraneousKeysDiagnostic
         missingKey: MissingKeyDiagnostic
         regex: RegexDiagnostic
+        numberSubtype: NumberSubtypeDiagnostic
         tupleLength: TupleLengthDiagnostic
         union: UnionDiagnostic
     }
 
     export type DiagnosticContext<Code extends DiagnosticCode> =
         RegisteredDiagnostics[Code]["context"]
+
+    export type ExternalDiagnosticContext<Code extends DiagnosticCode> = Omit<
+        DiagnosticContext<Code>,
+        "reason"
+    >
 
     export type DiagnosticOptions<Code extends DiagnosticCode> =
         RegisteredDiagnostics[Code]["options"]
@@ -186,14 +193,14 @@ export namespace Allows {
         readonly code: Code
         message: string
         path: Path
-        context: DiagnosticContext<Code>
+        context: ExternalDiagnosticContext<Code>
         options: DiagnosticOptions<Code>
 
         constructor(...[code, args, context]: DiagnosticArgs<Code>) {
             this.code = code
-            this.path = args.ctx.path
+            this.path = args.context.path
             this.context = context
-            // TODO: Figure out how to reconcile this and other context sources (cfg vs ctx.modelCfg?)
+            // TODO: Figure out how to reconcile this and other context sources (cfg vs context.modelCfg?)
             this.options = args.cfg.diagnostics?.[code] ?? {}
             this.message = `${context.reason}${
                 this.options?.includeDataInMessage

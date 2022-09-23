@@ -70,7 +70,7 @@ describe("custom validators", () => {
             `Must be 2 (was 1).`
         )
     })
-    test("can access standard validation errors and ctx", () => {
+    test("can access standard validation errors and context", () => {
         const num = type("number", {
             validate: {
                 validator: ({ getOriginalErrors }) => {

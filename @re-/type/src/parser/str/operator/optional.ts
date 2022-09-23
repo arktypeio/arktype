@@ -14,11 +14,11 @@ export type ParseOptional<S extends ParserState> = S["R"] extends ""
       }>
     : ParserState.Error<NonTerminatingOptionalMessage>
 
-export const parseOptional = (s: parserState.suffix, ctx: parseContext) => {
+export const parseOptional = (s: parserState.suffix, context: parseContext) => {
     if (s.r.lookahead !== "END") {
         throw new Error(nonTerminatingOptionalMessage)
     }
-    s.l.root = new optional(s.l.root, ctx)
+    s.l.root = new optional(s.l.root, context)
     s.l.nextSuffix = "END"
     return s
 }

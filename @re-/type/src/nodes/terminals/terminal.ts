@@ -1,4 +1,5 @@
 import { Base } from "../base.js"
+import type { StrAst } from "../common.js"
 import type { References } from "../references.js"
 import type { Alias } from "./alias.js"
 import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
@@ -17,7 +18,7 @@ export type TerminalConstructorArgs<Definition extends string = string> = [
 
 export abstract class TerminalNode<
     Definition extends string = string
-> extends Base.node<Definition> {
+> extends Base.node<Definition, StrAst> {
     constructor(...[definition, context]: TerminalConstructorArgs<Definition>) {
         super(definition, definition, context)
     }

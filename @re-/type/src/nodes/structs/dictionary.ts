@@ -23,12 +23,12 @@ export type InferDictionary<
 
 export class DictionaryNode extends struct<string> {
     check(args: Allows.Args) {
-        if (!checkObjectRoot(this.definition, args)) {
+        if (!checkObjectRoot(this.definition, "dictionary", args)) {
             return
         }
         const checkExtraneous =
             args.cfg.diagnostics?.extraneousKeys?.enabled ||
-            args.ctx.modelCfg.diagnostics?.extraneousKeys?.enabled
+            args.context.modelCfg.diagnostics?.extraneousKeys?.enabled
         const uncheckedData = checkExtraneous ? { ...args.data } : {}
         for (const [key, propNode] of this.entries) {
             const propArgs = this.argsForProp(args, key)
@@ -61,9 +61,9 @@ export class DictionaryNode extends struct<string> {
         return {
             ...args,
             data: args.data[propKey],
-            ctx: {
-                ...args.ctx,
-                path: [...args.ctx.path, propKey]
+            context: {
+                ...args.context,
+                path: [...args.context.path, propKey]
             }
         }
     }
@@ -77,9 +77,9 @@ export class DictionaryNode extends struct<string> {
             }
             result[propKey] = propNode.generate({
                 ...args,
-                ctx: {
-                    ...args.ctx,
-                    path: [...args.ctx.path, propKey]
+                context: {
+                    ...args.context,
+                    path: [...args.context.path, propKey]
                 }
             })
         }

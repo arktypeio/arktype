@@ -50,20 +50,24 @@ export class ResolutionNode extends Base.node {
         const nextArgs = this.nextArgs(args, this.context.validate)
         if (typeof args.data === "object" && args.data !== null) {
             if (
-                args.ctx.checkedValuesByAlias[this.alias]?.includes(args.data)
+                args.context.checkedValuesByAlias[this.alias]?.includes(
+                    args.data
+                )
             ) {
                 // If we've already seen this value, it must not have any errors or else we wouldn't be here
                 return true
             }
-            if (!args.ctx.checkedValuesByAlias[this.alias]) {
-                nextArgs.ctx.checkedValuesByAlias[this.alias] = [args.data]
+            if (!args.context.checkedValuesByAlias[this.alias]) {
+                nextArgs.context.checkedValuesByAlias[this.alias] = [args.data]
             } else {
-                nextArgs.ctx.checkedValuesByAlias[this.alias].push(args.data)
+                nextArgs.context.checkedValuesByAlias[this.alias].push(
+                    args.data
+                )
             }
         }
         const customValidator =
             nextArgs.cfg.validator ??
-            nextArgs.ctx.modelCfg.validator ??
+            nextArgs.context.modelCfg.validator ??
             "default"
         if (customValidator !== "default") {
             // TODO: Check custom validator format.
@@ -75,30 +79,30 @@ export class ResolutionNode extends Base.node {
 
     generate(args: Generate.Args) {
         const nextArgs = this.nextArgs(args, this.context.generate)
-        if (args.ctx.seen.includes(this.alias)) {
+        if (args.context.seen.includes(this.alias)) {
             const onRequiredCycle =
                 nextArgs.cfg.onRequiredCycle ??
-                nextArgs.ctx.modelCfg.onRequiredCycle
+                nextArgs.context.modelCfg.onRequiredCycle
             if (onRequiredCycle) {
                 return onRequiredCycle
             }
-            throw new Generate.RequiredCycleError(this.alias, args.ctx.seen)
+            throw new Generate.RequiredCycleError(this.alias, args.context.seen)
         }
         return this.root.generate(nextArgs)
     }
 
     private nextArgs<
         Args extends {
-            ctx: Traverse.Context<any>
+            context: Traverse.Context<any>
             cfg: any
         }
     >(args: Args, aliasCfg: any): Args {
         return {
             ...args,
-            ctx: {
-                ...args.ctx,
-                seen: [...args.ctx.seen, this.alias],
-                modelCfg: { ...args.ctx.modelCfg, ...aliasCfg }
+            context: {
+                ...args.context,
+                seen: [...args.context.seen, this.alias],
+                modelCfg: { ...args.context.modelCfg, ...aliasCfg }
             }
         }
     }

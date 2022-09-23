@@ -17,7 +17,7 @@ describe("inheritable configs", () => {
             assert(
                 user.check(
                     { name: "David Blass", age: 28 },
-                    { diagnostics: { ExtraneousKeys: { enable: true } } }
+                    { diagnostics: { extraneousKeys: { enabled: true } } }
                 ).errors?.summary
             ).snap(`Keys age were unexpected.`)
         })
@@ -26,7 +26,7 @@ describe("inheritable configs", () => {
                 { name: "string" },
                 {
                     validate: {
-                        diagnostics: { ExtraneousKeys: { enable: true } }
+                        diagnostics: { extraneousKeys: { enabled: true } }
                     }
                 }
             )
@@ -41,7 +41,7 @@ describe("inheritable configs", () => {
                     { name: "string" },
                     {
                         validate: {
-                            diagnostics: { ExtraneousKeys: { enable: true } }
+                            diagnostics: { extraneousKeys: { enabled: true } }
                         }
                     }
                 )
@@ -58,7 +58,7 @@ describe("inheritable configs", () => {
                 { user: { name: "string" } },
                 {
                     validate: {
-                        diagnostics: { ExtraneousKeys: { enable: true } }
+                        diagnostics: { extraneousKeys: { enabled: true } }
                     }
                 }
             )

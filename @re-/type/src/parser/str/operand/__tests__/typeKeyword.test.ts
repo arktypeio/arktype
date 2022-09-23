@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../type.js"
 
-describe("keyword", () => {
+describe("type keywords", () => {
     describe("boolean", () => {
         const b = type("boolean")
         test("type", () => {
@@ -204,97 +204,37 @@ describe("keyword", () => {
             )
         })
     })
-    describe("string subtypes", () => {
-        describe("string", () => {
-            const s = type("string")
-            test("type", () => {
-                assert(s.infer).typed as string
-            })
-            test("generation", () => {
-                assert(s.create()).is("")
-            })
-            test("validation", () => {
-                assert(s.check("KEKW").errors).is(undefined)
-                assert(s.check(["whoops"]).errors?.summary).snap(
-                    `Must be a string (was object).`
-                )
-            })
+    describe("string", () => {
+        const s = type("string")
+        test("type", () => {
+            assert(s.infer).typed as string
         })
-        test("email", () => {
-            const email = type("email")
-            assert(email.infer).typed as string
-            assert(email.check("david@redo.dev").errors).is(undefined)
-            assert(email.check("david@redo@dev").errors?.summary).snap(
-                `'david@redo@dev' must be a valid email.`
-            )
+        test("generation", () => {
+            assert(s.create()).is("")
         })
-        test("alpha", () => {
-            const alpha = type("alpha")
-            assert(alpha.infer).typed as string
-            assert(alpha.check("aBc").errors).is(undefined)
-            assert(alpha.check("a B c").errors?.summary).snap(
-                `'a B c' must include only letters.`
-            )
-        })
-        test("alphanum", () => {
-            const alphaNumeric = type("alphanumeric")
-            assert(alphaNumeric.infer).typed as string
-            assert(alphaNumeric.check("aBc123").errors).is(undefined)
-            assert(alphaNumeric.check("aBc+123").errors?.summary).snap(
-                `'aBc+123' must include only letters and digits.`
-            )
-        })
-        test("lower", () => {
-            const lowercase = type("lower")
-            assert(lowercase.infer).typed as string
-            assert(lowercase.check("alllowercase").errors).is(undefined)
-            assert(lowercase.check("whoOps").errors?.summary).snap(
-                `'whoOps' must include only lowercase letters.`
-            )
-        })
-        test("upper", () => {
-            const uppercase = type("upper")
-            assert(uppercase.infer).typed as string
-            assert(uppercase.check("ALLUPPERCASE").errors).is(undefined)
-            assert(uppercase.check("WHOoPS").errors?.summary).snap(
-                `'WHOoPS' must include only uppercase letters.`
+        test("validation", () => {
+            assert(s.check("KEKW").errors).is(undefined)
+            assert(s.check(["whoops"]).errors?.summary).snap(
+                `Must be a string (was object).`
             )
         })
     })
     describe("number", () => {
-        describe("number", () => {
-            const n = type("number")
-            test("type", () => {
-                assert(n.infer).typed as number
-            })
-            test("generation", () => {
-                assert(n.create()).is(0)
-            })
-            test("validation", () => {
-                assert(n.check(-83).errors).is(undefined)
-                assert(n.check(0.999).errors).is(undefined)
-                assert(n.check("42").errors?.summary).snap(
-                    `Must be a number (was string).`
-                )
-                assert(n.check(Infinity).errors).is(undefined)
-                assert(n.check(NaN).errors).is(undefined)
-            })
+        const n = type("number")
+        test("type", () => {
+            assert(n.infer).typed as number
         })
-        describe("subtypes", () => {
-            test("integer", () => {
-                const integer = type("integer")
-                assert(integer.infer).typed as number
-                assert(integer.check(5).errors).is(undefined)
-                assert(integer.check(5.0001).errors?.summary).snap(
-                    `'5.0001' must must be an integer.`
-                )
-                assert(integer.check(Infinity).errors?.summary).snap(
-                    `'Infinity' must must be an integer.`
-                )
-                assert(integer.check(NaN).errors?.summary).snap(
-                    `'NaN' must must be an integer.`
-                )
-            })
+        test("generation", () => {
+            assert(n.create()).is(0)
+        })
+        test("validation", () => {
+            assert(n.check(-83).errors).is(undefined)
+            assert(n.check(0.999).errors).is(undefined)
+            assert(n.check("42").errors?.summary).snap(
+                `Must be a number (was string).`
+            )
+            assert(n.check(Infinity).errors).is(undefined)
+            assert(n.check(NaN).errors).is(undefined)
         })
     })
 })

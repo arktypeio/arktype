@@ -3,7 +3,7 @@ import { Traverse } from "./traverse.js"
 export namespace Generate {
     export type Args = {
         cfg: Options
-        ctx: Traverse.Context<Options>
+        context: Traverse.Context<Options>
     }
 
     export type Options = {
@@ -19,7 +19,7 @@ export namespace Generate {
         options: Options = {},
         modelOptions: Options = {}
     ): Args => ({
-        ctx: Traverse.createContext(modelOptions),
+        context: Traverse.createContext(modelOptions),
         cfg: options
     })
 

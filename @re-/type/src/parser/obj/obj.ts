@@ -1,9 +1,8 @@
 import type { Evaluate } from "@re-/tools"
-import type { Dictionary } from "../../nodes/structs/dictionary.js"
 import { DictionaryNode } from "../../nodes/structs/dictionary.js"
 import { TupleNode } from "../../nodes/structs/tuple.js"
 import type { parseFn } from "../common.js"
-import type { Root } from "../root.js"
+import { Root } from "../root.js"
 import {
     isParameterizedDefinition,
     parseParameterizedDefinition
@@ -18,13 +17,31 @@ export namespace Obj {
         [K in keyof Def]: Root.Parse<Def[K], Dict>
     }>
 
-    export const parse: parseFn<object> = (def, ctx) => {
-        if (Array.isArray(def)) {
-            if (isParameterizedDefinition(def)) {
-                return parseParameterizedDefinition(def, ctx)
+    export const parse: parseFn<object> = (definition, context) => {
+        if (Array.isArray(definition)) {
+            if (isParameterizedDefinition(definition)) {
+                return parseParameterizedDefinition(definition, context)
             }
-            return new TupleNode(def, ctx)
+            return new TupleNode(
+                definition.map((itemDef, i) => [
+                    i,
+                    Root.parse(itemDef, {
+                        ...context,
+                        path: [...context.path, String(i)]
+                    })
+                ]),
+                context
+            )
         }
-        return new DictionaryNode(def as Dictionary.Definition, ctx)
+        return new DictionaryNode(
+            Object.entries(definition).map(([k, propDef]) => [
+                k,
+                Root.parse(propDef, {
+                    ...context,
+                    path: [...context.path, k]
+                })
+            ]),
+            context
+        )
     }
 }

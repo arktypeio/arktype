@@ -16,7 +16,7 @@ export type InferTuple<
 
 export class TupleNode extends struct<number> {
     check(args: Allows.Args) {
-        if (!checkObjectRoot(this.definition, args)) {
+        if (!checkObjectRoot(this.definition, "array", args)) {
             return
         }
         const expected = this.entries.length
@@ -39,9 +39,9 @@ export class TupleNode extends struct<number> {
             itemNode.check({
                 ...args,
                 data: args.data[itemIndex as any],
-                ctx: {
-                    ...args.ctx,
-                    path: [...args.ctx.path, itemIndex]
+                context: {
+                    ...args.context,
+                    path: [...args.context.path, itemIndex]
                 }
             })
         }
@@ -53,9 +53,9 @@ export class TupleNode extends struct<number> {
             result.push(
                 itemNode.generate({
                     ...args,
-                    ctx: {
-                        ...args.ctx,
-                        path: [...args.ctx.path, itemIndex]
+                    context: {
+                        ...args.context,
+                        path: [...args.context.path, itemIndex]
                     }
                 })
             )

@@ -1,4 +1,5 @@
 import type {
+    Dictionary,
     Evaluate,
     IsAnyOrUnknown,
     IterateType,
@@ -95,19 +96,21 @@ export const structureOf = <Data>(data: Data) =>
         ? "array"
         : "dictionary") as StrucutureOf<Data>
 
-export const checkObjectRoot = <Definition extends object>(
-    definition: Definition,
+export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
+    definition: Base.RootDefinition,
+    expectedStructure: ExpectedStructure,
     args: Allows.Args
 ): args is Allows.Args<
-    Definition extends TupleDefinition ? unknown[] : Record<string, unknown>
+    ExpectedStructure extends "array" ? unknown[] : Dictionary
 > => {
-    const expectedStructure = structureOf(definition) as ObjectKind
     const actualStructure = structureOf(args.data)
     if (expectedStructure !== actualStructure) {
         const expectedStructureDescription =
             expectedStructure === "array" ? "an array" : "a non-array object"
         args.diagnostics.add("structure", args, {
             reason: `Must be ${expectedStructureDescription}`,
+            definition,
+            data: args.data,
             expected: expectedStructure,
             actual: actualStructure
         })
@@ -119,6 +122,8 @@ export const checkObjectRoot = <Definition extends object>(
 export type StructureDiagnostic = Allows.DefineDiagnostic<
     "structure",
     {
+        definition: Base.RootDefinition
+        data: unknown
         expected: ObjectKind
         actual: StructureOfResult
     }

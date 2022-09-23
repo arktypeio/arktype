@@ -32,16 +32,16 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
 
-    export const parse: parseFn = (def, ctx) =>
+    export const parse: parseFn = (def, context) =>
         typeof def === "string"
-            ? Str.parse(def, ctx)
+            ? Str.parse(def, context)
             : typeof def === "object" && def !== null
-            ? Obj.parse(def, ctx)
+            ? Obj.parse(def, context)
             : throwParseError(
                   badDefinitionTypeMessage +
                       ` (was ${typeof def}${
-                          ctx.path.length
-                              ? " at path " + ctx.path.join("/")
+                          context.path.length
+                              ? " at path " + context.path.join("/")
                               : ""
                       }).`
               )

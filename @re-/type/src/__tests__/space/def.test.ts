@@ -11,7 +11,7 @@ const getSpace = () =>
             {
                 members: "user[]"
             },
-            { validate: { diagnostics: { ExtraneousKeys: { enable: true } } } }
+            { validate: { diagnostics: { extraneousKeys: { enabled: true } } } }
         ),
         name: {
             first: "string",

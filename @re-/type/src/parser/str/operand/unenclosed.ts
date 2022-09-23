@@ -1,5 +1,9 @@
 import { Alias } from "../../../nodes/terminals/alias.js"
-import { Keyword } from "../../../nodes/terminals/keywords/keyword.js"
+import type { KeywordDefinition } from "../../../nodes/terminals/keywords/keyword.js"
+import {
+    matchesKeyword,
+    parseKeyword
+} from "../../../nodes/terminals/keywords/keyword.js"
 import type {
     BigintLiteralDefinition,
     BooleanLiteralDefinition,
@@ -19,9 +23,9 @@ import { baseTerminatingChars, expressionExpectedMessage } from "./common.js"
 const lookaheadIsBaseTerminating: scanner.UntilCondition = (scanner) =>
     scanner.lookahead in baseTerminatingChars
 
-export const parseUnenclosedBase = (s: parserState, ctx: parseContext) => {
+export const parseUnenclosedBase = (s: parserState, context: parseContext) => {
     const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
-    s.l.root = unenclosedToNode(s, token, ctx)
+    s.l.root = unenclosedToNode(s, token, context)
     return s
 }
 
@@ -38,12 +42,12 @@ export type ParseUnenclosedBase<
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
-    ctx: parseContext
+    context: parseContext
 ) =>
-    Keyword.matches(token)
-        ? Keyword.parse(token)
-        : Alias.matches(token, ctx)
-        ? new Alias(token, ctx)
+    matchesKeyword(token)
+        ? parseKeyword(token, context)
+        : Alias.matches(token, context)
+        ? new Alias(token, context)
         : undefined
 
 /**
@@ -88,20 +92,24 @@ export const numberLiteralToValue = (def: NumberLiteralDefinition) => {
     return value
 }
 
-export const toNodeIfLiteral = (token: string) =>
+export const toNodeIfLiteral = (token: string, context: parseContext) =>
     isNumberLiteral(token)
-        ? new LiteralNode(numberLiteralToValue(token))
+        ? new LiteralNode(numberLiteralToValue(token), context)
         : isBigintLiteral(token)
-        ? new LiteralNode(BigInt(token.slice(0, -1)))
+        ? new LiteralNode(BigInt(token.slice(0, -1)), context)
         : token === "true"
-        ? new LiteralNode(true)
+        ? new LiteralNode(true, context)
         : token === "false"
-        ? new LiteralNode(false)
+        ? new LiteralNode(false, context)
         : undefined
 
-const unenclosedToNode = (s: parserState, token: string, ctx: parseContext) =>
-    toNodeIfResolvableIdentifier(token, ctx) ??
-    toNodeIfLiteral(token) ??
+const unenclosedToNode = (
+    s: parserState,
+    token: string,
+    context: parseContext
+) =>
+    toNodeIfResolvableIdentifier(token, context) ??
+    toNodeIfLiteral(token, context) ??
     s.error(
         token === ""
             ? expressionExpectedMessage(s.r.unscanned)
@@ -127,7 +135,7 @@ export const unresolvableMessage = <Token extends string>(
 ): UnresolvableMessage<Token> =>
     `'${token}' is not a builtin type and does not exist in your space.`
 
-export type IsResolvableName<Token, Dict> = Token extends Keyword.Definition
+export type IsResolvableName<Token, Dict> = Token extends KeywordDefinition
     ? true
     : Token extends keyof Dict
     ? true

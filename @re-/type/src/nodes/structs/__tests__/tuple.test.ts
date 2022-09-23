@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../index.js"
 import { unresolvableMessage } from "../../../parser/str/operand/unenclosed.js"
-import type { TupleLengthDiagnostic } from "../tuple.js"
+import type { Allows } from "../../allows.js"
 
 describe("tuple", () => {
     describe("empty", () => {
@@ -46,16 +46,19 @@ describe("tuple", () => {
                 test("too short", () => {
                     assert(
                         shallow().check(["violin", 42]).errors as any as [
-                            TupleLengthDiagnostic
+                            Allows.Diagnostic<"tupleLength">
                         ]
                     ).snap([
                         {
-                            code: `TupleLength`,
+                            code: `tupleLength`,
                             path: [],
-                            data: [`violin`, 42],
-                            options: `<undefined>`,
-                            expectedLength: 3,
-                            actualLength: 2,
+                            context: {
+                                definition: ["string", "number", "6"],
+                                data: [`violin`, 42],
+                                expected: 3,
+                                actual: 2
+                            },
+                            options: {},
                             message: `Must have length 3 (was 2).`
                         }
                     ])

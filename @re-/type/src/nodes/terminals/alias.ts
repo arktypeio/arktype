@@ -50,8 +50,8 @@ export namespace Alias {
 }
 
 export class Alias extends TerminalNode {
-    static matches(def: string, ctx: Base.context) {
-        return !!ctx.space && def in ctx.space.dictionary
+    static matches(def: string, context: Base.context) {
+        return !!context.space && def in context.space.dictionary
     }
 
     toString() {

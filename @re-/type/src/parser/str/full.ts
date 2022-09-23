@@ -23,19 +23,19 @@ import { scanner } from "./state/scanner.js"
 import type { ParserState } from "./state/state.js"
 import { parserState } from "./state/state.js"
 
-export const fullParse: parseFn<string> = (def, ctx) =>
-    loop(parseOperand(new parserState(def), ctx), ctx)
+export const fullParse: parseFn<string> = (def, context) =>
+    loop(parseOperand(new parserState(def), context), context)
 
 export type FullParse<Def extends string, Dict> = Loop<
     ParseOperand<ParserState.New<Def>, Dict>,
     Dict
 >
 
-const loop = (s: parserState, ctx: parseContext): strNode => {
+const loop = (s: parserState, context: parseContext): strNode => {
     while (!s.isSuffixable()) {
-        next(s, ctx)
+        next(s, context)
     }
-    return suffixLoop(transitionToSuffix(s), ctx)
+    return suffixLoop(transitionToSuffix(s), context)
 }
 
 type Loop<S extends ParserState, Dict> = S["L"]["nextSuffix"] extends string
@@ -44,8 +44,8 @@ type Loop<S extends ParserState, Dict> = S["L"]["nextSuffix"] extends string
       SuffixLoop<TransitionToSuffix<S>>
     : Loop<Next<S, Dict>, Dict>
 
-const next = (s: parserState, ctx: parseContext): parserState =>
-    s.hasRoot() ? parseOperator(s, ctx) : parseOperand(s, ctx)
+const next = (s: parserState, context: parseContext): parserState =>
+    s.hasRoot() ? parseOperator(s, context) : parseOperand(s, context)
 
 type Next<S extends ParserState, Dict> = S["L"]["root"] extends undefined
     ? ParseOperand<S, Dict>
@@ -73,15 +73,15 @@ type TransitionToSuffix<S extends ParserState<Left.Suffixable>> =
           }>
         : ParserState.Error<UnclosedGroupMessage>
 
-const suffixLoop = (s: parserState.suffix, ctx: parseContext): strNode => {
+const suffixLoop = (s: parserState.suffix, context: parseContext): strNode => {
     if (s.l.nextSuffix === "END") {
         return finalize(s)
     }
     if (s.l.nextSuffix === "?") {
-        return finalize(parseOptional(s, ctx))
+        return finalize(parseOptional(s, context))
     }
     if (isKeyOf(s.l.nextSuffix, scanner.comparators)) {
-        return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
+        return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), context)
     }
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
 }

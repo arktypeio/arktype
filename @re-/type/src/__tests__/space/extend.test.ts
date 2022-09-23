@@ -61,7 +61,7 @@ describe("extend space", () => {
                 onCycle: "boolean"
             },
             validate: {
-                diagnostics: { ExtraneousKeys: { enable: true } },
+                diagnostics: { extraneousKeys: { enabled: true } },
                 validator: `<function validator>`
             }
         })
@@ -76,7 +76,7 @@ const getExtendedSpace = () => {
                 { members: "user[]" },
                 {
                     validate: {
-                        diagnostics: { ExtraneousKeys: { enable: true } }
+                        diagnostics: { extraneousKeys: { enabled: true } }
                     }
                 }
             )
@@ -86,7 +86,7 @@ const getExtendedSpace = () => {
                 onCycle: "number"
             },
             validate: {
-                diagnostics: { ExtraneousKeys: { enable: false } },
+                diagnostics: { extraneousKeys: { enabled: false } },
                 validator: () => undefined
             }
         }
@@ -98,7 +98,7 @@ const getExtendedSpace = () => {
                 { users: "user[]", groups: "group[]" },
                 {
                     validate: {
-                        diagnostics: { ExtraneousKeys: { enable: false } }
+                        diagnostics: { extraneousKeys: { enabled: false } }
                     }
                 }
             )
@@ -108,7 +108,7 @@ const getExtendedSpace = () => {
                 onCycle: "boolean"
             },
             validate: {
-                diagnostics: { ExtraneousKeys: { enable: true } }
+                diagnostics: { extraneousKeys: { enabled: true } }
             }
         }
     )

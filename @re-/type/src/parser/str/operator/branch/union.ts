@@ -13,12 +13,12 @@ type PushRoot<B extends Branches, Root> = {
     ]
 }
 
-export const reduceUnion = (s: parserState.withRoot, ctx: parseContext) => {
+export const reduceUnion = (s: parserState.withRoot, context: parseContext) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }
     if (!s.l.branches.union) {
-        s.l.branches.union = new union([s.l.root], ctx)
+        s.l.branches.union = new union([s.l.root], context)
     } else {
         s.l.branches.union.addMember(s.l.root)
     }

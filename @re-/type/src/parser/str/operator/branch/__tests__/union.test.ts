@@ -64,8 +64,9 @@ describe("union", () => {
                     e: "1",
                     f: "2",
                     g: "3"
-                }).a.check(4, { diagnostics: { Union: { expand: true } } })
-                    .errors?.summary
+                }).a.check(4, {
+                    diagnostics: { union: { explainBranches: true } }
+                }).errors?.summary
             ).snap(`Must be one of b|c (was 4):
 b: Must be one of d|e (was 4):
 d: Must be 0 (was 4).

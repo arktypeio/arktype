@@ -7,8 +7,8 @@ describe("diagnostics", () => {
         assert(
             type("3<number<5").check(0, {
                 diagnostics: {
-                    BoundViolation: {
-                        message: ({ data, comparator, limit }) =>
+                    bound: {
+                        message: ({ context: { data, comparator, limit } }) =>
                             `${data} not ${comparator}${limit}`
                     }
                 }

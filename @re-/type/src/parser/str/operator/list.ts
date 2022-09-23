@@ -4,12 +4,15 @@ import type { Left, left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 
-export const parseList = (s: parserState<left.withRoot>, ctx: parseContext) => {
+export const parseList = (
+    s: parserState<left.withRoot>,
+    context: parseContext
+) => {
     const next = s.r.shift()
     if (next !== "]") {
         throw new Error(incompleteTokenMessage)
     }
-    s.l.root = new list(s.l.root, ctx)
+    s.l.root = new list(s.l.root, context)
     return s
 }
 

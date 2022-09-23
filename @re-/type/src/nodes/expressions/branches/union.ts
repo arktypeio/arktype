@@ -23,7 +23,6 @@ export class union extends branch {
         }
         args.diagnostics.add(
             "union",
-            this.definition,
             args,
             this.createUnionDiagnosticContext(args, branchDiagnosticsEntries)
         )
@@ -36,7 +35,7 @@ export class union extends branch {
         // TODO: Better way to get active options
         const explainBranches =
             args.cfg.diagnostics?.union?.explainBranches ||
-            args.ctx.modelCfg.diagnostics?.union?.explainBranches
+            args.context.modelCfg.diagnostics?.union?.explainBranches
         // TODO: Better default error messages for union
         // https://github.com/re-do/re-po/issues/472
         let reason = `Must be one of ${
@@ -52,7 +51,12 @@ export class union extends branch {
                 reason += `\n${branchDefinition}: ${branchDiagnostics.summary}`
             }
         }
-        return { reason, branchDiagnosticsEntries }
+        return {
+            definition: this.definition,
+            data: args.data,
+            reason,
+            branchDiagnosticsEntries
+        }
     }
 
     generate(args: Generate.Args) {

@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import type { Bounds } from "../../../../../nodes/constraints/bounds.js"
 import { boundToString } from "../../../../../nodes/constraints/bounds.js"
-import { Keyword } from "../../../../../nodes/terminals/keywords/keyword.js"
+import { keywordNodes } from "../../../../../nodes/terminals/keywords/keyword.js"
 import { numberKeywords } from "../../../../../nodes/terminals/keywords/number.js"
 import { stringTypedKeywords } from "../../../../../nodes/terminals/keywords/string.js"
 import type { DynamicType } from "../../../../../type.js"
@@ -14,7 +14,7 @@ import { doubleBoundComparators } from "../common.js"
 const keysOf = (o: object) => Object.keys(o)
 
 export const arbitraryKeywordList = fc.constantFrom(
-    ...keysOf(Keyword.nodes).map((_) => `${_}[]`)
+    ...keysOf(keywordNodes).map((_) => `${_}[]`)
 )
 export const arbitraryNumberKeyword = fc.constantFrom(...keysOf(numberKeywords))
 export const arbitraryStringKeyword = fc.constantFrom(
@@ -39,12 +39,11 @@ export const arbitraryLimit = fc
     .oneof(fc.float(boundRange), fc.integer(boundRange))
     .map((limit) => Number.parseFloat(limit.toFixed(2)))
 
-const expectedCheckResult = (expectedBounds: Bounds, data: number) => {
+const expectedCheckResult = (expectedBounds: Bounds.Ast, data: number) => {
     for (const [comparator, limit] of expectedBounds) {
         const possibleExpectedErrorMessage = boundToString(
             comparator,
             limit,
-            data,
             "number"
         )
         if (data > limit && !comparator.includes(">")) {
@@ -59,7 +58,7 @@ const expectedCheckResult = (expectedBounds: Bounds, data: number) => {
 
 const assertCheckResult = (
     t: DynamicType,
-    expectedBounds: Bounds,
+    expectedBounds: Bounds.Ast,
     data: number
 ) => {
     const actualErrors = t.check(data).errors
@@ -68,7 +67,10 @@ const assertCheckResult = (
     )
 }
 
-export const assertCheckResults = (t: DynamicType, expectedBounds: Bounds) => {
+export const assertCheckResults = (
+    t: DynamicType,
+    expectedBounds: Bounds.Ast
+) => {
     for (const bound of expectedBounds) {
         assertCheckResult(t, expectedBounds, bound[1] - 1)
         assertCheckResult(t, expectedBounds, bound[1])

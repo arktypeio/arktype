@@ -10,7 +10,7 @@ import {
 } from "../../parser/str/operator/bound/common.js"
 import type { Scanner } from "../../parser/str/state/scanner.js"
 import type { Allows } from "../allows.js"
-import type { StrNode, strNode } from "../common.js"
+import type { StrAst, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
 import type { Constraint } from "./constraint.js"
@@ -89,6 +89,7 @@ export class BoundConstraint implements Constraint {
                     limit,
                     kind,
                     actual,
+                    data: args.data,
                     reason: boundToString(comparator, limit, kind)
                 })
                 return
@@ -103,7 +104,7 @@ export type BoundDiagnostic = Allows.DefineDiagnostic<
         comparator: Scanner.Comparator
         data: BoundableData
         limit: number
-        size: number
+        actual: number
         kind: BoundKind
     }
 >
@@ -117,7 +118,7 @@ export const boundToString = (
         kind === "string" ? "characters " : kind === "array" ? "items " : ""
     }`
 
-const isConstrained = (ast: StrNode): ast is [StrNode, StrNode[]] =>
+const isConstrained = (ast: StrAst): ast is [StrAst, StrAst[]] =>
     Array.isArray(ast) && Array.isArray(ast[1])
 
 const isWithinBound = (

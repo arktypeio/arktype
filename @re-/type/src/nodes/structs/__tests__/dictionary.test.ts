@@ -1,11 +1,9 @@
 import { assert } from "@re-/assert"
+import { narrow } from "@re-/tools"
 import { describe, test } from "mocha"
 import { type } from "../../../index.js"
 import { unresolvableMessage } from "../../../parser/str/operand/unenclosed.js"
-import type {
-    ExtraneousKeysDiagnostic,
-    MissingKeyDiagnostic
-} from "../dictionary.js"
+import type { Allows } from "../../allows.js"
 
 describe("dictionary", () => {
     describe("empty", () => {
@@ -24,12 +22,12 @@ describe("dictionary", () => {
         })
     })
     describe("shallow", () => {
-        const shallow = () =>
-            type({
-                a: "string",
-                b: "number",
-                c: "67"
-            })
+        const shallowDefinition = narrow({
+            a: "string",
+            b: "number",
+            c: "67"
+        })
+        const shallow = () => type(shallowDefinition)
         test("type", () => {
             assert(shallow().infer).typed as {
                 a: string
@@ -53,23 +51,27 @@ describe("dictionary", () => {
                 test("missing keys", () => {
                     assert(
                         shallow().check({ a: "ok" })
-                            .errors as any as MissingKeyDiagnostic[]
+                            .errors as any as Allows.Diagnostic<"missingKey">[]
                     ).snap([
                         {
-                            code: `MissingKey`,
+                            code: `missingKey`,
+                            message: `b is required.`,
                             path: [`b`],
-                            data: `<undefined>`,
-                            options: `<undefined>`,
-                            key: `b`,
-                            message: `b is required.`
+                            options: {},
+                            context: {
+                                definition: shallowDefinition,
+                                key: `b`
+                            }
                         },
                         {
-                            code: `MissingKey`,
+                            code: `missingKey`,
+                            message: `c is required.`,
                             path: [`c`],
-                            data: `<undefined>`,
-                            options: `<undefined>`,
-                            key: `c`,
-                            message: `c is required.`
+                            options: {},
+                            context: {
+                                definition: shallowDefinition,
+                                key: `c`
+                            }
                         }
                     ])
                 })
@@ -85,23 +87,26 @@ describe("dictionary", () => {
                             },
                             {
                                 diagnostics: {
-                                    ExtraneousKeys: { enable: true }
+                                    extraneousKeys: { enabled: true }
                                 }
                             }
-                        ).errors as any as ExtraneousKeysDiagnostic[]
+                        ).errors as any as Allows.Diagnostic<"extraneousKeys">[]
                     ).snap([
                         {
-                            code: `ExtraneousKeys`,
+                            code: `extraneousKeys`,
                             path: [],
-                            data: {
-                                a: `ok`,
-                                b: 4.321,
-                                c: 67,
-                                d: `extraneous`,
-                                e: `x-ray-knee-us`
+                            context: {
+                                definition: shallowDefinition,
+                                data: {
+                                    a: `ok`,
+                                    b: 4.321,
+                                    c: 67,
+                                    d: `extraneous`,
+                                    e: `x-ray-knee-us`
+                                },
+                                keys: [`d`, `e`]
                             },
-                            options: { enable: true },
-                            keys: [`d`, `e`],
+                            options: { enabled: true },
                             message: `Keys d, e were unexpected.`
                         }
                     ])
@@ -116,7 +121,7 @@ describe("dictionary", () => {
                             },
                             {
                                 diagnostics: {
-                                    ExtraneousKeys: { enable: true }
+                                    extraneousKeys: { enabled: true }
                                 }
                             }
                         ).errors?.summary

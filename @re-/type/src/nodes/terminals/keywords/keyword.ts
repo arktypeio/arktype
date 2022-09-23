@@ -1,6 +1,6 @@
 import type { InstanceOf } from "@re-/tools"
-import { isKeyOf } from "@re-/tools"
-import type { Allows } from "../../allows.js"
+import type { parseFn } from "../../../parser/common.js"
+import type { Base } from "../../base.js"
 import { AnyNode } from "./any.js"
 import { BigintNode } from "./bigint.js"
 import { BooleanNode } from "./boolean.js"
@@ -53,6 +53,9 @@ export const keywordNodes = {
     ...stringTypedKeywords,
     ...numberKeywords
 }
+
+export const parseKeyword = (def: KeywordDefinition, context: Base.context) =>
+    new keywordNodes[def](def as any, context)
 
 export const matchesKeyword = (def: string): def is KeywordDefinition =>
     def in keywordNodes

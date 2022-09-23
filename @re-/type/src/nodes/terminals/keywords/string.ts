@@ -18,9 +18,12 @@ export class StringNode
 
     constructor(...args: TerminalConstructorArgs<StringTypedDefinition>) {
         super(...args)
+        if (this.definition === "string") {
+            return
+        }
         if (this.definitionIsKeyOf(stringSubtypes)) {
             this.regex = stringSubtypes[this.definition]
-        } else if (this.definition.match("/.*/")) {
+        } else {
             this.regex = new RegexConstraint(
                 new RegExp(this.definition.slice(1, -1)),
                 this.definition,
@@ -134,4 +137,5 @@ export type StringSubtypeDefinition =
     | RegexLiteralDefinition
 
 export type RegexLiteralDefinition = `/${string}/`
+
 export type StringTypedDefinition = StringTypedKeyword | RegexLiteralDefinition

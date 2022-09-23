@@ -1,4 +1,6 @@
 import { keySet } from "@re-/tools"
+import type { Base } from "../../../nodes/base.js"
+import type { RegexLiteralDefinition } from "../../../nodes/terminals/keywords/string.js"
 import { StringNode } from "../../../nodes/terminals/keywords/string.js"
 import { LiteralNode } from "../../../nodes/terminals/literal.js"
 import type { Left } from "../state/left.js"
@@ -40,7 +42,8 @@ const untilLookaheadIsClosing: Record<
 
 export const parseEnclosedBase = (
     s: parserState,
-    enclosing: EnclosedBaseStartChar
+    enclosing: EnclosedBaseStartChar,
+    context: Base.context
 ) => {
     const definition = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
         appendTo: enclosing,
@@ -50,8 +53,8 @@ export const parseEnclosedBase = (
     const enclosedText = definition.slice(1, -1)
     s.l.root =
         enclosing === "/"
-            ? new StringNode(definition)
-            : new LiteralNode(enclosedText)
+            ? new StringNode(definition as RegexLiteralDefinition, context)
+            : new LiteralNode(enclosedText, context)
     return s
 }
 

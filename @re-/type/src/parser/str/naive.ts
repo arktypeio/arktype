@@ -33,25 +33,28 @@ export type TryNaiveParse<
     ? Def
     : FullParse<Def, Dict>
 
-export const tryNaiveParse = (def: string, ctx: parseContext) => {
+export const tryNaiveParse = (def: string, context: parseContext) => {
     if (def.endsWith("?")) {
-        const possibleIdentifierNode = tryNaiveParseList(def.slice(0, -1), ctx)
+        const possibleIdentifierNode = tryNaiveParseList(
+            def.slice(0, -1),
+            context
+        )
         if (possibleIdentifierNode) {
-            return new optional(possibleIdentifierNode, ctx)
+            return new optional(possibleIdentifierNode, context)
         }
     }
-    return tryNaiveParseList(def, ctx)
+    return tryNaiveParseList(def, context)
 }
 
-const tryNaiveParseList = (def: string, ctx: parseContext) => {
+const tryNaiveParseList = (def: string, context: parseContext) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(
             def.slice(0, -2),
-            ctx
+            context
         )
         if (possibleIdentifierNode) {
-            return new list(possibleIdentifierNode, ctx)
+            return new list(possibleIdentifierNode, context)
         }
     }
-    return toNodeIfResolvableIdentifier(def, ctx)
+    return toNodeIfResolvableIdentifier(def, context)
 }

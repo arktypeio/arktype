@@ -26,9 +26,8 @@ export class NumberNode extends TerminalNode implements BoundableNode {
             return
         }
         if (this.definition === "integer" && !Number.isInteger(args.data)) {
-            args.diagnostics.add("keyword", args, {
+            args.diagnostics.add("numberSubtype", args, {
                 definition: "integer",
-                parentKeyword: "number",
                 data: args.data,
                 reason: "Must be an integer"
             })
@@ -52,3 +51,11 @@ export const numberKeywords = {
 export type NumberKeyword = keyof typeof numberKeywords
 
 export type NumberSubtypeKeyword = Exclude<NumberKeyword, "number">
+
+export type NumberSubtypeDiagnostic = Allows.DefineDiagnostic<
+    "numberSubtype",
+    {
+        definition: NumberSubtypeKeyword
+        data: number
+    }
+>

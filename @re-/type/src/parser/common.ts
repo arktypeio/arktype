@@ -20,7 +20,7 @@ export const initializeParseContext = (
 
 export type parseFn<DefType = unknown> = (
     def: DefType,
-    ctx: parseContext
+    context: parseContext
 ) => Base.node
 
 export class parseError extends Error {}

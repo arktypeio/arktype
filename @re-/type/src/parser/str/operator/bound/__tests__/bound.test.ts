@@ -2,10 +2,8 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { dynamic, type } from "../../../../../index.js"
-import type {
-    Bounds,
-    BoundViolationDiagnostic
-} from "../../../../../nodes/constraints/bounds.js"
+import type { Allows } from "../../../../../nodes/allows.js"
+import type { Bounds } from "../../../../../nodes/constraints/bounds.js"
 import { invalidDoubleBoundMessage, invertedComparators } from "../common.js"
 import { nonPrefixLeftBoundMessage } from "../left.js"
 import { singleEqualsMessage } from "../parse.js"
@@ -131,7 +129,7 @@ describe("bound", () => {
                         const singleBound = dynamic(
                             `number${comparator}${limit}`
                         )
-                        const expectedBounds: Bounds = [[comparator, limit]]
+                        const expectedBounds: Bounds.Ast = [[comparator, limit]]
                         assert(singleBound.ast).equals([
                             "number",
                             expectedBounds
@@ -157,7 +155,7 @@ describe("bound", () => {
                         const doubleBound = dynamic(
                             `${lowerLimit}${lowerComparator}number${upperComparator}${upperLimit}`
                         )
-                        const expectedBounds: Bounds = [
+                        const expectedBounds: Bounds.Ast = [
                             [invertedComparators[lowerComparator], lowerLimit],
                             [upperComparator, upperLimit]
                         ]
@@ -186,18 +184,20 @@ describe("bound", () => {
             const gte3 = type("string>=3")
             assert(gte3.check("yes").errors).equals(undefined)
             assert(
-                gte3.check("no").errors as any as BoundViolationDiagnostic[]
+                gte3.check("no").errors as any as Allows.Diagnostic<"bound">[]
             ).snap([
                 {
-                    code: `BoundViolation`,
+                    code: `bound`,
+                    message: `Must be at least 3 characters`,
                     path: [],
-                    data: `no`,
-                    options: `<undefined>`,
-                    comparator: `>=`,
-                    limit: 3,
-                    size: 2,
-                    kind: `string`,
-                    message: `Must be at least 3 characters (was 2).`
+                    options: {},
+                    context: {
+                        data: `no`,
+                        comparator: `>=`,
+                        limit: 3,
+                        actual: 2,
+                        kind: `string`
+                    }
                 }
             ])
         })

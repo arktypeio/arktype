@@ -78,7 +78,7 @@ export class Type implements DynamicType {
     check(value: unknown, options?: Allows.Options) {
         const args = Allows.createArgs(value, options, this.config.validate)
         const customValidator =
-            args.cfg.validator ?? args.ctx.modelCfg.validator ?? "default"
+            args.cfg.validator ?? args.context.modelCfg.validator ?? "default"
         if (customValidator !== "default") {
             Allows.checkCustomValidator(customValidator, this.root, args)
         } else {

@@ -12,10 +12,10 @@ type PushRoot<B extends Branches, Root> = {
 
 export const reduceIntersection = (
     s: parserState.withRoot,
-    ctx: parseContext
+    context: parseContext
 ) => {
     if (!s.l.branches.intersection) {
-        s.l.branches.intersection = new intersection([s.l.root], ctx)
+        s.l.branches.intersection = new intersection([s.l.root], context)
     } else {
         s.l.branches.intersection.addMember(s.l.root)
     }

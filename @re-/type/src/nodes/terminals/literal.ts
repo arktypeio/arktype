@@ -13,21 +13,19 @@ export type BigintLiteralDefinition<Value extends bigint = bigint> = `${Value}n`
 export type BooleanLiteralDefinition<Value extends boolean = boolean> =
     `${Value}`
 
+export type LiteralDefinition =
+    | StringLiteralDefinition
+    | NumberLiteralDefinition
+    | BigintLiteralDefinition
+    | BooleanLiteralDefinition
+
 export type PrimitiveLiteralValue = string | number | bigint | boolean
 
 export class LiteralNode<
     Value extends PrimitiveLiteralValue
-> extends TerminalNode {
+> extends TerminalNode<LiteralDefinition> {
     constructor(public value: Value, context: Base.context) {
-        const definition =
-            typeof value === "string"
-                ? value.includes(`"`)
-                    ? `'${value}'`
-                    : `"${value}"`
-                : typeof value === "bigint"
-                ? `${value}n`
-                : String(value)
-        super(definition, context)
+        super(literalToDefinition(value), context)
     }
 
     toString() {
@@ -50,7 +48,20 @@ export class LiteralNode<
     }
 }
 
+const literalToDefinition = (value: PrimitiveLiteralValue) =>
+    (typeof value === "string"
+        ? value.includes(`"`)
+            ? `'${value}'`
+            : `"${value}"`
+        : typeof value === "bigint"
+        ? `${value}n`
+        : String(value)) as LiteralDefinition
+
 export type LiteralDiagnostic = Allows.DefineDiagnostic<
     "literal",
-    { definition: string; data: unknown; value: PrimitiveLiteralValue }
+    {
+        definition: LiteralDefinition
+        data: unknown
+        value: PrimitiveLiteralValue
+    }
 >

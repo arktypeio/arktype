@@ -18,7 +18,7 @@ export class list extends unary implements BoundableNode {
     }
 
     check(args: Allows.Args) {
-        if (!checkObjectRoot(args, "array")) {
+        if (!checkObjectRoot(this.definition, "array", args)) {
             return
         }
         this.bounds?.check(args)
@@ -27,9 +27,9 @@ export class list extends unary implements BoundableNode {
             this.child.check({
                 ...args,
                 data: itemValue,
-                ctx: {
-                    ...args.ctx,
-                    path: [...args.ctx.path, itemIndex]
+                context: {
+                    ...args.context,
+                    path: [...args.context.path, itemIndex]
                 }
             })
             itemIndex++
