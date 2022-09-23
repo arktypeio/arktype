@@ -97,11 +97,14 @@ export namespace Allows {
         }
         const resultsList = !Array.isArray(result) ? [result] : result
         for (const messageOrCustomResult of resultsList) {
-            const resultEntry: CustomDiagnosticResult =
-                typeof messageOrCustomResult === "string"
-                    ? { id: "anonymous", reason: messageOrCustomResult }
-                    : messageOrCustomResult
-            args.diagnostics.add("custom", args, resultEntry)
+            if (typeof messageOrCustomResult === "string") {
+                args.diagnostics.add("custom", messageOrCustomResult, args, {
+                    id: "anonymous"
+                })
+            } else {
+                const { reason, ...context } = messageOrCustomResult
+                args.diagnostics.add("custom", reason, args, context)
+            }
         }
     }
 
@@ -138,16 +141,12 @@ export namespace Allows {
         [Code in DiagnosticCode]?: RegisteredDiagnostics[Code]["options"]
     }
 
-    type BaseDiagnosticContext = {
-        reason: string
-    }
-
     export type DefineDiagnostic<
         Code extends DiagnosticCode,
         Context extends Record<string, unknown>,
         Options extends Record<string, unknown> = {}
     > = {
-        context: Evaluate<BaseDiagnosticContext & Context>
+        context: Context
         options: Evaluate<BaseDiagnosticOptions<Code> & Options>
     }
 
@@ -185,6 +184,7 @@ export namespace Allows {
 
     export type DiagnosticArgs<Code extends DiagnosticCode> = [
         code: Code,
+        reason: string,
         args: Args,
         context: DiagnosticContext<Code>
     ]
@@ -196,26 +196,24 @@ export namespace Allows {
         context: ExternalDiagnosticContext<Code>
         options: DiagnosticOptions<Code>
 
-        constructor(...[code, args, context]: DiagnosticArgs<Code>) {
+        constructor(...[code, reason, args, context]: DiagnosticArgs<Code>) {
             this.code = code
             this.path = args.context.path
             this.context = context
             // TODO: Figure out how to reconcile this and other context sources (cfg vs context.modelCfg?)
-            this.options = args.cfg.diagnostics?.[code] ?? {}
-            this.message = `${context.reason}${
-                this.options?.omitActualFromMessage
-                    ? ""
-                    : ` (was ${
-                          // If we have a context item named "actual", use that
-                          // in place of data. This is useful in cases where it
-                          // is not the data itself but some property of the
-                          // data that resulted in the diagnostic, e.g. the
-                          // length of an array.
-                          "actual" in context
-                              ? context.actual
-                              : stringifyData(args.data)
-                      })`
-            }.`
+            this.options = {
+                ...args.cfg.diagnostics?.[code],
+                ...args.context.modelCfg.diagnostics?.[code]
+            }
+            this.message = reason
+            if (!this.options?.omitActualFromMessage) {
+                if ("actual" in context) {
+                    this.message += ` (was ${context.actual})`
+                }
+            }
+            if (this.options.message) {
+                this.message = this.options.message(this as any)
+            }
         }
     }
 
@@ -223,13 +221,7 @@ export namespace Allows {
 
     export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         add<Code extends DiagnosticCode>(...args: DiagnosticArgs<Code>) {
-            const diagnostic = new Diagnostic(...args)
-            if (diagnostic.options?.message) {
-                diagnostic.message = diagnostic.options.message(
-                    diagnostic as any
-                )
-            }
-            this.push(diagnostic)
+            this.push(new Diagnostic(...args))
         }
 
         get summary() {

@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { expressionExpectedMessage } from "../parser/str/operand/common.js"
+import { unresolvableMessage } from "../parser/str/operand/unenclosed.js"
 import { type } from "../type.js"
 
 describe("str", () => {
@@ -18,8 +19,6 @@ describe("str", () => {
         assert(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError(
-            "'boo' is not a builtin type and does not exist in your space."
-        )
+        ).throwsAndHasTypeError(unresolvableMessage("boo"))
     })
 })

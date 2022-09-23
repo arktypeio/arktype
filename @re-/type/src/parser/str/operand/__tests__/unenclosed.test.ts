@@ -64,9 +64,7 @@ describe("parse unenclosed", () => {
             })
             test("negative zero", () => {
                 // TS won't complain about this, but it also won't infer the literal correctly, so we throw.
-                assert(() => type("-0")).throws.snap(
-                    `Error: '-0' is not a builtin type and does not exist in your space.`
-                )
+                assert(() => type("-0")).throws(unresolvableMessage("-0"))
             })
         })
     })
@@ -92,9 +90,7 @@ describe("parse unenclosed", () => {
             })
             test("negative zero", () => {
                 // TS won't complain about this, but it also won't infer the literal correctly, so we throw.
-                assert(() => type("-0n")).throws.snap(
-                    `Error: '-0n' is not a builtin type and does not exist in your space.`
-                )
+                assert(() => type("-0n")).throws(unresolvableMessage("-0n"))
             })
         })
     })

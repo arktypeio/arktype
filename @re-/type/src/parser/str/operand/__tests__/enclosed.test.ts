@@ -3,7 +3,6 @@ import { describe, test } from "mocha"
 import { type } from "../../../../type.js"
 import { unterminatedEnclosedMessage } from "../enclosed.js"
 
-// TODO: Fix string literal quote types
 describe("parse enclosed", () => {
     test("with spaces", () => {
         assert(type("'this has spaces'").infer).typed as "this has spaces"
@@ -13,7 +12,7 @@ describe("parse enclosed", () => {
     })
     test("with neighbors", () => {
         assert(type("'foo'|/.*/[]").ast).narrowedValue([
-            '"foo"',
+            "'foo'",
             "|",
             ["/.*/", "[]"]
         ])
@@ -41,10 +40,10 @@ describe("parse enclosed", () => {
         })
     })
     test("single-quoted", () => {
-        assert(type("'hello'").ast).narrowedValue("hello")
+        assert(type("'hello'").ast).narrowedValue("'hello'")
     })
     test("double-quoted", () => {
-        assert(type('"goodbye"').ast).narrowedValue("goodbye")
+        assert(type('"goodbye"').ast).narrowedValue('"goodbye"')
     })
     test("regex literal", () => {
         assert(type("/.*/").ast).narrowedValue("/.*/")
@@ -63,9 +62,9 @@ describe("parse enclosed", () => {
     })
     test("mix of enclosed and unenclosed tokens", () => {
         assert(type("'yes|no'|'true|false'").ast).narrowedValue([
-            '"yes|no"',
+            "'yes|no'",
             "|",
-            '"true|false"'
+            "'true|false'"
         ])
     })
 })

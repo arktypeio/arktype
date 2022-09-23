@@ -1,41 +1,29 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../type.js"
+import { unclosedGroupMessage } from "../../full.js"
+import { expressionExpectedMessage } from "../../operand/common.js"
+import { unexpectedGroupCloseMessage } from "../groupClose.js"
 
-describe("parenthesized", () => {
+describe("group", () => {
     test("entire expression", () => {
-        assert(type("(string)").infer).typed as string
+        assert(type("(string)").ast).narrowedValue("string")
     })
-    test("default precedence", () => {
-        const unionWithList = type("boolean|number[]")
-        assert(unionWithList.infer).typed as boolean | number[]
-        assert(unionWithList.check(true).errors).equals(undefined)
-        assert(unionWithList.check([1, 2, 3]).errors).equals(undefined)
-        assert(unionWithList.check([true, false]).errors?.summary).snap(
-            `Must be one of boolean|number[] (was [true, false]).`
-        )
+    test("overrides default precedence", () => {
+        assert(type("boolean|number[]").ast).narrowedValue([
+            "boolean",
+            "|",
+            ["number", "[]"]
+        ])
+        assert(type("(boolean|number)[]").ast).narrowedValue([
+            ["boolean", "|", "number"],
+            "[]"
+        ])
     })
-    test("grouped precedence", () => {
-        const listOfUnion = type("(boolean|number)[]")
-        assert(listOfUnion.infer).typed as (boolean | number)[]
-        assert(listOfUnion.check([]).errors).equals(undefined)
-        assert(listOfUnion.check([1]).errors).equals(undefined)
-        assert(listOfUnion.check([1, true]).errors).equals(undefined)
-        assert(listOfUnion.check(true).errors?.summary).snap(
-            `Must be an object (was boolean).`
-        )
-        assert(listOfUnion.check(1).errors?.summary).snap(
-            `Must be an object (was number).`
-        )
-        assert(listOfUnion.check(["foo"]).errors?.summary).snap(
-            `Item 0 must be one of boolean|number (was "foo").`
-        )
-    })
-    test("nested precedence", () => {
-        const listOfUnionOfListsOfUnions = type(
-            "((boolean|number)[]|(string|undefined)[])[]"
-        )
-        assert(listOfUnionOfListsOfUnions.ast).narrowedValue([
+    test("nested", () => {
+        assert(
+            type("((boolean|number)[]|(string|undefined)[])[]").ast
+        ).narrowedValue([
             [
                 [["boolean", "|", "number"], "[]"],
                 "|",
@@ -43,86 +31,61 @@ describe("parenthesized", () => {
             ],
             "[]"
         ])
-        assert(listOfUnionOfListsOfUnions.infer).typed as (
-            | (boolean | number)[]
-            | (string | undefined)[]
-        )[]
-        assert(listOfUnionOfListsOfUnions.check([]).errors).equals(undefined)
-        assert(listOfUnionOfListsOfUnions.check([[1, true]]).errors).equals(
-            undefined
-        )
-        assert(
-            listOfUnionOfListsOfUnions.check([[1], ["foo", undefined], [true]])
-                .errors
-        ).equals(undefined)
-        // TODO: Add precedence as a prop to determine when to parenthesize
-        assert(
-            listOfUnionOfListsOfUnions.check([undefined]).errors?.summary
-        ).snap(
-            `Item 0 must be one of boolean|number[]|string|undefined[] (was undefined).`
-        )
-        // Can't mix items from each list
-        assert(
-            listOfUnionOfListsOfUnions.check([[false, "foo"]]).errors?.summary
-        ).snap(
-            `Item 0 must be one of boolean|number[]|string|undefined[] (was [false, "foo"]).`
-        )
     })
     describe("errors", () => {
         test("empty", () => {
             assert(() => {
                 // @ts-expect-error
-                type("()").infer
-            }).throwsAndHasTypeError("Expected an expression (was ')').")
+                type("()")
+            }).throwsAndHasTypeError(expressionExpectedMessage(")"))
         })
         test("unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
-                type("string|(boolean|number[]").infer
-            }).throwsAndHasTypeError("Missing ).")
+                type("string|(boolean|number[]")
+            }).throwsAndHasTypeError(unclosedGroupMessage)
         })
         test("unmatched )", () => {
             assert(() => {
                 // @ts-expect-error
-                type("string|number[]|boolean)").infer
-            }).throwsAndHasTypeError("Unexpected ).")
+                type("string|number[]|boolean)")
+            }).throwsAndHasTypeError(unexpectedGroupCloseMessage(""))
         })
         test("lone )", () => {
             assert(() => {
                 // @ts-expect-error
-                type(")").infer
-            }).throwsAndHasTypeError("Expected an expression (was ')').")
+                type(")")
+            }).throwsAndHasTypeError(expressionExpectedMessage(")"))
         })
         test("lone (", () => {
             assert(() => {
                 // @ts-expect-error
-                type("(").infer
-            }).throwsAndHasTypeError("Expected an expression.")
+                type("(")
+            }).throwsAndHasTypeError(expressionExpectedMessage(""))
         })
         test("deep unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
-                type("(null|(undefined|(1))|2").infer
-            }).throwsAndHasTypeError("Missing ).")
+                type("(null|(undefined|(1))|2")
+            }).throwsAndHasTypeError(unclosedGroupMessage)
         })
         test("deep unmatched )", () => {
-            // TODO: Add context to errors like this to show where it is
             assert(() => {
                 // @ts-expect-error
-                type("((string|number)[]|boolean))").infer
-            }).throwsAndHasTypeError("Unexpected ).")
+                type("((string|number)[]|boolean))[]")
+            }).throwsAndHasTypeError(unexpectedGroupCloseMessage("[]"))
         })
         test("starting )", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")number(")
-            }).throwsAndHasTypeError("Expected an expression (was ')number(').")
+            }).throwsAndHasTypeError(expressionExpectedMessage(")number("))
         })
         test("misplaced )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(number|)")
-            }).throwsAndHasTypeError("Expected an expression (was ')').")
+            }).throwsAndHasTypeError(expressionExpectedMessage(")"))
         })
     })
 })

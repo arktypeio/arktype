@@ -107,13 +107,17 @@ export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
     if (expectedStructure !== actualStructure) {
         const expectedStructureDescription =
             expectedStructure === "array" ? "an array" : "a non-array object"
-        args.diagnostics.add("structure", args, {
-            reason: `Must be ${expectedStructureDescription}`,
-            definition,
-            data: args.data,
-            expected: expectedStructure,
-            actual: actualStructure
-        })
+        args.diagnostics.add(
+            "structure",
+            `Must be ${expectedStructureDescription}`,
+            args,
+            {
+                definition,
+                data: args.data,
+                expected: expectedStructure,
+                actual: actualStructure
+            }
+        )
         return false
     }
     return true

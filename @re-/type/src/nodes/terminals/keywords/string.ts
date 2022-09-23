@@ -13,8 +13,8 @@ export class StringNode
     extends TerminalNode<StringTypedDefinition>
     implements BoundableNode
 {
+    bounds: BoundConstraint | null = null
     regex?: RegexConstraint
-    bounds?: BoundConstraint
 
     constructor(...args: TerminalConstructorArgs<StringTypedDefinition>) {
         super(...args)
@@ -59,23 +59,20 @@ export class StringNode
 }
 
 export class RegexConstraint implements Constraint {
-    private context: RegexDiagnostic["context"]
-
     constructor(
         public expression: RegExp,
-        definition: StringSubtypeDefinition,
-        description: string
-    ) {
-        this.context = {
-            definition,
-            expression,
-            reason: description
-        }
-    }
+        private definition: StringSubtypeDefinition,
+        private description: string
+    ) {}
 
     check(args: Allows.Args<string>) {
-        if (!this.context.expression.test(args.data)) {
-            args.diagnostics.add("regex", args, this.context)
+        if (!this.expression.test(args.data)) {
+            args.diagnostics.add("regex", this.description, args, {
+                definition: this.definition,
+                data: args.data,
+                actual: `"${args.data}"`,
+                expression: this.expression
+            })
         }
     }
 }
@@ -84,7 +81,9 @@ export type RegexDiagnostic = Allows.DefineDiagnostic<
     "regex",
     {
         definition: StringSubtypeDefinition
+        data: string
         expression: RegExp
+        actual: `"${string}"`
     }
 >
 

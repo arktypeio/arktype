@@ -34,7 +34,7 @@ export namespace Bounds {
 export type BoundableAst = NumberKeyword | StringTypedKeyword | [unknown, "[]"]
 
 export type BoundableNode = strNode & {
-    bounds?: BoundConstraint
+    bounds: null | BoundConstraint
 }
 
 export type BoundableData = number | string | unknown[]
@@ -84,14 +84,18 @@ export class BoundConstraint implements Constraint {
                         : typeof args.data === "number"
                         ? "number"
                         : "array"
-                args.diagnostics.add("bound", args, {
-                    comparator,
-                    limit,
-                    kind,
-                    actual,
-                    data: args.data,
-                    reason: boundToString(comparator, limit, kind)
-                })
+                args.diagnostics.add(
+                    "bound",
+                    boundToString(comparator, limit, kind),
+                    args,
+                    {
+                        comparator,
+                        limit,
+                        kind,
+                        actual,
+                        data: args.data
+                    }
+                )
                 return
             }
         }
@@ -114,8 +118,8 @@ export const boundToString = (
     limit: number,
     kind: BoundKind
 ) =>
-    `Must be ${comparatorToString[comparator]} ${limit} ${
-        kind === "string" ? "characters" : kind === "array" ? "items" : ""
+    `Must be ${comparatorToString[comparator]} ${limit}${
+        kind === "string" ? " characters" : kind === "array" ? " items" : ""
     }`
 
 const isConstrained = (ast: StrAst): ast is [StrAst, StrAst[]] =>

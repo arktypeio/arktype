@@ -22,13 +22,17 @@ export class TupleNode extends struct<number> {
         const expected = this.entries.length
         const actual = args.data.length
         if (expected !== actual) {
-            args.diagnostics.add("tupleLength", args, {
-                definition: this.definition,
-                data: args.data,
-                expected,
-                actual,
-                reason: `Length must be ${expected}`
-            })
+            args.diagnostics.add(
+                "tupleLength",
+                `Length must be ${expected}`,
+                args,
+                {
+                    definition: this.definition,
+                    data: args.data,
+                    expected,
+                    actual
+                }
+            )
             return
         }
         this.allowsItems(args)

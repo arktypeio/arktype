@@ -85,7 +85,7 @@ describe("custom validators", () => {
         })
         assert(num.check(7.43).errors).is(undefined)
         assert(num.check("ssalbdivad").errors?.summary).snap(
-            `Must be a number (was string).!!!`
+            `Must be a number (was string)!!!`
         )
     })
 })

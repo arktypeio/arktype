@@ -24,7 +24,7 @@ describe("optional node", () => {
         describe("errors", () => {
             test("bad inner type", () => {
                 assert(type("true?").check(false).errors?.summary).snap(
-                    `Must be true (was false).`
+                    `Must be true (was false)`
                 )
             })
         })

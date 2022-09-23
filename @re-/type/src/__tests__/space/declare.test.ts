@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { declare } from "../../index.js"
+import { unresolvableMessage } from "../../parser/str/operand/unenclosed.js"
 
 // Declare the models you will define
 import { compile } from "./declaration/declaration.js"
@@ -57,7 +58,7 @@ describe("declare", () => {
         ).throwsAndHasTypeError("somethingUndeclared")
         // @ts-expect-error
         assert(() => define.gottaDefineThis("whoops")).throwsAndHasTypeError(
-            "'whoops' is not a builtin type and does not exist in your space."
+            unresolvableMessage("whoops")
         )
         const space = compile(gottaDefineThis)
         assert(space.$root.ast).narrowedValue({ gottaDefineThis: "boolean" })

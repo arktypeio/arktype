@@ -21,40 +21,41 @@ export class union extends branch {
             }
             branchDiagnosticsEntries.push([child.toString(), branchDiagnostics])
         }
-        args.diagnostics.add(
-            "union",
-            args,
-            this.createUnionDiagnosticContext(args, branchDiagnosticsEntries)
-        )
-    }
-
-    private createUnionDiagnosticContext(
-        args: Allows.Args,
-        branchDiagnosticsEntries: BranchDiagnosticsEntry[]
-    ): Allows.DiagnosticContext<"union"> {
+        const context: UnionDiagnostic["context"] = {
+            definition: this.definition,
+            actual: Allows.stringifyData(args.data),
+            branchDiagnosticsEntries
+        }
         // TODO: Better way to get active options
         const explainBranches =
             args.cfg.diagnostics?.union?.explainBranches ||
             args.context.modelCfg.diagnostics?.union?.explainBranches
-        // TODO: Better default error messages for union
-        // https://github.com/re-do/re-po/issues/472
-        let reason = `Must be one of ${
-            this.definition
-        } (was ${Allows.stringifyData(args.data)})${explainBranches ? ":" : ""}`
+        args.diagnostics.add(
+            "union",
+            this.buildUnionDiagnosticReason(context, !!explainBranches),
+            args,
+            context
+        )
+    }
+
+    // TODO: Better default error messages for union
+    // https://github.com/re-do/re-po/issues/472
+    private buildUnionDiagnosticReason(
+        context: UnionDiagnostic["context"],
+        explainBranches: boolean
+    ) {
+        let reason = `Must be one of ${this.definition}${
+            explainBranches ? ":" : ""
+        }`
         if (explainBranches) {
             for (const [
                 branchDefinition,
                 branchDiagnostics
-            ] of branchDiagnosticsEntries) {
+            ] of context.branchDiagnosticsEntries) {
                 reason += `\n${branchDefinition}: ${branchDiagnostics.summary}`
             }
         }
-        return {
-            definition: this.definition,
-            data: args.data,
-            reason,
-            branchDiagnosticsEntries
-        }
+        return reason
     }
 
     generate(args: Generate.Args) {
@@ -112,7 +113,7 @@ export type UnionDiagnostic = Allows.DefineDiagnostic<
     "union",
     {
         definition: string
-        data: unknown
+        actual: unknown
         branchDiagnosticsEntries: BranchDiagnosticsEntry[]
     },
     {

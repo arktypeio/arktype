@@ -15,7 +15,7 @@ describe("type keywords", () => {
             assert(b.check(true).errors).is(undefined)
             assert(b.check(false).errors).is(undefined)
             assert(b.check(0).errors?.summary).snap(
-                `Must be boolean (was number).`
+                `Must be boolean (was number)`
             )
         })
     })
@@ -30,7 +30,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(t.check(true).errors).is(undefined)
             assert(t.check(false).errors?.summary).snap(
-                `Must be true (was false).`
+                `Must be true (was false)`
             )
         })
     })
@@ -45,7 +45,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(f.check(false).errors).is(undefined)
             assert(f.check(true).errors?.summary).snap(
-                `Must be false (was true).`
+                `Must be false (was true)`
             )
         })
     })
@@ -60,7 +60,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(b.check(999n).errors).is(undefined)
             assert(b.check(999).errors?.summary).snap(
-                `Must be a bigint (was number).`
+                `Must be a bigint (was number)`
             )
         })
     })
@@ -75,7 +75,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(s.check(Symbol("")).errors).is(undefined)
             assert(s.check("@").errors?.summary).snap(
-                `Must be a symbol (was string).`
+                `Must be a symbol (was string)`
             )
         })
     })
@@ -90,7 +90,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(f.check(() => ({})).errors).is(undefined)
             assert(f.check({}).errors?.summary).snap(
-                `Must be a function (was object).`
+                `Must be a function (was object)`
             )
         })
     })
@@ -106,7 +106,7 @@ describe("type keywords", () => {
             assert(o.check([]).errors).is(undefined)
             assert(o.check({}).errors).is(undefined)
             assert(o.check(null).errors?.summary).snap(
-                `Must be an object (was null).`
+                `Must be an object (was null)`
             )
         })
     })
@@ -121,7 +121,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(u.check(undefined).errors).is(undefined)
             assert(u.check(null).errors?.summary).snap(
-                `Must be undefined (was null).`
+                `Must be undefined (was null)`
             )
         })
     })
@@ -136,7 +136,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(n.check(null).errors).is(undefined)
             assert(n.check(undefined).errors?.summary).snap(
-                `Must be null (was undefined).`
+                `Must be null (was undefined)`
             )
         })
     })
@@ -151,7 +151,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(v.check(undefined).errors).is(undefined)
             assert(v.check(null).errors?.summary).snap(
-                `Must be undefined (was null).`
+                `Must be undefined (was null)`
             )
         })
     })
@@ -190,10 +190,10 @@ describe("type keywords", () => {
         })
         test("check", () => {
             assert(n.check("sometimes").errors?.summary).snap(
-                `Never allowed (was string).`
+                `Never allowed (was string)`
             )
             assert(n.check(undefined).errors?.summary).snap(
-                `Never allowed (was undefined).`
+                `Never allowed (was undefined)`
             )
         })
         test("generation", () => {
@@ -213,7 +213,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(s.check("KEKW").errors).is(undefined)
             assert(s.check(["whoops"]).errors?.summary).snap(
-                `Must be a string (was object).`
+                `Must be a string (was object)`
             )
         })
     })
@@ -229,7 +229,7 @@ describe("type keywords", () => {
             assert(n.check(-83).errors).is(undefined)
             assert(n.check(0.999).errors).is(undefined)
             assert(n.check("42").errors?.summary).snap(
-                `Must be a number (was string).`
+                `Must be a number (was string)`
             )
             assert(n.check(Infinity).errors).is(undefined)
             assert(n.check(NaN).errors).is(undefined)

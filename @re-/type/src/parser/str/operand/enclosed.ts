@@ -2,6 +2,7 @@ import { keySet } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
 import type { RegexLiteralDefinition } from "../../../nodes/terminals/keywords/string.js"
 import { StringNode } from "../../../nodes/terminals/keywords/string.js"
+import type { StringLiteralDefinition } from "../../../nodes/terminals/literal.js"
 import { LiteralNode } from "../../../nodes/terminals/literal.js"
 import type { Left } from "../state/left.js"
 import type { scanner } from "../state/scanner.js"
@@ -54,7 +55,11 @@ export const parseEnclosedBase = (
     s.l.root =
         enclosing === "/"
             ? new StringNode(definition as RegexLiteralDefinition, context)
-            : new LiteralNode(enclosedText, context)
+            : new LiteralNode(
+                  definition as StringLiteralDefinition,
+                  enclosedText,
+                  context
+              )
     return s
 }
 
@@ -63,12 +68,7 @@ export type ParseEnclosedBase<
     Enclosing extends EnclosedBaseStartChar
 > = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
     ? ParserState.From<{
-          L: Left.SetRoot<
-              S["L"],
-              Enclosing extends "/"
-                  ? `${Enclosing}${Contents}${Enclosing}`
-                  : `"${Contents}"`
-          >
+          L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
           R: Rest
       }>
     : ParserState.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>

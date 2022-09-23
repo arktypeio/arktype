@@ -41,17 +41,14 @@ export const arbitraryLimit = fc
 
 const expectedCheckResult = (expectedBounds: Bounds.Ast, data: number) => {
     for (const [comparator, limit] of expectedBounds) {
-        const possibleExpectedErrorMessage = boundToString(
-            comparator,
-            limit,
-            "number"
-        )
+        const reason = boundToString(comparator, limit, "number")
+        const expectedMessageIfOutOfBound = `${reason} (was ${data})`
         if (data > limit && !comparator.includes(">")) {
-            return possibleExpectedErrorMessage
+            return expectedMessageIfOutOfBound
         } else if (data < limit && !comparator.includes("<")) {
-            return possibleExpectedErrorMessage
+            return expectedMessageIfOutOfBound
         } else if (data === limit && !comparator.includes("=")) {
-            return possibleExpectedErrorMessage
+            return expectedMessageIfOutOfBound
         }
     }
 }

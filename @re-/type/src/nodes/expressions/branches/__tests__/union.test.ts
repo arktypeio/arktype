@@ -2,8 +2,8 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { space, type } from "../../../../index.js"
 
-describe("union", () => {
-    describe("validation", () => {
+describe("union node", () => {
+    describe("check", () => {
         test("two types", () => {
             assert(type("true|false").check(false).errors).is(undefined)
         })
@@ -15,12 +15,12 @@ describe("union", () => {
         describe("errors", () => {
             test("two types", () => {
                 assert(type("'yes'|'no'").check("maybe").errors?.summary).snap(
-                    `Must be one of "yes"|"no" (was "maybe").`
+                    `Must be one of 'yes'|'no' (was "maybe")`
                 )
             })
             test("several types", () => {
                 assert(type("2|4|6|8").check(5).errors?.summary).snap(
-                    `Must be one of 2|4|6|8 (was 5).`
+                    `Must be one of 2|4|6|8 (was 5)`
                 )
             })
             test("explainBranches", () => {
@@ -40,7 +40,7 @@ describe("union", () => {
             })
         })
     })
-    describe("creation", () => {
+    describe("generate", () => {
         test("prefers simple values", () => {
             assert(type("undefined|string").create()).is(undefined)
             assert(type("number|false|bigint").create() as any).is(false)

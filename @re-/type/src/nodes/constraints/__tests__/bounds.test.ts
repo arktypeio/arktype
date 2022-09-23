@@ -12,7 +12,7 @@ import {
     assertCheckResults
 } from "./common.js"
 
-describe("bound", () => {
+describe("bound constraint", () => {
     describe("check", () => {
         test("single", () => {
             fc.assert(
@@ -63,7 +63,6 @@ describe("bound", () => {
             )
         })
     })
-
     describe("string", () => {
         test("check", () => {
             const gte3 = type("string>=3")
@@ -73,31 +72,29 @@ describe("bound", () => {
             ).snap([
                 {
                     code: `bound`,
-                    message: `Must be at least 3 characters`,
                     path: [],
-                    options: {},
                     context: {
-                        data: `no`,
                         comparator: `>=`,
                         limit: 3,
+                        kind: `string`,
                         actual: 2,
-                        kind: `string`
-                    }
+                        data: `no`
+                    },
+                    options: {},
+                    message: `Must be at least 3 characters (was 2)`
                 }
             ])
         })
     })
-
-    describe("list", () => {
+    describe("array", () => {
         test("check", () => {
             const twoNulls = type("null[]==2")
             assert(twoNulls.check([null, null]).errors).equals(undefined)
             assert(twoNulls.check([null]).errors?.summary).snap(
-                `Must be exactly 2 items.`
+                `Must be exactly 2 items (was 1)`
             )
         })
     })
-
     describe("generation", () => {
         test("unsupported", () => {
             assert(() => type("1<number<5").create()).throws.snap(

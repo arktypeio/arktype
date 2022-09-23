@@ -25,7 +25,7 @@ describe("obj integration", () => {
                         true,
                         { a: ["ok", [[true, false]], "extraElement"] }
                     ]).errors?.summary
-                ).snap(`1/a must have length 2 (was 3).`)
+                ).snap(`1/a must have length 2 (was 3)`)
             })
             test("multiple", () => {
                 assert(

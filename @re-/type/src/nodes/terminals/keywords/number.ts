@@ -8,7 +8,7 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NumberNode extends TerminalNode implements BoundableNode {
-    bounds: BoundConstraint | undefined = undefined
+    bounds: BoundConstraint | null = null
 
     check(args: Allows.Args) {
         if (!Allows.dataIsOfType(args, "number")) {
@@ -26,10 +26,9 @@ export class NumberNode extends TerminalNode implements BoundableNode {
             return
         }
         if (this.definition === "integer" && !Number.isInteger(args.data)) {
-            args.diagnostics.add("numberSubtype", args, {
+            args.diagnostics.add("numberSubtype", "Must be an integer", args, {
                 definition: "integer",
-                data: args.data,
-                reason: "Must be an integer"
+                actual: args.data
             })
         }
         this.bounds?.check(args as Allows.Args<number>)
@@ -56,6 +55,6 @@ export type NumberSubtypeDiagnostic = Allows.DefineDiagnostic<
     "numberSubtype",
     {
         definition: NumberSubtypeKeyword
-        data: number
+        actual: number
     }
 >

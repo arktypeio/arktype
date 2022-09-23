@@ -11,7 +11,7 @@ import { unary } from "./unary.js"
 export type List<Child = unknown> = Unary<Child, "[]">
 
 export class list extends unary implements BoundableNode {
-    bounds: BoundConstraint | undefined = undefined
+    bounds: BoundConstraint | null = null
 
     constructor(...args: UnaryConstructorArgs) {
         super("[]", ...args)

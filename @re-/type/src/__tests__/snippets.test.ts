@@ -12,7 +12,7 @@ describe("snippets", () => {
             }
         }
         assert(modelSnippet.errors?.summary).snap(
-            `browser/kind must be one of "chrome"|"firefox"|"safari" (was "Internet Explorer").`
+            `browser/kind must be one of 'chrome'|'firefox'|'safari' (was "Internet Explorer")`
         )
     })
     test("space", async () => {
@@ -22,8 +22,8 @@ describe("snippets", () => {
         )
         assert(spaceSnippet.errors?.summary)
             .snap(`Encountered errors at the following paths:
-  dependencies/0/contributors: contributors is required.
-  contributors/0/email: 'david@redodev' must be a valid email.
+  dependencies/0: contributors is required
+  contributors/0/email: Must be a valid email (was "david@redodev")
 `)
     })
     test("constraints", async () => {
@@ -32,9 +32,9 @@ describe("snippets", () => {
         )
         assert(constraintsSnippet.errors?.summary)
             .snap(`Encountered errors at the following paths:
-  email: 'david@redo.biz' must match expression /[a-z]*@redo.dev/.
-  about/age: Must be at least 18 (was 17).
-  about/bio: Must be at most 80 characters (was 110).
+  email: Must match expression /[a-z]*@redo.dev/ (was "david@redo.biz")
+  about/age: Must be at least 18 (was 17)
+  about/bio: Must be at most 80 characters (was 110)
 `)
         assert(constraintsSnippet.employee.infer).typed as {
             email: string

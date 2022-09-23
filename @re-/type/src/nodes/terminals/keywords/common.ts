@@ -37,11 +37,10 @@ export const addTypeKeywordDiagnostic: AddTypeKeywordDiagnosticSignatures = (
         string
     ]
     const data = args.data
-    args.diagnostics.add("keyword", args, {
+    args.diagnostics.add("keyword", reason, args, {
         definition,
         data,
         actual: data === null ? "null" : typeof args.data,
-        reason,
         typeKeyword: diagnosticArgs[3] ?? definition
     })
 }

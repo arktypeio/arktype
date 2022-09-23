@@ -33,189 +33,126 @@ describe("dictionary", () => {
         const empty = type({})
         test("type", () => {
             assert(empty.infer).typed as {}
-            test("validation", () => {})
+        })
+        test("validation", () => {
             assert(empty.check({}).errors).is(undefined)
             assert(empty.check([]).errors?.summary).snap(
-                `Must not be an array.`
+                "Must be a non-array object (was array)"
             )
         })
         test("generation", () => {
             assert(empty.create()).equals({})
         })
     })
-    describe("shallow", () => {
-        const shallowDefinition = narrow({
+    describe("check", () => {
+        const shallowDef = narrow({
             a: "string",
             b: "number",
             c: "67"
         })
-        const shallow = () => type(shallowDefinition)
-        test("type", () => {
-            assert(shallow().infer).typed as {
-                a: string
-                b: number
-                c: 67
-            }
+        const shallow = () => type(shallowDef)
+        const nested = () => type({ nest: { ed: "string" } })
+        test("standard", () => {
+            assert(shallow().check({ a: "ok", b: 4.321, c: 67 }).errors).is(
+                undefined
+            )
         })
-        describe("validation", () => {
-            test("standard", () => {
-                assert(shallow().check({ a: "ok", b: 4.321, c: 67 }).errors).is(
-                    undefined
-                )
+        test("nested", () => {
+            assert(nested().check({ nest: { ed: "!" } }).errors).is(undefined)
+        })
+        describe("errors", () => {
+            test("bad value", () => {
+                assert(
+                    shallow().check({ a: "ko", b: 123.4, c: 76 }).errors
+                        ?.summary
+                ).snap(`c must be 67 (was 76)`)
             })
-            describe("errors", () => {
-                test("bad value", () => {
-                    assert(
-                        shallow().check({ a: "ko", b: 123.4, c: 76 }).errors
-                            ?.summary
-                    ).snap(`c must be 67 (was 76).`)
-                })
-                test("missing keys", () => {
-                    assert(
-                        shallow().check({ a: "ok" })
-                            .errors as any as Allows.Diagnostic<"missingKey">[]
-                    ).snap([
+            test("bad nested value", () => {
+                assert(
+                    nested().check({ nest: { ed: null } }).errors?.summary
+                ).snap(`nest/ed must be a string (was null)`)
+            })
+            test("missing keys", () => {
+                assert(
+                    shallow().check({ a: "ok" })
+                        .errors as any as Allows.Diagnostic<"missingKey">[]
+                ).snap([
+                    {
+                        code: `missingKey`,
+                        path: [],
+                        context: { definition: `number`, key: `b` },
+                        options: {},
+                        message: `b is required`
+                    },
+                    {
+                        code: `missingKey`,
+                        path: [],
+                        context: { definition: `67`, key: `c` },
+                        options: {},
+                        message: `c is required`
+                    }
+                ])
+            })
+            test("extraneous keys", () => {
+                assert(
+                    shallow().check(
                         {
-                            code: `missingKey`,
-                            message: `b is required.`,
-                            path: [`b`],
-                            options: {},
-                            context: {
-                                definition: shallowDefinition,
-                                key: `b`
-                            }
+                            a: "ok",
+                            b: 4.321,
+                            c: 67,
+                            d: "extraneous",
+                            e: "x-ray-knee-us"
                         },
                         {
-                            code: `missingKey`,
-                            message: `c is required.`,
-                            path: [`c`],
-                            options: {},
-                            context: {
-                                definition: shallowDefinition,
-                                key: `c`
+                            diagnostics: {
+                                extraneousKeys: { enabled: true }
                             }
                         }
-                    ])
-                })
-                test("extraneous keys", () => {
-                    assert(
-                        shallow().check(
-                            {
-                                a: "ok",
+                    ).errors as any as Allows.Diagnostic<"extraneousKeys">[]
+                ).snap([
+                    {
+                        code: `extraneousKeys`,
+                        path: [],
+                        context: {
+                            definition: shallowDef,
+                            data: {
+                                a: `ok`,
                                 b: 4.321,
                                 c: 67,
-                                d: "extraneous",
-                                e: "x-ray-knee-us"
+                                d: `extraneous`,
+                                e: `x-ray-knee-us`
                             },
-                            {
-                                diagnostics: {
-                                    extraneousKeys: { enabled: true }
-                                }
-                            }
-                        ).errors as any as Allows.Diagnostic<"extraneousKeys">[]
-                    ).snap([
-                        {
-                            code: `extraneousKeys`,
-                            path: [],
-                            context: {
-                                definition: shallowDefinition,
-                                data: {
-                                    a: `ok`,
-                                    b: 4.321,
-                                    c: 67,
-                                    d: `extraneous`,
-                                    e: `x-ray-knee-us`
-                                },
-                                keys: [`d`, `e`]
-                            },
-                            options: { enabled: true },
-                            message: `Keys d, e were unexpected.`
-                        }
-                    ])
-                })
-                test("missing and extraneous keys", () => {
-                    assert(
-                        shallow().check(
-                            {
-                                a: "ok",
-                                d: "extraneous",
-                                e: "x-ray-knee-us"
-                            },
-                            {
-                                diagnostics: {
-                                    extraneousKeys: { enabled: true }
-                                }
-                            }
-                        ).errors?.summary
-                    ).snap(`Encountered errors at the following paths:
-  b: b is required.
-  c: c is required.
-  /: Keys d, e were unexpected.
-`)
-                })
+                            keys: [`d`, `e`]
+                        },
+                        options: { enabled: true },
+                        message: `Keys 'd', 'e' were unexpected`
+                    }
+                ])
             })
-        })
-        test("generation", () => {
-            assert(shallow().create()).equals({ a: "", b: 0, c: 67 })
+            test("single extraneous", () => {
+                assert(
+                    shallow().check(
+                        {
+                            a: "",
+                            b: 1,
+                            c: 67,
+                            extraneous: true
+                        },
+                        {
+                            diagnostics: {
+                                extraneousKeys: { enabled: true }
+                            }
+                        }
+                    ).errors?.summary
+                ).snap(`Key 'extraneous' was unexpected`)
+            })
         })
     })
-    describe("nested", () => {
-        const nested = () =>
-            type({
-                nested: {
-                    russian: "'doll'"
-                }
-            })
-        describe("type", () => {
-            test("standard", () => {
-                assert(nested().infer).typed as {
-                    nested: {
-                        russian: "doll"
-                    }
-                }
-            })
-            describe("errors", () => {
-                test("invalid prop def", () => {
-                    assert(() =>
-                        // @ts-expect-error
-                        type({ a: { b: "whoops" } })
-                    ).throwsAndHasTypeError(unresolvableMessage("whoops"))
-                })
-            })
-        })
-        describe("validation", () => {
-            test("standard", () => {
-                assert(
-                    nested().check({ nested: { russian: "doll" } }).errors
-                ).is(undefined)
-            })
-            describe("errors", () => {
-                test("bad prop value", () => {
-                    assert(
-                        nested().check({ nested: { russian: "tortoise" } })
-                            .errors?.summary
-                    ).snap(`nested/russian must be "doll" (was "tortoise").`)
-                })
-                test("multiple", () => {
-                    assert(
-                        type({
-                            a: { b: "string" },
-                            c: { d: "number" },
-                            e: { f: "object" }
-                        }).check({
-                            a: {},
-                            c: { d: 20, y: "why?" },
-                            e: { f: 0n }
-                        }).errors?.summary
-                    ).snap(`Encountered errors at the following paths:
-  a/b: b is required.
-  e/f: Must be an object (was bigint).
-`)
-                })
-            })
-        })
-        test("generation", () => {
-            assert(nested().create()).equals({ nested: { russian: "doll" } })
-        })
+})
+
+test("generate", () => {
+    assert(type({ a: "string", b: { nested: "number" } }).create()).equals({
+        a: "",
+        b: { nested: 0 }
     })
 })

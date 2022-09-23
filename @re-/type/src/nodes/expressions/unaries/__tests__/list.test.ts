@@ -17,14 +17,14 @@ describe("list node", () => {
         describe("errors", () => {
             test("non-list", () => {
                 assert(type("any[]").check({}).errors?.summary).snap(
-                    `Must be an array.`
+                    `Must be an array (was dictionary)`
                 )
             })
             test("bad item", () => {
                 assert(
                     type("string[]").check(["one", "two", 3, "four", "five"])
                         .errors?.summary
-                ).snap(`Item 2 must be a string.`)
+                ).snap(`Item 2 must be a string (was number)`)
             })
         })
     })

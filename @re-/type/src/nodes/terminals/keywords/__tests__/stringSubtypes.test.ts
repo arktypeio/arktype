@@ -8,7 +8,7 @@ describe("string subtypes", () => {
         assert(email.infer).typed as string
         assert(email.check("david@redo.dev").errors).is(undefined)
         assert(email.check("david@redo@dev").errors?.summary).snap(
-            `Must be a valid email (was "david@redo@dev").`
+            `Must be a valid email (was "david@redo@dev")`
         )
     })
     test("alpha", () => {
@@ -16,7 +16,7 @@ describe("string subtypes", () => {
         assert(alpha.infer).typed as string
         assert(alpha.check("aBc").errors).is(undefined)
         assert(alpha.check("a B c").errors?.summary).snap(
-            `Must include only letters (was "a B c").`
+            `Must include only letters (was "a B c")`
         )
     })
     test("alphanum", () => {
@@ -24,7 +24,7 @@ describe("string subtypes", () => {
         assert(alphaNumeric.infer).typed as string
         assert(alphaNumeric.check("aBc123").errors).is(undefined)
         assert(alphaNumeric.check("aBc+123").errors?.summary).snap(
-            `Must include only letters and digits (was "aBc+123").`
+            `Must include only letters and digits (was "aBc+123")`
         )
     })
     test("lowercase", () => {
@@ -32,7 +32,7 @@ describe("string subtypes", () => {
         assert(lowercase.infer).typed as string
         assert(lowercase.check("alllowercase").errors).is(undefined)
         assert(lowercase.check("whoOps").errors?.summary).snap(
-            `Must include only lowercase letters (was "whoOps").`
+            `Must include only lowercase letters (was "whoOps")`
         )
     })
     test("uppercase", () => {
@@ -40,7 +40,7 @@ describe("string subtypes", () => {
         assert(uppercase.infer).typed as string
         assert(uppercase.check("ALLUPPERCASE").errors).is(undefined)
         assert(uppercase.check("WHOoPS").errors?.summary).snap(
-            `Must include only uppercase letters (was "WHOoPS").`
+            `Must include only uppercase letters (was "WHOoPS")`
         )
     })
     describe("regex literal", () => {
@@ -54,13 +54,13 @@ describe("string subtypes", () => {
             describe("errors", () => {
                 test("non-string", () => {
                     assert(type("/^[0-9]*$/").check(5).errors?.summary).snap(
-                        `Must be a string (was 5).`
+                        `Must be a string (was number)`
                     )
                 })
                 test("non-match", () => {
                     assert(
                         type("/^[0-9]*$/").check("durrrrrr").errors?.summary
-                    ).snap(`Must match expression /^[0-9]*$/ (was "durrrrrr").`)
+                    ).snap(`Must match expression /^[0-9]*$/ (was "durrrrrr")`)
                 })
             })
         })

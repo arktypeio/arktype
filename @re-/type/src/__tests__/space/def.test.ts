@@ -73,10 +73,10 @@ describe("def", () => {
                 description: "Typescript Devs"
             }).errors?.summary
         ).snap(`Encountered errors at the following paths:
-  members/0: Keys age were unexpected.
-  members/1/name: Must be an object (was number).
-  members/1: Keys age were unexpected.
-  /: Keys description were unexpected.
+  members/0: Key 'age' was unexpected
+  members/1/name: Must be a non-array object (was non-object)
+  members/1: Key 'age' was unexpected
+  /: Key 'description' was unexpected
 `)
     })
 })

@@ -2,45 +2,30 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../index.js"
 
-describe("validation", () => {
-    test("two types", () => {
-        assert(type("boolean&true").check(true).errors).is(undefined)
-    })
-    test("several types", () => {
-        assert(type("unknown&boolean&false").check(false).errors?.summary).is(
-            undefined
-        )
-    })
-    test("keyword specifiers", () => {
-        assert(type("integer&number").check(7).errors?.summary).is(undefined)
-    })
-    describe("errors", () => {
-        test("empty intersection", () => {
-            assert(type("number&string").check("5").errors?.summary).snap(
-                `Must be a number.`
-            )
-        })
+describe("intersection node", () => {
+    describe("check", () => {
         test("two types", () => {
-            assert(type("boolean&true").check(false).errors?.summary).snap(
-                `Must be true.`
+            const numberInteger = type("number&integer")
+            assert(numberInteger.check(100).errors).equals(undefined)
+            assert(numberInteger.check(99.9).errors?.summary).snap(
+                `Must be an integer (was 99.9)`
             )
         })
         test("several types", () => {
-            assert(
-                type("unknown&true&boolean").check(false).errors?.summary
-            ).snap(`Must be true.`)
-        })
-        test("bad keyword specifiers", () => {
-            assert(type("number&integer").check(7.5).errors?.summary).snap(
-                `Must be an integer.`
-            )
+            const unknownBooleanFalse = type("unknown&boolean&false")
+            assert(unknownBooleanFalse.check(false).errors).equals(undefined)
+            assert(unknownBooleanFalse.check("false").errors?.summary)
+                .snap(`Encountered errors at the following paths:
+  /: Must be boolean (was string)
+  /: Must be false (was "false")
+`)
         })
     })
-})
-describe("generation", () => {
-    test("unsupported", () => {
-        assert(() => type("boolean&true").create()).throws.snap(
-            `Error: Unable to generate a value for 'boolean&true': Intersection generation is unsupported.`
-        )
+    describe("generate", () => {
+        test("unsupported", () => {
+            assert(() => type("boolean&true").create()).throws.snap(
+                `Error: Unable to generate a value for 'boolean&true': Intersection generation is unsupported.`
+            )
+        })
     })
 })

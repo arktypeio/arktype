@@ -12,7 +12,7 @@ describe("tuple", () => {
         })
         test("validation", () => {
             assert(empty().check([]).errors).is(undefined)
-            assert(empty().check({}).errors?.summary).snap(`Must be an array.`)
+            assert(empty().check({}).errors?.summary).snap(`Must be an array`)
         })
         test("generation", () => {
             assert(empty().create()).equals([])
@@ -41,7 +41,7 @@ describe("tuple", () => {
                 test("bad item value", () => {
                     assert(
                         shallow().check(["violin", 42n, 6]).errors?.summary
-                    ).snap(`1 must be a number (was bigint).`)
+                    ).snap(`1 must be a number (was bigint)`)
                 })
                 test("too short", () => {
                     assert(
@@ -59,14 +59,14 @@ describe("tuple", () => {
                                 actual: 2
                             },
                             options: {},
-                            message: `Must have length 3 (was 2).`
+                            message: `Must have length 3 (was 2)`
                         }
                     ])
                 })
                 test("too long", () => {
                     assert(
                         shallow().check(["violin", 42, 6, null]).errors?.summary
-                    ).snap(`Must have length 3 (was 4).`)
+                    ).snap(`Must have length 3 (was 4)`)
                 })
             })
         })
@@ -103,7 +103,7 @@ describe("tuple", () => {
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
                         ]).errors?.summary
-                    ).snap(`Must have length 3 (was 2).`)
+                    ).snap(`Must have length 3 (was 2)`)
                 })
                 test("multiple", () => {
                     assert(

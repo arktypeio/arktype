@@ -64,7 +64,7 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
           }>
         : Lookahead extends ")"
         ? ParserState.From<{
-              L: ReduceGroupClose<S["L"]>
+              L: ReduceGroupClose<S["L"], Unscanned>
               R: Unscanned
           }>
         : Lookahead extends ComparatorChar

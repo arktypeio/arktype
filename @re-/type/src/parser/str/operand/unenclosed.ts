@@ -94,13 +94,13 @@ export const numberLiteralToValue = (def: NumberLiteralDefinition) => {
 
 export const toNodeIfLiteral = (token: string, context: parseContext) =>
     isNumberLiteral(token)
-        ? new LiteralNode(numberLiteralToValue(token), context)
+        ? new LiteralNode(token, numberLiteralToValue(token), context)
         : isBigintLiteral(token)
-        ? new LiteralNode(BigInt(token.slice(0, -1)), context)
+        ? new LiteralNode(token, BigInt(token.slice(0, -1)), context)
         : token === "true"
-        ? new LiteralNode(true, context)
+        ? new LiteralNode(token, true, context)
         : token === "false"
-        ? new LiteralNode(false, context)
+        ? new LiteralNode(token, false, context)
         : undefined
 
 const unenclosedToNode = (

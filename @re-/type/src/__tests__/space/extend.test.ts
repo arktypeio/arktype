@@ -39,7 +39,7 @@ describe("extend space", () => {
                 $def: { members: `user[]` },
                 $opts: {
                     validate: {
-                        diagnostics: { ExtraneousKeys: { enable: true } }
+                        diagnostics: { extraneousKeys: { enabled: true } }
                     }
                 }
             },
@@ -48,7 +48,7 @@ describe("extend space", () => {
                 $def: { users: `user[]`, groups: `group[]` },
                 $opts: {
                     validate: {
-                        diagnostics: { ExtraneousKeys: { enable: false } }
+                        diagnostics: { extraneousKeys: { enabled: false } }
                     }
                 }
             }

@@ -26,6 +26,24 @@ export class DictionaryNode extends struct<string> {
         if (!checkObjectRoot(this.definition, "dictionary", args)) {
             return
         }
+        const extraneousKeys = this.checkPropsAndGetIllegalKeys(args)
+        if (extraneousKeys.length) {
+            const reason =
+                extraneousKeys.length === 1
+                    ? `Key '${extraneousKeys[0]}' was unexpected`
+                    : `Keys '${extraneousKeys.join("', '")}' were unexpected`
+            args.diagnostics.add("extraneousKeys", reason, args, {
+                definition: this.definition,
+                data: args.data,
+                keys: extraneousKeys
+            })
+        }
+    }
+
+    /** Returns any extraneous keys, if the options is enabled and they exist */
+    private checkPropsAndGetIllegalKeys(
+        args: Allows.Args<Dictionary>
+    ): string[] {
         const checkExtraneous =
             args.cfg.diagnostics?.extraneousKeys?.enabled ||
             args.context.modelCfg.diagnostics?.extraneousKeys?.enabled
@@ -35,23 +53,14 @@ export class DictionaryNode extends struct<string> {
             if (key in args.data) {
                 propNode.check(propArgs)
             } else if (!(propNode instanceof optional)) {
-                args.diagnostics.add("missingKey", args, {
-                    reason: `${key} is required`,
+                args.diagnostics.add("missingKey", `${key} is required`, args, {
                     definition: propNode.definition,
                     key
                 })
             }
             delete uncheckedData[key]
         }
-        const extraneousKeys = Object.keys(uncheckedData)
-        if (extraneousKeys.length) {
-            args.diagnostics.add("extraneousKeys", args, {
-                definition: this.definition,
-                data: args.data,
-                keys: extraneousKeys,
-                reason: `Keys ${extraneousKeys.join(", ")} were unexpected`
-            })
-        }
+        return Object.keys(uncheckedData)
     }
 
     private argsForProp(
