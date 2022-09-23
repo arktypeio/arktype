@@ -71,9 +71,6 @@ export const addResultToMatchingData = (
 ) => {
     const mark = toMarkData(benchUpdate)
     const latestResult = matchingResults[0] as BenchResult | undefined
-    if (latestResult?.transient) {
-        matchingResults.shift()
-    }
     if (
         latestResult?.date === date &&
         !(benchUpdate.snapFunctionName in latestResult.mark) &&
@@ -84,6 +81,9 @@ export const addResultToMatchingData = (
         const newResult: BenchResult = { date, mark }
         if (benchUpdate.transient) {
             newResult.transient = true
+        }
+        if (latestResult?.transient) {
+            matchingResults.shift()
         }
         matchingResults.unshift(newResult)
     }

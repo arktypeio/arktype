@@ -127,9 +127,9 @@ module.exports = defineConfig({
             }
         },
         {
-            files: ["**/*.test.ts"],
+            files: ["**/*.test.ts", "**/*.bench.ts"],
             rules: {
-                // Does not play well with "describe" blocks
+                // Does not play well with "describe" or "suite" blocks
                 "max-lines-per-function": "off"
             }
         },

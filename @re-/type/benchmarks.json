@@ -1,35 +1,62 @@
 {
-    "dictionary": {
-        "check": {
-            "valid": [
+    "struct": {
+        "dictionary": {
+            "parse": [
                 {
                     "date": "9/23/2022",
                     "mark": {
-                        "median": [488, "ns"]
-                    }
-                },
-                {
-                    "date": "9/23/2022",
-                    "mark": {
-                        "median": [497, "ns"]
+                        "median": [3.43, "us"],
+                        "type": [132, "in"]
                     }
                 }
             ],
-            "invalid": [
-                {
-                    "date": "9/23/2022",
-                    "mark": {
-                        "median": [1.19, "us"]
+            "check": {
+                "valid": [
+                    {
+                        "date": "9/23/2022",
+                        "mark": {
+                            "median": [507, "ns"]
+                        }
                     }
-                },
+                ],
+                "invalid": [
+                    {
+                        "date": "9/23/2022",
+                        "mark": {
+                            "median": [1.32, "us"]
+                        }
+                    }
+                ]
+            }
+        },
+        "tuple": {
+            "parse": [
                 {
                     "date": "9/23/2022",
                     "mark": {
-                        "median": [1.19, "us"]
+                        "median": [2.25, "us"],
+                        "type": [486, "in"]
                     }
                 }
-            ]
-        },
-        "parse": []
+            ],
+            "check": {
+                "valid": [
+                    {
+                        "date": "9/23/2022",
+                        "mark": {
+                            "median": [273, "ns"]
+                        }
+                    }
+                ],
+                "invalid": [
+                    {
+                        "date": "9/23/2022",
+                        "mark": {
+                            "median": [1.1, "us"]
+                        }
+                    }
+                ]
+            }
+        }
     }
 }

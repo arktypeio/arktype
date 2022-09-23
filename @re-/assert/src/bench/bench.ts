@@ -60,20 +60,39 @@ process.on("beforeExit", () => {
     }
 })
 
-export const suite = (name: string, body: () => void) => {
+const addUnhandledSuiteException = (originalMessage: string) => {
+    console.error(
+        `Suite ${currentSuitePath.join(
+            "/"
+        )} failed due to the following error:\n${originalMessage}`
+    )
+    unhandledExceptionMessages.push(originalMessage)
+}
+
+export const suite = <Fn extends BenchableFunction>(name: string, body: Fn) => {
     currentSuitePath.push(name)
     try {
-        body()
+        const result = body()
+        if (result instanceof Promise) {
+            return new Promise((resolve) => {
+                result.then(
+                    () => {
+                        currentSuitePath.pop()
+                        resolve(undefined)
+                    },
+                    (e) => {
+                        addUnhandledSuiteException(String(e))
+                        currentSuitePath.pop()
+                        resolve(undefined)
+                    }
+                )
+            })
+        } else {
+            currentSuitePath.pop()
+        }
     } catch (e) {
-        const originalMessage = String(e)
-        console.error(
-            `Suite ${currentSuitePath.join(
-                "/"
-            )} failed due to the following error:\n${originalMessage}`
-        )
-        unhandledExceptionMessages.push(originalMessage)
+        addUnhandledSuiteException(String(e))
     }
-    currentSuitePath.pop()
 }
 
 export const bench = <Fn extends BenchableFunction>(
