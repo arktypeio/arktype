@@ -1,59 +1,42 @@
 import { bench, suite } from "@re-/assert"
-import { narrow } from "@re-/tools"
 import { type } from "../../../index.js"
 
 suite("struct", () => {
     suite("dictionary", () => {
-        const def = narrow({
+        const dict = type({
             a: "string?",
             b: "number?",
             c: { nested: "boolean?" }
         })
 
-        bench("parse", () => {
-            const dict = type(def)
-        })
-            .median("3.43us")
-            .type("132in")
-
         suite("check", () => {
-            const preparsed = type(def)
-
             bench("valid", () => {
-                preparsed.check({
+                dict.check({
                     a: "okay",
                     b: 5,
                     c: { nested: true }
                 })
-            }).median("507.00ns")
+            }).median("489.00ns")
 
             bench("invalid", () => {
-                preparsed.check({
+                dict.check({
                     a: null,
                     c: { nested: null }
                 })
-            }).median("1.32us")
+            }).median("1.30us")
         })
     })
     suite("tuple", () => {
-        const def = narrow(["string?", "number?", ["boolean?"]])
-
-        bench("parse", () => {
-            const tuple = type(def)
-        })
-            .median("2.25us")
-            .type("486in")
+        const tuple = type(["string?", "number?", ["boolean?"]])
 
         suite("check", () => {
-            const preparsed = type(def)
-
             bench("valid", () => {
-                preparsed.check(["okay", 5, [true]])
-            }).median("273.00ns")
+                tuple.check(["okay", 5, [true]])
+            }).median("277.00ns")
 
             bench("invalid", () => {
-                preparsed.check([null, null, [null, null]])
-            }).median("1.10us")
+                tuple.check([null, null, [null, null]])
+            }).median("1.11us")
         })
     })
 })

@@ -1,21 +1,12 @@
 {
     "struct": {
         "dictionary": {
-            "parse": [
-                {
-                    "date": "9/23/2022",
-                    "mark": {
-                        "median": [3.43, "us"],
-                        "type": [132, "in"]
-                    }
-                }
-            ],
             "check": {
                 "valid": [
                     {
                         "date": "9/23/2022",
                         "mark": {
-                            "median": [507, "ns"]
+                            "median": [489, "ns"]
                         }
                     }
                 ],
@@ -23,28 +14,19 @@
                     {
                         "date": "9/23/2022",
                         "mark": {
-                            "median": [1.32, "us"]
+                            "median": [1.3, "us"]
                         }
                     }
                 ]
             }
         },
         "tuple": {
-            "parse": [
-                {
-                    "date": "9/23/2022",
-                    "mark": {
-                        "median": [2.25, "us"],
-                        "type": [486, "in"]
-                    }
-                }
-            ],
             "check": {
                 "valid": [
                     {
                         "date": "9/23/2022",
                         "mark": {
-                            "median": [273, "ns"]
+                            "median": [277, "ns"]
                         }
                     }
                 ],
@@ -52,7 +34,7 @@
                     {
                         "date": "9/23/2022",
                         "mark": {
-                            "median": [1.1, "us"]
+                            "median": [1.11, "us"]
                         }
                     }
                 ]

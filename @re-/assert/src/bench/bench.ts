@@ -70,7 +70,7 @@ const addUnhandledSuiteException = (originalMessage: string) => {
 }
 
 export const suite = <Fn extends BenchableFunction>(name: string, body: Fn) => {
-    currentSuitePath.push(name)
+    currentSuitePath.push(...name.split("/"))
     try {
         const result = body()
         if (result instanceof Promise) {
