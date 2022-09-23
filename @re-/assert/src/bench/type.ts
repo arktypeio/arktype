@@ -1,19 +1,15 @@
 import { caller } from "@re-/node"
-import type { Node, Project, SourceFile, ts } from "ts-morph"
+import type { Node, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { findCallExpressionAncestor } from "../snapshot.js"
 import { forceCreateTsMorphProject } from "../type/index.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
-import type {
-    MeasureComparison,
-    TypeString,
-    TypeUnit
-} from "./measure/index.js"
-import { createTypeComparison, stringifyTypeMeasure } from "./measure/index.js"
+import type { Measure, MeasureComparison, TypeUnit } from "./measure/index.js"
+import { createTypeComparison } from "./measure/index.js"
 
 export type BenchTypeAssertions = {
-    type: (instantiations?: TypeString) => void
+    type: (instantiations?: Measure<TypeUnit>) => void
 }
 
 const getInternalTypeChecker = (project: Project) =>
@@ -114,7 +110,7 @@ const getInstantiationsContributedByNode = (
 export const createBenchTypeAssertion = (
     ctx: BenchContext
 ): BenchTypeAssertions => ({
-    type: (...args: [instantiations?: TypeString | undefined]) => {
+    type: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
         ctx.lastSnapCallPosition = caller()
         const benchFnCall = findCallExpressionAncestor(
             ctx.benchCallPosition,
@@ -127,13 +123,9 @@ export const createBenchTypeAssertion = (
             args[0]
         )
         compareToBaseline(comparison, ctx)
-        queueBaselineUpdateIfNeeded(
-            stringifyTypeMeasure(comparison.updated),
-            args[0],
-            {
-                ...ctx,
-                kind: "type"
-            }
-        )
+        queueBaselineUpdateIfNeeded(comparison.updated, args[0], {
+            ...ctx,
+            kind: "type"
+        })
     }
 })

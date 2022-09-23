@@ -16,7 +16,7 @@ suite("struct", () => {
                     b: 5,
                     c: { nested: true }
                 })
-            }).median("489.00ns")
+            }).median("496.00ns")
 
             bench("invalid", () => {
                 dict.check({
@@ -26,13 +26,14 @@ suite("struct", () => {
             }).median("1.30us")
         })
     })
+
     suite("tuple", () => {
         const tuple = type(["string?", "number?", ["boolean?"]])
 
         suite("check", () => {
             bench("valid", () => {
                 tuple.check(["okay", 5, [true]])
-            }).median("277.00ns")
+            }).median("308.00ns")
 
             bench("invalid", () => {
                 tuple.check([null, null, [null, null]])

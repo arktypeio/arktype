@@ -1,8 +1,6 @@
 import type { QueuedUpdate } from "../snapshot.js"
 import type { TimeUnit } from "./measure/time.js"
-import { parseMark, parseTimeMeasureString } from "./measure/time.js"
 import type { TypeUnit } from "./measure/types.js"
-import { parseTypeMeasureString } from "./measure/types.js"
 
 type MarkData = Record<string, BenchStatTuple>
 
@@ -22,19 +20,11 @@ const toMarkData = ({
     snapFunctionName,
     newArgText
 }: BenchUpdate): MarkData => {
-    // Remove quotes added for inline write
-    const parsableText: any = /^".*"$/.test(newArgText)
-        ? newArgText.slice(1, -1)
-        : newArgText
     if (snapFunctionName === "mark") {
-        return parseMark(parsableText)
+        return JSON.parse(newArgText)
     }
-    const statMeasure =
-        snapFunctionName === "type"
-            ? parseTypeMeasureString(parsableText)
-            : parseTimeMeasureString(parsableText)
     return {
-        [snapFunctionName]: statMeasure
+        [snapFunctionName]: JSON.parse(newArgText)
     }
 }
 

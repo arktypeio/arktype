@@ -14,7 +14,7 @@ bench(
         return "boofoozoo".includes("foo")
     },
     fakeCallOptions
-).median("2.00ms")
+).median([2, "ms"])
 
 bench(
     "bench call single stat",
@@ -22,7 +22,7 @@ bench(
         return "boofoozoo".includes("foo")
     },
     fakeCallOptions
-).mean("2.00ms")
+).mean([2, "ms"])
 
 bench(
     "bench call mark",
@@ -30,7 +30,7 @@ bench(
         return /.*foo.*/.test("boofoozoo")
     },
     fakeCallOptions
-).mark({ mean: "2.00ms", median: "2.00ms" })
+).mark({ mean: [2, "ms"], median: [2, "ms"] })
 
 type MakeComplexType<S extends string> = ListPossibleTypes<
     StringReplace<keyof Type, "e", S>
@@ -38,7 +38,7 @@ type MakeComplexType<S extends string> = ListPossibleTypes<
 
 bench("bench type", () => {
     return [] as any as MakeComplexType<"!">
-}).type("45763in")
+}).type([45763, "instantiations"])
 
 bench(
     "bench call and type",
@@ -47,5 +47,5 @@ bench(
     },
     fakeCallOptions
 )
-    .mean("2.00ms")
-    .type("45763in")
+    .mean([2, "ms"])
+    .type([45763, "instantiations"])

@@ -1,13 +1,10 @@
 import { performance } from "node:perf_hooks"
 import { caller } from "@re-/node"
 import { chainableNoOpProxy } from "@re-/tools"
-import {
-    compareToBaseline,
-    queueBaselineUpdateIfNeeded as queueBaselineUpdateIfNeeded
-} from "./baseline.js"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import { unhandledExceptionMessages } from "./bench.js"
-import type { TimeString } from "./measure/index.js"
+import type { Measure, TimeUnit } from "./measure/index.js"
 import {
     createTimeComparison,
     createTimeMeasure,
@@ -134,35 +131,34 @@ export class BenchAssertions<
     private createAssertion<Name extends TimeAssertionName>(
         name: Name,
         baseline: Name extends "mark"
-            ? Record<StatName, TimeString> | undefined
-            : TimeString | undefined,
+            ? Record<StatName, Measure<TimeUnit>> | undefined
+            : Measure<TimeUnit> | undefined,
         callTimes: number[]
     ) {
         if (name === "mark") {
             return this.markAssertion(baseline as any, callTimes)
         }
         const ms: number = stats[name as StatName](callTimes)
-        const comparison = createTimeComparison(ms, baseline as TimeString)
+        const comparison = createTimeComparison(
+            ms,
+            baseline as Measure<TimeUnit>
+        )
         console.group(`${this.label} (${name}):`)
         compareToBaseline(comparison, this.ctx)
         console.groupEnd()
-        queueBaselineUpdateIfNeeded(
-            stringifyTimeMeasure(createTimeMeasure(ms)),
-            baseline,
-            {
-                ...this.ctx,
-                kind: name
-            }
-        )
+        queueBaselineUpdateIfNeeded(createTimeMeasure(ms), baseline, {
+            ...this.ctx,
+            kind: name
+        })
         return this.getNextAssertions()
     }
 
     private markAssertion(
-        baseline: Record<StatName, TimeString> | undefined,
+        baseline: Record<StatName, Measure<TimeUnit>> | undefined,
         callTimes: number[]
     ) {
         console.group(`${this.label}:`)
-        const markEntries: [StatName, TimeString | undefined][] = (
+        const markEntries: [StatName, Measure<TimeUnit> | undefined][] = (
             baseline
                 ? Object.entries(baseline)
                 : // If nothing was passed, gather all available baselines by setting their values to undefined.
@@ -175,7 +171,7 @@ export class BenchAssertions<
                 const comparison = createTimeComparison(ms, kindBaseline)
                 compareToBaseline(comparison, this.ctx)
                 console.groupEnd()
-                return [kind, stringifyTimeMeasure(comparison.updated)]
+                return [kind, comparison.updated]
             })
         )
         console.groupEnd()
@@ -193,8 +189,8 @@ export class BenchAssertions<
     private createStatMethod<Name extends TimeAssertionName>(
         name: Name,
         baseline: Name extends "mark"
-            ? Record<StatName, TimeString> | undefined
-            : TimeString | undefined
+            ? Record<StatName, Measure<TimeUnit>> | undefined
+            : Measure<TimeUnit> | undefined
     ) {
         if (this.ctx.isAsync) {
             return new Promise((resolve) => {
@@ -230,7 +226,7 @@ export class BenchAssertions<
         unhandledExceptionMessages.push(message)
     }
 
-    median(baseline?: TimeString) {
+    median(baseline?: Measure<TimeUnit>) {
         this.ctx.lastSnapCallPosition = caller()
         return this.createStatMethod(
             "median",
@@ -238,7 +234,7 @@ export class BenchAssertions<
         ) as any as ReturnedAssertions
     }
 
-    mean(baseline?: TimeString) {
+    mean(baseline?: Measure<TimeUnit>) {
         this.ctx.lastSnapCallPosition = caller()
         return this.createStatMethod(
             "mean",
@@ -246,7 +242,7 @@ export class BenchAssertions<
         ) as any as ReturnedAssertions
     }
 
-    mark(baseline?: Record<StatName, TimeString>) {
+    mark(baseline?: Record<StatName, Measure<TimeUnit>>) {
         this.ctx.lastSnapCallPosition = caller()
         return this.createStatMethod(
             "mark",

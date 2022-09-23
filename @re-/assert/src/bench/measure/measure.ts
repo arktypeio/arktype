@@ -1,7 +1,7 @@
+import { isKeyOf } from "@re-/tools"
 import type { TimeUnit } from "./time.js"
-import { stringifyTimeMeasure } from "./time.js"
+import { stringifyTimeMeasure, TIME_UNIT_RATIOS } from "./time.js"
 import type { TypeUnit } from "./types.js"
-import { stringifyTypeMeasure, TYPE_UNITS } from "./types.js"
 
 type MeasureUnit = TimeUnit | TypeUnit
 
@@ -15,7 +15,7 @@ export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
     baseline: Measure<Unit> | undefined
 }
 
-export const stringifyMeasure = (m: Measure) =>
-    TYPE_UNITS.includes(m[1] as any)
-        ? stringifyTypeMeasure(m as Measure<TypeUnit>)
-        : stringifyTimeMeasure(m as Measure<TimeUnit>)
+export const stringifyMeasure = ([value, units]: Measure) =>
+    isKeyOf(units, TIME_UNIT_RATIOS)
+        ? stringifyTimeMeasure([value, units])
+        : `${value}${units}`

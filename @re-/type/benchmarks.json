@@ -6,6 +6,13 @@
                     {
                         "date": "9/23/2022",
                         "mark": {
+                            "median": [496, "ns"]
+                        },
+                        "transient": true
+                    },
+                    {
+                        "date": "9/23/2022",
+                        "mark": {
                             "median": [489, "ns"]
                         }
                     }
@@ -23,6 +30,13 @@
         "tuple": {
             "check": {
                 "valid": [
+                    {
+                        "date": "9/23/2022",
+                        "mark": {
+                            "median": [308, "ns"]
+                        },
+                        "transient": true
+                    },
                     {
                         "date": "9/23/2022",
                         "mark": {

@@ -1,57 +1,17 @@
-import { mutateValues, toNumber } from "@re-/tools"
 import type { StatName } from "../call.js"
 import type { Measure, MeasureComparison } from "./measure.js"
 
-const TIME_UNIT_RATIOS = Object.freeze({
+export const TIME_UNIT_RATIOS = Object.freeze({
     ns: 0.000_001,
     us: 0.001,
     ms: 1,
     s: 1000
 })
 
-const TIME_UNITS = Object.keys(TIME_UNIT_RATIOS)
-
 export type TimeUnit = keyof typeof TIME_UNIT_RATIOS
 
-export type TimeString = `${number}${TimeUnit}`
-
-const timeStringRegex = new RegExp(
-    `^(0|[1-9]\\d*)(\\.\\d+)?(${TIME_UNITS.join("|")})$`
-)
-
-const assertTimeString: (s: string) => asserts s is TimeString = (
-    s: string
-) => {
-    if (!timeStringRegex.test(s)) {
-        throw new Error(
-            `Bench measure '${s}' must be of the format "<number><${TIME_UNITS.join(
-                "|"
-            )}>".`
-        )
-    }
-}
-
-export const parseTimeMeasureString = (s: TimeString): Measure<TimeUnit> => {
-    assertTimeString(s)
-    // If the two last characters match one of the units, split based on a unit length of two
-    // The only other possibility since the regex was matched is length one ("s")
-    const unitLength = TIME_UNITS.includes(s.slice(-2)) ? 2 : 1
-    const value = toNumber(s.slice(0, -unitLength))
-    const unit = s.slice(-unitLength) as TimeUnit
-    return [value, unit]
-}
-
-export const parseMark = (
-    s: string
-): Partial<Record<StatName, Measure<TimeUnit>>> => {
-    const rawData = JSON.parse(s)
-    return mutateValues(rawData, (measureString: TimeString) =>
-        parseTimeMeasureString(measureString)
-    )
-}
-
 export const stringifyTimeMeasure = ([value, unit]: Measure<TimeUnit>) =>
-    `${value.toFixed(2)}${unit}` as TimeString
+    `${value.toFixed(2)}${unit}`
 
 const convertTimeUnit = (n: number, from: TimeUnit, to: TimeUnit) => {
     return (n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to]
@@ -89,11 +49,9 @@ const createTimeMeasureForUnit = (
 
 export const createTimeComparison = (
     ms: number,
-    baselineString: TimeString | undefined
+    baseline: Measure<TimeUnit> | undefined
 ): MeasureComparison<TimeUnit> => {
-    if (baselineString) {
-        // Convert the new result to the existing units for comparison
-        const baseline = parseTimeMeasureString(baselineString)
+    if (baseline) {
         return {
             updated: [convertTimeUnit(ms, "ms", baseline[1]), baseline[1]],
             baseline
