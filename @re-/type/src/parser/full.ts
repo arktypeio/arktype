@@ -79,7 +79,7 @@ const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
     if (s.l.nextSuffix === "%") {
         return suffixLoop(parseModulo(s, ctx), ctx)
     }
-    return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
+    return s.error(invalidSuffixMessage(s.l.nextSuffix))
 }
 
 type SuffixLoop<S extends ParserState.Of<Left.Suffix>> =
@@ -94,7 +94,7 @@ type NextSuffix<S extends ParserState.Of<Left.Suffix>> =
         ? ParseSuffixBound<S, S["L"]["nextSuffix"]>
         : S["L"]["nextSuffix"] extends "%"
         ? ParseModulo<S>
-        : ParserState.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
+        : ParserState.Error<InvalidSuffixMessage<S["L"]["nextSuffix"]>>
 
 const finalize = (s: parserState.suffix) =>
     s.l.lowerBound ? s.error(unpairedLeftBoundMessage) : s.l.root
@@ -103,9 +103,9 @@ type Finalize<L extends Left.Suffix> = L["lowerBound"] extends undefined
     ? L["root"]
     : Base.ParseError<UnpairedLeftBoundMessage>
 
-type UnexpectedSuffixMessage<Token extends string> =
+type InvalidSuffixMessage<Token extends string> =
     `Unexpected suffix token '${Token}'.`
 
-const unexpectedSuffixMessage = <Token extends string>(
+const invalidSuffixMessage = <Token extends string>(
     token: Token
-): UnexpectedSuffixMessage<Token> => `Unexpected suffix token '${token}'.`
+): InvalidSuffixMessage<Token> => `Unexpected suffix token '${token}'.`

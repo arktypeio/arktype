@@ -17,21 +17,15 @@ import { AddConstraints } from "../../nodes/constraints/common.js"
 import { modulo } from "../../nodes/types/nonTerminal/expression/unary/modulo.js"
 import { NumberLiteralDefinition } from "../operand/unenclosed.js"
 import {
+    comparators,
     OneCharSuffixToken,
     SuffixToken,
-    suffixTokens,
     TwoCharSuffixToken,
     UnexpectedSuffixMessage
 } from "../parser/common.js"
 import { left, Left } from "../parser/left.js"
+import { scanner } from "../parser/scanner.js"
 import { parserState, ParserState } from "../parser/state.js"
-
-// "number%10<100"
-// S["R"] == "10<100"
-
-// "number%10<=100"
-// S["R"] == "10<=100"
-// S["R"] == "=100"
 
 export type ParseModulo<S extends ParserState.Of<Left.Suffix>> =
     S["R"] extends ModuloValueFollowedByTwoCharSuffix<
@@ -96,19 +90,31 @@ type ModuloValueFollowedByTwoCharSuffix<
 > = `${Value}${NextSuffix}${Unscanned}`
 
 export const parseModulo = (s: parserState<left.suffix>, ctx: Base.context) => {
-    let val = ""
-    if (!parseInt(s.r.lookahead)) {
-        throw new Error("Well that's not a number literal.")
-    }
-    while (parseInt(s.r.lookahead)) {
-        val += s.r.lookahead
-        s.r.shift()
-    }
+    // if (!parseInt(s.r.lookahead)) {
+    //     throw new Error("Well that's not a number literal.")
+    // }
+    s.r.shiftUntil(untilPostModuloSuffix)
 
-    s.l.root = new modulo(s.l.root, ctx)
-    s.l.nextSuffix = "END"
+    // s.l.nextSuffix = "END"
     return s
 }
 
-// const untilNextSuffix: scanner.UntilCondition = (scanner) =>
-//     scanner.lookahead ===
+const untilPostModuloSuffix: scanner.UntilCondition = (scanner) =>
+    scanner.lookahead === "?" || scanner.lookaheadIsIn(comparators)
+// export const parseSuffixBound = (
+//     s: parserState<left.suffix>,
+//     token: Comparator
+// ) => {
+//     const boundingValue = s.r.shiftUntil(untilPostBoundSuffix)
+//     const nextSuffix = s.r.shift() as "?" | "END"
+//     return isNumberLiteral(boundingValue)
+//         ? reduceRightBound(
+//               s,
+//               [token, numberLiteralToValue(boundingValue)],
+//               nextSuffix
+//           )
+//         : s.error(
+//               unexpectedSuffixMessage(token, s.r.unscanned, "a number literal")
+//           )
+// }
+//check if numberNode

@@ -10,5 +10,10 @@ describe("modulo", () => {
             )
         })
     })
+    describe("ERRORRRR", () => {
+        test("Mod and suffix", () => {
+            assert(type("number%>2").tree)
+        })
+    })
 })
 // const message = unexpectedSuffixMessage("?", "foobar", "number")

@@ -31,7 +31,7 @@ export const parseSuffixBound = (
     s: parserState<left.suffix>,
     token: Comparator
 ) => {
-    const boundingValue = s.r.shiftUntil(untilNextSuffix)
+    const boundingValue = s.r.shiftUntil(untilPostBoundSuffix)
     const nextSuffix = s.r.shift() as "?" | "END"
     return isNumberLiteral(boundingValue)
         ? reduceRightBound(
@@ -171,5 +171,5 @@ export const unboundableMessage = <Root extends string>(
 ): UnboundableMessage<Root> =>
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
 
-const untilNextSuffix: scanner.UntilCondition = (scanner) =>
+const untilPostBoundSuffix: scanner.UntilCondition = (scanner) =>
     scanner.lookahead === "?"
