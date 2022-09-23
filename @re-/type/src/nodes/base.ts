@@ -37,8 +37,12 @@ export namespace Base {
             collected: References.Collection
         ): void
 
-        references(opts: References.Options<string, boolean>) {
-            return References.collect(this, opts)
+        references(
+            opts: References.Options<string, boolean>
+        ): string[] | References.StructuredReferences {
+            const collected = References.createCollection()
+            this.collectReferences(opts, collected)
+            return Object.keys(collected)
         }
 
         definitionIsKeyOf<Obj extends Record<string, unknown>>(

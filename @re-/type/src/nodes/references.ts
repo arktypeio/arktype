@@ -1,5 +1,4 @@
 import { ElementOf, IterateType, Merge } from "@re-/tools"
-import { Base } from "./base.js"
 import { RootNode } from "./common.js"
 
 export type ReferencesOf<
@@ -111,12 +110,5 @@ export namespace References {
         ? ElementOf<References>[]
         : ElementOf<References>
 
-    export const collect = (
-        startNode: Base.node,
-        opts: Options<string, boolean>
-    ): string[] | StructuredReferences => {
-        const collected = {}
-        startNode.collectReferences(opts, collected)
-        return Object.keys(collected)
-    }
+    export const createCollection = () => ({})
 }
