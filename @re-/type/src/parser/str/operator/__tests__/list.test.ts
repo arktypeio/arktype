@@ -1,16 +1,11 @@
 import { assert } from "@re-/assert"
-import { before, describe, test } from "mocha"
+import { describe, test } from "mocha"
 import { type } from "../../../../index.js"
 import { incompleteTokenMessage } from "../list.js"
 
-describe("list", () => {
-    let list: ReturnType<typeof init>
-    const init = () => type("string[]")
-    before(() => {
-        list = init()
-    })
+describe("parse list", () => {
     test("parse", () => {
-        assert(list.ast).narrowedValue(["string", "[]"])
+        assert(type("string[]").ast).narrowedValue(["string", "[]"])
     })
     describe("errors", () => {
         test("incomplete token", () => {
@@ -18,36 +13,6 @@ describe("list", () => {
             assert(() => type("string[")).throwsAndHasTypeError(
                 incompleteTokenMessage
             )
-        })
-    })
-    test("infer", () => {
-        assert(list.infer).typed as string[]
-    })
-    describe("check", () => {
-        test("empty", () => {
-            assert(list.check([]).errors).is(undefined)
-        })
-        test("singleton", () => {
-            assert(list.check(["@re-/type"]).errors).is(undefined)
-        })
-        test("multiple", () => {
-            assert(list.check(["@re-/", "type"]).errors).is(undefined)
-        })
-        describe("errors", () => {
-            test("non-list", () => {
-                assert(list.check({}).errors?.summary).snap(`Must be an array.`)
-            })
-            test("bad item", () => {
-                assert(
-                    list.check(["one", "two", 3, "four", "five"]).errors
-                        ?.summary
-                ).snap(`Item 2 must be a string (was number).`)
-            })
-        })
-    })
-    describe("generation", () => {
-        test("empty by default", () => {
-            assert(list.create()).equals([])
         })
     })
 })

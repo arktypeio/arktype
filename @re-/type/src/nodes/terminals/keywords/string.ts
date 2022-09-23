@@ -27,7 +27,7 @@ export class StringNode
             this.regex = new RegexConstraint(
                 new RegExp(this.definition.slice(1, -1)),
                 this.definition,
-                `match expression ${this.definition}`
+                `Must match expression ${this.definition}`
             )
         }
     }

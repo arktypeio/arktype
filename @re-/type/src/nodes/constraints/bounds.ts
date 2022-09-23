@@ -115,7 +115,7 @@ export const boundToString = (
     kind: BoundKind
 ) =>
     `Must be ${comparatorToString[comparator]} ${limit} ${
-        kind === "string" ? "characters " : kind === "array" ? "items " : ""
+        kind === "string" ? "characters" : kind === "array" ? "items" : ""
     }`
 
 const isConstrained = (ast: StrAst): ast is [StrAst, StrAst[]] =>

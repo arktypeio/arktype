@@ -131,7 +131,7 @@ export namespace Allows {
 
     export type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
         message?: (context: Diagnostic<Code>) => string
-        includeDataInMessage?: boolean
+        omitActualFromMessage?: boolean
     }
 
     type OptionsByDiagnostic = {
@@ -203,8 +203,9 @@ export namespace Allows {
             // TODO: Figure out how to reconcile this and other context sources (cfg vs context.modelCfg?)
             this.options = args.cfg.diagnostics?.[code] ?? {}
             this.message = `${context.reason}${
-                this.options?.includeDataInMessage
-                    ? ` (was ${
+                this.options?.omitActualFromMessage
+                    ? ""
+                    : ` (was ${
                           // If we have a context item named "actual", use that
                           // in place of data. This is useful in cases where it
                           // is not the data itself but some property of the
@@ -214,7 +215,6 @@ export namespace Allows {
                               ? context.actual
                               : stringifyData(args.data)
                       })`
-                    : ""
             }.`
         }
     }

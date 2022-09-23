@@ -1,13 +1,12 @@
-import type { InstanceOf } from "@re-/tools"
-import { isKeyOf } from "@re-/tools"
+import type { JsTypeName } from "@re-/tools"
 import type { Allows } from "../../allows.js"
 import type {
     KeywordDefinition,
     SubtypeDefinition,
-    SubtypeKeyword,
     TypeKeyword
 } from "./keyword.js"
-import { StringNode, stringTypedKeywords } from "./string.js"
+
+export type NormalizedJsTypeName = JsTypeName | "null"
 
 export type KeywordTypeDiagnostic = Allows.DefineDiagnostic<
     "keyword",
@@ -15,6 +14,7 @@ export type KeywordTypeDiagnostic = Allows.DefineDiagnostic<
         definition: KeywordDefinition
         typeKeyword: TypeKeyword
         data: unknown
+        actual: NormalizedJsTypeName
     }
 >
 
@@ -36,9 +36,11 @@ export const addTypeKeywordDiagnostic: AddTypeKeywordDiagnosticSignatures = (
         KeywordDefinition,
         string
     ]
+    const data = args.data
     args.diagnostics.add("keyword", args, {
         definition,
-        data: args.data,
+        data,
+        actual: data === null ? "null" : typeof args.data,
         reason,
         typeKeyword: diagnosticArgs[3] ?? definition
     })

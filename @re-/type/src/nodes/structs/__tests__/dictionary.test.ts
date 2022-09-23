@@ -6,12 +6,34 @@ import { unresolvableMessage } from "../../../parser/str/operand/unenclosed.js"
 import type { Allows } from "../../allows.js"
 
 describe("dictionary", () => {
+    describe("infer", () => {
+        test("base", () => {
+            assert(
+                type({
+                    a: "0"
+                }).infer
+            ).typed as { a: 0 }
+        })
+        test("with optional key", () => {
+            assert(
+                type({
+                    required: "boolean",
+                    optional: "boolean?"
+                }).infer
+            ).typed as {
+                required: boolean
+                optional?: boolean | undefined
+            }
+        })
+        test("empty", () => {
+            assert(type({}).infer).typed as {}
+        })
+    })
     describe("empty", () => {
         const empty = type({})
         test("type", () => {
             assert(empty.infer).typed as {}
-        })
-        test("validation", () => {
+            test("validation", () => {})
             assert(empty.check({}).errors).is(undefined)
             assert(empty.check([]).errors?.summary).snap(
                 `Must not be an array.`

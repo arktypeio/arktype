@@ -40,9 +40,7 @@ export class union extends branch {
         // https://github.com/re-do/re-po/issues/472
         let reason = `Must be one of ${
             this.definition
-        } (was ${Allows.stringifyData(args.data)})${
-            explainBranches ? ":" : "."
-        }`
+        } (was ${Allows.stringifyData(args.data)})${explainBranches ? ":" : ""}`
         if (explainBranches) {
             for (const [
                 branchDefinition,

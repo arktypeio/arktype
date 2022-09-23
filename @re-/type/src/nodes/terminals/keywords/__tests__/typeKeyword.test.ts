@@ -5,29 +5,29 @@ import { type } from "../../../../type.js"
 describe("type keywords", () => {
     describe("boolean", () => {
         const b = type("boolean")
-        test("type", () => {
+        test("infer", () => {
             assert(b.infer).typed as boolean
         })
         test("generation", () => {
             assert(b.create()).is(false)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(b.check(true).errors).is(undefined)
             assert(b.check(false).errors).is(undefined)
             assert(b.check(0).errors?.summary).snap(
-                `Must be a boolean (was number).`
+                `Must be boolean (was number).`
             )
         })
     })
     describe("true", () => {
         const t = type("true")
-        test("type", () => {
+        test("infer", () => {
             assert(t.infer).typed as true
         })
         test("generation", () => {
             assert(t.create()).is(true)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(t.check(true).errors).is(undefined)
             assert(t.check(false).errors?.summary).snap(
                 `Must be true (was false).`
@@ -36,13 +36,13 @@ describe("type keywords", () => {
     })
     describe("false", () => {
         const f = type("false")
-        test("type", () => {
+        test("infer", () => {
             assert(f.infer).typed as false
         })
         test("generation", () => {
             assert(f.create()).is(false)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(f.check(false).errors).is(undefined)
             assert(f.check(true).errors?.summary).snap(
                 `Must be false (was true).`
@@ -51,13 +51,13 @@ describe("type keywords", () => {
     })
     describe("bigint", () => {
         const b = type("bigint")
-        test("type", () => {
+        test("infer", () => {
             assert(b.infer).typed as bigint
         })
         test("generation", () => {
             assert(b.create()).is(0n)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(b.check(999n).errors).is(undefined)
             assert(b.check(999).errors?.summary).snap(
                 `Must be a bigint (was number).`
@@ -66,13 +66,13 @@ describe("type keywords", () => {
     })
     describe("symbol", () => {
         const s = type("symbol")
-        test("type", () => {
+        test("infer", () => {
             assert(s.infer).typed as symbol
         })
         test("generation", () => {
             assert(typeof s.create()).is("symbol")
         })
-        test("validation", () => {
+        test("check", () => {
             assert(s.check(Symbol("")).errors).is(undefined)
             assert(s.check("@").errors?.summary).snap(
                 `Must be a symbol (was string).`
@@ -81,13 +81,13 @@ describe("type keywords", () => {
     })
     describe("function", () => {
         const f = type("function")
-        test("type", () => {
+        test("infer", () => {
             assert(f.infer).typed as Function
         })
         test("generation", () => {
             assert(typeof f.create()).equals("function")
         })
-        test("validation", () => {
+        test("check", () => {
             assert(f.check(() => ({})).errors).is(undefined)
             assert(f.check({}).errors?.summary).snap(
                 `Must be a function (was object).`
@@ -96,13 +96,13 @@ describe("type keywords", () => {
     })
     describe("object", () => {
         const o = type("object")
-        test("type", () => {
+        test("infer", () => {
             assert(o.infer).typed as object
         })
         test("generation", () => {
             assert(o.create()).equals({})
         })
-        test("validation", () => {
+        test("check", () => {
             assert(o.check([]).errors).is(undefined)
             assert(o.check({}).errors).is(undefined)
             assert(o.check(null).errors?.summary).snap(
@@ -112,13 +112,13 @@ describe("type keywords", () => {
     })
     describe("undefined", () => {
         const u = type("undefined")
-        test("type", () => {
+        test("infer", () => {
             assert(u.infer).typed as undefined
         })
         test("generation", () => {
             assert(u.create()).is(undefined)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(u.check(undefined).errors).is(undefined)
             assert(u.check(null).errors?.summary).snap(
                 `Must be undefined (was null).`
@@ -127,13 +127,13 @@ describe("type keywords", () => {
     })
     describe("null", () => {
         const n = type("null")
-        test("type", () => {
+        test("infer", () => {
             assert(n.infer).typed as null
         })
         test("generation", () => {
             assert(n.create()).is(null)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(n.check(null).errors).is(undefined)
             assert(n.check(undefined).errors?.summary).snap(
                 `Must be null (was undefined).`
@@ -142,28 +142,28 @@ describe("type keywords", () => {
     })
     describe("void", () => {
         const v = type("void")
-        test("type", () => {
+        test("infer", () => {
             assert(v.infer).typed as void
         })
         test("generation", () => {
             assert(v.create()).is(undefined)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(v.check(undefined).errors).is(undefined)
             assert(v.check(null).errors?.summary).snap(
-                `Must be a void (was null).`
+                `Must be undefined (was null).`
             )
         })
     })
     describe("any", () => {
         const a = type("any")
-        test("type", () => {
+        test("infer", () => {
             assert(a.infer).typed as any
         })
         test("generation", () => {
             assert(a.create()).is(undefined)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(a.check(-34_324n).errors).is(undefined)
             assert(a.check({ yes: "no" }).errors).is(undefined)
             assert(a.check([0, "1", 2, "3"]).errors).is(undefined)
@@ -171,14 +171,13 @@ describe("type keywords", () => {
     })
     describe("unknown", () => {
         const u = type("unknown")
-        test("type", () => {
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        test("infer", () => {
             assert(u.infer).typed as unknown
         })
         test("generation", () => {
             assert(u.create()).is(undefined)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(u.check(34_324n).errors).is(undefined)
             assert(u.check({ no: "yes" }).errors).is(undefined)
             assert(u.check(["0", 1, "2", 3]).errors).is(undefined)
@@ -186,33 +185,32 @@ describe("type keywords", () => {
     })
     describe("never", () => {
         const n = type("never")
-        test("type", () => {
-            // @ts-ignore
+        test("infer", () => {
             assert(n.infer).typed as never
+        })
+        test("check", () => {
+            assert(n.check("sometimes").errors?.summary).snap(
+                `Never allowed (was string).`
+            )
+            assert(n.check(undefined).errors?.summary).snap(
+                `Never allowed (was undefined).`
+            )
         })
         test("generation", () => {
             assert(() => n.create()).throws.snap(
                 `Error: Unable to generate a value for 'never': never is ungeneratable by definition.`
             )
         })
-        test("validation", () => {
-            assert(n.check("sometimes").errors?.summary).snap(
-                `Must be never (was string).`
-            )
-            assert(n.check(undefined).errors?.summary).snap(
-                `Must be never (was undefined).`
-            )
-        })
     })
     describe("string", () => {
         const s = type("string")
-        test("type", () => {
+        test("infer", () => {
             assert(s.infer).typed as string
         })
         test("generation", () => {
             assert(s.create()).is("")
         })
-        test("validation", () => {
+        test("check", () => {
             assert(s.check("KEKW").errors).is(undefined)
             assert(s.check(["whoops"]).errors?.summary).snap(
                 `Must be a string (was object).`
@@ -221,13 +219,13 @@ describe("type keywords", () => {
     })
     describe("number", () => {
         const n = type("number")
-        test("type", () => {
+        test("infer", () => {
             assert(n.infer).typed as number
         })
         test("generation", () => {
             assert(n.create()).is(0)
         })
-        test("validation", () => {
+        test("check", () => {
             assert(n.check(-83).errors).is(undefined)
             assert(n.check(0.999).errors).is(undefined)
             assert(n.check("42").errors?.summary).snap(
