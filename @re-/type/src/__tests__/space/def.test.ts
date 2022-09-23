@@ -1,13 +1,13 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { def, space } from "../../index.js"
+import { define, space } from "../../index.js"
 
 const getSpace = () =>
     space({
-        user: def({
+        user: define({
             name: "name"
         }),
-        group: def(
+        group: define(
             {
                 members: "user[]"
             },

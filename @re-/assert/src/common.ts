@@ -25,11 +25,12 @@ export const positionToString = (position: SourcePosition) =>
 export type ReAssertConfig = Required<ReAssertJson> & {
     updateSnapshots: boolean
     benchFormat: BenchFormat
-    benchMatcher: RegExp | string | undefined
     cacheDir: string
     assertionCacheFile: string
     snapCacheDir: string
     skipTypes: boolean
+    transient: boolean
+    filter: string[] | string | undefined
 }
 
 type ReAssertJson = {
@@ -45,11 +46,8 @@ type ReJson = {
     assert?: ReAssertJson
 }
 
-const argsIncludeUpdateFlag = (args: string[]) =>
-    args.some((arg) => ["-u", "--update", "--updateSnapshot"].includes(arg))
-
-const checkArgsForParam = (args: string[], param: string) => {
-    const filterFlagIndex = args.indexOf(`--${param}`)
+const checkArgsForParam = (args: string[], param: `-${string}`) => {
+    const filterFlagIndex = args.indexOf(param)
     if (filterFlagIndex === -1) {
         return undefined
     }
@@ -113,19 +111,27 @@ const getArgsToCheck = () => {
     return process.argv
 }
 
-const getMatcher = (argsToCheck: string[]) => {
-    // This matcher can be used to filter calls we have control over like benches
-    const possibleMatcher = checkArgsForParam(argsToCheck, "only")
-    if (possibleMatcher) {
-        const asRegex = !!possibleMatcher.match(/\/.*\//)
-        console.log(
-            `Running benches ${
-                asRegex ? "matching expression" : "including"
-            } '${possibleMatcher}'...`
-        )
-        return asRegex
-            ? new RegExp(possibleMatcher.slice(1, -1))
-            : possibleMatcher
+/** Determine which benches to run:
+ *    If a "--filter" (or "-f") arg is present...
+ *       1. If the arg starts with "/", run benches at that "/"-delimited path
+ *       2. Otherwise, run benches including a segment anywhere in their path with the arg's value
+ *    Otherwise, return undefined, and all benches will be run
+ */
+const getFilter = (argsToCheck: string[]) => {
+    const filter =
+        checkArgsForParam(argsToCheck, "--filter") ||
+        checkArgsForParam(argsToCheck, "-f")
+    if (filter) {
+        // Removing logging until we only run this once per CLI invocation
+        if (filter.startsWith("/")) {
+            // console.log(`Running benches at path '${filter}'...`)
+            return filter.split("/").slice(1)
+        } else {
+            // console.log(
+            //     `Running benches including a segment named '${filter}'...`
+            // )
+            return filter
+        }
     }
 }
 
@@ -141,18 +147,25 @@ export const getReAssertConfig = (): ReAssertConfig => {
     const reAssertJson: ReAssertJson = reJson.assert ?? {}
     const argsToCheck = getArgsToCheck()
     const cacheDir =
-        checkArgsForParam(argsToCheck, "cacheDir") ?? resolve(".reassert")
+        checkArgsForParam(argsToCheck, "--cacheDir") ?? resolve(".reassert")
     const snapCacheDir = join(cacheDir, "snaps")
     ensureDir(cacheDir)
     ensureDir(snapCacheDir)
+    const transient = argsToCheck.some(
+        (arg) => arg === "-t" || arg === "--transient"
+    )
     return {
-        updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
-        skipTypes: argsToCheck.includes("--skipTypes"),
+        updateSnapshots:
+            transient ||
+            argsToCheck.some((arg) => arg === "-u" || arg === "--update"),
+        skipTypes: argsToCheck.some(
+            (arg) => arg === "-s" || arg === "--skipTypes"
+        ),
         benchFormat: {
             noInline: argsToCheck.includes("--no-inline"),
             noExternal: argsToCheck.includes("--no-external")
         },
-        benchMatcher: getMatcher(argsToCheck),
+        filter: getFilter(argsToCheck),
         tsconfig,
         precached: argsToCheck.includes("--precache"),
         preserveCache: false,
@@ -162,6 +175,7 @@ export const getReAssertConfig = (): ReAssertConfig => {
         assertionCacheFile: join(cacheDir, "assertions.json"),
         benchPercentThreshold: 20,
         benchErrorOnThresholdExceeded: false,
+        transient,
         ...reAssertJson
     }
 }

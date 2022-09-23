@@ -1,10 +1,12 @@
 import { performance } from "node:perf_hooks"
 import { caller } from "@re-/node"
+import { chainableNoOpProxy } from "@re-/tools"
 import {
     compareToBaseline,
     queueBaselineUpdateIfNeeded as queueBaselineUpdateIfNeeded
 } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
+import { unhandledExceptionMessages } from "./bench.js"
 import type { TimeString } from "./measure/index.js"
 import {
     createTimeComparison,
@@ -98,7 +100,7 @@ export class BenchAssertions<
     private label: string
     private lastCallTimes: number[] | undefined
     constructor(private fn: Fn, private ctx: BenchContext) {
-        this.label = `Call: ${ctx.name}`
+        this.label = `Call: ${ctx.qualifiedName}`
     }
 
     private applyCallTimeHooks() {
@@ -195,13 +197,37 @@ export class BenchAssertions<
             : TimeString | undefined
     ) {
         if (this.ctx.isAsync) {
-            return new Promise((resolve, reject) => {
-                this.callTimesAsync().then((callTimes) => {
-                    resolve(this.createAssertion(name, baseline, callTimes))
-                }, reject)
+            return new Promise((resolve) => {
+                this.callTimesAsync().then(
+                    (callTimes) => {
+                        resolve(this.createAssertion(name, baseline, callTimes))
+                    },
+                    (e) => {
+                        this.addUnhandledBenchException(e)
+                        resolve(chainableNoOpProxy)
+                    }
+                )
             })
         }
-        return this.createAssertion(name, baseline, this.callTimesSync())
+        let assertions = chainableNoOpProxy
+        try {
+            assertions = this.createAssertion(
+                name,
+                baseline,
+                this.callTimesSync()
+            )
+        } catch (e) {
+            this.addUnhandledBenchException(e)
+        }
+        return assertions
+    }
+
+    private addUnhandledBenchException(reason: unknown) {
+        const message = `Bench ${
+            this.ctx.qualifiedName
+        } threw during execution:\n${String(reason)}`
+        console.error(message)
+        unhandledExceptionMessages.push(message)
     }
 
     median(baseline?: TimeString) {

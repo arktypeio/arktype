@@ -4,7 +4,7 @@ import { toString } from "@re-/tools"
 import type { CallExpression, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import type { SourcePosition } from "./common.js"
-import { positionToString } from "./common.js"
+import { getReAssertConfig, positionToString } from "./common.js"
 import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 import { writeUpdates } from "./writeSnapshot.js"
@@ -14,7 +14,7 @@ export type SnapshotArgs = {
     serializedValue: unknown
     benchFormat: BenchFormat
     snapFunctionName?: string
-    baselineName?: string
+    baselinePath?: string[]
 }
 
 export const findCallExpressionAncestor = (
@@ -70,15 +70,16 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
     snapFunctionName = "snap",
-    baselineName,
+    baselinePath,
     benchFormat
 }: SnapshotArgs) => {
+    const { transient } = getReAssertConfig()
     const project = getDefaultTsMorphProject()
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
     const newArgText = toString(serializedValue, {
-        quote: "backtick",
-        nonAlphaNumKeyQuote: "single"
+        quote: "double",
+        keyQuote: "double"
     }).replace(`\\`, `\\\\`)
     queuedUpdates.push({
         file,
@@ -86,8 +87,9 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
         snapCall,
         snapFunctionName,
         newArgText,
-        baselineName,
-        benchFormat
+        baselinePath,
+        benchFormat,
+        transient
     })
 }
 
@@ -97,7 +99,8 @@ export type QueuedUpdate = {
     snapCall: CallExpression
     snapFunctionName: string
     newArgText: string
-    baselineName: string | undefined
+    baselinePath: string[] | undefined
+    transient: boolean
     benchFormat: BenchFormat
 }
 

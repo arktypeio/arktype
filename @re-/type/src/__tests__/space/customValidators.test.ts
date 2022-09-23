@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import type { CustomValidator } from "../../index.js"
-import { def, space, type } from "../../index.js"
+import { define, space, type } from "../../index.js"
 
 describe("custom validators", () => {
     const validator: CustomValidator = ({ data: value }) => {
@@ -26,7 +26,7 @@ describe("custom validators", () => {
     })
     test("model root", () => {
         const mySpace = space({
-            palindrome: def("string", { validate: { validator } })
+            palindrome: define("string", { validate: { validator } })
         })
         assert(mySpace.palindrome.check("redivider").errors).is(undefined)
         assert(mySpace.palindrome.check("predivider").errors?.summary).is(
@@ -35,7 +35,7 @@ describe("custom validators", () => {
     })
     test("model nested", () => {
         const mySpace = space({
-            palindrome: def("string", { validate: { validator } }),
+            palindrome: define("string", { validate: { validator } }),
             yourPal: { name: "palindrome" }
         })
         assert(mySpace.yourPal.check({ name: "bob" }).errors).is(undefined)

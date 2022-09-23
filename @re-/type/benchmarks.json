@@ -1,0 +1,35 @@
+{
+    "dictionary": {
+        "check": {
+            "valid": [
+                {
+                    "date": "9/23/2022",
+                    "mark": {
+                        "median": [488, "ns"]
+                    }
+                },
+                {
+                    "date": "9/23/2022",
+                    "mark": {
+                        "median": [497, "ns"]
+                    }
+                }
+            ],
+            "invalid": [
+                {
+                    "date": "9/23/2022",
+                    "mark": {
+                        "median": [1.19, "us"]
+                    }
+                },
+                {
+                    "date": "9/23/2022",
+                    "mark": {
+                        "median": [1.19, "us"]
+                    }
+                }
+            ]
+        },
+        "parse": []
+    }
+}

@@ -3,12 +3,8 @@ import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { fromCwd, readJson, requireResolve, shell, writeJson } from "@re-/node"
 import type { Node, ts } from "ts-morph"
-import type { BenchHistory } from "./bench/benchHistory.js"
-import {
-    assertNoDuplicateBenchNames,
-    updateIsBench,
-    upsertBenchResult
-} from "./bench/benchHistory.js"
+import type { BenchData } from "./bench/benchHistory.js"
+import { updateIsBench, upsertBenchResult } from "./bench/benchHistory.js"
 import { getFileKey, getReAssertConfig } from "./common.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import {
@@ -83,36 +79,31 @@ export const writeInlineSnapshotUpdateToCacheDir = (args: SnapshotArgs) => {
     )
 }
 
-const defaultFormat: BenchFormat = {
-    noExternal: true,
-    noInline: false
-}
-
-const benchHistoryPath = join(fromCwd(), "benchHistory.json")
+const benchHistoryPath = join(fromCwd(), "benchmarks.json")
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
 export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
     if (!queuedUpdates.length) {
         return
     }
-    assertNoDuplicateBenchNames(queuedUpdates)
-    const benchData: BenchHistory[] = existsSync(benchHistoryPath)
+    const benchData: BenchData = existsSync(benchHistoryPath)
         ? readJson(benchHistoryPath)
-        : []
-    const benchFormat = queuedUpdates[0].benchFormat ?? defaultFormat
+        : {}
     for (const update of queuedUpdates) {
         updateIsBench(update) && upsertBenchResult(update, benchData)
         const originalArgs = update.snapCall.getArguments()
         const previousValue = originalArgs.length
             ? originalArgs[0].getText()
             : undefined
-        !benchFormat.noInline && writeUpdateToFile(originalArgs, update)
+        if (!update.benchFormat.noInline) {
+            writeUpdateToFile(originalArgs, update)
+        }
+        if (!update.benchFormat.noExternal) {
+            writeJson(benchHistoryPath, benchData)
+        }
         summarizeSnapUpdate(originalArgs, update, previousValue)
     }
     runPrettierIfAvailable(queuedUpdates)
-    if (!benchFormat.noExternal) {
-        writeJson(benchHistoryPath, benchData)
-    }
 }
 
 const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
@@ -136,14 +127,14 @@ const summarizeSnapUpdate = (
     let updateSummary = `${
         originalArgs.length ? "🆙  Updated" : "📸  Established"
     } `
-    updateSummary += update.baselineName
-        ? `baseline '${update.baselineName}' `
+    updateSummary += update.baselinePath
+        ? `baseline '${update.baselinePath.join("/")}' `
         : `snap at ${getFileKey(update.file.getFilePath())}:${
               update.position.line
           } `
     updateSummary += previousValue
         ? `from ${previousValue} to `
-        : `${update.baselineName ? "at" : "as"} `
+        : `${update.baselinePath ? "at" : "as"} `
 
     updateSummary += update.newArgText
     console.log(updateSummary)

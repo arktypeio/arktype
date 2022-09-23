@@ -1,98 +1,95 @@
-import { relative } from "node:path"
-import { fromCwd } from "@re-/node"
 import type { QueuedUpdate } from "../snapshot.js"
+import type { TimeUnit } from "./measure/time.js"
+import { parseMark, parseTimeMeasureString } from "./measure/time.js"
+import type { TypeUnit } from "./measure/types.js"
+import { parseTypeMeasureString } from "./measure/types.js"
+
+type MarkData = Record<string, BenchStatTuple>
 
 export type BenchResult = {
-    timestamp: string
-    result: Record<string, any>
-}
-export type BenchHistory = {
-    name: string
-    file: string
-    results: BenchResult[]
+    date: string
+    mark: MarkData
+    transient?: true
 }
 
-const timestamp = new Date().toLocaleString()
+export type BenchStatTuple = [number, TimeUnit | TypeUnit]
+
+export type BenchData = { [K in string]: BenchData | BenchResult[] }
+
+const date = new Date().toLocaleDateString()
+
+const toMarkData = ({
+    snapFunctionName,
+    newArgText
+}: BenchUpdate): MarkData => {
+    // Remove quotes added for inline write
+    const parsableText: any = /^".*"$/.test(newArgText)
+        ? newArgText.slice(1, -1)
+        : newArgText
+    if (snapFunctionName === "mark") {
+        return parseMark(parsableText)
+    }
+    const statMeasure =
+        snapFunctionName === "type"
+            ? parseTypeMeasureString(parsableText)
+            : parseTimeMeasureString(parsableText)
+    return {
+        [snapFunctionName]: statMeasure
+    }
+}
+
 export const upsertBenchResult = (
-    { baselineName, snapFunctionName, position, newArgText }: BenchUpdate,
-    benchData: BenchHistory[]
+    benchUpdate: BenchUpdate,
+    rootBenchData: BenchData
 ) => {
-    const file = relative(fromCwd(), position.file)
-    const matchingBenchHistory = benchData.find(
-        (data) => data.name === baselineName && data.file === file
-    )
-    // TODO: Improve bench history format: https://github.com/re-do/re-po/issues/459
-    const currentResult = {
-        timestamp,
-        result: { [snapFunctionName]: newArgText }
+    let matchingData = rootBenchData
+    const remainingSegments = [...benchUpdate.baselinePath]
+    const fullPathName = benchUpdate.baselinePath.join("/")
+    while (remainingSegments.length) {
+        if (Array.isArray(matchingData)) {
+            throw new Error(
+                `Bench data already exists at prefix path of ${fullPathName}.`
+            )
+        }
+        const head = remainingSegments.shift()!
+        if (!(head in matchingData)) {
+            matchingData[head] = remainingSegments.length ? {} : []
+        }
+        matchingData = matchingData[head] as BenchData
     }
-    if (matchingBenchHistory) {
-        updateExistingBenchResult(matchingBenchHistory, currentResult)
-    } else {
-        benchData.push({
-            name: baselineName,
-            file,
-            results: [currentResult]
-        })
+    if (!Array.isArray(matchingData)) {
+        throw new Error(
+            `Expected a list of bench history results at ${fullPathName}.`
+        )
     }
+    addResultToMatchingData(benchUpdate, matchingData)
 }
-const updateExistingBenchResult = (
-    matchingBenchHistory: BenchHistory,
-    currentResult: BenchResult
+
+export const addResultToMatchingData = (
+    benchUpdate: BenchUpdate,
+    matchingResults: BenchResult[]
 ) => {
+    const mark = toMarkData(benchUpdate)
+    const latestResult = matchingResults[0] as BenchResult | undefined
+    if (latestResult?.transient) {
+        matchingResults.shift()
+    }
     if (
-        timestamp ===
-        matchingBenchHistory.results[matchingBenchHistory.results.length - 1]
-            .timestamp
+        latestResult?.date === date &&
+        !(benchUpdate.snapFunctionName in latestResult.mark) &&
+        benchUpdate.snapFunctionName !== "mark"
     ) {
-        Object.assign(
-            matchingBenchHistory.results[
-                matchingBenchHistory.results.length - 1
-            ].result,
-            currentResult
-        )
+        latestResult.mark = { ...latestResult.mark, ...mark }
     } else {
-        matchingBenchHistory.results.push({
-            timestamp,
-            result: currentResult
-        })
+        const newResult: BenchResult = { date, mark }
+        if (benchUpdate.transient) {
+            newResult.transient = true
+        }
+        matchingResults.unshift(newResult)
     }
 }
-type BenchUpdate = QueuedUpdate & { baselineName: string }
+
+type BenchUpdate = QueuedUpdate & { baselinePath: string[] }
+
 export const updateIsBench = (update: QueuedUpdate): update is BenchUpdate =>
-    update.baselineName !== undefined
-
-export const assertNoDuplicateBenchNames = (queuedUpdates: QueuedUpdate[]) => {
-    const duplicatedNames: string[] = []
-    const benchNamesToLineAppearances: Record<string, number[]> = {}
-    for (const update of queuedUpdates) {
-        const name = update.baselineName
-        if (!name) {
-            return
-        }
-        //snapCall refers to the entire bench call so chained snap calls result in the same line number
-        const benchCallLine = update.snapCall.getStartLineNumber()
-        if (name in benchNamesToLineAppearances) {
-            if (!benchNamesToLineAppearances[name].includes(benchCallLine)) {
-                if (!duplicatedNames.includes(name)) {
-                    duplicatedNames.push(name)
-                }
-                benchNamesToLineAppearances[name].push(benchCallLine)
-            }
-        } else {
-            benchNamesToLineAppearances[name] = [benchCallLine]
-        }
-    }
-
-    if (duplicatedNames.length) {
-        const duplicateBenchNamesMessage = duplicatedNames.reduce(
-            (message, name) => {
-                return `${message}\n ${name} found on lines: ${benchNamesToLineAppearances[
-                    name
-                ].join(",")}`
-            },
-            `❌ duplicate bench names found in file ${queuedUpdates[0].position.file}:`
-        )
-        throw new Error(duplicateBenchNamesMessage)
-    }
-}
+    !!update.baselinePath

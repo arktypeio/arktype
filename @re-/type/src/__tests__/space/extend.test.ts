@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { def, space } from "../../index.js"
+import { define, space } from "../../index.js"
 
 describe("extend space", () => {
     test("type", () => {
@@ -35,7 +35,7 @@ describe("extend space", () => {
         assert(extended.$root.dictionary).snap({
             user: { first: `string`, last: `string` },
             group: {
-                // @ts-expect-error (values returned from def() don't match their declared types by design)
+                // @ts-expect-error (values returned from define() don't match their declared types by design)
                 $def: { members: `user[]` },
                 $opts: {
                     validate: {
@@ -72,7 +72,7 @@ const getExtendedSpace = () => {
     const mySpace = space(
         {
             user: { name: "string" },
-            group: def(
+            group: define(
                 { members: "user[]" },
                 {
                     validate: {
@@ -94,7 +94,7 @@ const getExtendedSpace = () => {
     const extended = mySpace.$root.extend(
         {
             user: { first: "string", last: "string" },
-            other: def(
+            other: define(
                 { users: "user[]", groups: "group[]" },
                 {
                     validate: {

@@ -46,16 +46,13 @@ const emptyBenchFn = (statement: Node<ts.ExpressionStatement>) => {
     benchCall.getArguments()[1].replaceWithText("()=>{}")
 }
 
-const getTopLevelExpressionStatements = (file: SourceFile) =>
-    file
-        .getFirstChildByKindOrThrow(SyntaxKind.SyntaxList)
-        .getChildrenOfKind(SyntaxKind.ExpressionStatement)
-
-const isBenchExpression = (statement: Node<ts.ExpressionStatement>) =>
-    statement
+const isBenchExpression = (statement: Node<ts.ExpressionStatement>) => {
+    const firstCallIdentifier = statement
         .getFirstChildByKind(SyntaxKind.CallExpression)
         ?.getFirstDescendantByKind(SyntaxKind.Identifier)
-        ?.getText() === "bench"
+        ?.getText()
+    return firstCallIdentifier === "bench" || firstCallIdentifier === "suite"
+}
 
 const getInstantiationsForIsolatedBench = (
     originalFileText: string,
@@ -68,15 +65,24 @@ const getInstantiationsForIsolatedBench = (
         fakePath,
         originalFileText
     )
-    const topLevelStatements = getTopLevelExpressionStatements(fileToTransform)
-    for (const statement of topLevelStatements) {
-        if (statement.getText() === isolatedBenchExressionText) {
-            if (!includeBenchFn) {
-                emptyBenchFn(statement)
-            }
-        } else if (isBenchExpression(statement)) {
+    const currentBenchStatement = fileToTransform.getFirstDescendantOrThrow(
+        (node) =>
+            node.isKind(SyntaxKind.ExpressionStatement) &&
+            node.getText() === isolatedBenchExressionText
+    ) as Node<ts.ExpressionStatement>
+    const siblingStatements = [
+        ...currentBenchStatement.getPreviousSiblings(),
+        ...currentBenchStatement.getNextSiblings()
+    ].filter((node) =>
+        node.isKind(SyntaxKind.ExpressionStatement)
+    ) as Node<ts.ExpressionStatement>[]
+    for (const statement of siblingStatements) {
+        if (isBenchExpression(statement)) {
             statement.replaceWithText("")
         }
+    }
+    if (!includeBenchFn) {
+        emptyBenchFn(currentBenchStatement)
     }
     return getUpdatedInstantiationCount(isolatedProject)
 }

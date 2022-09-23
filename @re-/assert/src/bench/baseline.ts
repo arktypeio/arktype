@@ -16,14 +16,14 @@ export const queueBaselineUpdateIfNeeded = (
     const serializedValue = literalSerialize(updated)
     if (!ctx.lastSnapCallPosition) {
         throw new Error(
-            `Unable to update baseline for ${ctx.name} ('lastSnapCallPosition' was unset).`
+            `Unable to update baseline for ${ctx.qualifiedName} ('lastSnapCallPosition' was unset).`
         )
     }
     queueInlineSnapshotWriteOnProcessExit({
         position: ctx.lastSnapCallPosition,
         serializedValue,
         snapFunctionName: ctx.kind,
-        baselineName: ctx.name,
+        baselinePath: ctx.qualifiedPath,
         benchFormat: ctx.cfg.benchFormat
     })
 }
@@ -37,7 +37,8 @@ export const compareToBaseline = (
     if (result.baseline && !ctx.cfg.updateSnapshots) {
         console.log(`⛳ Baseline: ${stringifyMeasure(result.baseline)}`)
         const delta =
-            ((result.updated.n - result.baseline.n) / result.baseline.n) * 100
+            ((result.updated[0] - result.baseline[0]) / result.baseline[0]) *
+            100
         const formattedDelta = `${delta.toFixed(2)}%`
         if (delta > ctx.cfg.benchPercentThreshold) {
             handlePositiveDelta(formattedDelta, ctx)
@@ -50,7 +51,7 @@ export const compareToBaseline = (
 }
 
 const handlePositiveDelta = (formattedDelta: string, ctx: BenchContext) => {
-    const message = `'${ctx.name}' exceeded baseline by ${formattedDelta} (threshold is ${ctx.cfg.benchPercentThreshold}%).`
+    const message = `'${ctx.qualifiedName}' exceeded baseline by ${formattedDelta} (threshold is ${ctx.cfg.benchPercentThreshold}%).`
     console.error(`📈 ${message}`)
     if (ctx.cfg.benchErrorOnThresholdExceeded) {
         process.exitCode = 1
@@ -64,7 +65,7 @@ const handlePositiveDelta = (formattedDelta: string, ctx: BenchContext) => {
 const handleNegativeDelta = (formattedDelta: string, ctx: BenchContext) => {
     console.log(
         // Remove the leading negative when formatting our delta
-        `📉 ${ctx.name} was under baseline by ${formattedDelta.slice(
+        `📉 ${ctx.qualifiedName} was under baseline by ${formattedDelta.slice(
             1
         )}! Consider setting a new baseline.`
     )

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { def, space, type } from "../../index.js"
+import { define, space, type } from "../../index.js"
 
 describe("inheritable configs", () => {
     describe("methods", () => {
@@ -37,7 +37,7 @@ describe("inheritable configs", () => {
 
         test("def config in space", () => {
             const mySpace = space({
-                user: def(
+                user: define(
                     { name: "string" },
                     {
                         validate: {
@@ -72,7 +72,7 @@ describe("inheritable configs", () => {
         test("precedence", () => {
             const nesting = space(
                 {
-                    doll: def(
+                    doll: define(
                         { contents: "doll" },
                         { generate: { onRequiredCycle: "def" } }
                     )

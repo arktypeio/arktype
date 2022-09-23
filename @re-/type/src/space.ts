@@ -90,9 +90,9 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
  * This allows users to provide alias-specific options without interfering
  * with type inference.
  */
-export const def = <Def>(def: Narrow<Def>, options?: TypeOptions) =>
+export const define = <Def>(definition: Narrow<Def>, options?: TypeOptions) =>
     ({
-        $def: def,
+        $def: definition,
         $opts: options
     } as any as Def)
 

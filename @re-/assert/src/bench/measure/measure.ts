@@ -5,10 +5,10 @@ import { stringifyTypeMeasure, TYPE_UNITS } from "./types.js"
 
 type MeasureUnit = TimeUnit | TypeUnit
 
-export type Measure<Unit extends MeasureUnit = MeasureUnit> = {
-    n: number
+export type Measure<Unit extends MeasureUnit = MeasureUnit> = [
+    value: number,
     unit: Unit
-}
+]
 
 export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
     updated: Measure<Unit>
@@ -16,6 +16,6 @@ export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
 }
 
 export const stringifyMeasure = (m: Measure) =>
-    TYPE_UNITS.includes(m.unit as any)
+    TYPE_UNITS.includes(m[1] as any)
         ? stringifyTypeMeasure(m as Measure<TypeUnit>)
         : stringifyTimeMeasure(m as Measure<TimeUnit>)

@@ -1,4 +1,5 @@
-import { toNumber } from "@re-/tools"
+import { mutateValues, toNumber } from "@re-/tools"
+import type { StatName } from "../call.js"
 import type { Measure, MeasureComparison } from "./measure.js"
 
 const TIME_UNIT_RATIOS = Object.freeze({
@@ -30,21 +31,27 @@ const assertTimeString: (s: string) => asserts s is TimeString = (
     }
 }
 
-export const parseTimeString = (s: TimeString): Measure<TimeUnit> => {
+export const parseTimeMeasureString = (s: TimeString): Measure<TimeUnit> => {
     assertTimeString(s)
     // If the two last characters match one of the units, split based on a unit length of two
     // The only other possibility since the regex was matched is length one ("s")
     const unitLength = TIME_UNITS.includes(s.slice(-2)) ? 2 : 1
-    const n = toNumber(s.slice(0, -unitLength))
+    const value = toNumber(s.slice(0, -unitLength))
     const unit = s.slice(-unitLength) as TimeUnit
-    return {
-        n,
-        unit
-    }
+    return [value, unit]
 }
 
-export const stringifyTimeMeasure = (m: Measure<TimeUnit>) =>
-    `${m.n.toFixed(2)}${m.unit}` as TimeString
+export const parseMark = (
+    s: string
+): Partial<Record<StatName, Measure<TimeUnit>>> => {
+    const rawData = JSON.parse(s)
+    return mutateValues(rawData, (measureString: TimeString) =>
+        parseTimeMeasureString(measureString)
+    )
+}
+
+export const stringifyTimeMeasure = ([value, unit]: Measure<TimeUnit>) =>
+    `${value.toFixed(2)}${unit}` as TimeString
 
 const convertTimeUnit = (n: number, from: TimeUnit, to: TimeUnit) => {
     return (n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to]
@@ -59,12 +66,15 @@ export const createTimeMeasure = (ms: number) => {
         const candidateMeasure = createTimeMeasureForUnit(ms, u as TimeUnit)
         if (!bestMatch) {
             bestMatch = candidateMeasure
-        } else if (bestMatch.n >= 1) {
-            if (candidateMeasure.n >= 1 && candidateMeasure.n < bestMatch.n) {
+        } else if (bestMatch[0] >= 1) {
+            if (
+                candidateMeasure[0] >= 1 &&
+                candidateMeasure[0] < bestMatch[0]
+            ) {
                 bestMatch = candidateMeasure
             }
         } else {
-            if (candidateMeasure.n >= bestMatch.n) {
+            if (candidateMeasure[0] >= bestMatch[0]) {
                 bestMatch = candidateMeasure
             }
         }
@@ -75,13 +85,7 @@ export const createTimeMeasure = (ms: number) => {
 const createTimeMeasureForUnit = (
     ms: number,
     unit: TimeUnit
-): Measure<TimeUnit> => {
-    const n = convertTimeUnit(ms, "ms", unit)
-    return {
-        n,
-        unit
-    }
-}
+): Measure<TimeUnit> => [convertTimeUnit(ms, "ms", unit), unit]
 
 export const createTimeComparison = (
     ms: number,
@@ -89,12 +93,9 @@ export const createTimeComparison = (
 ): MeasureComparison<TimeUnit> => {
     if (baselineString) {
         // Convert the new result to the existing units for comparison
-        const baseline = parseTimeString(baselineString)
+        const baseline = parseTimeMeasureString(baselineString)
         return {
-            updated: {
-                n: convertTimeUnit(ms, "ms", baseline.unit),
-                unit: baseline.unit
-            },
+            updated: [convertTimeUnit(ms, "ms", baseline[1]), baseline[1]],
             baseline
         }
     }

@@ -2,50 +2,46 @@ import type { ElementOf } from "@re-/tools"
 import { toNumber } from "@re-/tools"
 import type { Measure, MeasureComparison } from "./measure.js"
 
-export const TYPE_UNITS = ["instantiations"] as const
+// "in" === Instantiations
+export const TYPE_UNITS = ["in"] as const
 
 export type TypeUnit = ElementOf<typeof TYPE_UNITS>
 
 // Using bigint here excludes non-integer values
-export type TypeString = `${bigint} ${TypeUnit}`
+export type TypeString = `${bigint}${TypeUnit}`
 
-const typeStringRegex = new RegExp(`^0|[1-9]\\d*\\s(${TYPE_UNITS.join("|")})$`)
+const typeStringRegex = new RegExp(`^0|[1-9]\\d*(${TYPE_UNITS.join("|")})$`)
 
 const assertTypeString: (s: string) => asserts s is TypeString = (
     s: string
 ) => {
     if (!typeStringRegex.test(s)) {
         throw new Error(
-            `Bench type measure '${s}' must be of the format "<integer><space><${TYPE_UNITS.join(
+            `Bench type measure '${s}' must be of the format "<integer><${TYPE_UNITS.join(
                 "|"
             )}>".`
         )
     }
 }
 
-export const parseTypeString = (s: TypeString): Measure<TypeUnit> => {
+export const parseTypeMeasureString = (s: TypeString): Measure<TypeUnit> => {
     assertTypeString(s)
-    const parts = s.split(" ")
-    const n = toNumber(parts[0])
-    const unit = parts[1] as TypeUnit
-    return {
-        n,
-        unit
-    }
+    const value = toNumber(s.slice(0, -2))
+    const unit = s.slice(-2) as TypeUnit
+    return [value, unit]
 }
 
-export const stringifyTypeMeasure = (m: Measure<TypeUnit>) =>
-    `${m.n} ${m.unit}` as TypeString
+export const stringifyTypeMeasure = ([value, unit]: Measure<TypeUnit>) =>
+    `${value}${unit}` as TypeString
 
 export const createTypeComparison = (
-    n: number,
+    value: number,
     baselineString: TypeString | undefined
 ): MeasureComparison<TypeUnit> => {
     return {
-        updated: {
-            n,
-            unit: "instantiations"
-        },
-        baseline: baselineString ? parseTypeString(baselineString) : undefined
+        updated: [value, "in"],
+        baseline: baselineString
+            ? parseTypeMeasureString(baselineString)
+            : undefined
     }
 }
