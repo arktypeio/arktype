@@ -8,8 +8,8 @@ import type { ResolutionType } from "./parser/resolution.js"
 import { Root } from "./parser/root.js"
 import type {
     DynamicType,
+    TypeFn,
     TypeFrom,
-    TypeFunction,
     TypeOptions,
     Validate
 } from "./type.js"
@@ -19,10 +19,10 @@ export const space: CreateSpaceFn = (dictionary, options) =>
     dynamicSpace(dictionary, options) as any
 
 export type CreateSpaceFn = <Dict, Meta = {}>(
-    dictionary: ValidateDictionary<Dict>,
+    dictionary: ValidateResolutions<Dict>,
     options?: ValidateSpaceOptions<Dict, Meta>
     // @ts-expect-error Constraining Meta interferes with our ability to validate it
-) => SpaceOutput<{ Dict: ValidateDictionary<Dict>; Meta: Meta }>
+) => SpaceOutput<{ Dict: ValidateResolutions<Dict>; Meta: Meta }>
 
 export type DynamicSpace = Record<string, DynamicType> & {
     $root: SpaceMetaFrom<{ Dict: any; Meta: {} }>
@@ -119,12 +119,12 @@ export type Space = {
     Meta: ParseOptions
 }
 
-export type ValidateDictionary<Dict> = Evaluate<{
+export type ValidateResolutions<Dict> = Evaluate<{
     [Alias in keyof Dict]: ResolutionType.Validate<Alias, Dict>
 }>
 
 // TODO: Implement runtime equivalent for these
-type ValidatedMetaDefs<Meta, Dict> = {
+type ValidateMetaDefs<Meta, Dict> = {
     onCycle?: Root.Validate<Get<Meta, "onCycle">, Dict & { $cyclic: "unknown" }>
     onResolve?: Root.Validate<
         Get<Meta, "onResolve">,
@@ -133,7 +133,7 @@ type ValidatedMetaDefs<Meta, Dict> = {
 }
 
 export type ValidateSpaceOptions<Dict, Meta> = {
-    parse?: Conform<Meta, ValidatedMetaDefs<Meta, Dict>>
+    parse?: Conform<Meta, ValidateMetaDefs<Meta, Dict>>
 } & TypeOptions
 
 export type SpaceOptions = TypeOptions
@@ -149,8 +149,8 @@ export type SpaceOutput<S extends Space> = Evaluate<
 export type SpaceMetaFrom<S extends Space> = {
     infer: InferSpaceRoot<S>
     ast: Root.Parse<S["Dict"], S["Dict"]>
-    type: TypeFunction<S>
-    extend: ExtendFunction<S>
+    type: TypeFn<S>
+    extend: ExtendFn<S>
     dictionary: S["Dict"]
     options: SpaceOptions
 }
@@ -179,7 +179,7 @@ export type InferResolution<
     }
 >
 
-export type ExtendFunction<S extends Space> = <ExtensionDict, ExtensionMeta>(
+export type ExtendFn<S extends Space> = <ExtensionDict, ExtensionMeta>(
     dictionary: ValidateDictionaryExtension<S["Dict"], ExtensionDict>,
     options?: ValidateSpaceOptions<
         Merge<S["Dict"], ExtensionDict>,

@@ -29,7 +29,7 @@ export type ReferencesOptions<
     Filter extends string = string,
     PreserveStructure extends boolean = boolean
 > = {
-    filter?: FilterFunction<Filter>
+    filter?: FilterFn<Filter>
     preserveStructure?: PreserveStructure
 }
 
@@ -37,7 +37,7 @@ export type StructuredReferences = {
     [K in string | number]: string[] | StructuredReferences
 }
 
-export type FilterFunction<Filter extends string> =
+export type FilterFn<Filter extends string> =
     | ((reference: string) => reference is Filter)
     | ((reference: string) => boolean)
 
@@ -53,13 +53,11 @@ export type ReferenceTypeOptions<
     format?: Format
 }
 
-export type ReferencesFunction<Def, Dict> = <
-    Options extends ReferencesOptions = {}
->(
+export type ReferencesFn<Def, Dict> = <Options extends ReferencesOptions = {}>(
     options?: Options
 ) => Merge<
     {
-        filter: FilterFunction<string>
+        filter: FilterFn<string>
         preserveStructure: false
     },
     Options

@@ -2,14 +2,14 @@ import type { ElementOf, Exact, Get, Narrow, SetChange } from "@re-/tools"
 import { diffSets } from "@re-/tools"
 import type {
     SpaceOutput,
-    ValidateDictionary,
+    ValidateResolutions,
     ValidateSpaceOptions
 } from "./space.js"
 import { dynamicSpace } from "./space.js"
 import type { Validate } from "./type.js"
 
 export const declare: DeclareFn = (...names) => ({
-    define: createDeclaredDefineFunctionMap(names) as any,
+    define: createDeclaredDefineFnMap(names) as any,
     compile: (dict, options) => {
         const discrepancies = diffSets(names, Object.keys(dict))
         if (discrepancies) {
@@ -22,43 +22,43 @@ export const declare: DeclareFn = (...names) => ({
 export type DeclareFn = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
 ) => {
-    define: DeclaredDefineFunctionMap<DeclaredTypeNames>
-    compile: DeclaredCompileFunction<DeclaredTypeNames>
+    define: DeclaredDefineFnMap<DeclaredTypeNames>
+    compile: DeclaredCompileFn<DeclaredTypeNames>
 }
 
-const createDeclaredDefineFunctionMap = <DeclaredTypeNames extends string[]>(
+const createDeclaredDefineFnMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
-): DeclaredDefineFunctionMap<DeclaredTypeNames> =>
+): DeclaredDefineFnMap<DeclaredTypeNames> =>
     Object.fromEntries(
         typeNames.map((typeName) => [
             typeName,
-            createDeclaredDefineFunction(typeNames, typeName as any)
+            createDeclaredDefineFn(typeNames, typeName as any)
         ])
     ) as any
 
-type DeclaredDefineFunctionMap<DeclaredTypeNames extends string[]> = {
-    [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DeclaredDefineFunction<
+type DeclaredDefineFnMap<DeclaredTypeNames extends string[]> = {
+    [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DeclaredDefineFn<
         DefinedTypeName,
         DeclaredTypeNames
     >
 }
 
-type DeclaredDefineFunction<
+type DeclaredDefineFn<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
 > = <Def>(definition: CheckReferences<Def, ElementOf<DeclaredTypeNames>>) => {
     [K in DefinedTypeName]: Def
 }
 
-type CreateDeclaredDefineFunction = <
+type CreateDeclaredDefineFn = <
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
 >(
     declaredTypeNames: DeclaredTypeNames,
     definedTypeName: DefinedTypeName
-) => DeclaredDefineFunction<DefinedTypeName, DeclaredTypeNames>
+) => DeclaredDefineFn<DefinedTypeName, DeclaredTypeNames>
 
-const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
+const createDeclaredDefineFn: CreateDeclaredDefineFn =
     (declaredTypeNames, definedTypeName) => (definition) => {
         // Dummy create for validation
         dynamicSpace(
@@ -82,12 +82,12 @@ type CheckReferences<Def, DeclaredTypeName extends string> = Validate<
 
 type CheckDeclaredCompilation<Dict, DeclaredTypeNames extends string[]> = {
     [TypeName in ElementOf<DeclaredTypeNames>]: Get<
-        ValidateDictionary<Dict>,
+        ValidateResolutions<Dict>,
         TypeName
     >
 }
 
-export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
+export type DeclaredCompileFn<DeclaredTypeNames extends string[]> = <
     Dict,
     Meta = {}
 >(

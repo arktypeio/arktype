@@ -14,18 +14,14 @@ import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { Space, SpaceMeta } from "./space.js"
 
-export const type: TypeFunction = (
-    definition,
-    options = {},
-    space?: SpaceMeta
-) => {
+export const type: TypeFn = (definition, options = {}, space?: SpaceMeta) => {
     const root = Root.parse(definition, initializeParseContext(options, space))
     return new Type(definition, root, options) as any
 }
 
-export const dynamic = type as DynamicTypeFunction
+export const dynamic = type as DynamicTypeFn
 
-export type DynamicTypeFunction = (
+export type DynamicTypeFn = (
     definition: unknown,
     options?: TypeOptions
 ) => DynamicType
@@ -38,7 +34,7 @@ export type TypeOptions = {
     generate?: Generate.GenerateOptions
 }
 
-export type TypeFunction<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
+export type TypeFn<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
     definition: Root.Validate<Def, S["Dict"]>,
     options?: TypeOptions
 ) => TypeFrom<Def, S["Dict"], Infer<Def, Base.InferenceContext.FromSpace<S>>>
@@ -46,12 +42,12 @@ export type TypeFunction<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
 export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     definition: Def
     infer: Inferred
-    check: ValidateFunction<Inferred>
-    assert: AssertFunction<Inferred>
+    check: CheckFn<Inferred>
+    assert: AssertFn<Inferred>
     default: Inferred
     ast: Root.Parse<Def, Dict>
-    create: CreateFunction<Inferred>
-    references: References.ReferencesFunction<Def, Dict>
+    create: GenerateFn<Inferred>
+    references: References.ReferencesFn<Def, Dict>
 }>
 
 export class Type implements DynamicType {
@@ -108,24 +104,24 @@ export class Type implements DynamicType {
     }
 }
 
-export type ValidateFunction<Inferred> = (
-    value: unknown,
+export type CheckFn<Inferred> = (
+    data: unknown,
     options?: Check.CheckOptions
-) => ValidationResult<Inferred>
+) => CheckResult<Inferred>
 
-export type ValidationResult<Inferred> = MutuallyExclusiveProps<
+export type CheckResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
         errors: Diagnostics
     }
 >
 
-export type AssertFunction<Inferred> = (
+export type AssertFn<Inferred> = (
     value: unknown,
     options?: Check.CheckOptions
 ) => Inferred
 
-export type CreateFunction<Inferred> = (
+export type GenerateFn<Inferred> = (
     options?: Generate.GenerateOptions
 ) => Inferred
 

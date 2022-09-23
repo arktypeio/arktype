@@ -28,28 +28,13 @@ describe("dictionary", () => {
             assert(type({}).infer).typed as {}
         })
     })
-    describe("empty", () => {
-        const empty = type({})
-        test("type", () => {
-            assert(empty.infer).typed as {}
-        })
-        test("validation", () => {
-            assert(empty.check({}).errors).is(undefined)
-            assert(empty.check([]).errors?.summary).snap(
-                "Must be a non-array object (was array)"
-            )
-        })
-        test("generation", () => {
-            assert(empty.create()).equals({})
-        })
-    })
     describe("check", () => {
-        const shallowDef = narrow({
+        const shallowInputDef = narrow({
             a: "string",
             b: "number",
             c: "67"
         })
-        const shallow = () => type(shallowDef)
+        const shallow = () => type(shallowInputDef)
         const nested = () => type({ nest: { ed: "string" } })
         test("standard", () => {
             assert(shallow().check({ a: "ok", b: 4.321, c: 67 }).errors).is(
@@ -113,7 +98,7 @@ describe("dictionary", () => {
                         code: `extraneousKeys`,
                         path: [],
                         context: {
-                            definition: shallowDef,
+                            definition: shallowInputDef,
                             data: {
                                 a: `ok`,
                                 b: 4.321,
@@ -147,11 +132,10 @@ describe("dictionary", () => {
             })
         })
     })
-})
-
-test("generate", () => {
-    assert(type({ a: "string", b: { nested: "number" } }).create()).equals({
-        a: "",
-        b: { nested: 0 }
+    test("generate", () => {
+        assert(type({ a: "string", b: { nested: "number" } }).create()).equals({
+            a: "",
+            b: { nested: 0 }
+        })
     })
 })
