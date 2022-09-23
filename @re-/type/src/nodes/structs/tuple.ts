@@ -1,8 +1,7 @@
 import type { Evaluate } from "@re-/tools"
-import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
-import type { Generate } from "../generate.js"
 import type { RootNode } from "../common.js"
+import type { Check, Generate } from "../traverse/exports.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
@@ -15,7 +14,7 @@ export type InferTuple<
 }>
 
 export class TupleNode extends struct<number> {
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         if (!checkObjectRoot(this.definition, "array", args)) {
             return
         }
@@ -40,7 +39,7 @@ export class TupleNode extends struct<number> {
         this.allowsItems(args)
     }
 
-    private allowsItems(args: Allows.Args<unknown[]>) {
+    private allowsItems(args: Check.CheckArgs<unknown[]>) {
         for (const [itemIndex, itemNode] of this.entries) {
             itemNode.check({
                 ...args,
@@ -53,7 +52,7 @@ export class TupleNode extends struct<number> {
         }
     }
 
-    generate(args: Generate.Args) {
+    generate(args: Generate.GenerateArgs) {
         const result: unknown[] = []
         for (const [itemIndex, itemNode] of this.entries) {
             result.push(
@@ -70,7 +69,7 @@ export class TupleNode extends struct<number> {
     }
 }
 
-export type TupleLengthDiagnostic = Allows.DefineDiagnostic<
+export type TupleLengthDiagnostic = Check.DefineDiagnostic<
     "tupleLength",
     {
         definition: TupleDefinition

@@ -2,8 +2,7 @@ import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
 import { describe, test } from "mocha"
 import { type } from "../../../index.js"
-import { unresolvableMessage } from "../../../parser/str/operand/unenclosed.js"
-import type { Allows } from "../../allows.js"
+import type { Check } from "../../traverse/exports.js"
 
 describe("dictionary", () => {
     describe("infer", () => {
@@ -75,7 +74,7 @@ describe("dictionary", () => {
             test("missing keys", () => {
                 assert(
                     shallow().check({ a: "ok" })
-                        .errors as any as Allows.Diagnostic<"missingKey">[]
+                        .errors as any as Check.Diagnostic<"missingKey">[]
                 ).snap([
                     {
                         code: `missingKey`,
@@ -108,7 +107,7 @@ describe("dictionary", () => {
                                 extraneousKeys: { enabled: true }
                             }
                         }
-                    ).errors as any as Allows.Diagnostic<"extraneousKeys">[]
+                    ).errors as any as Check.Diagnostic<"extraneousKeys">[]
                 ).snap([
                     {
                         code: `extraneousKeys`,

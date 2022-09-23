@@ -1,6 +1,6 @@
 import { Base } from "../../base.js"
 import type { StrAst, strNode } from "../../common.js"
-import type { References } from "../../references.js"
+import type { References } from "../../traverse/exports.js"
 
 export type Unary<Child = unknown, Modifier = unknown> = [Child, Modifier]
 
@@ -19,8 +19,8 @@ export abstract class unary extends Base.node<string, StrAst> {
     }
 
     collectReferences(
-        opts: References.Options,
-        collected: References.Collection
+        opts: References.ReferencesOptions,
+        collected: References.ReferenceCollection
     ) {
         this.child.collectReferences(opts, collected)
     }

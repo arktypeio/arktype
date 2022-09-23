@@ -6,7 +6,6 @@ import type {
     Join,
     Narrow
 } from "@re-/tools"
-import type { ParseError } from "./common.js"
 import type { Root } from "./root.js"
 import type { Str } from "./str/str.js"
 

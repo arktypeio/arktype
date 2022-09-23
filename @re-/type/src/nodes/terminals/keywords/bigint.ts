@@ -1,9 +1,9 @@
-import type { Allows } from "../../allows.js"
+import type { Check } from "../../traverse/exports.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class BigintNode extends TerminalNode {
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         if (typeof args.data !== "bigint") {
             addTypeKeywordDiagnostic(args, "bigint", "Must be a bigint")
         }

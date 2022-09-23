@@ -1,5 +1,4 @@
 import type { InstanceOf } from "@re-/tools"
-import type { parseFn } from "../../../parser/common.js"
 import type { Base } from "../../base.js"
 import { AnyNode } from "./any.js"
 import { BigintNode } from "./bigint.js"

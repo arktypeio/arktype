@@ -1,5 +1,5 @@
-import type { Allows } from "../../allows.js"
-import { Generate } from "../../generate.js"
+import { Generate } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/exports.js"
 import type { Branch, BranchConstructorArgs } from "./branch.js"
 import { branch } from "./branch.js"
 
@@ -13,7 +13,7 @@ export class intersection extends branch {
     constructor(...args: BranchConstructorArgs) {
         super("&", ...args)
     }
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         for (const branch of this.children) {
             branch.check(args)
         }

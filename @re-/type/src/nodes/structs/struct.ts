@@ -7,12 +7,11 @@ import type {
     ValueOf
 } from "@re-/tools"
 import { transform } from "@re-/tools"
-import type { Allows } from "../allows.js"
 import { Base } from "../base.js"
-import type { References } from "../references.js"
 import type { RootNode } from "../common.js"
+import type { Check, References } from "../traverse/exports.js"
 import type { InferDictionary } from "./dictionary.js"
-import type { InferTuple, TupleDefinition } from "./tuple.js"
+import type { InferTuple } from "./tuple.js"
 
 type StructKey = string | number
 
@@ -57,15 +56,15 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
     }
 
     collectReferences(
-        opts: References.Options<string, boolean>,
-        collected: References.Collection
+        opts: References.ReferencesOptions<string, boolean>,
+        collected: References.ReferenceCollection
     ) {
         for (const entry of this.entries) {
             entry[1].collectReferences(opts, collected)
         }
     }
 
-    override references(opts: References.Options) {
+    override references(opts: References.ReferencesOptions) {
         if (opts.preserveStructure) {
             const references: References.StructuredReferences = {}
             for (const [k, childNode] of this.entries) {
@@ -99,8 +98,8 @@ export const structureOf = <Data>(data: Data) =>
 export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
     definition: Base.RootDefinition,
     expectedStructure: ExpectedStructure,
-    args: Allows.Args
-): args is Allows.Args<
+    args: Check.CheckArgs
+): args is Check.CheckArgs<
     ExpectedStructure extends "array" ? unknown[] : Dictionary
 > => {
     const actualStructure = structureOf(args.data)
@@ -125,7 +124,7 @@ export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
     return true
 }
 
-export type StructureDiagnostic = Allows.DefineDiagnostic<
+export type StructureDiagnostic = Check.DefineDiagnostic<
     "structure",
     {
         definition: Base.RootDefinition

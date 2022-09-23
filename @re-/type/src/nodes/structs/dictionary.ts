@@ -1,9 +1,8 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
-import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
-import { optional } from "../expressions/unaries/optional.js"
-import type { Generate } from "../generate.js"
 import type { RootNode } from "../common.js"
+import { optional } from "../expressions/unaries/optional.js"
+import type { Check, Generate } from "../traverse/exports.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
 export type InferDictionary<
@@ -22,7 +21,7 @@ export type InferDictionary<
 >
 
 export class DictionaryNode extends struct<string> {
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         if (!checkObjectRoot(this.definition, "dictionary", args)) {
             return
         }
@@ -46,7 +45,7 @@ export class DictionaryNode extends struct<string> {
 
     /** Returns any extraneous keys, if the options is enabled and they exist */
     private checkPropsAndGetIllegalKeys(
-        args: Allows.Args<Dictionary>
+        args: Check.CheckArgs<Dictionary>
     ): string[] {
         const checkExtraneous =
             args.cfg.diagnostics?.extraneousKeys?.enabled ||
@@ -72,9 +71,9 @@ export class DictionaryNode extends struct<string> {
     }
 
     private argsForProp(
-        args: Allows.Args<Dictionary>,
+        args: Check.CheckArgs<Dictionary>,
         propKey: string
-    ): Allows.Args {
+    ): Check.CheckArgs {
         return {
             ...args,
             data: args.data[propKey],
@@ -85,7 +84,7 @@ export class DictionaryNode extends struct<string> {
         }
     }
 
-    generate(args: Generate.Args) {
+    generate(args: Generate.GenerateArgs) {
         const result: Dictionary = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
@@ -104,7 +103,7 @@ export class DictionaryNode extends struct<string> {
     }
 }
 
-export type ExtraneousKeysDiagnostic = Allows.DefineDiagnostic<
+export type ExtraneousKeysDiagnostic = Check.DefineDiagnostic<
     "extraneousKeys",
     {
         definition: Dictionary
@@ -116,7 +115,7 @@ export type ExtraneousKeysDiagnostic = Allows.DefineDiagnostic<
     }
 >
 
-export type MissingKeyDiagnostic = Allows.DefineDiagnostic<
+export type MissingKeyDiagnostic = Check.DefineDiagnostic<
     "missingKey",
     {
         definition: Base.RootDefinition

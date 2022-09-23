@@ -1,7 +1,7 @@
 import type { Conform, Evaluate, Get, Merge, Narrow } from "@re-/tools"
 import { chainableNoOpProxy, deepMerge } from "@re-/tools"
-import { ResolutionNode } from "./nodes/resolution.js"
 import type { RootNode } from "./nodes/common.js"
+import { ResolutionNode } from "./nodes/resolution.js"
 import type { ParseOptions } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import type { ResolutionType } from "./parser/resolution.js"

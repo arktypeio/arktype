@@ -3,11 +3,10 @@ import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { SpaceMeta } from "../space.js"
 import { getResolutionDefAndOptions } from "../space.js"
-import { Allows } from "./allows.js"
 import { Base } from "./base.js"
-import { Generate } from "./generate.js"
-import type { References } from "./references.js"
-import type { Traverse } from "./traverse.js"
+import { checkCustomValidator } from "./traverse/check/customValidator.js"
+import type { Check, References, Traverse } from "./traverse/exports.js"
+import { Generate } from "./traverse/exports.js"
 
 export class ResolutionNode extends Base.node {
     public root: Base.node
@@ -36,17 +35,17 @@ export class ResolutionNode extends Base.node {
     }
 
     collectReferences(
-        opts: References.Options<string, boolean>,
-        collected: References.Collection
+        opts: References.ReferencesOptions<string, boolean>,
+        collected: References.ReferenceCollection
     ) {
         this.root.collectReferences(opts, collected)
     }
 
-    references(opts: References.Options<string, boolean>) {
+    references(opts: References.ReferencesOptions<string, boolean>) {
         return this.root.references(opts)
     }
 
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         const nextArgs = this.nextArgs(args, this.context.validate)
         if (typeof args.data === "object" && args.data !== null) {
             if (
@@ -70,14 +69,13 @@ export class ResolutionNode extends Base.node {
             nextArgs.context.modelCfg.validator ??
             "default"
         if (customValidator !== "default") {
-            // TODO: Check custom validator format.
-            Allows.checkCustomValidator(customValidator, this, nextArgs)
+            checkCustomValidator(customValidator, this, nextArgs)
             return
         }
         this.root.check(nextArgs)
     }
 
-    generate(args: Generate.Args) {
+    generate(args: Generate.GenerateArgs) {
         const nextArgs = this.nextArgs(args, this.context.generate)
         if (args.context.seen.includes(this.alias)) {
             const onRequiredCycle =
@@ -93,7 +91,7 @@ export class ResolutionNode extends Base.node {
 
     private nextArgs<
         Args extends {
-            context: Traverse.Context<any>
+            context: Traverse.TraverseContext<any>
             cfg: any
         }
     >(args: Args, aliasCfg: any): Args {

@@ -1,5 +1,5 @@
-import { Allows } from "../allows.js"
 import type { Base } from "../base.js"
+import { Check } from "../traverse/exports.js"
 import { TerminalNode } from "./terminal.js"
 
 export type StringLiteralDefinition<Text extends string = string> =
@@ -36,7 +36,7 @@ export class LiteralNode<
         return this.definition
     }
 
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         if (args.data !== this.value) {
             args.diagnostics.add(
                 "literal",
@@ -47,7 +47,7 @@ export class LiteralNode<
                 {
                     definition: this.definition,
                     expected: this.value,
-                    actual: Allows.stringifyData(args.data),
+                    actual: Check.stringifyData(args.data),
                     data: args.data
                 }
             )
@@ -59,7 +59,7 @@ export class LiteralNode<
     }
 }
 
-export type LiteralDiagnostic = Allows.DefineDiagnostic<
+export type LiteralDiagnostic = Check.DefineDiagnostic<
     "literal",
     {
         definition: LiteralDefinition

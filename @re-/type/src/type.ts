@@ -1,10 +1,14 @@
 import type { Evaluate, MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
-import { Allows } from "./nodes/allows.js"
 import type { Base } from "./nodes/base.js"
-import { Generate } from "./nodes/generate.js"
-import type { References } from "./nodes/references.js"
 import type { RootNode } from "./nodes/common.js"
+import { checkCustomValidator } from "./nodes/traverse/check/customValidator.js"
+import {
+    Diagnostics,
+    ValidationError
+} from "./nodes/traverse/check/diagnostics.js"
+import { Check, Generate } from "./nodes/traverse/exports.js"
+import type { References } from "./nodes/traverse/exports.js"
 import type { ParseOptions } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
@@ -30,8 +34,8 @@ export type DynamicType = TypeFrom<unknown, {}, unknown>
 
 export type TypeOptions = {
     parse?: ParseOptions
-    validate?: Allows.Options
-    generate?: Generate.Options
+    validate?: Check.CheckOptions
+    generate?: Generate.GenerateOptions
 }
 
 export type TypeFunction<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
@@ -69,59 +73,61 @@ export class Type implements DynamicType {
         return this.root.ast as any
     }
 
-    check(value: unknown, options?: Allows.Options) {
-        const args = Allows.createArgs(value, options, this.config.validate)
+    check(value: unknown, options?: Check.CheckOptions) {
+        const args = Check.createCheckArgs(value, options, this.config.validate)
         const customValidator =
             args.cfg.validator ?? args.context.modelCfg.validator ?? "default"
         if (customValidator !== "default") {
-            Allows.checkCustomValidator(customValidator, this.root, args)
+            checkCustomValidator(customValidator, this.root, args)
         } else {
             this.root.check(args)
         }
         return args.diagnostics.length
             ? {
-                  errors: new Allows.Diagnostics(...args.diagnostics)
+                  errors: new Diagnostics(...args.diagnostics)
               }
             : { data: value }
     }
 
-    assert(value: unknown, options?: Allows.Options) {
+    assert(value: unknown, options?: Check.CheckOptions) {
         const validationResult = this.check(value, options)
         if (validationResult.errors) {
-            throw new Allows.ValidationError(validationResult.errors.summary)
+            throw new ValidationError(validationResult.errors.summary)
         }
         return validationResult.data
     }
 
-    create(options?: Generate.Options) {
+    create(options?: Generate.GenerateOptions) {
         return this.root.generate(
-            Generate.createArgs(options, this.config.generate)
+            Generate.createGenerateArgs(options, this.config.generate)
         )
     }
 
-    references(options: References.Options = {}) {
+    references(options: References.ReferencesOptions = {}) {
         return this.root.references(options) as any
     }
 }
 
 export type ValidateFunction<Inferred> = (
     value: unknown,
-    options?: Allows.Options
+    options?: Check.CheckOptions
 ) => ValidationResult<Inferred>
 
 export type ValidationResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
-        errors: Allows.Diagnostics
+        errors: Diagnostics
     }
 >
 
 export type AssertFunction<Inferred> = (
     value: unknown,
-    options?: Allows.Options
+    options?: Check.CheckOptions
 ) => Inferred
 
-export type CreateFunction<Inferred> = (options?: Generate.Options) => Inferred
+export type CreateFunction<Inferred> = (
+    options?: Generate.GenerateOptions
+) => Inferred
 
 export type Infer<Def, S extends Space> = RootNode.Infer<
     Def,

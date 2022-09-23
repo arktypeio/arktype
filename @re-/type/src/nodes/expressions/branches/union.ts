@@ -1,6 +1,5 @@
 import type { JsTypeName } from "@re-/tools"
-import { Allows } from "../../allows.js"
-import { Generate } from "../../generate.js"
+import { Check, Generate } from "../../traverse/exports.js"
 import type { Branch, BranchConstructorArgs } from "./branch.js"
 import { branch } from "./branch.js"
 
@@ -11,10 +10,10 @@ export class union extends branch {
         super("|", ...args)
     }
 
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
         for (const child of this.children) {
-            const branchDiagnostics = new Allows.Diagnostics()
+            const branchDiagnostics = new Check.Diagnostics()
             child.check({ ...args, diagnostics: branchDiagnostics })
             if (!branchDiagnostics.length) {
                 return
@@ -23,7 +22,7 @@ export class union extends branch {
         }
         const context: UnionDiagnostic["context"] = {
             definition: this.definition,
-            actual: Allows.stringifyData(args.data),
+            actual: Check.stringifyData(args.data),
             branchDiagnosticsEntries
         }
         // TODO: Better way to get active options
@@ -47,7 +46,7 @@ export class union extends branch {
         )
     }
 
-    generate(args: Generate.Args) {
+    generate(args: Generate.GenerateArgs) {
         const nextGenResults = this.generateChildren(args)
         if (!nextGenResults.values.length) {
             this.throwAllMembersUngeneratableError(nextGenResults.errors, args)
@@ -67,7 +66,7 @@ export class union extends branch {
         )
     }
 
-    private generateChildren(args: Generate.Args) {
+    private generateChildren(args: Generate.GenerateArgs) {
         const results = {
             values: [] as unknown[],
             errors: [] as string[]
@@ -88,7 +87,7 @@ export class union extends branch {
 
     private throwAllMembersUngeneratableError(
         errors: string[],
-        args: Generate.Args
+        args: Generate.GenerateArgs
     ) {
         throw new Generate.UngeneratableError(
             this.toString(),
@@ -111,7 +110,7 @@ const buildBranchDiagnosticsExplanation = (
     return branchDiagnosticSummary
 }
 
-export type UnionDiagnostic = Allows.DefineDiagnostic<
+export type UnionDiagnostic = Check.DefineDiagnostic<
     "union",
     {
         definition: string
@@ -123,7 +122,7 @@ export type UnionDiagnostic = Allows.DefineDiagnostic<
     }
 >
 
-export type BranchDiagnosticsEntry = [string, Allows.Diagnostics]
+export type BranchDiagnosticsEntry = [string, Check.Diagnostics]
 
 type PreferredDefaults = ({ value: any } | { typeOf: JsTypeName })[]
 

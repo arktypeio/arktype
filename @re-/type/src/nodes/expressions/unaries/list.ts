@@ -1,10 +1,10 @@
-import type { Allows } from "../../allows.js"
 import type {
     BoundableNode,
     BoundConstraint
 } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
 import { checkObjectRoot } from "../../structs/struct.js"
+import type { Check } from "../../traverse/exports.js"
 import type { Unary, UnaryConstructorArgs } from "./unary.js"
 import { unary } from "./unary.js"
 
@@ -17,7 +17,7 @@ export class list extends unary implements BoundableNode {
         super("[]", ...args)
     }
 
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         if (!checkObjectRoot(this.definition, "array", args)) {
             return
         }

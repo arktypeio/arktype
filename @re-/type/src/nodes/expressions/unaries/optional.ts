@@ -1,4 +1,4 @@
-import type { Allows } from "../../allows.js"
+import type { Check } from "../../traverse/exports.js"
 import type { Unary, UnaryConstructorArgs } from "./unary.js"
 import { unary } from "./unary.js"
 
@@ -9,7 +9,7 @@ export class optional extends unary {
         super("?", ...args)
     }
 
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         if (args.data === undefined) {
             return true
         }

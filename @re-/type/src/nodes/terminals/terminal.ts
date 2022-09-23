@@ -1,6 +1,6 @@
 import { Base } from "../base.js"
 import type { StrAst } from "../common.js"
-import type { References } from "../references.js"
+import type { References } from "../traverse/exports.js"
 import type { Alias } from "./alias.js"
 import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
 import type { RegexLiteralDefinition } from "./keywords/string.js"
@@ -28,8 +28,8 @@ export abstract class TerminalNode<
     }
 
     collectReferences(
-        args: References.Options,
-        collected: References.Collection
+        args: References.ReferencesOptions,
+        collected: References.ReferenceCollection
     ) {
         const reference = this.toString()
         if (!args.filter || args.filter(reference)) {

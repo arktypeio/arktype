@@ -2,9 +2,9 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { dynamic, type } from "../../../index.js"
-import type { Allows } from "../../../nodes/allows.js"
 import type { Bounds } from "../../../nodes/constraints/bounds.js"
 import { invertedComparators } from "../../../parser/str/operator/bound/common.js"
+import type { Check } from "../../traverse/exports.js"
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,
@@ -68,7 +68,7 @@ describe("bound constraint", () => {
             const gte3 = type("string>=3")
             assert(gte3.check("yes").errors).equals(undefined)
             assert(
-                gte3.check("no").errors as any as Allows.Diagnostic<"bound">[]
+                gte3.check("no").errors as any as Check.Diagnostic<"bound">[]
             ).snap([
                 {
                     code: `bound`,

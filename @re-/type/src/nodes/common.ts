@@ -1,6 +1,6 @@
 import type { Iterate } from "@re-/tools"
-import type { Base } from "./base.js"
 import type { Str } from "../parser/str/str.js"
+import type { Base } from "./base.js"
 import type { Struct } from "./structs/struct.js"
 
 export const pathToString = (path: Path) =>

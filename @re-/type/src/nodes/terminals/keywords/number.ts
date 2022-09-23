@@ -1,17 +1,17 @@
-import { Allows } from "../../allows.js"
 import type {
     BoundableNode,
     BoundConstraint
 } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
+import { Check } from "../../traverse/exports.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NumberNode extends TerminalNode implements BoundableNode {
     bounds: BoundConstraint | null = null
 
-    check(args: Allows.Args) {
-        if (!Allows.dataIsOfType(args, "number")) {
+    check(args: Check.CheckArgs) {
+        if (!Check.dataIsOfType(args, "number")) {
             if (this.definition === "number") {
                 addTypeKeywordDiagnostic(args, "number", "Must be a number")
             } else {
@@ -35,7 +35,7 @@ export class NumberNode extends TerminalNode implements BoundableNode {
                 }
             )
         }
-        this.bounds?.check(args as Allows.Args<number>)
+        this.bounds?.check(args as Check.CheckArgs<number>)
     }
 
     generate() {
@@ -55,7 +55,7 @@ export type NumberKeyword = keyof typeof numberKeywords
 
 export type NumberSubtypeKeyword = Exclude<NumberKeyword, "number">
 
-export type NumberSubtypeDiagnostic = Allows.DefineDiagnostic<
+export type NumberSubtypeDiagnostic = Check.DefineDiagnostic<
     "numberSubtype",
     {
         definition: NumberSubtypeKeyword

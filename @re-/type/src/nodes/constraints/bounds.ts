@@ -9,10 +9,10 @@ import {
     invertedComparators
 } from "../../parser/str/operator/bound/common.js"
 import type { Scanner } from "../../parser/str/state/scanner.js"
-import type { Allows } from "../allows.js"
 import type { StrAst, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
+import type { Check } from "../traverse/exports.js"
 import type { Constraint } from "./constraint.js"
 
 export namespace Bounds {
@@ -73,7 +73,7 @@ const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
 export class BoundConstraint implements Constraint {
     constructor(public ast: Bounds.Ast) {}
 
-    check(args: Allows.Args<BoundableData>) {
+    check(args: Check.CheckArgs<BoundableData>) {
         const actual =
             typeof args.data === "number" ? args.data : args.data.length
         for (const [comparator, limit] of this.ast) {
@@ -104,7 +104,7 @@ export class BoundConstraint implements Constraint {
     }
 }
 
-export type BoundDiagnostic = Allows.DefineDiagnostic<
+export type BoundDiagnostic = Check.DefineDiagnostic<
     "bound",
     {
         comparator: Scanner.Comparator

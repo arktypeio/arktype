@@ -1,5 +1,5 @@
 import type { JsTypeName } from "@re-/tools"
-import type { Allows } from "../../allows.js"
+import type { Check } from "../../traverse/exports.js"
 import type {
     KeywordDefinition,
     SubtypeDefinition,
@@ -8,7 +8,7 @@ import type {
 
 export type NormalizedJsTypeName = JsTypeName | "null"
 
-export type KeywordTypeDiagnostic = Allows.DefineDiagnostic<
+export type KeywordTypeDiagnostic = Check.DefineDiagnostic<
     "keyword",
     {
         definition: KeywordDefinition
@@ -19,9 +19,9 @@ export type KeywordTypeDiagnostic = Allows.DefineDiagnostic<
 >
 
 type AddTypeKeywordDiagnosticSignatures = {
-    (args: Allows.Args, definition: TypeKeyword, reason: string): void
+    (args: Check.CheckArgs, definition: TypeKeyword, reason: string): void
     (
-        args: Allows.Args,
+        args: Check.CheckArgs,
         definition: SubtypeDefinition,
         reason: string,
         parentKeyword: TypeKeyword
@@ -32,7 +32,7 @@ export const addTypeKeywordDiagnostic: AddTypeKeywordDiagnosticSignatures = (
     ...diagnosticArgs: any[]
 ) => {
     const [args, definition, reason] = diagnosticArgs as [
-        Allows.Args,
+        Check.CheckArgs,
         KeywordDefinition,
         string
     ]

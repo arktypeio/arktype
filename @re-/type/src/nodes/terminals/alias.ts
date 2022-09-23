@@ -1,8 +1,7 @@
 import type { WithPropValue } from "@re-/tools"
-import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
-import type { Generate } from "../generate.js"
 import type { RootNode } from "../common.js"
+import type { Check, Generate } from "../traverse/exports.js"
 import { TerminalNode } from "./terminal.js"
 
 export namespace Alias {
@@ -62,11 +61,11 @@ export class Alias extends TerminalNode {
         return this.context.space!.resolutions[this.definition]
     }
 
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         return this.resolution.check(args)
     }
 
-    generate(args: Generate.Args) {
+    generate(args: Generate.GenerateArgs) {
         return this.resolution.generate(args)
     }
 }

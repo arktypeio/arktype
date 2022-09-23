@@ -1,8 +1,8 @@
-import type { Allows } from "../allows.js"
-import { Generate } from "../generate.js"
+import { Generate } from "../traverse/exports.js"
+import type { Check } from "../traverse/exports.js"
 
 export type Constraint = {
-    check(args: Allows.Args): void
+    check(args: Check.CheckArgs): void
 }
 
 export class ConstraintGenerationError extends Generate.UngeneratableError {

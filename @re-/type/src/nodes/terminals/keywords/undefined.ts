@@ -1,9 +1,9 @@
-import type { Allows } from "../../allows.js"
+import type { Check } from "../../traverse/exports.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class UndefinedNode extends TerminalNode {
-    check(args: Allows.Args) {
+    check(args: Check.CheckArgs) {
         if (args.data !== undefined) {
             addTypeKeywordDiagnostic(args, "undefined", "Must be undefined")
         }

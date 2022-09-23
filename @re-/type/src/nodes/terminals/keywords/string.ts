@@ -1,10 +1,10 @@
-import { Allows } from "../../allows.js"
 import type {
     BoundableNode,
     BoundConstraint
 } from "../../constraints/bounds.js"
 import type { Constraint } from "../../constraints/constraint.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
+import { Check } from "../../traverse/exports.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
@@ -32,8 +32,8 @@ export class StringNode
         }
     }
 
-    check(args: Allows.Args) {
-        if (!Allows.dataIsOfType(args, "string")) {
+    check(args: Check.CheckArgs) {
+        if (!Check.dataIsOfType(args, "string")) {
             if (this.definition === "string") {
                 addTypeKeywordDiagnostic(args, "string", "Must be a string")
             } else {
@@ -65,7 +65,7 @@ export class RegexConstraint implements Constraint {
         private description: string
     ) {}
 
-    check(args: Allows.Args<string>) {
+    check(args: Check.CheckArgs<string>) {
         if (!this.expression.test(args.data)) {
             args.diagnostics.add(
                 "regex",
@@ -81,7 +81,7 @@ export class RegexConstraint implements Constraint {
     }
 }
 
-export type RegexDiagnostic = Allows.DefineDiagnostic<
+export type RegexDiagnostic = Check.DefineDiagnostic<
     "regex",
     {
         definition: StringSubtypeDefinition

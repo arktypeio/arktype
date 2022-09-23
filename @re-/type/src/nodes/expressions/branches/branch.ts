@@ -1,6 +1,6 @@
 import { Base } from "../../base.js"
 import type { StrAst, strNode } from "../../common.js"
-import type { References } from "../../references.js"
+import type { References } from "../../traverse/exports.js"
 
 export type Branch<
     Left = unknown,
@@ -39,8 +39,8 @@ export abstract class branch extends Base.node<string, StrAst> {
     }
 
     collectReferences(
-        opts: References.Options,
-        collected: References.Collection
+        opts: References.ReferencesOptions,
+        collected: References.ReferenceCollection
     ) {
         for (const child of this.children) {
             child.collectReferences(opts, collected)
