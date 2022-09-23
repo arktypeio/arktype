@@ -1,8 +1,7 @@
 import type { Evaluate, JsBuiltinTypes, JsTypeName } from "@re-/tools"
 import { toString, uncapitalize } from "@re-/tools"
 import type { Base } from "./base.js"
-import type { Path } from "./common.js"
-import { pathToString } from "./common.js"
+import { Path, pathToString } from "./common.js"
 import type { BoundDiagnostic as BoundDiagnostic } from "./constraints/bounds.js"
 import type { UnionDiagnostic } from "./expressions/branches/union.js"
 import type {
@@ -98,12 +97,16 @@ export namespace Allows {
         const resultsList = !Array.isArray(result) ? [result] : result
         for (const messageOrCustomResult of resultsList) {
             if (typeof messageOrCustomResult === "string") {
-                args.diagnostics.add("custom", messageOrCustomResult, args, {
-                    id: "anonymous"
-                })
+                args.diagnostics.add(
+                    "custom",
+                    { reason: messageOrCustomResult, args },
+                    {
+                        id: "anonymous"
+                    }
+                )
             } else {
                 const { reason, ...context } = messageOrCustomResult
-                args.diagnostics.add("custom", reason, args, context)
+                args.diagnostics.add("custom", { reason, args }, context)
             }
         }
     }
@@ -184,20 +187,27 @@ export namespace Allows {
 
     export type DiagnosticArgs<Code extends DiagnosticCode> = [
         code: Code,
-        reason: string,
-        args: Args,
+        input: InternalDiagnosticInput,
         context: DiagnosticContext<Code>
     ]
 
+    export type InternalDiagnosticInput = {
+        args: Args
+        reason: string
+        suffix?: string
+    }
+
     export class Diagnostic<Code extends DiagnosticCode> {
-        readonly code: Code
         message: string
         path: Path
         context: ExternalDiagnosticContext<Code>
         options: DiagnosticOptions<Code>
 
-        constructor(...[code, reason, args, context]: DiagnosticArgs<Code>) {
-            this.code = code
+        constructor(
+            public readonly code: Code,
+            { reason, args, suffix }: InternalDiagnosticInput,
+            context: DiagnosticContext<Code>
+        ) {
             this.path = args.context.path
             this.context = context
             // TODO: Figure out how to reconcile this and other context sources (cfg vs context.modelCfg?)
@@ -211,6 +221,9 @@ export namespace Allows {
                     this.message += ` (was ${context.actual})`
                 }
             }
+            if (suffix) {
+                this.message += suffix
+            }
             if (this.options.message) {
                 this.message = this.options.message(this as any)
             }
@@ -220,17 +233,24 @@ export namespace Allows {
     export class ValidationError extends Error {}
 
     export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
-        add<Code extends DiagnosticCode>(...args: DiagnosticArgs<Code>) {
-            this.push(new Diagnostic(...args))
+        add<Code extends DiagnosticCode>(
+            code: Code,
+            input: InternalDiagnosticInput,
+            context: DiagnosticContext<Code>
+        ) {
+            this.push(new Diagnostic(code, input, context))
         }
 
         get summary() {
             if (this.length === 1) {
                 const error = this[0]
                 if (error.path.length) {
-                    return `${pathToString(error.path)} ${uncapitalize(
-                        error.message
-                    )}`
+                    const pathPrefix =
+                        error.path.length === 1 &&
+                        typeof error.path[0] === "number"
+                            ? `Value at index ${error.path[0]}`
+                            : pathToString(error.path)
+                    return `${pathPrefix} ${uncapitalize(error.message)}`
                 }
                 return error.message
             }

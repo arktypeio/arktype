@@ -1,7 +1,7 @@
 import type { Conform, Evaluate, Get, Merge, Narrow } from "@re-/tools"
 import { chainableNoOpProxy, deepMerge } from "@re-/tools"
 import { ResolutionNode } from "./nodes/resolution.js"
-import type { RootInfer } from "./nodes/root.js"
+import type { RootNode } from "./nodes/common.js"
 import type { ParseOptions } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import type { ResolutionType } from "./parser/resolution.js"
@@ -170,7 +170,7 @@ export type InferSpaceRoot<S extends Space> = Evaluate<{
 export type InferResolution<
     S extends Space,
     Alias extends keyof S["Dict"]
-> = RootInfer<
+> = RootNode.Infer<
     S["Dict"][Alias],
     {
         Dict: S["Dict"]

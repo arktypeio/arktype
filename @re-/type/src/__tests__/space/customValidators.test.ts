@@ -54,10 +54,10 @@ describe("custom validators", () => {
                     // TODO: Combine resolution and root? Should root be an "anonymous" resolution for type?
                     // (should be able to check current alias)
                     validator: ({ definition, data, getOriginalErrors }) => {
-                        if (definition === "1") {
+                        if (definition === "first") {
                             return data === 1
                                 ? undefined
-                                : `${data} FAILED TO BE 1.`
+                                : `${data} FAILED TO BE 1`
                         }
                         return getOriginalErrors().map((_) => _.message)
                     }
@@ -65,9 +65,9 @@ describe("custom validators", () => {
             }
         )
         assert(mySpace.first.check(1).errors).is(undefined)
-        assert(() => mySpace.first.assert(2)).throws(`2 FAILED TO BE 1.`)
+        assert(() => mySpace.first.assert(2)).throws(`2 FAILED TO BE 1`)
         assert(mySpace.$root.type("second").check(1).errors?.summary).snap(
-            `Must be 2 (was 1).`
+            `Must be 2 (was 1)`
         )
     })
     test("can access standard validation errors and context", () => {

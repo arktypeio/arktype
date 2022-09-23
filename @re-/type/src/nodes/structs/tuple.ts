@@ -2,7 +2,7 @@ import type { Evaluate } from "@re-/tools"
 import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import type { Generate } from "../generate.js"
-import type { RootInfer } from "../root.js"
+import type { RootNode } from "../common.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
@@ -11,7 +11,7 @@ export type InferTuple<
     Def extends readonly unknown[],
     Ctx extends Base.InferenceContext
 > = Evaluate<{
-    [I in keyof Def]: RootInfer<Def[I], Ctx>
+    [I in keyof Def]: RootNode.Infer<Def[I], Ctx>
 }>
 
 export class TupleNode extends struct<number> {
@@ -24,8 +24,10 @@ export class TupleNode extends struct<number> {
         if (expected !== actual) {
             args.diagnostics.add(
                 "tupleLength",
-                `Length must be ${expected}`,
-                args,
+                {
+                    reason: `Length must be ${expected}`,
+                    args
+                },
                 {
                     definition: this.definition,
                     data: args.data,

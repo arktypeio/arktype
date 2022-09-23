@@ -36,7 +36,13 @@ describe("union node", () => {
                     }).a.check(4, {
                         diagnostics: { union: { explainBranches: true } }
                     }).errors?.summary
-                ).snap({} as any)
+                ).snap(`Must be one of b|c (was 4):
+b: Must be one of d|e (was 4):
+d: Must be 0 (was 4)
+e: Must be 1 (was 4)
+c: Must be one of f|g (was 4):
+f: Must be 2 (was 4)
+g: Must be 3 (was 4)`)
             })
         })
     })

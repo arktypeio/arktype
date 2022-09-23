@@ -1,4 +1,11 @@
-import type { ElementOf, Get, IsAny, IterateType, Join } from "@re-/tools"
+import type {
+    ElementOf,
+    Get,
+    IsAny,
+    IterateType,
+    Join,
+    Narrow
+} from "@re-/tools"
 import type { ParseError } from "./common.js"
 import type { Root } from "./root.js"
 import type { Str } from "./str/str.js"
@@ -24,11 +31,15 @@ export namespace ResolutionType {
     >
 }
 
-// const shallowCycleError = (shallowSeen: string[]) =>
-//     `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
+export const shallowCycleMessage = <Seen extends string[]>(
+    shallowSeen: Narrow<Seen>
+): ShallowCycleMessage<Seen> =>
+    `${shallowSeen[0]} references a shallow cycle: ${
+        shallowSeen.join("=>") as any
+    }`
 
-type ShallowCycleError<Seen extends string[]> =
-    ParseError<`${Seen[0]} references shallow cycle ${Join<Seen, "=>">}.`>
+type ShallowCycleMessage<Seen extends string[]> =
+    `${Seen[0]} references a shallow cycle: ${Join<Seen, "=>">}`
 
 type CheckResolutionForShallowCycle<
     Resolution,
@@ -84,4 +95,4 @@ type IfShallowCycleTupleElse<
 type IfShallowCycleErrorElse<
     CheckResult extends string[],
     Else
-> = [] extends CheckResult ? Else : ShallowCycleError<CheckResult>
+> = [] extends CheckResult ? Else : ShallowCycleMessage<CheckResult>

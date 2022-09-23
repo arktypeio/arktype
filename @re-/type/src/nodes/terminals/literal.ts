@@ -40,8 +40,10 @@ export class LiteralNode<
         if (args.data !== this.value) {
             args.diagnostics.add(
                 "literal",
-                `Must be ${this.definition}`,
-                args,
+                {
+                    reason: `Must be ${this.definition}`,
+                    args
+                },
                 {
                     definition: this.definition,
                     expected: this.value,

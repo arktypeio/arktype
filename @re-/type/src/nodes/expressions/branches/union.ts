@@ -30,32 +30,21 @@ export class union extends branch {
         const explainBranches =
             args.cfg.diagnostics?.union?.explainBranches ||
             args.context.modelCfg.diagnostics?.union?.explainBranches
+        // TODO: Better default error messages for union
+        // https://github.com/re-do/re-po/issues/472
         args.diagnostics.add(
             "union",
-            this.buildUnionDiagnosticReason(context, !!explainBranches),
-            args,
+            {
+                reason: `Must be one of ${this.definition}`,
+                args,
+                suffix: explainBranches
+                    ? buildBranchDiagnosticsExplanation(
+                          branchDiagnosticsEntries
+                      )
+                    : undefined
+            },
             context
         )
-    }
-
-    // TODO: Better default error messages for union
-    // https://github.com/re-do/re-po/issues/472
-    private buildUnionDiagnosticReason(
-        context: UnionDiagnostic["context"],
-        explainBranches: boolean
-    ) {
-        let reason = `Must be one of ${this.definition}${
-            explainBranches ? ":" : ""
-        }`
-        if (explainBranches) {
-            for (const [
-                branchDefinition,
-                branchDiagnostics
-            ] of context.branchDiagnosticsEntries) {
-                reason += `\n${branchDefinition}: ${branchDiagnostics.summary}`
-            }
-        }
-        return reason
     }
 
     generate(args: Generate.Args) {
@@ -107,6 +96,19 @@ export class union extends branch {
                 (args.cfg.verbose ? `:\n${errors.join("\n")}` : ".")
         )
     }
+}
+
+const buildBranchDiagnosticsExplanation = (
+    branchDiagnosticsEntries: BranchDiagnosticsEntry[]
+) => {
+    let branchDiagnosticSummary = ":"
+    for (const [
+        branchDefinition,
+        branchDiagnostics
+    ] of branchDiagnosticsEntries) {
+        branchDiagnosticSummary += `\n${branchDefinition}: ${branchDiagnostics.summary}`
+    }
+    return branchDiagnosticSummary
 }
 
 export type UnionDiagnostic = Allows.DefineDiagnostic<

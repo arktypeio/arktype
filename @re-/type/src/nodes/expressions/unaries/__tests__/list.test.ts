@@ -24,7 +24,7 @@ describe("list node", () => {
                 assert(
                     type("string[]").check(["one", "two", 3, "four", "five"])
                         .errors?.summary
-                ).snap(`Item 2 must be a string (was number)`)
+                ).snap(`Value at index 2 must be a string (was number)`)
             })
         })
     })

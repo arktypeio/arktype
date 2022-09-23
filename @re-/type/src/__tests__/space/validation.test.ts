@@ -37,17 +37,6 @@ describe("space validation", () => {
   fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description: "Fuji"})
 `)
     })
-    // TODO: Reenable
-    test.skip("errors on shallow cycle", () => {
-        // @ts-expect-error
-        assert(() => space({ a: "a" })).throwsAndHasTypeError(
-            `Error: a references a shallow cycle: a=>a.`
-        )
-        assert(() =>
-            // @ts-expect-error
-            space({ a: "b", b: "c", c: "a|b|c" })
-        ).throwsAndHasTypeError(`a references a shallow cycle: a=>b=>c=>a`)
-    })
     test("cyclic space", () => {
         const bicycle = space({
             a: { a: "a?", b: "b?", isA: "true" },

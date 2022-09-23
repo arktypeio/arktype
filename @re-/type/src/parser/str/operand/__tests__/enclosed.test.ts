@@ -33,9 +33,9 @@ describe("parse enclosed", () => {
             })
             test("double-quote", () => {
                 // @ts-expect-error
-                assert(() => type('".*')).throwsAndHasTypeError(
-                    unterminatedEnclosedMessage('".*', '"')
-                )
+                assert(() => type('".*'))
+                    .throws(unterminatedEnclosedMessage('".*', '"'))
+                    .type.errors('\\".* requires a closing \\".')
             })
         })
     })
@@ -54,11 +54,15 @@ describe("parse enclosed", () => {
         )
     })
     test("mixed quote types", () => {
-        assert(type(`"'single-quoted'"`).ast).typed as "'single-quoted'"
-        assert(type(`'"double-quoted"'`).ast).typed as '"double-quoted"'
+        assert(type(`"'single-quoted'"`).ast).narrowedValue(
+            "\"'single-quoted'\""
+        )
+        assert(type(`'"double-quoted"'`).ast).narrowedValue(
+            "'\"double-quoted\"'"
+        )
     })
     test("ignores enclosed tokens", () => {
-        assert(type('"yes|no|maybe"').ast).typed as '"yes|no|maybe"'
+        assert(type("'yes|no|maybe'").ast).narrowedValue("'yes|no|maybe'")
     })
     test("mix of enclosed and unenclosed tokens", () => {
         assert(type("'yes|no'|'true|false'").ast).narrowedValue([

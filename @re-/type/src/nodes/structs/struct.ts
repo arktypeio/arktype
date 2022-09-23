@@ -10,7 +10,7 @@ import { transform } from "@re-/tools"
 import type { Allows } from "../allows.js"
 import { Base } from "../base.js"
 import type { References } from "../references.js"
-import type { RootReferences } from "../root.js"
+import type { RootNode } from "../common.js"
 import type { InferDictionary } from "./dictionary.js"
 import type { InferTuple, TupleDefinition } from "./tuple.js"
 
@@ -109,8 +109,10 @@ export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
             expectedStructure === "array" ? "an array" : "a non-array object"
         args.diagnostics.add(
             "structure",
-            `Must be ${expectedStructureDescription}`,
-            args,
+            {
+                reason: `Must be ${expectedStructureDescription}`,
+                args
+            },
             {
                 definition,
                 data: args.data,
@@ -157,11 +159,11 @@ export namespace Struct {
         ? UnstructuredReferences<
               Remaining,
               Dict,
-              [...Result, ...RootReferences<Current, Dict, false>]
+              [...Result, ...RootNode.References<Current, Dict, false>]
           >
         : Result
 
     type StructuredReferences<Def, Dict> = Evaluate<{
-        [K in keyof Def]: RootReferences<Def[K], Dict, true>
+        [K in keyof Def]: RootNode.References<Def[K], Dict, true>
     }>
 }

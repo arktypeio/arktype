@@ -2,7 +2,7 @@ import type { WithPropValue } from "@re-/tools"
 import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import type { Generate } from "../generate.js"
-import type { RootInfer } from "../root.js"
+import type { RootNode } from "../common.js"
 import { TerminalNode } from "./terminal.js"
 
 export namespace Alias {
@@ -22,12 +22,12 @@ export namespace Alias {
     type BaseOf<
         Def extends keyof Ctx["Dict"],
         Ctx extends Base.InferenceContext
-    > = RootInfer<Ctx["Dict"][Def], Ctx & { Seen: { [K in Def]: true } }>
+    > = RootNode.Infer<Ctx["Dict"][Def], Ctx & { Seen: { [K in Def]: true } }>
 
     type OnResolveOf<
         Def extends keyof Ctx["Dict"],
         Ctx extends Base.InferenceContext
-    > = RootInfer<
+    > = RootNode.Infer<
         Ctx["Meta"]["onResolve"],
         {
             Dict: WithPropValue<Ctx["Dict"], "$resolution", Ctx["Dict"][Def]>
@@ -39,7 +39,7 @@ export namespace Alias {
     type OnCycleOf<
         Def extends keyof Ctx["Dict"],
         Ctx extends Base.InferenceContext
-    > = RootInfer<
+    > = RootNode.Infer<
         Ctx["Meta"]["onCycle"],
         {
             Dict: WithPropValue<Ctx["Dict"], "$cyclic", Ctx["Dict"][Def]>

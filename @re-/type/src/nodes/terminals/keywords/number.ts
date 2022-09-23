@@ -26,10 +26,14 @@ export class NumberNode extends TerminalNode implements BoundableNode {
             return
         }
         if (this.definition === "integer" && !Number.isInteger(args.data)) {
-            args.diagnostics.add("numberSubtype", "Must be an integer", args, {
-                definition: "integer",
-                actual: args.data
-            })
+            args.diagnostics.add(
+                "numberSubtype",
+                { reason: "Must be an integer", args },
+                {
+                    definition: "integer",
+                    actual: args.data
+                }
+            )
         }
         this.bounds?.check(args as Allows.Args<number>)
     }

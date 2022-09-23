@@ -1,6 +1,6 @@
 // @ts-nocheck TODO: Add a real snippet here
-//import { type } from "../index.js"
 import { narrow, Narrow } from "@re-/tools"
+import { type } from "./src/index.js"
 
 const type = {} as any
 const io = {} as any

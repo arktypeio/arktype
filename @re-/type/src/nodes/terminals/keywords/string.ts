@@ -67,12 +67,16 @@ export class RegexConstraint implements Constraint {
 
     check(args: Allows.Args<string>) {
         if (!this.expression.test(args.data)) {
-            args.diagnostics.add("regex", this.description, args, {
-                definition: this.definition,
-                data: args.data,
-                actual: `"${args.data}"`,
-                expression: this.expression
-            })
+            args.diagnostics.add(
+                "regex",
+                { reason: this.description, args },
+                {
+                    definition: this.definition,
+                    data: args.data,
+                    actual: `"${args.data}"`,
+                    expression: this.expression
+                }
+            )
         }
     }
 }

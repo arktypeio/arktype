@@ -2,7 +2,7 @@ import type { parseContext, ParseOptions } from "../parser/common.js"
 import type { Space } from "../space.js"
 import type { Allows } from "./allows.js"
 import type { Generate } from "./generate.js"
-import type { References } from "./references.js"
+import { References } from "./references.js"
 
 export namespace Base {
     export type context = parseContext
@@ -37,12 +37,8 @@ export namespace Base {
             collected: References.Collection
         ): void
 
-        references(
-            opts: References.Options<string, boolean>
-        ): string[] | References.StructuredReferences {
-            const collected = {}
-            this.collectReferences(opts, collected)
-            return Object.keys(collected)
+        references(opts: References.Options<string, boolean>) {
+            return References.collect(this, opts)
         }
 
         definitionIsKeyOf<Obj extends Record<string, unknown>>(

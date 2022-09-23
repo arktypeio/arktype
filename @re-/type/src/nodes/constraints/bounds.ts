@@ -86,8 +86,10 @@ export class BoundConstraint implements Constraint {
                         : "array"
                 args.diagnostics.add(
                     "bound",
-                    boundToString(comparator, limit, kind),
-                    args,
+                    {
+                        reason: boundToString(comparator, limit, kind),
+                        args
+                    },
                     {
                         comparator,
                         limit,

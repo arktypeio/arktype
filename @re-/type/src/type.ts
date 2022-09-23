@@ -1,16 +1,10 @@
-import type {
-    ElementOf,
-    Evaluate,
-    IterateType,
-    Merge,
-    MutuallyExclusiveProps
-} from "@re-/tools"
+import type { Evaluate, MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import { Allows } from "./nodes/allows.js"
 import type { Base } from "./nodes/base.js"
 import { Generate } from "./nodes/generate.js"
 import type { References } from "./nodes/references.js"
-import type { RootInfer, RootReferences } from "./nodes/root.js"
+import type { RootNode } from "./nodes/common.js"
 import type { ParseOptions } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
@@ -53,7 +47,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     default: Inferred
     ast: Root.Parse<Def, Dict>
     create: CreateFunction<Inferred>
-    references: ReferencesFunction<Def, Dict>
+    references: References.ReferencesFunction<Def, Dict>
 }>
 
 export class Type implements DynamicType {
@@ -129,25 +123,7 @@ export type AssertFunction<Inferred> = (
 
 export type CreateFunction<Inferred> = (options?: Generate.Options) => Inferred
 
-export type ReferencesFunction<Def, Dict> = <
-    Options extends References.Options = {}
->(
-    options?: Options
-) => Merge<
-    {
-        filter: References.FilterFunction<string>
-        preserveStructure: false
-    },
-    Options
-> extends References.Options<infer Filter, infer PreserveStructure>
-    ? TransformReferences<
-          RootReferences<Def, Dict, PreserveStructure>,
-          Filter,
-          "list"
-      >
-    : []
-
-export type Infer<Def, S extends Space> = RootInfer<
+export type Infer<Def, S extends Space> = RootNode.Infer<
     Def,
     Base.InferenceContext.From<{
         Dict: S["Dict"]
@@ -157,57 +133,3 @@ export type Infer<Def, S extends Space> = RootInfer<
 >
 
 export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>
-
-export type ReferencesOf<
-    Def,
-    Dict,
-    Options extends References.TypeOptions = {}
-> = Merge<
-    { filter: string; preserveStructure: false; format: "list" },
-    Options
-> extends References.TypeOptions<
-    infer Filter,
-    infer PreserveStructure,
-    infer Format
->
-    ? TransformReferences<
-          RootReferences<Def, Dict, PreserveStructure>,
-          Filter,
-          Format
-      >
-    : {}
-
-type TransformReferences<
-    References,
-    Filter extends string,
-    Format extends References.TypeFormat
-> = References extends string[]
-    ? FormatReferenceList<FilterReferenceList<References, Filter, []>, Format>
-    : {
-          [K in keyof References]: TransformReferences<
-              References[K],
-              Filter,
-              Format
-          >
-      }
-
-type FilterReferenceList<
-    References extends string[],
-    Filter extends string,
-    Result extends string[]
-> = References extends IterateType<string, infer Current, infer Remaining>
-    ? FilterReferenceList<
-          Remaining,
-          Filter,
-          Current extends Filter ? [...Result, Current] : Result
-      >
-    : Result
-
-type FormatReferenceList<
-    References extends string[],
-    Format extends References.TypeFormat
-> = Format extends "tuple"
-    ? References
-    : Format extends "list"
-    ? ElementOf<References>[]
-    : ElementOf<References>

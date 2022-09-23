@@ -3,7 +3,7 @@ import type { Allows } from "../allows.js"
 import type { Base } from "../base.js"
 import { optional } from "../expressions/unaries/optional.js"
 import type { Generate } from "../generate.js"
-import type { RootInfer } from "../root.js"
+import type { RootNode } from "../common.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
 export type InferDictionary<
@@ -15,9 +15,9 @@ export type InferDictionary<
     RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
 > = Evaluate<
     {
-        [K in RequiredKey]: RootInfer<Def[K], Ctx>
+        [K in RequiredKey]: RootNode.Infer<Def[K], Ctx>
     } & {
-        [K in OptionalKey]?: RootInfer<Def[K], Ctx>
+        [K in OptionalKey]?: RootNode.Infer<Def[K], Ctx>
     }
 >
 
@@ -32,11 +32,15 @@ export class DictionaryNode extends struct<string> {
                 extraneousKeys.length === 1
                     ? `Key '${extraneousKeys[0]}' was unexpected`
                     : `Keys '${extraneousKeys.join("', '")}' were unexpected`
-            args.diagnostics.add("extraneousKeys", reason, args, {
-                definition: this.definition,
-                data: args.data,
-                keys: extraneousKeys
-            })
+            args.diagnostics.add(
+                "extraneousKeys",
+                { reason, args },
+                {
+                    definition: this.definition,
+                    data: args.data,
+                    keys: extraneousKeys
+                }
+            )
         }
     }
 
@@ -53,10 +57,14 @@ export class DictionaryNode extends struct<string> {
             if (key in args.data) {
                 propNode.check(propArgs)
             } else if (!(propNode instanceof optional)) {
-                args.diagnostics.add("missingKey", `${key} is required`, args, {
-                    definition: propNode.definition,
-                    key
-                })
+                args.diagnostics.add(
+                    "missingKey",
+                    { reason: `${key} is required`, args },
+                    {
+                        definition: propNode.definition,
+                        key
+                    }
+                )
             }
             delete uncheckedData[key]
         }
