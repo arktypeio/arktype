@@ -51,6 +51,7 @@ const LINE_FROM_TOKEN = "@lineFrom"
 const TEMPLATE_REPLACE_TOKEN = "{?}"
 const BLOCK_FROM_TOKEN = "@blockFrom"
 
+// eslint-disable-next-line max-lines-per-function, max-statements
 const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
     const originalLines = readFile(targetPath).split("\n")
     const transformedLines = []
@@ -93,6 +94,7 @@ const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
     writeFile(targetPath, transformedLines.join("\n"))
 }
 
+// eslint-disable-next-line max-lines-per-function, max-statements
 const getUpdatedLines = (
     line: string,
     token: string,

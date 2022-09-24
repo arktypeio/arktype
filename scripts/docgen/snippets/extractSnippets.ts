@@ -42,7 +42,10 @@ export const extractPackageSnippets = ({
     const packageSnippets: PackageSnippets = {}
     for (const source of sources) {
         const paths = statSync(source.path).isDirectory()
-            ? walkPaths(source.path, { excludeDirs: true })
+            ? walkPaths(source.path, {
+                  excludeDirs: true,
+                  exclude: (path) => path.includes("__tests__")
+              })
             : [source.path]
         for (const path of paths) {
             const fileKey = relative(fromPackageRoot(), path)
@@ -74,6 +77,7 @@ const extractSnippetsFromFile = (sourceFileText: string): FileSnippets => {
 
 export type LabeledSnippets = Record<string, Snippet>
 
+// eslint-disable-next-line max-lines-per-function, max-statements
 const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
     const labeledSnippets: Record<string, Snippet> = {}
     const openBlocks: SnipStart[] = []
@@ -88,22 +92,14 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
                 openBlocks.push({ ...parsedSnip, lineNumber })
                 continue
             } else if (parsedSnip.kind === "@snipEnd") {
-                const matchingSnipStartIndex = openBlocks.findIndex(
-                    (block) => block.id === parsedSnip.id
+                const matchingSnipStart = spliceMatchingSnipStart(
+                    openBlocks,
+                    parsedSnip.id
                 )
-                if (matchingSnipStartIndex === -1) {
-                    throw new Error(
-                        `Found no matching @snipStart for @snipEnd with id ${parsedSnip.id}.`
-                    )
-                }
-                const matchingSnipStart = openBlocks.splice(
-                    matchingSnipStartIndex,
-                    1
-                )[0]
                 text = linesToOutput(
                     lines.slice(matchingSnipStart.lineNumber, lineNumber)
                 )
-            } else if ((parsedSnip.kind = "@snipLine")) {
+            } else if (parsedSnip.kind === "@snipLine") {
                 text = linesToOutput(lines.slice(lineNumber, lineNumber + 1))
             } else {
                 throw new Error(`Unrecognized snip '${parsedSnip.kind}'`)
@@ -112,14 +108,27 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
         }
     }
     if (openBlocks.length) {
-        throw new Error(
-            `No @snipEnd comments were found corresponding to the following @snipStart ids: ${openBlocks
-                .map((block) => block.id)
-                .join(",")}.`
-        )
+        throw new Error(buildOpenBlocksErrorMessage(openBlocks))
     }
     return labeledSnippets
 }
+
+const spliceMatchingSnipStart = (openBlocks: SnipStart[], id: string) => {
+    const matchingSnipStartIndex = openBlocks.findIndex(
+        (block) => block.id === id
+    )
+    if (matchingSnipStartIndex === -1) {
+        throw new Error(
+            `Found no matching @snipStart for @snipEnd with id ${id}.`
+        )
+    }
+    return openBlocks.splice(matchingSnipStartIndex, 1)[0]
+}
+
+const buildOpenBlocksErrorMessage = (openBlocks: SnipStart[]) =>
+    `No @snipEnd comments were found corresponding to the following @snipStart ids: ${openBlocks
+        .map((block) => block.id)
+        .join(",")}.`
 
 const linesToOutput = (lines: string[]) =>
     lines.filter((line) => outputShouldInclude(line)).join("\n")

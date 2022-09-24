@@ -3,7 +3,7 @@ import { Project } from "ts-morph"
 import type { PackageJson } from "type-fest"
 import type { ApiEntryPoint } from "./api/index.js"
 import { extractPackageApi } from "./api/index.js"
-import type { DocGenConfig } from "./config.js"
+import type { DocGenConfig, DocGenPackageConfig } from "./config.js"
 import type { PackageSnippets } from "./snippets/index.js"
 import { extractPackageSnippets } from "./snippets/index.js"
 import { fromHere, readPackageJson } from "@re-/node"
@@ -28,37 +28,51 @@ export const extractRepo = (config: DocGenConfig): PackageExtractionData[] => {
         tsConfigFilePath: join(REPO_ROOT, "tsconfig.references.json"),
         skipAddingFilesFromTsConfig: true
     })
-    return config.packages.map((packageConfig) => {
-        const rootDir = join(REPO_ROOT, packageConfig.path)
-        const packageJsonData: PackageJson = readPackageJson(rootDir)
-        const packageMetadata: PackageMetadata = {
-            name: packageJsonData.name!,
-            version: packageJsonData.version!,
-            rootDir,
-            packageJsonData
-        }
-        const api = extractPackageApi({
-            project,
-            packageJson: packageJsonData,
-            rootDir
-        })
-        const extractedPackage: PackageExtractionData = {
-            metadata: packageMetadata,
-            api,
-            snippets: {}
-        }
-        if (packageConfig.snippets) {
-            const sources = packageConfig.snippets.sources.map(
-                ({ path, ...rest }) => {
-                    return { path: join(rootDir, path), ...rest }
-                }
-            )
-            extractedPackage.snippets = extractPackageSnippets({
-                project,
-                sources,
-                packageMetadata
-            })
-        }
-        return extractedPackage
+    return config.packages.map((packageConfig) =>
+        extractPackage(project, packageConfig)
+    )
+}
+
+export const extractPackage = (
+    project: Project,
+    packageConfig: DocGenPackageConfig
+): PackageExtractionData => {
+    const rootDir = join(REPO_ROOT, packageConfig.path)
+    const packageJsonData: PackageJson = readPackageJson(rootDir)
+    const packageMetadata: PackageMetadata = {
+        name: packageJsonData.name!,
+        version: packageJsonData.version!,
+        rootDir,
+        packageJsonData
+    }
+    const api = extractPackageApi({
+        project,
+        packageJson: packageJsonData,
+        rootDir
     })
+    const extractedPackage: PackageExtractionData = {
+        metadata: packageMetadata,
+        api,
+        snippets: {}
+    }
+    if (packageConfig.snippets) {
+        extractedPackage.snippets = extractPackageSnippets({
+            project,
+            sources: normalizePackageSnippetSources(packageConfig),
+            packageMetadata
+        })
+    }
+    return extractedPackage
+}
+
+export const normalizePackageSnippetSources = (
+    packageConfig: DocGenPackageConfig
+) => {
+    if (packageConfig.snippets) {
+        const rootDir = join(REPO_ROOT, packageConfig.path)
+        return packageConfig.snippets.sources.map(({ path, ...rest }) => {
+            return { path: join(rootDir, path), ...rest }
+        })
+    }
+    return []
 }
