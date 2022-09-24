@@ -1,4 +1,4 @@
-import { optional } from "../../../nodes/expressions/unaries/optional.js"
+import { OptionalNode } from "../../../nodes/unaries/optional.js"
 import type { parseContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { parserState, ParserState } from "../state/state.js"
@@ -18,7 +18,7 @@ export const parseOptional = (s: parserState.suffix, context: parseContext) => {
     if (s.r.lookahead !== "END") {
         throw new Error(nonTerminatingOptionalMessage)
     }
-    s.l.root = new optional(s.l.root, context)
+    s.l.root = new OptionalNode(s.l.root, context)
     s.l.nextSuffix = "END"
     return s
 }

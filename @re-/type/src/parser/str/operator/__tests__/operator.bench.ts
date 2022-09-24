@@ -5,7 +5,7 @@ const buildBranchDef = (token: string, size: number) =>
     [...Array(size - 1)].reduce((def, _, i) => `${def}${token}${i + 1}`, "0")
 
 suite("parse/str/operator", () => {
-    bench("list", () => {
+    bench("array", () => {
         const _ = type("number[]")
     })
         .median()
@@ -76,13 +76,13 @@ suite("parse/str/operator", () => {
     })
     suite("bounds", () => {
         bench("single-bounded", () => {
-            type("string>5").infer
+            const _ = type("string>5")
         })
             .median()
             .type()
 
         bench("double-bounded", () => {
-            type("-7<=integer<99").infer
+            const _ = type("-7<=integer<99")
         })
             .median()
             .type()

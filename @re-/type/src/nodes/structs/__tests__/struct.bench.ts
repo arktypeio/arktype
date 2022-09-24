@@ -16,14 +16,14 @@ suite("struct", () => {
                     b: 5,
                     c: { nested: true }
                 })
-            }).median("496.00ns")
+            }).median()
 
             bench("invalid", () => {
                 dict.check({
                     a: null,
                     c: { nested: null }
                 })
-            }).median("1.30us")
+            }).median()
         })
     })
 
@@ -33,11 +33,11 @@ suite("struct", () => {
         suite("check", () => {
             bench("valid", () => {
                 tuple.check(["okay", 5, [true]])
-            }).median("308.00ns")
+            }).median()
 
             bench("invalid", () => {
                 tuple.check([null, null, [null, null]])
-            }).median("1.11us")
+            }).median()
         })
     })
 })

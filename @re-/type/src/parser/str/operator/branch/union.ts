@@ -1,5 +1,5 @@
+import { UnionNode } from "../../../../nodes/branches/union.js"
 import type { strNode } from "../../../../nodes/common.js"
-import { union } from "../../../../nodes/expressions/branches/union.js"
 import type { parseContext } from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"
@@ -18,7 +18,7 @@ export const reduceUnion = (s: parserState.withRoot, context: parseContext) => {
         mergeIntersection(s)
     }
     if (!s.l.branches.union) {
-        s.l.branches.union = new union([s.l.root], context)
+        s.l.branches.union = new UnionNode([s.l.root], context)
     } else {
         s.l.branches.union.addMember(s.l.root)
     }
@@ -35,7 +35,7 @@ export type ReduceUnion<L extends Left> = Left.From<{
 
 export type stateWithMergeableUnion = parserState<{
     root: strNode
-    branches: { union: union }
+    branches: { union: UnionNode }
 }>
 
 export const hasMergeableUnion = (

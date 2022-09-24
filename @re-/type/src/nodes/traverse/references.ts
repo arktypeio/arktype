@@ -6,7 +6,7 @@ export type ReferencesOf<
     Dict,
     Options extends ReferenceTypeOptions = {}
 > = Merge<
-    { filter: string; preserveStructure: false; format: "list" },
+    { filter: string; preserveStructure: false; format: "array" },
     Options
 > extends ReferenceTypeOptions<
     infer Filter,
@@ -41,7 +41,7 @@ export type FilterFn<Filter extends string> =
     | ((reference: string) => reference is Filter)
     | ((reference: string) => boolean)
 
-export type ReferenceTypeFormat = "list" | "tuple" | "union"
+export type ReferenceTypeFormat = "array" | "tuple" | "union"
 
 export type ReferenceTypeOptions<
     Filter extends string = string,
@@ -65,7 +65,7 @@ export type ReferencesFn<Def, Dict> = <Options extends ReferencesOptions = {}>(
     ? TransformReferences<
           RootNode.References<Def, Dict, PreserveStructure>,
           Filter,
-          "list"
+          "array"
       >
     : []
 
@@ -74,7 +74,7 @@ export type TransformReferences<
     Filter extends string,
     Format extends ReferenceTypeFormat
 > = References extends string[]
-    ? FormatReferenceList<FilterReferenceList<References, Filter, []>, Format>
+    ? FormatReferences<FilterReferences<References, Filter, []>, Format>
     : {
           [K in keyof References]: TransformReferences<
               References[K],
@@ -83,24 +83,24 @@ export type TransformReferences<
           >
       }
 
-type FilterReferenceList<
+type FilterReferences<
     References extends string[],
     Filter extends string,
     Result extends string[]
 > = References extends IterateType<string, infer Current, infer Remaining>
-    ? FilterReferenceList<
+    ? FilterReferences<
           Remaining,
           Filter,
           Current extends Filter ? [...Result, Current] : Result
       >
     : Result
 
-type FormatReferenceList<
+type FormatReferences<
     References extends string[],
     Format extends ReferenceTypeFormat
 > = Format extends "tuple"
     ? References
-    : Format extends "list"
+    : Format extends "array"
     ? ElementOf<References>[]
     : ElementOf<References>
 

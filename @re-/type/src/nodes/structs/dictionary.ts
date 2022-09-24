@@ -1,8 +1,8 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
-import { optional } from "../expressions/unaries/optional.js"
 import type { Check, Generate } from "../traverse/exports.js"
+import { OptionalNode } from "../unaries/optional.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
 export type InferDictionary<
@@ -55,7 +55,7 @@ export class DictionaryNode extends struct<string> {
             const propArgs = this.argsForProp(args, key)
             if (key in args.data) {
                 propNode.check(propArgs)
-            } else if (!(propNode instanceof optional)) {
+            } else if (!(propNode instanceof OptionalNode)) {
                 args.diagnostics.add(
                     "missingKey",
                     { reason: `${key} is required`, args },
@@ -88,7 +88,7 @@ export class DictionaryNode extends struct<string> {
         const result: Dictionary = {}
         for (const [propKey, propNode] of this.entries) {
             // Don't include optional keys by default in generated values
-            if (propNode instanceof optional) {
+            if (propNode instanceof OptionalNode) {
                 continue
             }
             result[propKey] = propNode.generate({

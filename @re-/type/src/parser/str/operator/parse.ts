@@ -4,6 +4,8 @@ import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import { scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
+import type { ParseArray } from "./array.js"
+import { parseArray } from "./array.js"
 import type { ComparatorChar } from "./bound/common.js"
 import { comparatorChars } from "./bound/common.js"
 import type { ParseBound } from "./bound/parse.js"
@@ -14,8 +16,6 @@ import type { ReduceUnion } from "./branch/union.js"
 import { reduceUnion } from "./branch/union.js"
 import type { ReduceGroupClose } from "./groupClose.js"
 import { reduceGroupClose } from "./groupClose.js"
-import type { ParseList } from "./list.js"
-import { parseList } from "./list.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
@@ -27,7 +27,7 @@ export const parseOperator = (
         : lookahead === "?"
         ? s.suffixed("?")
         : lookahead === "["
-        ? parseList(s, context)
+        ? parseArray(s, context)
         : lookahead === "|"
         ? reduceUnion(s, context)
         : lookahead === "&"
@@ -51,7 +51,7 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
               R: Unscanned
           }>
         : Lookahead extends "["
-        ? ParseList<S, Unscanned>
+        ? ParseArray<S, Unscanned>
         : Lookahead extends "|"
         ? ParserState.From<{
               L: ReduceUnion<S["L"]>

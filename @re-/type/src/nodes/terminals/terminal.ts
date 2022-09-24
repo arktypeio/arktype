@@ -36,6 +36,12 @@ export abstract class TerminalNode<
             collected[reference] = true
         }
     }
+
+    definitionIsKeyOf<Obj extends Record<string, unknown>>(
+        obj: Obj
+    ): this is Base.node<Extract<keyof Obj, string>> {
+        return this.definition in obj
+    }
 }
 
 export type InferTerminal<

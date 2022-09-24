@@ -154,12 +154,12 @@ export const unpairedLeftBoundMessage = `Left bounds are only valid when paired 
 export type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
 
 type UnboundableMessage<Root extends string> =
-    `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
+    `Bounded expression '${Root}' must be a number-or-string-typed keyword or an array-typed expression.`
 
 export const unboundableMessage = <Root extends string>(
     Root: Root
 ): UnboundableMessage<Root> =>
-    `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
+    `Bounded expression '${Root}' must be a number-or-string-typed keyword or an array-typed expression.`
 
 export type NonSuffixRightBoundMessage<
     T extends Scanner.Comparator,

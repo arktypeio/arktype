@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../index.js"
-import { incompleteTokenMessage } from "../list.js"
+import { incompleteTokenMessage } from "../array.js"
 
-describe("parse list", () => {
+describe("parse array", () => {
     test("parse", () => {
         assert(type("string[]").ast).narrowedValue(["string", "[]"])
     })

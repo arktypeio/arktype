@@ -1,12 +1,12 @@
 import type { Base } from "../../nodes/base.js"
+import type { BranchAst } from "../../nodes/branches/branch.js"
+import type { IntersectionAst } from "../../nodes/branches/intersection.js"
+import type { UnionAst } from "../../nodes/branches/union.js"
 import type { ConstrainedAst } from "../../nodes/constraints/constraint.js"
-import type { Branch } from "../../nodes/expressions/branches/branch.js"
-import type { Intersection } from "../../nodes/expressions/branches/intersection.js"
-import type { Union } from "../../nodes/expressions/branches/union.js"
-import type { List } from "../../nodes/expressions/unaries/list.js"
-import type { Optional } from "../../nodes/expressions/unaries/optional.js"
-import type { Unary } from "../../nodes/expressions/unaries/unary.js"
 import type { InferTerminal } from "../../nodes/terminals/terminal.js"
+import type { ArrayAst } from "../../nodes/unaries/array.js"
+import type { OptionalAst } from "../../nodes/unaries/optional.js"
+import type { UnaryAst } from "../../nodes/unaries/unary.js"
 import type { ParseError, parseFn } from "../common.js"
 import { fullParse } from "./full.js"
 import type { TryNaiveParse } from "./naive.js"
@@ -29,13 +29,13 @@ export namespace Str {
 
     type TreeInfer<T, Ctx extends Base.InferenceContext> = T extends string
         ? InferTerminal<T, Ctx>
-        : T extends Optional<infer Child>
+        : T extends OptionalAst<infer Child>
         ? TreeInfer<Child, Ctx> | undefined
-        : T extends List<infer Child>
+        : T extends ArrayAst<infer Child>
         ? TreeInfer<Child, Ctx>[]
-        : T extends Union<infer Left, infer Right>
+        : T extends UnionAst<infer Left, infer Right>
         ? TreeInfer<Left, Ctx> | TreeInfer<Right, Ctx>
-        : T extends Intersection<infer Left, infer Right>
+        : T extends IntersectionAst<infer Left, infer Right>
         ? TreeInfer<Left, Ctx> & TreeInfer<Right, Ctx>
         : T extends ConstrainedAst<infer Child>
         ? TreeInfer<Child, Ctx>
@@ -45,9 +45,9 @@ export namespace Str {
         Parse<Def, Dict>
     >
 
-    type TreeReferences<T> = T extends Unary<infer Child>
+    type TreeReferences<T> = T extends UnaryAst<infer Child>
         ? TreeReferences<Child>
-        : T extends Branch<infer Left, infer Right>
+        : T extends BranchAst<infer Left, infer Right>
         ? [...TreeReferences<Left>, ...TreeReferences<Right>]
         : T extends ConstrainedAst<infer Child>
         ? TreeReferences<Child>

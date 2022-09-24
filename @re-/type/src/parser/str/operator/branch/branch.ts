@@ -1,12 +1,12 @@
-import type { intersection } from "../../../../nodes/expressions/branches/intersection.js"
-import type { union } from "../../../../nodes/expressions/branches/union.js"
+import type { IntersectionNode } from "../../../../nodes/branches/intersection.js"
+import type { UnionNode } from "../../../../nodes/branches/union.js"
 import type { parserState } from "../../state/state.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 import { hasMergeableUnion, mergeUnion } from "./union.js"
 
 export type branches = {
-    union?: union
-    intersection?: intersection
+    union?: UnionNode
+    intersection?: IntersectionNode
 }
 
 export type BranchToken = "|" | "&"

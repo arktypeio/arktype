@@ -9,12 +9,12 @@ suite("parse/obj", () => {
             c: { nested: "boolean?" }
         })
     })
-        .median("3.33us")
-        .type("132in")
+        .median()
+        .type()
 
     bench("tuple", () => {
         const tuple = type(["string?", "number?", ["boolean?"]])
     })
-        .median("2.31us")
-        .type("486in")
+        .median()
+        .type()
 })

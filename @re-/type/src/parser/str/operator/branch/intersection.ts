@@ -1,5 +1,5 @@
+import { IntersectionNode } from "../../../../nodes/branches/intersection.js"
 import type { strNode } from "../../../../nodes/common.js"
-import { intersection } from "../../../../nodes/expressions/branches/intersection.js"
 import type { parseContext } from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"
@@ -15,7 +15,7 @@ export const reduceIntersection = (
     context: parseContext
 ) => {
     if (!s.l.branches.intersection) {
-        s.l.branches.intersection = new intersection([s.l.root], context)
+        s.l.branches.intersection = new IntersectionNode([s.l.root], context)
     } else {
         s.l.branches.intersection.addMember(s.l.root)
     }
@@ -32,7 +32,7 @@ export type ReduceIntersection<L extends Left> = Left.From<{
 
 export type stateWithMergeableIntersection = parserState<{
     root: strNode
-    branches: { intersection: intersection }
+    branches: { intersection: IntersectionNode }
 }>
 
 export const hasMergeableIntersection = (

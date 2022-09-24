@@ -43,12 +43,6 @@ export namespace Base {
             this.collectReferences(opts, collected)
             return Object.keys(collected)
         }
-
-        definitionIsKeyOf<Obj extends Record<string, unknown>>(
-            obj: Obj
-        ): this is node<Extract<keyof Obj, string>> {
-            return this.definition in obj
-        }
     }
 
     export type InferenceContext = {

@@ -205,7 +205,7 @@ export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
     ? T
     : CastTo
 
-export type Conform<T, Template> = T extends Template ? T : Template
+export type Conform<T, Base> = T extends Base ? T : Base
 
 /**
  *  Check if T is exactly identical to U.

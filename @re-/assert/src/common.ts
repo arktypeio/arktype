@@ -162,7 +162,7 @@ export const getReAssertConfig = (): ReAssertConfig => {
             (arg) => arg === "-s" || arg === "--skipTypes"
         ),
         benchFormat: {
-            noInline: argsToCheck.includes("--no-inline"),
+            noInline: argsToCheck.includes("--no-inline") || transient,
             noExternal: argsToCheck.includes("--no-external")
         },
         filter: getFilter(argsToCheck),

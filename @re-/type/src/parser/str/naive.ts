@@ -1,5 +1,5 @@
-import { list } from "../../nodes/expressions/unaries/list.js"
-import { optional } from "../../nodes/expressions/unaries/optional.js"
+import { ArrayNode } from "../../nodes/unaries/array.js"
+import { OptionalNode } from "../../nodes/unaries/optional.js"
 import type { parseContext } from "../common.js"
 import type { FullParse } from "./full.js"
 import type { IsResolvableName } from "./operand/unenclosed.js"
@@ -35,25 +35,25 @@ export type TryNaiveParse<
 
 export const tryNaiveParse = (def: string, context: parseContext) => {
     if (def.endsWith("?")) {
-        const possibleIdentifierNode = tryNaiveParseList(
+        const possibleIdentifierNode = tryNaiveParseArray(
             def.slice(0, -1),
             context
         )
         if (possibleIdentifierNode) {
-            return new optional(possibleIdentifierNode, context)
+            return new OptionalNode(possibleIdentifierNode, context)
         }
     }
-    return tryNaiveParseList(def, context)
+    return tryNaiveParseArray(def, context)
 }
 
-const tryNaiveParseList = (def: string, context: parseContext) => {
+const tryNaiveParseArray = (def: string, context: parseContext) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(
             def.slice(0, -2),
             context
         )
         if (possibleIdentifierNode) {
-            return new list(possibleIdentifierNode, context)
+            return new ArrayNode(possibleIdentifierNode, context)
         }
     }
     return toNodeIfResolvableIdentifier(def, context)
