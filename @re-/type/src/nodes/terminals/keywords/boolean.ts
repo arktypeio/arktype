@@ -3,9 +3,9 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class BooleanNode extends TerminalNode {
-    check(args: Check.CheckArgs) {
-        if (typeof args.data !== "boolean") {
-            addTypeKeywordDiagnostic(args, "boolean", "Must be boolean")
+    check(state: Check.CheckState) {
+        if (typeof state.data !== "boolean") {
+            addTypeKeywordDiagnostic(state, "boolean", "Must be boolean")
         }
     }
 

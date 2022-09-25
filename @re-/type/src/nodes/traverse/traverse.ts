@@ -1,18 +1,10 @@
+import type { TypeOptions } from "../../type.js"
 import type { Path } from "../common.js"
 
-export type TraverseContext<Cfg> = {
-    path: Path
-    seen: string[]
-    modelCfg: Cfg
-}
-
 // TODO: State based traversal?
-export const createTraverseContext = <Cfg>(
-    modelOptions: Cfg
-): TraverseContext<Cfg> => {
-    return {
-        path: [],
-        seen: [],
-        modelCfg: modelOptions
-    }
+export class TraversalState {
+    path: Path = []
+    seen: string[] = []
+
+    constructor(public options: TypeOptions) {}
 }

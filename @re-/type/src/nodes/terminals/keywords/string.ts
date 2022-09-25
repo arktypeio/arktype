@@ -4,7 +4,7 @@ import type {
 } from "../../constraints/bounds.js"
 import type { Constraint } from "../../constraints/constraint.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
-import { Check } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/exports.js"
 import type { TerminalConstructorArgs } from "../terminal.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
@@ -32,13 +32,13 @@ export class StringNode
         }
     }
 
-    check(args: Check.CheckArgs) {
-        if (!Check.dataIsOfType(args, "string")) {
+    check(state: Check.CheckState) {
+        if (!state.dataIsOfType("string")) {
             if (this.definition === "string") {
-                addTypeKeywordDiagnostic(args, "string", "Must be a string")
+                addTypeKeywordDiagnostic(state, "string", "Must be a string")
             } else {
                 addTypeKeywordDiagnostic(
-                    args,
+                    state,
                     this.definition,
                     "Must be a string",
                     "string"
@@ -46,8 +46,8 @@ export class StringNode
             }
             return
         }
-        this.regex?.check(args)
-        this.bounds?.check(args)
+        this.regex?.check(state)
+        this.bounds?.check(state)
     }
 
     generate() {
@@ -65,15 +65,15 @@ export class RegexConstraint implements Constraint {
         private description: string
     ) {}
 
-    check(args: Check.CheckArgs<string>) {
-        if (!this.expression.test(args.data)) {
-            args.diagnostics.add(
+    check(state: Check.CheckState<string>) {
+        if (!this.expression.test(state.data)) {
+            state.errors.add(
                 "regex",
-                { reason: this.description, args },
+                { reason: this.description, state: state },
                 {
                     definition: this.definition,
-                    data: args.data,
-                    actual: `"${args.data}"`,
+                    data: state.data,
+                    actual: `"${state.data}"`,
                     expression: this.expression
                 }
             )
@@ -81,15 +81,12 @@ export class RegexConstraint implements Constraint {
     }
 }
 
-export type RegexDiagnostic = Check.DefineDiagnostic<
-    "regex",
-    {
-        definition: StringSubtypeDefinition
-        data: string
-        expression: RegExp
-        actual: `"${string}"`
-    }
->
+export type RegexDiagnostic = Check.DiagnosticConfig<{
+    definition: StringSubtypeDefinition
+    data: string
+    expression: RegExp
+    actual: `"${string}"`
+}>
 
 export const stringSubtypes: Record<
     Exclude<StringTypedKeyword, "string">,

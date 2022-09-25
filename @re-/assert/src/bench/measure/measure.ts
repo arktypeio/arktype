@@ -1,4 +1,5 @@
 import { isKeyOf } from "@re-/tools"
+import type { StatName } from "../call.js"
 import type { TimeUnit } from "./time.js"
 import { stringifyTimeMeasure, TIME_UNIT_RATIOS } from "./time.js"
 import type { TypeUnit } from "./types.js"
@@ -14,6 +15,8 @@ export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
     updated: Measure<Unit>
     baseline: Measure<Unit> | undefined
 }
+
+export type MarkMeasure = Partial<Record<StatName, Measure>>
 
 export const stringifyMeasure = ([value, units]: Measure) =>
     isKeyOf(units, TIME_UNIT_RATIOS)

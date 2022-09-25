@@ -1,12 +1,16 @@
 import { literalSerialize } from "../common.js"
 import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
-import type { MeasureComparison } from "./measure/index.js"
+import type {
+    MarkMeasure,
+    Measure,
+    MeasureComparison
+} from "./measure/index.js"
 import { stringifyMeasure } from "./measure/index.js"
 
 export const queueBaselineUpdateIfNeeded = (
-    updated: string | object,
-    baseline: string | object | undefined,
+    updated: Measure | MarkMeasure,
+    baseline: Measure | MarkMeasure | undefined,
     ctx: BenchAssertionContext
 ) => {
     // If we already have a baseline and the user didn't pass an update flag, do nothing

@@ -14,32 +14,38 @@ export class UnionNode extends BranchNode {
         super("|", ...args)
     }
 
-    check(args: Check.CheckArgs) {
+    check(state: Check.CheckState) {
+        const rootErrors = state.errors
         const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
         for (const child of this.children) {
-            const branchDiagnostics = new Check.Diagnostics()
-            child.check({ ...args, diagnostics: branchDiagnostics })
-            if (!branchDiagnostics.length) {
+            state.errors = new Check.Diagnostics()
+            child.check(state)
+            if (!state.errors.length) {
                 return
             }
-            branchDiagnosticsEntries.push([child.toString(), branchDiagnostics])
+            branchDiagnosticsEntries.push([child.toString(), state.errors])
         }
+        state.errors = rootErrors
+        this.addUnionDiagnostic(state, branchDiagnosticsEntries)
+    }
+
+    private addUnionDiagnostic(
+        state: Check.CheckState,
+        branchDiagnosticsEntries: BranchDiagnosticsEntry[]
+    ) {
         const context: UnionDiagnostic["context"] = {
             definition: this.definition,
-            actual: Check.stringifyData(args.data),
+            actual: Check.stringifyData(state.data),
             branchDiagnosticsEntries
         }
-        // TODO: Better way to get active options
-        const explainBranches =
-            args.cfg.diagnostics?.union?.explainBranches ||
-            args.context.modelCfg.diagnostics?.union?.explainBranches
+        const explainBranches = state.options.errors?.union?.explainBranches
         // TODO: Better default error messages for union
         // https://github.com/re-do/re-po/issues/472
-        args.diagnostics.add(
+        state.errors.add(
             "union",
             {
                 reason: `Must be one of ${this.definition}`,
-                args,
+                state: state,
                 suffix: explainBranches
                     ? buildBranchDiagnosticsExplanation(
                           branchDiagnosticsEntries
@@ -50,13 +56,13 @@ export class UnionNode extends BranchNode {
         )
     }
 
-    generate(args: Generate.GenerateArgs) {
-        const nextGenResults = this.generateChildren(args)
-        if (!nextGenResults.values.length) {
-            this.throwAllMembersUngeneratableError(nextGenResults.errors, args)
+    generate(state: Generate.GenerateState) {
+        const branchResults = this.generateChildren(state)
+        if (!branchResults.values.length) {
+            this.throwAllMembersUngeneratableError(branchResults.errors, state)
         }
         for (const constraint of preferredDefaults) {
-            const matches = nextGenResults.values.filter((value) =>
+            const matches = branchResults.values.filter((value) =>
                 "value" in constraint
                     ? constraint.value === value
                     : constraint.typeOf === typeof value
@@ -70,14 +76,14 @@ export class UnionNode extends BranchNode {
         )
     }
 
-    private generateChildren(args: Generate.GenerateArgs) {
+    private generateChildren(state: Generate.GenerateState) {
         const results = {
             values: [] as unknown[],
             errors: [] as string[]
         }
         for (const node of this.children) {
             try {
-                results.values.push(node.generate(args))
+                results.values.push(node.generate(state))
             } catch (error) {
                 if (error instanceof Generate.UngeneratableError) {
                     results.errors.push(error.message)
@@ -91,12 +97,14 @@ export class UnionNode extends BranchNode {
 
     private throwAllMembersUngeneratableError(
         errors: string[],
-        args: Generate.GenerateArgs
+        state: Generate.GenerateState
     ) {
         throw new Generate.UngeneratableError(
             this.toString(),
             "None of the definitions can be generated" +
-                (args.cfg.verbose ? `:\n${errors.join("\n")}` : ".")
+                (state.options.generate?.verbose
+                    ? `:\n${errors.join("\n")}`
+                    : ".")
         )
     }
 }
@@ -114,8 +122,7 @@ const buildBranchDiagnosticsExplanation = (
     return branchDiagnosticSummary
 }
 
-export type UnionDiagnostic = Check.DefineDiagnostic<
-    "union",
+export type UnionDiagnostic = Check.DiagnosticConfig<
     {
         definition: string
         actual: unknown

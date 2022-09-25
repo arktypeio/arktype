@@ -12,6 +12,7 @@ import type { Scanner } from "../../parser/str/state/scanner.js"
 import type { StrAst, strNode } from "../common.js"
 import type { NumberKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
+import type { CheckState } from "../traverse/check/check.js"
 import type { Check } from "../traverse/exports.js"
 import type { Constraint } from "./constraint.js"
 
@@ -73,47 +74,54 @@ const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
 export class BoundConstraint implements Constraint {
     constructor(public ast: Bounds.Ast) {}
 
-    check(args: Check.CheckArgs<BoundableData>) {
+    check(state: Check.CheckState<BoundableData>) {
         const actual =
-            typeof args.data === "number" ? args.data : args.data.length
+            typeof state.data === "number" ? state.data : state.data.length
         for (const [comparator, limit] of this.ast) {
             if (!isWithinBound(comparator, limit, actual)) {
-                const kind: BoundKind =
-                    typeof args.data === "string"
-                        ? "string"
-                        : typeof args.data === "number"
-                        ? "number"
-                        : "array"
-                args.diagnostics.add(
-                    "bound",
-                    {
-                        reason: boundToString(comparator, limit, kind),
-                        args
-                    },
-                    {
-                        comparator,
-                        limit,
-                        kind,
-                        actual,
-                        data: args.data
-                    }
-                )
+                this.addBoundError(state, comparator, limit, actual)
                 return
             }
         }
     }
+
+    private addBoundError(
+        state: CheckState<BoundableData>,
+        comparator: Scanner.Comparator,
+        limit: number,
+        actual: number
+    ) {
+        const kind: BoundKind =
+            typeof state.data === "string"
+                ? "string"
+                : typeof state.data === "number"
+                ? "number"
+                : "array"
+        state.errors.add(
+            "bound",
+            {
+                reason: boundToString(comparator, limit, kind),
+                state: state
+            },
+            {
+                comparator,
+                limit,
+                kind,
+                actual,
+                data: state.data
+            }
+        )
+        return
+    }
 }
 
-export type BoundDiagnostic = Check.DefineDiagnostic<
-    "bound",
-    {
-        comparator: Scanner.Comparator
-        data: BoundableData
-        limit: number
-        actual: number
-        kind: BoundKind
-    }
->
+export type BoundDiagnostic = Check.DiagnosticConfig<{
+    comparator: Scanner.Comparator
+    data: BoundableData
+    limit: number
+    actual: number
+    kind: BoundKind
+}>
 
 export const boundToString = (
     comparator: Scanner.Comparator,

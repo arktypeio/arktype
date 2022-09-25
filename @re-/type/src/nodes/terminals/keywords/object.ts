@@ -3,9 +3,9 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class ObjectNode extends TerminalNode {
-    check(args: Check.CheckArgs) {
-        if (typeof args.data !== "object" || args.data === null) {
-            addTypeKeywordDiagnostic(args, "object", "Must be an object")
+    check(state: Check.CheckState) {
+        if (typeof state.data !== "object" || state.data === null) {
+            addTypeKeywordDiagnostic(state, "object", "Must be an object")
         }
     }
 

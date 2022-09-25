@@ -98,23 +98,23 @@ export const structureOf = <Data>(data: Data) =>
 export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
     definition: Base.RootDefinition,
     expectedStructure: ExpectedStructure,
-    args: Check.CheckArgs
-): args is Check.CheckArgs<
+    state: Check.CheckState
+): state is Check.CheckState<
     ExpectedStructure extends "array" ? unknown[] : Dictionary
 > => {
-    const actualStructure = structureOf(args.data)
+    const actualStructure = structureOf(state.data)
     if (expectedStructure !== actualStructure) {
         const expectedStructureDescription =
             expectedStructure === "array" ? "an array" : "a non-array object"
-        args.diagnostics.add(
+        state.errors.add(
             "structure",
             {
                 reason: `Must be ${expectedStructureDescription}`,
-                args
+                state: state
             },
             {
                 definition,
-                data: args.data,
+                data: state.data,
                 expected: expectedStructure,
                 actual: actualStructure
             }
@@ -124,15 +124,12 @@ export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
     return true
 }
 
-export type StructureDiagnostic = Check.DefineDiagnostic<
-    "structure",
-    {
-        definition: Base.RootDefinition
-        data: unknown
-        expected: ObjectKind
-        actual: StructureOfResult
-    }
->
+export type StructureDiagnostic = Check.DiagnosticConfig<{
+    definition: Base.RootDefinition
+    data: unknown
+    expected: ObjectKind
+    actual: StructureOfResult
+}>
 
 export namespace Struct {
     export type Infer<

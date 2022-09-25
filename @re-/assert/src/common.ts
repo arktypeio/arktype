@@ -154,6 +154,9 @@ export const getReAssertConfig = (): ReAssertConfig => {
     const transient = argsToCheck.some(
         (arg) => arg === "-t" || arg === "--transient"
     )
+    const noWrite = argsToCheck.some(
+        (arg) => arg === "-n" || arg === "--no-write"
+    )
     return {
         updateSnapshots:
             transient ||
@@ -162,8 +165,9 @@ export const getReAssertConfig = (): ReAssertConfig => {
             (arg) => arg === "-s" || arg === "--skipTypes"
         ),
         benchFormat: {
-            noInline: argsToCheck.includes("--no-inline") || transient,
-            noExternal: argsToCheck.includes("--no-external")
+            noInline:
+                argsToCheck.includes("--no-inline") || noWrite || transient,
+            noExternal: argsToCheck.includes("--no-external") || noWrite
         },
         filter: getFilter(argsToCheck),
         tsconfig,

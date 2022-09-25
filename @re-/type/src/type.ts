@@ -2,21 +2,22 @@ import type { Evaluate, MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { Base } from "./nodes/base.js"
 import type { RootNode } from "./nodes/common.js"
-import { checkCustomValidator } from "./nodes/traverse/check/customValidator.js"
-import {
-    Diagnostics,
-    ValidationError
-} from "./nodes/traverse/check/diagnostics.js"
-import { Check, Generate } from "./nodes/traverse/exports.js"
-import type { References } from "./nodes/traverse/exports.js"
+import type { Diagnostics } from "./nodes/traverse/check/diagnostics.js"
+import { ValidationError } from "./nodes/traverse/check/diagnostics.js"
+import { CheckState } from "./nodes/traverse/check/exports.js"
+import { Generate } from "./nodes/traverse/exports.js"
+import type { Check, References } from "./nodes/traverse/exports.js"
 import type { ParseOptions } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { Space, SpaceMeta } from "./space.js"
 
 export const type: TypeFn = (definition, options = {}, space?: SpaceMeta) => {
-    const root = Root.parse(definition, initializeParseContext(options, space))
-    return new Type(definition, root, options) as any
+    const root = Root.parse(
+        definition,
+        initializeParseContext(options as any, space)
+    )
+    return new Type(definition, root, options as any) as any
 }
 
 export const dynamic = type as DynamicTypeFn
@@ -28,15 +29,19 @@ export type DynamicTypeFn = (
 
 export type DynamicType = TypeFrom<unknown, {}, unknown>
 
-export type TypeOptions = {
+export type TypeOptions<Inferred = unknown> = {
     parse?: ParseOptions
-    validate?: Check.CheckOptions
+    // TODO: Rename to narrow?
+    constrain?: Check.CustomConstraint<Inferred>
+    errors?: Check.OptionsByDiagnostic
     generate?: Generate.GenerateOptions
 }
 
 export type TypeFn<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
     definition: Root.Validate<Def, S["Dict"]>,
-    options?: TypeOptions
+    // TODO: Better to have this in generics?
+    // Did adding this result in params type hints not being individual?
+    options?: TypeOptions<Infer<Def, Base.InferenceContext.FromSpace<S>>>
 ) => TypeFrom<Def, S["Dict"], Infer<Def, Base.InferenceContext.FromSpace<S>>>
 
 export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
@@ -46,7 +51,7 @@ export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     assert: AssertFn<Inferred>
     default: Inferred
     ast: Root.Parse<Def, Dict>
-    create: GenerateFn<Inferred>
+    generate: GenerateFn<Inferred>
     references: References.ReferencesFn<Def, Dict>
 }>
 
@@ -54,7 +59,7 @@ export class Type implements DynamicType {
     constructor(
         public definition: unknown,
         public root: Base.node,
-        public config: TypeOptions = {}
+        public options: TypeOptions = {}
     ) {}
 
     get infer() {
@@ -62,41 +67,34 @@ export class Type implements DynamicType {
     }
 
     get default() {
-        return this.create()
+        return this.generate()
     }
 
     get ast() {
         return this.root.ast as any
     }
 
-    check(value: unknown, options?: Check.CheckOptions) {
-        const args = Check.createCheckArgs(value, options, this.config.validate)
-        const customValidator =
-            args.cfg.validator ?? args.context.modelCfg.validator ?? "default"
-        if (customValidator !== "default") {
-            checkCustomValidator(customValidator, this.root, args)
-        } else {
-            this.root.check(args)
-        }
-        return args.diagnostics.length
+    check(data: unknown) {
+        const state = new CheckState(data, this.options)
+        this.root.check(state)
+        return state.errors.length
             ? {
-                  errors: new Diagnostics(...args.diagnostics)
+                  errors: state.errors
               }
-            : { data: value }
+            : { data: data }
     }
 
-    assert(value: unknown, options?: Check.CheckOptions) {
-        const validationResult = this.check(value, options)
+    assert(data: unknown) {
+        const validationResult = this.check(data)
         if (validationResult.errors) {
             throw new ValidationError(validationResult.errors.summary)
         }
         return validationResult.data
     }
 
-    create(options?: Generate.GenerateOptions) {
-        return this.root.generate(
-            Generate.createGenerateArgs(options, this.config.generate)
-        )
+    generate() {
+        const state = new Generate.GenerateState(this.options)
+        return this.root.generate(state)
     }
 
     references(options: References.ReferencesOptions = {}) {

@@ -9,11 +9,11 @@ export class OptionalNode extends UnaryNode {
         super("?", ...args)
     }
 
-    check(args: Check.CheckArgs) {
-        if (args.data === undefined) {
-            return true
+    check(state: Check.CheckState) {
+        if (state.data === undefined) {
+            return
         }
-        return this.child.check(args)
+        this.child.check(state)
     }
 
     generate() {

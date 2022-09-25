@@ -36,19 +36,19 @@ export class LiteralNode<
         return this.definition
     }
 
-    check(args: Check.CheckArgs) {
-        if (args.data !== this.value) {
-            args.diagnostics.add(
+    check(state: Check.CheckState) {
+        if (state.data !== this.value) {
+            state.errors.add(
                 "literal",
                 {
                     reason: `Must be ${this.definition}`,
-                    args
+                    state: state
                 },
                 {
                     definition: this.definition,
                     expected: this.value,
-                    actual: Check.stringifyData(args.data),
-                    data: args.data
+                    actual: Check.stringifyData(state.data),
+                    data: state.data
                 }
             )
         }
@@ -59,12 +59,9 @@ export class LiteralNode<
     }
 }
 
-export type LiteralDiagnostic = Check.DefineDiagnostic<
-    "literal",
-    {
-        definition: LiteralDefinition
-        data: unknown
-        expected: PrimitiveLiteralValue
-        actual: string
-    }
->
+export type LiteralDiagnostic = Check.DiagnosticConfig<{
+    definition: LiteralDefinition
+    data: unknown
+    expected: PrimitiveLiteralValue
+    actual: string
+}>

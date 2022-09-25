@@ -1,4 +1,3 @@
-import { toNumber } from "../stringUtils.js"
 import type { ListComparisonMode } from "./diff.js"
 import { deepEquals } from "./diff.js"
 
@@ -33,13 +32,13 @@ export const findDeepEqualIndices = (
     mode: UnorderedDiffMode
 ) => {
     const matchingIndices = []
-    for (const i in list) {
+    for (let i = 0; i < list.length; i++) {
         if (
             deepEquals(item, list[i], {
                 listComparison: mode
             })
         ) {
-            matchingIndices.push(toNumber(i))
+            matchingIndices.push(i)
         }
     }
     return matchingIndices
@@ -50,13 +49,13 @@ export const findFirstDeepEqualIndex = (
     item: unknown,
     mode: UnorderedDiffMode
 ) => {
-    for (const i in list) {
+    for (let i = 0; i < list.length; i++) {
         if (
             deepEquals(item, list[i], {
                 listComparison: mode
             })
         ) {
-            return toNumber(i)
+            return i
         }
     }
     return -1

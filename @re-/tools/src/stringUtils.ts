@@ -1,6 +1,6 @@
 import type {
     ElementOf,
-    FilterFunction,
+    FilterFn,
     Iterate,
     IterateType,
     List,
@@ -53,7 +53,7 @@ export const toNumber = (s: string): number => {
 
 export const isAlphaNumeric = (s: string) => alphaNumericRegex.test(s)
 
-export const filterChars = (s: string, charFilter: FilterFunction<string>) =>
+export const filterChars = (s: string, charFilter: FilterFn<string>) =>
     [...s].filter(charFilter).join("")
 
 type TransformSubstringOptions = {

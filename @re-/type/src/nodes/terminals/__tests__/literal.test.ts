@@ -8,7 +8,7 @@ describe("literal", () => {
         assert(type("1n").check(1).errors?.summary).snap(`Must be 1n (was 1)`)
     })
     test("generate", () => {
-        assert(type("1").create()).typedValue(1)
-        assert(type("true").create()).typedValue(true)
+        assert(type("1").generate()).typedValue(1)
+        assert(type("true").generate()).typedValue(true)
     })
 })

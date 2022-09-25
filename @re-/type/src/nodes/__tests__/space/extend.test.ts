@@ -60,10 +60,8 @@ describe("extend space", () => {
             parse: {
                 onCycle: "boolean"
             },
-            validate: {
-                diagnostics: { extraneousKeys: { enabled: true } },
-                validator: `<function validator>`
-            }
+            errors: { extraneousKeys: { enabled: true } },
+            constrain: `<function validator>`
         })
     })
 })
@@ -75,9 +73,7 @@ const getExtendedSpace = () => {
             group: define(
                 { members: "user[]" },
                 {
-                    validate: {
-                        diagnostics: { extraneousKeys: { enabled: true } }
-                    }
+                    errors: { extraneousKeys: { enabled: true } }
                 }
             )
         },
@@ -85,10 +81,8 @@ const getExtendedSpace = () => {
             parse: {
                 onCycle: "number"
             },
-            validate: {
-                diagnostics: { extraneousKeys: { enabled: false } },
-                validator: () => undefined
-            }
+            errors: { extraneousKeys: { enabled: false } },
+            constrain: () => undefined
         }
     )
     const extended = mySpace.$root.extend(
@@ -97,9 +91,7 @@ const getExtendedSpace = () => {
             other: define(
                 { users: "user[]", groups: "group[]" },
                 {
-                    validate: {
-                        diagnostics: { extraneousKeys: { enabled: false } }
-                    }
+                    errors: { extraneousKeys: { enabled: false } }
                 }
             )
         },
@@ -107,9 +99,7 @@ const getExtendedSpace = () => {
             parse: {
                 onCycle: "boolean"
             },
-            validate: {
-                diagnostics: { extraneousKeys: { enabled: true } }
-            }
+            errors: { extraneousKeys: { enabled: true } }
         }
     )
     return extended

@@ -31,11 +31,11 @@ describe("optional node", () => {
     })
     describe("generate", () => {
         test("standalone is undefined by default", () => {
-            assert(type("null?").create()).is(undefined)
+            assert(type("null?").generate()).is(undefined)
         })
         test("optional key is omitted by default", () => {
             assert(
-                type({ required: "string", optional: "string?" }).create()
+                type({ required: "string", optional: "string?" }).generate()
             ).equals({ required: "" })
         })
     })

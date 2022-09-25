@@ -66,7 +66,7 @@ describe("string subtypes", () => {
         })
         describe("generation", () => {
             test("unsupported", () => {
-                assert(() => type("/.*/").create()).throws.snap(
+                assert(() => type("/.*/").generate()).throws.snap(
                     `Error: Unable to generate a value for '/.*/': Constrained generation is not yet supported.`
                 )
             })

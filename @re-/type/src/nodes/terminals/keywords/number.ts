@@ -3,20 +3,20 @@ import type {
     BoundConstraint
 } from "../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../constraints/constraint.js"
-import { Check } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/exports.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NumberNode extends TerminalNode implements BoundableNode {
     bounds: BoundConstraint | null = null
 
-    check(args: Check.CheckArgs) {
-        if (!Check.dataIsOfType(args, "number")) {
+    check(state: Check.CheckState) {
+        if (!state.dataIsOfType("number")) {
             if (this.definition === "number") {
-                addTypeKeywordDiagnostic(args, "number", "Must be a number")
+                addTypeKeywordDiagnostic(state, "number", "Must be a number")
             } else {
                 addTypeKeywordDiagnostic(
-                    args,
+                    state,
                     "integer",
                     "Must be a number",
                     "number"
@@ -25,17 +25,17 @@ export class NumberNode extends TerminalNode implements BoundableNode {
 
             return
         }
-        if (this.definition === "integer" && !Number.isInteger(args.data)) {
-            args.diagnostics.add(
+        if (this.definition === "integer" && !Number.isInteger(state.data)) {
+            state.errors.add(
                 "numberSubtype",
-                { reason: "Must be an integer", args },
+                { reason: "Must be an integer", state: state },
                 {
                     definition: "integer",
-                    actual: args.data
+                    actual: state.data
                 }
             )
         }
-        this.bounds?.check(args as Check.CheckArgs<number>)
+        this.bounds?.check(state as Check.CheckState<number>)
     }
 
     generate() {
@@ -55,10 +55,7 @@ export type NumberKeyword = keyof typeof numberKeywords
 
 export type NumberSubtypeKeyword = Exclude<NumberKeyword, "number">
 
-export type NumberSubtypeDiagnostic = Check.DefineDiagnostic<
-    "numberSubtype",
-    {
-        definition: NumberSubtypeKeyword
-        actual: number
-    }
->
+export type NumberSubtypeDiagnostic = Check.DiagnosticConfig<{
+    definition: NumberSubtypeKeyword
+    actual: number
+}>

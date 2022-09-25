@@ -88,7 +88,7 @@ describe("dictionary", () => {
                             e: "x-ray-knee-us"
                         },
                         {
-                            diagnostics: {
+                            errors: {
                                 extraneousKeys: { enabled: true }
                             }
                         }
@@ -123,7 +123,7 @@ describe("dictionary", () => {
                             extraneous: true
                         },
                         {
-                            diagnostics: {
+                            errors: {
                                 extraneousKeys: { enabled: true }
                             }
                         }
@@ -133,7 +133,9 @@ describe("dictionary", () => {
         })
     })
     test("generate", () => {
-        assert(type({ a: "string", b: { nested: "number" } }).create()).equals({
+        assert(
+            type({ a: "string", b: { nested: "number" } }).generate()
+        ).equals({
             a: "",
             b: { nested: 0 }
         })

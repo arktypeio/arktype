@@ -8,20 +8,17 @@ import type {
 
 export type NormalizedJsTypeName = JsTypeName | "null"
 
-export type KeywordTypeDiagnostic = Check.DefineDiagnostic<
-    "keyword",
-    {
-        definition: KeywordDefinition
-        typeKeyword: TypeKeyword
-        data: unknown
-        actual: NormalizedJsTypeName
-    }
->
+export type KeywordTypeDiagnostic = Check.DiagnosticConfig<{
+    definition: KeywordDefinition
+    typeKeyword: TypeKeyword
+    data: unknown
+    actual: NormalizedJsTypeName
+}>
 
 type AddTypeKeywordDiagnosticSignatures = {
-    (args: Check.CheckArgs, definition: TypeKeyword, reason: string): void
+    (state: Check.CheckState, definition: TypeKeyword, reason: string): void
     (
-        args: Check.CheckArgs,
+        state: Check.CheckState,
         definition: SubtypeDefinition,
         reason: string,
         parentKeyword: TypeKeyword
@@ -32,14 +29,14 @@ export const addTypeKeywordDiagnostic: AddTypeKeywordDiagnosticSignatures = (
     ...diagnosticArgs: any[]
 ) => {
     const [args, definition, reason] = diagnosticArgs as [
-        Check.CheckArgs,
+        Check.CheckState,
         KeywordDefinition,
         string
     ]
     const data = args.data
-    args.diagnostics.add(
+    args.errors.add(
         "keyword",
-        { reason, args },
+        { reason, state: args },
         {
             definition,
             data,

@@ -21,90 +21,90 @@ export type InferDictionary<
 >
 
 export class DictionaryNode extends struct<string> {
-    check(args: Check.CheckArgs) {
-        if (!checkObjectRoot(this.definition, "dictionary", args)) {
+    check(state: Check.CheckState) {
+        if (!checkObjectRoot(this.definition, "dictionary", state)) {
             return
         }
-        const extraneousKeys = this.checkPropsAndGetIllegalKeys(args)
+        const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)
         if (extraneousKeys.length) {
-            const reason =
-                extraneousKeys.length === 1
-                    ? `Key '${extraneousKeys[0]}' was unexpected`
-                    : `Keys '${extraneousKeys.join("', '")}' were unexpected`
-            args.diagnostics.add(
-                "extraneousKeys",
-                { reason, args },
-                {
-                    definition: this.definition,
-                    data: args.data,
-                    keys: extraneousKeys
-                }
-            )
+            this.addExtraneousKeyDiagnostic(state, extraneousKeys)
         }
     }
 
     /** Returns any extraneous keys, if the options is enabled and they exist */
-    private checkPropsAndGetIllegalKeys(
-        args: Check.CheckArgs<Dictionary>
+    private checkChildrenAndGetIllegalKeys(
+        state: Check.CheckState<Dictionary>
     ): string[] {
-        const checkExtraneous =
-            args.cfg.diagnostics?.extraneousKeys?.enabled ||
-            args.context.modelCfg.diagnostics?.extraneousKeys?.enabled
-        const uncheckedData = checkExtraneous ? { ...args.data } : {}
-        for (const [key, propNode] of this.entries) {
-            const propArgs = this.argsForProp(args, key)
-            if (key in args.data) {
-                propNode.check(propArgs)
-            } else if (!(propNode instanceof OptionalNode)) {
-                args.diagnostics.add(
-                    "missingKey",
-                    { reason: `${key} is required`, args },
-                    {
-                        definition: propNode.definition,
-                        key
-                    }
-                )
+        const rootData: any = state.data
+        // const checkExtraneous =
+        //     args.config.errors?.extraneousKeys?.enabled ||
+        //     args.context.resolutionConfig.errors?.extraneousKeys?.enabled
+        const uncheckedData: any = {} // checkExtraneous ? { ...args.data } : {}
+        for (const [k, child] of this.entries) {
+            if (k in rootData) {
+                state.path.push(k)
+                state.data = rootData[k]
+                child.check(state)
+                state.path.pop()
+            } else if (!(child instanceof OptionalNode)) {
+                this.addMissingKeyDiagnostic(state, k, child.definition)
             }
-            delete uncheckedData[key]
+            delete uncheckedData[k]
         }
+        state.data = rootData
         return Object.keys(uncheckedData)
     }
 
-    private argsForProp(
-        args: Check.CheckArgs<Dictionary>,
-        propKey: string
-    ): Check.CheckArgs {
-        return {
-            ...args,
-            data: args.data[propKey],
-            context: {
-                ...args.context,
-                path: [...args.context.path, propKey]
-            }
-        }
-    }
-
-    generate(args: Generate.GenerateArgs) {
+    generate(state: Generate.GenerateState) {
         const result: Dictionary = {}
-        for (const [propKey, propNode] of this.entries) {
+        for (const [k, child] of this.entries) {
             // Don't include optional keys by default in generated values
-            if (propNode instanceof OptionalNode) {
+            if (child instanceof OptionalNode) {
                 continue
             }
-            result[propKey] = propNode.generate({
-                ...args,
-                context: {
-                    ...args.context,
-                    path: [...args.context.path, propKey]
-                }
-            })
+            state.path.push(k)
+            result[k] = child.generate(state)
+            state.path.pop()
         }
         return result
     }
+
+    private addMissingKeyDiagnostic(
+        state: Check.CheckState<Dictionary>,
+        key: string,
+        definition: Base.RootDefinition
+    ) {
+        state.errors.add(
+            "missingKey",
+            { reason: `${key} is required`, state: state },
+            {
+                definition,
+                key
+            }
+        )
+    }
+
+    private addExtraneousKeyDiagnostic(
+        state: Check.CheckState<Dictionary>,
+        keys: string[]
+    ) {
+        const reason =
+            keys.length === 1
+                ? `Key '${keys[0]}' was unexpected`
+                : `Keys '${keys.join("', '")}' were unexpected`
+        state.errors.add(
+            "extraneousKeys",
+            { reason, state: state },
+            {
+                definition: this.definition,
+                data: state.data,
+                keys
+            }
+        )
+    }
 }
 
-export type ExtraneousKeysDiagnostic = Check.DefineDiagnostic<
-    "extraneousKeys",
+export type ExtraneousKeysDiagnostic = Check.DiagnosticConfig<
     {
         definition: Dictionary
         data: Dictionary
@@ -115,10 +115,7 @@ export type ExtraneousKeysDiagnostic = Check.DefineDiagnostic<
     }
 >
 
-export type MissingKeyDiagnostic = Check.DefineDiagnostic<
-    "missingKey",
-    {
-        definition: Base.RootDefinition
-        key: string
-    }
->
+export type MissingKeyDiagnostic = Check.DiagnosticConfig<{
+    definition: Base.RootDefinition
+    key: string
+}>

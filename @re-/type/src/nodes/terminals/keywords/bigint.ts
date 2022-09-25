@@ -3,9 +3,9 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class BigintNode extends TerminalNode {
-    check(args: Check.CheckArgs) {
-        if (typeof args.data !== "bigint") {
-            addTypeKeywordDiagnostic(args, "bigint", "Must be a bigint")
+    check(state: Check.CheckState) {
+        if (typeof state.data !== "bigint") {
+            addTypeKeywordDiagnostic(state, "bigint", "Must be a bigint")
         }
     }
 

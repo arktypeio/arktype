@@ -9,7 +9,7 @@ describe("type keywords", () => {
             assert(b.infer).typed as boolean
         })
         test("generation", () => {
-            assert(b.create()).is(false)
+            assert(b.generate()).is(false)
         })
         test("check", () => {
             assert(b.check(true).errors).is(undefined)
@@ -25,7 +25,7 @@ describe("type keywords", () => {
             assert(t.infer).typed as true
         })
         test("generation", () => {
-            assert(t.create()).is(true)
+            assert(t.generate()).is(true)
         })
         test("check", () => {
             assert(t.check(true).errors).is(undefined)
@@ -40,7 +40,7 @@ describe("type keywords", () => {
             assert(f.infer).typed as false
         })
         test("generation", () => {
-            assert(f.create()).is(false)
+            assert(f.generate()).is(false)
         })
         test("check", () => {
             assert(f.check(false).errors).is(undefined)
@@ -55,7 +55,7 @@ describe("type keywords", () => {
             assert(b.infer).typed as bigint
         })
         test("generation", () => {
-            assert(b.create()).is(0n)
+            assert(b.generate()).is(0n)
         })
         test("check", () => {
             assert(b.check(999n).errors).is(undefined)
@@ -70,7 +70,7 @@ describe("type keywords", () => {
             assert(s.infer).typed as symbol
         })
         test("generation", () => {
-            assert(typeof s.create()).is("symbol")
+            assert(typeof s.generate()).is("symbol")
         })
         test("check", () => {
             assert(s.check(Symbol("")).errors).is(undefined)
@@ -85,7 +85,7 @@ describe("type keywords", () => {
             assert(f.infer).typed as Function
         })
         test("generation", () => {
-            assert(typeof f.create()).equals("function")
+            assert(typeof f.generate()).equals("function")
         })
         test("check", () => {
             assert(f.check(() => ({})).errors).is(undefined)
@@ -100,7 +100,7 @@ describe("type keywords", () => {
             assert(o.infer).typed as object
         })
         test("generation", () => {
-            assert(o.create()).equals({})
+            assert(o.generate()).equals({})
         })
         test("check", () => {
             assert(o.check([]).errors).is(undefined)
@@ -116,7 +116,7 @@ describe("type keywords", () => {
             assert(u.infer).typed as undefined
         })
         test("generation", () => {
-            assert(u.create()).is(undefined)
+            assert(u.generate()).is(undefined)
         })
         test("check", () => {
             assert(u.check(undefined).errors).is(undefined)
@@ -131,7 +131,7 @@ describe("type keywords", () => {
             assert(n.infer).typed as null
         })
         test("generation", () => {
-            assert(n.create()).is(null)
+            assert(n.generate()).is(null)
         })
         test("check", () => {
             assert(n.check(null).errors).is(undefined)
@@ -146,7 +146,7 @@ describe("type keywords", () => {
             assert(v.infer).typed as void
         })
         test("generation", () => {
-            assert(v.create()).is(undefined)
+            assert(v.generate()).is(undefined)
         })
         test("check", () => {
             assert(v.check(undefined).errors).is(undefined)
@@ -161,7 +161,7 @@ describe("type keywords", () => {
             assert(a.infer).typed as any
         })
         test("generation", () => {
-            assert(a.create()).is(undefined)
+            assert(a.generate()).is(undefined)
         })
         test("check", () => {
             assert(a.check(-34_324n).errors).is(undefined)
@@ -175,7 +175,7 @@ describe("type keywords", () => {
             assert(u.infer).typed as unknown
         })
         test("generation", () => {
-            assert(u.create()).is(undefined)
+            assert(u.generate()).is(undefined)
         })
         test("check", () => {
             assert(u.check(34_324n).errors).is(undefined)
@@ -197,7 +197,7 @@ describe("type keywords", () => {
             )
         })
         test("generation", () => {
-            assert(() => n.create()).throws.snap(
+            assert(() => n.generate()).throws.snap(
                 `Error: Unable to generate a value for 'never': never is ungeneratable by definition.`
             )
         })
@@ -208,7 +208,7 @@ describe("type keywords", () => {
             assert(s.infer).typed as string
         })
         test("generation", () => {
-            assert(s.create()).is("")
+            assert(s.generate()).is("")
         })
         test("check", () => {
             assert(s.check("KEKW").errors).is(undefined)
@@ -223,7 +223,7 @@ describe("type keywords", () => {
             assert(n.infer).typed as number
         })
         test("generation", () => {
-            assert(n.create()).is(0)
+            assert(n.generate()).is(0)
         })
         test("check", () => {
             assert(n.check(-83).errors).is(undefined)

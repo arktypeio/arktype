@@ -4,12 +4,8 @@ import { chainableNoOpProxy } from "@re-/tools"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import { unhandledExceptionMessages } from "./bench.js"
-import type { Measure, TimeUnit } from "./measure/index.js"
-import {
-    createTimeComparison,
-    createTimeMeasure,
-    stringifyTimeMeasure
-} from "./measure/index.js"
+import type { MarkMeasure, Measure, TimeUnit } from "./measure/index.js"
+import { createTimeComparison, createTimeMeasure } from "./measure/index.js"
 import type { BenchTypeAssertions } from "./type.js"
 import { createBenchTypeAssertion } from "./type.js"
 
@@ -17,19 +13,24 @@ export type StatName = keyof typeof stats
 
 export type TimeAssertionName = StatName | "mark"
 
+const round = (value: number, decimalPlaces: number) =>
+    Math.round(value * 10 ** decimalPlaces) / 10 ** decimalPlaces
+
 export const stats = {
     mean: (callTimes: number[]) => {
         const totalCallMs = callTimes.reduce(
             (sum, duration) => sum + duration,
             0
         )
-        return totalCallMs / callTimes.length
+        return round(totalCallMs / callTimes.length, 2)
     },
     median: (callTimes: number[]) => {
         const middleIndex = Math.floor(callTimes.length / 2)
-        return callTimes.length % 2 === 0
-            ? (callTimes[middleIndex - 1] + callTimes[middleIndex]) / 2
-            : callTimes[middleIndex]
+        const ms =
+            callTimes.length % 2 === 0
+                ? (callTimes[middleIndex - 1] + callTimes[middleIndex]) / 2
+                : callTimes[middleIndex]
+        return round(ms, 2)
     }
 }
 
@@ -154,7 +155,7 @@ export class BenchAssertions<
     }
 
     private markAssertion(
-        baseline: Record<StatName, Measure<TimeUnit>> | undefined,
+        baseline: MarkMeasure | undefined,
         callTimes: number[]
     ) {
         console.group(`${this.label}:`)
@@ -242,11 +243,11 @@ export class BenchAssertions<
         ) as any as ReturnedAssertions
     }
 
-    mark(baseline?: Record<StatName, Measure<TimeUnit>>) {
+    mark(baseline?: MarkMeasure) {
         this.ctx.lastSnapCallPosition = caller()
         return this.createStatMethod(
             "mark",
-            baseline
+            baseline as any
         ) as any as ReturnedAssertions
     }
 }

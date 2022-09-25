@@ -2,6 +2,7 @@ import type { parseContext, ParseOptions } from "../parser/common.js"
 import type { Space } from "../space.js"
 import { References } from "./traverse/exports.js"
 import type { Check, Generate } from "./traverse/exports.js"
+import type { TraversalState } from "./traverse/traverse.js"
 
 export namespace Base {
     export type context = parseContext
@@ -28,8 +29,8 @@ export namespace Base {
             public context: context
         ) {}
 
-        abstract check(args: Check.CheckArgs): void
-        abstract generate(args: Generate.GenerateArgs): unknown
+        abstract check(state: Check.CheckState): void
+        abstract generate(state: TraversalState): unknown
         /** Mutates collected by adding references as keys */
         abstract collectReferences(
             opts: References.ReferencesOptions,

@@ -53,7 +53,7 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
         this.resolutions = {}
     }
 
-    type(def: unknown, options: TypeOptions = {}) {
+    type(def: unknown, options: TypeOptions<any> = {}) {
         const root = Root.parse(
             def,
             initializeParseContext(deepMerge(this.options, options), this)

@@ -3,9 +3,9 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NullNode extends TerminalNode {
-    check(args: Check.CheckArgs) {
-        if (args.data !== null) {
-            addTypeKeywordDiagnostic(args, "null", "Must be null")
+    check(state: Check.CheckState) {
+        if (state.data !== null) {
+            addTypeKeywordDiagnostic(state, "null", "Must be null")
         }
     }
 

@@ -2,7 +2,7 @@ import { Generate } from "../traverse/exports.js"
 import type { Check } from "../traverse/exports.js"
 
 export type Constraint = {
-    check(args: Check.CheckArgs): void
+    check(state: Check.CheckState): void
 }
 
 export class ConstraintGenerationError extends Generate.UngeneratableError {

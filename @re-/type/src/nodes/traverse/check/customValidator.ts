@@ -1,8 +1,7 @@
 import type { Evaluate } from "@re-/tools"
 import type { Base } from "../../base.js"
 import type { Path } from "../../common.js"
-import type { CheckArgs } from "./check.js"
-import { Diagnostics } from "./diagnostics.js"
+import type { CheckState } from "./check.js"
 
 export type CustomDiagnosticResult = {
     id: string
@@ -10,8 +9,8 @@ export type CustomDiagnosticResult = {
     additionalContext?: Record<string, unknown>
 }
 
-export type CustomValidator = (
-    args: CustomValidatorArgs
+export type CustomConstraint<Data = unknown> = (
+    args: CustomValidatorArgs<Data>
 ) =>
     | undefined
     | string
@@ -19,64 +18,41 @@ export type CustomValidator = (
     | CustomDiagnosticResult
     | CustomDiagnosticResult[]
 
-export type CustomDiagnosticContext = {
-    definition: Base.RootDefinition
-    data: unknown
+export type CustomConstraintContext<Data = unknown> = {
+    data: Data
     path: Path
 }
 
-export type CustomValidatorArgs = Evaluate<
-    CustomDiagnosticContext & {
-        getOriginalErrors: () => Diagnostics
-    }
+export type CustomValidatorArgs<Data = unknown> = Evaluate<
+    CustomConstraintContext<Data>
 >
 
 export const checkCustomValidator = (
-    validator: CustomValidator,
+    constrain: CustomConstraint,
     node: Base.node,
-    args: CheckArgs
+    state: CheckState
 ) => {
-    const context: CustomDiagnosticContext = {
-        definition: node.definition,
-        data: args.data,
-        path: args.context.path
+    const context: CustomConstraintContext = {
+        data: state.data,
+        path: state.path
     }
-    const result = getCustomValidationResult(validator, context, node, args)
+    const result = constrain(context)
     if (result === undefined) {
         return
     }
     const resultsList = !Array.isArray(result) ? [result] : result
     for (const messageOrCustomResult of resultsList) {
         if (typeof messageOrCustomResult === "string") {
-            args.diagnostics.add(
+            state.errors.add(
                 "custom",
-                { reason: messageOrCustomResult, args },
+                { reason: messageOrCustomResult, state: state },
                 {
                     id: "anonymous"
                 }
             )
         } else {
             const { reason, ...context } = messageOrCustomResult
-            args.diagnostics.add("custom", { reason, args }, context)
+            state.errors.add("custom", { reason, state: state }, context)
         }
     }
 }
-
-const getCustomValidationResult = (
-    validator: CustomValidator,
-    context: CustomDiagnosticContext,
-    node: Base.node,
-    args: CheckArgs
-) =>
-    validator({
-        ...context,
-        getOriginalErrors: () => {
-            const diagnostics = new Diagnostics()
-            node.check({
-                ...args,
-                cfg: { ...args.cfg, validator: "default" },
-                diagnostics
-            })
-            return diagnostics
-        }
-    })

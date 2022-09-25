@@ -51,8 +51,14 @@ export const mapValues: MapValuesFn = (o, mapFn) => {
 }
 
 export const mutateValues: MapValuesFn = (o, mapFn) => {
-    for (const k in o) {
-        o[k] = mapFn(o[k] as any) as any
+    if (Array.isArray(o)) {
+        for (let i = 0; i < o.length; i++) {
+            o[i] = mapFn(o[i])
+        }
+    } else {
+        for (const k in o) {
+            o[k] = mapFn(o[k] as any) as any
+        }
     }
     return o as any
 }

@@ -14,23 +14,19 @@ export class ArrayNode extends UnaryNode implements BoundableNode {
         super("[]", ...args)
     }
 
-    check(args: Check.CheckArgs) {
-        if (!checkObjectRoot(this.definition, "array", args)) {
+    check(state: Check.CheckState) {
+        if (!checkObjectRoot(this.definition, "array", state)) {
             return
         }
-        this.bounds?.check(args)
-        let itemIndex = 0
-        for (const itemValue of args.data) {
-            this.child.check({
-                ...args,
-                data: itemValue,
-                context: {
-                    ...args.context,
-                    path: [...args.context.path, itemIndex]
-                }
-            })
-            itemIndex++
+        const rootData = state.data
+        for (let i = 0; i < rootData.length; i++) {
+            state.path.push(i)
+            state.data = rootData[i] as any
+            this.child.check(state)
+            state.path.pop()
         }
+        state.data = rootData
+        this.bounds?.check(state)
     }
 
     generate() {

@@ -38,7 +38,7 @@ describe("creation", () => {
                 c: "a|b"
             })
                 .$root.type("a")
-                .create()
+                .generate()
         ).equals({ b: {} })
     })
     test("required cycle", () => {
@@ -47,10 +47,10 @@ describe("creation", () => {
             b: { c: "c" },
             c: "a|b"
         })
-        assert(() => cyclicSpace.$root.type("a").create()).throws.snap(
+        assert(() => cyclicSpace.$root.type("a").generate()).throws.snap(
             `Error: Unable to generate a value for 'a|b': None of the definitions can be generated.`
         )
-        assert(() => cyclicSpace.$root.type("a").create({ verbose: true }))
+        assert(() => cyclicSpace.$root.type("a").generate({ verbose: true }))
             .throws
             .snap(`Error: Unable to generate a value for 'a|b': None of the definitions can be generated:
 Unable to generate a value for 'a': Definition includes a required cycle:
@@ -68,7 +68,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                 c: "a|b"
             })
                 .$root.type("a")
-                .create({ onRequiredCycle: { whoops: ["cycle"] } })
+                .generate({ onRequiredCycle: { whoops: ["cycle"] } })
         ).unknown.equals({
             b: { c: { whoops: ["cycle"] } }
         })
@@ -80,7 +80,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                 b: { a: "a" }
             })
                 .$root.type("a|b")
-                .create({ onRequiredCycle: "cycle" })
+                .generate({ onRequiredCycle: "cycle" })
         ).unknown.equals({ b: { a: "cycle" } })
     })
     test("from parsed", () => {
@@ -93,7 +93,7 @@ If you'd like to avoid throwing when this occurs, pass a value to return when th
                 optionalGroup: "group?",
                 optionalGroups: "group[]?"
             })
-            .create()
+            .generate()
         assert(defaultValue).equals({
             requiredGroup: { name: "" },
             requiredGroups: []

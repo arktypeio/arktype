@@ -1,6 +1,7 @@
 import type { Evaluate } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
+import type { CheckState } from "../traverse/check/check.js"
 import type { Check, Generate } from "../traverse/exports.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
@@ -14,67 +15,63 @@ export type InferTuple<
 }>
 
 export class TupleNode extends struct<number> {
-    check(args: Check.CheckArgs) {
-        if (!checkObjectRoot(this.definition, "array", args)) {
+    check(state: Check.CheckState) {
+        if (!checkObjectRoot(this.definition, "array", state)) {
             return
         }
-        const expected = this.entries.length
-        const actual = args.data.length
-        if (expected !== actual) {
-            args.diagnostics.add(
-                "tupleLength",
-                {
-                    reason: `Length must be ${expected}`,
-                    args
-                },
-                {
-                    definition: this.definition,
-                    data: args.data,
-                    expected,
-                    actual
-                }
-            )
+        const expectedLength = this.entries.length
+        const actualLength = state.data.length
+        if (expectedLength !== actualLength) {
+            this.addTupleLengthError(state, expectedLength, actualLength)
             return
         }
-        this.allowsItems(args)
+        this.checkChildren(state)
     }
 
-    private allowsItems(args: Check.CheckArgs<unknown[]>) {
-        for (const [itemIndex, itemNode] of this.entries) {
-            itemNode.check({
-                ...args,
-                data: args.data[itemIndex as any],
-                context: {
-                    ...args.context,
-                    path: [...args.context.path, itemIndex]
-                }
-            })
+    private checkChildren(state: Check.CheckState) {
+        const rootData: any = state.data
+        for (const [k, child] of this.entries) {
+            state.path.push(k)
+            state.data = rootData[k]
+            child.check(state)
+            state.path.pop()
         }
+        state.data = rootData
     }
 
-    generate(args: Generate.GenerateArgs) {
-        const result: unknown[] = []
-        for (const [itemIndex, itemNode] of this.entries) {
-            result.push(
-                itemNode.generate({
-                    ...args,
-                    context: {
-                        ...args.context,
-                        path: [...args.context.path, itemIndex]
-                    }
-                })
-            )
-        }
-        return result
+    generate(state: Generate.GenerateState) {
+        return this.entries.map(([i, child]) => {
+            state.path.push(i)
+            const result = child.generate(state)
+            state.path.pop()
+            return result
+        })
+    }
+
+    private addTupleLengthError(
+        state: CheckState<unknown[]>,
+        expected: number,
+        actual: number
+    ) {
+        state.errors.add(
+            "tupleLength",
+            {
+                reason: `Length must be ${expected}`,
+                state: state
+            },
+            {
+                definition: this.definition,
+                data: state.data,
+                expected,
+                actual
+            }
+        )
     }
 }
 
-export type TupleLengthDiagnostic = Check.DefineDiagnostic<
-    "tupleLength",
-    {
-        definition: TupleDefinition
-        data: unknown[]
-        expected: number
-        actual: number
-    }
->
+export type TupleLengthDiagnostic = Check.DiagnosticConfig<{
+    definition: TupleDefinition
+    data: unknown[]
+    expected: number
+    actual: number
+}>

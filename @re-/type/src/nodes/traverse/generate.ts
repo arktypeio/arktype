@@ -1,10 +1,4 @@
-import type { TraverseContext } from "./traverse.js"
-import { createTraverseContext } from "./traverse.js"
-
-export type GenerateArgs = {
-    cfg: GenerateOptions
-    context: TraverseContext<GenerateOptions>
-}
+import { TraversalState } from "./traverse.js"
 
 export type GenerateOptions = {
     /*
@@ -15,13 +9,7 @@ export type GenerateOptions = {
     verbose?: boolean
 }
 
-export const createGenerateArgs = (
-    options: GenerateOptions = {},
-    modelOptions: GenerateOptions = {}
-): GenerateArgs => ({
-    context: createTraverseContext(modelOptions),
-    cfg: options
-})
+export class GenerateState extends TraversalState {}
 
 export class UngeneratableError extends Error {
     constructor(def: string, reason: string) {

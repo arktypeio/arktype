@@ -5,8 +5,8 @@ import type { SpaceMeta } from "../space.js"
 import { getResolutionDefAndOptions } from "../space.js"
 import { Base } from "./base.js"
 import { checkCustomValidator } from "./traverse/check/customValidator.js"
-import type { Check, References, Traverse } from "./traverse/exports.js"
 import { Generate } from "./traverse/exports.js"
+import type { Check, References } from "./traverse/exports.js"
 
 export class ResolutionNode extends Base.node {
     public root: Base.node
@@ -45,63 +45,43 @@ export class ResolutionNode extends Base.node {
         return this.root.references(opts)
     }
 
-    check(args: Check.CheckArgs) {
-        const nextArgs = this.nextArgs(args, this.context.validate)
-        if (typeof args.data === "object" && args.data !== null) {
-            if (
-                args.context.checkedValuesByAlias[this.alias]?.includes(
-                    args.data
-                )
-            ) {
+    check(state: Check.CheckState) {
+        // const nextArgs = this.nextArgs(state, this.context.validate)
+        if (typeof state.data === "object" && state.data !== null) {
+            if (state.checkedValuesByAlias[this.alias]?.includes(state.data)) {
                 // If we've already seen this value, it must not have any errors or else we wouldn't be here
                 return true
             }
-            if (!args.context.checkedValuesByAlias[this.alias]) {
-                nextArgs.context.checkedValuesByAlias[this.alias] = [args.data]
+            if (!state.checkedValuesByAlias[this.alias]) {
+                state.checkedValuesByAlias[this.alias] = [state.data]
             } else {
-                nextArgs.context.checkedValuesByAlias[this.alias].push(
-                    args.data
-                )
+                state.checkedValuesByAlias[this.alias].push(state.data)
             }
         }
-        const customValidator =
-            nextArgs.cfg.validator ??
-            nextArgs.context.modelCfg.validator ??
-            "default"
-        if (customValidator !== "default") {
-            checkCustomValidator(customValidator, this, nextArgs)
-            return
+        // TODO: Should maybe only check for type errors?
+        const previousErrorCount = state.errors.length
+        state.seen.push(this.alias)
+        this.root.check(state)
+        if (
+            state.options.constrain &&
+            previousErrorCount === state.errors.length
+        ) {
+            checkCustomValidator(state.options.constrain, this, state)
         }
-        this.root.check(nextArgs)
+        state.seen.pop()
     }
 
-    generate(args: Generate.GenerateArgs) {
-        const nextArgs = this.nextArgs(args, this.context.generate)
-        if (args.context.seen.includes(this.alias)) {
-            const onRequiredCycle =
-                nextArgs.cfg.onRequiredCycle ??
-                nextArgs.context.modelCfg.onRequiredCycle
+    generate(state: Generate.GenerateState) {
+        if (state.seen.includes(this.alias)) {
+            const onRequiredCycle = state.options.generate?.onRequiredCycle
             if (onRequiredCycle) {
                 return onRequiredCycle
             }
-            throw new Generate.RequiredCycleError(this.alias, args.context.seen)
+            throw new Generate.RequiredCycleError(this.alias, state.seen)
         }
-        return this.root.generate(nextArgs)
-    }
-
-    private nextArgs<
-        Args extends {
-            context: Traverse.TraverseContext<any>
-            cfg: any
-        }
-    >(args: Args, aliasCfg: any): Args {
-        return {
-            ...args,
-            context: {
-                ...args.context,
-                seen: [...args.context.seen, this.alias],
-                modelCfg: { ...args.context.modelCfg, ...aliasCfg }
-            }
-        }
+        state.seen.push(this.alias)
+        const result = this.root.generate(state)
+        state.seen.pop()
+        return result
     }
 }

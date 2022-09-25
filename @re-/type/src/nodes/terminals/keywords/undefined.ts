@@ -3,9 +3,9 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class UndefinedNode extends TerminalNode {
-    check(args: Check.CheckArgs) {
-        if (args.data !== undefined) {
-            addTypeKeywordDiagnostic(args, "undefined", "Must be undefined")
+    check(state: Check.CheckState) {
+        if (state.data !== undefined) {
+            addTypeKeywordDiagnostic(state, "undefined", "Must be undefined")
         }
     }
 

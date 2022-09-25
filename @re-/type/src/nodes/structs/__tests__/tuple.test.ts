@@ -17,7 +17,7 @@ describe("tuple", () => {
             )
         })
         test("generation", () => {
-            assert(empty().create()).equals([])
+            assert(empty().generate()).equals([])
         })
     })
     const shallow = () => type(["string", "number", "6"])
@@ -72,6 +72,6 @@ describe("tuple", () => {
         })
     })
     test("generate", () => {
-        assert(shallow().create()).equals(["", 0, 6])
+        assert(shallow().generate()).equals(["", 0, 6])
     })
 })

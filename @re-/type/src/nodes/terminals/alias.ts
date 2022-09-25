@@ -61,11 +61,11 @@ export class Alias extends TerminalNode {
         return this.context.space!.resolutions[this.definition]
     }
 
-    check(args: Check.CheckArgs) {
-        return this.resolution.check(args)
+    check(state: Check.CheckState) {
+        return this.resolution.check(state)
     }
 
-    generate(args: Generate.GenerateArgs) {
-        return this.resolution.generate(args)
+    generate(state: Generate.GenerateState) {
+        return this.resolution.generate(state)
     }
 }

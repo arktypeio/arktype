@@ -3,9 +3,9 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class SymbolNode extends TerminalNode {
-    check(args: Check.CheckArgs) {
-        if (typeof args.data !== "symbol") {
-            addTypeKeywordDiagnostic(args, "symbol", "Must be a symbol")
+    check(state: Check.CheckState) {
+        if (typeof state.data !== "symbol") {
+            addTypeKeywordDiagnostic(state, "symbol", "Must be a symbol")
         }
     }
 

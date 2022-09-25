@@ -1,46 +1,32 @@
 import type { JsBuiltinTypes, JsTypeName } from "@re-/tools"
 import { toString } from "@re-/tools"
-import type { TraverseContext } from "../traverse.js"
-import { createTraverseContext } from "../traverse.js"
-import type { CustomValidator } from "./customValidator.js"
-import type { OptionsByDiagnostic } from "./diagnostics.js"
+import type { TypeOptions } from "../../../type.js"
+import { TraversalState } from "../traverse.js"
 import { Diagnostics } from "./diagnostics.js"
+import type { CustomConstraint, OptionsByDiagnostic } from "./exports.js"
 
-export type CheckArgs<Data = unknown> = {
-    data: Data
-    diagnostics: Diagnostics
-    cfg: CheckOptions
-    context: CheckContext
+export type CheckOptions<Inferred = unknown> = {
+    constrain?: CustomConstraint<Inferred>
+    errors?: OptionsByDiagnostic
 }
 
-export const createCheckArgs = (
-    data: unknown,
-    options: CheckOptions = {},
-    modelOptions: CheckOptions = {}
-): CheckArgs => {
-    const args = {
-        data,
-        diagnostics: new Diagnostics(),
-        context: createTraverseContext(modelOptions) as CheckContext,
-        cfg: options
-    }
-    args.context.checkedValuesByAlias = {}
-    return args
-}
-
-export type CheckOptions = {
-    validator?: CustomValidator | "default"
-    diagnostics?: OptionsByDiagnostic
-}
-
-export type CheckContext = TraverseContext<CheckOptions> & {
+export class CheckState<Data = unknown> extends TraversalState {
+    errors: Diagnostics = new Diagnostics()
     checkedValuesByAlias: Record<string, object[]>
-}
 
-export const dataIsOfType = <TypeName extends JsTypeName>(
-    args: CheckArgs,
-    typeName: TypeName
-): args is CheckArgs<JsBuiltinTypes[TypeName]> => typeof args.data === typeName
+    constructor(public data: Data, options: TypeOptions) {
+        super(options)
+        this.checkedValuesByAlias = {}
+    }
+
+    dataIsOfType<TypeName extends JsTypeName>(
+        typeName: TypeName
+    ): this is CheckState<JsBuiltinTypes[TypeName]> {
+        // In JS, typeof null === "object", but in TS null is not assignable to
+        // object. To avoid false positives, we just avoid narrowing based on null.
+        return this.data === null ? false : typeof this.data === typeName
+    }
+}
 
 export const stringifyData = (data: unknown) =>
     toString(data, {

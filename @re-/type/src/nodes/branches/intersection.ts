@@ -13,9 +13,9 @@ export class IntersectionNode extends BranchNode {
     constructor(...args: BranchConstructorArgs) {
         super("&", ...args)
     }
-    check(args: Check.CheckArgs) {
+    check(state: Check.CheckState) {
         for (const branch of this.children) {
-            branch.check(args)
+            branch.check(state)
         }
     }
 

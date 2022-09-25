@@ -77,11 +77,15 @@ export type OneOrMorePropsFrom<O> = {
     >
 }[keyof O]
 
-export type FilterFunction<T> = (
-    value: T,
+export type ArrayMethodParams<Element = unknown> = [
+    element: Element,
     index: number,
-    context: T[]
-) => boolean
+    context: Element[]
+]
+
+export type MapFn<In = unknown> = <Out>(...args: ArrayMethodParams<In>) => Out
+
+export type FilterFn<In = unknown> = (...args: ArrayMethodParams<In>) => boolean
 
 export type IntersectOf<U> = (
     U extends unknown ? (k: U) => void : never

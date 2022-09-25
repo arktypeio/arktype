@@ -14,29 +14,28 @@ import type { KeywordTypeDiagnostic } from "../../terminals/keywords/common.js"
 import type { NumberSubtypeDiagnostic } from "../../terminals/keywords/number.js"
 import type { RegexDiagnostic } from "../../terminals/keywords/string.js"
 import type { LiteralDiagnostic } from "../../terminals/literal.js"
-import type { CheckArgs } from "./check.js"
+import type { CheckState } from "./check.js"
 import type { CustomDiagnosticResult } from "./customValidator.js"
 
 export type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
     message?: (context: Diagnostic<Code>) => string
-    omitActualFromMessage?: boolean
-}
+} & ("actual" extends keyof RegisteredDiagnostics[Code]["context"]
+    ? { omitActualFromMessage?: boolean }
+    : {})
 
 export type OptionsByDiagnostic = {
-    [Code in DiagnosticCode]?: RegisteredDiagnostics[Code]["options"]
+    [Code in DiagnosticCode]?: DiagnosticOptions<Code>
 }
 
-export type DefineDiagnostic<
-    Code extends DiagnosticCode,
+export type DiagnosticConfig<
     Context extends Record<string, unknown>,
     Options extends Record<string, unknown> = {}
 > = {
     context: Context
-    options: Evaluate<BaseDiagnosticOptions<Code> & Options>
+    options: Options
 }
 
-export type CustomDiagnostic = DefineDiagnostic<
-    "custom",
+export type CustomDiagnostic = DiagnosticConfig<
     Omit<CustomDiagnosticResult, "reason">
 >
 
@@ -62,8 +61,9 @@ export type ExternalDiagnosticContext<Code extends DiagnosticCode> = Omit<
     "reason"
 >
 
-export type DiagnosticOptions<Code extends DiagnosticCode> =
-    RegisteredDiagnostics[Code]["options"]
+export type DiagnosticOptions<Code extends DiagnosticCode> = Evaluate<
+    RegisteredDiagnostics[Code]["options"] & BaseDiagnosticOptions<Code>
+>
 
 export type DiagnosticCode = keyof RegisteredDiagnostics
 
@@ -74,7 +74,7 @@ export type DiagnosticArgs<Code extends DiagnosticCode> = [
 ]
 
 export type InternalDiagnosticInput = {
-    args: CheckArgs
+    state: CheckState
     reason: string
     suffix?: string
 }
@@ -87,21 +87,21 @@ export class Diagnostic<Code extends DiagnosticCode> {
 
     constructor(
         public readonly code: Code,
-        { reason, args, suffix }: InternalDiagnosticInput,
+        { reason, state, suffix }: InternalDiagnosticInput,
         context: DiagnosticContext<Code>
     ) {
-        this.path = args.context.path
+        // TODO: Idea of freezing current? Probably could be built into traversal?
+        this.path = [...state.path]
         this.context = context
-        // TODO: Figure out how to reconcile this and other context sources (cfg vs context.modelCfg?)
-        this.options = {
-            ...args.cfg.diagnostics?.[code],
-            ...args.context.modelCfg.diagnostics?.[code]
-        }
+        // TODO: Figure out how to reconcile this and other context sources (config vs context.modelConfig?)
+        const options = state.options.errors?.[code]
+        this.options = { ...options } as any
         this.message = reason
-        if (!this.options?.omitActualFromMessage) {
-            if ("actual" in context) {
-                this.message += ` (was ${context.actual})`
-            }
+        if (
+            "actual" in context &&
+            !(this.options as any)?.omitActualFromMessage
+        ) {
+            this.message += ` (was ${context.actual})`
         }
         if (suffix) {
             this.message += suffix
@@ -120,7 +120,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         input: InternalDiagnosticInput,
         context: DiagnosticContext<Code>
     ) {
-        this.push(new Diagnostic(code, input, context))
+        this.push(new Diagnostic(code, input, context) as any)
     }
 
     get summary() {
