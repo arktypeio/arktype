@@ -6,7 +6,7 @@ import { Diagnostics } from "./diagnostics.js"
 import type { CustomConstraint, OptionsByDiagnostic } from "./exports.js"
 
 export type CheckOptions<Inferred = unknown> = {
-    constrain?: CustomConstraint<Inferred>
+    narrow?: CustomConstraint<Inferred>
     errors?: OptionsByDiagnostic
 }
 

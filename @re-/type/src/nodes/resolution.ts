@@ -63,10 +63,10 @@ export class ResolutionNode extends Base.node {
         state.seen.push(this.alias)
         this.root.check(state)
         if (
-            state.options.constrain &&
+            state.options.narrow &&
             previousErrorCount === state.errors.length
         ) {
-            checkCustomValidator(state.options.constrain, this, state)
+            checkCustomValidator(state.options.narrow, this, state)
         }
         state.seen.pop()
     }

@@ -1,6 +1,7 @@
 // @ts-nocheck TODO: Add a real snippet here
 import { narrow, Narrow } from "@re-/tools"
 import { type } from "./src/index.js"
+import { TypeOptions } from "./src/type.js"
 
 const type = {} as any
 const io = {} as any
@@ -23,8 +24,10 @@ const user = type({
 
 const newUser = user({ name: "David" })
 
+// Should append semicolon for consistency with "meta" definition?
 const user2 = type([
     { first: "string", last: "string", age: "number?" },
+    "=>",
     { name: "string", age: "number?" },
     // Keys whose type does not change (and eventually those that can be auto-converted) should be optional to return
     ({ name }) => {
@@ -40,7 +43,6 @@ const user3 = type(
     io(
         { name: "string", age: "number?" },
         { first: "string", last: "string", age: "number?" },
-        // Keys whose type does not change (and eventually those that can be auto-converted) should be optional to return
         ({ name }) => {
             const [first, last] = name.split(" ")
             return {
@@ -65,4 +67,70 @@ const user4 = type({
             }
         }
     )
+})
+
+const define = (def: unknown, options?: TypeOptions) => {}
+
+const user7 = type({
+    first: "string",
+    last: "string",
+    age: "number?",
+    extras: define(
+        { data: "unknown" },
+        {
+            errors: {
+                extraneousKeys: true
+            }
+        }
+    )
+})
+
+const user8 = type({
+    first: "string",
+    last: "string",
+    age: "number?",
+    extras: [
+        { data: "unknown" },
+        ";",
+        {
+            errors: {
+                extraneousKeys: true
+            }
+        }
+    ]
+})
+
+// TODO: Toplevel narrow
+const user10 = type({
+    first: "string",
+    last: "string",
+    age: "number?",
+    extras: narrow({ data: "unknown" }, ({ data }) =>
+        data === "isSomethingSpecific" ? undefined : "this is an error"
+    )
+})
+
+// Output of above
+const user11 = type({
+    first: "string",
+    last: "string",
+    age: "number?",
+    extras: [
+        { data: "unknown" },
+        // Meta operator as second item of tuple
+        ";",
+        {
+            narrow: ({ data }) =>
+                data === "isSomethingSpecific" ? undefined : "this is an error"
+        }
+    ]
+})
+
+// TODO: If meta token is second char of tuple, parse accordingly. Will include main operators plus ";" and "=>"
+const meta = type({
+    first: "string",
+    last: "string",
+    age: "number?",
+    extras: ["string", "|", "boolean"],
+    another: ["number", "[]"]
 })

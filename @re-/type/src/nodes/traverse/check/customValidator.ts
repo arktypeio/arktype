@@ -28,7 +28,7 @@ export type CustomValidatorArgs<Data = unknown> = Evaluate<
 >
 
 export const checkCustomValidator = (
-    constrain: CustomConstraint,
+    narrow: CustomConstraint,
     node: Base.node,
     state: CheckState
 ) => {
@@ -36,7 +36,7 @@ export const checkCustomValidator = (
         data: state.data,
         path: state.path
     }
-    const result = constrain(context)
+    const result = narrow(context)
     if (result === undefined) {
         return
     }

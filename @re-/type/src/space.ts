@@ -1,5 +1,5 @@
 import type { Conform, Evaluate, Get, Merge, Narrow } from "@re-/tools"
-import { chainableNoOpProxy, deepMerge } from "@re-/tools"
+import { chainableNoOpProxy, deepMerge, mapValues } from "@re-/tools"
 import type { RootNode } from "./nodes/common.js"
 import { ResolutionNode } from "./nodes/resolution.js"
 import type { ParseOptions } from "./parser/common.js"
@@ -38,7 +38,7 @@ export const dynamicSpace = (
     for (const alias of Object.keys(dictionary)) {
         const resolution = new ResolutionNode(alias, meta)
         meta.resolutions[alias] = resolution
-        compiled[alias] = new Type(resolution.root, resolution)
+        compiled[alias] = new Type(resolution.root, resolution, options)
     }
     return compiled as DynamicSpace
 }
@@ -53,12 +53,13 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
         this.resolutions = {}
     }
 
-    type(def: unknown, options: TypeOptions<any> = {}) {
+    type(definition: unknown, options: TypeOptions<any> = {}) {
+        const compiledOptions = deepMerge(this.options, options)
         const root = Root.parse(
-            def,
-            initializeParseContext(deepMerge(this.options, options), this)
+            definition,
+            initializeParseContext(compiledOptions, this)
         )
-        return new Type(def, root, deepMerge(this.options, options)) as any
+        return new Type(definition, root, compiledOptions) as any
     }
 
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions) {
@@ -73,12 +74,7 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
     }
 
     get ast() {
-        return Object.fromEntries(
-            Object.entries(this.resolutions).map(([alias, resolution]) => [
-                alias,
-                resolution.ast
-            ])
-        )
+        return mapValues(this.resolutions, (resolution) => resolution.ast)
     }
 }
 

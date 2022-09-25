@@ -11,7 +11,7 @@ describe("custom validators", () => {
     }
     test("type", () => {
         const palindrome = type("string", {
-            constrain: ({ data }) =>
+            narrow: ({ data }) =>
                 data === [...data].reverse().join("")
                     ? undefined
                     : `'${data}' is not a palindrome!`
@@ -23,7 +23,7 @@ describe("custom validators", () => {
         const palindrome = space({ palindrome: "string" }).$root.type(
             "palindrome",
             {
-                constrain: palindromeValidator
+                narrow: palindromeValidator
             }
         )
         assert(palindrome.check("step on no pets").errors).equals(undefined)
@@ -34,7 +34,7 @@ describe("custom validators", () => {
     test("model root", () => {
         const mySpace = space({
             palindrome: define("string", {
-                constrain: palindromeValidator
+                narrow: palindromeValidator
             })
         })
         assert(mySpace.palindrome.check("redivider").errors).is(undefined)
@@ -45,7 +45,7 @@ describe("custom validators", () => {
     test("model nested", () => {
         const mySpace = space({
             palindrome: define("string", {
-                constrain: palindromeValidator
+                narrow: palindromeValidator
             }),
             yourPal: { name: "palindrome" }
         })

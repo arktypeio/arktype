@@ -31,8 +31,7 @@ export type DynamicType = TypeFrom<unknown, {}, unknown>
 
 export type TypeOptions<Inferred = unknown> = {
     parse?: ParseOptions
-    // TODO: Rename to narrow?
-    constrain?: Check.CustomConstraint<Inferred>
+    narrow?: Check.CustomConstraint<Inferred>
     errors?: Check.OptionsByDiagnostic
     generate?: Generate.GenerateOptions
 }
@@ -58,7 +57,7 @@ export class Type implements DynamicType {
     constructor(
         public definition: unknown,
         public root: Base.node,
-        public options: TypeOptions = {}
+        public options: TypeOptions
     ) {}
 
     get infer() {

@@ -61,7 +61,7 @@ describe("extend space", () => {
                 onCycle: "boolean"
             },
             errors: { extraneousKeys: { enabled: true } },
-            constrain: `<function validator>`
+            narrow: `<function validator>`
         })
     })
 })
@@ -82,7 +82,7 @@ const getExtendedSpace = () => {
                 onCycle: "number"
             },
             errors: { extraneousKeys: { enabled: false } },
-            constrain: () => undefined
+            narrow: () => undefined
         }
     )
     const extended = mySpace.$root.extend(
