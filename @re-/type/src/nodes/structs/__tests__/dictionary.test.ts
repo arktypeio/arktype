@@ -79,20 +79,15 @@ describe("dictionary", () => {
             })
             test("extraneous keys", () => {
                 assert(
-                    shallow().check(
-                        {
-                            a: "ok",
-                            b: 4.321,
-                            c: 67,
-                            d: "extraneous",
-                            e: "x-ray-knee-us"
-                        },
-                        {
-                            errors: {
-                                extraneousKeys: { enabled: true }
-                            }
+                    type(shallowInputDef, {
+                        errors: {
+                            extraneousKeys: { enabled: true }
                         }
-                    ).errors as any as Check.Diagnostic<"extraneousKeys">[]
+                    }).check({
+                        errors: {
+                            extraneousKeys: { enabled: true }
+                        }
+                    }).errors as any as Check.Diagnostic<"extraneousKeys">[]
                 ).snap([
                     {
                         code: `extraneousKeys`,
@@ -115,19 +110,16 @@ describe("dictionary", () => {
             })
             test("single extraneous", () => {
                 assert(
-                    shallow().check(
-                        {
-                            a: "",
-                            b: 1,
-                            c: 67,
-                            extraneous: true
-                        },
-                        {
-                            errors: {
-                                extraneousKeys: { enabled: true }
-                            }
+                    type(shallowInputDef, {
+                        errors: {
+                            extraneousKeys: { enabled: true }
                         }
-                    ).errors?.summary
+                    }).check({
+                        a: "",
+                        b: 1,
+                        c: 67,
+                        extraneous: true
+                    }).errors?.summary
                 ).snap(`Key 'extraneous' was unexpected`)
             })
         })

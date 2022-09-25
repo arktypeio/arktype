@@ -40,7 +40,6 @@ export type TypeOptions<Inferred = unknown> = {
 export type TypeFn<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
     definition: Root.Validate<Def, S["Dict"]>,
     // TODO: Better to have this in generics?
-    // Did adding this result in params type hints not being individual?
     options?: TypeOptions<Infer<Def, Base.InferenceContext.FromSpace<S>>>
 ) => TypeFrom<Def, S["Dict"], Infer<Def, Base.InferenceContext.FromSpace<S>>>
 
@@ -102,10 +101,7 @@ export class Type implements DynamicType {
     }
 }
 
-export type CheckFn<Inferred> = (
-    data: unknown,
-    options?: Check.CheckOptions
-) => CheckResult<Inferred>
+export type CheckFn<Inferred> = (data: unknown) => CheckResult<Inferred>
 
 export type CheckResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
@@ -114,10 +110,7 @@ export type CheckResult<Inferred> = MutuallyExclusiveProps<
     }
 >
 
-export type AssertFn<Inferred> = (
-    value: unknown,
-    options?: Check.CheckOptions
-) => Inferred
+export type AssertFn<Inferred> = (value: unknown) => Inferred
 
 export type GenerateFn<Inferred> = (
     options?: Generate.GenerateOptions

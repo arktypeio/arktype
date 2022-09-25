@@ -25,17 +25,20 @@ describe("union node", () => {
             })
             test("explainBranches", () => {
                 assert(
-                    space({
-                        a: "b|c",
-                        b: "d|e",
-                        c: "f|g",
-                        d: "0",
-                        e: "1",
-                        f: "2",
-                        g: "3"
-                    }).a.check(4, {
-                        errors: { union: { explainBranches: true } }
-                    }).errors?.summary
+                    space(
+                        {
+                            a: "b|c",
+                            b: "d|e",
+                            c: "f|g",
+                            d: "0",
+                            e: "1",
+                            f: "2",
+                            g: "3"
+                        },
+                        {
+                            errors: { union: { explainBranches: true } }
+                        }
+                    ).a.check(4).errors?.summary
                 ).snap(`Must be one of b|c (was 4):
 b: Must be one of d|e (was 4):
 d: Must be 0 (was 4)
