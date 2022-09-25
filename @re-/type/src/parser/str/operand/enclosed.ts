@@ -66,10 +66,10 @@ export const parseEnclosedBase = (
 export type ParseEnclosedBase<
     S extends ParserState,
     Enclosing extends EnclosedBaseStartChar
-> = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Rest}`
+> = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Unscanned}`
     ? ParserState.From<{
           L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
-          R: Rest
+          R: Unscanned
       }>
     : ParserState.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
 

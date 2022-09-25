@@ -22,25 +22,6 @@ export namespace Str {
         ? Message
         : Def
 
-    export type Infer<
-        Def extends string,
-        Ctx extends Base.InferenceContext
-    > = TreeInfer<Parse<Def, Ctx["Dict"]>, Ctx>
-
-    type TreeInfer<T, Ctx extends Base.InferenceContext> = T extends string
-        ? InferTerminal<T, Ctx>
-        : T extends OptionalAst<infer Child>
-        ? TreeInfer<Child, Ctx> | undefined
-        : T extends ArrayAst<infer Child>
-        ? TreeInfer<Child, Ctx>[]
-        : T extends UnionAst<infer Left, infer Right>
-        ? TreeInfer<Left, Ctx> | TreeInfer<Right, Ctx>
-        : T extends IntersectionAst<infer Left, infer Right>
-        ? TreeInfer<Left, Ctx> & TreeInfer<Right, Ctx>
-        : T extends ConstrainedAst<infer Child>
-        ? TreeInfer<Child, Ctx>
-        : unknown
-
     export type References<Def extends string, Dict> = TreeReferences<
         Parse<Def, Dict>
     >

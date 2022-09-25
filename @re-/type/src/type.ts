@@ -20,7 +20,7 @@ export const type: TypeFn = (definition, options = {}, space?: SpaceMeta) => {
     return new Type(definition, root, options as any) as any
 }
 
-export const dynamic = type as DynamicTypeFn
+export const dynamic = type as any as DynamicTypeFn
 
 export type DynamicTypeFn = (
     definition: unknown,
@@ -36,11 +36,11 @@ export type TypeOptions<Inferred = unknown> = {
     generate?: Generate.GenerateOptions
 }
 
-export type TypeFn<S extends Space = { Dict: {}; Meta: {} }> = <Def>(
+export type TypeFn<S extends Space = { Dict: {}; Meta: {}; Ast: {} }> = <Def>(
     definition: Root.Validate<Def, S["Dict"]>,
     // TODO: Better to have this in generics?
-    options?: TypeOptions<Infer<Def, Base.InferenceContext.FromSpace<S>>>
-) => TypeFrom<Def, S["Dict"], Infer<Def, Base.InferenceContext.FromSpace<S>>>
+    options?: TypeOptions<Infer<Def, S>>
+) => TypeFrom<Def, S["Dict"], Infer<Def, S>>
 
 export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
     definition: Def
@@ -115,11 +115,12 @@ export type GenerateFn<Inferred> = (
     options?: Generate.GenerateOptions
 ) => Inferred
 
-export type Infer<Def, S extends Space> = RootNode.Infer<
-    Def,
+export type Infer<Definition, S extends Space> = RootNode.InferAst<
+    Root.Parse<Definition, S["Dict"]>,
     Base.InferenceContext.From<{
         Dict: S["Dict"]
         Meta: S["Meta"]
+        Ast: S["Ast"]
         Seen: {}
     }>
 >

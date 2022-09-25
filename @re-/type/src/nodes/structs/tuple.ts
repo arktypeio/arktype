@@ -7,11 +7,11 @@ import { checkObjectRoot, struct } from "./struct.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
 
-export type InferTuple<
-    Def extends readonly unknown[],
+export type InferTupleAst<
+    Ast extends readonly unknown[],
     Ctx extends Base.InferenceContext
 > = Evaluate<{
-    [I in keyof Def]: RootNode.Infer<Def[I], Ctx>
+    [I in keyof Ast]: RootNode.InferAst<Ast[I], Ctx>
 }>
 
 export class TupleNode extends struct<number> {

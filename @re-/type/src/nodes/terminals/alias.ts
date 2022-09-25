@@ -1,4 +1,5 @@
 import type { WithPropValue } from "@re-/tools"
+import type { Root } from "../../index.js"
 import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { Check, Generate } from "../traverse/exports.js"
@@ -6,7 +7,7 @@ import { TerminalNode } from "./terminal.js"
 
 export namespace Alias {
     export type Infer<
-        Def extends keyof Ctx["Dict"],
+        Def extends keyof Ctx["Ast"],
         Ctx extends Base.InferenceContext
     > = "onResolve" extends keyof Ctx["Meta"]
         ? Def extends "$resolution"
@@ -19,30 +20,40 @@ export namespace Alias {
         : BaseOf<Def, Ctx>
 
     type BaseOf<
-        Def extends keyof Ctx["Dict"],
+        Def extends keyof Ctx["Ast"],
         Ctx extends Base.InferenceContext
-    > = RootNode.Infer<Ctx["Dict"][Def], Ctx & { Seen: { [K in Def]: true } }>
+    > = RootNode.InferAst<Ctx["Ast"][Def], Ctx & { Seen: { [K in Def]: true } }>
 
     type OnResolveOf<
-        Def extends keyof Ctx["Dict"],
+        Def extends keyof Ctx["Ast"],
         Ctx extends Base.InferenceContext
-    > = RootNode.Infer<
+    > = RootNode.InferAst<
         Ctx["Meta"]["onResolve"],
         {
             Dict: WithPropValue<Ctx["Dict"], "$resolution", Ctx["Dict"][Def]>
             Meta: Ctx["Meta"]
+            Ast: WithPropValue<
+                Ctx["Ast"],
+                "$cyclic",
+                Root.Parse<Ctx["Dict"][Def], Ctx["Dict"]>
+            >
             Seen: Ctx["Seen"] & { [K in Def]: true }
         }
     >
 
     type OnCycleOf<
-        Def extends keyof Ctx["Dict"],
+        Def extends keyof Ctx["Ast"],
         Ctx extends Base.InferenceContext
-    > = RootNode.Infer<
+    > = RootNode.InferAst<
         Ctx["Meta"]["onCycle"],
         {
             Dict: WithPropValue<Ctx["Dict"], "$cyclic", Ctx["Dict"][Def]>
             Meta: Ctx["Meta"]
+            Ast: WithPropValue<
+                Ctx["Ast"],
+                "$cyclic",
+                Root.Parse<Ctx["Dict"][Def], Ctx["Dict"]>
+            >
             Seen: {}
         }
     >

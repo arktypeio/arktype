@@ -20,8 +20,11 @@ export type ParseBound<
     S extends ParserState,
     Start extends ComparatorChar,
     Unscanned extends string
-> = Unscanned extends Scanner.Shift<"=", infer Rest>
-    ? ParserState.From<{ L: ReduceBound<S["L"], `${Start}=`>; R: Rest }>
+> = Unscanned extends Scanner.Shift<"=", infer NextUnscanned>
+    ? ParserState.From<{
+          L: ReduceBound<S["L"], `${Start}=`>
+          R: NextUnscanned
+      }>
     : Start extends SingleCharComparator
     ? ParserState.From<{ L: ReduceBound<S["L"], Start>; R: Unscanned }>
     : ParserState.Error<SingleEqualsMessage>

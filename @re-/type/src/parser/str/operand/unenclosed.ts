@@ -34,10 +34,10 @@ export type ParseUnenclosedBase<
     Fragment extends string,
     Unscanned extends string,
     Dict
-> = Unscanned extends Scanner.Shift<infer Next, infer Rest>
-    ? Next extends BaseTerminatingChar
+> = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
+    ? Lookahead extends BaseTerminatingChar
         ? ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
-        : ParseUnenclosedBase<S, `${Fragment}${Next}`, Rest, Dict>
+        : ParseUnenclosedBase<S, `${Fragment}${Lookahead}`, NextUnscanned, Dict>
     : ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
 
 export const toNodeIfResolvableIdentifier = (

@@ -2,21 +2,22 @@ import type { Dictionary, Evaluate } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { Check, Generate } from "../traverse/exports.js"
+import type { OptionalAst } from "../unaries/optional.js"
 import { OptionalNode } from "../unaries/optional.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
-export type InferDictionary<
-    Def,
+export type InferDictionaryAst<
+    Ast,
     Ctx extends Base.InferenceContext,
-    OptionalKey extends keyof Def = {
-        [K in keyof Def]: Def[K] extends `${string}?` ? K : never
-    }[keyof Def],
-    RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
+    OptionalKey extends keyof Ast = {
+        [K in keyof Ast]: Ast[K] extends OptionalAst ? K : never
+    }[keyof Ast],
+    RequiredKey extends keyof Ast = Exclude<keyof Ast, OptionalKey>
 > = Evaluate<
     {
-        [K in RequiredKey]: RootNode.Infer<Def[K], Ctx>
+        [K in RequiredKey]: RootNode.InferAst<Ast[K], Ctx>
     } & {
-        [K in OptionalKey]?: RootNode.Infer<Def[K], Ctx>
+        [K in OptionalKey]?: RootNode.InferAst<Ast[K], Ctx>
     }
 >
 

@@ -86,6 +86,7 @@ const suffixLoop = (s: parserState.suffix, context: parseContext): strNode => {
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
 }
 
+// TODO: Test removing suffixes
 type SuffixLoop<S extends ParserState.Of<Left.Suffix>> =
     S["L"]["nextSuffix"] extends "END"
         ? Finalize<S["L"]>

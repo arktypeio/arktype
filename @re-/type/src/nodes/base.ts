@@ -49,6 +49,7 @@ export namespace Base {
     export type InferenceContext = {
         Dict: unknown
         Meta: ParseOptions
+        Ast: unknown
         Seen: Record<string, true>
     }
 
@@ -58,6 +59,7 @@ export namespace Base {
         export type FromSpace<S extends Space> = From<{
             Dict: S["Dict"]
             Meta: S["Meta"]
+            Ast: S["Ast"]
             Seen: {}
         }>
     }

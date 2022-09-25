@@ -22,10 +22,10 @@ export type CreateSpaceFn = <Dict, Meta = {}>(
     dictionary: ValidateResolutions<Dict>,
     options?: ValidateSpaceOptions<Dict, Meta>
     // @ts-expect-error Constraining Meta interferes with our ability to validate it
-) => SpaceOutput<{ Dict: ValidateResolutions<Dict>; Meta: Meta }>
+) => SpaceOutput<ParseSpace<ValidateResolutions<Dict>, Meta>>
 
 export type DynamicSpace = Record<string, DynamicType> & {
-    $root: SpaceMetaFrom<{ Dict: any; Meta: {} }>
+    $root: SpaceMetaFrom<{ Dict: any; Meta: {}; Ast: any }>
 }
 
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
@@ -78,6 +78,10 @@ export class SpaceMeta implements SpaceMetaFrom<any> {
     }
 }
 
+const z = space({ a: "string[]", b: "a" })
+
+z.$root.ast
+
 /**
  * Although this function claims to return Def, it actually returns an object
  * with a nested "$def" key containing the definition alongside any options
@@ -112,6 +116,7 @@ export const getResolutionDefAndOptions = (def: any): DefWithOptions => {
 
 export type Space = {
     Dict: unknown
+    Ast: unknown
     Meta: ParseOptions
 }
 
@@ -144,7 +149,7 @@ export type SpaceOutput<S extends Space> = Evaluate<
 
 export type SpaceMetaFrom<S extends Space> = {
     infer: InferSpaceRoot<S>
-    ast: Root.Parse<S["Dict"], S["Dict"]>
+    ast: S["Ast"]
     type: TypeFn<S>
     extend: ExtendFn<S>
     dictionary: S["Dict"]
@@ -166,11 +171,12 @@ export type InferSpaceRoot<S extends Space> = Evaluate<{
 export type InferResolution<
     S extends Space,
     Alias extends keyof S["Dict"]
-> = RootNode.Infer<
-    S["Dict"][Alias],
+> = RootNode.InferAst<
+    Root.Parse<S["Dict"][Alias], S["Dict"]>,
     {
         Dict: S["Dict"]
         Meta: S["Meta"]
+        Ast: S["Ast"]
         Seen: { [K in Alias]: true }
     }
 >
@@ -181,10 +187,15 @@ export type ExtendFn<S extends Space> = <ExtensionDict, ExtensionMeta>(
         Merge<S["Dict"], ExtensionDict>,
         ExtensionMeta
     >
-) => SpaceOutput<{
-    Dict: Merge<S["Dict"], ExtensionDict>
-    Meta: Merge<S["Meta"], ExtensionMeta>
-}>
+) => SpaceOutput<
+    ParseSpace<Merge<S["Dict"], ExtensionDict>, Merge<S["Meta"], ExtensionMeta>>
+>
+
+export type ParseSpace<Definition, Meta extends ParseOptions> = {
+    Dict: Definition
+    Meta: Meta
+    Ast: Root.Parse<Definition, Definition>
+}
 
 export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
     [TypeName in keyof ExtensionDict]: Validate<

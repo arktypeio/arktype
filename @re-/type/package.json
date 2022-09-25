@@ -29,7 +29,8 @@
         "tnt": "reassert --skipTypes --cmd mocha",
         "testBuild": "ts-node ../../scripts/testBuild.ts",
         "bench": "reassert bench",
-        "generateBenchData": "ts-node ./scripts/generateBenchData.ts"
+        "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
+        "diag": "tsc --composite false --noEmit --diagnostics --incremental false"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
