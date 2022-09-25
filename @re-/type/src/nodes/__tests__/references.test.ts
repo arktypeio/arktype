@@ -112,11 +112,11 @@ describe("references", () => {
                     easyAs: ["a|string", "a|b|boolean", "a|b|c|never"]
                 }
             })
-            type Dictionary = typeof mySpace.$root.dictionary
+            type Dictionary = typeof mySpace.$root.definitions
             const references = mySpace.c.references({
                 preserveStructure: true,
                 filter: (reference): reference is keyof Dictionary =>
-                    reference in mySpace.$root.dictionary
+                    reference in mySpace.$root.definitions
             })
             assert(references).equals(
                 {

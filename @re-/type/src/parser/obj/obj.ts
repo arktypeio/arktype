@@ -11,24 +11,24 @@ import type {
 import { isMetaDefinition, parseMetaDefinition } from "./meta.js"
 
 export namespace Obj {
-    export type Validate<Def, Dict> = Def extends MetaDefinition<
+    export type Validate<Def, Space> = Def extends MetaDefinition<
         infer Left,
         infer Token,
         infer Args
     >
-        ? ValidateMetaDefinition<Left, Token, Args, Dict>
+        ? ValidateMetaDefinition<Left, Token, Args, Space>
         : {
-              [K in keyof Def]: Root.Validate<Def[K], Dict>
+              [K in keyof Def]: Root.Validate<Def[K], Space>
           }
 
-    export type Parse<Def, Dict> = Def extends MetaDefinition<
+    export type Parse<Def, Space> = Def extends MetaDefinition<
         infer Left,
         infer Token,
         infer Args
     >
-        ? ParseMetaDefinition<Left, Token, Args, Dict>
+        ? ParseMetaDefinition<Left, Token, Args, Space>
         : Evaluate<{
-              [K in keyof Def]: Root.Parse<Def[K], Dict>
+              [K in keyof Def]: Root.Parse<Def[K], Space>
           }>
 
     export const parse: parseFn<object> = (definition, context) => {

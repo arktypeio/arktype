@@ -1,7 +1,7 @@
 import { deepMerge } from "@re-/tools"
 import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
-import type { SpaceMeta } from "../space.js"
+import type { SpaceRoot } from "../space.js"
 import { getResolutionDefAndOptions } from "../space.js"
 import { Base } from "./base.js"
 import { checkCustomValidator } from "./traverse/check/customValidator.js"
@@ -12,11 +12,11 @@ export class ResolutionNode extends Base.node {
     public root: Base.node
     public rootDef: unknown
 
-    constructor(public alias: string, space: SpaceMeta) {
+    constructor(public alias: string, space: SpaceRoot) {
         // If this is the first time we've seen the alias,
         // create a Node that will be used for future resolutions.
         const defAndOptions = getResolutionDefAndOptions(
-            space.dictionary[alias]
+            space.definitions[alias]
         )
         const context = initializeParseContext(
             defAndOptions.options

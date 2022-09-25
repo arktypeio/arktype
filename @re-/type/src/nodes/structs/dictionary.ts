@@ -6,18 +6,18 @@ import type { OptionalAst } from "../unaries/optional.js"
 import { OptionalNode } from "../unaries/optional.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
-export type InferDictionaryAst<
+export type InferDictionary<
     Ast,
-    Ctx extends Base.InferenceContext,
+    Space,
     OptionalKey extends keyof Ast = {
         [K in keyof Ast]: Ast[K] extends OptionalAst ? K : never
     }[keyof Ast],
     RequiredKey extends keyof Ast = Exclude<keyof Ast, OptionalKey>
 > = Evaluate<
     {
-        [K in RequiredKey]: RootNode.InferAst<Ast[K], Ctx>
+        [K in RequiredKey]: RootNode.Infer<Ast[K], Space>
     } & {
-        [K in OptionalKey]?: RootNode.InferAst<Ast[K], Ctx>
+        [K in OptionalKey]?: RootNode.Infer<Ast[K], Space>
     }
 >
 

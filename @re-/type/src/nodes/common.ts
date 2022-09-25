@@ -4,8 +4,9 @@ import type { Base } from "./base.js"
 import type { IntersectionAst } from "./branches/intersection.js"
 import type { UnionAst } from "./branches/union.js"
 import type { ConstrainedAst } from "./constraints/constraint.js"
+import type { InferDictionary } from "./structs/dictionary.js"
 import type { Struct } from "./structs/struct.js"
-import type { InferTupleAst } from "./structs/tuple.js"
+import type { InferTuple } from "./structs/tuple.js"
 import type { InferTerminal } from "./terminals/terminal.js"
 import type { ArrayAst } from "./unaries/array.js"
 import type { OptionalAst } from "./unaries/optional.js"
@@ -30,34 +31,22 @@ export type StrAst = string | number | StrAst[]
 export type strNode = Base.node & { ast: StrAst }
 
 export namespace RootNode {
-    export type InferAst<
-        Ast,
-        Ctx extends Base.InferenceContext
-    > = Ast extends string
-        ? InferTerminal<Ast, Ctx>
+    export type Infer<Ast, Space> = Ast extends string
+        ? InferTerminal<Ast, Space>
         : Ast extends readonly unknown[]
         ? Ast extends OptionalAst<infer Child>
-            ? InferAst<Child, Ctx> | undefined
+            ? Infer<Child, Space> | undefined
             : Ast extends ArrayAst<infer Child>
-            ? InferAst<Child, Ctx>[]
+            ? Infer<Child, Space>[]
             : Ast extends UnionAst<infer Left, infer Right>
-            ? InferAst<Left, Ctx> | InferAst<Right, Ctx>
+            ? Infer<Left, Space> | Infer<Right, Space>
             : Ast extends IntersectionAst<infer Left, infer Right>
-            ? InferAst<Left, Ctx> & InferAst<Right, Ctx>
+            ? Infer<Left, Space> & Infer<Right, Space>
             : // TODO: Change constraints?
             Ast extends ConstrainedAst<infer Child>
-            ? InferAst<Child, Ctx>
-            : InferTupleAst<Ast, Ctx>
-        : Struct.InferAst<Ast, Ctx>
-
-    // export type InferAst<
-    //     Ast,
-    //     Ctx extends Base.InferenceContext
-    // > = unknown extends Ast
-    //     ? Ast
-    //     : Ast extends string | unknown[]
-    //     ? Str.TreeInfer<Ast, Ctx>
-    //     : Struct.Infer<Ast, Ctx>
+            ? Infer<Child, Space>
+            : InferTuple<Ast, Space>
+        : InferDictionary<Ast, Space>
 
     export type References<
         Def,

@@ -6,27 +6,24 @@ import type {
     Join,
     Narrow
 } from "@re-/tools"
+import type { Space } from "../space.js"
 import type { Root } from "./root.js"
 import type { Str } from "./str/str.js"
 
 export namespace ResolutionType {
     export type Validate<
-        Alias extends keyof Dict,
-        Dict
-    > = Dict[Alias] extends string
-        ? ValidateStringResolution<Alias, Dict>
-        : Root.Validate<Dict[Alias], Dict>
+        Alias extends keyof S,
+        S extends Space.Definition
+    > = S[Alias] extends string
+        ? ValidateStringResolution<Alias, S>
+        : Root.Validate<S[Alias], S>
 
     export type ValidateStringResolution<
-        Alias extends keyof Dict,
-        Dict
+        Alias extends keyof S,
+        S extends Space.Definition
     > = IfShallowCycleErrorElse<
-        CheckResolutionForShallowCycle<
-            Dict[Alias],
-            Dict,
-            [Extract<Alias, string>]
-        >,
-        Str.Validate<Extract<Dict[Alias], string>, Dict>
+        CheckResolutionForShallowCycle<S[Alias], S, [Extract<Alias, string>]>,
+        Str.Validate<Extract<S[Alias], string>, S>
     >
 }
 

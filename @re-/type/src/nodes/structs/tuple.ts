@@ -1,5 +1,4 @@
 import type { Evaluate } from "@re-/tools"
-import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { CheckState } from "../traverse/check/check.js"
 import type { Check, Generate } from "../traverse/exports.js"
@@ -7,11 +6,8 @@ import { checkObjectRoot, struct } from "./struct.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
 
-export type InferTupleAst<
-    Ast extends readonly unknown[],
-    Ctx extends Base.InferenceContext
-> = Evaluate<{
-    [I in keyof Ast]: RootNode.InferAst<Ast[I], Ctx>
+export type InferTuple<Ast extends readonly unknown[], Space> = Evaluate<{
+    [I in keyof Ast]: RootNode.Infer<Ast[I], Space>
 }>
 
 export class TupleNode extends struct<number> {

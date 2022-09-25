@@ -10,7 +10,6 @@ import { transform } from "@re-/tools"
 import { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { Check, References } from "../traverse/exports.js"
-import type { InferDictionaryAst } from "./dictionary.js"
 
 type StructKey = string | number
 
@@ -131,11 +130,6 @@ export type StructureDiagnostic = Check.DiagnosticConfig<{
 }>
 
 export namespace Struct {
-    export type InferAst<
-        Ast,
-        Ctx extends Base.InferenceContext
-    > = InferDictionaryAst<Ast, Ctx>
-
     export type References<
         Def,
         Dict,

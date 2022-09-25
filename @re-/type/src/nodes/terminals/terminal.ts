@@ -1,5 +1,5 @@
 import { Base } from "../base.js"
-import type { StrAst } from "../common.js"
+import type { RootNode, StrAst } from "../common.js"
 import type { References } from "../traverse/exports.js"
 import type { Alias } from "./alias.js"
 import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
@@ -46,11 +46,11 @@ export abstract class TerminalNode<
 
 export type InferTerminal<
     Token extends string,
-    Ctx extends Base.InferenceContext
+    Space
 > = Token extends KeywordDefinition
     ? InferKeyword<Token>
-    : Token extends keyof Ctx["Dict"]
-    ? Alias.Infer<Token, Ctx>
+    : Token extends keyof Space
+    ? RootNode.Infer<Space[Token], Space>
     : Token extends StringLiteralDefinition<infer Value>
     ? Value
     : Token extends RegexLiteralDefinition

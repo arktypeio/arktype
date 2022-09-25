@@ -1,22 +1,23 @@
+import type { Space } from "../space.js"
 import type { parseFn } from "./common.js"
 import { throwParseError } from "./common.js"
 import { Obj } from "./obj/obj.js"
 import { Str } from "./str/str.js"
 
 export namespace Root {
-    export type Validate<Def, Dict> = Def extends []
-        ? Def
-        : Def extends string
-        ? Str.Validate<Def, Dict>
-        : Def extends BadDefinitionType
+    export type Validate<D, S extends Space.Definition> = D extends []
+        ? D
+        : D extends string
+        ? Str.Validate<D, S>
+        : D extends BadDefinitionType
         ? BadDefinitionTypeMessage
-        : Obj.Validate<Def, Dict>
+        : Obj.Validate<D, S>
 
-    export type Parse<Def, Dict> = unknown extends Def
-        ? Def
-        : Def extends string
-        ? Str.Parse<Def, Dict>
-        : Obj.Parse<Def, Dict>
+    export type Parse<D, S extends Space.Definition> = unknown extends D
+        ? D
+        : D extends string
+        ? Str.Parse<D, S>
+        : Obj.Parse<D, S>
 
     export type BadDefinitionType =
         | undefined

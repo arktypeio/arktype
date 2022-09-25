@@ -5,36 +5,8 @@ import { unresolvableMessage } from "../../../parser/str/operand/unenclosed.js"
 
 describe("meta", () => {
     // TODO: Add tests for runtime behavior....
-    test("with onCycle option", () => {
-        const models = space(
-            {
-                a: { b: "b", isA: "true", isB: "false" },
-                b: { a: "a", isA: "false", isB: "true" }
-            },
-            {
-                parse: {
-                    onCycle: {
-                        cyclic: "$cyclic?"
-                    }
-                }
-            }
-        )
-        const cyclicModel = models.$root.type({
-            a: "a",
-            b: "b"
-        })
-        assert(cyclicModel.infer.a.b.a.cyclic).type.toString.snap(
-            `{ b: { a: { b: { cyclic?: { a: { b: { a: { cyclic?: { b: { a: { b: any; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined`
-        )
-        assert(cyclicModel.infer.b.a.b.cyclic).type.toString.snap(
-            `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
-        )
-        assert(cyclicModel.infer.a.b.a.cyclic?.b.a.b.cyclic).type.toString.snap(
-            `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
-        )
-    })
     test("with onResolve option", () => {
-        const models = space(
+        const types = space(
             {
                 a: { b: "b", isA: "true", isB: "false" },
                 b: { a: "a", isA: "false", isB: "true" }
@@ -48,7 +20,7 @@ describe("meta", () => {
                 }
             }
         )
-        const withOnResolve = models.$root.type({
+        const withOnResolve = types.$root.type({
             referencesA: "a",
             noReferences: {
                 favoriteSoup: "'borscht'"
@@ -64,7 +36,7 @@ describe("meta", () => {
     })
     test("allows non-meta references within meta", () => {
         assert(
-            space({ a: { a: "a" }, s: "string" }, { parse: { onCycle: "s" } })
+            space({ a: { a: "a" }, s: "string" }, { parse: { onResolve: "s" } })
                 .$root.infer
         ).typed as {
             a: {
@@ -82,19 +54,13 @@ describe("meta", () => {
     test("errors on bad meta def", () => {
         assert(() =>
             // @ts-expect-error
-            space({}, { parse: { onCycle: "fake" } })
+            space({}, { parse: { onResolve: "fake" } })
         ).type.errors(unresolvableMessage("fake"))
     })
     test("doesn't allow meta-only defs outside meta", () => {
         // @ts-expect-error
-        assert(() => space({ a: "$cyclic" })).throwsAndHasTypeError(
-            unresolvableMessage("$cyclic")
+        assert(() => space({ a: "$resolution" })).throwsAndHasTypeError(
+            unresolvableMessage("$resolution")
         )
-    })
-    test("doesn't allow key-specific meta references in other meta keys", () => {
-        assert(() =>
-            // @ts-expect-error
-            space({}, { parse: { onCycle: "$resolution" } })
-        ).type.errors(unresolvableMessage("$resolution"))
     })
 })

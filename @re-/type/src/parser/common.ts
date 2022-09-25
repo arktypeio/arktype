@@ -1,17 +1,17 @@
 import type { Base } from "../nodes/base.js"
-import type { SpaceMeta } from "../space.js"
+import type { SpaceRoot } from "../space.js"
 import type { TypeOptions } from "../type.js"
 
 export type parseContext = TypeOptions & {
     path: string[]
-    space?: SpaceMeta
+    space?: SpaceRoot
 }
 
 // Space is passed through an internal-only param, so we add
 // it to the provided options to create a context.
 export const initializeParseContext = (
     options: TypeOptions,
-    space: SpaceMeta | undefined
+    space: SpaceRoot | undefined
 ) => ({
     ...options,
     space,
@@ -32,6 +32,5 @@ export const throwParseError = (message: string) => {
 export type ParseError<Message extends string> = `!${Message}`
 
 export type ParseOptions = {
-    onCycle?: unknown
     onResolve?: unknown
 }

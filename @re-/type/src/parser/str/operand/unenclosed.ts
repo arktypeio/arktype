@@ -1,3 +1,4 @@
+import type { AliasAst } from "../../../nodes/terminals/alias.js"
 import { Alias } from "../../../nodes/terminals/alias.js"
 import type { KeywordDefinition } from "../../../nodes/terminals/keywords/keyword.js"
 import {
@@ -10,6 +11,7 @@ import type {
     NumberLiteralDefinition
 } from "../../../nodes/terminals/literal.js"
 import { LiteralNode } from "../../../nodes/terminals/literal.js"
+import type { Space } from "../../../space.js"
 import type { parseContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { scanner, Scanner } from "../state/scanner.js"
@@ -121,7 +123,13 @@ type ReduceUnenclosed<
     Unscanned extends string,
     Token extends string,
     Dict
-> = IsResolvableUnenclosed<Token, Dict> extends true
+    // TODO: Need to get better caching with Naive?
+> = Token extends keyof Space.DefinitionsOf<Dict>
+    ? ParserState.From<{
+          L: Left.SetRoot<L, AliasAst<Token, Dict>>
+          R: Unscanned
+      }>
+    : IsResolvableBuiltin<Token> extends true
     ? ParserState.From<{ L: Left.SetRoot<L, Token>; R: Unscanned }>
     : Token extends ""
     ? ParserState.Error<ExpressionExpectedMessage<Unscanned>>
@@ -135,16 +143,7 @@ export const unresolvableMessage = <Token extends string>(
 ): UnresolvableMessage<Token> =>
     `'${token}' is not a builtin type and does not exist in your space.`
 
-export type IsResolvableName<Token, Dict> = Token extends KeywordDefinition
-    ? true
-    : Token extends keyof Dict
-    ? true
-    : false
-
-type IsResolvableUnenclosed<Token, Dict> = IsResolvableName<
-    Token,
-    Dict
-> extends true
+type IsResolvableBuiltin<Token> = Token extends KeywordDefinition
     ? true
     : Token extends NumberLiteralDefinition
     ? true

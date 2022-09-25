@@ -7,12 +7,11 @@ import { ValidationError } from "./nodes/traverse/check/diagnostics.js"
 import { CheckState } from "./nodes/traverse/check/exports.js"
 import { Generate } from "./nodes/traverse/exports.js"
 import type { Check, References } from "./nodes/traverse/exports.js"
-import type { ParseOptions } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
-import type { Space, SpaceMeta } from "./space.js"
+import type { SpaceRoot } from "./space.js"
 
-export const type: TypeFn = (definition, options = {}, space?: SpaceMeta) => {
+export const type: TypeFn = (definition, options = {}, space?: SpaceRoot) => {
     const root = Root.parse(
         definition,
         initializeParseContext(options as any, space)
@@ -30,27 +29,32 @@ export type DynamicTypeFn = (
 export type DynamicType = TypeFrom<unknown, {}, unknown>
 
 export type TypeOptions<Inferred = unknown> = {
-    parse?: ParseOptions
     narrow?: Check.CustomConstraint<Inferred>
     errors?: Check.OptionsByDiagnostic
     generate?: Generate.GenerateOptions
 }
 
-export type TypeFn<S extends Space = { Dict: {}; Meta: {}; Ast: {} }> = <Def>(
-    definition: Root.Validate<Def, S["Dict"]>,
+export type TypeFn<SpaceAst = {}> = <Def>(
+    definition: Root.Validate<Def, SpaceAst>,
     // TODO: Better to have this in generics?
-    options?: TypeOptions<Infer<Def, S>>
-) => TypeFrom<Def, S["Dict"], Infer<Def, S>>
+    options?: TypeOptions<RootNode.Infer<Root.Parse<Def, SpaceAst>, SpaceAst>>
+) => ToType<Def, Root.Parse<Def, SpaceAst>, SpaceAst>
 
-export type TypeFrom<Def, Dict, Inferred> = Evaluate<{
+export type ToType<Def, Ast, SpaceAst> = TypeFrom<
+    Def,
+    Ast,
+    RootNode.Infer<Ast, SpaceAst>
+>
+
+export type TypeFrom<Def, Ast, Inferred> = Evaluate<{
     definition: Def
     infer: Inferred
     check: CheckFn<Inferred>
     assert: AssertFn<Inferred>
     default: Inferred
-    ast: Root.Parse<Def, Dict>
+    ast: Ast
     generate: GenerateFn<Inferred>
-    references: References.ReferencesFn<Def, Dict>
+    references: (...args: any[]) => string[] //References.ReferencesFn<Def, Dict>
 }>
 
 export class Type implements DynamicType {
@@ -114,15 +118,3 @@ export type AssertFn<Inferred> = (value: unknown) => Inferred
 export type GenerateFn<Inferred> = (
     options?: Generate.GenerateOptions
 ) => Inferred
-
-export type Infer<Definition, S extends Space> = RootNode.InferAst<
-    Root.Parse<Definition, S["Dict"]>,
-    Base.InferenceContext.From<{
-        Dict: S["Dict"]
-        Meta: S["Meta"]
-        Ast: S["Ast"]
-        Seen: {}
-    }>
->
-
-export type Validate<Def, Dict = {}> = Root.Validate<Def, Dict>

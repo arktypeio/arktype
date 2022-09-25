@@ -1,7 +1,6 @@
-import type { parseContext, ParseOptions } from "../parser/common.js"
-import type { Space } from "../space.js"
+import type { parseContext } from "../parser/common.js"
 import { References } from "./traverse/exports.js"
-import type { Check, Generate } from "./traverse/exports.js"
+import type { Check } from "./traverse/exports.js"
 import type { TraversalState } from "./traverse/traverse.js"
 
 export namespace Base {
@@ -44,23 +43,5 @@ export namespace Base {
             this.collectReferences(opts, collected)
             return Object.keys(collected)
         }
-    }
-
-    export type InferenceContext = {
-        Dict: unknown
-        Meta: ParseOptions
-        Ast: unknown
-        Seen: Record<string, true>
-    }
-
-    export namespace InferenceContext {
-        export type From<Ctx extends InferenceContext> = Ctx
-
-        export type FromSpace<S extends Space> = From<{
-            Dict: S["Dict"]
-            Meta: S["Meta"]
-            Ast: S["Ast"]
-            Seen: {}
-        }>
     }
 }

@@ -32,7 +32,7 @@ describe("extend space", () => {
     })
     test("dictionary", () => {
         const extended = getExtendedSpace()
-        assert(extended.$root.dictionary).snap({
+        assert(extended.$root.definitions).snap({
             user: { first: `string`, last: `string` },
             group: {
                 // @ts-expect-error (values returned from define() don't match their declared types by design)

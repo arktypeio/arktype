@@ -33,40 +33,38 @@ export const parseMetaDefinition: parseFn<MetaDefinition> = (
     context
 ) => (token === ";" ? ({} as Base.node) : ({} as Base.node))
 
-const f = type(["string", "|", {}])
-
 export type ValidateMetaDefinition<
     Child,
     Token extends MetaToken,
     Args extends unknown[],
-    Dict
+    Space
 > = Token extends "|" | "&" | "=>"
     ? Args extends [infer Head, ...infer Tail]
         ? [
-              Root.Validate<Child, Dict>,
+              Root.Validate<Child, Space>,
               Token,
-              Root.Validate<Head, Dict>,
+              Root.Validate<Head, Space>,
               ...Tail
           ]
         : [
-              Root.Validate<Child, Dict>,
+              Root.Validate<Child, Space>,
               `Meta token '${Token}' requires a right-hand definition.`
           ]
-    : [Root.Validate<Child, Dict>, Token, ...Args]
+    : [Root.Validate<Child, Space>, Token, ...Args]
 
 export type ParseMetaDefinition<
     Child,
     Token extends MetaToken,
     Args extends unknown[],
-    Dict
+    Space
 > = Token extends ";"
-    ? Root.Parse<Child, Dict>
+    ? Root.Parse<Child, Space>
     : Token extends "?"
-    ? OptionalAst<Root.Parse<Child, Dict>>
+    ? OptionalAst<Root.Parse<Child, Space>>
     : Token extends "[]"
-    ? ArrayAst<Root.Parse<Child, Dict>>
+    ? ArrayAst<Root.Parse<Child, Space>>
     : Token extends "|"
-    ? UnionAst<Root.Parse<Child, Dict>, Root.Parse<Args[0], Dict>>
+    ? UnionAst<Root.Parse<Child, Space>, Root.Parse<Args[0], Space>>
     : Token extends "&"
-    ? IntersectionAst<Root.Parse<Child, Dict>, Root.Parse<Args[0], Dict>>
+    ? IntersectionAst<Root.Parse<Child, Space>, Root.Parse<Args[0], Space>>
     : {}

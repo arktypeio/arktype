@@ -1,5 +1,5 @@
 import { bench, suite } from "@re-/assert"
-import { type } from "../../../index.js"
+import { dynamic, type } from "../../../index.js"
 
 suite("legacy", () => {
     bench("validate undefined", () => {
@@ -13,11 +13,11 @@ suite("legacy", () => {
     const deepStringDef = "string|".repeat(20).slice(0, -1)
 
     bench("parse deeep", () => {
-        type(deepStringDef as any)
+        dynamic(deepStringDef)
     }).median([6.19, "us"])
 
     bench("parse and validate deeep", () => {
-        type(deepStringDef as any).check("test")
+        dynamic(deepStringDef).check("test")
     }).median([6.21, "us"])
 
     bench("parseUnion", () => {
@@ -25,7 +25,7 @@ suite("legacy", () => {
     }).median([894.0, "ns"])
 
     // Marked as any so that we can still measure instantiations in parse union
-    const smallUnion = type("string|number" as any)
+    const smallUnion = dynamic("string|number")
 
     bench("validate small union second", () => {
         smallUnion.check(5)
