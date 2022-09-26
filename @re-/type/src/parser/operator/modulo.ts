@@ -11,12 +11,12 @@ import {
     NumberLiteralDefinition
 } from "../operand/unenclosed.js"
 import {
+    InvalidSuffixMessage,
+    invalidSuffixMessage,
     NodeToString,
     OneCharSuffixToken,
     SuffixToken,
-    TwoCharSuffixToken,
-    unexpectedSuffixMessage,
-    UnexpectedSuffixMessage
+    TwoCharSuffixToken
 } from "../parser/common.js"
 import { left, Left } from "../parser/left.js"
 import { scanner } from "../parser/scanner.js"
@@ -62,7 +62,7 @@ export type ParseModulo<S extends ParserState.Of<Left.Suffix>> =
                   R: ""
               }>
             : ParserState.Error<
-                  UnexpectedSuffixMessage<"%", S["R"], "a number literal">
+                  InvalidSuffixMessage<"%", S["R"], "an integer literal">
               >
         : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
 
@@ -92,7 +92,7 @@ export const parseModulo = (s: parserState<left.suffix>) => {
               )
             : s.error(indivisibleMessage(s.l.root.toString()))
         : s.error(
-              unexpectedSuffixMessage(
+              invalidSuffixMessage(
                   "%",
                   `${moduloValue}${nextSuffix === "END" ? "" : nextSuffix}${
                       s.r.unscanned

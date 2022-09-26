@@ -12,10 +12,10 @@ import {
     numberLiteralToValue
 } from "../../operand/unenclosed.js"
 import {
+    InvalidSuffixMessage,
+    invalidSuffixMessage,
     NodeToString,
-    SuffixToken,
-    UnexpectedSuffixMessage,
-    unexpectedSuffixMessage
+    SuffixToken
 } from "../../parser/common.js"
 import { Left, left } from "../../parser/left.js"
 import { scanner } from "../../parser/scanner.js"
@@ -40,7 +40,11 @@ export const parseSuffixBound = (
               nextSuffix
           )
         : s.error(
-              unexpectedSuffixMessage(token, s.r.unscanned, "a number literal")
+              invalidSuffixMessage(
+                  token,
+                  boundingValue + s.r.unscanned,
+                  "a number literal"
+              )
           )
 }
 
@@ -61,9 +65,7 @@ export type ParseSuffixBound<
           L: ReduceRightBound<S["L"], [Token, Value], "END">
           R: ""
       }>
-    : ParserState.Error<
-          UnexpectedSuffixMessage<Token, S["R"], "a number literal">
-      >
+    : ParserState.Error<InvalidSuffixMessage<Token, S["R"], "a number literal">>
 
 type BoundingValueWithSuffix<
     BoundingValue extends number,

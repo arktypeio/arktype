@@ -81,7 +81,7 @@ export const isIntegerLiteral = (
  */
 export type BigintLiteralDefinition<Value extends bigint = bigint> = `${Value}n`
 
-const BIGINT_MATCHER = new RegExp(INT_MATCHER.source.slice(-1) + "n$")
+const BIGINT_MATCHER = new RegExp(INT_MATCHER.source.slice(0, -1) + "n$")
 
 export const isBigintLiteral = (def: string): def is BigintLiteralDefinition =>
     BIGINT_MATCHER.test(def)

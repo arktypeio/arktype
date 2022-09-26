@@ -24,7 +24,7 @@ export type OneCharSuffixToken = "?" | "%" | "<" | ">" | "END"
 
 export type TwoCharSuffixToken = "<=" | ">=" | "=="
 
-export type UnexpectedSuffixMessage<
+export type InvalidSuffixMessage<
     LastValidSuffixToken extends SuffixToken,
     Unscanned extends string,
     ExpectedFollowingTokenDescription extends string = ""
@@ -32,7 +32,7 @@ export type UnexpectedSuffixMessage<
     ? ""
     : ` ${ExpectedFollowingTokenDescription} and`} zero or more additional suffix tokens (got '${Unscanned}').`
 
-export const unexpectedSuffixMessage = <
+export const invalidSuffixMessage = <
     Token extends SuffixToken,
     Unscanned extends string,
     ExpectedFollowingTokenDescription extends string
@@ -40,11 +40,7 @@ export const unexpectedSuffixMessage = <
     lastValidSuffixToken: Token,
     unscanned: Unscanned,
     expectedFollowingTokenDescription?: ExpectedFollowingTokenDescription
-): UnexpectedSuffixMessage<
-    Token,
-    Unscanned,
-    ExpectedFollowingTokenDescription
-> =>
+): InvalidSuffixMessage<Token, Unscanned, ExpectedFollowingTokenDescription> =>
     `Suffix ${lastValidSuffixToken} must be followed by${
         (expectedFollowingTokenDescription
             ? ` ${expectedFollowingTokenDescription} and`
