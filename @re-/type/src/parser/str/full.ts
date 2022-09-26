@@ -48,7 +48,7 @@ type Loop<
     Ctx extends ParserContext
 > = S["L"]["nextSuffix"] extends string
     ? // We just checked that nextSuffix is a string, so this is safe.
-      // @ts-ignore There are ways to get TS to infer that, but they're more expensive.
+      // @ts-expect-error There are ways to get TS to infer that, but they're more expensive.
       SuffixLoop<TransitionToSuffix<S>>
     : Loop<Next<S, Ctx>, Ctx>
 
