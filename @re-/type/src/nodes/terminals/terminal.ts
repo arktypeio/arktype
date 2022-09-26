@@ -1,3 +1,4 @@
+import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
 import type { RootNode, StrAst } from "../common.js"
 import type { References } from "../traverse/exports.js"
@@ -26,13 +27,10 @@ export abstract class TerminalNode<
         return this.definition
     }
 
-    collectReferences(
-        args: References.ReferencesOptions,
-        collected: References.ReferenceCollection
-    ) {
+    collectReferences(args: References.ReferencesOptions, collected: KeySet) {
         const reference = this.toString()
         if (!args.filter || args.filter(reference)) {
-            collected[reference] = true
+            collected[reference] = 1
         }
     }
 

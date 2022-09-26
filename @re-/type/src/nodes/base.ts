@@ -1,6 +1,6 @@
+import type { KeySet } from "@re-/tools"
 import type { parserContext } from "../parser/common.js"
-import { References } from "./traverse/exports.js"
-import type { Check } from "./traverse/exports.js"
+import type { Check, References } from "./traverse/exports.js"
 import type { TraversalState } from "./traverse/traverse.js"
 
 export namespace Base {
@@ -8,10 +8,10 @@ export namespace Base {
 
     export type Input = [node: node, mapper: (data: unknown) => unknown]
 
-    export type ConstructorArgs<Definition = unknown, Ast = unknown> = [
-        definition: Definition,
+    export type ConstructorArgs<Def = unknown, Ast = unknown> = [
+        def: Def,
         ast: Ast,
-        context: context
+        ctx: context
     ]
 
     export type RootDefinition = string | object
@@ -33,13 +33,12 @@ export namespace Base {
         /** Mutates collected by adding references as keys */
         abstract collectReferences(
             opts: References.ReferencesOptions,
-            collected: References.ReferenceCollection
+            collected: KeySet
         ): void
 
-        references(
-            opts: References.ReferencesOptions<string, boolean>
-        ): string[] | References.StructuredReferences {
-            const collected = References.createCollection()
+        // TODO: Standardize on "children" prop? (subclasses could still have convenience accessors)
+        references(opts: References.ReferencesOptions): string[] {
+            const collected = {}
             this.collectReferences(opts, collected)
             return Object.keys(collected)
         }

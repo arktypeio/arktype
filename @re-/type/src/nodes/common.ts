@@ -1,4 +1,5 @@
 import type { Iterate } from "@re-/tools"
+import type { Root } from "../index.js"
 import type { Base } from "./base.js"
 import type { BranchAst } from "./branches/branch.js"
 import type { IntersectionAst } from "./branches/intersection.js"
@@ -43,35 +44,21 @@ export namespace RootNode {
             ? Infer<Left, Resolutions> | Infer<Right, Resolutions>
             : Ast extends IntersectionAst<infer Left, infer Right>
             ? Infer<Left, Resolutions> & Infer<Right, Resolutions>
-            : // TODO: Change constraints?
+            : // TODO: Change constraints to worok better with second token?
             Ast extends ConstrainedAst<infer Child>
             ? Infer<Child, Resolutions>
             : InferTuple<Ast, Resolutions>
         : InferDictionary<Ast, Resolutions>
 
-    // export type References<
-    //     Ast,
-    //     PreserveStructure extends boolean
-    // > = Ast extends string
-    //     ? [Ast]
-    //     : Ast extends readonly unknown[]
-    //     ? Ast extends UnaryAst<infer Child>
-    //         ? References<Child, PreserveStructure>
-    //         : Ast extends BranchAst<infer Left, infer Right>
-    //         ? [
-    //               ...References<Left, PreserveStructure>,
-    //               ...References<Right, PreserveStructure>
-    //           ]
-    //         : Ast extends ConstrainedAst<infer Child>
-    //         ? References<Child, PreserveStructure>
-    //         : Struct.References<Ast, PreserveStructure>
-    //     : Struct.References<Ast, PreserveStructure>
-
-    // export type References<
-    //     Def,
-    //     Dict,
-    //     PreserveStructure extends boolean
-    // > = Def extends string
-    //     ? Str.References<Def, Dict>
-    //     : Struct.References<Def, Dict, PreserveStructure>
+    export type References<Ast> = Ast extends string
+        ? [Ast]
+        : Ast extends readonly unknown[]
+        ? Ast extends UnaryAst<infer Child>
+            ? References<Child>
+            : Ast extends BranchAst<infer Left, infer Right>
+            ? [...References<Left>, ...References<Right>]
+            : Ast extends ConstrainedAst<infer Child>
+            ? References<Child>
+            : Struct.References<Ast>
+        : Struct.References<Ast>
 }

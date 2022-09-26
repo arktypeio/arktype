@@ -1,3 +1,5 @@
+import type { KeySet } from "@re-/tools"
+import type { BranchToken } from "../../parser/str/operator/branch/branch.js"
 import { Base } from "../base.js"
 import type { StrAst, strNode } from "../common.js"
 import type { References } from "../traverse/exports.js"
@@ -5,16 +7,16 @@ import type { References } from "../traverse/exports.js"
 export type BranchAst<
     Left = unknown,
     Right = unknown,
-    Token extends string = string
+    Token extends BranchToken = BranchToken
 > = [Left, Token, Right]
 
-export type BranchConstructorArgs = [children: strNode[], context: Base.context]
+export type BranchConstructorArgs = [children: strNode[], ctx: Base.context]
 
 export abstract class BranchNode extends Base.node<string, StrAst> {
     protected children: strNode[]
 
     constructor(
-        protected token: string,
+        protected token: BranchToken,
         ...[children, context]: BranchConstructorArgs
     ) {
         const definition = children
@@ -38,10 +40,7 @@ export abstract class BranchNode extends Base.node<string, StrAst> {
         return (this.ast as string[]).flat(Infinity).join("")
     }
 
-    collectReferences(
-        opts: References.ReferencesOptions,
-        collected: References.ReferenceCollection
-    ) {
+    collectReferences(opts: References.ReferencesOptions, collected: KeySet) {
         for (const child of this.children) {
             child.collectReferences(opts, collected)
         }

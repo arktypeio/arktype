@@ -14,7 +14,7 @@ export class ConstraintGenerationError extends Generate.UngeneratableError {
 export type ConstrainedAst<
     Child = unknown,
     Constraints extends unknown[] = unknown[]
-> = [Child, Constraints]
+> = [Child, ":", Constraints]
 
 export type PossiblyConstrainedAst<
     Child = unknown,

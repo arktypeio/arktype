@@ -1,8 +1,7 @@
 import type {
     Dictionary,
-    Evaluate,
     IsAnyOrUnknown,
-    IterateType,
+    KeySet,
     ListPossibleTypes,
     ValueOf
 } from "@re-/tools"
@@ -53,24 +52,10 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
         return result + indentation + (isArray ? "]" : "}")
     }
 
-    collectReferences(
-        opts: References.ReferencesOptions<string, boolean>,
-        collected: References.ReferenceCollection
-    ) {
+    collectReferences(opts: References.ReferencesOptions, collected: KeySet) {
         for (const entry of this.entries) {
             entry[1].collectReferences(opts, collected)
         }
-    }
-
-    override references(opts: References.ReferencesOptions) {
-        if (opts.preserveStructure) {
-            const references: References.StructuredReferences = {}
-            for (const [k, childNode] of this.entries) {
-                references[k] = childNode.references(opts)
-            }
-            return references
-        }
-        return super.references(opts)
     }
 }
 
@@ -130,22 +115,15 @@ export type StructureDiagnostic = Check.DiagnosticConfig<{
 }>
 
 export namespace Struct {
-    // export type References<
-    //     Ast,
-    //     PreserveStructure extends boolean
-    // > = PreserveStructure extends true
-    //     ? StructuredReferences<Ast>
-    //     : UnstructuredReferences<ListPossibleTypes<ValueOf<Ast>>, []>
-    // type UnstructuredReferences<
-    //     Values extends unknown[],
-    //     Result extends unknown[]
-    // > = Values extends IterateType<unknown, infer Current, infer Remaining>
-    //     ? UnstructuredReferences<
-    //           Remaining,
-    //           [...Result, ...RootNode.References<Current, false>]
-    //       >
-    //     : Result
-    // type StructuredReferences<Ast> = Evaluate<{
-    //     [K in keyof Ast]: RootNode.References<Ast, true>
-    // }>
+    export type References<Ast> = CollectReferences<
+        Ast extends readonly unknown[] ? Ast : ListPossibleTypes<ValueOf<Ast>>,
+        []
+    >
+
+    type CollectReferences<
+        Children extends readonly unknown[],
+        Result extends readonly unknown[]
+    > = Children extends [infer Head, ...infer Tail]
+        ? CollectReferences<Tail, [...Result, ...RootNode.References<Head>]>
+        : Result
 }

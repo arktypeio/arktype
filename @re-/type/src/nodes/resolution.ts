@@ -1,3 +1,4 @@
+import type { KeySet } from "@re-/tools"
 import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { SpaceRoot } from "../space/root.js"
@@ -23,14 +24,11 @@ export class ResolutionNode extends Base.node {
         return this.root.toString()
     }
 
-    collectReferences(
-        opts: References.ReferencesOptions<string, boolean>,
-        collected: References.ReferenceCollection
-    ) {
+    collectReferences(opts: References.ReferencesOptions, collected: KeySet) {
         this.root.collectReferences(opts, collected)
     }
 
-    references(opts: References.ReferencesOptions<string, boolean>) {
+    references(opts: References.ReferencesOptions) {
         return this.root.references(opts)
     }
 

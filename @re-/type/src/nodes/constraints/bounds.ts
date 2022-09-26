@@ -14,7 +14,7 @@ import type { NumberKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
 import type { CheckState } from "../traverse/check/check.js"
 import type { Check } from "../traverse/exports.js"
-import type { Constraint } from "./constraint.js"
+import type { ConstrainedAst, Constraint } from "./constraint.js"
 
 export namespace Bounds {
     export type Ast = Single | Double
@@ -29,7 +29,7 @@ export namespace Bounds {
 
     export type Double = [Lower, Upper]
 
-    export type Apply<Child, Bounds extends Ast> = Evaluate<[Child, Bounds]>
+    export type Apply<Child, Bounds extends Ast> = ConstrainedAst<Child, Bounds>
 }
 
 export type BoundableAst = NumberKeyword | StringTypedKeyword | [unknown, "[]"]
