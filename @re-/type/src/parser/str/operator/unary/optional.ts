@@ -1,18 +1,17 @@
 import { OptionalNode } from "../../../../nodes/unaries/optional.js"
-import type { parserContext } from "../../../common.js"
+import type { ParseError, parserContext } from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState, ParserState } from "../../state/state.js"
 
-export type ParseOptional<S extends ParserState> = S["R"] extends ""
+export type FinalizeOptional<L extends Left, Unscanned> = Unscanned extends ""
     ? ParserState.From<{
-          L: Left.SuffixFrom<{
-              lowerBound: S["L"]["lowerBound"]
-              root: [S["L"]["root"], "?"]
-              nextSuffix: "END"
-          }>
-          R: ""
+          L: ReduceOptional<Left.Finalize<L>>
+          R: "END"
       }>
     : ParserState.Error<NonTerminatingOptionalMessage>
+
+export type ReduceOptional<L extends Left> =
+    L["root"] extends ParseError<string> ? L : Left.SetRoot<L, [L["root"], "?"]>
 
 export const parseOptional = (
     s: parserState.suffix,

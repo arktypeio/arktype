@@ -1,7 +1,13 @@
 import type { Base } from "../../../nodes/base.js"
 import type { Bounds } from "../../../nodes/constraints/bounds.js"
 import type { ParseError } from "../../common.js"
-import type { Branches, branches } from "../operator/binary/branch.js"
+import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
+import type {
+    Branches,
+    branches,
+    MergeBranches
+} from "../operator/binary/branch.js"
+import type { UnpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
 import type { Scanner } from "./scanner.js"
 
 type leftBase = {
@@ -90,36 +96,16 @@ export namespace Left {
         root: Node
     }>
 
-    export type SetNextSuffix<
-        L extends LeftBase,
-        Token extends Scanner.Suffix
-    > = From<{
-        lowerBound: L["lowerBound"]
-        groups: L["groups"]
-        branches: L["branches"]
-        root: L["root"]
-        nextSuffix: Token
-    }>
-
     export type WithRoot<Root> = With<{ root: Root }>
 
-    type SuffixInput = {
-        lowerBound: Bounds.Lower | undefined
-        root: unknown
-        nextSuffix: Scanner.Suffix
-    }
-
-    export type Suffixable = With<{ nextSuffix: Scanner.Suffix }>
-
-    export type Suffix<Constraints extends Partial<SuffixInput> = {}> = With<
-        SuffixInput & Constraints
-    >
-
-    export type SuffixFrom<L extends SuffixInput> = Left.From<{
-        lowerBound: L["lowerBound"]
-        groups: never
-        branches: never
-        root: L["root"]
-        nextSuffix: L["nextSuffix"]
-    }>
+    export type Finalize<L extends Left> = L["groups"] extends []
+        ? L["lowerBound"] extends undefined
+            ? Left.From<{
+                  lowerBound: undefined
+                  groups: []
+                  branches: {}
+                  root: MergeBranches<L["branches"], L["root"]>
+              }>
+            : Left.Error<UnpairedLeftBoundMessage>
+        : Left.Error<UnclosedGroupMessage>
 }

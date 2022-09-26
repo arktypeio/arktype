@@ -2,94 +2,23 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../api.js"
 import { invalidSuffixMessage } from "../../../state/scanner.js"
-import { indivisibleMessage, moduloByZeroMessage } from "../modulo.js"
+import { indivisibleMessage, invalidDivisorMessage } from "../modulo.js"
 
 describe("modulo", () => {
     describe("valid", () => {
         test("integerLiteralDefinition", () => {
-            assert(type("number%2").ast).narrowedValue(["number", [["%", 2]]])
-        })
-        describe("moduloValueFollowedByOneCharSuffix", () => {
-            test("%,?", () => {
-                assert(type("number%10?").ast).narrowedValue([
-                    ["number", [["%", 10]]],
-                    "?"
-                ])
-            })
-            test("%,>", () => {
-                assert(type("number%10>2").ast).narrowedValue([
-                    "number",
-                    [
-                        ["%", 10],
-                        [">", 2]
-                    ]
-                ])
-            })
-            test("%,<", () => {
-                assert(type("number%10>2").ast).narrowedValue([
-                    "number",
-                    [
-                        ["%", 10],
-                        [">", 2]
-                    ]
-                ])
-            })
-            test("<,%,<", () => {
-                assert(type("2<number%10<4").ast).narrowedValue([
-                    "number",
-                    [
-                        ["%", 10],
-                        [">", 2],
-                        ["<", 4]
-                    ]
-                ])
-            })
-        })
-        describe("moduloValueFollowedByTwoCharSuffix", () => {
-            test("%,==", () => {
-                assert(type("number%2==0").ast).narrowedValue([
-                    "number",
-                    [
-                        ["%", 2],
-                        ["==", 0]
-                    ]
-                ])
-            })
-            test("%,<=", () => {
-                assert(type("number%2<=4").ast).narrowedValue([
-                    "number",
-                    [
-                        ["%", 2],
-                        ["<=", 4]
-                    ]
-                ])
-            })
-            test("%,>=", () => {
-                assert(type("number%2>=4").ast).narrowedValue([
-                    "number",
-                    [
-                        ["%", 2],
-                        [">=", 4]
-                    ]
-                ])
-            })
-            test("<=,%,<=", () => {
-                assert(type("1<=number%2<=4").ast).narrowedValue([
-                    "number",
-                    [
-                        ["%", 2],
-                        [">=", 1],
-                        ["<=", 4]
-                    ]
-                ])
-            })
+            assert(type("number%2").ast).narrowedValue([
+                "number",
+                ":",
+                [["%", 2]]
+            ])
         })
     })
     describe("invalid", () => {
         test("moduloByZero", () => {
             // @ts-expect-error
             assert(() => type("number%0")).throwsAndHasTypeError(
-                moduloByZeroMessage
+                invalidDivisorMessage("0")
             )
         })
         test("unexpectedSuffix", () => {

@@ -4,11 +4,7 @@ import { type } from "../../../../../../api.js"
 import { invalidDoubleBoundMessage } from "../common.js"
 import { nonPrefixLeftBoundMessage } from "../left.js"
 import { singleEqualsMessage } from "../parse.js"
-import {
-    nonSuffixRightBoundMessage,
-    unboundableMessage,
-    unpairedLeftBoundMessage
-} from "../right.js"
+import { unboundableMessage, unpairedLeftBoundMessage } from "../right.js"
 
 describe("bound", () => {
     describe("parse", () => {
@@ -94,12 +90,6 @@ describe("bound", () => {
                 // @ts-expect-error
                 assert(() => type("3<number==5")).throwsAndHasTypeError(
                     invalidDoubleBoundMessage("==")
-                )
-            })
-            test("non-suffix right bound", () => {
-                // @ts-expect-error
-                assert(() => type("3<number<5|string")).throwsAndHasTypeError(
-                    nonSuffixRightBoundMessage("<", "5|string")
                 )
             })
             test("unpaired left", () => {

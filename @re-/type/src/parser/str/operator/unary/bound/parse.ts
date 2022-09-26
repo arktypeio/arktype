@@ -1,13 +1,13 @@
 import { isKeyOf } from "@re-/tools"
 import { LiteralNode } from "../../../../../nodes/terminals/literal.js"
 import type { NumberLiteralDefinition } from "../../../../../nodes/terminals/literal.js"
-import type { Left } from "../../../state/left.js"
 import type { Scanner } from "../../../state/scanner.js"
 import type { parserState, ParserState } from "../../../state/state.js"
 import type { ComparatorChar, SingleCharComparator } from "./common.js"
 import { singleCharComparator } from "./common.js"
 import type { ReduceLeft } from "./left.js"
 import { reduceLeft } from "./left.js"
+import type { ParseRightBound } from "./right.js"
 
 export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
     reduceBound(s, shiftComparator(s, start))
@@ -27,12 +27,9 @@ export type ParseBound<
     Start extends ComparatorChar,
     Unscanned extends string
 > = Unscanned extends Scanner.Shift<"=", infer NextUnscanned>
-    ? ParserState.From<{
-          L: ReduceBound<S["L"], `${Start}=`>
-          R: NextUnscanned
-      }>
+    ? DelegateBoundReduction<S, `${Start}=`, NextUnscanned>
     : Start extends SingleCharComparator
-    ? ParserState.From<{ L: ReduceBound<S["L"], Start>; R: Unscanned }>
+    ? DelegateBoundReduction<S, Start, Unscanned>
     : ParserState.Error<SingleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
@@ -46,11 +43,10 @@ export const reduceBound = (
         ? reduceLeft(s, token)
         : s.suffixed(token)
 
-export type ReduceBound<
-    L extends Left,
-    Token extends Scanner.Comparator
-> = L extends {
-    root: NumberLiteralDefinition<infer Value>
-}
-    ? ReduceLeft<L, Value, Token>
-    : Left.SetNextSuffix<L, Token>
+export type DelegateBoundReduction<
+    S extends ParserState,
+    Token extends Scanner.Comparator,
+    Unscanned extends string
+> = S["L"]["root"] extends NumberLiteralDefinition<infer Value>
+    ? ParserState.From<{ L: ReduceLeft<S["L"], Value, Token>; R: Unscanned }>
+    : ParseRightBound<{ L: S["L"]; R: Unscanned }, Token>

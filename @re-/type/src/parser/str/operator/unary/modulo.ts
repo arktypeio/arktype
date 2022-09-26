@@ -1,4 +1,5 @@
 import type { NodeToString } from "../../../../nodes/common.js"
+import type { AddConstraints } from "../../../../nodes/constraints/constraint.js"
 import type { NumberTypedKeyword } from "../../../../nodes/terminals/keywords/number.js"
 import {
     ModuloConstraint,
@@ -6,72 +7,34 @@ import {
 } from "../../../../nodes/terminals/keywords/number.js"
 import type { NumberLiteralDefinition } from "../../../../nodes/terminals/literal.js"
 import { throwParseError } from "../../../../parser/common.js"
+import type { BaseTerminatingChar } from "../../operand/common.js"
 import type { IntegerLiteralDefinition } from "../../operand/unenclosed.js"
 import { isIntegerLiteral } from "../../operand/unenclosed.js"
 import type { left, Left } from "../../state/left.js"
-import type {
-    InvalidSuffixMessage,
-    Scanner,
-    scanner
-} from "../../state/scanner.js"
+import type { Scanner, scanner } from "../../state/scanner.js"
 import { invalidSuffixMessage } from "../../state/scanner.js"
 import type { parserState, ParserState } from "../../state/state.js"
 import { comparatorChars } from "./bound/common.js"
 import { shiftComparator } from "./bound/parse.js"
 
-export type ParseModulo<S extends ParserState.Of<Left.Suffix>> =
-    S["L"] extends { root: NumberTypedKeyword }
-        ? S["R"] extends ModuloValueFollowedByTwoCharSuffix<
-              infer Value,
-              Scanner.TwoCharSuffix,
-              infer Unscanned
-          >
-            ? S["R"] extends ModuloValueFollowedByTwoCharSuffix<
-                  Value,
-                  infer NextSuffix,
-                  Unscanned
-              >
-                ? ParserState.From<{
-                      L: ReduceModulo<S["L"], Value, NextSuffix>
-                      R: Unscanned
-                  }>
-                : never
-            : S["R"] extends ModuloValueFollowedByOneCharSuffix<
-                  infer Value,
-                  Scanner.OneCharSuffix,
-                  infer Unscanned
-              >
-            ? S["R"] extends ModuloValueFollowedByOneCharSuffix<
-                  Value,
-                  infer NextSuffix,
-                  Unscanned
-              >
-                ? ParserState.From<{
-                      L: ReduceModulo<S["L"], Value, NextSuffix>
-                      R: Unscanned
-                  }>
-                : never
-            : S["R"] extends IntegerLiteralDefinition<infer Value>
+export type ParseModulo<
+    S extends ParserState,
+    Unscanned extends string
+> = S["L"] extends {
+    root: NumberTypedKeyword
+}
+    ? Scanner.ShiftUntil<
+          Unscanned,
+          BaseTerminatingChar
+      > extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
+        ? Scanned extends IntegerLiteralDefinition<infer Value>
             ? ParserState.From<{
-                  L: ReduceModulo<S["L"], Value, "END">
-                  R: ""
+                  L: ReduceModulo<S["L"], Value>
+                  R: NextUnscanned
               }>
-            : ParserState.Error<
-                  InvalidSuffixMessage<"%", S["R"], "an integer literal">
-              >
-        : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
-
-type ModuloValueFollowedByOneCharSuffix<
-    Value extends bigint,
-    NextSuffix extends Scanner.OneCharSuffix,
-    Unscanned extends string
-> = `${Value}${NextSuffix}${Unscanned}`
-
-type ModuloValueFollowedByTwoCharSuffix<
-    Value extends bigint,
-    NextSuffix extends Scanner.TwoCharSuffix,
-    Unscanned extends string
-> = `${Value}${NextSuffix}${Unscanned}`
+            : ParserState.Error<InvalidDivisorMessage<Scanned>>
+        : never
+    : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
 
 export const parseModulo = (s: parserState<left.suffix>) => {
     const moduloValue = s.r.shiftUntil(untilPostModuloSuffix)
@@ -108,18 +71,11 @@ const reduceModulo = (
 }
 
 type ReduceModulo<
-    L extends Left.Suffix<{
-        root: NumberTypedKeyword
-    }>,
-    Value extends bigint,
-    NextSuffix extends Scanner.Suffix
+    L extends Left.WithRoot<NumberTypedKeyword>,
+    Value extends bigint
 > = Value extends 0n
-    ? Left.Error<ModuloByZeroMessage>
-    : Left.SuffixFrom<{
-          lowerBound: L["lowerBound"]
-          root: [L["root"], ":", [["%", BigintToNumber<Value>]]]
-          nextSuffix: NextSuffix
-      }>
+    ? Left.Error<InvalidDivisorMessage<"0">>
+    : Left.SetRoot<L, AddConstraints<L["root"], [["%", BigintToNumber<Value>]]>>
 
 type BigintToNumber<Value extends bigint> =
     `${Value}` extends NumberLiteralDefinition<infer NumericValue>
@@ -134,15 +90,18 @@ const integerLiteralToDivisorValue = (definition: IntegerLiteralDefinition) => {
         )
     }
     if (value === 0) {
-        throwParseError(moduloByZeroMessage)
+        throwParseError(invalidDivisorMessage("0"))
     }
     return value
 }
 
-export const moduloByZeroMessage =
-    "Zero is not valid as the right-hand side of a modulo expression"
+export const invalidDivisorMessage = <Divisor extends string>(
+    divisor: Divisor
+): InvalidDivisorMessage<Divisor> =>
+    `${divisor} is not valid as the right-hand side of a modulo expression`
 
-export type ModuloByZeroMessage = typeof moduloByZeroMessage
+export type InvalidDivisorMessage<Divisor extends string> =
+    `${Divisor} is not valid as the right-hand side of a modulo expression`
 
 const untilPostModuloSuffix: scanner.UntilCondition = (scanner) =>
     scanner.lookahead === "?" || scanner.lookaheadIsIn(comparatorChars)

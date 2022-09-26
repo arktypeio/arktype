@@ -73,10 +73,8 @@ export namespace scanner {
     })
 
     export const suffixes = keySet({
-        ...comparators,
         END: 1,
-        "?": 1,
-        "%": 1
+        "?": 1
     })
 }
 
@@ -85,6 +83,25 @@ export namespace Scanner {
         Lookahead extends string,
         Unscanned extends string
     > = `${Lookahead}${Unscanned}`
+
+    export type ShiftUntil<
+        Unscanned extends string,
+        TerminatingChar extends string,
+        Scanned extends string = ""
+    > = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
+        ? Lookahead extends TerminatingChar
+            ? [Scanned, Unscanned]
+            : ShiftUntil<
+                  NextUnscanned,
+                  TerminatingChar,
+                  `${Scanned}${Lookahead}`
+              >
+        : [Scanned, ""]
+
+    export type Shifted<Scanned extends string, Unscanned extends string> = [
+        Scanned,
+        Unscanned
+    ]
 
     export type Comparator = keyof typeof scanner.comparators
 

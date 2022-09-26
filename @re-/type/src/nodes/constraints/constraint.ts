@@ -26,5 +26,5 @@ export type AddConstraints<
     Child,
     Constraints extends unknown[]
 > = Child extends ConstrainedAst<infer Node, infer ExistingConstraints>
-    ? Evaluate<[Node, [...ExistingConstraints, ...Constraints]]>
-    : Evaluate<[Child, Constraints]>
+    ? Evaluate<[Node, ":", [...ExistingConstraints, ...Constraints]]>
+    : Evaluate<[Child, ":", Constraints]>

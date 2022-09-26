@@ -1,7 +1,14 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import { isEmpty } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
+import type { ParseError } from "../../common.js"
 import { parseError } from "../../common.js"
+import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
+import { unclosedGroupMessage } from "../operand/groupOpen.js"
+import type { MergeBranches } from "../operator/binary/branch.js"
+import { mergeBranches } from "../operator/binary/branch.js"
+import type { UnpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
+import { unpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
 import type { Left } from "./left.js"
 import { left } from "./left.js"
 import type { Scanner } from "./scanner.js"
@@ -56,6 +63,13 @@ export namespace parserState {
     export type withRoot<Root extends Base.node = Base.node> = parserState<
         left.withRoot<Root>
     >
+
+    export const finalize = (s: parserState.suffix) =>
+        !s.l.groups.length
+            ? !s.l.lowerBound
+                ? mergeBranches(s)
+                : s.error(unpairedLeftBoundMessage)
+            : s.error(unclosedGroupMessage)
 }
 
 export type ParserState<Constraints extends Partial<Left> = {}> = {
@@ -86,9 +100,7 @@ export namespace ParserState {
         R: ""
     }
 
-    export type Suffix = Of<Left.Suffix>
-
-    export type WithRoot<Root> = Of<Left.WithRoot<Root>>
+    export type WithRoot<Root = {}> = Of<Left.WithRoot<Root>>
 
     export type Suffixable = {
         L: {

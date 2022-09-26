@@ -13,3 +13,6 @@ export const reduceGroupOpen = (s: parserState) => {
     s.l.branches = {}
     return s
 }
+
+export const unclosedGroupMessage = "Missing )."
+export type UnclosedGroupMessage = typeof unclosedGroupMessage

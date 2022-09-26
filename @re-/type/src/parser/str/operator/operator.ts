@@ -15,6 +15,8 @@ import type { ComparatorChar } from "./unary/bound/common.js"
 import { comparatorChars } from "./unary/bound/common.js"
 import type { ParseBound } from "./unary/bound/parse.js"
 import { parseBound } from "./unary/bound/parse.js"
+import type { ParseModulo } from "./unary/modulo.js"
+import type { FinalizeOptional } from "./unary/optional.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
@@ -47,10 +49,7 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
     infer Unscanned
 >
     ? Lookahead extends "?"
-        ? ParserState.From<{
-              L: Left.SetNextSuffix<S["L"], "?">
-              R: Unscanned
-          }>
+        ? FinalizeOptional<S["L"], Unscanned>
         : Lookahead extends "["
         ? ParseArray<S, Unscanned>
         : Lookahead extends "|"
@@ -71,16 +70,13 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
         : Lookahead extends ComparatorChar
         ? ParseBound<S, Lookahead, Unscanned>
         : Lookahead extends "%"
-        ? ParserState.From<{
-              L: Left.SetNextSuffix<S["L"], "%">
-              R: Unscanned
-          }>
+        ? ParseModulo<S, Unscanned>
         : Lookahead extends " "
         ? ParseOperator<{ L: S["L"]; R: Unscanned }>
         : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>
     : ParserState.From<{
-          L: Left.SetNextSuffix<S["L"], "END">
-          R: ""
+          L: Left.Finalize<S["L"]>
+          R: "END"
       }>
 
 const unexpectedCharacterMessage = <Char extends string>(
