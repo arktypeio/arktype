@@ -5,12 +5,18 @@ import {
     Bounds,
     isBoundable
 } from "../../../nodes/constraints/bounds.js"
+import { AddConstraints } from "../../../nodes/constraints/common.js"
 import {
     isNumberLiteral,
     NumberLiteralDefinition,
     numberLiteralToValue
 } from "../../operand/unenclosed.js"
-import { NodeToString, SuffixToken } from "../../parser/common.js"
+import {
+    InvalidSuffixMessage,
+    invalidSuffixMessage,
+    NodeToString,
+    SuffixToken
+} from "../../parser/common.js"
 import { Left, left } from "../../parser/left.js"
 import { scanner } from "../../parser/scanner.js"
 import { parserState, ParserState } from "../../parser/state.js"
@@ -25,7 +31,7 @@ export const parseSuffixBound = (
     s: parserState<left.suffix>,
     token: Comparator
 ) => {
-    const boundingValue = s.r.shiftUntil(untilNextSuffix)
+    const boundingValue = s.r.shiftUntil(untilPostBoundSuffix)
     const nextSuffix = s.r.shift() as "?" | "END"
     return isNumberLiteral(boundingValue)
         ? reduceRightBound(
@@ -33,7 +39,13 @@ export const parseSuffixBound = (
               [token, numberLiteralToValue(boundingValue)],
               nextSuffix
           )
-        : s.error(nonSuffixRightBoundMessage(token, boundingValue))
+        : s.error(
+              invalidSuffixMessage(
+                  token,
+                  boundingValue + s.r.unscanned,
+                  "a number literal"
+              )
+          )
 }
 
 export type ParseSuffixBound<
@@ -53,7 +65,7 @@ export type ParseSuffixBound<
           L: ReduceRightBound<S["L"], [Token, Value], "END">
           R: ""
       }>
-    : ParserState.Error<NonSuffixRightBoundMessage<Token, S["R"]>>
+    : ParserState.Error<InvalidSuffixMessage<Token, S["R"], "a number literal">>
 
 type BoundingValueWithSuffix<
     BoundingValue extends number,
@@ -101,7 +113,7 @@ type ReduceDouble<
 > = RightBound extends Bounds.Upper
     ? Left.SuffixFrom<{
           lowerBound: undefined
-          root: Bounds.Apply<L["root"], [L["lowerBound"], RightBound]>
+          root: AddConstraints<L["root"], [L["lowerBound"], RightBound]>
           nextSuffix: NextSuffix
       }>
     : Left.Error<InvalidDoubleBoundMessage<RightBound[0]>>
@@ -131,7 +143,7 @@ type ReduceSingle<
     NextSuffix extends SuffixToken
 > = Left.SuffixFrom<{
     lowerBound: undefined
-    root: Bounds.Apply<L["root"], [Single]>
+    root: AddConstraints<L["root"], [Single]>
     nextSuffix: NextSuffix
 }>
 
@@ -161,19 +173,5 @@ export const unboundableMessage = <Root extends string>(
 ): UnboundableMessage<Root> =>
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or a list-typed expression.`
 
-export type NonSuffixRightBoundMessage<
-    T extends Comparator,
-    Suffix extends string
-> = `Right bound ${T} must be followed by a number literal and zero or more additional suffix tokens (got '${Suffix}').`
-
-export const nonSuffixRightBoundMessage = <
-    Token extends Comparator,
-    Suffix extends string
->(
-    t: Token,
-    suffix: Suffix
-): NonSuffixRightBoundMessage<Token, Suffix> =>
-    `Right bound ${t} must be followed by a number literal and zero or more additional suffix tokens (got '${suffix}').`
-
-const untilNextSuffix: scanner.UntilCondition = (scanner) =>
+const untilPostBoundSuffix: scanner.UntilCondition = (scanner) =>
     scanner.lookahead === "?"

@@ -12,10 +12,16 @@ import {
 import { ReduceLeft, reduceLeft } from "./left.js"
 
 export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
-    s.r.lookahead === "="
-        ? reduceBound(s.shifted(), `${start}=`)
+    reduceBound(s, shiftComparator(s, start))
+
+export const shiftComparator = (
+    s: parserState.withRoot,
+    start: ComparatorChar
+): Comparator =>
+    s.r.lookaheadIs("=")
+        ? `${start}${s.r.shift()}`
         : scanner.inTokenSet(start, singleCharComparator)
-        ? reduceBound(s, start)
+        ? start
         : s.error(singleEqualsMessage)
 
 export type ParseBound<
