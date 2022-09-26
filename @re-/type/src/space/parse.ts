@@ -14,22 +14,6 @@ export type ParseSpace<Aliases> = {
     [Name in keyof Aliases]: Root.Parse<Aliases[Name], { Aliases: Aliases }>
 }
 
-// export type ValidateAliases<Aliases, Ast> = Evaluate<{
-//     [Name in keyof Aliases]: Root.Validate<Aliases[Name], { Aliases: Aliases }>
-// }>
-
-// S["Aliases"][Alias] extends string
-// ? ValidateStringResolution<Alias, S>
-// : Root.Validate<S["Aliases"][Alias], S>
-
-// TODO: Implement runtime equivalent for these
-// export type ValidateMeta<Meta, Aliases> = {
-//     onResolve?: Root.Validate<
-//         Get<Meta, "onResolve">,
-//         Aliases & { $resolution: "unknown" }
-//     >
-// }
-
 export type ValidateStringResolution<
     Name extends keyof Ctx["Aliases"],
     Ctx extends ParserContext

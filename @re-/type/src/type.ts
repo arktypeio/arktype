@@ -11,23 +11,37 @@ import { initializeParserContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace, SpaceRoot } from "./space/root.js"
 
-export const dynamic: DynamicTypeFn = (def, opts) => {
+const rawTypeFn: DynamicTypeFn = (def, opts) => {
     const ctx = initializeParserContext(opts)
     const root = Root.parse(def, ctx)
     return new Type(def, root, ctx)
 }
 
-export const type: TypeFn = dynamic as any
+export type InferredTypeFn<Space extends ResolvedSpace> = <
+    Definition,
+    Ast = Root.Parse<Definition, Space>,
+    Inferred = RootNode.Infer<Ast, Space["Resolutions"]>
+>(
+    definition: Root.Validate<Definition, Ast>,
+    options?: TypeOptions<Inferred>
+) => Type.New<Definition, Ast, Inferred>
 
-export type DynamicTypeFn = (
+type DynamicTypeFn = (
     definition: unknown,
     options?: TypeOptions
 ) => DynamicTypeRoot
 
-export type DynamicTypeRoot = TypeFrom<unknown, {}, unknown>
+export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> =
+    InferredTypeFn<Space> & {
+        dynamic: DynamicTypeFn
+    }
+
+export const type: TypeFn = rawTypeFn as any
+
+export type DynamicTypeRoot = Type.New<unknown, unknown, unknown>
 
 export type TypeOptions<Inferred = unknown> = {
-    narrow?: Check.CustomConstraint<Inferred>
+    narrow?: Check.NarrowFn<Inferred>
     errors?: Check.OptionsByDiagnostic
     generate?: Generate.GenerateOptions
 }
@@ -36,30 +50,18 @@ export type InternalTypeOptions = TypeOptions<any> & {
     space?: SpaceRoot
 }
 
-export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> = <
-    Definition,
-    Ast = Root.Parse<Definition, Space>
->(
-    definition: Root.Validate<Definition, Ast>,
-    options?: TypeOptions<RootNode.Infer<Ast, Space>>
-) => ToType<Definition, Ast, Space["Resolutions"]>
-
-export type ToType<Def, Ast, Resolutions> = TypeFrom<
-    Def,
-    Ast,
-    RootNode.Infer<Ast, Resolutions>
->
-
-export type TypeFrom<Def, Ast, Inferred> = Evaluate<{
-    definition: Def
-    infer: Inferred
-    check: CheckFn<Inferred>
-    assert: AssertFn<Inferred>
-    default: Inferred
-    ast: Ast
-    generate: GenerateFn<Inferred>
-    references: References.ReferencesFn<Ast>
-}>
+export namespace Type {
+    export type New<Def, Ast, Inferred> = Evaluate<{
+        definition: Def
+        infer: Inferred
+        check: CheckFn<Inferred>
+        assert: AssertFn<Inferred>
+        default: Inferred
+        ast: Ast
+        generate: GenerateFn<Inferred>
+        references: References.ReferencesFn<Ast>
+    }>
+}
 
 export class Type implements DynamicTypeRoot {
     constructor(

@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
-import { dynamic, type } from "../../../index.js"
+import { type } from "../../../index.js"
 import type { Bounds } from "../../../nodes/constraints/bounds.js"
 import { invertedComparators } from "../../../parser/str/operator/unary/bound/common.js"
 import type { Check } from "../../traverse/exports.js"
@@ -20,7 +20,7 @@ describe("bound constraint", () => {
                     arbitraryComparator,
                     arbitraryLimit,
                     (comparator, limit) => {
-                        const singleBound = dynamic(
+                        const singleBound = type.dynamic(
                             `number${comparator}${limit}`
                         )
                         const expectedBounds: Bounds.Ast = [[comparator, limit]]
@@ -46,7 +46,7 @@ describe("bound constraint", () => {
                         upperComparator,
                         upperLimit
                     ) => {
-                        const doubleBound = dynamic(
+                        const doubleBound = type.dynamic(
                             `${lowerLimit}${lowerComparator}number${upperComparator}${upperLimit}`
                         )
                         const expectedBounds: Bounds.Ast = [

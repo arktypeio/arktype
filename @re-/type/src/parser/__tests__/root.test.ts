@@ -1,22 +1,22 @@
 import { assert } from "@re-/assert"
+import type { Dictionary } from "@re-/tools"
 import { describe, test } from "mocha"
-import { dynamic, dynamicSpace, type } from "../../index.js"
+import { space, type } from "../../index.js"
 import { unresolvableMessage } from "../str/operand/unenclosed.js"
 
 describe("root definition", () => {
     describe("dynamic", () => {
         test("allows uninferred types", () => {
-            const dynamicStringArray = dynamic("str" + "ing[" + "]")
+            const dynamicStringArray = type.dynamic("str" + "ing[" + "]")
             assert(dynamicStringArray.infer).typed as unknown
             assert(dynamicStringArray.ast).equals(["string", "[]"])
         })
         test("allows uninferred spaces", () => {
-            const s = dynamicSpace({
+            const s = space.dynamnic({
                 a: "str" + "ing[" + "]",
                 b: "a?"
             })
-            // Root dict is inferred as any so that all aliases are allowed
-            assert(s.$root.aliases).typed as any
+            assert(s.$root.aliases).typed as Dictionary<unknown>
             // Types are inferred as unknown
             assert(s.a.infer).typed as unknown
             // Allows all references, but will throw if they're not defined at runtime

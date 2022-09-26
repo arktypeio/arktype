@@ -1,5 +1,5 @@
 import { bench, suite } from "@re-/assert"
-import { dynamic, type } from "../../../../index.js"
+import { type } from "../../../../index.js"
 
 const buildBranchDef = (token: string, size: number) =>
     [...Array(size - 1)].reduce((def, _, i) => `${def}${token}${i + 1}`, "0")
@@ -32,7 +32,7 @@ suite("parse/str/operator", () => {
 
         const largeUnionDef = buildBranchDef("|", 100)
         bench("100-ary", () => {
-            dynamic(largeUnionDef)
+            type.dynamic(largeUnionDef)
         }).median()
     })
 
@@ -51,7 +51,7 @@ suite("parse/str/operator", () => {
 
         const largeIntersectionDef = buildBranchDef("&", 100)
         bench("100-ary", () => {
-            dynamic(largeIntersectionDef)
+            type.dynamic(largeIntersectionDef)
         }).median()
     })
 

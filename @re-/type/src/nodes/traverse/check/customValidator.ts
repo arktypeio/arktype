@@ -9,7 +9,7 @@ export type CustomDiagnosticResult = {
     additionalContext?: Record<string, unknown>
 }
 
-export type CustomConstraint<Data = unknown> = (
+export type NarrowFn<Data = unknown> = (
     args: CustomValidatorArgs<Data>
 ) =>
     | undefined
@@ -28,7 +28,7 @@ export type CustomValidatorArgs<Data = unknown> = Evaluate<
 >
 
 export const checkCustomValidator = (
-    narrow: CustomConstraint,
+    narrow: NarrowFn,
     node: Base.node,
     state: CheckState
 ) => {

@@ -3,10 +3,10 @@ import { toString } from "@re-/tools"
 import type { TypeOptions } from "../../../type.js"
 import { TraversalState } from "../traverse.js"
 import { Diagnostics } from "./diagnostics.js"
-import type { CustomConstraint, OptionsByDiagnostic } from "./exports.js"
+import type { NarrowFn, OptionsByDiagnostic } from "./exports.js"
 
 export type CheckOptions<Inferred = unknown> = {
-    narrow?: CustomConstraint<Inferred>
+    narrow?: NarrowFn<Inferred>
     errors?: OptionsByDiagnostic
 }
 
