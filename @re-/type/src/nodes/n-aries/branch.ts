@@ -13,7 +13,7 @@ export abstract class NaryNode extends Base.node<string> {
         ...[children, context]: BranchConstructorArgs
     ) {
         const definition = children
-            .map(({ definition }) => definition)
+            .map(({ def: definition }) => definition)
             .join(token)
         let ast = children[0].ast
         for (let i = 1; i < children.length; i++) {
@@ -25,7 +25,7 @@ export abstract class NaryNode extends Base.node<string> {
 
     addMember(node: Base.node) {
         this.children.push(node)
-        this.definition += this.token + node.definition
+        this.def += this.token + node.def
         this.ast = [this.ast, this.token, node.ast]
     }
 

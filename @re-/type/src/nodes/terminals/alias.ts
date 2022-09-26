@@ -1,18 +1,13 @@
-import type { Base } from "../base.js"
 import type { Check, Generate } from "../traverse/exports.js"
 import { TerminalNode } from "./terminal.js"
 
 export class Alias extends TerminalNode {
-    static matches(def: string, context: Base.context) {
-        return !!context.space && def in context.space.definitions
-    }
-
     toString() {
-        return this.definition
+        return this.def
     }
 
     get resolution() {
-        return this.context.space!.resolutions[this.definition]
+        return this.ctx.space!.resolutions[this.def]
     }
 
     check(state: Check.CheckState) {

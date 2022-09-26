@@ -13,7 +13,7 @@ export class ArrayNode extends UnaryNode implements BoundableNode {
     }
 
     check(state: Check.CheckState) {
-        if (!checkObjectRoot(this.definition, "array", state)) {
+        if (!checkObjectRoot(this.def, "array", state)) {
             return
         }
         const rootData = state.data

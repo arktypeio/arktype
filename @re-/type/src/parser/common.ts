@@ -1,7 +1,7 @@
 import { keySet } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
 import type { SpaceRoot } from "../space/root.js"
-import type { TypeOptions } from "../type.js"
+import type { InternalTypeOptions, TypeOptions } from "../type.js"
 
 export type ParserContext = {
     Aliases: unknown
@@ -12,17 +12,14 @@ export type parserContext = TypeOptions & {
     space?: SpaceRoot
 }
 
-// TODO: Still needed?
+// TODO: Mutation okay?
 // Space is passed through an internal-only param, so we add
 // it to the provided options to create a context.
-export const initializeParseContext = (
-    options: TypeOptions,
-    space: SpaceRoot | undefined
-) => ({
-    ...options,
-    space,
-    path: []
-})
+export const initializeParserContext = (opts: InternalTypeOptions = {}) => {
+    const ctx = opts as parserContext
+    ctx.path = []
+    return ctx
+}
 
 export type parseFn<DefType = unknown> = (
     def: DefType,

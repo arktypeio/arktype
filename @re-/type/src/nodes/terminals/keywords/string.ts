@@ -18,28 +18,28 @@ export class StringNode
 
     constructor(...args: TerminalConstructorArgs<StringTypedDefinition>) {
         super(...args)
-        if (this.definition === "string") {
+        if (this.def === "string") {
             return
         }
         if (this.definitionIsKeyOf(stringSubtypes)) {
-            this.regex = stringSubtypes[this.definition]
+            this.regex = stringSubtypes[this.def]
         } else {
             this.regex = new RegexConstraint(
-                new RegExp(this.definition.slice(1, -1)),
-                this.definition,
-                `Must match expression ${this.definition}`
+                new RegExp(this.def.slice(1, -1)),
+                this.def,
+                `Must match expression ${this.def}`
             )
         }
     }
 
     check(state: Check.CheckState) {
         if (!state.dataIsOfType("string")) {
-            if (this.definition === "string") {
+            if (this.def === "string") {
                 addTypeKeywordDiagnostic(state, "string", "Must be a string")
             } else {
                 addTypeKeywordDiagnostic(
                     state,
-                    this.definition,
+                    this.def,
                     "Must be a string",
                     "string"
                 )

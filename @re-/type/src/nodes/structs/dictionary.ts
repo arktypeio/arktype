@@ -22,7 +22,7 @@ export type InferDictionary<
 
 export class DictionaryNode extends struct<string> {
     check(state: Check.CheckState) {
-        if (!checkObjectRoot(this.definition, "dictionary", state)) {
+        if (!checkObjectRoot(this.def, "dictionary", state)) {
             return
         }
         const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)
@@ -47,7 +47,7 @@ export class DictionaryNode extends struct<string> {
                 child.check(state)
                 state.path.pop()
             } else if (!(child instanceof OptionalNode)) {
-                this.addMissingKeyDiagnostic(state, k, child.definition)
+                this.addMissingKeyDiagnostic(state, k, child.def)
             }
             delete uncheckedData[k]
         }
@@ -96,7 +96,7 @@ export class DictionaryNode extends struct<string> {
             "extraneousKeys",
             { reason, state: state },
             {
-                definition: this.definition,
+                definition: this.def,
                 data: state.data,
                 keys
             }

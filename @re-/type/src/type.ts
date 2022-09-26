@@ -7,31 +7,33 @@ import { ValidationError } from "./nodes/traverse/check/diagnostics.js"
 import { CheckState } from "./nodes/traverse/check/exports.js"
 import { Generate } from "./nodes/traverse/exports.js"
 import type { Check, References } from "./nodes/traverse/exports.js"
-import { initializeParseContext } from "./parser/common.js"
+import { initializeParserContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace, SpaceRoot } from "./space/root.js"
 
-export const type: TypeFn = (definition, options = {}, space?: SpaceRoot) => {
-    const root = Root.parse(
-        definition,
-        initializeParseContext(options as any, space)
-    )
-    return new Type(definition, root, options as any) as any
+export const dynamic: DynamicTypeFn = (def, opts) => {
+    const ctx = initializeParserContext(opts)
+    const root = Root.parse(def, ctx)
+    return new Type(def, root, ctx)
 }
 
-export const dynamic = type as any as DynamicTypeFn
+export const type: TypeFn = dynamic as any
 
 export type DynamicTypeFn = (
     definition: unknown,
     options?: TypeOptions
-) => DynamicType
+) => DynamicTypeRoot
 
-export type DynamicType = TypeFrom<unknown, {}, unknown>
+export type DynamicTypeRoot = TypeFrom<unknown, {}, unknown>
 
 export type TypeOptions<Inferred = unknown> = {
     narrow?: Check.CustomConstraint<Inferred>
     errors?: Check.OptionsByDiagnostic
     generate?: Generate.GenerateOptions
+}
+
+export type InternalTypeOptions = TypeOptions<any> & {
+    space?: SpaceRoot
 }
 
 export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> = <
@@ -41,8 +43,6 @@ export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> = <
     definition: Root.Validate<Definition, Ast>,
     options?: TypeOptions<RootNode.Infer<Ast, Space>>
 ) => ToType<Definition, Ast, Space["Resolutions"]>
-
-const z = type(["string", "boolean"])
 
 export type ToType<Def, Ast, Resolutions> = TypeFrom<
     Def,
@@ -61,11 +61,11 @@ export type TypeFrom<Def, Ast, Inferred> = Evaluate<{
     references: References.ReferencesFn<Ast>
 }>
 
-export class Type implements DynamicType {
+export class Type implements DynamicTypeRoot {
     constructor(
         public definition: unknown,
         public root: Base.node,
-        public options: TypeOptions
+        public options: InternalTypeOptions
     ) {}
 
     get infer() {

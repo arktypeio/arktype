@@ -33,7 +33,7 @@ export class LiteralNode<
     }
 
     toString() {
-        return this.definition
+        return this.def
     }
 
     check(state: Check.CheckState) {
@@ -41,11 +41,11 @@ export class LiteralNode<
             state.errors.add(
                 "literal",
                 {
-                    reason: `Must be ${this.definition}`,
+                    reason: `Must be ${this.def}`,
                     state: state
                 },
                 {
-                    definition: this.definition,
+                    definition: this.def,
                     expected: this.value,
                     actual: Check.stringifyData(state.data),
                     data: state.data

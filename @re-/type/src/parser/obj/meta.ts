@@ -1,5 +1,4 @@
 import type { Base } from "../../nodes/base.js"
-import { type } from "../../type.js"
 import type {
     BinaryToken,
     MetaToken,
@@ -11,8 +10,7 @@ import type {
 import { metaTokens } from "../common.js"
 import type { Root } from "../root.js"
 
-// TODO: Compare perf of infer from generic, centralize universally on one strategy
-
+// TODO: Test inferring from  meta def generic perf
 export type MetaDefinition = [unknown, MetaToken, ...unknown[]]
 
 export const isMetaDefinition = (def: unknown[]): def is MetaDefinition =>
@@ -22,8 +20,6 @@ export const parseMetaDefinition: parseFn<MetaDefinition> = (
     [definition, token, ...args],
     context
 ) => (token === ";" ? ({} as Base.node) : ({} as Base.node))
-
-const z = type([{ a: "string" }, "&", { b: "number" }]).ast
 
 export type ParseMetaDefinition<
     Def extends MetaDefinition,

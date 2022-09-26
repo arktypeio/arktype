@@ -12,7 +12,7 @@ export class NumberNode extends TerminalNode implements BoundableNode {
 
     check(state: Check.CheckState) {
         if (!state.dataIsOfType("number")) {
-            if (this.definition === "number") {
+            if (this.def === "number") {
                 addTypeKeywordDiagnostic(state, "number", "Must be a number")
             } else {
                 addTypeKeywordDiagnostic(
@@ -25,7 +25,7 @@ export class NumberNode extends TerminalNode implements BoundableNode {
 
             return
         }
-        if (this.definition === "integer" && !Number.isInteger(state.data)) {
+        if (this.def === "integer" && !Number.isInteger(state.data)) {
             state.errors.add(
                 "numberSubtype",
                 { reason: "Must be an integer", state: state },

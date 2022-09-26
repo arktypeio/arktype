@@ -8,12 +8,12 @@ export abstract class UnaryNode extends Base.node<string> {
     protected child: Base.node
 
     constructor(token: string, ...[child, context]: UnaryConstructorArgs) {
-        super(`${child.definition}${token}`, [child.ast, token], context)
+        super(`${child.def}${token}`, [child.ast, token], context)
         this.child = child
     }
 
     toString() {
-        return this.definition
+        return this.def
     }
 
     collectReferences(opts: References.ReferencesOptions, collected: KeySet) {

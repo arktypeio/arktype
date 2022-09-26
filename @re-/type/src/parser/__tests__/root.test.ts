@@ -16,7 +16,7 @@ describe("root definition", () => {
                 b: "a?"
             })
             // Root dict is inferred as any so that all aliases are allowed
-            assert(s.$root.definitions).typed as any
+            assert(s.$root.aliases).typed as any
             // Types are inferred as unknown
             assert(s.a.infer).typed as unknown
             // Allows all references, but will throw if they're not defined at runtime

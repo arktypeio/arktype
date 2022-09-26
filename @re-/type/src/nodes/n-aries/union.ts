@@ -28,7 +28,7 @@ export class UnionNode extends NaryNode {
         branchDiagnosticsEntries: BranchDiagnosticsEntry[]
     ) {
         const context: UnionDiagnostic["context"] = {
-            definition: this.definition,
+            definition: this.def,
             actual: Check.stringifyData(state.data),
             branchDiagnosticsEntries
         }
@@ -38,7 +38,7 @@ export class UnionNode extends NaryNode {
         state.errors.add(
             "union",
             {
-                reason: `Must be one of ${this.definition}`,
+                reason: `Must be one of ${this.def}`,
                 state: state,
                 suffix: explainBranches
                     ? buildBranchDiagnosticsExplanation(
@@ -53,7 +53,7 @@ export class UnionNode extends NaryNode {
     generate(state: Generate.GenerateState) {
         const branchResults = this.generateChildren(state)
         if (!branchResults.values.length) {
-            this.throwAllMembersUngeneratableError(branchResults.errors, state)
+            this.throwAllMembersUngeneratableError(branchResults.errors)
         }
         for (const constraint of preferredDefaults) {
             const matches = branchResults.values.filter((value) =>
@@ -89,16 +89,11 @@ export class UnionNode extends NaryNode {
         return results
     }
 
-    private throwAllMembersUngeneratableError(
-        errors: string[],
-        state: Generate.GenerateState
-    ) {
+    private throwAllMembersUngeneratableError(errors: string[]) {
         throw new Generate.UngeneratableError(
             this.toString(),
             "None of the definitions can be generated" +
-                (state.options.generate?.verbose
-                    ? `:\n${errors.join("\n")}`
-                    : ".")
+                `:\n${errors.join("\n")}`
         )
     }
 }

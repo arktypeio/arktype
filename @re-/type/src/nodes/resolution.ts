@@ -1,7 +1,6 @@
 import type { KeySet } from "@re-/tools"
-import { initializeParseContext } from "../parser/common.js"
+import type { parserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
-import type { SpaceRoot } from "../space/root.js"
 import { Base } from "./base.js"
 import { checkCustomValidator } from "./traverse/check/customValidator.js"
 import { Generate } from "./traverse/exports.js"
@@ -11,11 +10,10 @@ export class ResolutionNode extends Base.node {
     public root: Base.node
     public rootDef: unknown
 
-    constructor(public name: string, space: SpaceRoot) {
-        const rootDef = space.definitions[name]
-        const context = initializeParseContext(space.options, space)
-        const root = Root.parse(rootDef, context)
-        super(name, root.ast, context)
+    constructor(public name: string, ctx: parserContext) {
+        const rootDef = ctx.space!.aliases[name]
+        const root = Root.parse(rootDef, ctx)
+        super(name, root.ast, ctx)
         this.root = root
         this.rootDef = rootDef
     }

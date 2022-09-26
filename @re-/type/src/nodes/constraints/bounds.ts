@@ -64,12 +64,12 @@ const applyBoundsToAst = (node: BoundableNode, ast: Bounds.Ast) => {
 const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
     const rightBoundToString =
         ast.length === 1 ? ast[0].join("") : ast[1].join("")
-    node.definition += rightBoundToString
+    node.def += rightBoundToString
     if (ast.length === 2) {
         const leftBoundToString = `${ast[0][1]}${
             invertedComparators[ast[0][0]]
         }`
-        node.definition = leftBoundToString + node.definition
+        node.def = leftBoundToString + node.def
     }
 }
 

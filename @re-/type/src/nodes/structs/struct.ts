@@ -25,7 +25,7 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
     constructor(...[entries, context]: StructConstructorArgs<KeyType>) {
         const definition = transform(entries, ([, [k, child]]) => [
             k,
-            child.definition
+            child.def
         ])
         const ast = transform(entries, ([, [k, child]]) => [k, child.ast])
         super(definition, ast, context)
@@ -33,8 +33,8 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
     }
 
     toString() {
-        const isArray = Array.isArray(this.definition)
-        const indentation = "    ".repeat(this.context.path.length)
+        const isArray = Array.isArray(this.def)
+        const indentation = "    ".repeat(this.ctx.path.length)
         const nestedIndentation = indentation + "    "
         let result = isArray ? "[" : "{"
         for (let i = 0; i < this.entries.length; i++) {

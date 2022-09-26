@@ -6,7 +6,6 @@ export type GenerateOptions = {
      * If this options is provided, it will return its value instead
      */
     onRequiredCycle?: any
-    verbose?: boolean
 }
 
 export class GenerateState extends TraversalState {}

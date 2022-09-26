@@ -2,65 +2,68 @@ import type { Dictionary, Evaluate } from "@re-/tools"
 import { chainableNoOpProxy, deepMerge, mapValues } from "@re-/tools"
 import type { RootNode } from "../nodes/common.js"
 import { ResolutionNode } from "../nodes/resolution.js"
-import { initializeParseContext } from "../parser/common.js"
+import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import { Type } from "../type.js"
-import type { DynamicType, ToType, TypeFn, TypeOptions } from "../type.js"
+import type {
+    DynamicTypeRoot,
+    InternalTypeOptions,
+    ToType,
+    TypeFn,
+    TypeOptions
+} from "../type.js"
 import type { ParseSpace } from "./parse.js"
-
-// TODO: Ensure there are no extraneous types/space calls from testing
-export const space: SpaceFn = (aliases, options) =>
-    dynamicSpace(aliases as any, options as any) as any
 
 export type SpaceFn = <Aliases, Ast = ParseSpace<Aliases>>(
     aliases: Root.Validate<Aliases, Ast>,
     options?: TypeOptions
 ) => SpaceOutput<{ Aliases: Aliases; Resolutions: Ast }>
 
-export type DynamicSpace = Record<string, DynamicType> & {
-    $root: DynamicRoot
+export type DynamicSpace = Record<string, DynamicTypeRoot> & {
+    $root: DynamicSpaceRoot
 }
 
-type DynamicRoot = SpaceRootFrom<any>
+export type DynamicSpaceRoot = SpaceRootFrom<{
+    Aliases: Dictionary
+    Resolutions: Dictionary
+}>
 
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
-export const dynamicSpace = (
-    dictionary: Dictionary,
-    options: SpaceOptions = {}
-) => {
-    const root = new SpaceRoot(dictionary, options)
-    const compiled: Record<string, any> = { $root: root }
-    for (const alias of Object.keys(dictionary)) {
-        const resolution = new ResolutionNode(alias, root)
-        root.resolutions[alias] = resolution
-        compiled[alias] = new Type(resolution.root, resolution, options)
+export const dynamicSpace = (aliases: Dictionary, opts: SpaceOptions = {}) => {
+    const $root = new SpaceRoot(aliases, opts)
+    const compiled: Record<string, any> = { $root }
+    for (const name of Object.keys(aliases)) {
+        const ctx = initializeParserContext(opts)
+        ctx.space = $root
+        const resolution = new ResolutionNode(name, ctx)
+        $root.resolutions[name] = resolution
+        compiled[name] = new Type(resolution.root, resolution, opts)
     }
     return compiled as DynamicSpace
 }
 
-// TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space
-export class SpaceRoot implements DynamicRoot {
-    resolutions: Record<string, ResolutionNode>
+// TODO: Ensure there are no extraneous types/space calls from testing
+export const space: SpaceFn = dynamicSpace as any
 
-    constructor(
-        public definitions: Dictionary,
-        public options: SpaceOptions = {}
-    ) {
+// TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space
+export class SpaceRoot implements DynamicSpaceRoot {
+    resolutions: Dictionary<ResolutionNode>
+
+    constructor(public aliases: Dictionary, public options: SpaceOptions = {}) {
         this.resolutions = {}
     }
 
-    type(definition: unknown, options: TypeOptions<any> = {}) {
-        const compiledOptions = deepMerge(this.options, options)
-        const root = Root.parse(
-            definition,
-            initializeParseContext(compiledOptions, this)
-        )
-        return new Type(definition, root, compiledOptions) as any
+    type(def: unknown, opts: InternalTypeOptions = {}) {
+        // TODO: What do we need to calculate here?
+        const compiledOptions = deepMerge(this.options, opts)
+        compiledOptions.space = this
+        const root = Root.parse(def, initializeParserContext(compiledOptions))
+        return new Type(def, root, compiledOptions) as any
     }
 
     extend(extensions: Dictionary, overrides?: SpaceOptions) {
         return dynamicSpace(
-            { ...this.definitions, ...extensions },
+            { ...this.aliases, ...extensions },
             deepMerge(this.options, overrides)
         ) as any
     }
@@ -95,7 +98,7 @@ export type SpaceOptions = TypeOptions
 
 export type SpaceRootFrom<Space extends ResolvedSpace> = Evaluate<{
     infer: InferSpaceRoot<Space["Resolutions"]>
-    definitions: Space["Resolutions"]
+    aliases: Space["Resolutions"]
     ast: Space["Resolutions"]
     type: TypeFn<Space>
     // extend: ExtendFn<S>

@@ -23,9 +23,9 @@ import { baseTerminatingChars, expressionExpectedMessage } from "./common.js"
 const lookaheadIsBaseTerminating: scanner.UntilCondition = (scanner) =>
     scanner.lookahead in baseTerminatingChars
 
-export const parseUnenclosedBase = (s: parserState, context: parserContext) => {
+export const parseUnenclosedBase = (s: parserState, ctx: parserContext) => {
     const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
-    s.l.root = unenclosedToNode(s, token, context)
+    s.l.root = unenclosedToNode(s, token, ctx)
     return s
 }
 
@@ -42,12 +42,12 @@ export type ParseUnenclosedBase<
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
-    context: parserContext
+    ctx: parserContext
 ) =>
     matchesKeyword(token)
-        ? parseKeyword(token, context)
-        : Alias.matches(token, context)
-        ? new Alias(token, context)
+        ? parseKeyword(token, ctx)
+        : ctx.space?.aliases?.[token]
+        ? new Alias(token, ctx)
         : undefined
 
 /**
@@ -103,13 +103,9 @@ export const toNodeIfLiteral = (token: string, ctx: parserContext) =>
         ? new LiteralNode(token, false, ctx)
         : undefined
 
-const unenclosedToNode = (
-    s: parserState,
-    token: string,
-    context: parserContext
-) =>
-    toNodeIfResolvableIdentifier(token, context) ??
-    toNodeIfLiteral(token, context) ??
+const unenclosedToNode = (s: parserState, token: string, ctx: parserContext) =>
+    toNodeIfResolvableIdentifier(token, ctx) ??
+    toNodeIfLiteral(token, ctx) ??
     s.error(
         token === ""
             ? expressionExpectedMessage(s.r.unscanned)

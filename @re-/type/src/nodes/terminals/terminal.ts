@@ -19,12 +19,12 @@ export type TerminalConstructorArgs<Definition extends string = string> = [
 export abstract class TerminalNode<
     Definition extends string = string
 > extends Base.node<Definition> {
-    constructor(...[definition, context]: TerminalConstructorArgs<Definition>) {
-        super(definition, definition, context)
+    constructor(...[def, ctx]: TerminalConstructorArgs<Definition>) {
+        super(def, def, ctx)
     }
 
     toString() {
-        return this.definition
+        return this.def
     }
 
     collectReferences(args: References.ReferencesOptions, collected: KeySet) {
@@ -37,7 +37,7 @@ export abstract class TerminalNode<
     definitionIsKeyOf<Obj extends Record<string, unknown>>(
         obj: Obj
     ): this is Base.node<Extract<keyof Obj, string>> {
-        return this.definition in obj
+        return this.def in obj
     }
 }
 

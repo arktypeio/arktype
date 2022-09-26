@@ -23,9 +23,9 @@ export namespace Base {
         input?: Input
 
         constructor(
-            public definition: Definition,
+            public def: Definition,
             public ast: Ast,
-            public context: context
+            public ctx: context
         ) {}
 
         abstract check(state: Check.CheckState): void
