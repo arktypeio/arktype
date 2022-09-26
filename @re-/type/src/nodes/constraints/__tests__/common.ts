@@ -4,7 +4,7 @@ import type { DoubleBoundComparator } from "../../../parser/str/operator/unary/b
 import { doubleBoundComparators } from "../../../parser/str/operator/unary/bound/common.js"
 import type { Scanner } from "../../../parser/str/state/scanner.js"
 import { scanner } from "../../../parser/str/state/scanner.js"
-import type { DynamicTypeRoot } from "../../../type.js"
+import type { DynamicTypeRoot } from "../../../scopes/type.js"
 import { keywordNodes } from "../../terminals/keywords/keyword.js"
 import { numberTypedKeywords } from "../../terminals/keywords/number.js"
 import { stringTypedKeywords } from "../../terminals/keywords/string.js"

@@ -1,5 +1,5 @@
 import { bench, suite } from "@re-/assert"
-import { space, type } from "../../../../index.js"
+import { space, type } from "../../../../api.js"
 
 suite("parse/str/operand", () => {
     suite("enclosed", () => {

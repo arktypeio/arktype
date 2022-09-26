@@ -1,7 +1,7 @@
 import { keySet } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
-import type { SpaceRoot } from "../space/root.js"
-import type { InternalTypeOptions, TypeOptions } from "../type.js"
+import type { SpaceRoot } from "../scopes/root.js"
+import type { InternalTypeOptions, TypeOptions } from "../scopes/type.js"
 
 export type ParserContext = {
     Aliases: unknown

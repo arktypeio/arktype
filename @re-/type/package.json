@@ -13,13 +13,13 @@
         "directory": "@re-/type"
     },
     "type": "module",
-    "main": "./dist/cjs/index.js",
-    "types": "./dist/types/index.d.ts",
+    "main": "./dist/cjs/api.js",
+    "types": "./dist/types/api.d.ts",
     "exports": {
         ".": {
-            "types": "./dist/types/index.d.ts",
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
+            "types": "./dist/types/api.d.ts",
+            "import": "./dist/mjs/api.js",
+            "require": "./dist/cjs/api.js"
         }
     },
     "scripts": {

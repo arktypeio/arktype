@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { space } from "../../../../space/root.js"
-import { type } from "../../../../type.js"
+import { space } from "../../../../scopes/root.js"
+import { type } from "../../../../scopes/type.js"
 import { unresolvableMessage } from "../unenclosed.js"
 
 describe("parse unenclosed", () => {

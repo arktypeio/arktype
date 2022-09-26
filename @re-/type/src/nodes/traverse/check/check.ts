@@ -1,6 +1,6 @@
 import type { JsBuiltinTypes, JsTypeName } from "@re-/tools"
 import { toString } from "@re-/tools"
-import type { TypeOptions } from "../../../type.js"
+import type { TypeOptions } from "../../../scopes/type.js"
 import { TraversalState } from "../traverse.js"
 import { Diagnostics } from "./diagnostics.js"
 import type { NarrowFn, OptionsByDiagnostic } from "./exports.js"

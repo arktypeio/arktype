@@ -1,5 +1,5 @@
 import { bench, suite } from "@re-/assert"
-import { type } from "../../../index.js"
+import { type } from "../../../api.js"
 
 suite("terminal", () => {
     suite("literal", () => {

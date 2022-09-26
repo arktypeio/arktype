@@ -1,4 +1,4 @@
-import type { TypeOptions } from "../../type.js"
+import type { TypeOptions } from "../../scopes/type.js"
 import type { Path } from "../common.js"
 
 export class TraversalState {

@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
 import { describe, test } from "mocha"
-import { type } from "../../../index.js"
+import { type } from "../../../api.js"
 import type { Check } from "../../traverse/exports.js"
 
 describe("dictionary", () => {

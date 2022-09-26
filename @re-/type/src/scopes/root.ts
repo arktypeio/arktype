@@ -4,14 +4,14 @@ import type { RootNode } from "../nodes/common.js"
 import { ResolutionNode } from "../nodes/resolution.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
-import { Type } from "../type.js"
+import type { ParseSpace } from "./parse.js"
+import { Type } from "./type.js"
 import type {
     DynamicTypeRoot,
     InferredTypeFn,
     InternalTypeOptions,
     TypeOptions
-} from "../type.js"
-import type { ParseSpace } from "./parse.js"
+} from "./type.js"
 
 type TypedSpaceFn = <Aliases, Ast = ParseSpace<Aliases>>(
     aliases: Root.Validate<Aliases, Ast>,

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../../index.js"
+import { type } from "../../../../../api.js"
 import { unresolvableMessage } from "../../../operand/unenclosed.js"
 import { nonTerminatingOptionalMessage } from "../optional.js"
 

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../type.js"
+import { type } from "../../../../scopes/type.js"
 import { unclosedGroupMessage } from "../../full.js"
 import { expressionExpectedMessage } from "../../operand/common.js"
 import { unexpectedGroupCloseMessage } from "../groupClose.js"

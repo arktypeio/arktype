@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import type { Dictionary } from "@re-/tools"
 import { describe, test } from "mocha"
-import { space, type } from "../../index.js"
+import { space, type } from "../../api.js"
 import { unresolvableMessage } from "../str/operand/unenclosed.js"
 
 describe("root definition", () => {
