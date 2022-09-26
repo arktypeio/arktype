@@ -1,12 +1,12 @@
 import { ArrayNode } from "../../../nodes/unaries/array.js"
-import type { parseContext } from "../../common.js"
+import type { parserContext } from "../../common.js"
 import type { Left, left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 
 export const parseArray = (
     s: parserState<left.withRoot>,
-    context: parseContext
+    context: parserContext
 ) => {
     const next = s.r.shift()
     if (next !== "]") {

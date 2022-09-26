@@ -7,9 +7,9 @@ import { ValidationError } from "./nodes/traverse/check/diagnostics.js"
 import { CheckState } from "./nodes/traverse/check/exports.js"
 import { Generate } from "./nodes/traverse/exports.js"
 import type { Check, References } from "./nodes/traverse/exports.js"
+import type { ParserContext } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
-import type { Space } from "./space/parse.js"
 import type { SpaceRoot } from "./space/root.js"
 
 export const type: TypeFn = (definition, options = {}, space?: SpaceRoot) => {
@@ -35,11 +35,15 @@ export type TypeOptions<Inferred = unknown> = {
     generate?: Generate.GenerateOptions
 }
 
-export type TypeFn<S extends Space.Resolved = Space.Resolved.Empty> = <D>(
-    definition: Root.Validate<D, S>,
+// TODO: Can ParserContext just have names?
+export type TypeFn<
+    Ctx extends ParserContext = { Space: {} },
+    Resolutions = {}
+> = <D>(
+    definition: Root.Validate<D, Ctx>,
     // TODO: Better to have this in generics?
-    options?: TypeOptions<RootNode.Infer<Root.Parse<D, S>, S>>
-) => ToType<D, Root.Parse<D, S>, S>
+    options?: TypeOptions<RootNode.Infer<Root.Parse<D, Ctx>, Ctx>>
+) => ToType<D, Root.Parse<D, Ctx>, Resolutions>
 
 export type ToType<Def, Ast, Resolutions> = TypeFrom<
     Def,

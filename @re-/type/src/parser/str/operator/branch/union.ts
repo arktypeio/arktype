@@ -1,6 +1,6 @@
 import { UnionNode } from "../../../../nodes/branches/union.js"
 import type { strNode } from "../../../../nodes/common.js"
-import type { parseContext } from "../../../common.js"
+import type { parserContext } from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"
 import type { Branches, MergeExpression } from "./branch.js"
@@ -13,7 +13,10 @@ type PushRoot<B extends Branches, Root> = {
     ]
 }
 
-export const reduceUnion = (s: parserState.withRoot, context: parseContext) => {
+export const reduceUnion = (
+    s: parserState.withRoot,
+    context: parserContext
+) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }

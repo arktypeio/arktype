@@ -1,4 +1,4 @@
-import type { Conform, Dictionary, Evaluate } from "@re-/tools"
+import type { Dictionary, Evaluate } from "@re-/tools"
 import { chainableNoOpProxy, deepMerge, mapValues } from "@re-/tools"
 import type { RootNode } from "../nodes/common.js"
 import { ResolutionNode } from "../nodes/resolution.js"
@@ -6,31 +6,22 @@ import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import { Type } from "../type.js"
 import type { DynamicType, ToType, TypeFn, TypeOptions } from "../type.js"
-import type { Space } from "./parse.js"
+import type { ParseSpace, ValidateAliases } from "./parse.js"
 
 // TODO: Ensure there are no extraneous types/space calls from testing
-export const space: SpaceFn = (dictionary, options) =>
-    dynamicSpace(dictionary, options as any) as any
+export const space: SpaceFn = (aliases, options) =>
+    dynamicSpace(aliases, options as any) as any
 
-export const types = space({ a: "string[]", b: "a" }, { onResolve: "0" }).$root
-
-export type SpaceFn = <Aliases, Meta = {}>(
-    aliases: Space.ValidateAliases<Aliases, Meta>,
-    options?: TypeOptions & Conform<Meta, Space.ValidateMeta<Meta, Aliases>>
-) => CompileSpace<{
-    Aliases: Aliases
-    Meta: Conform<Meta, Space.MetaDefinitions>
-}>
-
-type CompileSpace<S extends Space.Definition> = SpaceOutput<
-    S & { Resolutions: Space.Parse<S> }
->
+export type SpaceFn = <Aliases>(
+    aliases: ValidateAliases<Aliases>,
+    options?: TypeOptions
+) => SpaceOutput<Aliases, ParseSpace<Aliases>>
 
 export type DynamicSpace = Record<string, DynamicType> & {
     $root: DynamicRoot
 }
 
-type DynamicRoot = SpaceRootFrom<any>
+type DynamicRoot = SpaceRootFrom<any, any>
 
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
 export const dynamicSpace = (
@@ -83,23 +74,21 @@ export class SpaceRoot implements DynamicRoot {
     }
 }
 
-export type SpaceOutput<S extends Space.Resolved> = Evaluate<
-    SpaceTypes<S["Resolutions"]> & {
-        $root: SpaceRootFrom<S>
+export type SpaceOutput<Aliases, Resolutions> = Evaluate<
+    SpaceTypes<Resolutions> & {
+        $root: SpaceRootFrom<Aliases, Resolutions>
     }
 >
 
-export type SpaceOptions<Meta = Space.MetaDefinitions> = Evaluate<
-    TypeOptions & Meta
->
+export type SpaceOptions = TypeOptions
 
-export type SpaceRootFrom<S extends Space.Resolved> = Evaluate<{
-    infer: InferSpaceRoot<S["Resolutions"]>
-    definitions: S["Aliases"]
-    ast: S["Resolutions"]
-    type: TypeFn<S>
+export type SpaceRootFrom<Aliases, Resolutions> = Evaluate<{
+    infer: InferSpaceRoot<Resolutions>
+    definitions: Aliases
+    ast: Resolutions
+    type: TypeFn<{ Space: Aliases }, Resolutions>
     // extend: ExtendFn<S>
-    options: SpaceOptions<S["Meta"]>
+    options: SpaceOptions
 }>
 
 export type SpaceTypes<Resolutions> = Evaluate<{

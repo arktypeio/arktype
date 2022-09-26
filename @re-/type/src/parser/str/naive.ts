@@ -1,18 +1,9 @@
-import type { KeywordDefinition } from "../../nodes/terminals/keywords/keyword.js"
 import { ArrayNode } from "../../nodes/unaries/array.js"
 import { OptionalNode } from "../../nodes/unaries/optional.js"
-import type { ParseContext, parseContext } from "../common.js"
+import type { ParserContext, parserContext } from "../common.js"
 import type { FullParse } from "./full.js"
+import type { IsResolvableIdentifier } from "./operand/unenclosed.js"
 import { toNodeIfResolvableIdentifier } from "./operand/unenclosed.js"
-
-type IsResolvableName<
-    Def,
-    Ctx extends ParseContext
-> = Def extends KeywordDefinition
-    ? true
-    : Def extends keyof Ctx["Aliases"]
-    ? true
-    : false
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -25,45 +16,42 @@ type IsResolvableName<
  */
 export type TryNaiveParse<
     Def extends string,
-    Ctx extends ParseContext
+    Ctx extends ParserContext
 > = Def extends `${infer Child}?`
     ? Child extends `${infer GrandChild}[]`
-        ? IsResolvableName<GrandChild, Ctx> extends true
+        ? IsResolvableIdentifier<GrandChild, Ctx> extends true
             ? [[GrandChild, "[]"], "?"]
             : FullParse<Def, Ctx>
-        : IsResolvableName<Child, Ctx> extends true
+        : IsResolvableIdentifier<Child, Ctx> extends true
         ? [Child, "?"]
         : FullParse<Def, Ctx>
     : Def extends `${infer Child}[]`
-    ? IsResolvableName<Child, Ctx> extends true
+    ? IsResolvableIdentifier<Child, Ctx> extends true
         ? [Child, "[]"]
         : FullParse<Def, Ctx>
-    : IsResolvableName<Def, Ctx> extends true
+    : IsResolvableIdentifier<Def, Ctx> extends true
     ? Def
     : FullParse<Def, Ctx>
 
-export const tryNaiveParse = (def: string, context: parseContext) => {
+export const tryNaiveParse = (def: string, ctx: parserContext) => {
     if (def.endsWith("?")) {
-        const possibleIdentifierNode = tryNaiveParseArray(
-            def.slice(0, -1),
-            context
-        )
+        const possibleIdentifierNode = tryNaiveParseArray(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
-            return new OptionalNode(possibleIdentifierNode, context)
+            return new OptionalNode(possibleIdentifierNode, ctx)
         }
     }
-    return tryNaiveParseArray(def, context)
+    return tryNaiveParseArray(def, ctx)
 }
 
-const tryNaiveParseArray = (def: string, context: parseContext) => {
+const tryNaiveParseArray = (def: string, ctx: parserContext) => {
     if (def.endsWith("[]")) {
         const possibleIdentifierNode = toNodeIfResolvableIdentifier(
             def.slice(0, -2),
-            context
+            ctx
         )
         if (possibleIdentifierNode) {
-            return new ArrayNode(possibleIdentifierNode, context)
+            return new ArrayNode(possibleIdentifierNode, ctx)
         }
     }
-    return toNodeIfResolvableIdentifier(def, context)
+    return toNodeIfResolvableIdentifier(def, ctx)
 }

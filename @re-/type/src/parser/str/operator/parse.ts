@@ -1,5 +1,5 @@
 import { isKeyOf } from "@re-/tools"
-import type { parseContext } from "../../common.js"
+import type { parserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
@@ -18,7 +18,7 @@ import { reduceGroupClose } from "./groupClose.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
-    context: parseContext
+    context: parserContext
 ): parserState => {
     const lookahead = s.r.shift()
     return lookahead === "END"

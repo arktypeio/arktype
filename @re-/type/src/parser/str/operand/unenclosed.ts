@@ -10,9 +10,7 @@ import type {
     NumberLiteralDefinition
 } from "../../../nodes/terminals/literal.js"
 import { LiteralNode } from "../../../nodes/terminals/literal.js"
-import type { Space } from "../../../space/parse.js"
-import type { parseContext } from "../../common.js"
-import type { Root } from "../../root.js"
+import type { ParserContext, parserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { scanner, Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
@@ -25,7 +23,7 @@ import { baseTerminatingChars, expressionExpectedMessage } from "./common.js"
 const lookaheadIsBaseTerminating: scanner.UntilCondition = (scanner) =>
     scanner.lookahead in baseTerminatingChars
 
-export const parseUnenclosedBase = (s: parserState, context: parseContext) => {
+export const parseUnenclosedBase = (s: parserState, context: parserContext) => {
     const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
     s.l.root = unenclosedToNode(s, token, context)
     return s
@@ -35,21 +33,16 @@ export type ParseUnenclosedBase<
     S extends ParserState,
     Fragment extends string,
     Unscanned extends string,
-    SpaceDef extends Space.Definition
+    Ctx extends ParserContext
 > = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
     ? Lookahead extends BaseTerminatingChar
-        ? ReduceUnenclosed<S["L"], Unscanned, Fragment, SpaceDef>
-        : ParseUnenclosedBase<
-              S,
-              `${Fragment}${Lookahead}`,
-              NextUnscanned,
-              SpaceDef
-          >
-    : ReduceUnenclosed<S["L"], Unscanned, Fragment, SpaceDef>
+        ? ReduceUnenclosed<S["L"], Unscanned, Fragment, Ctx>
+        : ParseUnenclosedBase<S, `${Fragment}${Lookahead}`, NextUnscanned, Ctx>
+    : ReduceUnenclosed<S["L"], Unscanned, Fragment, Ctx>
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
-    context: parseContext
+    context: parserContext
 ) =>
     matchesKeyword(token)
         ? parseKeyword(token, context)
@@ -99,21 +92,21 @@ export const numberLiteralToValue = (def: NumberLiteralDefinition) => {
     return value
 }
 
-export const toNodeIfLiteral = (token: string, context: parseContext) =>
+export const toNodeIfLiteral = (token: string, ctx: parserContext) =>
     isNumberLiteral(token)
-        ? new LiteralNode(token, numberLiteralToValue(token), context)
+        ? new LiteralNode(token, numberLiteralToValue(token), ctx)
         : isBigintLiteral(token)
-        ? new LiteralNode(token, BigInt(token.slice(0, -1)), context)
+        ? new LiteralNode(token, BigInt(token.slice(0, -1)), ctx)
         : token === "true"
-        ? new LiteralNode(token, true, context)
+        ? new LiteralNode(token, true, ctx)
         : token === "false"
-        ? new LiteralNode(token, false, context)
+        ? new LiteralNode(token, false, ctx)
         : undefined
 
 const unenclosedToNode = (
     s: parserState,
     token: string,
-    context: parseContext
+    context: parserContext
 ) =>
     toNodeIfResolvableIdentifier(token, context) ??
     toNodeIfLiteral(token, context) ??
@@ -127,29 +120,12 @@ type ReduceUnenclosed<
     L extends Left,
     Unscanned extends string,
     Token extends string,
-    SpaceDef extends Space.Definition
-> = Token extends keyof SpaceDef["Aliases"]
-    ? ParserState.From<{
-          L: Left.SetRoot<L, ParseAlias<Token, SpaceDef>>
-          R: Unscanned
-      }>
-    : IsResolvableBuiltin<Token> extends true
+    Ctx extends ParserContext
+> = IsResolvableUnenclosed<Token, Ctx> extends true
     ? ParserState.From<{ L: Left.SetRoot<L, Token>; R: Unscanned }>
     : Token extends ""
     ? ParserState.Error<ExpressionExpectedMessage<Unscanned>>
     : ParserState.Error<UnresolvableMessage<Token>>
-
-export type ParseAlias<
-    Name extends keyof S["Aliases"],
-    S extends Space.Definition
-> = "onResolve" extends S["Meta"]
-    ? Name extends "$resolution"
-        ? S["Aliases"][Name]
-        : Root.Parse<
-              S["Meta"]["onResolve"],
-              S & { Aliases: { $resolution: Alias } }
-          >
-    : Name
 
 type UnresolvableMessage<Token extends string> =
     `'${Token}' is not a builtin type and does not exist in your space.`
@@ -159,7 +135,19 @@ export const unresolvableMessage = <Token extends string>(
 ): UnresolvableMessage<Token> =>
     `'${token}' is not a builtin type and does not exist in your space.`
 
-type IsResolvableBuiltin<Token> = Token extends KeywordDefinition
+export type IsResolvableIdentifier<
+    Token,
+    Ctx extends ParserContext
+> = Token extends KeywordDefinition
+    ? true
+    : Token extends keyof Ctx["Space"]
+    ? true
+    : false
+
+type IsResolvableUnenclosed<
+    Token,
+    Ctx extends ParserContext
+> = IsResolvableIdentifier<Token, Ctx> extends true
     ? true
     : Token extends NumberLiteralDefinition
     ? true

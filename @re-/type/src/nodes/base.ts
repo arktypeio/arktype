@@ -1,10 +1,10 @@
-import type { parseContext } from "../parser/common.js"
+import type { parserContext } from "../parser/common.js"
 import { References } from "./traverse/exports.js"
 import type { Check } from "./traverse/exports.js"
 import type { TraversalState } from "./traverse/traverse.js"
 
 export namespace Base {
-    export type context = parseContext
+    export type context = parserContext
 
     export type Input = [node: node, mapper: (data: unknown) => unknown]
 

@@ -1,5 +1,4 @@
-import type { Space } from "../../../space/parse.js"
-import type { parseContext } from "../../common.js"
+import type { ParserContext, parserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 import type { ExpressionExpectedMessage } from "./common.js"
@@ -13,7 +12,7 @@ import { parseUnenclosedBase } from "./unenclosed.js"
 
 export const parseOperand = (
     s: parserState,
-    context: parseContext
+    context: parserContext
 ): parserState =>
     s.r.lookahead === "("
         ? reduceGroupOpen(s.shifted())
@@ -27,7 +26,7 @@ export const parseOperand = (
 
 export type ParseOperand<
     S extends ParserState,
-    SpaceDef extends Space.Definition
+    Ctx extends ParserContext
 > = S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
     ? Lookahead extends "("
         ? ParserState.From<{
@@ -37,6 +36,6 @@ export type ParseOperand<
         : Lookahead extends EnclosedBaseStartChar
         ? ParseEnclosedBase<S, Lookahead>
         : Lookahead extends " "
-        ? ParseOperand<{ L: S["L"]; R: Unscanned }, SpaceDef>
-        : ParseUnenclosedBase<S, "", S["R"], SpaceDef>
+        ? ParseOperand<{ L: S["L"]; R: Unscanned }, Ctx>
+        : ParseUnenclosedBase<S, "", S["R"], Ctx>
     : ParserState.Error<ExpressionExpectedMessage<"">>

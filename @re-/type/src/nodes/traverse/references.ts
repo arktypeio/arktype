@@ -64,7 +64,8 @@ export type ReferencesFn<Def, Dict> = <Options extends ReferencesOptions = {}>(
     Options
 > extends ReferencesOptions<infer Filter, infer PreserveStructure>
     ? TransformReferences<
-          RootNode.References<Def, Dict, PreserveStructure>,
+          [],
+          //RootNode.References<Def, Dict, PreserveStructure>,
           Filter,
           "array"
       >

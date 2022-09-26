@@ -1,4 +1,3 @@
-import { deepMerge } from "@re-/tools"
 import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { SpaceRoot } from "../space/root.js"
