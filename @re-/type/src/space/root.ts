@@ -15,13 +15,13 @@ export const space: SpaceFn = (aliases, options) =>
 export type SpaceFn = <Aliases>(
     aliases: ValidateAliases<Aliases>,
     options?: TypeOptions
-) => SpaceOutput<Aliases, ParseSpace<Aliases>>
+) => SpaceOutput<{ Aliases: Aliases; Resolutions: ParseSpace<Aliases> }>
 
 export type DynamicSpace = Record<string, DynamicType> & {
     $root: DynamicRoot
 }
 
-type DynamicRoot = SpaceRootFrom<any, any>
+type DynamicRoot = SpaceRootFrom<any>
 
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
 export const dynamicSpace = (
@@ -74,19 +74,30 @@ export class SpaceRoot implements DynamicRoot {
     }
 }
 
-export type SpaceOutput<Aliases, Resolutions> = Evaluate<
-    SpaceTypes<Resolutions> & {
-        $root: SpaceRootFrom<Aliases, Resolutions>
+export type ResolvedSpace = {
+    Aliases: unknown
+    Resolutions: unknown
+}
+
+export namespace ResolvedSpace {
+    export type From<S extends ResolvedSpace> = S
+
+    export type Empty = From<{ Aliases: {}; Resolutions: {} }>
+}
+
+export type SpaceOutput<Space extends ResolvedSpace> = Evaluate<
+    SpaceTypes<Space["Resolutions"]> & {
+        $root: SpaceRootFrom<Space>
     }
 >
 
 export type SpaceOptions = TypeOptions
 
-export type SpaceRootFrom<Aliases, Resolutions> = Evaluate<{
-    infer: InferSpaceRoot<Resolutions>
-    definitions: Aliases
-    ast: Resolutions
-    type: TypeFn<{ Space: Aliases }, Resolutions>
+export type SpaceRootFrom<Space extends ResolvedSpace> = Evaluate<{
+    infer: InferSpaceRoot<Space["Resolutions"]>
+    definitions: Space["Resolutions"]
+    ast: Space["Resolutions"]
+    type: TypeFn<Space>
     // extend: ExtendFn<S>
     options: SpaceOptions
 }>

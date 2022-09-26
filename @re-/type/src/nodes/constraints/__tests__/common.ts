@@ -6,7 +6,7 @@ import type { Scanner } from "../../../parser/str/state/scanner.js"
 import { scanner } from "../../../parser/str/state/scanner.js"
 import type { DynamicType } from "../../../type.js"
 import { keywordNodes } from "../../terminals/keywords/keyword.js"
-import { numberKeywords } from "../../terminals/keywords/number.js"
+import { numberTypedKeywords } from "../../terminals/keywords/number.js"
 import { stringTypedKeywords } from "../../terminals/keywords/string.js"
 import type { Bounds } from "../bounds.js"
 import { boundToString } from "../bounds.js"
@@ -16,7 +16,9 @@ const keysOf = (o: object) => Object.keys(o)
 export const arbitraryKeywordList = fc.constantFrom(
     ...keysOf(keywordNodes).map((_) => `${_}[]`)
 )
-export const arbitraryNumberKeyword = fc.constantFrom(...keysOf(numberKeywords))
+export const arbitraryNumberKeyword = fc.constantFrom(
+    ...keysOf(numberTypedKeywords)
+)
 export const arbitraryStringKeyword = fc.constantFrom(
     ...keysOf(stringTypedKeywords)
 )

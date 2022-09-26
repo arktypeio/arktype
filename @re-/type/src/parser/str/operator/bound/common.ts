@@ -1,6 +1,5 @@
 import { keySet } from "@re-/tools"
 import type { Scanner } from "../../state/scanner.js"
-import { scanner } from "../../state/scanner.js"
 
 export const comparatorChars = keySet({
     "<": 1,

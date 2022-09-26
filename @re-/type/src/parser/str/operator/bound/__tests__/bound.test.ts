@@ -16,30 +16,35 @@ describe("bound", () => {
             test(">", () => {
                 assert(type("number>0").ast).narrowedValue([
                     "number",
+                    ":",
                     [[">", 0]]
                 ])
             })
             test("<", () => {
                 assert(type("number<10").ast).narrowedValue([
                     "number",
+                    ":",
                     [["<", 10]]
                 ])
             })
             test(">=", () => {
                 assert(type("number>=3.14159").ast).narrowedValue([
                     "number",
+                    ":",
                     [[">=", 3.14159]]
                 ])
             })
             test("<=", () => {
                 assert(type("number<=-49").ast).narrowedValue([
                     "number",
+                    ":",
                     [["<=", -49]]
                 ])
             })
             test("==", () => {
                 assert(type("number==3211993").ast).narrowedValue([
                     "number",
+                    ":",
                     [["==", 3211993]]
                 ])
             })
@@ -48,6 +53,7 @@ describe("bound", () => {
             test("<,<=", () => {
                 assert(type("-5<number<=5").ast).narrowedValue([
                     "number",
+                    ":",
                     [
                         [">", -5],
                         ["<=", 5]
@@ -57,6 +63,7 @@ describe("bound", () => {
             test("<=,<", () => {
                 assert(type("-3.23<=number<4.654").ast).narrowedValue([
                     "number",
+                    ":",
                     [
                         [">=", -3.23],
                         ["<", 4.654]
@@ -111,6 +118,7 @@ describe("bound", () => {
         test("string", () => {
             assert(type("1<string<=5").ast).narrowedValue([
                 "string",
+                ":",
                 [
                     [">", 1],
                     ["<=", 5]
@@ -120,6 +128,7 @@ describe("bound", () => {
         test("parse", () => {
             assert(type("-343<=boolean[]<89").ast).narrowedValue([
                 ["boolean", "[]"],
+                ":",
                 [
                     [">=", -343],
                     ["<", 89]

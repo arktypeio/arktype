@@ -10,7 +10,7 @@ import {
 } from "../../parser/str/operator/bound/common.js"
 import type { Scanner } from "../../parser/str/state/scanner.js"
 import type { StrAst, strNode } from "../common.js"
-import type { NumberKeyword } from "../terminals/keywords/number.js"
+import type { NumberTypedKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
 import type { CheckState } from "../traverse/check/check.js"
 import type { Check } from "../traverse/exports.js"
@@ -32,7 +32,10 @@ export namespace Bounds {
     export type Apply<Child, Bounds extends Ast> = ConstrainedAst<Child, Bounds>
 }
 
-export type BoundableAst = NumberKeyword | StringTypedKeyword | [unknown, "[]"]
+export type BoundableAst =
+    | NumberTypedKeyword
+    | StringTypedKeyword
+    | [unknown, "[]"]
 
 export type BoundableNode = strNode & {
     bounds: null | BoundConstraint
@@ -55,8 +58,8 @@ export const applyBound = (node: BoundableNode, bounds: BoundConstraint) => {
 
 const applyBoundsToAst = (node: BoundableNode, ast: Bounds.Ast) => {
     node.ast = isConstrained(node.ast)
-        ? [node.ast[0], [...node.ast[1], ...ast]]
-        : [node.ast, ast]
+        ? [node.ast[0], ":", [...node.ast[2], ...ast]]
+        : [node.ast, ":", ast]
 }
 
 const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
@@ -132,8 +135,8 @@ export const boundToString = (
         kind === "string" ? " characters" : kind === "array" ? " items" : ""
     }`
 
-const isConstrained = (ast: StrAst): ast is [StrAst, StrAst[]] =>
-    Array.isArray(ast) && Array.isArray(ast[1])
+const isConstrained = (ast: StrAst): ast is [StrAst, ":", StrAst[]] =>
+    (ast as any)[1] === ":"
 
 const isWithinBound = (
     comparator: Scanner.Comparator,

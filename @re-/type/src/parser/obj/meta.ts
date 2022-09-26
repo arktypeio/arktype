@@ -4,6 +4,7 @@ import type { IntersectionAst } from "../../nodes/branches/intersection.js"
 import type { UnionAst } from "../../nodes/branches/union.js"
 import type { ArrayAst } from "../../nodes/unaries/array.js"
 import type { OptionalAst } from "../../nodes/unaries/optional.js"
+import { type } from "../../type.js"
 import type { parseFn, ParserContext } from "../common.js"
 import type { Root } from "../root.js"
 

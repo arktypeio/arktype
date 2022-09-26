@@ -46,14 +46,14 @@ export class NumberNode extends TerminalNode implements BoundableNode {
     }
 }
 
-export const numberKeywords = {
+export const numberTypedKeywords = {
     number: NumberNode,
     integer: NumberNode
 }
 
-export type NumberKeyword = keyof typeof numberKeywords
+export type NumberTypedKeyword = keyof typeof numberTypedKeywords
 
-export type NumberSubtypeKeyword = Exclude<NumberKeyword, "number">
+export type NumberSubtypeKeyword = Exclude<NumberTypedKeyword, "number">
 
 export type NumberSubtypeDiagnostic = Check.DiagnosticConfig<{
     definition: NumberSubtypeKeyword

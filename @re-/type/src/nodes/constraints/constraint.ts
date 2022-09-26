@@ -1,3 +1,4 @@
+import type { Evaluate } from "@re-/tools"
 import { Generate } from "../traverse/exports.js"
 import type { Check } from "../traverse/exports.js"
 
@@ -14,7 +15,7 @@ export class ConstraintGenerationError extends Generate.UngeneratableError {
 export type ConstrainedAst<
     Child = unknown,
     Constraints extends unknown[] = unknown[]
-> = [Child, ":", Constraints]
+> = Evaluate<[Child, ":", Constraints]>
 
 export type PossiblyConstrainedAst<
     Child = unknown,

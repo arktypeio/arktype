@@ -10,7 +10,7 @@ import type { Check, References } from "./nodes/traverse/exports.js"
 import type { ParserContext } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
-import type { SpaceRoot } from "./space/root.js"
+import type { ResolvedSpace, SpaceRoot } from "./space/root.js"
 
 export const type: TypeFn = (definition, options = {}, space?: SpaceRoot) => {
     const root = Root.parse(
@@ -35,15 +35,13 @@ export type TypeOptions<Inferred = unknown> = {
     generate?: Generate.GenerateOptions
 }
 
-// TODO: Can ParserContext just have names?
-export type TypeFn<
-    Ctx extends ParserContext = { Space: {} },
-    Resolutions = {}
-> = <D>(
-    definition: Root.Validate<D, Ctx>,
+export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> = <
+    Definition
+>(
+    definition: Root.Validate<Definition, Space>,
     // TODO: Better to have this in generics?
-    options?: TypeOptions<RootNode.Infer<Root.Parse<D, Ctx>, Ctx>>
-) => ToType<D, Root.Parse<D, Ctx>, Resolutions>
+    options?: TypeOptions<RootNode.Infer<Root.Parse<Definition, Space>, Space>>
+) => ToType<Definition, Root.Parse<Definition, Space>, Space["Resolutions"]>
 
 export type ToType<Def, Ast, Resolutions> = TypeFrom<
     Def,

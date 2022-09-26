@@ -7,7 +7,7 @@ import { FunctionNode } from "./function.js"
 import { NeverNode } from "./never.js"
 import { NullNode } from "./null.js"
 import type { NumberSubtypeKeyword } from "./number.js"
-import { numberKeywords, NumberNode } from "./number.js"
+import { numberTypedKeywords, NumberNode } from "./number.js"
 import { ObjectNode } from "./object.js"
 import type { StringSubtypeDefinition, StringSubtypeKeyword } from "./string.js"
 import { StringNode, stringTypedKeywords } from "./string.js"
@@ -50,7 +50,7 @@ export type InferKeyword<Definition extends KeywordDefinition> =
 export const keywordNodes = {
     ...typeKeywords,
     ...stringTypedKeywords,
-    ...numberKeywords
+    ...numberTypedKeywords
 }
 
 export const parseKeyword = (def: KeywordDefinition, context: Base.context) =>

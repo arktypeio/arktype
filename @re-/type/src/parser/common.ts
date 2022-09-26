@@ -3,7 +3,7 @@ import type { SpaceRoot } from "../space/root.js"
 import type { TypeOptions } from "../type.js"
 
 export type ParserContext = {
-    Space: unknown
+    Aliases: unknown
 }
 
 export type parserContext = TypeOptions & {
@@ -11,6 +11,7 @@ export type parserContext = TypeOptions & {
     space?: SpaceRoot
 }
 
+// TODO: Still needed?
 // Space is passed through an internal-only param, so we add
 // it to the provided options to create a context.
 export const initializeParseContext = (

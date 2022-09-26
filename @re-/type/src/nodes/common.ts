@@ -1,5 +1,4 @@
-import type { Iterate } from "@re-/tools"
-import type { Root } from "../index.js"
+import type { Evaluate } from "@re-/tools"
 import type { Base } from "./base.js"
 import type { BranchAst } from "./branches/branch.js"
 import type { IntersectionAst } from "./branches/intersection.js"
@@ -19,10 +18,10 @@ export const pathToString = (path: Path) =>
 export type Segment = string | number
 export type Path = Segment[]
 
-export type NodeToString<
-    Node,
-    Result extends string = ""
-> = Node extends Iterate<infer Head, infer Tail>
+export type NodeToString<Node, Result extends string = ""> = Node extends [
+    infer Head,
+    ...infer Tail
+]
     ? NodeToString<Tail, `${Result}${NodeToString<Head>}`>
     : Node extends string
     ? `${Result}${Node}`
@@ -33,32 +32,35 @@ export type StrAst = string | number | StrAst[]
 export type strNode = Base.node & { ast: StrAst }
 
 export namespace RootNode {
+    export type UnaryToken = "?" | "[]" | TypelessToken
+
+    export type BranchToken = "|" | "&"
+
+    export type TypelessToken = ":"
+
     export type Infer<Ast, Resolutions> = Ast extends string
         ? InferTerminal<Ast, Resolutions>
         : Ast extends readonly unknown[]
-        ? Ast extends OptionalAst<infer Child>
-            ? Infer<Child, Resolutions> | undefined
-            : Ast extends ArrayAst<infer Child>
-            ? Infer<Child, Resolutions>[]
-            : Ast extends UnionAst<infer Left, infer Right>
-            ? Infer<Left, Resolutions> | Infer<Right, Resolutions>
-            : Ast extends IntersectionAst<infer Left, infer Right>
-            ? Infer<Left, Resolutions> & Infer<Right, Resolutions>
-            : // TODO: Change constraints to worok better with second token?
-            Ast extends ConstrainedAst<infer Child>
-            ? Infer<Child, Resolutions>
+        ? Ast[1] extends "?"
+            ? Infer<Ast[0], Resolutions> | undefined
+            : Ast[1] extends "[]"
+            ? Infer<Ast[0], Resolutions>[]
+            : Ast[1] extends "|"
+            ? Infer<Ast[0], Resolutions> | Infer<Ast[2], Resolutions>
+            : Ast[1] extends "&"
+            ? Evaluate<Infer<Ast[0], Resolutions> & Infer<Ast[2], Resolutions>>
+            : Ast[1] extends TypelessToken
+            ? Infer<Ast[0], Resolutions>
             : InferTuple<Ast, Resolutions>
         : InferDictionary<Ast, Resolutions>
 
     export type References<Ast> = Ast extends string
         ? [Ast]
         : Ast extends readonly unknown[]
-        ? Ast extends UnaryAst<infer Child>
-            ? References<Child>
-            : Ast extends BranchAst<infer Left, infer Right>
-            ? [...References<Left>, ...References<Right>]
-            : Ast extends ConstrainedAst<infer Child>
-            ? References<Child>
+        ? Ast[1] extends UnaryToken
+            ? References<Ast[0]>
+            : Ast[1] extends BranchToken
+            ? [...References<Ast[0]>, ...References<Ast[2]>]
             : Struct.References<Ast>
         : Struct.References<Ast>
 }

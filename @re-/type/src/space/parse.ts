@@ -7,15 +7,16 @@ import type {
     Join,
     Narrow
 } from "@re-/tools"
+import type { ParserContext } from "../parser/common.js"
 import type { Root } from "../parser/root.js"
 import type { Str } from "../parser/str/str.js"
 
-export type ParseSpace<Space> = {
-    [Name in keyof Space]: Root.Parse<Space[Name], { Space: Space }>
+export type ParseSpace<Aliases> = {
+    [Name in keyof Aliases]: Root.Parse<Aliases[Name], { Aliases: Aliases }>
 }
 
-export type ValidateAliases<Space> = Evaluate<{
-    [Name in keyof Space]: Root.Validate<Space[Name], { Space: Space }>
+export type ValidateAliases<Aliases> = Evaluate<{
+    [Name in keyof Aliases]: Root.Validate<Aliases[Name], { Aliases: Aliases }>
 }>
 
 // S["Aliases"][Alias] extends string
@@ -31,11 +32,15 @@ export type ValidateAliases<Space> = Evaluate<{
 // }
 
 export type ValidateStringResolution<
-    Name extends keyof Space,
-    Space
+    Name extends keyof Ctx["Aliases"],
+    Ctx extends ParserContext
 > = IfShallowCycleErrorElse<
-    CheckResolutionForShallowCycle<Space[Name], Space, [Extract<Name, string>]>,
-    Str.Validate<Extract<Space[Name], string>, { Space: Space }>
+    CheckResolutionForShallowCycle<
+        Ctx["Aliases"][Name],
+        Ctx["Aliases"],
+        [Extract<Name, string>]
+    >,
+    Str.Validate<Extract<Ctx["Aliases"][Name], string>, Ctx>
 >
 
 export const shallowCycleMessage = <Seen extends string[]>(
