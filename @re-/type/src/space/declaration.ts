@@ -7,7 +7,7 @@
 // } from "./space.js"
 // import { dynamicSpace } from "./space.js"
 
-export const declare = (...names: any[]) => ({} as any)
+export const declare = (...names: any[]) => names as any
 
 // export const declare: DeclareFn = (...names) => ({
 //     define: createDeclaredDefineFnMap(names) as any,

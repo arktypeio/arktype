@@ -4,6 +4,7 @@ import type { IntersectionAst } from "../../nodes/branches/intersection.js"
 import type { UnionAst } from "../../nodes/branches/union.js"
 import type { ArrayAst } from "../../nodes/unaries/array.js"
 import type { OptionalAst } from "../../nodes/unaries/optional.js"
+import type { Space } from "../../space/parse.js"
 import { type, TypeOptions } from "../../type.js"
 import type { parseFn } from "../common.js"
 import type { Root } from "../root.js"
@@ -37,34 +38,29 @@ export type ValidateMetaDefinition<
     Child,
     Token extends MetaToken,
     Args extends unknown[],
-    Space
+    S extends Space.Definition
 > = Token extends "|" | "&" | "=>"
     ? Args extends [infer Head, ...infer Tail]
-        ? [
-              Root.Validate<Child, Space>,
-              Token,
-              Root.Validate<Head, Space>,
-              ...Tail
-          ]
+        ? [Root.Validate<Child, S>, Token, Root.Validate<Head, S>, ...Tail]
         : [
-              Root.Validate<Child, Space>,
+              Root.Validate<Child, S>,
               `Meta token '${Token}' requires a right-hand definition.`
           ]
-    : [Root.Validate<Child, Space>, Token, ...Args]
+    : [Root.Validate<Child, S>, Token, ...Args]
 
 export type ParseMetaDefinition<
     Child,
     Token extends MetaToken,
     Args extends unknown[],
-    Space
+    S extends Space.Definition
 > = Token extends ";"
-    ? Root.Parse<Child, Space>
+    ? Root.Parse<Child, S>
     : Token extends "?"
-    ? OptionalAst<Root.Parse<Child, Space>>
+    ? OptionalAst<Root.Parse<Child, S>>
     : Token extends "[]"
-    ? ArrayAst<Root.Parse<Child, Space>>
+    ? ArrayAst<Root.Parse<Child, S>>
     : Token extends "|"
-    ? UnionAst<Root.Parse<Child, Space>, Root.Parse<Args[0], Space>>
+    ? UnionAst<Root.Parse<Child, S>, Root.Parse<Args[0], S>>
     : Token extends "&"
-    ? IntersectionAst<Root.Parse<Child, Space>, Root.Parse<Args[0], Space>>
+    ? IntersectionAst<Root.Parse<Child, S>, Root.Parse<Args[0], S>>
     : {}

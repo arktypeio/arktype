@@ -14,7 +14,8 @@ export type ReferencesOf<
     infer Format
 >
     ? TransformReferences<
-          RootNode.References<Def, Dict, PreserveStructure>,
+          [],
+          //RootNode.References<Def, Dict, PreserveStructure>,
           Filter,
           Format
       >

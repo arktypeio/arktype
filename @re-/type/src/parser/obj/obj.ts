@@ -1,6 +1,7 @@
 import type { Evaluate } from "@re-/tools"
 import { DictionaryNode } from "../../nodes/structs/dictionary.js"
 import { TupleNode } from "../../nodes/structs/tuple.js"
+import type { Space } from "../../space/parse.js"
 import type { parseFn } from "../common.js"
 import { Root } from "../root.js"
 import type {
@@ -11,24 +12,23 @@ import type {
 import { isMetaDefinition, parseMetaDefinition } from "./meta.js"
 
 export namespace Obj {
-    export type Validate<Def, Space> = Def extends MetaDefinition<
-        infer Left,
-        infer Token,
-        infer Args
-    >
-        ? ValidateMetaDefinition<Left, Token, Args, Space>
+    export type Validate<
+        D,
+        S extends Space.Definition
+    > = D extends MetaDefinition<infer Left, infer Token, infer Args>
+        ? ValidateMetaDefinition<Left, Token, Args, S>
         : {
-              [K in keyof Def]: Root.Validate<Def[K], Space>
+              [K in keyof D]: Root.Validate<D[K], S>
           }
 
-    export type Parse<Def, Space> = Def extends MetaDefinition<
+    export type Parse<D, S extends Space.Definition> = D extends MetaDefinition<
         infer Left,
         infer Token,
         infer Args
     >
-        ? ParseMetaDefinition<Left, Token, Args, Space>
+        ? ParseMetaDefinition<Left, Token, Args, S>
         : Evaluate<{
-              [K in keyof Def]: Root.Parse<Def[K], Space>
+              [K in keyof D]: Root.Parse<D[K], S>
           }>
 
     export const parse: parseFn<object> = (definition, context) => {

@@ -1,5 +1,5 @@
 export { type, dynamic } from "./type.js"
 export { space, dynamicSpace } from "./space/root.js"
-export { declare } from "./declaration.js"
+export { declare } from "./space/declaration.js"
 export { Root } from "./parser/root.js"
 export type { ReferencesOf } from "./nodes/traverse/references.js"

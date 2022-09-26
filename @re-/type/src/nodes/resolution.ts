@@ -11,22 +11,13 @@ export class ResolutionNode extends Base.node {
     public root: Base.node
     public rootDef: unknown
 
-    constructor(public alias: string, space: SpaceRoot) {
-        // If this is the first time we've seen the alias,
-        // create a Node that will be used for future resolutions.
-        const defAndOptions = getResolutionDefAndOptions(
-            space.definitions[alias]
-        )
-        const context = initializeParseContext(
-            defAndOptions.options
-                ? deepMerge(space.options, defAndOptions.options)
-                : space.options,
-            space
-        )
-        const root = Root.parse(defAndOptions.def, context)
-        super(alias, root.ast, context)
+    constructor(public name: string, space: SpaceRoot) {
+        const rootDef = space.definitions[name]
+        const context = initializeParseContext(space.options, space)
+        const root = Root.parse(rootDef, context)
+        super(name, root.ast, context)
         this.root = root
-        this.rootDef = defAndOptions.def
+        this.rootDef = rootDef
     }
 
     toString() {
@@ -47,19 +38,19 @@ export class ResolutionNode extends Base.node {
     check(state: Check.CheckState) {
         // const nextArgs = this.nextArgs(state, this.context.validate)
         if (typeof state.data === "object" && state.data !== null) {
-            if (state.checkedValuesByAlias[this.alias]?.includes(state.data)) {
+            if (state.checkedValuesByAlias[this.name]?.includes(state.data)) {
                 // If we've already seen this value, it must not have any errors or else we wouldn't be here
                 return true
             }
-            if (!state.checkedValuesByAlias[this.alias]) {
-                state.checkedValuesByAlias[this.alias] = [state.data]
+            if (!state.checkedValuesByAlias[this.name]) {
+                state.checkedValuesByAlias[this.name] = [state.data]
             } else {
-                state.checkedValuesByAlias[this.alias].push(state.data)
+                state.checkedValuesByAlias[this.name].push(state.data)
             }
         }
         // TODO: Should maybe only check for type errors?
         const previousErrorCount = state.errors.length
-        state.seen.push(this.alias)
+        state.seen.push(this.name)
         this.root.check(state)
         if (
             state.options.narrow &&
@@ -71,14 +62,14 @@ export class ResolutionNode extends Base.node {
     }
 
     generate(state: Generate.GenerateState) {
-        if (state.seen.includes(this.alias)) {
+        if (state.seen.includes(this.name)) {
             const onRequiredCycle = state.options.generate?.onRequiredCycle
             if (onRequiredCycle) {
                 return onRequiredCycle
             }
-            throw new Generate.RequiredCycleError(this.alias, state.seen)
+            throw new Generate.RequiredCycleError(this.name, state.seen)
         }
-        state.seen.push(this.alias)
+        state.seen.push(this.name)
         const result = this.root.generate(state)
         state.seen.pop()
         return result

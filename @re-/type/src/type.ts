@@ -55,7 +55,7 @@ export type TypeFrom<Def, Ast, Inferred> = Evaluate<{
     default: Inferred
     ast: Ast
     generate: GenerateFn<Inferred>
-    references: (...args: any[]) => string[] //References.ReferencesFn<Def, Dict>
+    //references: (...args: any[]) => string[] //References.ReferencesFn<Def, Dict>
 }>
 
 export class Type implements DynamicType {

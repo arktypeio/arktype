@@ -1,4 +1,3 @@
-import type { Space } from "../../space/parse.js"
 import { Base } from "../base.js"
 import type { RootNode, StrAst } from "../common.js"
 import type { References } from "../traverse/exports.js"

@@ -1,6 +1,9 @@
 import type { Base } from "../nodes/base.js"
+import type { Space } from "../space/parse.js"
 import type { SpaceRoot } from "../space/root.js"
 import type { TypeOptions } from "../type.js"
+
+export type ParseContext = Space.Definition
 
 export type parseContext = TypeOptions & {
     path: string[]

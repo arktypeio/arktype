@@ -1,6 +1,12 @@
 import { isKeyOf } from "@re-/tools"
 import type { strNode } from "../../nodes/common.js"
-import type { parseContext, ParseError, parseFn } from "../common.js"
+import type { Space } from "../../space/parse.js"
+import type {
+    ParseContext,
+    parseContext,
+    ParseError,
+    parseFn
+} from "../common.js"
 import type { ParseOperand } from "./operand/operand.js"
 import { parseOperand } from "./operand/operand.js"
 import type {
@@ -23,33 +29,37 @@ import { scanner } from "./state/scanner.js"
 import type { ParserState } from "./state/state.js"
 import { parserState } from "./state/state.js"
 
-export const fullParse: parseFn<string> = (def, context) =>
-    loop(parseOperand(new parserState(def), context), context)
+export const fullParse: parseFn<string> = (def, ctx) =>
+    loop(parseOperand(new parserState(def), ctx), ctx)
 
-export type FullParse<Def extends string, Dict> = Loop<
-    ParseOperand<ParserState.New<Def>, Dict>,
-    Dict
+export type FullParse<Def extends string, Ctx extends ParseContext> = Loop<
+    ParseOperand<ParserState.New<Def>, Ctx>,
+    Ctx
 >
 
-const loop = (s: parserState, context: parseContext): strNode => {
+const loop = (s: parserState, ctx: parseContext): strNode => {
     while (!s.isSuffixable()) {
-        next(s, context)
+        next(s, ctx)
     }
-    return suffixLoop(transitionToSuffix(s), context)
+    return suffixLoop(transitionToSuffix(s), ctx)
 }
 
-type Loop<S extends ParserState, Dict> = S["L"]["nextSuffix"] extends string
+type Loop<
+    S extends ParserState,
+    Ctx extends ParseContext
+> = S["L"]["nextSuffix"] extends string
     ? // We just checked that nextSuffix is a string, so this is safe.
       // @ts-ignore There are ways to get TS to infer that, but they're more expensive.
       SuffixLoop<TransitionToSuffix<S>>
-    : Loop<Next<S, Dict>, Dict>
+    : Loop<Next<S, Ctx>, Ctx>
 
-const next = (s: parserState, context: parseContext): parserState =>
-    s.hasRoot() ? parseOperator(s, context) : parseOperand(s, context)
+const next = (s: parserState, ctx: parseContext): parserState =>
+    s.hasRoot() ? parseOperator(s, ctx) : parseOperand(s, ctx)
 
-type Next<S extends ParserState, Dict> = S["L"]["root"] extends undefined
-    ? ParseOperand<S, Dict>
-    : ParseOperator<S>
+type Next<
+    S extends ParserState,
+    Ctx extends ParseContext
+> = S["L"]["root"] extends undefined ? ParseOperand<S, Ctx> : ParseOperator<S>
 
 export const unclosedGroupMessage = "Missing )."
 type UnclosedGroupMessage = typeof unclosedGroupMessage

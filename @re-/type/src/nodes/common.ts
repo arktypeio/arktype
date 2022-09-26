@@ -49,23 +49,23 @@ export namespace RootNode {
             : InferTuple<Ast, Resolutions>
         : InferDictionary<Ast, Resolutions>
 
-    export type References<
-        Ast,
-        PreserveStructure extends boolean
-    > = Ast extends string
-        ? [Ast]
-        : Ast extends readonly unknown[]
-        ? Ast extends UnaryAst<infer Child>
-            ? References<Child, PreserveStructure>
-            : Ast extends BranchAst<infer Left, infer Right>
-            ? [
-                  ...References<Left, PreserveStructure>,
-                  ...References<Right, PreserveStructure>
-              ]
-            : Ast extends ConstrainedAst<infer Child>
-            ? References<Child, PreserveStructure>
-            : Struct.References<Ast, PreserveStructure>
-        : Struct.References<Ast, PreserveStructure>
+    // export type References<
+    //     Ast,
+    //     PreserveStructure extends boolean
+    // > = Ast extends string
+    //     ? [Ast]
+    //     : Ast extends readonly unknown[]
+    //     ? Ast extends UnaryAst<infer Child>
+    //         ? References<Child, PreserveStructure>
+    //         : Ast extends BranchAst<infer Left, infer Right>
+    //         ? [
+    //               ...References<Left, PreserveStructure>,
+    //               ...References<Right, PreserveStructure>
+    //           ]
+    //         : Ast extends ConstrainedAst<infer Child>
+    //         ? References<Child, PreserveStructure>
+    //         : Struct.References<Ast, PreserveStructure>
+    //     : Struct.References<Ast, PreserveStructure>
 
     // export type References<
     //     Def,
