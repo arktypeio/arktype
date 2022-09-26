@@ -9,7 +9,8 @@ import { Generate } from "./nodes/traverse/exports.js"
 import type { Check, References } from "./nodes/traverse/exports.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
-import type { SpaceRoot } from "./space.js"
+import type { Space } from "./space/parse.js"
+import type { SpaceRoot } from "./space/root.js"
 
 export const type: TypeFn = (definition, options = {}, space?: SpaceRoot) => {
     const root = Root.parse(
@@ -34,16 +35,16 @@ export type TypeOptions<Inferred = unknown> = {
     generate?: Generate.GenerateOptions
 }
 
-export type TypeFn<SpaceAst = {}> = <Def>(
-    definition: Root.Validate<Def, SpaceAst>,
+export type TypeFn<S extends Space.Resolved = Space.Resolved.Empty> = <D>(
+    definition: Root.Validate<D, S>,
     // TODO: Better to have this in generics?
-    options?: TypeOptions<RootNode.Infer<Root.Parse<Def, SpaceAst>, SpaceAst>>
-) => ToType<Def, Root.Parse<Def, SpaceAst>, SpaceAst>
+    options?: TypeOptions<RootNode.Infer<Root.Parse<D, S>, S>>
+) => ToType<D, Root.Parse<D, S>, S>
 
-export type ToType<Def, Ast, SpaceAst> = TypeFrom<
+export type ToType<Def, Ast, Resolutions> = TypeFrom<
     Def,
     Ast,
-    RootNode.Infer<Ast, SpaceAst>
+    RootNode.Infer<Ast, Resolutions>
 >
 
 export type TypeFrom<Def, Ast, Inferred> = Evaluate<{

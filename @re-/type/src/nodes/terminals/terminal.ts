@@ -1,7 +1,7 @@
+import type { Space } from "../../space/parse.js"
 import { Base } from "../base.js"
 import type { RootNode, StrAst } from "../common.js"
 import type { References } from "../traverse/exports.js"
-import type { Alias } from "./alias.js"
 import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
 import type { RegexLiteralDefinition } from "./keywords/string.js"
 import type {
@@ -46,11 +46,11 @@ export abstract class TerminalNode<
 
 export type InferTerminal<
     Token extends string,
-    Space
+    Resolutions
 > = Token extends KeywordDefinition
     ? InferKeyword<Token>
-    : Token extends keyof Space
-    ? RootNode.Infer<Space[Token], Space>
+    : Token extends keyof Resolutions
+    ? RootNode.Infer<Resolutions[Token], Resolutions>
     : Token extends StringLiteralDefinition<infer Value>
     ? Value
     : Token extends RegexLiteralDefinition

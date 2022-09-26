@@ -131,26 +131,23 @@ export type StructureDiagnostic = Check.DiagnosticConfig<{
 
 export namespace Struct {
     export type References<
-        Def,
-        Dict,
+        Ast,
         PreserveStructure extends boolean
     > = PreserveStructure extends true
-        ? StructuredReferences<Def, Dict>
-        : UnstructuredReferences<ListPossibleTypes<ValueOf<Def>>, Dict, []>
+        ? StructuredReferences<Ast>
+        : UnstructuredReferences<ListPossibleTypes<ValueOf<Ast>>, []>
 
     type UnstructuredReferences<
         Values extends unknown[],
-        Dict,
         Result extends unknown[]
     > = Values extends IterateType<unknown, infer Current, infer Remaining>
         ? UnstructuredReferences<
               Remaining,
-              Dict,
-              [...Result, ...RootNode.References<Current, Dict, false>]
+              [...Result, ...RootNode.References<Current, false>]
           >
         : Result
 
-    type StructuredReferences<Def, Dict> = Evaluate<{
-        [K in keyof Def]: RootNode.References<Def[K], Dict, true>
+    type StructuredReferences<Ast> = Evaluate<{
+        [K in keyof Ast]: RootNode.References<Ast, true>
     }>
 }

@@ -1,5 +1,5 @@
 import type { Base } from "../nodes/base.js"
-import type { SpaceRoot } from "../space.js"
+import type { SpaceRoot } from "../space/root.js"
 import type { TypeOptions } from "../type.js"
 
 export type parseContext = TypeOptions & {
@@ -30,7 +30,3 @@ export const throwParseError = (message: string) => {
 }
 
 export type ParseError<Message extends string> = `!${Message}`
-
-export type ParseOptions = {
-    onResolve?: unknown
-}

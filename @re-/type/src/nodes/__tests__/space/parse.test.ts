@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { space } from "../../../index.js"
-import { shallowCycleMessage } from "../../../parser/resolution.js"
+import { shallowCycleMessage } from "../../../space/parse.js"
 
 describe("parse space", () => {
     // TODO: Reenable

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { space } from "../../../../space.js"
+import { space } from "../../../../space/root.js"
 import { type } from "../../../../type.js"
 import { unresolvableMessage } from "../unenclosed.js"
 

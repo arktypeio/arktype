@@ -1,4 +1,4 @@
-import type { Space } from "../space.js"
+import type { Space } from "../space/parse.js"
 import type { parseFn } from "./common.js"
 import { throwParseError } from "./common.js"
 import { Obj } from "./obj/obj.js"

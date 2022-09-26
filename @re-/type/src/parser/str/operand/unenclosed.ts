@@ -1,4 +1,3 @@
-import type { AliasAst } from "../../../nodes/terminals/alias.js"
 import { Alias } from "../../../nodes/terminals/alias.js"
 import type { KeywordDefinition } from "../../../nodes/terminals/keywords/keyword.js"
 import {
@@ -11,8 +10,9 @@ import type {
     NumberLiteralDefinition
 } from "../../../nodes/terminals/literal.js"
 import { LiteralNode } from "../../../nodes/terminals/literal.js"
-import type { Space } from "../../../space.js"
+import type { Space } from "../../../space/parse.js"
 import type { parseContext } from "../../common.js"
+import type { Root } from "../../root.js"
 import type { Left } from "../state/left.js"
 import type { scanner, Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
@@ -35,12 +35,17 @@ export type ParseUnenclosedBase<
     S extends ParserState,
     Fragment extends string,
     Unscanned extends string,
-    Dict
+    SpaceDef extends Space.Definition
 > = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
     ? Lookahead extends BaseTerminatingChar
-        ? ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
-        : ParseUnenclosedBase<S, `${Fragment}${Lookahead}`, NextUnscanned, Dict>
-    : ReduceUnenclosed<S["L"], Unscanned, Fragment, Dict>
+        ? ReduceUnenclosed<S["L"], Unscanned, Fragment, SpaceDef>
+        : ParseUnenclosedBase<
+              S,
+              `${Fragment}${Lookahead}`,
+              NextUnscanned,
+              SpaceDef
+          >
+    : ReduceUnenclosed<S["L"], Unscanned, Fragment, SpaceDef>
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
@@ -122,11 +127,10 @@ type ReduceUnenclosed<
     L extends Left,
     Unscanned extends string,
     Token extends string,
-    Dict
-    // TODO: Need to get better caching with Naive?
-> = Token extends keyof Space.DefinitionsOf<Dict>
+    SpaceDef extends Space.Definition
+> = Token extends keyof SpaceDef["Aliases"]
     ? ParserState.From<{
-          L: Left.SetRoot<L, AliasAst<Token, Dict>>
+          L: Left.SetRoot<L, ParseAlias<Token, SpaceDef>>
           R: Unscanned
       }>
     : IsResolvableBuiltin<Token> extends true
@@ -134,6 +138,18 @@ type ReduceUnenclosed<
     : Token extends ""
     ? ParserState.Error<ExpressionExpectedMessage<Unscanned>>
     : ParserState.Error<UnresolvableMessage<Token>>
+
+export type ParseAlias<
+    Name extends keyof S["Aliases"],
+    S extends Space.Definition
+> = "onResolve" extends S["Meta"]
+    ? Name extends "$resolution"
+        ? S["Aliases"][Name]
+        : Root.Parse<
+              S["Meta"]["onResolve"],
+              S & { Aliases: { $resolution: Alias } }
+          >
+    : Name
 
 type UnresolvableMessage<Token extends string> =
     `'${Token}' is not a builtin type and does not exist in your space.`
