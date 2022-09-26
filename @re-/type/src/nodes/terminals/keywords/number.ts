@@ -7,8 +7,26 @@ import type { Check } from "../../traverse/exports.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
+export class ModuloConstraint {
+    constructor(public value: number) {}
+
+    check(state: Check.CheckState<number>) {
+        if (state.data % this.value !== 0) {
+            state.errors.add(
+                "modulo",
+                {
+                    state,
+                    reason: `Must be divisible by ${this.value}`
+                },
+                { divisor: this.value, actual: state.data }
+            )
+        }
+    }
+}
+
 export class NumberNode extends TerminalNode implements BoundableNode {
     bounds: BoundConstraint | null = null
+    modulo: ModuloConstraint | null = null
 
     check(state: Check.CheckState) {
         if (!state.dataIsOfType("number")) {
@@ -35,7 +53,8 @@ export class NumberNode extends TerminalNode implements BoundableNode {
                 }
             )
         }
-        this.bounds?.check(state as Check.CheckState<number>)
+        this.modulo?.check(state)
+        this.bounds?.check(state)
     }
 
     generate() {
@@ -57,5 +76,10 @@ export type NumberSubtypeKeyword = Exclude<NumberTypedKeyword, "number">
 
 export type NumberSubtypeDiagnostic = Check.DiagnosticConfig<{
     definition: NumberSubtypeKeyword
+    actual: number
+}>
+
+export type ModuloDiagnostic = Check.DiagnosticConfig<{
+    divisor: number
     actual: number
 }>

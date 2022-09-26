@@ -71,13 +71,21 @@ const NUMBER_MATCHER = /^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
 export const isNumberLiteral = (def: string): def is NumberLiteralDefinition =>
     NUMBER_MATCHER.test(def)
 
+export type IntegerLiteralDefinition<Value extends bigint = bigint> = `${Value}`
+
+const INT_MATCHER = /^(?:0|(?:-?[1-9]\d*))$/
+
+export const isIntegerLiteral = (
+    def: string
+): def is IntegerLiteralDefinition => INT_MATCHER.test(def)
+
 /**
  *  Matches a well-formatted bigint expression according to the following rules:
  *    1. Must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
  *    2. The value may not be "-0"
  *    3. The literal character "n" terminates the definition and must immediately succeed the integer from 1.
  */
-const BIGINT_MATCHER = /^(?:0|(?:-?[1-9]\d*))n$/
+const BIGINT_MATCHER = new RegExp(INT_MATCHER.source.slice(0, -1) + "n$")
 
 export const isBigintLiteral = (def: string): def is BigintLiteralDefinition =>
     BIGINT_MATCHER.test(def)

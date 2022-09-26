@@ -75,7 +75,8 @@ export namespace scanner {
     export const suffixes = keySet({
         ...comparators,
         END: 1,
-        "?": 1
+        "?": 1,
+        "%": 1
     })
 }
 
@@ -88,4 +89,31 @@ export namespace Scanner {
     export type Comparator = keyof typeof scanner.comparators
 
     export type Suffix = keyof typeof scanner.suffixes
+
+    export type OneCharSuffix = "?" | "%" | "<" | ">" | "END"
+
+    export type TwoCharSuffix = "<=" | ">=" | "=="
 }
+
+export type InvalidSuffixMessage<
+    LastValidSuffixToken extends Scanner.Suffix,
+    Unscanned extends string,
+    ExpectedFollowingTokenDescription extends string = ""
+> = `Suffix ${LastValidSuffixToken} must be followed by${ExpectedFollowingTokenDescription extends ""
+    ? ""
+    : ` ${ExpectedFollowingTokenDescription} and`} zero or more additional suffix tokens (got '${Unscanned}').`
+
+export const invalidSuffixMessage = <
+    Token extends Scanner.Suffix,
+    Unscanned extends string,
+    ExpectedFollowingTokenDescription extends string
+>(
+    lastValidSuffixToken: Token,
+    unscanned: Unscanned,
+    expectedFollowingTokenDescription?: ExpectedFollowingTokenDescription
+): InvalidSuffixMessage<Token, Unscanned, ExpectedFollowingTokenDescription> =>
+    `Suffix ${lastValidSuffixToken} must be followed by${
+        (expectedFollowingTokenDescription
+            ? ` ${expectedFollowingTokenDescription} and`
+            : "") as any
+    } zero or more additional suffix tokens (got '${unscanned}').`

@@ -11,7 +11,10 @@ import type {
 import type { StructureDiagnostic } from "../../structs/struct.js"
 import type { TupleLengthDiagnostic } from "../../structs/tuple.js"
 import type { KeywordTypeDiagnostic } from "../../terminals/keywords/common.js"
-import type { NumberSubtypeDiagnostic } from "../../terminals/keywords/number.js"
+import type {
+    ModuloDiagnostic,
+    NumberSubtypeDiagnostic
+} from "../../terminals/keywords/number.js"
 import type { RegexDiagnostic } from "../../terminals/keywords/string.js"
 import type { LiteralDiagnostic } from "../../terminals/literal.js"
 import type { CheckState } from "./check.js"
@@ -51,6 +54,7 @@ export type RegisteredDiagnostics = {
     numberSubtype: NumberSubtypeDiagnostic
     tupleLength: TupleLengthDiagnostic
     union: UnionDiagnostic
+    modulo: ModuloDiagnostic
 }
 
 export type DiagnosticContext<Code extends DiagnosticCode> =

@@ -13,7 +13,11 @@ import type { NumberTypedKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
 import type { CheckState } from "../traverse/check/check.js"
 import type { Check } from "../traverse/exports.js"
-import type { ConstrainedAst, Constraint } from "./constraint.js"
+import type {
+    ConstrainedAst,
+    Constraint,
+    PossiblyConstrainedAst
+} from "./constraint.js"
 
 export namespace Bounds {
     export type Ast = Single | Double
@@ -27,14 +31,17 @@ export namespace Bounds {
     export type Single = [Bound]
 
     export type Double = [Lower, Upper]
-
-    export type Apply<Child, Bounds extends Ast> = ConstrainedAst<Child, Bounds>
 }
 
-export type BoundableAst =
-    | NumberTypedKeyword
-    | StringTypedKeyword
-    | [unknown, "[]"]
+/** A BoundableNode must be either:
+ *    1. A number-typed keyword terminal (e.g. "integer" in "integer>5")
+ *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100<alphanumeric")
+ *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
+ */
+
+export type BoundableAst = PossiblyConstrainedAst<
+    NumberTypedKeyword | StringTypedKeyword | [unknown, "[]"]
+>
 
 export type BoundableNode = Base.node & {
     bounds: null | BoundConstraint

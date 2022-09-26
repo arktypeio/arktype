@@ -20,6 +20,8 @@ import type {
     ParseSuffixBound,
     UnpairedLeftBoundMessage
 } from "./operator/unary/bound/right.js"
+import type { ParseModulo } from "./operator/unary/modulo.js"
+import { parseModulo } from "./operator/unary/modulo.js"
 import type { ParseOptional } from "./operator/unary/optional.js"
 import { parseOptional } from "./operator/unary/optional.js"
 import type { Left, left } from "./state/left.js"
@@ -82,18 +84,18 @@ type TransitionToSuffix<S extends ParserState<Left.Suffixable>> =
           }>
         : ParserState.Error<UnclosedGroupMessage>
 
-const suffixLoop = (
-    s: parserState.suffix,
-    context: parserContext
-): Base.node => {
+const suffixLoop = (s: parserState.suffix, ctx: parserContext): Base.node => {
     if (s.l.nextSuffix === "END") {
         return finalize(s)
     }
     if (s.l.nextSuffix === "?") {
-        return finalize(parseOptional(s, context))
+        return finalize(parseOptional(s, ctx))
     }
     if (isKeyOf(s.l.nextSuffix, scanner.comparators)) {
-        return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), context)
+        return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
+    }
+    if (s.l.nextSuffix === "%") {
+        return suffixLoop(parseModulo(s), ctx)
     }
     return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
 }
@@ -109,6 +111,8 @@ type NextSuffix<S extends ParserState.Of<Left.Suffix>> =
         ? ParseOptional<S>
         : S["L"]["nextSuffix"] extends Scanner.Comparator
         ? ParseSuffixBound<S, S["L"]["nextSuffix"]>
+        : S["L"]["nextSuffix"] extends "%"
+        ? ParseModulo<S>
         : ParserState.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
 
 const finalize = (s: parserState.suffix) =>
