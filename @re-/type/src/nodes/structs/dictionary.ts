@@ -2,7 +2,6 @@ import type { Dictionary, Evaluate } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { Check, Generate } from "../traverse/exports.js"
-import type { OptionalAst } from "../unaries/optional.js"
 import { OptionalNode } from "../unaries/optional.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
@@ -10,7 +9,7 @@ export type InferDictionary<
     Ast,
     Space,
     OptionalKey extends keyof Ast = {
-        [K in keyof Ast]: Ast[K] extends OptionalAst ? K : never
+        [K in keyof Ast]: Ast[K] extends [unknown, "?"] ? K : never
     }[keyof Ast],
     RequiredKey extends keyof Ast = Exclude<keyof Ast, OptionalKey>
 > = Evaluate<

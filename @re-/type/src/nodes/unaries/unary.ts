@@ -1,19 +1,11 @@
 import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
-import type { StrAst, strNode } from "../common.js"
 import type { References } from "../traverse/exports.js"
 
-export type UnaryToken = "[]" | "?"
+export type UnaryConstructorArgs = [child: Base.node, ctx: Base.context]
 
-export type UnaryAst<Child = unknown, Token extends UnaryToken = UnaryToken> = [
-    Child,
-    Token
-]
-
-export type UnaryConstructorArgs = [child: strNode, context: Base.context]
-
-export abstract class UnaryNode extends Base.node<string, StrAst> {
-    protected child: strNode
+export abstract class UnaryNode extends Base.node<string> {
+    protected child: Base.node
 
     constructor(token: string, ...[child, context]: UnaryConstructorArgs) {
         super(`${child.definition}${token}`, [child.ast, token], context)

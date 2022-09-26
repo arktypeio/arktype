@@ -1,13 +1,13 @@
-import type { strNode } from "../../../nodes/common.js"
+import type { Base } from "../../../nodes/base.js"
 import type { Bounds } from "../../../nodes/constraints/bounds.js"
 import type { ParseError } from "../../common.js"
-import type { Branches, branches } from "../operator/branch/branch.js"
+import type { Branches, branches } from "../operator/binary/branch.js"
 import type { Scanner } from "./scanner.js"
 
 type leftBase = {
     groups: branches[]
     branches: branches
-    root?: strNode
+    root?: Base.node
     lowerBound?: Bounds.Lower
     nextSuffix?: Scanner.Suffix
 }
@@ -32,18 +32,18 @@ export namespace left {
         branches: {}
     })
 
-    export type withRoot<Root extends strNode = strNode> = {
+    export type withRoot<Root extends Base.node = Base.node> = {
         root: Root
     }
 
     export type suffixable = {
-        root: strNode
+        root: Base.node
         nextSuffix: Scanner.Suffix
     }
 
     type baseSuffix = {
         lowerBound?: Bounds.Lower
-        root: strNode
+        root: Base.node
         nextSuffix: Scanner.Suffix
     }
 

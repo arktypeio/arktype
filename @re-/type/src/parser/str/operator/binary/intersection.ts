@@ -1,6 +1,9 @@
-import { IntersectionNode } from "../../../../nodes/branches/intersection.js"
-import type { strNode } from "../../../../nodes/common.js"
-import type { parserContext } from "../../../common.js"
+import type { Base } from "../../../../nodes/base.js"
+import { IntersectionNode } from "../../../../nodes/n-aries/intersection.js"
+import type {
+    MissingRightOperandMessage,
+    parserContext
+} from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"
 import type { Branches, MergeExpression } from "./branch.js"
@@ -23,15 +26,20 @@ export const reduceIntersection = (
     return s
 }
 
-export type ReduceIntersection<L extends Left> = Left.From<{
-    lowerBound: L["lowerBound"]
-    groups: L["groups"]
-    branches: PushRoot<L["branches"], L["root"]>
-    root: undefined
-}>
+export type ReduceIntersection<
+    L extends Left,
+    Unscanned extends string
+> = Unscanned extends ""
+    ? MissingRightOperandMessage<"&">
+    : Left.From<{
+          lowerBound: L["lowerBound"]
+          groups: L["groups"]
+          branches: PushRoot<L["branches"], L["root"]>
+          root: undefined
+      }>
 
 export type stateWithMergeableIntersection = parserState<{
-    root: strNode
+    root: Base.node
     branches: { intersection: IntersectionNode }
 }>
 

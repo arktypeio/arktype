@@ -1,7 +1,7 @@
-import { OptionalNode } from "../../../nodes/unaries/optional.js"
-import type { parserContext } from "../../common.js"
-import type { Left } from "../state/left.js"
-import type { parserState, ParserState } from "../state/state.js"
+import { OptionalNode } from "../../../../nodes/unaries/optional.js"
+import type { parserContext } from "../../../common.js"
+import type { Left } from "../../state/left.js"
+import type { parserState, ParserState } from "../../state/state.js"
 
 export type ParseOptional<S extends ParserState> = S["R"] extends ""
     ? ParserState.From<{

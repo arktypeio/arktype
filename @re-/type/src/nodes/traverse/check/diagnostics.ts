@@ -1,9 +1,9 @@
 import type { Evaluate } from "@re-/tools"
 import { uncapitalize } from "@re-/tools"
-import type { UnionDiagnostic } from "../../branches/union.js"
 import type { Path } from "../../common.js"
 import { pathToString } from "../../common.js"
 import type { BoundDiagnostic as BoundDiagnostic } from "../../constraints/bounds.js"
+import type { UnionDiagnostic } from "../../n-aries/union.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic

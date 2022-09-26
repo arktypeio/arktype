@@ -1,16 +1,14 @@
 import type { Evaluate } from "@re-/tools"
+import type {
+    BinaryToken,
+    TypelessToken,
+    UnaryToken
+} from "../parser/common.js"
 import type { Base } from "./base.js"
-import type { BranchAst } from "./branches/branch.js"
-import type { IntersectionAst } from "./branches/intersection.js"
-import type { UnionAst } from "./branches/union.js"
-import type { ConstrainedAst } from "./constraints/constraint.js"
 import type { InferDictionary } from "./structs/dictionary.js"
 import type { Struct } from "./structs/struct.js"
 import type { InferTuple } from "./structs/tuple.js"
 import type { InferTerminal } from "./terminals/terminal.js"
-import type { ArrayAst } from "./unaries/array.js"
-import type { OptionalAst } from "./unaries/optional.js"
-import type { UnaryAst } from "./unaries/unary.js"
 
 export const pathToString = (path: Path) =>
     path.length === 0 ? "/" : path.join("/")
@@ -27,17 +25,7 @@ export type NodeToString<Node, Result extends string = ""> = Node extends [
     ? `${Result}${Node}`
     : Result
 
-export type StrAst = string | number | StrAst[]
-
-export type strNode = Base.node & { ast: StrAst }
-
 export namespace RootNode {
-    export type UnaryToken = "?" | "[]" | TypelessToken
-
-    export type BinaryToken = "|" | "&" | "=>"
-
-    export type TypelessToken = ":"
-
     export type Infer<Ast, Resolutions> = Ast extends string
         ? InferTerminal<Ast, Resolutions>
         : Ast extends readonly unknown[]

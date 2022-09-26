@@ -1,15 +1,14 @@
-import type { Evaluate } from "@re-/tools"
 // TODO: Fix parser imports
 import type {
     DoubleBoundComparator,
     NormalizedLowerBoundComparator
-} from "../../parser/str/operator/bound/common.js"
+} from "../../parser/str/operator/unary/bound/common.js"
 import {
     comparatorToString,
     invertedComparators
-} from "../../parser/str/operator/bound/common.js"
+} from "../../parser/str/operator/unary/bound/common.js"
 import type { Scanner } from "../../parser/str/state/scanner.js"
-import type { StrAst, strNode } from "../common.js"
+import type { Base } from "../base.js"
 import type { NumberTypedKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
 import type { CheckState } from "../traverse/check/check.js"
@@ -37,13 +36,13 @@ export type BoundableAst =
     | StringTypedKeyword
     | [unknown, "[]"]
 
-export type BoundableNode = strNode & {
+export type BoundableNode = Base.node & {
     bounds: null | BoundConstraint
 }
 
 export type BoundableData = number | string | unknown[]
 
-export const isBoundable = (node: strNode): node is BoundableNode =>
+export const isBoundable = (node: Base.node): node is BoundableNode =>
     "bounds" in node
 
 export type BoundUnits = "characters" | "items"
@@ -135,8 +134,8 @@ export const boundToString = (
         kind === "string" ? " characters" : kind === "array" ? " items" : ""
     }`
 
-const isConstrained = (ast: StrAst): ast is [StrAst, ":", StrAst[]] =>
-    (ast as any)[1] === ":"
+const isConstrained = (ast: unknown): ast is [unknown, ":", unknown[]] =>
+    Array.isArray(ast) && ast[1] === ":"
 
 const isWithinBound = (
     comparator: Scanner.Comparator,

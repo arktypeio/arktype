@@ -1,23 +1,23 @@
 import { isKeyOf } from "@re-/tools"
-import type { NodeToString } from "../../../../nodes/common.js"
-import type {
-    BoundableAst,
-    BoundableNode,
-    Bounds
-} from "../../../../nodes/constraints/bounds.js"
+import type { NodeToString } from "../../../../../nodes/common.js"
 import {
     applyBound,
     BoundConstraint,
     isBoundable
-} from "../../../../nodes/constraints/bounds.js"
-import type { NumberLiteralDefinition } from "../../../../nodes/terminals/literal.js"
+} from "../../../../../nodes/constraints/bounds.js"
+import type {
+    BoundableAst,
+    BoundableNode,
+    Bounds
+} from "../../../../../nodes/constraints/bounds.js"
+import type { NumberLiteralDefinition } from "../../../../../nodes/terminals/literal.js"
 import {
     isNumberLiteral,
     numberLiteralToValue
-} from "../../operand/unenclosed.js"
-import type { Left, left } from "../../state/left.js"
-import type { Scanner, scanner } from "../../state/scanner.js"
-import type { parserState, ParserState } from "../../state/state.js"
+} from "../../../operand/unenclosed.js"
+import type { Left, left } from "../../../state/left.js"
+import type { Scanner, scanner } from "../../../state/scanner.js"
+import type { parserState, ParserState } from "../../../state/state.js"
 import type { InvalidDoubleBoundMessage } from "./common.js"
 import { doubleBoundComparators, invalidDoubleBoundMessage } from "./common.js"
 

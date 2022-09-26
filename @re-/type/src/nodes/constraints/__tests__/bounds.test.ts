@@ -3,7 +3,7 @@ import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { dynamic, type } from "../../../index.js"
 import type { Bounds } from "../../../nodes/constraints/bounds.js"
-import { invertedComparators } from "../../../parser/str/operator/bound/common.js"
+import { invertedComparators } from "../../../parser/str/operator/unary/bound/common.js"
 import type { Check } from "../../traverse/exports.js"
 import {
     arbitraryComparator,

@@ -1,6 +1,9 @@
-import { UnionNode } from "../../../../nodes/branches/union.js"
-import type { strNode } from "../../../../nodes/common.js"
-import type { parserContext } from "../../../common.js"
+import type { Base } from "../../../../nodes/base.js"
+import { UnionNode } from "../../../../nodes/n-aries/union.js"
+import type {
+    MissingRightOperandMessage,
+    parserContext
+} from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"
 import type { Branches, MergeExpression } from "./branch.js"
@@ -29,15 +32,20 @@ export const reduceUnion = (
     return s
 }
 
-export type ReduceUnion<L extends Left> = Left.From<{
-    lowerBound: L["lowerBound"]
-    groups: L["groups"]
-    branches: PushRoot<L["branches"], L["root"]>
-    root: undefined
-}>
+export type ReduceUnion<
+    L extends Left,
+    Unscanned extends string
+> = Unscanned extends ""
+    ? MissingRightOperandMessage<"|">
+    : Left.From<{
+          lowerBound: L["lowerBound"]
+          groups: L["groups"]
+          branches: PushRoot<L["branches"], L["root"]>
+          root: undefined
+      }>
 
 export type stateWithMergeableUnion = parserState<{
-    root: strNode
+    root: Base.node
     branches: { union: UnionNode }
 }>
 

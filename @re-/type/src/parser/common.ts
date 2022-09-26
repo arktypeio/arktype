@@ -1,3 +1,4 @@
+import { keySet } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
 import type { SpaceRoot } from "../space/root.js"
 import type { TypeOptions } from "../type.js"
@@ -35,3 +36,29 @@ export const throwParseError = (message: string) => {
 }
 
 export type ParseError<Message extends string> = `!${Message}`
+
+// TODO: Better way to organize tokens
+export const metaTokens = keySet({
+    ";": 1,
+    "=>": 1,
+    "[]": 1,
+    "?": 1,
+    "|": 1,
+    "&": 1
+})
+
+export type UnaryToken = "?" | "[]" | TypelessToken
+
+export type BinaryToken = "|" | "&" | "=>"
+
+export type TypelessToken = ":"
+
+export type MetaToken = keyof typeof metaTokens
+
+export type MissingRightOperandMessage<Token extends BinaryToken> =
+    `Token '${Token}' requires a right operand.`
+
+export const missingRightOperandMessage = <Token extends BinaryToken>(
+    token: Token
+): MissingRightOperandMessage<Token> =>
+    `Token '${token}' requires a right operand.`

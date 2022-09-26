@@ -1,5 +1,4 @@
 import type { ParseError, parseFn, ParserContext } from "../common.js"
-import type { FullParse } from "./full.js"
 import { fullParse } from "./full.js"
 import type { TryNaiveParse } from "./naive.js"
 import { tryNaiveParse } from "./naive.js"

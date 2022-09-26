@@ -1,6 +1,6 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import { isEmpty } from "@re-/tools"
-import type { strNode } from "../../../nodes/common.js"
+import type { Base } from "../../../nodes/base.js"
 import { parseError } from "../../common.js"
 import type { Left } from "./left.js"
 import { left } from "./left.js"
@@ -20,7 +20,7 @@ export class parserState<constraints extends Partial<left> = {}> {
         throw new parseError(message)
     }
 
-    hasRoot<NodeClass extends ClassOf<strNode> = ClassOf<strNode>>(
+    hasRoot<NodeClass extends ClassOf<Base.node> = ClassOf<Base.node>>(
         ofClass?: NodeClass
     ): this is parserState<{ root: InstanceOf<NodeClass> }> {
         return ofClass ? this.l.root instanceof ofClass : !!this.l.root
@@ -53,7 +53,7 @@ export namespace parserState {
     export type suffix<Constraints extends Partial<left.suffix> = {}> =
         parserState<left.suffix<Constraints>>
 
-    export type withRoot<Root extends strNode = strNode> = parserState<
+    export type withRoot<Root extends Base.node = Base.node> = parserState<
         left.withRoot<Root>
     >
 }

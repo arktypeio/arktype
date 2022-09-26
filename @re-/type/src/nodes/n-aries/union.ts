@@ -1,15 +1,9 @@
 import type { JsTypeName } from "@re-/tools"
 import { Check, Generate } from "../traverse/exports.js"
-import type { BranchAst, BranchConstructorArgs } from "./branch.js"
-import { BranchNode } from "./branch.js"
+import type { BranchConstructorArgs } from "./branch.js"
+import { NaryNode } from "./branch.js"
 
-export type UnionAst<Left = unknown, Right = unknown> = BranchAst<
-    Left,
-    Right,
-    "|"
->
-
-export class UnionNode extends BranchNode {
+export class UnionNode extends NaryNode {
     constructor(...args: BranchConstructorArgs) {
         super("|", ...args)
     }

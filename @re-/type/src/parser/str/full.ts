@@ -1,5 +1,5 @@
 import { isKeyOf } from "@re-/tools"
-import type { strNode } from "../../nodes/common.js"
+import type { Base } from "../../nodes/base.js"
 import type {
     ParseError,
     parseFn,
@@ -8,20 +8,20 @@ import type {
 } from "../common.js"
 import type { ParseOperand } from "./operand/operand.js"
 import { parseOperand } from "./operand/operand.js"
-import type {
-    ParseSuffixBound,
-    UnpairedLeftBoundMessage
-} from "./operator/bound/right.js"
+import type { MergeBranches } from "./operator/binary/branch.js"
+import { mergeBranches } from "./operator/binary/branch.js"
+import type { ParseOperator } from "./operator/parse.js"
+import { parseOperator } from "./operator/parse.js"
 import {
     parseSuffixBound,
     unpairedLeftBoundMessage
-} from "./operator/bound/right.js"
-import type { MergeBranches } from "./operator/branch/branch.js"
-import { mergeBranches } from "./operator/branch/branch.js"
-import type { ParseOptional } from "./operator/optional.js"
-import { parseOptional } from "./operator/optional.js"
-import type { ParseOperator } from "./operator/parse.js"
-import { parseOperator } from "./operator/parse.js"
+} from "./operator/unary/bound/right.js"
+import type {
+    ParseSuffixBound,
+    UnpairedLeftBoundMessage
+} from "./operator/unary/bound/right.js"
+import type { ParseOptional } from "./operator/unary/optional.js"
+import { parseOptional } from "./operator/unary/optional.js"
 import type { Left, left } from "./state/left.js"
 import type { Scanner } from "./state/scanner.js"
 import { scanner } from "./state/scanner.js"
@@ -36,7 +36,7 @@ export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
     Ctx
 >
 
-const loop = (s: parserState, ctx: parserContext): strNode => {
+const loop = (s: parserState, ctx: parserContext): Base.node => {
     while (!s.isSuffixable()) {
         next(s, ctx)
     }
@@ -82,7 +82,10 @@ type TransitionToSuffix<S extends ParserState<Left.Suffixable>> =
           }>
         : ParserState.Error<UnclosedGroupMessage>
 
-const suffixLoop = (s: parserState.suffix, context: parserContext): strNode => {
+const suffixLoop = (
+    s: parserState.suffix,
+    context: parserContext
+): Base.node => {
     if (s.l.nextSuffix === "END") {
         return finalize(s)
     }

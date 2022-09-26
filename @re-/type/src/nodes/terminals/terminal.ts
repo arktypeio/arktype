@@ -1,6 +1,6 @@
 import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
-import type { RootNode, StrAst } from "../common.js"
+import type { RootNode } from "../common.js"
 import type { References } from "../traverse/exports.js"
 import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
 import type { RegexLiteralDefinition } from "./keywords/string.js"
@@ -18,7 +18,7 @@ export type TerminalConstructorArgs<Definition extends string = string> = [
 
 export abstract class TerminalNode<
     Definition extends string = string
-> extends Base.node<Definition, StrAst> {
+> extends Base.node<Definition> {
     constructor(...[definition, context]: TerminalConstructorArgs<Definition>) {
         super(definition, definition, context)
     }

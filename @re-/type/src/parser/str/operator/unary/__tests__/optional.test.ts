@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../index.js"
-import { unresolvableMessage } from "../../operand/unenclosed.js"
+import { type } from "../../../../../index.js"
+import { unresolvableMessage } from "../../../operand/unenclosed.js"
 import { nonTerminatingOptionalMessage } from "../optional.js"
 
 describe("parse optional", () => {

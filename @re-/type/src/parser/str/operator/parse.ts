@@ -3,18 +3,18 @@ import type { parserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
-import type { ParseArray } from "./array.js"
-import { parseArray } from "./array.js"
-import type { ComparatorChar } from "./bound/common.js"
-import { comparatorChars } from "./bound/common.js"
-import type { ParseBound } from "./bound/parse.js"
-import { parseBound } from "./bound/parse.js"
-import type { ReduceIntersection } from "./branch/intersection.js"
-import { reduceIntersection } from "./branch/intersection.js"
-import type { ReduceUnion } from "./branch/union.js"
-import { reduceUnion } from "./branch/union.js"
+import type { ReduceIntersection } from "./binary/intersection.js"
+import { reduceIntersection } from "./binary/intersection.js"
+import type { ReduceUnion } from "./binary/union.js"
+import { reduceUnion } from "./binary/union.js"
 import type { ReduceGroupClose } from "./groupClose.js"
 import { reduceGroupClose } from "./groupClose.js"
+import { parseArray } from "./unary/array.js"
+import type { ParseArray } from "./unary/array.js"
+import type { ComparatorChar } from "./unary/bound/common.js"
+import { comparatorChars } from "./unary/bound/common.js"
+import type { ParseBound } from "./unary/bound/parse.js"
+import { parseBound } from "./unary/bound/parse.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
@@ -53,12 +53,12 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
         ? ParseArray<S, Unscanned>
         : Lookahead extends "|"
         ? ParserState.From<{
-              L: ReduceUnion<S["L"]>
+              L: ReduceUnion<S["L"], Unscanned>
               R: Unscanned
           }>
         : Lookahead extends "&"
         ? ParserState.From<{
-              L: ReduceIntersection<S["L"]>
+              L: ReduceIntersection<S["L"], Unscanned>
               R: Unscanned
           }>
         : Lookahead extends ")"

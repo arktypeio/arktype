@@ -1,33 +1,17 @@
-import type { Get } from "@re-/tools"
-import { keySet } from "@re-/tools"
 import type { Base } from "../../nodes/base.js"
 import { type } from "../../type.js"
-import type { ParseError, parseFn, ParserContext } from "../common.js"
+import type {
+    BinaryToken,
+    MetaToken,
+    MissingRightOperandMessage,
+    ParseError,
+    parseFn,
+    ParserContext
+} from "../common.js"
+import { metaTokens } from "../common.js"
 import type { Root } from "../root.js"
 
-// TODO: Find a better way to organize tokens.
-export const metaTokens = keySet({
-    ";": 1,
-    "=>": 1,
-    "[]": 1,
-    "?": 1,
-    "|": 1,
-    "&": 1
-})
-
-export type UnaryToken = "?" | "[]" | TypelessToken
-
-export type BinaryToken = "|" | "&" | "=>"
-
-export type TypelessToken = ":"
-
-export type MetaToken = keyof typeof metaTokens
-
-// export type MetaDefinition<
-//     Child = unknown,
-//     Token extends MetaToken = MetaToken,
-//     Args extends unknown[] = unknown[]
-// > = [Child, Token, ...Args]
+// TODO: Compare perf of infer from generic, centralize universally on one strategy
 
 export type MetaDefinition = [unknown, MetaToken, ...unknown[]]
 
@@ -48,7 +32,7 @@ export type ParseMetaDefinition<
     ? Def[2] extends undefined
         ? [
               Root.Parse<Def[0], Ctx>,
-              ParseError<`Meta token '${Def[1]}' requires a right-hand definition.`>
+              ParseError<MissingRightOperandMessage<Def[1]>>
           ]
         : [Root.Parse<Def[0], Ctx>, Def[1], Root.Parse<Def[2], Ctx>]
     : [Root.Parse<Def[0], Ctx>, Def[1]]

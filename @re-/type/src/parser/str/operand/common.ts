@@ -1,5 +1,5 @@
 import { keySet } from "@re-/tools"
-import { comparatorChars } from "../operator/bound/common.js"
+import { comparatorChars } from "../operator/unary/bound/common.js"
 
 export const expressionExpectedMessage = <Unscanned extends string>(
     unscanned: Unscanned

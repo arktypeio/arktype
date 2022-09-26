@@ -1,6 +1,5 @@
 import type {
     ElementOf,
-    Evaluate,
     Get,
     IsAny,
     IterateType,

@@ -1,19 +1,12 @@
 import type { KeySet } from "@re-/tools"
-import type { BranchToken } from "../../parser/str/operator/branch/branch.js"
+import type { BranchToken } from "../../parser/str/operator/binary/branch.js"
 import { Base } from "../base.js"
-import type { StrAst, strNode } from "../common.js"
 import type { References } from "../traverse/exports.js"
 
-export type BranchAst<
-    Left = unknown,
-    Right = unknown,
-    Token extends BranchToken = BranchToken
-> = [Left, Token, Right]
+export type BranchConstructorArgs = [children: Base.node[], ctx: Base.context]
 
-export type BranchConstructorArgs = [children: strNode[], ctx: Base.context]
-
-export abstract class BranchNode extends Base.node<string, StrAst> {
-    protected children: strNode[]
+export abstract class NaryNode extends Base.node<string> {
+    protected children: Base.node[]
 
     constructor(
         protected token: BranchToken,
@@ -30,7 +23,7 @@ export abstract class BranchNode extends Base.node<string, StrAst> {
         this.children = children
     }
 
-    addMember(node: strNode) {
+    addMember(node: Base.node) {
         this.children.push(node)
         this.definition += this.token + node.definition
         this.ast = [this.ast, this.token, node.ast]
