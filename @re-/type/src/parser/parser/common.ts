@@ -33,7 +33,7 @@ export type UnexpectedSuffixMessage<
     : ` ${ExpectedFollowingTokenDescription} and`} zero or more additional suffix tokens (got '${Unscanned}').`
 
 export const unexpectedSuffixMessage = <
-    Token extends Comparator,
+    Token extends SuffixToken,
     Unscanned extends string,
     ExpectedFollowingTokenDescription extends string
 >(

@@ -11,7 +11,6 @@ import {
 import { ReduceUnion, reduceUnion } from "./branch/union.js"
 import { ReduceGroupClose, reduceGroupClose } from "./groupClose.js"
 import { ParseList, parseList } from "./list.js"
-import { ParseModulo } from "./modulo.js"
 
 export const parseOperator = (
     s: parserState.withRoot,

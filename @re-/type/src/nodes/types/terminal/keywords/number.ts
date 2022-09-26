@@ -1,3 +1,4 @@
+import { StrNode } from "../../../../parser/common.js"
 import { boundableNode, bounds } from "../../../constraints/bounds.js"
 import { ConstraintGenerationError } from "../../../constraints/common.js"
 import { Allows } from "../../../traversal/allows.js"
@@ -12,7 +13,20 @@ import { terminalNode } from "../terminal.js"
  * Additionally, as in "bounds", we will need equivalent functions for
  * "boundString" and "boundTree"
  */
-export class moduloConstraint {}
+export class moduloConstraint {
+    constructor(public value: number) {}
+
+    check(args: Allows.Args<number>) {
+        if (args.data % this.value !== 0) {
+            args.diagnostics.push(
+                new Allows.CustomDiagnostic(
+                    args,
+                    `${args.data} is not divisible by ${this.value}`
+                )
+            )
+        }
+    }
+}
 
 export class numberNode extends terminalNode implements boundableNode {
     bounds: bounds | undefined = undefined
@@ -36,15 +50,25 @@ export class numberNode extends terminalNode implements boundableNode {
     }
 
     toString() {
-        return this.bounds
-            ? this.bounds.boundString(this.definition)
-            : this.definition
+        let result = this.definition
+        if (this.modulo) {
+            result = `${result}%${this.modulo.value}`
+        }
+        if (this.bounds) {
+            result = this.bounds.boundString(result)
+        }
+        return result
     }
 
     override get tree() {
-        return this.bounds
-            ? this.bounds.boundTree(this.definition)
-            : this.definition
+        let result: StrNode = this.definition
+        if (this.modulo) {
+            result = [result, [["%", this.modulo.value]]]
+        }
+        if (this.bounds) {
+            result = this.bounds.boundTree(result)
+        }
+        return result
     }
 
     check(args: Allows.Args) {

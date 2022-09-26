@@ -77,7 +77,7 @@ const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
         return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
     }
     if (s.l.nextSuffix === "%") {
-        return suffixLoop(parseModulo(s, ctx), ctx)
+        return suffixLoop(parseModulo(s), ctx)
     }
     return s.error(invalidSuffixMessage(s.l.nextSuffix))
 }
