@@ -7,7 +7,6 @@ import { ValidationError } from "./nodes/traverse/check/diagnostics.js"
 import { CheckState } from "./nodes/traverse/check/exports.js"
 import { Generate } from "./nodes/traverse/exports.js"
 import type { Check, References } from "./nodes/traverse/exports.js"
-import type { ParserContext } from "./parser/common.js"
 import { initializeParseContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace, SpaceRoot } from "./space/root.js"
@@ -36,12 +35,14 @@ export type TypeOptions<Inferred = unknown> = {
 }
 
 export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> = <
-    Definition
+    Definition,
+    Ast = Root.Parse<Definition, Space>
 >(
-    definition: Root.Validate<Definition, Space>,
-    // TODO: Better to have this in generics?
-    options?: TypeOptions<RootNode.Infer<Root.Parse<Definition, Space>, Space>>
-) => ToType<Definition, Root.Parse<Definition, Space>, Space["Resolutions"]>
+    definition: Root.Validate<Definition, Ast>,
+    options?: TypeOptions<RootNode.Infer<Ast, Space>>
+) => ToType<Definition, Ast, Space["Resolutions"]>
+
+const z = type(["string", "boolean"])
 
 export type ToType<Def, Ast, Resolutions> = TypeFrom<
     Def,

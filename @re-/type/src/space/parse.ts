@@ -15,9 +15,9 @@ export type ParseSpace<Aliases> = {
     [Name in keyof Aliases]: Root.Parse<Aliases[Name], { Aliases: Aliases }>
 }
 
-export type ValidateAliases<Aliases> = Evaluate<{
-    [Name in keyof Aliases]: Root.Validate<Aliases[Name], { Aliases: Aliases }>
-}>
+// export type ValidateAliases<Aliases, Ast> = Evaluate<{
+//     [Name in keyof Aliases]: Root.Validate<Aliases[Name], { Aliases: Aliases }>
+// }>
 
 // S["Aliases"][Alias] extends string
 // ? ValidateStringResolution<Alias, S>

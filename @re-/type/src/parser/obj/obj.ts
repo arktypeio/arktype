@@ -1,30 +1,17 @@
-import type { Evaluate } from "@re-/tools"
+import type { Evaluate, Get } from "@re-/tools"
 import { DictionaryNode } from "../../nodes/structs/dictionary.js"
 import { TupleNode } from "../../nodes/structs/tuple.js"
 import type { parseFn, ParserContext } from "../common.js"
 import { Root } from "../root.js"
-import type {
-    MetaDefinition,
-    ParseMetaDefinition,
-    ValidateMetaDefinition
-} from "./meta.js"
+import type { MetaDefinition, ParseMetaDefinition } from "./meta.js"
 import { isMetaDefinition, parseMetaDefinition } from "./meta.js"
 
 export namespace Obj {
-    export type Validate<
-        Def,
-        Ctx extends ParserContext
-    > = Def extends MetaDefinition<infer Left, infer Token, infer Args>
-        ? ValidateMetaDefinition<Left, Token, Args, Ctx>
-        : {
-              [K in keyof Def]: Root.Validate<Def[K], Ctx>
-          }
-
     export type Parse<
         Def,
         Ctx extends ParserContext
-    > = Def extends MetaDefinition<infer Left, infer Token, infer Args>
-        ? ParseMetaDefinition<Left, Token, Args, Ctx>
+    > = Def extends MetaDefinition
+        ? ParseMetaDefinition<Def, Ctx>
         : Evaluate<{
               [K in keyof Def]: Root.Parse<Def[K], Ctx>
           }>

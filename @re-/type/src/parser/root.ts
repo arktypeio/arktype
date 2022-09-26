@@ -1,22 +1,23 @@
-import type { parseFn, ParserContext } from "./common.js"
+import type { ParseError, parseFn, ParserContext } from "./common.js"
 import { throwParseError } from "./common.js"
 import { Obj } from "./obj/obj.js"
 import { Str } from "./str/str.js"
 
 export namespace Root {
-    export type Validate<Def, Ctx extends ParserContext> = Def extends []
-        ? Def
-        : Def extends string
-        ? Str.Validate<Def, Ctx>
-        : Def extends BadDefinitionType
-        ? BadDefinitionTypeMessage
-        : Obj.Validate<Def, Ctx>
-
-    export type Parse<Def, Ctx extends ParserContext> = unknown extends Def
-        ? Def
-        : Def extends string
+    export type Parse<Def, Ctx extends ParserContext> = Def extends string
         ? Str.Parse<Def, Ctx>
+        : Def extends BadDefinitionType
+        ? ParseError<BadDefinitionTypeMessage>
         : Obj.Parse<Def, Ctx>
+
+    export type Validate<Def, Ast> = Def extends []
+        ? Def
+        : Ast extends ParseError<infer Message>
+        ? Message
+        : Def extends string
+        ? Def
+        : // @ts-expect-error We know K will also be in AST here because it must be a Struct
+          { [K in keyof Def]: Validate<Def[K], Ast[K]> }
 
     export type BadDefinitionType =
         | undefined

@@ -6,16 +6,16 @@ import { initializeParseContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import { Type } from "../type.js"
 import type { DynamicType, ToType, TypeFn, TypeOptions } from "../type.js"
-import type { ParseSpace, ValidateAliases } from "./parse.js"
+import type { ParseSpace } from "./parse.js"
 
 // TODO: Ensure there are no extraneous types/space calls from testing
 export const space: SpaceFn = (aliases, options) =>
-    dynamicSpace(aliases, options as any) as any
+    dynamicSpace(aliases as any, options as any) as any
 
-export type SpaceFn = <Aliases>(
-    aliases: ValidateAliases<Aliases>,
+export type SpaceFn = <Aliases, Ast = ParseSpace<Aliases>>(
+    aliases: Root.Validate<Aliases, Ast>,
     options?: TypeOptions
-) => SpaceOutput<{ Aliases: Aliases; Resolutions: ParseSpace<Aliases> }>
+) => SpaceOutput<{ Aliases: Aliases; Resolutions: Ast }>
 
 export type DynamicSpace = Record<string, DynamicType> & {
     $root: DynamicRoot

@@ -34,7 +34,7 @@ export type strNode = Base.node & { ast: StrAst }
 export namespace RootNode {
     export type UnaryToken = "?" | "[]" | TypelessToken
 
-    export type BranchToken = "|" | "&"
+    export type BinaryToken = "|" | "&" | "=>"
 
     export type TypelessToken = ":"
 
@@ -59,7 +59,7 @@ export namespace RootNode {
         : Ast extends readonly unknown[]
         ? Ast[1] extends UnaryToken
             ? References<Ast[0]>
-            : Ast[1] extends BranchToken
+            : Ast[1] extends BinaryToken
             ? [...References<Ast[0]>, ...References<Ast[2]>]
             : Struct.References<Ast>
         : Struct.References<Ast>
