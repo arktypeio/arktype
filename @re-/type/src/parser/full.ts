@@ -8,6 +8,7 @@ import {
     unpairedLeftBoundMessage
 } from "./operator/bound/right.js"
 import { MergeBranches, mergeBranches } from "./operator/branch/branch.js"
+import { ParseModulo, parseModulo } from "./operator/modulo.js"
 import { ParseOptional, parseOptional } from "./operator/optional.js"
 import { ParseOperator, parseOperator } from "./operator/parse.js"
 import { Comparator, comparators } from "./parser/common.js"
@@ -75,7 +76,10 @@ const suffixLoop = (s: parserState.suffix, ctx: Base.context): strNode => {
     if (scanner.inTokenSet(s.l.nextSuffix, comparators)) {
         return suffixLoop(parseSuffixBound(s, s.l.nextSuffix), ctx)
     }
-    return s.error(unexpectedSuffixMessage(s.l.nextSuffix))
+    if (s.l.nextSuffix === "%") {
+        return suffixLoop(parseModulo(s), ctx)
+    }
+    return s.error(invalidSuffixMessage(s.l.nextSuffix))
 }
 
 type SuffixLoop<S extends ParserState.Of<Left.Suffix>> =
@@ -88,7 +92,9 @@ type NextSuffix<S extends ParserState.Of<Left.Suffix>> =
         ? ParseOptional<S>
         : S["L"]["nextSuffix"] extends Comparator
         ? ParseSuffixBound<S, S["L"]["nextSuffix"]>
-        : ParserState.Error<UnexpectedSuffixMessage<S["L"]["nextSuffix"]>>
+        : S["L"]["nextSuffix"] extends "%"
+        ? ParseModulo<S>
+        : ParserState.Error<InvalidSuffixMessage<S["L"]["nextSuffix"]>>
 
 const finalize = (s: parserState.suffix) =>
     s.l.lowerBound ? s.error(unpairedLeftBoundMessage) : s.l.root
@@ -97,9 +103,9 @@ type Finalize<L extends Left.Suffix> = L["lowerBound"] extends undefined
     ? L["root"]
     : Base.ParseError<UnpairedLeftBoundMessage>
 
-type UnexpectedSuffixMessage<Token extends string> =
+type InvalidSuffixMessage<Token extends string> =
     `Unexpected suffix token '${Token}'.`
 
-const unexpectedSuffixMessage = <Token extends string>(
+const invalidSuffixMessage = <Token extends string>(
     token: Token
-): UnexpectedSuffixMessage<Token> => `Unexpected suffix token '${token}'.`
+): InvalidSuffixMessage<Token> => `Unexpected suffix token '${token}'.`
