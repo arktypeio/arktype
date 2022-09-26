@@ -1,10 +1,10 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import type { CustomConstraint } from "../../api.js"
+import type { NarrowFn } from "../../api.js"
 import { space, type } from "../../api.js"
 
 describe("custom validators", () => {
-    const palindromeValidator: CustomConstraint = ({ data }) => {
+    const palindromeValidator: NarrowFn = ({ data }) => {
         if (typeof data !== "string" || data !== [...data].reverse().join("")) {
             return `${data} is not a palindrome!`
         }

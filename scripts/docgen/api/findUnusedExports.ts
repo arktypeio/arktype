@@ -46,48 +46,57 @@ type UnusedFileExportsContext = {
 
 const findUnusedExportsInFile = (context: UnusedFileExportsContext) => {
     const exportedDeclarations = context.sourceFile.getExportedDeclarations()
-    return findUnusedDeclarations(exportedDeclarations, context)
+    return findUnusedModuleDeclarations(exportedDeclarations, context)
 }
 
-const findUnusedDeclarations = (
+const findUnusedModuleDeclarations = (
     exportedDeclarations: ReadonlyMap<string, ExportedDeclarations[]>,
     context: UnusedFileExportsContext
 ) => {
-    const unusedExportsInFile: string[] = []
+    const unusedNames: string[] = []
 
     for (const [name, declarations] of exportedDeclarations) {
-        const references = declarations.flatMap((declaration) => {
-            if (shouldIgnoreDeclaration(name, declaration, context)) {
-                return []
-            }
-            if (declaration.isKind(SyntaxKind.ModuleDeclaration)) {
-                const exportedDeclationsInNamespace =
-                    declaration.getExportedDeclarations()
-                unusedExportsInFile.push(
-                    ...findUnusedDeclarations(
-                        exportedDeclationsInNamespace,
-                        context
-                    )
-                )
-            }
-            const references = getExportReferences(declaration)
-            if (
-                checkForIgnoreUnusedComment(
-                    name,
-                    declaration,
-                    context,
-                    references.length
-                )
-            ) {
-                return []
-            }
-            return references
-        })
+        const references = declarations.flatMap((declaration) =>
+            traverseReferences(declaration, name, context, unusedNames)
+        )
         if (references.length === 1) {
-            unusedExportsInFile.push(name)
+            unusedNames.push(name)
         }
     }
-    return unusedExportsInFile
+    return unusedNames
+}
+
+const traverseReferences = (
+    declaration: ExportedDeclarations,
+    name: string,
+    context: UnusedFileExportsContext,
+    unusedNames: string[]
+) => {
+    if (shouldIgnoreDeclaration(name, declaration, context)) {
+        return []
+    }
+    if (declaration.isKind(SyntaxKind.ModuleDeclaration)) {
+        const exportedDeclationsInNamespace =
+            declaration.getExportedDeclarations()
+        unusedNames.push(
+            ...findUnusedModuleDeclarations(
+                exportedDeclationsInNamespace,
+                context
+            )
+        )
+    }
+    const references = getExportReferences(declaration)
+    if (
+        checkForIgnoreUnusedComment(
+            name,
+            declaration,
+            context,
+            references.length
+        )
+    ) {
+        return []
+    }
+    return references
 }
 
 const getExportReferences = (node: ExportedDeclarations) => {
