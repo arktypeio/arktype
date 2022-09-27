@@ -1,4 +1,4 @@
-import type { ListPossibleTypes, StringReplace } from "@re-/tools"
+import type { StringReplace, UnionToTuple } from "@re-/tools"
 import type { Type } from "ts-morph"
 import { bench } from "../../index.js"
 
@@ -32,13 +32,13 @@ bench(
     fakeCallOptions
 ).mark({ mean: [2, "ms"], median: [2, "ms"] })
 
-type MakeComplexType<S extends string> = ListPossibleTypes<
+type MakeComplexType<S extends string> = UnionToTuple<
     StringReplace<keyof Type, "e", S>
 >
 
 bench("bench type", () => {
     return [] as any as MakeComplexType<"!">
-}).type([45763, "instantiations"])
+}).type([44667, "instantiations"])
 
 bench(
     "bench call and type",
@@ -48,4 +48,4 @@ bench(
     fakeCallOptions
 )
     .mean([2, "ms"])
-    .type([45763, "instantiations"])
+    .type([44667, "instantiations"])

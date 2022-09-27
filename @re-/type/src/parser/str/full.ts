@@ -16,7 +16,7 @@ export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
 
 // TODO: Recursion perf?
 const loop = (s: parserState, ctx: parserContext) => {
-    while (s.r.lookahead !== "END") {
+    while (!s.l.done) {
         next(s, ctx)
     }
     return s.l.root!

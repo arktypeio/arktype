@@ -8,6 +8,7 @@ type leftBase = {
     branches: branches
     root?: Base.node
     lowerBound?: BoundsAst.Lower
+    done?: true
 }
 
 export type left<constraints extends Partial<leftBase> = {}> = leftBase &

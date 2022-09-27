@@ -24,7 +24,7 @@ export const parseOperator = (
     ctx: parserContext
 ): parserState => {
     const lookahead = s.r.shift()
-    return lookahead === ""
+    return lookahead === "END"
         ? s.finalize()
         : lookahead === "?"
         ? finalizeOptional(s, ctx)

@@ -41,7 +41,7 @@ export class parserState<constraints extends Partial<left> = {}> {
         this.hasRoot()
             ? !this.l.groups.length
                 ? !this.l.lowerBound
-                    ? mergeBranches(this)
+                    ? this.reduceFinal()
                     : this.error(
                           unpairedLeftBoundMessage(
                               this.l.root.toString(),
@@ -50,7 +50,12 @@ export class parserState<constraints extends Partial<left> = {}> {
                       )
                 : this.error(unclosedGroupMessage)
             : this.error(expressionExpectedMessage(""))
-        return this
+        return this as parserState.withRoot
+    }
+
+    reduceFinal() {
+        mergeBranches(this as parserState.withRoot)
+        this.l.done = true
     }
 }
 

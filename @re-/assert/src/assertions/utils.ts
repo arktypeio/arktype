@@ -1,5 +1,5 @@
-import { strict } from "node:assert"
 import type { AssertionContext } from "../assert.js"
+import { throwAssertionError } from "../assertions.js"
 
 export const callAssertedFunction = (
     asserted: Function,
@@ -14,11 +14,12 @@ export const callAssertedFunction = (
     return result
 }
 
-export const getThrownMessage = (result: AssertedFnCallResult) => {
+export const getThrownMessage = (
+    result: AssertedFnCallResult,
+    ctx: AssertionContext
+) => {
     if (!("threw" in result)) {
-        throw new strict.AssertionError({
-            message: "Function didn't throw."
-        })
+        throwAssertionError({ message: "Function didn't throw.", ctx })
     }
     return result.threw
 }
@@ -28,29 +29,34 @@ type AssertedFnCallResult = {
     threw?: string
 }
 
-export const assertEqualOrMatching = (expected: unknown, actual: unknown) => {
+export const assertEqualOrMatching = (
+    expected: unknown,
+    actual: unknown,
+    ctx: AssertionContext
+) => {
+    const assertionArgs = { actual, expected, ctx }
     if (typeof actual !== "string") {
-        throw new strict.AssertionError({
+        throwAssertionError({
             message: `Value was of type ${typeof actual} (expected a string).`,
-            actual,
-            expected
+            ...assertionArgs
         })
-    }
-    if (typeof expected === "string") {
+    } else if (typeof expected === "string") {
         if (!actual.includes(expected)) {
-            throw new strict.AssertionError({
+            throwAssertionError({
                 message: `Expected string '${expected}' did not appear in actual string '${actual}'.`,
-                actual,
-                expected
+                ...assertionArgs
             })
         }
     } else if (expected instanceof RegExp) {
-        strict.match(actual, expected)
+        if (!expected.test(actual)) {
+            throwAssertionError({
+                message: `Actual string '${actual}' did not match regex '${expected.source}'.`,
+                ...assertionArgs
+            })
+        }
     } else {
-        throw new strict.AssertionError({
-            message: `Expected value for this assertion should be a string or RegExp.`,
-            expected,
-            actual
-        })
+        throw new Error(
+            `Expected value for this assertion should be a string or RegExp.`
+        )
     }
 }

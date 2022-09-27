@@ -4,7 +4,7 @@ import { caller } from "@re-/node"
 import type { Fn } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { AssertionContext } from "../assert.js"
-import { assertEquals } from "../assertEquals.js"
+import { assertEquals } from "../assertions.js"
 import { literalSerialize } from "../common.js"
 import type { SnapshotArgs } from "../snapshot.js"
 import {
@@ -156,7 +156,7 @@ export class Assertions implements AssertionRecord {
                 }
             }
             if (this.ctx.allowRegex) {
-                assertEqualOrMatching(expected, this.actual)
+                assertEqualOrMatching(expected, this.actual, this.ctx)
             } else {
                 assertEquals(expected, this.actual, this.ctx)
             }
@@ -181,7 +181,7 @@ export class Assertions implements AssertionRecord {
 
     get throws() {
         const result = callAssertedFunction(this.actual as Fn, this.ctx)
-        this.ctx.actual = getThrownMessage(result)
+        this.ctx.actual = getThrownMessage(result, this.ctx)
         this.ctx.allowRegex = true
         this.ctx.defaultExpected = ""
         return this.immediateOrChained()
@@ -190,12 +190,17 @@ export class Assertions implements AssertionRecord {
     throwsAndHasTypeError(matchValue: string | RegExp) {
         assertEqualOrMatching(
             matchValue,
-            getThrownMessage(callAssertedFunction(this.actual as Fn, this.ctx))
+            getThrownMessage(
+                callAssertedFunction(this.actual as Fn, this.ctx),
+                this.ctx
+            ),
+            this.ctx
         )
         if (!this.ctx.cfg.skipTypes) {
             assertEqualOrMatching(
                 matchValue,
-                getTypeDataAtPos(this.ctx.position).errors
+                getTypeDataAtPos(this.ctx.position).errors,
+                this.ctx
             )
         }
     }

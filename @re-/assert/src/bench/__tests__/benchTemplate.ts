@@ -1,4 +1,4 @@
-import type { ListPossibleTypes, StringReplace } from "@re-/tools"
+import type { StringReplace, UnionToTuple } from "@re-/tools"
 import type { Type } from "ts-morph"
 import { bench } from "../../index.js"
 
@@ -32,7 +32,7 @@ bench(
     fakeCallOptions
 ).mark()
 
-type MakeComplexType<S extends string> = ListPossibleTypes<
+type MakeComplexType<S extends string> = UnionToTuple<
     StringReplace<keyof Type, "e", S>
 >
 
