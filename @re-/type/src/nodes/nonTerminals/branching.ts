@@ -15,7 +15,7 @@ export abstract class BranchingNode<
         super(children)
     }
 
-    addMember(node: Base.node) {
+    addChild(node: Base.node) {
         this.children.push(node)
     }
 

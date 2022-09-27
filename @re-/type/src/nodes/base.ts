@@ -34,28 +34,38 @@ export namespace Base {
             collected: KeySet
         ): void
 
-        protected abstract get typeAst(): UnknownAst
+        protected abstract get ast(): UnknownAst
         protected abstract get typeStr(): string
-        protected abstract get typeDef(): UnknownDefinition
+        protected abstract get def(): UnknownDefinition
 
         check(state: Check.CheckState) {
             this.typecheck(state)
+            // Add constraints
         }
 
-        get ast() {
-            // Add constraints
-            return this.typeAst
-        }
+        astChildren() {}
 
-        get def() {
-            // Add constraints
-            return this.typeDef
-        }
+        childrenToString()
 
-        toString() {
-            // Add constraints
-            return this.typeStr
-        }
+        // get nextAst() {
+        //     // Add constraints
+        //     //return this.typeAst
+        // }
+
+        // get ast() {
+        //     // Add constraints
+        //     return this.typeAst
+        // }
+
+        // get def() {
+        //     // Add constraints
+        //     return this.typeDef
+        // }
+
+        // toString() {
+        //     // Add constraints
+        //     return this.typeStr
+        // }
 
         references(opts: References.ReferencesOptions): string[] {
             const collected = {}

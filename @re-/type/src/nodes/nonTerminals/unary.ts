@@ -1,11 +1,12 @@
 import type { UnaryToken } from "../../parser/common.js"
 import type { Base } from "../base.js"
+import type { ConstraintToggles } from "../constraints/constraint.js"
 import { NonTerminalNode } from "./nonTerminal.js"
 
 export abstract class UnaryNode<
     Token extends UnaryToken,
-    AllowedConstraint extends string = never
-> extends NonTerminalNode<Token, AllowedConstraint> {
+    AllowedConstraints extends ConstraintToggles = {}
+> extends NonTerminalNode<Token, AllowedConstraints> {
     constructor(protected child: Base.node) {
         super([child])
     }
