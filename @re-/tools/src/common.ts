@@ -1,22 +1,8 @@
 import type { Evaluate } from "./evaluate.js"
-import { toString } from "./toString.js"
 
 export type WithPropValue<Obj, Prop extends string | number, Value> = Evaluate<
     Omit<Obj, Prop> & { [K in Prop]: Value }
 >
-
-export type JsBuiltinTypes = {
-    bigint: bigint
-    boolean: boolean
-    function: Function
-    number: number
-    object: object | null
-    string: string
-    symbol: symbol
-    undefined: undefined
-}
-
-export type JsTypeName = keyof JsBuiltinTypes
 
 export type Dictionary<PropType = unknown> = Record<string, PropType>
 
@@ -51,15 +37,6 @@ export const isRecursible = <O>(
     ? O & Record<Key, unknown>
     : Recursible<O> => typeof o === "object" && o !== null
 
-export const isEmpty = (value: object) => {
-    if (!isRecursible(value)) {
-        throw new Error(
-            `isEmpty requires an object. Received ${toString(value)}`
-        )
-    }
-    return !Object.keys(value).length
-}
-
 /** Either:
  * First, with all properties of Second as undefined
  * OR
@@ -68,14 +45,6 @@ export const isEmpty = (value: object) => {
 export type MutuallyExclusiveProps<First, Second> =
     | Evaluate<First & { [K in keyof Second]?: undefined }>
     | Evaluate<Second & { [K in keyof First]?: undefined }>
-
-export type OneOrMorePropsFrom<O> = {
-    [K in keyof O]: Evaluate<
-        { [RequiredProp in K]: O[K] } & {
-            [OptionalProps in Exclude<keyof O, K>]?: O[K]
-        }
-    >
-}[keyof O]
 
 export type ArrayMethodParams<Element = unknown> = [
     element: Element,
@@ -87,37 +56,13 @@ export type MapFn<In = unknown> = <Out>(...args: ArrayMethodParams<In>) => Out
 
 export type FilterFn<In = unknown> = (...args: ArrayMethodParams<In>) => boolean
 
-export type IntersectOf<U> = (
-    U extends unknown ? (k: U) => void : never
-) extends (k: infer I) => void
-    ? I
+export type IntersectionOf<Union> = (
+    Union extends unknown ? (_: Union) => void : never
+) extends (_: infer Intersection) => void
+    ? Intersection
     : never
 
-export type IntersectProps<O> = IntersectOf<O[keyof O]>
-
 export type Key = string | number | symbol
-
-export type And<A extends boolean, B extends boolean> = {
-    true: {
-        true: true
-        false: false
-    }
-    false: {
-        true: false
-        false: false
-    }
-}[`${A}`][`${B}`]
-
-export type Or<A extends boolean, B extends boolean> = {
-    true: {
-        true: true
-        false: true
-    }
-    false: {
-        true: true
-        false: false
-    }
-}[`${A}`][`${B}`]
 
 export type ClassOf<Instance> = new (...constructorArgs: any[]) => Instance
 export type InstanceOf<Class extends ClassOf<any>> = Class extends ClassOf<
@@ -176,26 +121,6 @@ export type OptionalizeKeys<O, KeysToMakeOptional extends keyof O> = Omit<
 > & {
     [K in KeysToMakeOptional]-?: O[K]
 }
-
-type GetLastUnionMember<T> = IntersectOf<
-    T extends unknown ? (x: T) => void : never
-> extends (x: infer Last) => void
-    ? Last
-    : never
-
-type ListPossibleTypesRecurse<
-    Union,
-    Result extends unknown[] = [],
-    Current = GetLastUnionMember<Union>
-> = {
-    0: ListPossibleTypesRecurse<Exclude<Union, Current>, [Current, ...Result]>
-    1: Result
-}[[Union] extends [never] ? 1 : 0]
-
-export type ListPossibleTypes<Union> =
-    ListPossibleTypesRecurse<Union> extends infer X
-        ? Conform<X, Union[]>
-        : never
 
 export type Stringifiable =
     | string

@@ -26,7 +26,7 @@ export class scanner<Lookahead extends string = string> {
     ): string {
         let shifted = opts?.appendTo ?? ""
         while (!condition(this, shifted)) {
-            if (this.lookahead === "") {
+            if (this.lookahead === "END") {
                 return opts?.onInputEnd?.(this, shifted) ?? shifted
             }
             shifted += this.shift()
@@ -39,7 +39,7 @@ export class scanner<Lookahead extends string = string> {
     }
 
     shiftUntilNextTerminator() {
-        return this.shiftUntil(this.lookaheadIsTerminator)
+        return this.shiftUntil(scanner.lookaheadIsTerminator)
     }
 
     get unscanned() {
@@ -55,10 +55,6 @@ export class scanner<Lookahead extends string = string> {
     ): this is scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens
     }
-
-    lookaheadIsTerminator() {
-        return this.lookahead in scanner.terminatingChars
-    }
 }
 
 export namespace scanner {
@@ -71,6 +67,9 @@ export namespace scanner {
         inclusive?: boolean
         appendTo?: string
     }
+
+    export const lookaheadIsTerminator: UntilCondition = (r: scanner) =>
+        r.lookahead in terminatingChars
 
     export const terminatingChars = keySet({
         ...comparatorChars,

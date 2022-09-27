@@ -1,5 +1,5 @@
-import type { JsBuiltinTypes, JsTypeName } from "@re-/tools"
-import { toString } from "@re-/tools"
+import type { NormalizedJsTypeName, NormalizedJsTypes } from "@re-/tools"
+import { hasJsType, toString } from "@re-/tools"
 import type { TypeOptions } from "../../../scopes/type.js"
 import { TraversalState } from "../traverse.js"
 import { Diagnostics } from "./diagnostics.js"
@@ -19,12 +19,10 @@ export class CheckState<Data = unknown> extends TraversalState {
         this.checkedValuesByAlias = {}
     }
 
-    dataIsOfType<TypeName extends JsTypeName>(
+    dataIsOfType<TypeName extends NormalizedJsTypeName>(
         typeName: TypeName
-    ): this is CheckState<JsBuiltinTypes[TypeName]> {
-        // In JS, typeof null === "object", but in TS null is not assignable to
-        // object. To avoid false positives, we just avoid narrowing based on null.
-        return this.data === null ? false : typeof this.data === typeName
+    ): this is CheckState<NormalizedJsTypes[TypeName]> {
+        return hasJsType(this.data, typeName)
     }
 }
 

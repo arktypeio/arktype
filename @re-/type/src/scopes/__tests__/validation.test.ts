@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
 import { describe, test } from "mocha"
-import { space } from "../root.js"
+import { space } from "../space.js"
 
 describe("space validation", () => {
     test("simple space", () => {

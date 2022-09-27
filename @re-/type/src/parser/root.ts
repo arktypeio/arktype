@@ -28,7 +28,7 @@ export namespace Root {
         | Function
         | symbol
 
-    const badDefinitionTypeMessage =
+    export const badDefinitionTypeMessage =
         "Type definitions must be strings or objects."
 
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage

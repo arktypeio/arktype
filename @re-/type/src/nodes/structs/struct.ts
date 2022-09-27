@@ -1,11 +1,10 @@
+import { jsTypeOf, transform } from "@re-/tools"
 import type {
     Dictionary,
-    IsAnyOrUnknown,
     KeySet,
-    ListPossibleTypes,
-    ValueOf
+    NormalizedJsTypeName,
+    UnionToTuple
 } from "@re-/tools"
-import { transform } from "@re-/tools"
 import { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { Check, References } from "../traverse/exports.js"
@@ -59,24 +58,7 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
     }
 }
 
-export type ObjectKind = "array" | "dictionary"
-
-export type StructureOfResult = ObjectKind | "non-object"
-
-export type StrucutureOf<Data> = IsAnyOrUnknown<Data> extends true
-    ? StructureOfResult
-    : Data extends object
-    ? Data extends readonly unknown[]
-        ? "array"
-        : "dictionary"
-    : "non-object"
-
-export const structureOf = <Data>(data: Data) =>
-    (typeof data !== "object" || data === null
-        ? "non-object"
-        : Array.isArray(data)
-        ? "array"
-        : "dictionary") as StrucutureOf<Data>
+export type ObjectKind = "object" | "array"
 
 export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
     definition: Base.RootDefinition,
@@ -85,21 +67,21 @@ export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
 ): state is Check.CheckState<
     ExpectedStructure extends "array" ? unknown[] : Dictionary
 > => {
-    const actualStructure = structureOf(state.data)
-    if (expectedStructure !== actualStructure) {
+    const actual = jsTypeOf(state.data)
+    if (expectedStructure !== actual) {
         const expectedStructureDescription =
             expectedStructure === "array" ? "an array" : "a non-array object"
         state.errors.add(
             "structure",
             {
                 reason: `Must be ${expectedStructureDescription}`,
-                state: state
+                state
             },
             {
                 definition,
                 data: state.data,
                 expected: expectedStructure,
-                actual: actualStructure
+                actual
             }
         )
         return false
@@ -111,12 +93,12 @@ export type StructureDiagnostic = Check.DiagnosticConfig<{
     definition: Base.RootDefinition
     data: unknown
     expected: ObjectKind
-    actual: StructureOfResult
+    actual: NormalizedJsTypeName
 }>
 
 export namespace Struct {
     export type References<Ast> = CollectReferences<
-        Ast extends readonly unknown[] ? Ast : ListPossibleTypes<ValueOf<Ast>>,
+        Ast extends readonly unknown[] ? Ast : UnionToTuple<Ast[keyof Ast]>,
         []
     >
 

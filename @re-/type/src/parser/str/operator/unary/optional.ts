@@ -4,8 +4,8 @@ import type { parserState, ParserState } from "../../state/state.js"
 
 export const finalizeOptional = (s: parserState.withRoot, ctx: parserContext) =>
     s.r.lookahead === "END"
-        ? s.error(nonTerminatingOptionalMessage)
-        : reduceOptional(s.finalize(), ctx)
+        ? reduceOptional(s.finalize(), ctx)
+        : s.error(nonTerminatingOptionalMessage)
 
 export type FinalizeOptional<S extends ParserState> = S["R"] extends "?"
     ? ParserState.Finalize<S, true>

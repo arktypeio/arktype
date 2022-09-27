@@ -1,5 +1,5 @@
 import { bench } from "@re-/assert"
-import { space } from "../root.js"
+import { space } from "../space.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })

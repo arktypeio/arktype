@@ -22,7 +22,7 @@ export type InferDictionary<
 
 export class DictionaryNode extends struct<string> {
     check(state: Check.CheckState) {
-        if (!checkObjectRoot(this.def, "dictionary", state)) {
+        if (!checkObjectRoot(this.def, "object", state)) {
             return
         }
         const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)

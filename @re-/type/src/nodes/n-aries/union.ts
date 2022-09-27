@@ -1,4 +1,4 @@
-import type { JsTypeName } from "@re-/tools"
+import type { BuiltinJsTypeName } from "@re-/tools"
 import { Check, Generate } from "../traverse/exports.js"
 import type { BranchConstructorArgs } from "./branch.js"
 import { NaryNode } from "./branch.js"
@@ -124,7 +124,7 @@ export type UnionDiagnostic = Check.DiagnosticConfig<
 
 export type BranchDiagnosticsEntry = [string, Check.Diagnostics]
 
-type PreferredDefaults = ({ value: any } | { typeOf: JsTypeName })[]
+type PreferredDefaults = ({ value: any } | { typeOf: BuiltinJsTypeName })[]
 
 const preferredDefaults: PreferredDefaults = [
     { value: undefined },

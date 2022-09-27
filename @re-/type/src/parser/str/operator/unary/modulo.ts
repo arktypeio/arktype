@@ -9,11 +9,8 @@ import type { NumberLiteralDefinition } from "../../../../nodes/terminals/litera
 import { throwParseError } from "../../../../parser/common.js"
 import type { IntegerLiteralDefinition } from "../../operand/unenclosed.js"
 import { isIntegerLiteral } from "../../operand/unenclosed.js"
-import type { left } from "../../state/left.js"
-import type { Scanner, scanner } from "../../state/scanner.js"
+import type { Scanner } from "../../state/scanner.js"
 import type { parserState, ParserState } from "../../state/state.js"
-import { comparatorChars } from "./bound/common.js"
-import { shiftComparator } from "./bound/parse.js"
 
 // TODO: Check for multiple modulos/bounds etc.
 export type ParseModulo<
@@ -35,27 +32,15 @@ export type ParseModulo<
     : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
 
 export const parseModulo = (s: parserState.withRoot) => {
-    const moduloValue = s.r.shiftUntil(untilPostModuloSuffix)
-    const nextSuffix = s.r.lookaheadIsIn(comparatorChars)
-        ? shiftComparator(s, s.r.shift())
-        : (s.r.shift() as "?" | "END")
-    return isIntegerLiteral(moduloValue)
-        ? s.hasRoot(NumberNode)
+    const moduloValue = s.r.shiftUntilNextTerminator()
+    return s.hasRoot(NumberNode)
+        ? isIntegerLiteral(moduloValue)
             ? reduceModulo(s, integerLiteralToDivisorValue(moduloValue))
-            : s.error(indivisibleMessage(s.l.root.toString()))
-        : s.error(
-              invalidDivisorMessage(
-                  `${moduloValue}${nextSuffix === "END" ? "" : nextSuffix}${
-                      s.r.unscanned
-                  }`
-              )
-          )
+            : s.error(invalidDivisorMessage(moduloValue))
+        : s.error(indivisibleMessage(s.l.root.toString()))
 }
 
-const reduceModulo = (
-    s: parserState<left.withRoot<NumberNode>>,
-    value: number
-) => {
+const reduceModulo = (s: parserState.withRoot<NumberNode>, value: number) => {
     s.l.root.modulo = new ModuloConstraint(value)
     return s
 }
@@ -97,9 +82,6 @@ export const invalidDivisorMessage = <Divisor extends string>(
 
 export type InvalidDivisorMessage<Divisor extends string> =
     `Modulo operator must be followed by an integer literal (was ${Divisor})`
-
-const untilPostModuloSuffix: scanner.UntilCondition = (scanner) =>
-    scanner.lookahead === "?" || scanner.lookaheadIsIn(comparatorChars)
 
 type IndivisibleMessage<Root extends string> =
     `Modulo operator must be applied to a number-typed keyword (was '${Root}')`

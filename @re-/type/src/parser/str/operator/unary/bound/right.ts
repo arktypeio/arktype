@@ -1,3 +1,4 @@
+import type { Evaluate } from "@re-/tools"
 import { isKeyOf } from "@re-/tools"
 import type { NodeToString } from "../../../../../nodes/common.js"
 import {
@@ -8,7 +9,7 @@ import {
 import type {
     BoundableAst,
     BoundableNode,
-    Bounds
+    BoundsAst
 } from "../../../../../nodes/constraints/bounds.js"
 import type { AddConstraints } from "../../../../../nodes/constraints/constraint.js"
 import type { NumberLiteralDefinition } from "../../../../../nodes/terminals/literal.js"
@@ -16,7 +17,7 @@ import {
     isNumberLiteral,
     numberLiteralToValue
 } from "../../../operand/unenclosed.js"
-import type { Left, left } from "../../../state/left.js"
+import type { Left } from "../../../state/left.js"
 import type { Scanner } from "../../../state/scanner.js"
 import type { parserState, ParserState } from "../../../state/state.js"
 import type { Comparator, InvalidDoubleBoundMessage } from "./common.js"
@@ -46,7 +47,7 @@ export type ParseRightBound<
 
 export const reduceRightBound = (
     s: parserState.withRoot,
-    right: Bounds.Bound
+    right: BoundsAst.Single
 ) =>
     hasBoundableRoot(s)
         ? hasLowerBound(s)
@@ -56,28 +57,28 @@ export const reduceRightBound = (
 
 export type ReduceRightBound<
     L extends Left,
-    RightBound extends Bounds.Bound
+    RightBound extends BoundsAst.Single
 > = L extends { root: BoundableAst }
-    ? L extends { lowerBound: Bounds.Lower }
+    ? L extends { lowerBound: BoundsAst.Lower }
         ? ReduceDouble<L, RightBound>
         : ReduceSingle<L, RightBound>
     : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
 
 const hasBoundableRoot = (
-    s: parserState<left.withRoot>
-): s is parserState<left.withRoot<BoundableNode>> => isBoundable(s.l.root)
+    s: parserState.withRoot
+): s is parserState<{ root: BoundableNode }> => isBoundable(s.l.root)
 
 const hasLowerBound = (
     s: parserState
-): s is parserState<{ lowerBound: Bounds.Lower }> => !!s.l.lowerBound
+): s is parserState<{ lowerBound: BoundsAst.Lower }> => !!s.l.lowerBound
 
 type ReduceDouble<
     L extends Left<{
         root: BoundableAst
-        lowerBound: Bounds.Lower
+        lowerBound: BoundsAst.Lower
     }>,
-    RightBound extends Bounds.Bound
-> = RightBound extends Bounds.Upper
+    RightBound extends BoundsAst.Single
+> = RightBound extends BoundsAst.Upper
     ? Left.From<{
           lowerBound: undefined
           root: AddConstraints<L["root"], [L["lowerBound"], RightBound]>
@@ -87,13 +88,11 @@ type ReduceDouble<
     : Left.Error<InvalidDoubleBoundMessage<RightBound[0]>>
 
 const reduceDouble = (
-    s: parserState<
-        left<{
-            root: BoundableNode
-            lowerBound: Bounds.Lower
-        }>
-    >,
-    right: Bounds.Bound
+    s: parserState<{
+        root: BoundableNode
+        lowerBound: BoundsAst.Lower
+    }>,
+    right: BoundsAst.Single
 ) => {
     if (isValidDoubleBoundRight(right)) {
         applyBound(s.l.root, new BoundConstraint([s.l.lowerBound, right]))
@@ -105,24 +104,21 @@ const reduceDouble = (
 
 type ReduceSingle<
     L extends Left<{ root: BoundableAst }>,
-    Single extends Bounds.Bound
+    Single extends BoundsAst.Single
 > = Left.SetRoot<L, AddConstraints<L["root"], [Single]>>
 
 const reduceSingle = (
     s: parserState.withRoot<BoundableNode>,
-    right: Bounds.Bound
+    right: BoundsAst.Single
 ) => {
     applyBound(s.l.root, new BoundConstraint([right]))
     s.l.lowerBound = undefined
     return s
 }
 
-const isValidDoubleBoundRight = (right: Bounds.Bound): right is Bounds.Upper =>
-    isKeyOf(right[0], doubleBoundComparators)
-
-export const unpairedLeftBoundMessage = `Left bounds are only valid when paired with right bounds.`
-
-export type UnpairedLeftBoundMessage = typeof unpairedLeftBoundMessage
+const isValidDoubleBoundRight = (
+    right: BoundsAst.Single
+): right is BoundsAst.Upper => isKeyOf(right[0], doubleBoundComparators)
 
 type UnboundableMessage<Root extends string> =
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or an array-typed expression.`

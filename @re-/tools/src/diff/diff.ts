@@ -1,5 +1,5 @@
 import type { MutuallyExclusiveProps } from "../common.js"
-import { isEmpty, isRecursible } from "../common.js"
+import { isRecursible } from "../common.js"
 import type { Merge } from "../merge.js"
 import type { Narrow } from "../narrow.js"
 import { narrow } from "../narrow.js"
@@ -34,7 +34,7 @@ export const diff = <Options extends DiffOptions = {}>(
         path: "/",
         changes
     } as any)
-    return isEmpty(changes) ? undefined : changes
+    return Object.keys(changes).length ? changes : undefined
 }
 
 export const deepEquals = (base: any, compare: any, options?: DiffOptions) =>

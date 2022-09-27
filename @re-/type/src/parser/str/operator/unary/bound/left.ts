@@ -6,7 +6,8 @@ import type {
     Comparator,
     DoubleBoundComparator,
     InvalidDoubleBoundMessage,
-    InvertedComparators
+    InvertedComparators,
+    NormalizedLowerBoundComparator
 } from "./common.js"
 import {
     doubleBoundComparators,
@@ -15,7 +16,7 @@ import {
 } from "./common.js"
 
 const applyLeftBound = (
-    s: parserState<left.withRoot<LiteralNode<number>>>,
+    s: parserState.withRoot<LiteralNode<number>>,
     token: DoubleBoundComparator
 ) => {
     s.l.lowerBound = [invertedComparators[token], s.l.root.value]
@@ -24,7 +25,7 @@ const applyLeftBound = (
 }
 
 export const reduceLeft = (
-    s: parserState<left.withRoot<LiteralNode<number>>>,
+    s: parserState.withRoot<LiteralNode<number>>,
     token: Comparator
 ) =>
     isKeyOf(token, doubleBoundComparators)
@@ -43,3 +44,23 @@ export type ReduceLeft<
           lowerBound: [InvertedComparators[Token], Value]
       }>
     : Left.Error<InvalidDoubleBoundMessage<Token>>
+
+// Finalization is responsible for checking that there are no unpaired left bounds,
+// so we just export the error messages for use here
+
+export type UnpairedLeftBoundMessage<
+    Root extends string,
+    Token extends NormalizedLowerBoundComparator,
+    Limit extends number
+> = `Left bounds are only valid when paired with right bounds. Consider using ${Root}${Token}${Limit} instead.`
+
+export const unpairedLeftBoundMessage = <
+    Root extends string,
+    Token extends NormalizedLowerBoundComparator,
+    Limit extends number
+>(
+    root: Root,
+    normalizedComparator: Token,
+    limit: Limit
+): UnpairedLeftBoundMessage<Root, Token, Limit> =>
+    `Left bounds are only valid when paired with right bounds. Consider using ${root}${normalizedComparator}${limit} instead.`

@@ -4,7 +4,7 @@ import { type } from "../../../../scopes/type.js"
 
 describe("type keywords", () => {
     describe("boolean", () => {
-        const b = type("boolean")
+        const b = type.lazy("boolean")
         test("infer", () => {
             assert(b.infer).typed as boolean
         })
@@ -19,38 +19,8 @@ describe("type keywords", () => {
             )
         })
     })
-    describe("true", () => {
-        const t = type("true")
-        test("infer", () => {
-            assert(t.infer).typed as true
-        })
-        test("generation", () => {
-            assert(t.generate()).is(true)
-        })
-        test("check", () => {
-            assert(t.check(true).errors).is(undefined)
-            assert(t.check(false).errors?.summary).snap(
-                `Must be true (was false)`
-            )
-        })
-    })
-    describe("false", () => {
-        const f = type("false")
-        test("infer", () => {
-            assert(f.infer).typed as false
-        })
-        test("generation", () => {
-            assert(f.generate()).is(false)
-        })
-        test("check", () => {
-            assert(f.check(false).errors).is(undefined)
-            assert(f.check(true).errors?.summary).snap(
-                `Must be false (was true)`
-            )
-        })
-    })
     describe("bigint", () => {
-        const b = type("bigint")
+        const b = type.lazy("bigint")
         test("infer", () => {
             assert(b.infer).typed as bigint
         })
@@ -65,7 +35,7 @@ describe("type keywords", () => {
         })
     })
     describe("symbol", () => {
-        const s = type("symbol")
+        const s = type.lazy("symbol")
         test("infer", () => {
             assert(s.infer).typed as symbol
         })
@@ -80,7 +50,7 @@ describe("type keywords", () => {
         })
     })
     describe("function", () => {
-        const f = type("function")
+        const f = type.lazy("function")
         test("infer", () => {
             assert(f.infer).typed as Function
         })
@@ -95,7 +65,7 @@ describe("type keywords", () => {
         })
     })
     describe("object", () => {
-        const o = type("object")
+        const o = type.lazy("object")
         test("infer", () => {
             assert(o.infer).typed as object
         })
@@ -111,7 +81,7 @@ describe("type keywords", () => {
         })
     })
     describe("undefined", () => {
-        const u = type("undefined")
+        const u = type.lazy("undefined")
         test("infer", () => {
             assert(u.infer).typed as undefined
         })
@@ -126,7 +96,7 @@ describe("type keywords", () => {
         })
     })
     describe("null", () => {
-        const n = type("null")
+        const n = type.lazy("null")
         test("infer", () => {
             assert(n.infer).typed as null
         })
@@ -141,7 +111,7 @@ describe("type keywords", () => {
         })
     })
     describe("void", () => {
-        const v = type("void")
+        const v = type.lazy("void")
         test("infer", () => {
             assert(v.infer).typed as void
         })
@@ -156,7 +126,7 @@ describe("type keywords", () => {
         })
     })
     describe("any", () => {
-        const a = type("any")
+        const a = type.lazy("any")
         test("infer", () => {
             assert(a.infer).typed as any
         })
@@ -170,7 +140,7 @@ describe("type keywords", () => {
         })
     })
     describe("unknown", () => {
-        const u = type("unknown")
+        const u = type.lazy("unknown")
         test("infer", () => {
             assert(u.infer).typed as unknown
         })
@@ -184,7 +154,7 @@ describe("type keywords", () => {
         })
     })
     describe("never", () => {
-        const n = type("never")
+        const n = type.lazy("never")
         test("infer", () => {
             assert(n.infer).typed as never
         })
@@ -203,7 +173,7 @@ describe("type keywords", () => {
         })
     })
     describe("string", () => {
-        const s = type("string")
+        const s = type.lazy("string")
         test("infer", () => {
             assert(s.infer).typed as string
         })
@@ -218,7 +188,7 @@ describe("type keywords", () => {
         })
     })
     describe("number", () => {
-        const n = type("number")
+        const n = type.lazy("number")
         test("infer", () => {
             assert(n.infer).typed as number
         })

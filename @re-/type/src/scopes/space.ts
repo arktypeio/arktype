@@ -5,7 +5,7 @@ import { ResolutionNode } from "../nodes/resolution.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { ParseSpace } from "./parse.js"
-import { Type } from "./type.js"
+import { TypeRoot } from "./type.js"
 import type {
     DynamicTypeRoot,
     InferredTypeFn,
@@ -23,7 +23,7 @@ type DynamicSpaceFn = <Aliases extends Dictionary>(
     options?: TypeOptions
 ) => DynamicSpace<Aliases>
 
-export type SpaceFn = TypedSpaceFn & { dynamnic: DynamicSpaceFn }
+export type SpaceFn = TypedSpaceFn & { dynamic: DynamicSpaceFn }
 
 export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
     keyof Aliases,
@@ -45,7 +45,7 @@ const rawSpace = (aliases: Dictionary, opts: SpaceOptions = {}) => {
         ctx.space = $root
         const resolution = new ResolutionNode(name, ctx)
         $root.resolutions[name] = resolution
-        compiled[name] = new Type(resolution.root, resolution, opts)
+        compiled[name] = new TypeRoot(resolution.root, resolution, opts)
     }
     return compiled as DynamicSpace
 }
@@ -68,7 +68,7 @@ export class SpaceRoot implements DynamicSpaceRoot {
         const compiledOptions = deepMerge(this.options, opts)
         compiledOptions.space = this
         const root = Root.parse(def, initializeParserContext(compiledOptions))
-        return new Type(def, root, compiledOptions) as any
+        return new TypeRoot(def, root, compiledOptions) as any
     }
 
     extend(extensions: Dictionary, overrides?: SpaceOptions) {
@@ -99,7 +99,7 @@ export namespace ResolvedSpace {
 }
 
 export type SpaceOutput<Space extends ResolvedSpace> = Evaluate<
-    SpaceTypes<Space["Resolutions"]> & {
+    SpaceTypeRoots<Space["Resolutions"]> & {
         $root: SpaceRootFrom<Space>
     }
 >
@@ -115,8 +115,12 @@ export type SpaceRootFrom<Space extends ResolvedSpace> = Evaluate<{
     options: SpaceOptions
 }>
 
-export type SpaceTypes<Resolutions> = Evaluate<{
-    [Name in keyof Resolutions]: Type.New<Name, Resolutions[Name], Resolutions>
+export type SpaceTypeRoots<Resolutions> = Evaluate<{
+    [Name in keyof Resolutions]: TypeRoot.New<
+        Name,
+        Resolutions[Name],
+        Resolutions
+    >
 }>
 
 export type InferSpaceRoot<Resolutions> = Evaluate<{

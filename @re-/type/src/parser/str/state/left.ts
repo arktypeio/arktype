@@ -1,5 +1,5 @@
 import type { Base } from "../../../nodes/base.js"
-import type { Bounds } from "../../../nodes/constraints/bounds.js"
+import type { BoundsAst } from "../../../nodes/constraints/bounds.js"
 import type { ParseError } from "../../common.js"
 import type { Branches, branches } from "../operator/binary/branch.js"
 
@@ -7,14 +7,14 @@ type leftBase = {
     groups: branches[]
     branches: branches
     root?: Base.node
-    lowerBound?: Bounds.Lower
+    lowerBound?: BoundsAst.Lower
 }
 
 export type left<constraints extends Partial<leftBase> = {}> = leftBase &
     constraints
 
 type LeftBase = {
-    lowerBound: Bounds.Lower | undefined
+    lowerBound: BoundsAst.Lower | undefined
     groups: Branches[]
     branches: Branches
     root: unknown
@@ -29,10 +29,6 @@ export namespace left {
         groups: [],
         branches: {}
     })
-
-    export type withRoot<Root extends Base.node = Base.node> = {
-        root: Root
-    }
 }
 
 export namespace Left {

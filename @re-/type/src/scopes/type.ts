@@ -9,12 +9,27 @@ import { Generate } from "../nodes/traverse/exports.js"
 import type { Check, References } from "../nodes/traverse/exports.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
-import type { ResolvedSpace, SpaceRoot } from "./root.js"
+import type { ResolvedSpace, SpaceRoot } from "./space.js"
 
 const rawTypeFn: DynamicTypeFn = (def, opts) => {
     const ctx = initializeParserContext(opts)
     const root = Root.parse(def, ctx)
-    return new Type(def, root, ctx)
+    return new TypeRoot(def, root, ctx)
+}
+
+const lazyTypeFn: DynamicTypeFn = (def, opts) => {
+    let cache: any
+    return new Proxy(
+        {},
+        {
+            get: (_, k) => {
+                if (!cache) {
+                    cache = rawTypeFn(def, opts)
+                }
+                return cache[k]
+            }
+        }
+    ) as any
 }
 
 export type InferredTypeFn<Space extends ResolvedSpace> = <
@@ -24,7 +39,7 @@ export type InferredTypeFn<Space extends ResolvedSpace> = <
 >(
     definition: Root.Validate<Definition, Ast>,
     options?: TypeOptions<Inferred>
-) => Type.New<Definition, Ast, Inferred>
+) => TypeRoot.New<Definition, Ast, Inferred>
 
 type DynamicTypeFn = (
     definition: unknown,
@@ -34,11 +49,16 @@ type DynamicTypeFn = (
 export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> =
     InferredTypeFn<Space> & {
         dynamic: DynamicTypeFn
+        lazy: InferredTypeFn<Space>
+        lazyDynamic: DynamicTypeFn
     }
 
 export const type: TypeFn = rawTypeFn as any
+type.dynamic = rawTypeFn
+type.lazy = lazyTypeFn as any
+type.lazyDynamic = lazyTypeFn
 
-export type DynamicTypeRoot = Type.New<unknown, unknown, unknown>
+export type DynamicTypeRoot = TypeRoot.New<unknown, unknown, unknown>
 
 export type TypeOptions<Inferred = unknown> = {
     narrow?: Check.NarrowFn<Inferred>
@@ -50,7 +70,7 @@ export type InternalTypeOptions = TypeOptions<any> & {
     space?: SpaceRoot
 }
 
-export namespace Type {
+export namespace TypeRoot {
     export type New<Def, Ast, Inferred> = Evaluate<{
         definition: Def
         infer: Inferred
@@ -63,7 +83,7 @@ export namespace Type {
     }>
 }
 
-export class Type implements DynamicTypeRoot {
+export class TypeRoot implements DynamicTypeRoot {
     constructor(
         public definition: unknown,
         public root: Base.node,

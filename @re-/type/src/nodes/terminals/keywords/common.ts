@@ -1,12 +1,10 @@
-import type { JsTypeName } from "@re-/tools"
+import type { NormalizedJsTypeName } from "@re-/tools"
 import type { Check } from "../../traverse/exports.js"
 import type {
     KeywordDefinition,
     SubtypeDefinition,
     TypeKeyword
 } from "./keyword.js"
-
-export type NormalizedJsTypeName = JsTypeName | "null"
 
 export type KeywordTypeDiagnostic = Check.DiagnosticConfig<{
     definition: KeywordDefinition

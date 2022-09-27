@@ -1,18 +1,19 @@
 import { assert } from "@re-/assert"
 import type { Dictionary } from "@re-/tools"
 import { describe, test } from "mocha"
-import { space, type } from "../../api.js"
+import { Root, space, type } from "../../api.js"
 import { unresolvableMessage } from "../str/operand/unenclosed.js"
 
 describe("root definition", () => {
+    // TODO: Add lazy tests
     describe("dynamic", () => {
-        test("allows uninferred types", () => {
+        test("uninferred types", () => {
             const dynamicStringArray = type.dynamic("str" + "ing[" + "]")
             assert(dynamicStringArray.infer).typed as unknown
             assert(dynamicStringArray.ast).equals(["string", "[]"])
         })
-        test("allows uninferred spaces", () => {
-            const s = space.dynamnic({
+        test("uninferred spaces", () => {
+            const s = space.dynamic({
                 a: "str" + "ing[" + "]",
                 b: "a?"
             })
@@ -28,23 +29,22 @@ describe("root definition", () => {
         })
     })
     describe("bad def types", () => {
-        const expectedError = "Type definitions must be strings or objects"
         test("undefined", () => {
             // @ts-expect-error
             assert(() => type({ bad: undefined })).throwsAndHasTypeError(
-                expectedError
+                Root.badDefinitionTypeMessage
             )
         })
         test("null", () => {
             // @ts-expect-error
             assert(() => type({ bad: null })).throwsAndHasTypeError(
-                expectedError
+                Root.badDefinitionTypeMessage
             )
         })
         test("boolean", () => {
             // @ts-expect-error
             assert(() => type({ bad: true })).throwsAndHasTypeError(
-                expectedError
+                Root.badDefinitionTypeMessage
             )
         })
         test("number", () => {
@@ -54,19 +54,19 @@ describe("root definition", () => {
         test("bigint", () => {
             // @ts-expect-error
             assert(() => type({ bad: 99999n })).throwsAndHasTypeError(
-                expectedError
+                Root.badDefinitionTypeMessage
             )
         })
         test("function", () => {
             // @ts-expect-error
             assert(() => type({ bad: () => {} })).throwsAndHasTypeError(
-                expectedError
+                Root.badDefinitionTypeMessage
             )
         })
         test("symbol", () => {
             // @ts-expect-error
             assert(() => type({ bad: Symbol() })).throwsAndHasTypeError(
-                expectedError
+                Root.badDefinitionTypeMessage
             )
         })
     })

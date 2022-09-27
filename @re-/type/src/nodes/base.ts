@@ -36,6 +36,8 @@ export namespace Base {
             collected: KeySet
         ): void
 
+        abstract toString(): string
+
         // TODO: Standardize on "children" prop? (subclasses could still have convenience accessors)
         references(opts: References.ReferencesOptions): string[] {
             const collected = {}

@@ -1,12 +1,5 @@
-import type {
-    ElementOf,
-    FilterFn,
-    Iterate,
-    IterateType,
-    List,
-    ListPossibleTypes,
-    Stringifiable
-} from "./common.js"
+import type { FilterFn, IterateType, Stringifiable } from "./common.js"
+import type { UnionToTuple } from "./unionToTuple.js"
 
 export const alphaOnlyRegex = /^[A-Za-z]+$/
 
@@ -97,15 +90,6 @@ export const lettersAfterFirstToLower = (word: string) =>
         start: 1
     })
 
-const vowels = {
-    a: 1,
-    e: 1,
-    i: 1,
-    o: 1,
-    u: 1
-}
-export const startsWithVowel = (s: string) => s[0].toLowerCase() in vowels
-
 export const capsCase = (words: string[]) =>
     words.map((word) => capitalize(lettersAfterFirstToLower(word))).join("")
 
@@ -134,54 +118,6 @@ export type Split<
       >
     : [...Result, S]
 
-/**
- * Iteratively split a string literal type using a tuple of delimiters
- */
-export type Spliterate<
-    S extends string,
-    Delimiters extends string[],
-    IncludeDelimiters extends boolean = false
-> = UnpackNestedTuples<
-    SpliterateRecurse<[S], Delimiters, IncludeDelimiters, []>
->
-
-type SpliterateRecurse<
-    Fragments extends string[],
-    Delimiters extends string[],
-    IncludeDelimiters extends boolean,
-    PreviousDelimiters extends string[]
-> = Delimiters extends IterateType<
-    string,
-    infer CurrentDelimiter,
-    infer RemainingDelimiters
->
-    ? {
-          [I in keyof Fragments]: Fragments[I] extends string
-              ? Fragments[I] extends ElementOf<PreviousDelimiters>
-                  ? Fragments[I]
-                  : SpliterateRecurse<
-                        Split<
-                            Fragments[I],
-                            CurrentDelimiter,
-                            IncludeDelimiters
-                        >,
-                        RemainingDelimiters,
-                        IncludeDelimiters,
-                        [...PreviousDelimiters, CurrentDelimiter]
-                    >
-              : never
-      }
-    : Fragments
-
-type UnpackNestedTuples<
-    T extends List,
-    Result extends unknown[] = []
-> = T extends Iterate<infer Current, infer Remaining>
-    ? Current extends List
-        ? [...UnpackNestedTuples<Current>, ...UnpackNestedTuples<Remaining>]
-        : [Current, ...UnpackNestedTuples<Remaining>]
-    : Result
-
 export type Join<
     Segments extends Stringifiable[],
     Delimiter extends string,
@@ -203,7 +139,7 @@ export type RemoveSpaces<FromString extends string> = StringReplace<
 export type StringifyPossibleTypes<
     U extends Stringifiable,
     Delimiter extends string = ", "
-> = Join<ListPossibleTypes<U>, Delimiter>
+> = Join<UnionToTuple<U>, Delimiter>
 
 export type ListChars<
     S extends string,

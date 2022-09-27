@@ -12,7 +12,7 @@ import type { DynamicTypeRoot } from "../../../scopes/type.js"
 import { keywordNodes } from "../../terminals/keywords/keyword.js"
 import { numberTypedKeywords } from "../../terminals/keywords/number.js"
 import { stringTypedKeywords } from "../../terminals/keywords/string.js"
-import type { Bounds } from "../bounds.js"
+import type { BoundsAst } from "../bounds.js"
 import { boundToString } from "../bounds.js"
 
 const keysOf = (o: object) => Object.keys(o)
@@ -45,7 +45,10 @@ export const arbitraryLimit = fc
     .oneof(fc.float(boundRange), fc.integer(boundRange))
     .map((limit) => Number.parseFloat(limit.toFixed(2)))
 
-const expectedCheckResult = (expectedBounds: Bounds.Ast, data: number) => {
+const expectedCheckResult = (
+    expectedBounds: BoundsAst.Constraints,
+    data: number
+) => {
     for (const [comparator, limit] of expectedBounds) {
         const reason = boundToString(comparator, limit, "number")
         const expectedMessageIfOutOfBound = `${reason} (was ${data})`
@@ -61,7 +64,7 @@ const expectedCheckResult = (expectedBounds: Bounds.Ast, data: number) => {
 
 const assertCheckResult = (
     t: DynamicTypeRoot,
-    expectedBounds: Bounds.Ast,
+    expectedBounds: BoundsAst.Constraints,
     data: number
 ) => {
     const actualErrors = t.check(data).errors
@@ -72,7 +75,7 @@ const assertCheckResult = (
 
 export const assertCheckResults = (
     t: DynamicTypeRoot,
-    expectedBounds: Bounds.Ast
+    expectedBounds: BoundsAst.Constraints
 ) => {
     for (const bound of expectedBounds) {
         assertCheckResult(t, expectedBounds, bound[1] - 1)

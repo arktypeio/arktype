@@ -1,12 +1,14 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
+import type { NodeToString } from "../../../nodes/common.js"
+import type { BoundsAst } from "../../../nodes/constraints/bounds.js"
 import { parseError } from "../../common.js"
 import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"
 import type { MergeBranches } from "../operator/binary/branch.js"
 import { mergeBranches } from "../operator/binary/branch.js"
-import type { UnpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
-import { unpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
+import type { UnpairedLeftBoundMessage } from "../operator/unary/bound/left.js"
+import { unpairedLeftBoundMessage } from "../operator/unary/bound/left.js"
 import type { Left } from "./left.js"
 import { left } from "./left.js"
 import { scanner } from "./scanner.js"
@@ -40,7 +42,12 @@ export class parserState<constraints extends Partial<left> = {}> {
             ? !this.l.groups.length
                 ? !this.l.lowerBound
                     ? mergeBranches(this)
-                    : this.error(unpairedLeftBoundMessage)
+                    : this.error(
+                          unpairedLeftBoundMessage(
+                              this.l.root.toString(),
+                              ...this.l.lowerBound
+                          )
+                      )
                 : this.error(unclosedGroupMessage)
             : this.error(expressionExpectedMessage(""))
         return this
@@ -52,8 +59,15 @@ export namespace ParserState {
         S extends ParserState,
         IsOptional extends boolean
     > = S["L"]["groups"] extends []
-        ? S["L"]["lowerBound"] extends undefined
-            ? From<{
+        ? S["L"]["lowerBound"] extends BoundsAst.Lower
+            ? ParserState.Error<
+                  UnpairedLeftBoundMessage<
+                      NodeToString<S["L"]["root"]>,
+                      S["L"]["lowerBound"][0],
+                      S["L"]["lowerBound"][1]
+                  >
+              >
+            : From<{
                   L: {
                       lowerBound: undefined
                       groups: []
@@ -66,7 +80,6 @@ export namespace ParserState {
                   }
                   R: ""
               }>
-            : ParserState.Error<UnpairedLeftBoundMessage>
         : ParserState.Error<UnclosedGroupMessage>
 }
 
@@ -75,9 +88,9 @@ type WrapIfOptional<Root, IsOptional extends boolean> = IsOptional extends true
     : Root
 
 export namespace parserState {
-    export type withRoot<Root extends Base.node = Base.node> = parserState<
-        left.withRoot<Root>
-    >
+    export type withRoot<Root extends Base.node = Base.node> = parserState<{
+        root: Root
+    }>
 }
 
 export type ParserState<Constraints extends Partial<Left> = {}> = {

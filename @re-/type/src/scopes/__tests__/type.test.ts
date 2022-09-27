@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { unresolvableMessage } from "../../parser/str/operand/unenclosed.js"
-import { space } from "../root.js"
+import { space } from "../space.js"
 
 describe("space", () => {
     test("single", () => {

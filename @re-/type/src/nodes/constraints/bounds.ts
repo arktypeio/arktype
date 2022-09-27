@@ -8,7 +8,6 @@ import {
     comparatorToString,
     invertedComparators
 } from "../../parser/str/operator/unary/bound/common.js"
-import type { Scanner } from "../../parser/str/state/scanner.js"
 import type { Base } from "../base.js"
 import type { NumberTypedKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
@@ -16,18 +15,14 @@ import type { CheckState } from "../traverse/check/check.js"
 import type { Check } from "../traverse/exports.js"
 import type { Constraint, PossiblyConstrainedAst } from "./constraint.js"
 
-export namespace Bounds {
-    export type Ast = Single | Double
+export namespace BoundsAst {
+    export type Constraints = [Single] | [Lower, Upper]
 
-    export type Bound = [Comparator, number]
+    export type Single = [Comparator, number]
 
     export type Lower = [NormalizedLowerBoundComparator, number]
 
     export type Upper = [DoubleBoundComparator, number]
-
-    export type Single = [Bound]
-
-    export type Double = [Lower, Upper]
 }
 
 /** A BoundableNode must be either:
@@ -58,13 +53,16 @@ export const applyBound = (node: BoundableNode, bounds: BoundConstraint) => {
     applyBoundsToDefinition(node, bounds.ast)
 }
 
-const applyBoundsToAst = (node: BoundableNode, ast: Bounds.Ast) => {
+const applyBoundsToAst = (node: BoundableNode, ast: BoundsAst.Constraints) => {
     node.ast = isConstrained(node.ast)
         ? [node.ast[0], ":", [...node.ast[2], ...ast]]
         : [node.ast, ":", ast]
 }
 
-const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
+const applyBoundsToDefinition = (
+    node: BoundableNode,
+    ast: BoundsAst.Constraints
+) => {
     const rightBoundToString =
         ast.length === 1 ? ast[0].join("") : ast[1].join("")
     node.def += rightBoundToString
@@ -77,7 +75,7 @@ const applyBoundsToDefinition = (node: BoundableNode, ast: Bounds.Ast) => {
 }
 
 export class BoundConstraint implements Constraint {
-    constructor(public ast: Bounds.Ast) {}
+    constructor(public ast: BoundsAst.Constraints) {}
 
     check(state: Check.CheckState<BoundableData>) {
         const actual =

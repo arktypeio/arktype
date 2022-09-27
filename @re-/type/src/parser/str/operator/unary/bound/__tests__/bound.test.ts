@@ -2,8 +2,9 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../../api.js"
 import { invalidDoubleBoundMessage } from "../common.js"
+import { unpairedLeftBoundMessage } from "../left.js"
 import { singleEqualsMessage } from "../parse.js"
-import { unboundableMessage, unpairedLeftBoundMessage } from "../right.js"
+import { unboundableMessage } from "../right.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
@@ -89,7 +90,7 @@ describe("bound", () => {
             test("unpaired left", () => {
                 // @ts-expect-error
                 assert(() => type("3<number")).throwsAndHasTypeError(
-                    unpairedLeftBoundMessage
+                    unpairedLeftBoundMessage("number", ">", 3)
                 )
             })
             test("unboundable", () => {

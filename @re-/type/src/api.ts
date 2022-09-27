@@ -1,5 +1,5 @@
 export { type } from "./scopes/type.js"
-export { space } from "./scopes/root.js"
+export { space } from "./scopes/space.js"
 export { declare } from "./scopes/declaration.js"
 export { Root } from "./parser/root.js"
 export type { ReferencesOf } from "./nodes/traverse/references.js"

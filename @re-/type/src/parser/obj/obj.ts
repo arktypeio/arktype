@@ -1,4 +1,4 @@
-import type { Evaluate, Get } from "@re-/tools"
+import type { Evaluate } from "@re-/tools"
 import { DictionaryNode } from "../../nodes/structs/dictionary.js"
 import { TupleNode } from "../../nodes/structs/tuple.js"
 import type { parseFn, ParserContext } from "../common.js"
