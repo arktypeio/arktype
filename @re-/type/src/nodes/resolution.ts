@@ -18,8 +18,8 @@ export class ResolutionNode extends Base.node {
         this.rootDef = rootDef
     }
 
-    toString() {
-        return this.root.toString()
+    typeStr() {
+        return this.root.typeStr()
     }
 
     collectReferences(opts: References.ReferencesOptions, collected: KeySet) {
@@ -30,7 +30,7 @@ export class ResolutionNode extends Base.node {
         return this.root.references(opts)
     }
 
-    check(state: Check.CheckState) {
+    typecheck(state: Check.CheckState) {
         // const nextArgs = this.nextArgs(state, this.context.validate)
         if (typeof state.data === "object" && state.data !== null) {
             if (state.checkedValuesByAlias[this.name]?.includes(state.data)) {

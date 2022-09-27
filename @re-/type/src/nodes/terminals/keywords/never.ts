@@ -4,7 +4,7 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NeverNode extends TerminalNode {
-    check(state: Check.CheckState) {
+    typecheck(state: Check.CheckState) {
         addTypeKeywordDiagnostic(state, "never", "Never allowed")
     }
 

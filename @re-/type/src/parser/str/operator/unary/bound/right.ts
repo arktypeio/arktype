@@ -52,7 +52,7 @@ export const reduceRightBound = (
         ? hasLowerBound(s)
             ? reduceDouble(s, right)
             : reduceSingle(s, right)
-        : s.error(unboundableMessage(s.l.root.toString()))
+        : s.error(unboundableMessage(s.l.root.typeStr()))
 
 export type ReduceRightBound<
     L extends Left,

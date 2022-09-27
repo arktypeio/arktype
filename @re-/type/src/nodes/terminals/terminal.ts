@@ -1,6 +1,7 @@
 import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
 import type { RootNode } from "../common.js"
+import type { ConstraintToggles } from "../constraints/constraint.js"
 import type { References } from "../traverse/exports.js"
 import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
 import type { RegexLiteralDefinition } from "./keywords/string.js"
@@ -11,33 +12,32 @@ import type {
     StringLiteralDefinition
 } from "./literal.js"
 
-export type TerminalConstructorArgs<Definition extends string = string> = [
-    definition: Definition,
-    context: Base.context
-]
-
 export abstract class TerminalNode<
-    Definition extends string = string
-> extends Base.node<Definition> {
-    constructor(...[def, ctx]: TerminalConstructorArgs<Definition>) {
-        super(def, def, ctx)
+    Def extends string = string,
+    AllowConstraints extends ConstraintToggles = {}
+> extends Base.node<AllowConstraints> {
+    constructor(protected typeDef: Def) {
+        super()
     }
 
-    toString() {
-        return this.def
+    protected get typeStr() {
+        return this.typeDef
+    }
+
+    protected get typeAst() {
+        return this.typeDef
     }
 
     collectReferences(args: References.ReferencesOptions, collected: KeySet) {
-        const reference = this.toString()
-        if (!args.filter || args.filter(reference)) {
-            collected[reference] = 1
+        if (!args.filter || args.filter(this.typeDef)) {
+            collected[this.typeDef] = 1
         }
     }
 
-    definitionIsKeyOf<Obj extends Record<string, unknown>>(
+    typeDefIsKeyOf<Obj extends Record<string, unknown>>(
         obj: Obj
-    ): this is Base.node<Extract<keyof Obj, string>> {
-        return this.def in obj
+    ): this is TerminalNode<Extract<keyof Obj, string>> {
+        return this.typeDef in obj
     }
 }
 

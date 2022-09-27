@@ -37,7 +37,7 @@ export const parseModulo = (s: parserState.withRoot) => {
         ? isIntegerLiteral(moduloValue)
             ? reduceModulo(s, integerLiteralToDivisorValue(moduloValue))
             : s.error(invalidDivisorMessage(moduloValue))
-        : s.error(indivisibleMessage(s.l.root.toString()))
+        : s.error(indivisibleMessage(s.l.root.typeStr()))
 }
 
 const reduceModulo = (s: parserState.withRoot<NumberNode>, value: number) => {

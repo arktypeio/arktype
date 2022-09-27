@@ -2,15 +2,11 @@ import type { Check, Generate } from "../traverse/exports.js"
 import { TerminalNode } from "./terminal.js"
 
 export class Alias extends TerminalNode {
-    toString() {
-        return this.def
-    }
-
     get resolution() {
         return this.ctx.space!.resolutions[this.def]
     }
 
-    check(state: Check.CheckState) {
+    typecheck(state: Check.CheckState) {
         return this.resolution.check(state)
     }
 

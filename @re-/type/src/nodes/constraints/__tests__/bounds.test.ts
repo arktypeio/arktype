@@ -28,6 +28,7 @@ describe("bound constraint", () => {
                         ]
                         assert(singleBound.ast).equals([
                             "number",
+                            ":",
                             expectedBounds
                         ])
                         assertCheckResults(singleBound, expectedBounds)
@@ -57,6 +58,7 @@ describe("bound constraint", () => {
                         ]
                         assert(doubleBound.ast).equals([
                             "number",
+                            ":",
                             expectedBounds
                         ])
                         assertCheckResults(doubleBound, expectedBounds)

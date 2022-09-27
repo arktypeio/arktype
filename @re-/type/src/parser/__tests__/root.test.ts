@@ -49,7 +49,9 @@ describe("root definition", () => {
         })
         test("number", () => {
             // @ts-expect-error
-            assert(() => type({ bad: 5 })).throwsAndHasTypeError(expectedError)
+            assert(() => type({ bad: 5 })).throwsAndHasTypeError(
+                Root.badDefinitionTypeMessage
+            )
         })
         test("bigint", () => {
             // @ts-expect-error

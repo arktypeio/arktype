@@ -31,7 +31,7 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
         this.entries = entries
     }
 
-    toString() {
+    typeStr() {
         const isArray = Array.isArray(this.def)
         const indentation = "    ".repeat(this.ctx.path.length)
         const nestedIndentation = indentation + "    "
@@ -41,7 +41,7 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
             if (!isArray) {
                 result += this.entries[i][0] + ": "
             }
-            result += this.entries[i][1].toString()
+            result += this.entries[i][1].typeStr()
             if (i !== this.entries.length - 1) {
                 result += ","
             } else {
@@ -61,7 +61,7 @@ export abstract class struct<KeyType extends StructKey> extends Base.node<
 export type ObjectKind = "object" | "array"
 
 export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
-    definition: Base.RootDefinition,
+    definition: string,
     expectedStructure: ExpectedStructure,
     state: Check.CheckState
 ): state is Check.CheckState<
@@ -90,7 +90,7 @@ export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
 }
 
 export type StructureDiagnostic = Check.DiagnosticConfig<{
-    definition: Base.RootDefinition
+    definition: Base.UnknownDefinition
     data: unknown
     expected: ObjectKind
     actual: NormalizedJsTypeName

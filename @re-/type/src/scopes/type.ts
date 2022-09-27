@@ -54,6 +54,7 @@ export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> =
     }
 
 export const type: TypeFn = rawTypeFn as any
+// TODO: Abstract these variants as wrapper, reuse for space
 type.dynamic = rawTypeFn
 type.lazy = lazyTypeFn as any
 type.lazyDynamic = lazyTypeFn

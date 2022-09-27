@@ -1,3 +1,4 @@
+import { jsTypeOf } from "@re-/tools"
 import type { ParseError, parseFn, ParserContext } from "./common.js"
 import { throwParseError } from "./common.js"
 import { Obj } from "./obj/obj.js"
@@ -33,16 +34,16 @@ export namespace Root {
 
     type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
 
-    export const parse: parseFn = (definition, context) =>
-        typeof definition === "string"
-            ? Str.parse(definition, context)
-            : typeof definition === "object" && definition !== null
-            ? Obj.parse(definition, context)
+    export const parse: parseFn = (def, ctx) =>
+        typeof def === "string"
+            ? Str.parse(def, ctx)
+            : typeof def === "object" && def !== null
+            ? Obj.parse(def, ctx)
             : throwParseError(
                   badDefinitionTypeMessage +
-                      ` (was ${typeof definition}${
-                          context.path.length
-                              ? " at path " + context.path.join("/")
+                      ` (was ${jsTypeOf(def)}${
+                          ctx.path.length
+                              ? " at path " + ctx.path.join("/")
                               : ""
                       }).`
               )

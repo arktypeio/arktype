@@ -11,7 +11,7 @@ export type InferTuple<Ast extends readonly unknown[], Space> = Evaluate<{
 }>
 
 export class TupleNode extends struct<number> {
-    check(state: Check.CheckState) {
+    typecheck(state: Check.CheckState) {
         if (!checkObjectRoot(this.def, "array", state)) {
             return
         }

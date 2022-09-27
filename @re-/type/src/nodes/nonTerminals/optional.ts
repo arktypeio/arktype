@@ -1,13 +1,10 @@
 import type { Check } from "../traverse/exports.js"
-import type { UnaryConstructorArgs } from "./unary.js"
 import { UnaryNode } from "./unary.js"
 
-export class OptionalNode extends UnaryNode {
-    constructor(...args: UnaryConstructorArgs) {
-        super("?", ...args)
-    }
+export class OptionalNode extends UnaryNode<"?"> {
+    readonly token = "?"
 
-    check(state: Check.CheckState) {
+    protected typecheck(state: Check.CheckState) {
         if (state.data === undefined) {
             return
         }

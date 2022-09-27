@@ -41,7 +41,7 @@ export const singleEqualsMessage = `= is not a valid comparator. Use == to check
 type SingleEqualsMessage = typeof singleEqualsMessage
 
 export const reduceBound = (s: parserState.withRoot, token: Comparator) =>
-    s.hasRoot(LiteralNode) && typeof s.l.root.value === "number"
+    s.hasRoot(LiteralNode) && typeof s.l.root.defValue === "number"
         ? reduceLeft(s, token)
         : parseRightBound(s, token)
 

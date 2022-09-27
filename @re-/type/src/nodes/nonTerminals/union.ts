@@ -1,14 +1,11 @@
 import type { BuiltinJsTypeName } from "@re-/tools"
 import { Check, Generate } from "../traverse/exports.js"
-import type { BranchConstructorArgs } from "./branch.js"
-import { NaryNode } from "./branch.js"
+import { BranchingNode } from "./branching.js"
 
-export class UnionNode extends NaryNode {
-    constructor(...args: BranchConstructorArgs) {
-        super("|", ...args)
-    }
+export class UnionNode extends BranchingNode<"|"> {
+    readonly token = "|"
 
-    check(state: Check.CheckState) {
+    typecheck(state: Check.CheckState) {
         const rootErrors = state.errors
         const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
         for (const child of this.children) {
@@ -28,7 +25,7 @@ export class UnionNode extends NaryNode {
         branchDiagnosticsEntries: BranchDiagnosticsEntry[]
     ) {
         const context: UnionDiagnostic["context"] = {
-            definition: this.def,
+            definition: this.toString(),
             actual: Check.stringifyData(state.data),
             branchDiagnosticsEntries
         }
@@ -38,7 +35,7 @@ export class UnionNode extends NaryNode {
         state.errors.add(
             "union",
             {
-                reason: `Must be one of ${this.def}`,
+                reason: `Must be one of ${this.typeStr()}`,
                 state: state,
                 suffix: explainBranches
                     ? buildBranchDiagnosticsExplanation(
@@ -66,7 +63,7 @@ export class UnionNode extends NaryNode {
             }
         }
         throw new Error(
-            `Unable to generate a value for unexpected union def ${this.toString()}.`
+            `Unable to generate a value for unexpected union def ${this.typeStr()}.`
         )
     }
 

@@ -1,8 +1,8 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
+import { OptionalNode } from "../nonTerminals/optional.js"
 import type { Check, Generate } from "../traverse/exports.js"
-import { OptionalNode } from "../unaries/optional.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
 export type InferDictionary<
@@ -21,8 +21,8 @@ export type InferDictionary<
 >
 
 export class DictionaryNode extends struct<string> {
-    check(state: Check.CheckState) {
-        if (!checkObjectRoot(this.def, "object", state)) {
+    typecheck(state: Check.CheckState) {
+        if (!checkObjectRoot(this.typeStr(), "object", state)) {
             return
         }
         const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)
@@ -47,7 +47,7 @@ export class DictionaryNode extends struct<string> {
                 child.check(state)
                 state.path.pop()
             } else if (!(child instanceof OptionalNode)) {
-                this.addMissingKeyDiagnostic(state, k, child.def)
+                this.addMissingKeyDiagnostic(state, k, child.toString())
             }
             delete uncheckedData[k]
         }
@@ -72,11 +72,11 @@ export class DictionaryNode extends struct<string> {
     private addMissingKeyDiagnostic(
         state: Check.CheckState<Dictionary>,
         key: string,
-        definition: Base.RootDefinition
+        definition: string
     ) {
         state.errors.add(
             "missingKey",
-            { reason: `${key} is required`, state: state },
+            { reason: `${key} is required`, state },
             {
                 definition,
                 key
@@ -94,9 +94,9 @@ export class DictionaryNode extends struct<string> {
                 : `Keys '${keys.join("', '")}' were unexpected`
         state.errors.add(
             "extraneousKeys",
-            { reason, state: state },
+            { reason, state },
             {
-                definition: this.def,
+                definition: this.typeStr(),
                 data: state.data,
                 keys
             }
@@ -116,6 +116,6 @@ export type ExtraneousKeysDiagnostic = Check.DiagnosticConfig<
 >
 
 export type MissingKeyDiagnostic = Check.DiagnosticConfig<{
-    definition: Base.RootDefinition
+    definition: Base.UnknownDefinition
     key: string
 }>

@@ -41,12 +41,15 @@ export const metaTokens = keySet({
     "[]": 1,
     "?": 1,
     "|": 1,
-    "&": 1
+    "&": 1,
+    ":": 1
 })
 
 export type UnaryToken = "?" | "[]" | TypelessToken
 
-export type BinaryToken = "|" | "&" | "=>"
+export type BinaryToken = BranchingToken | "=>"
+
+export type BranchingToken = "|" | "&"
 
 export type TypelessToken = ":"
 

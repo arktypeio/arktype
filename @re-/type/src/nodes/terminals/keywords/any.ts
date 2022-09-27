@@ -2,7 +2,7 @@ import { TerminalNode } from "../terminal.js"
 
 export class AnyNode extends TerminalNode {
     // Allows all data
-    check() {}
+    typecheck() {}
 
     generate(): any {
         return undefined

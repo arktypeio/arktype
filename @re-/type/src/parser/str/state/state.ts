@@ -44,7 +44,7 @@ export class parserState<constraints extends Partial<left> = {}> {
                     ? this.reduceFinal()
                     : this.error(
                           unpairedLeftBoundMessage(
-                              this.l.root.toString(),
+                              this.l.root.typeStr(),
                               ...this.l.lowerBound
                           )
                       )

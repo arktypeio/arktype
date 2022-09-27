@@ -3,6 +3,8 @@ import { uncapitalize } from "@re-/tools"
 import type { Path } from "../../common.js"
 import { pathToString } from "../../common.js"
 import type { BoundDiagnostic as BoundDiagnostic } from "../../constraints/bounds.js"
+import type { ModuloDiagnostic } from "../../constraints/modulo.js"
+import type { RegexDiagnostic } from "../../constraints/regex.js"
 import type { UnionDiagnostic } from "../../n-aries/union.js"
 import type {
     ExtraneousKeysDiagnostic,
@@ -11,11 +13,7 @@ import type {
 import type { StructureDiagnostic } from "../../structs/struct.js"
 import type { TupleLengthDiagnostic } from "../../structs/tuple.js"
 import type { KeywordTypeDiagnostic } from "../../terminals/keywords/common.js"
-import type {
-    ModuloDiagnostic,
-    NumberSubtypeDiagnostic
-} from "../../terminals/keywords/number.js"
-import type { RegexDiagnostic } from "../../terminals/keywords/string.js"
+import type { NumberSubtypeDiagnostic } from "../../terminals/keywords/number.js"
 import type { LiteralDiagnostic } from "../../terminals/literal.js"
 import type { CheckState } from "./check.js"
 import type { CustomDiagnosticResult } from "./customValidator.js"
@@ -83,6 +81,7 @@ export type InternalDiagnosticInput = {
     suffix?: string
 }
 
+// TODO: Automatically include definition?
 export class Diagnostic<Code extends DiagnosticCode> {
     message: string
     path: Path

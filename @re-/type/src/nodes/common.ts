@@ -4,7 +4,6 @@ import type {
     TypelessToken,
     UnaryToken
 } from "../parser/common.js"
-import type { Base } from "./base.js"
 import type { InferDictionary } from "./structs/dictionary.js"
 import type { Struct } from "./structs/struct.js"
 import type { InferTuple } from "./structs/tuple.js"
@@ -16,6 +15,7 @@ export const pathToString = (path: Path) =>
 export type Segment = string | number
 export type Path = Segment[]
 
+// TODO: Update to include objects
 export type NodeToString<Node, Result extends string = ""> = Node extends [
     infer Head,
     ...infer Tail

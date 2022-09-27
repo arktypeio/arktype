@@ -7,7 +7,7 @@ import { FunctionNode } from "./function.js"
 import { NeverNode } from "./never.js"
 import { NullNode } from "./null.js"
 import type { NumberSubtypeKeyword } from "./number.js"
-import { numberTypedKeywords, NumberNode } from "./number.js"
+import { NumberNode, numberTypedKeywords } from "./number.js"
 import { ObjectNode } from "./object.js"
 import type { StringSubtypeDefinition, StringSubtypeKeyword } from "./string.js"
 import { StringNode, stringTypedKeywords } from "./string.js"
@@ -53,8 +53,8 @@ export const keywordNodes = {
     ...numberTypedKeywords
 }
 
-export const parseKeyword = (def: KeywordDefinition, context: Base.context) =>
-    new keywordNodes[def](def as any, context)
+export const parseKeyword = (def: KeywordDefinition) =>
+    new keywordNodes[def](def as never)
 
 export const matchesKeyword = (def: string): def is KeywordDefinition =>
     def in keywordNodes

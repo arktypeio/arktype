@@ -24,29 +24,21 @@ export type PrimitiveLiteralValue = string | number | bigint | boolean
 export class LiteralNode<
     Value extends PrimitiveLiteralValue
 > extends TerminalNode<LiteralDefinition> {
-    constructor(
-        definition: LiteralDefinition,
-        public value: Value,
-        context: Base.context
-    ) {
-        super(definition, context)
+    constructor(typeDef: LiteralDefinition, public defValue: Value) {
+        super(typeDef)
     }
 
-    toString() {
-        return this.def
-    }
-
-    check(state: Check.CheckState) {
-        if (state.data !== this.value) {
+    typecheck(state: Check.CheckState) {
+        if (state.data !== this.defValue) {
             state.errors.add(
                 "literal",
                 {
-                    reason: `Must be ${this.def}`,
-                    state: state
+                    reason: `Must be ${this.typeDef}`,
+                    state
                 },
                 {
-                    definition: this.def,
-                    expected: this.value,
+                    definition: this.typeDef,
+                    expected: this.defValue,
                     actual: Check.stringifyData(state.data),
                     data: state.data
                 }
@@ -55,7 +47,7 @@ export class LiteralNode<
     }
 
     generate() {
-        return this.value
+        return this.defValue
     }
 }
 
