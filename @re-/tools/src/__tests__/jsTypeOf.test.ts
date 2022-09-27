@@ -3,17 +3,6 @@ import { describe, test } from "mocha"
 import type { NormalizedJsTypeName } from "../index.js"
 import { hasJsType, jsTypeOf } from "../index.js"
 
-type Z = {
-    bigint: bigint
-    boolean: boolean
-    function: Function
-    number: number
-    object: object | null
-    string: string
-    symbol: symbol
-    undefined: undefined
-}
-
 describe("jsTypeOf", () => {
     test("builtin", () => {
         assert(jsTypeOf(0n)).narrowedValue("bigint")
