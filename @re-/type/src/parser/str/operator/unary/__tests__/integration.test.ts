@@ -9,7 +9,7 @@ describe("parse constraint integration", () => {
             ":",
             [
                 ["%", 10],
-                [">", 2]
+                [">=", 2]
             ]
         ])
     })
@@ -20,7 +20,7 @@ describe("parse constraint integration", () => {
             [
                 ["%", 10],
                 [">", 2],
-                ["<", 4]
+                ["<=", 4]
             ]
         ])
     })

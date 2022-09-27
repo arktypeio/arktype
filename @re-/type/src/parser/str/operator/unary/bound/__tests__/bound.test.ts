@@ -96,7 +96,7 @@ describe("bound", () => {
             test("unboundable", () => {
                 // @ts-expect-error
                 assert(() => type("object|null>=10")).throwsAndHasTypeError(
-                    unboundableMessage("object|null")
+                    unboundableMessage("null")
                 )
             })
         })

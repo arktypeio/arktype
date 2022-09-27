@@ -1,4 +1,4 @@
-import { AssertionError, strict } from "node:assert"
+import { strict } from "node:assert"
 import type { DiffOptions } from "@re-/tools"
 import { diff, isRecursible, toString } from "@re-/tools"
 import type { AssertionContext } from "./assert.js"
@@ -56,14 +56,12 @@ export const assertEquals = (
                 compareKey: "actual"
             }
         })
-    } else {
-        try {
-            strict.equal(actual, expected)
-        } catch (e) {
-            if (e instanceof AssertionError) {
-                throwAssertionError({ ...e, ctx })
-            }
-            throw e
-        }
+    } else if (actual !== expected) {
+        throwAssertionError({
+            message: `${actual}!==${expected}`,
+            expected,
+            actual,
+            ctx
+        })
     }
 }

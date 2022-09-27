@@ -4,7 +4,7 @@ import { caller } from "@re-/node"
 import type { Fn } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { AssertionContext } from "../assert.js"
-import { assertEquals } from "../assertions.js"
+import { assertEquals, throwAssertionError } from "../assertions.js"
 import { literalSerialize } from "../common.js"
 import type { SnapshotArgs } from "../snapshot.js"
 import {
@@ -170,9 +170,7 @@ export class Assertions implements AssertionRecord {
     get returns() {
         const result = callAssertedFunction(this.actual as Fn, this.ctx)
         if (!("returned" in result)) {
-            throw new strict.AssertionError({
-                message: result.threw
-            })
+            throwAssertionError({ message: result.threw!, ctx: this.ctx })
         }
         this.ctx.actual = result.returned
         this.ctx.isReturn = true
