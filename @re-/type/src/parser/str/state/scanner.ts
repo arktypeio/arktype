@@ -89,24 +89,28 @@ export namespace Scanner {
         Unscanned extends string
     > = `${Lookahead}${Unscanned}`
 
+    export type TailOf<S> = S extends `${string}${infer Tail}` ? Tail : ""
+
     export type ShiftUntil<
         Unscanned extends string,
-        TerminatingChar extends string,
+        Terminator extends string,
         Scanned extends string = ""
     > = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
-        ? Lookahead extends TerminatingChar
+        ? Lookahead extends Terminator
             ? [Scanned, Unscanned]
-            : ShiftUntil<
-                  NextUnscanned,
-                  TerminatingChar,
-                  `${Scanned}${Lookahead}`
-              >
+            : ShiftUntil<NextUnscanned, Terminator, `${Scanned}${Lookahead}`>
         : [Scanned, ""]
+
+    export type ShiftUntilNextTerminator<Unscanned extends string> = ShiftUntil<
+        Unscanned,
+        UnenclosedTerminatingChar
+    >
 
     export type Shifted<Scanned extends string, Unscanned extends string> = [
         Scanned,
         Unscanned
     ]
 
-    export type TerminatingChar = keyof typeof scanner.terminatingChars
+    export type UnenclosedTerminatingChar =
+        keyof typeof scanner.terminatingChars
 }

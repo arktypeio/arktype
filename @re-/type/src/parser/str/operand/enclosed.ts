@@ -5,7 +5,7 @@ import { StringNode } from "../../../nodes/terminals/keywords/string.js"
 import type { StringLiteralDefinition } from "../../../nodes/terminals/literal.js"
 import { LiteralNode } from "../../../nodes/terminals/literal.js"
 import type { Left } from "../state/left.js"
-import type { scanner } from "../state/scanner.js"
+import type { Scanner, scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 
 export const enclosedBaseStartChars = keySet({
@@ -25,12 +25,12 @@ export const unterminatedEnclosedMessage = <
     fragment: Fragment,
     enclosing: Enclosing
 ): UnterminatedEnclosedMessage<Fragment, Enclosing> =>
-    `${fragment} requires a closing ${enclosing}.`
+    `${fragment} requires a closing ${enclosing}`
 
 type UnterminatedEnclosedMessage<
     Fragment extends string,
     Enclosing extends EnclosedBaseStartChar
-> = `${Fragment} requires a closing ${Enclosing}.`
+> = `${Fragment} requires a closing ${Enclosing}`
 
 const untilLookaheadIsClosing: Record<
     EnclosedBaseStartChar,
@@ -65,13 +65,19 @@ export const parseEnclosedBase = (
 
 export type ParseEnclosedBase<
     S extends ParserState,
-    Enclosing extends EnclosedBaseStartChar
-> = S["R"] extends `${Enclosing}${infer Contents}${Enclosing}${infer Unscanned}`
-    ? ParserState.From<{
-          L: Left.SetRoot<S["L"], `${Enclosing}${Contents}${Enclosing}`>
-          R: Unscanned
-      }>
-    : ParserState.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
+    Enclosing extends EnclosedBaseStartChar,
+    Unscanned extends string
+> = Scanner.ShiftUntil<Unscanned, Enclosing> extends Scanner.Shifted<
+    infer Scanned,
+    infer NextUnscanned
+>
+    ? NextUnscanned extends ""
+        ? ParserState.Error<UnterminatedEnclosedMessage<S["R"], Enclosing>>
+        : ParserState.From<{
+              L: Left.SetRoot<S["L"], `${Enclosing}${Scanned}${Enclosing}`>
+              R: Scanner.TailOf<NextUnscanned>
+          }>
+    : never
 
 const throwUnterminatedEnclosed: scanner.OnInputEndFn = (scanner, shifted) => {
     throw new Error(

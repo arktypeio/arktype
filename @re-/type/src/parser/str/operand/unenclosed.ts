@@ -26,17 +26,15 @@ export const parseUnenclosedBase = (s: parserState, ctx: parserContext) => {
     return s
 }
 
-// TODO: Shift until?
 export type ParseUnenclosedBase<
     S extends ParserState,
-    Fragment extends string,
-    Unscanned extends string,
     Ctx extends ParserContext
-> = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
-    ? Lookahead extends Scanner.TerminatingChar
-        ? ReduceUnenclosed<S["L"], Unscanned, Fragment, Ctx>
-        : ParseUnenclosedBase<S, `${Fragment}${Lookahead}`, NextUnscanned, Ctx>
-    : ReduceUnenclosed<S["L"], Unscanned, Fragment, Ctx>
+> = Scanner.ShiftUntilNextTerminator<S["R"]> extends Scanner.Shifted<
+    infer Scanned,
+    infer NextUnscanned
+>
+    ? ReduceUnenclosed<S["L"], Scanned, NextUnscanned, Ctx>
+    : never
 
 export const toNodeIfResolvableIdentifier = (
     token: string,
@@ -120,8 +118,8 @@ const unenclosedToNode = (s: parserState, token: string, ctx: parserContext) =>
 
 type ReduceUnenclosed<
     L extends Left,
-    Unscanned extends string,
     Token extends string,
+    Unscanned extends string,
     Ctx extends ParserContext
 > = IsResolvableUnenclosed<Token, Ctx> extends true
     ? ParserState.From<{ L: Left.SetRoot<L, Token>; R: Unscanned }>

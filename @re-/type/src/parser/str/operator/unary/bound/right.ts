@@ -1,4 +1,3 @@
-import type { Evaluate } from "@re-/tools"
 import { isKeyOf } from "@re-/tools"
 import type { NodeToString } from "../../../../../nodes/common.js"
 import {
@@ -33,10 +32,10 @@ export const parseRightBound = (s: parserState.withRoot, token: Comparator) => {
 export type ParseRightBound<
     S extends ParserState,
     Token extends Comparator
-> = Scanner.ShiftUntil<S["R"], Scanner.TerminatingChar> extends Scanner.Shifted<
-    infer Scanned,
-    infer NextUnscanned
->
+> = Scanner.ShiftUntil<
+    S["R"],
+    Scanner.UnenclosedTerminatingChar
+> extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
     ? Scanned extends NumberLiteralDefinition<infer Value>
         ? ParserState.From<{
               L: ReduceRightBound<S["L"], [Token, Value]>

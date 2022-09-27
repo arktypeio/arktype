@@ -1,6 +1,6 @@
 import { isKeyOf } from "@re-/tools"
 import type { LiteralNode } from "../../../../../nodes/terminals/literal.js"
-import type { Left, left } from "../../../state/left.js"
+import type { Left } from "../../../state/left.js"
 import type { parserState } from "../../../state/state.js"
 import type {
     Comparator,

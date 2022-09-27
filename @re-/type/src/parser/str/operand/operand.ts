@@ -34,8 +34,8 @@ export type ParseOperand<
               R: Unscanned
           }>
         : Lookahead extends EnclosedBaseStartChar
-        ? ParseEnclosedBase<S, Lookahead>
+        ? ParseEnclosedBase<S, Lookahead, Unscanned>
         : Lookahead extends " "
         ? ParseOperand<{ L: S["L"]; R: Unscanned }, Ctx>
-        : ParseUnenclosedBase<S, "", S["R"], Ctx>
+        : ParseUnenclosedBase<S, Ctx>
     : ParserState.Error<ExpressionExpectedMessage<"">>

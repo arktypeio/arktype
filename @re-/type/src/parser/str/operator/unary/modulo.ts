@@ -23,7 +23,7 @@ export type ParseModulo<
 }
     ? Scanner.ShiftUntil<
           Unscanned,
-          Scanner.TerminatingChar
+          Scanner.UnenclosedTerminatingChar
       > extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
         ? Scanned extends IntegerLiteralDefinition<infer Divisor>
             ? ReduceModulo<S, Divisor, NextUnscanned>
