@@ -1,21 +1,13 @@
 import type { Base } from "../../../nodes/base.js"
 import type { Bounds } from "../../../nodes/constraints/bounds.js"
 import type { ParseError } from "../../common.js"
-import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
-import type {
-    Branches,
-    branches,
-    MergeBranches
-} from "../operator/binary/branch.js"
-import type { UnpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
-import type { Scanner } from "./scanner.js"
+import type { Branches, branches } from "../operator/binary/branch.js"
 
 type leftBase = {
     groups: branches[]
     branches: branches
     root?: Base.node
     lowerBound?: Bounds.Lower
-    nextSuffix?: Scanner.Suffix
 }
 
 export type left<constraints extends Partial<leftBase> = {}> = leftBase &
@@ -26,7 +18,7 @@ type LeftBase = {
     groups: Branches[]
     branches: Branches
     root: unknown
-    nextSuffix?: Scanner.Suffix
+    done?: true
 }
 
 export type Left<Constraints extends Partial<LeftBase> = {}> = LeftBase &
@@ -41,20 +33,6 @@ export namespace left {
     export type withRoot<Root extends Base.node = Base.node> = {
         root: Root
     }
-
-    export type suffixable = {
-        root: Base.node
-        nextSuffix: Scanner.Suffix
-    }
-
-    type baseSuffix = {
-        lowerBound?: Bounds.Lower
-        root: Base.node
-        nextSuffix: Scanner.Suffix
-    }
-
-    export type suffix<constraints extends Partial<baseSuffix> = {}> =
-        baseSuffix & constraints
 }
 
 export namespace Left {
@@ -86,7 +64,7 @@ export namespace Left {
         groups: []
         branches: {}
         root: ParseError<Message>
-        nextSuffix: "END"
+        done: true
     }>
 
     export type SetRoot<L extends LeftBase, Node> = From<{
@@ -97,15 +75,4 @@ export namespace Left {
     }>
 
     export type WithRoot<Root> = With<{ root: Root }>
-
-    export type Finalize<L extends Left> = L["groups"] extends []
-        ? L["lowerBound"] extends undefined
-            ? Left.From<{
-                  lowerBound: undefined
-                  groups: []
-                  branches: {}
-                  root: MergeBranches<L["branches"], L["root"]>
-              }>
-            : Left.Error<UnpairedLeftBoundMessage>
-        : Left.Error<UnclosedGroupMessage>
 }

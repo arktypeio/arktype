@@ -1,9 +1,9 @@
 import { isKeyOf } from "@re-/tools"
 import type { LiteralNode } from "../../../../../nodes/terminals/literal.js"
 import type { Left, left } from "../../../state/left.js"
-import type { Scanner } from "../../../state/scanner.js"
 import type { parserState } from "../../../state/state.js"
 import type {
+    Comparator,
     DoubleBoundComparator,
     InvalidDoubleBoundMessage,
     InvertedComparators
@@ -13,20 +13,6 @@ import {
     invalidDoubleBoundMessage,
     invertedComparators
 } from "./common.js"
-
-type NonPrefixLeftBoundMessage<
-    BoundingValue extends number,
-    T extends Scanner.Comparator
-> = `Left bound '${BoundingValue}${T}...' must occur at the beginning of the definition.`
-
-export const nonPrefixLeftBoundMessage = <
-    BoundingValue extends number,
-    Token extends Scanner.Comparator
->(
-    Value: BoundingValue,
-    T: Token
-): NonPrefixLeftBoundMessage<BoundingValue, Token> =>
-    `Left bound '${Value}${T}...' must occur at the beginning of the definition.`
 
 const applyLeftBound = (
     s: parserState<left.withRoot<LiteralNode<number>>>,
@@ -39,25 +25,21 @@ const applyLeftBound = (
 
 export const reduceLeft = (
     s: parserState<left.withRoot<LiteralNode<number>>>,
-    token: Scanner.Comparator
+    token: Comparator
 ) =>
-    s.isPrefixable()
-        ? isKeyOf(token, doubleBoundComparators)
-            ? applyLeftBound(s, token)
-            : s.error(invalidDoubleBoundMessage(token))
-        : s.error(nonPrefixLeftBoundMessage(s.l.root.value, token))
+    isKeyOf(token, doubleBoundComparators)
+        ? applyLeftBound(s, token)
+        : s.error(invalidDoubleBoundMessage(token))
 
 export type ReduceLeft<
     L extends Left,
     Value extends number,
-    Token extends Scanner.Comparator
-> = Left.IsPrefixable<L> extends true
-    ? Token extends DoubleBoundComparator
-        ? Left.From<{
-              groups: []
-              branches: {}
-              root: undefined
-              lowerBound: [InvertedComparators[Token], Value]
-          }>
-        : Left.Error<InvalidDoubleBoundMessage<Token>>
-    : Left.Error<NonPrefixLeftBoundMessage<Value, Token>>
+    Token extends Comparator
+> = Token extends DoubleBoundComparator
+    ? Left.From<{
+          groups: L["groups"]
+          branches: L["branches"]
+          root: undefined
+          lowerBound: [InvertedComparators[Token], Value]
+      }>
+    : Left.Error<InvalidDoubleBoundMessage<Token>>

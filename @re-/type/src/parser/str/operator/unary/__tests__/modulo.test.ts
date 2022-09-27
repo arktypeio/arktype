@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../api.js"
-import { invalidSuffixMessage } from "../../../state/scanner.js"
 import { indivisibleMessage, invalidDivisorMessage } from "../modulo.js"
 
 describe("modulo", () => {
@@ -15,28 +14,28 @@ describe("modulo", () => {
         })
     })
     describe("invalid", () => {
-        test("moduloByZero", () => {
-            // @ts-expect-error
-            assert(() => type("number%0")).throwsAndHasTypeError(
-                invalidDivisorMessage("0")
-            )
-        })
-        test("unexpectedSuffix", () => {
-            // @ts-expect-error
-            assert(() => type("number%foobar")).throwsAndHasTypeError(
-                invalidSuffixMessage("%", "foobar", "an integer literal")
-            )
-        })
         test("indivisible", () => {
             // @ts-expect-error
             assert(() => type("string%2")).throwsAndHasTypeError(
                 indivisibleMessage("string")
             )
         })
-        test("non-integer", () => {
+        test("non-integer divisor", () => {
             // @ts-expect-error
             assert(() => type("number%2.3")).throwsAndHasTypeError(
-                invalidSuffixMessage("%", "2.3", "an integer literal")
+                invalidDivisorMessage("2.3")
+            )
+        })
+        test("non-numeric divisor", () => {
+            // @ts-expect-error
+            assert(() => type("number%foobar")).throwsAndHasTypeError(
+                invalidDivisorMessage("foobar")
+            )
+        })
+        test("zero divisor", () => {
+            // @ts-expect-error
+            assert(() => type("number%0")).throwsAndHasTypeError(
+                invalidDivisorMessage("0")
             )
         })
     })

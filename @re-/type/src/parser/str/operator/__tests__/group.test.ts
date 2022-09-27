@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../scopes/type.js"
-import { unclosedGroupMessage } from "../../full.js"
-import { expressionExpectedMessage } from "../../operand/common.js"
+import { unclosedGroupMessage } from "../../operand/groupOpen.js"
+import { expressionExpectedMessage } from "../../state/state.js"
 import { unexpectedGroupCloseMessage } from "../groupClose.js"
 
 describe("group", () => {

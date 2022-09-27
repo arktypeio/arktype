@@ -1,27 +1,18 @@
 import { OptionalNode } from "../../../../nodes/unaries/optional.js"
-import type { ParseError, parserContext } from "../../../common.js"
-import type { Left } from "../../state/left.js"
+import type { parserContext } from "../../../common.js"
 import type { parserState, ParserState } from "../../state/state.js"
 
-export type FinalizeOptional<L extends Left, Unscanned> = Unscanned extends ""
-    ? ParserState.From<{
-          L: ReduceOptional<Left.Finalize<L>>
-          R: "END"
-      }>
+export const finalizeOptional = (s: parserState.withRoot, ctx: parserContext) =>
+    s.r.lookahead === "END"
+        ? s.error(nonTerminatingOptionalMessage)
+        : reduceOptional(s.finalize(), ctx)
+
+export type FinalizeOptional<S extends ParserState> = S["R"] extends "?"
+    ? ParserState.Finalize<S, true>
     : ParserState.Error<NonTerminatingOptionalMessage>
 
-export type ReduceOptional<L extends Left> =
-    L["root"] extends ParseError<string> ? L : Left.SetRoot<L, [L["root"], "?"]>
-
-export const parseOptional = (
-    s: parserState.suffix,
-    context: parserContext
-) => {
-    if (s.r.lookahead !== "END") {
-        throw new Error(nonTerminatingOptionalMessage)
-    }
-    s.l.root = new OptionalNode(s.l.root, context)
-    s.l.nextSuffix = "END"
+export const reduceOptional = (s: parserState.withRoot, ctx: parserContext) => {
+    s.l.root = new OptionalNode(s.l.root, ctx)
     return s
 }
 

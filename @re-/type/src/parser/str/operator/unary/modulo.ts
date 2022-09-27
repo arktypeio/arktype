@@ -7,75 +7,70 @@ import {
 } from "../../../../nodes/terminals/keywords/number.js"
 import type { NumberLiteralDefinition } from "../../../../nodes/terminals/literal.js"
 import { throwParseError } from "../../../../parser/common.js"
-import type { BaseTerminatingChar } from "../../operand/common.js"
 import type { IntegerLiteralDefinition } from "../../operand/unenclosed.js"
 import { isIntegerLiteral } from "../../operand/unenclosed.js"
-import type { left, Left } from "../../state/left.js"
+import type { left } from "../../state/left.js"
 import type { Scanner, scanner } from "../../state/scanner.js"
-import { invalidSuffixMessage } from "../../state/scanner.js"
 import type { parserState, ParserState } from "../../state/state.js"
 import { comparatorChars } from "./bound/common.js"
 import { shiftComparator } from "./bound/parse.js"
 
+// TODO: Check for multiple modulos/bounds etc.
 export type ParseModulo<
     S extends ParserState,
     Unscanned extends string
-> = S["L"] extends {
-    root: NumberTypedKeyword
+> = S extends {
+    L: {
+        root: NumberTypedKeyword
+    }
 }
     ? Scanner.ShiftUntil<
           Unscanned,
-          BaseTerminatingChar
+          Scanner.TerminatingChar
       > extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
-        ? Scanned extends IntegerLiteralDefinition<infer Value>
-            ? ParserState.From<{
-                  L: ReduceModulo<S["L"], Value>
-                  R: NextUnscanned
-              }>
+        ? Scanned extends IntegerLiteralDefinition<infer Divisor>
+            ? ReduceModulo<S, Divisor, NextUnscanned>
             : ParserState.Error<InvalidDivisorMessage<Scanned>>
         : never
     : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
 
-export const parseModulo = (s: parserState<left.suffix>) => {
+export const parseModulo = (s: parserState.withRoot) => {
     const moduloValue = s.r.shiftUntil(untilPostModuloSuffix)
     const nextSuffix = s.r.lookaheadIsIn(comparatorChars)
         ? shiftComparator(s, s.r.shift())
         : (s.r.shift() as "?" | "END")
     return isIntegerLiteral(moduloValue)
         ? s.hasRoot(NumberNode)
-            ? reduceModulo(
-                  s,
-                  integerLiteralToDivisorValue(moduloValue),
-                  nextSuffix
-              )
+            ? reduceModulo(s, integerLiteralToDivisorValue(moduloValue))
             : s.error(indivisibleMessage(s.l.root.toString()))
         : s.error(
-              invalidSuffixMessage(
-                  "%",
+              invalidDivisorMessage(
                   `${moduloValue}${nextSuffix === "END" ? "" : nextSuffix}${
                       s.r.unscanned
-                  }`,
-                  "an integer literal"
+                  }`
               )
           )
 }
 
 const reduceModulo = (
-    s: parserState<left.suffix<{ root: NumberNode }>>,
-    value: number,
-    nextSuffix: Scanner.Suffix
+    s: parserState<left.withRoot<NumberNode>>,
+    value: number
 ) => {
     s.l.root.modulo = new ModuloConstraint(value)
-    s.l.nextSuffix = nextSuffix
     return s
 }
 
 type ReduceModulo<
-    L extends Left.WithRoot<NumberTypedKeyword>,
-    Value extends bigint
+    S extends ParserState.WithRoot<NumberTypedKeyword>,
+    Value extends bigint,
+    Unscanned extends string
 > = Value extends 0n
-    ? Left.Error<InvalidDivisorMessage<"0">>
-    : Left.SetRoot<L, AddConstraints<L["root"], [["%", BigintToNumber<Value>]]>>
+    ? ParserState.Error<InvalidDivisorMessage<"0">>
+    : ParserState.SetRoot<
+          S,
+          AddConstraints<S["L"]["root"], [["%", BigintToNumber<Value>]]>,
+          Unscanned
+      >
 
 type BigintToNumber<Value extends bigint> =
     `${Value}` extends NumberLiteralDefinition<infer NumericValue>
@@ -98,18 +93,18 @@ const integerLiteralToDivisorValue = (definition: IntegerLiteralDefinition) => {
 export const invalidDivisorMessage = <Divisor extends string>(
     divisor: Divisor
 ): InvalidDivisorMessage<Divisor> =>
-    `${divisor} is not valid as the right-hand side of a modulo expression`
+    `Modulo operator must be followed by an integer literal (was ${divisor})`
 
 export type InvalidDivisorMessage<Divisor extends string> =
-    `${Divisor} is not valid as the right-hand side of a modulo expression`
+    `Modulo operator must be followed by an integer literal (was ${Divisor})`
 
 const untilPostModuloSuffix: scanner.UntilCondition = (scanner) =>
     scanner.lookahead === "?" || scanner.lookaheadIsIn(comparatorChars)
 
 type IndivisibleMessage<Root extends string> =
-    `Modulo operator must be applied to a number-typed keyword (got '${Root}').`
+    `Modulo operator must be applied to a number-typed keyword (was '${Root}')`
 
 export const indivisibleMessage = <Root extends string>(
     root: Root
 ): IndivisibleMessage<Root> =>
-    `Modulo operator must be applied to a number-typed keyword (got '${root}').`
+    `Modulo operator must be applied to a number-typed keyword (was '${root}')`

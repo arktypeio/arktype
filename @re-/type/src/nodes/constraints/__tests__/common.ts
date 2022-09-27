@@ -1,9 +1,13 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
-import type { DoubleBoundComparator } from "../../../parser/str/operator/unary/bound/common.js"
-import { doubleBoundComparators } from "../../../parser/str/operator/unary/bound/common.js"
-import type { Scanner } from "../../../parser/str/state/scanner.js"
-import { scanner } from "../../../parser/str/state/scanner.js"
+import type {
+    Comparator,
+    DoubleBoundComparator
+} from "../../../parser/str/operator/unary/bound/common.js"
+import {
+    comparators,
+    doubleBoundComparators
+} from "../../../parser/str/operator/unary/bound/common.js"
 import type { DynamicTypeRoot } from "../../../scopes/type.js"
 import { keywordNodes } from "../../terminals/keywords/keyword.js"
 import { numberTypedKeywords } from "../../terminals/keywords/number.js"
@@ -29,7 +33,7 @@ export const aribtraryBoundable = fc.oneof(
     arbitraryKeywordList
 )
 export const arbitraryComparator = fc.constantFrom(
-    ...(Object.keys(scanner.comparators) as Scanner.Comparator[])
+    ...(Object.keys(comparators) as Comparator[])
 )
 export const arbitraryDoubleComparator = fc.constantFrom(
     ...(Object.keys(doubleBoundComparators) as DoubleBoundComparator[])

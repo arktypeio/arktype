@@ -1,8 +1,7 @@
 import { isKeyOf } from "@re-/tools"
 import type { parserContext } from "../../common.js"
-import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
-import type { parserState, ParserState } from "../state/state.js"
+import type { ParserState, parserState } from "../state/state.js"
 import type { ReduceIntersection } from "./binary/intersection.js"
 import { reduceIntersection } from "./binary/intersection.js"
 import type { ReduceUnion } from "./binary/union.js"
@@ -16,31 +15,33 @@ import { comparatorChars } from "./unary/bound/common.js"
 import type { ParseBound } from "./unary/bound/parse.js"
 import { parseBound } from "./unary/bound/parse.js"
 import type { ParseModulo } from "./unary/modulo.js"
+import { parseModulo } from "./unary/modulo.js"
 import type { FinalizeOptional } from "./unary/optional.js"
+import { finalizeOptional } from "./unary/optional.js"
 
 export const parseOperator = (
     s: parserState.withRoot,
-    context: parserContext
+    ctx: parserContext
 ): parserState => {
     const lookahead = s.r.shift()
-    return lookahead === "END"
-        ? s.suffixed("END")
+    return lookahead === ""
+        ? s.finalize()
         : lookahead === "?"
-        ? s.suffixed("?")
+        ? finalizeOptional(s, ctx)
         : lookahead === "["
-        ? parseArray(s, context)
+        ? parseArray(s, ctx)
         : lookahead === "|"
-        ? reduceUnion(s, context)
+        ? reduceUnion(s, ctx)
         : lookahead === "&"
-        ? reduceIntersection(s, context)
+        ? reduceIntersection(s, ctx)
         : lookahead === ")"
         ? reduceGroupClose(s)
         : isKeyOf(lookahead, comparatorChars)
         ? parseBound(s, lookahead)
         : lookahead === "%"
-        ? s.suffixed("%")
+        ? parseModulo(s)
         : lookahead === " "
-        ? parseOperator(s, context)
+        ? parseOperator(s, ctx)
         : s.error(unexpectedCharacterMessage(lookahead))
 }
 
@@ -49,7 +50,7 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
     infer Unscanned
 >
     ? Lookahead extends "?"
-        ? FinalizeOptional<S["L"], Unscanned>
+        ? FinalizeOptional<S>
         : Lookahead extends "["
         ? ParseArray<S, Unscanned>
         : Lookahead extends "|"
@@ -74,10 +75,7 @@ export type ParseOperator<S extends ParserState> = S["R"] extends Scanner.Shift<
         : Lookahead extends " "
         ? ParseOperator<{ L: S["L"]; R: Unscanned }>
         : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>
-    : ParserState.From<{
-          L: Left.Finalize<S["L"]>
-          R: "END"
-      }>
+    : ParserState.Finalize<S, false>
 
 const unexpectedCharacterMessage = <Char extends string>(
     char: Char

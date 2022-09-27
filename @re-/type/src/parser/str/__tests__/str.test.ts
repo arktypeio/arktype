@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { expressionExpectedMessage } from "../operand/common.js"
 import { unresolvableMessage } from "../operand/unenclosed.js"
+import { expressionExpectedMessage } from "../state/state.js"
 
 describe("str", () => {
     test("errors on empty string", () => {

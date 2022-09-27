@@ -1,7 +1,5 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
-import { isEmpty } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
-import type { ParseError } from "../../common.js"
 import { parseError } from "../../common.js"
 import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"
@@ -11,7 +9,6 @@ import type { UnpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
 import { unpairedLeftBoundMessage } from "../operator/unary/bound/right.js"
 import type { Left } from "./left.js"
 import { left } from "./left.js"
-import type { Scanner } from "./scanner.js"
 import { scanner } from "./scanner.js"
 
 export class parserState<constraints extends Partial<left> = {}> {
@@ -33,43 +30,54 @@ export class parserState<constraints extends Partial<left> = {}> {
         return ofClass ? this.l.root instanceof ofClass : !!this.l.root
     }
 
-    isPrefixable() {
-        return (
-            !this.l.lowerBound &&
-            isEmpty(this.l.branches) &&
-            !this.l.groups.length
-        )
-    }
-
-    isSuffixable(): this is parserState<left.suffixable> {
-        return !!this.l.nextSuffix
-    }
-
-    suffixed(token: Scanner.Suffix) {
-        this.l.nextSuffix = token
-        return this
-    }
-
     shifted() {
         this.r.shift()
         return this
     }
+
+    finalize() {
+        this.hasRoot()
+            ? !this.l.groups.length
+                ? !this.l.lowerBound
+                    ? mergeBranches(this)
+                    : this.error(unpairedLeftBoundMessage)
+                : this.error(unclosedGroupMessage)
+            : this.error(expressionExpectedMessage(""))
+        return this
+    }
 }
 
-export namespace parserState {
-    export type suffix<Constraints extends Partial<left.suffix> = {}> =
-        parserState<left.suffix<Constraints>>
+export namespace ParserState {
+    export type Finalize<
+        S extends ParserState,
+        IsOptional extends boolean
+    > = S["L"]["groups"] extends []
+        ? S["L"]["lowerBound"] extends undefined
+            ? From<{
+                  L: {
+                      lowerBound: undefined
+                      groups: []
+                      branches: {}
+                      root: WrapIfOptional<
+                          MergeBranches<S["L"]["branches"], S["L"]["root"]>,
+                          IsOptional
+                      >
+                      done: true
+                  }
+                  R: ""
+              }>
+            : ParserState.Error<UnpairedLeftBoundMessage>
+        : ParserState.Error<UnclosedGroupMessage>
+}
 
+type WrapIfOptional<Root, IsOptional extends boolean> = IsOptional extends true
+    ? [Root, "?"]
+    : Root
+
+export namespace parserState {
     export type withRoot<Root extends Base.node = Base.node> = parserState<
         left.withRoot<Root>
     >
-
-    export const finalize = (s: parserState.suffix) =>
-        !s.l.groups.length
-            ? !s.l.lowerBound
-                ? mergeBranches(s)
-                : s.error(unpairedLeftBoundMessage)
-            : s.error(unclosedGroupMessage)
 }
 
 export type ParserState<Constraints extends Partial<Left> = {}> = {
@@ -81,6 +89,15 @@ export namespace ParserState {
     export type New<Def extends string> = From<{
         L: Left.New
         R: Def
+    }>
+
+    export type SetRoot<
+        S extends ParserState,
+        Node,
+        ScanTo extends string = S["R"]
+    > = From<{
+        L: Left.SetRoot<S["L"], Node>
+        R: ScanTo
     }>
 
     export type Of<L extends Left> = {
@@ -97,7 +114,7 @@ export namespace ParserState {
 
     export type Error<Message extends string> = {
         L: Left.Error<Message>
-        R: ""
+        R: "END"
     }
 
     export type WithRoot<Root = {}> = Of<Left.WithRoot<Root>>
@@ -108,3 +125,15 @@ export namespace ParserState {
         }
     }
 }
+
+export type ExpressionExpectedMessage<Unscanned extends string> =
+    `Expected an expression${Unscanned extends ""
+        ? ""
+        : ` before '${Unscanned}'`}.`
+
+export const expressionExpectedMessage = <Unscanned extends string>(
+    unscanned: Unscanned
+) =>
+    `Expected an expression${
+        unscanned ? ` before '${unscanned}'` : ""
+    }.` as ExpressionExpectedMessage<Unscanned>

@@ -1,5 +1,6 @@
 import type { KeySet } from "@re-/tools"
 import { keySet } from "@re-/tools"
+import { comparatorChars } from "../operator/unary/bound/common.js"
 
 export class scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -25,7 +26,7 @@ export class scanner<Lookahead extends string = string> {
     ): string {
         let shifted = opts?.appendTo ?? ""
         while (!condition(this, shifted)) {
-            if (this.lookahead === "END") {
+            if (this.lookahead === "") {
                 return opts?.onInputEnd?.(this, shifted) ?? shifted
             }
             shifted += this.shift()
@@ -35,6 +36,10 @@ export class scanner<Lookahead extends string = string> {
             shifted += this.shift()
         }
         return shifted
+    }
+
+    shiftUntilNextTerminator() {
+        return this.shiftUntil(this.lookaheadIsTerminator)
     }
 
     get unscanned() {
@@ -50,6 +55,10 @@ export class scanner<Lookahead extends string = string> {
     ): this is scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens
     }
+
+    lookaheadIsTerminator() {
+        return this.lookahead in scanner.terminatingChars
+    }
 }
 
 export namespace scanner {
@@ -63,18 +72,15 @@ export namespace scanner {
         appendTo?: string
     }
 
-    // TODO: Can these be moved to Bounds somehow?
-    export const comparators = keySet({
-        "<": 1,
-        ">": 1,
-        "<=": 1,
-        ">=": 1,
-        "==": 1
-    })
-
-    export const suffixes = keySet({
-        END: 1,
-        "?": 1
+    export const terminatingChars = keySet({
+        ...comparatorChars,
+        "?": 1,
+        "|": 1,
+        "&": 1,
+        ")": 1,
+        "[": 1,
+        " ": 1,
+        "%": 1
     })
 }
 
@@ -103,34 +109,5 @@ export namespace Scanner {
         Unscanned
     ]
 
-    export type Comparator = keyof typeof scanner.comparators
-
-    export type Suffix = keyof typeof scanner.suffixes
-
-    export type OneCharSuffix = "?" | "%" | "<" | ">" | "END"
-
-    export type TwoCharSuffix = "<=" | ">=" | "=="
+    export type TerminatingChar = keyof typeof scanner.terminatingChars
 }
-
-export type InvalidSuffixMessage<
-    LastValidSuffixToken extends Scanner.Suffix,
-    Unscanned extends string,
-    ExpectedFollowingTokenDescription extends string = ""
-> = `Suffix ${LastValidSuffixToken} must be followed by${ExpectedFollowingTokenDescription extends ""
-    ? ""
-    : ` ${ExpectedFollowingTokenDescription} and`} zero or more additional suffix tokens (got '${Unscanned}').`
-
-export const invalidSuffixMessage = <
-    Token extends Scanner.Suffix,
-    Unscanned extends string,
-    ExpectedFollowingTokenDescription extends string
->(
-    lastValidSuffixToken: Token,
-    unscanned: Unscanned,
-    expectedFollowingTokenDescription?: ExpectedFollowingTokenDescription
-): InvalidSuffixMessage<Token, Unscanned, ExpectedFollowingTokenDescription> =>
-    `Suffix ${lastValidSuffixToken} must be followed by${
-        (expectedFollowingTokenDescription
-            ? ` ${expectedFollowingTokenDescription} and`
-            : "") as any
-    } zero or more additional suffix tokens (got '${unscanned}').`

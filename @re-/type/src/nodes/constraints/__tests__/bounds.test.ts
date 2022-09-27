@@ -75,6 +75,7 @@ describe("bound constraint", () => {
                     path: [],
                     context: {
                         comparator: `>=`,
+                        comparatorDescription: "at least",
                         limit: 3,
                         kind: `string`,
                         actual: 2,

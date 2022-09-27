@@ -1,4 +1,3 @@
-import type { Base } from "../../nodes/base.js"
 import type { parseFn, parserContext, ParserContext } from "../common.js"
 import type { ParseOperand } from "./operand/operand.js"
 import { parseOperand } from "./operand/operand.js"
@@ -15,17 +14,18 @@ export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
     Ctx
 >
 
-const loop = (s: parserState, ctx: parserContext): Base.node => {
-    while (!s.isSuffixable()) {
+// TODO: Recursion perf?
+const loop = (s: parserState, ctx: parserContext) => {
+    while (s.r.lookahead !== "END") {
         next(s, ctx)
     }
-    return suffixLoop(transitionToSuffix(s), ctx)
+    return s.l.root!
 }
 
 type Loop<
     S extends ParserState,
     Ctx extends ParserContext
-> = S["R"] extends "END" ? S["L"]["root"] : Loop<Next<S, Ctx>, Ctx>
+> = S["L"]["done"] extends true ? S["L"]["root"] : Loop<Next<S, Ctx>, Ctx>
 
 const next = (s: parserState, ctx: parserContext): parserState =>
     s.hasRoot() ? parseOperator(s, ctx) : parseOperand(s, ctx)

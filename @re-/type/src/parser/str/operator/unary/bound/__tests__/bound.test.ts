@@ -2,10 +2,10 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../../api.js"
 import { invalidDoubleBoundMessage } from "../common.js"
-import { nonPrefixLeftBoundMessage } from "../left.js"
 import { singleEqualsMessage } from "../parse.js"
 import { unboundableMessage, unpairedLeftBoundMessage } from "../right.js"
 
+//TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
@@ -68,12 +68,6 @@ describe("bound", () => {
             })
         })
         describe("errors", () => {
-            test("non-prefix left bound", () => {
-                // @ts-expect-error
-                assert(() => type("string|5<number")).throwsAndHasTypeError(
-                    nonPrefixLeftBoundMessage(5, "<")
-                )
-            })
             test("single equals", () => {
                 // @ts-expect-error
                 assert(() => type("string=5")).throwsAndHasTypeError(

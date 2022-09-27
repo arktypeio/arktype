@@ -1,5 +1,6 @@
 // TODO: Fix parser imports
 import type {
+    Comparator,
     DoubleBoundComparator,
     NormalizedLowerBoundComparator
 } from "../../parser/str/operator/unary/bound/common.js"
@@ -13,16 +14,12 @@ import type { NumberTypedKeyword } from "../terminals/keywords/number.js"
 import type { StringTypedKeyword } from "../terminals/keywords/string.js"
 import type { CheckState } from "../traverse/check/check.js"
 import type { Check } from "../traverse/exports.js"
-import type {
-    ConstrainedAst,
-    Constraint,
-    PossiblyConstrainedAst
-} from "./constraint.js"
+import type { Constraint, PossiblyConstrainedAst } from "./constraint.js"
 
 export namespace Bounds {
     export type Ast = Single | Double
 
-    export type Bound = [Scanner.Comparator, number]
+    export type Bound = [Comparator, number]
 
     export type Lower = [NormalizedLowerBoundComparator, number]
 
@@ -38,7 +35,6 @@ export namespace Bounds {
  *    2. A string-typed keyword terminal (e.g. "alphanumeric" in "100<alphanumeric")
  *    3. Any list node (e.g. "(string|number)[]" in "(string|number)[]>0")
  */
-
 export type BoundableAst = PossiblyConstrainedAst<
     NumberTypedKeyword | StringTypedKeyword | [unknown, "[]"]
 >
@@ -96,7 +92,7 @@ export class BoundConstraint implements Constraint {
 
     private addBoundError(
         state: CheckState<BoundableData>,
-        comparator: Scanner.Comparator,
+        comparator: Comparator,
         limit: number,
         actual: number
     ) {
@@ -114,6 +110,7 @@ export class BoundConstraint implements Constraint {
             },
             {
                 comparator,
+                comparatorDescription: comparatorToString[comparator],
                 limit,
                 kind,
                 actual,
@@ -125,7 +122,8 @@ export class BoundConstraint implements Constraint {
 }
 
 export type BoundDiagnostic = Check.DiagnosticConfig<{
-    comparator: Scanner.Comparator
+    comparator: Comparator
+    comparatorDescription: string
     data: BoundableData
     limit: number
     actual: number
@@ -133,7 +131,7 @@ export type BoundDiagnostic = Check.DiagnosticConfig<{
 }>
 
 export const boundToString = (
-    comparator: Scanner.Comparator,
+    comparator: Comparator,
     limit: number,
     kind: BoundKind
 ) =>
@@ -144,11 +142,7 @@ export const boundToString = (
 const isConstrained = (ast: unknown): ast is [unknown, ":", unknown[]] =>
     Array.isArray(ast) && ast[1] === ":"
 
-const isWithinBound = (
-    comparator: Scanner.Comparator,
-    limit: number,
-    size: number
-) => {
+const isWithinBound = (comparator: Comparator, limit: number, size: number) => {
     switch (comparator) {
         case "<=":
             return size <= limit

@@ -3,11 +3,16 @@ import { LiteralNode } from "../../../../../nodes/terminals/literal.js"
 import type { NumberLiteralDefinition } from "../../../../../nodes/terminals/literal.js"
 import type { Scanner } from "../../../state/scanner.js"
 import type { parserState, ParserState } from "../../../state/state.js"
-import type { ComparatorChar, SingleCharComparator } from "./common.js"
+import type {
+    Comparator,
+    ComparatorChar,
+    SingleCharComparator
+} from "./common.js"
 import { singleCharComparator } from "./common.js"
 import type { ReduceLeft } from "./left.js"
 import { reduceLeft } from "./left.js"
 import type { ParseRightBound } from "./right.js"
+import { parseRightBound } from "./right.js"
 
 export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
     reduceBound(s, shiftComparator(s, start))
@@ -15,7 +20,7 @@ export const parseBound = (s: parserState.withRoot, start: ComparatorChar) =>
 export const shiftComparator = (
     s: parserState.withRoot,
     start: ComparatorChar
-): Scanner.Comparator =>
+): Comparator =>
     s.r.lookaheadIs("=")
         ? `${start}${s.r.shift()}`
         : isKeyOf(start, singleCharComparator)
@@ -35,17 +40,14 @@ export type ParseBound<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
 type SingleEqualsMessage = typeof singleEqualsMessage
 
-export const reduceBound = (
-    s: parserState.withRoot,
-    token: Scanner.Comparator
-) =>
+export const reduceBound = (s: parserState.withRoot, token: Comparator) =>
     s.hasRoot(LiteralNode) && typeof s.l.root.value === "number"
         ? reduceLeft(s, token)
-        : s.suffixed(token)
+        : parseRightBound(s, token)
 
 export type DelegateBoundReduction<
     S extends ParserState,
-    Token extends Scanner.Comparator,
+    Token extends Comparator,
     Unscanned extends string
 > = S["L"]["root"] extends NumberLiteralDefinition<infer Value>
     ? ParserState.From<{ L: ReduceLeft<S["L"], Value, Token>; R: Unscanned }>

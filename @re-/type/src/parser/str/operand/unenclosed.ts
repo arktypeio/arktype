@@ -12,30 +12,28 @@ import type {
 import { LiteralNode } from "../../../nodes/terminals/literal.js"
 import type { ParserContext, parserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
-import type { scanner, Scanner } from "../state/scanner.js"
-import type { parserState, ParserState } from "../state/state.js"
+import type { Scanner } from "../state/scanner.js"
 import type {
-    BaseTerminatingChar,
-    ExpressionExpectedMessage
-} from "./common.js"
-import { baseTerminatingChars, expressionExpectedMessage } from "./common.js"
-
-const lookaheadIsBaseTerminating: scanner.UntilCondition = (scanner) =>
-    scanner.lookahead in baseTerminatingChars
+    ExpressionExpectedMessage,
+    ParserState,
+    parserState
+} from "../state/state.js"
+import { expressionExpectedMessage } from "../state/state.js"
 
 export const parseUnenclosedBase = (s: parserState, ctx: parserContext) => {
-    const token = s.r.shiftUntil(lookaheadIsBaseTerminating)
+    const token = s.r.shiftUntilNextTerminator()
     s.l.root = unenclosedToNode(s, token, ctx)
     return s
 }
 
+// TODO: Shift until?
 export type ParseUnenclosedBase<
     S extends ParserState,
     Fragment extends string,
     Unscanned extends string,
     Ctx extends ParserContext
 > = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
-    ? Lookahead extends BaseTerminatingChar
+    ? Lookahead extends Scanner.TerminatingChar
         ? ReduceUnenclosed<S["L"], Unscanned, Fragment, Ctx>
         : ParseUnenclosedBase<S, `${Fragment}${Lookahead}`, NextUnscanned, Ctx>
     : ReduceUnenclosed<S["L"], Unscanned, Fragment, Ctx>

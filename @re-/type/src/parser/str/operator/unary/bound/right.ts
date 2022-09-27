@@ -12,60 +12,46 @@ import type {
 } from "../../../../../nodes/constraints/bounds.js"
 import type { AddConstraints } from "../../../../../nodes/constraints/constraint.js"
 import type { NumberLiteralDefinition } from "../../../../../nodes/terminals/literal.js"
-import type { BaseTerminatingChar } from "../../../operand/common.js"
 import {
     isNumberLiteral,
     numberLiteralToValue
 } from "../../../operand/unenclosed.js"
 import type { Left, left } from "../../../state/left.js"
-import type { Scanner, scanner } from "../../../state/scanner.js"
-import { invalidSuffixMessage } from "../../../state/scanner.js"
+import type { Scanner } from "../../../state/scanner.js"
 import type { parserState, ParserState } from "../../../state/state.js"
-import type { InvalidDoubleBoundMessage } from "./common.js"
+import type { Comparator, InvalidDoubleBoundMessage } from "./common.js"
 import { doubleBoundComparators, invalidDoubleBoundMessage } from "./common.js"
 
-export const parseSuffixBound = (s: parserState, token: Scanner.Comparator) => {
-    const boundingValue = s.r.shiftUntil(untilPostBoundSuffix)
-    const nextSuffix = s.r.shift() as "?" | "END"
+export const parseRightBound = (s: parserState.withRoot, token: Comparator) => {
+    const boundingValue = s.r.shiftUntilNextTerminator()
     return isNumberLiteral(boundingValue)
-        ? reduceRightBound(
-              s,
-              [token, numberLiteralToValue(boundingValue)],
-              nextSuffix
-          )
-        : s.error(
-              invalidSuffixMessage(
-                  token,
-                  boundingValue + s.r.unscanned,
-                  "a number literal"
-              )
-          )
+        ? reduceRightBound(s, [token, numberLiteralToValue(boundingValue)])
+        : s.error(invalidLimitMessage(token, boundingValue + s.r.unscanned))
 }
 
 export type ParseRightBound<
     S extends ParserState,
-    Comparator extends Scanner.Comparator
-> = Scanner.ShiftUntil<S["R"], BaseTerminatingChar> extends Scanner.Shifted<
+    Token extends Comparator
+> = Scanner.ShiftUntil<S["R"], Scanner.TerminatingChar> extends Scanner.Shifted<
     infer Scanned,
     infer NextUnscanned
 >
     ? Scanned extends NumberLiteralDefinition<infer Value>
         ? ParserState.From<{
-              L: ReduceRightBound<S["L"], [Comparator, Value]>
+              L: ReduceRightBound<S["L"], [Token, Value]>
               R: NextUnscanned
           }>
-        : ParserState.Error<InvalidLimitMessage<Comparator, Scanned>>
+        : ParserState.Error<InvalidLimitMessage<Token, Scanned>>
     : never
 
 export const reduceRightBound = (
-    s: parserState<left.suffix>,
-    right: Bounds.Bound,
-    nextSuffix: Scanner.Suffix
+    s: parserState.withRoot,
+    right: Bounds.Bound
 ) =>
     hasBoundableRoot(s)
         ? hasLowerBound(s)
-            ? reduceDouble(s, right, nextSuffix)
-            : reduceSingle(s, right, nextSuffix)
+            ? reduceDouble(s, right)
+            : reduceSingle(s, right)
         : s.error(unboundableMessage(s.l.root.toString()))
 
 export type ReduceRightBound<
@@ -78,13 +64,12 @@ export type ReduceRightBound<
     : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
 
 const hasBoundableRoot = (
-    s: parserState<left.suffix>
-): s is parserState<left.suffix<{ root: BoundableNode }>> =>
-    isBoundable(s.l.root)
+    s: parserState<left.withRoot>
+): s is parserState<left.withRoot<BoundableNode>> => isBoundable(s.l.root)
 
 const hasLowerBound = (
-    s: parserState.suffix
-): s is parserState.suffix<{ lowerBound: Bounds.Lower }> => !!s.l.lowerBound
+    s: parserState
+): s is parserState<{ lowerBound: Bounds.Lower }> => !!s.l.lowerBound
 
 type ReduceDouble<
     L extends Left<{
@@ -103,18 +88,16 @@ type ReduceDouble<
 
 const reduceDouble = (
     s: parserState<
-        left.suffix<{
+        left<{
             root: BoundableNode
             lowerBound: Bounds.Lower
         }>
     >,
-    right: Bounds.Bound,
-    nextSuffix: Scanner.Suffix
+    right: Bounds.Bound
 ) => {
     if (isValidDoubleBoundRight(right)) {
         applyBound(s.l.root, new BoundConstraint([s.l.lowerBound, right]))
         s.l.lowerBound = undefined as any
-        s.l.nextSuffix = nextSuffix
         return s
     }
     return s.error(invalidDoubleBoundMessage(right[0]))
@@ -126,13 +109,11 @@ type ReduceSingle<
 > = Left.SetRoot<L, AddConstraints<L["root"], [Single]>>
 
 const reduceSingle = (
-    s: parserState.suffix<{ root: BoundableNode }>,
-    right: Bounds.Bound,
-    nextSuffix: Scanner.Suffix
+    s: parserState.withRoot<BoundableNode>,
+    right: Bounds.Bound
 ) => {
     applyBound(s.l.root, new BoundConstraint([right]))
     s.l.lowerBound = undefined
-    s.l.nextSuffix = nextSuffix
     return s
 }
 
@@ -152,18 +133,15 @@ export const unboundableMessage = <Root extends string>(
     `Bounded expression '${Root}' must be a number-or-string-typed keyword or an array-typed expression.`
 
 export type InvalidLimitMessage<
-    Comparator extends Scanner.Comparator,
-    Token extends string
-> = `Right bound ${Comparator} must be followed by a number literal (was '${Token}').`
+    Token extends Comparator,
+    Limit extends string
+> = `Right comparator ${Token} must be followed by a number literal (was '${Limit}').`
 
 export const invalidLimitMessage = <
-    Comparator extends Scanner.Comparator,
-    Token extends string
+    Token extends Comparator,
+    Limit extends string
 >(
-    comparator: Comparator,
-    token: Token
-): InvalidLimitMessage<Comparator, Token> =>
-    `Right bound ${comparator} must be followed by a number literal (was '${token}').`
-
-const untilPostBoundSuffix: scanner.UntilCondition = (scanner) =>
-    scanner.lookahead === "?"
+    token: Token,
+    limit: Limit
+): InvalidLimitMessage<Token, Limit> =>
+    `Right comparator ${token} must be followed by a number literal (was '${limit}').`

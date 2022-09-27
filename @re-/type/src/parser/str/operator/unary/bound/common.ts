@@ -1,5 +1,14 @@
 import { keySet } from "@re-/tools"
-import type { Scanner } from "../../../state/scanner.js"
+
+export const comparators = keySet({
+    "<": 1,
+    ">": 1,
+    "<=": 1,
+    ">=": 1,
+    "==": 1
+})
+
+export type Comparator = keyof typeof comparators
 
 export const comparatorChars = keySet({
     "<": 1,
@@ -34,7 +43,7 @@ export const invertedComparators = {
 
 export type InvertedComparators = typeof invertedComparators
 
-export const comparatorToString: Record<Scanner.Comparator, string> = {
+export const comparatorToString: Record<Comparator, string> = {
     "<": "less than",
     ">": "greater than",
     "<=": "at most",
@@ -49,10 +58,10 @@ export const singleCharComparator = keySet({
 
 export type SingleCharComparator = keyof typeof singleCharComparator
 
-export type InvalidDoubleBoundMessage<Token extends Scanner.Comparator> =
+export type InvalidDoubleBoundMessage<Token extends Comparator> =
     `Double-bound expressions must specify their bounds using < or <= (was ${Token}).`
 
-export const invalidDoubleBoundMessage = <Token extends Scanner.Comparator>(
-    T: Token
+export const invalidDoubleBoundMessage = <Token extends Comparator>(
+    token: Token
 ): InvalidDoubleBoundMessage<Token> =>
-    `Double-bound expressions must specify their bounds using < or <= (was ${T}).`
+    `Double-bound expressions must specify their bounds using < or <= (was ${token}).`

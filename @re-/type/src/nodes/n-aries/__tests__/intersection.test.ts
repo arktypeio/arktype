@@ -3,6 +3,11 @@ import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 
 describe("intersection node", () => {
+    test("infer", () => {
+        assert(type("boolean&true").infer).typed as true
+        assert(type("number&1&unknown").infer).typed as 1
+        assert(type("true&false").infer).typed as never
+    })
     describe("check", () => {
         test("two types", () => {
             const numberInteger = type("number&integer")

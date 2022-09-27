@@ -1,8 +1,10 @@
 import type { ParserContext, parserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
-import type { ParserState, parserState } from "../state/state.js"
-import type { ExpressionExpectedMessage } from "./common.js"
-import { expressionExpectedMessage } from "./common.js"
+import type {
+    ExpressionExpectedMessage,
+    ParserState,
+    parserState
+} from "../state/state.js"
 import type { EnclosedBaseStartChar, ParseEnclosedBase } from "./enclosed.js"
 import { enclosedBaseStartChars, parseEnclosedBase } from "./enclosed.js"
 import type { ReduceGroupOpen } from "./groupOpen.js"
@@ -20,8 +22,6 @@ export const parseOperand = (
         ? parseEnclosedBase(s, s.r.shift(), context)
         : s.r.lookahead === " "
         ? parseOperand(s.shifted(), context)
-        : s.r.lookahead === "END"
-        ? s.error(expressionExpectedMessage(""))
         : parseUnenclosedBase(s, context)
 
 export type ParseOperand<

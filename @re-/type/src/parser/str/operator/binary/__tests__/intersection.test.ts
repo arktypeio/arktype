@@ -1,16 +1,11 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../api.js"
-import { expressionExpectedMessage } from "../../../operand/common.js"
 import { unresolvableMessage } from "../../../operand/unenclosed.js"
+import { expressionExpectedMessage } from "../../../state/state.js"
 
 describe("intersection", () => {
     describe("parse", () => {
-        test("inference", () => {
-            assert(type("boolean&true").infer).typed as true
-            assert(type("number&1&unknown").infer).typed as 1
-            assert(type("true&false").infer).typed as never
-        })
         test("two types", () => {
             const booleanAndTrue = type("boolean&true")
             assert(booleanAndTrue.ast).narrowedValue(["boolean", "&", "true"])

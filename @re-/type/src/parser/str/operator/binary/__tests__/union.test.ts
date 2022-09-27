@@ -1,21 +1,26 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../api.js"
-import { expressionExpectedMessage } from "../../../operand/common.js"
 import { unresolvableMessage } from "../../../operand/unenclosed.js"
+import { expressionExpectedMessage } from "../../../state/state.js"
 
 describe("union", () => {
-    describe("type", () => {
+    describe("infer", () => {
         test("two types", () => {
-            assert(type("number|string").infer).typed as string | number
+            assert(type("number|string").ast).narrowedValue([
+                "number",
+                "|",
+                "string"
+            ])
         })
         test("several types", () => {
-            assert(type("false|null|undefined|0|''").infer).typed as
-                | 0
-                | false
-                | ""
-                | null
-                | undefined
+            assert(type("false|null|undefined|0|''").ast).narrowedValue([
+                [
+                    [[["false", "|", "null"], "|", "undefined"], "|", "0"],
+                    "|",
+                    "''"
+                ]
+            ])
         })
         describe("errors", () => {
             test("bad reference", () => {
