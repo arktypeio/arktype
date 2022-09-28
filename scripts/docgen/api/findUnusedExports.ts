@@ -2,7 +2,6 @@ import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
 import type { ExportedDeclarations, Node, SourceFile, ts } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
-import type { PackageJson } from "type-fest"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 
@@ -195,7 +194,7 @@ export const getPublicApiExports = (project: Project): ApiExports[] => {
         if (!existsSync(packageRoot)) {
             throw new Error(`${packageRoot} does not exist.`)
         }
-        const packageJsonData: PackageJson = readPackageJson(packageRoot)
+        const packageJsonData = readPackageJson(packageRoot)
         const entryPoints = getEntryPointsToRelativeDtsPaths(packageJsonData)
         const pathToSourceFile = join(packageRoot, ...entryPoints[0])
         const sourceFile = project.addSourceFileAtPath(pathToSourceFile)

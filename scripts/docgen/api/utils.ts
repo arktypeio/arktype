@@ -1,9 +1,7 @@
-import type { PackageJson } from "type-fest"
-
 export type EntryPointPathEntry = [string, string]
 
 export const getEntryPointsToRelativeDtsPaths = (
-    packageJson: PackageJson
+    packageJson: Record<string, unknown>
 ): EntryPointPathEntry[] => {
     if (!packageJson.exports) {
         throw new Error(
@@ -21,8 +19,8 @@ export const getEntryPointsToRelativeDtsPaths = (
 }
 
 const hasTypesExport = (
-    conditions: PackageJson.Exports
-): conditions is { types: string } =>
-    typeof conditions === "object" &&
-    conditions !== null &&
-    "types" in conditions
+    exportConditions: Record<string, unknown>
+): exportConditions is { types: string } =>
+    typeof exportConditions === "object" &&
+    exportConditions !== null &&
+    "types" in exportConditions

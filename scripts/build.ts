@@ -7,17 +7,18 @@ import {
     shell,
     writeJson
 } from "../@re-/node/src/index.js"
-import {
+import { getPackageDataFromCwd, isProd } from "./common.js"
+
+const {
     cjsOut,
     inFiles,
-    isProd,
     mjsOut,
     outRoot,
     packageName,
     packageRoot,
     tsConfig,
     typesOut
-} from "./common.js"
+} = getPackageDataFromCwd()
 
 const successMessage = `🎁 Successfully built ${packageName}!`
 
@@ -77,7 +78,7 @@ const swc = ({ outDir, moduleType }: SwcOptions) => {
     if (moduleType) {
         cmd += `-C module.type=${moduleType} `
     }
-    if (!isProd) {
+    if (!isProd()) {
         cmd += `--source-maps inline `
     }
     cmd += inFiles.join(" ")

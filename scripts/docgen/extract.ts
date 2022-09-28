@@ -1,6 +1,5 @@
 import { join } from "node:path"
 import { Project } from "ts-morph"
-import type { PackageJson } from "type-fest"
 import type { ApiEntryPoint } from "./api/index.js"
 import { extractPackageApi } from "./api/index.js"
 import type { DocGenConfig, DocGenPackageConfig } from "./config.js"
@@ -20,7 +19,7 @@ export type PackageMetadata = {
     name: string
     version: string
     rootDir: string
-    packageJsonData: PackageJson
+    packageJsonData: Record<string, unknown>
 }
 
 export const extractRepo = (config: DocGenConfig): PackageExtractionData[] => {
@@ -38,7 +37,7 @@ export const extractPackage = (
     packageConfig: DocGenPackageConfig
 ): PackageExtractionData => {
     const rootDir = join(REPO_ROOT, packageConfig.path)
-    const packageJsonData: PackageJson = readPackageJson(rootDir)
+    const packageJsonData = readPackageJson(rootDir)
     const packageMetadata: PackageMetadata = {
         name: packageJsonData.name!,
         version: packageJsonData.version!,

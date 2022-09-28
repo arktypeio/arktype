@@ -4,4 +4,5 @@ scopes:
     - type
     - node
     - tools
+    - plugin
     - redo.dev

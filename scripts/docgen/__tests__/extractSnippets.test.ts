@@ -1,7 +1,6 @@
 import { relative } from "node:path"
 import { describe, test } from "mocha"
 import { Project } from "ts-morph"
-import type { PackageJson } from "type-fest"
 import type { DocGenSnippetExtractionConfig } from "../config.js"
 import type { PackageMetadata } from "../extract.js"
 import { extractPackageSnippets } from "../snippets/extractSnippets.js"
@@ -9,7 +8,7 @@ import { assert } from "@re-/assert"
 import { fromHere, fromPackageRoot, readPackageJson } from "@re-/node"
 
 const repoRoot = fromPackageRoot()
-const packageJsonData: PackageJson = readPackageJson(repoRoot)
+const packageJsonData = readPackageJson(repoRoot)
 const testFilesFolder = fromHere("testFiles")
 const testFile = fromHere("testFile.md")
 const sources: DocGenSnippetExtractionConfig[] = [

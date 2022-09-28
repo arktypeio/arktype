@@ -7,7 +7,6 @@ import type {
     SourceFile
 } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import type { PackageJson } from "type-fest"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 export type ApiEntryPoint = {
@@ -17,7 +16,7 @@ export type ApiEntryPoint = {
 
 export type ExtractPackageApiContext = {
     project: Project
-    packageJson: PackageJson
+    packageJson: Record<string, unknown>
     rootDir: string
 }
 
