@@ -140,7 +140,7 @@ export type IsResolvableIdentifier<
     Ctx extends ParserContext
 > = Token extends KeywordDefinition
     ? true
-    : Token extends keyof Ctx["Aliases"]
+    : Token extends keyof Ctx["aliases"]
     ? true
     : false
 

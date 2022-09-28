@@ -12,7 +12,7 @@ export type InferTuple<Ast extends readonly unknown[], Space> = Evaluate<{
 
 export class TupleNode extends struct<number> {
     typecheck(state: Check.CheckState) {
-        if (!checkObjectRoot(this.toIsomorphicDef, "array", state)) {
+        if (!checkObjectRoot(this.toIsomorphicDef(), "array", state)) {
             return
         }
         const expectedLength = this.entries.length
@@ -53,7 +53,7 @@ export class TupleNode extends struct<number> {
             "tupleLength",
             {
                 reason: `Length must be ${expected}`,
-                state: state
+                state
             },
             {
                 definition: this.toIsomorphicDef,

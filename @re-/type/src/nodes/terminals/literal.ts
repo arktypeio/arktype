@@ -1,4 +1,3 @@
-import type { Base } from "../base.js"
 import { Check } from "../traverse/exports.js"
 import { TerminalNode } from "./terminal.js"
 
@@ -24,21 +23,21 @@ export type PrimitiveLiteralValue = string | number | bigint | boolean
 export class LiteralNode<
     Value extends PrimitiveLiteralValue
 > extends TerminalNode<LiteralDefinition> {
-    constructor(typeDef: LiteralDefinition, public defValue: Value) {
-        super(typeDef)
+    constructor(def: LiteralDefinition, public value: Value) {
+        super(def)
     }
 
     check(state: Check.CheckState) {
-        if (state.data !== this.defValue) {
+        if (state.data !== this.value) {
             state.errors.add(
                 "literal",
                 {
-                    reason: `Must be ${this.typeDef}`,
+                    reason: `Must be ${this.def}`,
                     state
                 },
                 {
-                    definition: this.typeDef,
-                    expected: this.defValue,
+                    definition: this.toIsomorphicDef(),
+                    expected: this.value,
                     actual: Check.stringifyData(state.data),
                     data: state.data
                 }
@@ -47,7 +46,7 @@ export class LiteralNode<
     }
 
     generate() {
-        return this.defValue
+        return this.value
     }
 }
 

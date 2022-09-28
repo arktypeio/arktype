@@ -1,9 +1,8 @@
-import type { StringSubtypeDefinition } from "../../terminals/keywords/string.js"
 import type { Check } from "../../traverse/exports.js"
-import type { BaseCondition } from "./constraint.js"
+import type { Narrowing } from "./narrowing.js"
 
 export namespace Regex {
-    export class Condition implements BaseCondition {
+    export class Condition implements Narrowing.Condition {
         constructor(
             private expression: RegExp,
             private definition: StringSubtypeDefinition,

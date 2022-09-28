@@ -1,7 +1,7 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { RootNode } from "../common.js"
-import { OptionalNode } from "../nonTerminals/optional.js"
+import { OptionalNode } from "../nonTerminal/unary/optional.js"
 import type { Check, Generate } from "../traverse/exports.js"
 import { checkObjectRoot, struct } from "./struct.js"
 
@@ -21,8 +21,8 @@ export type InferDictionary<
 >
 
 export class DictionaryNode extends struct<string> {
-    typecheck(state: Check.CheckState) {
-        if (!checkObjectRoot(this.typeStr(), "object", state)) {
+    check(state: Check.CheckState) {
+        if (!checkObjectRoot(this.toString(), "object", state)) {
             return
         }
         const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)

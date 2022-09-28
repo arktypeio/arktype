@@ -1,5 +1,4 @@
 import type { NodeToString } from "../../../../nodes/common.js"
-import type { NumberTypedKeyword } from "../../../../nodes/terminals/keywords/number.js"
 import { NumberNode } from "../../../../nodes/terminals/keywords/number.js"
 import type { NumberLiteralDefinition } from "../../../../nodes/terminals/literal.js"
 import { throwParseError } from "../../../../parser/common.js"
@@ -14,7 +13,8 @@ export type ParseModulo<
     Unscanned extends string
 > = S extends {
     L: {
-        root: NumberTypedKeyword
+        // TODO: Actually by type
+        root: "number" | "integer"
     }
 }
     ? Scanner.ShiftUntil<

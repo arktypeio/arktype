@@ -19,7 +19,7 @@ const applyLeftBound = (
     s: parserState.withRoot<LiteralNode<number>>,
     token: DoubleBoundComparator
 ) => {
-    s.l.lowerBound = [invertedComparators[token], s.l.root.defValue]
+    s.l.lowerBound = [invertedComparators[token], s.l.root.value]
     s.l.root = undefined as any
     return s
 }

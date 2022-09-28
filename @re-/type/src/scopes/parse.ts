@@ -11,19 +11,19 @@ import type { Root } from "../parser/root.js"
 import type { Str } from "../parser/str/str.js"
 
 export type ParseSpace<Aliases> = {
-    [Name in keyof Aliases]: Root.Parse<Aliases[Name], { Aliases: Aliases }>
+    [Name in keyof Aliases]: Root.Parse<Aliases[Name], { aliases: Aliases }>
 }
 
 export type ValidateStringResolution<
-    Name extends keyof Ctx["Aliases"],
+    Name extends keyof Ctx["aliases"],
     Ctx extends ParserContext
 > = IfShallowCycleErrorElse<
     CheckResolutionForShallowCycle<
-        Ctx["Aliases"][Name],
-        Ctx["Aliases"],
+        Ctx["aliases"][Name],
+        Ctx["aliases"],
         [Extract<Name, string>]
     >,
-    Str.Validate<Extract<Ctx["Aliases"][Name], string>, Ctx>
+    Str.Validate<Extract<Ctx["aliases"][Name], string>, Ctx>
 >
 
 export const shallowCycleMessage = <Seen extends string[]>(

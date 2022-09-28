@@ -4,7 +4,7 @@ import type { SpaceRoot } from "../scopes/space.js"
 import type { InternalTypeOptions, TypeOptions } from "../scopes/type.js"
 
 export type ParserContext = {
-    Aliases: unknown
+    aliases: unknown
 }
 
 export type parserContext = TypeOptions & {
@@ -44,8 +44,6 @@ export const metaTokens = keySet({
     "&": 1,
     ":": 1
 })
-
-export type UnaryToken = "?" | "[]" | TypelessToken
 
 export type BinaryToken = BranchingToken | "=>"
 

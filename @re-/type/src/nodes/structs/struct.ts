@@ -11,37 +11,35 @@ import type { Check, References } from "../traverse/exports.js"
 
 type StructKey = string | number
 
-export type StructConstructorArgs<KeyType extends StructKey> = [
-    entries: [KeyType, Base.node][],
-    context: Base.context
-]
+export type StructEntries<KeyType extends StructKey> = [KeyType, Base.node][]
 
-export abstract class struct<KeyType extends StructKey> extends Base.node<
-    KeyType extends number ? unknown[] : Record<string, unknown>
-> {
-    entries: [KeyType, Base.node][]
+export abstract class struct<KeyType extends StructKey> extends Base.node {
+    constructor(public entries: StructEntries<KeyType>) {
+        super()
+    }
 
-    constructor(...[entries, context]: StructConstructorArgs<KeyType>) {
-        const definition = transform(entries, ([, [k, child]]) => [
+    toIsomorphicDef() {
+        return transform(this.entries, ([, [k, child]]) => [
             k,
             child.toIsomorphicDef
         ])
-        const ast = transform(entries, ([, [k, child]]) => [k, child.ast])
-        super(definition, ast, context)
-        this.entries = entries
     }
 
-    typeStr() {
+    toAst() {
+        return transform(this.entries, ([, [k, child]]) => [k, child.toAst()])
+    }
+
+    toString() {
         const isArray = Array.isArray(this.toIsomorphicDef)
-        const indentation = "    ".repeat(this.ctx.path.length)
         const nestedIndentation = indentation + "    "
+        const indentation = "    ".repeat(this.ctx.path.length)
         let result = isArray ? "[" : "{"
         for (let i = 0; i < this.entries.length; i++) {
             result += "\n" + nestedIndentation
             if (!isArray) {
                 result += this.entries[i][0] + ": "
             }
-            result += this.entries[i][1].typeStr()
+            result += this.entries[i][1].toString()
             if (i !== this.entries.length - 1) {
                 result += ","
             } else {
@@ -90,7 +88,7 @@ export const checkObjectRoot = <ExpectedStructure extends ObjectKind>(
 }
 
 export type StructureDiagnostic = Check.DiagnosticConfig<{
-    definition: Base.UnknownDefinition
+    definition: string
     data: unknown
     expected: ObjectKind
     actual: NormalizedJsTypeName

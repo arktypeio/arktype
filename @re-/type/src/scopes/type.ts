@@ -35,7 +35,7 @@ const lazyTypeFn: DynamicTypeFn = (def, opts) => {
 export type InferredTypeFn<Space extends ResolvedSpace> = <
     Definition,
     Ast = Root.Parse<Definition, Space>,
-    Inferred = RootNode.Infer<Ast, Space["Resolutions"]>
+    Inferred = RootNode.Infer<Ast, Space["resolutions"]>
 >(
     definition: Root.Validate<Definition, Ast>,
     options?: TypeOptions<Inferred>
@@ -100,7 +100,7 @@ export class TypeRoot implements DynamicTypeRoot {
     }
 
     get ast() {
-        return this.root.ast as any
+        return this.root.toAst()
     }
 
     check(data: unknown) {
@@ -110,7 +110,7 @@ export class TypeRoot implements DynamicTypeRoot {
             ? {
                   errors: state.errors
               }
-            : { data: data }
+            : { data }
     }
 
     assert(data: unknown) {

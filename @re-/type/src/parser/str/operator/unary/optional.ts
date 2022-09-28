@@ -1,18 +1,17 @@
-import { OptionalNode } from "../../../../nodes/unaries/optional.js"
-import type { parserContext } from "../../../common.js"
+import { OptionalNode } from "../../../../nodes/nonTerminal/unary/optional.js"
 import type { parserState, ParserState } from "../../state/state.js"
 
-export const finalizeOptional = (s: parserState.withRoot, ctx: parserContext) =>
+export const finalizeOptional = (s: parserState.withRoot) =>
     s.r.lookahead === "END"
-        ? reduceOptional(s.finalize(), ctx)
+        ? reduceOptional(s.finalize())
         : s.error(nonTerminatingOptionalMessage)
 
 export type FinalizeOptional<S extends ParserState> = S["R"] extends "?"
     ? ParserState.Finalize<S, true>
     : ParserState.Error<NonTerminatingOptionalMessage>
 
-export const reduceOptional = (s: parserState.withRoot, ctx: parserContext) => {
-    s.l.root = new OptionalNode(s.l.root, ctx)
+export const reduceOptional = (s: parserState.withRoot) => {
+    s.l.root = new OptionalNode(s.l.root)
     return s
 }
 

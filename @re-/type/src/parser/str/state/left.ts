@@ -1,5 +1,5 @@
 import type { Base } from "../../../nodes/base.js"
-import type { Bounds } from "../../../nodes/nonTerminals/constraint/bounds.js"
+import type { Bounds } from "../../../nodes/nonTerminal/narrowing/bounds.js"
 import type { ParseError } from "../../common.js"
 import type { Branches, branches } from "../operator/binary/branch.js"
 

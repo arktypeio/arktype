@@ -2,10 +2,10 @@ import type { Evaluate } from "@re-/tools"
 import { uncapitalize } from "@re-/tools"
 import type { Path } from "../../common.js"
 import { pathToString } from "../../common.js"
-import type { Bounds } from "../../nonTerminals/constraint/bounds.js"
-import type { Divisibility } from "../../nonTerminals/constraint/divisibility.js"
-import type { Regex } from "../../nonTerminals/constraint/regex.js"
-import type { UnionDiagnostic } from "../../nonTerminals/union.js"
+import type { Bounds } from "../../nonTerminal/narrowing/bounds.js"
+import type { Divisibility } from "../../nonTerminal/narrowing/divisibility.js"
+import type { Regex } from "../../nonTerminal/narrowing/regex.js"
+import type { UnionDiagnostic } from "../../nonTerminal/nary/union.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic

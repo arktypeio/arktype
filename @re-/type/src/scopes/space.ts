@@ -13,10 +13,10 @@ import type {
     TypeOptions
 } from "./type.js"
 
-type TypedSpaceFn = <Aliases, Ast = ParseSpace<Aliases>>(
-    aliases: Root.Validate<Aliases, Ast>,
+type TypedSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
+    aliases: Root.Validate<Aliases, Resolutions>,
     options?: TypeOptions
-) => SpaceOutput<{ Aliases: Aliases; Resolutions: Ast }>
+) => SpaceOutput<{ aliases: Aliases; resolutions: Resolutions }>
 
 type DynamicSpaceFn = <Aliases extends Dictionary>(
     aliases: Aliases,
@@ -33,8 +33,8 @@ export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
 }
 
 export type DynamicSpaceRoot = SpaceRootFrom<{
-    Aliases: Dictionary
-    Resolutions: Dictionary
+    aliases: Dictionary
+    resolutions: Dictionary
 }>
 
 const rawSpace = (aliases: Dictionary, opts: SpaceOptions = {}) => {
@@ -83,23 +83,23 @@ export class SpaceRoot implements DynamicSpaceRoot {
     }
 
     get ast() {
-        return mapValues(this.resolutions, (resolution) => resolution.ast)
+        return mapValues(this.resolutions, (resolution) => resolution.toAst())
     }
 }
 
 export type ResolvedSpace = {
-    Aliases: unknown
-    Resolutions: unknown
+    aliases: unknown
+    resolutions: unknown
 }
 
 export namespace ResolvedSpace {
     export type From<S extends ResolvedSpace> = S
 
-    export type Empty = From<{ Aliases: {}; Resolutions: {} }>
+    export type Empty = From<{ aliases: {}; resolutions: {} }>
 }
 
 export type SpaceOutput<Space extends ResolvedSpace> = Evaluate<
-    SpaceTypeRoots<Space["Resolutions"]> & {
+    SpaceTypeRoots<Space["resolutions"]> & {
         $root: SpaceRootFrom<Space>
     }
 >
@@ -107,9 +107,9 @@ export type SpaceOutput<Space extends ResolvedSpace> = Evaluate<
 export type SpaceOptions = TypeOptions
 
 export type SpaceRootFrom<Space extends ResolvedSpace> = Evaluate<{
-    infer: InferSpaceRoot<Space["Resolutions"]>
-    aliases: Space["Resolutions"]
-    ast: Space["Resolutions"]
+    infer: InferSpaceRoot<Space["resolutions"]>
+    aliases: Space["resolutions"]
+    ast: Space["resolutions"]
     type: InferredTypeFn<Space>
     // extend: ExtendFn<S>
     options: SpaceOptions
