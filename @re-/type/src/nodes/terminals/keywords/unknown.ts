@@ -2,7 +2,7 @@ import { TerminalNode } from "../terminal.js"
 
 export class UnknownNode extends TerminalNode {
     // Allows all data
-    typecheck() {}
+    check() {}
 
     generate(): unknown {
         return undefined

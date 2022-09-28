@@ -3,34 +3,31 @@ import type { Check } from "../../traverse/exports.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
-export class StringNode extends TerminalNode<
-    StringTypedDefinition,
-    { bound: true; regex: true }
-> {
-    constructor(typeDef: StringTypedDefinition) {
-        super(typeDef)
-        if (this.typeDef === "string") {
+export class StringNode extends TerminalNode<StringTypedDefinition> {
+    constructor(protected def: StringTypedDefinition) {
+        super(def)
+        if (this.def === "string") {
             return
         }
         if (this.typeDefIsKeyOf(stringSubtypes)) {
-            this.constraints.regex = stringSubtypes[this.typeDef]
+            this.constraints.regex = stringSubtypes[this.def]
         } else {
             this.constraints.regex = new RegexConstraint(
-                new RegExp(this.typeDef.slice(1, -1)),
-                this.typeDef,
-                `Must match expression ${this.typeDef}`
+                new RegExp(this.def.slice(1, -1)),
+                this.def,
+                `Must match expression ${this.def}`
             )
         }
     }
 
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         if (!state.dataIsOfType("string")) {
-            if (this.typeDef === "string") {
+            if (this.def === "string") {
                 addTypeKeywordDiagnostic(state, "string", "Must be a string")
             } else {
                 addTypeKeywordDiagnostic(
                     state,
-                    this.typeDef,
+                    this.def,
                     "Must be a string",
                     "string"
                 )

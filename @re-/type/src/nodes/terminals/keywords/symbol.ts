@@ -3,7 +3,7 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class SymbolNode extends TerminalNode {
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         if (typeof state.data !== "symbol") {
             addTypeKeywordDiagnostic(state, "symbol", "Must be a symbol")
         }

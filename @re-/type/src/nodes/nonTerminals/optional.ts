@@ -4,7 +4,7 @@ import { UnaryNode } from "./unary.js"
 export class OptionalNode extends UnaryNode<"?"> {
     readonly token = "?"
 
-    protected typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         if (state.data === undefined) {
             return
         }

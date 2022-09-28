@@ -28,7 +28,7 @@ export class LiteralNode<
         super(typeDef)
     }
 
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         if (state.data !== this.defValue) {
             state.errors.add(
                 "literal",

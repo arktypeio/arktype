@@ -1,11 +1,5 @@
-import type { Get, KeySet } from "@re-/tools"
+import type { KeySet } from "@re-/tools"
 import type { parserContext } from "../parser/common.js"
-import type {
-    Constraint,
-    ConstraintKinds,
-    ConstraintName,
-    ConstraintToggles
-} from "./constraints/constraint.js"
 import type { Check, References } from "./traverse/exports.js"
 import type { TraversalState } from "./traverse/traverse.js"
 
@@ -18,15 +12,10 @@ export namespace Base {
 
     export type UnknownAst = string | number | object
 
-    export abstract class node<
-        AllowConstraints extends ConstraintToggles = {}
-    > {
+    export abstract class node {
         input?: Input
-        constraints: {
-            [K in keyof AllowConstraints]?: Get<ConstraintKinds, K>
-        } = {}
 
-        protected abstract typecheck(state: Check.CheckState): void
+        abstract check(state: Check.CheckState): void
         abstract generate(state: TraversalState): unknown
         /** Mutates collected by adding references as keys */
         abstract collectReferences(
@@ -34,38 +23,9 @@ export namespace Base {
             collected: KeySet
         ): void
 
-        protected abstract get ast(): UnknownAst
-        protected abstract get typeStr(): string
-        protected abstract get def(): UnknownDefinition
-
-        check(state: Check.CheckState) {
-            this.typecheck(state)
-            // Add constraints
-        }
-
-        astChildren() {}
-
-        childrenToString()
-
-        // get nextAst() {
-        //     // Add constraints
-        //     //return this.typeAst
-        // }
-
-        // get ast() {
-        //     // Add constraints
-        //     return this.typeAst
-        // }
-
-        // get def() {
-        //     // Add constraints
-        //     return this.typeDef
-        // }
-
-        // toString() {
-        //     // Add constraints
-        //     return this.typeStr
-        // }
+        abstract toAst(): UnknownAst
+        abstract toIsomorphicDef(): UnknownDefinition
+        abstract toString(): string
 
         references(opts: References.ReferencesOptions): string[] {
             const collected = {}

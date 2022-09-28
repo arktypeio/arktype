@@ -19,15 +19,15 @@ export abstract class BranchingNode<
         this.children.push(node)
     }
 
-    protected typeAst() {
-        let ast = this.children[0].ast
+    toAst() {
+        let ast = this.children[0].toAst()
         for (let i = 1; i < this.children.length; i++) {
-            ast = [ast, this.token, this.children[i].ast]
+            ast = [ast, this.token, this.children[i].toAst()]
         }
         return ast as BinaryAst<Token>
     }
 
-    protected typeStr() {
+    toString() {
         let result = this.children[0].toString()
         for (let i = 1; i < this.children.length; i++) {
             result += this.token + this.children[i].toString()
@@ -35,22 +35,22 @@ export abstract class BranchingNode<
         return result
     }
 
-    protected typeDef() {
+    toIsomorphicDef() {
         let stringifiable = true
-        const childDefs = this.children.map((child) => {
-            const def = child.def
+        const isomorphizedChildren = this.children.map((child) => {
+            const def = child.toIsomorphicDef()
             if (typeof def !== "string") {
                 stringifiable = false
             }
             return def
         })
         if (stringifiable) {
-            return childDefs.join(this.token)
+            return isomorphizedChildren.join(this.token)
         }
-        let binaryDef = childDefs[0]
-        for (let i = 1; i < childDefs.length; i++) {
-            binaryDef = [binaryDef, this.token, childDefs]
+        let root = isomorphizedChildren[0]
+        for (let i = 1; i < isomorphizedChildren.length; i++) {
+            root = [root, this.token, isomorphizedChildren]
         }
-        return binaryDef
+        return root
     }
 }

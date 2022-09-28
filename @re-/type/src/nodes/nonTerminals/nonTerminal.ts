@@ -1,13 +1,11 @@
 import type { KeySet } from "@re-/tools"
 import type { MetaToken } from "../../parser/common.js"
 import { Base } from "../base.js"
-import type { ConstraintToggles } from "../constraints/constraint.js"
 import type { References } from "../traverse/exports.js"
 
 export abstract class NonTerminalNode<
-    Token extends MetaToken,
-    Constraints extends ConstraintToggles = {}
-> extends Base.node<Constraints> {
+    Token extends MetaToken
+> extends Base.node {
     // TODO: Change token organization
     abstract token: Token
     constructor(protected children: Base.node[]) {
@@ -20,9 +18,5 @@ export abstract class NonTerminalNode<
         }
     }
 
-    protected abstract get typeAst(): readonly [
-        Base.UnknownAst,
-        Token,
-        ...Base.UnknownAst[]
-    ]
+    abstract toAst(): readonly [Base.UnknownAst, Token, ...Base.UnknownAst[]]
 }

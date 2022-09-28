@@ -2,13 +2,10 @@ import type { Check } from "../../traverse/exports.js"
 import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
-export class NumberNode extends TerminalNode<
-    NumberTypedKeyword,
-    { bound: true; regex: true }
-> {
-    typecheck(state: Check.CheckState) {
+export class NumberNode extends TerminalNode<NumberTypedKeyword> {
+    check(state: Check.CheckState) {
         if (!state.dataIsOfType("number")) {
-            if (this.typeDef === "number") {
+            if (this.def === "number") {
                 addTypeKeywordDiagnostic(state, "number", "Must be a number")
             } else {
                 addTypeKeywordDiagnostic(
@@ -20,7 +17,7 @@ export class NumberNode extends TerminalNode<
             }
             return
         }
-        if (this.typeDef === "integer" && !Number.isInteger(state.data)) {
+        if (this.def === "integer" && !Number.isInteger(state.data)) {
             state.errors.add(
                 "numberSubtype",
                 { reason: "Must be an integer", state: state },

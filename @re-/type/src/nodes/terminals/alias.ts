@@ -3,10 +3,10 @@ import { TerminalNode } from "./terminal.js"
 
 export class Alias extends TerminalNode {
     get resolution() {
-        return this.ctx.space!.resolutions[this.def]
+        return this.ctx.space!.resolutions[this.toIsomorphicDef]
     }
 
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         return this.resolution.check(state)
     }
 

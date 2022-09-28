@@ -3,7 +3,7 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class NullNode extends TerminalNode {
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         if (state.data !== null) {
             addTypeKeywordDiagnostic(state, "null", "Must be null")
         }

@@ -30,7 +30,7 @@ export class ResolutionNode extends Base.node {
         return this.root.references(opts)
     }
 
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         // const nextArgs = this.nextArgs(state, this.context.validate)
         if (typeof state.data === "object" && state.data !== null) {
             if (state.checkedValuesByAlias[this.name]?.includes(state.data)) {

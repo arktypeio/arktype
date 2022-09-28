@@ -5,7 +5,7 @@ import { BranchingNode } from "./branching.js"
 export class UnionNode extends BranchingNode<"|"> {
     readonly token = "|"
 
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         const rootErrors = state.errors
         const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
         for (const child of this.children) {
@@ -35,7 +35,7 @@ export class UnionNode extends BranchingNode<"|"> {
         state.errors.add(
             "union",
             {
-                reason: `Must be one of ${this.typeStr()}`,
+                reason: `Must be one of ${this.toString()}`,
                 state: state,
                 suffix: explainBranches
                     ? buildBranchDiagnosticsExplanation(
@@ -63,7 +63,7 @@ export class UnionNode extends BranchingNode<"|"> {
             }
         }
         throw new Error(
-            `Unable to generate a value for unexpected union def ${this.typeStr()}.`
+            `Unable to generate a value for unexpected union def ${this.toString()}.`
         )
     }
 

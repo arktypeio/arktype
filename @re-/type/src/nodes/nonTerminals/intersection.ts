@@ -5,7 +5,7 @@ import { BranchingNode } from "./branching.js"
 export class IntersectionNode extends BranchingNode<"&"> {
     readonly token = "&"
 
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         for (const branch of this.children) {
             branch.check(state)
         }

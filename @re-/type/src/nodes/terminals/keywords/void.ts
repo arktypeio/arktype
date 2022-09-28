@@ -3,7 +3,7 @@ import { TerminalNode } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class VoidNode extends TerminalNode {
-    typecheck(state: Check.CheckState) {
+    check(state: Check.CheckState) {
         if (state.data !== undefined) {
             addTypeKeywordDiagnostic(state, "void", "Must be undefined")
         }
