@@ -20,6 +20,7 @@
         "ci:publish": "ts-node ./scripts/publish.ts"
     },
     "devDependencies": {
+        "@arktype/plugin": "link:./@re-/plugin",
         "@re-/assert": "link:./@re-/assert",
         "@re-/node": "link:./@re-/node",
         "@changesets/cli": "2.24.4",

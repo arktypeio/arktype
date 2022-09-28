@@ -38,6 +38,7 @@
     "devDependencies": {
         "@re-/assert": "workspace:*",
         "@re-/node": "workspace:*",
-        "fast-check": "3.1.2"
+        "@arktype/plugin": "workspace:*",
+        "fast-check": "3.1.4"
     }
 }
