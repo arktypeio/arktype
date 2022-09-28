@@ -1,5 +1,4 @@
 import type { KeySet } from "@re-/tools"
-import type { parserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import { Base } from "./base.js"
 import { checkCustomValidator } from "./traverse/check/customValidator.js"
@@ -10,16 +9,24 @@ export class ResolutionNode extends Base.node {
     public root: Base.node
     public rootDef: unknown
 
-    constructor(public name: string, ctx: parserContext) {
+    constructor(public name: string, public ctx: Base.context) {
+        super()
         const rootDef = ctx.space!.aliases[name]
         const root = Root.parse(rootDef, ctx)
-        super(name, root.ast, ctx)
         this.root = root
         this.rootDef = rootDef
     }
 
-    typeStr() {
-        return this.root.typeStr()
+    toString() {
+        return this.name
+    }
+
+    toAst(): Base.UnknownAst {
+        return this.name
+    }
+
+    toIsomorphicDef() {
+        return this.name
     }
 
     collectReferences(opts: References.ReferencesOptions, collected: KeySet) {

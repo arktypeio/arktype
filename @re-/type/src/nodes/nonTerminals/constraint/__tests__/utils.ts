@@ -1,17 +1,17 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
-import type {
-    Comparator,
-    DoubleBoundComparator
-} from "../../../parser/str/operator/unary/bound/common.js"
 import {
     comparators,
     doubleBoundComparators
-} from "../../../parser/str/operator/unary/bound/common.js"
-import type { DynamicTypeRoot } from "../../../scopes/type.js"
-import { keywordNodes } from "../../terminals/keywords/keyword.js"
-import { numberTypedKeywords } from "../../terminals/keywords/number.js"
-import { stringTypedKeywords } from "../../terminals/keywords/string.js"
+} from "../../../../parser/str/operator/unary/bound/common.js"
+import type {
+    Comparator,
+    DoubleBoundComparator
+} from "../../../../parser/str/operator/unary/bound/common.js"
+import type { DynamicTypeRoot } from "../../../../scopes/type.js"
+import { keywordNodes } from "../../../terminals/keywords/keyword.js"
+import { numberTypedKeywords } from "../../../terminals/keywords/number.js"
+import { stringTypedKeywords } from "../../../terminals/keywords/string.js"
 import type { BoundsAst } from "../bounds.js"
 import { boundToString } from "../bounds.js"
 

@@ -1,18 +1,18 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
-import { type } from "../../../api.js"
-import type { BoundsAst } from "../../../nodes/constraints/bounds.js"
-import { invertedComparators } from "../../../parser/str/operator/unary/bound/common.js"
-import type { Check } from "../../traverse/exports.js"
+import { type } from "../../../../api.js"
+import { invertedComparators } from "../../../../parser/str/operator/unary/bound/common.js"
+import type { Check } from "../../../traverse/exports.js"
+import type { BoundsAst } from "../bounds.js"
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,
     arbitraryLimit,
     assertCheckResults
-} from "./common.js"
+} from "./utils.js"
 
-describe("bound constraint", () => {
+describe("bound", () => {
     describe("check", () => {
         test("single", () => {
             fc.assert(

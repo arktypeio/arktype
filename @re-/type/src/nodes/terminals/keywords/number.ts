@@ -20,7 +20,7 @@ export class NumberNode extends TerminalNode<NumberTypedKeyword> {
         if (this.def === "integer" && !Number.isInteger(state.data)) {
             state.errors.add(
                 "numberSubtype",
-                { reason: "Must be an integer", state: state },
+                { reason: "Must be an integer", state },
                 {
                     definition: "integer",
                     actual: state.data
