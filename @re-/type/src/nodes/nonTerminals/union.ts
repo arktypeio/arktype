@@ -36,7 +36,7 @@ export class UnionNode extends BranchingNode<"|"> {
             "union",
             {
                 reason: `Must be one of ${this.toString()}`,
-                state: state,
+                state,
                 suffix: explainBranches
                     ? buildBranchDiagnosticsExplanation(
                           branchDiagnosticsEntries
