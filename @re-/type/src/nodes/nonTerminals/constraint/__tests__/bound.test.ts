@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { invertedComparators } from "../../../../parser/str/operator/unary/bound/common.js"
+import { invertedComparators } from "../../../../parser/str/operator/unary/comparator/common.js"
 import type { Check } from "../../../traverse/exports.js"
 import type { BoundsAst } from "../bounds.js"
 import {

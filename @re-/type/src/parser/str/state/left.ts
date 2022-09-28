@@ -1,5 +1,5 @@
 import type { Base } from "../../../nodes/base.js"
-import type { BoundsAst } from "../../../nodes/constraints/bounds.js"
+import type { Bounds } from "../../../nodes/nonTerminals/constraint/bounds.js"
 import type { ParseError } from "../../common.js"
 import type { Branches, branches } from "../operator/binary/branch.js"
 
@@ -7,7 +7,7 @@ type leftBase = {
     groups: branches[]
     branches: branches
     root?: Base.node
-    lowerBound?: BoundsAst.Lower
+    lowerBound?: Bounds.Ast.Lower
     done?: true
 }
 
@@ -15,7 +15,7 @@ export type left<constraints extends Partial<leftBase> = {}> = leftBase &
     constraints
 
 type LeftBase = {
-    lowerBound: BoundsAst.Lower | undefined
+    lowerBound: Bounds.Ast.Lower | null
     groups: Branches[]
     branches: Branches
     root: unknown
@@ -34,14 +34,14 @@ export namespace left {
 
 export namespace Left {
     export type New = From<{
-        lowerBound: undefined
+        lowerBound: null
         groups: []
         branches: {}
         root: undefined
     }>
 
     export type IsPrefixable<L extends LeftBase> = From<{
-        lowerBound: undefined
+        lowerBound: null
         groups: []
         branches: {}
         root: any
@@ -57,7 +57,7 @@ export namespace Left {
     export type From<L extends LeftBase> = L
 
     export type Error<Message extends string> = From<{
-        lowerBound: undefined
+        lowerBound: null
         groups: []
         branches: {}
         root: ParseError<Message>

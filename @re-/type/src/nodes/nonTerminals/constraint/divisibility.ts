@@ -8,11 +8,17 @@ export namespace Divisibility {
 
         check(state: Check.CheckState<number>) {
             if (state.data % this.divisor !== 0) {
+                const reason =
+                    this.divisor === 1
+                        ? "Must be an integer"
+                        : this.divisor === 2
+                        ? "Must be an even integer"
+                        : `Must be an integer divisible by ${this.divisor}`
                 state.errors.add(
                     "divisibility",
                     {
                         state,
-                        reason: `Must be divisible by ${this.divisor}`
+                        reason
                     },
                     { divisor: this.divisor, actual: state.data }
                 )

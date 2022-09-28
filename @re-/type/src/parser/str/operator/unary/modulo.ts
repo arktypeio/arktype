@@ -1,10 +1,6 @@
 import type { NodeToString } from "../../../../nodes/common.js"
-import type { AddConstraints } from "../../../../nodes/constraints/constraint.js"
 import type { NumberTypedKeyword } from "../../../../nodes/terminals/keywords/number.js"
-import {
-    ModuloConstraint,
-    NumberNode
-} from "../../../../nodes/terminals/keywords/number.js"
+import { NumberNode } from "../../../../nodes/terminals/keywords/number.js"
 import type { NumberLiteralDefinition } from "../../../../nodes/terminals/literal.js"
 import { throwParseError } from "../../../../parser/common.js"
 import type { IntegerLiteralDefinition } from "../../operand/unenclosed.js"
@@ -37,7 +33,7 @@ export const parseModulo = (s: parserState.withRoot) => {
         ? isIntegerLiteral(moduloValue)
             ? reduceModulo(s, integerLiteralToDivisorValue(moduloValue))
             : s.error(invalidDivisorMessage(moduloValue))
-        : s.error(indivisibleMessage(s.l.root.typeStr()))
+        : s.error(indivisibleMessage(s.l.root.toString()))
 }
 
 const reduceModulo = (s: parserState.withRoot<NumberNode>, value: number) => {

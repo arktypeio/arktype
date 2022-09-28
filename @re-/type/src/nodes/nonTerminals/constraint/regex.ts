@@ -32,4 +32,32 @@ export namespace Regex {
         expression: RegExp
         actual: `"${string}"`
     }>
+
+    export const keywords = {
+        email: new Regex.Condition(
+            /^(.+)@(.+)\.(.+)$/,
+            "email",
+            "Must be a valid email"
+        ),
+        alpha: new Regex.Condition(
+            /^[A-Za-z]+$/,
+            "alpha",
+            "Must include only letters"
+        ),
+        alphanumeric: new Regex.Condition(
+            /^[\dA-Za-z]+$/,
+            "alphanumeric",
+            "Must include only letters and digits"
+        ),
+        lowercase: new Regex.Condition(
+            /^[a-z]*$/,
+            "lowercase",
+            "Must include only lowercase letters"
+        ),
+        uppercase: new Regex.Condition(
+            /^[A-Z]*$/,
+            "uppercase",
+            "Must include only uppercase letters"
+        )
+    }
 }

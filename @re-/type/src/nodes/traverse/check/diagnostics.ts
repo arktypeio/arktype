@@ -2,10 +2,10 @@ import type { Evaluate } from "@re-/tools"
 import { uncapitalize } from "@re-/tools"
 import type { Path } from "../../common.js"
 import { pathToString } from "../../common.js"
-import type { BoundDiagnostic as BoundDiagnostic } from "../../constraints/bounds.js"
-import type { ModuloDiagnostic } from "../../constraints/modulo.js"
-import type { RegexDiagnostic } from "../../constraints/regex.js"
-import type { UnionDiagnostic } from "../../n-aries/union.js"
+import type { Bounds } from "../../nonTerminals/constraint/bounds.js"
+import type { Divisibility } from "../../nonTerminals/constraint/divisibility.js"
+import type { Regex } from "../../nonTerminals/constraint/regex.js"
+import type { UnionDiagnostic } from "../../nonTerminals/union.js"
 import type {
     ExtraneousKeysDiagnostic,
     MissingKeyDiagnostic
@@ -45,14 +45,14 @@ export type RegisteredDiagnostics = {
     keyword: KeywordTypeDiagnostic
     literal: LiteralDiagnostic
     structure: StructureDiagnostic
-    bound: BoundDiagnostic
+    bound: Bounds.Diagnostic
     extraneousKeys: ExtraneousKeysDiagnostic
     missingKey: MissingKeyDiagnostic
-    regex: RegexDiagnostic
+    regex: Regex.Diagnostic
     numberSubtype: NumberSubtypeDiagnostic
     tupleLength: TupleLengthDiagnostic
     union: UnionDiagnostic
-    modulo: ModuloDiagnostic
+    divisibility: Divisibility.Diagnostic
 }
 
 export type DiagnosticContext<Code extends DiagnosticCode> =

@@ -4,7 +4,7 @@ import type { Check } from "../../traverse/exports.js"
 import type { TraversalState } from "../../traverse/traverse.js"
 import { NonTerminalNode } from "../nonTerminal.js"
 import type { Bounds } from "./bounds.js"
-import type { Divisibility } from "./modulo.js"
+import type { Divisibility } from "./divisibility.js"
 import type { Regex } from "./regex.js"
 
 // TODO: Finalize constraint token

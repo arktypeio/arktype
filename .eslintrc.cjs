@@ -45,6 +45,7 @@ module.exports = defineConfig({
         ],
         "@typescript-eslint/default-param-last": "warn",
         "@typescript-eslint/consistent-type-imports": "warn",
+        "object-shorthand": ["warn"],
         /**
          * Conventions
          */

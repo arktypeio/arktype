@@ -2,8 +2,7 @@ import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { References } from "../traverse/exports.js"
-import type { InferKeyword, KeywordDefinition } from "./keywords/keyword.js"
-import type { RegexLiteralDefinition } from "./keywords/string.js"
+import type { Keyword } from "./keywords/keyword.js"
 import type {
     BigintLiteralDefinition,
     BooleanLiteralDefinition,
@@ -46,8 +45,8 @@ export abstract class TerminalNode<
 export type InferTerminal<
     Token extends string,
     Resolutions
-> = Token extends KeywordDefinition
-    ? InferKeyword<Token>
+> = Token extends Keyword.Definition
+    ? Keyword.Infer<Token>
     : Token extends keyof Resolutions
     ? RootNode.Infer<Resolutions[Token], Resolutions>
     : Token extends StringLiteralDefinition<infer Value>

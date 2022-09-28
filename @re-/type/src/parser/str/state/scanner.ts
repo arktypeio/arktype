@@ -1,6 +1,6 @@
 import type { KeySet } from "@re-/tools"
 import { keySet } from "@re-/tools"
-import { comparatorChars } from "../operator/unary/bound/common.js"
+import { comparatorChars } from "../operator/unary/comparator/common.js"
 
 export class scanner<Lookahead extends string = string> {
     private chars: string[]

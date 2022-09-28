@@ -2,12 +2,12 @@
 import {
     comparatorToString,
     invertedComparators
-} from "../../../parser/str/operator/unary/bound/common.js"
+} from "../../../parser/str/operator/unary/comparator/common.js"
 import type {
     Comparator,
     DoubleBoundComparator,
     NormalizedLowerBoundComparator
-} from "../../../parser/str/operator/unary/bound/common.js"
+} from "../../../parser/str/operator/unary/comparator/common.js"
 import type { Base } from "../../base.js"
 import type { CheckState } from "../../traverse/check/check.js"
 import type { Check } from "../../traverse/exports.js"

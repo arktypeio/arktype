@@ -1,14 +1,14 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
 import type { NodeToString } from "../../../nodes/common.js"
-import type { BoundsAst } from "../../../nodes/constraints/bounds.js"
+import type { Bounds } from "../../../nodes/nonTerminals/constraint/bounds.js"
 import { parseError } from "../../common.js"
 import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"
 import type { MergeBranches } from "../operator/binary/branch.js"
 import { mergeBranches } from "../operator/binary/branch.js"
-import type { UnpairedLeftBoundMessage } from "../operator/unary/bound/left.js"
-import { unpairedLeftBoundMessage } from "../operator/unary/bound/left.js"
+import type { UnpairedLeftBoundMessage } from "../operator/unary/comparator/left.js"
+import { unpairedLeftBoundMessage } from "../operator/unary/comparator/left.js"
 import type { Left } from "./left.js"
 import { left } from "./left.js"
 import { scanner } from "./scanner.js"
@@ -44,7 +44,7 @@ export class parserState<constraints extends Partial<left> = {}> {
                     ? this.reduceFinal()
                     : this.error(
                           unpairedLeftBoundMessage(
-                              this.l.root.typeStr(),
+                              this.l.root.toString(),
                               ...this.l.lowerBound
                           )
                       )
@@ -64,7 +64,7 @@ export namespace ParserState {
         S extends ParserState,
         IsOptional extends boolean
     > = S["L"]["groups"] extends []
-        ? S["L"]["lowerBound"] extends BoundsAst.Lower
+        ? S["L"]["lowerBound"] extends Bounds.Ast.Lower
             ? ParserState.Error<
                   UnpairedLeftBoundMessage<
                       NodeToString<S["L"]["root"]>,
@@ -74,7 +74,7 @@ export namespace ParserState {
               >
             : From<{
                   L: {
-                      lowerBound: undefined
+                      lowerBound: null
                       groups: []
                       branches: {}
                       root: WrapIfOptional<

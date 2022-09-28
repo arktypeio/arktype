@@ -7,7 +7,8 @@
         "sort-imports",
         "import/no-duplicates",
         "unicorn/prefer-node-protocol",
-        "@typescript-eslint/consistent-type-imports"
+        "@typescript-eslint/consistent-type-imports",
+        "object-shorthand"
     ],
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
