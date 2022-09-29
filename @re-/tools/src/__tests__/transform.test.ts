@@ -1,20 +1,22 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { mapValues, mutateValues, transform } from "../index.js"
+import type { Dictionary } from "../index.js"
+import { mapValues, mutateValues, transformEntriesOf } from "../index.js"
 
 describe("transform", () => {
     test("to dict", () => {
-        const stringified = transform([0, 1], ([k, v]) => [
+        const stringified = transformEntriesOf([0, 1], ([k, v]) => [
             "$" + String(k),
             !!v
         ])
-        assert(stringified).equals({ $0: false, $1: true }).typed as Record<
-            string,
-            boolean
-        >
+        assert(stringified).equals({ $0: false, $1: true })
+            .typed as Dictionary<boolean>
     })
     test("to array", () => {
-        const stringified = transform({ a: 0, b: 1 }, ([k, v]) => [v, k])
+        const stringified = transformEntriesOf({ a: 0, b: 1 }, ([k, v]) => [
+            v,
+            k
+        ])
         assert(stringified).equals(["a", "b"]).typed as ("a" | "b")[]
     })
 })

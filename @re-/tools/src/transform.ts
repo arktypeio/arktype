@@ -1,4 +1,4 @@
-import type { Entry, EntryOf } from "./common.js"
+import type { Dictionary, Entry, EntryOf } from "./common.js"
 import type { Evaluate } from "./evaluate.js"
 
 export type MapEntryFn<In extends Entry = Entry, Out extends Entry = Entry> = (
@@ -11,15 +11,25 @@ export type MapValues<O, F extends MapValueFn<O[keyof O]>> = Evaluate<{
     [K in keyof O]: ReturnType<F>
 }>
 
-type TransformFn = <O, F extends MapEntryFn<EntryOf<O>>>(
+type EntryMapResult<ReturnedEntry extends Entry> =
+    ReturnedEntry[0] extends number
+        ? ReturnedEntry[1][]
+        : Dictionary<ReturnedEntry[1]>
+
+type TransformEntriesOfFn = <O, F extends MapEntryFn<EntryOf<O>>>(
     o: O,
     mapEntryFn: F
-) => ReturnType<F>[0] extends number
-    ? ReturnType<F>[1][]
-    : Record<string, ReturnType<F>[1]>
+) => EntryMapResult<ReturnType<F>>
 
-export const transform: TransformFn = (o, mapEntryFn) => {
-    const inEntries = Object.entries(o as object)
+type TransformEntriesFn = <E extends Entry, F extends MapEntryFn<E>>(
+    entries: E[],
+    mapEntryFn: F
+) => EntryMapResult<ReturnType<F>>
+
+export const transformEntriesOf: TransformEntriesOfFn = (o, mapEntryFn) =>
+    transformEntries(Object.entries(o as any), mapEntryFn as any) as any
+
+export const transformEntries: TransformEntriesFn = (inEntries, mapEntryFn) => {
     const indexedOutValues: any[] = []
     const outEntries = inEntries.map((entry, i) => {
         const outEntry = mapEntryFn(entry as any)
