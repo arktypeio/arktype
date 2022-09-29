@@ -32,11 +32,11 @@ export namespace Constraining {
 
     export class Node extends NonTerminal.Node<Token> {
         readonly token = token
-        name?: Keyword
 
         constructor(
             protected child: Base.node,
-            private conditions: Constraint[]
+            public conditions: Constraint[],
+            private name?: Keyword
         ) {
             super([child])
         }
@@ -101,7 +101,7 @@ export namespace Constraining {
           >
         : Evaluate<[Node, Token, Constraints]>
 
-    const keywords = {
+    export const keywords = {
         email: new Regex.Constraint(
             /^(.+)@(.+)\.(.+)$/,
             "email",

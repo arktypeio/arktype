@@ -38,4 +38,8 @@ export namespace Divisibility {
         divisor: number
         actual: number
     }>
+
+    export const keywords = {
+        integer: new Constraint(1)
+    }
 }
