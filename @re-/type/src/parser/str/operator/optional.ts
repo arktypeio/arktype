@@ -1,5 +1,5 @@
-import { OptionalNode } from "../../../../nodes/nonTerminal/postfix/optional.js"
-import type { parserState, ParserState } from "../../state/state.js"
+import { OptionalNode } from "../../../nodes/nonTerminal/postfix/optional.js"
+import type { parserState, ParserState } from "../state/state.js"
 
 export const finalizeOptional = (s: parserState.withRoot) =>
     s.r.lookahead === "END"

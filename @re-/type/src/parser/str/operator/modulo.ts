@@ -1,11 +1,11 @@
-import type { NodeToString } from "../../../../nodes/common.js"
-import { NumberNode } from "../../../../nodes/terminal/keyword/number.js"
-import type { NumberLiteralDefinition } from "../../../../nodes/terminal/literal.js"
-import { throwParseError } from "../../../../parser/common.js"
-import type { IntegerLiteralDefinition } from "../../operand/unenclosed.js"
-import { isIntegerLiteral } from "../../operand/unenclosed.js"
-import type { Scanner } from "../../state/scanner.js"
-import type { parserState, ParserState } from "../../state/state.js"
+import type { NodeToString } from "../../../nodes/common.js"
+import { NumberNode } from "../../../nodes/terminal/keyword/number.js"
+import type { NumberLiteralDefinition } from "../../../nodes/terminal/literal.js"
+import { throwParseError } from "../../common.js"
+import type { IntegerLiteralDefinition } from "../operand/unenclosed.js"
+import { isIntegerLiteral } from "../operand/unenclosed.js"
+import type { Scanner } from "../state/scanner.js"
+import type { parserState, ParserState } from "../state/state.js"
 
 // TODO: Check for multiple modulos/bounds etc.
 export type ParseModulo<
@@ -19,7 +19,7 @@ export type ParseModulo<
 }
     ? Scanner.ShiftUntil<
           Unscanned,
-          Scanner.UnenclosedTerminatingChar
+          Scanner.TerminatingChar
       > extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
         ? Scanned extends IntegerLiteralDefinition<infer Divisor>
             ? ReduceModulo<S, Divisor, NextUnscanned>

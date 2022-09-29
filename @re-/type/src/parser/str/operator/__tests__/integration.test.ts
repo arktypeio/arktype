@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../../api.js"
+import { type } from "../../../../api.js"
 
 describe("branch", () => {
     test("intersection parsed before union", () => {

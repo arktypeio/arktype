@@ -1,7 +1,7 @@
 import type { Conform, ElementOf, Merge, UnionToTuple } from "@re-/tools"
-import type { RootNode } from "../common.js"
-import type { Infix } from "../nonTerminal/infix/infix.js"
-import type { Postfix } from "../nonTerminal/postfix/postfix.js"
+import type { RootNode } from "../../common.js"
+import type { Infix } from "../../nonTerminal/infix/infix.js"
+import type { Postfix } from "../../nonTerminal/postfix/postfix.js"
 
 export type ReferencesOf<
     Ast,

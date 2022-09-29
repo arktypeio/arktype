@@ -72,6 +72,7 @@ const mutateArktypeSignature = (signature: SignatureHelpItem) => {
         // TODO: Add back in options but with simplified type
         signature.parameters = [signature.parameters[0]]
         // TODO: Just show name of inferred type for return
+        // TODO: Increase priority of "type" and other items that are behind node
     }
 }
 

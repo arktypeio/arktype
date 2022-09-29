@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../../api.js"
-import { unresolvableMessage } from "../../../operand/unenclosed.js"
-import { expressionExpectedMessage } from "../../../state/state.js"
+import { type } from "../../../../api.js"
+import { unresolvableMessage } from "../../operand/unenclosed.js"
+import { expressionExpectedMessage } from "../../state/state.js"
 
 describe("intersection", () => {
     describe("parse", () => {

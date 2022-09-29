@@ -1,6 +1,5 @@
 import type { KeySet } from "@re-/tools"
 import { keySet } from "@re-/tools"
-import { comparatorChars } from "../operator/unary/comparator/common.js"
 
 export class scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -72,14 +71,16 @@ export namespace scanner {
         r.lookahead in terminatingChars
 
     export const terminatingChars = keySet({
-        ...comparatorChars,
+        "<": 1,
+        ">": 1,
+        "=": 1,
         "?": 1,
         "|": 1,
         "&": 1,
         ")": 1,
         "[": 1,
-        " ": 1,
-        "%": 1
+        "%": 1,
+        " ": 1
     })
 }
 
@@ -103,7 +104,7 @@ export namespace Scanner {
 
     export type ShiftUntilNextTerminator<Unscanned extends string> = ShiftUntil<
         Unscanned,
-        UnenclosedTerminatingChar
+        TerminatingChar
     >
 
     export type Shifted<Scanned extends string, Unscanned extends string> = [
@@ -111,6 +112,5 @@ export namespace Scanner {
         Unscanned
     ]
 
-    export type UnenclosedTerminatingChar =
-        keyof typeof scanner.terminatingChars
+    export type TerminatingChar = keyof typeof scanner.terminatingChars
 }

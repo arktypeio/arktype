@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../api.js"
 import { unresolvableMessage } from "../../../operand/unenclosed.js"
-import { nonTerminatingOptionalMessage } from "../optional.js"
+import { nonTerminatingOptionalMessage } from "../../optional.js"
 
 describe("parse optional", () => {
     test("valid", () => {

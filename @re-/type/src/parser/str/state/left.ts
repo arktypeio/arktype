@@ -1,13 +1,14 @@
 import type { Base } from "../../../nodes/base.js"
 import type { Bound } from "../../../nodes/nonTerminal/infix/bound.js"
+import type { Intersection } from "../../../nodes/nonTerminal/infix/intersection.js"
+import type { Union } from "../../../nodes/nonTerminal/infix/union.js"
+import type { LiteralNode } from "../../../nodes/terminal/literal.js"
 import type { ParseError } from "../../common.js"
-import type { Branches, branches } from "../operator/binary/branch.js"
 
 type leftBase = {
-    groups: branches[]
-    branches: branches
+    groups: openBranches[]
+    branches: openBranches
     root?: Base.node
-    lowerBound?: Bound.Ast.Lower
     done?: true
 }
 
@@ -15,9 +16,8 @@ export type left<constraints extends Partial<leftBase> = {}> = leftBase &
     constraints
 
 type LeftBase = {
-    lowerBound: Bound.Ast.Lower | null
-    groups: Branches[]
-    branches: Branches
+    groups: OpenBranches[]
+    branches: OpenBranches
     root: unknown
     done?: true
 }
@@ -34,14 +34,12 @@ export namespace left {
 
 export namespace Left {
     export type New = From<{
-        lowerBound: null
         groups: []
         branches: {}
         root: undefined
     }>
 
     export type IsPrefixable<L extends LeftBase> = From<{
-        lowerBound: null
         groups: []
         branches: {}
         root: any
@@ -65,11 +63,55 @@ export namespace Left {
     }>
 
     export type SetRoot<L extends LeftBase, Node> = From<{
-        lowerBound: L["lowerBound"]
         groups: L["groups"]
         branches: L["branches"]
         root: Node
     }>
 
     export type WithRoot<Root> = With<{ root: Root }>
+}
+
+export type openBranches = {
+    leftBound?: [LiteralNode<number>, Bound.Token]
+    union?: Union.Node
+    intersection?: Intersection.Node
+}
+
+export type OpenBranches = {
+    leftBound?: OpenBranches.OpenLeftBound
+    union?: OpenBranches.OpenUnion
+    intersection?: OpenBranches.OpenIntersection
+}
+
+export namespace openBranches {
+    export const mergeBranches = (s: parserState.withRoot) => {
+        if (hasMergeableIntersection(s)) {
+            mergeIntersection(s)
+        }
+        if (hasMergeableUnion(s)) {
+            mergeUnion(s)
+        }
+        return s
+    }
+}
+
+export namespace OpenBranches {
+    export type OpenLeftBound = [number, Bound.Token]
+
+    export type OpenUnion = [unknown, Union.Token]
+
+    export type OpenIntersection = [unknown, Intersection.Token]
+
+    // TODO: Add left bound check here
+    export type Merge<
+        B extends OpenBranches,
+        Root
+    > = B["leftBound"] extends OpenLeftBound
+        ? "error"
+        : PushExpression<B["union"], PushExpression<B["intersection"], Root>>
+
+    export type PushExpression<
+        B extends unknown[] | undefined,
+        Expression
+    > = B extends unknown[] ? [...B, Expression] : Expression
 }

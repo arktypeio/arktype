@@ -1,16 +1,14 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
 import type { NodeToString } from "../../../nodes/common.js"
-import type { Bound } from "../../../nodes/nonTerminal/infix/bound.js"
 import { parseError } from "../../common.js"
 import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"
-import type { MergeBranches } from "../operator/binary/branch.js"
-import { mergeBranches } from "../operator/binary/branch.js"
-import type { UnpairedLeftBoundMessage } from "../operator/unary/comparator/left.js"
-import { unpairedLeftBoundMessage } from "../operator/unary/comparator/left.js"
+import type { UnpairedLeftBoundMessage } from "../operator/bound/left.js"
+import { unpairedLeftBoundMessage } from "../operator/bound/left.js"
 import type { Left } from "./left.js"
 import { left } from "./left.js"
+import type { OpenBranches } from "./openBranches.js"
 import { scanner } from "./scanner.js"
 
 export class parserState<constraints extends Partial<left> = {}> {
@@ -40,14 +38,15 @@ export class parserState<constraints extends Partial<left> = {}> {
     finalize(): parserState.withRoot {
         return this.hasRoot()
             ? !this.l.groups.length
-                ? !this.l.lowerBound
-                    ? this.reduceFinal()
-                    : this.error(
+                ? this.l.branches.leftBound
+                    ? this.error(
                           unpairedLeftBoundMessage(
                               this.l.root.toString(),
-                              ...this.l.lowerBound
+                              this.l.branches.leftBound[0].value,
+                              this.l.branches.leftBound[1]
                           )
                       )
+                    : this.reduceFinal()
                 : this.error(unclosedGroupMessage)
             : this.error(expressionExpectedMessage(""))
     }
@@ -64,12 +63,12 @@ export namespace ParserState {
         S extends ParserState,
         IsOptional extends boolean
     > = S["L"]["groups"] extends []
-        ? S["L"]["lowerBound"] extends Bound.Ast.Lower
+        ? S["L"]["branches"]["leftBound"] extends OpenBranches.OpenLeftBound
             ? ParserState.Error<
                   UnpairedLeftBoundMessage<
                       NodeToString<S["L"]["root"]>,
-                      S["L"]["lowerBound"][0],
-                      S["L"]["lowerBound"][1]
+                      S["L"]["branches"]["leftBound"][0],
+                      S["L"]["branches"]["leftBound"][1]
                   >
               >
             : From<{
@@ -132,7 +131,7 @@ export namespace ParserState {
 
     export type Error<Message extends string> = {
         L: Left.Error<Message>
-        R: "END"
+        R: ""
     }
 
     export type WithRoot<Root = {}> = Of<Left.WithRoot<Root>>

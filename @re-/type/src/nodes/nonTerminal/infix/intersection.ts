@@ -7,7 +7,7 @@ export namespace Intersection {
 
     export type Token = typeof token
 
-    export class IntersectionNode extends Infix.Node<Token> {
+    export class Node extends Infix.Node<Token> {
         readonly token = token
 
         check(state: Check.CheckState) {

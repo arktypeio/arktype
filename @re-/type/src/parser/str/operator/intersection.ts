@@ -1,12 +1,7 @@
-import type { Base } from "../../../../nodes/base.js"
-import { IntersectionNode } from "../../../../nodes/n-aries/intersection.js"
-import type {
-    MissingRightOperandMessage,
-    parserContext
-} from "../../../common.js"
-import type { Left } from "../../state/left.js"
-import type { parserState } from "../../state/state.js"
-import type { Branches, MergeExpression } from "./branch.js"
+import type { Base } from "../../../nodes/base.js"
+import type { MissingRightOperandMessage, parserContext } from "../../common.js"
+import type { Left } from "../state/left.js"
+import type { parserState } from "../state/state.js"
 
 type PushRoot<B extends Branches, Root> = {
     union: B["union"]

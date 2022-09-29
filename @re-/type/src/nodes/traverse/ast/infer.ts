@@ -1,13 +1,13 @@
 import type { Evaluate } from "@re-/tools"
-import type { Bound } from "../nonTerminal/infix/bound.js"
-import type { Divisibility } from "../nonTerminal/infix/divisibility.js"
-import type { Keyword } from "../terminal/keyword/keyword.js"
+import type { Bound } from "../../nonTerminal/infix/bound.js"
+import type { Divisibility } from "../../nonTerminal/infix/divisibility.js"
+import type { Keyword } from "../../terminal/keyword/keyword.js"
 import type {
     BigintLiteralDefinition,
     BooleanLiteralDefinition,
     NumberLiteralDefinition,
     StringLiteralDefinition
-} from "../terminal/literal.js"
+} from "../../terminal/literal.js"
 
 export type Infer<Ast, Resolutions> = Ast extends string
     ? InferTerminal<Ast, Resolutions>
