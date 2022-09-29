@@ -11,7 +11,7 @@ import type {
 import type { Base } from "../../base.js"
 import type { CheckState } from "../../traverse/check/check.js"
 import type { Check } from "../../traverse/exports.js"
-import type { Narrowing } from "./narrowing.js"
+import type { Constraining } from "./constraining.js"
 
 export namespace Bounds {
     export type Ast = [Ast.Single] | [Ast.Lower, Ast.Upper]
@@ -24,7 +24,7 @@ export namespace Bounds {
         export type Upper = [DoubleBoundComparator, number]
     }
 
-    export class Condition implements Narrowing.Condition {
+    export class Constraint implements Constraining.Constraint {
         constructor(public ast: Ast) {}
 
         check(state: Check.CheckState<BoundableData>) {

@@ -1,8 +1,9 @@
 import type { Check } from "../../traverse/exports.js"
-import type { Narrowing } from "./narrowing.js"
+import type { Constraining } from "./constraining.js"
+import { Divisibility } from "./divisibility.js"
 
 export namespace Regex {
-    export class Condition implements Narrowing.Condition {
+    export class Constraint implements Constraining.Constraint {
         constructor(
             private expression: RegExp,
             private definition: StringSubtypeDefinition,
@@ -33,30 +34,33 @@ export namespace Regex {
     }>
 
     export const keywords = {
-        email: new Regex.Condition(
+        email: new Regex.Constraint(
             /^(.+)@(.+)\.(.+)$/,
             "email",
             "Must be a valid email"
         ),
-        alpha: new Regex.Condition(
+        alpha: new Regex.Constraint(
             /^[A-Za-z]+$/,
             "alpha",
             "Must include only letters"
         ),
-        alphanumeric: new Regex.Condition(
+        alphanumeric: new Regex.Constraint(
             /^[\dA-Za-z]+$/,
             "alphanumeric",
             "Must include only letters and digits"
         ),
-        lowercase: new Regex.Condition(
+        lowercase: new Regex.Constraint(
             /^[a-z]*$/,
             "lowercase",
             "Must include only lowercase letters"
         ),
-        uppercase: new Regex.Condition(
+        uppercase: new Regex.Constraint(
             /^[A-Z]*$/,
             "uppercase",
             "Must include only uppercase letters"
-        )
+        ),
+        integer: new Divisibility.Constraint(1)
     }
+
+    export type Keyword = keyof typeof keywords
 }

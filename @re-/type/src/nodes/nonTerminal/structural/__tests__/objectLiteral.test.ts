@@ -4,7 +4,7 @@ import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 import type { Check } from "../../traverse/exports.js"
 
-describe("dictionary", () => {
+describe("object", () => {
     describe("infer", () => {
         test("base", () => {
             assert(

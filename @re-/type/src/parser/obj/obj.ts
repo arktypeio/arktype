@@ -1,6 +1,6 @@
 import type { Evaluate } from "@re-/tools"
-import { DictionaryNode } from "../../nodes/structs/dictionary.js"
-import { TupleNode } from "../../nodes/structs/tuple.js"
+import { DictionaryNode } from "../../nodes/structural/dictionary.js"
+import { TupleNode } from "../../nodes/structural/tuple.js"
 import type { parseFn, ParserContext } from "../common.js"
 import { Root } from "../root.js"
 import type { MetaDefinition, ParseMetaDefinition } from "./meta.js"

@@ -1,9 +1,9 @@
 import type { Base } from "../../base.js"
 import type { Check } from "../../traverse/exports.js"
-import type { Narrowing } from "./narrowing.js"
+import type { Constraining } from "./constraining.js"
 
 export namespace Divisibility {
-    export class Condition implements Narrowing.Condition {
+    export class Constraint implements Constraining.Constraint {
         constructor(private divisor: number) {}
 
         check(state: Check.CheckState<number>) {

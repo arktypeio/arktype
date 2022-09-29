@@ -1,7 +1,7 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
 import type { NodeToString } from "../../../nodes/common.js"
-import type { Bounds } from "../../../nodes/nonTerminal/narrowing/bounds.js"
+import type { Bounds } from "../../../nodes/nonTerminal/constraining/bounds.js"
 import { parseError } from "../../common.js"
 import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"

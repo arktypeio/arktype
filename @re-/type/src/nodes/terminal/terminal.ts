@@ -2,7 +2,7 @@ import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
 import type { RootNode } from "../common.js"
 import type { References } from "../traverse/exports.js"
-import type { Keyword } from "./keywords/keyword.js"
+import type { Keyword } from "./keyword/keyword.js"
 import type {
     BigintLiteralDefinition,
     BooleanLiteralDefinition,

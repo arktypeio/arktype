@@ -1,6 +1,6 @@
 import { isKeyOf } from "@re-/tools"
-import { LiteralNode } from "../../../../../nodes/terminals/literal.js"
-import type { NumberLiteralDefinition } from "../../../../../nodes/terminals/literal.js"
+import { LiteralNode } from "../../../../../nodes/terminal/literal.js"
+import type { NumberLiteralDefinition } from "../../../../../nodes/terminal/literal.js"
 import type { Scanner } from "../../../state/scanner.js"
 import type { parserState, ParserState } from "../../../state/state.js"
 import type {

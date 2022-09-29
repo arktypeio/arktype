@@ -1,6 +1,6 @@
 import type { NodeToString } from "../../../../nodes/common.js"
-import { NumberNode } from "../../../../nodes/terminals/keywords/number.js"
-import type { NumberLiteralDefinition } from "../../../../nodes/terminals/literal.js"
+import { NumberNode } from "../../../../nodes/terminal/keyword/number.js"
+import type { NumberLiteralDefinition } from "../../../../nodes/terminal/literal.js"
 import { throwParseError } from "../../../../parser/common.js"
 import type { IntegerLiteralDefinition } from "../../operand/unenclosed.js"
 import { isIntegerLiteral } from "../../operand/unenclosed.js"

@@ -9,9 +9,9 @@ import type {
     DoubleBoundComparator
 } from "../../../../parser/str/operator/unary/comparator/common.js"
 import type { DynamicTypeRoot } from "../../../../scopes/type.js"
-import { keywordNodes } from "../../../terminals/keywords/keyword.js"
-import { numberTypedKeywords } from "../../../terminals/keywords/number.js"
-import { stringTypedKeywords } from "../../../terminals/keywords/string.js"
+import { keywordNodes } from "../../../terminal/keyword/keyword.js"
+import { numberTypedKeywords } from "../../../terminal/keyword/number.js"
+import { stringTypedKeywords } from "../../../terminal/keyword/string.js"
 import type { BoundsAst } from "../bounds.js"
 import { boundToString } from "../bounds.js"
 

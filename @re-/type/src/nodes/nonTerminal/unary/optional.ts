@@ -6,7 +6,7 @@ export namespace Optional {
 
     export type Token = typeof token
 
-    export class OptionalNode extends Unary.Node<Token> {
+    export class Node extends Unary.Node<Token> {
         readonly token = token
 
         check(state: Check.CheckState) {

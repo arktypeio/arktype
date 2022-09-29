@@ -3,7 +3,7 @@ import { describe, test } from "mocha"
 import type { Dictionary } from "../index.js"
 import { mapValues, mutateValues, transformEntriesOf } from "../index.js"
 
-describe("transform", () => {
+describe("transformEntriesOf", () => {
     test("to dict", () => {
         const stringified = transformEntriesOf([0, 1], ([k, v]) => [
             "$" + String(k),

@@ -4,10 +4,10 @@ import type {
     TypelessToken,
     UnaryToken
 } from "../parser/common.js"
-import type { InferDictionary } from "./structs/dictionary.js"
-import type { Struct } from "./structs/struct.js"
-import type { InferTuple } from "./structs/tuple.js"
-import type { InferTerminal } from "./terminals/terminal.js"
+import type { InferDictionary } from "./structural/dictionary.js"
+import type { Struct } from "./structural/struct.js"
+import type { InferTuple } from "./structural/tuple.js"
+import type { InferTerminal } from "./terminal/terminal.js"
 
 export const pathToString = (path: Path) =>
     path.length === 0 ? "/" : path.join("/")

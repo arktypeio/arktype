@@ -11,7 +11,7 @@ import type {
     BoundsAst
 } from "../../../../../nodes/constraints/bounds.js"
 import type { AddConstraints } from "../../../../../nodes/constraints/constraint.js"
-import type { NumberLiteralDefinition } from "../../../../../nodes/terminals/literal.js"
+import type { NumberLiteralDefinition } from "../../../../../nodes/terminal/literal.js"
 import {
     isNumberLiteral,
     numberLiteralToValue

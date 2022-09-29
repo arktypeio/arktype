@@ -1,15 +1,15 @@
-import { Alias } from "../../../nodes/terminals/alias.js"
-import type { KeywordDefinition } from "../../../nodes/terminals/keywords/keyword.js"
+import { Alias } from "../../../nodes/terminal/alias.js"
+import type { KeywordDefinition } from "../../../nodes/terminal/keyword/keyword.js"
 import {
     matchesKeyword,
     parseKeyword
-} from "../../../nodes/terminals/keywords/keyword.js"
+} from "../../../nodes/terminal/keyword/keyword.js"
 import type {
     BigintLiteralDefinition,
     BooleanLiteralDefinition,
     NumberLiteralDefinition
-} from "../../../nodes/terminals/literal.js"
-import { LiteralNode } from "../../../nodes/terminals/literal.js"
+} from "../../../nodes/terminal/literal.js"
+import { LiteralNode } from "../../../nodes/terminal/literal.js"
 import type { ParserContext, parserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"

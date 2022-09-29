@@ -1,5 +1,5 @@
-import { checkObjectRoot } from "../../structs/struct.js"
 import type { Check } from "../../traverse/exports.js"
+import { checkObjectRoot } from "../structural/common.js"
 import { Unary } from "./unary.js"
 
 export namespace Array {

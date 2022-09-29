@@ -1,12 +1,12 @@
 import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
 import type { References } from "../traverse/exports.js"
-import type { Narrowing } from "./narrowing/narrowing.js"
-import type { Branching } from "./nary/branching.js"
+import type { Branching } from "./branching/branching.js"
+import type { Constraining } from "./constraining/constraining.js"
 import type { Unary } from "./unary/unary.js"
 
 export namespace NonTerminal {
-    export type Token = Unary.Token | Branching.Token | Narrowing.Token
+    export type Token = Unary.Token | Branching.Token | Constraining.Token
 
     export abstract class Node<T extends Token> extends Base.node {
         abstract token: T
