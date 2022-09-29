@@ -4,7 +4,7 @@ import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { invertedComparators } from "../../../../parser/str/operator/unary/comparator/common.js"
 import type { Check } from "../../../traverse/exports.js"
-import type { BoundsAst } from "../bounds.js"
+import type { BoundsAst } from "../../infix/constraining/bounds.js"
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,

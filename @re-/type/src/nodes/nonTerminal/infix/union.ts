@@ -1,13 +1,13 @@
 import type { BuiltinJsTypeName } from "@re-/tools"
 import { Check, Generate } from "../../traverse/exports.js"
-import { Branching } from "./branching.js"
+import { Infix } from "./infix.js"
 
 export namespace Union {
     export const token = "|"
 
     export type Token = typeof token
 
-    export class Node extends Branching.Node<Token> {
+    export class Node extends Infix.Node<Token> {
         readonly token = token
 
         check(state: Check.CheckState) {

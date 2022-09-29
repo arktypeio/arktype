@@ -1,4 +1,4 @@
-import { OptionalNode } from "../../../../nodes/nonTerminal/unary/optional.js"
+import { OptionalNode } from "../../../../nodes/nonTerminal/postfix/optional.js"
 import type { parserState, ParserState } from "../../state/state.js"
 
 export const finalizeOptional = (s: parserState.withRoot) =>

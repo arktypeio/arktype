@@ -1,15 +1,15 @@
 import type { KeySet } from "@re-/tools"
 import { Base } from "../base.js"
 import type { References } from "../traverse/exports.js"
-import type { Branching } from "./branching/branching.js"
-import type { Constraining } from "./constraining/constraining.js"
-import type { Unary } from "./unary/unary.js"
+import { Infix } from "./infix/infix.js"
+import { Postfix } from "./postfix/postfix.js"
 
 export namespace NonTerminal {
-    export type Token = Unary.Token | Branching.Token | Constraining.Token
+    export const tokens = { ...Postfix.tokens, ...Infix.tokens }
 
-    export abstract class Node<T extends Token> extends Base.node {
-        abstract token: T
+    export type Token = Postfix.Token | Infix.Token
+
+    export abstract class Node extends Base.node {
         constructor(protected children: Base.node[]) {
             super()
         }
@@ -22,7 +22,5 @@ export namespace NonTerminal {
                 child.collectReferences(opts, collected)
             }
         }
-
-        abstract toAst(): readonly [Base.UnknownAst, T, ...Base.UnknownAst[]]
     }
 }

@@ -1,35 +1,18 @@
-import type { Dictionary, Evaluate } from "@re-/tools"
-import { Base } from "../base.js"
-import type { RootNode } from "../common.js"
-import type { Check, Generate } from "../traverse/exports.js"
-import { Optional } from "../unary/optional.js"
-import { checkObjectRoot } from "./struct.js"
+import type { Dictionary } from "@re-/tools"
+import type { Base } from "../../base.js"
+import type { Check, Generate } from "../../traverse/exports.js"
+import { NonTerminal } from "../nonTerminal.js"
+import { Optional } from "../postfix/optional.js"
+import { checkObjectKind } from "./common.js"
 
 export namespace ObjectLiteral {
-    export type Infer<
-        Ast,
-        Space,
-        OptionalKey extends keyof Ast = {
-            [K in keyof Ast]: Ast[K] extends [unknown, Optional.Token]
-                ? K
-                : never
-        }[keyof Ast],
-        RequiredKey extends keyof Ast = Exclude<keyof Ast, OptionalKey>
-    > = Evaluate<
-        {
-            [K in RequiredKey]: RootNode.Infer<Ast[K], Space>
-        } & {
-            [K in OptionalKey]?: RootNode.Infer<Ast[K], Space>
-        }
-    >
-
-    export class Node extends Base.node {
-        constructor(public children: Base.node[], private keys: string[]) {
-            super()
+    export class Node extends NonTerminal.Node {
+        constructor(children: Base.node[], private keys: string[]) {
+            super(children)
         }
 
         check(state: Check.CheckState) {
-            if (!checkObjectRoot(this.toString(), "object", state)) {
+            if (!checkObjectKind(this.toString(), "object", state)) {
                 return
             }
             const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)
@@ -110,8 +93,6 @@ export namespace ObjectLiteral {
             )
         }
 
-        // Yes, these two functions are not very DRY, but for now, in the interest
-        // of perf, I will try not to lose too much sleep over it. It does make me sad though.
         toIsomorphicDef() {
             const result: Dictionary = {}
             for (let i = 0; i < this.children.length; i++) {
@@ -126,6 +107,20 @@ export namespace ObjectLiteral {
                 result[this.keys[i]] = this.children[i].toAst()
             }
             return result
+        }
+
+        toString() {
+            if (!this.children.length) {
+                return "{}"
+            }
+            let result = "{"
+            let i = 0
+            for (i; i < this.children.length - 1; i++) {
+                result +=
+                    this.keys[i] + ": " + this.children[i].toString() + ", "
+            }
+            // Avoid trailing comma
+            return result + this.children[i].toString() + "}"
         }
     }
 

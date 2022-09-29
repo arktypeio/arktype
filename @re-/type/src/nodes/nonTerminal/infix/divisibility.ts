@@ -1,18 +1,25 @@
 import type { Base } from "../../base.js"
 import type { Check } from "../../traverse/exports.js"
-import type { Constraining } from "./constraining.js"
+import type { TraversalState } from "../../traverse/traverse.js"
+import { Infix } from "./infix.js"
 
 export namespace Divisibility {
-    export class Constraint implements Constraining.Constraint {
-        constructor(private divisor: number) {}
+    export const token = "%"
+
+    export type Token = typeof token
+
+    export class Node extends Infix.Node<Token> {
+        readonly token = token
+
+        constructor(private child: Base.node, private divisor: number) {
+            super([child])
+        }
 
         check(state: Check.CheckState<number>) {
             if (state.data % this.divisor !== 0) {
                 const reason =
                     this.divisor === 1
                         ? "Must be an integer"
-                        : this.divisor === 2
-                        ? "Must be an even integer"
                         : `Must be an integer divisible by ${this.divisor}`
                 state.errors.add(
                     "divisibility",
@@ -25,12 +32,8 @@ export namespace Divisibility {
             }
         }
 
-        affixToAst(conditionsAst: Base.UnknownAst[]) {
-            conditionsAst.push(["%", this.divisor])
-        }
-
-        affixToString(def: string) {
-            return def + "%" + this.divisor
+        generate(state: TraversalState) {
+            this.child.generate(state)
         }
     }
 
@@ -38,8 +41,4 @@ export namespace Divisibility {
         divisor: number
         actual: number
     }>
-
-    export const keywords = {
-        integer: new Constraint(1)
-    }
 }

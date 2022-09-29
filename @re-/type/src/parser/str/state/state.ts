@@ -1,7 +1,7 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
 import type { NodeToString } from "../../../nodes/common.js"
-import type { Bounds } from "../../../nodes/nonTerminal/constraining/bounds.js"
+import type { Bound } from "../../../nodes/nonTerminal/infix/bound.js"
 import { parseError } from "../../common.js"
 import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"
@@ -64,7 +64,7 @@ export namespace ParserState {
         S extends ParserState,
         IsOptional extends boolean
     > = S["L"]["groups"] extends []
-        ? S["L"]["lowerBound"] extends Bounds.Ast.Lower
+        ? S["L"]["lowerBound"] extends Bound.Ast.Lower
             ? ParserState.Error<
                   UnpairedLeftBoundMessage<
                       NodeToString<S["L"]["root"]>,

@@ -1,5 +1,5 @@
-import type { IntersectionNode } from "../../../../nodes/nonTerminal/branching/intersection.js"
-import type { UnionNode } from "../../../../nodes/nonTerminal/branching/union.js"
+import type { IntersectionNode } from "../../../../nodes/nonTerminal/infix/intersection.js"
+import type { UnionNode } from "../../../../nodes/nonTerminal/infix/union.js"
 import type { parserState } from "../../state/state.js"
 import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
 import { hasMergeableUnion, mergeUnion } from "./union.js"

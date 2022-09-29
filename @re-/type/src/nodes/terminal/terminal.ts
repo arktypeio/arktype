@@ -41,22 +41,3 @@ export abstract class TerminalNode<
         return this.def in obj
     }
 }
-
-export type InferTerminal<
-    Token extends string,
-    Resolutions
-> = Token extends Keyword.Definition
-    ? Keyword.Infer<Token>
-    : Token extends keyof Resolutions
-    ? RootNode.Infer<Resolutions[Token], Resolutions>
-    : Token extends StringLiteralDefinition<infer Value>
-    ? Value
-    : Token extends RegexLiteralDefinition
-    ? string
-    : Token extends NumberLiteralDefinition<infer Value>
-    ? Value
-    : Token extends BigintLiteralDefinition<infer Value>
-    ? Value
-    : Token extends BooleanLiteralDefinition<infer Value>
-    ? Value
-    : unknown

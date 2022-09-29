@@ -8,10 +8,6 @@ export namespace Base {
 
     export type Input = [node: node, mapper: (data: unknown) => unknown]
 
-    export type UnknownDefinition = string | object
-
-    export type UnknownAst = string | number | object
-
     export abstract class node {
         input?: Input
 
@@ -23,8 +19,8 @@ export namespace Base {
             collected: KeySet
         ): void
 
-        abstract toAst(): UnknownAst
-        abstract toIsomorphicDef(): UnknownDefinition
+        abstract toAst(): unknown
+        abstract toIsomorphicDef(): unknown
         abstract toString(): string
 
         references(opts: References.ReferencesOptions): string[] {

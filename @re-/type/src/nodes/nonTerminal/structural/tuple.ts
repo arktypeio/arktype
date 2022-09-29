@@ -1,15 +1,9 @@
-import type { Evaluate } from "@re-/tools"
-import { Base } from "../base.js"
-import type { RootNode } from "../common.js"
-import type { CheckState } from "../traverse/check/check.js"
-import type { Check, Generate } from "../traverse/exports.js"
-import { checkObjectRoot } from "./struct.js"
+import { Base } from "../../base.js"
+import type { CheckState } from "../../traverse/check/check.js"
+import type { Check, Generate } from "../../traverse/exports.js"
+import { checkObjectKind } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
-
-export type InferTuple<Ast extends readonly unknown[], Space> = Evaluate<{
-    [I in keyof Ast]: RootNode.Infer<Ast[I], Space>
-}>
 
 export class TupleNode extends Base.node {
     constructor(public children: Base.node[]) {
@@ -24,9 +18,22 @@ export class TupleNode extends Base.node {
         return this.children.map((child) => child.toIsomorphicDef())
     }
 
+    toString() {
+        if (!this.children.length) {
+            return "[]"
+        }
+        let result = "["
+        let i = 0
+        for (i; i < this.children.length - 1; i++) {
+            result += this.children[i].toString() + ", "
+        }
+        // Avoid trailing comma
+        return result + this.children[i].toString() + "]"
+    }
+
     check(state: Check.CheckState) {
         // TODO: Add "to" object with callables
-        if (!checkObjectRoot(this.toString(), "array", state)) {
+        if (!checkObjectKind(this.toString(), "array", state)) {
             return
         }
         const expectedLength = this.children.length

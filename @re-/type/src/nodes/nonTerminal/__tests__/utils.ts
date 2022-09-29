@@ -12,8 +12,8 @@ import type { DynamicTypeRoot } from "../../../../scopes/type.js"
 import { keywordNodes } from "../../../terminal/keyword/keyword.js"
 import { numberTypedKeywords } from "../../../terminal/keyword/number.js"
 import { stringTypedKeywords } from "../../../terminal/keyword/string.js"
-import type { BoundsAst } from "../bounds.js"
-import { boundToString } from "../bounds.js"
+import type { BoundsAst } from "../../infix/constraining/bounds.js"
+import { boundToString } from "../../infix/constraining/bounds.js"
 
 const keysOf = (o: object) => Object.keys(o)
 
