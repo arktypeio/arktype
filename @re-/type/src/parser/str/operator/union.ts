@@ -1,58 +1,49 @@
 import type { Base } from "../../../nodes/base.js"
 import { Union } from "../../../nodes/nonTerminal/nary/union.js"
-import type { MissingRightOperandMessage, parserContext } from "../../common.js"
+import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
 import type { Left } from "../state/left.js"
-import type { OpenBranches } from "../state/openBranches.js"
 import type { parserState } from "../state/state.js"
-import { hasMergeableIntersection, mergeIntersection } from "./intersection.js"
+import { IntersectionOperator } from "./intersection.js"
 
-type PushRoot<B extends OpenBranches, Root> = {
-    union: [
-        OpenBranches.PushExpression<
-            B["union"],
-            OpenBranches.PushExpression<B["intersection"], Root>
-        >,
-        "|"
-    ]
-}
-
-export const reduceUnion = (s: parserState.withPreconditionRoot) => {
-    if (hasMergeableIntersection(s)) {
-        mergeIntersection(s)
+export namespace UnionOperator {
+    export const reduce = (s: parserState.requireRoot) => {
+        IntersectionOperator.maybeMerge(s)
+        if (!s.l.branches.union) {
+            s.l.branches.union = new Union.Node([s.l.root])
+        } else {
+            s.l.branches.union.pushChild(s.l.root)
+        }
+        s.l.root = undefined as any
+        return s
     }
-    if (!s.l.branches.union) {
-        s.l.branches.union = new Union.Node([s.l.root])
-    } else {
-        s.l.branches.union.addMember(s.l.root)
+
+    export type Reduce<
+        L extends Left,
+        Unscanned extends string
+    > = Unscanned extends ""
+        ? MissingRightOperandMessage<"|">
+        : Left.From<{
+              groups: L["groups"]
+              branches: PushChild<L["branches"], L["root"]>
+              root: undefined
+          }>
+
+    type PushChild<B extends Left.OpenBranches, Root> = Left.OpenBranches.From<{
+        leftBound: B["leftBound"]
+        intersection: []
+        union: [
+            MaybeAppend<MaybeAppend<Root, B["intersection"]>, B["union"]>,
+            "|"
+        ]
+    }>
+
+    export const maybeMerge = (s: parserState<{ root: Base.node }>) => {
+        if (!s.l.branches.union) {
+            return s
+        }
+        s.l.branches.union.pushChild(s.l.root)
+        s.l.root = s.l.branches.union
+        s.l.branches.union = undefined
+        return s
     }
-    s.l.root = undefined as any
-    return s
-}
-
-export type ReduceUnion<
-    L extends Left,
-    Unscanned extends string
-> = Unscanned extends ""
-    ? MissingRightOperandMessage<"|">
-    : Left.From<{
-          lowerBound: L["lowerBound"]
-          groups: L["groups"]
-          branches: PushRoot<L["branches"], L["root"]>
-          root: undefined
-      }>
-
-type stateWithMergeableUnion = parserState<{
-    root: Base.node
-    branches: { union: Union.Node }
-}>
-
-export const hasMergeableUnion = (
-    s: parserState.withPreconditionRoot
-): s is stateWithMergeableUnion => !!s.l.branches.union
-
-export const mergeUnion = (s: stateWithMergeableUnion) => {
-    s.l.branches.union.addMember(s.l.root)
-    s.l.root = s.l.branches.union
-    s.l.branches.union = undefined as any
-    return s
 }

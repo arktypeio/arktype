@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { indivisibleMessage, invalidDivisorMessage } from "../modulo.js"
+import { indivisibleMessage, invalidDivisorMessage } from "../divisibility.js"
 
 describe("modulo", () => {
     describe("valid", () => {

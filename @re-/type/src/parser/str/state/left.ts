@@ -2,9 +2,9 @@ import type { Base } from "../../../nodes/base.js"
 import type { Bound } from "../../../nodes/nonTerminal/binary/bound.js"
 import type { Intersection } from "../../../nodes/nonTerminal/nary/intersection.js"
 import type { Union } from "../../../nodes/nonTerminal/nary/union.js"
-import type { LiteralNode } from "../../../nodes/terminal/literal.js"
+import type { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
 import type { ParseError } from "../../common.js"
-import type { ComparatorTokens } from "../operator/bound/tokens.js"
+import type { Comparators } from "../operator/bound/tokens.js"
 
 type leftBase = {
     groups: left.openBranches[]
@@ -33,14 +33,33 @@ export namespace left {
         intersection?: Intersection.Node
     }
 
-    export type openLeftBound = [LiteralNode<number>, Bound.Token]
+    export type openLeftBound = [PrimitiveLiteral.Node<number>, Bound.Token]
 }
 
 export namespace Left {
     export type OpenBranches = {
-        leftBound?: OpenLeftBound
-        union?: OpenUnion
-        intersection?: OpenIntersection
+        leftBound: OpenBranches.LeftBound | []
+        union: OpenBranches.Union | []
+        intersection: OpenBranches.Intersection | []
+    }
+
+    export namespace OpenBranches {
+        export type From<Branches extends OpenBranches> = Branches
+
+        export type Default = From<{
+            leftBound: []
+            union: []
+            intersection: []
+        }>
+
+        export type LeftBound<
+            Limit extends number = number,
+            Comparator extends Comparators.Doublable = Comparators.Doublable
+        > = [Limit, Comparator]
+
+        export type Union = [unknown, Union.Token]
+
+        export type Intersection = [unknown, Intersection.Token]
     }
 }
 
@@ -52,7 +71,7 @@ export namespace Left {
 
     export type Error<Message extends string> = From<{
         groups: []
-        branches: {}
+        branches: OpenBranches.Default
         root: ParseError<Message>
         done: true
     }>
@@ -64,13 +83,4 @@ export namespace Left {
     }>
 
     export type WithRoot<Root> = With<{ root: Root }>
-
-    export type OpenLeftBound<
-        Limit extends number = number,
-        Comparator extends ComparatorTokens.Doublable = ComparatorTokens.Doublable
-    > = [Limit, Comparator]
-
-    export type OpenUnion = [unknown, Union.Token]
-
-    export type OpenIntersection = [unknown, Intersection.Token]
 }

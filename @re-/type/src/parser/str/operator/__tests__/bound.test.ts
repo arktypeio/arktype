@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../../api.js"
-import { singleEqualsMessage } from "../bound/comparator.js"
+import { singleEqualsMessage } from "../bound/bound.js"
 import { unpairedLeftBoundMessage } from "../bound/left.js"
 import { unboundableMessage } from "../bound/right.js"
 import { invalidDoubleBoundMessage } from "../bound/tokens.js"

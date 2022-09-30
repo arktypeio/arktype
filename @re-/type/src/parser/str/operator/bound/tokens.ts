@@ -1,7 +1,7 @@
 import { keySet } from "@re-/tools"
 import type { Bound } from "../../../../nodes/nonTerminal/binary/bound.js"
 
-export namespace ComparatorTokens {
+export namespace Comparators {
     export const startChar = keySet({
         "<": 1,
         ">": 1,

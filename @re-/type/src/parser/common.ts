@@ -13,8 +13,6 @@ export type parserContext = TypeOptions & {
 }
 
 // TODO: Mutation okay?
-// Space is passed through an internal-only param, so we add
-// it to the provided options to create a context.
 export const initializeParserContext = (opts: InternalTypeOptions = {}) => {
     const ctx = opts as parserContext
     ctx.path = []

@@ -4,7 +4,7 @@ import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 
 export namespace ArrayOperator {
-    export const parse = (s: parserState.withPreconditionRoot) => {
+    export const parse = (s: parserState.requireRoot) => {
         const next = s.r.shift()
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
@@ -13,7 +13,7 @@ export namespace ArrayOperator {
         return s
     }
 
-    export type ParseArray<
+    export type Parse<
         S extends ParserState,
         Unscanned extends string
     > = Unscanned extends Scanner.Shift<"]", infer Remaining>

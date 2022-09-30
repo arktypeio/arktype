@@ -1,56 +1,54 @@
 import { isKeyOf } from "@re-/tools"
 import type { Bound } from "../../../../nodes/nonTerminal/binary/bound.js"
-import type { NumberLiteralDefinition } from "../../../../nodes/terminal/literal.js"
-import { LiteralNode } from "../../../../nodes/terminal/literal.js"
+import { PrimitiveLiteral } from "../../../../nodes/terminal/literal.js"
 import type { Scanner } from "../../state/scanner.js"
 import type { ParserState, parserState } from "../../state/state.js"
-import { ComparatorTokens } from "./tokens.js"
+import { LeftBoundOperator } from "./left.js"
+import { RightBoundOperator } from "./right.js"
+import { Comparators } from "./tokens.js"
 
-export namespace ComparatorOperator {
+export namespace BoundOperator {
     export const parse = (
-        s: parserState.withPreconditionRoot,
-        start: ComparatorTokens.StartChar
+        s: parserState.requireRoot,
+        start: Comparators.StartChar
     ) => reduce(s, shift(s, start))
 
     const shift = (
-        s: parserState.withPreconditionRoot,
-        start: ComparatorTokens.StartChar
+        s: parserState.requireRoot,
+        start: Comparators.StartChar
     ): Bound.Token =>
         s.r.lookaheadIs("=")
             ? `${start}${s.r.shift()}`
-            : isKeyOf(start, ComparatorTokens.oneChar)
+            : isKeyOf(start, Comparators.oneChar)
             ? start
             : s.error(singleEqualsMessage)
 
     export type Parse<
         S extends ParserState,
-        Start extends ComparatorTokens.StartChar,
+        Start extends Comparators.StartChar,
         Unscanned extends string
     > = Unscanned extends Scanner.Shift<"=", infer NextUnscanned>
         ? DelegateReduction<S, `${Start}=`, NextUnscanned>
-        : Start extends ComparatorTokens.OneChar
+        : Start extends Comparators.OneChar
         ? DelegateReduction<S, Start, Unscanned>
         : ParserState.Error<SingleEqualsMessage>
 
     export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
     type SingleEqualsMessage = typeof singleEqualsMessage
 
-    const reduce = (
-        s: parserState.withPreconditionRoot,
-        comparator: Bound.Token
-    ) =>
-        s.hasRoot(LiteralNode) && typeof s.l.root.value === "number"
-            ? reduceLeft(s, comparator)
-            : parseRightBound(s, comparator)
+    const reduce = (s: parserState.requireRoot, comparator: Bound.Token) =>
+        s.hasRoot(PrimitiveLiteral.Node) && typeof s.l.root.value === "number"
+            ? LeftBoundOperator.reduce(s, comparator)
+            : RightBoundOperator.parse(s, comparator)
 
     type DelegateReduction<
         S extends ParserState,
         Token extends Bound.Token,
         Unscanned extends string
-    > = S["L"]["root"] extends NumberLiteralDefinition<infer Value>
+    > = S["L"]["root"] extends PrimitiveLiteral.Number<infer Value>
         ? ParserState.From<{
-              L: ReduceLeft<S["L"], Value, Token>
+              L: LeftBoundOperator.Reduce<S["L"], Value, Token>
               R: Unscanned
           }>
-        : ParseRightBound<{ L: S["L"]; R: Unscanned }, Token>
+        : RightBoundOperator.Parse<{ L: S["L"]; R: Unscanned }, Token>
 }

@@ -2,8 +2,7 @@ import { Arr } from "../../nodes/nonTerminal/unary/array.js"
 import { Optional } from "../../nodes/nonTerminal/unary/optional.js"
 import type { ParserContext, parserContext } from "../common.js"
 import type { FullParse } from "./full.js"
-import type { IsResolvableIdentifier } from "./operand/unenclosed.js"
-import { maybeParseIdentifier } from "./operand/unenclosed.js"
+import { Unenclosed } from "./operand/unenclosed.js"
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -19,17 +18,17 @@ export type TryNaiveParse<
     Ctx extends ParserContext
 > = Def extends `${infer Child}?`
     ? Child extends `${infer GrandChild}[]`
-        ? IsResolvableIdentifier<GrandChild, Ctx> extends true
+        ? Unenclosed.IsResolvableIdentifier<GrandChild, Ctx> extends true
             ? [[GrandChild, "[]"], "?"]
             : FullParse<Def, Ctx>
-        : IsResolvableIdentifier<Child, Ctx> extends true
+        : Unenclosed.IsResolvableIdentifier<Child, Ctx> extends true
         ? [Child, "?"]
         : FullParse<Def, Ctx>
     : Def extends `${infer Child}[]`
-    ? IsResolvableIdentifier<Child, Ctx> extends true
+    ? Unenclosed.IsResolvableIdentifier<Child, Ctx> extends true
         ? [Child, "[]"]
         : FullParse<Def, Ctx>
-    : IsResolvableIdentifier<Def, Ctx> extends true
+    : Unenclosed.IsResolvableIdentifier<Def, Ctx> extends true
     ? Def
     : FullParse<Def, Ctx>
 
@@ -45,7 +44,7 @@ export const tryNaiveParse = (def: string, ctx: parserContext) => {
 
 const tryNaiveParseArray = (def: string, ctx: parserContext) => {
     if (def.endsWith("[]")) {
-        const possibleIdentifierNode = maybeParseIdentifier(
+        const possibleIdentifierNode = Unenclosed.maybeParseIdentifier(
             def.slice(0, -2),
             ctx
         )
@@ -53,5 +52,5 @@ const tryNaiveParseArray = (def: string, ctx: parserContext) => {
             return new Arr.Node(possibleIdentifierNode)
         }
     }
-    return maybeParseIdentifier(def, ctx)
+    return Unenclosed.maybeParseIdentifier(def, ctx)
 }

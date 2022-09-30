@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { unresolvableMessage } from "../../operand/unenclosed.js"
-import { expressionExpectedMessage } from "../../state/state.js"
+import { Unenclosed } from "../../operand/unenclosed.js"
+import { scanner } from "../../state/scanner.js"
 
 describe("union", () => {
     describe("infer", () => {
@@ -24,26 +24,28 @@ describe("union", () => {
             test("bad reference", () => {
                 // @ts-expect-error
                 assert(() => type("number|sting")).throwsAndHasTypeError(
-                    unresolvableMessage("sting")
+                    Unenclosed.unresolvableMessage("sting")
                 )
             })
             test("double pipes", () => {
                 // @ts-expect-error
                 assert(() => type("boolean||null")).throwsAndHasTypeError(
-                    expressionExpectedMessage("|null")
+                    scanner.expressionExpectedMessage("|null")
                 )
             })
             test("ends with |", () => {
                 // @ts-expect-error
                 assert(() => type("boolean|")).throwsAndHasTypeError(
-                    expressionExpectedMessage("")
+                    scanner.expressionExpectedMessage("")
                 )
             })
             test("long missing union member", () => {
                 assert(() =>
                     // @ts-expect-error
                     type("boolean[]|(string|number|)|object")
-                ).throwsAndHasTypeError(expressionExpectedMessage(")|object"))
+                ).throwsAndHasTypeError(
+                    scanner.expressionExpectedMessage(")|object")
+                )
             })
         })
     })

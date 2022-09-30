@@ -37,5 +37,7 @@ export namespace Keyword {
         NodeTypes[Def]["generate"]
     >
 
+    export const matches = (def: string): def is Definition => def in nodes
+
     export const getNode = (def: Definition) => nodes[def]
 }

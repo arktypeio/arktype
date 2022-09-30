@@ -4,7 +4,7 @@ import type { parserState } from "../state/state.js"
 export namespace GroupOpen {
     export type Reduce<L extends Left> = Left.From<{
         groups: [...L["groups"], L["branches"]]
-        branches: {}
+        branches: Left.OpenBranches.Default
         root: undefined
     }>
 

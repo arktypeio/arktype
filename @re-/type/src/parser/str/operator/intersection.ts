@@ -1,50 +1,43 @@
-import type { Base } from "../../../nodes/base.js"
-import type { MissingRightOperandMessage, parserContext } from "../../common.js"
+import { Intersection } from "../../../nodes/nonTerminal/nary/intersection.js"
+import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { parserState } from "../state/state.js"
 
-type PushRoot<B extends Branches, Root> = {
-    union: B["union"]
-    intersection: [MergeExpression<B["intersection"], Root>, "&"]
-}
+export namespace IntersectionOperator {
+    type PushChild<B extends Left.OpenBranches, Root> = Left.OpenBranches.From<{
+        leftBound: B["leftBound"]
+        union: B["union"]
+        intersection: [MaybeAppend<Root, B["intersection"]>, "&"]
+    }>
 
-export const reduceIntersection = (
-    s: parserState.withPreconditionRoot,
-    context: parserContext
-) => {
-    if (!s.l.branches.intersection) {
-        s.l.branches.intersection = new IntersectionNode([s.l.root], context)
-    } else {
-        s.l.branches.intersection.addMember(s.l.root)
+    export const reduce = (s: parserState.requireRoot) => {
+        if (!s.l.branches.intersection) {
+            s.l.branches.intersection = new Intersection.Node([s.l.root])
+        } else {
+            s.l.branches.intersection.pushChild(s.l.root)
+        }
+        s.l.root = undefined as any
+        return s
     }
-    s.l.root = undefined as any
-    return s
-}
 
-export type ReduceIntersection<
-    L extends Left,
-    Unscanned extends string
-> = Unscanned extends ""
-    ? MissingRightOperandMessage<"&">
-    : Left.From<{
-          lowerBound: L["lowerBound"]
-          groups: L["groups"]
-          branches: PushRoot<L["branches"], L["root"]>
-          root: undefined
-      }>
+    export type Reduce<
+        L extends Left,
+        Unscanned extends string
+    > = Unscanned extends ""
+        ? MissingRightOperandMessage<"&">
+        : Left.From<{
+              groups: L["groups"]
+              branches: PushChild<L["branches"], L["root"]>
+              root: undefined
+          }>
 
-export type stateWithMergeableIntersection = parserState<{
-    root: Base.node
-    branches: { intersection: IntersectionNode }
-}>
-
-export const hasMergeableIntersection = (
-    s: parserState.withPreconditionRoot
-): s is stateWithMergeableIntersection => !!s.l.branches.intersection
-
-export const mergeIntersection = (s: stateWithMergeableIntersection) => {
-    s.l.branches.intersection.addMember(s.l.root)
-    s.l.root = s.l.branches.intersection
-    s.l.branches.intersection = undefined as any
-    return s
+    export const maybeMerge = (s: parserState.requireRoot) => {
+        if (!s.l.branches.intersection) {
+            return s
+        }
+        s.l.branches.intersection.pushChild(s.l.root)
+        s.l.root = s.l.branches.intersection
+        s.l.branches.intersection = undefined
+        return s
+    }
 }

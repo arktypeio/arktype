@@ -82,6 +82,13 @@ export namespace scanner {
         "%": 1,
         " ": 1
     })
+
+    export const expressionExpectedMessage = <Unscanned extends string>(
+        unscanned: Unscanned
+    ) =>
+        `Expected an expression${
+            unscanned ? ` before '${unscanned}'` : ""
+        }.` as Scanner.ExpressionExpectedMessage<Unscanned>
 }
 
 export namespace Scanner {
@@ -113,4 +120,9 @@ export namespace Scanner {
     ]
 
     export type TerminatingChar = keyof typeof scanner.terminatingChars
+
+    export type ExpressionExpectedMessage<Unscanned extends string> =
+        `Expected an expression${Unscanned extends ""
+            ? ""
+            : ` before '${Unscanned}'`}.`
 }

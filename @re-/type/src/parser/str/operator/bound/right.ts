@@ -1,30 +1,32 @@
 import { isKeyOf } from "@re-/tools"
+import type { NodeToString } from "../../../../nodes/common.js"
 import { Bound } from "../../../../nodes/nonTerminal/binary/bound.js"
-import type { NumberLiteralDefinition } from "../../../../nodes/terminal/literal.js"
-import { LiteralNode } from "../../../../nodes/terminal/literal.js"
-import {
-    isNumberLiteral,
-    numberLiteralToValue
-} from "../../operand/unenclosed.js"
+import { PrimitiveLiteral } from "../../../../nodes/terminal/literal.js"
+import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { left, Left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
 import type { parserState, ParserState } from "../../state/state.js"
-import { ComparatorTokens } from "./tokens.js"
+import { Comparators } from "./tokens.js"
+
+// TODO: Fix
+type BoundableNode = any
 
 export namespace RightBoundOperator {
     export const parse = (
-        s: parserState.withPreconditionRoot,
+        s: parserState.requireRoot,
         comparator: Bound.Token
     ) => {
-        const boundingValue = s.r.shiftUntilNextTerminator()
-        if (isNumberLiteral(boundingValue)) {
-            s.l.root = new LiteralNode(boundingValue)
-        }
-        return isNumberLiteral(boundingValue)
-            ? reduce(s, comparator, numberLiteralToValue(boundingValue))
-            : s.error(
-                  invalidLimitMessage(comparator, boundingValue + s.r.unscanned)
-              )
+        const limitToken = s.r.shiftUntilNextTerminator()
+        const limit = UnenclosedNumber.parseWellFormed(
+            limitToken,
+            invalidLimitMessage(comparator, limitToken + s.r.unscanned),
+            "number"
+        )
+        return reduce(
+            s,
+            comparator,
+            new PrimitiveLiteral.Node(limitToken, limit)
+        )
     }
 
     export type Parse<
@@ -34,45 +36,59 @@ export namespace RightBoundOperator {
         infer Scanned,
         infer NextUnscanned
     >
-        ? Scanned extends NumberLiteralDefinition<infer Limit>
-            ? ParserState.From<{
-                  L: Reduce<S["L"], Comparator, Limit>
-                  R: NextUnscanned
-              }>
-            : ParserState.Error<InvalidLimitMessage<Comparator, Scanned>>
+        ? ParserState.From<{
+              L: Reduce<
+                  S["L"],
+                  Comparator,
+                  UnenclosedNumber.ParseWellFormed<
+                      Scanned,
+                      InvalidLimitMessage<Comparator, Scanned>,
+                      "number"
+                  >
+              >
+              R: NextUnscanned
+          }>
         : never
 
     const reduce = (
-        s: parserState.withPreconditionRoot,
+        s: parserState.requireRoot,
         comparator: Bound.Token,
-        limit: LiteralNode<number>
+        limit: PrimitiveLiteral.Node<number>
     ) =>
         isBoundable(s)
             ? isLeftBounded(s)
                 ? reduceDouble(s, comparator, limit)
                 : reduceSingle(s, comparator, limit)
-            : s.error(unboundableMessage(s.l.root.typeStr()))
+            : s.error(unboundableMessage(s.l.root.toString()))
 
     type Reduce<
         L extends Left,
         Comparator extends Bound.Token,
-        Limit extends number
-    > = L extends { root: BoundableNode }
-        ? L extends {
-              branches: {
-                  leftBound: Left.OpenLeftBound<
-                      infer LeftLimit,
-                      infer LeftComparator
-                  >
+        LimitParseResult extends string | number
+    > = LimitParseResult extends number
+        ? L extends { root: BoundableNode }
+            ? L extends {
+                  branches: {
+                      leftBound: Left.OpenBranches.LeftBound<
+                          infer LeftLimit,
+                          infer LeftComparator
+                      >
+                  }
               }
-          }
-            ? ReduceDouble<L, LeftLimit, LeftComparator, Comparator, Limit>
-            : ReduceSingle<L, Comparator, Limit>
-        : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
+                ? ReduceDouble<
+                      L,
+                      LeftLimit,
+                      LeftComparator,
+                      Comparator,
+                      LimitParseResult
+                  >
+                : ReduceSingle<L, Comparator, LimitParseResult>
+            : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
+        : Left.Error<`${LimitParseResult}`>
 
     const isBoundable = (
-        s: parserState.withPreconditionRoot
-    ): s is parserState<{ root: BoundableNode }> => isBoundable(s.l.root)
+        s: parserState.requireRoot
+    ): s is parserState<{ root: BoundableNode }> => true
 
     const isLeftBounded = (
         s: parserState
@@ -87,7 +103,7 @@ export namespace RightBoundOperator {
         LeftComparator extends Bound.Token,
         RightComparator extends Bound.Token,
         RightLimit extends number
-    > = RightComparator extends ComparatorTokens.SingleOnly
+    > = RightComparator extends Comparators.SingleOnly
         ? Left.From<{
               leftBound: undefined
               root: [
@@ -98,22 +114,20 @@ export namespace RightBoundOperator {
               groups: L["groups"]
               branches: L["branches"]
           }>
-        : Left.Error<ComparatorTokens.InvalidDoubleMessage<RightComparator>>
+        : Left.Error<Comparators.InvalidDoubleMessage<RightComparator>>
 
     const reduceDouble = (
         s: parserState<{
             root: BoundableNode
             branches: {
-                leftBound: {}
+                leftBound: left.openLeftBound
             }
         }>,
         rightComparator: Bound.Token,
-        rightLimit: LiteralNode<number>
+        rightLimit: PrimitiveLiteral.Node<number>
     ) => {
-        if (isKeyOf(rightComparator, ComparatorTokens.singleOnly)) {
-            return s.error(
-                ComparatorTokens.invalidDoubleMessage(rightComparator)
-            )
+        if (isKeyOf(rightComparator, Comparators.singleOnly)) {
+            return s.error(Comparators.invalidDoubleMessage(rightComparator))
         }
         s.l.root = new Bound.Node(
             [s.l.branches.leftBound[0], s.l.root],
@@ -134,9 +148,9 @@ export namespace RightBoundOperator {
     > = Left.SetRoot<L, [L["root"], Comparator, Limit]>
 
     const reduceSingle = (
-        s: parserState.withPreconditionRoot<BoundableNode>,
-        limit: LiteralNode<number>,
-        comparator: Bound.Token
+        s: parserState.requireRoot<BoundableNode>,
+        comparator: Bound.Token,
+        limit: PrimitiveLiteral.Node<number>
     ) => {
         s.l.root = new Bound.Node([s.l.root, limit], comparator, false)
         s.l.branches.leftBound = undefined

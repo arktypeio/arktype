@@ -1,77 +1,66 @@
 import { isKeyOf } from "@re-/tools"
-import type { parserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 import { parserState } from "../state/state.js"
-import { parseArray } from "./array.js"
-import type { ParseArray } from "./array.js"
-import { ComparatorOperator } from "./bound/comparator.js"
-import { ComparatorTokens } from "./bound/tokens.js"
-import type { ReduceGroupClose } from "./groupClose.js"
-import { reduceGroupClose } from "./groupClose.js"
-import type { ReduceIntersection } from "./intersection.js"
-import { reduceIntersection } from "./intersection.js"
-import { ModuloOperator } from "./modulo.js"
-import type { FinalizeOptional } from "./optional.js"
-import { finalizeOptional } from "./optional.js"
-import { reduceUnion } from "./union.js"
-import type { ReduceUnion } from "./union.js"
+import { ArrayOperator } from "./array.js"
+import { BoundOperator } from "./bound/bound.js"
+import { Comparators } from "./bound/tokens.js"
+import { DivisibilityOperator } from "./divisibility.js"
+import { GroupClose } from "./groupClose.js"
+import { IntersectionOperator } from "./intersection.js"
+import { OptionalOperator } from "./optional.js"
+import { UnionOperator } from "./union.js"
 
 export namespace Operator {
-    export const parse = (s: parserState.withPreconditionRoot): parserState => {
+    export const parse = (s: parserState.requireRoot): parserState => {
         const lookahead = s.r.shift()
         return lookahead === "END"
             ? parserState.finalize(s, false)
             : lookahead === "?"
-            ? finalizeOptional(s)
+            ? OptionalOperator.finalize(s)
             : lookahead === "["
-            ? parseArray(s, ctx)
+            ? ArrayOperator.parse(s)
             : lookahead === "|"
-            ? reduceUnion(s)
+            ? UnionOperator.reduce(s)
             : lookahead === "&"
-            ? reduceIntersection(s, ctx)
+            ? IntersectionOperator.reduce(s)
             : lookahead === ")"
-            ? reduceGroupClose(s)
-            : isKeyOf(lookahead, ComparatorTokens.startChar)
-            ? ComparatorOperator.parse(s, lookahead)
+            ? GroupClose.reduce(s)
+            : isKeyOf(lookahead, Comparators.startChar)
+            ? BoundOperator.parse(s, lookahead)
             : lookahead === "%"
-            ? ModuloOperator.parse(s)
+            ? DivisibilityOperator.parse(s)
             : lookahead === " "
             ? parse(s)
             : s.error(unexpectedCharacterMessage(lookahead))
     }
 
-    export type Parse<S extends ParserState> = S["R"] extends Scanner.Shift<
-        infer Lookahead,
-        infer Unscanned
-    >
-        ? Lookahead extends "?"
-            ? FinalizeOptional<S>
-            : Lookahead extends "["
-            ? ParseArray<S, Unscanned>
-            : Lookahead extends "|"
-            ? ParserState.From<{
-                  L: ReduceUnion<S["L"], Unscanned>
-                  R: Unscanned
-              }>
-            : Lookahead extends "&"
-            ? ParserState.From<{
-                  L: ReduceIntersection<S["L"], Unscanned>
-                  R: Unscanned
-              }>
-            : Lookahead extends ")"
-            ? ParserState.From<{
-                  L: ReduceGroupClose<S["L"], Unscanned>
-                  R: Unscanned
-              }>
-            : Lookahead extends ComparatorTokens.StartChar
-            ? ComparatorOperator.Parse<S, Lookahead, Unscanned>
-            : Lookahead extends "%"
-            ? ModuloOperator.Parse<S, Unscanned>
-            : Lookahead extends " "
-            ? Parse<{ L: S["L"]; R: Unscanned }>
-            : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>
-        : ParserState.Finalize<S, false>
+    export type Parse<S extends ParserState<{ root: {} }>> =
+        S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
+            ? Lookahead extends "?"
+                ? OptionalOperator.Finalize<S>
+                : Lookahead extends "["
+                ? ArrayOperator.Parse<S, Unscanned>
+                : Lookahead extends "|"
+                ? ParserState.From<{
+                      L: UnionOperator.Reduce<S["L"], Unscanned>
+                      R: Unscanned
+                  }>
+                : Lookahead extends "&"
+                ? ParserState.From<{
+                      L: IntersectionOperator.Reduce<S["L"], Unscanned>
+                      R: Unscanned
+                  }>
+                : Lookahead extends ")"
+                ? GroupClose.Reduce<S>
+                : Lookahead extends Comparators.StartChar
+                ? BoundOperator.Parse<S, Lookahead, Unscanned>
+                : Lookahead extends "%"
+                ? DivisibilityOperator.Parse<S, Unscanned>
+                : Lookahead extends " "
+                ? Parse<{ L: S["L"]; R: Unscanned }>
+                : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>
+            : ParserState.Finalize<S, false>
 
     const unexpectedCharacterMessage = <Char extends string>(
         char: Char

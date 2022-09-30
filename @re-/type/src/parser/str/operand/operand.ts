@@ -1,16 +1,9 @@
 import type { ParserContext, parserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
-import type {
-    ExpressionExpectedMessage,
-    ParserState,
-    parserState
-} from "../state/state.js"
-import type { EnclosedBaseStartChar, ParseEnclosedBase } from "./enclosed.js"
-import { enclosedBaseStartChars, parseEnclosedBase } from "./enclosed.js"
-import type { ReduceGroupOpen } from "./groupOpen.js"
-import { reduceGroupOpen } from "./groupOpen.js"
-import type { ParseUnenclosedBase } from "./unenclosed.js"
-import { parseUnenclosedBase } from "./unenclosed.js"
+import type { ParserState, parserState } from "../state/state.js"
+import { Enclosed } from "./enclosed.js"
+import { GroupOpen } from "./groupOpen.js"
+import { Unenclosed } from "./unenclosed.js"
 
 export namespace Operand {
     export const parse = (
@@ -18,12 +11,12 @@ export namespace Operand {
         context: parserContext
     ): parserState =>
         s.r.lookahead === "("
-            ? reduceGroupOpen(s.shifted())
-            : s.r.lookaheadIsIn(enclosedBaseStartChars)
-            ? parseEnclosedBase(s, s.r.shift(), context)
+            ? GroupOpen.reduce(s.shifted())
+            : s.r.lookaheadIsIn(Enclosed.startChars)
+            ? Enclosed.parse(s, s.r.shift())
             : s.r.lookahead === " "
             ? parse(s.shifted(), context)
-            : parseUnenclosedBase(s, context)
+            : Unenclosed.parse(s, context)
 
     export type Parse<
         S extends ParserState,
@@ -31,13 +24,13 @@ export namespace Operand {
     > = S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
         ? Lookahead extends "("
             ? ParserState.From<{
-                  L: ReduceGroupOpen<S["L"]>
+                  L: GroupOpen.Reduce<S["L"]>
                   R: Unscanned
               }>
-            : Lookahead extends EnclosedBaseStartChar
-            ? ParseEnclosedBase<S, Lookahead, Unscanned>
+            : Lookahead extends Enclosed.StartChar
+            ? Enclosed.Parse<S, Lookahead, Unscanned>
             : Lookahead extends " "
             ? Parse<{ L: S["L"]; R: Unscanned }, Ctx>
-            : ParseUnenclosedBase<S, Ctx>
-        : ParserState.Error<ExpressionExpectedMessage<"">>
+            : Unenclosed.Parse<S, Ctx>
+        : ParserState.Error<Scanner.ExpressionExpectedMessage<"">>
 }

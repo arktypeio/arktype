@@ -1,6 +1,5 @@
 import { keySet } from "@re-/tools"
-import type { Base } from "../../../nodes/base.js"
-import { StringNode } from "../../../nodes/terminal/keyword/string.js"
+import { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
 import type { Left } from "../state/left.js"
 import type { Scanner, scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
@@ -36,11 +35,7 @@ export namespace Enclosed {
         "/": (scanner) => scanner.lookahead === `/`
     }
 
-    export const parse = (
-        s: parserState,
-        enclosing: StartChar,
-        context: Base.context
-    ) => {
+    export const parse = (s: parserState, enclosing: StartChar) => {
         const token = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
             appendTo: enclosing,
             inclusive: true,
@@ -49,12 +44,8 @@ export namespace Enclosed {
         const enclosedText = token.slice(1, -1)
         s.l.root =
             enclosing === "/"
-                ? new StringNode(token as RegexLiteralDefinition, context)
-                : new LiteralNode(
-                      token as StringLiteralDefinition,
-                      enclosedText,
-                      context
-                  )
+                ? new PrimitiveLiteral.Node(token as RegexLiteralDefinition)
+                : new PrimitiveLiteral.Node(token, enclosedText)
         return s
     }
 
