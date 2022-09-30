@@ -1,4 +1,4 @@
-import type { Check } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/check/check.js"
 import { Nary } from "./nary.js"
 
 export namespace Intersection {
@@ -9,7 +9,7 @@ export namespace Intersection {
     export class Node extends Nary.Node<Token> {
         readonly token = token
 
-        check(state: Check.CheckState) {
+        check(state: Check.State) {
             for (const branch of this.children) {
                 branch.check(state)
             }

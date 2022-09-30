@@ -1,4 +1,4 @@
-import { Check } from "../traverse/exports.js"
+import { Check } from "../traverse/check/check.js"
 import { Terminal } from "./terminal.js"
 
 export namespace PrimitiveLiteral {
@@ -12,7 +12,7 @@ export namespace PrimitiveLiteral {
 
     export type Boolean<Value extends boolean = boolean> = `${Value}`
 
-    export type Diagnostic = Check.DiagnosticConfig<{
+    export type Diagnostic = Check.DefineDiagnostic<{
         definition: string
         data: unknown
         expected: Value
@@ -26,7 +26,7 @@ export namespace PrimitiveLiteral {
             super(def)
         }
 
-        check(state: Check.CheckState) {
+        check(state: Check.State) {
             if (state.data !== this.value) {
                 state.errors.add(
                     "primitiveLiteral",

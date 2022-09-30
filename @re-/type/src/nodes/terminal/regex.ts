@@ -1,4 +1,4 @@
-import type { Check } from "../traverse/exports.js"
+import type { Check } from "../traverse/check/check.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Regex {
@@ -23,7 +23,7 @@ export namespace Regex {
             super(def)
         }
 
-        check(state: Check.CheckState<string>) {
+        check(state: Check.State<string>) {
             if (!this.expression.test(state.data)) {
                 state.errors.add(
                     "regex",
@@ -41,7 +41,7 @@ export namespace Regex {
         }
     }
 
-    export type Diagnostic = Check.DiagnosticConfig<{
+    export type Diagnostic = Check.DefineDiagnostic<{
         expression: string
         actual: string
         keyword: PredefinedKeyword | undefined

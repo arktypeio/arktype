@@ -1,7 +1,7 @@
-import type { Dictionary, Evaluate } from "@re-/tools"
 import { chainableNoOpProxy, deepMerge, mapValues } from "@re-/tools"
+import type { Dictionary, Evaluate } from "@re-/tools"
 import { ResolutionNode } from "../nodes/resolution.js"
-import type { Infer } from "../nodes/traverse/ast/infer.js"
+import type { Ast } from "../nodes/traverse/ast.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { ParseSpace } from "./parse.js"
@@ -109,7 +109,7 @@ export type SpaceOptions = TypeOptions
 
 export type SpaceRootFrom<Space extends ResolvedSpace> = Evaluate<{
     infer: InferSpaceRoot<Space["resolutions"]>
-    aliases: Space["resolutions"]
+    aliases: Space["aliases"]
     ast: Space["resolutions"]
     type: InferredTypeFn<Space>
     // extend: ExtendFn<S>
@@ -121,5 +121,31 @@ export type SpaceTypeRoots<Resolutions> = Evaluate<{
 }>
 
 export type InferSpaceRoot<Resolutions> = Evaluate<{
-    [Name in keyof Resolutions]: Infer<Resolutions[Name], Resolutions>
+    [Name in keyof Resolutions]: Ast.Infer<Resolutions[Name], Resolutions>
 }>
+
+// export type ReferencesOptions<Filter extends string = string> = {
+//     filter?: FilterFn<Filter>
+// }
+
+// export type FilterFn<Filter extends string> =
+//     | ((reference: string) => reference is Filter)
+//     | ((reference: string) => boolean)
+
+// export type ReferencesFn<Ast> = <Options extends ReferencesOptions = {}>(
+//     options?: Options
+// ) => ElementOf<
+//     ReferencesOf<
+//         Ast,
+//         Options["filter"] extends FilterFn<infer Filter> ? Filter : string
+//     >
+// >[]
+
+// collectReferences(
+//     args: References.ReferencesOptions,
+//     collected: KeySet
+// ) {
+//     if (!args.filter || args.filter(this.def)) {
+//         collected[this.def] = 1
+//     }
+// }

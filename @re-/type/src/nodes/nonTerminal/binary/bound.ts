@@ -2,9 +2,7 @@
 import { keySet } from "@re-/tools"
 import type { Base } from "../../base.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
-import type { CheckState } from "../../traverse/check/check.js"
-import type { Check } from "../../traverse/exports.js"
-import type { TraversalState } from "../../traverse/traverse.js"
+import type { Check } from "../../traverse/check/check.js"
 import { Binary } from "./binary.js"
 
 export namespace Bound {
@@ -70,7 +68,7 @@ export namespace Bound {
             return this.isLeft ? invertedComparators[this.token] : this.token
         }
 
-        check(state: Check.CheckState<BoundableData>) {
+        check(state: Check.State<BoundableData>) {
             const actual =
                 typeof state.data === "number" ? state.data : state.data.length
             if (!this.isWithinBound(actual)) {
@@ -99,7 +97,7 @@ export namespace Bound {
             }
         }
 
-        private addError(state: CheckState<BoundableData>, actual: number) {
+        private addError(state: Check.State<BoundableData>, actual: number) {
             const kind: BoundableKind =
                 typeof state.data === "string"
                     ? "string"
@@ -124,7 +122,7 @@ export namespace Bound {
         }
     }
 
-    export type Diagnostic = Check.DiagnosticConfig<{
+    export type Diagnostic = Check.DefineDiagnostic<{
         comparator: Token
         comparatorDescription: string
         data: BoundableData

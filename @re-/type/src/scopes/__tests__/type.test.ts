@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { unresolvableMessage } from "../../parser/str/operand/unenclosed.js"
+import { Unenclosed } from "../../parser/str/operand/unenclosed.js"
 import { space } from "../space.js"
 
 describe("space", () => {
@@ -9,7 +9,7 @@ describe("space", () => {
         assert(() =>
             // @ts-expect-error
             space({ a: "strig" })
-        ).throwsAndHasTypeError(unresolvableMessage("strig"))
+        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("strig"))
     })
     test("independent", () => {
         assert(space({ a: "string", b: { c: "boolean" } }).$root.infer.b)
@@ -21,7 +21,7 @@ describe("space", () => {
                 // @ts-expect-error
                 { a: "string", b: { c: "uhoh" } }
             )
-        ).throwsAndHasTypeError(unresolvableMessage("uhoh"))
+        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("uhoh"))
     })
     test("interdependent", () => {
         assert(space({ a: "string", b: { c: "a" } }).$root.infer.b.c)
@@ -29,7 +29,7 @@ describe("space", () => {
         assert(() =>
             // @ts-expect-error
             space({ a: "yikes", b: { c: "a" } })
-        ).throwsAndHasTypeError(unresolvableMessage("yikes"))
+        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("yikes"))
     })
     test("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
@@ -90,6 +90,6 @@ describe("space", () => {
                 // @ts-expect-error
                 { nested: { a: "a", b: "b", c: "c" } }
             )
-        ).throwsAndHasTypeError(unresolvableMessage("c"))
+        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("c"))
     })
 })

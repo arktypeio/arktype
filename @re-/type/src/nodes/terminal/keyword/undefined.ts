@@ -1,4 +1,4 @@
-import type { Check } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/check/check.js"
 import { Terminal } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
@@ -7,7 +7,7 @@ export class UndefinedNode extends Terminal.Node<"undefined"> {
         super("undefined")
     }
 
-    check(state: Check.CheckState) {
+    check(state: Check.State) {
         if (state.data !== undefined) {
             addTypeKeywordDiagnostic(state, "undefined", "Must be undefined")
         }

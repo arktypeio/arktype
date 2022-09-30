@@ -1,9 +1,9 @@
 import type { Evaluate } from "@re-/tools"
 import type { Base } from "../../base.js"
 import type { Path } from "../../common.js"
-import type { CheckState } from "./check.js"
+import type { Check } from "./check.js"
 
-export type CustomDiagnosticResult = {
+type CustomDiagnosticResult = {
     id: string
     reason: string
     additionalContext?: Record<string, unknown>
@@ -18,19 +18,23 @@ export type NarrowFn<Data = unknown> = (
     | CustomDiagnosticResult
     | CustomDiagnosticResult[]
 
-export type CustomConstraintContext<Data = unknown> = {
+type CustomConstraintContext<Data = unknown> = {
     data: Data
     path: Path
 }
 
-export type CustomValidatorArgs<Data = unknown> = Evaluate<
+type CustomValidatorArgs<Data = unknown> = Evaluate<
     CustomConstraintContext<Data>
+>
+
+export type CustomDiagnostic = Check.DefineDiagnostic<
+    Omit<CustomDiagnosticResult, "reason">
 >
 
 export const checkCustomValidator = (
     narrow: NarrowFn,
     node: Base.node,
-    state: CheckState
+    state: Check.State
 ) => {
     const context: CustomConstraintContext = {
         data: state.data,

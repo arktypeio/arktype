@@ -1,5 +1,5 @@
 import type { NormalizedJsTypeName } from "@re-/tools"
-import type { Check } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/check/check.js"
 import type { Terminal } from "../terminal.js"
 import { AnyNode } from "./any.js"
 import { BigintNode } from "./bigint.js"
@@ -56,7 +56,7 @@ export namespace TypeKeyword {
 
     export const getNode = (def: Definition) => nodes[def]
 
-    export type Diagnostic = Check.DiagnosticConfig<{
+    export type Diagnostic = Check.DefineDiagnostic<{
         keyword: TypeKeyword.Definition
         data: string
         actual: NormalizedJsTypeName

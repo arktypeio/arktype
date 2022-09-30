@@ -1,11 +1,8 @@
 import type { MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
-import type { Infer } from "../nodes/traverse/ast/infer.js"
-import type { Diagnostics } from "../nodes/traverse/check/diagnostics.js"
-import { ValidationError } from "../nodes/traverse/check/diagnostics.js"
-import { CheckState } from "../nodes/traverse/check/exports.js"
-import type { Check, References } from "../nodes/traverse/exports.js"
+import { Check } from "../nodes/traverse/check/check.js"
+import { Diagnostics } from "../nodes/traverse/check/diagnostics.js"
 import type { ParseError } from "../parser/common.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
@@ -35,7 +32,7 @@ const lazyTypeFn: DynamicTypeFn = (def, opts) => {
 export type InferredTypeFn<Space extends ResolvedSpace> = <
     Definition,
     Ast = Root.Parse<Definition, Space>,
-    Inferred = Infer<Ast, Space["resolutions"]>
+    Inferred = Ast.Infer<Ast, Space["resolutions"]>
 >(
     definition: Root.Validate<Definition, Ast>,
     options?: TypeOptions<Inferred>
@@ -61,10 +58,7 @@ type.lazyDynamic = lazyTypeFn
 
 export type DynamicArktype = Arktype<unknown, unknown>
 
-export type TypeOptions<Inferred = unknown> = {
-    narrow?: Check.NarrowFn<Inferred>
-    errors?: Check.OptionsByDiagnostic
-}
+export type TypeOptions<Inferred = unknown> = Check.Options<Inferred>
 
 export type InternalTypeOptions = TypeOptions<any> & {
     space?: InternalSpace
@@ -75,7 +69,6 @@ export type Arktype<Inferred, Ast> = {
     check: CheckFn<Inferred>
     assert: AssertFn<Inferred>
     ast: Ast
-    references: References.ReferencesFn<Ast>
 }
 
 export class InternalArktype implements DynamicArktype {
@@ -90,7 +83,7 @@ export class InternalArktype implements DynamicArktype {
     }
 
     check(data: unknown) {
-        const state = new CheckState(data, this.options)
+        const state = new Check.State(data, this.options)
         this.root.check(state)
         return state.errors.length
             ? {
@@ -102,13 +95,11 @@ export class InternalArktype implements DynamicArktype {
     assert(data: unknown) {
         const validationResult = this.check(data)
         if (validationResult.errors) {
-            throw new ValidationError(validationResult.errors.summary)
+            throw new Diagnostics.ValidationError(
+                validationResult.errors.summary
+            )
         }
         return validationResult.data
-    }
-
-    references(options: References.ReferencesOptions = {}) {
-        return this.root.references(options) as any
     }
 }
 
@@ -117,7 +108,7 @@ export type CheckFn<Inferred> = (data: unknown) => CheckResult<Inferred>
 export type CheckResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
-        errors: Diagnostics
+        errors: Diagnostics.Diagnostics
     }
 >
 

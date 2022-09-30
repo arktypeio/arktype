@@ -1,4 +1,4 @@
-import type { Check } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/check/check.js"
 import { Terminal } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
@@ -7,7 +7,7 @@ export class BigintNode extends Terminal.Node<"bigint"> {
         super("bigint")
     }
 
-    check(state: Check.CheckState) {
+    check(state: Check.State) {
         if (typeof state.data !== "bigint") {
             addTypeKeywordDiagnostic(state, "bigint", "Must be a bigint")
         }

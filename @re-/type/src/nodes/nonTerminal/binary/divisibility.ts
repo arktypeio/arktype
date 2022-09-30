@@ -1,7 +1,6 @@
 import type { Base } from "../../base.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
-import type { Check } from "../../traverse/exports.js"
-import type { TraversalState } from "../../traverse/traverse.js"
+import type { Check } from "../../traverse/check/check.js"
 import { Binary } from "./binary.js"
 
 export namespace Divisibility {
@@ -19,7 +18,7 @@ export namespace Divisibility {
             super([child, divisor])
         }
 
-        check(state: Check.CheckState<number>) {
+        check(state: Check.State<number>) {
             if (state.data % this.divisor.value !== 0) {
                 const reason =
                     this.divisor.value === 1
@@ -37,7 +36,7 @@ export namespace Divisibility {
         }
     }
 
-    export type Diagnostic = Check.DiagnosticConfig<{
+    export type Diagnostic = Check.DefineDiagnostic<{
         divisor: number
         actual: number
     }>

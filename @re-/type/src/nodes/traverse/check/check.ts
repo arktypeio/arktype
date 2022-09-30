@@ -1,32 +1,44 @@
 import type { NormalizedJsTypeName, NormalizedJsTypes } from "@re-/tools"
 import { hasJsType, toString } from "@re-/tools"
 import type { TypeOptions } from "../../../scopes/type.js"
-import { TraversalState } from "../traverse.js"
+import type { NarrowFn } from "./customValidator.js"
+import type { OptionsByDiagnostic } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"
-import type { NarrowFn, OptionsByDiagnostic } from "./exports.js"
 
-export type CheckOptions<Inferred = unknown> = {
-    narrow?: NarrowFn<Inferred>
-    errors?: OptionsByDiagnostic
-}
+export namespace Check {
+    export const Errors = Diagnostics
 
-export class CheckState<Data = unknown> extends TraversalState {
-    errors: Diagnostics = new Diagnostics()
-    checkedValuesByAlias: Record<string, object[]>
-
-    constructor(public data: Data, options: TypeOptions) {
-        super(options)
-        this.checkedValuesByAlias = {}
+    export type DefineDiagnostic<
+        Context extends Record<string, unknown>,
+        Options extends Record<string, unknown> = {}
+    > = {
+        context: Context
+        options: Options
     }
 
-    dataIsOfType<TypeName extends NormalizedJsTypeName>(
-        typeName: TypeName
-    ): this is CheckState<NormalizedJsTypes[TypeName]> {
-        return hasJsType(this.data, typeName)
+    export type Options<Inferred = unknown> = {
+        narrow?: NarrowFn<Inferred>
+        errors?: OptionsByDiagnostic
     }
-}
 
-export const stringifyData = (data: unknown) =>
-    toString(data, {
-        maxNestedStringLength: 50
-    })
+    export class State<Data = unknown> {
+        path: string[] = []
+        errors = new Errors()
+        checkedValuesByAlias: Record<string, object[]>
+
+        constructor(public data: Data, public options: TypeOptions) {
+            this.checkedValuesByAlias = {}
+        }
+
+        dataIsOfType<TypeName extends NormalizedJsTypeName>(
+            typeName: TypeName
+        ): this is State<NormalizedJsTypes[TypeName]> {
+            return hasJsType(this.data, typeName)
+        }
+    }
+
+    export const stringifyData = (data: unknown) =>
+        toString(data, {
+            maxNestedStringLength: 50
+        })
+}

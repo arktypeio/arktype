@@ -1,5 +1,5 @@
 import type { Base } from "../nodes/base.js"
-import type { Nary } from "../nodes/nonTerminal/nary/nary.js"
+import type { NonTerminal } from "../nodes/nonTerminal/nonTerminal.js"
 import type { InternalSpace } from "../scopes/space.js"
 import type { InternalTypeOptions, TypeOptions } from "../scopes/type.js"
 
@@ -21,7 +21,7 @@ export const initializeParserContext = (opts: InternalTypeOptions = {}) => {
 
 export type parseFn<DefType = unknown> = (
     def: DefType,
-    context: parserContext
+    ctx: parserContext
 ) => Base.node
 
 export class parseError extends Error {}
@@ -36,10 +36,12 @@ export type MaybeAppend<T, MaybeArray> = MaybeArray extends unknown[]
     ? [...MaybeArray, T]
     : T
 
-export type MissingRightOperandMessage<Token extends Nary.Token> =
+export type MissingRightOperandMessage<Token extends NonTerminal.InfixToken> =
     `Token '${Token}' requires a right operand.`
 
-export const missingRightOperandMessage = <Token extends Nary.Token>(
+export const missingRightOperandMessage = <
+    Token extends NonTerminal.InfixToken
+>(
     token: Token
 ): MissingRightOperandMessage<Token> =>
     `Token '${token}' requires a right operand.`

@@ -1,8 +1,7 @@
-import type { KeySet } from "@re-/tools"
 import { Root } from "../parser/root.js"
 import { Base } from "./base.js"
+import type { Check } from "./traverse/check/check.js"
 import { checkCustomValidator } from "./traverse/check/customValidator.js"
-import type { Check, References } from "./traverse/exports.js"
 
 export class ResolutionNode extends Base.node {
     public root: Base.node
@@ -28,15 +27,7 @@ export class ResolutionNode extends Base.node {
         return this.name
     }
 
-    collectReferences(opts: References.ReferencesOptions, collected: KeySet) {
-        this.root.collectReferences(opts, collected)
-    }
-
-    references(opts: References.ReferencesOptions) {
-        return this.root.references(opts)
-    }
-
-    check(state: Check.CheckState) {
+    check(state: Check.State) {
         // const nextArgs = this.nextArgs(state, this.context.validate)
         if (typeof state.data === "object" && state.data !== null) {
             if (state.checkedValuesByAlias[this.name]?.includes(state.data)) {
@@ -51,7 +42,6 @@ export class ResolutionNode extends Base.node {
         }
         // TODO: Should maybe only check for type errors?
         const previousErrorCount = state.errors.length
-        state.seen.push(this.name)
         this.root.check(state)
         if (
             state.options.narrow &&
@@ -59,6 +49,5 @@ export class ResolutionNode extends Base.node {
         ) {
             checkCustomValidator(state.options.narrow, this, state)
         }
-        state.seen.pop()
     }
 }

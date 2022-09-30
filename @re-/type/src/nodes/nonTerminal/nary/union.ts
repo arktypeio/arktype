@@ -1,4 +1,4 @@
-import { Check } from "../../traverse/exports.js"
+import { Check } from "../../traverse/check/check.js"
 import { Nary } from "./nary.js"
 
 export namespace Union {
@@ -9,11 +9,11 @@ export namespace Union {
     export class Node extends Nary.Node<Token> {
         readonly token = token
 
-        check(state: Check.CheckState) {
+        check(state: Check.State) {
             const rootErrors = state.errors
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
             for (const child of this.children) {
-                state.errors = new Check.Diagnostics()
+                state.errors = new Check.Errors()
                 child.check(state)
                 if (!state.errors.length) {
                     return
@@ -25,7 +25,7 @@ export namespace Union {
         }
 
         private addUnionDiagnostic(
-            state: Check.CheckState,
+            state: Check.State,
             branchDiagnosticsEntries: BranchDiagnosticsEntry[]
         ) {
             const context: Diagnostic["context"] = {
@@ -65,7 +65,7 @@ export namespace Union {
         return branchDiagnosticSummary
     }
 
-    export type Diagnostic = Check.DiagnosticConfig<
+    export type Diagnostic = Check.DefineDiagnostic<
         {
             definition: string
             actual: unknown
@@ -76,5 +76,5 @@ export namespace Union {
         }
     >
 
-    export type BranchDiagnosticsEntry = [string, Check.Diagnostics]
+    export type BranchDiagnosticsEntry = [string, Check.Errors]
 }

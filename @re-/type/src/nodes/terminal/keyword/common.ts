@@ -1,9 +1,9 @@
 import { jsTypeOf } from "@re-/tools"
-import type { Check } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/check/check.js"
 import type { TypeKeyword } from "./keyword.js"
 
 export const addTypeKeywordDiagnostic = (
-    state: Check.CheckState,
+    state: Check.State,
     keyword: TypeKeyword.Definition,
     reason: string
 ) => {
