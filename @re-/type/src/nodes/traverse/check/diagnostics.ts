@@ -1,6 +1,6 @@
-import type { Evaluate } from "@re-/tools"
+import { uncapitalize } from "@re-/tools"
 import type { Base } from "../../base.js"
-import type { Path } from "../../common.js"
+import { pathToString } from "../../common.js"
 import type { Bound } from "../../nonTerminal/binary/bound.js"
 import type { Divisibility } from "../../nonTerminal/binary/divisibility.js"
 import type { Union } from "../../nonTerminal/nary/union.js"
@@ -11,22 +11,50 @@ import type { TypeKeyword } from "../../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Regex } from "../../terminal/regex.js"
 import type { Check } from "./check.js"
-import type { CustomDiagnostic } from "./customValidator.js"
-
-export type OptionsByDiagnostic = {
-    [Code in DiagnosticCode]?: DiagnosticOptions<Code>
-}
+import { stringifyData } from "./common.js"
 
 export type DiagnosticCode = keyof RegisteredDiagnostics
 
+export type Diagnostic<Code extends DiagnosticCode, Data = unknown> = {
+    code: Code
+} & BaseDiagnosticContext<Data> &
+    SupplementalDiagnosticContext<Code>
+
+export type OptionsByDiagnostic = {
+    [Code in DiagnosticCode]?: FullDiagnosticOptions<Code>
+}
+
+export type InternalDiagnosticInput<Code extends DiagnosticCode> =
+    SupplementalDiagnosticContext<Code> & {
+        type: Base.node
+        message: string
+    }
+
 type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
     message?: (context: Diagnostic<Code>) => string
-} & ("actual" extends keyof RegisteredDiagnostics[Code]["context"]
-    ? { omitActualFromMessage?: boolean }
+} & ("actual" extends keyof SupplementalDiagnosticContext<Code>
+    ? { omitActual?: boolean }
     : {})
 
+type BaseDiagnosticContext<Data = unknown> = {
+    type: Pick<Base.node, "toString" | "toAst" | "toDefinition">
+    data: {
+        raw: Data
+        toString(): string
+    }
+    message: string
+}
+
+type SupplementalDiagnosticContext<Code extends DiagnosticCode> =
+    RegisteredDiagnostics[Code]["context"]
+
+type SupplementalDiagnosticOptions<Code extends DiagnosticCode> =
+    RegisteredDiagnostics[Code]["options"]
+
+type FullDiagnosticOptions<Code extends DiagnosticCode> =
+    BaseDiagnosticOptions<Code> & SupplementalDiagnosticOptions<Code>
+
 type RegisteredDiagnostics = {
-    custom: CustomDiagnostic
     typeKeyword: TypeKeyword.Diagnostic
     primitiveLiteral: PrimitiveLiteral.Diagnostic
     structure: StructureDiagnostic
@@ -39,20 +67,30 @@ type RegisteredDiagnostics = {
     divisibility: Divisibility.Diagnostic
 }
 
-export type DiagnosticData<Code extends DiagnosticCode> =
-    RegisteredDiagnostics[Code]["context"]
+export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
+    constructor(private state: Check.State) {
+        super()
+    }
 
-type DiagnosticOptions<Code extends DiagnosticCode> = Evaluate<
-    RegisteredDiagnostics[Code]["options"] & BaseDiagnosticOptions<Code>
->
-
-export class Diagnostics extends Array<DiagnosticData<DiagnosticCode>> {
     add<Code extends DiagnosticCode>(
         code: Code,
-        context: DiagnosticData<Code>
+        context: SupplementalDiagnosticContext<Code>
     ) {
-        context.code
-        this.push()
+        const diagnostic = context as Diagnostic<Code>
+        const raw = this.state.data
+        diagnostic.data = {
+            raw,
+            toString: () => stringifyData(raw)
+        }
+        diagnostic.path = this.state.path
+        const options = this.state.options.errors?.[code]
+        if ("actual" in diagnostic && !options?.omitActual) {
+            diagnostic.message += ` (was ${diagnostic.actual})`
+        }
+        if (options?.message) {
+            diagnostic.message = options?.message(diagnostic)
+        }
+        this.push(diagnostic)
     }
 
     get summary() {

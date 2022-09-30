@@ -1,22 +1,23 @@
 import type { NormalizedJsTypeName, NormalizedJsTypes } from "@re-/tools"
-import { hasJsType, toString, uncapitalize } from "@re-/tools"
+import { hasJsType, toString } from "@re-/tools"
 import type { TypeOptions } from "../../../scopes/type.js"
 import type { Base } from "../../base.js"
-import { pathToString } from "../../common.js"
 import type { NarrowFn } from "./customValidator.js"
 import type {
+    Diagnostic,
     DiagnosticCode,
-    DiagnosticData,
+    InternalDiagnosticInput,
     OptionsByDiagnostic
-} from "./diagnostic.js"
+} from "./diagnostics.js"
+import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
     export type DefineDiagnostic<
-        Context extends Record<string, unknown>,
-        Options extends Record<string, unknown> = {}
+        SupplementalContext extends Record<string, unknown>,
+        SupplementalOptions extends Record<string, unknown> = {}
     > = {
-        context: Context
-        options: Options
+        context: SupplementalContext
+        options: SupplementalOptions
     }
 
     export type Options<Inferred = unknown> = {
@@ -24,31 +25,13 @@ export namespace Check {
         errors?: OptionsByDiagnostic
     }
 
-    export const stringifyData = (data: unknown) =>
-        toString(data, {
-            maxNestedStringLength: 50
-        })
-
-    type BaseDiagnosticContext<Data = unknown> = {
-        type: Pick<Base.node, "toString" | "toAst" | "toDefinition">
-        data: {
-            raw: Data
-            toString(): string
-        }
-        message: string
-    }
-
-    type FullDiagnosticContext<
-        Code extends DiagnosticCode,
-        Data = unknown
-    > = BaseDiagnosticContext<Data> & DiagnosticData<Code>
-
     export class State<Data = unknown> {
+        errors: Diagnostics
         path: string[] = []
-        errors = new Diagnostics()
         checkedValuesByAlias: Record<string, object[]>
 
         constructor(public data: Data, public options: TypeOptions) {
+            this.errors = new Diagnostics(this)
             this.checkedValuesByAlias = {}
         }
 
@@ -60,26 +43,11 @@ export namespace Check {
 
         add<Code extends DiagnosticCode>(
             code: Code,
-            context: DiagnosticData<Code> & {
-                type: Base.node
-                message: string
-            }
+            context: InternalDiagnosticInput<Code>
         ) {
-            const fullContext = context as FullDiagnosticContext<Code>
-            const raw = this.data
-            fullContext.data = {
-                raw,
-                toString: () => stringifyData(raw)
-            }
-            fullContext.path = this.path
-            const options = this.options.errors?.[code]
-            if ("actual" in fullContext && !options?.omitActual) {
-                fullContext.message += ` (was ${fullContext.actual})`
-            }
-            if (options?.message) {
-                fullContext.message = options?.message(fullContext)
-            }
-            this.errors.push(new Diagnostic(code))
+            const diagnostic = context as Diagnostic<Code>
+
+            this.errors.push(diagnostic)
         }
     }
 }

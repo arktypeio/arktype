@@ -13,10 +13,7 @@ export namespace PrimitiveLiteral {
     export type Boolean<Value extends boolean = boolean> = `${Value}`
 
     export type Diagnostic = Check.DefineDiagnostic<{
-        definition: string
-        data: unknown
-        expected: Value
-        actual: string
+        expected: PrimitiveLiteral.Value
     }>
 
     export class Node<
