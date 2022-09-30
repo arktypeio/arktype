@@ -2,6 +2,6 @@
     "extends": "../../tsconfig",
     "include": ["src"],
     "compilerOptions": {
-        "plugins": [{ "name": "@arktype/plugin" }]
+        // "plugins": [{ "name": "@arktype/plugin" }]
     }
 }

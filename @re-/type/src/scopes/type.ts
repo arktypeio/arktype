@@ -1,4 +1,4 @@
-import type { Evaluate, MutuallyExclusiveProps } from "@re-/tools"
+import type { MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
 import type { Infer } from "../nodes/traverse/ast/infer.js"
@@ -7,14 +7,15 @@ import { ValidationError } from "../nodes/traverse/check/diagnostics.js"
 import { CheckState } from "../nodes/traverse/check/exports.js"
 import { Generate } from "../nodes/traverse/exports.js"
 import type { Check, References } from "../nodes/traverse/exports.js"
+import type { ParseError } from "../parser/common.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
-import type { ResolvedSpace, SpaceRoot } from "./space.js"
+import type { InternalSpace, ResolvedSpace } from "./space.js"
 
 const rawTypeFn: DynamicTypeFn = (def, opts) => {
     const ctx = initializeParserContext(opts)
     const root = Root.parse(def, ctx)
-    return new TypeRoot(def, root, ctx)
+    return new InternalArktype(root, ctx)
 }
 
 const lazyTypeFn: DynamicTypeFn = (def, opts) => {
@@ -39,12 +40,12 @@ export type InferredTypeFn<Space extends ResolvedSpace> = <
 >(
     definition: Root.Validate<Definition, Ast>,
     options?: TypeOptions<Inferred>
-) => TypeRoot.New<Definition, Ast, Inferred>
+) => Ast extends ParseError<string> ? never : Arktype<Inferred, Ast>
 
 type DynamicTypeFn = (
     definition: unknown,
     options?: TypeOptions
-) => DynamicTypeRoot
+) => DynamicArktype
 
 export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> =
     InferredTypeFn<Space> & {
@@ -59,7 +60,7 @@ type.dynamic = rawTypeFn
 type.lazy = lazyTypeFn as any
 type.lazyDynamic = lazyTypeFn
 
-export type DynamicTypeRoot = TypeRoot.New<unknown, unknown, unknown>
+export type DynamicArktype = Arktype<unknown, unknown>
 
 export type TypeOptions<Inferred = unknown> = {
     narrow?: Check.NarrowFn<Inferred>
@@ -68,28 +69,21 @@ export type TypeOptions<Inferred = unknown> = {
 }
 
 export type InternalTypeOptions = TypeOptions<any> & {
-    space?: SpaceRoot
+    space?: InternalSpace
 }
 
-export namespace TypeRoot {
-    export type New<Def, Ast, Inferred> = Evaluate<{
-        definition: Def
-        infer: Inferred
-        check: CheckFn<Inferred>
-        assert: AssertFn<Inferred>
-        default: Inferred
-        ast: Ast
-        generate: GenerateFn<Inferred>
-        references: References.ReferencesFn<Ast>
-    }>
+export type Arktype<Inferred, Ast> = {
+    infer: Inferred
+    check: CheckFn<Inferred>
+    assert: AssertFn<Inferred>
+    default: Inferred
+    ast: Ast
+    generate: GenerateFn<Inferred>
+    references: References.ReferencesFn<Ast>
 }
 
-export class TypeRoot implements DynamicTypeRoot {
-    constructor(
-        public definition: unknown,
-        public root: Base.node,
-        public options: InternalTypeOptions
-    ) {}
+export class InternalArktype implements DynamicArktype {
+    constructor(public root: Base.node, public options: InternalTypeOptions) {}
 
     get infer() {
         return chainableNoOpProxy

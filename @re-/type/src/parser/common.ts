@@ -1,6 +1,6 @@
 import type { Base } from "../nodes/base.js"
 import type { Nary } from "../nodes/nonTerminal/nary/nary.js"
-import type { SpaceRoot } from "../scopes/space.js"
+import type { InternalSpace } from "../scopes/space.js"
 import type { InternalTypeOptions, TypeOptions } from "../scopes/type.js"
 
 export type ParserContext = {
@@ -9,7 +9,7 @@ export type ParserContext = {
 
 export type parserContext = TypeOptions & {
     path: string[]
-    space?: SpaceRoot
+    space?: InternalSpace
 }
 
 // TODO: Mutation okay?

@@ -5,9 +5,10 @@ import type { Infer } from "../nodes/traverse/ast/infer.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { ParseSpace } from "./parse.js"
-import { TypeRoot } from "./type.js"
+import { InternalArktype } from "./type.js"
 import type {
-    DynamicTypeRoot,
+    Arktype,
+    DynamicArktype,
     InferredTypeFn,
     InternalTypeOptions,
     TypeOptions
@@ -27,7 +28,7 @@ export type SpaceFn = TypedSpaceFn & { dynamic: DynamicSpaceFn }
 
 export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
     keyof Aliases,
-    DynamicTypeRoot
+    DynamicArktype
 > & {
     $root: DynamicSpaceRoot
 }
@@ -38,14 +39,14 @@ export type DynamicSpaceRoot = SpaceRootFrom<{
 }>
 
 const rawSpace = (aliases: Dictionary, opts: SpaceOptions = {}) => {
-    const $root = new SpaceRoot(aliases, opts)
+    const $root = new InternalSpace(aliases, opts)
     const compiled: Record<string, any> = { $root }
     for (const name of Object.keys(aliases)) {
         const ctx = initializeParserContext(opts)
         ctx.space = $root
         const resolution = new ResolutionNode(name, ctx)
         $root.resolutions[name] = resolution
-        compiled[name] = new TypeRoot(resolution.root, resolution, opts)
+        compiled[name] = new InternalArktype(resolution, opts)
     }
     return compiled as DynamicSpace
 }
@@ -53,10 +54,12 @@ const rawSpace = (aliases: Dictionary, opts: SpaceOptions = {}) => {
 rawSpace.dynamic = rawSpace
 export const space: SpaceFn = rawSpace as any
 
+space({ a: "string[]" })
+
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
 // TODO: Ensure there are no extraneous types/space calls from testing
 // TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space
-export class SpaceRoot implements DynamicSpaceRoot {
+export class InternalSpace implements DynamicSpaceRoot {
     resolutions: Dictionary<ResolutionNode>
 
     constructor(public aliases: Dictionary, public options: SpaceOptions = {}) {
@@ -68,7 +71,7 @@ export class SpaceRoot implements DynamicSpaceRoot {
         const compiledOptions = deepMerge(this.options, opts)
         compiledOptions.space = this
         const root = Root.parse(def, initializeParserContext(compiledOptions))
-        return new TypeRoot(def, root, compiledOptions) as any
+        return new InternalArktype(root, compiledOptions) as any
     }
 
     extend(extensions: Dictionary, overrides?: SpaceOptions) {
@@ -98,11 +101,11 @@ export namespace ResolvedSpace {
     export type Empty = From<{ aliases: {}; resolutions: {} }>
 }
 
-export type SpaceOutput<Space extends ResolvedSpace> = Evaluate<
-    SpaceTypeRoots<Space["resolutions"]> & {
-        $root: SpaceRootFrom<Space>
-    }
->
+export type SpaceOutput<Space extends ResolvedSpace> = SpaceTypeRoots<
+    Space["resolutions"]
+> & {
+    $root: SpaceRootFrom<Space>
+}
 
 export type SpaceOptions = TypeOptions
 
@@ -116,11 +119,7 @@ export type SpaceRootFrom<Space extends ResolvedSpace> = Evaluate<{
 }>
 
 export type SpaceTypeRoots<Resolutions> = Evaluate<{
-    [Name in keyof Resolutions]: TypeRoot.New<
-        Name,
-        Resolutions[Name],
-        Resolutions
-    >
+    [Name in keyof Resolutions]: Arktype<Resolutions[Name], Resolutions>
 }>
 
 export type InferSpaceRoot<Resolutions> = Evaluate<{
