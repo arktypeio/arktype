@@ -45,14 +45,14 @@ export const checkCustomValidator = (
         if (typeof messageOrCustomResult === "string") {
             state.errors.add(
                 "custom",
-                { reason: messageOrCustomResult, state: state },
+                { reason: messageOrCustomResult, state },
                 {
                     id: "anonymous"
                 }
             )
         } else {
             const { reason, ...context } = messageOrCustomResult
-            state.errors.add("custom", { reason, state: state }, context)
+            state.errors.add("custom", { reason, state }, context)
         }
     }
 }

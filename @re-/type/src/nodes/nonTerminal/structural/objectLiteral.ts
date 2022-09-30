@@ -1,6 +1,6 @@
 import type { Dictionary } from "@re-/tools"
 import type { Base } from "../../base.js"
-import type { Check, Generate } from "../../traverse/exports.js"
+import type { Check } from "../../traverse/exports.js"
 import { NonTerminal } from "../nonTerminal.js"
 import { Optional } from "../unary/optional.js"
 import { checkObjectKind } from "./common.js"
@@ -42,21 +42,6 @@ export namespace ObjectLiteral {
             }
             state.data = rootData
             return Object.keys(uncheckedData)
-        }
-
-        generate(state: Generate.GenerateState) {
-            const result: Dictionary = {}
-            for (let i = 0; i < this.children.length; i++) {
-                const k = this.keys[i]
-                const child = this.children[i]
-                if (child instanceof Optional.Node) {
-                    continue
-                }
-                state.path.push(k)
-                result[k] = child.generate(state)
-                state.path.pop()
-            }
-            return result
         }
 
         private addMissingKeyDiagnostic(

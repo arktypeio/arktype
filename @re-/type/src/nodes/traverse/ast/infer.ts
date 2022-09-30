@@ -1,13 +1,13 @@
 import type { Evaluate } from "@re-/tools"
 import type { Bound } from "../../nonTerminal/binary/bound.js"
 import type { Divisibility } from "../../nonTerminal/binary/divisibility.js"
-import type { Keyword } from "../../terminal/keyword/keyword.js"
+import type { TypeKeyword } from "../../terminal/keyword/keyword.js"
 import type {
     BigintLiteralDefinition,
     BooleanLiteralDefinition,
     NumberLiteralDefinition,
     StringLiteralDefinition
-} from "../../terminal/literal.js"
+} from "../../terminal/primitiveLiteral.js"
 
 export type Infer<Ast, Resolutions> = Ast extends string
     ? InferTerminal<Ast, Resolutions>
@@ -33,8 +33,8 @@ type ConstraintToken = Bound.Token | Divisibility.Token
 type InferTerminal<
     Token extends string,
     Resolutions
-> = Token extends Keyword.Definition
-    ? Keyword.Infer<Token>
+> = Token extends TypeKeyword.Definition
+    ? TypeKeyword.Infer<Token>
     : Token extends keyof Resolutions
     ? Infer<Resolutions[Token], Resolutions>
     : Token extends StringLiteralDefinition<infer Value>

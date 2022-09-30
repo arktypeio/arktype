@@ -1,5 +1,5 @@
 import type { Base } from "../../base.js"
-import type { PrimitiveLiteral } from "../../terminal/literal.js"
+import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Check } from "../../traverse/exports.js"
 import type { TraversalState } from "../../traverse/traverse.js"
 import { Binary } from "./binary.js"
@@ -34,10 +34,6 @@ export namespace Divisibility {
                     { divisor: this.divisor.value, actual: state.data }
                 )
             }
-        }
-
-        generate(state: TraversalState) {
-            this.child.generate(state)
         }
     }
 

@@ -1,7 +1,7 @@
 import { isKeyOf } from "@re-/tools"
 import type { NodeToString } from "../../../../nodes/common.js"
 import { Bound } from "../../../../nodes/nonTerminal/binary/bound.js"
-import { PrimitiveLiteral } from "../../../../nodes/terminal/literal.js"
+import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { left, Left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"

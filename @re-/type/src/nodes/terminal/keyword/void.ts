@@ -1,8 +1,8 @@
 import type { Check } from "../../traverse/exports.js"
-import { TerminalNode } from "../terminal.js"
+import { Terminal } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
-export class VoidNode extends TerminalNode<"void"> {
+export class VoidNode extends Terminal.Node<"void"> {
     constructor() {
         super("void")
     }
@@ -12,6 +12,4 @@ export class VoidNode extends TerminalNode<"void"> {
             addTypeKeywordDiagnostic(state, "void", "Must be undefined")
         }
     }
-
-    generate(): void {}
 }

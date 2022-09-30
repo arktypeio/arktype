@@ -100,11 +100,4 @@ describe("bound", () => {
             )
         })
     })
-    describe("generation", () => {
-        test("unsupported", () => {
-            assert(() => type("1<number<5").generate()).throws.snap(
-                `Error: Unable to generate a value for '1<number<5': Constrained generation is not yet supported.`
-            )
-        })
-    })
 })

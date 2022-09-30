@@ -2,7 +2,7 @@ import type { Base } from "../../../nodes/base.js"
 import type { Bound } from "../../../nodes/nonTerminal/binary/bound.js"
 import type { Intersection } from "../../../nodes/nonTerminal/nary/intersection.js"
 import type { Union } from "../../../nodes/nonTerminal/nary/union.js"
-import type { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
+import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError } from "../../common.js"
 import type { Comparators } from "../operator/bound/tokens.js"
 

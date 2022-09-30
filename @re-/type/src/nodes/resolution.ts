@@ -2,7 +2,6 @@ import type { KeySet } from "@re-/tools"
 import { Root } from "../parser/root.js"
 import { Base } from "./base.js"
 import { checkCustomValidator } from "./traverse/check/customValidator.js"
-import { Generate } from "./traverse/exports.js"
 import type { Check, References } from "./traverse/exports.js"
 
 export class ResolutionNode extends Base.node {
@@ -21,7 +20,7 @@ export class ResolutionNode extends Base.node {
         return this.name
     }
 
-    toAst(): Base.UnknownAst {
+    toAst() {
         return this.name
     }
 
@@ -61,19 +60,5 @@ export class ResolutionNode extends Base.node {
             checkCustomValidator(state.options.narrow, this, state)
         }
         state.seen.pop()
-    }
-
-    generate(state: Generate.GenerateState) {
-        if (state.seen.includes(this.name)) {
-            const onRequiredCycle = state.options.generate?.onRequiredCycle
-            if (onRequiredCycle) {
-                return onRequiredCycle
-            }
-            throw new Generate.RequiredCycleError(this.name, state.seen)
-        }
-        state.seen.push(this.name)
-        const result = this.root.generate(state)
-        state.seen.pop()
-        return result
     }
 }

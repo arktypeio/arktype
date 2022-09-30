@@ -1,4 +1,4 @@
-import type { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
+import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError } from "../../../parser/common.js"
 import { throwParseError } from "../../../parser/common.js"
 

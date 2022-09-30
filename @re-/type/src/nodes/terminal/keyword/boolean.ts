@@ -1,8 +1,8 @@
 import type { Check } from "../../traverse/exports.js"
-import { TerminalNode } from "../terminal.js"
+import { Terminal } from "../terminal.js"
 import { addTypeKeywordDiagnostic } from "./common.js"
 
-export class BooleanNode extends TerminalNode<"boolean"> {
+export class BooleanNode extends Terminal.Node<"boolean"> {
     constructor() {
         super("boolean")
     }
@@ -11,9 +11,5 @@ export class BooleanNode extends TerminalNode<"boolean"> {
         if (typeof state.data !== "boolean") {
             addTypeKeywordDiagnostic(state, "boolean", "Must be boolean")
         }
-    }
-
-    generate(): boolean {
-        return false
     }
 }

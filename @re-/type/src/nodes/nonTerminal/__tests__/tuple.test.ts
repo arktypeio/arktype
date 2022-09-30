@@ -16,9 +16,6 @@ describe("tuple", () => {
                 `Must be an array (was dictionary)`
             )
         })
-        test("generation", () => {
-            assert(empty().generate()).equals([])
-        })
     })
     const shallow = () => type(["string", "number", "6"])
     describe("infer", () => {
@@ -70,8 +67,5 @@ describe("tuple", () => {
                 ).snap(`Length must be 3 (was 4)`)
             })
         })
-    })
-    test("generate", () => {
-        assert(shallow().generate()).equals(["", 0, 6])
     })
 })

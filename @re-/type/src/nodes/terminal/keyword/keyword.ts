@@ -1,3 +1,6 @@
+import type { NormalizedJsTypeName } from "@re-/tools"
+import type { Check } from "../../traverse/exports.js"
+import type { Terminal } from "../terminal.js"
 import { AnyNode } from "./any.js"
 import { BigintNode } from "./bigint.js"
 import { BooleanNode } from "./boolean.js"
@@ -12,12 +15,12 @@ import { UndefinedNode } from "./undefined.js"
 import { UnknownNode } from "./unknown.js"
 import { VoidNode } from "./void.js"
 
-export namespace Keyword {
-    const nodes = {
+export namespace TypeKeyword {
+    const nodes: Record<Definition, Terminal.Node> = {
         any: new AnyNode(),
         bigint: new BigintNode(),
         boolean: new BooleanNode(),
-        function: new FunctionNode(),
+        Function: new FunctionNode(),
         never: new NeverNode(),
         null: new NullNode(),
         number: new NumberNode(),
@@ -29,15 +32,33 @@ export namespace Keyword {
         void: new VoidNode()
     }
 
-    type NodeTypes = typeof nodes
+    type Types = {
+        any: any
+        bigint: bigint
+        boolean: boolean
+        never: never
+        null: null
+        number: number
+        object: object
+        string: string
+        symbol: symbol
+        undefined: undefined
+        unknown: unknown
+        void: void
+        Function: Function
+    }
 
-    export type Definition = keyof NodeTypes
+    export type Definition = keyof Types
 
-    export type Infer<Def extends Definition> = ReturnType<
-        NodeTypes[Def]["generate"]
-    >
+    export type Infer<Def extends Definition> = Types[Def]
 
     export const matches = (def: string): def is Definition => def in nodes
 
     export const getNode = (def: Definition) => nodes[def]
+
+    export type Diagnostic = Check.DiagnosticConfig<{
+        keyword: TypeKeyword.Definition
+        data: string
+        actual: NormalizedJsTypeName
+    }>
 }

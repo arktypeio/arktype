@@ -1,7 +1,7 @@
 // TODO: Fix parser imports
 import { keySet } from "@re-/tools"
 import type { Base } from "../../base.js"
-import type { PrimitiveLiteral } from "../../terminal/literal.js"
+import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { CheckState } from "../../traverse/check/check.js"
 import type { Check } from "../../traverse/exports.js"
 import type { TraversalState } from "../../traverse/traverse.js"
@@ -16,12 +16,6 @@ export namespace Bound {
         "==": 1
     })
 
-    /** We have to invert the first comparator in an expression like
-     * 5<=number<10
-     * so that it can be split into two expressions like
-     * number>=5
-     * number<10
-     */
     export const invertedComparators = {
         "<": ">",
         ">": "<",
@@ -82,10 +76,6 @@ export namespace Bound {
             if (!this.isWithinBound(actual)) {
                 this.addError(state, actual)
             }
-        }
-
-        generate(state: TraversalState) {
-            this.bounded.generate(state)
         }
 
         private isWithinBound(actual: number) {

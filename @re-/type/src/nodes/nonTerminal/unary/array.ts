@@ -23,9 +23,5 @@ export namespace Arr {
             }
             state.data = rootData
         }
-
-        generate() {
-            return []
-        }
     }
 }

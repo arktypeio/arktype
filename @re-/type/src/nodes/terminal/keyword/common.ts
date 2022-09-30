@@ -1,21 +1,14 @@
-import type { NormalizedJsTypeName } from "@re-/tools"
 import { jsTypeOf } from "@re-/tools"
 import type { Check } from "../../traverse/exports.js"
-import type { Keyword } from "./keyword.js"
-
-export type KeywordTypeDiagnostic = Check.DiagnosticConfig<{
-    keyword: Keyword.Definition
-    data: unknown
-    actual: NormalizedJsTypeName
-}>
+import type { TypeKeyword } from "./keyword.js"
 
 export const addTypeKeywordDiagnostic = (
     state: Check.CheckState,
-    keyword: Keyword.Definition,
+    keyword: TypeKeyword.Definition,
     reason: string
 ) => {
     state.errors.add(
-        "keyword",
+        "typeKeyword",
         { reason, state },
         {
             keyword,

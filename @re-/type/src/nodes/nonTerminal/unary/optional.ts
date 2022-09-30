@@ -15,9 +15,5 @@ export namespace Optional {
             }
             this.child.check(state)
         }
-
-        generate() {
-            return undefined
-        }
     }
 }

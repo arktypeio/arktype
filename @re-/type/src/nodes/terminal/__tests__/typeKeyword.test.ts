@@ -1,15 +1,12 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../scopes/type.js"
+import { type } from "../../../scopes/type.js"
 
 describe("type keywords", () => {
     describe("boolean", () => {
         const b = type.lazy("boolean")
         test("infer", () => {
             assert(b.infer).typed as boolean
-        })
-        test("generation", () => {
-            assert(b.generate()).is(false)
         })
         test("check", () => {
             assert(b.check(true).errors).is(undefined)
@@ -24,9 +21,6 @@ describe("type keywords", () => {
         test("infer", () => {
             assert(b.infer).typed as bigint
         })
-        test("generation", () => {
-            assert(b.generate()).is(0n)
-        })
         test("check", () => {
             assert(b.check(999n).errors).is(undefined)
             assert(b.check(999).errors?.summary).snap(
@@ -38,9 +32,6 @@ describe("type keywords", () => {
         const s = type.lazy("symbol")
         test("infer", () => {
             assert(s.infer).typed as symbol
-        })
-        test("generation", () => {
-            assert(typeof s.generate()).is("symbol")
         })
         test("check", () => {
             assert(s.check(Symbol("")).errors).is(undefined)
@@ -54,9 +45,6 @@ describe("type keywords", () => {
         test("infer", () => {
             assert(f.infer).typed as Function
         })
-        test("generation", () => {
-            assert(typeof f.generate()).equals("function")
-        })
         test("check", () => {
             assert(f.check(() => ({})).errors).is(undefined)
             assert(f.check({}).errors?.summary).snap(
@@ -68,9 +56,6 @@ describe("type keywords", () => {
         const o = type.lazy("object")
         test("infer", () => {
             assert(o.infer).typed as object
-        })
-        test("generation", () => {
-            assert(o.generate()).equals({})
         })
         test("check", () => {
             assert(o.check([]).errors).is(undefined)
@@ -85,9 +70,6 @@ describe("type keywords", () => {
         test("infer", () => {
             assert(u.infer).typed as undefined
         })
-        test("generation", () => {
-            assert(u.generate()).is(undefined)
-        })
         test("check", () => {
             assert(u.check(undefined).errors).is(undefined)
             assert(u.check(null).errors?.summary).snap(
@@ -99,9 +81,6 @@ describe("type keywords", () => {
         const n = type.lazy("null")
         test("infer", () => {
             assert(n.infer).typed as null
-        })
-        test("generation", () => {
-            assert(n.generate()).is(null)
         })
         test("check", () => {
             assert(n.check(null).errors).is(undefined)
@@ -115,9 +94,6 @@ describe("type keywords", () => {
         test("infer", () => {
             assert(v.infer).typed as void
         })
-        test("generation", () => {
-            assert(v.generate()).is(undefined)
-        })
         test("check", () => {
             assert(v.check(undefined).errors).is(undefined)
             assert(v.check(null).errors?.summary).snap(
@@ -130,9 +106,6 @@ describe("type keywords", () => {
         test("infer", () => {
             assert(a.infer).typed as any
         })
-        test("generation", () => {
-            assert(a.generate()).is(undefined)
-        })
         test("check", () => {
             assert(a.check(-34_324n).errors).is(undefined)
             assert(a.check({ yes: "no" }).errors).is(undefined)
@@ -143,9 +116,6 @@ describe("type keywords", () => {
         const u = type.lazy("unknown")
         test("infer", () => {
             assert(u.infer).typed as unknown
-        })
-        test("generation", () => {
-            assert(u.generate()).is(undefined)
         })
         test("check", () => {
             assert(u.check(34_324n).errors).is(undefined)
@@ -166,19 +136,11 @@ describe("type keywords", () => {
                 `Never allowed (was undefined)`
             )
         })
-        test("generation", () => {
-            assert(() => n.generate()).throws.snap(
-                `Error: Unable to generate a value for 'never': never is ungeneratable by definition.`
-            )
-        })
     })
     describe("string", () => {
         const s = type.lazy("string")
         test("infer", () => {
             assert(s.infer).typed as string
-        })
-        test("generation", () => {
-            assert(s.generate()).is("")
         })
         test("check", () => {
             assert(s.check("KEKW").errors).is(undefined)
@@ -191,9 +153,6 @@ describe("type keywords", () => {
         const n = type.lazy("number")
         test("infer", () => {
             assert(n.infer).typed as number
-        })
-        test("generation", () => {
-            assert(n.generate()).is(0)
         })
         test("check", () => {
             assert(n.check(-83).errors).is(undefined)

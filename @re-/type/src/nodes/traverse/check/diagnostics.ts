@@ -4,17 +4,13 @@ import type { Path } from "../../common.js"
 import { pathToString } from "../../common.js"
 import type { Bound } from "../../nonTerminal/binary/bound.js"
 import type { Divisibility } from "../../nonTerminal/binary/divisibility.js"
-import type { Regex } from "../../nonTerminal/constraining/regex.js"
-import type { UnionDiagnostic } from "../../nonTerminal/nary/union.js"
-import type {
-    ExtraneousKeysDiagnostic,
-    MissingKeyDiagnostic
-} from "../../structural/dictionary.js"
-import type { StructureDiagnostic } from "../../structural/struct.js"
-import type { TupleLengthDiagnostic } from "../../structural/tuple.js"
-import type { KeywordTypeDiagnostic } from "../../terminal/keyword/common.js"
-import type { NumberSubtypeDiagnostic } from "../../terminal/keyword/number.js"
-import type { LiteralDiagnostic } from "../../terminal/literal.js"
+import type { Union } from "../../nonTerminal/nary/union.js"
+import type { StructureDiagnostic } from "../../nonTerminal/structural/common.js"
+import type { ObjectLiteral } from "../../nonTerminal/structural/objectLiteral.js"
+import type { Tuple } from "../../nonTerminal/structural/tuple.js"
+import type { TypeKeyword } from "../../terminal/keyword/keyword.js"
+import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
+import type { Regex } from "../../terminal/regex.js"
 import type { CheckState } from "./check.js"
 import type { CustomDiagnosticResult } from "./customValidator.js"
 
@@ -42,16 +38,15 @@ export type CustomDiagnostic = DiagnosticConfig<
 
 export type RegisteredDiagnostics = {
     custom: CustomDiagnostic
-    keyword: KeywordTypeDiagnostic
-    literal: LiteralDiagnostic
+    typeKeyword: TypeKeyword.Diagnostic
+    primitiveLiteral: PrimitiveLiteral.Diagnostic
     structure: StructureDiagnostic
     bound: Bound.Diagnostic
-    extraneousKeys: ExtraneousKeysDiagnostic
-    missingKey: MissingKeyDiagnostic
+    extraneousKeys: ObjectLiteral.ExtraneousKeysDiagnostic
+    missingKey: ObjectLiteral.MissingKeyDiagnostic
     regex: Regex.Diagnostic
-    numberSubtype: NumberSubtypeDiagnostic
-    tupleLength: TupleLengthDiagnostic
-    union: UnionDiagnostic
+    tupleLength: Tuple.LengthDiagnostic
+    union: Union.Diagnostic
     divisibility: Divisibility.Diagnostic
 }
 

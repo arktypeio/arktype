@@ -124,12 +124,4 @@ describe("object", () => {
             })
         })
     })
-    test("generate", () => {
-        assert(
-            type({ a: "string", b: { nested: "number" } }).generate()
-        ).equals({
-            a: "",
-            b: { nested: 0 }
-        })
-    })
 })

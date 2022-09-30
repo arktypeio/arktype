@@ -1,14 +1,10 @@
-import { TerminalNode } from "../terminal.js"
+import { Terminal } from "../terminal.js"
 
-export class UnknownNode extends TerminalNode<"unknown"> {
+export class UnknownNode extends Terminal.Node<"unknown"> {
     constructor() {
         super("unknown")
     }
 
     // Allows all data
     check() {}
-
-    generate(): unknown {
-        return undefined
-    }
 }

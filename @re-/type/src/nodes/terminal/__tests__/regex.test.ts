@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../scopes/type.js"
+import { type } from "../../../scopes/type.js"
 
 describe("string subtypes", () => {
     test("email", () => {
@@ -62,13 +62,6 @@ describe("string subtypes", () => {
                         type("/^[0-9]*$/").check("durrrrrr").errors?.summary
                     ).snap(`Must match expression /^[0-9]*$/ (was "durrrrrr")`)
                 })
-            })
-        })
-        describe("generation", () => {
-            test("unsupported", () => {
-                assert(() => type("/.*/").generate()).throws.snap(
-                    `Error: Unable to generate a value for '/.*/': Constrained generation is not yet supported.`
-                )
             })
         })
     })

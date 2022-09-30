@@ -1,5 +1,4 @@
-import type { BuiltinJsTypeName } from "@re-/tools"
-import { Check, Generate } from "../../traverse/exports.js"
+import { Check } from "../../traverse/exports.js"
 import { Nary } from "./nary.js"
 
 export namespace Union {
@@ -29,7 +28,7 @@ export namespace Union {
             state: Check.CheckState,
             branchDiagnosticsEntries: BranchDiagnosticsEntry[]
         ) {
-            const context: UnionDiagnostic["context"] = {
+            const context: Diagnostic["context"] = {
                 definition: this.toString(),
                 actual: Check.stringifyData(state.data),
                 branchDiagnosticsEntries
@@ -51,53 +50,6 @@ export namespace Union {
                 context
             )
         }
-
-        generate(state: Generate.GenerateState) {
-            const branchResults = this.generateChildren(state)
-            if (!branchResults.values.length) {
-                this.throwAllMembersUngeneratableError(branchResults.errors)
-            }
-            for (const constraint of preferredDefaults) {
-                const matches = branchResults.values.filter((value) =>
-                    "value" in constraint
-                        ? constraint.value === value
-                        : constraint.typeOf === typeof value
-                )
-                if (matches.length) {
-                    return matches[0]
-                }
-            }
-            throw new Error(
-                `Unable to generate a value for unexpected union def ${this.toString()}.`
-            )
-        }
-
-        private generateChildren(state: Generate.GenerateState) {
-            const results = {
-                values: [] as unknown[],
-                errors: [] as string[]
-            }
-            for (const node of this.children) {
-                try {
-                    results.values.push(node.generate(state))
-                } catch (error) {
-                    if (error instanceof Generate.UngeneratableError) {
-                        results.errors.push(error.message)
-                    } else {
-                        throw error
-                    }
-                }
-            }
-            return results
-        }
-
-        private throwAllMembersUngeneratableError(errors: string[]) {
-            throw new Generate.UngeneratableError(
-                this.toString(),
-                "None of the definitions can be generated" +
-                    `:\n${errors.join("\n")}`
-            )
-        }
     }
 
     const buildBranchDiagnosticsExplanation = (
@@ -113,7 +65,7 @@ export namespace Union {
         return branchDiagnosticSummary
     }
 
-    export type UnionDiagnostic = Check.DiagnosticConfig<
+    export type Diagnostic = Check.DiagnosticConfig<
         {
             definition: string
             actual: unknown
@@ -125,19 +77,4 @@ export namespace Union {
     >
 
     export type BranchDiagnosticsEntry = [string, Check.Diagnostics]
-
-    type PreferredDefaults = ({ value: any } | { typeOf: BuiltinJsTypeName })[]
-
-    const preferredDefaults: PreferredDefaults = [
-        { value: undefined },
-        { value: null },
-        { value: false },
-        { value: true },
-        { typeOf: "number" },
-        { typeOf: "string" },
-        { typeOf: "bigint" },
-        { typeOf: "object" },
-        { typeOf: "symbol" },
-        { typeOf: "function" }
-    ]
 }

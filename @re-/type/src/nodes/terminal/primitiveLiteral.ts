@@ -1,5 +1,5 @@
 import { Check } from "../traverse/exports.js"
-import { TerminalNode } from "./terminal.js"
+import { Terminal } from "./terminal.js"
 
 export namespace PrimitiveLiteral {
     export type Value = string | number | bigint | boolean
@@ -21,7 +21,7 @@ export namespace PrimitiveLiteral {
 
     export class Node<
         Value extends PrimitiveLiteral.Value
-    > extends TerminalNode {
+    > extends Terminal.Node {
         constructor(def: string, public value: Value) {
             super(def)
         }
@@ -29,7 +29,7 @@ export namespace PrimitiveLiteral {
         check(state: Check.CheckState) {
             if (state.data !== this.value) {
                 state.errors.add(
-                    "literal",
+                    "primitiveLiteral",
                     {
                         reason: `Must be ${this.def}`,
                         state
@@ -42,10 +42,6 @@ export namespace PrimitiveLiteral {
                     }
                 )
             }
-        }
-
-        generate() {
-            return this.value
         }
     }
 

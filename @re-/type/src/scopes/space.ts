@@ -54,8 +54,6 @@ const rawSpace = (aliases: Dictionary, opts: SpaceOptions = {}) => {
 rawSpace.dynamic = rawSpace
 export const space: SpaceFn = rawSpace as any
 
-space({ a: "string[]" })
-
 // TODO: Update dict extension meta to not deepmerge, fix extension meta.
 // TODO: Ensure there are no extraneous types/space calls from testing
 // TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space

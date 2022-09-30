@@ -1,4 +1,3 @@
-import { Generate } from "../../traverse/exports.js"
 import type { Check } from "../../traverse/exports.js"
 import { Nary } from "./nary.js"
 
@@ -14,13 +13,6 @@ export namespace Intersection {
             for (const branch of this.children) {
                 branch.check(state)
             }
-        }
-
-        generate() {
-            throw new Generate.UngeneratableError(
-                this.toString(),
-                "Intersection generation is unsupported."
-            )
         }
     }
 }

@@ -1,7 +1,7 @@
 import type { NodeToString } from "../../../nodes/common.js"
 import { Divisibility } from "../../../nodes/nonTerminal/binary/divisibility.js"
 import { NumberNode } from "../../../nodes/terminal/keyword/number.js"
-import { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
+import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"

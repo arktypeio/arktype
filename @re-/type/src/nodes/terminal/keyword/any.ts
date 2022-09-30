@@ -1,14 +1,10 @@
-import { TerminalNode } from "../terminal.js"
+import { Terminal } from "../terminal.js"
 
-export class AnyNode extends TerminalNode<"any"> {
+export class AnyNode extends Terminal.Node<"any"> {
     constructor() {
         super("any")
     }
 
     // Allows all data
     check() {}
-
-    generate(): any {
-        return undefined
-    }
 }

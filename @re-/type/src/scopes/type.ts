@@ -5,7 +5,6 @@ import type { Infer } from "../nodes/traverse/ast/infer.js"
 import type { Diagnostics } from "../nodes/traverse/check/diagnostics.js"
 import { ValidationError } from "../nodes/traverse/check/diagnostics.js"
 import { CheckState } from "../nodes/traverse/check/exports.js"
-import { Generate } from "../nodes/traverse/exports.js"
 import type { Check, References } from "../nodes/traverse/exports.js"
 import type { ParseError } from "../parser/common.js"
 import { initializeParserContext } from "../parser/common.js"
@@ -65,7 +64,6 @@ export type DynamicArktype = Arktype<unknown, unknown>
 export type TypeOptions<Inferred = unknown> = {
     narrow?: Check.NarrowFn<Inferred>
     errors?: Check.OptionsByDiagnostic
-    generate?: Generate.GenerateOptions
 }
 
 export type InternalTypeOptions = TypeOptions<any> & {
@@ -76,9 +74,7 @@ export type Arktype<Inferred, Ast> = {
     infer: Inferred
     check: CheckFn<Inferred>
     assert: AssertFn<Inferred>
-    default: Inferred
     ast: Ast
-    generate: GenerateFn<Inferred>
     references: References.ReferencesFn<Ast>
 }
 
@@ -87,10 +83,6 @@ export class InternalArktype implements DynamicArktype {
 
     get infer() {
         return chainableNoOpProxy
-    }
-
-    get default() {
-        return this.generate()
     }
 
     get ast() {
@@ -115,11 +107,6 @@ export class InternalArktype implements DynamicArktype {
         return validationResult.data
     }
 
-    generate() {
-        const state = new Generate.GenerateState(this.options)
-        return this.root.generate(state)
-    }
-
     references(options: References.ReferencesOptions = {}) {
         return this.root.references(options) as any
     }
@@ -135,7 +122,3 @@ export type CheckResult<Inferred> = MutuallyExclusiveProps<
 >
 
 export type AssertFn<Inferred> = (value: unknown) => Inferred
-
-export type GenerateFn<Inferred> = (
-    options?: Generate.GenerateOptions
-) => Inferred

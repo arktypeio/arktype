@@ -1,6 +1,6 @@
 import { Alias } from "../../../nodes/terminal/alias.js"
-import { Keyword } from "../../../nodes/terminal/keyword/keyword.js"
-import { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
+import { TypeKeyword } from "../../../nodes/terminal/keyword/keyword.js"
+import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError, ParserContext, parserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
@@ -29,8 +29,8 @@ export namespace Unenclosed {
         : never
 
     export const maybeParseIdentifier = (token: string, ctx: parserContext) =>
-        Keyword.matches(token)
-            ? Keyword.getNode(token)
+        TypeKeyword.matches(token)
+            ? TypeKeyword.getNode(token)
             : ctx.space?.aliases?.[token]
             ? new Alias(token)
             : undefined
@@ -79,7 +79,7 @@ export namespace Unenclosed {
     export type IsResolvableIdentifier<
         Token,
         Ctx extends ParserContext
-    > = Token extends Keyword.Definition
+    > = Token extends TypeKeyword.Definition
         ? true
         : Token extends keyof Ctx["aliases"]
         ? true

@@ -28,9 +28,4 @@ describe("array node", () => {
             })
         })
     })
-    describe("generate", () => {
-        test("empty by default", () => {
-            assert(type("unknown[]").generate()).equals([])
-        })
-    })
 })

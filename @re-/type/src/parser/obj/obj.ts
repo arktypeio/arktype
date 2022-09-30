@@ -1,6 +1,6 @@
 import type { Evaluate } from "@re-/tools"
-import { DictionaryNode } from "../../nodes/structural/dictionary.js"
-import { TupleNode } from "../../nodes/structural/tuple.js"
+import { ObjectLiteral } from "../../nodes/nonTerminal/structural/objectLiteral.js"
+import { Tuple } from "../../nodes/nonTerminal/structural/tuple.js"
 import type { parseFn, ParserContext } from "../common.js"
 import { Root } from "../root.js"
 import type { MetaDefinition, ParseMetaDefinition } from "./meta.js"
@@ -21,26 +21,13 @@ export namespace Obj {
             if (isMetaDefinition(def)) {
                 return parseMetaDefinition(def, ctx)
             }
-            return new TupleNode(
-                def.map((itemDef, i) => [
-                    i,
-                    Root.parse(itemDef, {
-                        ...ctx,
-                        path: [...ctx.path, String(i)]
-                    })
-                ]),
-                ctx
+            return new Tuple.Node(
+                def.map((itemDef) => Root.parse(itemDef, ctx))
             )
         }
-        return new DictionaryNode(
-            Object.entries(def).map(([k, propDef]) => [
-                k,
-                Root.parse(propDef, {
-                    ...ctx,
-                    path: [...ctx.path, k]
-                })
-            ]),
-            ctx
+        return new ObjectLiteral.Node(
+            Object.values(def).map((child) => Root.parse(child, ctx)),
+            Object.keys(def)
         )
     }
 }

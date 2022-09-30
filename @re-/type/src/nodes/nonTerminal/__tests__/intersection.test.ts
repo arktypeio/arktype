@@ -26,11 +26,4 @@ describe("intersection node", () => {
 `)
         })
     })
-    describe("generate", () => {
-        test("unsupported", () => {
-            assert(() => type("boolean&true").generate()).throws.snap(
-                `Error: Unable to generate a value for 'boolean&true': Intersection generation is unsupported.`
-            )
-        })
-    })
 })
