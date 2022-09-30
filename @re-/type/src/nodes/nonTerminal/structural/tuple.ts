@@ -14,8 +14,8 @@ export namespace Tuple {
             return this.children.map((child) => child.toAst())
         }
 
-        toIsomorphicDef() {
-            return this.children.map((child) => child.toIsomorphicDef())
+        toDefinition() {
+            return this.children.map((child) => child.toDefinition())
         }
 
         toString() {
@@ -68,7 +68,7 @@ export namespace Tuple {
                     state
                 },
                 {
-                    definition: this.toIsomorphicDef(),
+                    definition: this.toDefinition(),
                     data: state.data,
                     expected,
                     actual

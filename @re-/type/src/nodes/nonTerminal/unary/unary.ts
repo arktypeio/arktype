@@ -27,8 +27,8 @@ export namespace Unary {
             return this.child.toString() + this.token
         }
 
-        toIsomorphicDef() {
-            const nextDef = this.child.toIsomorphicDef()
+        toDefinition() {
+            const nextDef = this.child.toDefinition()
             return typeof nextDef === "string"
                 ? `${nextDef}${this.token}`
                 : [nextDef, this.token]

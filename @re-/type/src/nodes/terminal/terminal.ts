@@ -6,7 +6,7 @@ export namespace Terminal {
             super()
         }
 
-        toIsomorphicDef() {
+        toDefinition() {
             return this.def
         }
 

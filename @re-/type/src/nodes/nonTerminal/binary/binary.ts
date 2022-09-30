@@ -22,9 +22,9 @@ export namespace Binary {
     > extends NonTerminal.Node<Children> {
         abstract token: Token
 
-        toIsomorphicDef() {
-            const leftIsomorph = this.children[0].toIsomorphicDef()
-            const rightIsomorph = this.children[1].toIsomorphicDef()
+        toDefinition() {
+            const leftIsomorph = this.children[0].toDefinition()
+            const rightIsomorph = this.children[1].toDefinition()
             return typeof leftIsomorph === "string" &&
                 typeof rightIsomorph === "string"
                 ? leftIsomorph + this.token + rightIsomorph

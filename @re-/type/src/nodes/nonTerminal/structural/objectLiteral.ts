@@ -78,10 +78,10 @@ export namespace ObjectLiteral {
             )
         }
 
-        toIsomorphicDef() {
+        toDefinition() {
             const result: Dictionary = {}
             for (let i = 0; i < this.children.length; i++) {
-                result[this.keys[i]] = this.children[i].toIsomorphicDef()
+                result[this.keys[i]] = this.children[i].toDefinition()
             }
             return result
         }

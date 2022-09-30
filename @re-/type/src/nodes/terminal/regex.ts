@@ -25,27 +25,15 @@ export namespace Regex {
 
         check(state: Check.State<string>) {
             if (!this.expression.test(state.data)) {
-                state.errors.add(
-                    "regex",
-                    { reason: this.description, state },
-                    {
-                        expression: this.expression.source,
-                        actual: state.data,
-                        keyword:
-                            this.def in predefined
-                                ? (this.def as PredefinedKeyword)
-                                : undefined
-                    }
-                )
+                state.add("regex", {
+                    type: this,
+                    message: this.description
+                })
             }
         }
     }
 
-    export type Diagnostic = Check.DefineDiagnostic<{
-        expression: string
-        actual: string
-        keyword: PredefinedKeyword | undefined
-    }>
+    export type Diagnostic = Check.DefineDiagnostic<{}>
 
     export const getPredefined = (keyword: PredefinedKeyword) =>
         predefined[keyword]

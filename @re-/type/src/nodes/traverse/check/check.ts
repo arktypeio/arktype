@@ -1,13 +1,16 @@
 import type { NormalizedJsTypeName, NormalizedJsTypes } from "@re-/tools"
-import { hasJsType, toString } from "@re-/tools"
+import { hasJsType, toString, uncapitalize } from "@re-/tools"
 import type { TypeOptions } from "../../../scopes/type.js"
+import type { Base } from "../../base.js"
+import { pathToString } from "../../common.js"
 import type { NarrowFn } from "./customValidator.js"
-import type { OptionsByDiagnostic } from "./diagnostics.js"
-import { Diagnostics } from "./diagnostics.js"
+import type {
+    DiagnosticCode,
+    DiagnosticData,
+    OptionsByDiagnostic
+} from "./diagnostic.js"
 
 export namespace Check {
-    export const Errors = Diagnostics
-
     export type DefineDiagnostic<
         Context extends Record<string, unknown>,
         Options extends Record<string, unknown> = {}
@@ -21,9 +24,28 @@ export namespace Check {
         errors?: OptionsByDiagnostic
     }
 
+    export const stringifyData = (data: unknown) =>
+        toString(data, {
+            maxNestedStringLength: 50
+        })
+
+    type BaseDiagnosticContext<Data = unknown> = {
+        type: Pick<Base.node, "toString" | "toAst" | "toDefinition">
+        data: {
+            raw: Data
+            toString(): string
+        }
+        message: string
+    }
+
+    type FullDiagnosticContext<
+        Code extends DiagnosticCode,
+        Data = unknown
+    > = BaseDiagnosticContext<Data> & DiagnosticData<Code>
+
     export class State<Data = unknown> {
         path: string[] = []
-        errors = new Errors()
+        errors = new Diagnostics()
         checkedValuesByAlias: Record<string, object[]>
 
         constructor(public data: Data, public options: TypeOptions) {
@@ -35,10 +57,29 @@ export namespace Check {
         ): this is State<NormalizedJsTypes[TypeName]> {
             return hasJsType(this.data, typeName)
         }
-    }
 
-    export const stringifyData = (data: unknown) =>
-        toString(data, {
-            maxNestedStringLength: 50
-        })
+        add<Code extends DiagnosticCode>(
+            code: Code,
+            context: DiagnosticData<Code> & {
+                type: Base.node
+                message: string
+            }
+        ) {
+            const fullContext = context as FullDiagnosticContext<Code>
+            const raw = this.data
+            fullContext.data = {
+                raw,
+                toString: () => stringifyData(raw)
+            }
+            fullContext.path = this.path
+            const options = this.options.errors?.[code]
+            if ("actual" in fullContext && !options?.omitActual) {
+                fullContext.message += ` (was ${fullContext.actual})`
+            }
+            if (options?.message) {
+                fullContext.message = options?.message(fullContext)
+            }
+            this.errors.push(new Diagnostic(code))
+        }
+    }
 }

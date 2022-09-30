@@ -19,10 +19,10 @@ export namespace Nary {
             this.children.push(child)
         }
 
-        toIsomorphicDef() {
+        toDefinition() {
             let stringifiable = true
             const nextDefs = this.children.map((child) => {
-                const def = child.toIsomorphicDef()
+                const def = child.toDefinition()
                 if (typeof def !== "string") {
                     stringifiable = false
                 }

@@ -2,7 +2,7 @@ import type { MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
 import { Check } from "../nodes/traverse/check/check.js"
-import { Diagnostics } from "../nodes/traverse/check/diagnostics.js"
+import type { Diagnostics } from "../nodes/traverse/check/diagnostic.js"
 import type { ParseError } from "../parser/common.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
@@ -31,12 +31,14 @@ const lazyTypeFn: DynamicTypeFn = (def, opts) => {
 
 export type InferredTypeFn<Space extends ResolvedSpace> = <
     Definition,
-    Ast = Root.Parse<Definition, Space>,
-    Inferred = Ast.Infer<Ast, Space["resolutions"]>
+    ParseResult = Root.Parse<Definition, Space>,
+    Inferred = Ast.Infer<ParseResult, Space["resolutions"]>
 >(
-    definition: Root.Validate<Definition, Ast>,
+    definition: Root.Validate<Definition, ParseResult>,
     options?: TypeOptions<Inferred>
-) => Ast extends ParseError<string> ? never : Arktype<Inferred, Ast>
+) => ParseResult extends ParseError<string>
+    ? never
+    : Arktype<Inferred, ParseResult>
 
 type DynamicTypeFn = (
     definition: unknown,
@@ -71,6 +73,8 @@ export type Arktype<Inferred, Ast> = {
     ast: Ast
 }
 
+export class ArktypeError extends Error {}
+
 export class InternalArktype implements DynamicArktype {
     constructor(public root: Base.node, public options: InternalTypeOptions) {}
 
@@ -95,9 +99,7 @@ export class InternalArktype implements DynamicArktype {
     assert(data: unknown) {
         const validationResult = this.check(data)
         if (validationResult.errors) {
-            throw new Diagnostics.ValidationError(
-                validationResult.errors.summary
-            )
+            throw new ArktypeError(validationResult.errors.summary)
         }
         return validationResult.data
     }

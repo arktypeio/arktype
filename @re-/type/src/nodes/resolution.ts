@@ -23,7 +23,7 @@ export class ResolutionNode extends Base.node {
         return this.name
     }
 
-    toIsomorphicDef() {
+    toDefinition() {
         return this.name
     }
 
