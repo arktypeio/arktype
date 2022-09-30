@@ -1,6 +1,6 @@
 import type { Evaluate } from "@re-/tools"
-import type { Bound } from "../../nonTerminal/infix/bound.js"
-import type { Divisibility } from "../../nonTerminal/infix/divisibility.js"
+import type { Bound } from "../../nonTerminal/binary/bound.js"
+import type { Divisibility } from "../../nonTerminal/binary/divisibility.js"
 import type { Keyword } from "../../terminal/keyword/keyword.js"
 import type {
     BigintLiteralDefinition,

@@ -1,88 +1,85 @@
 import type { NodeToString } from "../../../nodes/common.js"
+import { Divisibility } from "../../../nodes/nonTerminal/binary/divisibility.js"
 import { NumberNode } from "../../../nodes/terminal/keyword/number.js"
-import type { NumberLiteralDefinition } from "../../../nodes/terminal/literal.js"
-import { throwParseError } from "../../common.js"
-import type { IntegerLiteralDefinition } from "../operand/unenclosed.js"
-import { isIntegerLiteral } from "../operand/unenclosed.js"
+import type { ParseError } from "../../common.js"
+import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
 
-// TODO: Check for multiple modulos/bounds etc.
-export type ParseModulo<
-    S extends ParserState,
-    Unscanned extends string
-> = S extends {
-    L: {
-        // TODO: Actually by type
-        root: "number" | "integer"
-    }
-}
-    ? Scanner.ShiftUntil<
-          Unscanned,
-          Scanner.TerminatingChar
-      > extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
-        ? Scanned extends IntegerLiteralDefinition<infer Divisor>
-            ? ReduceModulo<S, Divisor, NextUnscanned>
-            : ParserState.Error<InvalidDivisorMessage<Scanned>>
-        : never
-    : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
-
-export const parseModulo = (s: parserState.withRoot) => {
-    const moduloValue = s.r.shiftUntilNextTerminator()
-    return s.hasRoot(NumberNode)
-        ? isIntegerLiteral(moduloValue)
-            ? reduceModulo(s, integerLiteralToDivisorValue(moduloValue))
-            : s.error(invalidDivisorMessage(moduloValue))
-        : s.error(indivisibleMessage(s.l.root.toString()))
-}
-
-const reduceModulo = (s: parserState.withRoot<NumberNode>, value: number) => {
-    s.l.root.modulo = new ModuloConstraint(value)
-    return s
-}
-
-type ReduceModulo<
-    S extends ParserState.WithRoot<NumberTypedKeyword>,
-    Value extends bigint,
-    Unscanned extends string
-> = Value extends 0n
-    ? ParserState.Error<InvalidDivisorMessage<"0">>
-    : ParserState.SetRoot<
-          S,
-          AddConstraints<S["L"]["root"], [["%", BigintToNumber<Value>]]>,
-          Unscanned
-      >
-
-type BigintToNumber<Value extends bigint> =
-    `${Value}` extends NumberLiteralDefinition<infer NumericValue>
-        ? NumericValue
-        : never
-
-const integerLiteralToDivisorValue = (definition: IntegerLiteralDefinition) => {
-    const value = parseInt(definition)
-    if (Number.isNaN(value)) {
-        throwParseError(
-            `Unexpectedly failed to parse an integer from '${value}'.`
+export namespace ModuloOperator {
+    export const parse = (s: parserState.withPreconditionRoot) => {
+        if (!s.hasRoot(NumberNode)) {
+            return s.error(indivisibleMessage(s.l.root.toString()))
+        }
+        const divisorToken = s.r.shiftUntilNextTerminator()
+        return reduce(
+            s,
+            UnenclosedNumber.parseWellFormedInteger(
+                divisorToken,
+                invalidDivisorMessage(divisorToken)
+            )
         )
     }
-    if (value === 0) {
-        throwParseError(invalidDivisorMessage("0"))
+
+    // TODO: Check for multiple modulos/bounds etc.
+    export type Parse<
+        S extends ParserState,
+        Unscanned extends string
+    > = S extends {
+        L: {
+            // TODO: Actually by type
+            root: "number" | "integer"
+        }
     }
-    return value
+        ? Scanner.ShiftUntil<
+              Unscanned,
+              Scanner.TerminatingChar
+          > extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
+            ? Reduce<
+                  S,
+                  UnenclosedNumber.ParseWellFormedInteger<
+                      Scanned,
+                      InvalidDivisorMessage<Scanned>
+                  >,
+                  NextUnscanned
+              >
+            : never
+        : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
+
+    const reduce = (
+        s: parserState.withPreconditionRoot<NumberNode>,
+        parseResult: number
+    ) => {
+        if (parseResult === 0) {
+            return s.error(invalidDivisorMessage("0"))
+        }
+        s.l.root = new Divisibility.Node(s.l.root, parseResult) as any
+        return s
+    }
+
+    type Reduce<
+        S extends ParserState,
+        ParseResult extends number | ParseError<string>,
+        Unscanned extends string
+    > = ParseResult extends ParseError<infer Message>
+        ? ParserState.Error<Message>
+        : ParseResult extends 0
+        ? ParserState.Error<InvalidDivisorMessage<"0">>
+        : ParserState.SetRoot<S, [S["L"]["root"], "%", ParseResult], Unscanned>
+
+    export const invalidDivisorMessage = <Divisor extends string>(
+        divisor: Divisor
+    ): InvalidDivisorMessage<Divisor> =>
+        `Modulo operator must be followed by a non-zero integer literal (was ${divisor})`
+
+    export type InvalidDivisorMessage<Divisor extends string> =
+        `Modulo operator must be followed by a non-zero integer literal (was ${Divisor})`
+
+    type IndivisibleMessage<Root extends string> =
+        `Modulo operator must be applied to a number-typed keyword (was '${Root}')`
+
+    export const indivisibleMessage = <Root extends string>(
+        root: Root
+    ): IndivisibleMessage<Root> =>
+        `Modulo operator must be applied to a number-typed keyword (was '${root}')`
 }
-
-export const invalidDivisorMessage = <Divisor extends string>(
-    divisor: Divisor
-): InvalidDivisorMessage<Divisor> =>
-    `Modulo operator must be followed by an integer literal (was ${divisor})`
-
-export type InvalidDivisorMessage<Divisor extends string> =
-    `Modulo operator must be followed by an integer literal (was ${Divisor})`
-
-type IndivisibleMessage<Root extends string> =
-    `Modulo operator must be applied to a number-typed keyword (was '${Root}')`
-
-export const indivisibleMessage = <Root extends string>(
-    root: Root
-): IndivisibleMessage<Root> =>
-    `Modulo operator must be applied to a number-typed keyword (was '${root}')`

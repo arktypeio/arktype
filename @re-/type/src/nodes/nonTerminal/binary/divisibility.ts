@@ -1,7 +1,7 @@
 import type { Base } from "../../base.js"
 import type { Check } from "../../traverse/exports.js"
 import type { TraversalState } from "../../traverse/traverse.js"
-import { Infix } from "./infix.js"
+import { Infix } from "../infix/infix.js"
 
 export namespace Divisibility {
     export const token = "%"

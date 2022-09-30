@@ -1,7 +1,7 @@
 import type { Conform, ElementOf, Merge, UnionToTuple } from "@re-/tools"
 import type { RootNode } from "../../common.js"
 import type { Infix } from "../../nonTerminal/infix/infix.js"
-import type { Postfix } from "../../nonTerminal/postfix/postfix.js"
+import type { Unary } from "../../nonTerminal/unary/unary.js"
 
 export type ReferencesOf<
     Ast,
@@ -9,7 +9,7 @@ export type ReferencesOf<
 > = FilterReferences<References<Ast>, Filter, []>
 
 // For extracting references, we only care about the node at index 0
-type UnaryReferenceToken = Postfix.Token | Infix.ConstrainingToken
+type UnaryReferenceToken = Unary.Token | Infix.ConstrainingToken
 
 type References<Ast> = Ast extends string
     ? [Ast]

@@ -1,7 +1,7 @@
 import type { Evaluate, MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
-import type { RootNode } from "../nodes/common.js"
+import type { Infer } from "../nodes/traverse/ast/infer.js"
 import type { Diagnostics } from "../nodes/traverse/check/diagnostics.js"
 import { ValidationError } from "../nodes/traverse/check/diagnostics.js"
 import { CheckState } from "../nodes/traverse/check/exports.js"
@@ -35,7 +35,7 @@ const lazyTypeFn: DynamicTypeFn = (def, opts) => {
 export type InferredTypeFn<Space extends ResolvedSpace> = <
     Definition,
     Ast = Root.Parse<Definition, Space>,
-    Inferred = RootNode.Infer<Ast, Space["resolutions"]>
+    Inferred = Infer<Ast, Space["resolutions"]>
 >(
     definition: Root.Validate<Definition, Ast>,
     options?: TypeOptions<Inferred>

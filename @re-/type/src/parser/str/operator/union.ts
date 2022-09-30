@@ -1,5 +1,5 @@
 import type { Base } from "../../../nodes/base.js"
-import { Union } from "../../../nodes/nonTerminal/infix/union.js"
+import { Union } from "../../../nodes/nonTerminal/nary/union.js"
 import type { MissingRightOperandMessage, parserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { OpenBranches } from "../state/openBranches.js"
@@ -16,7 +16,7 @@ type PushRoot<B extends OpenBranches, Root> = {
     ]
 }
 
-export const reduceUnion = (s: parserState.withRoot) => {
+export const reduceUnion = (s: parserState.withPreconditionRoot) => {
     if (hasMergeableIntersection(s)) {
         mergeIntersection(s)
     }
@@ -47,7 +47,7 @@ type stateWithMergeableUnion = parserState<{
 }>
 
 export const hasMergeableUnion = (
-    s: parserState.withRoot
+    s: parserState.withPreconditionRoot
 ): s is stateWithMergeableUnion => !!s.l.branches.union
 
 export const mergeUnion = (s: stateWithMergeableUnion) => {

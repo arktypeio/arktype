@@ -1,22 +1,20 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
-import type { NodeToString } from "../../../nodes/common.js"
+import { Optional } from "../../../nodes/nonTerminal/unary/optional.js"
+import type { MaybeAppend, ParseError } from "../../common.js"
 import { parseError } from "../../common.js"
 import type { UnclosedGroupMessage } from "../operand/groupOpen.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"
-import type { UnpairedLeftBoundMessage } from "../operator/bound/left.js"
-import { unpairedLeftBoundMessage } from "../operator/bound/left.js"
-import type { Left } from "./left.js"
-import { left } from "./left.js"
-import type { OpenBranches } from "./openBranches.js"
+import { LeftBoundOperator } from "../operator/bound/left.js"
+import type { Left, left } from "./left.js"
 import { scanner } from "./scanner.js"
 
-export class parserState<constraints extends Partial<left> = {}> {
-    l: left<constraints>
+export class parserState<preconditions extends Partial<left> = {}> {
+    l: left<preconditions>
     r: scanner
 
     constructor(def: string) {
-        this.l = left.initialize() as left<constraints>
+        this.l = { groups: [], branches: {} } as any
         this.r = new scanner(def)
     }
 
@@ -34,52 +32,31 @@ export class parserState<constraints extends Partial<left> = {}> {
         this.r.shift()
         return this
     }
+}
 
-    finalize(): parserState.withRoot {
-        return this.hasRoot()
-            ? !this.l.groups.length
-                ? this.l.branches.leftBound
-                    ? this.error(
-                          unpairedLeftBoundMessage(
-                              this.l.root.toString(),
-                              this.l.branches.leftBound[0].value,
-                              this.l.branches.leftBound[1]
-                          )
-                      )
-                    : this.reduceFinal()
-                : this.error(unclosedGroupMessage)
-            : this.error(expressionExpectedMessage(""))
-    }
-
-    reduceFinal(): parserState.withRoot {
-        mergeBranches(this as parserState.withRoot)
-        this.l.done = true
-        return this as parserState.withRoot
-    }
+export namespace parserState {
+    export const finalize = (s: parserState, isOptional: boolean) =>
+        s.hasRoot()
+            ? !s.l.groups.length
+                ? reduceFinal(LeftBoundOperator.assertClosed(s), isOptional)
+                : s.error(unclosedGroupMessage)
+            : s.error(expressionExpectedMessage(""))
 }
 
 export namespace ParserState {
     export type Finalize<
-        S extends ParserState,
+        S extends ParserState.WithRootPrecondition,
         IsOptional extends boolean
     > = S["L"]["groups"] extends []
-        ? S["L"]["branches"]["leftBound"] extends OpenBranches.OpenLeftBound
-            ? ParserState.Error<
-                  UnpairedLeftBoundMessage<
-                      NodeToString<S["L"]["root"]>,
-                      S["L"]["branches"]["leftBound"][0],
-                      S["L"]["branches"]["leftBound"][1]
-                  >
-              >
+        ? LeftBoundOperator.AssertClosed<S["L"]> extends ParseError<
+              infer Message
+          >
+            ? ParserState.Error<Message>
             : From<{
                   L: {
-                      lowerBound: null
                       groups: []
                       branches: {}
-                      root: WrapIfOptional<
-                          MergeBranches<S["L"]["branches"], S["L"]["root"]>,
-                          IsOptional
-                      >
+                      root: WrapIfOptional<MergeBranches<S>, IsOptional>
                       done: true
                   }
                   R: ""
@@ -87,24 +64,93 @@ export namespace ParserState {
         : ParserState.Error<UnclosedGroupMessage>
 }
 
+export namespace parserState {
+    export const reduceFinal = (
+        s: parserState.withPreconditionRoot,
+        isOptional: boolean
+    ) => {
+        mergeBranches(s)
+        if (isOptional) {
+            s.l.root = new Optional.Node(s.l.root)
+        }
+        s.l.done = true
+        return s
+    }
+}
+
+export namespace ParserState {
+    export type ReduceFinal<
+        S extends ParserState.WithRootPrecondition,
+        IsOptional extends boolean
+    > = From<{
+        L: {
+            groups: []
+            branches: {}
+            root: WrapIfOptional<MergeBranches<S>, IsOptional>
+            done: true
+        }
+        R: ""
+    }>
+}
+
+export namespace parserState {
+    export const mergeBranches = (s: parserState.withPreconditionRoot) => {
+        LeftBoundOperator.assertClosed(s)
+        if (s.l.branches.intersection) {
+            s.l.branches.intersection.pushChild(s.l.root)
+            s.l.root = s.l.branches.intersection
+        }
+        if (s.l.branches.union) {
+            s.l.branches.union.pushChild(s.l.root)
+            s.l.root = s.l.branches.union
+        }
+        return s
+    }
+}
+
+// TODO: Check how this gets compiled (multiple of the same namespace in single file)
+export namespace ParserState {
+    export type MergeBranches<
+        S extends ParserState.WithRootPrecondition,
+        UpdatedGroups extends Left.OpenBranches[] = S["L"]["groups"]
+    > = LeftBoundOperator.AssertClosed<S["L"]> extends ParseError<infer Message>
+        ? Left.Error<Message>
+        : Left.From<{
+              groups: UpdatedGroups
+              branches: {}
+              root: MaybeAppend<
+                  MaybeAppend<
+                      S["L"]["root"],
+                      S["L"]["branches"]["intersection"]
+                  >,
+                  S["L"]["branches"]["union"]
+              >
+          }>
+}
+
 type WrapIfOptional<Root, IsOptional extends boolean> = IsOptional extends true
     ? [Root, "?"]
     : Root
 
 export namespace parserState {
-    export type withRoot<Root extends Base.node = Base.node> = parserState<{
-        root: Root
-    }>
+    export type withPreconditionRoot<Root extends Base.node = Base.node> =
+        parserState<{
+            root: Root
+        }>
 }
 
-export type ParserState<Constraints extends Partial<Left> = {}> = {
-    L: Left & Constraints
+export type ParserState<Preconditions extends Partial<Left> = {}> = {
+    L: Left & Preconditions
     R: string
 }
 
 export namespace ParserState {
     export type New<Def extends string> = From<{
-        L: Left.New
+        L: Left.From<{
+            groups: []
+            branches: {}
+            root: undefined
+        }>
         R: Def
     }>
 
@@ -122,11 +168,6 @@ export namespace ParserState {
         R: string
     }
 
-    export type With<Constraints extends Partial<Left>> = {
-        L: Left & Constraints
-        R: string
-    }
-
     export type From<S extends ParserState> = S
 
     export type Error<Message extends string> = {
@@ -134,7 +175,10 @@ export namespace ParserState {
         R: ""
     }
 
-    export type WithRoot<Root = {}> = Of<Left.WithRoot<Root>>
+    export type WithRootPrecondition<Root = {}> = From<{
+        L: Left.WithRoot<Root>
+        R: string
+    }>
 
     export type Suffixable = {
         L: {

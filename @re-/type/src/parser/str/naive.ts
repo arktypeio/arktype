@@ -1,9 +1,9 @@
-import { ArrayNode } from "../../nodes/unaries/array.js"
-import { OptionalNode } from "../../nodes/unaries/optional.js"
+import { Arr } from "../../nodes/nonTerminal/unary/array.js"
+import { Optional } from "../../nodes/nonTerminal/unary/optional.js"
 import type { ParserContext, parserContext } from "../common.js"
 import type { FullParse } from "./full.js"
 import type { IsResolvableIdentifier } from "./operand/unenclosed.js"
-import { toNodeIfResolvableIdentifier } from "./operand/unenclosed.js"
+import { maybeParseIdentifier } from "./operand/unenclosed.js"
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -37,7 +37,7 @@ export const tryNaiveParse = (def: string, ctx: parserContext) => {
     if (def.endsWith("?")) {
         const possibleIdentifierNode = tryNaiveParseArray(def.slice(0, -1), ctx)
         if (possibleIdentifierNode) {
-            return new OptionalNode(possibleIdentifierNode, ctx)
+            return new Optional.Node(possibleIdentifierNode)
         }
     }
     return tryNaiveParseArray(def, ctx)
@@ -45,13 +45,13 @@ export const tryNaiveParse = (def: string, ctx: parserContext) => {
 
 const tryNaiveParseArray = (def: string, ctx: parserContext) => {
     if (def.endsWith("[]")) {
-        const possibleIdentifierNode = toNodeIfResolvableIdentifier(
+        const possibleIdentifierNode = maybeParseIdentifier(
             def.slice(0, -2),
             ctx
         )
         if (possibleIdentifierNode) {
-            return new ArrayNode(possibleIdentifierNode, ctx)
+            return new Arr.Node(possibleIdentifierNode)
         }
     }
-    return toNodeIfResolvableIdentifier(def, ctx)
+    return maybeParseIdentifier(def, ctx)
 }

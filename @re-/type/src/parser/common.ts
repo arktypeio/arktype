@@ -1,5 +1,5 @@
-import { keySet } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
+import type { Nary } from "../nodes/nonTerminal/nary/nary.js"
 import type { SpaceRoot } from "../scopes/space.js"
 import type { InternalTypeOptions, TypeOptions } from "../scopes/type.js"
 
@@ -34,29 +34,15 @@ export const throwParseError = (message: string) => {
 
 export type ParseError<Message extends string> = `!${Message}`
 
-// TODO: Better way to organize tokens
-export const metaTokens = keySet({
-    ";": 1,
-    "=>": 1,
-    "[]": 1,
-    "?": 1,
-    "|": 1,
-    "&": 1,
-    ":": 1
-})
+export type MaybeAppend<
+    T,
+    MaybeArray extends unknown[] | undefined
+> = MaybeArray extends unknown[] ? [...MaybeArray, T] : T
 
-export type BinaryToken = BranchingToken | "=>"
-
-export type BranchingToken = "|" | "&"
-
-export type TypelessToken = ":"
-
-export type MetaToken = keyof typeof metaTokens
-
-export type MissingRightOperandMessage<Token extends BinaryToken> =
+export type MissingRightOperandMessage<Token extends Nary.Token> =
     `Token '${Token}' requires a right operand.`
 
-export const missingRightOperandMessage = <Token extends BinaryToken>(
+export const missingRightOperandMessage = <Token extends Nary.Token>(
     token: Token
 ): MissingRightOperandMessage<Token> =>
     `Token '${token}' requires a right operand.`

@@ -1,10 +1,8 @@
 import { keySet } from "@re-/tools"
 import type { Base } from "../../base.js"
 import { NonTerminal } from "../nonTerminal.js"
-import type { Arr } from "./array.js"
-import type { Optional } from "./optional.js"
 
-export namespace Postfix {
+export namespace Unary {
     export const tokens = keySet({
         "[]": 1,
         "?": 1
@@ -13,7 +11,7 @@ export namespace Postfix {
     export type Token = keyof typeof tokens
 
     export abstract class Node<
-        Token extends Postfix.Token
+        Token extends Unary.Token
     > extends NonTerminal.Node {
         abstract token: Token
 

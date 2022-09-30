@@ -1,13 +1,13 @@
 import { Generate } from "../../traverse/exports.js"
 import type { Check } from "../../traverse/exports.js"
-import { Infix } from "./infix.js"
+import { Nary } from "./nary.js"
 
 export namespace Intersection {
     export const token = "&"
 
     export type Token = typeof token
 
-    export class Node extends Infix.Node<Token> {
+    export class Node extends Nary.Node<Token> {
         readonly token = token
 
         check(state: Check.CheckState) {

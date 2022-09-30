@@ -1,9 +1,10 @@
 import type { Left } from "../state/left.js"
-import type { parserState } from "../state/state.js"
-import type { Branches, MergeBranches } from "./branch.js"
-import { mergeBranches } from "./branch.js"
+import { parserState } from "../state/state.js"
 
-type PopGroup<Stack extends Branches[], Top extends Branches> = [...Stack, Top]
+type PopGroup<
+    Stack extends Left.OpenBranches[],
+    Top extends Left.OpenBranches
+> = [...Stack, Top]
 
 type UnexpectedGroupCloseMessage<Unscanned extends string> =
     `Unexpected )${Unscanned extends "" ? "" : ` before ${Unscanned}`}.`
@@ -18,19 +19,18 @@ export type ReduceGroupClose<
     Unscanned extends string
 > = L["groups"] extends PopGroup<infer Stack, infer Top>
     ? Left.From<{
-          lowerBound: L["lowerBound"]
           groups: Stack
           branches: Top
           root: MergeBranches<L["branches"], L["root"]>
       }>
     : Left.Error<UnexpectedGroupCloseMessage<Unscanned>>
 
-export const reduceGroupClose = (s: parserState.withRoot) => {
-    const previousBranches = s.l.groups.pop()
-    if (!previousBranches) {
+export const reduceGroupClose = (s: parserState.withPreconditionRoot) => {
+    const previousOpenBranches = s.l.groups.pop()
+    if (!previousOpenBranches) {
         return s.error(unexpectedGroupCloseMessage(s.r.unscanned))
     }
-    mergeBranches(s)
-    s.l.branches = previousBranches
+    parserState.mergeBranches(s)
+    s.l.branches = previousOpenBranches
     return s
 }

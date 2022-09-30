@@ -9,7 +9,7 @@ type PushRoot<B extends Branches, Root> = {
 }
 
 export const reduceIntersection = (
-    s: parserState.withRoot,
+    s: parserState.withPreconditionRoot,
     context: parserContext
 ) => {
     if (!s.l.branches.intersection) {
@@ -39,7 +39,7 @@ export type stateWithMergeableIntersection = parserState<{
 }>
 
 export const hasMergeableIntersection = (
-    s: parserState.withRoot
+    s: parserState.withPreconditionRoot
 ): s is stateWithMergeableIntersection => !!s.l.branches.intersection
 
 export const mergeIntersection = (s: stateWithMergeableIntersection) => {

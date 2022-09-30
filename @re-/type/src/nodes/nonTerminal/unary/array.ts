@@ -1,16 +1,16 @@
 import type { Check } from "../../traverse/exports.js"
 import { checkObjectKind } from "../structural/common.js"
-import { Postfix } from "./postfix.js"
+import { Unary } from "./unary.js"
 
 export namespace Arr {
     export const token = "[]"
 
     export type Token = typeof token
 
-    export class Node extends Postfix.Node<Token> {
+    export class Node extends Unary.Node<Token> {
         readonly token = token
 
-        protected check(state: Check.CheckState) {
+        check(state: Check.CheckState) {
             if (!checkObjectKind(this.toString(), "array", state)) {
                 return
             }

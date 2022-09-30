@@ -1,36 +1,23 @@
 import { keySet } from "@re-/tools"
+import type { Base } from "../../base.js"
 import { NonTerminal } from "../nonTerminal.js"
 
-export namespace Infix {
-    export const branchingTokens = keySet({
+export namespace Nary {
+    export const tokens = keySet({
         "|": 1,
         "&": 1
     })
 
-    export type BranchingToken = keyof typeof branchingTokens
-
-    export const constrainingTokens = keySet({
-        ">": 1,
-        "<": 1,
-        ">=": 1,
-        "<=": 1,
-        "==": 1,
-        "%": 1
-    })
-
-    export type ConstrainingToken = keyof typeof constrainingTokens
-
-    export const tokens = {
-        ...branchingTokens,
-        ...constrainingTokens
-    }
-
     export type Token = keyof typeof tokens
 
     export abstract class Node<
-        Token extends Infix.Token
+        Token extends Nary.Token
     > extends NonTerminal.Node {
         abstract token: Token
+
+        pushChild(child: Base.node) {
+            this.children.push(child)
+        }
 
         toIsomorphicDef() {
             let stringifiable = true

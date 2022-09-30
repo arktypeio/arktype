@@ -5,7 +5,7 @@ import type { LiteralNode } from "../../terminal/literal.js"
 import type { CheckState } from "../../traverse/check/check.js"
 import type { Check } from "../../traverse/exports.js"
 import type { TraversalState } from "../../traverse/traverse.js"
-import { Infix } from "./infix.js"
+import { Binary } from "./binary.js"
 
 export namespace Bound {
     export const tokens = keySet({
@@ -42,23 +42,35 @@ export namespace Bound {
 
     export type Token = keyof typeof tokens
 
-    export class Node<IsLeft extends boolean> extends Infix.Node<Token> {
-        private limitValue: number
+    export type Children<IsLeft extends boolean> = IsLeft extends true
+        ? [LiteralNode<number>, Base.node]
+        : [Base.node, LiteralNode<number>]
+
+    export class Node<IsLeft extends boolean> extends Binary.Node<
+        Token,
+        Children<IsLeft>
+    > {
+        constructor(
+            children: Children<IsLeft>,
+            public token: Token,
+            private isLeft: IsLeft
+        ) {
+            super(children)
+        }
+
+        get bounded() {
+            return this.children[this.isLeft ? 1 : 0] as Base.node
+        }
+
+        get limit() {
+            return (this.children[this.isLeft ? 0 : 1] as LiteralNode<number>)
+                .value
+        }
+
         // If this is a left bound, normalizedComparator will be the inversion
         // of this.token so it can be checked consistently
-        private normalizedComparator: Token
-
-        constructor(
-            private bounded: Base.node,
-            limit: LiteralNode<number>,
-            public token: Token,
-            isLeft: IsLeft
-        ) {
-            super([bounded, limit])
-            this.limitValue = limit.value
-            this.normalizedComparator = isLeft
-                ? invertedComparators[token]
-                : token
+        get normalizedComparator() {
+            return this.isLeft ? invertedComparators[this.token] : this.token
         }
 
         check(state: Check.CheckState<BoundableData>) {
@@ -76,15 +88,15 @@ export namespace Bound {
         private isWithinBound(actual: number) {
             switch (this.normalizedComparator) {
                 case "<=":
-                    return actual <= this.limitValue
+                    return actual <= this.limit
                 case ">=":
-                    return actual >= this.limitValue
+                    return actual >= this.limit
                 case "<":
-                    return actual < this.limitValue
+                    return actual < this.limit
                 case ">":
-                    return actual > this.limitValue
+                    return actual > this.limit
                 case "==":
-                    return actual === this.limitValue
+                    return actual === this.limit
                 default:
                     // TODO: Does this work?
                     // c8 ignore next
@@ -104,13 +116,13 @@ export namespace Bound {
             state.errors.add(
                 "bound",
                 {
-                    reason: describe(this.token, this.limitValue, kind),
+                    reason: describe(this.token, this.limit, kind),
                     state
                 },
                 {
                     comparator: this.token,
                     comparatorDescription: comparatorDescriptions[this.token],
-                    limit: this.limitValue,
+                    limit: this.limit,
                     kind,
                     actual,
                     data: state.data

@@ -1,7 +1,7 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import { chainableNoOpProxy, deepMerge, mapValues } from "@re-/tools"
-import type { RootNode } from "../nodes/common.js"
 import { ResolutionNode } from "../nodes/resolution.js"
+import type { Infer } from "../nodes/traverse/ast/infer.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { ParseSpace } from "./parse.js"
@@ -124,5 +124,5 @@ export type SpaceTypeRoots<Resolutions> = Evaluate<{
 }>
 
 export type InferSpaceRoot<Resolutions> = Evaluate<{
-    [Name in keyof Resolutions]: RootNode.Infer<Resolutions[Name], Resolutions>
+    [Name in keyof Resolutions]: Infer<Resolutions[Name], Resolutions>
 }>

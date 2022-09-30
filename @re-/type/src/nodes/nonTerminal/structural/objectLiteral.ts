@@ -2,7 +2,7 @@ import type { Dictionary } from "@re-/tools"
 import type { Base } from "../../base.js"
 import type { Check, Generate } from "../../traverse/exports.js"
 import { NonTerminal } from "../nonTerminal.js"
-import { Optional } from "../postfix/optional.js"
+import { Optional } from "../unary/optional.js"
 import { checkObjectKind } from "./common.js"
 
 export namespace ObjectLiteral {

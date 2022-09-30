@@ -1,28 +1,29 @@
-import { ArrayNode } from "../../../../nodes/unaries/array.js"
-import type { parserContext } from "../../common.js"
+import { Arr } from "../../../nodes/nonTerminal/unary/array.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 
-export const parseArray = (s: parserState.withRoot, context: parserContext) => {
-    const next = s.r.shift()
-    if (next !== "]") {
-        throw new Error(incompleteTokenMessage)
+export namespace ArrayOperator {
+    export const parse = (s: parserState.withPreconditionRoot) => {
+        const next = s.r.shift()
+        if (next !== "]") {
+            throw new Error(incompleteTokenMessage)
+        }
+        s.l.root = new Arr.Node(s.l.root)
+        return s
     }
-    s.l.root = new ArrayNode(s.l.root, context)
-    return s
+
+    export type ParseArray<
+        S extends ParserState,
+        Unscanned extends string
+    > = Unscanned extends Scanner.Shift<"]", infer Remaining>
+        ? ParserState.From<{
+              L: Left.SetRoot<S["L"], [S["L"]["root"], "[]"]>
+              R: Remaining
+          }>
+        : ParserState.Error<IncompleteTokenMessage>
+
+    export const incompleteTokenMessage = `Missing expected ']'.`
+
+    type IncompleteTokenMessage = typeof incompleteTokenMessage
 }
-
-export type ParseArray<
-    S extends ParserState,
-    Unscanned extends string
-> = Unscanned extends Scanner.Shift<"]", infer Remaining>
-    ? ParserState.From<{
-          L: Left.SetRoot<S["L"], [S["L"]["root"], "[]"]>
-          R: Remaining
-      }>
-    : ParserState.Error<IncompleteTokenMessage>
-
-export const incompleteTokenMessage = `Missing expected ']'.`
-
-type IncompleteTokenMessage = typeof incompleteTokenMessage

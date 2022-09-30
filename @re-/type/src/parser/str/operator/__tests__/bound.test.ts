@@ -1,10 +1,10 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../../../api.js"
-import { invalidDoubleBoundMessage } from "../bound/common.js"
+import { singleEqualsMessage } from "../bound/comparator.js"
 import { unpairedLeftBoundMessage } from "../bound/left.js"
-import { singleEqualsMessage } from "../bound/parse.js"
 import { unboundableMessage } from "../bound/right.js"
+import { invalidDoubleBoundMessage } from "../bound/tokens.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
