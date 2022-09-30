@@ -15,7 +15,7 @@ describe("union", () => {
         })
         test("several types", () => {
             assert(type("false|null|undefined|0|''").ast).narrowedValue([
-                [[["false", "|", "null"], "|", "undefined"], "|", "0"],
+                [[["false", "|", "null"], "|", "undefined"], "|", 0],
                 "|",
                 "''"
             ])
@@ -23,8 +23,8 @@ describe("union", () => {
         describe("errors", () => {
             test("bad reference", () => {
                 // @ts-expect-error
-                assert(() => type("number|sting")).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("sting")
+                assert(() => type("number|strng")).throwsAndHasTypeError(
+                    Unenclosed.unresolvableMessage("strng")
                 )
             })
             test("double pipes", () => {

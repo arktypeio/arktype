@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import type { Dictionary } from "@re-/tools"
 import { describe, test } from "mocha"
 import { Root, space, type } from "../../api.js"
-import { unresolvableMessage } from "../str/operand/unenclosed.js"
+import { Unenclosed } from "../str/operand/unenclosed.js"
 
 describe("root definition", () => {
     // TODO: Add lazy tests
@@ -23,7 +23,7 @@ describe("root definition", () => {
             // Allows all references, but will throw if they're not defined at runtime
             assert(() => {
                 s.$root.type({ a: "st" })
-            }).throws(unresolvableMessage("st"))
+            }).throws(Unenclosed.unresolvableMessage("st"))
             // Runtime nodes created correctly
             assert(s.$root.ast).equals({ a: ["string", "[]"], b: ["a", "?"] })
         })

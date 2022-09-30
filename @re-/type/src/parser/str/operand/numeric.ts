@@ -79,7 +79,7 @@ export namespace UnenclosedNumber {
         Kind extends ValidationKind
     > = number extends ApparentLiteralValue
         ? ParseError<MalformedNumericLiteralMessage<ApparentDef, Kind>>
-        : ApparentLiteralValue
+        : ApparentDef
 
     export const parseWellFormed = (
         token: string,
@@ -132,10 +132,10 @@ export namespace UnenclosedBigint {
         }
     }
 
-    export type AssertDefWellFormed<
+    export type AssertWellFormed<
         ApparentDef extends string,
         ApparentLiteralValue extends bigint
-    > = number extends ApparentLiteralValue
+    > = bigint extends ApparentLiteralValue
         ? ParseError<MalformedNumericLiteralMessage<ApparentDef, "bigint">>
         : ApparentDef
 

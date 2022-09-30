@@ -1,14 +1,14 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { unresolvableMessage } from "../operand/unenclosed.js"
-import { expressionExpectedMessage } from "../state/state.js"
+import { Unenclosed } from "../operand/unenclosed.js"
+import { scanner } from "../state/scanner.js"
 
 describe("str", () => {
     test("errors on empty string", () => {
         // @ts-expect-error
         assert(() => type("")).throwsAndHasTypeError(
-            expressionExpectedMessage("")
+            scanner.expressionExpectedMessage("")
         )
     })
     test("ignores whitespace between identifiers/operators", () => {
@@ -19,6 +19,6 @@ describe("str", () => {
         assert(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError(unresolvableMessage("boo"))
+        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("boo"))
     })
 })

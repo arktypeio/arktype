@@ -15,7 +15,7 @@ export namespace Operator {
     export const parse = (s: parserState.requireRoot): parserState => {
         const lookahead = s.r.shift()
         return lookahead === "END"
-            ? parserState.finalize(s, false)
+            ? parserState.finalize(s, true)
             : lookahead === "?"
             ? OptionalOperator.finalize(s)
             : lookahead === "["
@@ -52,7 +52,7 @@ export namespace Operator {
                       R: Unscanned
                   }>
                 : Lookahead extends ")"
-                ? GroupClose.Reduce<S>
+                ? GroupClose.Reduce<S, Unscanned>
                 : Lookahead extends Comparators.StartChar
                 ? BoundOperator.Parse<S, Lookahead, Unscanned>
                 : Lookahead extends "%"

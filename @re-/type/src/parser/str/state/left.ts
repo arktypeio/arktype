@@ -38,18 +38,18 @@ export namespace left {
 
 export namespace Left {
     export type OpenBranches = {
-        leftBound: OpenBranches.LeftBound | []
-        union: OpenBranches.Union | []
-        intersection: OpenBranches.Intersection | []
+        leftBound: OpenBranches.LeftBound | null
+        union: OpenBranches.Union | null
+        intersection: OpenBranches.Intersection | null
     }
 
     export namespace OpenBranches {
         export type From<Branches extends OpenBranches> = Branches
 
         export type Default = From<{
-            leftBound: []
-            union: []
-            intersection: []
+            leftBound: null
+            union: null
+            intersection: null
         }>
 
         export type LeftBound<

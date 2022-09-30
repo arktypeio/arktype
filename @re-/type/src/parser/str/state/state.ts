@@ -1,7 +1,7 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
 import { Optional } from "../../../nodes/nonTerminal/unary/optional.js"
-import type { MaybeAppend, ParseError } from "../../common.js"
+import type { MaybeAppend } from "../../common.js"
 import { parseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import { LeftBoundOperator } from "../operator/bound/left.js"
@@ -36,33 +36,32 @@ export class parserState<preconditions extends Partial<left> = {}> {
 }
 
 export namespace parserState {
-    export const finalize = (s: parserState, isOptional: boolean) =>
-        s.hasRoot()
-            ? !s.l.groups.length
-                ? reduceFinal(LeftBoundOperator.assertClosed(s), isOptional)
-                : s.error(GroupOpen.unclosedMessage)
-            : s.error(scanner.expressionExpectedMessage(""))
+    export const finalize = (s: parserState.requireRoot, isOptional: boolean) =>
+        !s.l.groups.length
+            ? reduceFinal(s, isOptional)
+            : s.error(GroupOpen.unclosedMessage)
 }
 
 export namespace ParserState {
     export type Finalize<
-        S extends ParserState.RequireRoot,
+        S extends ParserState,
         IsOptional extends boolean
     > = S["L"]["groups"] extends []
-        ? LeftBoundOperator.AssertClosed<S["L"]> extends ParseError<
-              infer Message
-          >
-            ? ParserState.Error<Message>
-            : From<{
-                  L: {
-                      groups: []
-                      branches: Left.OpenBranches.Default
-                      root: WrapIfOptional<MergeBranches<S>, IsOptional>
-                      done: true
-                  }
-                  R: ""
-              }>
+        ? ParserState.From<{
+              L: {
+                  groups: []
+                  branches: Left.OpenBranches.Default
+                  root: WrapIfOptional<MergeBranches<S["L"]>, IsOptional>
+                  done: true
+              }
+              R: ""
+          }>
         : ParserState.Error<GroupOpen.UnclosedGroupMessage>
+
+    type WrapIfOptional<
+        Root,
+        IsOptional extends boolean
+    > = IsOptional extends true ? [Root, "?"] : Root
 }
 
 export namespace parserState {
@@ -79,21 +78,6 @@ export namespace parserState {
     }
 }
 
-export namespace ParserState {
-    export type ReduceFinal<
-        S extends ParserState.RequireRoot,
-        IsOptional extends boolean
-    > = From<{
-        L: {
-            groups: []
-            branches: Left.OpenBranches.Default
-            root: WrapIfOptional<MergeBranches<S>, IsOptional>
-            done: true
-        }
-        R: ""
-    }>
-}
-
 export namespace parserState {
     export const mergeBranches = (s: parserState.requireRoot) => {
         LeftBoundOperator.assertClosed(s)
@@ -105,28 +89,11 @@ export namespace parserState {
 
 // TODO: Check how this gets compiled (multiple of the same namespace in single file)
 export namespace ParserState {
-    export type MergeBranches<
-        S extends ParserState.RequireRoot,
-        UpdatedGroups extends Left.OpenBranches[] = S["L"]["groups"],
-        UpdatedBranches extends Left.OpenBranches = Left.OpenBranches.Default
-    > = LeftBoundOperator.AssertClosed<S["L"]> extends ParseError<infer Message>
-        ? Left.Error<Message>
-        : Left.From<{
-              groups: UpdatedGroups
-              branches: UpdatedBranches
-              root: MaybeAppend<
-                  MaybeAppend<
-                      S["L"]["root"],
-                      S["L"]["branches"]["intersection"]
-                  >,
-                  S["L"]["branches"]["union"]
-              >
-          }>
+    export type MergeBranches<L extends Left> = MaybeAppend<
+        MaybeAppend<L["root"], L["branches"]["intersection"]>,
+        L["branches"]["union"]
+    >
 }
-
-type WrapIfOptional<Root, IsOptional extends boolean> = IsOptional extends true
-    ? [Root, "?"]
-    : Root
 
 export namespace parserState {
     export type requireRoot<Root extends Base.node = Base.node> = parserState<{

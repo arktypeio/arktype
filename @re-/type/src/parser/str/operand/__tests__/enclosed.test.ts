@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../scopes/type.js"
-import { unterminatedEnclosedMessage } from "../enclosed.js"
+import { Enclosed } from "../enclosed.js"
 
 describe("parse enclosed", () => {
     test("with spaces", () => {
@@ -22,19 +22,19 @@ describe("parse enclosed", () => {
             test("regex", () => {
                 // @ts-expect-error
                 assert(() => type("/.*")).throwsAndHasTypeError(
-                    unterminatedEnclosedMessage("/.*", "/")
+                    Enclosed.unterminatedMessage("/.*", "/")
                 )
             })
             test("single-quote", () => {
                 // @ts-expect-error
                 assert(() => type("'.*")).throwsAndHasTypeError(
-                    unterminatedEnclosedMessage("'.*", "'")
+                    Enclosed.unterminatedMessage("'.*", "'")
                 )
             })
             test("double-quote", () => {
                 // @ts-expect-error
                 assert(() => type('".*'))
-                    .throws(unterminatedEnclosedMessage('".*', '"'))
+                    .throws(Enclosed.unterminatedMessage('".*', '"'))
                     .type.errors('\\".* requires a closing \\".')
             })
         })

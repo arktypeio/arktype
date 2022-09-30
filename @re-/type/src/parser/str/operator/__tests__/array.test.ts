@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { incompleteTokenMessage } from "../array.js"
+import { ArrayOperator } from "../array.js"
 
 describe("parse array", () => {
     test("parse", () => {
@@ -11,7 +11,7 @@ describe("parse array", () => {
         test("incomplete token", () => {
             // @ts-expect-error
             assert(() => type("string[")).throwsAndHasTypeError(
-                incompleteTokenMessage
+                ArrayOperator.incompleteTokenMessage
             )
         })
     })

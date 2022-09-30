@@ -32,10 +32,9 @@ export const throwParseError = (message: string) => {
 
 export type ParseError<Message extends string> = `!${Message}`
 
-export type MaybeAppend<
-    T,
-    MaybeArray extends unknown[] | undefined
-> = MaybeArray extends unknown[] ? [...MaybeArray, T] : T
+export type MaybeAppend<T, MaybeArray> = MaybeArray extends unknown[]
+    ? [...MaybeArray, T]
+    : T
 
 export type MissingRightOperandMessage<Token extends Nary.Token> =
     `Token '${Token}' requires a right operand.`

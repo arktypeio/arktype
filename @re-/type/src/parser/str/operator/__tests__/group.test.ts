@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../scopes/type.js"
-import { unclosedGroupMessage } from "../../operand/groupOpen.js"
-import { expressionExpectedMessage } from "../../state/state.js"
-import { unexpectedGroupCloseMessage } from "../groupClose.js"
+import { type } from "../../../../api.js"
+import { GroupOpen } from "../../operand/groupOpen.js"
+import { scanner } from "../../state/scanner.js"
+import { GroupClose } from "../groupClose.js"
 
 describe("group", () => {
     test("entire expression", () => {
@@ -37,55 +37,57 @@ describe("group", () => {
             assert(() => {
                 // @ts-expect-error
                 type("()")
-            }).throwsAndHasTypeError(expressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(")"))
         })
         test("unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("string|(boolean|number[]")
-            }).throwsAndHasTypeError(unclosedGroupMessage)
+            }).throwsAndHasTypeError(GroupOpen.unclosedMessage)
         })
         test("unmatched )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)")
-            }).throwsAndHasTypeError(unexpectedGroupCloseMessage(""))
+            }).throwsAndHasTypeError(GroupClose.unmatchedMessage(""))
         })
         test("lone )", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")")
-            }).throwsAndHasTypeError(expressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(")"))
         })
         test("lone (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(")
-            }).throwsAndHasTypeError(expressionExpectedMessage(""))
+            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(""))
         })
         test("deep unmatched (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(null|(undefined|(1))|2")
-            }).throwsAndHasTypeError(unclosedGroupMessage)
+            }).throwsAndHasTypeError(GroupOpen.unclosedMessage)
         })
         test("deep unmatched )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))[]")
-            }).throwsAndHasTypeError(unexpectedGroupCloseMessage("[]"))
+            }).throwsAndHasTypeError(GroupClose.unmatchedMessage("[]"))
         })
         test("starting )", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")number(")
-            }).throwsAndHasTypeError(expressionExpectedMessage(")number("))
+            }).throwsAndHasTypeError(
+                scanner.expressionExpectedMessage(")number(")
+            )
         })
         test("misplaced )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(number|)")
-            }).throwsAndHasTypeError(expressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(")"))
         })
     })
 })

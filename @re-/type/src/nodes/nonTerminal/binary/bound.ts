@@ -1,7 +1,7 @@
 // TODO: Fix parser imports
 import { keySet } from "@re-/tools"
 import type { Base } from "../../base.js"
-import type { LiteralNode } from "../../terminal/literal.js"
+import type { PrimitiveLiteral } from "../../terminal/literal.js"
 import type { CheckState } from "../../traverse/check/check.js"
 import type { Check } from "../../traverse/exports.js"
 import type { TraversalState } from "../../traverse/traverse.js"
@@ -43,8 +43,8 @@ export namespace Bound {
     export type Token = keyof typeof tokens
 
     export type Children<IsLeft extends boolean> = IsLeft extends true
-        ? [LiteralNode<number>, Base.node]
-        : [Base.node, LiteralNode<number>]
+        ? [PrimitiveLiteral.Node<number>, Base.node]
+        : [Base.node, PrimitiveLiteral.Node<number>]
 
     export class Node<IsLeft extends boolean> extends Binary.Node<
         Token,
@@ -63,8 +63,11 @@ export namespace Bound {
         }
 
         get limit() {
-            return (this.children[this.isLeft ? 0 : 1] as LiteralNode<number>)
-                .value
+            return (
+                this.children[
+                    this.isLeft ? 0 : 1
+                ] as PrimitiveLiteral.Node<number>
+            ).value
         }
 
         // If this is a left bound, normalizedComparator will be the inversion

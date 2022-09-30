@@ -1,24 +1,28 @@
 import type { Base } from "../../base.js"
+import type { PrimitiveLiteral } from "../../terminal/literal.js"
 import type { Check } from "../../traverse/exports.js"
 import type { TraversalState } from "../../traverse/traverse.js"
-import { Infix } from "../infix/infix.js"
+import { Binary } from "./binary.js"
 
 export namespace Divisibility {
     export const token = "%"
 
     export type Token = typeof token
 
-    export class Node extends Infix.Node<Token> {
+    export class Node extends Binary.Node<Token> {
         readonly token = token
 
-        constructor(private child: Base.node, private divisor: number) {
-            super([child])
+        constructor(
+            private child: Base.node,
+            private divisor: PrimitiveLiteral.Node<number>
+        ) {
+            super([child, divisor])
         }
 
         check(state: Check.CheckState<number>) {
-            if (state.data % this.divisor !== 0) {
+            if (state.data % this.divisor.value !== 0) {
                 const reason =
-                    this.divisor === 1
+                    this.divisor.value === 1
                         ? "Must be an integer"
                         : `Must be an integer divisible by ${this.divisor}`
                 state.errors.add(
@@ -27,7 +31,7 @@ export namespace Divisibility {
                         state,
                         reason
                     },
-                    { divisor: this.divisor, actual: state.data }
+                    { divisor: this.divisor.value, actual: state.data }
                 )
             }
         }

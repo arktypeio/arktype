@@ -2,7 +2,8 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { space } from "../../../../scopes/space.js"
 import { type } from "../../../../scopes/type.js"
-import { unresolvableMessage } from "../unenclosed.js"
+import { malformedNumericLiteralMessage } from "../numeric.js"
+import { Unenclosed } from "../unenclosed.js"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {
@@ -18,7 +19,7 @@ describe("parse unenclosed", () => {
             test("unresolvable", () => {
                 // @ts-expect-error
                 assert(() => type("HUH")).throwsAndHasTypeError(
-                    unresolvableMessage("HUH")
+                    Unenclosed.unresolvableMessage("HUH")
                 )
             })
         })
@@ -53,18 +54,33 @@ describe("parse unenclosed", () => {
             test("multiple decimals", () => {
                 // @ts-expect-error
                 assert(() => type("127.0.0.1")).throwsAndHasTypeError(
-                    unresolvableMessage("127.0.0.1")
+                    Unenclosed.unresolvableMessage("127.0.0.1")
                 )
             })
             test("with alpha", () => {
                 // @ts-expect-error
                 assert(() => type("13three7")).throwsAndHasTypeError(
-                    unresolvableMessage("13three7")
+                    Unenclosed.unresolvableMessage("13three7")
+                )
+            })
+
+            test("leading zeroes", () => {
+                // @ts-expect-error
+                assert(() => type("010")).throwsAndHasTypeError(
+                    malformedNumericLiteralMessage("010", "number")
+                )
+            })
+            test("trailing zeroes", () => {
+                // @ts-expect-error
+                assert(() => type("4.0")).throwsAndHasTypeError(
+                    malformedNumericLiteralMessage("4.0", "number")
                 )
             })
             test("negative zero", () => {
-                // TS won't complain about this, but it also won't infer the literal correctly, so we throw.
-                assert(() => type("-0")).throws(unresolvableMessage("-0"))
+                // @ts-expect-error
+                assert(() => type("-0")).throwsAndHasTypeError(
+                    malformedNumericLiteralMessage("-0", "number")
+                )
             })
         })
     })
@@ -85,12 +101,23 @@ describe("parse unenclosed", () => {
             test("decimal", () => {
                 // @ts-expect-error
                 assert(() => type("999.1n")).throwsAndHasTypeError(
-                    unresolvableMessage("999.1n")
+                    Unenclosed.unresolvableMessage("999.1n")
                 )
             })
+
+            test("leading zeroes", () => {
+                // TS currently doesn't try to infer this as bigint even
+                // though it matches our rules for a "malformed" integer.
+                // @ts-expect-error
+                assert(() => type("007n"))
+                    .throws(malformedNumericLiteralMessage("007n", "number"))
+                    .type.errors(Unenclosed.unresolvableMessage("007n"))
+            })
             test("negative zero", () => {
-                // TS won't complain about this, but it also won't infer the literal correctly, so we throw.
-                assert(() => type("-0n")).throws(unresolvableMessage("-0n"))
+                // @ts-expect-error
+                assert(() => type("-0n")).throwsAndHasTypeError(
+                    malformedNumericLiteralMessage("-0n", "bigint")
+                )
             })
         })
     })

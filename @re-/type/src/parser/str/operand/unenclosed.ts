@@ -67,6 +67,7 @@ export namespace Unenclosed {
         ? Left.Error<Message>
         : Left.SetRoot<L, Resolved>
 
+    // TODO: Change to scope?
     type UnresolvableMessage<Token extends string> =
         `'${Token}' is not a builtin type and does not exist in your space`
 
@@ -95,7 +96,7 @@ export namespace Unenclosed {
         : Token extends PrimitiveLiteral.Boolean
         ? Token
         : Token extends UnenclosedBigint.MaybeLiteral<infer Value>
-        ? UnenclosedBigint.AssertDefWellFormed<Token, Value>
+        ? UnenclosedBigint.AssertWellFormed<Token, Value>
         : ParseError<
               Token extends ""
                   ? Scanner.ExpressionExpectedMessage<Unscanned>

@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../../api.js"
-import { unresolvableMessage } from "../../../operand/unenclosed.js"
-import { nonTerminatingOptionalMessage } from "../../optional.js"
+import { type } from "../../../../api.js"
+import { Unenclosed } from "../../operand/unenclosed.js"
+import { OptionalOperator } from "../optional.js"
 
 describe("parse optional", () => {
     test("valid", () => {
@@ -12,19 +12,19 @@ describe("parse optional", () => {
         test("bad inner type", () => {
             // @ts-expect-error
             assert(() => type("nonexistent?")).throwsAndHasTypeError(
-                unresolvableMessage("nonexistent")
+                Unenclosed.unresolvableMessage("nonexistent")
             )
         })
         test("non-suffix", () => {
             // @ts-expect-error
             assert(() => type("number?|string?")).throwsAndHasTypeError(
-                nonTerminatingOptionalMessage
+                OptionalOperator.nonTerminatingMessage
             )
         })
         test("multiple suffix", () => {
             // @ts-expect-error
             assert(() => type("boolean??")).throwsAndHasTypeError(
-                nonTerminatingOptionalMessage
+                OptionalOperator.nonTerminatingMessage
             )
         })
     })

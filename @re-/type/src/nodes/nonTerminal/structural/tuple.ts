@@ -1,13 +1,14 @@
-import { Base } from "../../base.js"
+import type { Base } from "../../base.js"
 import type { CheckState } from "../../traverse/check/check.js"
 import type { Check, Generate } from "../../traverse/exports.js"
+import { NonTerminal } from "../nonTerminal.js"
 import { checkObjectKind } from "./common.js"
 
 export type TupleDefinition = unknown[] | readonly unknown[]
 
-export class TupleNode extends Base.node {
-    constructor(public children: Base.node[]) {
-        super()
+export class TupleNode extends NonTerminal.Node {
+    constructor(children: Base.node[]) {
+        super(children)
     }
 
     toAst() {

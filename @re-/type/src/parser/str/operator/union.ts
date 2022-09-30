@@ -30,7 +30,7 @@ export namespace UnionOperator {
 
     type PushChild<B extends Left.OpenBranches, Root> = Left.OpenBranches.From<{
         leftBound: B["leftBound"]
-        intersection: []
+        intersection: null
         union: [
             MaybeAppend<MaybeAppend<Root, B["intersection"]>, B["union"]>,
             "|"
