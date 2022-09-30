@@ -14,7 +14,7 @@
         "directory": "@re-/plugin"
     },
     "type": "commonjs",
-    "main": "./dist",
+    "main": "./dist/src/index.js",
     "scripts": {
         "build": "tsc",
         "watch": "tsc --watch"

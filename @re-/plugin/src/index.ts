@@ -4,6 +4,9 @@ import type {
     SignatureHelpItems
 } from "typescript/lib/tsserverlibrary"
 
+const arktypeNameMatcher = /^(type|space)$/
+const arktypeSourceMatcher = /@re-\/type|arktype|.*api\.(j|t)s/
+
 const initializeArktypePlugin = () => {
     const create = (info: ts.server.PluginCreateInfo) => {
         const log = (data: unknown) => {
@@ -31,27 +34,60 @@ const initializeArktypePlugin = () => {
             const arktypeSignature =
                 getPossibleArktypeSignature(originalResponse)
             if (arktypeSignature) {
+                log(arktypeSignature)
                 mutateArktypeSignature(arktypeSignature)
             }
             return originalResponse
         }
 
         proxy.getCompletionsAtPosition = (...args) => {
+            const [fileName, position] = args
             const originalCompletions =
                 info.languageService.getCompletionsAtPosition(...args)
             if (!originalCompletions) {
                 return undefined
             }
+
+            for (const completion of originalCompletions.entries) {
+                if (
+                    arktypeNameMatcher.test(completion.name) &&
+                    completion.hasAction &&
+                    completion.source &&
+                    !arktypeSourceMatcher.test(completion.source)
+                ) {
+                    log(
+                        `Deprioritizing completion '${completion.name}' from '${completion.source}'...`
+                    )
+                    completion.sortText = "Z"
+                }
+            }
+
             const signatureHelp = info.languageService.getSignatureHelpItems(
-                args[0],
-                args[1],
+                fileName,
+                position,
                 undefined
             )
-            // If it is an arktype call, bypass completions since they will be
-            // parse errors. Instead, provide feedback via signature help.
-            return getPossibleArktypeSignature(signatureHelp)
-                ? undefined
-                : originalCompletions
+
+            const possibleArktypeSignature =
+                getPossibleArktypeSignature(signatureHelp)
+            if (possibleArktypeSignature) {
+                const callName =
+                    possibleArktypeSignature.prefixDisplayParts[0].text
+
+                // If it is an arktype call, bypass completions since they will be
+                // parse errors. Instead, provide feedback via signature help.
+                originalCompletions.entries =
+                    originalCompletions.entries.filter((completion) => {
+                        if (completion.kind === "string") {
+                            log(
+                                `Skipping string literal completion ${completion.name} for arktype call ${callName} at ${fileName}:${position}...`
+                            )
+                            return false
+                        }
+                        return true
+                    })
+            }
+            return originalCompletions
         }
 
         return proxy
@@ -66,13 +102,27 @@ const mutateArktypeSignature = (signature: SignatureHelpItem) => {
         (part) => part.kind === "stringLiteral"
     )
     if (parseFeedback) {
-        // We don't need to see the return type here
-        signature.suffixDisplayParts = [{ text: ")", kind: "punctuation" }]
-        // TODO: Check if suggestion equals current text to check if error
-        // TODO: Add back in options but with simplified type
-        signature.parameters = [signature.parameters[0]]
-        // TODO: Just show name of inferred type for return
-        // TODO: Increase priority of "type" and other items that are behind node
+        const transformedSuffixDisplayParts = [
+            { text: ")", kind: "punctuation" }
+        ]
+        let inInferType = false
+        for (const part of signature.suffixDisplayParts) {
+            if (part.kind === "propertyName") {
+                inInferType = part.text === "infer"
+            } else if (inInferType) {
+                transformedSuffixDisplayParts.push(part)
+            }
+        }
+        signature.suffixDisplayParts = transformedSuffixDisplayParts
+        const transformedOptionsDisplayParts = []
+        for (const part of signature.parameters[1].displayParts) {
+            // Don't include generic in TypeOptions description
+            if (part.text === "<") {
+                break
+            }
+            transformedOptionsDisplayParts.push(part)
+        }
+        signature.parameters[1].displayParts = transformedOptionsDisplayParts
     }
 }
 
@@ -84,8 +134,7 @@ const getPossibleArktypeSignature = (
         return
     }
     if (
-        possibleSuggestion.prefixDisplayParts[0].text === "type" &&
-        possibleSuggestion.parameters[0].name === "definition"
+        arktypeNameMatcher.test(possibleSuggestion.prefixDisplayParts[0].text)
     ) {
         return possibleSuggestion
     }
