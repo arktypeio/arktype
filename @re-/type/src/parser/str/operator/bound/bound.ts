@@ -45,9 +45,11 @@ export namespace BoundOperator {
         S extends ParserState,
         Token extends Bound.Token,
         Unscanned extends string
-    > = S["L"]["root"] extends PrimitiveLiteral.Number<infer Value>
+    > = S extends {
+        L: { root: PrimitiveLiteral.Number }
+    }
         ? ParserState.From<{
-              L: LeftBoundOperator.Reduce<S["L"], Value, Token>
+              L: LeftBoundOperator.Reduce<S["L"], Token>
               R: Unscanned
           }>
         : RightBoundOperator.Parse<{ L: S["L"]; R: Unscanned }, Token>

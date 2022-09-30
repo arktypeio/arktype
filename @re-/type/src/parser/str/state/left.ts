@@ -53,7 +53,7 @@ export namespace Left {
         }>
 
         export type LeftBound<
-            Limit extends number = number,
+            Limit extends PrimitiveLiteral.Number = PrimitiveLiteral.Number,
             Comparator extends Comparators.Doublable = Comparators.Doublable
         > = [Limit, Comparator]
 

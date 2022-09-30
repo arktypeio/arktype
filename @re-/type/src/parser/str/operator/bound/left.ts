@@ -17,11 +17,10 @@ export namespace LeftBoundOperator {
             : s.error(Comparators.invalidDoubleMessage(comparator))
 
     export type Reduce<
-        L extends Left,
-        Limit extends number,
+        L extends Left.WithRoot<PrimitiveLiteral.Number>,
         Comparator extends Bound.Token
     > = Comparator extends Comparators.Doublable
-        ? ReduceValidated<L, Limit, Comparator>
+        ? ReduceValidated<L, Comparator>
         : Left.Error<Comparators.InvalidDoubleMessage<Comparator>>
 
     const reduceValidated = (
@@ -34,15 +33,14 @@ export namespace LeftBoundOperator {
     }
 
     type ReduceValidated<
-        L extends Left,
-        Limit extends number,
+        L extends Left.WithRoot<PrimitiveLiteral.Number>,
         Comparator extends Comparators.Doublable
     > = Left.From<{
         groups: L["groups"]
         branches: {
             union: L["branches"]["union"]
             intersection: L["branches"]["intersection"]
-            leftBound: [Limit, Comparator]
+            leftBound: [L["root"], Comparator]
         }
         root: undefined
     }>
@@ -52,7 +50,7 @@ export namespace LeftBoundOperator {
             ? s.error(
                   unpairedMessage(
                       s.l.root.toString(),
-                      s.l.branches.leftBound[0].value,
+                      s.l.branches.leftBound[0].toString(),
                       s.l.branches.leftBound[1]
                   )
               )
@@ -70,13 +68,13 @@ export namespace LeftBoundOperator {
 
     export type UnpairedMessage<
         Root extends string,
-        Limit extends number,
+        Limit extends string,
         Token extends Bound.Token
     > = `Left bounds are only valid when paired with right bounds. Consider using ${Root}${Bound.InvertedComparators[Token]}${Limit} instead.`
 
     export const unpairedMessage = <
         Root extends string,
-        Limit extends number,
+        Limit extends string,
         Token extends Bound.Token
     >(
         root: Root,

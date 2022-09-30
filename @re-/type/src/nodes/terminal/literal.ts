@@ -6,7 +6,7 @@ export namespace PrimitiveLiteral {
 
     export type String<Text extends string = string> = `"${Text}"` | `'${Text}'`
 
-    export type Number<Value extends number = number> = Value
+    export type Number<Value extends number = number> = `${Value}`
 
     export type Bigint<Value extends bigint = bigint> = `${Value}n`
 

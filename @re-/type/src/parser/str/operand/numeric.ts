@@ -1,3 +1,4 @@
+import type { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
 import type { ParseError } from "../../../parser/common.js"
 import { throwParseError } from "../../../parser/common.js"
 
@@ -52,8 +53,6 @@ export const malformedNumericLiteralMessage = <
 export namespace UnenclosedNumber {
     export type ValidationKind = "number" | "integer"
 
-    export type MaybeLiteral<Value extends number> = `${Value}`
-
     export const maybeParse = (def: string) => {
         const result = Number.parseFloat(def)
         return Number.isNaN(result) ? null : result
@@ -99,20 +98,26 @@ export namespace UnenclosedNumber {
 
     type MaybeInteger<Value extends bigint> = `${Value}`
 
-    export type ParseWellFormed<
+    export type ParseWellFormedNumber<
         Token extends string,
-        BadIntegerMessage extends string,
-        Kind extends ValidationKind
+        BadNumberMessage extends string
+    > = Token extends PrimitiveLiteral.Number<infer Value>
+        ? number extends Value
+            ? MalformedNumericLiteralMessage<Token, "number">
+            : Value
+        : BadNumberMessage
+
+    export type ParseWellFormedInteger<
+        Token extends string,
+        BadIntegerMessage extends string
     > = Token extends MaybeInteger<infer Value>
         ? bigint extends Value
-            ? MalformedNumericLiteralMessage<Token, Kind>
+            ? MalformedNumericLiteralMessage<Token, "integer">
             : UnenclosedBigint.ToNumber<Value>
         : BadIntegerMessage
 }
 
 export namespace UnenclosedBigint {
-    export type MaybeLiteral<Value extends bigint> = `${Value}n`
-
     export const maybeParse = (def: string) => {
         if (def[def.length - 1] !== "n") {
             return null

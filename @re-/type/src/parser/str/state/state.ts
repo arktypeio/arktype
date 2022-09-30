@@ -80,6 +80,7 @@ export namespace parserState {
 
 export namespace parserState {
     export const mergeBranches = (s: parserState.requireRoot) => {
+        // TODO: Ensure type check is also done for this
         LeftBoundOperator.assertClosed(s)
         IntersectionOperator.maybeMerge(s)
         UnionOperator.maybeMerge(s)

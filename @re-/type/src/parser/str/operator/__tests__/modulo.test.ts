@@ -6,7 +6,7 @@ import { DivisibilityOperator } from "../divisibility.js"
 describe("modulo", () => {
     describe("valid", () => {
         test("integerLiteralDefinition", () => {
-            assert(type("number%2").ast).narrowedValue(["number", "%", 2])
+            assert(type("number%2").ast).narrowedValue(["number", "%", "2"])
         })
     })
     describe("invalid", () => {

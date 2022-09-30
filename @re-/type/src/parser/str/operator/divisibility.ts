@@ -1,6 +1,7 @@
 import type { NodeToString } from "../../../nodes/common.js"
 import { Divisibility } from "../../../nodes/nonTerminal/binary/divisibility.js"
 import { NumberNode } from "../../../nodes/terminal/keyword/number.js"
+import { PrimitiveLiteral } from "../../../nodes/terminal/literal.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
@@ -13,6 +14,7 @@ export namespace DivisibilityOperator {
         const divisorToken = s.r.shiftUntilNextTerminator()
         return reduce(
             s,
+            divisorToken,
             UnenclosedNumber.parseWellFormed(
                 divisorToken,
                 invalidDivisorMessage(divisorToken),
@@ -37,10 +39,10 @@ export namespace DivisibilityOperator {
           > extends Scanner.Shifted<infer Scanned, infer NextUnscanned>
             ? Reduce<
                   S,
-                  UnenclosedNumber.ParseWellFormed<
+                  Scanned,
+                  UnenclosedNumber.ParseWellFormedInteger<
                       Scanned,
-                      InvalidDivisorMessage<Scanned>,
-                      "integer"
+                      InvalidDivisorMessage<Scanned>
                   >,
                   NextUnscanned
               >
@@ -49,24 +51,29 @@ export namespace DivisibilityOperator {
 
     const reduce = (
         s: parserState.requireRoot<NumberNode>,
+        divisorToken: string,
         parseResult: number
     ) => {
         if (parseResult === 0) {
             return s.error(invalidDivisorMessage("0"))
         }
-        s.l.root = new Divisibility.Node(s.l.root, parseResult) as any
+        s.l.root = new Divisibility.Node(
+            s.l.root,
+            new PrimitiveLiteral.Node(divisorToken, parseResult)
+        ) as any
         return s
     }
 
     type Reduce<
         S extends ParserState,
+        DivisorToken extends string,
         ParseResult extends number | string,
         Unscanned extends string
     > = ParseResult extends string
         ? ParserState.Error<ParseResult>
         : ParseResult extends 0
         ? ParserState.Error<InvalidDivisorMessage<"0">>
-        : ParserState.SetRoot<S, [S["L"]["root"], "%", ParseResult], Unscanned>
+        : ParserState.SetRoot<S, [S["L"]["root"], "%", DivisorToken], Unscanned>
 
     export const invalidDivisorMessage = <Divisor extends string>(
         divisor: Divisor

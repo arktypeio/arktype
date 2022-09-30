@@ -15,7 +15,7 @@ describe("union", () => {
         })
         test("several types", () => {
             assert(type("false|null|undefined|0|''").ast).narrowedValue([
-                [[["false", "|", "null"], "|", "undefined"], "|", 0],
+                [[["false", "|", "null"], "|", "undefined"], "|", "0"],
                 "|",
                 "''"
             ])

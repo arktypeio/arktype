@@ -40,10 +40,10 @@ export namespace RightBoundOperator {
               L: Reduce<
                   S["L"],
                   Comparator,
-                  UnenclosedNumber.ParseWellFormed<
+                  Scanned,
+                  UnenclosedNumber.ParseWellFormedNumber<
                       Scanned,
-                      InvalidLimitMessage<Comparator, Scanned>,
-                      "number"
+                      InvalidLimitMessage<Comparator, Scanned>
                   >
               >
               R: NextUnscanned
@@ -64,6 +64,7 @@ export namespace RightBoundOperator {
     type Reduce<
         L extends Left,
         Comparator extends Bound.Token,
+        LimitToken extends string,
         LimitParseResult extends string | number
     > = LimitParseResult extends number
         ? L extends { root: BoundableNode }
@@ -80,7 +81,9 @@ export namespace RightBoundOperator {
                       LeftLimit,
                       LeftComparator,
                       Comparator,
-                      LimitParseResult
+                      //TODO: Fix
+                      // @ts-expect-error
+                      LimitToken
                   >
                 : ReduceSingle<L, Comparator, LimitParseResult>
             : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
@@ -99,12 +102,13 @@ export namespace RightBoundOperator {
         L extends Left<{
             root: BoundableNode
         }>,
-        LeftLimit extends number,
+        LeftLimit extends PrimitiveLiteral.Number,
         LeftComparator extends Bound.Token,
         RightComparator extends Bound.Token,
-        RightLimit extends number
+        RightLimit extends PrimitiveLiteral.Number
     > = RightComparator extends Comparators.SingleOnly
-        ? Left.From<{
+        ? Left.Error<Comparators.InvalidDoubleMessage<RightComparator>>
+        : Left.From<{
               leftBound: undefined
               root: [
                   [LeftLimit, LeftComparator, L["root"]],
@@ -114,7 +118,6 @@ export namespace RightBoundOperator {
               groups: L["groups"]
               branches: L["branches"]
           }>
-        : Left.Error<Comparators.InvalidDoubleMessage<RightComparator>>
 
     const reduceDouble = (
         s: parserState<{

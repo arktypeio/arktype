@@ -91,11 +91,11 @@ export namespace Unenclosed {
         Ctx extends ParserContext
     > = IsResolvableIdentifier<Token, Ctx> extends true
         ? Token
-        : Token extends UnenclosedNumber.MaybeLiteral<infer Value>
+        : Token extends PrimitiveLiteral.Number<infer Value>
         ? UnenclosedNumber.AssertWellFormed<Token, Value, "number">
         : Token extends PrimitiveLiteral.Boolean
         ? Token
-        : Token extends UnenclosedBigint.MaybeLiteral<infer Value>
+        : Token extends PrimitiveLiteral.Bigint<infer Value>
         ? UnenclosedBigint.AssertWellFormed<Token, Value>
         : ParseError<
               Token extends ""
