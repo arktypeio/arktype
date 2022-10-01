@@ -1,12 +1,12 @@
 import type { Dictionary, NormalizedJsTypeName, UnionToTuple } from "@re-/tools"
 import { jsTypeOf } from "@re-/tools"
-import type { Check } from "../../traverse/exports.js"
+import type { Check } from "../traverse/check/check.js"
 
 export const checkObjectKind = <ExpectedStructure extends ObjectKind>(
     definition: string,
     expectedStructure: ExpectedStructure,
-    state: Check.CheckState
-): state is Check.CheckState<
+    state: Check.State
+): state is Check.State<
     ExpectedStructure extends "array" ? unknown[] : Dictionary
 > => {
     const actual = jsTypeOf(state.data)

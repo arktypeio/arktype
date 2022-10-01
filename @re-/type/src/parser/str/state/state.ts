@@ -23,7 +23,7 @@ export class parserState<preconditions extends Partial<left> = {}> {
         throw new parseError(message)
     }
 
-    hasRoot<NodeClass extends ClassOf<Base.node> = ClassOf<Base.node>>(
+    hasRoot<NodeClass extends ClassOf<Base.Node> = ClassOf<Base.Node>>(
         ofClass?: NodeClass
     ): this is parserState<{ root: InstanceOf<NodeClass> }> {
         return ofClass ? this.l.root instanceof ofClass : !!this.l.root
@@ -97,7 +97,7 @@ export namespace ParserState {
 }
 
 export namespace parserState {
-    export type requireRoot<Root extends Base.node = Base.node> = parserState<{
+    export type requireRoot<Root extends Base.Node = Base.Node> = parserState<{
         root: Root
     }>
 }

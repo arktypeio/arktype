@@ -76,7 +76,7 @@ export type Arktype<Inferred, Ast> = {
 export class ArktypeError extends Error {}
 
 export class InternalArktype implements DynamicArktype {
-    constructor(public root: Base.node, public options: InternalTypeOptions) {}
+    constructor(public root: Base.Node, public options: InternalTypeOptions) {}
 
     get infer() {
         return chainableNoOpProxy

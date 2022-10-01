@@ -1,15 +1,16 @@
+import type { Dictionary } from "@re-/tools"
 import { uncapitalize } from "@re-/tools"
 import type { Base } from "../../base.js"
 import { pathToString } from "../../common.js"
 import type { Bound } from "../../nonTerminal/binary/bound.js"
 import type { Divisibility } from "../../nonTerminal/binary/divisibility.js"
 import type { Union } from "../../nonTerminal/nary/union.js"
-import type { StructureDiagnostic } from "../../nonTerminal/structural/common.js"
-import type { ObjectLiteral } from "../../nonTerminal/structural/objectLiteral.js"
-import type { Tuple } from "../../nonTerminal/structural/tuple.js"
+import type { StructureDiagnostic } from "../../structural/common.js"
+import type { ObjectLiteral } from "../../structural/objectLiteral.js"
+import type { Tuple } from "../../structural/tuple.js"
 import type { TypeKeyword } from "../../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
-import type { Regex } from "../../terminal/regex.js"
+import type { RegexLiteral } from "../../terminal/regex.js"
 import type { Check } from "./check.js"
 import { stringifyData } from "./common.js"
 
@@ -17,7 +18,7 @@ export type DiagnosticCode = keyof RegisteredDiagnostics
 
 export type Diagnostic<Code extends DiagnosticCode, Data = unknown> = {
     code: Code
-} & BaseDiagnosticContext<Data> &
+} & BaseDiagnostic<Data> &
     SupplementalDiagnosticContext<Code>
 
 export type OptionsByDiagnostic = {
@@ -26,7 +27,7 @@ export type OptionsByDiagnostic = {
 
 export type InternalDiagnosticInput<Code extends DiagnosticCode> =
     SupplementalDiagnosticContext<Code> & {
-        type: Base.node
+        type: Base.Node
         message: string
     }
 
@@ -36,8 +37,13 @@ type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
     ? { omitActual?: boolean }
     : {})
 
-type BaseDiagnosticContext<Data = unknown> = {
-    type: Pick<Base.node, "toString" | "toAst" | "toDefinition">
+export type DiagnosticConfig = {
+    context: Dictionary
+    options: Dictionary
+}
+
+export type BaseDiagnostic<Node extends Base.Node, Data> = {
+    type: Pick<Node, "toString" | "toAst" | "toDefinition">
     data: {
         raw: Data
         toString(): string
@@ -61,7 +67,7 @@ type RegisteredDiagnostics = {
     bound: Bound.Diagnostic
     extraneousKeys: ObjectLiteral.ExtraneousKeysDiagnostic
     missingKey: ObjectLiteral.MissingKeyDiagnostic
-    regex: Regex.Diagnostic
+    regexLiteral: RegexLiteral.Diagnostic
     tupleLength: Tuple.LengthDiagnostic
     union: Union.Diagnostic
     divisibility: Divisibility.Diagnostic

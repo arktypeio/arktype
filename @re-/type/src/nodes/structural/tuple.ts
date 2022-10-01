@@ -1,14 +1,11 @@
-import type { Base } from "../../base.js"
-import type { CheckState } from "../../traverse/check/check.js"
-import type { Check } from "../../traverse/exports.js"
-import { NonTerminal } from "../nonTerminal.js"
+import type { Base } from "../base.js"
+import type { Check } from "../traverse/check/check.js"
+
 import { checkObjectKind } from "./common.js"
 
 export namespace Tuple {
-    export class Node extends NonTerminal.Node {
-        constructor(children: Base.node[]) {
-            super(children)
-        }
+    export class Node implements Base.Node {
+        constructor(public children: Base.Node[]) {}
 
         toAst() {
             return this.children.map((child) => child.toAst())
@@ -31,8 +28,7 @@ export namespace Tuple {
             return result + this.children[i].toString() + "]"
         }
 
-        check(state: Check.CheckState) {
-            // TODO: Add "to" object with callables
+        check(state: Check.State) {
             if (!checkObjectKind(this.toString(), "array", state)) {
                 return
             }
@@ -45,7 +41,7 @@ export namespace Tuple {
             this.checkChildren(state)
         }
 
-        private checkChildren(state: Check.CheckState) {
+        private checkChildren(state: Check.State) {
             const rootData: any = state.data
             for (let i = 0; i < this.children.length; i++) {
                 state.path.push(i)
@@ -57,7 +53,7 @@ export namespace Tuple {
         }
 
         private addTupleLengthError(
-            state: CheckState<unknown[]>,
+            state: Check.State<unknown[]>,
             expected: number,
             actual: number
         ) {

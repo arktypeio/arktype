@@ -1,36 +1,33 @@
 import type { NormalizedJsTypeName, NormalizedJsTypes } from "@re-/tools"
-import { hasJsType, toString } from "@re-/tools"
+import { hasJsType } from "@re-/tools"
 import type { TypeOptions } from "../../../scopes/type.js"
 import type { Base } from "../../base.js"
-import type { NarrowFn } from "./customValidator.js"
 import type {
-    Diagnostic,
+    BaseDiagnostic,
     DiagnosticCode,
-    InternalDiagnosticInput,
-    OptionsByDiagnostic
+    DiagnosticConfig,
+    InternalDiagnosticInput
 } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
     export type DefineDiagnostic<
-        SupplementalContext extends Record<string, unknown>,
-        SupplementalOptions extends Record<string, unknown> = {}
-    > = {
-        context: SupplementalContext
-        options: SupplementalOptions
-    }
+        Node extends Base.Node,
+        Data,
+        Supplemental extends Partial<DiagnosticConfig> = {}
+    > = BaseDiagnostic<Node, Data> & Supplemental
 
-    export type Options<Inferred = unknown> = {
-        narrow?: NarrowFn<Inferred>
-        errors?: OptionsByDiagnostic
-    }
-
+    // TODO: Try traversal
     export class State<Data = unknown> {
         errors: Diagnostics
         path: string[] = []
         checkedValuesByAlias: Record<string, object[]>
 
-        constructor(public data: Data, public options: TypeOptions) {
+        constructor(
+            public root: Base.Node,
+            public data: Data,
+            public options: TypeOptions
+        ) {
             this.errors = new Diagnostics(this)
             this.checkedValuesByAlias = {}
         }
@@ -43,11 +40,9 @@ export namespace Check {
 
         add<Code extends DiagnosticCode>(
             code: Code,
-            context: InternalDiagnosticInput<Code>
+            data: InternalDiagnosticInput<Code>
         ) {
-            const diagnostic = context as Diagnostic<Code>
-
-            this.errors.push(diagnostic)
+            this.errors.add(code, data)
         }
     }
 }

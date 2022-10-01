@@ -1,10 +1,9 @@
 import { Root } from "../parser/root.js"
 import { Base } from "./base.js"
 import type { Check } from "./traverse/check/check.js"
-import { checkCustomValidator } from "./traverse/check/customValidator.js"
 
-export class ResolutionNode extends Base.node {
-    public root: Base.node
+export class ResolutionNode extends Base.Node {
+    public root: Base.Node
     public rootDef: unknown
 
     constructor(public name: string, public ctx: Base.context) {

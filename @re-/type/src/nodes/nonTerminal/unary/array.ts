@@ -1,5 +1,5 @@
-import type { Check } from "../../traverse/exports.js"
-import { checkObjectKind } from "../structural/common.js"
+import { checkObjectKind } from "../../structural/common.js"
+import type { Check } from "../../traverse/check/check.js"
 import { Unary } from "./unary.js"
 
 export namespace Arr {
@@ -10,7 +10,7 @@ export namespace Arr {
     export class Node extends Unary.Node<Token> {
         readonly token = token
 
-        check(state: Check.CheckState) {
+        check(state: Check.State) {
             if (!checkObjectKind(this.toString(), "array", state)) {
                 return
             }

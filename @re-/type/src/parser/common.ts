@@ -22,7 +22,7 @@ export const initializeParserContext = (opts: InternalTypeOptions = {}) => {
 export type parseFn<DefType = unknown> = (
     def: DefType,
     ctx: parserContext
-) => Base.node
+) => Base.Node
 
 export class parseError extends Error {}
 

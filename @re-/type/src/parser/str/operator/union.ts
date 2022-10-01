@@ -37,7 +37,7 @@ export namespace UnionOperator {
         ]
     }>
 
-    export const maybeMerge = (s: parserState<{ root: Base.node }>) => {
+    export const maybeMerge = (s: parserState<{ root: Base.Node }>) => {
         if (!s.l.branches.union) {
             return s
         }

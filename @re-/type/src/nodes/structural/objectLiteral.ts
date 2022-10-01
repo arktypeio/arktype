@@ -1,17 +1,15 @@
 import type { Dictionary } from "@re-/tools"
-import type { Base } from "../../base.js"
-import type { Check } from "../../traverse/exports.js"
-import { NonTerminal } from "../nonTerminal.js"
-import { Optional } from "../unary/optional.js"
+import type { Base } from "../base.js"
+import { NonTerminal } from "../nonTerminal/nonTerminal.js"
+import { Optional } from "../nonTerminal/unary/optional.js"
+import type { Check } from "../traverse/check/check.js"
 import { checkObjectKind } from "./common.js"
 
 export namespace ObjectLiteral {
-    export class Node extends NonTerminal.Node {
-        constructor(children: Base.node[], private keys: string[]) {
-            super(children)
-        }
+    export class Node implements Base.Node {
+        constructor(public children: Base.Node[], private keys: string[]) {}
 
-        check(state: Check.CheckState) {
+        check(state: Check.State) {
             if (!checkObjectKind(this.toString(), "object", state)) {
                 return
             }
@@ -23,7 +21,7 @@ export namespace ObjectLiteral {
 
         /** Returns any extraneous keys, if the options is enabled and they exist */
         private checkChildrenAndGetIllegalKeys(
-            state: Check.CheckState<Dictionary>
+            state: Check.State<Dictionary>
         ): string[] {
             const rootData: any = state.data
             const uncheckedData: any = {}
@@ -45,7 +43,7 @@ export namespace ObjectLiteral {
         }
 
         private addMissingKeyDiagnostic(
-            state: Check.CheckState<Dictionary>,
+            state: Check.State<Dictionary>,
             key: string,
             definition: string
         ) {
@@ -60,7 +58,7 @@ export namespace ObjectLiteral {
         }
 
         private addExtraneousKeyDiagnostic(
-            state: Check.CheckState<Dictionary>,
+            state: Check.State<Dictionary>,
             keys: string[]
         ) {
             const reason =

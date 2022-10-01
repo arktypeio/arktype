@@ -3,7 +3,7 @@ import type { Bound } from "../nonTerminal/binary/bound.js"
 import type { Divisibility } from "../nonTerminal/binary/divisibility.js"
 import type { TypeKeyword } from "../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
-import type { Regex } from "../terminal/regex.js"
+import type { RegexKeyword, RegexLiteral } from "../terminal/regex.js"
 
 export namespace Ast {
     export type Infer<Ast, Resolutions> = Ast extends string
@@ -36,7 +36,7 @@ export namespace Ast {
         ? Infer<Resolutions[Token], Resolutions>
         : Token extends PrimitiveLiteral.String<infer Text>
         ? Text
-        : Token extends Regex.Definition
+        : Token extends RegexLiteral.Definition | RegexKeyword.Definition
         ? string
         : Token extends PrimitiveLiteral.Number<infer Value>
         ? Value

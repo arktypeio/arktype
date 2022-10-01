@@ -1,10 +1,11 @@
-import { Base } from "../base.js"
+import type { Base } from "../base.js"
+import type { Check } from "../traverse/check/check.js"
 
 export namespace Terminal {
-    export abstract class Node<Def extends string = string> extends Base.node {
-        constructor(protected def: Def) {
-            super()
-        }
+    export abstract class Node<Def extends string> implements Base.Node {
+        constructor(protected def: Def) {}
+
+        abstract check(state: Check.State): void
 
         toDefinition() {
             return this.def

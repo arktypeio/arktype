@@ -9,7 +9,7 @@ import type { Comparators } from "../operator/bound/tokens.js"
 type leftBase = {
     groups: left.openBranches[]
     branches: left.openBranches
-    root?: Base.node
+    root?: Base.Node
     done?: true
 }
 

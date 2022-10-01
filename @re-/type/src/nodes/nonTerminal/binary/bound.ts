@@ -35,8 +35,8 @@ export namespace Bound {
     export type Token = keyof typeof tokens
 
     export type Children<IsLeft extends boolean> = IsLeft extends true
-        ? [PrimitiveLiteral.Node<number>, Base.node]
-        : [Base.node, PrimitiveLiteral.Node<number>]
+        ? [PrimitiveLiteral.Node<number>, Base.Node]
+        : [Base.Node, PrimitiveLiteral.Node<number>]
 
     export class Node<IsLeft extends boolean> extends Binary.Node<
         Token,
@@ -51,7 +51,7 @@ export namespace Bound {
         }
 
         get bounded() {
-            return this.children[this.isLeft ? 1 : 0] as Base.node
+            return this.children[this.isLeft ? 1 : 0] as Base.Node
         }
 
         get limit() {

@@ -17,7 +17,7 @@ export const isMetaDefinition = (def: unknown[]): def is MetaDefinition =>
 export const parseMetaDefinition: parseFn<MetaDefinition> = (
     [definition, token, ...args],
     context
-) => ({} as Base.node)
+) => ({} as Base.Node)
 
 export type ParseMetaDefinition<
     Def extends MetaDefinition,

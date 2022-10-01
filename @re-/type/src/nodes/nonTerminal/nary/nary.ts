@@ -1,6 +1,6 @@
 import { keySet } from "@re-/tools"
 import type { Base } from "../../base.js"
-import { NonTerminal } from "../nonTerminal.js"
+import type { Check } from "../../traverse/check/check.js"
 
 export namespace Nary {
     export const tokens = keySet({
@@ -10,12 +10,14 @@ export namespace Nary {
 
     export type Token = keyof typeof tokens
 
-    export abstract class Node<
-        Token extends Nary.Token
-    > extends NonTerminal.Node {
+    export abstract class Node<Token extends Nary.Token> implements Base.Node {
         abstract token: Token
 
-        pushChild(child: Base.node) {
+        constructor(public children: Base.Node[]) {}
+
+        abstract check(state: Check.State): void
+
+        pushChild(child: Base.Node) {
             this.children.push(child)
         }
 

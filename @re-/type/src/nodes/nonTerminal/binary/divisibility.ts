@@ -12,7 +12,7 @@ export namespace Divisibility {
         readonly token = token
 
         constructor(
-            private child: Base.node,
+            private child: Base.Node,
             private divisor: PrimitiveLiteral.Node<number>
         ) {
             super([child, divisor])

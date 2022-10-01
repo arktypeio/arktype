@@ -1,6 +1,6 @@
 import { keySet } from "@re-/tools"
 import type { Base } from "../../base.js"
-import { NonTerminal } from "../nonTerminal.js"
+import type { Check } from "../../traverse/check/check.js"
 
 export namespace Binary {
     export const tokens = keySet({
@@ -14,37 +14,40 @@ export namespace Binary {
 
     export type Token = keyof typeof tokens
 
-    export type Children = [Base.node, Base.node]
+    export type Children = [Base.Node, Base.Node]
 
     export abstract class Node<
         Token extends Binary.Token,
         Children extends Binary.Children = Binary.Children
-    > extends NonTerminal.Node<Children> {
+    > implements Base.Node
+    {
         abstract token: Token
 
+        constructor(public children: Children) {}
+
+        abstract check(state: Check.State): void
+
         toDefinition() {
-            const leftIsomorph = this.children[0].toDefinition()
-            const rightIsomorph = this.children[1].toDefinition()
-            return typeof leftIsomorph === "string" &&
-                typeof rightIsomorph === "string"
-                ? leftIsomorph + this.token + rightIsomorph
-                : [leftIsomorph, this.token, rightIsomorph]
+            const leftDefinition = this.children[0].toDefinition()
+            const rightDefinition = this.children[1].toDefinition()
+            return typeof leftDefinition === "string" &&
+                typeof rightDefinition === "string"
+                ? (`${leftDefinition}${this.token}${rightDefinition}` as const)
+                : ([leftDefinition, this.token, rightDefinition] as const)
         }
 
         toString() {
-            return (
-                this.children[0].toString() +
-                this.token +
-                this.children[1].toString()
-            )
+            return `${this.children[0].toString()}${
+                this.token
+            }${this.children[1].toString()}` as const
         }
 
         toAst() {
             return [
                 this.children[0].toAst(),
                 this.token,
-                this.children[0].toAst()
-            ]
+                this.children[1].toAst()
+            ] as const
         }
     }
 }

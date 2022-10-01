@@ -1,4 +1,4 @@
-import { Check } from "../traverse/check/check.js"
+import type { Check } from "../traverse/check/check.js"
 import { Terminal } from "./terminal.js"
 
 export namespace PrimitiveLiteral {
@@ -12,32 +12,26 @@ export namespace PrimitiveLiteral {
 
     export type Boolean<Value extends boolean = boolean> = `${Value}`
 
+    export type Definition = String | Number | Bigint | Boolean
+
     export type Diagnostic = Check.DefineDiagnostic<{
-        expected: PrimitiveLiteral.Value
+        expectedValue: PrimitiveLiteral.Value
     }>
 
     export class Node<
         Value extends PrimitiveLiteral.Value
-    > extends Terminal.Node {
-        constructor(def: string, public value: Value) {
+    > extends Terminal.Node<Definition> {
+        constructor(def: Definition, public value: Value) {
             super(def)
         }
 
         check(state: Check.State) {
             if (state.data !== this.value) {
-                state.errors.add(
-                    "primitiveLiteral",
-                    {
-                        reason: `Must be ${this.def}`,
-                        state
-                    },
-                    {
-                        definition: this.def,
-                        expected: this.value,
-                        actual: Check.stringifyData(state.data),
-                        data: state.data
-                    }
-                )
+                state.add("primitiveLiteral", {
+                    message: `Must be ${this.def}`,
+                    type: this,
+                    expectedValue: this.value
+                })
             }
         }
     }
