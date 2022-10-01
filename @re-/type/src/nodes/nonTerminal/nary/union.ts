@@ -65,7 +65,7 @@ export namespace Union {
         return branchDiagnosticSummary
     }
 
-    export type Diagnostic = Check.DefineDiagnostic<
+    export type Diagnostic = Check.ConfigureDiagnostic<
         {
             definition: string
             actual: unknown

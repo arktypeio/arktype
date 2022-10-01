@@ -122,7 +122,7 @@ export namespace Bound {
         }
     }
 
-    export type Diagnostic = Check.DefineDiagnostic<{
+    export type Diagnostic = Check.ConfigureDiagnostic<{
         comparator: Token
         comparatorDescription: string
         data: BoundableData

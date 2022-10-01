@@ -1,4 +1,4 @@
-import type { Dictionary, NormalizedJsTypeName, UnionToTuple } from "@re-/tools"
+import type { Dictionary, NormalizedJsTypeName } from "@re-/tools"
 import { jsTypeOf } from "@re-/tools"
 import type { Check } from "../traverse/check/check.js"
 
@@ -33,7 +33,7 @@ export const checkObjectKind = <ExpectedStructure extends ObjectKind>(
 
 export type ObjectKind = "object" | "array"
 
-export type StructureDiagnostic = Check.DiagnosticConfig<{
+export type StructureDiagnostic = Check.ConfigureDiagnostic<{
     definition: string
     data: unknown
     expected: ObjectKind

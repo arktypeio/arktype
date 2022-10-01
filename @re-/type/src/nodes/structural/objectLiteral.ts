@@ -107,18 +107,14 @@ export namespace ObjectLiteral {
         }
     }
 
-    export type ExtraneousKeysDiagnostic = Check.DiagnosticConfig<
-        {
-            definition: string
-            data: Dictionary
-            keys: string[]
-        },
-        {
-            enabled: boolean
-        }
-    >
+    export type ExtraneousKeysDiagnostic = Check.ConfigureDiagnostic<{
+        type: Node
+        data: Dictionary
+        enabled: boolean
+        keys: string[]
+    }>
 
-    export type MissingKeyDiagnostic = Check.DiagnosticConfig<{
+    export type MissingKeyDiagnostic = Check.ConfigureDiagnostic<{
         definition: string
         key: string
     }>

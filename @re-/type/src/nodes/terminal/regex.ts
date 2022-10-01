@@ -22,7 +22,7 @@ export namespace RegexLiteral {
         }
     }
 
-    export type Diagnostic = Check.DefineDiagnostic<Node, string>
+    export type Diagnostic = Check.ConfigureDiagnostic<Node, string>
 }
 
 export namespace RegexKeyword {
@@ -52,7 +52,7 @@ export namespace RegexKeyword {
         }
     }
 
-    export type Diagnostic = Check.DefineDiagnostic<Node, string, {}>
+    export type Diagnostic = Check.ConfigureDiagnostic<Node, string, {}>
 
     export const getPredefined = (keyword: Definition) => predefined[keyword]
 

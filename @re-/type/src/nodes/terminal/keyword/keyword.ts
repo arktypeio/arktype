@@ -56,7 +56,7 @@ export namespace TypeKeyword {
 
     export const getNode = (def: Definition) => nodes[def]
 
-    export type Diagnostic = Check.DefineDiagnostic<{
+    export type Diagnostic = Check.ConfigureDiagnostic<{
         keyword: TypeKeyword.Definition
         data: string
         actual: NormalizedJsTypeName

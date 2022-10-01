@@ -14,53 +14,63 @@ import type { RegexLiteral } from "../../terminal/regex.js"
 import type { Check } from "./check.js"
 import { stringifyData } from "./common.js"
 
-export type DiagnosticCode = keyof RegisteredDiagnostics
+export type DiagnosticCode = keyof RegisteredDiagnosticConfigs
 
-export type Diagnostic<Code extends DiagnosticCode, Data = unknown> = {
+export type Diagnostic<Code extends DiagnosticCode> = {
     code: Code
-} & BaseDiagnostic<Data> &
-    SupplementalDiagnosticContext<Code>
+    options: CompileDiagnosticOptions<Code>
+} & DiagnosticContextConfig<Code> &
+    BaseDiagnosticContext<
+        DiagnosticContextConfig<Code>["node"],
+        DiagnosticContextConfig<Code>["data"]
+    >
 
 export type OptionsByDiagnostic = {
-    [Code in DiagnosticCode]?: FullDiagnosticOptions<Code>
+    [Code in DiagnosticCode]?: CompileDiagnosticOptions<Code>
 }
 
-export type InternalDiagnosticInput<Code extends DiagnosticCode> =
-    SupplementalDiagnosticContext<Code> & {
-        type: Base.Node
-        message: string
-    }
+export type InternalDiagnosticInput<Code extends DiagnosticCode> = Omit<
+    DiagnosticContextConfig<Code>,
+    "data"
+> & {
+    options: DiagnosticOptionsConfig<Code>
+    message: string
+}
 
-type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
-    message?: (context: Diagnostic<Code>) => string
-} & ("actual" extends keyof SupplementalDiagnosticContext<Code>
-    ? { omitActual?: boolean }
-    : {})
+export type Stringifiable<Data> = {
+    raw: Data
+    toString(): string
+}
 
 export type DiagnosticConfig = {
+    type: Base.Node
+    data: unknown
     context: Dictionary
     options: Dictionary
 }
 
-export type BaseDiagnostic<Node extends Base.Node, Data> = {
+type DiagnosticContextConfig<Code extends DiagnosticCode> =
+    RegisteredDiagnosticConfigs[Code]["context"]
+
+type BaseDiagnosticContext<Node extends Base.Node, Data> = {
     type: Pick<Node, "toString" | "toAst" | "toDefinition">
-    data: {
-        raw: Data
-        toString(): string
-    }
+    data: Stringifiable<Data>
     message: string
 }
 
-type SupplementalDiagnosticContext<Code extends DiagnosticCode> =
-    RegisteredDiagnostics[Code]["context"]
+type CompileDiagnosticOptions<Code extends DiagnosticCode> =
+    BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>["options"]
 
-type SupplementalDiagnosticOptions<Code extends DiagnosticCode> =
-    RegisteredDiagnostics[Code]["options"]
+type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
+    message?: (context: Diagnostic<Code>) => string
+} & ("actual" extends keyof DiagnosticContextConfig<Code>
+    ? { omitActual?: boolean }
+    : {})
 
-type FullDiagnosticOptions<Code extends DiagnosticCode> =
-    BaseDiagnosticOptions<Code> & SupplementalDiagnosticOptions<Code>
+type DiagnosticOptionsConfig<Code extends DiagnosticCode> =
+    RegisteredDiagnosticConfigs[Code]["options"]
 
-type RegisteredDiagnostics = {
+type RegisteredDiagnosticConfigs = {
     typeKeyword: TypeKeyword.Diagnostic
     primitiveLiteral: PrimitiveLiteral.Diagnostic
     structure: StructureDiagnostic
@@ -80,7 +90,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
 
     add<Code extends DiagnosticCode>(
         code: Code,
-        context: SupplementalDiagnosticContext<Code>
+        context: DiagnosticContextConfig<Code>
     ) {
         const diagnostic = context as Diagnostic<Code>
         const raw = this.state.data

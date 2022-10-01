@@ -1,7 +1,6 @@
 import { keySet } from "@re-/tools"
 import type { Base } from "../../base.js"
 import type { Check } from "../../traverse/check/check.js"
-import type { NonTerminal } from "../nonTerminal.js"
 
 export namespace Unary {
     export const tokens = keySet({
@@ -25,8 +24,8 @@ export namespace Unary {
 
         abstract check(state: Check.State): void
 
-        toAst() {
-            return [this.child.toAst(), this.token] as const
+        toAst(): [unknown, Token] {
+            return [this.child.toAst(), this.token]
         }
 
         toString() {
@@ -37,7 +36,7 @@ export namespace Unary {
             const nextDef = this.child.toDefinition()
             return typeof nextDef === "string"
                 ? (`${nextDef}${this.token}` as const)
-                : ([nextDef, this.token] as const)
+                : ([nextDef, this.token] as [unknown, Token])
         }
     }
 }

@@ -14,9 +14,12 @@ export namespace PrimitiveLiteral {
 
     export type Definition = String | Number | Bigint | Boolean
 
-    export type Diagnostic = Check.DefineDiagnostic<{
-        expectedValue: PrimitiveLiteral.Value
-    }>
+    export type Diagnostic = Check.ConfigureDiagnostic<
+        Node,
+        {
+            expectedValue: PrimitiveLiteral.Value
+        }
+    >
 
     export class Node<
         Value extends PrimitiveLiteral.Value

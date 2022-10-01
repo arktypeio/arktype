@@ -1,21 +1,26 @@
-import type { NormalizedJsTypeName, NormalizedJsTypes } from "@re-/tools"
+import type {
+    Dictionary,
+    NormalizedJsTypeName,
+    NormalizedJsTypes
+} from "@re-/tools"
 import { hasJsType } from "@re-/tools"
 import type { TypeOptions } from "../../../scopes/type.js"
 import type { Base } from "../../base.js"
-import type {
-    BaseDiagnostic,
-    DiagnosticCode,
-    DiagnosticConfig,
-    InternalDiagnosticInput
-} from "./diagnostics.js"
+import type { DiagnosticCode, InternalDiagnosticInput } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
-    export type DefineDiagnostic<
+    export type ConfigureDiagnostic<
         Node extends Base.Node,
-        Data,
-        Supplemental extends Partial<DiagnosticConfig> = {}
-    > = BaseDiagnostic<Node, Data> & Supplemental
+        Context extends Dictionary = {},
+        Options extends Dictionary = {},
+        Data = unknown
+    > = {
+        node: Node
+        data: Data
+        context: Context
+        options: Options
+    }
 
     // TODO: Try traversal
     export class State<Data = unknown> {

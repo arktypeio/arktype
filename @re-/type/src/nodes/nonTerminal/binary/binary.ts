@@ -27,13 +27,12 @@ export namespace Binary {
 
         abstract check(state: Check.State): void
 
-        toDefinition() {
-            const leftDefinition = this.children[0].toDefinition()
-            const rightDefinition = this.children[1].toDefinition()
-            return typeof leftDefinition === "string" &&
-                typeof rightDefinition === "string"
-                ? (`${leftDefinition}${this.token}${rightDefinition}` as const)
-                : ([leftDefinition, this.token, rightDefinition] as const)
+        toAst(): [unknown, Token, unknown] {
+            return [
+                this.children[0].toAst(),
+                this.token,
+                this.children[1].toAst()
+            ]
         }
 
         toString() {
@@ -42,12 +41,17 @@ export namespace Binary {
             }${this.children[1].toString()}` as const
         }
 
-        toAst() {
-            return [
-                this.children[0].toAst(),
-                this.token,
-                this.children[1].toAst()
-            ] as const
+        toDefinition() {
+            const leftDefinition = this.children[0].toDefinition()
+            const rightDefinition = this.children[1].toDefinition()
+            return typeof leftDefinition === "string" &&
+                typeof rightDefinition === "string"
+                ? (`${leftDefinition}${this.token}${rightDefinition}` as const)
+                : ([leftDefinition, this.token, rightDefinition] as [
+                      unknown,
+                      Token,
+                      unknown
+                  ])
         }
     }
 }

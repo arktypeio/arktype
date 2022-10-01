@@ -36,8 +36,11 @@ export namespace Divisibility {
         }
     }
 
-    export type Diagnostic = Check.DefineDiagnostic<{
-        divisor: number
-        actual: number
-    }>
+    export type Diagnostic = Check.ConfigureDiagnostic<
+        Node,
+        {
+            divisor: number
+            actual: number
+        }
+    >
 }

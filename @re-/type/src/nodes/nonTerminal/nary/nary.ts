@@ -10,6 +10,8 @@ export namespace Nary {
 
     export type Token = keyof typeof tokens
 
+    type RootAst = [unknown, Token, unknown]
+
     export abstract class Node<Token extends Nary.Token> implements Base.Node {
         abstract token: Token
 
@@ -19,6 +21,22 @@ export namespace Nary {
 
         pushChild(child: Base.Node) {
             this.children.push(child)
+        }
+
+        toAst() {
+            let root = this.children[0].toAst()
+            for (let i = 1; i < this.children.length; i++) {
+                root = [root, this.token, this.children[i].toAst()]
+            }
+            return root as RootAst
+        }
+
+        toString() {
+            let root = this.children[0].toString()
+            for (let i = 1; i < this.children.length; i++) {
+                root = root + this.token + this.children[i].toString()
+            }
+            return root
         }
 
         toDefinition() {
@@ -37,23 +55,7 @@ export namespace Nary {
             for (let i = 1; i < nextDefs.length; i++) {
                 root = [root, this.token, nextDefs]
             }
-            return root
-        }
-
-        toString() {
-            let root = this.children[0].toString()
-            for (let i = 1; i < this.children.length; i++) {
-                root = root + this.token + this.children[i].toString()
-            }
-            return root
-        }
-
-        toAst() {
-            let root = this.children[0].toAst()
-            for (let i = 1; i < this.children.length; i++) {
-                root = [root, this.token, this.children[i].toAst()]
-            }
-            return root
+            return root as RootAst
         }
     }
 }
