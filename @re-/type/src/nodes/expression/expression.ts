@@ -89,18 +89,6 @@ export namespace Expression {
             return stringifiable
                 ? isomorphicChildren.join("")
                 : isomorphicChildren
-            // let stringifiable = true
-            // const isomorphicChildren = this.children.map((child) => {
-            //     const isomorphicChild = child.toDefinition()
-            //     if (typeof isomorphicChild !== "string") {
-            //         stringifiable = false
-            //     }
-            //     return isomorphicChild
-            // })
-
-            // return stringifiable
-            //     ? this.buildString(isomorphicChildren as any)
-            //     : this.buildAst(isomorphicChildren as any)
         }
     }
 }
