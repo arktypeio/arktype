@@ -1,4 +1,3 @@
-import { Alias } from "../../../nodes/terminal/alias.js"
 import { TypeKeyword } from "../../../nodes/terminal/keyword/keyword.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError, ParserContext, parserContext } from "../../common.js"
@@ -44,7 +43,13 @@ export namespace Unenclosed {
                 ? false
                 : UnenclosedBigint.maybeParse(token))
         return maybeLiteralValue
-            ? new PrimitiveLiteral.Node(token, maybeLiteralValue)
+            ? new PrimitiveLiteral.Node(
+                  token as
+                      | PrimitiveLiteral.Number
+                      | PrimitiveLiteral.Bigint
+                      | PrimitiveLiteral.Boolean,
+                  maybeLiteralValue
+              )
             : undefined
     }
     const unenclosedToNode = (

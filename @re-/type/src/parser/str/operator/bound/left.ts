@@ -12,20 +12,20 @@ export namespace LeftBoundOperator {
         s: parserState.requireRoot<PrimitiveLiteral.Node<number>>,
         comparator: Bound.Token
     ) =>
-        isKeyOf(comparator, Comparators.doublable)
+        isKeyOf(comparator, Bound.doubleTokens)
             ? reduceValidated(s, comparator)
             : s.error(Comparators.invalidDoubleMessage(comparator))
 
     export type Reduce<
         L extends Left.WithRoot<PrimitiveLiteral.Number>,
         Comparator extends Bound.Token
-    > = Comparator extends Comparators.Doublable
+    > = Comparator extends Bound.DoubleToken
         ? ReduceValidated<L, Comparator>
         : Left.Error<Comparators.InvalidDoubleMessage<Comparator>>
 
     const reduceValidated = (
         s: parserState.requireRoot<PrimitiveLiteral.Node<number>>,
-        token: Comparators.Doublable
+        token: Bound.DoubleToken
     ) => {
         s.l.branches.leftBound = [s.l.root, token]
         s.l.root = undefined as any
@@ -34,7 +34,7 @@ export namespace LeftBoundOperator {
 
     type ReduceValidated<
         L extends Left.WithRoot<PrimitiveLiteral.Number>,
-        Comparator extends Comparators.Doublable
+        Comparator extends Bound.DoubleToken
     > = Left.From<{
         groups: L["groups"]
         branches: {

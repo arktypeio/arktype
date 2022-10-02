@@ -3,10 +3,16 @@ import type { Base } from "../base.js"
 import type { Check } from "../traverse/check/check.js"
 
 export namespace Expression {
-    export const tokens = {
-        ...Postfix.tokens,
+    export const infixTokens = {
         ...Binary.tokens,
         ...Branching.tokens
+    }
+
+    export type InfixToken = keyof typeof infixTokens
+
+    export const tokens = {
+        ...Postfix.tokens,
+        ...infixTokens
     }
 
     export type Token = keyof typeof tokens

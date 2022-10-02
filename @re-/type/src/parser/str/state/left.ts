@@ -33,7 +33,10 @@ export namespace left {
         intersection?: Intersection.Node
     }
 
-    export type openLeftBound = [PrimitiveLiteral.Node<number>, Bound.Token]
+    export type openLeftBound = [
+        PrimitiveLiteral.Node<number>,
+        Bound.DoubleToken
+    ]
 }
 
 export namespace Left {
@@ -54,7 +57,7 @@ export namespace Left {
 
         export type LeftBound<
             Limit extends PrimitiveLiteral.Number = PrimitiveLiteral.Number,
-            Comparator extends Comparators.Doublable = Comparators.Doublable
+            Comparator extends Bound.DoubleToken = Bound.DoubleToken
         > = [Limit, Comparator]
 
         export type Union = [unknown, Union.Token]

@@ -25,7 +25,10 @@ export namespace RightBoundOperator {
         return reduce(
             s,
             comparator,
-            new PrimitiveLiteral.Node(limitToken, limit)
+            new PrimitiveLiteral.Node(
+                limitToken as PrimitiveLiteral.Number,
+                limit
+            )
         )
     }
 
@@ -106,9 +109,8 @@ export namespace RightBoundOperator {
         LeftComparator extends Bound.Token,
         RightComparator extends Bound.Token,
         RightLimit extends PrimitiveLiteral.Number
-    > = RightComparator extends Comparators.SingleOnly
-        ? Left.Error<Comparators.InvalidDoubleMessage<RightComparator>>
-        : Left.From<{
+    > = RightComparator extends Bound.DoubleToken
+        ? Left.From<{
               leftBound: undefined
               root: [
                   [LeftLimit, LeftComparator, L["root"]],
@@ -118,6 +120,7 @@ export namespace RightBoundOperator {
               groups: L["groups"]
               branches: L["branches"]
           }>
+        : Left.Error<Comparators.InvalidDoubleMessage<RightComparator>>
 
     const reduceDouble = (
         s: parserState<{
@@ -129,18 +132,14 @@ export namespace RightBoundOperator {
         rightComparator: Bound.Token,
         rightLimit: PrimitiveLiteral.Node<number>
     ) => {
-        if (isKeyOf(rightComparator, Comparators.singleOnly)) {
+        if (!isKeyOf(rightComparator, Bound.doubleTokens)) {
             return s.error(Comparators.invalidDoubleMessage(rightComparator))
         }
-        s.l.root = new Bound.Node(
-            [s.l.branches.leftBound[0], s.l.root],
+        const upper = new Bound.RightNode(s.l.root, rightComparator, rightLimit)
+        s.l.root = new Bound.LeftNode(
+            s.l.branches.leftBound[0],
             s.l.branches.leftBound[1],
-            true
-        )
-        s.l.root = new Bound.Node(
-            [s.l.root, rightLimit],
-            rightComparator,
-            false
+            upper
         )
     }
 
@@ -155,7 +154,7 @@ export namespace RightBoundOperator {
         comparator: Bound.Token,
         limit: PrimitiveLiteral.Node<number>
     ) => {
-        s.l.root = new Bound.Node([s.l.root, limit], comparator, false)
+        s.l.root = new Bound.RightNode(s.l.root, comparator, limit)
         s.l.branches.leftBound = undefined
         return s
     }

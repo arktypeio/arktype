@@ -6,7 +6,9 @@ import type {
     Join,
     Narrow
 } from "@re-/tools"
+import type { Root } from "../api.js"
 import type { ParserContext } from "../parser/common.js"
+import type { Str } from "../parser/str/str.js"
 
 export type ParseSpace<Aliases> = {
     [Name in keyof Aliases]: Root.Parse<Aliases[Name], { aliases: Aliases }>

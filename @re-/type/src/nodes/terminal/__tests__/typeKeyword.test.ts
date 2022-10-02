@@ -41,7 +41,7 @@ describe("type keywords", () => {
         })
     })
     describe("function", () => {
-        const f = type.lazy("function")
+        const f = type.lazy("Function")
         test("infer", () => {
             assert(f.infer).typed as Function
         })
