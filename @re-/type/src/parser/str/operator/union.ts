@@ -1,5 +1,5 @@
 import type { Base } from "../../../nodes/base.js"
-import { Union } from "../../../nodes/nonTerminal/nary/union.js"
+import { Union } from "../../../nodes/nonTerminal/union.js"
 import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { parserState } from "../state/state.js"

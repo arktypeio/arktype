@@ -1,6 +1,6 @@
-import { checkObjectKind } from "../../structural/common.js"
-import type { Check } from "../../traverse/check/check.js"
-import { Unary } from "./unary.js"
+import { Structural } from "../structural/common.js"
+import type { Check } from "../traverse/check/check.js"
+import { Unary } from "./nonTerminal.js"
 
 export namespace Arr {
     export const token = "[]"
@@ -11,12 +11,12 @@ export namespace Arr {
         readonly token = token
 
         check(state: Check.State) {
-            if (!checkObjectKind(this.toString(), "array", state)) {
+            if (!Structural.checkObjectKind(this, "array", state)) {
                 return
             }
             const rootData = state.data
             for (let i = 0; i < rootData.length; i++) {
-                state.path.push(i)
+                state.path.push(String(i))
                 state.data = rootData[i] as any
                 this.child.check(state)
                 state.path.pop()

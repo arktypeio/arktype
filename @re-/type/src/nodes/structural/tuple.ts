@@ -1,7 +1,6 @@
 import type { Base } from "../base.js"
 import type { Check } from "../traverse/check/check.js"
-
-import { checkObjectKind } from "./common.js"
+import { Structural } from "./common.js"
 
 export namespace Tuple {
     export class Node implements Base.Node {
@@ -29,7 +28,7 @@ export namespace Tuple {
         }
 
         check(state: Check.State) {
-            if (!checkObjectKind(this.toString(), "array", state)) {
+            if (!Structural.checkObjectKind("array", state)) {
                 return
             }
             const expectedLength = this.children.length
@@ -44,7 +43,7 @@ export namespace Tuple {
         private checkChildren(state: Check.State) {
             const rootData: any = state.data
             for (let i = 0; i < this.children.length; i++) {
-                state.path.push(i)
+                state.path.push(String(i))
                 state.data = rootData[i]
                 this.children[i].check(state)
                 state.path.pop()
@@ -57,26 +56,22 @@ export namespace Tuple {
             expected: number,
             actual: number
         ) {
-            state.errors.add(
-                "tupleLength",
-                {
-                    reason: `Length must be ${expected}`,
-                    state
-                },
-                {
-                    definition: this.toDefinition(),
-                    data: state.data,
-                    expected,
-                    actual
-                }
-            )
+            state.addError("tupleLength", {
+                type: this,
+                message: `Length must be ${expected}`,
+                expected,
+                actual
+            })
         }
     }
 
-    export type LengthDiagnostic = Check.DiagnosticConfig<{
-        definition: string
-        data: unknown[]
-        expected: number
-        actual: number
-    }>
+    export type LengthDiagnostic = Check.ConfigureDiagnostic<
+        Node,
+        {
+            expected: number
+            actual: number
+        },
+        {},
+        unknown[]
+    >
 }

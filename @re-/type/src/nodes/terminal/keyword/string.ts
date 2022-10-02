@@ -1,6 +1,6 @@
+import { jsTypeOf } from "@re-/tools"
 import type { Check } from "../../traverse/check/check.js"
 import { Terminal } from "../terminal.js"
-import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class StringNode extends Terminal.Node<"string"> {
     constructor() {
@@ -9,7 +9,11 @@ export class StringNode extends Terminal.Node<"string"> {
 
     check(state: Check.State) {
         if (typeof state.data !== "string") {
-            addTypeKeywordDiagnostic(state, "string", "Must be a string")
+            state.addError("typeKeyword", {
+                type: this,
+                message: "Must be a string",
+                actual: jsTypeOf(state.data)
+            })
         }
     }
 }

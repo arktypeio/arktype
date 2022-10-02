@@ -14,7 +14,7 @@ export namespace RegexLiteral {
 
         check(state: Check.State<string>) {
             if (!this.expression.test(state.data)) {
-                state.add("regexLiteral", {
+                state.addError("regexLiteral", {
                     type: this,
                     message: `Must match expression ${this.def}`
                 })
@@ -44,7 +44,7 @@ export namespace RegexKeyword {
 
         check(state: Check.State<string>) {
             if (!this.expression.test(state.data)) {
-                state.add("regexKeyword", {
+                state.addError("regexKeyword", {
                     type: this,
                     message: this.description
                 })

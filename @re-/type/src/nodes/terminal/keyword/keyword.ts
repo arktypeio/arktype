@@ -16,7 +16,7 @@ import { UnknownNode } from "./unknown.js"
 import { VoidNode } from "./void.js"
 
 export namespace TypeKeyword {
-    const nodes: Record<Definition, Terminal.Node> = {
+    const nodes: Record<Definition, Terminal.Node<Definition>> = {
         any: new AnyNode(),
         bigint: new BigintNode(),
         boolean: new BooleanNode(),
@@ -56,9 +56,8 @@ export namespace TypeKeyword {
 
     export const getNode = (def: Definition) => nodes[def]
 
-    export type Diagnostic = Check.ConfigureDiagnostic<{
-        keyword: TypeKeyword.Definition
-        data: string
-        actual: NormalizedJsTypeName
-    }>
+    export type Diagnostic = Check.ConfigureDiagnostic<
+        Terminal.Node<Definition>,
+        { actual: NormalizedJsTypeName }
+    >
 }

@@ -1,16 +1,15 @@
 import type { Dictionary } from "@re-/tools"
 import type { Base } from "../base.js"
-import { NonTerminal } from "../nonTerminal/nonTerminal.js"
-import { Optional } from "../nonTerminal/unary/optional.js"
+import { Optional } from "../nonTerminal/optional.js"
 import type { Check } from "../traverse/check/check.js"
-import { checkObjectKind } from "./common.js"
+import { Structural } from "./common.js"
 
 export namespace ObjectLiteral {
     export class Node implements Base.Node {
         constructor(public children: Base.Node[], private keys: string[]) {}
 
         check(state: Check.State) {
-            if (!checkObjectKind(this.toString(), "object", state)) {
+            if (!Structural.checkObjectKind(this, "object", state)) {
                 return
             }
             const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)
@@ -34,7 +33,7 @@ export namespace ObjectLiteral {
                     child.check(state)
                     state.path.pop()
                 } else if (!(child instanceof Optional.Node)) {
-                    this.addMissingKeyDiagnostic(state, k, child.toString())
+                    this.addMissingKeyDiagnostic(state, k)
                 }
                 delete uncheckedData[k]
             }
@@ -44,36 +43,24 @@ export namespace ObjectLiteral {
 
         private addMissingKeyDiagnostic(
             state: Check.State<Dictionary>,
-            key: string,
-            definition: string
+            key: string
         ) {
-            state.errors.add(
-                "missingKey",
-                { reason: `${key} is required`, state },
-                {
-                    definition,
-                    key
-                }
-            )
+            state.addError("missingKey", {
+                type: this,
+                message: `${key} is required`,
+                key
+            })
         }
 
         private addExtraneousKeyDiagnostic(
             state: Check.State<Dictionary>,
             keys: string[]
         ) {
-            const reason =
+            const message =
                 keys.length === 1
                     ? `Key '${keys[0]}' was unexpected`
                     : `Keys '${keys.join("', '")}' were unexpected`
-            state.errors.add(
-                "extraneousKeys",
-                { reason, state },
-                {
-                    definition: this.toString(),
-                    data: state.data,
-                    keys
-                }
-            )
+            state.addError("extraneousKeys", { type: this, message, keys })
         }
 
         toDefinition() {
@@ -107,15 +94,19 @@ export namespace ObjectLiteral {
         }
     }
 
-    export type ExtraneousKeysDiagnostic = Check.ConfigureDiagnostic<{
-        type: Node
-        data: Dictionary
-        enabled: boolean
-        keys: string[]
-    }>
+    export type ExtraneousKeysDiagnostic = Check.ConfigureDiagnostic<
+        Node,
+        { keys: string[] },
+        {
+            enabled: boolean
+        },
+        Dictionary
+    >
 
-    export type MissingKeyDiagnostic = Check.ConfigureDiagnostic<{
-        definition: string
-        key: string
-    }>
+    export type MissingKeyDiagnostic = Check.ConfigureDiagnostic<
+        Node,
+        { key: string },
+        {},
+        Dictionary
+    >
 }

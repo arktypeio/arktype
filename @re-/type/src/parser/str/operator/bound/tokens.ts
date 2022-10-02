@@ -1,5 +1,5 @@
 import { keySet } from "@re-/tools"
-import type { Bound } from "../../../../nodes/nonTerminal/binary/bound.js"
+import type { Bound } from "../../../../nodes/nonTerminal/bound.js"
 
 export namespace Comparators {
     export const startChar = keySet({
@@ -9,21 +9,6 @@ export namespace Comparators {
     })
 
     export type StartChar = keyof typeof startChar
-
-    export const doublable = keySet({
-        "<=": 1,
-        "<": 1
-    })
-
-    export type Doublable = keyof typeof doublable
-
-    export const singleOnly = keySet({
-        ">=": 1,
-        ">": 1,
-        "==": 1
-    })
-
-    export type SingleOnly = keyof typeof singleOnly
 
     export const oneChar = keySet({
         "<": 1,

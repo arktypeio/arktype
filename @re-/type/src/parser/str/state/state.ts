@@ -1,6 +1,6 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
-import { Optional } from "../../../nodes/nonTerminal/unary/optional.js"
+import { Optional } from "../../../nodes/nonTerminal/optional.js"
 import type { MaybeAppend } from "../../common.js"
 import { parseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"

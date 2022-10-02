@@ -1,4 +1,4 @@
-import { Intersection } from "../../../nodes/nonTerminal/nary/intersection.js"
+import { Intersection } from "../../../nodes/nonTerminal/intersection.js"
 import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { parserState } from "../state/state.js"

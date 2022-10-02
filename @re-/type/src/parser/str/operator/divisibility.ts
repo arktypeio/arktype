@@ -1,5 +1,5 @@
 import type { NodeToString } from "../../../nodes/common.js"
-import { Divisibility } from "../../../nodes/nonTerminal/binary/divisibility.js"
+import { Divisibility } from "../../../nodes/nonTerminal/divisibility.js"
 import { NumberNode } from "../../../nodes/terminal/keyword/number.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { UnenclosedNumber } from "../operand/numeric.js"

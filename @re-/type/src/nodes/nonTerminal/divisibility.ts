@@ -1,7 +1,7 @@
-import type { Base } from "../../base.js"
-import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
-import type { Check } from "../../traverse/check/check.js"
-import { Binary } from "./binary.js"
+import type { Base } from "../base.js"
+import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
+import type { Check } from "../traverse/check/check.js"
+import { Binary } from "./nonTerminal.js"
 
 export namespace Divisibility {
     export const token = "%"

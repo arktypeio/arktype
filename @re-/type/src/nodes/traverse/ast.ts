@@ -1,6 +1,6 @@
 import type { Evaluate } from "@re-/tools"
-import type { Bound } from "../nonTerminal/binary/bound.js"
-import type { Divisibility } from "../nonTerminal/binary/divisibility.js"
+import type { Bound } from "../nonTerminal/bound.js"
+import type { Divisibility } from "../nonTerminal/divisibility.js"
 import type { TypeKeyword } from "../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
 import type { RegexKeyword, RegexLiteral } from "../terminal/regex.js"

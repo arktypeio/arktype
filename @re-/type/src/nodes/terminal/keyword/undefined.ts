@@ -1,6 +1,6 @@
+import { jsTypeOf } from "@re-/tools"
 import type { Check } from "../../traverse/check/check.js"
 import { Terminal } from "../terminal.js"
-import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class UndefinedNode extends Terminal.Node<"undefined"> {
     constructor() {
@@ -9,7 +9,11 @@ export class UndefinedNode extends Terminal.Node<"undefined"> {
 
     check(state: Check.State) {
         if (state.data !== undefined) {
-            addTypeKeywordDiagnostic(state, "undefined", "Must be undefined")
+            state.addError("typeKeyword", {
+                type: this,
+                message: "Must be undefined",
+                actual: jsTypeOf(state.data)
+            })
         }
     }
 }

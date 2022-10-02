@@ -1,5 +1,5 @@
 import { isKeyOf } from "@re-/tools"
-import type { Bound } from "../../../../nodes/nonTerminal/binary/bound.js"
+import type { Bound } from "../../../../nodes/nonTerminal/bound.js"
 import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Scanner } from "../../state/scanner.js"
 import type { ParserState, parserState } from "../../state/state.js"

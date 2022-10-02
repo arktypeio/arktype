@@ -6,7 +6,7 @@ import type {
 import { hasJsType } from "@re-/tools"
 import type { TypeOptions } from "../../../scopes/type.js"
 import type { Base } from "../../base.js"
-import type { DiagnosticCode, InternalDiagnosticInput } from "./diagnostics.js"
+import type { DiagnosticCode, InternalDiagnosticArgs } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
@@ -16,9 +16,10 @@ export namespace Check {
         Options extends Dictionary = {},
         Data = unknown
     > = {
-        node: Node
-        data: Data
-        context: Context
+        context: Context & {
+            type: Node
+            data: Data
+        }
         options: Options
     }
 
@@ -43,11 +44,11 @@ export namespace Check {
             return hasJsType(this.data, typeName)
         }
 
-        add<Code extends DiagnosticCode>(
+        addError<Code extends DiagnosticCode>(
             code: Code,
-            data: InternalDiagnosticInput<Code>
+            input: InternalDiagnosticArgs<Code>
         ) {
-            this.errors.add(code, data)
+            this.errors.add(code, input)
         }
     }
 }

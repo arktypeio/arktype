@@ -2,16 +2,16 @@ import type { Dictionary } from "@re-/tools"
 import { uncapitalize } from "@re-/tools"
 import type { Base } from "../../base.js"
 import { pathToString } from "../../common.js"
-import type { Bound } from "../../nonTerminal/binary/bound.js"
-import type { Divisibility } from "../../nonTerminal/binary/divisibility.js"
-import type { Union } from "../../nonTerminal/nary/union.js"
-import type { StructureDiagnostic } from "../../structural/common.js"
+import type { Bound } from "../../nonTerminal/bound.js"
+import type { Divisibility } from "../../nonTerminal/divisibility.js"
+import type { Union } from "../../nonTerminal/union.js"
 import type { ObjectLiteral } from "../../structural/objectLiteral.js"
 import type { Tuple } from "../../structural/tuple.js"
 import type { TypeKeyword } from "../../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { RegexLiteral } from "../../terminal/regex.js"
 import type { Check } from "./check.js"
+import type { Structure } from "./common.js"
 import { stringifyData } from "./common.js"
 
 export type DiagnosticCode = keyof RegisteredDiagnosticConfigs
@@ -21,7 +21,7 @@ export type Diagnostic<Code extends DiagnosticCode> = {
     options: CompileDiagnosticOptions<Code>
 } & DiagnosticContextConfig<Code> &
     BaseDiagnosticContext<
-        DiagnosticContextConfig<Code>["node"],
+        DiagnosticContextConfig<Code>["type"],
         DiagnosticContextConfig<Code>["data"]
     >
 
@@ -29,11 +29,10 @@ export type OptionsByDiagnostic = {
     [Code in DiagnosticCode]?: CompileDiagnosticOptions<Code>
 }
 
-export type InternalDiagnosticInput<Code extends DiagnosticCode> = Omit<
+export type InternalDiagnosticArgs<Code extends DiagnosticCode> = Omit<
     DiagnosticContextConfig<Code>,
     "data"
 > & {
-    options: DiagnosticOptionsConfig<Code>
     message: string
 }
 
@@ -73,7 +72,7 @@ type DiagnosticOptionsConfig<Code extends DiagnosticCode> =
 type RegisteredDiagnosticConfigs = {
     typeKeyword: TypeKeyword.Diagnostic
     primitiveLiteral: PrimitiveLiteral.Diagnostic
-    structure: StructureDiagnostic
+    structure: Structure.Diagnostic
     bound: Bound.Diagnostic
     extraneousKeys: ObjectLiteral.ExtraneousKeysDiagnostic
     missingKey: ObjectLiteral.MissingKeyDiagnostic

@@ -1,6 +1,6 @@
+import { jsTypeOf } from "@re-/tools"
 import type { Check } from "../../traverse/check/check.js"
 import { Terminal } from "../terminal.js"
-import { addTypeKeywordDiagnostic } from "./common.js"
 
 export class BigintNode extends Terminal.Node<"bigint"> {
     constructor() {
@@ -9,7 +9,11 @@ export class BigintNode extends Terminal.Node<"bigint"> {
 
     check(state: Check.State) {
         if (typeof state.data !== "bigint") {
-            addTypeKeywordDiagnostic(state, "bigint", "Must be a bigint")
+            state.addError("typeKeyword", {
+                type: this,
+                message: "Must be a bigint",
+                actual: jsTypeOf(state.data)
+            })
         }
     }
 }

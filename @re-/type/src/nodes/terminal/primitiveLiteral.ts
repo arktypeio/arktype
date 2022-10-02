@@ -15,7 +15,7 @@ export namespace PrimitiveLiteral {
     export type Definition = String | Number | Bigint | Boolean
 
     export type Diagnostic = Check.ConfigureDiagnostic<
-        Node,
+        Node<Value>,
         {
             expectedValue: PrimitiveLiteral.Value
         }
@@ -30,10 +30,10 @@ export namespace PrimitiveLiteral {
 
         check(state: Check.State) {
             if (state.data !== this.value) {
-                state.add("primitiveLiteral", {
+                state.addError("primitiveLiteral", {
                     message: `Must be ${this.def}`,
-                    type: this,
-                    expectedValue: this.value
+                    expectedValue: this.value,
+                    type: this
                 })
             }
         }
