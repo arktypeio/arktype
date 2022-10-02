@@ -1,3 +1,4 @@
+import type { NormalizedJsTypeName, NormalizedJsTypeOf } from "@re-/tools"
 import { jsTypeOf } from "@re-/tools"
 import type { ParseError, parseFn, ParserContext } from "./common.js"
 import { throwParseError } from "./common.js"
@@ -8,7 +9,7 @@ export namespace Root {
     export type Parse<Def, Ctx extends ParserContext> = Def extends string
         ? Str.Parse<Def, Ctx>
         : Def extends BadDefinitionType
-        ? ParseError<BadDefinitionTypeMessage>
+        ? ParseError<BadDefinitionTypeMessage<NormalizedJsTypeOf<Def>>>
         : Obj.Parse<Def, Ctx>
 
     export type Validate<Def, Ast> = Def extends []
@@ -29,22 +30,22 @@ export namespace Root {
         | Function
         | symbol
 
-    export const badDefinitionTypeMessage =
-        "Type definitions must be strings or objects."
+    export const badDefinitionTypeMessage = <
+        Actual extends NormalizedJsTypeName
+    >(
+        actual: Actual
+    ): BadDefinitionTypeMessage<Actual> =>
+        `Type definitions must be strings or objects (was ${actual}).`
 
-    type BadDefinitionTypeMessage = typeof badDefinitionTypeMessage
+    type BadDefinitionTypeMessage<Actual extends NormalizedJsTypeName> =
+        `Type definitions must be strings or objects (was ${Actual}).`
 
-    export const parse: parseFn = (def, ctx) =>
+    export const parse: parseFn = (def, space) =>
         typeof def === "string"
-            ? Str.parse(def, ctx)
+            ? Str.parse(def, space)
             : typeof def === "object" && def !== null
-            ? Obj.parse(def, ctx)
+            ? Obj.parse(def, space)
             : throwParseError(
-                  badDefinitionTypeMessage +
-                      ` (was ${jsTypeOf(def)}${
-                          ctx.path.length
-                              ? " at path " + ctx.path.join("/")
-                              : ""
-                      }).`
+                  badDefinitionTypeMessage + ` (was ${jsTypeOf(def)}).`
               )
 }

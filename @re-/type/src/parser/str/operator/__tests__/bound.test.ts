@@ -40,10 +40,18 @@ describe("bound", () => {
         })
         describe("double", () => {
             test("<,<=", () => {
-                assert(type("-5<number<=5").ast).narrowedValue([])
+                assert(type("-5<number<=5").ast).narrowedValue([
+                    "-5",
+                    "<",
+                    ["number", "<=", "5"]
+                ])
             })
             test("<=,<", () => {
-                assert(type("-3.23<=number<4.654").ast).narrowedValue([])
+                assert(type("-3.23<=number<4.654").ast).narrowedValue([
+                    "-3.23",
+                    "<=",
+                    ["number", "<", "4.654"]
+                ])
             })
         })
         describe("errors", () => {
@@ -79,10 +87,18 @@ describe("bound", () => {
             })
         })
         test("string", () => {
-            assert(type("1<string<=5").ast).narrowedValue([])
+            assert(type("1<string<=5").ast).narrowedValue([
+                "1",
+                "<",
+                ["string", "<=", "5"]
+            ])
         })
         test("array", () => {
-            assert(type("-343<=boolean[]<89").ast).narrowedValue([])
+            assert(type("-343<=boolean[]<89").ast).narrowedValue([
+                "-343",
+                "<=",
+                [["boolean", "[]"], "<", "89"]
+            ])
         })
     })
 })

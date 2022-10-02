@@ -1,10 +1,13 @@
 import type { MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
+import type { Ast } from "../nodes/traverse/ast.js"
 import { Check } from "../nodes/traverse/check/check.js"
-import type { Diagnostics } from "../nodes/traverse/check/diagnostics.js"
+import type {
+    Diagnostics,
+    OptionsByDiagnostic
+} from "../nodes/traverse/check/diagnostics.js"
 import type { ParseError } from "../parser/common.js"
-import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
 import type { InternalSpace, ResolvedSpace } from "./space.js"
 
@@ -60,7 +63,10 @@ type.lazyDynamic = lazyTypeFn
 
 export type DynamicArktype = Arktype<unknown, unknown>
 
-export type TypeOptions<Inferred = unknown> = Check.Options<Inferred>
+export type TypeOptions<Inferred = unknown> = {
+    narrow?: () => {}
+    errors?: OptionsByDiagnostic
+}
 
 export type InternalTypeOptions = TypeOptions<any> & {
     space?: InternalSpace
@@ -87,7 +93,7 @@ export class InternalArktype implements DynamicArktype {
     }
 
     check(data: unknown) {
-        const state = new Check.State(data, this.options)
+        const state = new Check.State(this.root, data, this.options)
         this.root.check(state)
         return state.errors.length
             ? {
@@ -110,7 +116,7 @@ export type CheckFn<Inferred> = (data: unknown) => CheckResult<Inferred>
 export type CheckResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
-        errors: Diagnostics.Diagnostics
+        errors: Diagnostics
     }
 >
 

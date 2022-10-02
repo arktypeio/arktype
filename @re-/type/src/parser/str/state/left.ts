@@ -4,7 +4,6 @@ import type { Intersection } from "../../../nodes/expression/intersection.js"
 import type { Union } from "../../../nodes/expression/union.js"
 import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError } from "../../common.js"
-import type { Comparators } from "../operator/bound/tokens.js"
 
 type leftBase = {
     groups: left.openBranches[]

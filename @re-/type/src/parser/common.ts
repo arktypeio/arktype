@@ -1,27 +1,14 @@
 import type { Base } from "../nodes/base.js"
 import type { Expression } from "../nodes/expression/expression.js"
 import type { InternalSpace } from "../scopes/space.js"
-import type { InternalTypeOptions, TypeOptions } from "../scopes/type.js"
 
 export type ParserContext = {
     aliases: unknown
 }
 
-export type parserContext = TypeOptions & {
-    path: string[]
-    space?: InternalSpace
-}
-
-// TODO: Mutation okay?
-export const initializeParserContext = (opts: InternalTypeOptions = {}) => {
-    const ctx = opts as parserContext
-    ctx.path = []
-    return ctx
-}
-
 export type parseFn<DefType = unknown> = (
     def: DefType,
-    ctx: parserContext
+    space: InternalSpace | undefined
 ) => Base.Node
 
 export class parseError extends Error {}

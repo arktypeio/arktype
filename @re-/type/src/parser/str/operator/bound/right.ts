@@ -84,9 +84,7 @@ export namespace RightBoundOperator {
                       LeftLimit,
                       LeftComparator,
                       Comparator,
-                      //TODO: Fix
-                      // @ts-expect-error
-                      LimitToken
+                      Extract<LimitToken, PrimitiveLiteral.Number>
                   >
                 : ReduceSingle<L, Comparator, LimitParseResult>
             : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
@@ -113,9 +111,9 @@ export namespace RightBoundOperator {
         ? Left.From<{
               leftBound: undefined
               root: [
-                  [LeftLimit, LeftComparator, L["root"]],
-                  RightComparator,
-                  RightLimit
+                  LeftLimit,
+                  LeftComparator,
+                  [L["root"], RightComparator, RightLimit]
               ]
               groups: L["groups"]
               branches: L["branches"]
@@ -135,11 +133,10 @@ export namespace RightBoundOperator {
         if (!isKeyOf(rightComparator, Bound.doubleTokens)) {
             return s.error(Comparators.invalidDoubleMessage(rightComparator))
         }
-        const upper = new Bound.RightNode(s.l.root, rightComparator, rightLimit)
         s.l.root = new Bound.LeftNode(
             s.l.branches.leftBound[0],
             s.l.branches.leftBound[1],
-            upper
+            new Bound.RightNode(s.l.root, rightComparator, rightLimit)
         )
     }
 

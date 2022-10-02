@@ -1,6 +1,7 @@
 import { TypeKeyword } from "../../../nodes/terminal/keyword/keyword.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import type { ParseError, ParserContext, parserContext } from "../../common.js"
+import type { InternalSpace } from "../../../scopes/space.js"
+import type { ParseError, ParserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import { scanner } from "../state/scanner.js"
@@ -8,9 +9,9 @@ import type { ParserState, parserState } from "../state/state.js"
 import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 
 export namespace Unenclosed {
-    export const parse = (s: parserState, ctx: parserContext) => {
+    export const parse = (s: parserState, space: InternalSpace) => {
         const token = s.r.shiftUntilNextTerminator()
-        s.l.root = unenclosedToNode(s, token, ctx)
+        s.l.root = unenclosedToNode(s, token, space)
         return s
     }
 
@@ -55,9 +56,9 @@ export namespace Unenclosed {
     const unenclosedToNode = (
         s: parserState,
         token: string,
-        ctx: parserContext
+        space: InternalSpace
     ) =>
-        maybeParseIdentifier(token, ctx) ??
+        maybeParseIdentifier(token, space) ??
         maybeParseLiteral(token) ??
         s.error(
             token === ""

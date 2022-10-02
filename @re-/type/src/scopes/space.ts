@@ -1,6 +1,6 @@
 import { chainableNoOpProxy, deepMerge, mapValues } from "@re-/tools"
 import type { Dictionary, Evaluate } from "@re-/tools"
-import { ResolutionNode } from "../nodes/resolution.js"
+import type { Base } from "../nodes/base.js"
 import type { Ast } from "../nodes/traverse/ast.js"
 import { initializeParserContext } from "../parser/common.js"
 import { Root } from "../parser/root.js"
@@ -44,7 +44,7 @@ const rawSpace = (aliases: Dictionary, opts: SpaceOptions = {}) => {
     for (const name of Object.keys(aliases)) {
         const ctx = initializeParserContext(opts)
         ctx.space = $root
-        const resolution = new ResolutionNode(name, ctx)
+        const resolution = Root.parse(aliases[name], ctx)
         $root.resolutions[name] = resolution
         compiled[name] = new InternalArktype(resolution, opts)
     }
@@ -58,7 +58,7 @@ export const space: SpaceFn = rawSpace as any
 // TODO: Ensure there are no extraneous types/space calls from testing
 // TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space
 export class InternalSpace implements DynamicSpaceRoot {
-    resolutions: Dictionary<ResolutionNode>
+    resolutions: Dictionary<Base.Node>
 
     constructor(public aliases: Dictionary, public options: SpaceOptions = {}) {
         this.resolutions = {}
