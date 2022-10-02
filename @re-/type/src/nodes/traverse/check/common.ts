@@ -1,8 +1,8 @@
 import type { NormalizedJsTypeName } from "@re-/tools"
 import { toString } from "@re-/tools"
-import type { Arr } from "../../nonTerminal/array.js"
-import type { ObjectLiteral } from "../../structural/objectLiteral.js"
-import type { Tuple } from "../../structural/tuple.js"
+import type { Arr } from "../../expression/array.js"
+import type { ObjectLiteral } from "../../structure/objectLiteral.js"
+import type { Tuple } from "../../structure/tuple.js"
 import type { Check } from "./check.js"
 
 export const stringifyData = (data: unknown) =>

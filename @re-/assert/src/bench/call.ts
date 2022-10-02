@@ -13,16 +13,13 @@ export type StatName = keyof typeof stats
 
 export type TimeAssertionName = StatName | "mark"
 
-const round = (value: number, decimalPlaces: number) =>
-    Math.round(value * 10 ** decimalPlaces) / 10 ** decimalPlaces
-
 export const stats = {
     mean: (callTimes: number[]) => {
         const totalCallMs = callTimes.reduce(
             (sum, duration) => sum + duration,
             0
         )
-        return round(totalCallMs / callTimes.length, 2)
+        return totalCallMs / callTimes.length
     },
     median: (callTimes: number[]) => {
         const middleIndex = Math.floor(callTimes.length / 2)
@@ -30,7 +27,7 @@ export const stats = {
             callTimes.length % 2 === 0
                 ? (callTimes[middleIndex - 1] + callTimes[middleIndex]) / 2
                 : callTimes[middleIndex]
-        return round(ms, 2)
+        return ms
     }
 }
 

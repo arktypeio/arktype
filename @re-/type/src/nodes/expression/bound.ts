@@ -4,7 +4,7 @@ import type { Base } from "../base.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check/check.js"
 import { Constraint } from "../traverse/check/common.js"
-import { Binary } from "./nonTerminal.js"
+import { Binary } from "./expression.js"
 
 export namespace Bound {
     export const tokens = keySet({

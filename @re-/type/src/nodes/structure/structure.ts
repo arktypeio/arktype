@@ -1,12 +1,12 @@
 import type { Dictionary, NormalizedJsTypeName } from "@re-/tools"
 import { jsTypeOf } from "@re-/tools"
 import type { Base } from "../base.js"
-import type { Arr } from "../nonTerminal/array.js"
+import type { Arr } from "../expression/array.js"
 import type { Check } from "../traverse/check/check.js"
 import type { ObjectLiteral } from "./objectLiteral.js"
 import type { Tuple } from "./tuple.js"
 
-export namespace Structural {
+export namespace Structure {
     export const checkObjectKind = <ExpectedStructure extends ObjectKind>(
         node: Base.Node,
         expectedStructure: ExpectedStructure,
@@ -33,7 +33,7 @@ export namespace Structural {
 
     export type ObjectKind = "object" | "array"
 
-    export type StructureDiagnostic = Check.ConfigureDiagnostic<
+    export type Diagnostic = Check.ConfigureDiagnostic<
         ObjectLiteral.Node | Tuple.Node | Arr.Node,
         {
             expected: ObjectKind

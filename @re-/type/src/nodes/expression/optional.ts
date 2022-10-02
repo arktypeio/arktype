@@ -1,5 +1,5 @@
 import type { Check } from "../traverse/check/check.js"
-import { Unary } from "./nonTerminal.js"
+import { Unary } from "./expression.js"
 
 export namespace Optional {
     export const token = "?"

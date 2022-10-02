@@ -1,15 +1,15 @@
 import type { Dictionary } from "@re-/tools"
 import type { Base } from "../base.js"
-import { Optional } from "../nonTerminal/optional.js"
+import { Optional } from "../expression/optional.js"
 import type { Check } from "../traverse/check/check.js"
-import { Structural } from "./common.js"
+import { Structure } from "./structure.js"
 
 export namespace ObjectLiteral {
     export class Node implements Base.Node {
         constructor(public children: Base.Node[], private keys: string[]) {}
 
         check(state: Check.State) {
-            if (!Structural.checkObjectKind(this, "object", state)) {
+            if (!Structure.checkObjectKind(this, "object", state)) {
                 return
             }
             const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)

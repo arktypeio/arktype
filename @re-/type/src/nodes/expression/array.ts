@@ -1,6 +1,6 @@
-import { Structural } from "../structural/common.js"
+import { Structure } from "../structure/structure.js"
 import type { Check } from "../traverse/check/check.js"
-import { Unary } from "./nonTerminal.js"
+import { Unary } from "./expression.js"
 
 export namespace Arr {
     export const token = "[]"
@@ -11,7 +11,7 @@ export namespace Arr {
         readonly token = token
 
         check(state: Check.State) {
-            if (!Structural.checkObjectKind(this, "array", state)) {
+            if (!Structure.checkObjectKind(this, "array", state)) {
                 return
             }
             const rootData = state.data

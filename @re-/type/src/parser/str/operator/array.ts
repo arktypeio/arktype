@@ -1,4 +1,4 @@
-import { Arr } from "../../../nodes/nonTerminal/array.js"
+import { Arr } from "../../../nodes/expression/array.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"

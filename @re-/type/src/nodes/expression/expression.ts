@@ -2,7 +2,7 @@ import { keySet } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { Check } from "../traverse/check/check.js"
 
-export namespace NonTerminal {
+export namespace Expression {
     export const tokens = {
         ...Unary.tokens,
         ...Nary.tokens,
@@ -12,6 +12,112 @@ export namespace NonTerminal {
     export type Token = Unary.Token | InfixToken
 
     export type InfixToken = Nary.Token | Binary.Token
+
+    export type ChildrenToAsts<Children extends Base.Node[]> = {
+        [K in keyof Children]: unknown
+    }
+
+    export type ChildrenToStrings<Children extends Base.Node[]> = {
+        [K in keyof Children]: string
+    }
+
+    export type ChildrenToTokens<Children extends Base.Node[]> = {
+        [K in keyof Children]: Token | ""
+    }
+
+    export abstract class Node<
+        Children extends Base.Node[],
+        Tokens extends ChildrenToTokens<Children>
+    > {
+        constructor(public children: Children, public tokens: Tokens) {}
+
+        abstract check(state: Check.State): void
+
+        abstract buildAst(childrenAsts: ChildrenToAsts<Children>): unknown
+        abstract buildString(
+            stringifiedChildren: ChildrenToStrings<Children>
+        ): string
+
+        toString() {
+            let result = ""
+            let i = 0
+            for (; i < this.tokens.length; i++) {
+                result += this.children[i].toString() + this.tokens[i]
+            }
+            if (this.children[i]) {
+                // There will be one final child if it is an infix expression
+                result += this.children[i].toString()
+            }
+            return result
+        }
+
+        toAst() {
+            const result: unknown[] = []
+            let i = 0
+            for (; i < this.tokens.length; i++) {
+                result.push(this.children[i].toAst(), this.tokens[i])
+            }
+            if (this.children[i]) {
+                result.push(this.children[i].toAst())
+            }
+            return result
+        }
+
+        /**
+         * This generates an isomorphic definition that can be parsed and
+         * inverted. The preferred isomorphic format for expressions is the
+         * string form over the tuple form:
+         *
+         * Terminal => string
+         * Structural => object
+         * NonTerminal => Any structural descendants ? [tuple-form expression] : "string-form expression"
+         *
+         * For example, the input definitions...
+         *
+         *     "string|number" (string form)
+         *         and
+         *     ["string", "|", "number"] (tuple form)
+         *
+         * both result in a toDefinition() output of "string|number".
+         *
+         * However, if the input definition was:
+         *
+         *     [{ a: ["string", "?"] }, "&", { b: ["boolean", "?"] }]
+         *
+         * Since the structural (in this case object literal) definitions cannot
+         * be stringified as a defininition, toDefintion() would yield:
+         *
+         *     [{a: "string?"}, "&", {b: "boolean?"}]
+         */
+        toDefinition() {
+            const isomorphicChildren: unknown[] = []
+            let stringifiable = true
+            let i = 0
+            for (; i < this.tokens.length; i++) {
+                const isomorphicChild = this.children[i].toDefinition()
+                if (typeof isomorphicChild !== "string") {
+                    stringifiable = false
+                }
+                isomorphicChildren.push(isomorphicChild, this.tokens[i])
+            }
+            if (this.children[i]) {
+                isomorphicChildren.push(this.children[i].toAst())
+            }
+            return isomorphicChildren
+            // let stringifiable = true
+            // const isomorphicChildren = this.children.map((child) => {
+            //     const isomorphicChild = child.toDefinition()
+            //     if (typeof isomorphicChild !== "string") {
+            //         stringifiable = false
+            //     }
+            //     return isomorphicChild
+            // })
+
+            // return stringifiable
+            //     ? this.buildString(isomorphicChildren as any)
+            //     : this.buildAst(isomorphicChildren as any)
+        }
+    }
 }
 
 export namespace Unary {

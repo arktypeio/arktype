@@ -1,5 +1,5 @@
-import { Arr } from "../../nodes/nonTerminal/array.js"
-import { Optional } from "../../nodes/nonTerminal/optional.js"
+import { Arr } from "../../nodes/expression/array.js"
+import { Optional } from "../../nodes/expression/optional.js"
 import type { ParserContext, parserContext } from "../common.js"
 import type { FullParse } from "./full.js"
 import { Unenclosed } from "./operand/unenclosed.js"

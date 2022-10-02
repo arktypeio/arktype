@@ -1,5 +1,5 @@
 import { Check } from "../traverse/check/check.js"
-import { Nary } from "./nonTerminal.js"
+import { Nary } from "./expression.js"
 
 export namespace Union {
     export const token = "|"

@@ -1,5 +1,5 @@
 import type { Base } from "../nodes/base.js"
-import type { NonTerminal } from "../nodes/nonTerminal/nonTerminal.js"
+import type { Expression } from "../nodes/expression/expression.js"
 import type { InternalSpace } from "../scopes/space.js"
 import type { InternalTypeOptions, TypeOptions } from "../scopes/type.js"
 
@@ -36,12 +36,10 @@ export type MaybeAppend<T, MaybeArray> = MaybeArray extends unknown[]
     ? [...MaybeArray, T]
     : T
 
-export type MissingRightOperandMessage<Token extends NonTerminal.InfixToken> =
+export type MissingRightOperandMessage<Token extends Expression.InfixToken> =
     `Token '${Token}' requires a right operand.`
 
-export const missingRightOperandMessage = <
-    Token extends NonTerminal.InfixToken
->(
+export const missingRightOperandMessage = <Token extends Expression.InfixToken>(
     token: Token
 ): MissingRightOperandMessage<Token> =>
     `Token '${token}' requires a right operand.`

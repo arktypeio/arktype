@@ -1,4 +1,3 @@
-import type { StatName } from "../call.js"
 import type { Measure, MeasureComparison } from "./measure.js"
 
 export const TIME_UNIT_RATIOS = Object.freeze({
@@ -14,7 +13,7 @@ export const stringifyTimeMeasure = ([value, unit]: Measure<TimeUnit>) =>
     `${value.toFixed(2)}${unit}`
 
 const convertTimeUnit = (n: number, from: TimeUnit, to: TimeUnit) => {
-    return (n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to]
+    return round((n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to], 2)
 }
 
 /**
@@ -46,6 +45,9 @@ const createTimeMeasureForUnit = (
     ms: number,
     unit: TimeUnit
 ): Measure<TimeUnit> => [convertTimeUnit(ms, "ms", unit), unit]
+
+const round = (value: number, decimalPlaces: number) =>
+    Math.round(value * 10 ** decimalPlaces) / 10 ** decimalPlaces
 
 export const createTimeComparison = (
     ms: number,
