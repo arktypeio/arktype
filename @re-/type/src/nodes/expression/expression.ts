@@ -13,30 +13,13 @@ export namespace Expression {
 
     export type InfixToken = Nary.Token | Binary.Token
 
-    export type ChildrenToAsts<Children extends Base.Node[]> = {
-        [K in keyof Children]: unknown
-    }
-
-    export type ChildrenToStrings<Children extends Base.Node[]> = {
-        [K in keyof Children]: string
-    }
-
-    export type ChildrenToTokens<Children extends Base.Node[]> = {
-        [K in keyof Children]: Token | ""
-    }
-
     export abstract class Node<
         Children extends Base.Node[],
-        Tokens extends ChildrenToTokens<Children>
+        Tokens extends Token | Token[]
     > {
         constructor(public children: Children, public tokens: Tokens) {}
 
         abstract check(state: Check.State): void
-
-        abstract buildAst(childrenAsts: ChildrenToAsts<Children>): unknown
-        abstract buildString(
-            stringifiedChildren: ChildrenToStrings<Children>
-        ): string
 
         toString() {
             let result = ""
@@ -103,7 +86,9 @@ export namespace Expression {
             if (this.children[i]) {
                 isomorphicChildren.push(this.children[i].toAst())
             }
-            return isomorphicChildren
+            return stringifiable
+                ? isomorphicChildren.join("")
+                : isomorphicChildren
             // let stringifiable = true
             // const isomorphicChildren = this.children.map((child) => {
             //     const isomorphicChild = child.toDefinition()
