@@ -9,7 +9,7 @@ import type { ObjectLiteral } from "../../structure/objectLiteral.js"
 import type { Tuple } from "../../structure/tuple.js"
 import type { TypeKeyword } from "../../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
-import type { RegexLiteral } from "../../terminal/regex.js"
+import type { RegexKeyword, RegexLiteral } from "../../terminal/regex.js"
 import type { Check } from "./check.js"
 import type { Structure } from "./common.js"
 import { stringifyData } from "./common.js"
@@ -54,11 +54,12 @@ type DiagnosticContextConfig<Code extends DiagnosticCode> =
 type BaseDiagnosticContext<Node extends Base.Node, Data> = {
     type: Pick<Node, "toString" | "toAst" | "toDefinition">
     data: Stringifiable<Data>
+    path: string[]
     message: string
 }
 
 type CompileDiagnosticOptions<Code extends DiagnosticCode> =
-    BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>["options"]
+    BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>
 
 type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
     message?: (context: Diagnostic<Code>) => string
@@ -77,6 +78,7 @@ type RegisteredDiagnosticConfigs = {
     extraneousKeys: ObjectLiteral.ExtraneousKeysDiagnostic
     missingKey: ObjectLiteral.MissingKeyDiagnostic
     regexLiteral: RegexLiteral.Diagnostic
+    regexKeyword: RegexKeyword.Diagnostic
     tupleLength: Tuple.LengthDiagnostic
     union: Union.Diagnostic
     divisibility: Divisibility.Diagnostic
@@ -105,7 +107,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         if (options?.message) {
             diagnostic.message = options?.message(diagnostic)
         }
-        this.push(diagnostic)
+        this.push(diagnostic as any)
     }
 
     get summary() {

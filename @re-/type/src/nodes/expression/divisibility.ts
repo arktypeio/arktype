@@ -8,30 +8,22 @@ export namespace Divisibility {
 
     export type Token = typeof token
 
-    export class Node extends Binary.Node<Token> {
-        readonly token = token
-
-        constructor(
-            private child: Base.Node,
-            private divisor: PrimitiveLiteral.Node<number>
-        ) {
-            super([child, divisor])
-        }
-
+    export class Node extends Binary.Node<
+        Base.Node,
+        Token,
+        PrimitiveLiteral.Node<number>
+    > {
         check(state: Check.State<number>) {
-            if (state.data % this.divisor.value !== 0) {
-                const reason =
-                    this.divisor.value === 1
-                        ? "Must be an integer"
-                        : `Must be an integer divisible by ${this.divisor}`
-                state.errors.add(
-                    "divisibility",
-                    {
-                        state,
-                        reason
-                    },
-                    { divisor: this.divisor.value, actual: state.data }
-                )
+            const divisor = this.right.value
+            if (state.data % divisor !== 0) {
+                state.addError("divisibility", {
+                    type: this,
+                    message:
+                        divisor === 1
+                            ? "Must be an integer"
+                            : `Must be an integer divisible by ${divisor}`,
+                    divisor
+                })
             }
         }
     }
@@ -40,7 +32,6 @@ export namespace Divisibility {
         Node,
         {
             divisor: number
-            actual: number
         }
     >
 }

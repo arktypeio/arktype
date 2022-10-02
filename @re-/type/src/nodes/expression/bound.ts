@@ -1,4 +1,3 @@
-// TODO: Fix parser imports
 import { keySet } from "@re-/tools"
 import type { Base } from "../base.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
@@ -16,6 +15,13 @@ export namespace Bound {
     })
 
     export type Token = keyof typeof tokens
+
+    export const doubleTokens = keySet({
+        "<=": 1,
+        "<": 1
+    })
+
+    export type DoubleToken = keyof typeof doubleTokens
 
     export const invertedComparators = {
         "<": ">",
@@ -60,102 +66,56 @@ export namespace Bound {
         }
     }
 
-    const checkBounds = (node: Single, state: Check.State<Constraint.Data>) => {
+    const checkBound = (
+        node: LeftNode | RightNode,
+        comparator: Token,
+        limit: number,
+        state: Check.State<Constraint.Data>
+    ) => {
         const actual = Constraint.toNumber(state.data)
-        for (const [comparator, limit] of bounds) {
-            if (!isWithinBound(comparator, limit, actual)) {
-                const kind = Constraint.toKind(state.data)
-                state.addError("bound", {
-                    type: node,
-                    message: describe(comparator, limit, kind),
-                    comparator,
-                    comparatorDescription: comparatorDescriptions[comparator],
-                    limit,
-                    actual,
-                    kind
-                })
-                return
-            }
+        if (!isWithinBound(comparator, limit, actual)) {
+            const kind = Constraint.toKind(state.data)
+            state.addError("bound", {
+                type: node,
+                message: describe(comparator, limit, kind),
+                comparator,
+                comparatorDescription: comparatorDescriptions[comparator],
+                limit,
+                actual,
+                kind
+            })
+            return false
+        }
+        return true
+    }
+
+    export class LeftNode extends Binary.Node<
+        PrimitiveLiteral.Node<number>,
+        DoubleToken,
+        RightNode
+    > {
+        check(state: Check.State<Constraint.Data>) {
+            checkBound(
+                this,
+                invertedComparators[this.token],
+                this.left.value,
+                state
+            ) && this.right.check(state)
         }
     }
 
-    export namespace Single {
-        export type Bound = [Token, number]
-
-        export class Node implements Base.Node {
-            public children: [Base.Node]
-            public bounds: [Bound]
-
-            constructor(private child: Base.Node, private bound: Bound) {
-                this.children = [child]
-                this.bounds = [bound]
-            }
-
-            check(state: Check.State<Constraint.Data>) {
-                checkBounds(this, state)
-            }
-
-            affixAst(child: unknown) {
-                return [child, this.bound[0], this.bound[1]] as const
-            }
-
-            affixString(child: string) {
-                return `${child}${this.bound[0]}${this.bound[1]}` as const
-            }
-        }
-    }
-
-    export namespace Double {
-        export const tokens = keySet({
-            "<=": 1,
-            "<": 1
-        })
-
-        export type Token = keyof typeof tokens
-
-        type NormalizedLeftToken = ">" | ">="
-
-        export type Bounds = [[NormalizedLeftToken, number], [Token, number]]
-
-        export type Lower = [number, Token]
-
-        export type Upper = [Token, number]
-
-        export class Node implements Base.Node {
-            public children: [Base.Node]
-            public bounds: Bounds
-
-            constructor(
-                private child: Base.Node,
-                private lower: Lower,
-                private upper: Upper
-            ) {
-                this.children = [child]
-                this.bounds = [[invertedComparators[lower[1]], lower[0]], upper]
-            }
-
-            check(state: Check.State<Constraint.Data>) {
-                checkBounds(this, state)
-            }
-
-            affixAst(child: unknown) {
-                return [
-                    this.lower[0],
-                    this.lower[1],
-                    child,
-                    this.upper[0],
-                    this.upper[1]
-                ] as const
-            }
-
-            affixString(child: string) {
-                return `${this.lower[0]}${this.lower[1]}${child}${this.upper[0]}${this.upper[1]}` as const
-            }
+    export class RightNode extends Binary.Node<
+        Base.Node,
+        Token,
+        PrimitiveLiteral.Node<number>
+    > {
+        check(state: Check.State<Constraint.Data>) {
+            checkBound(this, this.token, this.right.value, state)
         }
     }
 
     export type Diagnostic = Check.ConfigureDiagnostic<
-        Node,
+        LeftNode | RightNode,
         {
             comparator: Token
             comparatorDescription: string

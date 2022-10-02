@@ -4,6 +4,8 @@ import { Structure } from "./structure.js"
 
 export namespace Tuple {
     export class Node implements Base.Node {
+        hasStructure = true
+
         constructor(public children: Base.Node[]) {}
 
         toAst() {
@@ -28,7 +30,7 @@ export namespace Tuple {
         }
 
         check(state: Check.State) {
-            if (!Structure.checkObjectKind("array", state)) {
+            if (!Structure.checkObjectKind(this, "array", state)) {
                 return
             }
             const expectedLength = this.children.length

@@ -16,13 +16,19 @@ export namespace RegexLiteral {
             if (!this.expression.test(state.data)) {
                 state.addError("regexLiteral", {
                     type: this,
-                    message: `Must match expression ${this.def}`
+                    message: `Must match expression ${this.def}`,
+                    expression: this.expression
                 })
             }
         }
     }
 
-    export type Diagnostic = Check.ConfigureDiagnostic<Node, string>
+    export type Diagnostic = Check.ConfigureDiagnostic<
+        Node,
+        { expression: RegExp },
+        {},
+        string
+    >
 }
 
 export namespace RegexKeyword {
@@ -46,13 +52,19 @@ export namespace RegexKeyword {
             if (!this.expression.test(state.data)) {
                 state.addError("regexKeyword", {
                     type: this,
-                    message: this.description
+                    message: this.description,
+                    expression: this.expression
                 })
             }
         }
     }
 
-    export type Diagnostic = Check.ConfigureDiagnostic<Node, string, {}>
+    export type Diagnostic = Check.ConfigureDiagnostic<
+        Node,
+        { expression: RegExp },
+        {},
+        string
+    >
 
     export const getPredefined = (keyword: Definition) => predefined[keyword]
 

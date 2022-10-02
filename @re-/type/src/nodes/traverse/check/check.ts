@@ -48,7 +48,8 @@ export namespace Check {
             code: Code,
             input: InternalDiagnosticArgs<Code>
         ) {
-            this.errors.add(code, input)
+            // TODO: Fix types
+            this.errors.add(code, input as any)
         }
     }
 }

@@ -3,6 +3,8 @@ import type { Check } from "../traverse/check/check.js"
 
 export namespace Terminal {
     export abstract class Node<Def extends string> implements Base.Node {
+        hasStructure = false
+
         constructor(protected def: Def) {}
 
         abstract check(state: Check.State): void

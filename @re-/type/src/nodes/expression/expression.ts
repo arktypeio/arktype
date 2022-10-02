@@ -4,96 +4,15 @@ import type { Check } from "../traverse/check/check.js"
 
 export namespace Expression {
     export const tokens = {
-        ...Unary.tokens,
-        ...Nary.tokens,
-        ...Binary.tokens
+        ...Postfix.tokens,
+        ...Binary.tokens,
+        ...Branching.tokens
     }
 
-    export type Token = Unary.Token | InfixToken
-
-    export type InfixToken = Nary.Token | Binary.Token
-
-    export abstract class Node<
-        Children extends Base.Node[],
-        Tokens extends Token | Token[]
-    > {
-        constructor(public children: Children, public tokens: Tokens) {}
-
-        abstract check(state: Check.State): void
-
-        toString() {
-            let result = ""
-            let i = 0
-            for (; i < this.tokens.length; i++) {
-                result += this.children[i].toString() + this.tokens[i]
-            }
-            if (this.children[i]) {
-                // There will be one final child if it is an infix expression
-                result += this.children[i].toString()
-            }
-            return result
-        }
-
-        toAst() {
-            const result: unknown[] = []
-            let i = 0
-            for (; i < this.tokens.length; i++) {
-                result.push(this.children[i].toAst(), this.tokens[i])
-            }
-            if (this.children[i]) {
-                result.push(this.children[i].toAst())
-            }
-            return result
-        }
-
-        /**
-         * This generates an isomorphic definition that can be parsed and
-         * inverted. The preferred isomorphic format for expressions is the
-         * string form over the tuple form:
-         *
-         * Terminal => string
-         * Structural => object
-         * NonTerminal => Any structural descendants ? [tuple-form expression] : "string-form expression"
-         *
-         * For example, the input definitions...
-         *
-         *     "string|number" (string form)
-         *         and
-         *     ["string", "|", "number"] (tuple form)
-         *
-         * both result in a toDefinition() output of "string|number".
-         *
-         * However, if the input definition was:
-         *
-         *     [{ a: ["string", "?"] }, "&", { b: ["boolean", "?"] }]
-         *
-         * Since the structural (in this case object literal) definitions cannot
-         * be stringified as a defininition, toDefintion() would yield:
-         *
-         *     [{a: "string?"}, "&", {b: "boolean?"}]
-         */
-        toDefinition() {
-            const isomorphicChildren: unknown[] = []
-            let stringifiable = true
-            let i = 0
-            for (; i < this.tokens.length; i++) {
-                const isomorphicChild = this.children[i].toDefinition()
-                if (typeof isomorphicChild !== "string") {
-                    stringifiable = false
-                }
-                isomorphicChildren.push(isomorphicChild, this.tokens[i])
-            }
-            if (this.children[i]) {
-                isomorphicChildren.push(this.children[i].toAst())
-            }
-            return stringifiable
-                ? isomorphicChildren.join("")
-                : isomorphicChildren
-        }
-    }
+    export type Token = keyof typeof tokens
 }
 
-export namespace Unary {
+export namespace Postfix {
     export const tokens = keySet({
         "[]": 1,
         "?": 1
@@ -101,33 +20,56 @@ export namespace Unary {
 
     export type Token = keyof typeof tokens
 
+    type RootString<
+        Child extends Base.Node,
+        Token extends Postfix.Token
+    > = `${ReturnType<Child["toString"]>}${Token}`
+
+    type RootAst<Child extends Base.Node, Token extends Postfix.Token> = [
+        ReturnType<Child["toAst"]>,
+        Token
+    ]
+
+    type RootTupleDefinition<
+        Child extends Base.Node,
+        Token extends Postfix.Token
+    > = [ReturnType<Child["toDefinition"]>, Token]
+
     export abstract class Node<
-        Token extends Unary.Token,
-        Children extends [Base.Node] = [Base.Node]
+        Token extends Postfix.Token,
+        Child extends Base.Node = Base.Node
     > implements Base.Node
     {
-        children: Children
+        hasStructure: boolean
         abstract token: Token
 
-        constructor(protected child: Children[0]) {
-            this.children = [child] as Children
+        constructor(protected child: Child) {
+            this.hasStructure = this.child.hasStructure
         }
 
         abstract check(state: Check.State): void
 
-        toAst(): [unknown, Token] {
-            return [this.child.toAst(), this.token]
+        toString() {
+            return `${this.child.toString()}${this.token}` as RootString<
+                Child,
+                Token
+            >
         }
 
-        toString() {
-            return `${this.child.toString()}${this.token}` as const
+        toAst() {
+            return [this.child.toAst() as any, this.token] as RootAst<
+                Child,
+                Token
+            >
         }
 
         toDefinition() {
-            const nextDef = this.child.toDefinition()
-            return typeof nextDef === "string"
-                ? (`${nextDef}${this.token}` as const)
-                : ([nextDef, this.token] as [unknown, Token])
+            return this.hasStructure
+                ? ([
+                      this.child.toDefinition(),
+                      this.token
+                  ] as RootTupleDefinition<Child, Token>)
+                : this.toString()
         }
     }
 }
@@ -144,49 +86,76 @@ export namespace Binary {
 
     export type Token = keyof typeof tokens
 
-    export type Children = [Base.Node, Base.Node]
+    type RootString<
+        Left extends Base.Node,
+        Token extends Binary.Token,
+        Right extends Base.Node
+    > = `${ReturnType<Left["toString"]>}${Token}${ReturnType<
+        Right["toString"]
+    >}`
+
+    type RootTupleDefinition<
+        Left extends Base.Node,
+        Token extends Binary.Token,
+        Right extends Base.Node
+    > = [
+        ReturnType<Left["toDefinition"]>,
+        Token,
+        ReturnType<Right["toDefinition"]>
+    ]
+
+    type RootAst<
+        Left extends Base.Node,
+        Token extends Binary.Token,
+        Right extends Base.Node
+    > = [ReturnType<Left["toAst"]>, Token, ReturnType<Right["toAst"]>]
 
     export abstract class Node<
+        Left extends Base.Node,
         Token extends Binary.Token,
-        Children extends Binary.Children = Binary.Children
+        Right extends Base.Node
     > implements Base.Node
     {
-        abstract token: Token
+        hasStructure: boolean
 
-        constructor(public children: Children) {}
+        constructor(
+            protected left: Left,
+            protected token: Token,
+            protected right: Right
+        ) {
+            this.hasStructure =
+                this.left.hasStructure || this.right.hasStructure
+        }
 
         abstract check(state: Check.State): void
 
-        toAst(): [unknown, Token, unknown] {
-            return [
-                this.children[0].toAst(),
-                this.token,
-                this.children[1].toAst()
-            ]
+        toString() {
+            return `${this.left.toString()}${
+                this.token
+            }${this.right.toString()}` as RootString<Left, Token, Right>
         }
 
-        toString() {
-            return `${this.children[0].toString()}${
-                this.token
-            }${this.children[1].toString()}` as const
+        toAst() {
+            return [
+                this.left.toAst(),
+                this.token,
+                this.right.toAst()
+            ] as RootAst<Left, Token, Right>
         }
 
         toDefinition() {
-            const leftDefinition = this.children[0].toDefinition()
-            const rightDefinition = this.children[1].toDefinition()
-            return typeof leftDefinition === "string" &&
-                typeof rightDefinition === "string"
-                ? (`${leftDefinition}${this.token}${rightDefinition}` as const)
-                : ([leftDefinition, this.token, rightDefinition] as [
-                      unknown,
-                      Token,
-                      unknown
-                  ])
+            return this.hasStructure
+                ? ([
+                      this.left.toDefinition(),
+                      this.token,
+                      this.right.toDefinition()
+                  ] as RootTupleDefinition<Left, Token, Right>)
+                : this.toString()
         }
     }
 }
 
-export namespace Nary {
+export namespace Branching {
     export const tokens = keySet({
         "|": 1,
         "&": 1
@@ -194,25 +163,26 @@ export namespace Nary {
 
     export type Token = keyof typeof tokens
 
-    type RootAst = [unknown, Token, unknown]
+    type RootString<Token extends Branching.Token> =
+        `${string}${Token}${string}`
 
-    export abstract class Node<Token extends Nary.Token> implements Base.Node {
+    type RootTuple<Token extends Branching.Token> = [unknown, Token, unknown]
+
+    export abstract class Node<Token extends Branching.Token>
+        implements Base.Node
+    {
         abstract token: Token
+        hasStructure: boolean
 
-        constructor(public children: Base.Node[]) {}
+        constructor(public children: Base.Node[]) {
+            this.hasStructure = children.some((child) => child.hasStructure)
+        }
 
         abstract check(state: Check.State): void
 
         pushChild(child: Base.Node) {
             this.children.push(child)
-        }
-
-        toAst() {
-            let root = this.children[0].toAst()
-            for (let i = 1; i < this.children.length; i++) {
-                root = [root, this.token, this.children[i].toAst()]
-            }
-            return root as RootAst
+            this.hasStructure ||= child.hasStructure
         }
 
         toString() {
@@ -220,26 +190,26 @@ export namespace Nary {
             for (let i = 1; i < this.children.length; i++) {
                 root = root + this.token + this.children[i].toString()
             }
-            return root
+            return root as RootString<Token>
+        }
+
+        toAst() {
+            let root = this.children[0].toAst()
+            for (let i = 1; i < this.children.length; i++) {
+                root = [root, this.token, this.children[i].toAst()]
+            }
+            return root as RootTuple<Token>
         }
 
         toDefinition() {
-            let stringifiable = true
-            const nextDefs = this.children.map((child) => {
-                const def = child.toDefinition()
-                if (typeof def !== "string") {
-                    stringifiable = false
-                }
-                return def
-            })
-            if (stringifiable) {
-                return nextDefs.join(this.token)
+            if (!this.hasStructure) {
+                return this.toString()
             }
-            let root = nextDefs[0]
-            for (let i = 1; i < nextDefs.length; i++) {
-                root = [root, this.token, nextDefs]
+            let root = this.children[0].toDefinition()
+            for (let i = 1; i < this.children.length; i++) {
+                root = [root, this.token, this.children[i].toDefinition()]
             }
-            return root as RootAst
+            return root as RootTuple<Token>
         }
     }
 }

@@ -6,6 +6,8 @@ import { Structure } from "./structure.js"
 
 export namespace ObjectLiteral {
     export class Node implements Base.Node {
+        hasStructure = true
+
         constructor(public children: Base.Node[], private keys: string[]) {}
 
         check(state: Check.State) {
