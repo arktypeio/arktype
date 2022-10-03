@@ -40,12 +40,12 @@ export namespace Root {
     type BadDefinitionTypeMessage<Actual extends NormalizedJsTypeName> =
         `Type definitions must be strings or objects (was ${Actual}).`
 
-    export const parse: parseFn = (def, space) =>
-        typeof def === "string"
-            ? Str.parse(def, space)
-            : typeof def === "object" && def !== null
-            ? Obj.parse(def, space)
-            : throwParseError(
-                  badDefinitionTypeMessage + ` (was ${jsTypeOf(def)}).`
-              )
+    export const parse: parseFn = (def, space) => {
+        const defType = jsTypeOf(def)
+        return defType === "string"
+            ? Str.parse(def as any, space)
+            : defType === "object" || defType === "array"
+            ? Obj.parse(def as any, space)
+            : throwParseError(badDefinitionTypeMessage(defType))
+    }
 }

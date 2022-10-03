@@ -38,7 +38,4 @@ export namespace PrimitiveLiteral {
             }
         }
     }
-
-    // TODO: Can this work?
-    export const Number = Node<number>
 }

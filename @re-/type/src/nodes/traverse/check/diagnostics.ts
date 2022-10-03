@@ -1,5 +1,5 @@
 import type { Dictionary } from "@re-/tools"
-import { uncapitalize } from "@re-/tools"
+import { isKeyOf, keySet, uncapitalize } from "@re-/tools"
 import type { Base } from "../../base.js"
 import { pathToString } from "../../common.js"
 import type { Bound } from "../../expression/bound.js"
@@ -63,9 +63,7 @@ type CompileDiagnosticOptions<Code extends DiagnosticCode> =
 
 type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
     message?: (context: Diagnostic<Code>) => string
-} & ("actual" extends keyof DiagnosticContextConfig<Code>
-    ? { omitActual?: boolean }
-    : {})
+} & (Code extends DatalessCode ? {} : { omitActual?: boolean })
 
 type DiagnosticOptionsConfig<Code extends DiagnosticCode> =
     RegisteredDiagnosticConfigs[Code]["options"]
@@ -84,6 +82,13 @@ type RegisteredDiagnosticConfigs = {
     divisibility: Divisibility.Diagnostic
 }
 
+const datalessCodes = keySet({
+    missingKey: 1,
+    extraneousKeys: 1
+})
+
+type DatalessCode = keyof typeof datalessCodes
+
 export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
     constructor(private state: Check.State) {
         super()
@@ -100,9 +105,13 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
             toString: () => stringifyData(raw)
         }
         diagnostic.path = this.state.path
-        const options = this.state.options.errors?.[code]
-        if ("actual" in diagnostic && !options?.omitActual) {
-            diagnostic.message += ` (was ${diagnostic.actual})`
+        const options = this.state.queryContext("errors", code)
+        if (!(code in datalessCodes)) {
+            const actual =
+                "actual" in diagnostic
+                    ? diagnostic.actual
+                    : diagnostic.data.toString()
+            diagnostic.message += ` (was ${actual})`
         }
         if (options?.message) {
             diagnostic.message = options?.message(diagnostic)

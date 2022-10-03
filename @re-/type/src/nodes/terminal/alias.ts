@@ -8,7 +8,7 @@ export namespace Alias {
             super(def)
         }
 
-        check(state: Check.State<unknown>) {
+        check(state: Check.State) {
             this.space.resolutions
         }
     }

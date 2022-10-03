@@ -99,9 +99,7 @@ export namespace ObjectLiteral {
     export type ExtraneousKeysDiagnostic = Check.ConfigureDiagnostic<
         Node,
         { keys: string[] },
-        {
-            enabled: boolean
-        },
+        {},
         Dictionary
     >
 

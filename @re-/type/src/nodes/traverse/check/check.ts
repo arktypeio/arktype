@@ -1,41 +1,57 @@
 import type {
     Dictionary,
+    Evaluate,
     NormalizedJsTypeName,
     NormalizedJsTypes
 } from "@re-/tools"
 import { hasJsType } from "@re-/tools"
-import type { TypeOptions } from "../../../scopes/type.js"
 import type { Base } from "../../base.js"
+import type { Scope } from "../../scope.js"
 import type { DiagnosticCode, InternalDiagnosticArgs } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
-    export type ConfigureDiagnostic<
-        Node extends Base.Node,
-        Context extends Dictionary = {},
-        Options extends Dictionary = {},
-        Data = unknown
-    > = {
-        context: Context & {
-            type: Node
-            data: Data
-        }
-        options: Options
-    }
-
     // TODO: Try traversal
+
+    type QueryResult<K1 extends RootKey, K2 extends ConfigKey<K1>> =
+        | Required<Scope.Context>[K1][K2]
+        | undefined
+
+    export type RootKey = keyof Scope.Context
+
+    export type ConfigKey<K1 extends RootKey> =
+        keyof Required<Scope.Context>[K1]
+
     export class State<Data = unknown> {
         errors: Diagnostics
         path: string[] = []
+        private contexts: Scope.Context[]
         checkedValuesByAlias: Record<string, object[]>
 
-        constructor(
-            public root: Base.Node,
-            public data: Data,
-            public options: TypeOptions
-        ) {
+        constructor(public data: Data, rootContext: Scope.Context) {
             this.errors = new Diagnostics(this)
             this.checkedValuesByAlias = {}
+            this.contexts = [rootContext]
+        }
+
+        pushContext(context: Scope.Context) {
+            this.contexts.push(context)
+        }
+
+        popContext() {
+            this.contexts.pop()
+        }
+
+        queryContext<K1 extends RootKey, K2 extends ConfigKey<K1>>(
+            rootKey: K1,
+            configKey: K2
+        ): QueryResult<K1, K2> {
+            for (let i = this.contexts.length - 1; i >= 0; i--) {
+                const atPath = (this.contexts[i] as any)?.[rootKey]?.[configKey]
+                if (atPath) {
+                    return atPath
+                }
+            }
         }
 
         dataIsOfType<TypeName extends NormalizedJsTypeName>(
@@ -51,5 +67,18 @@ export namespace Check {
             // TODO: Fix types
             this.errors.add(code, input as any)
         }
+    }
+
+    export type ConfigureDiagnostic<
+        Node extends Base.Node,
+        Context extends Dictionary = {},
+        Options extends Dictionary = {},
+        Data = unknown
+    > = {
+        context: Context & {
+            type: Node
+            data: Data
+        }
+        options: Options
     }
 }

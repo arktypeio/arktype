@@ -29,7 +29,7 @@ export namespace Union {
             state: Check.State,
             branchDiagnosticsEntries: BranchDiagnosticsEntry[]
         ) {
-            const explainBranches = state.options.errors?.union?.explainBranches
+            const explainBranches = state.options.errors?.union?.explainBranch
             // TODO: Better default error messages for union
             // https://github.com/re-do/re-po/issues/472
             state.addError("union", {
