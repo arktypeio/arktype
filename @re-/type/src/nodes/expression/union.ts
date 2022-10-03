@@ -29,12 +29,16 @@ export namespace Union {
             state: Check.State,
             branchDiagnosticsEntries: BranchDiagnosticsEntry[]
         ) {
-            const explainBranches = state.options.errors?.union?.explainBranch
+            const explainBranches = state.queryContext(
+                "errors",
+                "union"
+            )?.explainBranches
             // TODO: Better default error messages for union
             // https://github.com/re-do/re-po/issues/472
             state.addError("union", {
+                type: this,
                 message: `Must be one of ${this.toString()}`,
-                suffix: explainBranches
+                details: explainBranches
                     ? buildBranchDiagnosticsExplanation(
                           branchDiagnosticsEntries
                       )
@@ -60,7 +64,6 @@ export namespace Union {
     export type Diagnostic = Check.ConfigureDiagnostic<
         Node,
         {
-            suffix: string
             branchDiagnosticsEntries: BranchDiagnosticsEntry[]
         },
         {

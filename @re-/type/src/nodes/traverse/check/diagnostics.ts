@@ -1,5 +1,5 @@
-import type { Dictionary } from "@re-/tools"
-import { isKeyOf, keySet, uncapitalize } from "@re-/tools"
+import type { Dictionary, Evaluate } from "@re-/tools"
+import { keySet, uncapitalize } from "@re-/tools"
 import type { Base } from "../../base.js"
 import { pathToString } from "../../common.js"
 import type { Bound } from "../../expression/bound.js"
@@ -25,15 +25,25 @@ export type Diagnostic<Code extends DiagnosticCode> = {
         DiagnosticContextConfig<Code>["data"]
     >
 
-export type OptionsByDiagnostic = {
-    [Code in DiagnosticCode]?: CompileDiagnosticOptions<Code>
+export type OptionsByDiagnostic = Evaluate<
+    {
+        $?: UniversalDiagnosticOptions
+    } & {
+        [Code in DiagnosticCode]?: CompileDiagnosticOptions<Code>
+    }
+>
+
+export type UniversalDiagnosticOptions = {
+    message?: WriteDiagnosticMessageFn<DiagnosticCode>
+    omitActual?: boolean
 }
 
-export type InternalDiagnosticArgs<Code extends DiagnosticCode> = Omit<
+export type InternalDiagnosticInput<Code extends DiagnosticCode> = Omit<
     DiagnosticContextConfig<Code>,
     "data"
 > & {
     message: string
+    details?: string
 }
 
 export type Stringifiable<Data> = {
@@ -61,9 +71,15 @@ type BaseDiagnosticContext<Node extends Base.Node, Data> = {
 type CompileDiagnosticOptions<Code extends DiagnosticCode> =
     BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>
 
-type BaseDiagnosticOptions<Code extends DiagnosticCode> = {
-    message?: (context: Diagnostic<Code>) => string
-} & (Code extends DatalessCode ? {} : { omitActual?: boolean })
+type BaseDiagnosticOptions<Code extends DiagnosticCode> = Evaluate<
+    {
+        message?: WriteDiagnosticMessageFn<Code>
+    } & (Code extends DatalessCode ? {} : { omitActual?: boolean })
+>
+
+type WriteDiagnosticMessageFn<Code extends DiagnosticCode> = (
+    context: Diagnostic<Code>
+) => string
 
 type DiagnosticOptionsConfig<Code extends DiagnosticCode> =
     RegisteredDiagnosticConfigs[Code]["options"]
@@ -105,8 +121,10 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
             toString: () => stringifyData(raw)
         }
         diagnostic.path = this.state.path
-        const options = this.state.queryContext("errors", code)
-        if (!(code in datalessCodes)) {
+        const options = this.state.queryContext("errors", code) as
+            | UniversalDiagnosticOptions
+            | undefined
+        if (!(code in datalessCodes) && !options?.omitActual) {
             const actual =
                 "actual" in diagnostic
                     ? diagnostic.actual
@@ -116,7 +134,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         if (options?.message) {
             diagnostic.message = options?.message(diagnostic)
         }
-        this.push(diagnostic as any)
+        this.push(diagnostic)
     }
 
     get summary() {

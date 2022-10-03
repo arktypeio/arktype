@@ -15,7 +15,9 @@ export namespace Scope {
         }
 
         check(state: Check.State) {
+            state.pushContext(this.context)
             this.child.check(state)
+            state.popContext()
         }
 
         toString() {

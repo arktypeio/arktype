@@ -1,13 +1,12 @@
 import type {
     Dictionary,
-    Evaluate,
     NormalizedJsTypeName,
     NormalizedJsTypes
 } from "@re-/tools"
 import { hasJsType } from "@re-/tools"
 import type { Base } from "../../base.js"
 import type { Scope } from "../../scope.js"
-import type { DiagnosticCode, InternalDiagnosticArgs } from "./diagnostics.js"
+import type { DiagnosticCode, InternalDiagnosticInput } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
@@ -43,13 +42,17 @@ export namespace Check {
         }
 
         queryContext<K1 extends RootKey, K2 extends ConfigKey<K1>>(
-            rootKey: K1,
-            configKey: K2
+            baseKey: K1,
+            specifierKey: K2
         ): QueryResult<K1, K2> {
             for (let i = this.contexts.length - 1; i >= 0; i--) {
-                const atPath = (this.contexts[i] as any)?.[rootKey]?.[configKey]
-                if (atPath) {
-                    return atPath
+                const baseConfig = this.contexts[i][baseKey] as any
+                if (baseConfig) {
+                    const specifierConfig =
+                        baseConfig[specifierKey] ?? baseConfig["$"]
+                    if (specifierConfig !== undefined) {
+                        return specifierConfig
+                    }
                 }
             }
         }
@@ -62,9 +65,12 @@ export namespace Check {
 
         addError<Code extends DiagnosticCode>(
             code: Code,
-            input: InternalDiagnosticArgs<Code>
+            input: InternalDiagnosticInput<Code>
         ) {
             // TODO: Fix types
+            if (input.details) {
+                input.message += input.details
+            }
             this.errors.add(code, input as any)
         }
     }
