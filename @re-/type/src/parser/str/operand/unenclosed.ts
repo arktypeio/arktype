@@ -1,7 +1,7 @@
 import { TypeKeyword } from "../../../nodes/terminal/keyword/keyword.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import type { InternalSpace } from "../../../scopes/space.js"
-import type { ParseError, ParserContext } from "../../common.js"
+import type { InternalSpace } from "../../../space.js"
+import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
 import { scanner } from "../state/scanner.js"
@@ -9,9 +9,9 @@ import type { ParserState, parserState } from "../state/state.js"
 import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 
 export namespace Unenclosed {
-    export const parse = (s: parserState, space: InternalSpace) => {
+    export const parse = (s: parserState, ctx: parserContext) => {
         const token = s.r.shiftUntilNextTerminator()
-        s.l.root = unenclosedToNode(s, token, space)
+        s.l.root = unenclosedToNode(s, token, ctx)
         return s
     }
 
@@ -31,7 +31,7 @@ export namespace Unenclosed {
     export const maybeParseIdentifier = (token: string, ctx: parserContext) =>
         TypeKeyword.matches(token)
             ? TypeKeyword.getNode(token)
-            : ctx.space?.aliases?.[token]
+            : token in ctx.aliases
             ? new Alias(token)
             : undefined
 
@@ -56,9 +56,9 @@ export namespace Unenclosed {
     const unenclosedToNode = (
         s: parserState,
         token: string,
-        space: InternalSpace
+        ctx: parserContext
     ) =>
-        maybeParseIdentifier(token, space) ??
+        maybeParseIdentifier(token, ctx) ??
         maybeParseLiteral(token) ??
         s.error(
             token === ""

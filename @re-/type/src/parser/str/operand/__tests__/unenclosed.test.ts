@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { space } from "../../../../scopes/space.js"
-import { type } from "../../../../scopes/type.js"
+import { space } from "../../../../space.js"
+import { type } from "../../../../type.js"
 import { malformedNumericLiteralMessage } from "../numeric.js"
 import { Unenclosed } from "../unenclosed.js"
 

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../scopes/type.js"
+import { type } from "../../../type.js"
 
 describe("literal", () => {
     test("check", () => {

@@ -1,14 +1,18 @@
+import type { Dictionary } from "@re-/tools"
 import type { Base } from "../nodes/base.js"
 import type { Expression } from "../nodes/expression/expression.js"
-import type { InternalSpace } from "../scopes/space.js"
 
 export type ParserContext = {
     aliases: unknown
 }
 
+export type parserContext = {
+    aliases: Dictionary
+}
+
 export type parseFn<DefType = unknown> = (
     def: DefType,
-    space: InternalSpace | undefined
+    ctx: parserContext
 ) => Base.Node
 
 export class parseError extends Error {}

@@ -1,4 +1,4 @@
-import type { InternalSpace } from "../../scopes/space.js"
+import type { InternalSpace } from "../../space.js"
 import type { parseFn, ParserContext } from "../common.js"
 import { Operand } from "./operand/operand.js"
 import { Operator } from "./operator/operator.js"

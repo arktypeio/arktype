@@ -157,4 +157,14 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         }
         return aggregatedMessage
     }
+
+    throw() {
+        throw new ArktypeError(this)
+    }
+}
+
+export class ArktypeError extends TypeError {
+    constructor(public diagnostics: Diagnostics) {
+        super(diagnostics.summary)
+    }
 }

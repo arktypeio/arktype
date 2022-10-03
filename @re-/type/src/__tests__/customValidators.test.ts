@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
-import type { NarrowFn } from "../../api.js"
-import { space, type } from "../../api.js"
+import { space, type } from "../api.js"
 
 describe("custom validators", () => {
     const palindromeValidator: NarrowFn = ({ data }) => {

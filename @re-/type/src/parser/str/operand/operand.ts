@@ -1,5 +1,5 @@
-import type { InternalSpace } from "../../../scopes/space.js"
-import type { ParserContext } from "../../common.js"
+import type { InternalSpace } from "../../../space.js"
+import type { parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 import { Enclosed } from "./enclosed.js"
@@ -7,14 +7,14 @@ import { GroupOpen } from "./groupOpen.js"
 import { Unenclosed } from "./unenclosed.js"
 
 export namespace Operand {
-    export const parse = (s: parserState, space: InternalSpace): parserState =>
+    export const parse = (s: parserState, ctx: parserContext): parserState =>
         s.r.lookahead === "("
             ? GroupOpen.reduce(s.shifted())
             : s.r.lookaheadIsIn(Enclosed.startChars)
             ? Enclosed.parse(s, s.r.shift())
             : s.r.lookahead === " "
-            ? parse(s.shifted(), space)
-            : Unenclosed.parse(s, context)
+            ? parse(s.shifted(), ctx)
+            : Unenclosed.parse(s, ctx)
 
     export type Parse<
         S extends ParserState,
