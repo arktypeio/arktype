@@ -93,7 +93,7 @@ export class InternalArktype implements DynamicArktype {
     }
 
     check(data: unknown) {
-        const state = new Check.State(this.root, data, this.options)
+        const state = new Check.State(data, this.options)
         this.root.check(state)
         return state.errors.length
             ? {
