@@ -59,7 +59,11 @@ export namespace DivisibilityOperator {
         }
         s.l.root = new Divisibility.Node(
             s.l.root,
-            new PrimitiveLiteral.Node(divisorToken, parseResult)
+            "%",
+            new PrimitiveLiteral.Node(
+                divisorToken as PrimitiveLiteral.Number,
+                parseResult
+            )
         ) as any
         return s
     }

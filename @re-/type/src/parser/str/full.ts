@@ -1,5 +1,4 @@
-import type { InternalSpace } from "../../space.js"
-import type { parseFn, ParserContext } from "../common.js"
+import type { parseFn, parserContext, ParserContext } from "../common.js"
 import { Operand } from "./operand/operand.js"
 import { Operator } from "./operator/operator.js"
 import type { ParserState } from "./state/state.js"
@@ -14,9 +13,9 @@ export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
 >
 
 // TODO: Recursion perf?
-const loop = (s: parserState, space: InternalSpace) => {
+const loop = (s: parserState, ctx: parserContext) => {
     while (!s.l.done) {
-        next(s, space)
+        next(s, ctx)
     }
     return s.l.root!
 }
@@ -26,8 +25,8 @@ type Loop<
     Ctx extends ParserContext
 > = S["L"]["done"] extends true ? S["L"]["root"] : Loop<Next<S, Ctx>, Ctx>
 
-const next = (s: parserState, space: InternalSpace): parserState =>
-    s.hasRoot() ? Operator.parse(s) : Operand.parse(s, space)
+const next = (s: parserState, ctx: parserContext): parserState =>
+    s.hasRoot() ? Operator.parse(s) : Operand.parse(s, ctx)
 
 type Next<S extends ParserState, Ctx extends ParserContext> = S extends {
     L: { root: {} }
