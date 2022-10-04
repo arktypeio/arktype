@@ -86,6 +86,8 @@ describe("bound", () => {
                 )
             })
             test("unboundable", () => {
+                // TODO: Would left bounds be easier to manage if they were lower precedence and got merged with unions/intersections?
+                // Would it be easier to understand/use? Decide this first.
                 // @ts-expect-error
                 assert(() => type("object|null>=10")).throwsAndHasTypeError(
                     RightBoundOperator.unboundableMessage("null")
