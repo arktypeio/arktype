@@ -79,6 +79,12 @@ describe("bound", () => {
                     LeftBoundOperator.unpairedMessage("number", "3", "<")
                 )
             })
+            test("double left", () => {
+                // @ts-expect-error
+                assert(() => type("3<5<8")).throwsAndHasTypeError(
+                    "Some double bound left check."
+                )
+            })
             test("unboundable", () => {
                 // @ts-expect-error
                 assert(() => type("object|null>=10")).throwsAndHasTypeError(
