@@ -4,6 +4,7 @@ import { keySet } from "@re-/tools"
 export class scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
+    hasBeenFinalized = false
 
     constructor(def: string) {
         this.chars = [...def]
@@ -92,32 +93,32 @@ export namespace scanner {
 }
 
 export namespace Scanner {
-    export type Shift<
+    export type shift<
         Lookahead extends string,
         Unscanned extends string
     > = `${Lookahead}${Unscanned}`
 
     export type TailOf<S> = S extends `${string}${infer Tail}` ? Tail : ""
 
-    export type ShiftUntil<
+    export type shiftUntil<
         Unscanned extends string,
         Terminator extends string,
         Scanned extends string = ""
-    > = Unscanned extends Scanner.Shift<infer Lookahead, infer NextUnscanned>
+    > = Unscanned extends Scanner.shift<infer Lookahead, infer NextUnscanned>
         ? Lookahead extends Terminator
             ? [Scanned, Unscanned]
-            : ShiftUntil<NextUnscanned, Terminator, `${Scanned}${Lookahead}`>
+            : shiftUntil<NextUnscanned, Terminator, `${Scanned}${Lookahead}`>
         : [Scanned, ""]
 
-    export type ShiftUntilNextTerminator<Unscanned extends string> = ShiftUntil<
+    export type shiftUntilNextTerminator<Unscanned extends string> = shiftUntil<
         Unscanned,
         TerminatingChar
     >
 
-    export type Shifted<Scanned extends string, Unscanned extends string> = [
-        Scanned,
-        Unscanned
-    ]
+    export type ShiftResult<
+        Scanned extends string,
+        Unscanned extends string
+    > = [Scanned, Unscanned]
 
     export type TerminatingChar = keyof typeof scanner.terminatingChars
 

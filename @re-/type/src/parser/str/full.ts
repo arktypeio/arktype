@@ -1,35 +1,35 @@
 import type { parseFn, parserContext, ParserContext } from "../common.js"
 import { Operand } from "./operand/operand.js"
-import { Operator } from "./operator/operator.js"
+import type { Operator } from "./operator/operator.js"
+import { operator } from "./operator/operator.js"
 import type { ParserState } from "./state/state.js"
 import { parserState } from "./state/state.js"
 
 export const fullParse: parseFn<string> = (def, ctx) =>
-    loop(Operand.parse(new parserState(def), ctx), ctx)
+    loop(Operand.parse(parserState.initialize(def), ctx), ctx)
 
 export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
-    Operand.Parse<ParserState.New<Def>, Ctx>,
+    Operand.Parse<ParserState.initialize<Def>, Ctx>,
     Ctx
 >
 
 // TODO: Recursion perf?
 const loop = (s: parserState, ctx: parserContext) => {
-    while (!s.l.final) {
+    while (!s.scanner.hasBeenFinalized) {
         next(s, ctx)
     }
-    return s.l.root!
+    return s.root!
 }
 
 type Loop<
     S extends ParserState.Unvalidated,
     Ctx extends ParserContext
-> = S["L"]["final"] extends string ? S["L"]["root"] : Loop<Next<S, Ctx>, Ctx>
+> = S extends ParserState.Unfinalized ? Loop<Next<S, Ctx>, Ctx> : S["root"]
 
 const next = (s: parserState, ctx: parserContext): parserState =>
-    s.hasRoot() ? Operator.parse(s) : Operand.parse(s, ctx)
+    parserState.hasRoot(s) ? operator.parse(s) : Operand.parse(s, ctx)
 
-type Next<S extends ParserState, Ctx extends ParserContext> = S extends {
-    L: { root: {} }
-}
-    ? Operator.Parse<S>
-    : Operand.Parse<S, Ctx>
+type Next<
+    S extends ParserState,
+    Ctx extends ParserContext
+> = S extends ParserState.HasRoot ? Operator.parse<S> : Operand.Parse<S, Ctx>

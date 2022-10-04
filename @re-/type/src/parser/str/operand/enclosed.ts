@@ -57,7 +57,7 @@ export namespace Enclosed {
         S extends ParserState,
         Enclosing extends StartChar,
         Unscanned extends string
-    > = Scanner.ShiftUntil<Unscanned, Enclosing> extends Scanner.Shifted<
+    > = Scanner.shiftUntil<Unscanned, Enclosing> extends Scanner.ShiftResult<
         infer Scanned,
         infer NextUnscanned
     >

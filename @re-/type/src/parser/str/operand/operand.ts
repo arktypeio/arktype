@@ -18,7 +18,7 @@ export namespace Operand {
     export type Parse<
         S extends ParserState,
         Ctx extends ParserContext
-    > = S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
+    > = S["R"] extends Scanner.shift<infer Lookahead, infer Unscanned>
         ? Lookahead extends "("
             ? ParserState.From<{
                   L: GroupOpen.Reduce<S["L"]>

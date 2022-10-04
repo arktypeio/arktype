@@ -1,75 +1,78 @@
 import { isKeyOf } from "@re-/tools"
-import type { Left } from "../state/left.js"
-import { left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
-import type { ParserState, parserState } from "../state/state.js"
-import { ArrayOperator } from "./array.js"
+import type { ParserState } from "../state/state.js"
+import { parserState } from "../state/state.js"
+import type { ArrayOperator } from "./array.js"
+import { arrayOperator } from "./array.js"
 import { BoundOperator } from "./bound/bound.js"
 import { Comparators } from "./bound/tokens.js"
-import { DivisibilityOperator } from "./divisibility.js"
-import { GroupClose } from "./groupClose.js"
-import { IntersectionOperator } from "./intersection.js"
-import { OptionalOperator } from "./optional.js"
-import { UnionOperator } from "./union.js"
+import type { DivisibilityOperator } from "./divisibility.js"
+import { divisibilityOperator } from "./divisibility.js"
+import type { GroupClose } from "./groupClose.js"
+import { groupClose } from "./groupClose.js"
+import { intersectionOperator } from "./intersection.js"
+import type { IntersectionOperator } from "./intersection.js"
+import type { OptionalOperator } from "./optional.js"
+import { optionalOperator } from "./optional.js"
+import type { UnionOperator } from "./union.js"
+import { unionOperator } from "./union.js"
 
-export namespace Operator {
-    export const parse = (s: parserState.requireRoot): parserState => {
-        const lookahead = s.r.shift()
+export namespace operator {
+    export const parse = (s: parserState.WithRoot): parserState => {
+        const lookahead = s.scanner.shift()
         return lookahead === "END"
-            ? left.finalize(s)
+            ? parserState.finalize(s)
             : lookahead === "?"
-            ? OptionalOperator.finalize(s)
+            ? optionalOperator.finalize(s)
             : lookahead === "["
-            ? ArrayOperator.parse(s)
+            ? arrayOperator.parse(s)
             : lookahead === "|"
-            ? UnionOperator.reduce(s)
+            ? unionOperator.reduce(s)
             : lookahead === "&"
-            ? IntersectionOperator.reduce(s)
+            ? intersectionOperator.reduce(s)
             : lookahead === ")"
-            ? GroupClose.reduce(s)
+            ? groupClose.reduce(s)
             : isKeyOf(lookahead, Comparators.startChar)
             ? BoundOperator.parse(s, lookahead)
             : lookahead === "%"
-            ? DivisibilityOperator.parse(s)
+            ? divisibilityOperator.parse(s)
             : lookahead === " "
             ? parse(s)
-            : s.error(unexpectedCharacterMessage(lookahead))
+            : parserState.error(buildUnexpectedCharacterMessage(lookahead))
     }
+}
 
-    export type Parse<S extends ParserState<{ root: {} }>> =
-        S["R"] extends Scanner.Shift<infer Lookahead, infer Unscanned>
+export namespace Operator {
+    export type parse<S extends ParserState.WithRoot> =
+        S["unscanned"] extends Scanner.shift<infer Lookahead, infer Unscanned>
             ? Lookahead extends "?"
-                ? OptionalOperator.Finalize<S>
+                ? OptionalOperator.finalize<S>
                 : Lookahead extends "["
                 ? ArrayOperator.Parse<S, Unscanned>
                 : Lookahead extends "|"
-                ? ParserState.From<{
-                      L: UnionOperator.Reduce<S["L"], Unscanned>
-                      R: Unscanned
-                  }>
+                ? UnionOperator.reduce<S, Unscanned>
                 : Lookahead extends "&"
-                ? ParserState.From<{
-                      L: IntersectionOperator.Reduce<S["L"], Unscanned>
-                      R: Unscanned
-                  }>
+                ? IntersectionOperator.reduce<S, Unscanned>
                 : Lookahead extends ")"
-                ? GroupClose.Reduce<S, Unscanned>
+                ? GroupClose.reduce<S, Unscanned>
                 : Lookahead extends Comparators.StartChar
                 ? BoundOperator.Parse<S, Lookahead, Unscanned>
                 : Lookahead extends "%"
                 ? DivisibilityOperator.Parse<S, Unscanned>
                 : Lookahead extends " "
-                ? Parse<{ L: S["L"]; R: Unscanned }>
-                : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>
-            : ParserState.From<{
-                  L: Left.Finalize<S["L"]>
-                  R: ""
-              }>
+                ? parse<ParserState.scanTo<S, Unscanned>>
+                : ParserState.error<buildUnexpectedCharacterMessage<Lookahead>>
+            : ParserState.finalize<S, 0>
+}
 
-    const unexpectedCharacterMessage = <Char extends string>(
-        char: Char
-    ): UnexpectedCharacterMessage<Char> => `Unexpected character '${char}'.`
+export namespace operator {
+    export const buildUnexpectedCharacterMessage = <char extends string>(
+        char: char
+    ): Operator.buildUnexpectedCharacterMessage<char> =>
+        `Unexpected character '${char}'.`
+}
 
-    type UnexpectedCharacterMessage<Char extends string> =
-        `Unexpected character '${Char}'.`
+export namespace Operator {
+    export type buildUnexpectedCharacterMessage<char extends string> =
+        `Unexpected character '${char}'.`
 }

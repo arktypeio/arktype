@@ -1,36 +1,38 @@
-import type { Left } from "../state/left.js"
-import { left } from "../state/left.js"
-import type { ParserState, parserState } from "../state/state.js"
+import type { ParserState } from "../state/state.js"
+import { parserState } from "../state/state.js"
+
+export namespace groupClose {
+    export const reduce = (s: parserState.WithRoot) => {
+        const previousOpenBranches = s.groups.pop()
+        if (!previousOpenBranches) {
+            return parserState.error(buildUnmatchedMessage(s.scanner.unscanned))
+        }
+        return parserState.finalizeGroup(s, previousOpenBranches)
+    }
+}
 
 export namespace GroupClose {
-    type PopGroup<
-        Stack extends Left.OpenBranches[],
-        Top extends Left.OpenBranches
-    > = [...Stack, Top]
+    type popGroup<
+        stack extends ParserState.OpenBranches[],
+        top extends ParserState.OpenBranches
+    > = [...stack, top]
 
-    type UnmatchedMessage<Unscanned extends string> =
-        `Unmatched )${Unscanned extends "" ? "" : ` before ${Unscanned}`}.`
+    export type reduce<
+        s extends ParserState.WithRoot,
+        unscanned extends string
+    > = s["groups"] extends popGroup<infer stack, infer top>
+        ? ParserState.finalizeGroup<s, top, stack, unscanned>
+        : ParserState.error<buildUnmatchedMessage<unscanned>>
+}
 
-    export const unmatchedMessage = <Unscanned extends string>(
-        unscanned: Unscanned
-    ): UnmatchedMessage<Unscanned> =>
+export namespace groupClose {
+    export const buildUnmatchedMessage = <unscanned extends string>(
+        unscanned: unscanned
+    ): GroupClose.buildUnmatchedMessage<unscanned> =>
         `Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}.`
+}
 
-    export type Reduce<
-        S extends ParserState.RequireRoot,
-        Unscanned extends string
-    > = S["L"]["groups"] extends PopGroup<infer Stack, infer Top>
-        ? ParserState.From<{
-              L: Left.FinalizeGroup<S["L"], Top, Stack, false>
-              R: Unscanned
-          }>
-        : ParserState.Error<UnmatchedMessage<Unscanned>>
-
-    export const reduce = (s: parserState.requireRoot) => {
-        const previousOpenBranches = s.l.groups.pop()
-        if (!previousOpenBranches) {
-            return s.error(unmatchedMessage(s.r.unscanned))
-        }
-        return left.finalizeGroup(s, previousOpenBranches)
-    }
+export namespace GroupClose {
+    export type buildUnmatchedMessage<unscanned extends string> =
+        `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}.`
 }

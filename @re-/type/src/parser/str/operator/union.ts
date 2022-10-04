@@ -1,49 +1,47 @@
-import type { Base } from "../../../nodes/common.js"
 import { Union } from "../../../nodes/expression/union.js"
-import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
-import type { Left } from "../state/left.js"
-import type { parserState } from "../state/state.js"
-import { IntersectionOperator } from "./intersection.js"
+import type { MissingRightOperandMessage } from "../../common.js"
+import type { ParserState, parserState } from "../state/state.js"
+import { intersectionOperator } from "./intersection.js"
 
-export namespace UnionOperator {
-    export const reduce = (s: parserState.requireRoot) => {
-        IntersectionOperator.maybeMerge(s)
-        if (!s.l.branches.union) {
-            s.l.branches.union = new Union.Node([s.l.root])
+export namespace unionOperator {
+    export const reduce = (s: parserState.WithRoot) => {
+        intersectionOperator.maybeMerge(s)
+        if (!s.branches.union) {
+            s.branches.union = new Union.Node([s.root])
         } else {
-            s.l.branches.union.pushChild(s.l.root)
+            s.branches.union.pushChild(s.root)
         }
-        s.l.root = undefined as any
+        s.root = undefined as any
         return s
     }
+}
 
-    export type Reduce<
-        L extends Left,
-        Unscanned extends string
-    > = Unscanned extends ""
+export namespace UnionOperator {
+    export type reduce<
+        s extends ParserState.WithRoot,
+        unscanned extends string
+    > = unscanned extends ""
         ? MissingRightOperandMessage<"|">
-        : Left.From<{
-              groups: L["groups"]
-              branches: PushChild<L["branches"], L["root"]>
+        : ParserState.from<{
               root: undefined
+              branches: {
+                  leftBound: s["branches"]["leftBound"]
+                  intersection: null
+                  union: [ParserState.mergeIntersectionAndUnion<s>, "|"]
+              }
+              groups: s["groups"]
+              unscanned: unscanned
           }>
+}
 
-    type PushChild<B extends Left.OpenBranches, Root> = Left.OpenBranches.From<{
-        leftBound: B["leftBound"]
-        intersection: null
-        union: [
-            MaybeAppend<MaybeAppend<Root, B["intersection"]>, B["union"]>,
-            "|"
-        ]
-    }>
-
-    export const maybeMerge = (s: parserState<{ root: Base.Node }>) => {
-        if (!s.l.branches.union) {
+export namespace unionOperator {
+    export const maybeMerge = (s: parserState.WithRoot) => {
+        if (!s.branches.union) {
             return s
         }
-        s.l.branches.union.pushChild(s.l.root)
-        s.l.root = s.l.branches.union
-        s.l.branches.union = undefined
+        s.branches.union.pushChild(s.root)
+        s.root = s.branches.union
+        s.branches.union = undefined
         return s
     }
 }

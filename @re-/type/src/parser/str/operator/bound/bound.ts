@@ -27,7 +27,7 @@ export namespace BoundOperator {
         S extends ParserState,
         Start extends Comparators.StartChar,
         Unscanned extends string
-    > = Unscanned extends Scanner.Shift<"=", infer NextUnscanned>
+    > = Unscanned extends Scanner.shift<"=", infer NextUnscanned>
         ? DelegateReduction<S, `${Start}=`, NextUnscanned>
         : Start extends Comparators.OneChar
         ? DelegateReduction<S, Start, Unscanned>

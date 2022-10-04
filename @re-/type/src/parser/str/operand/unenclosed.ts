@@ -18,7 +18,7 @@ export namespace Unenclosed {
     export type Parse<
         S extends ParserState,
         Ctx extends ParserContext
-    > = Scanner.ShiftUntilNextTerminator<S["R"]> extends Scanner.Shifted<
+    > = Scanner.shiftUntilNextTerminator<S["R"]> extends Scanner.ShiftResult<
         infer Scanned,
         infer NextUnscanned
     >
