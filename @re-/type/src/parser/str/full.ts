@@ -21,7 +21,7 @@ const loop = (s: parserState, ctx: parserContext) => {
 }
 
 type Loop<
-    S extends ParserState,
+    S extends ParserState.Unvalidated,
     Ctx extends ParserContext
 > = S["L"]["final"] extends string ? S["L"]["root"] : Loop<Next<S, Ctx>, Ctx>
 

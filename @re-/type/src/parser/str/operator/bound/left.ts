@@ -2,7 +2,6 @@ import { isKeyOf } from "@re-/tools"
 import { Bound } from "../../../../nodes/expression/bound.js"
 import type { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Ast } from "../../../../nodes/traverse/ast.js"
-import type { ParseError } from "../../../common.js"
 import type { Left } from "../../state/left.js"
 import type { parserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
@@ -61,10 +60,14 @@ export namespace LeftBoundOperator {
             infer Limit,
             infer Comparator
         >
-            ? ParseError<
-                  UnpairedMessage<Ast.ToString<L["root"]>, Limit, Comparator>
+            ? Left.Error<
+                  UnpairedMessage<
+                      Ast.ToString<Left.MergeIntersectionAndUnionToRoot<L>>,
+                      Limit,
+                      Comparator
+                  >
               >
-            : undefined
+            : L
 
     export type UnpairedMessage<
         Root extends string,

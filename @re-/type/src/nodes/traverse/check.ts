@@ -28,7 +28,7 @@ export namespace Check {
 
         constructor(
             public data: Data,
-            rootContext: Scope.Context,
+            private rootContext: Scope.Context,
             private resolutions: Dictionary<ArktypeRoot>
         ) {
             this.errors = new Diagnostics(this)
@@ -67,6 +67,7 @@ export namespace Check {
                     `Unexpectedly failed to resolve alias '${alias}'.`
                 )
             }
+            this.contexts = [this.rootContext]
             return resolution
         }
 
