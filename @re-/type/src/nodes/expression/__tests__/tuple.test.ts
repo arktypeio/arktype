@@ -28,7 +28,7 @@ describe("tuple", () => {
                     // @ts-expect-error
                     type(["string", ["number", "boolean", "whoops"]])
                 ).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("whoops")
+                    Unenclosed.buildUnresolvableMessage("whoops")
                 )
             })
         })

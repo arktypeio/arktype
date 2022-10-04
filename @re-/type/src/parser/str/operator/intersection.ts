@@ -2,7 +2,7 @@ import { Intersection } from "../../../nodes/expression/intersection.js"
 import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
 import type { ParserState, parserState } from "../state/state.js"
 
-export namespace intersectionOperator {
+export namespace IntersectionOperator {
     export const reduce = (s: parserState.WithRoot) => {
         if (!s.branches.intersection) {
             s.branches.intersection = new Intersection.Node([s.root])
@@ -12,9 +12,7 @@ export namespace intersectionOperator {
         s.root = undefined as any
         return s
     }
-}
 
-export namespace IntersectionOperator {
     export type reduce<
         S extends ParserState.WithRoot,
         Unscanned extends string
@@ -33,9 +31,7 @@ export namespace IntersectionOperator {
               groups: S["groups"]
               unscanned: Unscanned
           }>
-}
 
-export namespace intersectionOperator {
     export const maybeMerge = (s: parserState.WithRoot) => {
         if (!s.branches.intersection) {
             return s

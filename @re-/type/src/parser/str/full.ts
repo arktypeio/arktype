@@ -9,7 +9,7 @@ export const fullParse: parseFn<string> = (def, ctx) =>
     loop(Operand.parse(parserState.initialize(def), ctx), ctx)
 
 export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
-    Operand.Parse<ParserState.initialize<Def>, Ctx>,
+    Operand.parse<ParserState.initialize<Def>, Ctx>,
     Ctx
 >
 
@@ -32,4 +32,4 @@ const next = (s: parserState, ctx: parserContext): parserState =>
 type Next<
     S extends ParserState,
     Ctx extends ParserContext
-> = S extends ParserState.HasRoot ? Operator.parse<S> : Operand.Parse<S, Ctx>
+> = S extends ParserState.HasRoot ? Operator.parse<S> : Operand.parse<S, Ctx>

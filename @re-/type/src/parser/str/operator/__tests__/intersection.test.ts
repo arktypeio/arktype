@@ -21,13 +21,13 @@ describe("intersection", () => {
             test("bad reference", () => {
                 // @ts-expect-error
                 assert(() => type("boolean&tru")).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("tru")
+                    Unenclosed.buildUnresolvableMessage("tru")
                 )
             })
             test("double and", () => {
                 // @ts-expect-error
                 assert(() => type("boolean&&true")).throwsAndHasTypeError(
-                    scanner.expressionExpectedMessage("&true")
+                    scanner.buildExpressionExpectedMessage("&true")
                 )
             })
         })

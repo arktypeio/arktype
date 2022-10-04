@@ -37,7 +37,9 @@ describe("group", () => {
             assert(() => {
                 // @ts-expect-error
                 type("()")
-            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(
+                scanner.buildExpressionExpectedMessage(")")
+            )
         })
         test("unmatched (", () => {
             assert(() => {
@@ -55,13 +57,15 @@ describe("group", () => {
             assert(() => {
                 // @ts-expect-error
                 type(")")
-            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(
+                scanner.buildExpressionExpectedMessage(")")
+            )
         })
         test("lone (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(")
-            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(""))
+            }).throwsAndHasTypeError(scanner.buildExpressionExpectedMessage(""))
         })
         test("deep unmatched (", () => {
             assert(() => {
@@ -80,14 +84,16 @@ describe("group", () => {
                 // @ts-expect-error
                 type(")number(")
             }).throwsAndHasTypeError(
-                scanner.expressionExpectedMessage(")number(")
+                scanner.buildExpressionExpectedMessage(")number(")
             )
         })
         test("misplaced )", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(number|)")
-            }).throwsAndHasTypeError(scanner.expressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(
+                scanner.buildExpressionExpectedMessage(")")
+            )
         })
     })
 })

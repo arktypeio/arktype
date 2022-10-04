@@ -9,7 +9,7 @@ describe("space", () => {
         assert(() =>
             // @ts-expect-error
             space({ a: "strig" })
-        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("strig"))
+        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("strig"))
     })
     test("independent", () => {
         assert(space({ a: "string", b: { c: "boolean" } }).$root.infer.b)
@@ -21,7 +21,7 @@ describe("space", () => {
                 // @ts-expect-error
                 { a: "string", b: { c: "uhoh" } }
             )
-        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("uhoh"))
+        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("uhoh"))
     })
     test("interdependent", () => {
         assert(space({ a: "string", b: { c: "a" } }).$root.infer.b.c)
@@ -29,7 +29,7 @@ describe("space", () => {
         assert(() =>
             // @ts-expect-error
             space({ a: "yikes", b: { c: "a" } })
-        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("yikes"))
+        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("yikes"))
     })
     test("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
@@ -90,6 +90,6 @@ describe("space", () => {
                 // @ts-expect-error
                 { nested: { a: "a", b: "b", c: "c" } }
             )
-        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("c"))
+        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("c"))
     })
 })

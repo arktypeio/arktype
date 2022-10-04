@@ -17,11 +17,11 @@ export namespace Comparators {
 
     export type OneChar = keyof typeof oneChar
 
-    export type InvalidDoubleMessage<Token extends Bound.Token> =
-        `Double-bound expressions must specify their bounds using < or <= (was ${Token}).`
+    export type buildInvalidDoubleMessage<comparator extends Bound.Token> =
+        `Double-bound expressions must specify their bounds using < or <= (was ${comparator}).`
 
-    export const invalidDoubleMessage = <Token extends Bound.Token>(
-        token: Token
-    ): InvalidDoubleMessage<Token> =>
-        `Double-bound expressions must specify their bounds using < or <= (was ${token}).`
+    export const buildInvalidDoubleMessage = <comparator extends Bound.Token>(
+        comparator: comparator
+    ): buildInvalidDoubleMessage<comparator> =>
+        `Double-bound expressions must specify their bounds using < or <= (was ${comparator}).`
 }

@@ -12,7 +12,7 @@ describe("parse optional", () => {
         test("bad inner type", () => {
             // @ts-expect-error
             assert(() => type("nonexistent?")).throwsAndHasTypeError(
-                Unenclosed.unresolvableMessage("nonexistent")
+                Unenclosed.buildUnresolvableMessage("nonexistent")
             )
         })
         test("non-suffix", () => {

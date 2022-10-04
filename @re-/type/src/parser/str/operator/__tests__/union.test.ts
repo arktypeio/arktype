@@ -24,19 +24,19 @@ describe("union", () => {
             test("bad reference", () => {
                 // @ts-expect-error
                 assert(() => type("number|strng")).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("strng")
+                    Unenclosed.buildUnresolvableMessage("strng")
                 )
             })
             test("double pipes", () => {
                 // @ts-expect-error
                 assert(() => type("boolean||null")).throwsAndHasTypeError(
-                    scanner.expressionExpectedMessage("|null")
+                    scanner.buildExpressionExpectedMessage("|null")
                 )
             })
             test("ends with |", () => {
                 // @ts-expect-error
                 assert(() => type("boolean|")).throwsAndHasTypeError(
-                    scanner.expressionExpectedMessage("")
+                    scanner.buildExpressionExpectedMessage("")
                 )
             })
             test("long missing union member", () => {
@@ -44,7 +44,7 @@ describe("union", () => {
                     // @ts-expect-error
                     type("boolean[]|(string|number|)|object")
                 ).throwsAndHasTypeError(
-                    scanner.expressionExpectedMessage(")|object")
+                    scanner.buildExpressionExpectedMessage(")|object")
                 )
             })
         })

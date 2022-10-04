@@ -64,19 +64,19 @@ describe("bound", () => {
             test("invalid left comparator", () => {
                 // @ts-expect-error
                 assert(() => type("3>number<5")).throwsAndHasTypeError(
-                    Comparators.invalidDoubleMessage(">")
+                    Comparators.buildInvalidDoubleMessage(">")
                 )
             })
             test("invalid right double-bound comparator", () => {
                 // @ts-expect-error
                 assert(() => type("3<number==5")).throwsAndHasTypeError(
-                    Comparators.invalidDoubleMessage("==")
+                    Comparators.buildInvalidDoubleMessage("==")
                 )
             })
             test("unpaired left", () => {
                 // @ts-expect-error
                 assert(() => type("3<number")).throwsAndHasTypeError(
-                    LeftBoundOperator.unpairedMessage("number", "3", "<")
+                    LeftBoundOperator.buildUnpairedMessage("number", "3", "<")
                 )
             })
             test("double left", () => {

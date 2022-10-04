@@ -18,17 +18,17 @@ export type TryNaiveParse<
     Ctx extends ParserContext
 > = Def extends `${infer Child}?`
     ? Child extends `${infer GrandChild}[]`
-        ? Unenclosed.IsResolvableIdentifier<GrandChild, Ctx> extends true
+        ? Unenclosed.isResolvableIdentifier<GrandChild, Ctx> extends true
             ? [[GrandChild, "[]"], "?"]
             : FullParse<Def, Ctx>
-        : Unenclosed.IsResolvableIdentifier<Child, Ctx> extends true
+        : Unenclosed.isResolvableIdentifier<Child, Ctx> extends true
         ? [Child, "?"]
         : FullParse<Def, Ctx>
     : Def extends `${infer Child}[]`
-    ? Unenclosed.IsResolvableIdentifier<Child, Ctx> extends true
+    ? Unenclosed.isResolvableIdentifier<Child, Ctx> extends true
         ? [Child, "[]"]
         : FullParse<Def, Ctx>
-    : Unenclosed.IsResolvableIdentifier<Def, Ctx> extends true
+    : Unenclosed.isResolvableIdentifier<Def, Ctx> extends true
     ? Def
     : FullParse<Def, Ctx>
 

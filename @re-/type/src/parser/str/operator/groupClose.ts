@@ -1,7 +1,7 @@
 import type { ParserState } from "../state/state.js"
 import { parserState } from "../state/state.js"
 
-export namespace groupClose {
+export namespace GroupClose {
     export const reduce = (s: parserState.WithRoot) => {
         const previousOpenBranches = s.groups.pop()
         if (!previousOpenBranches) {
@@ -9,13 +9,6 @@ export namespace groupClose {
         }
         return parserState.finalizeGroup(s, previousOpenBranches)
     }
-}
-
-export namespace GroupClose {
-    type popGroup<
-        stack extends ParserState.OpenBranches[],
-        top extends ParserState.OpenBranches
-    > = [...stack, top]
 
     export type reduce<
         s extends ParserState.WithRoot,
@@ -23,16 +16,17 @@ export namespace GroupClose {
     > = s["groups"] extends popGroup<infer stack, infer top>
         ? ParserState.finalizeGroup<s, top, stack, unscanned>
         : ParserState.error<buildUnmatchedMessage<unscanned>>
-}
 
-export namespace groupClose {
+    type popGroup<
+        stack extends ParserState.OpenBranches[],
+        top extends ParserState.OpenBranches
+    > = [...stack, top]
+
     export const buildUnmatchedMessage = <unscanned extends string>(
         unscanned: unscanned
-    ): GroupClose.buildUnmatchedMessage<unscanned> =>
+    ): buildUnmatchedMessage<unscanned> =>
         `Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}.`
-}
 
-export namespace GroupClose {
-    export type buildUnmatchedMessage<unscanned extends string> =
+    type buildUnmatchedMessage<unscanned extends string> =
         `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}.`
 }

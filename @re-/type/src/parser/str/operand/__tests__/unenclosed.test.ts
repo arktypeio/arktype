@@ -19,7 +19,7 @@ describe("parse unenclosed", () => {
             test("unresolvable", () => {
                 // @ts-expect-error
                 assert(() => type("HUH")).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("HUH")
+                    Unenclosed.buildUnresolvableMessage("HUH")
                 )
             })
         })
@@ -54,13 +54,13 @@ describe("parse unenclosed", () => {
             test("multiple decimals", () => {
                 // @ts-expect-error
                 assert(() => type("127.0.0.1")).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("127.0.0.1")
+                    Unenclosed.buildUnresolvableMessage("127.0.0.1")
                 )
             })
             test("with alpha", () => {
                 // @ts-expect-error
                 assert(() => type("13three7")).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("13three7")
+                    Unenclosed.buildUnresolvableMessage("13three7")
                 )
             })
 
@@ -101,7 +101,7 @@ describe("parse unenclosed", () => {
             test("decimal", () => {
                 // @ts-expect-error
                 assert(() => type("999.1n")).throwsAndHasTypeError(
-                    Unenclosed.unresolvableMessage("999.1n")
+                    Unenclosed.buildUnresolvableMessage("999.1n")
                 )
             })
 
@@ -111,7 +111,7 @@ describe("parse unenclosed", () => {
                 // @ts-expect-error
                 assert(() => type("007n"))
                     .throws(malformedNumericLiteralMessage("007n", "number"))
-                    .type.errors(Unenclosed.unresolvableMessage("007n"))
+                    .type.errors(Unenclosed.buildUnresolvableMessage("007n"))
             })
             test("negative zero", () => {
                 // @ts-expect-error

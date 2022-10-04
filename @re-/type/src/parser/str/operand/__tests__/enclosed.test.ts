@@ -22,19 +22,19 @@ describe("parse enclosed", () => {
             test("regex", () => {
                 // @ts-expect-error
                 assert(() => type("/.*")).throwsAndHasTypeError(
-                    Enclosed.unterminatedMessage("/.*", "/")
+                    Enclosed.buildUnterminatedMessage("/.*", "/")
                 )
             })
             test("single-quote", () => {
                 // @ts-expect-error
                 assert(() => type("'.*")).throwsAndHasTypeError(
-                    Enclosed.unterminatedMessage("'.*", "'")
+                    Enclosed.buildUnterminatedMessage("'.*", "'")
                 )
             })
             test("double-quote", () => {
                 // @ts-expect-error
                 assert(() => type('".*'))
-                    .throws(Enclosed.unterminatedMessage('".*', '"'))
+                    .throws(Enclosed.buildUnterminatedMessage('".*', '"'))
                     .type.errors('\\".* requires a closing \\".')
             })
         })

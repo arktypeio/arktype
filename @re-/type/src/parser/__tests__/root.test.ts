@@ -24,7 +24,7 @@ describe("root definition", () => {
             // Allows all references, but will throw if they're not defined at runtime
             assert(() => {
                 s.$root.type({ a: "st" })
-            }).throws(Unenclosed.unresolvableMessage("st"))
+            }).throws(Unenclosed.buildUnresolvableMessage("st"))
             // Runtime nodes created correctly
             assert(s.$root.ast).equals({ a: ["string", "[]"], b: ["a", "?"] })
         })

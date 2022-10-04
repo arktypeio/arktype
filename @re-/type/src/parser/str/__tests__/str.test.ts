@@ -8,7 +8,7 @@ describe("str", () => {
     test("errors on empty string", () => {
         // @ts-expect-error
         assert(() => type("")).throwsAndHasTypeError(
-            scanner.expressionExpectedMessage("")
+            scanner.buildExpressionExpectedMessage("")
         )
     })
     test("ignores whitespace between identifiers/operators", () => {
@@ -19,6 +19,6 @@ describe("str", () => {
         assert(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError(Unenclosed.unresolvableMessage("boo"))
+        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("boo"))
     })
 })

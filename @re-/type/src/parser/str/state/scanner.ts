@@ -84,12 +84,12 @@ export namespace scanner {
         " ": 1
     })
 
-    export const expressionExpectedMessage = <Unscanned extends string>(
+    export const buildExpressionExpectedMessage = <Unscanned extends string>(
         unscanned: Unscanned
     ) =>
         `Expected an expression${
             unscanned ? ` before '${unscanned}'` : ""
-        }.` as Scanner.ExpressionExpectedMessage<Unscanned>
+        }.` as Scanner.buildExpressionExpectedMessage<Unscanned>
 }
 
 export namespace Scanner {
@@ -98,7 +98,7 @@ export namespace Scanner {
         Unscanned extends string
     > = `${Lookahead}${Unscanned}`
 
-    export type TailOf<S> = S extends `${string}${infer Tail}` ? Tail : ""
+    export type tailOf<S> = S extends `${string}${infer Tail}` ? Tail : ""
 
     export type shiftUntil<
         Unscanned extends string,
@@ -122,8 +122,8 @@ export namespace Scanner {
 
     export type TerminatingChar = keyof typeof scanner.terminatingChars
 
-    export type ExpressionExpectedMessage<Unscanned extends string> =
-        `Expected an expression${Unscanned extends ""
+    export type buildExpressionExpectedMessage<unscanned extends string> =
+        `Expected an expression${unscanned extends ""
             ? ""
-            : ` before '${Unscanned}'`}.`
+            : ` before '${unscanned}'`}.`
 }

@@ -9,10 +9,10 @@ import { parserState } from "../../state/state.js"
 import type { ParserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
-// TODO: Fix
-type BoundableNode = any
+export namespace RightBoundOperator {
+    // TODO: Fix
+    type BoundableNode = any
 
-export namespace rightBoundOperator {
     export const parse = (s: parserState.WithRoot, comparator: Bound.Token) => {
         const limitToken = s.scanner.shiftUntilNextTerminator()
         const limit = UnenclosedNumber.parseWellFormed(
@@ -32,70 +32,60 @@ export namespace rightBoundOperator {
             )
         )
     }
-}
 
-export namespace RightBoundOperator {
-    export type Parse<
-        s extends ParserState,
-        Comparator extends Bound.Token
+    export type parse<
+        s extends ParserState.WithRoot,
+        comparator extends Bound.Token
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
-    > extends Scanner.ShiftResult<infer Scanned, infer NextUnscanned>
-        ? Reduce<
+    > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
+        ? reduce<
               s,
-              Comparator,
-              Scanned,
+              comparator,
+              scanned,
               UnenclosedNumber.ParseWellFormedNumber<
-                  Scanned,
-                  buildInvalidLimitMessage<Comparator, Scanned>
-              >
+                  scanned,
+                  buildInvalidLimitMessage<comparator, scanned>
+              >,
+              nextUnscanned
           >
         : never
-}
 
-export namespace rightBoundOperator {
-    export const reduce = (
+    const reduce = (
         s: parserState.WithRoot,
         comparator: Bound.Token,
         limit: PrimitiveLiteral.Node<number>
     ) =>
         isLeftBounded(s)
-            ? reduceDouble(
-                  parserState.mergeIntersectionAndUnionToRoot(s),
-                  comparator,
-                  limit
-              )
+            ? reduceDouble(s, comparator, limit)
             : reduceSingle(s, comparator, limit)
-}
 
-export namespace RightBoundOperator {
-    export type Reduce<
-        S extends ParserState.WithRoot,
-        Comparator extends Bound.Token,
-        LimitToken extends string,
-        LimitParseResult extends string | number
-    > = LimitParseResult extends string
-        ? ParserState.error<LimitParseResult>
-        : S["branches"]["leftBound"] extends {}
-        ? ReduceDouble<
+    type reduce<
+        s extends ParserState.WithRoot,
+        comparator extends Bound.Token,
+        limitToken extends string,
+        limitParseResult extends string | number,
+        unscanned extends string
+    > = limitParseResult extends string
+        ? ParserState.error<limitParseResult>
+        : s["branches"]["leftBound"] extends {}
+        ? reduceDouble<
               ParserState.from<{
-                  root: ParserState.mergeIntersectionAndUnion<S>
+                  root: ParserState.mergeIntersectionAndUnion<s>
                   branches: {
-                      leftBound: S["branches"]["leftBound"]
+                      leftBound: s["branches"]["leftBound"]
                       union: null
                       intersection: null
                   }
-                  groups: S["groups"]
-                  unscanned: S["unscanned"]
+                  groups: s["groups"]
+                  unscanned: unscanned
               }>,
-              Comparator,
-              Extract<LimitToken, PrimitiveLiteral.Number>
+              comparator,
+              limitToken & PrimitiveLiteral.Number
           >
-        : ReduceSingle<S, Comparator, LimitParseResult>
-}
+        : reduceSingle<s, comparator, limitParseResult & number>
 
-export namespace rightBoundOperator {
-    export const reduceDouble = (
+    const reduceDouble = (
         s: parserState<{
             root: Base.Node
             branches: {
@@ -110,9 +100,10 @@ export namespace rightBoundOperator {
         }
         if (!isKeyOf(rightComparator, Bound.doubleTokens)) {
             return parserState.error(
-                Comparators.invalidDoubleMessage(rightComparator)
+                Comparators.buildInvalidDoubleMessage(rightComparator)
             )
         }
+        parserState.mergeIntersectionAndUnionToRoot(s)
         s.root = new Bound.LeftNode(
             s.branches.leftBound[0],
             s.branches.leftBound[1],
@@ -120,36 +111,32 @@ export namespace rightBoundOperator {
         )
         s.branches.leftBound = undefined as any
     }
-}
 
-export namespace RightBoundOperator {
-    export type ReduceDouble<
+    type reduceDouble<
         s extends ParserState<{
             root: BoundableNode
             branches: {
                 leftBound: ParserState.OpenLeftBound
             }
         }>,
-        RightComparator extends Bound.Token,
-        RightLimit extends PrimitiveLiteral.Number
+        rightComparator extends Bound.Token,
+        rightLimit extends PrimitiveLiteral.Number
     > = s["root"] extends BoundableNode
-        ? RightComparator extends Bound.DoubleToken
+        ? rightComparator extends Bound.DoubleToken
             ? ParserState.setRoot<
                   s,
                   [
-                      s["branches"]["leftBound"]["0"],
-                      s["branches"]["leftBound"]["1"],
-                      [s["root"], RightComparator, RightLimit]
+                      s["branches"]["leftBound"][0],
+                      s["branches"]["leftBound"][1],
+                      [s["root"], rightComparator, rightLimit]
                   ]
               >
             : ParserState.error<
-                  Comparators.InvalidDoubleMessage<RightComparator>
+                  Comparators.buildInvalidDoubleMessage<rightComparator>
               >
         : ParserState.error<buildUnboundableMessage<Ast.ToString<s["root"]>>>
-}
 
-export namespace rightBoundOperator {
-    export const reduceSingle = (
+    const reduceSingle = (
         s: parserState.WithRoot<BoundableNode>,
         comparator: Bound.Token,
         limit: PrimitiveLiteral.Node<number>
@@ -160,53 +147,43 @@ export namespace rightBoundOperator {
         s.root = new Bound.RightNode(s.root, comparator, limit)
         return s
     }
-}
 
-export namespace RightBoundOperator {
-    export type ReduceSingle<
+    type reduceSingle<
         s extends ParserState.WithRoot<BoundableNode>,
         comparator extends Bound.Token,
         limit extends number
     > = s["root"] extends BoundableNode
         ? ParserState.setRoot<s, [s["root"], comparator, limit]>
         : ParserState.error<buildUnboundableMessage<Ast.ToString<s["root"]>>>
-}
 
-export namespace rightBoundOperator {
     export const buildUnboundableMessage = <root extends string>(
         root: root
-    ): RightBoundOperator.buildUnboundableMessage<root> =>
+    ): buildUnboundableMessage<root> =>
         `Bounded expression '${root}' must be a number-or-string-typed keyword or an array-typed expression.`
-}
 
-export namespace RightBoundOperator {
-    export type buildUnboundableMessage<root extends string> =
+    type buildUnboundableMessage<root extends string> =
         `Bounded expression '${root}' must be a number-or-string-typed keyword or an array-typed expression.`
-}
 
-export namespace rightBoundOperator {
     export const buildInvalidLimitMessage = <
         comparator extends Bound.Token,
         limit extends string
     >(
         comparator: comparator,
         limit: limit
-    ): RightBoundOperator.buildInvalidLimitMessage<comparator, limit> =>
+    ): buildInvalidLimitMessage<comparator, limit> =>
         `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
-}
 
-export namespace RightBoundOperator {
-    export type buildInvalidLimitMessage<
+    type buildInvalidLimitMessage<
         comparator extends Bound.Token,
         limit extends string
     > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
+
+    const isBoundable = <s extends parserState.WithRoot>(
+        s: s
+    ): s is s & parserState.WithRoot<BoundableNode> => true
+
+    const isLeftBounded = <s extends parserState>(
+        s: s
+    ): s is s & { branches: { leftBound: parserState.OpenLeftBound } } =>
+        !!s.branches.leftBound
 }
-
-const isBoundable = <s extends parserState.WithRoot>(
-    s: s
-): s is s & parserState.WithRoot<BoundableNode> => true
-
-const isLeftBounded = <s extends parserState>(
-    s: s
-): s is s & { branches: { leftBound: parserState.OpenLeftBound } } =>
-    !!s.branches.leftBound

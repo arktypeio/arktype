@@ -215,14 +215,14 @@ export namespace parserState {
 
 export namespace ParserState {
     export type finalize<
-        S extends ParserState.WithRoot,
-        Unscanned extends UnscannedOrReturnCode
-    > = S["groups"] extends []
+        s extends ParserState.WithRoot,
+        unscanned extends UnscannedOrReturnCode
+    > = s["groups"] extends []
         ? finalizeGroup<
-              LeftBoundOperator.AssertClosed<S>,
+              LeftBoundOperator.assertClosed<s>,
               initialBranches,
               [],
-              Unscanned
+              unscanned
           >
         : error<GroupOpen.UnclosedGroupMessage>
 }

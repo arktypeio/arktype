@@ -2,87 +2,87 @@ import { isKeyOf } from "@re-/tools"
 import { Bound } from "../../../../nodes/expression/bound.js"
 import type { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Ast } from "../../../../nodes/traverse/ast.js"
-import type { Left } from "../../state/left.js"
-import type { parserState } from "../../state/state.js"
+import type { ParserState } from "../../state/state.js"
+import { parserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
 export namespace LeftBoundOperator {
     export const reduce = (
-        s: parserState.requireRoot<PrimitiveLiteral.Node<number>>,
+        s: parserState.WithRoot<PrimitiveLiteral.Node<number>>,
         comparator: Bound.Token
     ) =>
         isKeyOf(comparator, Bound.doubleTokens)
             ? reduceValidated(s, comparator)
-            : s.error(Comparators.invalidDoubleMessage(comparator))
+            : parserState.error(
+                  Comparators.buildInvalidDoubleMessage(comparator)
+              )
 
-    export type Reduce<
-        L extends Left.WithRoot<PrimitiveLiteral.Number>,
-        Comparator extends Bound.Token
-    > = Comparator extends Bound.DoubleToken
-        ? ReduceValidated<L, Comparator>
-        : Left.Error<Comparators.InvalidDoubleMessage<Comparator>>
+    export type reduce<
+        s extends ParserState.WithRoot<PrimitiveLiteral.Number>,
+        comparator extends Bound.Token
+    > = comparator extends Bound.DoubleToken
+        ? reduceValidated<s, comparator>
+        : ParserState.error<Comparators.buildInvalidDoubleMessage<comparator>>
 
     const reduceValidated = (
-        s: parserState.requireRoot<PrimitiveLiteral.Node<number>>,
+        s: parserState.WithRoot<PrimitiveLiteral.Node<number>>,
         token: Bound.DoubleToken
     ) => {
-        s.l.branches.leftBound = [s.l.root, token]
-        s.l.root = undefined as any
+        s.branches.leftBound = [s.root, token]
+        s.root = undefined as any
         return s
     }
 
-    type ReduceValidated<
-        L extends Left.WithRoot<PrimitiveLiteral.Number>,
-        Comparator extends Bound.DoubleToken
-    > = Left.From<{
-        groups: L["groups"]
+    type reduceValidated<
+        s extends ParserState.WithRoot<PrimitiveLiteral.Number>,
+        comparator extends Bound.DoubleToken
+    > = ParserState.from<{
+        groups: s["groups"]
         branches: {
-            union: L["branches"]["union"]
-            intersection: L["branches"]["intersection"]
-            leftBound: [L["root"], Comparator]
+            union: s["branches"]["union"]
+            intersection: s["branches"]["intersection"]
+            leftBound: [s["root"], comparator]
         }
         root: undefined
+        unscanned: s["unscanned"]
     }>
 
-    export const assertClosed = (s: parserState.requireRoot) =>
-        s.l.branches.leftBound
-            ? s.error(
-                  unpairedMessage(
-                      s.l.root.toString(),
-                      s.l.branches.leftBound[0].toString(),
-                      s.l.branches.leftBound[1]
+    export const assertClosed = (s: parserState.WithRoot) =>
+        s.branches.leftBound
+            ? parserState.error(
+                  buildUnpairedMessage(
+                      s.root.toString(),
+                      s.branches.leftBound[0].toString(),
+                      s.branches.leftBound[1]
                   )
               )
             : s
 
-    export type AssertClosed<L extends Left> =
-        L["branches"]["leftBound"] extends Left.OpenBranches.LeftBound<
-            infer Limit,
-            infer Comparator
-        >
-            ? Left.Error<
-                  UnpairedMessage<
-                      Ast.ToString<Left.MergeIntersectionAndUnionToRoot<L>>,
-                      Limit,
-                      Comparator
+    export type assertClosed<s extends ParserState.WithRoot> =
+        s["branches"]["leftBound"] extends ParserState.OpenLeftBound
+            ? ParserState.error<
+                  buildUnpairedMessage<
+                      Ast.ToString<ParserState.mergeIntersectionAndUnion<s>>,
+                      s["branches"]["leftBound"][0],
+                      s["branches"]["leftBound"][1]
                   >
               >
-            : L
+            : s
 
-    export type UnpairedMessage<
-        Root extends string,
-        Limit extends string,
-        Token extends Bound.Token
-    > = `Left bounds are only valid when paired with right bounds. Consider using ${Root}${Bound.InvertedComparators[Token]}${Limit} instead.`
-
-    export const unpairedMessage = <
-        Root extends string,
-        Limit extends string,
-        Token extends Bound.Token
+    export const buildUnpairedMessage = <
+        root extends string,
+        limit extends string,
+        token extends Bound.Token
     >(
-        root: Root,
-        limit: Limit,
-        comparator: Token
-    ): UnpairedMessage<Root, Limit, Token> =>
+        root: root,
+        limit: limit,
+        comparator: token
+    ): buildUnpairedMessage<root, limit, token> =>
         `Left bounds are only valid when paired with right bounds. Consider using ${root}${Bound.invertedComparators[comparator]}${limit} instead.`
+
+    type buildUnpairedMessage<
+        root extends string,
+        limit extends string,
+        token extends Bound.Token
+    > = `Left bounds are only valid when paired with right bounds. Consider using ${root}${Bound.InvertedComparators[token]}${limit} instead.`
 }

@@ -1,11 +1,11 @@
 import { Union } from "../../../nodes/expression/union.js"
 import type { MissingRightOperandMessage } from "../../common.js"
 import type { ParserState, parserState } from "../state/state.js"
-import { intersectionOperator } from "./intersection.js"
+import { IntersectionOperator } from "./intersection.js"
 
-export namespace unionOperator {
+export namespace UnionOperator {
     export const reduce = (s: parserState.WithRoot) => {
-        intersectionOperator.maybeMerge(s)
+        IntersectionOperator.maybeMerge(s)
         if (!s.branches.union) {
             s.branches.union = new Union.Node([s.root])
         } else {
@@ -14,9 +14,7 @@ export namespace unionOperator {
         s.root = undefined as any
         return s
     }
-}
 
-export namespace UnionOperator {
     export type reduce<
         s extends ParserState.WithRoot,
         unscanned extends string
@@ -32,9 +30,7 @@ export namespace UnionOperator {
               groups: s["groups"]
               unscanned: unscanned
           }>
-}
 
-export namespace unionOperator {
     export const maybeMerge = (s: parserState.WithRoot) => {
         if (!s.branches.union) {
             return s

@@ -1,49 +1,18 @@
 import { keySet } from "@re-/tools"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { RegexLiteral } from "../../../nodes/terminal/regexLiteral.js"
-import type { Left } from "../state/left.js"
 import type { Scanner, scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"
 
 export namespace Enclosed {
-    export const startChars = keySet({
-        "'": 1,
-        '"': 1,
-        "/": 1
-    })
-
-    export type StartChar = keyof typeof startChars
-
-    export type StringLiteralQuote = `'` | `"`
-
-    export const unterminatedMessage = <
-        Fragment extends string,
-        Enclosing extends StartChar
-    >(
-        fragment: Fragment,
-        enclosing: Enclosing
-    ): UnterminatedMessage<Fragment, Enclosing> =>
-        `${fragment} requires a closing ${enclosing}`
-
-    type UnterminatedMessage<
-        Fragment extends string,
-        Enclosing extends StartChar
-    > = `${Fragment} requires a closing ${Enclosing}`
-
-    const untilLookaheadIsClosing: Record<StartChar, scanner.UntilCondition> = {
-        "'": (scanner) => scanner.lookahead === `'`,
-        '"': (scanner) => scanner.lookahead === `"`,
-        "/": (scanner) => scanner.lookahead === `/`
-    }
-
     export const parse = (s: parserState, enclosing: StartChar) => {
-        const token = s.r.shiftUntil(untilLookaheadIsClosing[enclosing], {
+        const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
             appendTo: enclosing,
             inclusive: true,
             onInputEnd: throwUnterminatedEnclosed
         })
         const enclosedText = token.slice(1, -1)
-        s.l.root =
+        s.root =
             enclosing === "/"
                 ? new RegexLiteral.Node(token as RegexLiteral.Definition)
                 : new PrimitiveLiteral.Node(
@@ -53,26 +22,59 @@ export namespace Enclosed {
         return s
     }
 
-    export type Parse<
-        S extends ParserState,
-        Enclosing extends StartChar,
-        Unscanned extends string
-    > = Scanner.shiftUntil<Unscanned, Enclosing> extends Scanner.ShiftResult<
-        infer Scanned,
-        infer NextUnscanned
+    export type parse<
+        s extends ParserState,
+        enclosing extends StartChar,
+        unscanned extends string
+    > = Scanner.shiftUntil<unscanned, enclosing> extends Scanner.ShiftResult<
+        infer scanned,
+        infer nextUnscanned
     >
-        ? NextUnscanned extends ""
-            ? ParserState.Error<UnterminatedMessage<S["R"], Enclosing>>
-            : ParserState.From<{
-                  L: Left.SetRoot<S["L"], `${Enclosing}${Scanned}${Enclosing}`>
-                  R: Scanner.TailOf<NextUnscanned>
-              }>
+        ? nextUnscanned extends ""
+            ? ParserState.error<
+                  buildUnterminatedMessage<s["unscanned"], enclosing>
+              >
+            : ParserState.setRoot<
+                  s,
+                  `${enclosing}${scanned}${enclosing}`,
+                  Scanner.tailOf<nextUnscanned>
+              >
         : never
+
+    export const startChars = keySet({
+        "'": 1,
+        '"': 1,
+        "/": 1
+    })
+
+    export type StartChar = keyof typeof startChars
+
+    export const buildUnterminatedMessage = <
+        fragment extends string,
+        enclosing extends StartChar
+    >(
+        fragment: fragment,
+        enclosing: enclosing
+    ): buildUnterminatedMessage<fragment, enclosing> =>
+        `${fragment} requires a closing ${enclosing}`
+
+    type buildUnterminatedMessage<
+        fragment extends string,
+        enclosing extends StartChar
+    > = `${fragment} requires a closing ${enclosing}`
+
+    const untilLookaheadIsClosing: Record<StartChar, scanner.UntilCondition> = {
+        "'": (scanner) => scanner.lookahead === `'`,
+        '"': (scanner) => scanner.lookahead === `"`,
+        "/": (scanner) => scanner.lookahead === `/`
+    }
 
     const throwUnterminatedEnclosed: scanner.OnInputEndFn = (
         scanner,
         shifted
     ) => {
-        throw new Error(unterminatedMessage(shifted, shifted[0] as StartChar))
+        throw new Error(
+            buildUnterminatedMessage(shifted, shifted[0] as StartChar)
+        )
     }
 }
