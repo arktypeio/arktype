@@ -48,7 +48,7 @@ export namespace GroupClose {
         if (!previousOpenBranches) {
             return s.error(unmatchedMessage(s.r.unscanned))
         }
-        parserState.mergeBranches(s)
+        parserState.mergeIntersectionAndUnionToRoot(s)
         s.l.branches = previousOpenBranches
         return s
     }

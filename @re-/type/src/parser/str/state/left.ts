@@ -3,7 +3,7 @@ import type { Bound } from "../../../nodes/expression/bound.js"
 import type { Intersection } from "../../../nodes/expression/intersection.js"
 import type { Union } from "../../../nodes/expression/union.js"
 import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import type { ParseError } from "../../common.js"
+import type { MaybeAppend, ParseError } from "../../common.js"
 
 type leftBase = {
     groups: left.openBranches[]
@@ -44,6 +44,11 @@ export namespace Left {
         union: OpenBranches.Union | null
         intersection: OpenBranches.Intersection | null
     }
+
+    export type MergeIntersectionAndUnionToRoot<L extends Left> = MaybeAppend<
+        MaybeAppend<L["root"], L["branches"]["intersection"]>,
+        L["branches"]["union"]
+    >
 
     export namespace OpenBranches {
         export type From<Branches extends OpenBranches> = Branches

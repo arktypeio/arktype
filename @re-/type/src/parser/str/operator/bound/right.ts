@@ -1,11 +1,13 @@
 import { isKeyOf } from "@re-/tools"
+import type { Base } from "../../../../nodes/common.js"
 import { Bound } from "../../../../nodes/expression/bound.js"
 import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Ast } from "../../../../nodes/traverse/ast.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
-import type { left, Left } from "../../state/left.js"
+import type { Left, left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
-import type { parserState, ParserState } from "../../state/state.js"
+import type { ParserState } from "../../state/state.js"
+import { parserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
 // TODO: Fix
@@ -58,11 +60,14 @@ export namespace RightBoundOperator {
         comparator: Bound.Token,
         limit: PrimitiveLiteral.Node<number>
     ) =>
-        isBoundable(s)
-            ? isLeftBounded(s)
-                ? reduceDouble(s, comparator, limit)
-                : reduceSingle(s, comparator, limit)
-            : s.error(unboundableMessage(s.l.root.toString()))
+        isLeftBounded(s)
+            ? reduceDouble(
+                  parserState.mergeIntersectionAndUnionToRoot(s),
+                  ...s.l.branches.leftBound,
+                  comparator,
+                  limit
+              )
+            : reduceSingle(s, comparator, limit)
 
     type Reduce<
         L extends Left,
@@ -70,24 +75,26 @@ export namespace RightBoundOperator {
         LimitToken extends string,
         LimitParseResult extends string | number
     > = LimitParseResult extends number
-        ? L extends { root: BoundableNode }
-            ? L extends {
-                  branches: {
-                      leftBound: Left.OpenBranches.LeftBound<
-                          infer LeftLimit,
-                          infer LeftComparator
-                      >
-                  }
-              }
-                ? ReduceDouble<
-                      L,
-                      LeftLimit,
-                      LeftComparator,
-                      Comparator,
-                      Extract<LimitToken, PrimitiveLiteral.Number>
+        ? L extends {
+              branches: {
+                  leftBound: Left.OpenBranches.LeftBound<
+                      infer LeftLimit,
+                      infer LeftComparator
                   >
-                : ReduceSingle<L, Comparator, LimitParseResult>
-            : Left.Error<UnboundableMessage<Ast.ToString<L["root"]>>>
+              }
+          }
+            ? ReduceDouble<
+                  Left.From<{
+                      groups: L["groups"]
+                      branches: Left.OpenBranches.Default
+                      root: Left.MergeIntersectionAndUnionToRoot<L>
+                  }>,
+                  LeftLimit,
+                  LeftComparator,
+                  Comparator,
+                  Extract<LimitToken, PrimitiveLiteral.Number>
+              >
+            : ReduceSingle<L, Comparator, LimitParseResult>
         : Left.Error<`${LimitParseResult}`>
 
     const isBoundable = (
@@ -100,42 +107,43 @@ export namespace RightBoundOperator {
         !!s.l.branches.leftBound
 
     type ReduceDouble<
-        L extends Left<{
-            root: BoundableNode
-        }>,
+        L extends Left,
         LeftLimit extends PrimitiveLiteral.Number,
         LeftComparator extends Bound.Token,
         RightComparator extends Bound.Token,
         RightLimit extends PrimitiveLiteral.Number
-    > = RightComparator extends Bound.DoubleToken
-        ? Left.From<{
-              leftBound: undefined
-              root: [
-                  LeftLimit,
-                  LeftComparator,
-                  [L["root"], RightComparator, RightLimit]
-              ]
-              groups: L["groups"]
-              branches: L["branches"]
-          }>
-        : Left.Error<Comparators.InvalidDoubleMessage<RightComparator>>
+    > = L["root"] extends BoundableNode
+        ? RightComparator extends Bound.DoubleToken
+            ? Left.SetRoot<
+                  L,
+                  [
+                      LeftLimit,
+                      LeftComparator,
+                      [L["root"], RightComparator, RightLimit]
+                  ]
+              >
+            : Left.Error<Comparators.InvalidDoubleMessage<RightComparator>>
+        : Left.Error<UnboundableMessage<Ast.ToString<L["root"]>>>
 
     const reduceDouble = (
         s: parserState<{
-            root: BoundableNode
-            branches: {
-                leftBound: left.openLeftBound
-            }
+            root: Base.Node
         }>,
+        leftLimit: PrimitiveLiteral.Node<number>,
+        leftComparator: Bound.DoubleToken,
         rightComparator: Bound.Token,
         rightLimit: PrimitiveLiteral.Node<number>
     ) => {
+        if (!isBoundable(s)) {
+            return s.error(unboundableMessage(s.l.root.toString()))
+        }
         if (!isKeyOf(rightComparator, Bound.doubleTokens)) {
             return s.error(Comparators.invalidDoubleMessage(rightComparator))
         }
+        s.l.branches.leftBound = undefined
         s.l.root = new Bound.LeftNode(
-            s.l.branches.leftBound[0],
-            s.l.branches.leftBound[1],
+            leftLimit,
+            leftComparator,
             new Bound.RightNode(s.l.root, rightComparator, rightLimit)
         )
     }
@@ -144,15 +152,19 @@ export namespace RightBoundOperator {
         L extends Left<{ root: BoundableNode }>,
         Comparator extends Bound.Token,
         Limit extends number
-    > = Left.SetRoot<L, [L["root"], Comparator, Limit]>
+    > = L["root"] extends BoundableNode
+        ? Left.SetRoot<L, [L["root"], Comparator, Limit]>
+        : Left.Error<UnboundableMessage<Ast.ToString<L["root"]>>>
 
     const reduceSingle = (
         s: parserState.requireRoot<BoundableNode>,
         comparator: Bound.Token,
         limit: PrimitiveLiteral.Node<number>
     ) => {
+        if (!isBoundable(s)) {
+            return s.error(unboundableMessage(s.l.root.toString()))
+        }
         s.l.root = new Bound.RightNode(s.l.root, comparator, limit)
-        s.l.branches.leftBound = undefined
         return s
     }
 

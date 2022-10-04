@@ -69,7 +69,7 @@ export namespace parserState {
         s: parserState.requireRoot,
         isOptional: boolean
     ) => {
-        mergeBranches(s)
+        mergeIntersectionAndUnionToRoot(s)
         if (isOptional) {
             s.l.root = new Optional.Node(s.l.root)
         }
@@ -79,21 +79,13 @@ export namespace parserState {
 }
 
 export namespace parserState {
-    export const mergeBranches = (s: parserState.requireRoot) => {
-        // TODO: Ensure type check is also done for this
-        LeftBoundOperator.assertClosed(s)
+    export const mergeIntersectionAndUnionToRoot = (
+        s: parserState.requireRoot
+    ) => {
         IntersectionOperator.maybeMerge(s)
         UnionOperator.maybeMerge(s)
         return s
     }
-}
-
-// TODO: Check how this gets compiled (multiple of the same namespace in single file)
-export namespace ParserState {
-    export type MergeBranches<L extends Left> = MaybeAppend<
-        MaybeAppend<L["root"], L["branches"]["intersection"]>,
-        L["branches"]["union"]
-    >
 }
 
 export namespace parserState {

@@ -168,7 +168,10 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
 }
 
 export class ArktypeError extends TypeError {
-    constructor(public diagnostics: Diagnostics) {
+    cause: Diagnostics
+
+    constructor(diagnostics: Diagnostics) {
         super(diagnostics.summary)
+        this.cause = diagnostics
     }
 }

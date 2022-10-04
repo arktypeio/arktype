@@ -68,13 +68,13 @@ export type SpaceOutput<Space extends ResolvedSpace> = SpaceTypeRoots<
     $root: SpaceRootFrom<Space>
 }
 
-export type SpaceRootFrom<Space extends ResolvedSpace> = Evaluate<{
+export type SpaceRootFrom<Space extends ResolvedSpace> = {
     infer: InferSpaceRoot<Space["resolutions"]>
     aliases: Space["aliases"]
     ast: Space["resolutions"]
     type: InferredTypeFn<Space>
     options: ArktypeOptions
-}>
+}
 
 export type SpaceTypeRoots<Resolutions> = Evaluate<{
     [Name in keyof Resolutions]: Arktype<Resolutions[Name], Resolutions>
