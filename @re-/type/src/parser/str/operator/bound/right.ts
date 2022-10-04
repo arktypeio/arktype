@@ -4,10 +4,10 @@ import { Bound } from "../../../../nodes/expression/bound.js"
 import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Ast } from "../../../../nodes/traverse/ast.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
-import type { Left, left } from "../../state/left.js"
+import type { Left } from "../../state/left.js"
+import { left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
-import type { ParserState } from "../../state/state.js"
-import { parserState } from "../../state/state.js"
+import type { ParserState, parserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
 // TODO: Fix
@@ -62,7 +62,7 @@ export namespace RightBoundOperator {
     ) =>
         isLeftBounded(s)
             ? reduceDouble(
-                  parserState.mergeIntersectionAndUnionToRoot(s),
+                  left.mergeIntersectionAndUnionToRoot(s),
                   ...s.l.branches.leftBound,
                   comparator,
                   limit

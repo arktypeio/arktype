@@ -1,8 +1,6 @@
-import type { Ast } from "../../../nodes/traverse/ast.js"
 import type { Left } from "../state/left.js"
-import type { ParserState } from "../state/state.js"
-import { parserState } from "../state/state.js"
-import type { LeftBoundOperator } from "./bound/left.js"
+import { left } from "../state/left.js"
+import type { ParserState, parserState } from "../state/state.js"
 
 export namespace GroupClose {
     type PopGroup<
@@ -22,25 +20,10 @@ export namespace GroupClose {
         S extends ParserState.RequireRoot,
         Unscanned extends string
     > = S["L"]["groups"] extends PopGroup<infer Stack, infer Top>
-        ? S["L"]["branches"]["leftBound"] extends Left.OpenBranches.LeftBound<
-              infer Limit,
-              infer Comparator
-          >
-            ? ParserState.Error<
-                  LeftBoundOperator.UnpairedMessage<
-                      Ast.ToString<S["L"]["root"]>,
-                      Limit,
-                      Comparator
-                  >
-              >
-            : ParserState.From<{
-                  L: {
-                      groups: Stack
-                      branches: Top
-                      root: ParserState.MergeBranches<S["L"]>
-                  }
-                  R: Unscanned
-              }>
+        ? ParserState.From<{
+              L: Left.FinalizeGroup<S["L"], Top, Stack, false>
+              R: Unscanned
+          }>
         : ParserState.Error<UnmatchedMessage<Unscanned>>
 
     export const reduce = (s: parserState.requireRoot) => {
@@ -48,8 +31,6 @@ export namespace GroupClose {
         if (!previousOpenBranches) {
             return s.error(unmatchedMessage(s.r.unscanned))
         }
-        parserState.mergeIntersectionAndUnionToRoot(s)
-        s.l.branches = previousOpenBranches
-        return s
+        return left.finalizeGroup(s, previousOpenBranches)
     }
 }

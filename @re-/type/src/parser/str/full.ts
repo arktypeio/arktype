@@ -14,7 +14,7 @@ export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
 
 // TODO: Recursion perf?
 const loop = (s: parserState, ctx: parserContext) => {
-    while (!s.l.done) {
+    while (!s.l.final) {
         next(s, ctx)
     }
     return s.l.root!
@@ -23,7 +23,7 @@ const loop = (s: parserState, ctx: parserContext) => {
 type Loop<
     S extends ParserState,
     Ctx extends ParserContext
-> = S["L"]["done"] extends true ? S["L"]["root"] : Loop<Next<S, Ctx>, Ctx>
+> = S["L"]["final"] extends string ? S["L"]["root"] : Loop<Next<S, Ctx>, Ctx>
 
 const next = (s: parserState, ctx: parserContext): parserState =>
     s.hasRoot() ? Operator.parse(s) : Operand.parse(s, ctx)

@@ -1,7 +1,8 @@
 import { isKeyOf } from "@re-/tools"
+import type { Left } from "../state/left.js"
+import { left } from "../state/left.js"
 import type { Scanner } from "../state/scanner.js"
-import type { ParserState } from "../state/state.js"
-import { parserState } from "../state/state.js"
+import type { ParserState, parserState } from "../state/state.js"
 import { ArrayOperator } from "./array.js"
 import { BoundOperator } from "./bound/bound.js"
 import { Comparators } from "./bound/tokens.js"
@@ -15,7 +16,7 @@ export namespace Operator {
     export const parse = (s: parserState.requireRoot): parserState => {
         const lookahead = s.r.shift()
         return lookahead === "END"
-            ? parserState.finalize(s, true)
+            ? left.finalize(s)
             : lookahead === "?"
             ? OptionalOperator.finalize(s)
             : lookahead === "["
@@ -60,7 +61,10 @@ export namespace Operator {
                 : Lookahead extends " "
                 ? Parse<{ L: S["L"]; R: Unscanned }>
                 : ParserState.Error<UnexpectedCharacterMessage<Lookahead>>
-            : ParserState.Finalize<S, false>
+            : ParserState.From<{
+                  L: Left.Finalize<S["L"]>
+                  R: ""
+              }>
 
     const unexpectedCharacterMessage = <Char extends string>(
         char: Char

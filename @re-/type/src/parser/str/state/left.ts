@@ -3,13 +3,21 @@ import type { Bound } from "../../../nodes/expression/bound.js"
 import type { Intersection } from "../../../nodes/expression/intersection.js"
 import type { Union } from "../../../nodes/expression/union.js"
 import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import type { Ast } from "../../../nodes/traverse/ast.js"
 import type { MaybeAppend, ParseError } from "../../common.js"
+import { GroupOpen } from "../operand/groupOpen.js"
+import { LeftBoundOperator } from "../operator/bound/left.js"
+import { IntersectionOperator } from "../operator/intersection.js"
+import { UnionOperator } from "../operator/union.js"
+import type { parserState } from "./state.js"
 
 type leftBase = {
     groups: left.openBranches[]
     branches: left.openBranches
     root?: Base.Node
-    done?: true
+    // At runtime (unlike in type parsing), an error will actually throw, so a
+    // "final" error state is impossible
+    final?: "END"
 }
 
 export type left<constraints extends Partial<leftBase> = {}> = leftBase &
@@ -19,7 +27,7 @@ type LeftBase = {
     groups: Left.OpenBranches[]
     branches: Left.OpenBranches
     root: unknown
-    done?: true
+    final?: "END" | "ERR"
 }
 
 export type Left<Constraints extends Partial<LeftBase> = {}> = LeftBase &
@@ -36,6 +44,41 @@ export namespace left {
         PrimitiveLiteral.Node<number>,
         Bound.DoubleToken
     ]
+
+    export const mergeIntersectionAndUnionToRoot = (
+        s: parserState.requireRoot
+    ) => {
+        IntersectionOperator.maybeMerge(s)
+        UnionOperator.maybeMerge(s)
+        return s
+    }
+
+    export const finalize = (s: parserState.requireRoot) => {
+        if (s.l.groups.length) {
+            return s.error(GroupOpen.unclosedMessage)
+        }
+        finalizeGroup(s, {})
+        s.l.final = "END"
+        return s
+    }
+
+    export const finalizeGroup = (
+        s: parserState.requireRoot,
+        nextBranches: openBranches
+    ) => {
+        left.mergeIntersectionAndUnionToRoot(s)
+        if (s.l.branches.leftBound) {
+            return s.error(
+                LeftBoundOperator.unpairedMessage(
+                    s.l.root.toString(),
+                    s.l.branches.leftBound[0].toString(),
+                    s.l.branches.leftBound[1]
+                )
+            )
+        }
+        s.l.branches = nextBranches
+        return s as parserState
+    }
 }
 
 export namespace Left {
@@ -44,6 +87,33 @@ export namespace Left {
         union: OpenBranches.Union | null
         intersection: OpenBranches.Intersection | null
     }
+
+    export type Finalize<L extends Left> = L["groups"] extends []
+        ? Left.FinalizeGroup<L, Left.OpenBranches.Default, [], true>
+        : Left.Error<GroupOpen.UnclosedGroupMessage>
+
+    export type FinalizeGroup<
+        L extends Left,
+        NextBranches extends OpenBranches,
+        NextGroups extends OpenBranches[],
+        IsFinal extends boolean
+    > = L["branches"]["leftBound"] extends Left.OpenBranches.LeftBound<
+        infer Limit,
+        infer Comparator
+    >
+        ? Error<
+              LeftBoundOperator.UnpairedMessage<
+                  Ast.ToString<Left.MergeIntersectionAndUnionToRoot<L>>,
+                  Limit,
+                  Comparator
+              >
+          >
+        : Left.From<{
+              groups: NextGroups
+              branches: NextBranches
+              root: Left.MergeIntersectionAndUnionToRoot<L>
+              final: IsFinal extends true ? "END" : undefined
+          }>
 
     export type MergeIntersectionAndUnionToRoot<L extends Left> = MaybeAppend<
         MaybeAppend<L["root"], L["branches"]["intersection"]>,
@@ -80,7 +150,7 @@ export namespace Left {
         groups: []
         branches: OpenBranches.Default
         root: ParseError<Message>
-        done: true
+        final: "ERR"
     }>
 
     export type SetRoot<L extends LeftBase, Node> = From<{
