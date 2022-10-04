@@ -1,4 +1,4 @@
-import type { NodeToString } from "../../../nodes/common.js"
+import type { Ast } from "../../../nodes/traverse/ast.js"
 import type { Left } from "../state/left.js"
 import type { ParserState } from "../state/state.js"
 import { parserState } from "../state/state.js"
@@ -28,7 +28,7 @@ export namespace GroupClose {
           >
             ? ParserState.Error<
                   LeftBoundOperator.UnpairedMessage<
-                      NodeToString<S["L"]["root"]>,
+                      Ast.ToString<S["L"]["root"]>,
                       Limit,
                       Comparator
                   >

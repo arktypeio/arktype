@@ -7,7 +7,7 @@ describe("diagnostics", () => {
         const myNumber = type("3<number<5", {
             errors: {
                 bound: {
-                    message: ({ context: { data, comparator, limit } }) =>
+                    message: ({ data, comparator, limit }) =>
                         `${data} not ${comparator}${limit}`
                 }
             }

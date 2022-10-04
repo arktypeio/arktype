@@ -1,4 +1,3 @@
-import type { InternalSpace } from "../../../space.js"
 import type { parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"

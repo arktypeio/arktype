@@ -1,6 +1,6 @@
 import { keySet } from "@re-/tools"
-import type { Base } from "../base.js"
-import type { Check } from "../traverse/check/check.js"
+import type { Base } from "../common.js"
+import type { Check } from "../traverse/check.js"
 
 export namespace Expression {
     export const infixTokens = {

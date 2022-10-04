@@ -1,6 +1,6 @@
-import type { Base } from "../base.js"
+import type { Base } from "../common.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
-import type { Check } from "../traverse/check/check.js"
+import type { Check } from "../traverse/check.js"
 import { Binary } from "./expression.js"
 
 export namespace Divisibility {

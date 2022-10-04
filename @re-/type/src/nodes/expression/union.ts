@@ -1,5 +1,5 @@
-import type { Check } from "../traverse/check/check.js"
-import { Diagnostics } from "../traverse/check/diagnostics.js"
+import type { Check } from "../traverse/check.js"
+import { Diagnostics } from "../traverse/diagnostics.js"
 import { Branching } from "./expression.js"
 
 export namespace Union {

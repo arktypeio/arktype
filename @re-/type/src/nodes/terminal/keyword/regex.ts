@@ -1,35 +1,5 @@
-import type { Check } from "../traverse/check/check.js"
-import { Terminal } from "./terminal.js"
-
-export namespace RegexLiteral {
-    export type Definition<Source extends string = string> = `/${Source}/`
-
-    export class Node extends Terminal.Node<Definition> {
-        private expression: RegExp
-
-        constructor(def: Definition) {
-            super(def)
-            this.expression = new RegExp(def.slice(1, -1))
-        }
-
-        check(state: Check.State<string>) {
-            if (!this.expression.test(state.data)) {
-                state.addError("regexLiteral", {
-                    type: this,
-                    message: `Must match expression ${this.def}`,
-                    expression: this.expression
-                })
-            }
-        }
-    }
-
-    export type Diagnostic = Check.ConfigureDiagnostic<
-        Node,
-        { expression: RegExp },
-        {},
-        string
-    >
-}
+import type { Check } from "../../traverse/check.js"
+import { Terminal } from "../terminal.js"
 
 export namespace RegexKeyword {
     export type Definition =
@@ -59,16 +29,7 @@ export namespace RegexKeyword {
         }
     }
 
-    export type Diagnostic = Check.ConfigureDiagnostic<
-        Node,
-        { expression: RegExp },
-        {},
-        string
-    >
-
-    export const getPredefined = (keyword: Definition) => predefined[keyword]
-
-    export const predefined: Record<Definition, Node> = {
+    export const nodes: Record<Definition, Node> = {
         email: new Node("email", "Must be a valid email", /^(.+)@(.+)\.(.+)$/),
         alpha: new Node("alpha", "Must include only letters", /^[A-Za-z]+$/),
         alphanumeric: new Node(
@@ -87,4 +48,11 @@ export namespace RegexKeyword {
             /^[A-Z]*$/
         )
     }
+
+    export type Diagnostic = Check.ConfigureDiagnostic<
+        Node,
+        { expression: RegExp },
+        {},
+        string
+    >
 }

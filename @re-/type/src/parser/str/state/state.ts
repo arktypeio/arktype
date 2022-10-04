@@ -1,5 +1,5 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
-import type { Base } from "../../../nodes/base.js"
+import type { Base } from "../../../nodes/common.js"
 import { Optional } from "../../../nodes/expression/optional.js"
 import type { MaybeAppend } from "../../common.js"
 import { parseError } from "../../common.js"

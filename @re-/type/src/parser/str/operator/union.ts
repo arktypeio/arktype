@@ -1,4 +1,4 @@
-import type { Base } from "../../../nodes/base.js"
+import type { Base } from "../../../nodes/common.js"
 import { Union } from "../../../nodes/expression/union.js"
 import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
 import type { Left } from "../state/left.js"

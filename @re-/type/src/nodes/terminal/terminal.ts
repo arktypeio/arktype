@@ -1,5 +1,5 @@
-import type { Base } from "../base.js"
-import type { Check } from "../traverse/check/check.js"
+import type { Base } from "../common.js"
+import type { Check } from "../traverse/check.js"
 
 export namespace Terminal {
     export abstract class Node<Def extends string> implements Base.Node {

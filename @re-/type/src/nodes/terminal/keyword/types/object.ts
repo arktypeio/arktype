@@ -1,6 +1,6 @@
 import { jsTypeOf } from "@re-/tools"
-import type { Check } from "../../traverse/check/check.js"
-import { Terminal } from "../terminal.js"
+import type { Check } from "../../../traverse/check.js"
+import { Terminal } from "../../terminal.js"
 
 export class ObjectNode extends Terminal.Node<"object"> {
     constructor() {

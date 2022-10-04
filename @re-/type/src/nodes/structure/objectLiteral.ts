@@ -1,8 +1,8 @@
 import type { Dictionary } from "@re-/tools"
-import type { Base } from "../base.js"
+import type { Base } from "../common.js"
+import { Structure } from "../common.js"
 import { Optional } from "../expression/optional.js"
-import type { Check } from "../traverse/check/check.js"
-import { Structure } from "./structure.js"
+import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
     export class Node implements Base.Node {
@@ -11,7 +11,7 @@ export namespace ObjectLiteral {
         constructor(public children: Base.Node[], private keys: string[]) {}
 
         check(state: Check.State) {
-            if (!Structure.checkObjectKind(this, "object", state)) {
+            if (!Structure.checkKind(this, "object", state)) {
                 return
             }
             const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)

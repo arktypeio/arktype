@@ -1,6 +1,6 @@
 import { keySet } from "@re-/tools"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import { RegexLiteral } from "../../../nodes/terminal/regex.js"
+import { RegexLiteral } from "../../../nodes/terminal/regexLiteral.js"
 import type { Left } from "../state/left.js"
 import type { Scanner, scanner } from "../state/scanner.js"
 import type { ParserState, parserState } from "../state/state.js"

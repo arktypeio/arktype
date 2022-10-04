@@ -1,14 +1,16 @@
-import type { NodeToString } from "../../../nodes/common.js"
 import { Divisibility } from "../../../nodes/expression/divisibility.js"
-import { NumberNode } from "../../../nodes/terminal/keyword/number.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import type { Ast } from "../../../nodes/traverse/ast.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import type { parserState, ParserState } from "../state/state.js"
 
 export namespace DivisibilityOperator {
     export const parse = (s: parserState.requireRoot) => {
-        if (!s.hasRoot(NumberNode)) {
+        if (
+            !s.hasRoot(PrimitiveLiteral.Node) ||
+            typeof s.l.root.value !== "number"
+        ) {
             return s.error(indivisibleMessage(s.l.root.toString()))
         }
         const divisorToken = s.r.shiftUntilNextTerminator()
@@ -47,10 +49,10 @@ export namespace DivisibilityOperator {
                   NextUnscanned
               >
             : never
-        : ParserState.Error<IndivisibleMessage<NodeToString<S["L"]["root"]>>>
+        : ParserState.Error<IndivisibleMessage<Ast.ToString<S["L"]["root"]>>>
 
     const reduce = (
-        s: parserState.requireRoot<NumberNode>,
+        s: parserState.requireRoot<PrimitiveLiteral.Node<number>>,
         divisorToken: string,
         parseResult: number
     ) => {

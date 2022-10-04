@@ -1,10 +1,10 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
-import { type } from "../../../../api.js"
-import { invertedComparators } from "../../../../parser/str/operator/unary/comparator/common.js"
-import type { Check } from "../../../traverse/exports.js"
-import type { BoundsAst } from "../../infix/constraining/bounds.js"
+import { type } from "../../../type.js"
+import type { Diagnostic } from "../../traverse/diagnostics.js"
+import { Bound } from "../bound.js"
+import type { ExpectedBounds } from "./utils.js"
 import {
     arbitraryComparator,
     arbitraryDoubleComparator,
@@ -23,7 +23,7 @@ describe("bound", () => {
                         const singleBound = type.dynamic(
                             `number${comparator}${limit}`
                         )
-                        const expectedBounds: BoundsAst.Constraints = [
+                        const expectedBounds: ExpectedBounds = [
                             [comparator, limit]
                         ]
                         assert(singleBound.ast).equals([
@@ -52,8 +52,11 @@ describe("bound", () => {
                         const doubleBound = type.dynamic(
                             `${lowerLimit}${lowerComparator}number${upperComparator}${upperLimit}`
                         )
-                        const expectedBounds: BoundsAst.Constraints = [
-                            [invertedComparators[lowerComparator], lowerLimit],
+                        const expectedBounds: ExpectedBounds = [
+                            [
+                                Bound.invertedComparators[lowerComparator],
+                                lowerLimit
+                            ],
                             [upperComparator, upperLimit]
                         ]
                         assert(doubleBound.ast).equals([
@@ -72,23 +75,8 @@ describe("bound", () => {
             const gte3 = type("string>=3")
             assert(gte3.check("yes").errors).equals(undefined)
             assert(
-                gte3.check("no").errors as any as Check.Diagnostic<"bound">[]
-            ).snap([
-                {
-                    code: `bound`,
-                    path: [],
-                    context: {
-                        comparator: `>=`,
-                        comparatorDescription: "at least",
-                        limit: 3,
-                        kind: `string`,
-                        actual: 2,
-                        data: `no`
-                    },
-                    options: {},
-                    message: `Must be at least 3 characters (was 2)`
-                }
-            ])
+                gte3.check("no").errors as any as Diagnostic<"bound">[]
+            ).snap()
         })
     })
     describe("array", () => {

@@ -1,11 +1,11 @@
 import type { Dictionary, MutuallyExclusiveProps } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
-import type { Base } from "../base.js"
-import { Check } from "../traverse/check/check.js"
+import type { Base } from "../common.js"
+import { Check } from "../traverse/check.js"
 import type {
     Diagnostics,
     OptionsByDiagnostic
-} from "../traverse/check/diagnostics.js"
+} from "../traverse/diagnostics.js"
 
 export type Arktype<Inferred, Ast> = {
     infer: Inferred

@@ -1,18 +1,17 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
-import { keySet, uncapitalize } from "@re-/tools"
-import type { Base } from "../../base.js"
-import { pathToString } from "../../common.js"
-import type { Bound } from "../../expression/bound.js"
-import type { Divisibility } from "../../expression/divisibility.js"
-import type { Union } from "../../expression/union.js"
-import type { ObjectLiteral } from "../../structure/objectLiteral.js"
-import type { Tuple } from "../../structure/tuple.js"
-import type { TypeKeyword } from "../../terminal/keyword/keyword.js"
-import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
-import type { RegexKeyword, RegexLiteral } from "../../terminal/regex.js"
+import { keySet, toString, uncapitalize } from "@re-/tools"
+import { pathToString } from "../common.js"
+import type { Base, Structure } from "../common.js"
+import type { Bound } from "../expression/bound.js"
+import type { Divisibility } from "../expression/divisibility.js"
+import type { Union } from "../expression/union.js"
+import type { ObjectLiteral } from "../structure/objectLiteral.js"
+import type { Tuple } from "../structure/tuple.js"
+import type { RegexKeyword } from "../terminal/keyword/regex.js"
+import type { TypeKeyword } from "../terminal/keyword/types/typeKeyword.js"
+import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
+import type { RegexLiteral } from "../terminal/regexLiteral.js"
 import type { Check } from "./check.js"
-import type { Structure } from "./common.js"
-import { stringifyData } from "./common.js"
 
 export type DiagnosticCode = keyof RegisteredDiagnosticConfigs
 
@@ -104,6 +103,11 @@ const datalessCodes = keySet({
 })
 
 type DatalessCode = keyof typeof datalessCodes
+
+export const stringifyData = (data: unknown) =>
+    toString(data, {
+        maxNestedStringLength: 50
+    })
 
 export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
     constructor(private state: Check.State) {

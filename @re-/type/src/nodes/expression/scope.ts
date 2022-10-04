@@ -1,6 +1,6 @@
-import type { Base } from "../base.js"
+import type { Base } from "../common.js"
 import type { ArktypeOptions } from "../roots/type.js"
-import type { Check } from "../traverse/check/check.js"
+import type { Check } from "../traverse/check.js"
 
 export namespace Scope {
     export type Context = ArktypeOptions

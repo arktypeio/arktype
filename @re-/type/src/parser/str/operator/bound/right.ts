@@ -1,7 +1,7 @@
 import { isKeyOf } from "@re-/tools"
-import type { NodeToString } from "../../../../nodes/common.js"
 import { Bound } from "../../../../nodes/expression/bound.js"
 import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
+import type { Ast } from "../../../../nodes/traverse/ast.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { left, Left } from "../../state/left.js"
 import type { Scanner } from "../../state/scanner.js"
@@ -87,7 +87,7 @@ export namespace RightBoundOperator {
                       Extract<LimitToken, PrimitiveLiteral.Number>
                   >
                 : ReduceSingle<L, Comparator, LimitParseResult>
-            : Left.Error<UnboundableMessage<NodeToString<L["root"]>>>
+            : Left.Error<UnboundableMessage<Ast.ToString<L["root"]>>>
         : Left.Error<`${LimitParseResult}`>
 
     const isBoundable = (

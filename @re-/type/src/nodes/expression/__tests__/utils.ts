@@ -1,31 +1,24 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
-import {
-    comparators,
-    doubleBoundComparators
-} from "../../../../parser/str/operator/unary/comparator/common.js"
-import type {
-    Comparator,
-    DoubleBoundComparator
-} from "../../../../parser/str/operator/unary/comparator/common.js"
-import type { DynamicTypeRoot } from "../../../../scopes/type.js"
-import { keywordNodes } from "../../../terminal/keyword/keyword.js"
-import { numberTypedKeywords } from "../../../terminal/keyword/number.js"
-import { stringTypedKeywords } from "../../../terminal/keyword/string.js"
-import type { BoundsAst } from "../../infix/constraining/bounds.js"
-import { boundToString } from "../../infix/constraining/bounds.js"
+import type { DynamicArktype } from "../../roots/type.js"
+import { ConstraintKeyword } from "../../terminal/keyword/constraint.js"
+import { Keyword } from "../../terminal/keyword/keyword.js"
+import { RegexKeyword } from "../../terminal/keyword/regex.js"
+import { Bound } from "../bound.js"
 
 const keysOf = (o: object) => Object.keys(o)
 
 export const arbitraryKeywordList = fc.constantFrom(
-    ...keysOf(keywordNodes).map((_) => `${_}[]`)
+    ...keysOf(Keyword.nodes).map((_) => `${_}[]`)
 )
-export const arbitraryNumberKeyword = fc.constantFrom(
-    ...keysOf(numberTypedKeywords)
-)
-export const arbitraryStringKeyword = fc.constantFrom(
-    ...keysOf(stringTypedKeywords)
-)
+export const arbitraryNumberKeyword = fc.constantFrom([
+    "number",
+    ...keysOf(ConstraintKeyword.nodes)
+])
+export const arbitraryStringKeyword = fc.constantFrom([
+    "string",
+    ...keysOf(RegexKeyword.nodes)
+])
 
 export const aribtraryBoundable = fc.oneof(
     arbitraryNumberKeyword,
@@ -33,10 +26,10 @@ export const aribtraryBoundable = fc.oneof(
     arbitraryKeywordList
 )
 export const arbitraryComparator = fc.constantFrom(
-    ...(Object.keys(comparators) as Comparator[])
+    ...(Object.keys(Bound.tokens) as Bound.Token[])
 )
 export const arbitraryDoubleComparator = fc.constantFrom(
-    ...(Object.keys(doubleBoundComparators) as DoubleBoundComparator[])
+    ...(Object.keys(Bound.doubleTokens) as Bound.DoubleToken[])
 )
 
 const boundRange = { min: -1000, max: 1000, noNaN: true }
@@ -45,12 +38,11 @@ export const arbitraryLimit = fc
     .oneof(fc.float(boundRange), fc.integer(boundRange))
     .map((limit) => Number.parseFloat(limit.toFixed(2)))
 
-const expectedCheckResult = (
-    expectedBounds: BoundsAst.Constraints,
-    data: number
-) => {
+export type ExpectedBounds = [Bound.Token, number][]
+
+const expectedCheckResult = (expectedBounds: ExpectedBounds, data: number) => {
     for (const [comparator, limit] of expectedBounds) {
-        const reason = boundToString(comparator, limit, "number")
+        const reason = Bound.describe(comparator, limit, "number")
         const expectedMessageIfOutOfBound = `${reason} (was ${data})`
         if (data > limit && !comparator.includes(">")) {
             return expectedMessageIfOutOfBound
@@ -63,8 +55,8 @@ const expectedCheckResult = (
 }
 
 const assertCheckResult = (
-    t: DynamicTypeRoot,
-    expectedBounds: BoundsAst.Constraints,
+    t: DynamicArktype,
+    expectedBounds: [Bound.Token, number][],
     data: number
 ) => {
     const actualErrors = t.check(data).errors
@@ -74,8 +66,8 @@ const assertCheckResult = (
 }
 
 export const assertCheckResults = (
-    t: DynamicTypeRoot,
-    expectedBounds: BoundsAst.Constraints
+    t: DynamicArktype,
+    expectedBounds: [Bound.Token, number][]
 ) => {
     for (const bound of expectedBounds) {
         assertCheckResult(t, expectedBounds, bound[1] - 1)

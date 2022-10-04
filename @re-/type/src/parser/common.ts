@@ -1,5 +1,5 @@
 import type { Dictionary } from "@re-/tools"
-import type { Base } from "../nodes/base.js"
+import type { Base } from "../nodes/common.js"
 import type { Expression } from "../nodes/expression/expression.js"
 
 export type ParserContext = {

@@ -1,4 +1,4 @@
-import type { Check } from "../traverse/check/check.js"
+import type { Check } from "../traverse/check.js"
 import { Postfix } from "./expression.js"
 
 export namespace Optional {

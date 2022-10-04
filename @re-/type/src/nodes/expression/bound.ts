@@ -1,8 +1,8 @@
 import { keySet } from "@re-/tools"
-import type { Base } from "../base.js"
+import { Constraint } from "../common.js"
+import type { Base } from "../common.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
-import type { Check } from "../traverse/check/check.js"
-import { Constraint } from "../traverse/check/common.js"
+import type { Check } from "../traverse/check.js"
 import { Binary } from "./expression.js"
 
 export namespace Bound {
@@ -125,7 +125,11 @@ export namespace Bound {
         }
     >
 
-    const describe = (comparator: Token, limit: number, kind: BoundableKind) =>
+    export const describe = (
+        comparator: Token,
+        limit: number,
+        kind: BoundableKind
+    ) =>
         `Must be ${comparatorDescriptions[comparator]} ${limit}${
             kind === "string" ? " characters" : kind === "array" ? " items" : ""
         }`

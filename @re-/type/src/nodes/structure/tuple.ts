@@ -1,6 +1,6 @@
-import type { Base } from "../base.js"
-import type { Check } from "../traverse/check/check.js"
-import { Structure } from "./structure.js"
+import type { Base } from "../common.js"
+import { Structure } from "../common.js"
+import type { Check } from "../traverse/check.js"
 
 export namespace Tuple {
     export class Node implements Base.Node {
@@ -30,7 +30,7 @@ export namespace Tuple {
         }
 
         check(state: Check.State) {
-            if (!Structure.checkObjectKind(this, "array", state)) {
+            if (!Structure.checkKind(this, "array", state)) {
                 return
             }
             const expectedLength = this.children.length

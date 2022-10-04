@@ -1,9 +1,9 @@
 import type { Evaluate } from "@re-/tools"
 import type { Bound } from "../expression/bound.js"
 import type { Divisibility } from "../expression/divisibility.js"
-import type { TypeKeyword } from "../terminal/keyword/keyword.js"
+import type { Keyword } from "../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
-import type { RegexKeyword, RegexLiteral } from "../terminal/regex.js"
+import type { RegexLiteral } from "../terminal/regexLiteral.js"
 
 export namespace Ast {
     export type Infer<Ast, Resolutions> = Ast extends string
@@ -30,13 +30,13 @@ export namespace Ast {
     type InferTerminal<
         Token extends string,
         Resolutions
-    > = Token extends TypeKeyword.Definition
-        ? TypeKeyword.Infer<Token>
+    > = Token extends Keyword.Definition
+        ? Keyword.Infer<Token>
         : Token extends keyof Resolutions
         ? Infer<Resolutions[Token], Resolutions>
         : Token extends PrimitiveLiteral.String<infer Text>
         ? Text
-        : Token extends RegexLiteral.Definition | RegexKeyword.Definition
+        : Token extends RegexLiteral.Definition
         ? string
         : Token extends PrimitiveLiteral.Number<infer Value>
         ? Value
@@ -60,6 +60,16 @@ export namespace Ast {
             [K in OptionalKey]?: Infer<Ast[K], Resolutions>
         }
     >
+
+    // TODO: Update to include objects
+    export type ToString<Node, Result extends string = ""> = Node extends [
+        infer Head,
+        ...infer Tail
+    ]
+        ? ToString<Tail, `${Result}${ToString<Head>}`>
+        : Node extends string
+        ? `${Result}${Node}`
+        : Result
 }
 
 // import { assert } from "@re-/assert"

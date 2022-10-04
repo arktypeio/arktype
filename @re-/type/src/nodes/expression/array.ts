@@ -1,5 +1,5 @@
-import { Structure } from "../structure/structure.js"
-import type { Check } from "../traverse/check/check.js"
+import { Structure } from "../common.js"
+import type { Check } from "../traverse/check.js"
 import { Postfix } from "./expression.js"
 
 export namespace Arr {
@@ -11,7 +11,7 @@ export namespace Arr {
         readonly token = token
 
         check(state: Check.State) {
-            if (!Structure.checkObjectKind(this, "array", state)) {
+            if (!Structure.checkKind(this, "array", state)) {
                 return
             }
             const rootData = state.data

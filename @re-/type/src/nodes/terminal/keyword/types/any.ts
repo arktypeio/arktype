@@ -1,4 +1,4 @@
-import { Terminal } from "../terminal.js"
+import { Terminal } from "../../terminal.js"
 
 export class AnyNode extends Terminal.Node<"any"> {
     constructor() {

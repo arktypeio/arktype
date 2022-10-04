@@ -1,4 +1,4 @@
-import type { Base } from "../../nodes/base.js"
+import type { Base } from "../../nodes/common.js"
 import { Expression } from "../../nodes/expression/expression.js"
 import type {
     MissingRightOperandMessage,
