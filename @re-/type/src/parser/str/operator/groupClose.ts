@@ -1,17 +1,16 @@
-import type { ParserState } from "../state/state.js"
-import { parserState } from "../state/state.js"
+import { ParserState } from "../state/state.js"
 
 export namespace GroupClose {
-    export const reduce = (s: parserState.WithRoot) => {
+    export const reduce = (s: ParserState.WithRoot) => {
         const previousOpenBranches = s.groups.pop()
         if (!previousOpenBranches) {
-            return parserState.error(buildUnmatchedMessage(s.scanner.unscanned))
+            return ParserState.error(buildUnmatchedMessage(s.scanner.unscanned))
         }
-        return parserState.finalizeGroup(s, previousOpenBranches)
+        return ParserState.finalizeGroup(s, previousOpenBranches)
     }
 
     export type reduce<
-        s extends ParserState.WithRoot,
+        s extends ParserState.T.WithRoot,
         unscanned extends string
     > = s["groups"] extends popGroup<infer stack, infer top>
         ? ParserState.finalizeGroup<s, top, stack, unscanned>

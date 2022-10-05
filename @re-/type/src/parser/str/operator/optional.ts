@@ -1,26 +1,23 @@
 import { Optional } from "../../../nodes/expression/optional.js"
-import { parserState } from "../state/state.js"
-import type { ParserState } from "../state/state.js"
-
-export namespace optionalOperator {}
+import { ParserState } from "../state/state.js"
 
 export namespace OptionalOperator {
-    export const finalize = (s: parserState.WithRoot) => {
+    export const finalize = (s: ParserState.WithRoot) => {
         if (s.scanner.lookahead !== "END") {
-            return parserState.error(nonTerminatingMessage)
+            return ParserState.error(nonTerminatingMessage)
         }
-        parserState.finalize(s)
+        ParserState.finalize(s)
         s.root = new Optional.Node(s.root)
         return s
     }
 
-    export type finalize<s extends ParserState.WithRoot> =
+    export type finalize<s extends ParserState.T.WithRoot> =
         s["unscanned"] extends "?"
             ? wrapWithOptionalIfValid<ParserState.finalize<s, 0>>
             : ParserState.error<nonTerminatingMessage>
 
-    type wrapWithOptionalIfValid<s extends ParserState.Unvalidated> =
-        s extends ParserState.Valid
+    type wrapWithOptionalIfValid<s extends ParserState.T.Unvalidated> =
+        s extends ParserState.T.Valid
             ? ParserState.setRoot<s, [s["root"], "?"]>
             : s
 

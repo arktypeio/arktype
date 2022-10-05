@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/common.js"
 import type { Bound } from "../../../nodes/expression/bound.js"
@@ -9,18 +8,18 @@ import { parseError } from "../../common.js"
 import type { MaybeAppend, ParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import { LeftBoundOperator } from "../operator/bound/left.js"
-import { intersectionOperator } from "../operator/intersection.js"
-import { unionOperator } from "../operator/union.js"
+import { IntersectionOperator } from "../operator/intersection.js"
+import { UnionOperator } from "../operator/union.js"
 import { scanner } from "./scanner.js"
 
-export type parserState<Preconditions extends parserState.Preconditions = {}> =
-    parserState.Base & Preconditions
-
 export type ParserState<Preconditions extends ParserState.Preconditions = {}> =
-    ParserState.Base & Preconditions & { unscanned: string }
+    ParserState.Base & Preconditions
 
 // TODO: Check namespace parse output
-export namespace parserState {
+export namespace ParserState {
+    export type T<Preconditions extends T.Preconditions = {}> = T.Base &
+        Preconditions & { unscanned: string }
+
     export type Base = {
         root: Base.Node | null
         branches: OpenBranches
@@ -28,66 +27,87 @@ export namespace parserState {
         scanner: scanner
     }
 
-    export type from<S extends Base> = S
-}
-
-export namespace ParserState {
-    export type Base = {
-        root: unknown
-        branches: OpenBranches
-        groups: OpenBranches[]
-        unscanned: UnscannedOrReturnCode
+    export namespace T {
+        export type Base = {
+            root: unknown
+            branches: OpenBranches
+            groups: OpenBranches[]
+            unscanned: UnscannedOrReturnCode
+        }
     }
 
-    export type UnscannedOrReturnCode = ValidUnscanned | 1
+    export type from<s extends T.Base> = s
 
-    export type ValidUnscanned = string | 0
-
-    export type Unvalidated<Preconditions extends Partial<Base> = {}> = Base &
-        Preconditions
-
-    export type Validated<Preconditions extends Partial<Base> = {}> = Base &
-        Preconditions & { unscanned: ValidUnscanned }
-
-    export type Unfinalized = {
-        unscanned: string
-    }
-}
-
-export namespace parserState {
     export type Preconditions = {
         root?: Base.Node | null
         branches?: Partial<OpenBranches>
         groups?: OpenBranches[]
     }
-}
 
-export namespace ParserState {
-    export type Preconditions = {
-        root?: unknown
-        branches?: Partial<OpenBranches>
-        groups?: OpenBranches[]
+    export namespace T {
+        export type Preconditions = {
+            root?: unknown
+            branches?: Partial<OpenBranches>
+            groups?: OpenBranches[]
+        }
     }
-}
+    export type WithRoot<Root extends Base.Node = Base.Node> = ParserState<{
+        root: Root
+    }>
 
-export namespace parserState {
+    export namespace T {
+        export type WithRoot<Root = {}> = ParserState.T<{ root: Root }>
+    }
+
+    export type OpenBranches = {
+        leftBound?: OpenLeftBound
+        union?: Union.Node
+        intersection?: Intersection.Node
+    }
+
+    export namespace T {
+        export type OpenBranches = {
+            leftBound: OpenLeftBound | null
+            union: [unknown, Union.Token] | null
+            intersection: [unknown, Intersection.Token] | null
+        }
+    }
+
+    export type OpenLeftBound = [
+        PrimitiveLiteral.Node<number>,
+        Bound.DoubleToken
+    ]
+
+    export namespace T {
+        export type OpenLeftBound = [PrimitiveLiteral.Number, Bound.DoubleToken]
+    }
+
+    export namespace T {
+        export type UnscannedOrReturnCode = ValidUnscanned | 1
+
+        export type ValidUnscanned = string | 0
+
+        export type Unvalidated<Preconditions extends Partial<Base> = {}> =
+            Base & Preconditions
+
+        export type Validated<Preconditions extends Partial<Base> = {}> = Base &
+            Preconditions & { unscanned: ValidUnscanned }
+
+        export type Unfinalized = {
+            unscanned: string
+        }
+
+        export type Valid = {
+            unscanned: ValidUnscanned
+        }
+    }
+
     export const initialize = (def: string): Base => ({
         root: null,
         branches: initializeBranches(),
         groups: [],
         scanner: new scanner(def)
     })
-}
-
-export namespace ParserState {
-    export type from<s extends Base> = s
-
-    export type scanTo<s extends Base, unscanned extends string> = from<{
-        root: s["root"]
-        branches: s["branches"]
-        groups: s["groups"]
-        unscanned: unscanned
-    }>
 
     export type initialize<def extends string> = from<{
         root: null
@@ -95,49 +115,21 @@ export namespace ParserState {
         groups: []
         unscanned: def
     }>
-}
-
-export namespace parserState {
-    export type WithRoot<Root extends Base.Node = Base.Node> = parserState<{
-        root: Root
-    }>
 
     export const hasRoot = <
         NodeClass extends ClassOf<Base.Node> = ClassOf<Base.Node>
     >(
-        s: parserState,
+        s: ParserState,
         ofClass?: NodeClass
-    ): s is parserState<{ root: InstanceOf<NodeClass> }> =>
+    ): s is ParserState<{ root: InstanceOf<NodeClass> }> =>
         ofClass ? s.root instanceof ofClass : !!s.root
-}
 
-export namespace ParserState {
-    export type WithRoot<Root = {}> = ParserState<{ root: Root }>
+    export type hasRoot<ast = {}> = { root: ast }
 
-    export type HasRoot = { root: {} }
-}
-
-// TODO: CHeck perf of doing this at runtime
-export namespace ParserState {
-    export type setRoot<
-        S extends ParserState.Validated,
-        Node,
-        ScanTo extends UnscannedOrReturnCode = S["unscanned"]
-    > = from<{
-        root: Node
-        branches: S["branches"]
-        groups: S["groups"]
-        unscanned: ScanTo
-    }>
-}
-
-export namespace parserState {
     export const error = (message: string) => {
         throw new parseError(message)
     }
-}
 
-export namespace ParserState {
     export type error<message extends string> = from<{
         root: ParseError<message>
         branches: initialBranches
@@ -145,78 +137,38 @@ export namespace ParserState {
         unscanned: 1
     }>
 
-    export type Valid = {
-        unscanned: ValidUnscanned
-    }
-}
-
-export namespace parserState {
-    export type OpenBranches = {
-        leftBound?: OpenLeftBound
-        union?: Union.Node
-        intersection?: Intersection.Node
-    }
-
-    export type OpenLeftBound = [
-        PrimitiveLiteral.Node<number>,
-        Bound.DoubleToken
-    ]
-}
-
-export namespace ParserState {
-    export type OpenBranches = {
-        leftBound: OpenLeftBound | null
-        union: [unknown, Union.Token] | null
-        intersection: [unknown, Intersection.Token] | null
-    }
-
-    export type OpenLeftBound = [PrimitiveLiteral.Number, Bound.DoubleToken]
-}
-
-export namespace parserState {
     export const initializeBranches = (): OpenBranches => ({})
-}
 
-export namespace ParserState {
     export type initialBranches = {
         leftBound: null
         union: null
         intersection: null
     }
-}
 
-export namespace parserState {
     export const mergeIntersectionAndUnionToRoot = (
-        s: parserState.WithRoot
+        s: ParserState.WithRoot
     ) => {
-        intersectionOperator.maybeMerge(s)
-        unionOperator.maybeMerge(s)
+        IntersectionOperator.maybeMerge(s)
+        UnionOperator.maybeMerge(s)
         return s
     }
-}
 
-export namespace ParserState {
-    export type mergeIntersectionAndUnion<S extends ParserState.WithRoot> =
-        MaybeAppend<
-            MaybeAppend<S["root"], S["branches"]["intersection"]>,
-            S["branches"]["union"]
-        >
-}
+    export type mergeIntersectionAndUnion<S extends T.WithRoot> = MaybeAppend<
+        MaybeAppend<S["root"], S["branches"]["intersection"]>,
+        S["branches"]["union"]
+    >
 
-export namespace parserState {
-    export const finalize = (s: parserState.WithRoot) => {
+    export const finalize = (s: ParserState.WithRoot) => {
         if (s.groups.length) {
             return error(GroupOpen.unclosedMessage)
         }
         finalizeGroup(s, {})
         return s
     }
-}
 
-export namespace ParserState {
     export type finalize<
-        s extends ParserState.WithRoot,
-        unscanned extends UnscannedOrReturnCode
+        s extends T.WithRoot,
+        unscanned extends T.UnscannedOrReturnCode
     > = s["groups"] extends []
         ? finalizeGroup<
               LeftBoundOperator.assertClosed<s>,
@@ -225,27 +177,23 @@ export namespace ParserState {
               unscanned
           >
         : error<GroupOpen.UnclosedGroupMessage>
-}
 
-export namespace parserState {
     export const finalizeGroup = (
-        s: parserState.WithRoot,
+        s: ParserState.WithRoot,
         nextBranches: OpenBranches
     ) => {
         mergeIntersectionAndUnionToRoot(s)
         LeftBoundOperator.assertClosed(s)
         s.branches = nextBranches
-        return s as parserState
+        return s as ParserState
     }
-}
 
-export namespace ParserState {
     export type finalizeGroup<
-        s extends ParserState.Unvalidated<{ root: {} }>,
-        nextBranches extends OpenBranches,
-        nextGroups extends OpenBranches[],
-        unscanned extends UnscannedOrReturnCode
-    > = s extends Unfinalized
+        s extends T.Unvalidated<{ root: {} }>,
+        nextBranches extends T.OpenBranches,
+        nextGroups extends T.OpenBranches[],
+        unscanned extends T.UnscannedOrReturnCode
+    > = s extends T.Unfinalized
         ? from<{
               groups: nextGroups
               branches: nextBranches
@@ -253,11 +201,27 @@ export namespace ParserState {
               unscanned: unscanned
           }>
         : s
-}
 
-export namespace parserState {
-    export const shifted = (s: parserState) => {
+    export const shifted = (s: ParserState) => {
         s.scanner.shift()
         return s
     }
+
+    export type scanTo<s extends T.Base, unscanned extends string> = from<{
+        root: s["root"]
+        branches: s["branches"]
+        groups: s["groups"]
+        unscanned: unscanned
+    }>
+
+    export type setRoot<
+        S extends T.Validated,
+        Node,
+        ScanTo extends T.UnscannedOrReturnCode = S["unscanned"]
+    > = from<{
+        root: Node
+        branches: S["branches"]
+        groups: S["groups"]
+        unscanned: ScanTo
+    }>
 }

@@ -4,37 +4,33 @@ import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { scanner } from "../state/scanner.js"
-import { parserState } from "../state/state.js"
-import type { ParserState } from "../state/state.js"
+import { ParserState } from "../state/state.js"
 import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 
 export namespace Unenclosed {
-    export const parse = (s: parserState, ctx: parserContext) => {
+    export const parse = (s: ParserState, ctx: parserContext) => {
         const token = s.scanner.shiftUntilNextTerminator()
         s.root = unenclosedToNode(s, token, ctx)
         return s
     }
 
     export type parse<
-        s extends ParserState,
+        s extends ParserState.T,
         ctx extends ParserContext
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
-    > extends Scanner.ShiftResult<infer Scanned, infer NextUnscanned>
-        ? ParserState.from<{
-              L: reduce<s["L"], resolve<Scanned, NextUnscanned, ctx>>
-              R: NextUnscanned
-          }>
+    > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
+        ? reduce<s, resolve<scanned, nextUnscanned, ctx>>
         : never
 
     const unenclosedToNode = (
-        s: parserState,
+        s: ParserState,
         token: string,
         ctx: parserContext
     ) =>
         maybeParseIdentifier(token, ctx) ??
         maybeParseLiteral(token) ??
-        parserState.error(
+        ParserState.error(
             token === ""
                 ? scanner.buildExpressionExpectedMessage(s.scanner.unscanned)
                 : buildUnresolvableMessage(token)
@@ -67,8 +63,8 @@ export namespace Unenclosed {
     }
 
     type reduce<
-        s extends ParserState,
-        resolved extends string | number
+        s extends ParserState.T,
+        resolved extends string
     > = resolved extends ParseError<infer Message>
         ? ParserState.error<Message>
         : ParserState.setRoot<s, resolved>

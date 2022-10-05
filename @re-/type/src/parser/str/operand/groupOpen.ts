@@ -1,15 +1,14 @@
-import type { ParserState } from "../state/state.js"
-import { parserState } from "../state/state.js"
+import { ParserState } from "../state/state.js"
 
 export namespace GroupOpen {
-    export const reduce = (s: parserState) => {
+    export const reduce = (s: ParserState) => {
         s.groups.push(s.branches)
-        s.branches = parserState.initializeBranches()
+        s.branches = ParserState.initializeBranches()
         return s
     }
 
     export type reduce<
-        s extends ParserState,
+        s extends ParserState.T,
         unscanned extends string
     > = ParserState.from<{
         groups: [...s["groups"], s["branches"]]

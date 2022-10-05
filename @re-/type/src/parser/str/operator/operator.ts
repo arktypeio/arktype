@@ -1,32 +1,28 @@
 import { isKeyOf } from "@re-/tools"
 import type { Scanner } from "../state/scanner.js"
-import type { ParserState } from "../state/state.js"
-import { parserState } from "../state/state.js"
-import type { ArrayOperator } from "./array.js"
-import { arrayOperator } from "./array.js"
+import { ParserState } from "../state/state.js"
+import { ArrayOperator } from "./array.js"
 import { BoundOperator } from "./bound/bound.js"
 import { Comparators } from "./bound/tokens.js"
 import { DivisibilityOperator } from "./divisibility.js"
 import { GroupClose } from "./groupClose.js"
 import { IntersectionOperator } from "./intersection.js"
-import type { OptionalOperator } from "./optional.js"
-import { optionalOperator } from "./optional.js"
-import type { UnionOperator } from "./union.js"
-import { unionOperator } from "./union.js"
+import { OptionalOperator } from "./optional.js"
+import { UnionOperator } from "./union.js"
 
 export namespace operator {}
 
 export namespace Operator {
-    export const parse = (s: parserState.WithRoot): parserState => {
+    export const parse = (s: ParserState.WithRoot): ParserState => {
         const lookahead = s.scanner.shift()
         return lookahead === "END"
-            ? parserState.finalize(s)
+            ? ParserState.finalize(s)
             : lookahead === "?"
-            ? optionalOperator.finalize(s)
+            ? OptionalOperator.finalize(s)
             : lookahead === "["
-            ? arrayOperator.parse(s)
+            ? ArrayOperator.parse(s)
             : lookahead === "|"
-            ? unionOperator.reduce(s)
+            ? UnionOperator.reduce(s)
             : lookahead === "&"
             ? IntersectionOperator.reduce(s)
             : lookahead === ")"
@@ -37,15 +33,15 @@ export namespace Operator {
             ? DivisibilityOperator.parse(s)
             : lookahead === " "
             ? parse(s)
-            : parserState.error(buildUnexpectedCharacterMessage(lookahead))
+            : ParserState.error(buildUnexpectedCharacterMessage(lookahead))
     }
 
-    export type parse<s extends ParserState.WithRoot> =
+    export type parse<s extends ParserState.T.WithRoot> =
         s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
             ? lookahead extends "?"
                 ? OptionalOperator.finalize<s>
                 : lookahead extends "["
-                ? ArrayOperator.Parse<s, unscanned>
+                ? ArrayOperator.parse<s, unscanned>
                 : lookahead extends "|"
                 ? UnionOperator.reduce<s, unscanned>
                 : lookahead extends "&"

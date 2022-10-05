@@ -2,30 +2,29 @@ import { isKeyOf } from "@re-/tools"
 import type { Bound } from "../../../../nodes/expression/bound.js"
 import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Scanner } from "../../state/scanner.js"
-import { parserState } from "../../state/state.js"
-import type { ParserState } from "../../state/state.js"
+import { ParserState } from "../../state/state.js"
 import { LeftBoundOperator } from "./left.js"
 import { RightBoundOperator } from "./right.js"
 import { Comparators } from "./tokens.js"
 
 export namespace BoundOperator {
     const shift = (
-        s: parserState.WithRoot,
+        s: ParserState.WithRoot,
         start: Comparators.StartChar
     ): Bound.Token =>
         s.scanner.lookaheadIs("=")
             ? `${start}${s.scanner.shift()}`
             : isKeyOf(start, Comparators.oneChar)
             ? start
-            : parserState.error(singleEqualsMessage)
+            : ParserState.error(singleEqualsMessage)
 
     export const parse = (
-        s: parserState.WithRoot,
+        s: ParserState.WithRoot,
         start: Comparators.StartChar
     ) => delegateReduction(s, shift(s, start))
 
     export type parse<
-        s extends ParserState.WithRoot,
+        s extends ParserState.T.WithRoot,
         start extends Comparators.StartChar,
         unscanned extends string
     > = unscanned extends Scanner.shift<"=", infer nextUnscanned>
@@ -38,16 +37,16 @@ export namespace BoundOperator {
     type singleEqualsMessage = typeof singleEqualsMessage
 
     const delegateReduction = (
-        s: parserState.WithRoot,
+        s: ParserState.WithRoot,
         comparator: Bound.Token
     ) =>
-        parserState.hasRoot(s, PrimitiveLiteral.Node) &&
+        ParserState.hasRoot(s, PrimitiveLiteral.Node) &&
         typeof s.root.value === "number"
             ? LeftBoundOperator.reduce(s, comparator)
             : RightBoundOperator.parse(s, comparator)
 
     type DelegateReduction<
-        s extends ParserState.WithRoot,
+        s extends ParserState.T.WithRoot,
         comparator extends Bound.Token,
         unscanned extends string
     > = s extends {

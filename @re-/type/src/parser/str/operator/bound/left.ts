@@ -2,30 +2,29 @@ import { isKeyOf } from "@re-/tools"
 import { Bound } from "../../../../nodes/expression/bound.js"
 import type { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Ast } from "../../../../nodes/traverse/ast.js"
-import type { ParserState } from "../../state/state.js"
-import { parserState } from "../../state/state.js"
+import { ParserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
 export namespace LeftBoundOperator {
     export const reduce = (
-        s: parserState.WithRoot<PrimitiveLiteral.Node<number>>,
+        s: ParserState.WithRoot<PrimitiveLiteral.Node<number>>,
         comparator: Bound.Token
     ) =>
         isKeyOf(comparator, Bound.doubleTokens)
             ? reduceValidated(s, comparator)
-            : parserState.error(
+            : ParserState.error(
                   Comparators.buildInvalidDoubleMessage(comparator)
               )
 
     export type reduce<
-        s extends ParserState.WithRoot<PrimitiveLiteral.Number>,
+        s extends ParserState.T.WithRoot<PrimitiveLiteral.Number>,
         comparator extends Bound.Token
     > = comparator extends Bound.DoubleToken
         ? reduceValidated<s, comparator>
         : ParserState.error<Comparators.buildInvalidDoubleMessage<comparator>>
 
     const reduceValidated = (
-        s: parserState.WithRoot<PrimitiveLiteral.Node<number>>,
+        s: ParserState.WithRoot<PrimitiveLiteral.Node<number>>,
         token: Bound.DoubleToken
     ) => {
         s.branches.leftBound = [s.root, token]
@@ -34,7 +33,7 @@ export namespace LeftBoundOperator {
     }
 
     type reduceValidated<
-        s extends ParserState.WithRoot<PrimitiveLiteral.Number>,
+        s extends ParserState.T.WithRoot<PrimitiveLiteral.Number>,
         comparator extends Bound.DoubleToken
     > = ParserState.from<{
         groups: s["groups"]
@@ -47,9 +46,9 @@ export namespace LeftBoundOperator {
         unscanned: s["unscanned"]
     }>
 
-    export const assertClosed = (s: parserState.WithRoot) =>
+    export const assertClosed = (s: ParserState.WithRoot) =>
         s.branches.leftBound
-            ? parserState.error(
+            ? ParserState.error(
                   buildUnpairedMessage(
                       s.root.toString(),
                       s.branches.leftBound[0].toString(),
@@ -58,7 +57,7 @@ export namespace LeftBoundOperator {
               )
             : s
 
-    export type assertClosed<s extends ParserState.WithRoot> =
+    export type assertClosed<s extends ParserState.T.WithRoot> =
         s["branches"]["leftBound"] extends ParserState.OpenLeftBound
             ? ParserState.error<
                   buildUnpairedMessage<

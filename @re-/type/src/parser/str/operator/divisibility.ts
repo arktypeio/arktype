@@ -3,17 +3,16 @@ import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { Ast } from "../../../nodes/traverse/ast.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
-import { parserState } from "../state/state.js"
-import type { ParserState } from "../state/state.js"
+import { ParserState } from "../state/state.js"
 
 export namespace DivisibilityOperator {
     // TODO: Check for multiple modulos/bounds etc.
-    export const parse = (s: parserState.WithRoot) => {
+    export const parse = (s: ParserState.WithRoot) => {
         if (
-            !parserState.hasRoot(s, PrimitiveLiteral.Node) ||
+            !ParserState.hasRoot(s, PrimitiveLiteral.Node) ||
             typeof s.root.value !== "number"
         ) {
-            return parserState.error(buildIndivisibleMessage(s.root.toString()))
+            return ParserState.error(buildIndivisibleMessage(s.root.toString()))
         }
         const divisorToken = s.scanner.shiftUntilNextTerminator()
         return reduce(
@@ -28,7 +27,7 @@ export namespace DivisibilityOperator {
     }
 
     export type parse<
-        s extends ParserState,
+        s extends ParserState.T.WithRoot,
         unscanned extends string
     > = s extends {
         L: {
@@ -53,12 +52,12 @@ export namespace DivisibilityOperator {
         : ParserState.error<buildIndivisibleMessage<Ast.ToString<s["root"]>>>
 
     const reduce = (
-        s: parserState.WithRoot<PrimitiveLiteral.Node<number>>,
+        s: ParserState.WithRoot<PrimitiveLiteral.Node<number>>,
         divisorToken: string,
         parseResult: number
     ) => {
         if (parseResult === 0) {
-            return parserState.error(buildInvalidDivisorMessage("0"))
+            return ParserState.error(buildInvalidDivisorMessage("0"))
         }
         s.root = new Divisibility.Node(
             s.root,
@@ -72,7 +71,7 @@ export namespace DivisibilityOperator {
     }
 
     type reduce<
-        s extends ParserState,
+        s extends ParserState.T.WithRoot,
         divisorToken extends string,
         parsedDivisorOrErrorMessage extends number | string,
         unscanned extends string
