@@ -176,7 +176,7 @@ export namespace ParserState {
               [],
               unscanned
           >
-        : error<GroupOpen.UnclosedGroupMessage>
+        : error<GroupOpen.unclosedMessage>
 
     export const finalizeGroup = (
         s: ParserState.WithRoot,

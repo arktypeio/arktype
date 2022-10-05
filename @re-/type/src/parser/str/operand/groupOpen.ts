@@ -18,5 +18,5 @@ export namespace GroupOpen {
     }>
 
     export const unclosedMessage = "Missing )."
-    export type UnclosedGroupMessage = typeof unclosedMessage
+    export type unclosedMessage = typeof unclosedMessage
 }
