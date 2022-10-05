@@ -30,8 +30,6 @@ export namespace ParserState {
         }
     }
 
-    export type from<s extends T.Base> = s
-
     export type Of<Conditions extends Preconditions> = Base & Conditions
 
     export namespace T {
@@ -103,6 +101,8 @@ export namespace ParserState {
         export type OpenLeftBound = [PrimitiveLiteral.Number, Bound.DoubleToken]
     }
 
+    export type from<s extends T.Base> = s
+
     export const initialize = (def: string): Base => ({
         root: null,
         branches: initializeBranches(),
@@ -170,6 +170,7 @@ export namespace ParserState {
         unscanned extends T.UnscannedOrReturnCode
     > = s["groups"] extends []
         ? finalizeGroup<
+              // @ts-expect-error
               LeftBoundOperator.assertClosed<s>,
               initialBranches,
               [],
