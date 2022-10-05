@@ -12,7 +12,7 @@ export type FullParse<Def extends string, Ctx extends ParserContext> = Loop<
 >
 
 // TODO: Recursion perf?
-const loop = (s: ParserState, ctx: parserContext) => {
+const loop = (s: ParserState.Base, ctx: parserContext) => {
     while (!s.scanner.hasBeenFinalized) {
         next(s, ctx)
     }
@@ -20,14 +20,14 @@ const loop = (s: ParserState, ctx: parserContext) => {
 }
 
 type Loop<
-    S extends ParserState.T.Unvalidated,
-    Ctx extends ParserContext
-> = S extends ParserState.T.Unfinalized ? Loop<Next<S, Ctx>, Ctx> : S["root"]
+    s extends ParserState.T.Base,
+    ctx extends ParserContext
+> = s extends ParserState.T.Incomplete ? Loop<Next<s, ctx>, ctx> : s["root"]
 
-const next = (s: ParserState, ctx: parserContext): ParserState =>
-    ParserState.hasRoot(s) ? Operator.parse(s) : Operand.parse(s, ctx)
+const next = (s: ParserState.Base, ctx: parserContext): ParserState.Base =>
+    ParserState.rooted(s) ? Operator.parse(s) : Operand.parse(s, ctx)
 
 type Next<
-    S extends ParserState.T,
-    Ctx extends ParserContext
-> = S extends ParserState.hasRoot ? Operator.parse<S> : Operand.parse<S, Ctx>
+    s extends ParserState.T.Unfinished,
+    ctx extends ParserContext
+> = s extends ParserState.rooted ? Operator.parse<s> : Operand.parse<s, ctx>

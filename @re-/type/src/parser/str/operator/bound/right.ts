@@ -39,14 +39,13 @@ export namespace RightBoundOperator {
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
         ? reduce<
-              s,
+              ParserState.scanTo<s, nextUnscanned>,
               comparator,
               scanned,
               UnenclosedNumber.ParseWellFormedNumber<
                   scanned,
                   buildInvalidLimitMessage<comparator, scanned>
-              >,
-              nextUnscanned
+              >
           >
         : never
 
@@ -63,29 +62,26 @@ export namespace RightBoundOperator {
         s extends ParserState.T.WithRoot,
         comparator extends Bound.Token,
         limitToken extends string,
-        limitParseResult extends string | number,
-        unscanned extends string
+        limitParseResult extends string | number
     > = limitParseResult extends string
         ? ParserState.error<limitParseResult>
         : s["branches"]["leftBound"] extends {}
         ? reduceDouble<
               ParserState.from<{
                   root: ParserState.mergeIntersectionAndUnion<s>
-                  branches: {
-                      leftBound: s["branches"]["leftBound"]
-                      union: null
-                      intersection: null
-                  }
+                  branches: ParserState.initialBranches
                   groups: s["groups"]
-                  unscanned: unscanned
+                  unscanned: s["unscanned"]
               }>,
+              s["branches"]["leftBound"][0],
+              s["branches"]["leftBound"][1],
               comparator,
               limitToken & PrimitiveLiteral.Number
           >
-        : reduceSingle<s, comparator, limitParseResult & number>
+        : reduceSingle<s, comparator, limitToken & PrimitiveLiteral.Number>
 
     const reduceDouble = (
-        s: ParserState<{
+        s: ParserState.Of<{
             root: Base.Node
             branches: {
                 leftBound: ParserState.OpenLeftBound
@@ -102,7 +98,7 @@ export namespace RightBoundOperator {
                 Comparators.buildInvalidDoubleMessage(rightComparator)
             )
         }
-        ParserState.mergeIntersectionAndUnionToRoot(s)
+        ParserState.mergeIntersectionAndUnion(s)
         s.root = new Bound.LeftNode(
             s.branches.leftBound[0],
             s.branches.leftBound[1],
@@ -113,12 +109,9 @@ export namespace RightBoundOperator {
     }
 
     type reduceDouble<
-        s extends ParserState.T<{
-            root: BoundableNode
-            branches: {
-                leftBound: ParserState.T.OpenLeftBound
-            }
-        }>,
+        s extends ParserState.T.WithRoot<BoundableNode>,
+        leftLimit extends PrimitiveLiteral.Number,
+        leftComparator extends Bound.Token,
         rightComparator extends Bound.Token,
         rightLimit extends PrimitiveLiteral.Number
     > = s["root"] extends BoundableNode
@@ -126,8 +119,8 @@ export namespace RightBoundOperator {
             ? ParserState.setRoot<
                   s,
                   [
-                      s["branches"]["leftBound"][0],
-                      s["branches"]["leftBound"][1],
+                      leftLimit,
+                      leftComparator,
                       [s["root"], rightComparator, rightLimit]
                   ]
               >
@@ -151,7 +144,7 @@ export namespace RightBoundOperator {
     type reduceSingle<
         s extends ParserState.T.WithRoot<BoundableNode>,
         comparator extends Bound.Token,
-        limit extends number
+        limit extends PrimitiveLiteral.Number
     > = s["root"] extends BoundableNode
         ? ParserState.setRoot<s, [s["root"], comparator, limit]>
         : ParserState.error<buildUnboundableMessage<Ast.ToString<s["root"]>>>
@@ -182,7 +175,7 @@ export namespace RightBoundOperator {
         s: s
     ): s is s & ParserState.WithRoot<BoundableNode> => true
 
-    const isLeftBounded = <s extends ParserState>(
+    const isLeftBounded = <s extends ParserState.Base>(
         s: s
     ): s is s & { branches: { leftBound: ParserState.OpenLeftBound } } =>
         !!s.branches.leftBound

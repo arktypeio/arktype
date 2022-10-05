@@ -1,14 +1,14 @@
 import { ParserState } from "../state/state.js"
 
 export namespace GroupOpen {
-    export const reduce = (s: ParserState) => {
+    export const reduce = (s: ParserState.Base) => {
         s.groups.push(s.branches)
         s.branches = ParserState.initializeBranches()
         return s
     }
 
     export type reduce<
-        s extends ParserState.T,
+        s extends ParserState.T.Unfinished,
         unscanned extends string
     > = ParserState.from<{
         groups: [...s["groups"], s["branches"]]

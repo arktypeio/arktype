@@ -14,22 +14,22 @@ export namespace IntersectionOperator {
     }
 
     export type reduce<
-        S extends ParserState.T.WithRoot,
-        Unscanned extends string
-    > = Unscanned extends ""
+        s extends ParserState.T.WithRoot,
+        unscanned extends string
+    > = unscanned extends ""
         ? ParserState.error<MissingRightOperandMessage<"&">>
         : ParserState.from<{
               root: null
               branches: {
-                  leftBound: S["branches"]["leftBound"]
-                  union: S["branches"]["union"]
+                  leftBound: s["branches"]["leftBound"]
+                  union: s["branches"]["union"]
                   intersection: [
-                      MaybeAppend<S["root"], S["branches"]["intersection"]>,
+                      MaybeAppend<s["root"], s["branches"]["intersection"]>,
                       "&"
                   ]
               }
-              groups: S["groups"]
-              unscanned: Unscanned
+              groups: s["groups"]
+              unscanned: unscanned
           }>
 
     export const maybeMerge = (s: ParserState.WithRoot) => {

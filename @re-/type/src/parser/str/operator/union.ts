@@ -19,7 +19,7 @@ export namespace UnionOperator {
         s extends ParserState.T.WithRoot,
         unscanned extends string
     > = unscanned extends ""
-        ? MissingRightOperandMessage<"|">
+        ? ParserState.error<MissingRightOperandMessage<"|">>
         : ParserState.from<{
               root: undefined
               branches: {

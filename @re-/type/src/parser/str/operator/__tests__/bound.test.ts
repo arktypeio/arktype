@@ -11,30 +11,34 @@ describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
-                assert(type("number>0").ast).narrowedValue(["number", ">", 0])
+                assert(type("number>0").ast).narrowedValue(["number", ">", "0"])
             })
             test("<", () => {
-                assert(type("number<10").ast).narrowedValue(["number", "<", 10])
+                assert(type("number<10").ast).narrowedValue([
+                    "number",
+                    "<",
+                    "10"
+                ])
             })
             test(">=", () => {
                 assert(type("number>=3.14159").ast).narrowedValue([
                     "number",
                     ">=",
-                    3.14159
+                    "3.14159"
                 ])
             })
             test("<=", () => {
                 assert(type("number<=-49").ast).narrowedValue([
                     "number",
                     "<=",
-                    -49
+                    "-49"
                 ])
             })
             test("==", () => {
                 assert(type("number==3211993").ast).narrowedValue([
                     "number",
                     "==",
-                    3211993
+                    "3211993"
                 ])
             })
         })
@@ -90,7 +94,7 @@ describe("bound", () => {
                 // Would it be easier to understand/use? Decide this first.
                 // @ts-expect-error
                 assert(() => type("object|null>=10")).throwsAndHasTypeError(
-                    RightBoundOperator.unboundableMessage("null")
+                    RightBoundOperator.buildUnboundableMessage("null")
                 )
             })
         })

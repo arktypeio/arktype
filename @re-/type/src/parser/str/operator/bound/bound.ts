@@ -28,9 +28,9 @@ export namespace BoundOperator {
         start extends Comparators.StartChar,
         unscanned extends string
     > = unscanned extends Scanner.shift<"=", infer nextUnscanned>
-        ? DelegateReduction<s, `${start}=`, nextUnscanned>
+        ? DelegateReduction<ParserState.scanTo<s, nextUnscanned>, `${start}=`>
         : start extends Comparators.OneChar
-        ? DelegateReduction<s, start, unscanned>
+        ? DelegateReduction<ParserState.scanTo<s, unscanned>, start>
         : ParserState.error<singleEqualsMessage>
 
     export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
@@ -40,18 +40,17 @@ export namespace BoundOperator {
         s: ParserState.WithRoot,
         comparator: Bound.Token
     ) =>
-        ParserState.hasRoot(s, PrimitiveLiteral.Node) &&
+        ParserState.rooted(s, PrimitiveLiteral.Node) &&
         typeof s.root.value === "number"
             ? LeftBoundOperator.reduce(s, comparator)
             : RightBoundOperator.parse(s, comparator)
 
     type DelegateReduction<
         s extends ParserState.T.WithRoot,
-        comparator extends Bound.Token,
-        unscanned extends string
+        comparator extends Bound.Token
     > = s extends {
         root: PrimitiveLiteral.Number
     }
-        ? LeftBoundOperator.reduce<ParserState.scanTo<s, unscanned>, comparator>
-        : RightBoundOperator.parse<ParserState.scanTo<s, unscanned>, comparator>
+        ? LeftBoundOperator.reduce<s, comparator>
+        : RightBoundOperator.parse<s, comparator>
 }

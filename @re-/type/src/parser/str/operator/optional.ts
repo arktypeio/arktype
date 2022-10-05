@@ -16,8 +16,8 @@ export namespace OptionalOperator {
             ? wrapWithOptionalIfValid<ParserState.finalize<s, 0>>
             : ParserState.error<nonTerminatingMessage>
 
-    type wrapWithOptionalIfValid<s extends ParserState.T.Unvalidated> =
-        s extends ParserState.T.Valid
+    type wrapWithOptionalIfValid<s extends ParserState.T.Base> =
+        s extends ParserState.T.Unfinished
             ? ParserState.setRoot<s, [s["root"], "?"]>
             : s
 

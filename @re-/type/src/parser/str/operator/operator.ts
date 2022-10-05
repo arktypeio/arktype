@@ -13,7 +13,7 @@ import { UnionOperator } from "./union.js"
 export namespace operator {}
 
 export namespace Operator {
-    export const parse = (s: ParserState.WithRoot): ParserState => {
+    export const parse = (s: ParserState.WithRoot): ParserState.Base => {
         const lookahead = s.scanner.shift()
         return lookahead === "END"
             ? ParserState.finalize(s)

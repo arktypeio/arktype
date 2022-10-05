@@ -5,7 +5,7 @@ import type { Scanner, scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 
 export namespace Enclosed {
-    export const parse = (s: ParserState, enclosing: StartChar) => {
+    export const parse = (s: ParserState.Base, enclosing: StartChar) => {
         const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
             appendTo: enclosing,
             inclusive: true,
@@ -23,7 +23,7 @@ export namespace Enclosed {
     }
 
     export type parse<
-        s extends ParserState.T,
+        s extends ParserState.T.Unfinished,
         enclosing extends StartChar,
         unscanned extends string
     > = Scanner.shiftUntil<unscanned, enclosing> extends Scanner.ShiftResult<

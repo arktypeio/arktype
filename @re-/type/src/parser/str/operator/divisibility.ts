@@ -9,7 +9,7 @@ export namespace DivisibilityOperator {
     // TODO: Check for multiple modulos/bounds etc.
     export const parse = (s: ParserState.WithRoot) => {
         if (
-            !ParserState.hasRoot(s, PrimitiveLiteral.Node) ||
+            !ParserState.rooted(s, PrimitiveLiteral.Node) ||
             typeof s.root.value !== "number"
         ) {
             return ParserState.error(buildIndivisibleMessage(s.root.toString()))
@@ -30,10 +30,8 @@ export namespace DivisibilityOperator {
         s extends ParserState.T.WithRoot,
         unscanned extends string
     > = s extends {
-        L: {
-            // TODO: Actually by type
-            root: "number" | "integer"
-        }
+        // TODO: Actually by type
+        root: "number" | "integer"
     }
         ? Scanner.shiftUntil<
               unscanned,

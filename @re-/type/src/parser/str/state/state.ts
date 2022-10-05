@@ -12,14 +12,8 @@ import { IntersectionOperator } from "../operator/intersection.js"
 import { UnionOperator } from "../operator/union.js"
 import { scanner } from "./scanner.js"
 
-export type ParserState<Preconditions extends ParserState.Preconditions = {}> =
-    ParserState.Base & Preconditions
-
 // TODO: Check namespace parse output
 export namespace ParserState {
-    export type T<Preconditions extends T.Preconditions = {}> = T.Base &
-        Preconditions & { unscanned: string }
-
     export type Base = {
         root: Base.Node | null
         branches: OpenBranches
@@ -38,6 +32,33 @@ export namespace ParserState {
 
     export type from<s extends T.Base> = s
 
+    export type Of<Conditions extends Preconditions> = Base & Conditions
+
+    export namespace T {
+        export type Unvalidated<Conditions extends Preconditions = {}> = Base &
+            Conditions
+
+        export type Unfinished<Conditions extends Preconditions = {}> = Base &
+            Conditions &
+            Incomplete
+
+        export type Incomplete = {
+            unscanned: string
+        }
+
+        export type Finished = {
+            unscanned: number
+        }
+
+        export type Valid = {
+            unscanned: ValidUnscanned
+        }
+
+        export type ValidUnscanned = string | 0
+
+        export type UnscannedOrReturnCode = ValidUnscanned | 1
+    }
+
     export type Preconditions = {
         root?: Base.Node | null
         branches?: Partial<OpenBranches>
@@ -51,12 +72,12 @@ export namespace ParserState {
             groups?: OpenBranches[]
         }
     }
-    export type WithRoot<Root extends Base.Node = Base.Node> = ParserState<{
+    export type WithRoot<Root extends Base.Node = Base.Node> = Of<{
         root: Root
     }>
 
     export namespace T {
-        export type WithRoot<Root = {}> = ParserState.T<{ root: Root }>
+        export type WithRoot<Root = {}> = Unfinished<{ root: Root }>
     }
 
     export type OpenBranches = {
@@ -82,26 +103,6 @@ export namespace ParserState {
         export type OpenLeftBound = [PrimitiveLiteral.Number, Bound.DoubleToken]
     }
 
-    export namespace T {
-        export type UnscannedOrReturnCode = ValidUnscanned | 1
-
-        export type ValidUnscanned = string | 0
-
-        export type Unvalidated<Preconditions extends Partial<Base> = {}> =
-            Base & Preconditions
-
-        export type Validated<Preconditions extends Partial<Base> = {}> = Base &
-            Preconditions & { unscanned: ValidUnscanned }
-
-        export type Unfinalized = {
-            unscanned: string
-        }
-
-        export type Valid = {
-            unscanned: ValidUnscanned
-        }
-    }
-
     export const initialize = (def: string): Base => ({
         root: null,
         branches: initializeBranches(),
@@ -116,15 +117,15 @@ export namespace ParserState {
         unscanned: def
     }>
 
-    export const hasRoot = <
-        NodeClass extends ClassOf<Base.Node> = ClassOf<Base.Node>
+    export const rooted = <
+        nodeClass extends ClassOf<Base.Node> = ClassOf<Base.Node>
     >(
-        s: ParserState,
-        ofClass?: NodeClass
-    ): s is ParserState<{ root: InstanceOf<NodeClass> }> =>
+        s: ParserState.Base,
+        ofClass?: nodeClass
+    ): s is ParserState.Of<{ root: InstanceOf<nodeClass> }> =>
         ofClass ? s.root instanceof ofClass : !!s.root
 
-    export type hasRoot<ast = {}> = { root: ast }
+    export type rooted<ast = {}> = { root: ast }
 
     export const error = (message: string) => {
         throw new parseError(message)
@@ -145,9 +146,7 @@ export namespace ParserState {
         intersection: null
     }
 
-    export const mergeIntersectionAndUnionToRoot = (
-        s: ParserState.WithRoot
-    ) => {
+    export const mergeIntersectionAndUnion = (s: ParserState.WithRoot) => {
         IntersectionOperator.maybeMerge(s)
         UnionOperator.maybeMerge(s)
         return s
@@ -182,10 +181,10 @@ export namespace ParserState {
         s: ParserState.WithRoot,
         nextBranches: OpenBranches
     ) => {
-        mergeIntersectionAndUnionToRoot(s)
+        mergeIntersectionAndUnion(s)
         LeftBoundOperator.assertClosed(s)
         s.branches = nextBranches
-        return s as ParserState
+        return s as ParserState.Base
     }
 
     export type finalizeGroup<
@@ -193,7 +192,7 @@ export namespace ParserState {
         nextBranches extends T.OpenBranches,
         nextGroups extends T.OpenBranches[],
         unscanned extends T.UnscannedOrReturnCode
-    > = s extends T.Unfinalized
+    > = s extends T.Incomplete
         ? from<{
               groups: nextGroups
               branches: nextBranches
@@ -202,7 +201,7 @@ export namespace ParserState {
           }>
         : s
 
-    export const shifted = (s: ParserState) => {
+    export const shifted = (s: ParserState.Base) => {
         s.scanner.shift()
         return s
     }
@@ -215,13 +214,13 @@ export namespace ParserState {
     }>
 
     export type setRoot<
-        S extends T.Validated,
-        Node,
-        ScanTo extends T.UnscannedOrReturnCode = S["unscanned"]
+        s extends T.Unfinished,
+        node,
+        scanTo extends T.UnscannedOrReturnCode = s["unscanned"]
     > = from<{
-        root: Node
-        branches: S["branches"]
-        groups: S["groups"]
-        unscanned: ScanTo
+        root: node
+        branches: s["branches"]
+        groups: s["groups"]
+        unscanned: scanTo
     }>
 }

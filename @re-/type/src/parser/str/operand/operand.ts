@@ -6,7 +6,10 @@ import { GroupOpen } from "./groupOpen.js"
 import { Unenclosed } from "./unenclosed.js"
 
 export namespace Operand {
-    export const parse = (s: ParserState, ctx: parserContext): ParserState =>
+    export const parse = (
+        s: ParserState.Base,
+        ctx: parserContext
+    ): ParserState.Base =>
         s.scanner.lookahead === "("
             ? GroupOpen.reduce(ParserState.shifted(s))
             : s.scanner.lookaheadIsIn(Enclosed.startChars)
@@ -16,7 +19,7 @@ export namespace Operand {
             : Unenclosed.parse(s, ctx)
 
     export type parse<
-        s extends ParserState.T,
+        s extends ParserState.T.Unfinished,
         ctx extends ParserContext
     > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
         ? lookahead extends "("

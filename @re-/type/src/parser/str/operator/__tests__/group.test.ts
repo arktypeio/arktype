@@ -51,7 +51,7 @@ describe("group", () => {
             assert(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)")
-            }).throwsAndHasTypeError(GroupClose.unmatchedMessage(""))
+            }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage(""))
         })
         test("lone )", () => {
             assert(() => {
@@ -77,7 +77,7 @@ describe("group", () => {
             assert(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))[]")
-            }).throwsAndHasTypeError(GroupClose.unmatchedMessage("[]"))
+            }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage("[]"))
         })
         test("starting )", () => {
             assert(() => {

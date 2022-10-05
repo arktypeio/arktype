@@ -17,8 +17,8 @@ export namespace GroupClose {
         : ParserState.error<buildUnmatchedMessage<unscanned>>
 
     type popGroup<
-        stack extends ParserState.OpenBranches[],
-        top extends ParserState.OpenBranches
+        stack extends ParserState.T.OpenBranches[],
+        top extends ParserState.T.OpenBranches
     > = [...stack, top]
 
     export const buildUnmatchedMessage = <unscanned extends string>(

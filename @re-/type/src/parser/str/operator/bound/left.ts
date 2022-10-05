@@ -36,13 +36,13 @@ export namespace LeftBoundOperator {
         s extends ParserState.T.WithRoot<PrimitiveLiteral.Number>,
         comparator extends Bound.DoubleToken
     > = ParserState.from<{
-        groups: s["groups"]
+        root: null
         branches: {
             union: s["branches"]["union"]
             intersection: s["branches"]["intersection"]
             leftBound: [s["root"], comparator]
         }
-        root: undefined
+        groups: s["groups"]
         unscanned: s["unscanned"]
     }>
 
@@ -58,7 +58,7 @@ export namespace LeftBoundOperator {
             : s
 
     export type assertClosed<s extends ParserState.T.WithRoot> =
-        s["branches"]["leftBound"] extends ParserState.OpenLeftBound
+        s["branches"]["leftBound"] extends ParserState.T.OpenLeftBound
             ? ParserState.error<
                   buildUnpairedMessage<
                       Ast.ToString<ParserState.mergeIntersectionAndUnion<s>>,

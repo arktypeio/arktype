@@ -13,25 +13,25 @@ describe("modulo", () => {
         test("indivisible", () => {
             // @ts-expect-error
             assert(() => type("string%2")).throwsAndHasTypeError(
-                DivisibilityOperator.indivisibleMessage("string")
+                DivisibilityOperator.buildIndivisibleMessage("string")
             )
         })
         test("non-integer divisor", () => {
             // @ts-expect-error
             assert(() => type("number%2.3")).throwsAndHasTypeError(
-                DivisibilityOperator.invalidDivisorMessage("2.3")
+                DivisibilityOperator.buildInvalidDivisorMessage("2.3")
             )
         })
         test("non-numeric divisor", () => {
             // @ts-expect-error
             assert(() => type("number%foobar")).throwsAndHasTypeError(
-                DivisibilityOperator.invalidDivisorMessage("foobar")
+                DivisibilityOperator.buildInvalidDivisorMessage("foobar")
             )
         })
         test("zero divisor", () => {
             // @ts-expect-error
             assert(() => type("number%0")).throwsAndHasTypeError(
-                DivisibilityOperator.invalidDivisorMessage("0")
+                DivisibilityOperator.buildInvalidDivisorMessage("0")
             )
         })
     })
