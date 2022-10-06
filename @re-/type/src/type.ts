@@ -4,7 +4,7 @@ import type {
     DynamicArktype
 } from "./nodes/roots/type.js"
 import { ArktypeRoot } from "./nodes/roots/type.js"
-import type { Ast } from "./nodes/traverse/ast.js"
+import type { Ast } from "./nodes/traverse/ast/ast.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace } from "./space.js"
@@ -32,14 +32,17 @@ const lazyTypeFn: DynamicTypeFn = (def, opts) => {
 
 export type InferredTypeFn<Space extends ResolvedSpace> = <
     Definition,
-    ParseResult = Root.Parse<Definition, Space>,
+    ParseResult = Root.parse<Definition, Space>,
     Inferred = Ast.Infer<ParseResult, Space["resolutions"]>
 >(
-    definition: Root.Validate<Definition, ParseResult>,
+    definition: Ast.semanticValidate<
+        Ast.syntacticValidate<Definition, ParseResult>,
+        ParseResult,
+        Space["resolutions"]
+    >,
     options?: ArktypeOptions
-) => ParseResult extends ParseError<string>
-    ? never
-    : Arktype<Inferred, ParseResult>
+) => // TODO: Check objects?
+ParseResult extends ParseError<string> ? never : Arktype<Inferred, ParseResult>
 
 type DynamicTypeFn = (
     definition: unknown,

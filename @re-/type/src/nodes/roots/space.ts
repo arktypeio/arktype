@@ -1,13 +1,12 @@
 import { chainableNoOpProxy, mapValues } from "@re-/tools"
 import type { Dictionary } from "@re-/tools"
 import { Root } from "../../parser/root.js"
-import { Scope } from "../expression/scope.js"
+import { Scope } from "../expression/infix/scope.js"
 import type { ArktypeOptions } from "./type.js"
 import { ArktypeRoot } from "./type.js"
 
 // TODO: Ensure there are no extraneous types/space calls from testing
 // TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space
-// TODO: Is proxy better?
 export class ArktypeSpace {
     constructor(
         public resolutions: Dictionary<ArktypeRoot>,

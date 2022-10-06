@@ -33,43 +33,43 @@ describe("root definition", () => {
         test("undefined", () => {
             // @ts-expect-error
             assert(() => type({ bad: undefined })).throwsAndHasTypeError(
-                Root.badDefinitionTypeMessage("undefined")
+                Root.buildBadDefinitionTypeMessage("undefined")
             )
         })
         test("null", () => {
             // @ts-expect-error
             assert(() => type({ bad: null })).throwsAndHasTypeError(
-                Root.badDefinitionTypeMessage("null")
+                Root.buildBadDefinitionTypeMessage("null")
             )
         })
         test("boolean", () => {
             // @ts-expect-error
             assert(() => type({ bad: true })).throwsAndHasTypeError(
-                Root.badDefinitionTypeMessage("boolean")
+                Root.buildBadDefinitionTypeMessage("boolean")
             )
         })
         test("number", () => {
             // @ts-expect-error
             assert(() => type({ bad: 5 })).throwsAndHasTypeError(
-                Root.badDefinitionTypeMessage("number")
+                Root.buildBadDefinitionTypeMessage("number")
             )
         })
         test("bigint", () => {
             // @ts-expect-error
             assert(() => type({ bad: 99999n })).throwsAndHasTypeError(
-                Root.badDefinitionTypeMessage("bigint")
+                Root.buildBadDefinitionTypeMessage("bigint")
             )
         })
         test("function", () => {
             // @ts-expect-error
             assert(() => type({ bad: () => {} })).throwsAndHasTypeError(
-                Root.badDefinitionTypeMessage("function")
+                Root.buildBadDefinitionTypeMessage("function")
             )
         })
         test("symbol", () => {
             // @ts-expect-error
             assert(() => type({ bad: Symbol() })).throwsAndHasTypeError(
-                Root.badDefinitionTypeMessage("symbol")
+                Root.buildBadDefinitionTypeMessage("symbol")
             )
         })
     })

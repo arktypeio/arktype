@@ -1,6 +1,6 @@
-import type { Check } from "../traverse/check.js"
-import { Diagnostics } from "../traverse/diagnostics.js"
-import { Branching } from "./expression.js"
+import type { Check } from "../../traverse/check.js"
+import { Diagnostics } from "../../traverse/diagnostics.js"
+import { Branching } from "./branching.js"
 
 export namespace Union {
     export const token = "|"

@@ -75,8 +75,8 @@ export namespace Structure {
     >
 }
 
-export namespace Constraint {
-    export type Data = number | string | unknown[]
+export namespace Constrainable {
+    export type Data = number | string | readonly unknown[]
 
     export type Kind = "number" | "string" | "array"
 

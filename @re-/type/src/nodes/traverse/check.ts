@@ -5,7 +5,7 @@ import type {
 } from "@re-/tools"
 import { hasJsType } from "@re-/tools"
 import type { Base } from "../common.js"
-import type { Scope } from "../expression/scope.js"
+import type { Scope } from "../expression/infix/scope.js"
 import type { ArktypeRoot } from "../roots/type.js"
 import type { DiagnosticCode, InternalDiagnosticInput } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"

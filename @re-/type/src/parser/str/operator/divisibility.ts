@@ -1,6 +1,6 @@
-import { Divisibility } from "../../../nodes/expression/divisibility.js"
+import { Divisibility } from "../../../nodes/expression/infix/divisibility.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import type { Ast } from "../../../nodes/traverse/ast.js"
+import type { Ast } from "../../../nodes/traverse/ast/ast.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -40,14 +40,14 @@ export namespace DivisibilityOperator {
             ? reduce<
                   s,
                   scanned,
-                  UnenclosedNumber.ParseWellFormedInteger<
+                  UnenclosedNumber.parseWellFormedInteger<
                       scanned,
                       buildInvalidDivisorMessage<scanned>
                   >,
                   nextUnscanned
               >
             : never
-        : ParserState.error<buildIndivisibleMessage<Ast.ToString<s["root"]>>>
+        : ParserState.error<buildIndivisibleMessage<Ast.toString<s["root"]>>>
 
     const reduce = (
         s: ParserState.WithRoot<PrimitiveLiteral.Node<number>>,

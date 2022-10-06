@@ -36,18 +36,18 @@ const wellFormedIntegerMatcher = new RegExp(
 
 type NumericLiteralKind = "number" | "bigint" | "integer"
 
-type MalformedNumericLiteralMessage<
-    Def extends string,
-    Kind extends NumericLiteralKind
-> = `'${Def}' was parsed as a ${Kind} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
+type buildMalformedNumericLiteralMessage<
+    def extends string,
+    kind extends NumericLiteralKind
+> = `'${def}' was parsed as a ${kind} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
 
-export const malformedNumericLiteralMessage = <
-    Def extends string,
-    Kind extends NumericLiteralKind
+export const buildMalformedNumericLiteralMessage = <
+    def extends string,
+    kind extends NumericLiteralKind
 >(
-    def: Def,
-    kind: Kind
-): MalformedNumericLiteralMessage<Def, Kind> =>
+    def: def,
+    kind: kind
+): buildMalformedNumericLiteralMessage<def, kind> =>
     `'${def}' was parsed as a ${kind} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
 
 export namespace UnenclosedNumber {
@@ -58,27 +58,24 @@ export namespace UnenclosedNumber {
         return Number.isNaN(result) ? null : result
     }
 
-    export const isWellFormed = (apparentDef: string, kind: ValidationKind) =>
+    export const isWellFormed = (def: string, kind: ValidationKind) =>
         kind === "number"
-            ? wellFormedNumberMatcher.test(apparentDef)
-            : wellFormedIntegerMatcher.test(apparentDef)
+            ? wellFormedNumberMatcher.test(def)
+            : wellFormedIntegerMatcher.test(def)
 
-    export const assertWellFormed = (
-        apparentDef: string,
-        kind: ValidationKind
-    ) => {
-        if (!isWellFormed(apparentDef, kind)) {
-            throwParseError(malformedNumericLiteralMessage(apparentDef, kind))
+    export const assertWellFormed = (def: string, kind: ValidationKind) => {
+        if (!isWellFormed(def, kind)) {
+            throwParseError(buildMalformedNumericLiteralMessage(def, kind))
         }
     }
 
-    export type AssertWellFormed<
-        ApparentDef extends string,
-        ApparentLiteralValue extends number,
-        Kind extends ValidationKind
-    > = number extends ApparentLiteralValue
-        ? ParseError<MalformedNumericLiteralMessage<ApparentDef, Kind>>
-        : ApparentDef
+    export type assertWellFormed<
+        def extends string,
+        inferredValue extends number,
+        kind extends ValidationKind
+    > = number extends inferredValue
+        ? ParseError<buildMalformedNumericLiteralMessage<def, kind>>
+        : def
 
     export const parseWellFormed = (
         token: string,
@@ -96,25 +93,25 @@ export namespace UnenclosedNumber {
         return value
     }
 
-    type MaybeInteger<Value extends bigint> = `${Value}`
+    type IntegerLiteral<Value extends bigint> = `${Value}`
 
-    export type ParseWellFormedNumber<
-        Token extends string,
-        BadNumberMessage extends string
-    > = Token extends PrimitiveLiteral.Number<infer Value>
+    export type parseWellFormedNumber<
+        token extends string,
+        badNumberMessage extends string
+    > = token extends PrimitiveLiteral.Number<infer Value>
         ? number extends Value
-            ? MalformedNumericLiteralMessage<Token, "number">
-            : Value
-        : BadNumberMessage
+            ? buildMalformedNumericLiteralMessage<token, "number">
+            : token
+        : badNumberMessage
 
-    export type ParseWellFormedInteger<
-        Token extends string,
-        BadIntegerMessage extends string
-    > = Token extends MaybeInteger<infer Value>
+    export type parseWellFormedInteger<
+        token extends string,
+        badIntegerMessage extends string
+    > = token extends IntegerLiteral<infer Value>
         ? bigint extends Value
-            ? MalformedNumericLiteralMessage<Token, "integer">
-            : UnenclosedBigint.ToNumber<Value>
-        : BadIntegerMessage
+            ? buildMalformedNumericLiteralMessage<token, "integer">
+            : token
+        : badIntegerMessage
 }
 
 export namespace UnenclosedBigint {
@@ -132,22 +129,15 @@ export namespace UnenclosedBigint {
     export const assertWellFormed = (apparentDef: string) => {
         if (!wellFormedIntegerMatcher.test(apparentDef.slice(0, -1))) {
             throwParseError(
-                malformedNumericLiteralMessage(apparentDef, "bigint")
+                buildMalformedNumericLiteralMessage(apparentDef, "bigint")
             )
         }
     }
 
-    export type AssertWellFormed<
-        ApparentDef extends string,
-        ApparentLiteralValue extends bigint
-    > = bigint extends ApparentLiteralValue
-        ? ParseError<MalformedNumericLiteralMessage<ApparentDef, "bigint">>
-        : ApparentDef
-
-    type EmbeddedNumber<Value extends number> = `${Value}`
-
-    export type ToNumber<BigintValue extends bigint> =
-        `${BigintValue}` extends EmbeddedNumber<infer AsNumber>
-            ? AsNumber
-            : never
+    export type assertWellFormed<
+        def extends string,
+        inferredValue extends bigint
+    > = bigint extends inferredValue
+        ? ParseError<buildMalformedNumericLiteralMessage<def, "bigint">>
+        : def
 }

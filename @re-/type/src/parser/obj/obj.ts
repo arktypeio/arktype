@@ -13,7 +13,7 @@ export namespace Obj {
     > = Def extends MetaDefinition
         ? ParseMetaDefinition<Def, Ctx>
         : Evaluate<{
-              [K in keyof Def]: Root.Parse<Def[K], Ctx>
+              [K in keyof Def]: Root.parse<Def[K], Ctx>
           }>
 
     export const parse: parseFn<object> = (def, ctx) => {

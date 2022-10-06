@@ -1,4 +1,4 @@
-import { Union } from "../../../nodes/expression/union.js"
+import { Union } from "../../../nodes/expression/branching/union.js"
 import type { MissingRightOperandMessage } from "../../common.js"
 import type { ParserState } from "../state/state.js"
 import { IntersectionOperator } from "./intersection.js"

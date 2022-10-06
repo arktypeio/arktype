@@ -1,10 +1,10 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import type { DynamicArktype } from "../../roots/type.js"
-import { ConstraintKeyword } from "../../terminal/keyword/constraint.js"
+import { ConstrainedKeyword } from "../../terminal/keyword/constrained.js"
 import { Keyword } from "../../terminal/keyword/keyword.js"
 import { RegexKeyword } from "../../terminal/keyword/regex.js"
-import { Bound } from "../bound.js"
+import { Bound } from "../infix/bound.js"
 
 const keysOf = (o: object) => Object.keys(o)
 
@@ -13,7 +13,7 @@ export const arbitraryKeywordList = fc.constantFrom(
 )
 export const arbitraryNumberKeyword = fc.constantFrom([
     "number",
-    ...keysOf(ConstraintKeyword.nodes)
+    ...keysOf(ConstrainedKeyword.nodes)
 ])
 export const arbitraryStringKeyword = fc.constantFrom([
     "string",

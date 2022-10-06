@@ -1,7 +1,7 @@
 import type { Root } from "./root.js"
 
 export type ParseSpace<Aliases> = {
-    [Name in keyof Aliases]: Root.Parse<Aliases[Name], { aliases: Aliases }>
+    [Name in keyof Aliases]: Root.parse<Aliases[Name], { aliases: Aliases }>
 }
 
 // export type ValidateStringResolution<

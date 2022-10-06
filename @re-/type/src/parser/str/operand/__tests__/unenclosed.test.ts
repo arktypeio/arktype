@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { space } from "../../../../space.js"
 import { type } from "../../../../type.js"
-import { malformedNumericLiteralMessage } from "../numeric.js"
+import { buildMalformedNumericLiteralMessage } from "../numeric.js"
 import { Unenclosed } from "../unenclosed.js"
 
 describe("parse unenclosed", () => {
@@ -67,19 +67,19 @@ describe("parse unenclosed", () => {
             test("leading zeroes", () => {
                 // @ts-expect-error
                 assert(() => type("010")).throwsAndHasTypeError(
-                    malformedNumericLiteralMessage("010", "number")
+                    buildMalformedNumericLiteralMessage("010", "number")
                 )
             })
             test("trailing zeroes", () => {
                 // @ts-expect-error
                 assert(() => type("4.0")).throwsAndHasTypeError(
-                    malformedNumericLiteralMessage("4.0", "number")
+                    buildMalformedNumericLiteralMessage("4.0", "number")
                 )
             })
             test("negative zero", () => {
                 // @ts-expect-error
                 assert(() => type("-0")).throwsAndHasTypeError(
-                    malformedNumericLiteralMessage("-0", "number")
+                    buildMalformedNumericLiteralMessage("-0", "number")
                 )
             })
         })
@@ -110,13 +110,15 @@ describe("parse unenclosed", () => {
                 // though it matches our rules for a "malformed" integer.
                 // @ts-expect-error
                 assert(() => type("007n"))
-                    .throws(malformedNumericLiteralMessage("007n", "number"))
+                    .throws(
+                        buildMalformedNumericLiteralMessage("007n", "number")
+                    )
                     .type.errors(Unenclosed.buildUnresolvableMessage("007n"))
             })
             test("negative zero", () => {
                 // @ts-expect-error
                 assert(() => type("-0n")).throwsAndHasTypeError(
-                    malformedNumericLiteralMessage("-0n", "bigint")
+                    buildMalformedNumericLiteralMessage("-0n", "bigint")
                 )
             })
         })

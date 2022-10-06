@@ -1,9 +1,9 @@
 import { keySet } from "@re-/tools"
-import { Constraint } from "../common.js"
-import type { Base } from "../common.js"
-import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
-import type { Check } from "../traverse/check.js"
-import { Binary } from "./expression.js"
+import { Constrainable } from "../../common.js"
+import type { Base } from "../../common.js"
+import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
+import type { Check } from "../../traverse/check.js"
+import { Infix } from "./infix.js"
 
 export namespace Bound {
     export const tokens = keySet({
@@ -70,11 +70,11 @@ export namespace Bound {
         node: LeftNode | RightNode,
         comparator: Token,
         limit: number,
-        state: Check.State<Constraint.Data>
+        state: Check.State<Constrainable.Data>
     ) => {
-        const actual = Constraint.toNumber(state.data)
+        const actual = Constrainable.toNumber(state.data)
         if (!isWithinBound(comparator, limit, actual)) {
-            const kind = Constraint.toKind(state.data)
+            const kind = Constrainable.toKind(state.data)
             state.addError("bound", {
                 type: node,
                 message: describe(comparator, limit, kind),
@@ -89,12 +89,14 @@ export namespace Bound {
         return true
     }
 
-    export class LeftNode extends Binary.Node<
+    export type LeftAst = [PrimitiveLiteral.Number, DoubleToken, RightAst]
+
+    export class LeftNode extends Infix.Node<
         PrimitiveLiteral.Node<number>,
         DoubleToken,
         RightNode
     > {
-        check(state: Check.State<Constraint.Data>) {
+        check(state: Check.State<Constrainable.Data>) {
             checkBound(
                 this,
                 invertedComparators[this.token],
@@ -104,12 +106,14 @@ export namespace Bound {
         }
     }
 
-    export class RightNode extends Binary.Node<
+    export type RightAst = [unknown, Token, PrimitiveLiteral.Number]
+
+    export class RightNode extends Infix.Node<
         Base.Node,
         Token,
         PrimitiveLiteral.Node<number>
     > {
-        check(state: Check.State<Constraint.Data>) {
+        check(state: Check.State<Constrainable.Data>) {
             checkBound(this, this.token, this.right.value, state)
         }
     }

@@ -1,5 +1,5 @@
 import { isKeyOf } from "@re-/tools"
-import type { Bound } from "../../../../nodes/expression/bound.js"
+import type { Bound } from "../../../../nodes/expression/infix/bound.js"
 import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
@@ -28,9 +28,9 @@ export namespace BoundOperator {
         start extends Comparators.StartChar,
         unscanned extends string
     > = unscanned extends Scanner.shift<"=", infer nextUnscanned>
-        ? DelegateReduction<ParserState.scanTo<s, nextUnscanned>, `${start}=`>
+        ? delegateReduction<ParserState.scanTo<s, nextUnscanned>, `${start}=`>
         : start extends Comparators.OneChar
-        ? DelegateReduction<ParserState.scanTo<s, unscanned>, start>
+        ? delegateReduction<ParserState.scanTo<s, unscanned>, start>
         : ParserState.error<singleEqualsMessage>
 
     export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
@@ -45,7 +45,7 @@ export namespace BoundOperator {
             ? LeftBoundOperator.reduce(s, comparator)
             : RightBoundOperator.parse(s, comparator)
 
-    type DelegateReduction<
+    type delegateReduction<
         s extends ParserState.T.WithRoot,
         comparator extends Bound.Token
     > = s extends {

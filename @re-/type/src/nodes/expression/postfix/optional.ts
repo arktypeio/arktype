@@ -1,5 +1,5 @@
-import type { Check } from "../traverse/check.js"
-import { Postfix } from "./expression.js"
+import type { Check } from "../../traverse/check.js"
+import { Postfix } from "./postfix.js"
 
 export namespace Optional {
     export const token = "?"

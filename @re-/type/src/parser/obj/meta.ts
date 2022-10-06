@@ -22,11 +22,11 @@ export const parseMetaDefinition: parseFn<MetaDefinition> = (
 export type ParseMetaDefinition<
     Def extends MetaDefinition,
     Ctx extends ParserContext
-> = Def[1] extends Expression.InfixToken
+> = Def[1] extends Expression.BinaryToken
     ? Def[2] extends undefined
         ? [
-              Root.Parse<Def[0], Ctx>,
+              Root.parse<Def[0], Ctx>,
               ParseError<MissingRightOperandMessage<Def[1]>>
           ]
-        : [Root.Parse<Def[0], Ctx>, Def[1], Root.Parse<Def[2], Ctx>]
-    : [Root.Parse<Def[0], Ctx>, Def[1]]
+        : [Root.parse<Def[0], Ctx>, Def[1], Root.parse<Def[2], Ctx>]
+    : [Root.parse<Def[0], Ctx>, Def[1]]

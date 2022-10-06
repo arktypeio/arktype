@@ -1,5 +1,5 @@
-import type { Check } from "../traverse/check.js"
-import { Branching } from "./expression.js"
+import type { Check } from "../../traverse/check.js"
+import { Branching } from "./branching.js"
 
 export namespace Intersection {
     export const token = "&"

@@ -1,4 +1,4 @@
-import { Intersection } from "../../../nodes/expression/intersection.js"
+import { Intersection } from "../../../nodes/expression/branching/intersection.js"
 import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
 import type { ParserState } from "../state/state.js"
 

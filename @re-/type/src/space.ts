@@ -6,13 +6,13 @@ import type {
     DynamicArktype
 } from "./nodes/roots/type.js"
 import { ArktypeRoot } from "./nodes/roots/type.js"
-import type { Ast } from "./nodes/traverse/ast.js"
+import type { Ast } from "./nodes/traverse/ast/ast.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type { InferredTypeFn } from "./type.js"
 
 type TypedSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
-    aliases: Root.Validate<Aliases, Resolutions>,
+    aliases: Ast.syntacticValidate<Aliases, Resolutions>,
     options?: ArktypeOptions
 ) => SpaceOutput<{ aliases: Aliases; resolutions: Resolutions }>
 

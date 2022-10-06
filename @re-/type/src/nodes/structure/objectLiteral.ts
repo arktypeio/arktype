@@ -1,7 +1,7 @@
 import type { Dictionary } from "@re-/tools"
 import type { Base } from "../common.js"
 import { Structure } from "../common.js"
-import { Optional } from "../expression/optional.js"
+import { Optional } from "../expression/postfix/optional.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {

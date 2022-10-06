@@ -94,11 +94,11 @@ export namespace Unenclosed {
     > = isResolvableIdentifier<token, ctx> extends true
         ? token
         : token extends PrimitiveLiteral.Number<infer Value>
-        ? UnenclosedNumber.AssertWellFormed<token, Value, "number">
+        ? UnenclosedNumber.assertWellFormed<token, Value, "number">
         : token extends PrimitiveLiteral.Boolean
         ? token
         : token extends PrimitiveLiteral.Bigint<infer Value>
-        ? UnenclosedBigint.AssertWellFormed<token, Value>
+        ? UnenclosedBigint.assertWellFormed<token, Value>
         : ParseError<
               token extends ""
                   ? Scanner.buildExpressionExpectedMessage<unscanned>

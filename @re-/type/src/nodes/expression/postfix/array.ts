@@ -1,11 +1,13 @@
-import { Structure } from "../common.js"
-import type { Check } from "../traverse/check.js"
-import { Postfix } from "./expression.js"
+import { Structure } from "../../common.js"
+import type { Check } from "../../traverse/check.js"
+import { Postfix } from "./postfix.js"
 
 export namespace Arr {
     export const token = "[]"
 
     export type Token = typeof token
+
+    export type Ast = [unknown, Token]
 
     export class Node extends Postfix.Node<Token> {
         readonly token = token
