@@ -1,7 +1,7 @@
 import { isKeyOf } from "@re-/tools"
 import { Bound } from "../../../../nodes/expression/infix/bound.js"
 import type { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
-import type { Ast } from "../../../../nodes/traverse/ast/ast.js"
+import type { toString } from "../../../../nodes/traverse/ast/toString.js"
 import { ParserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
@@ -61,7 +61,7 @@ export namespace LeftBoundOperator {
         s["branches"]["leftBound"] extends ParserState.T.OpenLeftBound
             ? ParserState.error<
                   buildUnpairedMessage<
-                      Ast.toString<ParserState.mergeIntersectionAndUnion<s>>,
+                      toString<ParserState.mergeIntersectionAndUnion<s>>,
                       s["branches"]["leftBound"][0],
                       s["branches"]["leftBound"][1]
                   >

@@ -2,6 +2,7 @@ import { keySet } from "@re-/tools"
 import type { Base } from "../../common.js"
 import type { Check } from "../../traverse/check.js"
 import { Bound } from "./bound.js"
+import type { Divisibility } from "./divisibility.js"
 
 export namespace Infix {
     export const tokens = keySet({
@@ -11,8 +12,9 @@ export namespace Infix {
 
     export type Token = keyof typeof tokens
 
-    /** These tokens affect runtime validation but not the inferred type */
-    export type TypelessToken = Token
+    export type LeftTypedAst = Bound.RightAst | Divisibility.Ast
+
+    export type RightTypedAst = Bound.LeftAst
 
     type RootString<
         Left extends Base.Node,

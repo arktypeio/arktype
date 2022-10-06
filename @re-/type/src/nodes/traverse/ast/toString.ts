@@ -1,9 +1,9 @@
 // TODO: Update to include objects
-export type toString<Node, Result extends string = ""> = Node extends [
-    infer Head,
-    ...infer Tail
+export type toString<node, result extends string = ""> = node extends [
+    infer head,
+    ...infer tail
 ]
-    ? toString<Tail, `${Result}${toString<Head>}`>
-    : Node extends string
-    ? `${Result}${Node}`
-    : Result
+    ? toString<tail, `${result}${toString<head>}`>
+    : node extends string
+    ? `${result}${node}`
+    : result

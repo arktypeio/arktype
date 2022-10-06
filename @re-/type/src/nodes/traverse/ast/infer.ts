@@ -4,55 +4,59 @@ import type { Keyword } from "../../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { RegexLiteral } from "../../terminal/regexLiteral.js"
 
-export type Infer<Ast, Resolutions> = Ast extends string
-    ? InferTerminal<Ast, Resolutions>
-    : Ast extends readonly unknown[]
-    ? Ast[1] extends "?"
-        ? Infer<Ast[0], Resolutions> | undefined
-        : Ast[1] extends "[]"
-        ? Infer<Ast[0], Resolutions>[]
-        : Ast[1] extends "|"
-        ? Infer<Ast[0], Resolutions> | Infer<Ast[2], Resolutions>
-        : Ast[1] extends "&"
-        ? Evaluate<Infer<Ast[0], Resolutions> & Infer<Ast[2], Resolutions>>
-        : Ast[1] extends Infix.TypelessToken
-        ? Infer<Ast[0], Resolutions>
+export type inferAst<node, resolutions> = node extends string
+    ? inferTerminal<node, resolutions>
+    : node extends readonly unknown[]
+    ? node[1] extends "?"
+        ? inferAst<node[0], resolutions> | undefined
+        : node[1] extends "[]"
+        ? inferAst<node[0], resolutions>[]
+        : node[1] extends "|"
+        ? inferAst<node[0], resolutions> | inferAst<node[2], resolutions>
+        : node[1] extends "&"
+        ? Evaluate<
+              inferAst<node[0], resolutions> & inferAst<node[2], resolutions>
+          >
+        : node extends Infix.LeftTypedAst
+        ? inferAst<node[0], resolutions>
+        : node extends Infix.RightTypedAst
+        ? inferAst<node[2], resolutions>
         : // If the value at index 1 was none of the above, it's a normal tuple definition
           Evaluate<{
-              [I in keyof Ast]: Infer<Ast[I], Resolutions>
+              [I in keyof node]: inferAst<node[I], resolutions>
           }>
-    : InferObjectLiteral<Ast, Resolutions>
+    : inferObjectLiteral<node, resolutions>
 
-type InferTerminal<
-    Token extends string,
-    Resolutions
-> = Token extends Keyword.Definition
-    ? Keyword.Infer<Token>
-    : Token extends keyof Resolutions
-    ? Infer<Resolutions[Token], Resolutions>
-    : Token extends PrimitiveLiteral.String<infer Text>
+type inferTerminal<
+    token extends string,
+    resolutions
+> = token extends Keyword.Definition
+    ? Keyword.Infer<token>
+    : token extends keyof resolutions
+    ? inferAst<resolutions[token], resolutions>
+    : token extends PrimitiveLiteral.String<infer Text>
     ? Text
-    : Token extends RegexLiteral.Definition
+    : token extends RegexLiteral.Definition
     ? string
-    : Token extends PrimitiveLiteral.Number<infer Value>
+    : token extends PrimitiveLiteral.Number<infer Value>
     ? Value
-    : Token extends PrimitiveLiteral.Bigint<infer Value>
+    : token extends PrimitiveLiteral.Bigint<infer Value>
     ? Value
-    : Token extends PrimitiveLiteral.Boolean<infer Value>
+    : token extends PrimitiveLiteral.Boolean<infer Value>
     ? Value
     : unknown
 
-type InferObjectLiteral<
-    Ast,
-    Resolutions,
-    OptionalKey extends keyof Ast = {
-        [K in keyof Ast]: Ast[K] extends [unknown, "?"] ? K : never
-    }[keyof Ast],
-    RequiredKey extends keyof Ast = Exclude<keyof Ast, OptionalKey>
+type inferObjectLiteral<
+    node,
+    resolutions,
+    optionalKey extends keyof node = {
+        [K in keyof node]: node[K] extends [unknown, "?"] ? K : never
+    }[keyof node],
+    requiredKey extends keyof node = Exclude<keyof node, optionalKey>
 > = Evaluate<
     {
-        [K in RequiredKey]: Infer<Ast[K], Resolutions>
+        [k in requiredKey]: inferAst<node[k], resolutions>
     } & {
-        [K in OptionalKey]?: Infer<Ast[K], Resolutions>
+        [k in optionalKey]?: inferAst<node[k], resolutions>
     }
 >

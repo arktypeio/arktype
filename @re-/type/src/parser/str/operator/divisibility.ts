@@ -1,6 +1,5 @@
 import { Divisibility } from "../../../nodes/expression/infix/divisibility.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import type { Ast } from "../../../nodes/traverse/ast/ast.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -8,12 +7,6 @@ import { ParserState } from "../state/state.js"
 export namespace DivisibilityOperator {
     // TODO: Check for multiple modulos/bounds etc.
     export const parse = (s: ParserState.WithRoot) => {
-        if (
-            !ParserState.rooted(s, PrimitiveLiteral.Node) ||
-            typeof s.root.value !== "number"
-        ) {
-            return ParserState.error(buildIndivisibleMessage(s.root.toString()))
-        }
         const divisorToken = s.scanner.shiftUntilNextTerminator()
         return reduce(
             s,
@@ -29,28 +22,23 @@ export namespace DivisibilityOperator {
     export type parse<
         s extends ParserState.T.WithRoot,
         unscanned extends string
-    > = s extends {
-        // TODO: Actually by type
-        root: "number" | "integer"
-    }
-        ? Scanner.shiftUntil<
-              unscanned,
-              Scanner.TerminatingChar
-          > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-            ? reduce<
-                  s,
+    > = Scanner.shiftUntil<
+        unscanned,
+        Scanner.TerminatingChar
+    > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
+        ? reduce<
+              s,
+              scanned,
+              UnenclosedNumber.parseWellFormedInteger<
                   scanned,
-                  UnenclosedNumber.parseWellFormedInteger<
-                      scanned,
-                      buildInvalidDivisorMessage<scanned>
-                  >,
-                  nextUnscanned
-              >
-            : never
-        : ParserState.error<buildIndivisibleMessage<Ast.toString<s["root"]>>>
+                  buildInvalidDivisorMessage<scanned>
+              >,
+              nextUnscanned
+          >
+        : never
 
     const reduce = (
-        s: ParserState.WithRoot<PrimitiveLiteral.Node<number>>,
+        s: ParserState.WithRoot,
         divisorToken: string,
         parseResult: number
     ) => {
@@ -86,12 +74,4 @@ export namespace DivisibilityOperator {
 
     type buildInvalidDivisorMessage<divisor extends string> =
         `Modulo operator must be followed by a non-zero integer literal (was ${divisor})`
-
-    export const buildIndivisibleMessage = <root extends string>(
-        root: root
-    ): buildIndivisibleMessage<root> =>
-        `Modulo operator must be applied to a number-typed keyword (was '${root}')`
-
-    type buildIndivisibleMessage<root extends string> =
-        `Modulo operator must be applied to a number-typed keyword (was '${root}')`
 }

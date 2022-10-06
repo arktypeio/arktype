@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
+import { Validate } from "../../../../nodes/traverse/ast/validate.js"
 import { BoundOperator } from "../bound/bound.js"
 import { LeftBoundOperator } from "../bound/left.js"
-import { RightBoundOperator } from "../bound/right.js"
 import { Comparators } from "../bound/tokens.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
@@ -90,27 +90,11 @@ describe("bound", () => {
                 )
             })
             test("unboundable", () => {
-                // TODO: Would left bounds be easier to manage if they were lower precedence and got merged with unions/intersections?
-                // Would it be easier to understand/use? Decide this first.
                 // @ts-expect-error
                 assert(() => type("object|null>=10")).throwsAndHasTypeError(
-                    RightBoundOperator.buildUnboundableMessage("null")
+                    Validate.buildUnconstrainableMessage("null")
                 )
             })
-        })
-        test("string", () => {
-            assert(type("1<string<=5").ast).narrowedValue([
-                "1",
-                "<",
-                ["string", "<=", "5"]
-            ])
-        })
-        test("array", () => {
-            assert(type("-343<=boolean[]<89").ast).narrowedValue([
-                "-343",
-                "<=",
-                [["boolean", "[]"], "<", "89"]
-            ])
         })
     })
 })
