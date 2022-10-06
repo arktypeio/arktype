@@ -23,10 +23,5 @@ describe("validate", () => {
                 assert(() => type("null<10")).throwsAndHasTypeError()
             })
         })
-        test("single-bound", () => {
-            assert(() => type("s"))
-        })
-        test("double-bound", () => {})
-        test("divisbility", () => {})
     })
 })
