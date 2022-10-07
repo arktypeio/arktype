@@ -22,6 +22,10 @@ describe("validate", () => {
                 // @ts-expect-error
                 assert(() => type("null<10")).throwsAndHasTypeError()
             })
+            test("number literal", () => {
+                // @ts-expect-error
+                assert(() => type("5%10")).throwsAndHasTypeError()
+            })
         })
     })
 })

@@ -5,7 +5,7 @@ import type {
 } from "./nodes/roots/type.js"
 import { ArktypeRoot } from "./nodes/roots/type.js"
 import type { inferAst } from "./nodes/traverse/ast/infer.js"
-import type { Validate } from "./nodes/traverse/ast/validate.js"
+import type { validate } from "./nodes/traverse/ast/validate.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace } from "./space.js"
@@ -31,16 +31,19 @@ const lazyTypeFn: DynamicTypeFn = (def, opts) => {
     ) as any
 }
 
+export const type: TypeFn = rawTypeFn as any
+
+// TODO: Abstract these variants as wrapper, reuse for space
+type.dynamic = rawTypeFn
+type.lazy = lazyTypeFn as any
+type.lazyDynamic = lazyTypeFn
+
 export type InferredTypeFn<Space extends ResolvedSpace> = <
     Definition,
     Ast = Root.parse<Definition, Space>,
     Inferred = inferAst<Ast, Space["resolutions"]>
 >(
-    definition: Validate.semantic<
-        Validate.syntactic<Definition, Ast>,
-        Ast,
-        Space["resolutions"]
-    >,
+    definition: validate<Definition, Ast, Space["resolutions"]>,
     options?: ArktypeOptions
 ) => // TODO: Check objects?
 Ast extends ParseError<string> ? never : Arktype<Inferred, Ast>
@@ -56,9 +59,3 @@ export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> =
         lazy: InferredTypeFn<Space>
         lazyDynamic: DynamicTypeFn
     }
-
-export const type: TypeFn = rawTypeFn as any
-// TODO: Abstract these variants as wrapper, reuse for space
-type.dynamic = rawTypeFn
-type.lazy = lazyTypeFn as any
-type.lazyDynamic = lazyTypeFn

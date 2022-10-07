@@ -7,13 +7,13 @@ import type {
 } from "./nodes/roots/type.js"
 import { ArktypeRoot } from "./nodes/roots/type.js"
 import type { inferAst } from "./nodes/traverse/ast/infer.js"
-import type { Validate } from "./nodes/traverse/ast/validate.js"
+import type { validate } from "./nodes/traverse/ast/validate.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type { InferredTypeFn } from "./type.js"
 
 type TypedSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
-    aliases: Validate.syntactic<Aliases, Resolutions>,
+    aliases: validate<Aliases, Resolutions, Resolutions>,
     options?: ArktypeOptions
 ) => SpaceOutput<{ aliases: Aliases; resolutions: Resolutions }>
 

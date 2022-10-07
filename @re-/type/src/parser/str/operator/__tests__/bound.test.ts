@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { Validate } from "../../../../nodes/traverse/ast/validate.js"
+import { buildUnconstrainableMessage } from "../../../../nodes/traverse/ast/validate.js"
 import { BoundOperator } from "../bound/bound.js"
 import { LeftBoundOperator } from "../bound/left.js"
 import { Comparators } from "../bound/tokens.js"
@@ -92,7 +92,7 @@ describe("bound", () => {
             test("unboundable", () => {
                 // @ts-expect-error
                 assert(() => type("object|null>=10")).throwsAndHasTypeError(
-                    Validate.buildUnconstrainableMessage("null")
+                    buildUnconstrainableMessage("null", ">=")
                 )
             })
         })
