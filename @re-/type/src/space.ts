@@ -12,7 +12,7 @@ import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type { InferredTypeFn } from "./type.js"
 
-type TypedSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
+type InferredSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
     aliases: validate<Aliases, Resolutions, Resolutions>,
     options?: ArktypeOptions
 ) => SpaceOutput<{ aliases: Aliases; resolutions: Resolutions }>
@@ -22,7 +22,7 @@ type DynamicSpaceFn = <Aliases extends Dictionary>(
     options?: ArktypeOptions
 ) => DynamicSpace<Aliases>
 
-export type SpaceFn = TypedSpaceFn & { dynamic: DynamicSpaceFn }
+export type SpaceFn = InferredSpaceFn & { dynamic: DynamicSpaceFn }
 
 export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
     keyof Aliases,

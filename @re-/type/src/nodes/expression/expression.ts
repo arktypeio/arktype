@@ -1,6 +1,4 @@
 import { Branching } from "./branching/branching.js"
-import type { Bound } from "./infix/bound.js"
-import type { Divisibility } from "./infix/divisibility.js"
 import { Infix } from "./infix/infix.js"
 import { Postfix } from "./postfix/postfix.js"
 
