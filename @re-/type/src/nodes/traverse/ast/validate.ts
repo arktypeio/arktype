@@ -1,6 +1,5 @@
 import type { IsAny } from "@re-/tools"
 import type { ParseError } from "../../../parser/common.js"
-import { type } from "../../../type.js"
 import type { Constrainable } from "../../common.js"
 import type { Branching } from "../../expression/branching/branching.js"
 import type { Infix } from "../../expression/infix/infix.js"
@@ -10,10 +9,10 @@ import type { toString } from "./toString.js"
 
 export type validate<def, ast, resolutions> = def extends []
     ? def
+    : ast extends ParseError<infer message>
+    ? message
     : def extends string
-    ? ast extends ParseError<infer Message>
-        ? Message
-        : catchErrorOrFallback<checkAst<ast, resolutions>, def>
+    ? catchErrorOrFallback<checkAst<ast, resolutions>, def>
     : // @ts-expect-error We know K will also be in AST here because it must be structural
       { [K in keyof def]: validate<def[K], ast[K], resolutions> }
 

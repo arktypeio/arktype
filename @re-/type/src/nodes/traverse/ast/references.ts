@@ -9,7 +9,7 @@ export type ReferencesOf<Ast, By extends string = string> = Filter<
 >
 
 // For extracting references, we only care about the node at index 0
-type UnaryTypedToken = Postfix.Token | Infix.TypelessToken
+type UnaryTypedToken = Postfix.Token | Infix.ConstraintToken
 
 type References<Ast> = Ast extends string
     ? [Ast]
