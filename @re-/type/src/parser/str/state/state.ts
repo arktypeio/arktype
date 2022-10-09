@@ -29,7 +29,11 @@ export namespace ParserState {
         }
     }
 
-    export type Of<Conditions extends Preconditions> = Base & Conditions
+    export type Of<Conditions extends Preconditions> = Omit<
+        Base,
+        keyof Conditions
+    > &
+        Conditions
 
     export namespace T {
         export type Unvalidated<Conditions extends Preconditions = {}> = Base &

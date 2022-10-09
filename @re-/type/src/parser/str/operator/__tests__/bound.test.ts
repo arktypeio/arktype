@@ -85,7 +85,7 @@ describe("bound", () => {
             test("double left", () => {
                 // @ts-expect-error
                 assert(() => type("3<5<8")).throwsAndHasTypeError(
-                    "Some double bound left check."
+                    LeftBoundOperator.buildBoundLiteralMessage("5", "3", "<")
                 )
             })
         })

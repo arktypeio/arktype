@@ -12,7 +12,15 @@ export namespace LeftBoundOperator {
         comparator: Bound.Token
     ) =>
         isKeyOf(comparator, Bound.doubleTokens)
-            ? reduceValidated(s, comparator)
+            ? ParserState.openLeftBounded(s)
+                ? ParserState.error(
+                      buildBoundLiteralMessage(
+                          s.root.toString(),
+                          s.branches.leftBound[0].toString(),
+                          s.branches.leftBound[1]
+                      )
+                  )
+                : reduceValidated(s, comparator)
             : ParserState.error(
                   Comparators.buildInvalidDoubleMessage(comparator)
               )
@@ -21,7 +29,15 @@ export namespace LeftBoundOperator {
         s extends ParserState.T.WithRoot<PrimitiveLiteral.Number>,
         comparator extends Bound.Token
     > = comparator extends Bound.DoubleToken
-        ? reduceValidated<s, comparator>
+        ? s extends ParserState.openLeftBounded
+            ? ParserState.error<
+                  buildBoundLiteralMessage<
+                      s["root"],
+                      s["branches"]["leftBound"][0],
+                      s["branches"]["leftBound"][1]
+                  >
+              >
+            : reduceValidated<s, comparator>
         : ParserState.error<Comparators.buildInvalidDoubleMessage<comparator>>
 
     const reduceValidated = (
@@ -73,6 +89,23 @@ export namespace LeftBoundOperator {
                 s.branches.leftBound[1]
             )
         )
+
+    export const buildBoundLiteralMessage = <
+        literal extends PrimitiveLiteral.Number,
+        limit extends string,
+        token extends Bound.Token
+    >(
+        literal: literal,
+        limit: limit,
+        comparator: token
+    ): buildBoundLiteralMessage<literal, limit, token> =>
+        `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
+
+    export type buildBoundLiteralMessage<
+        literal extends PrimitiveLiteral.Number,
+        limit extends string,
+        comparator extends Bound.Token
+    > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
 
     export const buildUnpairedMessage = <
         root extends string,

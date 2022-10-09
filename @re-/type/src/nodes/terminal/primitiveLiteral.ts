@@ -21,10 +21,18 @@ export namespace PrimitiveLiteral {
         }
     >
 
+    export type ValueToDefinition<Value extends PrimitiveLiteral.Value> =
+        Value extends string
+            ? String<Value>
+            : Value extends bigint
+            ? Bigint<Value>
+            : `${Value}`
+
     export class Node<
-        Value extends PrimitiveLiteral.Value
-    > extends Terminal.Node<Definition> {
-        constructor(def: Definition, public value: Value) {
+        Value extends PrimitiveLiteral.Value,
+        Def extends Definition = ValueToDefinition<Value>
+    > extends Terminal.Node<Def> {
+        constructor(def: Def, public value: Value) {
             super(def)
         }
 
