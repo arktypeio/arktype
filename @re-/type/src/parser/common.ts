@@ -23,7 +23,7 @@ export const throwParseError = (message: string) => {
 
 export type ParseError<Message extends string> = `!${Message}`
 
-export type MaybeAppend<T, MaybeArray> = MaybeArray extends unknown[]
+export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
     ? [...MaybeArray, T]
     : T
 

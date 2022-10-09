@@ -1,5 +1,4 @@
 import { isKeyOf } from "@re-/tools"
-import type { Base } from "../../../../nodes/common.js"
 import { Bound } from "../../../../nodes/expression/infix/bound.js"
 import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
@@ -48,10 +47,24 @@ export namespace RightBoundOperator {
         s: ParserState.WithRoot,
         comparator: Bound.Token,
         limit: PrimitiveLiteral.Node<number>
-    ) =>
-        isLeftBounded(s)
-            ? reduceDouble(s, comparator, limit)
-            : reduceSingle(s, comparator, limit)
+    ) => {
+        if (!isLeftBounded(s)) {
+            s.root = new Bound.RightNode(s.root, comparator, limit)
+            return s
+        }
+        if (!isKeyOf(comparator, Bound.doubleTokens)) {
+            return ParserState.error(
+                Comparators.buildInvalidDoubleMessage(comparator)
+            )
+        }
+        s.root = new Bound.LeftNode(
+            s.branches.leftBound[0],
+            s.branches.leftBound[1],
+            new Bound.RightNode(s.root, comparator, limit)
+        )
+        s.branches.leftBound = undefined as any
+        return s
+    }
 
     type reduce<
         s extends ParserState.T.WithRoot,
@@ -59,79 +72,26 @@ export namespace RightBoundOperator {
         limitTokenOrError extends string
     > = limitTokenOrError extends PrimitiveLiteral.Number
         ? s["branches"]["leftBound"] extends {}
-            ? reduceDouble<
-                  ParserState.from<{
-                      root: ParserState.mergeIntersectionAndUnion<s>
-                      branches: ParserState.initialBranches
+            ? comparator extends Bound.DoubleToken
+                ? ParserState.from<{
+                      root: [
+                          s["branches"]["leftBound"][0],
+                          s["branches"]["leftBound"][1],
+                          [s["root"], comparator, limitTokenOrError]
+                      ]
+                      branches: {
+                          leftBound: null
+                          intersection: s["branches"]["intersection"]
+                          union: s["branches"]["union"]
+                      }
                       groups: s["groups"]
                       unscanned: s["unscanned"]
-                  }>,
-                  s["branches"]["leftBound"][0],
-                  s["branches"]["leftBound"][1],
-                  comparator,
-                  limitTokenOrError
-              >
-            : reduceSingle<s, comparator, limitTokenOrError>
+                  }>
+                : ParserState.error<
+                      Comparators.buildInvalidDoubleMessage<comparator>
+                  >
+            : ParserState.setRoot<s, [s["root"], comparator, limitTokenOrError]>
         : ParserState.error<limitTokenOrError>
-
-    const reduceDouble = (
-        s: ParserState.Of<{
-            root: Base.Node
-            branches: {
-                leftBound: ParserState.OpenLeftBound
-            }
-        }>,
-        rightComparator: Bound.Token,
-        rightLimit: PrimitiveLiteral.Node<number>
-    ) => {
-        if (!isKeyOf(rightComparator, Bound.doubleTokens)) {
-            return ParserState.error(
-                Comparators.buildInvalidDoubleMessage(rightComparator)
-            )
-        }
-        ParserState.mergeIntersectionAndUnion(s)
-        s.root = new Bound.LeftNode(
-            s.branches.leftBound[0],
-            s.branches.leftBound[1],
-            new Bound.RightNode(s.root, rightComparator, rightLimit)
-        )
-        s.branches.leftBound = undefined as any
-        return s
-    }
-
-    type reduceDouble<
-        s extends ParserState.T.WithRoot,
-        leftLimit extends PrimitiveLiteral.Number,
-        leftComparator extends Bound.Token,
-        rightComparator extends Bound.Token,
-        rightLimit extends PrimitiveLiteral.Number
-    > = rightComparator extends Bound.DoubleToken
-        ? ParserState.setRoot<
-              s,
-              [
-                  leftLimit,
-                  leftComparator,
-                  [s["root"], rightComparator, rightLimit]
-              ]
-          >
-        : ParserState.error<
-              Comparators.buildInvalidDoubleMessage<rightComparator>
-          >
-
-    const reduceSingle = (
-        s: ParserState.WithRoot,
-        comparator: Bound.Token,
-        limit: PrimitiveLiteral.Node<number>
-    ) => {
-        s.root = new Bound.RightNode(s.root, comparator, limit)
-        return s
-    }
-
-    type reduceSingle<
-        s extends ParserState.T.WithRoot,
-        comparator extends Bound.Token,
-        limit extends PrimitiveLiteral.Number
-    > = ParserState.setRoot<s, [s["root"], comparator, limit]>
 
     export const buildInvalidLimitMessage = <
         comparator extends Bound.Token,

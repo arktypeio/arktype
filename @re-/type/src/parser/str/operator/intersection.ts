@@ -1,5 +1,5 @@
 import { Intersection } from "../../../nodes/expression/branching/intersection.js"
-import type { MaybeAppend, MissingRightOperandMessage } from "../../common.js"
+import type { maybePush, MissingRightOperandMessage } from "../../common.js"
 import type { ParserState } from "../state/state.js"
 
 export namespace IntersectionOperator {
@@ -23,16 +23,18 @@ export namespace IntersectionOperator {
               branches: {
                   leftBound: s["branches"]["leftBound"]
                   union: s["branches"]["union"]
-                  intersection: [
-                      MaybeAppend<s["root"], s["branches"]["intersection"]>,
-                      "&"
-                  ]
+                  intersection: [collectBranches<s>, "&"]
               }
               groups: s["groups"]
               unscanned: unscanned
           }>
 
-    export const maybeMerge = (s: ParserState.WithRoot) => {
+    export type collectBranches<s extends ParserState.T.WithRoot> = maybePush<
+        s["branches"]["intersection"],
+        s["root"]
+    >
+
+    export const mergeToRootIfPresent = (s: ParserState.WithRoot) => {
         if (!s.branches.intersection) {
             return s
         }

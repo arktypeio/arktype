@@ -61,7 +61,7 @@ export namespace LeftBoundOperator {
         s["branches"]["leftBound"] extends ParserState.T.OpenLeftBound
             ? ParserState.error<
                   buildUnpairedMessage<
-                      toString<ParserState.mergeIntersectionAndUnion<s>>,
+                      toString<s["root"]>,
                       s["branches"]["leftBound"][0],
                       s["branches"]["leftBound"][1]
                   >
@@ -79,7 +79,7 @@ export namespace LeftBoundOperator {
     ): buildUnpairedMessage<root, limit, token> =>
         `Left bounds are only valid when paired with right bounds. Consider using ${root}${Bound.invertedComparators[comparator]}${limit} instead.`
 
-    type buildUnpairedMessage<
+    export type buildUnpairedMessage<
         root extends string,
         limit extends string,
         token extends Bound.Token

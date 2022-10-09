@@ -5,7 +5,7 @@ import type { Union } from "../../../nodes/expression/branching/union.js"
 import type { Bound } from "../../../nodes/expression/infix/bound.js"
 import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { parseError } from "../../common.js"
-import type { MaybeAppend, ParseError } from "../../common.js"
+import type { ParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import { LeftBoundOperator } from "../operator/bound/left.js"
 import { IntersectionOperator } from "../operator/intersection.js"
@@ -146,16 +146,34 @@ export namespace ParserState {
         intersection: null
     }
 
-    export const mergeIntersectionAndUnion = (s: ParserState.WithRoot) => {
-        IntersectionOperator.maybeMerge(s)
-        UnionOperator.maybeMerge(s)
+    export const finalizeBranches = (s: ParserState.WithRoot) => {
+        if (s.branches.leftBound) {
+            return error(
+                LeftBoundOperator.buildUnpairedMessage(
+                    s.branches.leftBound[0].toString(),
+                    s.branches.leftBound[1]
+                )
+            )
+        }
+        IntersectionOperator.mergeToRootIfPresent(s)
+        UnionOperator.mergeToRootIfPresent(s)
         return s
     }
 
-    export type mergeIntersectionAndUnion<S extends T.WithRoot> = MaybeAppend<
-        MaybeAppend<S["root"], S["branches"]["intersection"]>,
-        S["branches"]["union"]
-    >
+    export type finalizeBranches<s extends T.WithRoot> =
+        s["branches"]["leftBound"] extends {}
+            ? ParserState.error<
+                  LeftBoundOperator.buildUnpairedMessage<
+                      s["branches"]["leftBound"][0],
+                      s["branches"]["leftBound"][1]
+                  >
+              >
+            : ParserState.from<{
+                  root: UnionOperator.collectBranches<s>
+                  groups: s["groups"]
+                  branches: initialBranches
+                  unscanned: s["unscanned"]
+              }>
 
     export const finalize = (s: ParserState.WithRoot) => {
         if (s.groups.length) {
@@ -169,21 +187,14 @@ export namespace ParserState {
         s extends T.WithRoot,
         unscanned extends T.UnscannedOrReturnCode
     > = s["groups"] extends []
-        ? finalizeGroup<
-              // @ts-expect-error
-              LeftBoundOperator.assertClosed<s>,
-              initialBranches,
-              [],
-              unscanned
-          >
+        ? finalizeGroup<finalizeBranches<s>, initialBranches, [], unscanned>
         : error<GroupOpen.unclosedMessage>
 
     export const finalizeGroup = (
         s: ParserState.WithRoot,
         nextBranches: OpenBranches
     ) => {
-        mergeIntersectionAndUnion(s)
-        LeftBoundOperator.assertClosed(s)
+        finalizeBranches(s)
         s.branches = nextBranches
         return s as ParserState.Base
     }
@@ -197,7 +208,7 @@ export namespace ParserState {
         ? from<{
               groups: nextGroups
               branches: nextBranches
-              root: mergeIntersectionAndUnion<s>
+              root: s
               unscanned: unscanned
           }>
         : s

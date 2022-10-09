@@ -80,7 +80,7 @@ describe("bound", () => {
             test("unpaired left", () => {
                 // @ts-expect-error
                 assert(() => type("3<number")).throwsAndHasTypeError(
-                    LeftBoundOperator.buildUnpairedMessage("number", "3", "<")
+                    LeftBoundOperator.buildUnpairedMessage("3", "<")
                 )
             })
             test("double left", () => {
