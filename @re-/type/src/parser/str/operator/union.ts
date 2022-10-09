@@ -1,5 +1,4 @@
 import { Union } from "../../../nodes/expression/branching/union.js"
-import type { toString } from "../../../nodes/traverse/ast/toString.js"
 import type { maybePush, MissingRightOperandMessage } from "../../common.js"
 import type { ParserState } from "../state/state.js"
 import type { LeftBoundOperator } from "./bound/left.js"
@@ -7,7 +6,7 @@ import { IntersectionOperator } from "./intersection.js"
 
 export namespace UnionOperator {
     export const reduce = (s: ParserState.WithRoot) => {
-        IntersectionOperator.mergeToRootIfPresent(s)
+        IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         if (!s.branches.union) {
             s.branches.union = new Union.Node([s.root])
         } else {
@@ -22,14 +21,8 @@ export namespace UnionOperator {
         unscanned extends string
     > = unscanned extends ""
         ? ParserState.error<MissingRightOperandMessage<"|">>
-        : s["branches"]["leftBound"] extends {}
-        ? ParserState.error<
-              LeftBoundOperator.buildUnpairedMessage<
-                  toString<s["root"]>,
-                  s["branches"]["leftBound"][0],
-                  s["branches"]["leftBound"][1]
-              >
-          >
+        : s extends ParserState.openLeftBounded
+        ? LeftBoundOperator.unpairedError<s>
         : ParserState.from<{
               root: undefined
               branches: {
@@ -46,7 +39,10 @@ export namespace UnionOperator {
         IntersectionOperator.collectBranches<s>
     >
 
-    export const mergeToRootIfPresent = (s: ParserState.WithRoot) => {
+    export const mergeDescendantsToRootIfPresent = (
+        s: ParserState.WithRoot
+    ) => {
+        IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         if (!s.branches.union) {
             return s
         }

@@ -10,12 +10,6 @@ describe("modulo", () => {
         })
     })
     describe("invalid", () => {
-        test("indivisible", () => {
-            // @ts-expect-error
-            assert(() => type("string%2")).throwsAndHasTypeError(
-                DivisibilityOperator.buildIndivisibleMessage("string")
-            )
-        })
         test("non-integer divisor", () => {
             // @ts-expect-error
             assert(() => type("number%2.3")).throwsAndHasTypeError(

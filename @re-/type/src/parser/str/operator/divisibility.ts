@@ -28,7 +28,6 @@ export namespace DivisibilityOperator {
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
         ? reduce<
               s,
-              scanned,
               UnenclosedNumber.parseWellFormedInteger<
                   scanned,
                   buildInvalidDivisorMessage<scanned>
@@ -58,20 +57,23 @@ export namespace DivisibilityOperator {
 
     type reduce<
         s extends ParserState.T.WithRoot,
-        divisorToken extends string,
-        parsedDivisorOrErrorMessage extends number | string,
+        divisorTokenOrError extends string,
         unscanned extends string
-    > = parsedDivisorOrErrorMessage extends string
-        ? ParserState.error<parsedDivisorOrErrorMessage>
-        : parsedDivisorOrErrorMessage extends 0
-        ? ParserState.error<buildInvalidDivisorMessage<"0">>
-        : ParserState.setRoot<s, [s["root"], "%", divisorToken], unscanned>
+    > = divisorTokenOrError extends PrimitiveLiteral.Number
+        ? divisorTokenOrError extends "0"
+            ? ParserState.error<buildInvalidDivisorMessage<"0">>
+            : ParserState.setRoot<
+                  s,
+                  [s["root"], "%", divisorTokenOrError],
+                  unscanned
+              >
+        : ParserState.error<divisorTokenOrError>
 
     export const buildInvalidDivisorMessage = <divisor extends string>(
         divisor: divisor
     ): buildInvalidDivisorMessage<divisor> =>
-        `Modulo operator must be followed by a non-zero integer literal (was ${divisor})`
+        `% operator must be followed by a non-zero integer literal (was ${divisor})`
 
     type buildInvalidDivisorMessage<divisor extends string> =
-        `Modulo operator must be followed by a non-zero integer literal (was ${divisor})`
+        `% operator must be followed by a non-zero integer literal (was ${divisor})`
 }

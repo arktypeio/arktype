@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { buildUnconstrainableMessage } from "../../../../nodes/traverse/ast/validate.js"
 import { BoundOperator } from "../bound/bound.js"
 import { LeftBoundOperator } from "../bound/left.js"
 import { Comparators } from "../bound/tokens.js"
@@ -80,19 +79,13 @@ describe("bound", () => {
             test("unpaired left", () => {
                 // @ts-expect-error
                 assert(() => type("3<number")).throwsAndHasTypeError(
-                    LeftBoundOperator.buildUnpairedMessage("3", "<")
+                    LeftBoundOperator.buildUnpairedMessage("number", "3", "<")
                 )
             })
             test("double left", () => {
                 // @ts-expect-error
                 assert(() => type("3<5<8")).throwsAndHasTypeError(
                     "Some double bound left check."
-                )
-            })
-            test("unboundable", () => {
-                // @ts-expect-error
-                assert(() => type("object|null>=10")).throwsAndHasTypeError(
-                    buildUnconstrainableMessage("null", ">=")
                 )
             })
         })

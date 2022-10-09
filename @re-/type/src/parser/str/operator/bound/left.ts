@@ -1,4 +1,5 @@
 import { isKeyOf } from "@re-/tools"
+import type { Base } from "../../../../nodes/common.js"
 import { Bound } from "../../../../nodes/expression/infix/bound.js"
 import type { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { toString } from "../../../../nodes/traverse/ast/toString.js"
@@ -46,27 +47,32 @@ export namespace LeftBoundOperator {
         unscanned: s["unscanned"]
     }>
 
-    export const assertClosed = (s: ParserState.WithRoot) =>
-        s.branches.leftBound
-            ? ParserState.error(
-                  buildUnpairedMessage(
-                      s.root.toString(),
-                      s.branches.leftBound[0].toString(),
-                      s.branches.leftBound[1]
-                  )
-              )
-            : s
+    export type unpairedError<
+        s extends ParserState.T.Unfinished<{
+            root: {}
+            branches: { leftBound: ParserState.T.OpenLeftBound }
+        }>
+    > = ParserState.error<
+        buildUnpairedMessage<
+            toString<s["root"]>,
+            s["branches"]["leftBound"][0],
+            s["branches"]["leftBound"][1]
+        >
+    >
 
-    export type assertClosed<s extends ParserState.T.WithRoot> =
-        s["branches"]["leftBound"] extends ParserState.T.OpenLeftBound
-            ? ParserState.error<
-                  buildUnpairedMessage<
-                      toString<s["root"]>,
-                      s["branches"]["leftBound"][0],
-                      s["branches"]["leftBound"][1]
-                  >
-              >
-            : s
+    export const unpairedError = (
+        s: ParserState.Of<{
+            root: Base.Node
+            branches: { leftBound: ParserState.OpenLeftBound }
+        }>
+    ) =>
+        ParserState.error(
+            buildUnpairedMessage(
+                s.root.toString(),
+                s.branches.leftBound[0].toString(),
+                s.branches.leftBound[1]
+            )
+        )
 
     export const buildUnpairedMessage = <
         root extends string,

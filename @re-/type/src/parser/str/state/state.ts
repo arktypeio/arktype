@@ -7,8 +7,7 @@ import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.
 import { parseError } from "../../common.js"
 import type { ParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
-import { LeftBoundOperator } from "../operator/bound/left.js"
-import { IntersectionOperator } from "../operator/intersection.js"
+import type { LeftBoundOperator } from "../operator/bound/left.js"
 import { UnionOperator } from "../operator/union.js"
 import { scanner } from "./scanner.js"
 
@@ -118,14 +117,22 @@ export namespace ParserState {
     }>
 
     export const rooted = <
+        s extends ParserState.Base,
         nodeClass extends ClassOf<Base.Node> = ClassOf<Base.Node>
     >(
-        s: ParserState.Base,
+        s: s,
         ofClass?: nodeClass
-    ): s is ParserState.Of<{ root: InstanceOf<nodeClass> }> =>
+    ): s is s & { root: InstanceOf<nodeClass> } =>
         ofClass ? s.root instanceof ofClass : !!s.root
 
     export type rooted<ast = {}> = { root: ast }
+
+    export const openLeftBounded = <s extends ParserState.Base>(
+        s: s
+    ): s is s & { branches: { leftBound: OpenLeftBound } } =>
+        !!s.branches.leftBound
+
+    export type openLeftBounded = { branches: { leftBound: {} } }
 
     export const error = (message: string) => {
         throw new parseError(message)
@@ -147,27 +154,13 @@ export namespace ParserState {
     }
 
     export const finalizeBranches = (s: ParserState.WithRoot) => {
-        if (s.branches.leftBound) {
-            return error(
-                LeftBoundOperator.buildUnpairedMessage(
-                    s.branches.leftBound[0].toString(),
-                    s.branches.leftBound[1]
-                )
-            )
-        }
-        IntersectionOperator.mergeToRootIfPresent(s)
-        UnionOperator.mergeToRootIfPresent(s)
+        UnionOperator.mergeDescendantsToRootIfPresent(s)
         return s
     }
 
     export type finalizeBranches<s extends T.WithRoot> =
-        s["branches"]["leftBound"] extends {}
-            ? ParserState.error<
-                  LeftBoundOperator.buildUnpairedMessage<
-                      s["branches"]["leftBound"][0],
-                      s["branches"]["leftBound"][1]
-                  >
-              >
+        s extends openLeftBounded
+            ? LeftBoundOperator.unpairedError<s>
             : ParserState.from<{
                   root: UnionOperator.collectBranches<s>
                   groups: s["groups"]
@@ -208,7 +201,7 @@ export namespace ParserState {
         ? from<{
               groups: nextGroups
               branches: nextBranches
-              root: s
+              root: UnionOperator.collectBranches<s>
               unscanned: unscanned
           }>
         : s
