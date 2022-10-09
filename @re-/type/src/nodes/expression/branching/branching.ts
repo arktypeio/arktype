@@ -10,6 +10,8 @@ export namespace Branching {
 
     export type Token = keyof typeof tokens
 
+    export type Ast<Left, Right> = [Left, Token, Right]
+
     type RootString<Token extends Branching.Token> =
         `${string}${Token}${string}`
 

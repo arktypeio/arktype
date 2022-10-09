@@ -89,7 +89,11 @@ export namespace Bound {
         return true
     }
 
-    export type LeftAst = [PrimitiveLiteral.Number, DoubleToken, RightAst]
+    export type LeftAst<Child extends RightAst = RightAst> = [
+        PrimitiveLiteral.Number,
+        DoubleToken,
+        Child
+    ]
 
     export class LeftNode extends Infix.Node<
         PrimitiveLiteral.Node<number>,
@@ -106,7 +110,11 @@ export namespace Bound {
         }
     }
 
-    export type RightAst = [unknown, Token, PrimitiveLiteral.Number]
+    export type RightAst<Child = unknown> = [
+        Child,
+        Token,
+        PrimitiveLiteral.Number
+    ]
 
     export class RightNode extends Infix.Node<
         Base.Node,

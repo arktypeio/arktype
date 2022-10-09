@@ -12,6 +12,8 @@ export namespace Infix {
 
     export type Token = keyof typeof tokens
 
+    export type ConstraintToken = Bound.Token | Divisibility.Token
+
     export type LeftTypedAst = Bound.RightAst | Divisibility.Ast
 
     export type RightTypedAst = Bound.LeftAst
