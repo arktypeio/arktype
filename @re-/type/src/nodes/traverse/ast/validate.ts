@@ -13,41 +13,32 @@ export type validate<def, ast, resolutions> = def extends []
     : def extends string
     ? ast extends ParseError<infer Message>
         ? Message
-        : checkAst<def, ast, resolutions>
+        : catchErrorOrFallback<checkAst<ast, resolutions>, def>
     : // @ts-expect-error We know K will also be in AST here because it must be structural
       { [K in keyof def]: validate<def[K], ast[K], resolutions> }
 
-// TODO: Fix union and intersection getting merged
-const f = type({ a: "string|boolean%5[][][][]|number" }).ast
-
-type checkAst<def, ast, resolutions> = ast extends string
+type catchErrorOrFallback<errors extends string[], def> = [] extends errors
     ? def
+    : errors[0]
+
+type checkAst<ast, resolutions> = ast extends string
+    ? []
     : ast extends [infer child, unknown]
-    ? checkAst<def, child, resolutions>
+    ? checkAst<child, resolutions>
     : ast extends [infer left, infer token, infer right]
     ? token extends Branching.Token
-        ? checkBranching<
-              def,
-              checkAst<def, left, resolutions>,
-              right,
-              resolutions
-          >
+        ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
         : token extends Infix.ConstraintToken
         ? left extends PrimitiveLiteral.Number
-            ? checkAst<def, right, resolutions>
+            ? checkAst<right, resolutions>
             : isAssignableTo<
                   inferAst<left, resolutions>,
                   Constrainable.Data
               > extends true
-            ? checkAst<def, left, resolutions>
-            : ParseError<buildUnconstrainableMessage<toString<ast[0]>, token>>
-        : checkAst<def, left, resolutions>
-    : def
-
-type checkBranching<def, leftResult, rightAst, resolutions> =
-    leftResult extends ParseError<string>
-        ? leftResult
-        : checkAst<def, rightAst, resolutions>
+            ? checkAst<left, resolutions>
+            : [ParseError<buildUnconstrainableMessage<toString<ast[0]>, token>>]
+        : checkAst<left, resolutions>
+    : []
 
 type isAssignableTo<inferred, t> = IsAny<inferred> extends true
     ? true
