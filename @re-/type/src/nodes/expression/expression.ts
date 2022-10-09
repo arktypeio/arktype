@@ -14,6 +14,4 @@ export namespace Expression {
     export type Token = keyof typeof tokens
 
     export type BinaryToken = Infix.Token | Branching.Token
-
-    export type ConstraintToken = Bound.Token | Divisibility.Token
 }
