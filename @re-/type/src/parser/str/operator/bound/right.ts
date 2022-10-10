@@ -11,11 +11,11 @@ export namespace RightBoundOperator {
         const limitToken = s.scanner.shiftUntilNextTerminator()
         const limit = UnenclosedNumber.parseWellFormed(
             limitToken,
+            "number",
             buildInvalidLimitMessage(
                 comparator,
                 limitToken + s.scanner.unscanned
-            ),
-            "number"
+            )
         )
         return reduce(
             s,

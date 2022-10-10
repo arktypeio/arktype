@@ -111,7 +111,7 @@ describe("parse unenclosed", () => {
                 // @ts-expect-error
                 assert(() => type("007n"))
                     .throws(
-                        buildMalformedNumericLiteralMessage("007n", "number")
+                        buildMalformedNumericLiteralMessage("007n", "bigint")
                     )
                     .type.errors(Unenclosed.buildUnresolvableMessage("007n"))
             })

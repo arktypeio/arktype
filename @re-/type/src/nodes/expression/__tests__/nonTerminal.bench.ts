@@ -4,7 +4,6 @@ import { type } from "../../../api.js"
 suite("unary", () => {
     suite("optional", () => {
         const optional = type("number?")
-
         suite("check", () => {
             suite("valid", () => {
                 bench("value", () => {

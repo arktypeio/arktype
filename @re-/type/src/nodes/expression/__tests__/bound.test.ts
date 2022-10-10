@@ -76,7 +76,24 @@ describe("bound", () => {
             assert(gte3.check("yes").errors).equals(undefined)
             assert(
                 gte3.check("no").errors as any as Diagnostic<"bound">[]
-            ).snap()
+            ).snap([
+                {
+                    type: {
+                        left: { def: "string", hasStructure: false },
+                        token: ">=",
+                        right: { def: "3", hasStructure: false, value: 3 },
+                        hasStructure: false
+                    },
+                    message: "Must be at least 3 characters (was 2)",
+                    comparator: ">=",
+                    comparatorDescription: "at least",
+                    limit: 3,
+                    actual: 2,
+                    kind: "string",
+                    data: { raw: "no", toString: "<function toString>" },
+                    path: []
+                }
+            ])
         })
     })
     describe("array", () => {

@@ -29,7 +29,7 @@ export namespace Unenclosed {
         ctx: parserContext
     ) =>
         maybeParseIdentifier(token, ctx) ??
-        maybeParseLiteral(token) ??
+        maybeParseUnenclosedLiteral(token) ??
         ParserState.error(
             token === ""
                 ? scanner.buildExpressionExpectedMessage(s.scanner.unscanned)
@@ -43,23 +43,23 @@ export namespace Unenclosed {
             ? new Alias.Node(token)
             : undefined
 
-    const maybeParseLiteral = (token: string) => {
+    const maybeParseUnenclosedLiteral = (token: string) => {
         const maybeLiteralValue =
-            UnenclosedNumber.maybeParse(token) ??
+            UnenclosedNumber.parseWellFormed(token, "number") ??
             (token === "true"
                 ? true
                 : token === "false"
                 ? false
-                : UnenclosedBigint.maybeParse(token))
-        return maybeLiteralValue
-            ? new PrimitiveLiteral.Node(
-                  token as
-                      | PrimitiveLiteral.Number
-                      | PrimitiveLiteral.Bigint
-                      | PrimitiveLiteral.Boolean,
-                  maybeLiteralValue
-              )
-            : undefined
+                : UnenclosedBigint.parseWellFormed(token))
+        if (maybeLiteralValue !== undefined) {
+            return new PrimitiveLiteral.Node(
+                token as
+                    | PrimitiveLiteral.Number
+                    | PrimitiveLiteral.Bigint
+                    | PrimitiveLiteral.Boolean,
+                maybeLiteralValue
+            )
+        }
     }
 
     type reduce<

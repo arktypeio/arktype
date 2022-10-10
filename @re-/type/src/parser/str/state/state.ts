@@ -180,6 +180,7 @@ export namespace ParserState {
             return error(GroupOpen.unclosedMessage)
         }
         finalizeGroup(s, {})
+        s.scanner.hasBeenFinalized = true
         return s
     }
 

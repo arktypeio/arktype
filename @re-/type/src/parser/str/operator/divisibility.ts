@@ -13,8 +13,8 @@ export namespace DivisibilityOperator {
             divisorToken,
             UnenclosedNumber.parseWellFormed(
                 divisorToken,
-                buildInvalidDivisorMessage(divisorToken),
-                "integer"
+                "integer",
+                buildInvalidDivisorMessage(divisorToken)
             )
         )
     }

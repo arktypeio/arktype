@@ -23,6 +23,10 @@ const wellFormedNumberMatcherSource =
 
 const wellFormedNumberMatcher = new RegExp(`^${wellFormedNumberMatcherSource}$`)
 
+const numberLikeMatcherSource = "-?\\d*\\.?\\d*"
+
+const numberLikeMatcher = new RegExp(`^${numberLikeMatcherSource}$`)
+
 /**
  *  Matches a well-formatted integer according to the following rules:
  *    1. Must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
@@ -34,12 +38,24 @@ const wellFormedIntegerMatcher = new RegExp(
     `^${wellFormedIntegerMatcherSource}$`
 )
 
+const integerLikeMatcherSource = "-?\\d*"
+
+const integerLikeMatcher = new RegExp(`^${integerLikeMatcherSource}$`)
+
 type NumericLiteralKind = "number" | "bigint" | "integer"
+
+const numericLiteralDescriptions = {
+    number: "a number",
+    bigint: "a bigint",
+    integer: "an integer"
+} as const
+
+type numericLiteralDescriptions = typeof numericLiteralDescriptions
 
 type buildMalformedNumericLiteralMessage<
     def extends string,
     kind extends NumericLiteralKind
-> = `'${def}' was parsed as a ${kind} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
+> = `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
 
 export const buildMalformedNumericLiteralMessage = <
     def extends string,
@@ -48,22 +64,25 @@ export const buildMalformedNumericLiteralMessage = <
     def: def,
     kind: kind
 ): buildMalformedNumericLiteralMessage<def, kind> =>
-    `'${def}' was parsed as a ${kind} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
+    `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
 
 export namespace UnenclosedNumber {
     export type ValidationKind = "number" | "integer"
 
-    export const maybeParse = (def: string) => {
-        const result = Number.parseFloat(def)
-        return Number.isNaN(result) ? null : result
-    }
-
-    export const isWellFormed = (def: string, kind: ValidationKind) =>
+    const isWellFormed = (def: string, kind: ValidationKind) =>
         kind === "number"
             ? wellFormedNumberMatcher.test(def)
             : wellFormedIntegerMatcher.test(def)
 
-    export const assertWellFormed = (def: string, kind: ValidationKind) => {
+    const parseKind = (def: string, kind: ValidationKind) =>
+        kind === "number" ? Number.parseFloat(def) : Number.parseInt(def)
+
+    const isKindLike = (def: string, kind: ValidationKind) =>
+        kind === "number"
+            ? numberLikeMatcher.test(def)
+            : integerLikeMatcher.test(def)
+
+    const assertWellFormed = (def: string, kind: ValidationKind) => {
         if (!isWellFormed(def, kind)) {
             throwParseError(buildMalformedNumericLiteralMessage(def, kind))
         }
@@ -77,20 +96,25 @@ export namespace UnenclosedNumber {
         ? ParseError<buildMalformedNumericLiteralMessage<def, kind>>
         : def
 
-    export const parseWellFormed = (
+    export const parseWellFormed = <ErrorOnFail extends string | undefined>(
         token: string,
-        badTokenMessage: string,
-        kind: ValidationKind
-    ) => {
-        const value =
-            kind === "integer"
-                ? Number.parseInt(token)
-                : Number.parseFloat(token)
-        if (Number.isNaN(value)) {
-            throwParseError(badTokenMessage)
+        kind: ValidationKind,
+        errorOnFail?: ErrorOnFail
+    ): ErrorOnFail extends string ? number : number | undefined => {
+        const value = parseKind(token, kind)
+        if (!Number.isNaN(value)) {
+            if (isWellFormed(token, kind)) {
+                return value
+            }
+            if (isKindLike(token, kind)) {
+                // If the definition looks like the correct numeric kind but is
+                // not well-formed, always throw.
+                return throwParseError(
+                    buildMalformedNumericLiteralMessage(token, kind)
+                )
+            }
         }
-        assertWellFormed(token, kind)
-        return value
+        return (errorOnFail ? throwParseError(errorOnFail) : undefined) as any
     }
 
     type IntegerLiteral<Value extends bigint> = `${Value}`
@@ -115,21 +139,25 @@ export namespace UnenclosedNumber {
 }
 
 export namespace UnenclosedBigint {
-    export const maybeParse = (def: string) => {
+    export const parseWellFormed = (def: string) => {
         if (def[def.length - 1] !== "n") {
-            return null
+            return
         }
+        const maybeIntegerLiteral = def.slice(0, -1)
+        let value
         try {
-            return BigInt(def.slice(0, -1))
+            value = BigInt(maybeIntegerLiteral)
         } catch {
-            return null
+            return
         }
-    }
-
-    export const assertWellFormed = (apparentDef: string) => {
-        if (!wellFormedIntegerMatcher.test(apparentDef.slice(0, -1))) {
-            throwParseError(
-                buildMalformedNumericLiteralMessage(apparentDef, "bigint")
+        if (wellFormedIntegerMatcher.test(maybeIntegerLiteral)) {
+            return value
+        }
+        if (integerLikeMatcher.test(maybeIntegerLiteral)) {
+            // If the definition looks like a bigint but is
+            // not well-formed, throw.
+            return throwParseError(
+                buildMalformedNumericLiteralMessage(def, "bigint")
             )
         }
     }

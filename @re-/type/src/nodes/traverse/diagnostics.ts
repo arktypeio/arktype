@@ -153,9 +153,9 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
             }
             return error.message
         }
-        let aggregatedMessage = "Encountered errors at the following paths:\n"
+        let aggregatedMessage = ""
         for (const error of this) {
-            aggregatedMessage += `  ${pathToString(error.path)}: ${
+            aggregatedMessage += `${pathToString(error.path)}: ${
                 error.message
             }\n`
         }

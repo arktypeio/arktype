@@ -2,7 +2,6 @@ import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import type { Diagnostic } from "../../traverse/diagnostics.js"
 
 describe("object", () => {
     describe("infer", () => {
@@ -34,33 +33,29 @@ describe("object", () => {
             b: "number",
             c: "67"
         })
-        const shallow = () => type(shallowInputDef)
-        const nested = () => type({ nest: { ed: "string" } })
+        const shallow = type.lazy(shallowInputDef)
+        const nested = type.lazy({ nest: { ed: "string" } })
         test("standard", () => {
-            assert(shallow().check({ a: "ok", b: 4.321, c: 67 }).errors).is(
+            assert(shallow.check({ a: "ok", b: 4.321, c: 67 }).errors).is(
                 undefined
             )
         })
         test("nested", () => {
-            assert(nested().check({ nest: { ed: "!" } }).errors).is(undefined)
+            assert(nested.check({ nest: { ed: "!" } }).errors).is(undefined)
         })
         describe("errors", () => {
             test("bad value", () => {
                 assert(
-                    shallow().check({ a: "ko", b: 123.4, c: 76 }).errors
-                        ?.summary
+                    shallow.check({ a: "ko", b: 123.4, c: 76 }).errors?.summary
                 ).snap(`c must be 67 (was 76)`)
             })
             test("bad nested value", () => {
                 assert(
-                    nested().check({ nest: { ed: null } }).errors?.summary
+                    nested.check({ nest: { ed: null } }).errors?.summary
                 ).snap(`nest/ed must be a string (was null)`)
             })
             test("missing keys", () => {
-                assert(
-                    shallow().check({ a: "ok" })
-                        .errors as any as Diagnostic<"missingKey">[]
-                ).snap()
+                assert(shallow.check({ a: "ok" }).errors?.summary).snap()
             })
             test("extraneous keys", () => {
                 assert(
@@ -72,7 +67,7 @@ describe("object", () => {
                         // errors: {
                         //     extraneousKeys: { enabled: true }
                         // }
-                    }).errors as any as Diagnostic<"extraneousKeys">[]
+                    }).errors?.summary
                 ).snap()
             })
             test("single extraneous", () => {
@@ -87,7 +82,7 @@ describe("object", () => {
                         c: 67,
                         extraneous: true
                     }).errors?.summary
-                ).snap()
+                ).snap("<undefined>")
             })
         })
     })
