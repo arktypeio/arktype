@@ -8,10 +8,6 @@ export namespace Keyword {
         | RegexKeyword.Definition
         | ConstrainedKeyword.Definition
 
-    export type StringTyped = "string" | RegexKeyword.Definition
-
-    export type NumberTyped = "number" | ConstrainedKeyword.Definition
-
     type InferredAs = TypeKeyword.InferredAs & {
         [K in RegexKeyword.Definition]: string
     } & { [K in ConstrainedKeyword.Definition]: number }

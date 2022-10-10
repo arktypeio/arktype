@@ -15,7 +15,7 @@ export namespace Divisibility {
     > {
         check(state: Check.State<number>) {
             const divisor = this.right.value
-            if (state.data % divisor !== 0) {
+            if (!state.dataIsOfType("number") || state.data % divisor !== 0) {
                 state.addError("divisibility", {
                     type: this,
                     message:
@@ -25,6 +25,7 @@ export namespace Divisibility {
                     divisor
                 })
             }
+            this.left.check(state)
         }
     }
 

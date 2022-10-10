@@ -46,7 +46,7 @@ describe("regex keywords", () => {
     test("check non-string", () => {
         const uppercase = type("uppercase")
         assert(uppercase.check(null).errors?.summary).snap(
-            "some kind of string"
+            "Must be a string (was null)"
         )
     })
 })

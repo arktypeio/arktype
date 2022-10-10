@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
 
-describe("number subtypes", () => {
+describe("constrained keyword", () => {
     test("integer", () => {
         const integer = type("integer")
         assert(integer.infer).typed as number

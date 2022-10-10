@@ -1,5 +1,4 @@
 import { keySet } from "@re-/tools"
-import { Constrainable } from "../../common.js"
 import type { Base } from "../../common.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Check } from "../../traverse/check.js"
@@ -33,7 +32,7 @@ export namespace Bound {
 
     export type InvertedComparators = typeof invertedComparators
 
-    export const comparatorDescriptions: Record<Token, string> = {
+    const comparatorDescriptions: Record<Token, string> = {
         "<": "less than",
         ">": "greater than",
         "<=": "at most",
@@ -70,11 +69,14 @@ export namespace Bound {
         node: LeftNode | RightNode,
         comparator: Token,
         limit: number,
-        state: Check.State<Constrainable.Data>
+        state: Check.State
     ) => {
-        const actual = Constrainable.toNumber(state.data)
+        const kind = toBoundableKind(state.data)
+        if (kind === "unboundable") {
+            return false
+        }
+        const actual = boundableToNumber(state.data as BoundableData)
         if (!isWithinBound(comparator, limit, actual)) {
-            const kind = Constrainable.toKind(state.data)
             state.addError("bound", {
                 type: node,
                 message: describe(comparator, limit, kind),
@@ -100,16 +102,21 @@ export namespace Bound {
         DoublableToken,
         RightNode
     > {
-        check(state: Check.State<Constrainable.Data>) {
-            checkBound(
-                this,
-                invertedComparators[this.token],
-                this.left.value,
-                state
-            ) && this.right.check(state)
+        check(state: Check.State) {
+            if (
+                checkBound(
+                    this,
+                    invertedComparators[this.token],
+                    this.left.value,
+                    state
+                )
+            ) {
+                this.right.check(state)
+            }
         }
     }
 
+    // TODO: Remove these?
     export type RightAst<Child = unknown> = [
         Child,
         Token,
@@ -121,8 +128,9 @@ export namespace Bound {
         Token,
         PrimitiveLiteral.Node<number>
     > {
-        check(state: Check.State<Constrainable.Data>) {
+        check(state: Check.State) {
             checkBound(this, this.token, this.right.value, state)
+            this.left.check(state)
         }
     }
 
@@ -146,6 +154,19 @@ export namespace Bound {
             kind === "string" ? " characters" : kind === "array" ? " items" : ""
         }`
 
-    export type BoundableKind = "number" | "string" | "array"
-    export type Units = "characters" | "items"
+    type BoundableData = number | string | readonly unknown[]
+
+    const boundableToNumber = (data: BoundableData) =>
+        typeof data === "number" ? data : data.length
+
+    type BoundableKind = "number" | "string" | "array"
+
+    const toBoundableKind = (data: unknown) =>
+        typeof data === "number"
+            ? "number"
+            : typeof data === "string"
+            ? "string"
+            : Array.isArray(data)
+            ? "array"
+            : "unboundable"
 }

@@ -1,5 +1,6 @@
 import type { Check } from "../../traverse/check.js"
 import { Terminal } from "../terminal.js"
+import { TypeKeyword } from "./types/typeKeyword.js"
 
 export namespace RegexKeyword {
     export type Definition =
@@ -19,7 +20,10 @@ export namespace RegexKeyword {
         }
 
         check(state: Check.State<string>) {
-            if (!this.expression.test(state.data)) {
+            if (
+                TypeKeyword.allows("string", state) &&
+                !this.expression.test(state.data)
+            ) {
                 state.addError("regexKeyword", {
                     type: this,
                     message: this.description,

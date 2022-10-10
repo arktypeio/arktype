@@ -6,6 +6,7 @@ import type { Divisibility } from "./divisibility.js"
 export namespace Infix {
     export type Token = Bound.Token | Divisibility.Token
 
+    // TODO: Better way to do this?
     export type LeftTypedAst = Bound.RightAst | Divisibility.Ast
 
     export type RightTypedAst = Bound.LeftAst

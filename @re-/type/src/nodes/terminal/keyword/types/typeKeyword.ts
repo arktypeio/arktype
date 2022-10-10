@@ -36,6 +36,15 @@ export namespace TypeKeyword {
         Function: new FunctionNode()
     }
 
+    /** Check whether the keyword type allows state.data, appending new
+     * diagnostics if needed and returning a boolean indicating whether or not
+     * the data was allowed */
+    export const allows = (keyword: Definition, state: Check.State) => {
+        const priorErrorCount = state.errors.length
+        nodes[keyword].check(state)
+        return priorErrorCount === state.errors.length
+    }
+
     export type InferredAs = {
         any: any
         bigint: bigint
@@ -50,7 +59,6 @@ export namespace TypeKeyword {
         unknown: unknown
         void: void
         Function: Function
-        integer: number
     }
 
     export type Diagnostic = Check.ConfigureDiagnostic<

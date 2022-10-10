@@ -75,22 +75,6 @@ export namespace Structure {
     >
 }
 
-export namespace Constrainable {
-    export type Data = number | string | readonly unknown[]
-
-    export type Kind = "number" | "string" | "array"
-
-    export const toNumber = (data: Data) =>
-        typeof data === "number" ? data : data.length
-
-    export const toKind = (data: Data) =>
-        typeof data === "number"
-            ? "number"
-            : typeof data === "string"
-            ? "string"
-            : "array"
-}
-
 export type Segment = string | number
 export type Path = Segment[]
 

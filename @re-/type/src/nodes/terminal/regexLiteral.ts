@@ -1,4 +1,5 @@
 import type { Check } from "../traverse/check.js"
+import { TypeKeyword } from "./keyword/types/typeKeyword.js"
 import { Terminal } from "./terminal.js"
 
 export namespace RegexLiteral {
@@ -13,7 +14,10 @@ export namespace RegexLiteral {
         }
 
         check(state: Check.State<string>) {
-            if (!this.expression.test(state.data)) {
+            if (
+                TypeKeyword.allows("string", state) &&
+                !this.expression.test(state.data)
+            ) {
                 state.addError("regexLiteral", {
                     type: this,
                     message: `Must match expression ${this.def}`,
