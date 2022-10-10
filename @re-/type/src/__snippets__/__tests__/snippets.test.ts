@@ -21,7 +21,7 @@ describe("snippets", () => {
             "{ name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }"
         )
         assert(spaceSnippet.errors?.summary)
-            .snap(`dependencies/0: contributors is required
+            .snap(`dependencies/0/contributors: contributors is required
 contributors/0/email: Must be a valid email (was "david@redodev")`)
     })
     test("constraints", async () => {

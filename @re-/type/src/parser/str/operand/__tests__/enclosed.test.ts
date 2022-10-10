@@ -33,9 +33,9 @@ describe("parse enclosed", () => {
             })
             test("double-quote", () => {
                 // @ts-expect-error
-                assert(() => type('".*'))
-                    .throws(Enclosed.buildUnterminatedMessage('".*', '"'))
-                    .type.errors('\\".* requires a closing \\".')
+                assert(() => type('".*')).throwsAndHasTypeError(
+                    Enclosed.buildUnterminatedMessage('".*', '"')
+                )
             })
         })
     })

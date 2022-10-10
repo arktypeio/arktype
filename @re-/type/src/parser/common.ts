@@ -27,12 +27,13 @@ export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
     ? [...MaybeArray, T]
     : T
 
-export type MissingRightOperandMessage<Token extends Expression.BinaryToken> =
-    `Token '${Token}' requires a right operand.`
+export type buildMissingRightOperandMessage<
+    token extends Expression.BinaryToken
+> = `Token '${token}' requires a right operand.`
 
-export const missingRightOperandMessage = <
-    Token extends Expression.BinaryToken
+export const buildMissingRightOperandMessage = <
+    token extends Expression.BinaryToken
 >(
-    token: Token
-): MissingRightOperandMessage<Token> =>
+    token: token
+): buildMissingRightOperandMessage<token> =>
     `Token '${token}' requires a right operand.`

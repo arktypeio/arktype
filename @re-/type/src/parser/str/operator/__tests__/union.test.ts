@@ -1,6 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
+import { buildMissingRightOperandMessage } from "../../../common.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
 import { scanner } from "../../state/scanner.js"
 
@@ -36,7 +37,7 @@ describe("union", () => {
             test("ends with |", () => {
                 // @ts-expect-error
                 assert(() => type("boolean|")).throwsAndHasTypeError(
-                    scanner.buildExpressionExpectedMessage("")
+                    buildMissingRightOperandMessage("|")
                 )
             })
             test("long missing union member", () => {

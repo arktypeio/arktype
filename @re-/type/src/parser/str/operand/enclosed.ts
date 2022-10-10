@@ -49,6 +49,14 @@ export namespace Enclosed {
 
     export type StartChar = keyof typeof startChars
 
+    const enclosingCharDescriptions = {
+        '"': "double-quote",
+        "'": "single-quote",
+        "/": "forward slash"
+    } as const
+
+    type enclosingCharDescriptions = typeof enclosingCharDescriptions
+
     export const buildUnterminatedMessage = <
         fragment extends string,
         enclosing extends StartChar
@@ -56,12 +64,12 @@ export namespace Enclosed {
         fragment: fragment,
         enclosing: enclosing
     ): buildUnterminatedMessage<fragment, enclosing> =>
-        `${fragment} requires a closing ${enclosing}`
+        `${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
 
     type buildUnterminatedMessage<
         fragment extends string,
         enclosing extends StartChar
-    > = `${fragment} requires a closing ${enclosing}`
+    > = `${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
 
     const untilLookaheadIsClosing: Record<StartChar, scanner.UntilCondition> = {
         "'": (scanner) => scanner.lookahead === `'`,

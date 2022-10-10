@@ -1,7 +1,7 @@
 import type { Base } from "../../nodes/common.js"
 import { Expression } from "../../nodes/expression/expression.js"
 import type {
-    MissingRightOperandMessage,
+    buildMissingRightOperandMessage,
     ParseError,
     parseFn,
     ParserContext
@@ -26,7 +26,7 @@ export type ParseMetaDefinition<
     ? Def[2] extends undefined
         ? [
               Root.parse<Def[0], Ctx>,
-              ParseError<MissingRightOperandMessage<Def[1]>>
+              ParseError<buildMissingRightOperandMessage<Def[1]>>
           ]
         : [Root.parse<Def[0], Ctx>, Def[1], Root.parse<Def[2], Ctx>]
     : [Root.parse<Def[0], Ctx>, Def[1]]
