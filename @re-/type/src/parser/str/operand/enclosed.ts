@@ -1,7 +1,8 @@
 import { keySet } from "@re-/tools"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { RegexLiteral } from "../../../nodes/terminal/regexLiteral.js"
-import type { Scanner, scanner } from "../state/scanner.js"
+import { throwParseError } from "../../common.js"
+import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 
 export namespace Enclosed {
@@ -71,18 +72,17 @@ export namespace Enclosed {
         enclosing extends StartChar
     > = `${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
 
-    const untilLookaheadIsClosing: Record<StartChar, scanner.UntilCondition> = {
+    const untilLookaheadIsClosing: Record<StartChar, Scanner.UntilCondition> = {
         "'": (scanner) => scanner.lookahead === `'`,
         '"': (scanner) => scanner.lookahead === `"`,
         "/": (scanner) => scanner.lookahead === `/`
     }
 
-    const throwUnterminatedEnclosed: scanner.OnInputEndFn = (
+    const throwUnterminatedEnclosed: Scanner.OnInputEndFn = (
         scanner,
         shifted
-    ) => {
-        throw new Error(
+    ) =>
+        throwParseError(
             buildUnterminatedMessage(shifted, shifted[0] as StartChar)
         )
-    }
 }

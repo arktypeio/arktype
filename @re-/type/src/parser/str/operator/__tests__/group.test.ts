@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { GroupOpen } from "../../operand/groupOpen.js"
-import { scanner } from "../../state/scanner.js"
+import { Operand } from "../../operand/operand.js"
 import { GroupClose } from "../groupClose.js"
 
 describe("group", () => {
@@ -38,7 +38,7 @@ describe("group", () => {
                 // @ts-expect-error
                 type("()")
             }).throwsAndHasTypeError(
-                scanner.buildExpressionExpectedMessage(")")
+                Operand.buildExpressionExpectedMessage(")")
             )
         })
         test("unmatched (", () => {
@@ -58,14 +58,14 @@ describe("group", () => {
                 // @ts-expect-error
                 type(")")
             }).throwsAndHasTypeError(
-                scanner.buildExpressionExpectedMessage(")")
+                Operand.buildExpressionExpectedMessage(")")
             )
         })
         test("lone (", () => {
             assert(() => {
                 // @ts-expect-error
                 type("(")
-            }).throwsAndHasTypeError(scanner.buildExpressionExpectedMessage(""))
+            }).throwsAndHasTypeError(Operand.buildExpressionExpectedMessage(""))
         })
         test("deep unmatched (", () => {
             assert(() => {
@@ -84,15 +84,7 @@ describe("group", () => {
                 // @ts-expect-error
                 type(")number(")
             }).throwsAndHasTypeError(
-                scanner.buildExpressionExpectedMessage(")number(")
-            )
-        })
-        test("misplaced )", () => {
-            assert(() => {
-                // @ts-expect-error
-                type("(number|)")
-            }).throwsAndHasTypeError(
-                scanner.buildExpressionExpectedMessage(")")
+                Operand.buildExpressionExpectedMessage(")number(")
             )
         })
     })

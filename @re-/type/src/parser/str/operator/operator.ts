@@ -16,7 +16,7 @@ export namespace operator {}
 export namespace Operator {
     export const parse = (s: ParserState.WithRoot): ParserState.Base => {
         const lookahead = s.scanner.shift()
-        return lookahead === "END"
+        return lookahead === ""
             ? ParserState.finalize(s)
             : lookahead === "?"
             ? OptionalOperator.finalize(s)

@@ -1,8 +1,5 @@
 import { Union } from "../../../nodes/expression/branching/union.js"
-import type {
-    maybePush,
-    buildMissingRightOperandMessage
-} from "../../common.js"
+import type { maybePush } from "../../common.js"
 import type { ParserState } from "../state/state.js"
 import type { LeftBoundOperator } from "./bound/left.js"
 import { IntersectionOperator } from "./intersection.js"
@@ -22,9 +19,7 @@ export namespace UnionOperator {
     export type reduce<
         s extends ParserState.T.WithRoot,
         unscanned extends string
-    > = unscanned extends ""
-        ? ParserState.error<buildMissingRightOperandMessage<"|">>
-        : s extends ParserState.openLeftBounded
+    > = s extends ParserState.openLeftBounded
         ? LeftBoundOperator.unpairedError<s>
         : ParserState.from<{
               root: undefined

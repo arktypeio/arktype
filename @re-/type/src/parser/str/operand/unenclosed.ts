@@ -3,9 +3,9 @@ import { Keyword } from "../../../nodes/terminal/keyword/keyword.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
-import { scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
+import { Operand } from "./operand.js"
 
 export namespace Unenclosed {
     export const parse = (s: ParserState.Base, ctx: parserContext) => {
@@ -20,7 +20,7 @@ export namespace Unenclosed {
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-        ? reduce<s, resolve<scanned, nextUnscanned, ctx>, nextUnscanned>
+        ? reduce<s, resolve<s, scanned, ctx>, nextUnscanned>
         : never
 
     const unenclosedToNode = (
@@ -32,7 +32,7 @@ export namespace Unenclosed {
         maybeParseUnenclosedLiteral(token) ??
         ParserState.error(
             token === ""
-                ? scanner.buildExpressionExpectedMessage(s.scanner.unscanned)
+                ? Operand.buildMissingOperandMessage(s)
                 : buildUnresolvableMessage(token)
         )
 
@@ -66,8 +66,8 @@ export namespace Unenclosed {
         s extends ParserState.T.Unfinished,
         resolved extends string,
         unscanned extends string
-    > = resolved extends ParseError<infer Message>
-        ? ParserState.error<Message>
+    > = resolved extends ParseError<infer message>
+        ? ParserState.error<message>
         : ParserState.setRoot<s, resolved, unscanned>
 
     export const buildUnresolvableMessage = <token extends string>(
@@ -88,8 +88,8 @@ export namespace Unenclosed {
         : false
 
     type resolve<
+        s extends ParserState.T.Unfinished,
         token extends string,
-        unscanned extends string,
         ctx extends ParserContext
     > = isResolvableIdentifier<token, ctx> extends true
         ? token
@@ -101,7 +101,7 @@ export namespace Unenclosed {
         ? UnenclosedBigint.assertWellFormed<token, Value>
         : ParseError<
               token extends ""
-                  ? Scanner.buildExpressionExpectedMessage<unscanned>
+                  ? Operand.buildMissingOperandMessage<s>
                   : buildUnresolvableMessage<token>
           >
 }

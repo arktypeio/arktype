@@ -1,4 +1,6 @@
+import type { Expression } from "../../../nodes/expression/expression.js"
 import type { parserContext, ParserContext } from "../../common.js"
+import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 import { Enclosed } from "./enclosed.js"
@@ -10,7 +12,9 @@ export namespace Operand {
         s: ParserState.Base,
         ctx: parserContext
     ): ParserState.Base =>
-        s.scanner.lookahead === "("
+        s.scanner.lookahead === ""
+            ? throwParseError(buildMissingOperandMessage(s))
+            : s.scanner.lookahead === "("
             ? GroupOpen.reduce(ParserState.shifted(s))
             : s.scanner.lookaheadIsIn(Enclosed.startChars)
             ? Enclosed.parse(s, s.scanner.shift())
@@ -29,5 +33,51 @@ export namespace Operand {
             : lookahead extends " "
             ? parse<ParserState.scanTo<s, unscanned>, ctx>
             : Unenclosed.parse<s, ctx>
-        : ParserState.error<Scanner.buildExpressionExpectedMessage<"">>
+        : ParserState.error<buildMissingOperandMessage<s>>
+
+    export const buildMissingOperandMessage = <s extends ParserState.Base>(
+        s: s
+    ) => {
+        const lastOperator = ParserState.lastOperator(s)
+        return lastOperator === null
+            ? buildExpressionExpectedMessage(s.scanner.unscanned)
+            : buildMissingRightOperandMessage(lastOperator, s.scanner.unscanned)
+    }
+
+    export type buildMissingOperandMessage<
+        s extends ParserState.T.Unfinished,
+        lastOperator extends Expression.BinaryToken | null = ParserState.lastOperator<s>
+    > = lastOperator extends {}
+        ? buildMissingRightOperandMessage<lastOperator, s["unscanned"]>
+        : buildExpressionExpectedMessage<s["unscanned"]>
+
+    export type buildMissingRightOperandMessage<
+        token extends Expression.BinaryToken,
+        unscanned extends string
+    > = `Token '${token}' requires a right operand${unscanned extends ""
+        ? ""
+        : ` before '${unscanned}'`}`
+
+    export const buildMissingRightOperandMessage = <
+        token extends Expression.BinaryToken,
+        unscanned extends string
+    >(
+        token: token,
+        unscanned: unscanned
+    ): buildMissingRightOperandMessage<token, unscanned> =>
+        `Token '${token}' requires a right operand${
+            unscanned ? "" : (` before '${unscanned}'` as any)
+        }`
+
+    export const buildExpressionExpectedMessage = <unscanned extends string>(
+        unscanned: unscanned
+    ) =>
+        `Expected an expression${
+            unscanned ? ` before '${unscanned}'` : ""
+        }` as buildExpressionExpectedMessage<unscanned>
+
+    export type buildExpressionExpectedMessage<unscanned extends string> =
+        `Expected an expression${unscanned extends ""
+            ? ""
+            : ` before '${unscanned}'`}`
 }

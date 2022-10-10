@@ -3,7 +3,7 @@ import { ParserState } from "../state/state.js"
 
 export namespace OptionalOperator {
     export const finalize = (s: ParserState.WithRoot) => {
-        if (s.scanner.lookahead !== "END") {
+        if (s.scanner.lookahead !== "") {
             return ParserState.error(nonTerminatingMessage)
         }
         ParserState.finalize(s)

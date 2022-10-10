@@ -1,9 +1,8 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { buildMissingRightOperandMessage } from "../../../common.js"
+import { Operand } from "../../operand/operand.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
-import { scanner } from "../../state/scanner.js"
 
 describe("union", () => {
     describe("infer", () => {
@@ -28,16 +27,16 @@ describe("union", () => {
                     Unenclosed.buildUnresolvableMessage("strng")
                 )
             })
-            test("double pipes", () => {
+            test("consecutive tokens", () => {
                 // @ts-expect-error
                 assert(() => type("boolean||null")).throwsAndHasTypeError(
-                    scanner.buildExpressionExpectedMessage("|null")
+                    Operand.buildMissingRightOperandMessage("|", "|null")
                 )
             })
             test("ends with |", () => {
                 // @ts-expect-error
                 assert(() => type("boolean|")).throwsAndHasTypeError(
-                    buildMissingRightOperandMessage("|")
+                    Operand.buildMissingRightOperandMessage("|", "")
                 )
             })
             test("long missing union member", () => {
@@ -45,7 +44,7 @@ describe("union", () => {
                     // @ts-expect-error
                     type("boolean[]|(string|number|)|object")
                 ).throwsAndHasTypeError(
-                    scanner.buildExpressionExpectedMessage(")|object")
+                    Operand.buildMissingRightOperandMessage("|", ")|object")
                 )
             })
         })

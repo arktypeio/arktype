@@ -4,12 +4,12 @@ import type { Intersection } from "../../../nodes/expression/branching/intersect
 import type { Union } from "../../../nodes/expression/branching/union.js"
 import type { Bound } from "../../../nodes/expression/infix/bound.js"
 import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import { parseError } from "../../common.js"
 import type { ParseError } from "../../common.js"
+import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import type { LeftBoundOperator } from "../operator/bound/left.js"
 import { UnionOperator } from "../operator/union.js"
-import { scanner } from "./scanner.js"
+import { Scanner } from "./scanner.js"
 
 // TODO: Check namespace parse output
 export namespace ParserState {
@@ -17,7 +17,7 @@ export namespace ParserState {
         root: Base.Node | null
         branches: OpenBranches
         groups: OpenBranches[]
-        scanner: scanner
+        scanner: Scanner
     }
 
     export namespace T {
@@ -113,7 +113,7 @@ export namespace ParserState {
         root: null,
         branches: initializeBranches(),
         groups: [],
-        scanner: new scanner(def)
+        scanner: new Scanner(def)
     })
 
     export type initialize<def extends string> = from<{
@@ -141,9 +141,7 @@ export namespace ParserState {
 
     export type openLeftBounded = { branches: { leftBound: {} } }
 
-    export const error = (message: string) => {
-        throw new parseError(message)
-    }
+    export const error = (message: string) => throwParseError(message)
 
     export type error<message extends string> = from<{
         root: ParseError<message>
@@ -236,4 +234,20 @@ export namespace ParserState {
         groups: s["groups"]
         unscanned: scanTo
     }>
+
+    export const lastOperator = (s: ParserState.Base) =>
+        s.branches.leftBound?.[1] ?? s.branches.intersection
+            ? "&"
+            : s.branches.union
+            ? "|"
+            : null
+
+    export type lastOperator<s extends T.Unfinished> =
+        s extends ParserState.openLeftBounded
+            ? s["branches"]["leftBound"][1]
+            : s["branches"]["intersection"] extends {}
+            ? "&"
+            : s["branches"]["union"] extends {}
+            ? "|"
+            : null
 }

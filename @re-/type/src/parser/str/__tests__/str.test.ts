@@ -1,14 +1,15 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
+import { Operand } from "../operand/operand.js"
 import { Unenclosed } from "../operand/unenclosed.js"
-import { scanner } from "../state/scanner.js"
+import { Scanner } from "../state/scanner.js"
 
 describe("str", () => {
     test("errors on empty string", () => {
         // @ts-expect-error
         assert(() => type("")).throwsAndHasTypeError(
-            scanner.buildExpressionExpectedMessage("")
+            Operand.buildExpressionExpectedMessage("")
         )
     })
     test("ignores whitespace between identifiers/operators", () => {

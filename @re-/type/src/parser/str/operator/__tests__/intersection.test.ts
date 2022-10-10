@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
-import { scanner } from "../../state/scanner.js"
+import { Scanner } from "../../state/scanner.js"
 
 describe("intersection", () => {
     describe("parse", () => {
@@ -31,7 +31,7 @@ describe("intersection", () => {
             test("double and", () => {
                 // @ts-expect-error
                 assert(() => type("boolean&&true")).throwsAndHasTypeError(
-                    scanner.buildExpressionExpectedMessage("&true")
+                    Scanner.buildExpressionExpectedMessage("&true")
                 )
             })
         })

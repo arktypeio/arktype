@@ -120,7 +120,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         context: DiagnosticContextConfig<Code>
     ) {
         const diagnostic = context as Diagnostic<Code>
-        const raw = shallowClone(this.state.data)
+        const raw = this.state.data
         diagnostic.data = {
             raw,
             toString: () => stringifyData(raw)

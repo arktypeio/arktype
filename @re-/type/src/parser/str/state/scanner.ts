@@ -1,7 +1,7 @@
 import type { KeySet } from "@re-/tools"
 import { keySet } from "@re-/tools"
 
-export class scanner<Lookahead extends string = string> {
+export class Scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
     hasBeenFinalized = false
@@ -13,20 +13,20 @@ export class scanner<Lookahead extends string = string> {
 
     /** Get lookahead and advance scanner by one */
     shift() {
-        return (this.chars[this.i++] ?? "END") as Lookahead
+        return (this.chars[this.i++] ?? "") as Lookahead
     }
 
     get lookahead() {
-        return (this.chars[this.i] ?? "END") as Lookahead
+        return (this.chars[this.i] ?? "") as Lookahead
     }
 
     shiftUntil(
-        condition: scanner.UntilCondition,
-        opts?: scanner.ShiftUntilOptions
+        condition: Scanner.UntilCondition,
+        opts?: Scanner.ShiftUntilOptions
     ): string {
         let shifted = opts?.appendTo ?? ""
         while (!condition(this, shifted)) {
-            if (this.lookahead === "END") {
+            if (this.lookahead === "") {
                 return opts?.onInputEnd?.(this, shifted) ?? shifted
             }
             shifted += this.shift()
@@ -39,28 +39,28 @@ export class scanner<Lookahead extends string = string> {
     }
 
     shiftUntilNextTerminator() {
-        return this.shiftUntil(scanner.lookaheadIsTerminator)
+        return this.shiftUntil(Scanner.lookaheadIsTerminator)
     }
 
     get unscanned() {
         return this.chars.slice(this.i, this.chars.length).join("")
     }
 
-    lookaheadIs<Char extends Lookahead>(char: Char): this is scanner<Char> {
+    lookaheadIs<Char extends Lookahead>(char: Char): this is Scanner<Char> {
         return this.lookahead === char
     }
 
     lookaheadIsIn<Tokens extends KeySet>(
         tokens: Tokens
-    ): this is scanner<Extract<keyof Tokens, string>> {
+    ): this is Scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens
     }
 }
 
-export namespace scanner {
-    export type UntilCondition = (scanner: scanner, shifted: string) => boolean
+export namespace Scanner {
+    export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
 
-    export type OnInputEndFn = (scanner: scanner, shifted: string) => string
+    export type OnInputEndFn = (scanner: Scanner, shifted: string) => string
 
     export type ShiftUntilOptions = {
         onInputEnd?: OnInputEndFn
@@ -68,7 +68,7 @@ export namespace scanner {
         appendTo?: string
     }
 
-    export const lookaheadIsTerminator: UntilCondition = (r: scanner) =>
+    export const lookaheadIsTerminator: UntilCondition = (r: Scanner) =>
         r.lookahead in terminatingChars
 
     export const terminatingChars = keySet({
@@ -84,15 +84,8 @@ export namespace scanner {
         " ": 1
     })
 
-    export const buildExpressionExpectedMessage = <Unscanned extends string>(
-        unscanned: Unscanned
-    ) =>
-        `Expected an expression${
-            unscanned ? ` before '${unscanned}'` : ""
-        }.` as Scanner.buildExpressionExpectedMessage<Unscanned>
-}
+    export type TerminatingChar = keyof typeof Scanner.terminatingChars
 
-export namespace Scanner {
     export type shift<
         Lookahead extends string,
         Unscanned extends string
@@ -119,11 +112,4 @@ export namespace Scanner {
         Scanned extends string,
         Unscanned extends string
     > = [Scanned, Unscanned]
-
-    export type TerminatingChar = keyof typeof scanner.terminatingChars
-
-    export type buildExpressionExpectedMessage<unscanned extends string> =
-        `Expected an expression${unscanned extends ""
-            ? ""
-            : ` before '${unscanned}'`}.`
 }
