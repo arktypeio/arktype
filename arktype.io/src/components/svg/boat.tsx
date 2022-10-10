@@ -1,6 +1,7 @@
-import { calcLength, motion } from "framer-motion"
+import { motion } from "framer-motion"
 import React from "react"
 
+// eslint-disable-next-line max-lines-per-function
 export const Boat = () => (
     <motion.svg
         viewBox="0 0 375 375"
