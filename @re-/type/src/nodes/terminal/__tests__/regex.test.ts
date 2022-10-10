@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
 
-describe("string subtypes", () => {
+describe("regex keywords", () => {
     test("email", () => {
         const email = type("email")
         assert(email.infer).typed as string
@@ -19,7 +19,7 @@ describe("string subtypes", () => {
             `Must include only letters (was "a B c")`
         )
     })
-    test("alphanum", () => {
+    test("alphanumeric", () => {
         const alphaNumeric = type("alphanumeric")
         assert(alphaNumeric.infer).typed as string
         assert(alphaNumeric.check("aBc123").errors).is(undefined)
@@ -43,25 +43,32 @@ describe("string subtypes", () => {
             `Must include only uppercase letters (was "WHOoPS")`
         )
     })
-    describe("regex literal", () => {
-        test("infer", () => {
-            assert(type("/.*/").infer).typed as string
+    test("check non-string", () => {
+        const uppercase = type("uppercase")
+        assert(uppercase.check(null).errors?.summary).snap(
+            "some kind of string"
+        )
+    })
+})
+
+describe("regex literal", () => {
+    test("infer", () => {
+        assert(type("/.*/").infer).typed as string
+    })
+    describe("check", () => {
+        test("matching string", () => {
+            assert(type("/.*/").check("dursurdo").errors).is(undefined)
         })
-        describe("validation", () => {
-            test("matching string", () => {
-                assert(type("/.*/").check("dursurdo").errors).is(undefined)
+        describe("errors", () => {
+            test("non-string", () => {
+                assert(type("/^[0-9]*$/").check(5).errors?.summary).snap(
+                    `Must be a string (was number)`
+                )
             })
-            describe("errors", () => {
-                test("non-string", () => {
-                    assert(type("/^[0-9]*$/").check(5).errors?.summary).snap(
-                        `Must be a string (was number)`
-                    )
-                })
-                test("non-match", () => {
-                    assert(
-                        type("/^[0-9]*$/").check("durrrrrr").errors?.summary
-                    ).snap(`Must match expression /^[0-9]*$/ (was "durrrrrr")`)
-                })
+            test("non-match", () => {
+                assert(
+                    type("/^[0-9]*$/").check("durrrrrr").errors?.summary
+                ).snap(`Must match expression /^[0-9]*$/ (was "durrrrrr")`)
             })
         })
     })

@@ -17,7 +17,7 @@ describe("array node", () => {
         describe("errors", () => {
             test("non-array", () => {
                 assert(type("any[]").check({}).errors?.summary).snap(
-                    `Must be an array (was dictionary)`
+                    "Must be an array (was object)"
                 )
             })
             test("bad item", () => {

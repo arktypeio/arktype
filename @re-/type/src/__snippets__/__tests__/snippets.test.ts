@@ -20,20 +20,11 @@ describe("snippets", () => {
         assert(spaceSnippet.types.package.infer).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
-        assert(spaceSnippet.errors?.summary)
-            .snap(`Encountered errors at the following paths:
-  dependencies/0: contributors is required
-  contributors/0/email: Must be a valid email (was "david@redodev")
-`)
+        assert(spaceSnippet.errors?.summary).snap()
     })
     test("constraints", async () => {
         const constraintsSnippet = await import("../constraints.js")
-        assert(constraintsSnippet.errors?.summary)
-            .snap(`Encountered errors at the following paths:
-  email: Must match expression /[a-z]*@redo.dev/ (was "david@redo.biz")
-  about/age: Must be at least 18 (was 17)
-  about/bio: Must be at most 80 characters (was 110)
-`)
+        assert(constraintsSnippet.errors?.summary).snap()
         assert(constraintsSnippet.employee.infer).typed as {
             email: string
             about: {

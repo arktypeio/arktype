@@ -1,6 +1,7 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import { keySet, toString, uncapitalize } from "@re-/tools"
-import { pathToString } from "../common.js"
+import { isIntegerLike } from "../../parser/str/operand/numeric.js"
+import { pathToString, shallowClone } from "../common.js"
 import type { Base, Structure } from "../common.js"
 import type { Union } from "../expression/branching/union.js"
 import type { Bound } from "../expression/infix/bound.js"
@@ -119,12 +120,12 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         context: DiagnosticContextConfig<Code>
     ) {
         const diagnostic = context as Diagnostic<Code>
-        const raw = this.state.data
+        const raw = shallowClone(this.state.data)
         diagnostic.data = {
             raw,
             toString: () => stringifyData(raw)
         }
-        diagnostic.path = this.state.path
+        diagnostic.path = [...this.state.path]
         const options = this.state.queryContext("errors", code) as
             | UniversalDiagnosticOptions
             | undefined
@@ -146,7 +147,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
             const error = this[0]
             if (error.path.length) {
                 const pathPrefix =
-                    error.path.length === 1 && typeof error.path[0] === "number"
+                    error.path.length === 1 && isIntegerLike(error.path[0])
                         ? `Value at index ${error.path[0]}`
                         : pathToString(error.path)
                 return `${pathPrefix} ${uncapitalize(error.message)}`

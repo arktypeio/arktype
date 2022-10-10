@@ -101,3 +101,10 @@ export const stringifyData = (data: unknown) =>
     toString(data, {
         maxNestedStringLength: 50
     })
+
+export const shallowClone = (data: unknown) => {
+    if (typeof data === "object" && data !== null) {
+        return Array.isArray(data) ? [...data] : { ...data }
+    }
+    return data
+}

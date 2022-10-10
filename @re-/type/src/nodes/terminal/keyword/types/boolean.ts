@@ -11,7 +11,7 @@ export class BooleanNode extends Terminal.Node<"boolean"> {
         if (typeof state.data !== "boolean") {
             state.addError("typeKeyword", {
                 type: this,
-                message: "Must be a boolean",
+                message: "Must be boolean",
                 actual: jsTypeOf(state.data)
             })
         }

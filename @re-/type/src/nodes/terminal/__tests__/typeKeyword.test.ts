@@ -145,7 +145,7 @@ describe("type keywords", () => {
         test("check", () => {
             assert(s.check("KEKW").errors).is(undefined)
             assert(s.check(["whoops"]).errors?.summary).snap(
-                `Must be a string (was object)`
+                `Must be a string (was array)`
             )
         })
     })

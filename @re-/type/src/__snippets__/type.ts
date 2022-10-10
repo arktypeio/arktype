@@ -23,6 +23,6 @@ export const fetchUser = () => ({
 export const { errors, data } = user.check(fetchUser())
 
 if (errors) {
-    // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+    // TODO: Add actual error
     console.log(errors.summary)
 }

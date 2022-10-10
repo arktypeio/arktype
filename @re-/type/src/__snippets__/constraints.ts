@@ -25,8 +25,5 @@ export const queryEmployee = () => ({
 // The error messages are so nice you might be tempted to break your code more often ;)
 export const { errors } = employee.check(queryEmployee())
 
-// Encountered errors at the following paths:
-//   email: 'david@redo.biz' does not match expression /[a-z]*@redo.dev/.
-//   about/age: 17 must be greater than or equal to 18.
-//   about/bio: "I am very interesting.I am very interesting.I am ..." must be less than or equal to 80 characters (was 110).
+// TODO: Add error message.
 console.log(errors?.summary ?? "Flawless. Obviously.")

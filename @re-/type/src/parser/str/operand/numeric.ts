@@ -18,29 +18,23 @@ import { throwParseError } from "../../../parser/common.js"
  *    3. If the value includes a decimal, its last digit may not be 0
  *    4. The value may not be "-0"
  */
-const wellFormedNumberMatcherSource =
-    "(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?"
+const wellFormedNumberMatcher = /^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
+export const isWellFormedNumber = (s: string) => wellFormedNumberMatcher.test(s)
 
-const wellFormedNumberMatcher = new RegExp(`^${wellFormedNumberMatcherSource}$`)
-
-const numberLikeMatcherSource = "-?\\d*\\.?\\d*"
-
-const numberLikeMatcher = new RegExp(`^${numberLikeMatcherSource}$`)
+const numberLikeMatcher = /^-?\d*\.?\d*$/
+export const isNumberLike = (s: string) => numberLikeMatcher.test(s)
 
 /**
  *  Matches a well-formatted integer according to the following rules:
  *    1. Must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
  *    2. The value may not be "-0"
  */
-const wellFormedIntegerMatcherSource = "(?:0|(?:-?[1-9]\\d*))"
+const wellFormedIntegerMatcher = /(?:0|(?:-?[1-9]\d*))/
+export const isWellFormedInteger = (s: string) =>
+    wellFormedIntegerMatcher.test(s)
 
-const wellFormedIntegerMatcher = new RegExp(
-    `^${wellFormedIntegerMatcherSource}$`
-)
-
-const integerLikeMatcherSource = "-?\\d*"
-
-const integerLikeMatcher = new RegExp(`^${integerLikeMatcherSource}$`)
+const integerLikeMatcher = /^-?\d*$/
+export const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
 
 type NumericLiteralKind = "number" | "bigint" | "integer"
 
@@ -70,17 +64,13 @@ export namespace UnenclosedNumber {
     export type ValidationKind = "number" | "integer"
 
     const isWellFormed = (def: string, kind: ValidationKind) =>
-        kind === "number"
-            ? wellFormedNumberMatcher.test(def)
-            : wellFormedIntegerMatcher.test(def)
+        kind === "number" ? isWellFormedNumber(def) : isWellFormedInteger(def)
 
     const parseKind = (def: string, kind: ValidationKind) =>
         kind === "number" ? Number.parseFloat(def) : Number.parseInt(def)
 
     const isKindLike = (def: string, kind: ValidationKind) =>
-        kind === "number"
-            ? numberLikeMatcher.test(def)
-            : integerLikeMatcher.test(def)
+        kind === "number" ? isNumberLike(def) : isIntegerLike(def)
 
     const assertWellFormed = (def: string, kind: ValidationKind) => {
         if (!isWellFormed(def, kind)) {

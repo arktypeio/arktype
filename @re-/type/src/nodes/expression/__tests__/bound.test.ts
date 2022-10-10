@@ -2,7 +2,6 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
-import type { Diagnostic } from "../../traverse/diagnostics.js"
 import { Bound } from "../infix/bound.js"
 import type { ExpectedBounds } from "./utils.js"
 import {
@@ -74,26 +73,9 @@ describe("bound", () => {
         test("check", () => {
             const gte3 = type("string>=3")
             assert(gte3.check("yes").errors).equals(undefined)
-            assert(
-                gte3.check("no").errors as any as Diagnostic<"bound">[]
-            ).snap([
-                {
-                    type: {
-                        left: { def: "string", hasStructure: false },
-                        token: ">=",
-                        right: { def: "3", hasStructure: false, value: 3 },
-                        hasStructure: false
-                    },
-                    message: "Must be at least 3 characters (was 2)",
-                    comparator: ">=",
-                    comparatorDescription: "at least",
-                    limit: 3,
-                    actual: 2,
-                    kind: "string",
-                    data: { raw: "no", toString: "<function toString>" },
-                    path: []
-                }
-            ])
+            assert(gte3.check("no").errors?.summary).snap(
+                "Must be at least 3 characters (was 2)"
+            )
         })
     })
     describe("array", () => {
