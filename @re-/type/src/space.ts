@@ -28,7 +28,7 @@ export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
     keyof Aliases,
     DynamicArktype
 > & {
-    $root: DynamicSpaceRoot
+    $: DynamicSpaceRoot
 }
 
 export type DynamicSpaceRoot = SpaceRootFrom<{
@@ -45,7 +45,7 @@ const rawSpace = (aliases: Dictionary, context: ArktypeOptions) => {
             resolutions
         )
     }
-    resolutions.$root = new ArktypeSpace(resolutions, context) as any
+    resolutions.$ = new ArktypeSpace(resolutions, context) as any
     return resolutions as any as DynamicSpace
 }
 
@@ -66,7 +66,7 @@ export namespace ResolvedSpace {
 export type SpaceOutput<Space extends ResolvedSpace> = SpaceTypeRoots<
     Space["resolutions"]
 > & {
-    $root: SpaceRootFrom<Space>
+    $: SpaceRootFrom<Space>
 }
 
 export type SpaceRootFrom<Space extends ResolvedSpace> = {
@@ -78,7 +78,10 @@ export type SpaceRootFrom<Space extends ResolvedSpace> = {
 }
 
 export type SpaceTypeRoots<Resolutions> = Evaluate<{
-    [Name in keyof Resolutions]: Arktype<Resolutions[Name], Resolutions>
+    [Name in keyof Resolutions]: Arktype<
+        inferAst<Resolutions[Name], Resolutions>,
+        Resolutions[Name]
+    >
 }>
 
 export type InferSpaceRoot<Resolutions> = Evaluate<{

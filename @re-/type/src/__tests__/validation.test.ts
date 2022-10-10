@@ -12,7 +12,7 @@ describe("space validation", () => {
             },
             apple: { circumference: "number", type: "string" },
             fruit: "banana|apple"
-        }).$root.type({ fruits: "fruit[]" })
+        }).$.type({ fruits: "fruit[]" })
         assert(
             groceries.check({
                 fruits: [
@@ -42,7 +42,7 @@ describe("space validation", () => {
             a: { a: "a?", b: "b?", isA: "true" },
             b: { a: "a?", b: "b?", isA: "false" },
             either: "a|b"
-        }).$root.type({ a: "a", b: "b", c: "either[]" })
+        }).$.type({ a: "a", b: "b", c: "either[]" })
         assert(
             bicycle.check({
                 a: {
@@ -112,14 +112,14 @@ describe("space validation", () => {
     const recursiveDict = narrow({ dejaVu: { dejaVu: "dejaVu?" } })
     test("validates recursive objects", () => {
         const recursive = space(recursiveDict)
-        type DejaVu = typeof recursive.$root.infer.dejaVu
+        type DejaVu = typeof recursive.$.infer.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
         assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
     })
     test("validates deep objects", () => {
         const recursive = space(recursiveDict)
-        const dejaVu: typeof recursive.$root.infer.dejaVu = {}
+        const dejaVu: typeof recursive.$.infer.dejaVu = {}
         let i = 0
         let current = dejaVu
         while (i < 50) {

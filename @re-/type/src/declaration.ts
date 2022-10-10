@@ -66,7 +66,7 @@ export const declare = (...names: any[]) => names as any
 //             Object.fromEntries(
 //                 declaredTypeNames.map((typeName) => [typeName, "unknown"])
 //             )
-//         ).$root.type(definition)
+//         ).$.type(definition)
 //         return { [definedTypeName]: definition } as any
 //     }
 

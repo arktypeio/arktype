@@ -65,7 +65,7 @@
 //                 generate: { onRequiredCycle: "space" }
 //             }
 //         )
-//         const doll = nesting.$root.type("doll", {
+//         const doll = nesting.$.type("doll", {
 //             generate: { onRequiredCycle: "type" }
 //         })
 //         // When all four are provided, the options provided to the call win
@@ -74,7 +74,7 @@
 //         ).unknown.equals("create")
 //         // When no args are provided, options def config wins
 //         assert(
-//             nesting.$root.type("doll").generate().contents
+//             nesting.$.type("doll").generate().contents
 //         ).unknown.equals("def")
 //         // When no type-specific config is provided, space config applies
 //         assert(
@@ -86,7 +86,7 @@
 //         // When there is no other config, create options will apply
 //         assert(
 //             space({ doll: { contents: "doll" } })
-//                 .$root.type("doll", {
+//                 .$.type("doll", {
 //                     generate: { onRequiredCycle: "create" }
 //                 })
 //                 .generate().contents

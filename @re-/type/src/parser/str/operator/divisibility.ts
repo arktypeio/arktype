@@ -5,7 +5,6 @@ import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 
 export namespace DivisibilityOperator {
-    // TODO: Check for multiple modulos/bounds etc.
     export const parse = (s: ParserState.WithRoot) => {
         const divisorToken = s.scanner.shiftUntilNextTerminator()
         return reduce(

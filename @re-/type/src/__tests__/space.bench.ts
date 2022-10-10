@@ -3,7 +3,7 @@ import { space } from "../api.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })
-const dejaVu: typeof recursive.$root.infer.dejaVu = {}
+const dejaVu: typeof recursive.$.infer.dejaVu = {}
 let i = 0
 let current = dejaVu
 while (i < 50) {

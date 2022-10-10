@@ -18,15 +18,15 @@ describe("root definition", () => {
                 a: "str" + "ing[" + "]",
                 b: "a?"
             })
-            assert(s.$root.aliases).typed as Dictionary<unknown>
+            assert(s.$.aliases).typed as Dictionary<unknown>
             // Types are inferred as unknown
             assert(s.a.infer).typed as unknown
             // Allows all references, but will throw if they're not defined at runtime
             assert(() => {
-                s.$root.type({ a: "st" })
+                s.$.type({ a: "st" })
             }).throws(Unenclosed.buildUnresolvableMessage("st"))
             // Runtime nodes created correctly
-            assert(s.$root.ast).equals({ a: ["string", "[]"], b: ["a", "?"] })
+            assert(s.$.ast).equals({ a: ["string", "[]"], b: ["a", "?"] })
         })
     })
     describe("bad def types", () => {

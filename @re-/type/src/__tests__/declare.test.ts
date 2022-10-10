@@ -12,7 +12,7 @@
 //     test("compiles", () => {
 //         // Creates your space (or tells you which definition you forgot to include)
 //         const space = compile({ ...userDef, ...groupDef })
-//         assert(space.$root.ast).narrowedValue({
+//         assert(space.$.ast).narrowedValue({
 //             group: {
 //                 name: "string",
 //                 members: ["user", "[]"]
@@ -30,7 +30,7 @@
 //             { ...userDef, ...groupDef },
 //             { parse: { onCycle: "'cycle'" } }
 //         )
-//         assert(space.$root.infer).typed as {
+//         assert(space.$.infer).typed as {
 //             group: {
 //                 name: string
 //                 members: {
@@ -61,7 +61,7 @@
 //             unresolvableMessage("whoops")
 //         )
 //         const space = compile(gottaDefineThis)
-//         assert(space.$root.ast).narrowedValue({ gottaDefineThis: "boolean" })
+//         assert(space.$.ast).narrowedValue({ gottaDefineThis: "boolean" })
 //     })
 //     test("errors on compile with declared type undefined", () => {
 //         const { define, compile } = declare(

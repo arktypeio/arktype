@@ -95,7 +95,7 @@ type FilterRecurse<
 //     describe("model", () => {
 //         test("from string", () => {
 //             const references = space({ user: "unknown", group: "unknown" })
-//                 .$root.type("0<(user[]|group[]|boolean&true|integer|null)[]<2")
+//                 .$.type("0<(user[]|group[]|boolean&true|integer|null)[]<2")
 //                 .references()
 //             const expectedReferenceSet = narrow([
 //                 "user",

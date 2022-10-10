@@ -19,7 +19,7 @@
 //         console.log(palindrome.check("step on your cat").errors?.summary)
 //     })
 //     test("inline", () => {
-//         const palindrome = space({ palindrome: "string" }).$root.type(
+//         const palindrome = space({ palindrome: "string" }).$.type(
 //             "palindrome",
 //             {
 //                 narrow: palindromeValidator

@@ -29,7 +29,7 @@ export const isNumberLike = (s: string) => numberLikeMatcher.test(s)
  *    1. Must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
  *    2. The value may not be "-0"
  */
-const wellFormedIntegerMatcher = /(?:0|(?:-?[1-9]\d*))/
+const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/
 export const isWellFormedInteger = (s: string) =>
     wellFormedIntegerMatcher.test(s)
 

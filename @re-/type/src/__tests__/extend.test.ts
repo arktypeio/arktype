@@ -5,7 +5,7 @@
 // describe("extend space", () => {
 //     test("type", () => {
 //         const extended = getExtendedSpace()
-//         assert(extended.$root.infer).typed as {
+//         assert(extended.$.infer).typed as {
 //             user: {
 //                 first: string
 //                 last: string
@@ -32,7 +32,7 @@
 //     })
 //     test("dictionary", () => {
 //         const extended = getExtendedSpace()
-//         assert(extended.$root.definitions).snap({
+//         assert(extended.$.definitions).snap({
 //             user: { first: `string`, last: `string` },
 //             group: {
 //                 // @ts-expect-error (values returned from define() don't match their declared types by design)
@@ -56,7 +56,7 @@
 //     })
 //     test("options", () => {
 //         const extended = getExtendedSpace()
-//         assert(extended.$root.options).snap({
+//         assert(extended.$.options).snap({
 //             parse: {
 //                 onCycle: "boolean"
 //             },
@@ -85,7 +85,7 @@
 //             narrow: () => undefined
 //         }
 //     )
-//     const extended = mySpace.$root.extend(
+//     const extended = mySpace.$.extend(
 //         {
 //             user: { first: "string", last: "string" },
 //             other: define(
