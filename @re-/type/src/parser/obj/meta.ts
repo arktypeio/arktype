@@ -1,12 +1,8 @@
 import type { Base } from "../../nodes/common.js"
 import { Expression } from "../../nodes/expression/expression.js"
-import type {
-    buildMissingRightOperandMessage,
-    ParseError,
-    parseFn,
-    ParserContext
-} from "../common.js"
+import type { ParseError, parseFn, ParserContext } from "../common.js"
 import type { Root } from "../root.js"
+import type { Operand } from "../str/operand/operand.js"
 
 // TODO: Test inferring from  meta def generic perf
 export type MetaDefinition = [unknown, Expression.Token, ...unknown[]]
@@ -26,7 +22,7 @@ export type ParseMetaDefinition<
     ? Def[2] extends undefined
         ? [
               Root.parse<Def[0], Ctx>,
-              ParseError<buildMissingRightOperandMessage<Def[1]>>
+              ParseError<Operand.buildMissingRightOperandMessage<Def[1], "">>
           ]
         : [Root.parse<Def[0], Ctx>, Def[1], Root.parse<Def[2], Ctx>]
     : [Root.parse<Def[0], Ctx>, Def[1]]

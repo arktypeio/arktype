@@ -1,7 +1,7 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import { keySet, toString, uncapitalize } from "@re-/tools"
 import { isIntegerLike } from "../../parser/str/operand/numeric.js"
-import { pathToString, shallowClone } from "../common.js"
+import { pathToString } from "../common.js"
 import type { Base, Structure } from "../common.js"
 import type { Union } from "../expression/branching/union.js"
 import type { Bound } from "../expression/infix/bound.js"
@@ -63,10 +63,12 @@ type DiagnosticContextConfig<Code extends DiagnosticCode> =
 
 type BaseDiagnosticContext<Node extends Base.Node, Data> = {
     type: Pick<Node, "toString" | "toAst" | "toDefinition">
-    data: Stringifiable<Data>
     path: string[]
     message: string
-}
+} & (Data extends never ? {} : { data: Stringifiable<Data> })
+
+type DataForCode<Code extends DiagnosticCode> =
+    DiagnosticContextConfig<Code>["data"]
 
 type CompileDiagnosticOptions<Code extends DiagnosticCode> =
     BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>
@@ -74,7 +76,7 @@ type CompileDiagnosticOptions<Code extends DiagnosticCode> =
 type BaseDiagnosticOptions<Code extends DiagnosticCode> = Evaluate<
     {
         message?: WriteDiagnosticMessageFn<Code>
-    } & (Code extends DatalessCode ? {} : { omitActual?: boolean })
+    } & (DataForCode<Code> extends never ? {} : { omitActual?: boolean })
 >
 
 type WriteDiagnosticMessageFn<Code extends DiagnosticCode> = (

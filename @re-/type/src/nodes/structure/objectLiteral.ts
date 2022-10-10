@@ -108,6 +108,6 @@ export namespace ObjectLiteral {
         Node,
         { key: string },
         {},
-        Dictionary
+        never
     >
 }
