@@ -1,4 +1,4 @@
-import type { Base } from "../../common.js"
+import { Base } from "../../common.js"
 import type { Check } from "../../traverse/check.js"
 import type { Bound } from "./bound.js"
 import type { Divisibility } from "./divisibility.js"
@@ -39,8 +39,7 @@ export namespace Infix {
         Left extends Base.Node,
         Token extends string,
         Right extends Base.Node
-    > implements Base.Node
-    {
+    > extends Base.Node {
         hasStructure: boolean
 
         constructor(
@@ -48,11 +47,12 @@ export namespace Infix {
             protected token: Token,
             protected right: Right
         ) {
+            super()
             this.hasStructure =
                 this.left.hasStructure || this.right.hasStructure
         }
 
-        abstract check(state: Check.State): void
+        abstract allows(state: Check.State): void
 
         toString() {
             return `${this.left.toString()}${

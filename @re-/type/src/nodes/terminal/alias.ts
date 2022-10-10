@@ -7,7 +7,7 @@ export namespace Alias {
             super(def)
         }
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             return state.resolve(this.def).check(state)
         }
     }

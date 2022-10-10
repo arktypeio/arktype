@@ -7,14 +7,14 @@ import { scanner } from "../../state/scanner.js"
 describe("union", () => {
     describe("infer", () => {
         test("two types", () => {
-            assert(type("number|string").ast).narrowedValue([
+            assert(type("number|string").toAst()).narrowedValue([
                 "number",
                 "|",
                 "string"
             ])
         })
         test("several types", () => {
-            assert(type("false|null|undefined|0|''").ast).narrowedValue([
+            assert(type("false|null|undefined|0|''").toAst()).narrowedValue([
                 [[["false", "|", "null"], "|", "undefined"], "|", "0"],
                 "|",
                 "''"

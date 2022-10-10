@@ -7,7 +7,7 @@ export class BooleanNode extends Terminal.Node<"boolean"> {
         super("boolean")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (typeof state.data !== "boolean") {
             state.addError("typeKeyword", {
                 type: this,

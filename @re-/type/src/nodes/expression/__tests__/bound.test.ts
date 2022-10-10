@@ -11,6 +11,7 @@ import {
     assertCheckResults
 } from "./utils.js"
 
+// TODO: Add subtype tests for bounds and divisibility
 describe("bound", () => {
     describe("check", () => {
         test("single", () => {
@@ -22,7 +23,7 @@ describe("bound", () => {
                         const singleBound = type.dynamic(
                             `number${comparator}${limit}`
                         )
-                        assert(singleBound.ast).equals([
+                        assert(singleBound.toAst()).equals([
                             "number",
                             comparator,
                             String(limit)
@@ -55,7 +56,7 @@ describe("bound", () => {
                             ],
                             [upperComparator, upperLimit]
                         ]
-                        assert(doubleBound.ast).equals([
+                        assert(doubleBound.toAst()).equals([
                             String(lowerLimit),
                             lowerComparator,
                             ["number", upperComparator, String(upperLimit)]

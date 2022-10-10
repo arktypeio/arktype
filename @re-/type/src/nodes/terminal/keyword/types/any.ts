@@ -6,5 +6,5 @@ export class AnyNode extends Terminal.Node<"any"> {
     }
 
     // Allows all data
-    check() {}
+    allows() {}
 }

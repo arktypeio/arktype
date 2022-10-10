@@ -19,7 +19,7 @@ export namespace RegexKeyword {
             super(keyword)
         }
 
-        check(state: Check.State<string>) {
+        allows(state: Check.State<string>) {
             if (
                 TypeKeyword.allows("string", state) &&
                 !this.expression.test(state.data)

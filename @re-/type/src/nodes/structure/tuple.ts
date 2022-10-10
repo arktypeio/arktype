@@ -1,12 +1,13 @@
-import type { Base } from "../common.js"
-import { Structure } from "../common.js"
+import { Base, Structure } from "../common.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace Tuple {
-    export class Node implements Base.Node {
+    export class Node extends Base.Node {
         hasStructure = true
 
-        constructor(public children: Base.Node[]) {}
+        constructor(public children: Base.Node[]) {
+            super()
+        }
 
         toAst() {
             return this.children.map((child) => child.toAst())
@@ -29,7 +30,7 @@ export namespace Tuple {
             return result + this.children[i].toString() + "]"
         }
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             if (!Structure.checkKind(this, "array", state)) {
                 return
             }
@@ -47,7 +48,7 @@ export namespace Tuple {
             for (let i = 0; i < this.children.length; i++) {
                 state.path.push(String(i))
                 state.data = rootData[i]
-                this.children[i].check(state)
+                this.children[i].allows(state)
                 state.path.pop()
             }
             state.data = rootData

@@ -7,7 +7,7 @@ export class NullNode extends Terminal.Node<"null"> {
         super("null")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (state.data !== null) {
             state.addError("typeKeyword", {
                 type: this,

@@ -7,7 +7,7 @@ export class ObjectNode extends Terminal.Node<"object"> {
         super("object")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (typeof state.data !== "object" || state.data === null) {
             state.addError("typeKeyword", {
                 type: this,

@@ -6,7 +6,7 @@ export class NeverNode extends Terminal.Node<"never"> {
         super("never")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         state.addError("typeKeyword", {
             type: this,
             message: "Never allowed",

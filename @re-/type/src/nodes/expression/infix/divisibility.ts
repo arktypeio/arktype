@@ -1,3 +1,4 @@
+import { hasJsType } from "@re-/tools"
 import type { Base } from "../../common.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Check } from "../../traverse/check.js"
@@ -13,9 +14,9 @@ export namespace Divisibility {
         Token,
         PrimitiveLiteral.Node<number>
     > {
-        check(state: Check.State<number>) {
+        allows(state: Check.State<number>) {
             const divisor = this.right.value
-            if (!state.dataIsOfType("number") || state.data % divisor !== 0) {
+            if (hasJsType(state.data, "number") && state.data % divisor !== 0) {
                 state.addError("divisibility", {
                     type: this,
                     message:
@@ -25,7 +26,7 @@ export namespace Divisibility {
                     divisor
                 })
             }
-            this.left.check(state)
+            this.left.allows(state)
         }
     }
 

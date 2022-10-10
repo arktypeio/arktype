@@ -1,4 +1,5 @@
 import { keySet } from "@re-/tools"
+import { InternalArktypeError } from "../../../internal.js"
 import type { Base } from "../../common.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Check } from "../../traverse/check.js"
@@ -59,7 +60,7 @@ export namespace Bound {
             default:
                 // TODO: Does this work?
                 // c8 ignore next
-                throw new Error(
+                throw new InternalArktypeError(
                     `Unexpected comparator '${normalizedComparator}'.`
                 )
         }
@@ -102,7 +103,7 @@ export namespace Bound {
         DoublableToken,
         RightNode
     > {
-        check(state: Check.State) {
+        allows(state: Check.State) {
             if (
                 checkBound(
                     this,
@@ -111,7 +112,7 @@ export namespace Bound {
                     state
                 )
             ) {
-                this.right.check(state)
+                this.right.allows(state)
             }
         }
     }
@@ -128,9 +129,9 @@ export namespace Bound {
         Token,
         PrimitiveLiteral.Node<number>
     > {
-        check(state: Check.State) {
+        allows(state: Check.State) {
             checkBound(this, this.token, this.right.value, state)
-            this.left.check(state)
+            this.left.allows(state)
         }
     }
 

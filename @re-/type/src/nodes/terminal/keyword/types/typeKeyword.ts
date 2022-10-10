@@ -41,7 +41,7 @@ export namespace TypeKeyword {
      * the data was allowed */
     export const allows = (keyword: Definition, state: Check.State) => {
         const priorErrorCount = state.errors.length
-        nodes[keyword].check(state)
+        nodes[keyword].allows(state)
         return priorErrorCount === state.errors.length
     }
 

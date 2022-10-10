@@ -9,9 +9,9 @@ export namespace Intersection {
     export class Node extends Branching.Node<Token> {
         readonly token = token
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             for (const branch of this.children) {
-                branch.check(state)
+                branch.allows(state)
             }
         }
     }

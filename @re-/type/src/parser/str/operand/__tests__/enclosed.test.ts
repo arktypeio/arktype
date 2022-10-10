@@ -8,10 +8,10 @@ describe("parse enclosed", () => {
         assert(type("'this has spaces'").infer).typed as "this has spaces"
     })
     test("isolated", () => {
-        assert(type('"alone"').ast).narrowedValue('"alone"')
+        assert(type('"alone"').toAst()).narrowedValue('"alone"')
     })
     test("with neighbors", () => {
-        assert(type("'foo'|/.*/[]").ast).narrowedValue([
+        assert(type("'foo'|/.*/[]").toAst()).narrowedValue([
             "'foo'",
             "|",
             ["/.*/", "[]"]
@@ -40,13 +40,13 @@ describe("parse enclosed", () => {
         })
     })
     test("single-quoted", () => {
-        assert(type("'hello'").ast).narrowedValue("'hello'")
+        assert(type("'hello'").toAst()).narrowedValue("'hello'")
     })
     test("double-quoted", () => {
-        assert(type('"goodbye"').ast).narrowedValue('"goodbye"')
+        assert(type('"goodbye"').toAst()).narrowedValue('"goodbye"')
     })
     test("regex literal", () => {
-        assert(type("/.*/").ast).narrowedValue("/.*/")
+        assert(type("/.*/").toAst()).narrowedValue("/.*/")
     })
     test("invalid regex", () => {
         assert(() => type("/[/")).throws.snap(
@@ -54,18 +54,18 @@ describe("parse enclosed", () => {
         )
     })
     test("mixed quote types", () => {
-        assert(type(`"'single-quoted'"`).ast).narrowedValue(
+        assert(type(`"'single-quoted'"`).toAst()).narrowedValue(
             "\"'single-quoted'\""
         )
-        assert(type(`'"double-quoted"'`).ast).narrowedValue(
+        assert(type(`'"double-quoted"'`).toAst()).narrowedValue(
             "'\"double-quoted\"'"
         )
     })
     test("ignores enclosed tokens", () => {
-        assert(type("'yes|no|maybe'").ast).narrowedValue("'yes|no|maybe'")
+        assert(type("'yes|no|maybe'").toAst()).narrowedValue("'yes|no|maybe'")
     })
     test("mix of enclosed and unenclosed tokens", () => {
-        assert(type("'yes|no'|'true|false'").ast).narrowedValue([
+        assert(type("'yes|no'|'true|false'").toAst()).narrowedValue([
             "'yes|no'",
             "|",
             "'true|false'"

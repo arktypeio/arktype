@@ -7,7 +7,11 @@ describe("divisibility", () => {
     describe("parse", () => {
         describe("valid", () => {
             test("integerLiteralDefinition", () => {
-                assert(type("number%2").ast).narrowedValue(["number", "%", "2"])
+                assert(type("number%2").toAst()).narrowedValue([
+                    "number",
+                    "%",
+                    "2"
+                ])
             })
         })
         describe("invalid", () => {

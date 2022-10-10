@@ -12,7 +12,7 @@ export namespace Arr {
     export class Node extends Postfix.Node<Token> {
         readonly token = token
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             if (!Structure.checkKind(this, "array", state)) {
                 return
             }
@@ -20,7 +20,7 @@ export namespace Arr {
             for (let i = 0; i < rootData.length; i++) {
                 state.path.push(String(i))
                 state.data = rootData[i] as any
-                this.child.check(state)
+                this.child.allows(state)
                 state.path.pop()
             }
             state.data = rootData

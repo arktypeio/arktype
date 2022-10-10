@@ -1,4 +1,5 @@
 import { isKeyOf } from "@re-/tools"
+import { throwInternalError } from "../../../internal.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 import { ArrayOperator } from "./array.js"
@@ -33,7 +34,7 @@ export namespace Operator {
             ? DivisibilityOperator.parse(s)
             : lookahead === " "
             ? parse(s)
-            : ParserState.error(buildUnexpectedCharacterMessage(lookahead))
+            : throwInternalError(buildUnexpectedCharacterMessage(lookahead))
     }
 
     export type parse<s extends ParserState.T.WithRoot> =

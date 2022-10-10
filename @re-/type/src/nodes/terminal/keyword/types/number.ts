@@ -7,7 +7,7 @@ export class NumberNode extends Terminal.Node<"number"> {
         super("number")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (typeof state.data !== "number") {
             state.addError("typeKeyword", {
                 type: this,

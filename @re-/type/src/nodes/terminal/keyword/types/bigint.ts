@@ -7,7 +7,7 @@ export class BigintNode extends Terminal.Node<"bigint"> {
         super("bigint")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (typeof state.data !== "bigint") {
             state.addError("typeKeyword", {
                 type: this,

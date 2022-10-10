@@ -12,7 +12,7 @@
 //     test("compiles", () => {
 //         // Creates your space (or tells you which definition you forgot to include)
 //         const space = compile({ ...userDef, ...groupDef })
-//         assert(space.$.ast).narrowedValue({
+//         assert(space.$.toAst()).narrowedValue({
 //             group: {
 //                 name: "string",
 //                 members: ["user", "[]"]
@@ -61,7 +61,7 @@
 //             unresolvableMessage("whoops")
 //         )
 //         const space = compile(gottaDefineThis)
-//         assert(space.$.ast).narrowedValue({ gottaDefineThis: "boolean" })
+//         assert(space.$.toAst()).narrowedValue({ gottaDefineThis: "boolean" })
 //     })
 //     test("errors on compile with declared type undefined", () => {
 //         const { define, compile } = declare(

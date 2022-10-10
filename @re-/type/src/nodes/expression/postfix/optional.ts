@@ -9,11 +9,11 @@ export namespace Optional {
     export class Node extends Postfix.Node<Token> {
         readonly token = token
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             if (state.data === undefined) {
                 return
             }
-            this.child.check(state)
+            this.child.allows(state)
         }
     }
 }

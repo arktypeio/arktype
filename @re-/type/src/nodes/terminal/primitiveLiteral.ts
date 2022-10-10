@@ -36,7 +36,7 @@ export namespace PrimitiveLiteral {
             super(def)
         }
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             if (state.data !== this.value) {
                 state.addError("primitiveLiteral", {
                     message: `Must be ${this.def}`,

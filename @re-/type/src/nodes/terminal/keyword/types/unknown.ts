@@ -6,5 +6,5 @@ export class UnknownNode extends Terminal.Node<"unknown"> {
     }
 
     // Allows all data
-    check() {}
+    allows() {}
 }

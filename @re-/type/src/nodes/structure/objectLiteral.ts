@@ -1,16 +1,17 @@
 import type { Dictionary } from "@re-/tools"
-import type { Base } from "../common.js"
-import { Structure } from "../common.js"
+import { Base, Structure } from "../common.js"
 import { Optional } from "../expression/postfix/optional.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
-    export class Node implements Base.Node {
+    export class Node extends Base.Node {
         hasStructure = true
 
-        constructor(public children: Base.Node[], private keys: string[]) {}
+        constructor(public children: Base.Node[], private keys: string[]) {
+            super()
+        }
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             if (!Structure.checkKind(this, "object", state)) {
                 return
             }
@@ -32,7 +33,7 @@ export namespace ObjectLiteral {
                 if (k in rootData) {
                     state.path.push(k)
                     state.data = rootData[k]
-                    child.check(state)
+                    child.allows(state)
                     state.path.pop()
                 } else if (!(child instanceof Optional.Node)) {
                     this.addMissingKeyDiagnostic(state, k)

@@ -10,31 +10,35 @@ describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
-                assert(type("number>0").ast).narrowedValue(["number", ">", "0"])
+                assert(type("number>0").toAst()).narrowedValue([
+                    "number",
+                    ">",
+                    "0"
+                ])
             })
             test("<", () => {
-                assert(type("number<10").ast).narrowedValue([
+                assert(type("number<10").toAst()).narrowedValue([
                     "number",
                     "<",
                     "10"
                 ])
             })
             test(">=", () => {
-                assert(type("number>=3.14159").ast).narrowedValue([
+                assert(type("number>=3.14159").toAst()).narrowedValue([
                     "number",
                     ">=",
                     "3.14159"
                 ])
             })
             test("<=", () => {
-                assert(type("number<=-49").ast).narrowedValue([
+                assert(type("number<=-49").toAst()).narrowedValue([
                     "number",
                     "<=",
                     "-49"
                 ])
             })
             test("==", () => {
-                assert(type("number==3211993").ast).narrowedValue([
+                assert(type("number==3211993").toAst()).narrowedValue([
                     "number",
                     "==",
                     "3211993"
@@ -43,14 +47,14 @@ describe("bound", () => {
         })
         describe("double", () => {
             test("<,<=", () => {
-                assert(type("-5<number<=5").ast).narrowedValue([
+                assert(type("-5<number<=5").toAst()).narrowedValue([
                     "-5",
                     "<",
                     ["number", "<=", "5"]
                 ])
             })
             test("<=,<", () => {
-                assert(type("-3.23<=number<4.654").ast).narrowedValue([
+                assert(type("-3.23<=number<4.654").toAst()).narrowedValue([
                     "-3.23",
                     "<=",
                     ["number", "<", "4.654"]

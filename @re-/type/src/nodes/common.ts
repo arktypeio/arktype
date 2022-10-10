@@ -1,14 +1,34 @@
 import type { Dictionary, NormalizedJsTypeName } from "@re-/tools"
-import { jsTypeOf, toString } from "@re-/tools"
-import type { Check } from "./traverse/check.js"
+import { chainableNoOpProxy, jsTypeOf, toString } from "@re-/tools"
+import type { DynamicArktype } from "../type.js"
+import { Check } from "./traverse/check.js"
 
 export namespace Base {
-    export type Node = {
-        hasStructure: boolean
-        check(state: Check.State): void
-        toAst(): unknown
-        toString(): string
+    export abstract class Node implements DynamicArktype {
+        check(data: unknown) {
+            const state = new Check.State(data)
+            this.allows(state)
+            return state.errors.length
+                ? {
+                      errors: state.errors
+                  }
+                : { data }
+        }
 
+        assert(data: unknown) {
+            const result = this.check(data)
+            result.errors?.throw()
+            return result.data
+        }
+
+        get infer() {
+            return chainableNoOpProxy
+        }
+
+        abstract hasStructure: boolean
+        abstract allows(state: Check.State): void
+        abstract toAst(): unknown
+        abstract toString(): string
         /**
          * This generates an isomorphic definition that can be parsed and
          * inverted. The preferred isomorphic format for expressions is the
@@ -35,7 +55,7 @@ export namespace Base {
          *
          *     [{a: "string?"}, "&", {b: "boolean?"}]
          */
-        toDefinition(): unknown
+        abstract toDefinition(): unknown
     }
 }
 
@@ -75,10 +95,7 @@ export namespace Structure {
     >
 }
 
-export type Segment = string | number
-export type Path = Segment[]
-
-export const pathToString = (path: Path) =>
+export const pathToString = (path: string[]) =>
     path.length === 0 ? "/" : path.join("/")
 
 export const stringifyData = (data: unknown) =>

@@ -10,12 +10,12 @@ export namespace Union {
     export class Node extends Branching.Node<Token> {
         readonly token = token
 
-        check(state: Check.State) {
+        allows(state: Check.State) {
             const rootErrors = state.errors
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
             for (const child of this.children) {
                 state.errors = new Diagnostics(state)
-                child.check(state)
+                child.allows(state)
                 if (!state.errors.length) {
                     return
                 }

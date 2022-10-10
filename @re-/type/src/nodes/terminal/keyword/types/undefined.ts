@@ -7,7 +7,7 @@ export class UndefinedNode extends Terminal.Node<"undefined"> {
         super("undefined")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (state.data !== undefined) {
             state.addError("typeKeyword", {
                 type: this,

@@ -40,7 +40,7 @@ describe("snippets", () => {
     //         declarationSnippet.types.group.infer.members[0].groups[0].members[0]
     //             .name
     //     ).typed as string
-    //     assert(declarationSnippet.types.$.ast).snap({
+    //     assert(declarationSnippet.types.$.toAst()).snap({
     //         user: {
     //             name: `string`,
     //             bestFriend: [`user`, `?`],

@@ -7,7 +7,7 @@ export class StringNode extends Terminal.Node<"string"> {
         super("string")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (typeof state.data !== "string") {
             state.addError("typeKeyword", {
                 type: this,

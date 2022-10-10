@@ -13,7 +13,7 @@ export namespace RegexLiteral {
             this.expression = new RegExp(def.slice(1, -1))
         }
 
-        check(state: Check.State<string>) {
+        allows(state: Check.State<string>) {
             if (
                 TypeKeyword.allows("string", state) &&
                 !this.expression.test(state.data)

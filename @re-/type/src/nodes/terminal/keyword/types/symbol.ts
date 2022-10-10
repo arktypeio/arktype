@@ -7,7 +7,7 @@ export class SymbolNode extends Terminal.Node<"symbol"> {
         super("symbol")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (typeof state.data !== "symbol") {
             state.addError("typeKeyword", {
                 type: this,

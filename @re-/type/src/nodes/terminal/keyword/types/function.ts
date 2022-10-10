@@ -7,7 +7,7 @@ export class FunctionNode extends Terminal.Node<"Function"> {
         super("Function")
     }
 
-    check(state: Check.State) {
+    allows(state: Check.State) {
         if (typeof state.data !== "function") {
             state.addError("typeKeyword", {
                 type: this,
