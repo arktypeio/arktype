@@ -1,5 +1,4 @@
 import { Base } from "../common.js"
-import type { Check } from "../traverse/check.js"
 
 export namespace Terminal {
     export abstract class Node<Def extends string> extends Base.Node {
@@ -8,8 +7,6 @@ export namespace Terminal {
         constructor(protected def: Def) {
             super()
         }
-
-        abstract allows(state: Check.State): void
 
         toDefinition() {
             return this.def

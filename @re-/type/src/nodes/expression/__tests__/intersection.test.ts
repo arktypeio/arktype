@@ -19,7 +19,9 @@ describe("intersection node", () => {
         test("several types", () => {
             const unknownBooleanFalse = type("unknown&boolean&false")
             assert(unknownBooleanFalse.check(false).errors).equals(undefined)
-            assert(unknownBooleanFalse.check("false").errors?.summary).snap()
+            assert(unknownBooleanFalse.check("false").errors?.summary)
+                .snap(`/: Must be boolean (was string)
+/: Must be false (was "false")`)
         })
     })
 })

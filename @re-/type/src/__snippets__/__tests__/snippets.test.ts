@@ -18,13 +18,18 @@ describe("snippets", () => {
     test("space", async () => {
         const spaceSnippet = await import("../space.js")
         assert(spaceSnippet.types.package.infer).type.toString.snap(
-            `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
+            "{ name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }"
         )
-        assert(spaceSnippet.errors?.summary).snap("??")
+        assert(spaceSnippet.errors?.summary)
+            .snap(`dependencies/0: contributors is required
+contributors/0/email: Must be a valid email (was "david@redodev")`)
     })
     test("constraints", async () => {
         const constraintsSnippet = await import("../constraints.js")
-        assert(constraintsSnippet.errors?.summary).snap()
+        assert(constraintsSnippet.errors?.summary)
+            .snap(`email: Must match expression /[a-z]*@redo.dev/ (was "david@redo.biz")
+about/age: Must be at least 18 (was 17)
+about/bio: Must be at most 80 characters (was 110)`)
         assert(constraintsSnippet.employee.infer).typed as {
             email: string
             about: {

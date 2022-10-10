@@ -10,7 +10,7 @@ export namespace Scope {
 
     export const merge = (base: Context, merged: Context): Context => ({
         errors: { ...base.errors, ...merged.errors },
-        resolutions: merged.resolutions ?? base.resolutions
+        resolutions: base.resolutions
     })
 
     export class Node extends Base.Node {
@@ -18,6 +18,7 @@ export namespace Scope {
 
         constructor(protected child: Base.Node, protected context: Context) {
             super()
+            // TODO: Handle children at a base node level
             this.hasStructure = child.hasStructure
         }
 

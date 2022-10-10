@@ -19,4 +19,8 @@ assert(undefined).snap()
 
 assert({ a: undefined }).snap()
 
+assert("multiline\nmultiline").snap()
+
+assert("with `quotes`").snap()
+
 isPrecached && cleanupAssertions()

@@ -1,10 +1,4 @@
-import type {
-    Conform,
-    Fn,
-    IsAnyOrUnknown,
-    ListComparisonMode,
-    Narrow
-} from "@re-/tools"
+import type { Fn, IsAnyOrUnknown, ListComparisonMode, Narrow } from "@re-/tools"
 import type { Serialized } from "../common.js"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
@@ -116,9 +110,7 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
         "unknown"
     >
     typedValue: (expected: T) => undefined
-    narrowedValue: <Expected>(
-        expected: Conform<Narrow<Expected>, T>
-    ) => undefined
+    narrowedValue: <Expected extends T>(expected: Narrow<Expected>) => undefined
 }
 
 export type ExternalSnapshotArgs = {

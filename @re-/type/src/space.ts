@@ -45,7 +45,7 @@ const rawSpace = (aliases: Dictionary, opts: ArktypeOptions = {}) => {
             ctx
         )
     }
-    // TODO: Add error for referencing this directly?
+    // TODO: Add error for referencing "$" directly?
     ctx.resolutions.$ = new ArktypeSpace(ctx) as any
     return ctx.resolutions as any as DynamicSpace
 }
@@ -72,10 +72,7 @@ export type SpaceOutput<Space extends ResolvedSpace> = SpaceTypeRoots<
 
 export type SpaceRootFrom<Space extends ResolvedSpace> = {
     infer: InferSpaceRoot<Space["resolutions"]>
-    aliases: Space["aliases"]
-    ast: Space["resolutions"]
     type: InferredTypeFn<Space>
-    options: ArktypeOptions
 }
 
 export type SpaceTypeRoots<Resolutions> = Evaluate<{

@@ -78,9 +78,11 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
     const newArgText = toString(serializedValue, {
-        quote: "double",
+        // Bench snapshots don't include newlines and should be JSON parsable,
+        // so use double quotes instead of backticks
+        quote: baselinePath ? "double" : "backtick",
         keyQuote: "double"
-    }).replace(`\\`, `\\\\`)
+    })
     queuedUpdates.push({
         file,
         position,

@@ -18,11 +18,22 @@ export namespace Check {
     export class State<Data = unknown> {
         path: string[] = []
         private contexts: Scope.Context[] = []
-        checkedValuesByAlias: Record<string, object[]> = {}
+        // TODO: More efficient structure?
+        checkedDataByAlias: Record<string, unknown[]> = {}
         errors: Diagnostics
 
         constructor(public data: Data) {
             this.errors = new Diagnostics(this)
+        }
+
+        clearContexts() {
+            const priorContexts = this.contexts
+            this.contexts = []
+            return priorContexts
+        }
+
+        restoreContexts(contexts: Scope.Context[]) {
+            this.contexts = contexts
         }
 
         pushContext(context: Scope.Context) {
@@ -31,10 +42,6 @@ export namespace Check {
 
         popContext() {
             this.contexts.pop()
-        }
-
-        private get topContext(): Scope.Context | undefined {
-            return this.contexts[this.contexts.length - 1]
         }
 
         queryContext<K1 extends RootKey, K2 extends ConfigKey<K1>>(
@@ -54,13 +61,12 @@ export namespace Check {
         }
 
         resolve(alias: string) {
-            const resolution = this.topContext?.resolutions?.[alias]
+            const resolution = this.contexts[0]?.resolutions?.[alias]
             if (!resolution) {
                 throw new InternalArktypeError(
-                    `Unexpectedly failed to resolve alias '${alias}'.`
+                    `Unexpectedly failed to resolve alias '${alias}'`
                 )
             }
-            this.contexts = []
             return resolution
         }
 

@@ -160,7 +160,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
                 error.message
             }\n`
         }
-        return aggregatedMessage
+        return aggregatedMessage.slice(0, -1)
     }
 
     throw() {

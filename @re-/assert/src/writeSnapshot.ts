@@ -147,6 +147,13 @@ const writeUpdateToFile = (
     for (const originalArg of originalArgs) {
         update.snapCall.removeArgument(originalArg)
     }
+    // let formattedNewArgText = update.newArgText
+    // if (formattedNewArgText.match(/^".*(\n|").*"$/)) {
+    //     formattedNewArgText = formattedNewArgText
+    //         .replace(/`/, "\\`")
+    //         .replace(/\\"/, `"`)
+    //     formattedNewArgText = "`" + formattedNewArgText.slice(1, -1) + "`"
+    // }
     update.snapCall.addArgument(update.newArgText)
     update.file.saveSync()
 }

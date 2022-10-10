@@ -30,14 +30,14 @@ export namespace ObjectLiteral {
             for (let i = 0; i < this.children.length; i++) {
                 const k = this.keys[i]
                 const child = this.children[i]
+                state.path.push(k)
                 if (k in rootData) {
-                    state.path.push(k)
                     state.data = rootData[k]
                     child.allows(state)
-                    state.path.pop()
                 } else if (!(child instanceof Optional.Node)) {
                     this.addMissingKeyDiagnostic(state, k)
                 }
+                state.path.pop()
                 delete uncheckedData[k]
             }
             state.data = rootData

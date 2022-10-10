@@ -60,6 +60,12 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
                             options.maxNestedStringLength - 1
                         ) + "..."
                 }
+                if (quote) {
+                    formattedStringValue = formattedStringValue.replace(
+                        new RegExp(quote, "g"),
+                        "\\" + quote
+                    )
+                }
                 result += `${quote}${formattedStringValue}${quote}`
             } else if (typeof value === "bigint") {
                 result += `${value}n`

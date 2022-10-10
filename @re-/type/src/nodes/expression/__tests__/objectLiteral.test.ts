@@ -55,35 +55,38 @@ describe("object", () => {
                 ).snap(`nest/ed must be a string (was null)`)
             })
             test("missing keys", () => {
-                assert(shallow.check({ a: "ok" }).errors?.summary).snap()
+                assert(shallow.check({ a: "ok" }).errors?.summary)
+                    .snap(`b: b is required
+c: c is required`)
             })
-            test("extraneous keys", () => {
-                assert(
-                    type(shallowInputDef, {
-                        // errors: {
-                        //     extraneousKeys: { enabled: true }
-                        // }
-                    }).check({
-                        // errors: {
-                        //     extraneousKeys: { enabled: true }
-                        // }
-                    }).errors?.summary
-                ).snap()
-            })
-            test("single extraneous", () => {
-                assert(
-                    type(shallowInputDef, {
-                        // errors: {
-                        //     extraneousKeys: { enabled: true }
-                        // }
-                    }).check({
-                        a: "",
-                        b: 1,
-                        c: 67,
-                        extraneous: true
-                    }).errors?.summary
-                ).snap("<undefined>")
-            })
+            // TODO: Reenable
+            // test("extraneous keys", () => {
+            //     assert(
+            //         type(shallowInputDef, {
+            //             // errors: {
+            //             //     extraneousKeys: { enabled: true }
+            //             // }
+            //         }).check({
+            //             // errors: {
+            //             //     extraneousKeys: { enabled: true }
+            //             // }
+            //         }).errors?.summary
+            //     ).snap()
+            // })
+            // test("single extraneous", () => {
+            //     assert(
+            //         type(shallowInputDef, {
+            //             // errors: {
+            //             //     extraneousKeys: { enabled: true }
+            //             // }
+            //         }).check({
+            //             a: "",
+            //             b: 1,
+            //             c: 67,
+            //             extraneous: true
+            //         }).errors?.summary
+            //     ).snap("<undefined>")
+            // })
         })
     })
 })

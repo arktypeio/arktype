@@ -32,7 +32,9 @@ describe("space validation", () => {
                     { circumference: 3.14159, description: "Fuji" }
                 ]
             }).errors?.summary
-        ).snap()
+        )
+            .snap(`fruits/0: Must be one of banana|apple (was {length: 5000, type: "slippery"})
+fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description: "Fuji"})`)
     })
     test("cyclic space", () => {
         const bicycle = space({
@@ -100,7 +102,7 @@ describe("space validation", () => {
                     { isA: "the duck goes quack" }
                 ]
             }).errors?.summary
-        ).snap()
+        ).snap(`c/8 must be one of a|b (was {isA: "the duck goes quack"})`)
     })
     const recursiveDict = narrow({ dejaVu: { dejaVu: "dejaVu?" } })
     test("validates recursive objects", () => {
@@ -122,6 +124,8 @@ describe("space validation", () => {
         }
         assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
         current.dejaVu = "whoops" as any
-        assert(recursive.dejaVu.check(dejaVu).errors?.summary).snap()
+        assert(recursive.dejaVu.check(dejaVu).errors?.summary).snap(
+            "dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu must be a non-array object (was string)"
+        )
     })
 })
