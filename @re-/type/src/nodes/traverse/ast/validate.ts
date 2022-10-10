@@ -1,8 +1,8 @@
 import type { IsAny } from "@re-/tools"
 import type { ParseError } from "../../../parser/common.js"
-import type { Constrainable } from "../../common.js"
 import type { Branching } from "../../expression/branching/branching.js"
-import type { Expression } from "../../expression/expression.js"
+import type { Bound } from "../../expression/infix/bound.js"
+import type { Divisibility } from "../../expression/infix/divisibility.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { inferAst } from "./infer.js"
 import type { toString } from "./toString.js"
@@ -27,34 +27,57 @@ type checkAst<ast, resolutions> = ast extends string
     : ast extends [infer left, infer token, infer right]
     ? token extends Branching.Token
         ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
-        : token extends Expression.ConstraintToken
+        : token extends Bound.Token
         ? left extends PrimitiveLiteral.Number
             ? checkAst<right, resolutions>
-            : isAssignableTo<
-                  inferAst<left, resolutions>,
-                  Constrainable.Data
-              > extends true
+            : isBoundable<inferAst<left, resolutions>> extends true
             ? checkAst<left, resolutions>
-            : [ParseError<buildUnconstrainableMessage<toString<ast[0]>, token>>]
+            : [buildUnboundableMessage<toString<ast[0]>>]
+        : token extends Divisibility.Token
+        ? isDivisible<inferAst<left, resolutions>> extends true
+            ? checkAst<left, resolutions>
+            : [buildIndivisibleMessage<toString<ast[0]>>]
         : checkAst<left, resolutions>
     : []
 
-type isAssignableTo<inferred, t> = IsAny<inferred> extends true
+type isNonLiteralNumber<T> = T extends number
+    ? number extends T
+        ? true
+        : false
+    : false
+
+type isNonLiteralString<T> = T extends string
+    ? string extends T
+        ? true
+        : false
+    : false
+
+type isDivisible<inferred> = IsAny<inferred> extends true
     ? true
-    : inferred extends t
+    : isNonLiteralNumber<inferred>
+
+type isBoundable<inferred> = IsAny<inferred> extends true
+    ? true
+    : isNonLiteralNumber<inferred> extends true
+    ? true
+    : isNonLiteralString<inferred> extends true
+    ? true
+    : inferred extends readonly unknown[]
     ? true
     : false
 
-export const buildUnconstrainableMessage = <
-    root extends string,
-    token extends Expression.ConstraintToken
->(
-    root: root,
-    token: token
-): buildUnconstrainableMessage<root, token> =>
-    `Expression '${root}' must be a number, string or array to be constrained by operator '${token}'.`
+export const buildIndivisibleMessage = <root extends string>(
+    root: root
+): buildIndivisibleMessage<root> =>
+    `Divisibility operand ${root} must be a non-literal number`
 
-type buildUnconstrainableMessage<
-    root extends string,
-    token extends Expression.ConstraintToken
-> = `Expression '${root}' must be a number, string or array to be constrained by operator '${token}'.`
+type buildIndivisibleMessage<root extends string> =
+    `Divisibility operand ${root} must be a non-literal number`
+
+export const buildUnboundableMessage = <root extends string>(
+    root: root
+): buildUnboundableMessage<root> =>
+    `Bounded expression ${root} must be a non-literal number, string or array`
+
+type buildUnboundableMessage<root extends string> =
+    `Bounded expression ${root} must be a non-literal number, string or array`
