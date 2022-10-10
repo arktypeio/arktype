@@ -97,11 +97,14 @@ export namespace ParserState {
 
     export type OpenLeftBound = [
         PrimitiveLiteral.Node<number>,
-        Bound.DoubleToken
+        Bound.DoublableToken
     ]
 
     export namespace T {
-        export type OpenLeftBound = [PrimitiveLiteral.Number, Bound.DoubleToken]
+        export type OpenLeftBound = [
+            PrimitiveLiteral.Number,
+            Bound.DoublableToken
+        ]
     }
 
     export type from<s extends T.Base> = s

@@ -21,6 +21,7 @@ export type ArktypeOptions = {
     errors?: OptionsByDiagnostic
 }
 
+// TODO: Try this as base node.
 export class ArktypeRoot implements DynamicArktype {
     constructor(
         private root: Base.Node,

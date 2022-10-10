@@ -2,7 +2,7 @@ import type { IsAny } from "@re-/tools"
 import type { ParseError } from "../../../parser/common.js"
 import type { Constrainable } from "../../common.js"
 import type { Branching } from "../../expression/branching/branching.js"
-import type { Infix } from "../../expression/infix/infix.js"
+import type { Expression } from "../../expression/expression.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { inferAst } from "./infer.js"
 import type { toString } from "./toString.js"
@@ -27,7 +27,7 @@ type checkAst<ast, resolutions> = ast extends string
     : ast extends [infer left, infer token, infer right]
     ? token extends Branching.Token
         ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
-        : token extends Infix.ConstraintToken
+        : token extends Expression.ConstraintToken
         ? left extends PrimitiveLiteral.Number
             ? checkAst<right, resolutions>
             : isAssignableTo<
@@ -47,7 +47,7 @@ type isAssignableTo<inferred, t> = IsAny<inferred> extends true
 
 export const buildUnconstrainableMessage = <
     root extends string,
-    token extends Infix.ConstraintToken
+    token extends Expression.ConstraintToken
 >(
     root: root,
     token: token
@@ -56,5 +56,5 @@ export const buildUnconstrainableMessage = <
 
 type buildUnconstrainableMessage<
     root extends string,
-    token extends Infix.ConstraintToken
+    token extends Expression.ConstraintToken
 > = `Expression '${root}' must be a number, string or array to be constrained by operator '${token}'.`

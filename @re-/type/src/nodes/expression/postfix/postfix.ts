@@ -1,14 +1,10 @@
-import { keySet } from "@re-/tools"
 import type { Base } from "../../common.js"
 import type { Check } from "../../traverse/check.js"
+import type { Arr } from "./array.js"
+import type { Optional } from "./optional.js"
 
 export namespace Postfix {
-    export const tokens = keySet({
-        "[]": 1,
-        "?": 1
-    })
-
-    export type Token = keyof typeof tokens
+    export type Token = Optional.Token | Arr.Token
 
     type RootString<
         Child extends Base.Node,

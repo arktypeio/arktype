@@ -1,16 +1,10 @@
-import { keySet } from "@re-/tools"
 import type { Base } from "../../common.js"
 import type { Check } from "../../traverse/check.js"
+import type { Intersection } from "./intersection.js"
+import type { Union } from "./union.js"
 
 export namespace Branching {
-    export const tokens = keySet({
-        "|": 1,
-        "&": 1
-    })
-
-    export type Token = keyof typeof tokens
-
-    export type Ast<Left, Right> = [Left, Token, Right]
+    export type Token = Union.Token | Intersection.Token
 
     type RootString<Token extends Branching.Token> =
         `${string}${Token}${string}`

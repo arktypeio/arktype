@@ -4,9 +4,7 @@ import type { Check } from "../../traverse/check.js"
 import { Infix } from "./infix.js"
 
 export namespace Divisibility {
-    export const token = "%"
-
-    export type Token = typeof token
+    export type Token = "%"
 
     export type Ast = [unknown, Token, PrimitiveLiteral.Number]
 

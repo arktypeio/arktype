@@ -29,7 +29,7 @@ export const arbitraryComparator = fc.constantFrom(
     ...(Object.keys(Bound.tokens) as Bound.Token[])
 )
 export const arbitraryDoubleComparator = fc.constantFrom(
-    ...(Object.keys(Bound.doubleTokens) as Bound.DoubleToken[])
+    ...(Object.keys(Bound.doublableTokens) as Bound.DoublableToken[])
 )
 
 const boundRange = { min: -1000, max: 1000, noNaN: true }

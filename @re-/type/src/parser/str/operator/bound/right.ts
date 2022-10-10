@@ -52,7 +52,7 @@ export namespace RightBoundOperator {
             s.root = new Bound.RightNode(s.root, comparator, limit)
             return s
         }
-        if (!isKeyOf(comparator, Bound.doubleTokens)) {
+        if (!isKeyOf(comparator, Bound.doublableTokens)) {
             return ParserState.error(
                 Comparators.buildInvalidDoubleMessage(comparator)
             )
@@ -72,7 +72,7 @@ export namespace RightBoundOperator {
         limitTokenOrError extends string
     > = limitTokenOrError extends PrimitiveLiteral.Number
         ? s["branches"]["leftBound"] extends {}
-            ? comparator extends Bound.DoubleToken
+            ? comparator extends Bound.DoublableToken
                 ? ParserState.from<{
                       root: [
                           s["branches"]["leftBound"][0],

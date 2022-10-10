@@ -16,12 +16,12 @@ export namespace Bound {
 
     export type Token = keyof typeof tokens
 
-    export const doubleTokens = keySet({
+    export const doublableTokens = keySet({
         "<=": 1,
         "<": 1
     })
 
-    export type DoubleToken = keyof typeof doubleTokens
+    export type DoublableToken = keyof typeof doublableTokens
 
     export const invertedComparators = {
         "<": ">",
@@ -33,13 +33,13 @@ export namespace Bound {
 
     export type InvertedComparators = typeof invertedComparators
 
-    export const comparatorDescriptions = {
+    export const comparatorDescriptions: Record<Token, string> = {
         "<": "less than",
         ">": "greater than",
         "<=": "at most",
         ">=": "at least",
         "==": "exactly"
-    } as const
+    }
 
     const isWithinBound = (
         normalizedComparator: Token,
@@ -91,13 +91,13 @@ export namespace Bound {
 
     export type LeftAst<Child extends RightAst = RightAst> = [
         PrimitiveLiteral.Number,
-        DoubleToken,
+        DoublableToken,
         Child
     ]
 
     export class LeftNode extends Infix.Node<
         PrimitiveLiteral.Node<number>,
-        DoubleToken,
+        DoublableToken,
         RightNode
     > {
         check(state: Check.State<Constrainable.Data>) {

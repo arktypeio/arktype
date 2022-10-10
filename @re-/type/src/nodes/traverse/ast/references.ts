@@ -1,6 +1,6 @@
 import type { ElementOf, UnionToTuple } from "@re-/tools"
 import type { Branching } from "../../expression/branching/branching.js"
-import type { Infix } from "../../expression/infix/infix.js"
+import type { Expression } from "../../expression/expression.js"
 import type { Postfix } from "../../expression/postfix/postfix.js"
 
 export type ReferencesOf<Ast, By extends string = string> = Filter<
@@ -9,7 +9,8 @@ export type ReferencesOf<Ast, By extends string = string> = Filter<
 >
 
 // For extracting references, we only care about the node at index 0
-type UnaryTypedToken = Postfix.Token | Infix.ConstraintToken
+// TODO: Fix?
+type UnaryTypedToken = Postfix.Token | Expression.ConstraintToken
 
 type References<Ast> = Ast extends string
     ? [Ast]
