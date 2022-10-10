@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { describe } from "mocha"
+import { describe, test } from "mocha"
 import { type } from "../../../../type.js"
 
 describe("validate", () => {
