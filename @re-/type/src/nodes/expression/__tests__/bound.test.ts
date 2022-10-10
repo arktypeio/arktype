@@ -22,15 +22,12 @@ describe("bound", () => {
                         const singleBound = type.dynamic(
                             `number${comparator}${limit}`
                         )
-                        const expectedBounds: ExpectedBounds = [
-                            [comparator, limit]
-                        ]
                         assert(singleBound.ast).equals([
                             "number",
-                            ":",
-                            expectedBounds
+                            comparator,
+                            String(limit)
                         ])
-                        assertCheckResults(singleBound, expectedBounds)
+                        assertCheckResults(singleBound, [[comparator, limit]])
                     }
                 )
             )
@@ -59,9 +56,9 @@ describe("bound", () => {
                             [upperComparator, upperLimit]
                         ]
                         assert(doubleBound.ast).equals([
-                            "number",
-                            ":",
-                            expectedBounds
+                            String(lowerLimit),
+                            lowerComparator,
+                            ["number", upperComparator, String(upperLimit)]
                         ])
                         assertCheckResults(doubleBound, expectedBounds)
                     }
