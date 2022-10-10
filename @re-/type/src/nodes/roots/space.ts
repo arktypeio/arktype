@@ -13,7 +13,7 @@ export class ArktypeSpace {
         public context: ArktypeOptions
     ) {}
 
-    type(def: unknown, typeContext: ArktypeOptions) {
+    type(def: unknown, typeContext: ArktypeOptions = {}) {
         const root = Root.parse(def, { aliases: this.resolutions })
         return new ArktypeRoot(
             root,

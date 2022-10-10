@@ -20,7 +20,7 @@ describe("snippets", () => {
         assert(spaceSnippet.types.package.infer).type.toString.snap(
             `{ name: string; dependencies: { name: string; dependencies: any[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: any[]; }[] | undefined; }[]; }[]; contributors: { email: string; packages?: { name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }[] | undefined; }[]; }`
         )
-        assert(spaceSnippet.errors?.summary).snap()
+        assert(spaceSnippet.errors?.summary).snap("<undefined>")
     })
     test("constraints", async () => {
         const constraintsSnippet = await import("../constraints.js")

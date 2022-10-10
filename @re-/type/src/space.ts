@@ -36,7 +36,7 @@ export type DynamicSpaceRoot = SpaceRootFrom<{
     resolutions: Dictionary
 }>
 
-const rawSpace = (aliases: Dictionary, context: ArktypeOptions) => {
+const rawSpace = (aliases: Dictionary, context: ArktypeOptions = {}) => {
     const resolutions: Dictionary<ArktypeRoot> = {}
     for (const name in aliases) {
         resolutions[name] = new ArktypeRoot(
