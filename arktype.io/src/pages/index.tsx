@@ -24,7 +24,6 @@ const Contents = () => {
     )
 }
 
-// eslint-disable-next-line import/no-default-export
 export default () => {
     const { siteConfig } = useDocusaurusContext()
     return (
@@ -34,7 +33,6 @@ export default () => {
     )
 }
 
-// eslint-disable-next-line max-lines-per-function
 const Logo = ({ title, tagline }: Record<string, string>) => (
     <header>
         <div className="logo">
@@ -60,12 +58,16 @@ const Logo = ({ title, tagline }: Record<string, string>) => (
                         {tagline}
                     </Typography>
                 </motion.div>
-                <motion.div animate={{ opacity: 0 }} transition={{ delay: 7 }}>
-                    <TS />
-                    <JS />
-                    <Boat />
-                </motion.div>
+                {animation}
             </motion.div>
         </div>
     </header>
+)
+
+const animation = () => (
+    <motion.div animate={{ opacity: 0 }} transition={{ delay: 7 }}>
+        <TS />
+        <JS />
+        <Boat />
+    </motion.div>
 )
