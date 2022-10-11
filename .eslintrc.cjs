@@ -125,14 +125,14 @@ module.exports = defineConfig({
         },
         // Docusaurus requires pages export a default component
         {
-            files: ["redo.dev/src/pages/*"],
+            files: ["redo.dev/src/pages/*", "arktype.io/src/pages/*"],
             rules: {
                 "import/no-default-export": "off"
             }
         },
         // Components that are mostly just SVG data with some theme injections
         {
-            files: ["redo.dev/**/svg/*.tsx"],
+            files: ["redo.dev/**/svg/*.tsx", "arktype.io/**/svg/*.tsx"],
             rules: {
                 "max-lines": "off",
                 "max-lines-per-function": "off"
