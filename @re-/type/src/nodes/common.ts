@@ -1,5 +1,5 @@
 import type { Dictionary, NormalizedJsTypeName } from "@re-/tools"
-import { chainableNoOpProxy, jsTypeOf } from "@re-/tools"
+import { chainableNoOpProxy, jsTypeOf, keySet } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
 import { Check } from "./traverse/check.js"
 
@@ -28,6 +28,7 @@ export namespace Base {
         }
 
         abstract allows(state: Check.State): void
+        abstract toDescription(): string
         abstract toAst(): unknown
         abstract toString(): string
         /**
@@ -60,10 +61,10 @@ export namespace Base {
     }
 }
 
-export namespace Structure {
-    export type Kind = "object" | "array"
+export namespace ObjectKind {
+    export type name = "object" | "array"
 
-    export const checkKind = <ExpectedStructure extends Structure.Kind>(
+    export const check = <ExpectedStructure extends ObjectKind.name>(
         node: Base.Node,
         expectedStructure: ExpectedStructure,
         state: Check.State
@@ -90,7 +91,7 @@ export namespace Structure {
     export type Diagnostic = Check.ConfigureDiagnostic<
         Base.Node,
         {
-            expected: Kind
+            expected: name
             actual: NormalizedJsTypeName
         }
     >
@@ -98,3 +99,8 @@ export namespace Structure {
 
 export const pathToString = (path: string[]) =>
     path.length === 0 ? "/" : path.join("/")
+
+const vowels = keySet({ a: 1, e: 1, i: 1, o: 1, u: 1 })
+
+export const addArticle = (phrase: string) =>
+    (phrase[0] in vowels ? "an " : "a ") + phrase

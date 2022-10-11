@@ -13,6 +13,10 @@ export namespace RegexLiteral {
             this.expression = new RegExp(def.slice(1, -1))
         }
 
+        toDescription() {
+            return `string matching ${this.def}`
+        }
+
         allows(state: Check.State<string>) {
             if (
                 TypeKeyword.allows("string", state) &&

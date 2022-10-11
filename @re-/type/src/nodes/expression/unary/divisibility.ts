@@ -2,18 +2,14 @@ import { hasJsType } from "@re-/tools"
 import type { Base } from "../../common.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Check } from "../../traverse/check.js"
-import { Infix } from "./infix.js"
+import { Unary } from "./unary.js"
 
 export namespace Divisibility {
     export type Token = "%"
 
     export type Ast = [unknown, Token, PrimitiveLiteral.Number]
 
-    export class Node extends Infix.Node<
-        Base.Node,
-        Token,
-        PrimitiveLiteral.Node<number>
-    > {
+    export class Node extends Unary.Node {
         allows(state: Check.State<number>) {
             const divisor = this.right.value
             if (hasJsType(state.data, "number") && state.data % divisor !== 0) {
@@ -26,7 +22,13 @@ export namespace Divisibility {
                     divisor
                 })
             }
-            this.left.allows(state)
+            this.child.allows(state)
+        }
+
+        toDescription() {
+            return `${this.child.toDescription()} divisible by ${
+                this.right.value
+            }`
         }
     }
 

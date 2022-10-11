@@ -3,7 +3,7 @@ import { InternalArktypeError } from "../../../internal.js"
 import type { Base } from "../../common.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Check } from "../../traverse/check.js"
-import { Infix } from "./infix.js"
+import { Infix } from "../infix/infix.js"
 
 export namespace Bound {
     export const tokens = keySet({

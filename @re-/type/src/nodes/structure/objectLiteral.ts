@@ -1,6 +1,6 @@
 import type { Dictionary } from "@re-/tools"
-import { Base, Structure } from "../common.js"
-import { Optional } from "../expression/postfix/optional.js"
+import { Base, ObjectKind } from "../common.js"
+import { Optional } from "../expression/optional.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
@@ -9,13 +9,13 @@ export namespace ObjectLiteral {
             super(children, true)
         }
 
+        keyAt(childIndex: number) {
+            return this.keys[childIndex]
+        }
+
         allows(state: Check.State) {
-            if (!Structure.checkKind(this, "object", state)) {
-                return
-            }
-            const extraneousKeys = this.checkChildrenAndGetIllegalKeys(state)
-            if (extraneousKeys.length) {
-                this.addExtraneousKeyDiagnostic(state, extraneousKeys)
+            if (!ObjectKind.check(this, "object", state)) {
+                return false
             }
         }
 

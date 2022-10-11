@@ -1,10 +1,14 @@
-import { Base, Structure } from "../common.js"
+import { Base, ObjectKind } from "../common.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace Tuple {
     export class Node extends Base.Node {
         constructor(children: Base.Node[]) {
             super(children, true)
+        }
+
+        keyAt(childIndex: number) {
+            return String(childIndex)
         }
 
         toAst() {
@@ -24,12 +28,11 @@ export namespace Tuple {
             for (i; i < this.children.length - 1; i++) {
                 result += this.children[i].toString() + ", "
             }
-            // Avoid trailing comma
             return result + this.children[i].toString() + "]"
         }
 
         allows(state: Check.State) {
-            if (!Structure.checkKind(this, "array", state)) {
+            if (!ObjectKind.check(this, "array", state)) {
                 return
             }
             const expectedLength = this.children.length
@@ -38,18 +41,6 @@ export namespace Tuple {
                 this.addTupleLengthError(state, expectedLength, actualLength)
                 return
             }
-            this.checkChildren(state)
-        }
-
-        private checkChildren(state: Check.State) {
-            const rootData: any = state.data
-            for (let i = 0; i < this.children.length; i++) {
-                state.path.push(String(i))
-                state.data = rootData[i]
-                this.children[i].allows(state)
-                state.path.pop()
-            }
-            state.data = rootData
         }
 
         private addTupleLengthError(

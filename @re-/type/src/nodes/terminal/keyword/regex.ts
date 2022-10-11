@@ -5,7 +5,7 @@ import { TypeKeyword } from "./types/typeKeyword.js"
 export namespace RegexKeyword {
     export type Definition =
         | "email"
-        | "alpha"
+        | "alphaonly"
         | "alphanumeric"
         | "lowercase"
         | "uppercase"
@@ -17,6 +17,10 @@ export namespace RegexKeyword {
             private expression: RegExp
         ) {
             super(keyword)
+        }
+
+        toDescription() {
+            return this.description
         }
 
         allows(state: Check.State<string>) {
@@ -34,21 +38,25 @@ export namespace RegexKeyword {
     }
 
     export const nodes: Record<Definition, Node> = {
-        email: new Node("email", "Must be a valid email", /^(.+)@(.+)\.(.+)$/),
-        alpha: new Node("alpha", "Must include only letters", /^[A-Za-z]+$/),
+        email: new Node("email", "a valid email", /^(.+)@(.+)\.(.+)$/),
+        alphaonly: new Node(
+            "alphaonly",
+            "a string including only letters",
+            /^[A-Za-z]+$/
+        ),
         alphanumeric: new Node(
             "alphanumeric",
-            "Must include only letters and digits",
+            "an alphanumeric string",
             /^[\dA-Za-z]+$/
         ),
         lowercase: new Node(
             "lowercase",
-            "Must include only lowercase letters",
+            "a string of lowercase letters",
             /^[a-z]*$/
         ),
         uppercase: new Node(
             "uppercase",
-            "Must include only uppercase letters",
+            "a string of uppercase letters",
             /^[A-Z]*$/
         )
     }

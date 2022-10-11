@@ -2,10 +2,10 @@ import type { Dictionary, Evaluate } from "@re-/tools"
 import { keySet, toString, uncapitalize } from "@re-/tools"
 import { isIntegerLike } from "../../parser/str/operand/numeric.js"
 import { pathToString } from "../common.js"
-import type { Base, Structure } from "../common.js"
-import type { Union } from "../expression/branching/union.js"
-import type { Bound } from "../expression/infix/bound.js"
-import type { Divisibility } from "../expression/infix/divisibility.js"
+import type { Base, ObjectKind } from "../common.js"
+import type { Bound } from "../expression/bound.js"
+import type { Divisibility } from "../expression/divisibility.js"
+import type { Union } from "../expression/union.js"
 import type { ObjectLiteral } from "../structure/objectLiteral.js"
 import type { Tuple } from "../structure/tuple.js"
 import type { RegexKeyword } from "../terminal/keyword/regex.js"
@@ -71,7 +71,7 @@ type DiagnosticOptionsConfig<Code extends DiagnosticCode> =
 type RegisteredDiagnosticConfigs = {
     typeKeyword: TypeKeyword.Diagnostic
     primitiveLiteral: PrimitiveLiteral.Diagnostic
-    structure: Structure.Diagnostic
+    structure: ObjectKind.Diagnostic
     bound: Bound.Diagnostic
     extraneousKeys: ObjectLiteral.ExtraneousKeysDiagnostic
     missingKey: ObjectLiteral.MissingKeyDiagnostic

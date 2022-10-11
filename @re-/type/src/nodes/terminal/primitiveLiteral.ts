@@ -36,6 +36,10 @@ export namespace PrimitiveLiteral {
             super(def)
         }
 
+        toDescription() {
+            return this.def
+        }
+
         allows(state: Check.State) {
             if (state.data !== this.value) {
                 state.addError("primitiveLiteral", {

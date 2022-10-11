@@ -1,5 +1,5 @@
 import { keySet } from "@re-/tools"
-import type { Bound } from "../../../../nodes/expression/infix/bound.js"
+import type { Bound } from "../../../../nodes/expression/bound.js"
 
 export namespace Comparators {
     export const startChar = keySet({

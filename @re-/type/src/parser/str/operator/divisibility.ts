@@ -1,4 +1,4 @@
-import { Divisibility } from "../../../nodes/expression/infix/divisibility.js"
+import { Divisibility } from "../../../nodes/expression/divisibility.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"

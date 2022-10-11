@@ -2,6 +2,8 @@ import type { Dictionary } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../common.js"
 import type { Scope } from "../scope.js"
+import type { ObjectLiteral } from "../structure/objectLiteral.js"
+import type { Tuple } from "../structure/tuple.js"
 import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
@@ -14,9 +16,33 @@ export namespace Check {
     export type ConfigKey<K1 extends RootKey> =
         keyof Required<Scope.Context>[K1]
 
+    const isStructure = (
+        node: Base.Node
+    ): node is Tuple.Node | ObjectLiteral.Node => "keyAt" in node
+
+    export const traverse = (node: Base.Node, state: State) => {
+        const shouldContinue = node.allows(state) as any as boolean
+        if (shouldContinue) {
+            if (isStructure(node)) {
+                const rootData: any = state.data
+                for (let i = 0; i < node.children.length; i++) {
+                    const k = node.keyAt(i)
+                    state.path.push(k)
+                    state.data = rootData[k]
+                    traverse(node.children[i], state)
+                    state.path.pop()
+                }
+                state.data = rootData
+            } else {
+                for (let i = 0; i < node.children.length; i++) {
+                    traverse(node.children[i], state)
+                }
+            }
+        }
+    }
+
     export class State<Data = unknown> {
         path: string[] = []
-        unionDepth = 0
         private contexts: Scope.Context[] = []
         // TODO: More efficient structure?
         checkedDataByAlias: Record<string, unknown[]> = {}
