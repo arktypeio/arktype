@@ -4,7 +4,7 @@ import type { DynamicArktype } from "../../../type.js"
 import { ConstrainedKeyword } from "../../terminal/keyword/constrained.js"
 import { Keyword } from "../../terminal/keyword/keyword.js"
 import { RegexKeyword } from "../../terminal/keyword/regex.js"
-import { Bound } from "../unary/bound.js"
+import { Bound } from "../infix/bound.js"
 
 const keysOf = (o: object) => Object.keys(o)
 

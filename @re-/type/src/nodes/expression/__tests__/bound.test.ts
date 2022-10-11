@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
-import { Bound } from "../unary/bound.js"
+import { Bound } from "../infix/bound.js"
 import type { ExpectedBounds } from "./utils.js"
 import {
     arbitraryComparator,

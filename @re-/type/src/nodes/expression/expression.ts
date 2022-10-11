@@ -1,7 +1,7 @@
 import type { Branching } from "./branching/branching.js"
+import { Bound } from "./infix/bound.js"
+import type { Divisibility } from "./infix/divisibility.js"
 import type { Infix } from "./infix/infix.js"
-import { Bound } from "./unary/bound.js"
-import type { Divisibility } from "./unary/divisibility.js"
 import type { Unary } from "./unary/unary.js"
 
 export namespace Expression {
