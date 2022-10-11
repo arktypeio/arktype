@@ -4,8 +4,12 @@ import type { DynamicArktype } from "../type.js"
 import { Check } from "./traverse/check.js"
 
 export namespace Base {
-    export abstract class Node implements DynamicArktype {
-        constructor(public children: Node[], public hasStructure: boolean) {}
+    type NodeChildren = Node<NodeChildren>[]
+
+    export abstract class Node<Children extends NodeChildren = NodeChildren>
+        implements DynamicArktype
+    {
+        constructor(public children: Children, public hasStructure: boolean) {}
 
         check(data: unknown) {
             const state = new Check.State(data)
@@ -28,8 +32,8 @@ export namespace Base {
         }
 
         abstract allows(state: Check.State): void
-        abstract toDescription(): string
-        abstract toAst(): unknown
+        abstract get description(): string
+        abstract get ast(): unknown
         abstract toString(): string
         /**
          * This generates an isomorphic definition that can be parsed and
@@ -57,7 +61,7 @@ export namespace Base {
          *
          *     [{a: "string?"}, "&", {b: "boolean?"}]
          */
-        abstract toDefinition(): unknown
+        abstract definition: unknown
     }
 }
 

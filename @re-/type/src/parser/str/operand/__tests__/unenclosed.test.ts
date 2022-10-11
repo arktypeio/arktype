@@ -8,12 +8,10 @@ import { Unenclosed } from "../unenclosed.js"
 describe("parse unenclosed", () => {
     describe("identifier", () => {
         test("keyword", () => {
-            assert(type("string").toAst()).narrowedValue("string")
+            assert(type("string").ast).narrowedValue("string")
         })
         test("alias", () => {
-            assert(space({ a: "string" }).$.type("a").toAst()).narrowedValue(
-                "a"
-            )
+            assert(space({ a: "string" }).$.type("a").ast).narrowedValue("a")
         })
         describe("errors", () => {
             test("unresolvable", () => {
@@ -27,28 +25,28 @@ describe("parse unenclosed", () => {
     describe("number", () => {
         describe("positive", () => {
             test("whole", () => {
-                assert(type("4").toAst()).narrowedValue("4")
+                assert(type("4").ast).narrowedValue("4")
             })
             test("decimal", () => {
-                assert(type("3.14159").toAst()).narrowedValue("3.14159")
+                assert(type("3.14159").ast).narrowedValue("3.14159")
             })
             test("decimal with zero whole portion", () => {
-                assert(type("0.5").toAst()).narrowedValue("0.5")
+                assert(type("0.5").ast).narrowedValue("0.5")
             })
         })
         describe("negative", () => {
             test("whole", () => {
-                assert(type("-12").toAst()).narrowedValue("-12")
+                assert(type("-12").ast).narrowedValue("-12")
             })
             test("decimal", () => {
-                assert(type("-1.618").toAst()).narrowedValue("-1.618")
+                assert(type("-1.618").ast).narrowedValue("-1.618")
             })
             test("decimal with zero whole portion", () => {
-                assert(type("-0.001").toAst()).narrowedValue("-0.001")
+                assert(type("-0.001").ast).narrowedValue("-0.001")
             })
         })
         test("zero", () => {
-            assert(type("0").toAst()).narrowedValue("0")
+            assert(type("0").ast).narrowedValue("0")
         })
         describe("errors", () => {
             test("multiple decimals", () => {
@@ -87,15 +85,15 @@ describe("parse unenclosed", () => {
     describe("bigint", () => {
         test("positive", () => {
             // Is prime :D
-            assert(type("12345678910987654321n").toAst()).narrowedValue(
+            assert(type("12345678910987654321n").ast).narrowedValue(
                 "12345678910987654321n"
             )
         })
         test("negative", () => {
-            assert(type("-9801n").toAst()).narrowedValue("-9801n")
+            assert(type("-9801n").ast).narrowedValue("-9801n")
         })
         test("zero", () => {
-            assert(type("0n").toAst()).narrowedValue("0n")
+            assert(type("0n").ast).narrowedValue("0n")
         })
         describe("errors", () => {
             test("decimal", () => {

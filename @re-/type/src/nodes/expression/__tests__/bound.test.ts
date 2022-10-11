@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
-import { Bound } from "../constraining/bound.js"
+import { Bound } from "../bound.js"
 import type { ExpectedBounds } from "./utils.js"
 import {
     arbitraryComparator,
@@ -23,7 +23,7 @@ describe("bound", () => {
                         const singleBound = type.dynamic(
                             `number${comparator}${limit}`
                         )
-                        assert(singleBound.toAst()).equals([
+                        assert(singleBound.ast).equals([
                             "number",
                             comparator,
                             String(limit)
@@ -56,7 +56,7 @@ describe("bound", () => {
                             ],
                             [upperComparator, upperLimit]
                         ]
-                        assert(doubleBound.toAst()).equals([
+                        assert(doubleBound.ast).equals([
                             String(lowerLimit),
                             lowerComparator,
                             ["number", upperComparator, String(upperLimit)]

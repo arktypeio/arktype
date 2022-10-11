@@ -1,9 +1,9 @@
 import { keySet } from "@re-/tools"
-import { InternalArktypeError } from "../../../internal.js"
-import type { Base } from "../../common.js"
-import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
-import type { Check } from "../../traverse/check.js"
-import { Constraining } from "./constraining.js"
+import { InternalArktypeError } from "../../internal.js"
+import type { Base } from "../common.js"
+import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
+import type { Check } from "../traverse/check.js"
+import { Expression } from "./expression.js"
 
 export namespace Bound {
     export const tokens = keySet({
@@ -97,25 +97,46 @@ export namespace Bound {
         Child
     ]
 
-    export class LeftNode extends Constraining.LeftNode<
+    export type LeftTuple = [
         PrimitiveLiteral.Number,
         DoublableToken,
-        RightNode
-    > {
+        RightTuple<true>
+    ]
+
+    export class LeftNode extends Expression.Node<[Base.Node], LeftTuple> {
+        constructor(
+            public limit: number,
+            public comparator: DoublableToken,
+            child: Base.Node
+        ) {
+            super([child], child.hasStructure)
+        }
+
         allows(state: Check.State) {
-            const actual = boundableToNumber(state.data as BoundableData)
+            // TODO: Fix
+            const actual = boundableToNumber(state.data as any)
             return isWithinBound(
-                invertedComparators[this.token],
-                this.value,
+                invertedComparators[this.comparator],
+                this.limit,
                 actual
             )
         }
 
-        toDescription() {
-            // TODO: Add description
+        toString() {
+            return `${this.limit}${
+                this.comparator
+            }${this.children[0].toString()}` as const
+        }
+
+        toTuple(child: RightTuple<true>) {
+            return [`${this.limit}`, this.comparator, child] as const
+        }
+
+        get description() {
+            // TODO: Add units description
             return `${
-                comparatorDescriptions[invertedComparators[this.token]]
-            } ${this.value}`
+                comparatorDescriptions[invertedComparators[this.comparator]]
+            } ${this.limit}` as const
         }
     }
 
@@ -126,21 +147,44 @@ export namespace Bound {
         PrimitiveLiteral.Number
     ]
 
-    export class RightNode<
-        HasLeft extends boolean = boolean
-    > extends Constraining.RightNode<
-        Base.Node,
+    export type RightTuple<HasLeft extends boolean = boolean> = [
+        unknown,
         HasLeft extends true ? DoublableToken : Token,
         PrimitiveLiteral.Number
-    > {
-        allows(state: Check.State) {
-            const actual = boundableToNumber(state.data as BoundableData)
-            return isWithinBound(this.token, this.value, actual)
+    ]
+
+    export class RightNode<
+        HasLeft extends boolean = boolean
+    > extends Expression.Node<[Base.Node], RightTuple<HasLeft>> {
+        constructor(
+            child: Base.Node,
+            public comparator: DoublableToken,
+            public limit: number
+        ) {
+            super([child], child.hasStructure)
         }
 
-        toDescription() {
-            // TODO: Add description
-            return `${comparatorDescriptions[this.token]} ${this.value}`
+        allows(state: Check.State) {
+            // TODO: Fix
+            const actual = boundableToNumber(state.data as any)
+            return isWithinBound(this.comparator, this.limit, actual)
+        }
+
+        toString() {
+            return `${this.children[0].toString()}${this.comparator}${
+                this.limit
+            }` as const
+        }
+
+        toTuple(child: unknown) {
+            return [child, this.comparator, `${this.limit}`] as const
+        }
+
+        get description() {
+            // TODO: Add units description
+            return `${comparatorDescriptions[this.comparator]} ${
+                this.limit
+            }` as const
         }
     }
 

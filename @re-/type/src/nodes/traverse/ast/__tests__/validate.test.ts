@@ -9,28 +9,24 @@ import {
 describe("validate", () => {
     describe("bound", () => {
         test("number", () => {
-            assert(type("number==-3.14159").toAst()).narrowedValue([
+            assert(type("number==-3.14159").ast).narrowedValue([
                 "number",
                 "==",
                 "-3.14159"
             ])
         })
         test("string", () => {
-            assert(type("string<=5").toAst()).narrowedValue([
-                "string",
-                "<=",
-                "5"
-            ])
+            assert(type("string<=5").ast).narrowedValue(["string", "<=", "5"])
         })
         test("array", () => {
-            assert(type("87<=boolean[]<89").toAst()).narrowedValue([
+            assert(type("87<=boolean[]<89").ast).narrowedValue([
                 "87",
                 "<=",
                 [["boolean", "[]"], "<", "89"]
             ])
         })
         test("any", () => {
-            assert(type("any>5").toAst()).narrowedValue(["any", ">", "5"])
+            assert(type("any>5").ast).narrowedValue(["any", ">", "5"])
         })
         describe("errors", () => {
             test("unboundable", () => {
@@ -51,10 +47,10 @@ describe("validate", () => {
     })
     describe("divisibility", () => {
         test("number", () => {
-            assert(type("number%2").toAst()).narrowedValue(["number", "%", "2"])
+            assert(type("number%2").ast).narrowedValue(["number", "%", "2"])
         })
         test("any", () => {
-            assert(type("any%1").toAst()).narrowedValue(["any", "%", "1"])
+            assert(type("any%1").ast).narrowedValue(["any", "%", "1"])
         })
         describe("errors", () => {
             test("indivisible", () => {

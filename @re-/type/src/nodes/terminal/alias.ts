@@ -8,14 +8,14 @@ export namespace Alias {
         }
 
         allows(state: Check.State) {
-            const resolution = state.resolve(this.def)
-            const checkedValues = state.checkedDataByAlias[this.def]
+            const resolution = state.resolve(this.definition)
+            const checkedValues = state.checkedDataByAlias[this.definition]
             if (!checkedValues) {
-                state.checkedDataByAlias[this.def] = [state.data]
+                state.checkedDataByAlias[this.definition] = [state.data]
             } else if (checkedValues.some((value) => value === state.data)) {
                 return
             } else {
-                state.checkedDataByAlias[this.def].push(state.data)
+                state.checkedDataByAlias[this.definition].push(state.data)
             }
             const priorContexts = state.clearContexts()
             resolution.allows(state)

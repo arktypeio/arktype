@@ -13,8 +13,8 @@ export namespace RegexLiteral {
             this.expression = new RegExp(def.slice(1, -1))
         }
 
-        toDescription() {
-            return `string matching ${this.def}`
+        get description() {
+            return `string matching ${this.definition}`
         }
 
         allows(state: Check.State<string>) {
@@ -24,7 +24,7 @@ export namespace RegexLiteral {
             ) {
                 state.addError("regexLiteral", {
                     type: this,
-                    message: `Must match expression ${this.def}`,
+                    message: `Must match expression ${this.definition}`,
                     expression: this.expression
                 })
             }

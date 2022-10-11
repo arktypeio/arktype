@@ -12,7 +12,7 @@ export namespace ConstrainedKeyword {
             super("integer")
         }
 
-        toDescription() {
+        get description() {
             return this.description
         }
 
@@ -23,7 +23,7 @@ export namespace ConstrainedKeyword {
             ) {
                 state.addError("keyword", {
                     type: this,
-                    message: this.toDescription()
+                    message: this.description
                 })
             }
         }

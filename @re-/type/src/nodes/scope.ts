@@ -28,12 +28,12 @@ export namespace Scope {
             return this.child.toString()
         }
 
-        toAst() {
-            return this.child.toAst()
+        get ast() {
+            return this.child.ast
         }
 
-        toDefinition() {
-            return this.child.toDefinition()
+        get definition() {
+            return this.child.definition
         }
     }
 }

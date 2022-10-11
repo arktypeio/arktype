@@ -7,14 +7,14 @@ import { Unenclosed } from "../../operand/unenclosed.js"
 describe("union", () => {
     describe("infer", () => {
         test("two types", () => {
-            assert(type("number|string").toAst()).narrowedValue([
+            assert(type("number|string").ast).narrowedValue([
                 "number",
                 "|",
                 "string"
             ])
         })
         test("several types", () => {
-            assert(type("false|null|undefined|0|''").toAst()).narrowedValue([
+            assert(type("false|null|undefined|0|''").ast).narrowedValue([
                 [[["false", "|", "null"], "|", "undefined"], "|", "0"],
                 "|",
                 "''"

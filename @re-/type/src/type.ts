@@ -68,8 +68,9 @@ export type Arktype<Inferred, Ast> = {
     check: CheckFn<Inferred>
     assert: AssertFn<Inferred>
     toString(): string
-    toAst(): Ast
-    toDefinition(): unknown
+    get ast(): Ast
+    get definition(): unknown
+    get description(): unknown
 }
 
 export type DynamicArktype = Arktype<unknown, unknown>

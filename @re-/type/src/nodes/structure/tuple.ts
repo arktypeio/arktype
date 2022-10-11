@@ -7,16 +7,12 @@ export namespace Tuple {
             super(children, true)
         }
 
-        keyAt(childIndex: number) {
-            return String(childIndex)
+        get ast() {
+            return this.children.map((child) => child.ast)
         }
 
-        toAst() {
-            return this.children.map((child) => child.toAst())
-        }
-
-        toDefinition() {
-            return this.children.map((child) => child.toDefinition())
+        get definition() {
+            return this.children.map((child) => child.definition)
         }
 
         toString() {

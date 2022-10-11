@@ -19,7 +19,7 @@ export namespace RegexKeyword {
             super(keyword)
         }
 
-        toDescription() {
+        get description() {
             return this.description
         }
 

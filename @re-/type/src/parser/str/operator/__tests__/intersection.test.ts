@@ -8,14 +8,10 @@ describe("intersection", () => {
     describe("parse", () => {
         test("two types", () => {
             const booleanAndTrue = type("boolean&true")
-            assert(booleanAndTrue.toAst()).narrowedValue([
-                "boolean",
-                "&",
-                "true"
-            ])
+            assert(booleanAndTrue.ast).narrowedValue(["boolean", "&", "true"])
         })
         test("several types", () => {
-            assert(type("unknown&boolean&false").toAst()).narrowedValue([
+            assert(type("unknown&boolean&false").ast).narrowedValue([
                 ["unknown", "&", "boolean"],
                 "&",
                 "false"

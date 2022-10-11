@@ -17,6 +17,7 @@ export namespace Check {
     export class State<Data = unknown> {
         path: string[] = []
         private contexts: Scope.Context[] = []
+        unionDepth = 0
         // TODO: More efficient structure?
         checkedDataByAlias: Record<string, unknown[]> = {}
         errors: Diagnostics

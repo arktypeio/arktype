@@ -38,14 +38,14 @@ export namespace PrimitiveLiteral {
             super(def)
         }
 
-        toDescription() {
-            return this.def
+        get description() {
+            return this.definition
         }
 
         allows(state: Check.State) {
             if (state.data !== this.value) {
                 state.addError("primitiveLiteral", {
-                    message: `Must be ${this.def}`,
+                    message: `Must be ${this.definition}`,
                     expectedValue: this.value,
                     type: this
                 })

@@ -46,7 +46,7 @@ const stringifiableFrom = <Data>(raw: Data) => ({
 
 type DeepSimplifyNode<Node extends Base.Node> = Pick<
     Node,
-    "toString" | "toAst" | "toDefinition"
+    "toString" | "ast" | "definition"
 > & { children: SimplifyChildren<Node["children"]> }
 
 type SimplifyChildren<Children extends Base.Node[]> = {
@@ -149,16 +149,8 @@ export class UnionDiagnostic extends Diagnostic<
     }
 }
 
-// TODO: Reintegrate
-export type DiagnosticsListContext = {
-    unionDepth: number
-}
-
 export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
-    constructor(
-        private state: Check.State,
-        public ctx: DiagnosticsListContext
-    ) {
+    constructor(private state: Check.State) {
         super()
     }
 

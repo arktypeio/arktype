@@ -1,6 +1,6 @@
 import type { Dictionary } from "@re-/tools"
 import { Base, ObjectKind } from "../common.js"
-import { Optional } from "../expression/postfix/optional.js"
+import { Optional } from "../expression/optional.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
@@ -65,18 +65,18 @@ export namespace ObjectLiteral {
             state.addError("extraneousKeys", { type: this, message, keys })
         }
 
-        toDefinition() {
+        get definition() {
             const result: Dictionary = {}
             for (let i = 0; i < this.children.length; i++) {
-                result[this.keys[i]] = this.children[i].toDefinition()
+                result[this.keys[i]] = this.children[i].definition
             }
             return result
         }
 
-        toAst() {
+        get ast() {
             const result: Dictionary = {}
             for (let i = 0; i < this.children.length; i++) {
-                result[this.keys[i]] = this.children[i].toAst()
+                result[this.keys[i]] = this.children[i].ast
             }
             return result
         }

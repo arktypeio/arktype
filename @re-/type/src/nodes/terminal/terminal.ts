@@ -3,21 +3,17 @@ import { Base } from "../common.js"
 export namespace Terminal {
     const children: never[] = []
 
-    export abstract class Node<Def extends string> extends Base.Node {
-        constructor(protected def: Def) {
+    export abstract class Node<Definition extends string> extends Base.Node {
+        constructor(public definition: Definition) {
             super(children, false)
         }
 
         toString() {
-            return this.def
+            return this.definition
         }
 
-        toAst() {
-            return this.def
-        }
-
-        toDefinition() {
-            return this.def
+        get ast() {
+            return this.definition
         }
     }
 }

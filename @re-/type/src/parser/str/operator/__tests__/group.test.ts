@@ -7,22 +7,22 @@ import { GroupClose } from "../groupClose.js"
 
 describe("group", () => {
     test("entire expression", () => {
-        assert(type("(string)").toAst()).narrowedValue("string")
+        assert(type("(string)").ast).narrowedValue("string")
     })
     test("overrides default precedence", () => {
-        assert(type("boolean|number[]").toAst()).narrowedValue([
+        assert(type("boolean|number[]").ast).narrowedValue([
             "boolean",
             "|",
             ["number", "[]"]
         ])
-        assert(type("(boolean|number)[]").toAst()).narrowedValue([
+        assert(type("(boolean|number)[]").ast).narrowedValue([
             ["boolean", "|", "number"],
             "[]"
         ])
     })
     test("nested", () => {
         assert(
-            type("((boolean|number)[]|(string|undefined)[])[]").toAst()
+            type("((boolean|number)[]|(string|undefined)[])[]").ast
         ).narrowedValue([
             [
                 [["boolean", "|", "number"], "[]"],

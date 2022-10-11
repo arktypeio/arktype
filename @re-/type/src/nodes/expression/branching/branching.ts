@@ -1,25 +1,28 @@
-import { Base } from "../../common.js"
-import type { Intersection } from "./intersection.js"
-import type { Union } from "./union.js"
+import type { Base } from "../../common.js"
+import { addArticle } from "../../common.js"
+import { Expression } from "../expression.js"
 
 export namespace Branching {
-    export type Token = Union.Token | Intersection.Token
+    export type Token = "|" | "&"
 
-    type RootString<Token extends Branching.Token> =
-        `${string}${Token}${string}`
+    const hasStructure = (child: Base.Node) => child.hasStructure
 
-    type RootTuple<Token extends Branching.Token> = [unknown, Token, unknown]
+    export type Tuple<Token extends Branching.Token> = [unknown, Token, unknown]
 
-    const includesStructured = (children: Base.Node[]) =>
-        children.some((child) => child.hasStructure)
+    const tokenConjunctions = {
+        "|": "or",
+        "&": "and"
+    } as const
+
+    type TokenConjunctions = typeof tokenConjunctions
 
     export abstract class Node<
         Token extends Branching.Token
-    > extends Base.Node {
+    > extends Expression.Node<Base.Node[], Tuple<Token>> {
         abstract token: Token
 
         constructor(children: Base.Node[]) {
-            super(children, includesStructured(children))
+            super(children, children.some(hasStructure))
         }
 
         pushChild(child: Base.Node) {
@@ -30,28 +33,28 @@ export namespace Branching {
         toString() {
             let root = this.children[0].toString()
             for (let i = 1; i < this.children.length; i++) {
-                root = root + this.token + this.children[i].toString()
+                root += this.token + this.children[i].toString()
             }
-            return root as RootString<Token>
+            return root as `${string}${Token}${string}`
         }
 
-        toAst() {
-            let root = this.children[0].toAst()
-            for (let i = 1; i < this.children.length; i++) {
-                root = [root, this.token, this.children[i].toAst()]
+        toTuple(...branches: unknown[]) {
+            let root = branches[0]
+            for (let i = 1; i < branches.length; i++) {
+                root = [root, this.token, branches[i]]
             }
-            return root as RootTuple<Token>
+            return root as readonly [unknown, Token, unknown]
         }
 
-        toDefinition() {
-            if (!this.hasStructure) {
-                return this.toString()
-            }
-            let root = this.children[0].toDefinition()
+        get description() {
+            const conjunction = tokenConjunctions[this.token]
+            let root = addArticle(this.children[0].description)
             for (let i = 1; i < this.children.length; i++) {
-                root = [root, this.token, this.children[i].toDefinition()]
+                root += ` ${conjunction} ${addArticle(
+                    this.children[i].description
+                )}`
             }
-            return root as RootTuple<Token>
+            return root as `${string}${TokenConjunctions[Token]}${string}`
         }
     }
 }
