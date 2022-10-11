@@ -58,13 +58,13 @@ const Logo = ({ title, tagline }: Record<string, string>) => (
                         {tagline}
                     </Typography>
                 </motion.div>
-                {animation}
+                <Animation />
             </motion.div>
         </div>
     </header>
 )
 
-const animation = () => (
+const Animation = () => (
     <motion.div animate={{ opacity: 0 }} transition={{ delay: 7 }}>
         <TS />
         <JS />

@@ -20,6 +20,10 @@ const config = {
             }
         })
     },
+    i18n: {
+        defaultLocale: "en",
+        locales: ["en"]
+    },
     themes: [
         [
             "@docusaurus/theme-classic",
@@ -33,7 +37,7 @@ const config = {
             {
                 id: "type",
                 path: "docs/type",
-                routeBasePath: "/type",
+                routeBasePath: "type",
                 sidebarPath: require.resolve("./docs/type/sidebar.js")
             }
         ],
