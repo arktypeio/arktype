@@ -51,6 +51,16 @@ export type Stringifiable<Data> = {
     toString(): string
 }
 
+const stringifyData = (data: unknown) =>
+    toString(data, {
+        maxNestedStringLength: 50
+    })
+
+const stringifiableFrom = <Data>(raw: Data) => ({
+    raw,
+    toString: () => stringifyData(raw)
+})
+
 export type DiagnosticConfig = {
     type: Base.Node
     data: unknown
@@ -61,14 +71,21 @@ export type DiagnosticConfig = {
 type DiagnosticContextConfig<Code extends DiagnosticCode> =
     RegisteredDiagnosticConfigs[Code]["context"]
 
+type DeepSimplifyNode<Node extends Base.Node> = Pick<
+    Node,
+    "toString" | "toAst" | "toDefinition"
+> & { children: SimplifyChildren<Node["children"]> }
+
+type SimplifyChildren<Children extends Base.Node[]> = {
+    [I in keyof Children]: DeepSimplifyNode<Children[I]>
+}
+
 type BaseDiagnosticContext<Node extends Base.Node, Data> = {
-    type: Pick<Node, "toString" | "toAst" | "toDefinition">
     path: string[]
     message: string
-} & (Data extends never ? {} : { data: Stringifiable<Data> })
-
-type DataForCode<Code extends DiagnosticCode> =
-    DiagnosticContextConfig<Code>["data"]
+    type: DeepSimplifyNode<Node>
+    data: Stringifiable<Data>
+}
 
 type CompileDiagnosticOptions<Code extends DiagnosticCode> =
     BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>
@@ -76,7 +93,7 @@ type CompileDiagnosticOptions<Code extends DiagnosticCode> =
 type BaseDiagnosticOptions<Code extends DiagnosticCode> = Evaluate<
     {
         message?: WriteDiagnosticMessageFn<Code>
-    } & (DataForCode<Code> extends never ? {} : { omitActual?: boolean })
+    } & (Code extends AlwaysOmitActualCode ? {} : { omitActual?: boolean })
 >
 
 type WriteDiagnosticMessageFn<Code extends DiagnosticCode> = (
@@ -100,17 +117,12 @@ type RegisteredDiagnosticConfigs = {
     divisibility: Divisibility.Diagnostic
 }
 
-const datalessCodes = keySet({
+const alwaysOmitActualCodes = keySet({
     missingKey: 1,
     extraneousKeys: 1
 })
 
-type DatalessCode = keyof typeof datalessCodes
-
-export const stringifyData = (data: unknown) =>
-    toString(data, {
-        maxNestedStringLength: 50
-    })
+type AlwaysOmitActualCode = keyof typeof alwaysOmitActualCodes
 
 export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
     constructor(private state: Check.State) {
@@ -123,15 +135,12 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
     ) {
         const diagnostic = context as Diagnostic<Code>
         const raw = this.state.data
-        diagnostic.data = {
-            raw,
-            toString: () => stringifyData(raw)
-        }
+        diagnostic.data = stringifiableFrom(raw)
         diagnostic.path = [...this.state.path]
         const options = this.state.queryContext("errors", code) as
             | UniversalDiagnosticOptions
             | undefined
-        if (!(code in datalessCodes) && !options?.omitActual) {
+        if (!(code in alwaysOmitActualCodes) && !options?.omitActual) {
             const actual =
                 "actual" in diagnostic
                     ? diagnostic.actual
