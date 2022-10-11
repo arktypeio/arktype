@@ -1,5 +1,4 @@
 import { Base } from "../../common.js"
-import type { Check } from "../../traverse/check.js"
 import type { Intersection } from "./intersection.js"
 import type { Union } from "./union.js"
 
@@ -11,18 +10,17 @@ export namespace Branching {
 
     type RootTuple<Token extends Branching.Token> = [unknown, Token, unknown]
 
+    const includesStructured = (children: Base.Node[]) =>
+        children.some((child) => child.hasStructure)
+
     export abstract class Node<
         Token extends Branching.Token
     > extends Base.Node {
         abstract token: Token
-        hasStructure: boolean
 
-        constructor(public children: Base.Node[]) {
-            super()
-            this.hasStructure = children.some((child) => child.hasStructure)
+        constructor(children: Base.Node[]) {
+            super(children, includesStructured(children))
         }
-
-        abstract allows(state: Check.State): void
 
         pushChild(child: Base.Node) {
             this.children.push(child)

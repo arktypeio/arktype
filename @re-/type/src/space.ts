@@ -1,6 +1,6 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
-import { Scope } from "./nodes/expression/infix/scope.js"
+import { Scope } from "./nodes/scope.js"
 import type { inferAst } from "./nodes/traverse/ast/infer.js"
 import type { validate } from "./nodes/traverse/ast/validate.js"
 import { Root } from "./parser/root.js"

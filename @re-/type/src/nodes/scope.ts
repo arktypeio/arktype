@@ -1,7 +1,7 @@
 import type { Dictionary } from "@re-/tools"
-import type { ArktypeOptions } from "../../../type.js"
-import { Base } from "../../common.js"
-import type { Check } from "../../traverse/check.js"
+import type { ArktypeOptions } from "../type.js"
+import { Base } from "./common.js"
+import type { Check } from "./traverse/check.js"
 
 export namespace Scope {
     export type Context = ArktypeOptions & {
@@ -14,12 +14,8 @@ export namespace Scope {
     })
 
     export class Node extends Base.Node {
-        hasStructure: boolean
-
         constructor(protected child: Base.Node, protected context: Context) {
-            super()
-            // TODO: Handle children at a base node level
-            this.hasStructure = child.hasStructure
+            super([child], child.hasStructure)
         }
 
         allows(state: Check.State) {

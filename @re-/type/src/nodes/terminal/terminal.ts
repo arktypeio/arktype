@@ -1,15 +1,11 @@
 import { Base } from "../common.js"
 
 export namespace Terminal {
+    const children: never[] = []
+
     export abstract class Node<Def extends string> extends Base.Node {
-        hasStructure = false
-
         constructor(protected def: Def) {
-            super()
-        }
-
-        toDefinition() {
-            return this.def
+            super(children, false)
         }
 
         toString() {
@@ -20,10 +16,8 @@ export namespace Terminal {
             return this.def
         }
 
-        typeDefIsKeyOf<Obj extends Record<string, unknown>>(
-            obj: Obj
-        ): this is Node<Extract<keyof Obj, string>> {
-            return this.def in obj
+        toDefinition() {
+            return this.def
         }
     }
 }

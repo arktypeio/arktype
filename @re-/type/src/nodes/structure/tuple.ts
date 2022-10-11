@@ -3,10 +3,8 @@ import type { Check } from "../traverse/check.js"
 
 export namespace Tuple {
     export class Node extends Base.Node {
-        hasStructure = true
-
-        constructor(public children: Base.Node[]) {
-            super()
+        constructor(children: Base.Node[]) {
+            super(children, true)
         }
 
         toAst() {

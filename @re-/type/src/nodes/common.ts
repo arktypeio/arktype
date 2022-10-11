@@ -5,6 +5,8 @@ import { Check } from "./traverse/check.js"
 
 export namespace Base {
     export abstract class Node implements DynamicArktype {
+        constructor(public children: Node[], public hasStructure: boolean) {}
+
         check(data: unknown) {
             const state = new Check.State(data)
             this.allows(state)
@@ -25,7 +27,6 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract hasStructure: boolean
         abstract allows(state: Check.State): void
         abstract toAst(): unknown
         abstract toString(): string

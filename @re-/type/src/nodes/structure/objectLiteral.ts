@@ -5,10 +5,8 @@ import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
     export class Node extends Base.Node {
-        hasStructure = true
-
-        constructor(public children: Base.Node[], private keys: string[]) {
-            super()
+        constructor(children: Base.Node[], private keys: string[]) {
+            super(children, true)
         }
 
         allows(state: Check.State) {

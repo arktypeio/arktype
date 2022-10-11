@@ -1,5 +1,4 @@
 import { Base } from "../../common.js"
-import type { Check } from "../../traverse/check.js"
 import type { Arr } from "./array.js"
 import type { Optional } from "./optional.js"
 
@@ -25,15 +24,11 @@ export namespace Postfix {
         Token extends Postfix.Token,
         Child extends Base.Node = Base.Node
     > extends Base.Node {
-        hasStructure: boolean
         abstract token: Token
 
         constructor(protected child: Child) {
-            super()
-            this.hasStructure = this.child.hasStructure
+            super([child], child.hasStructure)
         }
-
-        abstract allows(state: Check.State): void
 
         toString() {
             return `${this.child.toString()}${this.token}` as RootString<
