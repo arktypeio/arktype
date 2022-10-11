@@ -1,0 +1,109 @@
+:root {
+    --redo-main: #264bcf;
+    --redo-secondary: #ffc40c;
+}
+
+.rollerContainer {
+    margin: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+}
+.roller {
+    display: inline-block;
+    position: absolute;
+    transform: translate(-40px, -40px);
+    width: 80px;
+    height: 80px;
+}
+.roller div {
+    animation: roller 1.5s cubic-bezier(1, 0.2, 0.5, 1) infinite;
+    transform-origin: 40px 40px;
+}
+.roller div:after {
+    content: " ";
+    display: block;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    margin: -4px 0 0 -4px;
+}
+.roller div:nth-child(1) {
+    animation-delay: -0.036s;
+}
+.roller div:nth-child(1):after {
+    top: 73px;
+    left: 73px;
+    background-color: var(--redo-main);
+}
+.roller div:nth-child(2) {
+    animation-delay: -0.072s;
+}
+.roller div:nth-child(2):after {
+    top: 78px;
+    left: 66px;
+    background-color: red;
+}
+.roller div:nth-child(3) {
+    animation-delay: -0.108s;
+}
+.roller div:nth-child(3):after {
+    top: 81px;
+    left: 58px;
+    background-color: red;
+}
+.roller div:nth-child(4) {
+    animation-delay: -0.144s;
+}
+.roller div:nth-child(4):after {
+    top: 82px;
+    left: 50px;
+    background-color: var(--redo-main);
+}
+.roller div:nth-child(5) {
+    animation-delay: -0.18s;
+}
+.roller div:nth-child(5):after {
+    top: 81px;
+    left: 42px;
+    background-color: var(--redo-main);
+}
+.roller div:nth-child(6) {
+    animation-delay: -0.216s;
+}
+.roller div:nth-child(6):after {
+    top: 78px;
+    left: 34px;
+    background-color: var(--redo-main);
+}
+.roller div:nth-child(7) {
+    animation-delay: -0.252s;
+}
+.roller div:nth-child(7):after {
+    top: 73px;
+    left: 27px;
+    background-color: var(--redo-main);
+}
+.roller div:nth-child(8) {
+    animation-delay: -0.288s;
+}
+.roller div:nth-child(8):after {
+    top: 66px;
+    left: 22px;
+    background-color: var(--redo-secondary);
+}
+@keyframes roller {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
