@@ -8,6 +8,8 @@ export namespace PrimitiveLiteral {
 
     export type Number<Value extends number = number> = `${Value}`
 
+    export type Integer<Value extends bigint = bigint> = `${Value}` & Number
+
     export type Bigint<Value extends bigint = bigint> = `${Value}n`
 
     export type Boolean<Value extends boolean = boolean> = `${Value}`

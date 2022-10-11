@@ -149,8 +149,16 @@ export class UnionDiagnostic extends Diagnostic<
     }
 }
 
+// TODO: Reintegrate
+export type DiagnosticsListContext = {
+    unionDepth: number
+}
+
 export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
-    constructor(private state: Check.State) {
+    constructor(
+        private state: Check.State,
+        public ctx: DiagnosticsListContext
+    ) {
         super()
     }
 

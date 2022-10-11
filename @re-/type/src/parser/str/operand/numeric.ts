@@ -107,8 +107,6 @@ export namespace UnenclosedNumber {
         return (errorOnFail ? throwParseError(errorOnFail) : undefined) as any
     }
 
-    type IntegerLiteral<Value extends bigint> = `${Value}`
-
     export type parseWellFormedNumber<
         token extends string,
         badNumberMessage extends string
@@ -121,7 +119,7 @@ export namespace UnenclosedNumber {
     export type parseWellFormedInteger<
         token extends string,
         badIntegerMessage extends string
-    > = token extends IntegerLiteral<infer Value>
+    > = token extends PrimitiveLiteral.Integer<infer Value>
         ? bigint extends Value
             ? buildMalformedNumericLiteralMessage<token, "integer">
             : token

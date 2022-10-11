@@ -1,6 +1,6 @@
 import type { Dictionary } from "@re-/tools"
 import { Base, ObjectKind } from "../common.js"
-import { Optional } from "../expression/optional.js"
+import { Optional } from "../expression/postfix/optional.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
@@ -15,8 +15,9 @@ export namespace ObjectLiteral {
 
         allows(state: Check.State) {
             if (!ObjectKind.check(this, "object", state)) {
-                return false
+                return
             }
+            this.checkChildrenAndGetIllegalKeys(state)
         }
 
         /** Returns any extraneous keys, if the options is enabled and they exist */

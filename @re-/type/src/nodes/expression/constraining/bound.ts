@@ -3,7 +3,7 @@ import { InternalArktypeError } from "../../../internal.js"
 import type { Base } from "../../common.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { Check } from "../../traverse/check.js"
-import { Infix } from "../infix/infix.js"
+import { Constraining } from "./constraining.js"
 
 export namespace Bound {
     export const tokens = keySet({
@@ -66,31 +66,30 @@ export namespace Bound {
         }
     }
 
-    const checkBound = (
-        node: LeftNode | RightNode,
-        comparator: Token,
-        limit: number,
-        state: Check.State
-    ) => {
-        const kind = toBoundableKind(state.data)
-        if (kind === "unboundable") {
-            return false
-        }
-        const actual = boundableToNumber(state.data as BoundableData)
-        if (!isWithinBound(comparator, limit, actual)) {
-            state.addError("bound", {
-                type: node,
-                message: describe(comparator, limit, kind),
-                comparator,
-                comparatorDescription: comparatorDescriptions[comparator],
-                limit,
-                actual,
-                kind
-            })
-            return false
-        }
-        return true
-    }
+    // const checkBound = (
+    //     node: LeftNode | RightNode,
+    //     comparator: Token,
+    //     limit: number
+    // ) => {
+    //     const kind = toBoundableKind(state.data)
+    //     if (kind === "unboundable") {
+    //         return false
+    //     }
+    //     const actual = boundableToNumber(state.data as BoundableData)
+    //     if (!isWithinBound(comparator, limit, actual)) {
+    //         state.addError("bound", {
+    //             type: node,
+    //             message: describe(comparator, limit, kind),
+    //             comparator,
+    //             comparatorDescription: comparatorDescriptions[comparator],
+    //             limit,
+    //             actual,
+    //             kind
+    //         })
+    //         return false
+    //     }
+    //     return true
+    // }
 
     export type LeftAst<Child extends RightAst = RightAst> = [
         PrimitiveLiteral.Number,
@@ -98,22 +97,25 @@ export namespace Bound {
         Child
     ]
 
-    export class LeftNode extends Infix.Node<
-        PrimitiveLiteral.Node<number>,
+    export class LeftNode extends Constraining.LeftNode<
+        PrimitiveLiteral.Number,
         DoublableToken,
         RightNode
     > {
         allows(state: Check.State) {
-            if (
-                checkBound(
-                    this,
-                    invertedComparators[this.token],
-                    this.left.value,
-                    state
-                )
-            ) {
-                this.right.allows(state)
-            }
+            const actual = boundableToNumber(state.data as BoundableData)
+            return isWithinBound(
+                invertedComparators[this.token],
+                this.value,
+                actual
+            )
+        }
+
+        toDescription() {
+            // TODO: Add description
+            return `${
+                comparatorDescriptions[invertedComparators[this.token]]
+            } ${this.value}`
         }
     }
 
@@ -124,14 +126,21 @@ export namespace Bound {
         PrimitiveLiteral.Number
     ]
 
-    export class RightNode extends Infix.Node<
+    export class RightNode<
+        HasLeft extends boolean = boolean
+    > extends Constraining.RightNode<
         Base.Node,
-        Token,
-        PrimitiveLiteral.Node<number>
+        HasLeft extends true ? DoublableToken : Token,
+        PrimitiveLiteral.Number
     > {
         allows(state: Check.State) {
-            checkBound(this, this.token, this.right.value, state)
-            this.left.allows(state)
+            const actual = boundableToNumber(state.data as BoundableData)
+            return isWithinBound(this.token, this.value, actual)
+        }
+
+        toDescription() {
+            // TODO: Add description
+            return `${comparatorDescriptions[this.token]} ${this.value}`
         }
     }
 

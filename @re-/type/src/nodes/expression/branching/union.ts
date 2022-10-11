@@ -13,7 +13,6 @@ export namespace Union {
         allows(state: Check.State) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
             const rootErrors = state.errors
-            state.unionDepth++
             for (const child of this.children) {
                 state.errors = new Diagnostics(state)
                 child.allows(state)
