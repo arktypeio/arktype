@@ -2,7 +2,6 @@ import type { Dictionary } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../common.js"
 import type { Scope } from "../scope.js"
-import type { DiagnosticCode, InternalDiagnosticInput } from "./diagnostics.js"
 import { Diagnostics } from "./diagnostics.js"
 
 export namespace Check {
@@ -17,6 +16,7 @@ export namespace Check {
 
     export class State<Data = unknown> {
         path: string[] = []
+        unionDepth = 0
         private contexts: Scope.Context[] = []
         // TODO: More efficient structure?
         checkedDataByAlias: Record<string, unknown[]> = {}
@@ -68,17 +68,6 @@ export namespace Check {
                 )
             }
             return resolution
-        }
-
-        addError<Code extends DiagnosticCode>(
-            code: Code,
-            input: InternalDiagnosticInput<Code>
-        ) {
-            if (input.details) {
-                input.message += input.details
-            }
-            // TODO: Fix types
-            this.errors.add(code, input as any)
         }
     }
 

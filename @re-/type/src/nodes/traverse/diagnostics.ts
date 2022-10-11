@@ -16,15 +16,6 @@ import type { Check } from "./check.js"
 
 export type DiagnosticCode = keyof RegisteredDiagnosticConfigs
 
-export type Diagnostic<Code extends DiagnosticCode> = {
-    code: Code
-    options: CompileDiagnosticOptions<Code>
-} & DiagnosticContextConfig<Code> &
-    BaseDiagnosticContext<
-        DiagnosticContextConfig<Code>["type"],
-        DiagnosticContextConfig<Code>["data"]
-    >
-
 export type OptionsByDiagnostic = Evaluate<
     {
         $?: UniversalDiagnosticOptions
@@ -36,14 +27,6 @@ export type OptionsByDiagnostic = Evaluate<
 export type UniversalDiagnosticOptions = {
     message?: WriteDiagnosticMessageFn<DiagnosticCode>
     omitActual?: boolean
-}
-
-export type InternalDiagnosticInput<Code extends DiagnosticCode> = Omit<
-    DiagnosticContextConfig<Code>,
-    "data"
-> & {
-    message: string
-    details?: string
 }
 
 export type Stringifiable<Data> = {
@@ -61,16 +44,6 @@ const stringifiableFrom = <Data>(raw: Data) => ({
     toString: () => stringifyData(raw)
 })
 
-export type DiagnosticConfig = {
-    type: Base.Node
-    data: unknown
-    context: Dictionary
-    options: Dictionary
-}
-
-type DiagnosticContextConfig<Code extends DiagnosticCode> =
-    RegisteredDiagnosticConfigs[Code]["context"]
-
 type DeepSimplifyNode<Node extends Base.Node> = Pick<
     Node,
     "toString" | "toAst" | "toDefinition"
@@ -80,21 +53,13 @@ type SimplifyChildren<Children extends Base.Node[]> = {
     [I in keyof Children]: DeepSimplifyNode<Children[I]>
 }
 
-type BaseDiagnosticContext<Node extends Base.Node, Data> = {
-    path: string[]
-    message: string
-    type: DeepSimplifyNode<Node>
-    data: Stringifiable<Data>
-}
-
 type CompileDiagnosticOptions<Code extends DiagnosticCode> =
     BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>
 
-type BaseDiagnosticOptions<Code extends DiagnosticCode> = Evaluate<
-    {
-        message?: WriteDiagnosticMessageFn<Code>
-    } & (Code extends AlwaysOmitActualCode ? {} : { omitActual?: boolean })
->
+type BaseDiagnosticOptions<Code extends DiagnosticCode> = Evaluate<{
+    message?: WriteDiagnosticMessageFn<Code>
+    omitActual?: boolean
+}>
 
 type WriteDiagnosticMessageFn<Code extends DiagnosticCode> = (
     context: Diagnostic<Code>
@@ -117,12 +82,72 @@ type RegisteredDiagnosticConfigs = {
     divisibility: Divisibility.Diagnostic
 }
 
-const alwaysOmitActualCodes = keySet({
-    missingKey: 1,
-    extraneousKeys: 1
-})
+export abstract class Diagnostic<
+    Code extends DiagnosticCode,
+    CustomOptions,
+    Node extends Base.Node,
+    Data
+> {
+    data: Stringifiable<Data>
+    path: string[]
+    private unionDepth: number
+    protected omitActualByDefault?: true
+    options: BaseDiagnosticOptions<Code> & CustomOptions
 
-type AlwaysOmitActualCode = keyof typeof alwaysOmitActualCodes
+    constructor(
+        public readonly code: Code,
+        public type: DeepSimplifyNode<Node>,
+        state: Check.State
+    ) {
+        this.data = stringifiableFrom(state.data as Data)
+        this.path = [...state.path]
+        this.unionDepth = state.unionDepth
+        this.options = (state.queryContext("errors", this.code) as any) ?? {}
+    }
+
+    abstract get conditionDescription(): string
+
+    get defaultMessage() {
+        let message = `Must be ${this.conditionDescription}`
+        if (!this.options.omitActual) {
+            if ("actual" in context) {
+                message += ` (was ${context.actual})`
+            } else if (
+                !this.omitActualByDefault &&
+                // If we're in a union, don't redundandtly include data (other
+                // "actual" context is still included)
+                !this.unionDepth
+            ) {
+                message += ` (was ${this.data.toString()})`
+            }
+        }
+        return message
+    }
+
+    get message() {
+        let result = this.options.message?.(this) ?? this.defaultMessage
+        if (this.unionDepth) {
+            const branchIndentation = "  ".repeat(this.unionDepth)
+            result = branchIndentation + result
+        }
+        return result
+    }
+}
+
+export class UnionDiagnostic extends Diagnostic<
+    "union",
+    {
+        explainBranches: boolean
+    },
+    Base.Node,
+    unknown
+> {
+    readonly code = "union"
+
+    get conditionDescription() {
+        return ""
+    }
+}
 
 export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
     constructor(private state: Check.State) {
@@ -133,24 +158,20 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         code: Code,
         context: DiagnosticContextConfig<Code>
     ) {
-        const diagnostic = context as Diagnostic<Code>
         const raw = this.state.data
-        diagnostic.data = stringifiableFrom(raw)
-        diagnostic.path = [...this.state.path]
+        const baseContext: BaseDiagnosticContext<Base.Node, unknown> = {
+            path: [...this.state.path],
+            data: stringifiableFrom(raw)
+        }
         const options = this.state.queryContext("errors", code) as
             | UniversalDiagnosticOptions
             | undefined
-        if (!(code in alwaysOmitActualCodes) && !options?.omitActual) {
-            const actual =
-                "actual" in diagnostic
-                    ? diagnostic.actual
-                    : diagnostic.data.toString()
-            diagnostic.message += ` (was ${actual})`
-        }
+
         if (options?.message) {
-            diagnostic.message = options?.message(diagnostic)
+            context.message = options?.message(context)
         }
-        this.push(diagnostic)
+
+        this.push(context)
     }
 
     get summary() {

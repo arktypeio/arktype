@@ -11,18 +11,22 @@ export namespace Union {
         readonly token = token
 
         allows(state: Check.State) {
-            const rootErrors = state.errors
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
+            const rootErrors = state.errors
+            state.unionDepth++
             for (const child of this.children) {
                 state.errors = new Diagnostics(state)
                 child.allows(state)
                 if (!state.errors.length) {
-                    return
+                    break
                 }
                 branchDiagnosticsEntries.push([child.toString(), state.errors])
             }
+            state.unionDepth--
             state.errors = rootErrors
-            this.addUnionDiagnostic(state, branchDiagnosticsEntries)
+            if (branchDiagnosticsEntries.length === this.children.length) {
+                this.addUnionDiagnostic(state, branchDiagnosticsEntries)
+            }
         }
 
         private addUnionDiagnostic(

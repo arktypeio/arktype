@@ -1,5 +1,5 @@
 import type { Dictionary, NormalizedJsTypeName } from "@re-/tools"
-import { chainableNoOpProxy, jsTypeOf, toString } from "@re-/tools"
+import { chainableNoOpProxy, jsTypeOf } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
 import { Check } from "./traverse/check.js"
 
@@ -98,15 +98,3 @@ export namespace Structure {
 
 export const pathToString = (path: string[]) =>
     path.length === 0 ? "/" : path.join("/")
-
-export const stringifyData = (data: unknown) =>
-    toString(data, {
-        maxNestedStringLength: 50
-    })
-
-export const shallowClone = (data: unknown) => {
-    if (typeof data === "object" && data !== null) {
-        return Array.isArray(data) ? [...data] : { ...data }
-    }
-    return data
-}
