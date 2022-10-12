@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import React from "react"
 import { StackBlitzDemo } from "../../docs/demos"
 import { getTheme } from "../components"
+import { AT } from "../components/svg/at"
 import { Boat } from "../components/svg/boat"
 import { JS } from "../components/svg/js"
 import { TS } from "../components/svg/ts"
@@ -57,15 +58,27 @@ const Logo = ({ title, tagline }: Record<string, string>) => (
             }}
         >
             <TS />
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 6, duration: 1.5 }}
-            >
-                <Typography component="h2" variant="h5" color="common.white">
-                    {tagline}
-                </Typography>
-            </motion.div>
+            <Stack>
+                {/* <AT /> */}
+                <motion.div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center"
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 6, duration: 1.5 }}
+                >
+                    <Typography
+                        component="h2"
+                        variant="h5"
+                        color="common.white"
+                    >
+                        {tagline}
+                    </Typography>
+                </motion.div>
+            </Stack>
             <JS />
         </Stack>
         <Boat />
