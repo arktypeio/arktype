@@ -1,4 +1,4 @@
-import type { Base } from "../../common.js"
+import type { Base } from "../../base.js"
 import { Divisibility } from "../../expression/divisibility.js"
 import { PrimitiveLiteral } from "../primitiveLiteral.js"
 import { Terminal } from "../terminal.js"

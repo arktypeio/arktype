@@ -1,5 +1,5 @@
 import { isKeyOf } from "@re-/tools"
-import type { Base } from "../../../../nodes/common.js"
+import type { Base } from "../../../../nodes/base.js"
 import { Bound } from "../../../../nodes/expression/bound.js"
 import type { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { toString } from "../../../../nodes/traverse/ast/toString.js"

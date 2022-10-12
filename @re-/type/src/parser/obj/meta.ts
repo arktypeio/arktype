@@ -1,4 +1,4 @@
-import type { Base } from "../../nodes/common.js"
+import type { Base } from "../../nodes/base.js"
 import { Expression } from "../../nodes/expression/expression.js"
 import type { ParseError, parseFn, ParserContext } from "../common.js"
 import type { Root } from "../root.js"

@@ -1,4 +1,4 @@
-import type { Base } from "../common.js"
+import type { Base } from "../base.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
@@ -32,7 +32,11 @@ export namespace Divisibility {
         }
 
         get description() {
-            return `${this.children[0].description} divisible by ${this.divisor}` as const
+            return `${this.children[0].description} ${this.checks}`
+        }
+
+        get checks() {
+            return `divisible by ${this.divisor}` as const
         }
     }
 

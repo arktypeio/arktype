@@ -1,4 +1,4 @@
-import { Base } from "../common.js"
+import { Base } from "../base.js"
 
 export namespace Terminal {
     const children: never[] = []

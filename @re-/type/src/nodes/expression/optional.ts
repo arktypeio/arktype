@@ -1,4 +1,4 @@
-import type { Base } from "../common.js"
+import type { Base } from "../base.js"
 import { Expression } from "./expression.js"
 
 export namespace Optional {
@@ -19,6 +19,10 @@ export namespace Optional {
 
         get description() {
             return `optional ${this.children[0].description}` as const
+        }
+
+        get checks() {
+            return "optional" as const
         }
     }
 }

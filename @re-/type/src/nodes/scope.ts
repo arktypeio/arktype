@@ -1,6 +1,6 @@
 import type { Dictionary } from "@re-/tools"
 import type { ArktypeOptions } from "../type.js"
-import { Base } from "./common.js"
+import { Base } from "./base.js"
 import type { Check } from "./traverse/check.js"
 
 export namespace Scope {

@@ -1,5 +1,5 @@
-import type { Base } from "../../common.js"
-import { addArticle } from "../../common.js"
+import type { Base } from "../../base.js"
+import { addArticle } from "../../base.js"
 import { Expression } from "../expression.js"
 
 export namespace Branching {

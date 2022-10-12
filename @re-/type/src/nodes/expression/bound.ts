@@ -1,6 +1,6 @@
 import { keySet } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
-import type { Base } from "../common.js"
+import type { Base } from "../base.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
@@ -41,7 +41,7 @@ export namespace Bound {
         "==": "exactly"
     }
 
-    const isWithinBound = (
+    const isWithin = (
         normalizedComparator: Token,
         limit: number,
         actual: number
@@ -115,7 +115,7 @@ export namespace Bound {
         allows(state: Check.State) {
             // TODO: Fix
             const actual = boundableToNumber(state.data as any)
-            return isWithinBound(
+            return isWithin(
                 invertedComparators[this.comparator],
                 this.limit,
                 actual
@@ -133,6 +133,10 @@ export namespace Bound {
         }
 
         get description() {
+            return `${this.children[0].description} ${this.checks}`
+        }
+
+        get checks() {
             // TODO: Add units description
             return `${
                 comparatorDescriptions[invertedComparators[this.comparator]]
@@ -167,7 +171,7 @@ export namespace Bound {
         allows(state: Check.State) {
             // TODO: Fix
             const actual = boundableToNumber(state.data as any)
-            return isWithinBound(this.comparator, this.limit, actual)
+            return isWithin(this.comparator, this.limit, actual)
         }
 
         toString() {
@@ -181,6 +185,10 @@ export namespace Bound {
         }
 
         get description() {
+            return `${this.children[0].description} ${this.checks}`
+        }
+
+        get checks() {
             // TODO: Add units description
             return `${comparatorDescriptions[this.comparator]} ${
                 this.limit

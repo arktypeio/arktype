@@ -3,8 +3,8 @@ import { Terminal } from "./terminal.js"
 
 export namespace Alias {
     export class Node extends Terminal.Node<string> {
-        constructor(def: string) {
-            super(def)
+        constructor(definition: string) {
+            super(definition)
         }
 
         allows(state: Check.State) {
@@ -20,6 +20,10 @@ export namespace Alias {
             const priorContexts = state.clearContexts()
             resolution.allows(state)
             state.restoreContexts(priorContexts)
+        }
+
+        get description() {
+            return this.definition
         }
     }
 }

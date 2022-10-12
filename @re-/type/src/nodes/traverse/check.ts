@@ -1,6 +1,6 @@
 import type { Dictionary } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
-import type { Base } from "../common.js"
+import type { Base } from "../base.js"
 import type { Scope } from "../scope.js"
 import { Diagnostics } from "./diagnostics.js"
 

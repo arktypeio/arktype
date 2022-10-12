@@ -1,5 +1,5 @@
 import type { Dictionary } from "@re-/tools"
-import { Base, ObjectKind } from "../common.js"
+import { Base, ObjectKind } from "../base.js"
 import { Optional } from "../expression/optional.js"
 import type { Check } from "../traverse/check.js"
 
@@ -7,10 +7,6 @@ export namespace ObjectLiteral {
     export class Node extends Base.Node {
         constructor(children: Base.Node[], private keys: string[]) {
             super(children, true)
-        }
-
-        keyAt(childIndex: number) {
-            return this.keys[childIndex]
         }
 
         allows(state: Check.State) {
@@ -82,17 +78,27 @@ export namespace ObjectLiteral {
         }
 
         toString() {
-            if (!this.children.length) {
+            return this.buildString(this.mapChildrenToStrings())
+        }
+
+        get description() {
+            return this.buildString(this.mapChildrenToDescriptions())
+        }
+
+        get checks() {
+            return "an object"
+        }
+
+        private buildString(stringifiedChildren: string[]) {
+            if (!stringifiedChildren.length) {
                 return "{}"
             }
             let result = "{"
             let i = 0
-            for (i; i < this.children.length - 1; i++) {
-                result +=
-                    this.keys[i] + ": " + this.children[i].toString() + ", "
+            for (i; i < stringifiedChildren.length - 1; i++) {
+                result += this.keys[i] + ": " + stringifiedChildren[i] + ", "
             }
-            // Avoid trailing comma
-            return result + this.children[i].toString() + "}"
+            return result + stringifiedChildren[i] + "}"
         }
     }
 

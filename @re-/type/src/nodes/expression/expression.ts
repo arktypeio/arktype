@@ -1,4 +1,4 @@
-import { Base } from "../common.js"
+import { Base } from "../base.js"
 import { Bound } from "./bound.js"
 import type { Branching } from "./branching/branching.js"
 import type { Divisibility } from "./divisibility.js"

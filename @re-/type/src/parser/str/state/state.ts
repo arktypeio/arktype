@@ -1,5 +1,5 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
-import type { Base } from "../../../nodes/common.js"
+import type { Base } from "../../../nodes/base.js"
 import type { Bound } from "../../../nodes/expression/bound.js"
 import type { Intersection } from "../../../nodes/expression/intersection.js"
 import type { Union } from "../../../nodes/expression/union.js"

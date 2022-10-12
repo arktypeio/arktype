@@ -1,5 +1,5 @@
-import type { Base } from "../common.js"
-import { ObjectKind } from "../common.js"
+import type { Base } from "../base.js"
+import { ObjectKind } from "../base.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
 
@@ -9,10 +9,7 @@ export namespace Arr {
             if (!ObjectKind.check(this, "array", state)) {
                 return false
             }
-        }
-
-        traverse(state: Check.State<any>) {
-            const rootData = state.data
+            const rootData: any[] = state.data
             for (let i = 0; i < rootData.length; i++) {
                 state.path.push(String(i))
                 state.data = rootData[i]
@@ -32,6 +29,10 @@ export namespace Arr {
 
         get description() {
             return `${this.children[0].description} array` as const
+        }
+
+        get checks() {
+            return "an array" as const
         }
     }
 }

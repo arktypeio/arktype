@@ -32,9 +32,13 @@ export namespace Base {
         }
 
         abstract allows(state: Check.State): void
-        abstract get description(): string
-        abstract get ast(): unknown
+
+        addError(state: Check.State, context: any) {}
+
         abstract toString(): string
+        abstract get description(): string
+        abstract get checks(): string
+        abstract get ast(): unknown
         /**
          * This generates an isomorphic definition that can be parsed and
          * inverted. The preferred isomorphic format for expressions is the
@@ -62,7 +66,19 @@ export namespace Base {
          *     [{a: "string?"}, "&", {b: "boolean?"}]
          */
         abstract definition: unknown
+
+        mapChildrenToStrings(): string[] {
+            return this.children.map(mapToString)
+        }
+
+        mapChildrenToDescriptions(): string[] {
+            return this.children.map(mapToDescription)
+        }
     }
+
+    const mapToString = (child: Base.Node) => child.toString()
+
+    const mapToDescription = (child: Base.Node) => child.description
 }
 
 export namespace ObjectKind {
