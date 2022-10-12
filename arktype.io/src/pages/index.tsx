@@ -1,6 +1,6 @@
 import { useColorMode } from "@docusaurus/theme-common"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
-import { ThemeProvider, Typography } from "@mui/material"
+import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import { motion } from "framer-motion"
 import React from "react"
@@ -33,41 +33,51 @@ export default () => {
     )
 }
 
+// eslint-disable-next-line max-lines-per-function
 const Logo = ({ title, tagline }: Record<string, string>) => (
     <header>
-        <div className="logo">
-            <motion.div className="logoContainer">
+        {/* <Stack
+            sx={{ height: 180, alignItems: "center", justifyContent: "center" }}
+        > */}
+        <motion.div
+            style={{
+                height: 180,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center"
+            }}
+            animate={{ y: 20 }}
+            transition={{ delay: 4.5, duration: 1.5, ease: "easeOut" }}
+        >
+            <Typography component="h1" variant="h2" color="common.white">
+                {title}
+            </Typography>
+            <Stack
+                direction="row"
+                sx={{
+                    width: 600,
+                    justifyContent: "space-between",
+                    alignContent: "center"
+                }}
+            >
+                <TS />
                 <motion.div
-                    animate={{ y: 50 }}
-                    transition={{ duration: 2, delay: 6, ease: "easeIn" }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 4, duration: 1.5 }}
                 >
-                    <Typography
-                        component="h1"
-                        variant="h3"
-                        color="common.white"
-                        id="title"
-                    >
-                        {title}
-                    </Typography>
                     <Typography
                         component="h2"
                         variant="h5"
                         color="common.white"
-                        id="tagline"
                     >
                         {tagline}
                     </Typography>
                 </motion.div>
-                <Animation />
-            </motion.div>
-        </div>
+                <JS />
+            </Stack>
+            <Boat />
+        </motion.div>
     </header>
-)
-
-const Animation = () => (
-    <motion.div animate={{ opacity: 0 }} transition={{ delay: 7 }}>
-        <TS />
-        <JS />
-        <Boat />
-    </motion.div>
 )
