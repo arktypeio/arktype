@@ -7,7 +7,7 @@ export const TS = () => (
             viewBox="0 0 124 124"
             initial={{ opacity: 0.25 }}
             animate={{ opacity: 0, x: 200 }}
-            transition={{ delay: 4, duration: 1 }}
+            transition={{ delay: 6, duration: 1 }}
         >
             <motion.g>
                 <motion.rect width="128" height="128" fill="#fff" rx="2" />

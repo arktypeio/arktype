@@ -24,11 +24,14 @@ export const getTheme = ({ isDark }: ThemeConfigOptions) =>
             warning: {
                 main: "#ff7518"
             },
+            common: {
+                white: "#fffff0"
+            },
             info: {
                 main: "#264bcf"
             },
             background: {
-                default: isDark ? "#242424" : "#fff"
+                default: isDark ? "#242424" : "#fffff0"
             }
         },
         typography: {
