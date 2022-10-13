@@ -1,5 +1,5 @@
 import { Alias } from "../../../nodes/terminal/alias.js"
-import { Keyword } from "../../../nodes/terminal/keyword/keyword.js"
+import { Keyword } from "../../../nodes/terminal/keyword.js"
 import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"

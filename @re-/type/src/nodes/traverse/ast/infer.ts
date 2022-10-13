@@ -1,6 +1,6 @@
 import type { Evaluate } from "@re-/tools"
 import type { Infix } from "../../expression/constraining/constraining.js"
-import type { Keyword } from "../../terminal/keyword/keyword.js"
+import type { Keyword } from "../../terminal/keyword.js"
 import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
 import type { RegexLiteral } from "../../terminal/regexLiteral.js"
 

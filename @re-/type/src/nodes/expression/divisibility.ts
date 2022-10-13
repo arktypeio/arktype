@@ -17,7 +17,6 @@ export namespace Divisibility {
 
         allows(state: Check.State<any>) {
             this.children[0].allows(state)
-            // TODO: Fix
             if (state.data % this.divisor !== 0) {
                 return
             }

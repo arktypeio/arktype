@@ -1,5 +1,4 @@
 import type { Check } from "../traverse/check.js"
-import { TypeKeyword } from "./keyword/types/typeKeyword.js"
 import { Terminal } from "./terminal.js"
 
 export namespace RegexLiteral {
@@ -14,11 +13,8 @@ export namespace RegexLiteral {
             this.expression = new RegExp(definition.slice(1, -1))
         }
 
-        allows(state: Check.State<string>) {
-            if (
-                TypeKeyword.allows("string", state) &&
-                !this.expression.test(state.data)
-            ) {
+        allows(state: Check.State) {
+            if (!this.expression.test(state.data)) {
                 return
             }
         }

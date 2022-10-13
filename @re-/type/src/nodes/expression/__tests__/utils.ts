@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
 import * as fc from "fast-check"
 import type { DynamicArktype } from "../../../type.js"
-import { ConstrainedKeyword } from "../../terminal/keyword/constrained.js"
-import { Keyword } from "../../terminal/keyword/keyword.js"
+import { ConstrainedKeyword } from "../../terminal/keyword/subtypes.js"
+import { Keyword } from "../../terminal/keyword.js"
 import { RegexKeyword } from "../../terminal/keyword/regex.js"
 import { Bound } from "../bound.js"
 
