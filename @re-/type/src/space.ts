@@ -1,5 +1,7 @@
 import type { Dictionary, Evaluate } from "@re-/tools"
 import { chainableNoOpProxy } from "@re-/tools"
+import type { LazyDynamicWrap } from "./internal.js"
+import { lazyDynamicWrap } from "./internal.js"
 import { Scope } from "./nodes/scope.js"
 import type { inferAst } from "./nodes/traverse/ast/infer.js"
 import type { validate } from "./nodes/traverse/ast/validate.js"
@@ -12,6 +14,21 @@ import type {
     InferredTypeFn
 } from "./type.js"
 
+const rawSpace = (aliases: Dictionary, opts: ArktypeOptions = {}) => {
+    const ctx = opts as SpaceContext
+    ctx.resolutions = {}
+    for (const name in aliases) {
+        ctx.resolutions[name] = new Scope.Node(
+            Root.parse(aliases[name], { aliases }),
+            ctx
+        )
+    }
+    ctx.resolutions.$ = new ArktypeSpace(ctx) as any
+    return ctx.resolutions as any as DynamicSpace
+}
+
+export const space = lazyDynamicWrap(rawSpace) as SpaceFn
+
 type InferredSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
     aliases: validate<Aliases, Resolutions, Resolutions>,
     options?: ArktypeOptions
@@ -22,7 +39,7 @@ type DynamicSpaceFn = <Aliases extends Dictionary>(
     options?: ArktypeOptions
 ) => DynamicSpace<Aliases>
 
-export type SpaceFn = InferredSpaceFn & { dynamic: DynamicSpaceFn }
+export type SpaceFn = LazyDynamicWrap<InferredSpaceFn, DynamicSpaceFn>
 
 export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
     keyof Aliases,
@@ -35,23 +52,6 @@ export type DynamicSpaceRoot = SpaceRootFrom<{
     aliases: Dictionary
     resolutions: Dictionary
 }>
-
-const rawSpace = (aliases: Dictionary, opts: ArktypeOptions = {}) => {
-    const ctx = opts as SpaceContext
-    ctx.resolutions = {}
-    for (const name in aliases) {
-        ctx.resolutions[name] = new Scope.Node(
-            Root.parse(aliases[name], { aliases }),
-            ctx
-        )
-    }
-    // TODO: Add error for referencing "$" directly?
-    ctx.resolutions.$ = new ArktypeSpace(ctx) as any
-    return ctx.resolutions as any as DynamicSpace
-}
-
-rawSpace.dynamic = rawSpace
-export const space: SpaceFn = rawSpace as any
 
 export type ResolvedSpace = {
     aliases: unknown

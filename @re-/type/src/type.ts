@@ -1,4 +1,6 @@
 import type { MutuallyExclusiveProps } from "@re-/tools"
+import type { LazyDynamicWrap } from "./internal.js"
+import { lazyDynamicWrap } from "./internal.js"
 import { Scope } from "./nodes/scope.js"
 import type { inferAst } from "./nodes/traverse/ast/infer.js"
 import type { validate } from "./nodes/traverse/ast/validate.js"
@@ -19,27 +21,10 @@ const rawTypeFn: DynamicTypeFn = (def, ctx) => {
     return root
 }
 
-const lazyTypeFn: DynamicTypeFn = (def, opts) => {
-    let cache: any
-    return new Proxy(
-        {},
-        {
-            get: (_, k) => {
-                if (!cache) {
-                    cache = rawTypeFn(def, opts)
-                }
-                return cache[k]
-            }
-        }
-    ) as any
-}
-
-export const type: TypeFn = rawTypeFn as any
-
-// TODO: Abstract these variants as wrapper, reuse for space
-type.dynamic = rawTypeFn
-type.lazy = lazyTypeFn as any
-type.lazyDynamic = lazyTypeFn
+export const type: TypeFn = lazyDynamicWrap<
+    InferredTypeFn<ResolvedSpace.Empty>,
+    DynamicTypeFn
+>(rawTypeFn)
 
 export type InferredTypeFn<Space extends ResolvedSpace> = <
     Definition,
@@ -57,11 +42,7 @@ type DynamicTypeFn = (
 ) => DynamicArktype
 
 export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> =
-    InferredTypeFn<Space> & {
-        dynamic: DynamicTypeFn
-        lazy: InferredTypeFn<Space>
-        lazyDynamic: DynamicTypeFn
-    }
+    LazyDynamicWrap<InferredTypeFn<Space>, DynamicTypeFn>
 
 export type Arktype<Inferred, Ast> = {
     infer: Inferred

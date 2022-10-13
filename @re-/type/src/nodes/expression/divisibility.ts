@@ -6,8 +6,6 @@ import { Expression } from "./expression.js"
 export namespace Divisibility {
     export type Token = "%"
 
-    export type Ast = [unknown, Token, PrimitiveLiteral.Number]
-
     export type Tuple = [unknown, Token, PrimitiveLiteral.Number]
 
     export class Node extends Expression.Node<[Base.Node], Tuple> {
