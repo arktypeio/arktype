@@ -1,14 +1,11 @@
 import { Base } from "../base.js"
 
 export namespace Terminal {
-    export abstract class Node<
-        Kind extends string,
-        Definition extends string
-    > extends Base.Node<Kind, undefined> {
+    export abstract class Node extends Base.Node {
         children: undefined
         hasStructure = false
 
-        abstract definition: Definition
+        abstract readonly definition: string
 
         toString() {
             return this.definition

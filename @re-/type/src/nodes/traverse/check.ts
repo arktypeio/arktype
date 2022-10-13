@@ -1,4 +1,6 @@
+import { jsTypeOf } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
+import type { Base } from "../base.js"
 import type { Scope } from "../scope.js"
 import { Diagnostics } from "./diagnostics.js"
 
@@ -11,6 +13,19 @@ export namespace Check {
 
     export type ConfigKey<K1 extends RootKey> =
         keyof Required<Scope.Context>[K1]
+
+    export const traverse = (
+        data: unknown,
+        root: Base.UnknownNode,
+        state: State
+    ) => {
+        const dataType = jsTypeOf(state.data)
+        let node = root
+
+        if (node.precondition && node.precondition !== dataType) {
+            return false
+        }
+    }
 
     export class State<Data = unknown> {
         path: string[] = []

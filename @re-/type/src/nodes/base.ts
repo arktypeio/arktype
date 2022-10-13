@@ -1,20 +1,12 @@
-import type { Dictionary, NormalizedJsTypeName } from "@re-/tools"
-import { chainableNoOpProxy, jsTypeOf, keySet } from "@re-/tools"
+import { chainableNoOpProxy, keySet } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
 import { Check } from "./traverse/check.js"
-import { Diagnostic } from "./traverse/diagnostics.js"
 
 export namespace Base {
-    export type UnknownNode = Node<string, UnknownNode[] | undefined>
-
-    export abstract class Node<
-        Kind extends string,
-        Children extends UnknownNode[] | undefined
-    > implements DynamicArktype
-    {
-        abstract children: Children
+    export abstract class Node implements DynamicArktype {
+        abstract children?: Node[]
         abstract hasStructure: boolean
-        abstract readonly kind: Kind
+        abstract readonly kind: string
 
         check(data: unknown) {
             const state = new Check.State(data)
@@ -36,13 +28,9 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract allows(state: Check.State): void
+        abstract allows: AllowsFn<this>
 
-        addError(state: Check.State, context: any) {
-            state.errors.push()
-        }
-
-        precondition?: Precondition
+        precondition?: Node
 
         abstract toString(): string
         abstract get mustBe(): string
@@ -75,9 +63,27 @@ export namespace Base {
          */
         abstract definition: unknown
     }
-}
 
-export type Precondition = "string" | "number" | "object" | "array"
+    export type AllowsFn<node extends Node> =
+        | BaseAllowsFn<InferPrecondition<node>>
+        | NarrowingAllowsFn<InferPrecondition<node>>
+
+    type BaseAllowsFn<precondition> = (
+        data: precondition
+    ) => boolean | undefined
+
+    type NarrowingAllowsFn<precondition> = (
+        data: precondition
+    ) => data is precondition
+
+    type InferPrecondition<node extends Node> = node["precondition"] extends {}
+        ? node["precondition"]["allows"] extends (
+              data: any
+          ) => data is infer Postcondition
+            ? Postcondition
+            : InferPrecondition<node["precondition"]>
+        : unknown
+}
 
 export const pathToString = (path: string[]) =>
     path.length === 0 ? "/" : path.join("/")

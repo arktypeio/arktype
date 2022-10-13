@@ -1,4 +1,5 @@
 import type { Base } from "../base.js"
+import { Keyword } from "../terminal/keyword.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
@@ -15,12 +16,13 @@ export namespace Divisibility {
             super([child])
         }
 
-        allows(state: Check.State<any>) {
-            this.children[0].allows(state)
-            if (state.data % this.divisor !== 0) {
+        allows(data: number) {
+            if (data % this.divisor !== 0) {
                 return
             }
         }
+
+        precondition = Keyword.getNode("number")
 
         toString() {
             return `${this.children[0].toString()}%${this.divisor}` as const
