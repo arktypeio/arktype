@@ -2,8 +2,10 @@ import { Base, ObjectKind } from "../base.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace Tuple {
-    export class Node extends Base.Node {
-        constructor(children: Base.Node[]) {
+    export class Node extends Base.Node<"tuple"> {
+        readonly kind = "tuple"
+
+        constructor(children: Base.UnknownNode[]) {
             super(children, true)
         }
 

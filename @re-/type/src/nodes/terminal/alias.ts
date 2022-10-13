@@ -2,9 +2,12 @@ import type { Check } from "../traverse/check.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Alias {
-    export class Node extends Terminal.Node<string> {
+    export class Node extends Terminal.Node<string, string> {
+        public kind: string
+
         constructor(definition: string) {
             super(definition)
+            this.kind = definition
         }
 
         allows(state: Check.State) {

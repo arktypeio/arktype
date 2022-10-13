@@ -6,15 +6,15 @@ import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
 
 export namespace Bound {
-    export const tokens = keySet({
-        "<": 1,
-        ">": 1,
-        "<=": 1,
-        ">=": 1,
-        "==": 1
-    })
+    export const tokensToKinds = {
+        "<": "bound",
+        ">": "bound",
+        "<=": "bound",
+        ">=": "bound",
+        "==": "bound"
+    } as const
 
-    export type Token = keyof typeof tokens
+    export type Token = keyof typeof tokensToKinds
 
     export const doublableTokens = keySet({
         "<=": 1,
@@ -103,11 +103,13 @@ export namespace Bound {
         RightTuple<true>
     ]
 
-    export class LeftNode extends Expression.Node<[Base.Node], LeftTuple> {
+    export class LeftNode extends Expression.Node<[RightNode], LeftTuple> {
+        readonly kind = "bound"
+
         constructor(
             public limit: number,
             public comparator: DoublableToken,
-            child: Base.Node
+            child: RightNode
         ) {
             super([child], child.hasStructure)
         }
@@ -159,9 +161,11 @@ export namespace Bound {
 
     export class RightNode<
         HasLeft extends boolean = boolean
-    > extends Expression.Node<[Base.Node], RightTuple<HasLeft>> {
+    > extends Expression.Node<[Base.UnknownNode], RightTuple<HasLeft>> {
+        readonly kind = "bound"
+
         constructor(
-            child: Base.Node,
+            child: Base.UnknownNode,
             public comparator: DoublableToken,
             public limit: number
         ) {

@@ -5,7 +5,7 @@ import { Expression } from "../expression.js"
 export namespace Branching {
     export type Token = "|" | "&"
 
-    const hasStructure = (child: Base.Node) => child.hasStructure
+    const hasStructure = (child: Base.UnknownNode) => child.hasStructure
 
     export type Tuple<Token extends Branching.Token> = [unknown, Token, unknown]
 
@@ -18,14 +18,14 @@ export namespace Branching {
 
     export abstract class Node<
         Token extends Branching.Token
-    > extends Expression.Node<Base.Node[], Tuple<Token>> {
+    > extends Expression.Node<Base.Children, Tuple<Token>> {
         abstract token: Token
 
-        constructor(children: Base.Node[]) {
+        constructor(children: Base.Children) {
             super(children, children.some(hasStructure))
         }
 
-        pushChild(child: Base.Node) {
+        pushChild(child: Base.UnknownNode) {
             this.children.push(child)
             this.hasStructure ||= child.hasStructure
         }

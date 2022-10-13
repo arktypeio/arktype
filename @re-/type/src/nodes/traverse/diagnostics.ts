@@ -82,12 +82,7 @@ type RegisteredDiagnosticConfigs = {
     divisibility: Divisibility.Diagnostic
 }
 
-export abstract class Diagnostic<
-    Code extends DiagnosticCode,
-    CustomOptions,
-    Node extends Base.Node,
-    Data
-> {
+export abstract class Diagnostic<Node extends Base.UnknownNode> {
     data: Stringifiable<Data>
     path: string[]
     private unionDepth: number
@@ -104,8 +99,6 @@ export abstract class Diagnostic<
         this.unionDepth = state.unionDepth
         this.options = (state.queryContext("errors", this.code) as any) ?? {}
     }
-
-    abstract get conditionDescription(): string
 
     get defaultMessage() {
         let message = `Must be ${this.conditionDescription}`

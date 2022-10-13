@@ -8,7 +8,7 @@ import type { Operand } from "../str/operand/operand.js"
 export type MetaDefinition = [unknown, Expression.Token, ...unknown[]]
 
 export const isMetaDefinition = (def: unknown[]): def is MetaDefinition =>
-    (def[1] as any) in Expression.tokens
+    (def[1] as any) in Expression.tokensToKinds
 
 export const parseMetaDefinition: parseFn<MetaDefinition> = (
     [definition, token, ...args],

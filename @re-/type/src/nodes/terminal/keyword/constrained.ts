@@ -29,7 +29,7 @@ export namespace ConstrainedKeyword {
         }
     }
 
-    export const nodes: Record<Definition, Base.Node> = {
+    export const nodes: Record<Definition> = {
         integer: new Divisibility.Node(
             TypeKeyword.nodes["number"],
             "%",

@@ -5,7 +5,7 @@ import type { Check } from "./traverse/check.js"
 
 export namespace Scope {
     export type Context = ArktypeOptions & {
-        resolutions?: Dictionary<Base.Node>
+        resolutions?: Dictionary<Base.UnknownNode>
     }
 
     export const merge = (base: Context, merged: Context): Context => ({
@@ -13,27 +13,29 @@ export namespace Scope {
         resolutions: base.resolutions
     })
 
-    export class Node extends Base.Node {
-        constructor(protected child: Base.Node, protected context: Context) {
+    export class Node extends Base.Node<"scope"> {
+        readonly kind = "scope"
+
+        constructor(child: Base.UnknownNode, protected context: Context) {
             super([child], child.hasStructure)
         }
 
         allows(state: Check.State) {
             state.pushContext(this.context)
-            this.child.allows(state)
+            this.children[0].allows(state)
             state.popContext()
         }
 
         toString() {
-            return this.child.toString()
+            return this.children[0].toString()
         }
 
         get ast() {
-            return this.child.ast
+            return this.children[0].ast
         }
 
         get definition() {
-            return this.child.definition
+            return this.children[0].definition
         }
     }
 }

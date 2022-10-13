@@ -5,6 +5,7 @@ import { Branching } from "./branching.js"
 export namespace Union {
     export class Node extends Branching.Node<"|"> {
         readonly token = "|"
+        readonly kind = "union"
 
         allows(state: Check.State) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []

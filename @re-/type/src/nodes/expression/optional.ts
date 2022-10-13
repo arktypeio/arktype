@@ -2,7 +2,12 @@ import type { Base } from "../base.js"
 import { Expression } from "./expression.js"
 
 export namespace Optional {
-    export class Node extends Expression.Node<[Base.Node], [unknown, "?"]> {
+    export class Node extends Expression.Node<
+        [Base.UnknownNode],
+        [unknown, "?"]
+    > {
+        readonly kind = "optional"
+
         allows(data: unknown) {
             if (data === undefined) {
                 return true

@@ -2,14 +2,19 @@ import type { Dictionary, NormalizedJsTypeName } from "@re-/tools"
 import { chainableNoOpProxy, jsTypeOf, keySet } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
 import { Check } from "./traverse/check.js"
+import { Diagnostic } from "./traverse/diagnostics.js"
 
 export namespace Base {
-    type NodeChildren = Node<NodeChildren>[]
+    export type UnknownNode = Node<string>
 
-    export abstract class Node<Children extends NodeChildren = NodeChildren>
-        implements DynamicArktype
+    export abstract class Node<
+        Kind extends string,
+        Children extends UnknownNode[] = UnknownNode[]
+    > implements DynamicArktype
     {
         constructor(public children: Children, public hasStructure: boolean) {}
+
+        abstract readonly kind: Kind
 
         check(data: unknown) {
             const state = new Check.State(data)
@@ -33,7 +38,11 @@ export namespace Base {
 
         abstract allows(state: Check.State): void
 
-        addError(state: Check.State, context: any) {}
+        addError(state: Check.State, context: any) {
+            state.errors.push(new Diagnostic(this, state, context))
+        }
+
+        precondition?: Precondition
 
         abstract toString(): string
         abstract get description(): string
@@ -76,16 +85,18 @@ export namespace Base {
         }
     }
 
-    const mapToString = (child: Base.Node) => child.toString()
+    const mapToString = (child: Base.UnknownNode) => child.toString()
 
-    const mapToDescription = (child: Base.Node) => child.description
+    const mapToDescription = (child: Base.UnknownNode) => child.description
 }
+
+export type Precondition = "string" | "number" | "object" | "array"
 
 export namespace ObjectKind {
     export type name = "object" | "array"
 
     export const check = <ExpectedStructure extends ObjectKind.name>(
-        node: Base.Node,
+        node: Base.UnknownNode,
         expectedStructure: ExpectedStructure,
         state: Check.State
     ): state is Check.State<
@@ -109,7 +120,7 @@ export namespace ObjectKind {
     }
 
     export type Diagnostic = Check.ConfigureDiagnostic<
-        Base.Node,
+        Base.UnknownNode,
         {
             expected: name
             actual: NormalizedJsTypeName

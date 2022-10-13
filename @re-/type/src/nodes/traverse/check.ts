@@ -1,6 +1,4 @@
-import type { Dictionary } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
-import type { Base } from "../base.js"
 import type { Scope } from "../scope.js"
 import { Diagnostics } from "./diagnostics.js"
 
@@ -69,18 +67,5 @@ export namespace Check {
             }
             return resolution
         }
-    }
-
-    export type ConfigureDiagnostic<
-        Node extends Base.Node,
-        Context extends Dictionary = {},
-        Options extends Dictionary = {},
-        Data = unknown
-    > = {
-        context: Context & {
-            type: Node
-            data: Data
-        }
-        options: Options
     }
 }

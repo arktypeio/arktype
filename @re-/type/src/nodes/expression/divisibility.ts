@@ -8,8 +8,10 @@ export namespace Divisibility {
 
     export type Tuple = [unknown, Token, PrimitiveLiteral.Number]
 
-    export class Node extends Expression.Node<[Base.Node], Tuple> {
-        constructor(child: Base.Node, public divisor: number) {
+    export class Node extends Expression.Node<[Base.UnknownNode], Tuple> {
+        readonly kind = "divisibility"
+
+        constructor(child: Base.UnknownNode, public divisor: number) {
             super([child], child.hasStructure)
         }
 

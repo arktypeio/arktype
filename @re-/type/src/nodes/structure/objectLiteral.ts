@@ -4,8 +4,10 @@ import { Optional } from "../expression/optional.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
-    export class Node extends Base.Node {
-        constructor(children: Base.Node[], private keys: string[]) {
+    export class Node extends Base.Node<"objectLiteral"> {
+        readonly kind = "objectLiteral"
+
+        constructor(children: Base.UnknownNode[], private keys: string[]) {
             super(children, true)
         }
 

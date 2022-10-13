@@ -5,7 +5,8 @@ import { Terminal } from "./terminal.js"
 export namespace RegexLiteral {
     export type Definition<Source extends string = string> = `/${Source}/`
 
-    export class Node extends Terminal.Node<Definition> {
+    export class Node extends Terminal.Node<"regexLiteral", Definition> {
+        readonly kind = "regexLiteral"
         private expression: RegExp
 
         constructor(def: Definition) {
