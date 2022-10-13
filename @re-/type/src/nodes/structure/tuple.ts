@@ -6,7 +6,7 @@ export namespace Tuple {
         readonly kind = "tuple"
         hasStructure = true
 
-        constructor(public children: Base.UnknownNode[]) {
+        constructor(public children: Base.Node[]) {
             super()
         }
 

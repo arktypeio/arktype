@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import type { NormalizedJsTypeName } from "../index.js"
-import { hasJsType, jsTypeOf } from "../index.js"
+import { hasJsType, hasJsTypeIn, jsTypeOf } from "../index.js"
 
 describe("jsTypeOf", () => {
     test("builtin", () => {
@@ -30,6 +30,13 @@ describe("jsTypeOf", () => {
         const data: unknown = []
         if (hasJsType(data, "array")) {
             assert(data).typed as unknown[]
+        }
+    })
+
+    test("type guard keySet", () => {
+        const data: unknown = ""
+        if (hasJsTypeIn(data, { string: 1, number: 1 })) {
+            assert(data).typed as string | number
         }
     })
 })

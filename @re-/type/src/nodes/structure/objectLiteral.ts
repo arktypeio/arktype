@@ -8,10 +8,7 @@ export namespace ObjectLiteral {
         readonly kind = "objectLiteral"
         hasStructure = true
 
-        constructor(
-            public children: Base.UnknownNode[],
-            private keys: string[]
-        ) {
+        constructor(public children: Base.Node[], private keys: string[]) {
             super()
         }
 

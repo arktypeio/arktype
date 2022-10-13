@@ -28,7 +28,13 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract allows: AllowsFn<this>
+        // abstract allows(data: InferPrecondition<this>): boolean | undefined
+        // abstract allows(
+        //     data: InferPrecondition<this>
+        // ): data is InferPrecondition<this>
+
+        //abstract allows(data: InferPrecondition<this>): data is any
+        abstract allows(data: InferPrecondition<this>): boolean | Node
 
         precondition?: Node
 

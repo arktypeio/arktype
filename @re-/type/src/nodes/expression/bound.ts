@@ -157,11 +157,11 @@ export namespace Bound {
 
     export class RightNode<
         HasLeft extends boolean = boolean
-    > extends Expression.Node<[Base.UnknownNode], RightTuple<HasLeft>> {
+    > extends Expression.Node<[Base.Node], RightTuple<HasLeft>> {
         readonly kind = "bound"
 
         constructor(
-            child: Base.UnknownNode,
+            child: Base.Node,
             public comparator: DoublableToken,
             public limit: number
         ) {

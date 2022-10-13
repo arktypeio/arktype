@@ -19,7 +19,7 @@ const stringifiableFrom = <Data>(raw: Data) => ({
     toString: () => stringifyData(raw)
 })
 
-export abstract class Diagnostic<Node extends Base.UnknownNode> {
+export abstract class Diagnostic<Node extends Base.Node> {
     data: Stringifiable<Data>
     path: string[]
     private unionDepth: number
@@ -69,7 +69,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         context: DiagnosticContextConfig<Code>
     ) {
         const raw = this.state.data
-        const baseContext: BaseDiagnosticContext<Base.UnknownNode, unknown> = {
+        const baseContext: BaseDiagnosticContext<Base.Node, unknown> = {
             path: [...this.state.path],
             data: stringifiableFrom(raw)
         }

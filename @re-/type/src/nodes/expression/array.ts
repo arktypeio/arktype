@@ -4,10 +4,7 @@ import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
 
 export namespace Arr {
-    export class Node extends Expression.Node<
-        [Base.UnknownNode],
-        [unknown, "[]"]
-    > {
+    export class Node extends Expression.Node<[Base.Node], [unknown, "[]"]> {
         readonly kind = "array"
 
         allows(state: Check.State) {

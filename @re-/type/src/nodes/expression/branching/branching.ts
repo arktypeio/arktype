@@ -16,10 +16,10 @@ export namespace Branching {
 
     export abstract class Node<
         Token extends Branching.Token
-    > extends Expression.Node<Base.UnknownNode[], Tuple<Token>> {
+    > extends Expression.Node<Base.Node[], Tuple<Token>> {
         abstract token: Token
 
-        pushChild(child: Base.UnknownNode) {
+        pushChild(child: Base.Node) {
             this.children.push(child)
             this.hasStructure ||= child.hasStructure
         }

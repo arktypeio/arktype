@@ -1,5 +1,4 @@
-import type { Base } from "../base.js"
-import type { Check } from "../traverse/check.js"
+import type { InstanceOf } from "@re-/tools"
 import { Terminal } from "./terminal.js"
 
 export namespace Keyword {
@@ -10,26 +9,15 @@ export namespace Keyword {
     export const matches = (token: string): token is Definition =>
         token in nodes
 
-    export const getNode = <Keyword extends Definition>(keyword: Keyword) =>
-        nodes[keyword]
-
-    // @ts-expect-error TS doesn't like some of our Pre/Post condition inference
-    // TODO: Convert keywords back to invididual nodes
-    export class Node<
-        Keyword extends Definition,
-        Precondition extends Base.Node
-    > extends Terminal.Node {
-        readonly kind = "keyword"
-
-        constructor(
-            public definition: Keyword,
-            public mustBe: string,
-            public allows: Base.AllowsFn<this>,
-            public precondition?: Precondition
-        ) {
-            super()
+    export const getNode = <Keyword extends Definition>(keyword: Keyword) => {
+        if (keyword in cache) {
+            return cache[keyword]
         }
     }
+
+    type Nodes = typeof nodes
+
+    type I = { [K in keyof Nodes]: InstanceOf<Nodes[K]> }
 
     export type Inferences = {
         any: any
@@ -53,95 +41,178 @@ export namespace Keyword {
         integer: number
     }
 
-    const stringNode = new Node(
-        "string",
-        "a string",
-        (data): data is string => typeof data === "string"
-    )
+    export const StringNode = class extends Terminal.Node {
+        kind = "keyword"
+        definition = "string"
+        mustBe = "a string"
+        allows(data: unknown): data is string {
+            return typeof data === "string"
+        }
+    }
 
-    const numberNode = new Node(
-        "number",
-        "a number",
-        (data): data is number => typeof data === "number"
-    )
+    export const NumberNode = class extends Terminal.Node {
+        kind = "keyword"
+        definition = "number"
+        mustBe = "a number"
+        allows(data: unknown): data is number {
+            return typeof data === "number"
+        }
+    }
 
-    export const nodes = {
-        any: new Node("any", "anything", () => true),
-        bigint: new Node(
-            "bigint",
-            "a bigint",
-            (data): data is bigint => typeof data === "bigint"
-        ),
-        boolean: new Node(
-            "boolean",
-            "boolean",
-            (data): data is boolean => typeof data === "boolean"
-        ),
-        never: new Node("never", "nothing", () => false),
-        null: new Node("null", "null", (data): data is null => data === null),
-        number: numberNode,
-        object: new Node(
-            "object",
-            "an object or array",
-            (data): data is object => typeof data === "object" && data !== null
-        ),
-        string: stringNode,
-        symbol: new Node(
-            "symbol",
-            "a symbol",
-            (data): data is symbol => typeof data === "symbol"
-        ),
-        undefined: new Node(
-            "undefined",
-            "undefined",
-            (data): data is undefined => data === undefined
-        ),
-        unknown: new Node("unknown", "anything", () => true),
-        void: new Node(
-            "void",
-            "undefined",
-            (data): data is void => data === undefined
-        ),
-        Function: new Node(
-            "Function",
-            "a function",
-            (data): data is Function => typeof data === "function"
-        ),
-        email: new Node(
-            "email",
-            "a valid email",
-            (data) => /^(.+)@(.+)\.(.+)$/.test(data),
-            stringNode
-        ),
-        alphaonly: new Node(
-            "alphaonly",
-            "a string including only letters",
-            (data) => /^[A-Za-z]+$/.test(data),
-            stringNode
-        ),
-        alphanumeric: new Node(
-            "alphanumeric",
-            "an alphanumeric string",
-            (data) => /^[\dA-Za-z]+$/.test(data),
-            stringNode
-        ),
-        lowercase: new Node(
-            "lowercase",
-            "a string of lowercase letters",
-            (data) => /^[a-z]*$/.test(data),
-            stringNode
-        ),
-        uppercase: new Node(
-            "uppercase",
-            "a string of uppercase letters",
-            (data) => /^[A-Z]*$/.test(data),
-            stringNode
-        ),
-        integer: new Node(
-            "integer",
-            "an integer",
-            (data) => Number.isInteger(data),
-            numberNode
-        )
+    const cache = {
+        string: new StringNode(),
+        number: new NumberNode()
+    }
+
+    const nodes = {
+        any: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "any"
+            mustBe = "anything"
+            allows(data: unknown): data is any {
+                return true
+            }
+        },
+        bigint: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "bigint"
+            mustBe = "a bigint"
+            allows(data: unknown): data is bigint {
+                return typeof data === "bigint"
+            }
+        },
+        boolean: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "boolean"
+            mustBe = "a boolean"
+            allows(data: unknown): data is boolean {
+                return typeof data === "boolean"
+            }
+        },
+        never: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "never"
+            mustBe = "nothing"
+            allows(data: unknown): data is never {
+                return false
+            }
+        },
+        null: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "null"
+            mustBe = "null"
+            allows(data: unknown): data is null {
+                return data === null
+            }
+        },
+        number: NumberNode,
+        object: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "object"
+            mustBe = "an object or array"
+            allows(data: unknown): data is object {
+                return typeof data === "object" && data !== null
+            }
+        },
+        string: StringNode,
+        symbol: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "symbol"
+            mustBe = "a symbol"
+            allows(data: unknown): data is symbol {
+                return typeof data === "symbol"
+            }
+        },
+        undefined: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "undefined"
+            mustBe = "undefined"
+            allows(data: unknown): data is undefined {
+                return data === undefined
+            }
+        },
+        unknown: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "unknown"
+            mustBe = "anything"
+            allows(data: unknown): data is unknown {
+                return true
+            }
+        },
+        void: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "void"
+            mustBe = "undefined"
+            allows(data: unknown): data is void {
+                return data === undefined
+            }
+        },
+        Function: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "Function"
+            mustBe = "a function"
+            allows(data: unknown): data is Function {
+                return typeof data === "function"
+            }
+        },
+        email: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "email"
+            mustBe = "a valid email"
+            expression = /^(.+)@(.+)\.(.+)$/
+            allows(data: string) {
+                return this.expression.test(data)
+            }
+            precondition = cache.string
+        },
+        alphaonly: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "alphaonly"
+            mustBe = "only letters"
+            expression = /^[A-Za-z]+$/
+            allows(data: string) {
+                return this.expression.test(data)
+            }
+            precondition = cache.string
+        },
+        alphanumeric: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "alphanumeric"
+            mustBe = "only letters and digits"
+            expression = /^[\dA-Za-z]+$/
+            allows(data: string) {
+                return this.expression.test(data)
+            }
+            precondition = cache.string
+        },
+        lowercase: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "lowercase"
+            mustBe = "only lowercase letters"
+            expression = /^[a-z]*$/
+            allows(data: string) {
+                return this.expression.test(data)
+            }
+            precondition = cache.string
+        },
+        uppercase: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "uppercase"
+            mustBe = "only uppercase letters"
+            expression = /^[A-Z]*$/
+            allows(data: string) {
+                return this.expression.test(data)
+            }
+            precondition = cache.string
+        },
+        integer: class extends Terminal.Node {
+            kind = "keyword"
+            definition = "integer"
+            mustBe = "an integer"
+            allows(data: number) {
+                return Number.isInteger(data)
+            }
+            precondition = cache.number
+        }
     }
 }

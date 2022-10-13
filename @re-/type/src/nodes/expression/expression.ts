@@ -25,7 +25,7 @@ export namespace Expression {
 
     export type Tuple = readonly [left: unknown, token: Token, right?: unknown]
 
-    type MappedChildren<Children extends Base.UnknownNode[]> = {
+    type MappedChildren<Children extends Base.Node[]> = {
         [I in keyof Children]: unknown
     }
 
@@ -35,9 +35,9 @@ export namespace Expression {
     export type RightTypedAst = Bound.LeftAst
 
     export abstract class Node<
-        Children extends Base.UnknownNode[],
+        Children extends Base.Node[],
         Tuple extends Expression.Tuple
-    > extends Base.Node<TokensToKinds[Tuple[1]], Children> {
+    > extends Base.Node {
         abstract toTuple(
             ...childResults: MappedChildren<Children>
         ): Readonly<Tuple>
@@ -68,5 +68,5 @@ export namespace Expression {
         }
     }
 
-    const childHasStructure = (child: Base.UnknownNode) => child.hasStructure
+    const childHasStructure = (child: Base.Node) => child.hasStructure
 }

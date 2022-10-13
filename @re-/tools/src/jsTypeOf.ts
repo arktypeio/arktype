@@ -59,3 +59,8 @@ export const hasJsType = <TypeName extends NormalizedJsTypeName>(
     data: unknown,
     typeName: TypeName
 ): data is NormalizedJsTypes[TypeName] => jsTypeOf(data) === typeName
+
+export const hasJsTypeIn = <TypeName extends NormalizedJsTypeName>(
+    data: unknown,
+    typeNames: Record<TypeName, unknown>
+): data is NormalizedJsTypes[TypeName] => jsTypeOf(data) in typeNames

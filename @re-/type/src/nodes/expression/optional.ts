@@ -2,16 +2,13 @@ import type { Base } from "../base.js"
 import { Expression } from "./expression.js"
 
 export namespace Optional {
-    export class Node extends Expression.Node<
-        [Base.UnknownNode],
-        [unknown, "?"]
-    > {
+    export class Node extends Expression.Node<[Base.Node], [unknown, "?"]> {
         readonly kind = "optional"
 
+        postcondition = this.children[0]
+
         allows(data: unknown) {
-            if (data === undefined) {
-                return true
-            }
+            return data === undefined ? true : this.children[0]
         }
 
         toString() {

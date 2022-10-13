@@ -1,6 +1,6 @@
-import { jsTypeOf } from "@re-/tools"
+import type { Dictionary, NormalizedJsTypes } from "@re-/tools"
+import { IsAnyOrUnknown, jsTypeOf } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
-import type { Base } from "../base.js"
 import type { Scope } from "../scope.js"
 import { Diagnostics } from "./diagnostics.js"
 
@@ -14,20 +14,54 @@ export namespace Check {
     export type ConfigKey<K1 extends RootKey> =
         keyof Required<Scope.Context>[K1]
 
-    export const traverse = (
-        data: unknown,
-        root: Base.UnknownNode,
-        state: State
-    ) => {
-        const dataType = jsTypeOf(state.data)
-        let node = root
+    // TODO: Compare recursion perf
+    export const checkData = (root: any, data: unknown, state: State) => {
+        const stack = [root]
+        while (stack.length) {
+            const precondition = stack[stack.length - 1].precondition
+            if (precondition) {
+                stack.push(precondition)
+                continue
+            }
+            const node = stack.pop()
+            const postcondition = node.allows(data)
+            if (postcondition === true) {
+                return true
+            }
+            if (postcondition === false) {
+                state.errors.push()
+                return false
+            }
+            stack.push(postcondition)
+        }
+        // TODO: Will this happen? When?
+        return true
+    }
 
-        if (node.precondition && node.precondition !== dataType) {
-            return false
+    const traverseObject = (root: any, data: Dictionary, state: State) => {}
+
+    const traverseArray = (root: any, data: unknown[], state: State) => {}
+
+    export const traverse = (root: any, data: unknown, state: State) => {
+        const shallowResult = checkData(root, data, state)
+        const isStructured = typeof data === "object" && data !== null
+        if (isStructured) {
+            // TODO: Root structure nodes
+            if (Array.isArray(data)) {
+                for (let i = 0; i < data.length; i++) {
+                    traverse(root, data[i], state)
+                }
+            } else {
+                for (const k in data) {
+                    traverse(root, data[k], state)
+                }
+            }
+        } else {
+            checkData()
         }
     }
 
-    export class State<Data = unknown> {
+    export class State {
         path: string[] = []
         private contexts: Scope.Context[] = []
         unionDepth = 0
@@ -35,7 +69,7 @@ export namespace Check {
         checkedDataByAlias: Record<string, unknown[]> = {}
         errors: Diagnostics
 
-        constructor(public data: Data) {
+        constructor() {
             this.errors = new Diagnostics(this)
         }
 
