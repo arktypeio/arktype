@@ -19,10 +19,6 @@ export namespace RegexKeyword {
             super(keyword)
         }
 
-        get description() {
-            return this.description
-        }
-
         allows(state: Check.State<string>) {
             if (
                 TypeKeyword.allows("string", state) &&

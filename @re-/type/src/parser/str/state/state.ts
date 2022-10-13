@@ -1,8 +1,8 @@
 import type { ClassOf, InstanceOf } from "@re-/tools"
 import type { Base } from "../../../nodes/base.js"
 import type { Bound } from "../../../nodes/expression/bound.js"
-import type { Intersection } from "../../../nodes/expression/intersection.js"
-import type { Union } from "../../../nodes/expression/union.js"
+import type { Intersection } from "../../../nodes/expression/branching/intersection.js"
+import type { Union } from "../../../nodes/expression/branching/union.js"
 import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
@@ -91,8 +91,8 @@ export namespace ParserState {
     export namespace T {
         export type OpenBranches = {
             leftBound: OpenLeftBound | null
-            union: [unknown, Union.Token] | null
-            intersection: [unknown, Intersection.Token] | null
+            union: [unknown, "|"] | null
+            intersection: [unknown, "&"] | null
         }
     }
 

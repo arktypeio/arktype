@@ -4,9 +4,10 @@ import type { Check } from "../traverse/check.js"
 export namespace Tuple {
     export class Node extends Base.Node<"tuple"> {
         readonly kind = "tuple"
+        hasStructure = true
 
-        constructor(children: Base.UnknownNode[]) {
-            super(children, true)
+        constructor(public children: Base.UnknownNode[]) {
+            super()
         }
 
         get ast() {
@@ -17,24 +18,16 @@ export namespace Tuple {
             return this.children.map((child) => child.definition)
         }
 
-        private buildString(stringifiedChildren: string[]) {
-            if (!stringifiedChildren.length) {
+        toString() {
+            if (!this.children.length) {
                 return "[]"
             }
             let result = "["
             let i = 0
-            for (i; i < stringifiedChildren.length - 1; i++) {
-                result += stringifiedChildren[i] + ", "
+            for (i; i < this.children.length - 1; i++) {
+                result += this.children[i] + ", "
             }
-            return result + stringifiedChildren[i] + "]"
-        }
-
-        toString() {
-            return this.buildString(this.mapChildrenToStrings())
-        }
-
-        get description() {
-            return this.buildString(this.mapChildrenToDescriptions())
+            return result + this.children[i] + "]"
         }
 
         get mustBe() {
@@ -48,32 +41,8 @@ export namespace Tuple {
             const expectedLength = this.children.length
             const actualLength = state.data.length
             if (expectedLength !== actualLength) {
-                this.addTupleLengthError(state, expectedLength, actualLength)
                 return
             }
         }
-
-        private addTupleLengthError(
-            state: Check.State<unknown[]>,
-            expected: number,
-            actual: number
-        ) {
-            state.addError("tupleLength", {
-                type: this,
-                message: `Length must be ${expected}`,
-                expected,
-                actual
-            })
-        }
     }
-
-    export type LengthDiagnostic = Check.ConfigureDiagnostic<
-        Node,
-        {
-            expected: number
-            actual: number
-        },
-        {},
-        unknown[]
-    >
 }

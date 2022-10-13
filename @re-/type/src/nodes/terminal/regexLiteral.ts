@@ -9,13 +9,9 @@ export namespace RegexLiteral {
         readonly kind = "regexLiteral"
         private expression: RegExp
 
-        constructor(def: Definition) {
-            super(def)
-            this.expression = new RegExp(def.slice(1, -1))
-        }
-
-        get description() {
-            return `string matching ${this.definition}`
+        constructor(public definition: Definition) {
+            super()
+            this.expression = new RegExp(definition.slice(1, -1))
         }
 
         allows(state: Check.State<string>) {
@@ -23,19 +19,12 @@ export namespace RegexLiteral {
                 TypeKeyword.allows("string", state) &&
                 !this.expression.test(state.data)
             ) {
-                state.addError("regexLiteral", {
-                    type: this,
-                    message: `Must match expression ${this.definition}`,
-                    expression: this.expression
-                })
+                return
             }
         }
-    }
 
-    export type Diagnostic = Check.ConfigureDiagnostic<
-        Node,
-        { expression: RegExp },
-        {},
-        string
-    >
+        get mustBe() {
+            return `matched by ${this.definition}` as const
+        }
+    }
 }

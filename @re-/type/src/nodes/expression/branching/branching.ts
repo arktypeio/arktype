@@ -5,8 +5,6 @@ import { Expression } from "../expression.js"
 export namespace Branching {
     export type Token = "|" | "&"
 
-    const hasStructure = (child: Base.UnknownNode) => child.hasStructure
-
     export type Tuple<Token extends Branching.Token> = [unknown, Token, unknown]
 
     const tokenConjunctions = {
@@ -18,12 +16,8 @@ export namespace Branching {
 
     export abstract class Node<
         Token extends Branching.Token
-    > extends Expression.Node<Base.Children, Tuple<Token>> {
+    > extends Expression.Node<Base.UnknownNode[], Tuple<Token>> {
         abstract token: Token
-
-        constructor(children: Base.Children) {
-            super(children, children.some(hasStructure))
-        }
 
         pushChild(child: Base.UnknownNode) {
             this.children.push(child)
@@ -46,13 +40,12 @@ export namespace Branching {
             return root as readonly [unknown, Token, unknown]
         }
 
-        get description() {
+        get mustBe() {
+            // TODO: Find a better way to do the full description?
             const conjunction = tokenConjunctions[this.token]
-            let root = addArticle(this.children[0].description)
+            let root = addArticle(this.children[0].mustBe)
             for (let i = 1; i < this.children.length; i++) {
-                root += ` ${conjunction} ${addArticle(
-                    this.children[i].description
-                )}`
+                root += ` ${conjunction} ${addArticle(this.children[i].mustBe)}`
             }
             return root as `${string}${TokenConjunctions[Token]}${string}`
         }

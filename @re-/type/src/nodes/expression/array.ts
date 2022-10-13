@@ -32,10 +32,6 @@ export namespace Arr {
             return [child, "[]"] as const
         }
 
-        get description() {
-            return `${this.children[0].description} array` as const
-        }
-
         get mustBe() {
             return "an array" as const
         }

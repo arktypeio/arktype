@@ -12,10 +12,6 @@ export namespace ConstrainedKeyword {
             super("integer")
         }
 
-        get description() {
-            return this.description
-        }
-
         allows(state: Check.State<string>) {
             if (
                 TypeKeyword.allows("number", state.data) &&

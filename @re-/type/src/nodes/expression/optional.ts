@@ -22,10 +22,6 @@ export namespace Optional {
             return [child, "?"] as const
         }
 
-        get description() {
-            return `optional ${this.children[0].description}` as const
-        }
-
         get mustBe() {
             return "anything" as const
         }

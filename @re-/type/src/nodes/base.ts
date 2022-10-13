@@ -5,15 +5,15 @@ import { Check } from "./traverse/check.js"
 import { Diagnostic } from "./traverse/diagnostics.js"
 
 export namespace Base {
-    export type UnknownNode = Node<string>
+    export type UnknownNode = Node<string, UnknownNode[] | undefined>
 
     export abstract class Node<
         Kind extends string,
-        Children extends UnknownNode[] = UnknownNode[]
+        Children extends UnknownNode[] | undefined
     > implements DynamicArktype
     {
-        constructor(public children: Children, public hasStructure: boolean) {}
-
+        abstract children: Children
+        abstract hasStructure: boolean
         abstract readonly kind: Kind
 
         check(data: unknown) {
@@ -39,13 +39,12 @@ export namespace Base {
         abstract allows(state: Check.State): void
 
         addError(state: Check.State, context: any) {
-            state.errors.push(new Diagnostic(this, state, context))
+            state.errors.push()
         }
 
         precondition?: Precondition
 
         abstract toString(): string
-        abstract get description(): string
         abstract get mustBe(): string
         abstract get ast(): unknown
         /**
@@ -75,58 +74,10 @@ export namespace Base {
          *     [{a: "string?"}, "&", {b: "boolean?"}]
          */
         abstract definition: unknown
-
-        mapChildrenToStrings(): string[] {
-            return this.children.map(mapToString)
-        }
-
-        mapChildrenToDescriptions(): string[] {
-            return this.children.map(mapToDescription)
-        }
     }
-
-    const mapToString = (child: Base.UnknownNode) => child.toString()
-
-    const mapToDescription = (child: Base.UnknownNode) => child.description
 }
 
 export type Precondition = "string" | "number" | "object" | "array"
-
-export namespace ObjectKind {
-    export type name = "object" | "array"
-
-    export const check = <ExpectedStructure extends ObjectKind.name>(
-        node: Base.UnknownNode,
-        expectedStructure: ExpectedStructure,
-        state: Check.State
-    ): state is Check.State<
-        ExpectedStructure extends "array" ? unknown[] : Dictionary
-    > => {
-        const actual = jsTypeOf(state.data)
-        if (expectedStructure !== actual) {
-            const expectedStructureDescription =
-                expectedStructure === "array"
-                    ? "an array"
-                    : "a non-array object"
-            state.addError("structure", {
-                type: node,
-                message: `Must be ${expectedStructureDescription}`,
-                expected: expectedStructure,
-                actual
-            })
-            return false
-        }
-        return true
-    }
-
-    export type Diagnostic = Check.ConfigureDiagnostic<
-        Base.UnknownNode,
-        {
-            expected: name
-            actual: NormalizedJsTypeName
-        }
-    >
-}
 
 export const pathToString = (path: string[]) =>
     path.length === 0 ? "/" : path.join("/")

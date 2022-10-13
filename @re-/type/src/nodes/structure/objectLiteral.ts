@@ -6,9 +6,13 @@ import type { Check } from "../traverse/check.js"
 export namespace ObjectLiteral {
     export class Node extends Base.Node<"objectLiteral"> {
         readonly kind = "objectLiteral"
+        hasStructure = true
 
-        constructor(children: Base.UnknownNode[], private keys: string[]) {
-            super(children, true)
+        constructor(
+            public children: Base.UnknownNode[],
+            private keys: string[]
+        ) {
+            super()
         }
 
         allows(state: Check.State) {
@@ -80,41 +84,19 @@ export namespace ObjectLiteral {
         }
 
         toString() {
-            return this.buildString(this.mapChildrenToStrings())
-        }
-
-        get description() {
-            return this.buildString(this.mapChildrenToDescriptions())
+            if (!this.children.length) {
+                return "{}"
+            }
+            let result = "{"
+            let i = 0
+            for (i; i < this.children.length - 1; i++) {
+                result += this.keys[i] + ": " + this.children[i] + ", "
+            }
+            return result + this.children[i] + "}"
         }
 
         get mustBe() {
             return "an object"
         }
-
-        private buildString(stringifiedChildren: string[]) {
-            if (!stringifiedChildren.length) {
-                return "{}"
-            }
-            let result = "{"
-            let i = 0
-            for (i; i < stringifiedChildren.length - 1; i++) {
-                result += this.keys[i] + ": " + stringifiedChildren[i] + ", "
-            }
-            return result + stringifiedChildren[i] + "}"
-        }
     }
-
-    export type ExtraneousKeysDiagnostic = Check.ConfigureDiagnostic<
-        Node,
-        { keys: string[] },
-        {},
-        Dictionary
-    >
-
-    export type MissingKeyDiagnostic = Check.ConfigureDiagnostic<
-        Node,
-        { key: string },
-        {},
-        never
-    >
 }

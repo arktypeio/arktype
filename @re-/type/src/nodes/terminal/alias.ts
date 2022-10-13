@@ -1,13 +1,13 @@
+import { addArticle } from "../base.js"
 import type { Check } from "../traverse/check.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Alias {
-    export class Node extends Terminal.Node<string, string> {
-        public kind: string
+    export class Node extends Terminal.Node<"alias", string> {
+        readonly kind = "alias"
 
-        constructor(definition: string) {
-            super(definition)
-            this.kind = definition
+        constructor(public definition: string) {
+            super()
         }
 
         allows(state: Check.State) {
@@ -25,8 +25,8 @@ export namespace Alias {
             state.restoreContexts(priorContexts)
         }
 
-        get description() {
-            return this.definition
+        get mustBe() {
+            return addArticle(this.definition)
         }
     }
 }

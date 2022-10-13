@@ -12,7 +12,7 @@ export namespace Divisibility {
         readonly kind = "divisibility"
 
         constructor(child: Base.UnknownNode, public divisor: number) {
-            super([child], child.hasStructure)
+            super([child])
         }
 
         allows(state: Check.State<any>) {
@@ -29,10 +29,6 @@ export namespace Divisibility {
 
         toTuple(child: unknown) {
             return [child, "%", `${this.divisor}`] as const
-        }
-
-        get description() {
-            return `${this.children[0].description} ${this.mustBe}`
         }
 
         get mustBe() {

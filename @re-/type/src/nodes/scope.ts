@@ -13,11 +13,15 @@ export namespace Scope {
         resolutions: base.resolutions
     })
 
-    export class Node extends Base.Node<"scope"> {
+    export class Node extends Base.Node<"scope", [Base.UnknownNode]> {
         readonly kind = "scope"
+        children: [Base.UnknownNode]
+        hasStructure: boolean
 
         constructor(child: Base.UnknownNode, protected context: Context) {
-            super([child], child.hasStructure)
+            super()
+            this.children = [child]
+            this.hasStructure = child.hasStructure
         }
 
         allows(state: Check.State) {
@@ -36,6 +40,10 @@ export namespace Scope {
 
         get definition() {
             return this.children[0].definition
+        }
+
+        get mustBe() {
+            return this.children[0].mustBe
         }
     }
 }

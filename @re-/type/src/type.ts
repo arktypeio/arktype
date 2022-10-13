@@ -51,7 +51,6 @@ export type Arktype<Inferred, Ast> = {
     toString(): string
     get ast(): Ast
     get definition(): unknown
-    get description(): unknown
 }
 
 export type DynamicArktype = Arktype<unknown, unknown>

@@ -22,30 +22,8 @@ export namespace Union {
             state.unionDepth--
             state.errors = rootErrors
             if (branchDiagnosticsEntries.length === this.children.length) {
-                this.addUnionDiagnostic(state, branchDiagnosticsEntries)
+                return
             }
-        }
-
-        private addUnionDiagnostic(
-            state: Check.State,
-            branchDiagnosticsEntries: BranchDiagnosticsEntry[]
-        ) {
-            const explainBranches = state.queryContext(
-                "errors",
-                "union"
-            )?.explainBranches
-            // TODO: Better default error messages for union
-            // https://github.com/re-do/re-po/issues/472
-            state.addError("union", {
-                type: this,
-                message: `Must be one of ${this.toString()}`,
-                details: explainBranches
-                    ? buildBranchDiagnosticsExplanation(
-                          branchDiagnosticsEntries
-                      )
-                    : undefined,
-                branchDiagnosticsEntries
-            })
         }
     }
 
@@ -61,16 +39,6 @@ export namespace Union {
         }
         return branchDiagnosticSummary
     }
-
-    export type Diagnostic = Check.ConfigureDiagnostic<
-        Node,
-        {
-            branchDiagnosticsEntries: BranchDiagnosticsEntry[]
-        },
-        {
-            explainBranches: boolean
-        }
-    >
 
     export type BranchDiagnosticsEntry = [string, Diagnostics]
 }

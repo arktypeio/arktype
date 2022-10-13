@@ -111,7 +111,7 @@ export namespace Bound {
             public comparator: DoublableToken,
             child: RightNode
         ) {
-            super([child], child.hasStructure)
+            super([child])
         }
 
         allows(state: Check.State) {
@@ -132,10 +132,6 @@ export namespace Bound {
 
         toTuple(child: RightTuple<true>) {
             return [`${this.limit}`, this.comparator, child] as const
-        }
-
-        get description() {
-            return `${this.children[0].description} ${this.mustBe}`
         }
 
         get mustBe() {
@@ -169,7 +165,7 @@ export namespace Bound {
             public comparator: DoublableToken,
             public limit: number
         ) {
-            super([child], child.hasStructure)
+            super([child])
         }
 
         allows(state: Check.State) {
@@ -186,10 +182,6 @@ export namespace Bound {
 
         toTuple(child: unknown) {
             return [child, this.comparator, `${this.limit}`] as const
-        }
-
-        get description() {
-            return `${this.children[0].description} ${this.mustBe}`
         }
 
         get mustBe() {

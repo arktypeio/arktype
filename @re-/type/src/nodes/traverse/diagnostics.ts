@@ -1,33 +1,8 @@
-import type { Evaluate } from "@re-/tools"
 import { toString, uncapitalize } from "@re-/tools"
 import { isIntegerLike } from "../../parser/str/operand/numeric.js"
 import { pathToString } from "../base.js"
-import type { Base, ObjectKind } from "../base.js"
-import type { Bound } from "../expression/bound.js"
-import type { Union } from "../expression/branching/union.js"
-import type { Divisibility } from "../expression/divisibility.js"
-import type { ObjectLiteral } from "../structure/objectLiteral.js"
-import type { Tuple } from "../structure/tuple.js"
-import type { RegexKeyword } from "../terminal/keyword/regex.js"
-import type { TypeKeyword } from "../terminal/keyword/types/typeKeyword.js"
-import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
-import type { RegexLiteral } from "../terminal/regexLiteral.js"
+import type { Base } from "../base.js"
 import type { Check } from "./check.js"
-
-export type DiagnosticCode = keyof RegisteredDiagnosticConfigs
-
-export type OptionsByDiagnostic = Evaluate<
-    {
-        $?: UniversalDiagnosticOptions
-    } & {
-        [Code in DiagnosticCode]?: CompileDiagnosticOptions<Code>
-    }
->
-
-export type UniversalDiagnosticOptions = {
-    message?: WriteDiagnosticMessageFn<DiagnosticCode>
-    omitActual?: boolean
-}
 
 export type Stringifiable<Data> = {
     raw: Data
@@ -44,47 +19,13 @@ const stringifiableFrom = <Data>(raw: Data) => ({
     toString: () => stringifyData(raw)
 })
 
-type CompileDiagnosticOptions<Code extends DiagnosticCode> =
-    BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>
-
-type BaseDiagnosticOptions<Code extends DiagnosticCode> = Evaluate<{
-    message?: WriteDiagnosticMessageFn<Code>
-    omitActual?: boolean
-}>
-
-type WriteDiagnosticMessageFn<Code extends DiagnosticCode> = (
-    context: Diagnostic<Code>
-) => string
-
-type DiagnosticOptionsConfig<Code extends DiagnosticCode> =
-    RegisteredDiagnosticConfigs[Code]["options"]
-
-type RegisteredDiagnosticConfigs = {
-    typeKeyword: TypeKeyword.Diagnostic
-    primitiveLiteral: PrimitiveLiteral.Diagnostic
-    structure: ObjectKind.Diagnostic
-    bound: Bound.Diagnostic
-    extraneousKeys: ObjectLiteral.ExtraneousKeysDiagnostic
-    missingKey: ObjectLiteral.MissingKeyDiagnostic
-    regexLiteral: RegexLiteral.Diagnostic
-    regexKeyword: RegexKeyword.Diagnostic
-    tupleLength: Tuple.LengthDiagnostic
-    union: Union.Diagnostic
-    divisibility: Divisibility.Diagnostic
-}
-
 export abstract class Diagnostic<Node extends Base.UnknownNode> {
     data: Stringifiable<Data>
     path: string[]
     private unionDepth: number
     protected omitActualByDefault?: true
-    options: BaseDiagnosticOptions<Code> & CustomOptions
 
-    constructor(
-        public readonly code: Code,
-        public type: DeepSimplifyNode<Node>,
-        state: Check.State
-    ) {
+    constructor(public type: Node, state: Check.State) {
         this.data = stringifiableFrom(state.data as Data)
         this.path = [...state.path]
         this.unionDepth = state.unionDepth
