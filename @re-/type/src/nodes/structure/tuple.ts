@@ -37,7 +37,7 @@ export namespace Tuple {
             return this.buildString(this.mapChildrenToDescriptions())
         }
 
-        get checks() {
+        get mustBe() {
             return `an array of length ${this.children.length}`
         }
 

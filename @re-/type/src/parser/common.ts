@@ -12,7 +12,7 @@ export type parserContext = {
 export type parseFn<DefType = unknown> = (
     def: DefType,
     ctx: parserContext
-) => Base.Node
+) => Base.UnknownNode
 
 export class parseError extends Error {}
 

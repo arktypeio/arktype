@@ -46,7 +46,7 @@ export namespace Base {
 
         abstract toString(): string
         abstract get description(): string
-        abstract get checks(): string
+        abstract get mustBe(): string
         abstract get ast(): unknown
         /**
          * This generates an isomorphic definition that can be parsed and

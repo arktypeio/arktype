@@ -32,18 +32,11 @@ export namespace Divisibility {
         }
 
         get description() {
-            return `${this.children[0].description} ${this.checks}`
+            return `${this.children[0].description} ${this.mustBe}`
         }
 
-        get checks() {
+        get mustBe() {
             return `divisible by ${this.divisor}` as const
         }
     }
-
-    export type Diagnostic = Check.ConfigureDiagnostic<
-        Node,
-        {
-            divisor: number
-        }
-    >
 }

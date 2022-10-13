@@ -78,7 +78,7 @@ export namespace LeftBoundOperator {
 
     export const unpairedError = (
         s: ParserState.Of<{
-            root: Base.Node
+            root: Base.UnknownNode
             branches: { leftBound: ParserState.OpenLeftBound }
         }>
     ) =>

@@ -14,7 +14,7 @@ import { Scanner } from "./scanner.js"
 // TODO: Check namespace parse output
 export namespace ParserState {
     export type Base = {
-        root: Base.Node | null
+        root: Base.UnknownNode | null
         branches: OpenBranches
         groups: OpenBranches[]
         scanner: Scanner
@@ -61,7 +61,7 @@ export namespace ParserState {
     }
 
     export type Preconditions = {
-        root?: Base.Node | null
+        root?: Base.UnknownNode | null
         branches?: Partial<OpenBranches>
         groups?: OpenBranches[]
     }
@@ -73,9 +73,10 @@ export namespace ParserState {
             groups?: OpenBranches[]
         }
     }
-    export type WithRoot<Root extends Base.Node = Base.Node> = Of<{
-        root: Root
-    }>
+    export type WithRoot<Root extends Base.UnknownNode = Base.UnknownNode> =
+        Of<{
+            root: Root
+        }>
 
     export namespace T {
         export type WithRoot<Root = {}> = Unfinished<{ root: Root }>
@@ -125,7 +126,7 @@ export namespace ParserState {
 
     export const rooted = <
         s extends ParserState.Base,
-        nodeClass extends ClassOf<Base.Node> = ClassOf<Base.Node>
+        nodeClass extends ClassOf<Base.UnknownNode> = ClassOf<Base.UnknownNode>
     >(
         s: s,
         ofClass?: nodeClass

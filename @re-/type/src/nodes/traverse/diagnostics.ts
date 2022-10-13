@@ -44,15 +44,6 @@ const stringifiableFrom = <Data>(raw: Data) => ({
     toString: () => stringifyData(raw)
 })
 
-type DeepSimplifyNode<Node extends Base.Node> = Pick<
-    Node,
-    "toString" | "ast" | "definition"
-> & { children: SimplifyChildren<Node["children"]> }
-
-type SimplifyChildren<Children extends Base.Node[]> = {
-    [I in keyof Children]: DeepSimplifyNode<Children[I]>
-}
-
 type CompileDiagnosticOptions<Code extends DiagnosticCode> =
     BaseDiagnosticOptions<Code> & DiagnosticOptionsConfig<Code>
 
@@ -127,21 +118,6 @@ export abstract class Diagnostic<Node extends Base.UnknownNode> {
     }
 }
 
-export class UnionDiagnostic extends Diagnostic<
-    "union",
-    {
-        explainBranches: boolean
-    },
-    Base.Node,
-    unknown
-> {
-    readonly code = "union"
-
-    get conditionDescription() {
-        return ""
-    }
-}
-
 export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
     constructor(private state: Check.State) {
         super()
@@ -152,7 +128,7 @@ export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
         context: DiagnosticContextConfig<Code>
     ) {
         const raw = this.state.data
-        const baseContext: BaseDiagnosticContext<Base.Node, unknown> = {
+        const baseContext: BaseDiagnosticContext<Base.UnknownNode, unknown> = {
             path: [...this.state.path],
             data: stringifiableFrom(raw)
         }

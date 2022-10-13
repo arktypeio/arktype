@@ -32,7 +32,7 @@ export namespace ObjectLiteral {
                     state.data = rootData[k]
                     child.allows(state)
                 } else if (!(child instanceof Optional.Node)) {
-                    this.addMissingKeyDiagnostic(state, k)
+                    // this.addMissingKeyDiagnostic(state, k)
                 }
                 state.path.pop()
                 delete uncheckedData[k]
@@ -41,27 +41,27 @@ export namespace ObjectLiteral {
             return Object.keys(uncheckedData)
         }
 
-        private addMissingKeyDiagnostic(
-            state: Check.State<Dictionary>,
-            key: string
-        ) {
-            state.addError("missingKey", {
-                type: this,
-                message: `${key} is required`,
-                key
-            })
-        }
+        // private addMissingKeyDiagnostic(
+        //     state: Check.State<Dictionary>,
+        //     key: string
+        // ) {
+        //     state.addError("missingKey", {
+        //         type: this,
+        //         message: `${key} is required`,
+        //         key
+        //     })
+        // }
 
-        private addExtraneousKeyDiagnostic(
-            state: Check.State<Dictionary>,
-            keys: string[]
-        ) {
-            const message =
-                keys.length === 1
-                    ? `Key '${keys[0]}' was unexpected`
-                    : `Keys '${keys.join("', '")}' were unexpected`
-            state.addError("extraneousKeys", { type: this, message, keys })
-        }
+        // private addExtraneousKeyDiagnostic(
+        //     state: Check.State<Dictionary>,
+        //     keys: string[]
+        // ) {
+        //     const message =
+        //         keys.length === 1
+        //             ? `Key '${keys[0]}' was unexpected`
+        //             : `Keys '${keys.join("', '")}' were unexpected`
+        //     state.addError("extraneousKeys", { type: this, message, keys })
+        // }
 
         get definition() {
             const result: Dictionary = {}
@@ -87,7 +87,7 @@ export namespace ObjectLiteral {
             return this.buildString(this.mapChildrenToDescriptions())
         }
 
-        get checks() {
+        get mustBe() {
             return "an object"
         }
 

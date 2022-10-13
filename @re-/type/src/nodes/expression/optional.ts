@@ -26,8 +26,8 @@ export namespace Optional {
             return `optional ${this.children[0].description}` as const
         }
 
-        get checks() {
-            return "optional" as const
+        get mustBe() {
+            return "anything" as const
         }
     }
 }

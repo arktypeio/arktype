@@ -135,10 +135,10 @@ export namespace Bound {
         }
 
         get description() {
-            return `${this.children[0].description} ${this.checks}`
+            return `${this.children[0].description} ${this.mustBe}`
         }
 
-        get checks() {
+        get mustBe() {
             // TODO: Add units description
             return `${
                 comparatorDescriptions[invertedComparators[this.comparator]]
@@ -189,27 +189,16 @@ export namespace Bound {
         }
 
         get description() {
-            return `${this.children[0].description} ${this.checks}`
+            return `${this.children[0].description} ${this.mustBe}`
         }
 
-        get checks() {
+        get mustBe() {
             // TODO: Add units description
             return `${comparatorDescriptions[this.comparator]} ${
                 this.limit
             }` as const
         }
     }
-
-    export type Diagnostic = Check.ConfigureDiagnostic<
-        LeftNode | RightNode,
-        {
-            comparator: Token
-            comparatorDescription: string
-            limit: number
-            actual: number
-            kind: BoundableKind
-        }
-    >
 
     export const describe = (
         comparator: Token,

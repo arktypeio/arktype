@@ -36,7 +36,7 @@ export namespace Arr {
             return `${this.children[0].description} array` as const
         }
 
-        get checks() {
+        get mustBe() {
             return "an array" as const
         }
     }
