@@ -10,7 +10,7 @@ export const keywords = {
     ...typeKeywords,
     ...stringSubtypeKeywords,
     ...numberSubtypeKeywords
-} as const
+}
 
 export namespace Keyword {
     export type Definition = keyof Nodes

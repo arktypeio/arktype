@@ -29,12 +29,13 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract allows(data: InferPrecondition<this>): AllowsResult
+        protected abstract allows(data: inferPrecondition<this>): AllowsResult
 
         childForKey?(key: string): Node
         childForKey?(key: number): Node
 
         readonly precondition?: Node
+        readonly postcondition?: Node
 
         abstract toString(): string
         abstract readonly mustBe: string
@@ -69,12 +70,17 @@ export namespace Base {
         abstract definition: unknown
     }
 
-    export type InferPrecondition<node extends Node> =
+    export type inferPrecondition<node extends Node> =
         node["precondition"] extends {
             definition: Keyword.Definition
         }
             ? Keyword.Infer<node["precondition"]["definition"]>
             : unknown
+
+    export type AllowsFn<node extends Node> = (
+        node: node,
+        data: inferPrecondition<node>
+    ) => AllowsResult
 
     export type AllowsResult = boolean | Node[] | string[] | number
 }
