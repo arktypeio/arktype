@@ -1,7 +1,5 @@
-import type { Dictionary, NormalizedJsTypes } from "@re-/tools"
-import { IsAnyOrUnknown, jsTypeOf } from "@re-/tools"
-import { InternalArktypeError, throwInternalError } from "../../internal.js"
-import { stringifyData } from "../base.js"
+import { InternalArktypeError } from "../../internal.js"
+import { Base } from "../base.js"
 import type { Scope } from "../scope.js"
 import { Diagnostics } from "./diagnostics.js"
 
@@ -16,45 +14,35 @@ export namespace Check {
         keyof Required<Scope.Context>[K1]
 
     // TODO: Compare recursion perf
-    export const checkData = (root: any, data: unknown, state: State) => {
+    export const checkRoot = (root: Base.Node, data: any, state: State) => {
         const stack = [root]
-        while (stack.length) {
-            const precondition = stack[stack.length - 1].precondition
-            if (precondition) {
-                stack.push(precondition)
-                continue
+        let lastResult: Base.AllowsResult = root
+        do {
+            if (lastResult.precondition) {
+                stack.push(lastResult.precondition)
+            } else {
+                lastResult = stack.pop()!.allows(data)
+                if (lastResult === false) {
+                    state.errors.push()
+                    return false
+                }
             }
-            const node = stack.pop()
-            const postcondition = node.allows(data)
-            if (postcondition === true) {
-                return true
-            }
-            if (postcondition === false) {
-                state.errors.push()
-                return false
-            }
-            stack.push(postcondition)
-        }
-        return throwInternalError(
-            `Unexpectedly ran out of nodes while checking:\n${stringifyData(
-                data
-            )}\nagainst type\n${root}`
-        )
+        } while (lastResult instanceof Base.Node)
+        return lastResult
     }
 
-    export const traverse = (root: any, data: unknown, state: State) => {
-        const shallowResult = checkData(root, data, state)
-        if (typeof data === "object" && data !== null) {
-            if (Array.isArray(data)) {
-                for (let i = 0; i < data.length; i++) {
-                    traverse(root, data[i], state)
-                }
-            } else {
-                for (const k in data) {
-                    traverse(root, (data as Dictionary)[k], state)
-                }
+    export const traverse = (root: Base.Node, data: any, state: State) => {
+        const result = checkRoot(root, data, state)
+        if (typeof result === "number") {
+            for (let i = 0; i < result; i++) {
+                traverse(root.childForKey!(i), data[i], state)
+            }
+        } else if (Array.isArray(result)) {
+            for (const childKey of result) {
+                traverse(root.childForKey!(childKey), data[childKey], state)
             }
         }
+        return state
     }
 
     export class State {

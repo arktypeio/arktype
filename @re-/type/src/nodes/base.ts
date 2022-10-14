@@ -32,6 +32,9 @@ export namespace Base {
             data: InferPrecondition<this["precondition"]>
         ): AllowsResult
 
+        childForKey?(key: string): Node
+        childForKey?(key: number): Node
+
         readonly precondition?: Node
 
         abstract toString(): string
@@ -67,10 +70,10 @@ export namespace Base {
         abstract definition: unknown
     }
 
-    export type AllowsResult = boolean | Node
+    export type AllowsResult = boolean | Node | string[] | number
 
     export type InferPrecondition<node extends Node | undefined> =
-        node extends {}
+        node extends Node
             ? node["allows"] extends (
                   data: unknown
               ) => data is infer Postcondition
