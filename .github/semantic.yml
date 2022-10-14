@@ -5,3 +5,4 @@ scopes:
     - node
     - tools
     - redo.dev
+    - arktype.io

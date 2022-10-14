@@ -1,14 +1,12 @@
 import { useColorMode } from "@docusaurus/theme-common"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
-import { ThemeProvider, Typography } from "@mui/material"
+import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
-import { motion } from "framer-motion"
 import React from "react"
 import { StackBlitzDemo } from "../../docs/demos"
 import { getTheme } from "../components"
-import { Boat } from "../components/svg/boat"
-import { JS } from "../components/svg/js"
-import { TS } from "../components/svg/ts"
+import { Boat } from "../components/boat"
+import { LogoCloud } from "../components/logoCloud"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
@@ -16,7 +14,7 @@ const Contents = () => {
     const isDark = colorMode === "dark"
     return (
         <ThemeProvider theme={getTheme({ isDark })}>
-            <Logo title={siteConfig.title} tagline={siteConfig.tagline} />
+            <Header title={siteConfig.title} tagline={siteConfig.tagline} />
             <main>
                 <StackBlitzDemo embedId="type" />
             </main>
@@ -33,41 +31,28 @@ export default () => {
     )
 }
 
-const Logo = ({ title, tagline }: Record<string, string>) => (
-    <header>
-        <div className="logo">
-            <motion.div className="logoContainer">
-                <motion.div
-                    animate={{ y: 50 }}
-                    transition={{ duration: 2, delay: 6, ease: "easeIn" }}
-                >
-                    <Typography
-                        component="h1"
-                        variant="h3"
-                        color="common.white"
-                        id="title"
-                    >
-                        {title}
-                    </Typography>
-                    <Typography
-                        component="h2"
-                        variant="h5"
-                        color="common.white"
-                        id="tagline"
-                    >
-                        {tagline}
-                    </Typography>
-                </motion.div>
-                <Animation />
-            </motion.div>
-        </div>
-    </header>
-)
-
-const Animation = () => (
-    <motion.div animate={{ opacity: 0 }} transition={{ delay: 7 }}>
-        <TS />
-        <JS />
-        <Boat />
-    </motion.div>
-)
+const Header = ({ title, tagline }: Record<string, string>) => {
+    return (
+        <header
+            style={{
+                height: 180,
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center"
+            }}
+        >
+            <LogoCloud names={["typescript", "vscode", "intellij", "vim"]} />
+            <Stack flexGrow={1}>
+                <Typography component="h1" variant="h2" color="common.white">
+                    {title}
+                </Typography>
+                <Typography component="h2" variant="h5" color="common.white">
+                    {tagline}
+                </Typography>
+            </Stack>
+            <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
+            <Boat />
+        </header>
+    )
+}

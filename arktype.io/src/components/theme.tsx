@@ -4,8 +4,6 @@ export type ThemeConfigOptions = {
     isDark: boolean
 }
 
-// Palette can be viewed at https://coolors.co/ffc40c-2243b6-c80815-1b1b1b-00ad43-9932cc-ff7518
-
 export const getTheme = ({ isDark }: ThemeConfigOptions) =>
     createTheme({
         palette: {
@@ -24,11 +22,14 @@ export const getTheme = ({ isDark }: ThemeConfigOptions) =>
             warning: {
                 main: "#ff7518"
             },
+            common: {
+                white: "#fffff0"
+            },
             info: {
                 main: "#264bcf"
             },
             background: {
-                default: isDark ? "#242424" : "#fff"
+                default: isDark ? "#242424" : "#fffff0"
             }
         },
         typography: {
