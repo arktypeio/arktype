@@ -1,4 +1,4 @@
-import { Intersection } from "../../../nodes/expression/intersection.js"
+import { Intersection } from "../../../nodes/expression/branching/intersection.js"
 import type { maybePush } from "../../common.js"
 import { ParserState } from "../state/state.js"
 import { LeftBoundOperator } from "./bound/left.js"

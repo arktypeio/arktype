@@ -1,5 +1,5 @@
 import { keySet } from "@re-/tools"
-import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import { StringLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { RegexLiteral } from "../../../nodes/terminal/regexLiteral.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
@@ -12,14 +12,10 @@ export namespace Enclosed {
             inclusive: true,
             onInputEnd: throwUnterminatedEnclosed
         })
-        const enclosedText = token.slice(1, -1)
         s.root =
             enclosing === "/"
                 ? new RegexLiteral.Node(token as RegexLiteral.Definition)
-                : new PrimitiveLiteral.Node(
-                      token as PrimitiveLiteral.String,
-                      enclosedText
-                  )
+                : new StringLiteral.Node(token.slice(1, -1), enclosing)
         return s
     }
 

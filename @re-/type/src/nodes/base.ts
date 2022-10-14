@@ -29,13 +29,13 @@ export namespace Base {
         }
 
         abstract allows(
-            data: InferPrecondition<this["precondition"]>
+            data: InferPostcondition<this["precondition"]>
         ): AllowsResult
 
         childForKey?(key: string): Node
         childForKey?(key: number): Node
 
-        readonly precondition?: Node
+        precondition?: Node
 
         abstract toString(): string
         abstract readonly mustBe: string
@@ -72,18 +72,13 @@ export namespace Base {
 
     export type AllowsResult = boolean | Node | string[] | number
 
-    export type InferPrecondition<node extends Node | undefined> =
-        node extends Node
-            ? node["allows"] extends (
-                  data: unknown
-              ) => data is infer Postcondition
-                ? Postcondition
-                : node["allows"] extends (
-                      data: infer PreviousPrecondition
-                  ) => unknown
-                ? PreviousPrecondition
-                : never
-            : unknown
+    export type InferPostcondition<node> = undefined extends node
+        ? unknown
+        : node extends {
+              allows: (data: unknown) => data is infer Postcondition
+          }
+        ? Postcondition
+        : unknown
 }
 
 export const pathToString = (path: string[]) =>

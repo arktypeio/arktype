@@ -54,29 +54,9 @@ export abstract class Diagnostic<Node extends Base.Node> {
     }
 }
 
-export class Diagnostics extends Array<Diagnostic<DiagnosticCode>> {
+export class Diagnostics extends Array<Diagnostic<Base.Node>> {
     constructor(private state: Check.State) {
         super()
-    }
-
-    add<Code extends DiagnosticCode>(
-        code: Code,
-        context: DiagnosticContextConfig<Code>
-    ) {
-        const raw = this.state.data
-        const baseContext: BaseDiagnosticContext<Base.Node, unknown> = {
-            path: [...this.state.path],
-            data: stringifiableFrom(raw)
-        }
-        const options = this.state.queryContext("errors", code) as
-            | UniversalDiagnosticOptions
-            | undefined
-
-        if (options?.message) {
-            context.message = options?.message(context)
-        }
-
-        this.push(context)
     }
 
     get summary() {
