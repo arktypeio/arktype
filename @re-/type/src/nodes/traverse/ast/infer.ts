@@ -1,7 +1,11 @@
 import type { Evaluate } from "@re-/tools"
-import type { Infix } from "../../expression/constraining/constraining.js"
-import type { Keyword } from "../../terminal/keyword.js"
-import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
+import type { Expression } from "../../expression/expression.js"
+import type { Keyword } from "../../terminal/keyword/keyword.js"
+import type {
+    BigintLiteral,
+    NumberLiteral,
+    StringLiteral
+} from "../../terminal/primitiveLiteral.js"
 import type { RegexLiteral } from "../../terminal/regexLiteral.js"
 
 export type inferAst<node, resolutions> = node extends string
@@ -17,9 +21,9 @@ export type inferAst<node, resolutions> = node extends string
         ? Evaluate<
               inferAst<node[0], resolutions> & inferAst<node[2], resolutions>
           >
-        : node extends Infix.LeftTypedAst
+        : node extends Expression.LeftTypedAst
         ? inferAst<node[0], resolutions>
-        : node extends Infix.RightTypedAst
+        : node extends Expression.RightTypedAst
         ? inferAst<node[2], resolutions>
         : // If the value at index 1 was none of the above, it's a normal tuple definition
           Evaluate<{
@@ -34,15 +38,13 @@ type inferTerminal<
     ? Keyword.Infer<token>
     : token extends keyof resolutions
     ? inferAst<resolutions[token], resolutions>
-    : token extends PrimitiveLiteral.String<infer Text>
+    : token extends StringLiteral.Definition<infer Text>
     ? Text
     : token extends RegexLiteral.Definition
     ? string
-    : token extends PrimitiveLiteral.Number<infer Value>
+    : token extends NumberLiteral.Definition<infer Value>
     ? Value
-    : token extends PrimitiveLiteral.Bigint<infer Value>
-    ? Value
-    : token extends PrimitiveLiteral.Boolean<infer Value>
+    : token extends BigintLiteral.Definition<infer Value>
     ? Value
     : unknown
 

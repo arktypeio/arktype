@@ -1,5 +1,5 @@
 import { Divisibility } from "../../../nodes/expression/divisibility.js"
-import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -9,7 +9,6 @@ export namespace DivisibilityOperator {
         const divisorToken = s.scanner.shiftUntilNextTerminator()
         return reduce(
             s,
-            divisorToken,
             UnenclosedNumber.parseWellFormed(
                 divisorToken,
                 "integer",
@@ -35,22 +34,11 @@ export namespace DivisibilityOperator {
           >
         : never
 
-    const reduce = (
-        s: ParserState.WithRoot,
-        divisorToken: string,
-        parseResult: number
-    ) => {
+    const reduce = (s: ParserState.WithRoot, parseResult: number) => {
         if (parseResult === 0) {
             return ParserState.error(buildInvalidDivisorMessage("0"))
         }
-        s.root = new Divisibility.Node(
-            s.root,
-            "%",
-            new PrimitiveLiteral.Node(
-                divisorToken as PrimitiveLiteral.Number,
-                parseResult
-            )
-        ) as any
+        s.root = new Divisibility.Node(s.root, parseResult) as any
         return s
     }
 
@@ -58,7 +46,7 @@ export namespace DivisibilityOperator {
         s extends ParserState.T.WithRoot,
         divisorTokenOrError extends string,
         unscanned extends string
-    > = divisorTokenOrError extends PrimitiveLiteral.Number
+    > = divisorTokenOrError extends NumberLiteral.IntegerDefinition
         ? divisorTokenOrError extends "0"
             ? ParserState.error<buildInvalidDivisorMessage<"0">>
             : ParserState.setRoot<

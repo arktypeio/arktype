@@ -1,7 +1,6 @@
 import type { Dictionary } from "@re-/tools"
 import type { ArktypeOptions } from "../type.js"
 import { Base } from "./base.js"
-import type { Check } from "./traverse/check.js"
 
 export namespace Scope {
     export type Context = ArktypeOptions & {
@@ -13,7 +12,7 @@ export namespace Scope {
         resolutions: base.resolutions
     })
 
-    export class Node extends Base.Node<"scope", [Base.Node]> {
+    export class Node extends Base.Node {
         readonly kind = "scope"
         children: [Base.Node]
         hasStructure: boolean
@@ -24,7 +23,7 @@ export namespace Scope {
             this.hasStructure = child.definitionHasStructure
         }
 
-        allows(state: Check.State) {
+        allows(data: unknown) {
             state.pushContext(this.context)
             this.children[0].allows(state)
             state.popContext()

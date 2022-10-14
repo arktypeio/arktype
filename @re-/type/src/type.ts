@@ -4,10 +4,7 @@ import { lazyDynamicWrap } from "./internal.js"
 import { Scope } from "./nodes/scope.js"
 import type { inferAst } from "./nodes/traverse/ast/infer.js"
 import type { validate } from "./nodes/traverse/ast/validate.js"
-import type {
-    Diagnostics,
-    OptionsByDiagnostic
-} from "./nodes/traverse/diagnostics.js"
+import type { Diagnostics } from "./nodes/traverse/diagnostics.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace } from "./space.js"
@@ -56,7 +53,7 @@ export type Arktype<Inferred, Ast> = {
 export type DynamicArktype = Arktype<unknown, unknown>
 
 export type ArktypeOptions = {
-    errors?: OptionsByDiagnostic
+    errors?: {}
 }
 
 export type CheckFn<Inferred> = (data: unknown) => CheckResult<Inferred>

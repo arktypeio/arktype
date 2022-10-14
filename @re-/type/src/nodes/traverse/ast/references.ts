@@ -1,7 +1,7 @@
 import type { ElementOf, UnionToTuple } from "@re-/tools"
-import type { Branching } from "../../expression/branching.js"
+import type { Branching } from "../../expression/branching/branching.js"
+
 import type { Expression } from "../../expression/expression.js"
-import type { Unary } from "../../expression/unary/unary.js"
 
 export type ReferencesOf<Ast, By extends string = string> = Filter<
     References<Ast>,
@@ -10,7 +10,7 @@ export type ReferencesOf<Ast, By extends string = string> = Filter<
 
 // For extracting references, we only care about the node at index 0
 // TODO: Fix?
-type UnaryTypedToken = Unary.Token | Expression.ConstraintToken
+type UnaryTypedToken = Expression.PostfixToken | Expression.ConstraintToken
 
 type References<Ast> = Ast extends string
     ? [Ast]

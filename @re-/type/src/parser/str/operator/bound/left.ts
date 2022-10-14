@@ -1,14 +1,14 @@
 import { isKeyOf } from "@re-/tools"
 import type { Base } from "../../../../nodes/base.js"
 import { Bound } from "../../../../nodes/expression/bound.js"
-import type { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { toString } from "../../../../nodes/traverse/ast/toString.js"
 import { ParserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
 export namespace LeftBoundOperator {
     export const reduce = (
-        s: ParserState.WithRoot<PrimitiveLiteral.Node<number>>,
+        s: ParserState.WithRoot<NumberLiteral.Node>,
         comparator: Bound.Token
     ) =>
         isKeyOf(comparator, Bound.doublableTokens)
@@ -16,7 +16,7 @@ export namespace LeftBoundOperator {
                 ? ParserState.error(
                       buildBoundLiteralMessage(
                           s.root.toString(),
-                          s.branches.leftBound[0].toString(),
+                          s.branches.leftBound[0],
                           s.branches.leftBound[1]
                       )
                   )
@@ -26,7 +26,7 @@ export namespace LeftBoundOperator {
               )
 
     export type reduce<
-        s extends ParserState.T.WithRoot<PrimitiveLiteral.Number>,
+        s extends ParserState.T.WithRoot<NumberLiteral.Definition>,
         comparator extends Bound.Token
     > = comparator extends Bound.DoublableToken
         ? s extends ParserState.openLeftBounded
@@ -41,16 +41,16 @@ export namespace LeftBoundOperator {
         : ParserState.error<Comparators.buildInvalidDoubleMessage<comparator>>
 
     const reduceValidated = (
-        s: ParserState.WithRoot<PrimitiveLiteral.Node<number>>,
+        s: ParserState.WithRoot<NumberLiteral.Node>,
         token: Bound.DoublableToken
     ) => {
-        s.branches.leftBound = [s.root, token]
+        s.branches.leftBound = [s.root.value, token]
         s.root = undefined as any
         return s
     }
 
     type reduceValidated<
-        s extends ParserState.T.WithRoot<PrimitiveLiteral.Number>,
+        s extends ParserState.T.WithRoot<NumberLiteral.Definition>,
         comparator extends Bound.DoublableToken
     > = ParserState.from<{
         root: null
@@ -91,7 +91,7 @@ export namespace LeftBoundOperator {
         )
 
     export const buildBoundLiteralMessage = <
-        literal extends PrimitiveLiteral.Number,
+        literal extends NumberLiteral.Definition,
         limit extends string,
         token extends Bound.Token
     >(
@@ -102,7 +102,7 @@ export namespace LeftBoundOperator {
         `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
 
     export type buildBoundLiteralMessage<
-        literal extends PrimitiveLiteral.Number,
+        literal extends NumberLiteral.Definition,
         limit extends string,
         comparator extends Bound.Token
     > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`

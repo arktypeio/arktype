@@ -1,9 +1,9 @@
 import type { IsAny } from "@re-/tools"
 import type { ParseError } from "../../../parser/common.js"
 import type { Bound } from "../../expression/bound.js"
-import type { Branching } from "../../expression/branching.js"
+import type { Branching } from "../../expression/branching/branching.js"
 import type { Divisibility } from "../../expression/divisibility.js"
-import type { PrimitiveLiteral } from "../../terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../terminal/primitiveLiteral.js"
 import type { inferAst } from "./infer.js"
 import type { toString } from "./toString.js"
 
@@ -28,7 +28,7 @@ type checkAst<ast, resolutions> = ast extends string
     ? token extends Branching.Token
         ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
         : token extends Bound.Token
-        ? left extends PrimitiveLiteral.Number
+        ? left extends NumberLiteral.Definition
             ? checkAst<right, resolutions>
             : isBoundable<inferAst<left, resolutions>> extends true
             ? checkAst<left, resolutions>

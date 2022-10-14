@@ -41,11 +41,10 @@ export namespace Branching {
         }
 
         get mustBe() {
-            // TODO: Find a better way to do the full description?
             const conjunction = tokenConjunctions[this.token]
             let root = addArticle(this.children[0].mustBe)
             for (let i = 1; i < this.children.length; i++) {
-                root += ` ${conjunction} ${addArticle(this.children[i].mustBe)}`
+                root += ` ${conjunction} ${this.children[i].mustBe}`
             }
             return root as `${string}${TokenConjunctions[Token]}${string}`
         }

@@ -1,5 +1,5 @@
 import type { Base } from "../base.js"
-import { Keyword } from "../terminal/keyword.js"
+import { Keyword } from "../terminal/keyword/keyword.js"
 import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"

@@ -1,6 +1,6 @@
 import { isKeyOf } from "@re-/tools"
 import { Bound } from "../../../../nodes/expression/bound.js"
-import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
@@ -17,14 +17,7 @@ export namespace RightBoundOperator {
                 limitToken + s.scanner.unscanned
             )
         )
-        return reduce(
-            s,
-            comparator,
-            new PrimitiveLiteral.Node(
-                limitToken as PrimitiveLiteral.Number,
-                limit
-            )
-        )
+        return reduce(s, comparator, limit)
     }
 
     export type parse<
@@ -46,10 +39,10 @@ export namespace RightBoundOperator {
     const reduce = (
         s: ParserState.WithRoot,
         comparator: Bound.Token,
-        limit: PrimitiveLiteral.Node<number>
+        limit: number
     ) => {
         if (!isLeftBounded(s)) {
-            s.root = new Bound.RightNode(s.root, comparator, limit)
+            s.root = new Bound.RightNode<false>(s.root, comparator, limit)
             return s
         }
         if (!isKeyOf(comparator, Bound.doublableTokens)) {
@@ -70,7 +63,7 @@ export namespace RightBoundOperator {
         s extends ParserState.T.WithRoot,
         comparator extends Bound.Token,
         limitTokenOrError extends string
-    > = limitTokenOrError extends PrimitiveLiteral.Number
+    > = limitTokenOrError extends NumberLiteral.Definition
         ? s["branches"]["leftBound"] extends {}
             ? comparator extends Bound.DoublableToken
                 ? ParserState.from<{

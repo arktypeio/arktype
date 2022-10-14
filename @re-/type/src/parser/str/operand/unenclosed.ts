@@ -1,6 +1,11 @@
+import { isKeyOf } from "@re-/tools"
 import { Alias } from "../../../nodes/terminal/alias.js"
-import { Keyword } from "../../../nodes/terminal/keyword.js"
-import { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import type { Keyword } from "../../../nodes/terminal/keyword/keyword.js"
+import { keywords } from "../../../nodes/terminal/keyword/keyword.js"
+import {
+    BigintLiteral,
+    NumberLiteral
+} from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -37,28 +42,20 @@ export namespace Unenclosed {
         )
 
     export const maybeParseIdentifier = (token: string, ctx: parserContext) =>
-        Keyword.matches(token)
-            ? Keyword.getNode(token)
+        isKeyOf(token, keywords)
+            ? keywords[token]
             : token in ctx.aliases
             ? new Alias.Node(token)
             : undefined
 
     const maybeParseUnenclosedLiteral = (token: string) => {
-        const maybeLiteralValue =
-            UnenclosedNumber.parseWellFormed(token, "number") ??
-            (token === "true"
-                ? true
-                : token === "false"
-                ? false
-                : UnenclosedBigint.parseWellFormed(token))
-        if (maybeLiteralValue !== undefined) {
-            return new PrimitiveLiteral.Node(
-                token as
-                    | PrimitiveLiteral.Number
-                    | PrimitiveLiteral.Bigint
-                    | PrimitiveLiteral.Boolean,
-                maybeLiteralValue
-            )
+        const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
+        if (maybeNumber) {
+            return new NumberLiteral.Node(maybeNumber)
+        }
+        const maybeBigint = UnenclosedBigint.parseWellFormed(token)
+        if (maybeBigint) {
+            return new BigintLiteral.Node(maybeBigint)
         }
     }
 
@@ -93,11 +90,9 @@ export namespace Unenclosed {
         ctx extends ParserContext
     > = isResolvableIdentifier<token, ctx> extends true
         ? token
-        : token extends PrimitiveLiteral.Number<infer Value>
+        : token extends NumberLiteral.Definition<infer Value>
         ? UnenclosedNumber.assertWellFormed<token, Value, "number">
-        : token extends PrimitiveLiteral.Boolean
-        ? token
-        : token extends PrimitiveLiteral.Bigint<infer Value>
+        : token extends BigintLiteral.Definition<infer Value>
         ? UnenclosedBigint.assertWellFormed<token, Value>
         : ParseError<
               token extends ""

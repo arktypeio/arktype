@@ -1,5 +1,4 @@
-import type { Check } from "../traverse/check.js"
-import { Keyword } from "./keyword.js"
+import { keywords } from "./keyword/keyword.js"
 import { Terminal } from "./terminal.js"
 
 export namespace RegexLiteral {
@@ -15,12 +14,10 @@ export namespace RegexLiteral {
         }
 
         allows(data: string) {
-            if (!this.expression.test(data)) {
-                return
-            }
+            return this.expression.test(data)
         }
 
-        precondition = Keyword.getNode("string")
+        precondition = keywords.string
 
         get mustBe() {
             return `matched by ${this.definition}` as const

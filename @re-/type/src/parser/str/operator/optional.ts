@@ -7,7 +7,7 @@ export namespace OptionalOperator {
             return ParserState.error(nonTerminatingMessage)
         }
         ParserState.finalize(s)
-        s.root = new Optional.Node(s.root)
+        s.root = new Optional.Node([s.root])
         return s
     }
 

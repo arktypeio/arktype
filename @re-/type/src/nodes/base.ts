@@ -1,4 +1,4 @@
-import { chainableNoOpProxy, keySet, toString } from "@re-/tools"
+import { chainableNoOpProxy, toString } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
 import { Check } from "./traverse/check.js"
 
@@ -9,8 +9,8 @@ export namespace Base {
         abstract readonly kind: string
 
         check(data: unknown) {
-            const state = new Check.State(data)
-            this.allows(state)
+            const state = new Check.State()
+            Check.traverse(this, data, state)
             return state.errors.length
                 ? {
                       errors: state.errors
@@ -39,9 +39,9 @@ export namespace Base {
 
         abstract toString(): string
         abstract readonly mustBe: string
+        abstract readonly ast: unknown
 
         /**
-        abstract get ast(): unknown
          * This generates an isomorphic definition that can be parsed and
          * inverted. The preferred isomorphic format for expressions is the
          * string form over the tuple form:
@@ -88,12 +88,6 @@ export namespace Base {
 
 export const pathToString = (path: string[]) =>
     path.length === 0 ? "/" : path.join("/")
-
-const vowels = keySet({ a: 1, e: 1, i: 1, o: 1, u: 1 })
-
-// TODO: Remove
-export const addArticle = (phrase: string) =>
-    (phrase[0] in vowels ? "an " : "a ") + phrase
 
 export const stringifyData = (data: unknown) =>
     toString(data, {

@@ -1,9 +1,8 @@
-import { addArticle } from "../base.js"
 import type { Check } from "../traverse/check.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Alias {
-    export class Node extends Terminal.Node<"alias", string> {
+    export class Node extends Terminal.Node {
         readonly kind = "alias"
 
         constructor(public definition: string) {
@@ -26,7 +25,7 @@ export namespace Alias {
         }
 
         get mustBe() {
-            return addArticle(this.definition)
+            return `a valid ${this.definition}` as const
         }
     }
 }

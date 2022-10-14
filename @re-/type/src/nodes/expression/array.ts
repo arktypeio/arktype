@@ -1,6 +1,5 @@
 import type { Base } from "../base.js"
-import { ObjectKind } from "../base.js"
-import { Keyword } from "../terminal/keyword.js"
+import { Keyword, keywords } from "../terminal/keyword/keyword.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
 
@@ -8,13 +7,14 @@ export namespace Arr {
     export class Node extends Expression.Node<[Base.Node], [unknown, "[]"]> {
         readonly kind = "array"
 
-        allows(state: Check.State) {
+        allows(data: unknown) {
             if (!ObjectKind.check(this, "array", state)) {
                 return false
             }
             if (Keyword.isTopType(this.children[0])) {
                 return true
             }
+            return
         }
 
         toString() {
@@ -29,4 +29,6 @@ export namespace Arr {
             return "an array" as const
         }
     }
+
+    export const unknownArray = new Node([keywords.unknown])
 }

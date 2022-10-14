@@ -3,7 +3,7 @@ import type { Base } from "../../../nodes/base.js"
 import type { Bound } from "../../../nodes/expression/bound.js"
 import type { Intersection } from "../../../nodes/expression/branching/intersection.js"
 import type { Union } from "../../../nodes/expression/branching/union.js"
-import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
@@ -95,14 +95,11 @@ export namespace ParserState {
         }
     }
 
-    export type OpenLeftBound = [
-        PrimitiveLiteral.Node<number>,
-        Bound.DoublableToken
-    ]
+    export type OpenLeftBound = [number, Bound.DoublableToken]
 
     export namespace T {
         export type OpenLeftBound = [
-            PrimitiveLiteral.Number,
+            NumberLiteral.Definition,
             Bound.DoublableToken
         ]
     }

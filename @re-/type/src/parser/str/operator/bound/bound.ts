@@ -1,6 +1,6 @@
 import { isKeyOf } from "@re-/tools"
 import type { Bound } from "../../../../nodes/expression/bound.js"
-import { PrimitiveLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
+import { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
 import { LeftBoundOperator } from "./left.js"
@@ -40,7 +40,7 @@ export namespace BoundOperator {
         s: ParserState.WithRoot,
         comparator: Bound.Token
     ) =>
-        ParserState.rooted(s, PrimitiveLiteral.Node) &&
+        ParserState.rooted(s, NumberLiteral.Node) &&
         typeof s.root.value === "number"
             ? LeftBoundOperator.reduce(s, comparator)
             : RightBoundOperator.parse(s, comparator)
@@ -49,7 +49,7 @@ export namespace BoundOperator {
         s extends ParserState.T.WithRoot,
         comparator extends Bound.Token
     > = s extends {
-        root: PrimitiveLiteral.Number
+        root: NumberLiteral.Definition
     }
         ? LeftBoundOperator.reduce<s, comparator>
         : RightBoundOperator.parse<s, comparator>

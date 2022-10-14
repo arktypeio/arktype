@@ -1,4 +1,4 @@
-import type { PrimitiveLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
 import type { ParseError } from "../../../parser/common.js"
 import { throwParseError } from "../../../parser/common.js"
 
@@ -110,7 +110,7 @@ export namespace UnenclosedNumber {
     export type parseWellFormedNumber<
         token extends string,
         badNumberMessage extends string
-    > = token extends PrimitiveLiteral.Number<infer Value>
+    > = token extends NumberLiteral.Definition<infer Value>
         ? number extends Value
             ? buildMalformedNumericLiteralMessage<token, "number">
             : token
@@ -119,7 +119,7 @@ export namespace UnenclosedNumber {
     export type parseWellFormedInteger<
         token extends string,
         badIntegerMessage extends string
-    > = token extends PrimitiveLiteral.Integer<infer Value>
+    > = token extends NumberLiteral.IntegerDefinition<infer Value>
         ? bigint extends Value
             ? buildMalformedNumericLiteralMessage<token, "integer">
             : token
