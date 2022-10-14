@@ -1,5 +1,6 @@
 import { chainableNoOpProxy, toString } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
+import type { Keyword } from "./terminal/keyword/keyword.js"
 import { Check } from "./traverse/check.js"
 
 export namespace Base {
@@ -28,14 +29,12 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract allows(
-            data: InferPostcondition<this["precondition"]>
-        ): AllowsResult
+        abstract allows(data: InferPrecondition<this>): AllowsResult
 
         childForKey?(key: string): Node
         childForKey?(key: number): Node
 
-        precondition?: Node
+        readonly precondition?: Node
 
         abstract toString(): string
         abstract readonly mustBe: string
@@ -70,15 +69,14 @@ export namespace Base {
         abstract definition: unknown
     }
 
-    export type AllowsResult = boolean | Node | string[] | number
+    export type InferPrecondition<node extends Node> =
+        node["precondition"] extends {
+            definition: Keyword.Definition
+        }
+            ? Keyword.Infer<node["precondition"]["definition"]>
+            : unknown
 
-    export type InferPostcondition<node> = undefined extends node
-        ? unknown
-        : node extends {
-              allows: (data: unknown) => data is infer Postcondition
-          }
-        ? Postcondition
-        : unknown
+    export type AllowsResult = boolean | Node | string[] | number
 }
 
 export const pathToString = (path: string[]) =>
