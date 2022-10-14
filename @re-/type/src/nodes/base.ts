@@ -7,7 +7,7 @@ export namespace Base {
     export abstract class Node implements DynamicArktype {
         abstract children?: Node[]
         abstract definitionHasStructure: boolean
-        abstract readonly kind: string
+        abstract readonly kind: string //NodeKind
 
         check(data: unknown) {
             const state = new Check.State()

@@ -2,7 +2,7 @@ import type { Base } from "../base.js"
 import { Keyword, keywords } from "../terminal/keyword/keyword.js"
 import { Expression } from "./expression.js"
 
-export namespace Arr {
+export namespace Array {
     export class Node extends Expression.Node<[Base.Node]> {
         readonly kind = "array"
 

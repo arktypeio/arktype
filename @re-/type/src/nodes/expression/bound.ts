@@ -66,31 +66,6 @@ export namespace Bound {
         }
     }
 
-    // const checkBound = (
-    //     node: LeftNode | RightNode,
-    //     comparator: Token,
-    //     limit: number
-    // ) => {
-    //     const kind = toBoundableKind(state.data)
-    //     if (kind === "unboundable") {
-    //         return false
-    //     }
-    //     const actual = boundableToNumber(state.data as BoundableData)
-    //     if (!isWithinBound(comparator, limit, actual)) {
-    //         state.addError("bound", {
-    //             type: node,
-    //             message: describe(comparator, limit, kind),
-    //             comparator,
-    //             comparatorDescription: comparatorDescriptions[comparator],
-    //             limit,
-    //             actual,
-    //             kind
-    //         })
-    //         return false
-    //     }
-    //     return true
-    // }
-
     export type LeftAst<Child extends RightAst = RightAst> = [
         NumberLiteral.Definition,
         DoublableToken,
@@ -103,7 +78,7 @@ export namespace Bound {
         RightTuple<true>
     ]
 
-    export class LeftNode extends Expression.Node<[RightNode], LeftTuple> {
+    export class LeftNode extends Expression.Node<[RightNode]> {
         readonly kind = "bound"
 
         constructor(

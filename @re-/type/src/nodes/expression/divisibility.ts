@@ -1,28 +1,27 @@
 import type { Base } from "../base.js"
-import { Keyword } from "../terminal/keyword/keyword.js"
-import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
-import type { Check } from "../traverse/check.js"
+import { Keyword, keywords } from "../terminal/keyword/keyword.js"
+import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
 import { Expression } from "./expression.js"
 
 export namespace Divisibility {
     export type Token = "%"
 
-    export type Tuple = [unknown, Token, PrimitiveLiteral.Number]
+    export type Tuple = [unknown, Token, NumberLiteral.Definition]
 
-    export class Node extends Expression.Node<[Base.Node], Tuple> {
+    export class Node extends Expression.Node<[Base.Node]> {
         readonly kind = "divisibility"
 
         constructor(child: Base.Node, public divisor: number) {
             super([child])
         }
 
+        precondition = keywords.number
+
         allows(data: number) {
             if (data % this.divisor !== 0) {
-                return
+                return false
             }
         }
-
-        precondition = Keyword.getNode("number")
 
         toString() {
             return `${this.children[0].toString()}%${this.divisor}` as const

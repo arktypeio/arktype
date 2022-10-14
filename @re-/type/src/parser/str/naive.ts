@@ -1,4 +1,4 @@
-import { Arr } from "../../nodes/expression/array.js"
+import { Array } from "../../nodes/expression/array.js"
 import { Optional } from "../../nodes/expression/optional.js"
 import type { ParserContext, parserContext } from "../common.js"
 import type { FullParse } from "./full.js"
@@ -49,7 +49,7 @@ const tryNaiveParseArray = (def: string, ctx: parserContext) => {
             ctx
         )
         if (possibleIdentifierNode) {
-            return new Arr.Node(possibleIdentifierNode)
+            return new Array.Node(possibleIdentifierNode)
         }
     }
     return Unenclosed.maybeParseIdentifier(def, ctx)
