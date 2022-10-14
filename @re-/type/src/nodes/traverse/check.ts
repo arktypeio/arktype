@@ -1,5 +1,5 @@
 import { InternalArktypeError } from "../../internal.js"
-import { Base } from "../base.js"
+import type { Base } from "../base.js"
 import type { Scope } from "../scope.js"
 import { Diagnostics } from "./diagnostics.js"
 
@@ -16,18 +16,21 @@ export namespace Check {
     // TODO: Compare recursion perf
     export const checkRoot = (root: Base.Node, data: any, state: State) => {
         const stack = [root]
-        let lastResult: Base.AllowsResult = root
         do {
-            if (lastResult.precondition) {
-                stack.push(lastResult.precondition)
+            const precondition = stack[stack.length - 1].precondition
+            if (precondition) {
+                stack.push(precondition)
             } else {
-                lastResult = stack.pop()!.allows(data)
-                if (lastResult === false) {
-                    state.errors.push()
-                    return false
+                const node = stack.pop()!
+                const result = node.allows(data)
+                if (typeof result === "boolean") {
+                    if (!result) {
+                        state.errors.push()
+                    }
+                    return result
                 }
             }
-        } while (lastResult instanceof Base.Node)
+        } while (true)
         return lastResult
     }
 

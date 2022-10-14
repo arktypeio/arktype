@@ -7,6 +7,7 @@ export namespace Intersection {
         readonly kind = "intersection"
 
         allows(state: Check.State) {
+            // TODO: Ensure redundant errors aren't specified for subtypes
             for (const branch of this.children) {
                 branch.allows(state)
             }

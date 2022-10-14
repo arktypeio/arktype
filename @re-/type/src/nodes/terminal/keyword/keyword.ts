@@ -2,10 +2,12 @@ import type { Base } from "../../base.js"
 import { jsKeywords } from "./js.js"
 import { numberSubtypeKeywords, stringSubtypeKeywords } from "./subtype.js"
 import { tsKeywords } from "./ts.js"
+import { typeKeywords } from "./type.js"
 
 export const keywords = {
     ...tsKeywords,
     ...jsKeywords,
+    ...typeKeywords,
     ...stringSubtypeKeywords,
     ...numberSubtypeKeywords
 } as const

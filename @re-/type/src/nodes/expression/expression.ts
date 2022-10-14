@@ -34,10 +34,7 @@ export namespace Expression {
 
     export type RightTypedAst = Bound.LeftAst
 
-    export abstract class Node<
-        Children extends Base.Node[],
-        Tuple extends Expression.Tuple
-    > extends Base.Node {
+    export abstract class Node<Children extends Base.Node[]> extends Base.Node {
         abstract toTuple(
             ...childResults: MappedChildren<Children>
         ): Readonly<Tuple>

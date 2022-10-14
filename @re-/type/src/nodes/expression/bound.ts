@@ -1,7 +1,7 @@
 import { keySet } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base.js"
-import type { PrimitiveLiteral } from "../terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
 
@@ -92,13 +92,13 @@ export namespace Bound {
     // }
 
     export type LeftAst<Child extends RightAst = RightAst> = [
-        PrimitiveLiteral.Number,
+        NumberLiteral.Definition,
         DoublableToken,
         Child
     ]
 
     export type LeftTuple = [
-        PrimitiveLiteral.Number,
+        NumberLiteral.Definition,
         DoublableToken,
         RightTuple<true>
     ]
@@ -146,18 +146,18 @@ export namespace Bound {
     export type RightAst<Child = unknown> = [
         Child,
         Token,
-        PrimitiveLiteral.Number
+        NumberLiteral.Definition
     ]
 
     export type RightTuple<HasLeft extends boolean = boolean> = [
         unknown,
         HasLeft extends true ? DoublableToken : Token,
-        PrimitiveLiteral.Number
+        NumberLiteral.Definition
     ]
 
     export class RightNode<
         HasLeft extends boolean = boolean
-    > extends Expression.Node<[Base.Node], RightTuple<HasLeft>> {
+    > extends Expression.Node<[Base.Node]> {
         readonly kind = "bound"
 
         constructor(
@@ -181,7 +181,11 @@ export namespace Bound {
         }
 
         toTuple(child: unknown) {
-            return [child, this.comparator, `${this.limit}`] as const
+            return [
+                child,
+                this.comparator,
+                `${this.limit}`
+            ] as RightTuple<HasLeft>
         }
 
         get mustBe() {

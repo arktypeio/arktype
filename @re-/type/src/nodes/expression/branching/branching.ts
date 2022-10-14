@@ -1,5 +1,4 @@
 import type { Base } from "../../base.js"
-import { addArticle } from "../../base.js"
 import { Expression } from "../expression.js"
 
 export namespace Branching {
@@ -16,7 +15,7 @@ export namespace Branching {
 
     export abstract class Node<
         Token extends Branching.Token
-    > extends Expression.Node<Base.Node[], Tuple<Token>> {
+    > extends Expression.Node<Base.Node[]> {
         abstract token: Token
 
         pushChild(child: Base.Node) {
@@ -42,7 +41,7 @@ export namespace Branching {
 
         get mustBe() {
             const conjunction = tokenConjunctions[this.token]
-            let root = addArticle(this.children[0].mustBe)
+            let root = this.children[0].mustBe
             for (let i = 1; i < this.children.length; i++) {
                 root += ` ${conjunction} ${this.children[i].mustBe}`
             }

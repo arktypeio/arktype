@@ -76,7 +76,7 @@ export namespace Base {
             ? Keyword.Infer<node["precondition"]["definition"]>
             : unknown
 
-    export type AllowsResult = boolean | Node | string[] | number
+    export type AllowsResult = boolean | Node[] | string[] | number
 }
 
 export const pathToString = (path: string[]) =>
