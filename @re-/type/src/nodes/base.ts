@@ -1,11 +1,11 @@
-import { chainableNoOpProxy, keySet } from "@re-/tools"
+import { chainableNoOpProxy, keySet, toString } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
 import { Check } from "./traverse/check.js"
 
 export namespace Base {
     export abstract class Node implements DynamicArktype {
         abstract children?: Node[]
-        abstract hasStructure: boolean
+        abstract definitionHasStructure: boolean
         abstract readonly kind: string
 
         check(data: unknown) {
@@ -28,20 +28,17 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        // abstract allows(data: InferPrecondition<this>): boolean | undefined
-        // abstract allows(
-        //     data: InferPrecondition<this>
-        // ): data is InferPrecondition<this>
+        abstract allows(
+            data: InferPrecondition<this["precondition"]>
+        ): AllowsResult
 
-        //abstract allows(data: InferPrecondition<this>): data is any
-        abstract allows(data: InferPrecondition<this>): boolean | Node
-
-        precondition?: Node
+        readonly precondition?: Node
 
         abstract toString(): string
-        abstract get mustBe(): string
-        abstract get ast(): unknown
+        abstract readonly mustBe: string
+
         /**
+        abstract get ast(): unknown
          * This generates an isomorphic definition that can be parsed and
          * inverted. The preferred isomorphic format for expressions is the
          * string form over the tuple form:
@@ -70,25 +67,20 @@ export namespace Base {
         abstract definition: unknown
     }
 
-    export type AllowsFn<node extends Node> =
-        | BaseAllowsFn<InferPrecondition<node>>
-        | NarrowingAllowsFn<InferPrecondition<node>>
+    export type AllowsResult = boolean | Node
 
-    type BaseAllowsFn<precondition> = (
-        data: precondition
-    ) => boolean | undefined
-
-    type NarrowingAllowsFn<precondition> = (
-        data: precondition
-    ) => data is precondition
-
-    type InferPrecondition<node extends Node> = node["precondition"] extends {}
-        ? node["precondition"]["allows"] extends (
-              data: any
-          ) => data is infer Postcondition
-            ? Postcondition
-            : InferPrecondition<node["precondition"]>
-        : unknown
+    export type InferPrecondition<node extends Node | undefined> =
+        node extends {}
+            ? node["allows"] extends (
+                  data: unknown
+              ) => data is infer Postcondition
+                ? Postcondition
+                : node["allows"] extends (
+                      data: infer PreviousPrecondition
+                  ) => unknown
+                ? PreviousPrecondition
+                : never
+            : unknown
 }
 
 export const pathToString = (path: string[]) =>
@@ -96,5 +88,11 @@ export const pathToString = (path: string[]) =>
 
 const vowels = keySet({ a: 1, e: 1, i: 1, o: 1, u: 1 })
 
+// TODO: Remove
 export const addArticle = (phrase: string) =>
     (phrase[0] in vowels ? "an " : "a ") + phrase
+
+export const stringifyData = (data: unknown) =>
+    toString(data, {
+        maxNestedStringLength: 50
+    })

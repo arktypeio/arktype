@@ -1,6 +1,7 @@
 import type { Dictionary, NormalizedJsTypes } from "@re-/tools"
 import { IsAnyOrUnknown, jsTypeOf } from "@re-/tools"
-import { InternalArktypeError } from "../../internal.js"
+import { InternalArktypeError, throwInternalError } from "../../internal.js"
+import { stringifyData } from "../base.js"
 import type { Scope } from "../scope.js"
 import { Diagnostics } from "./diagnostics.js"
 
@@ -34,30 +35,25 @@ export namespace Check {
             }
             stack.push(postcondition)
         }
-        // TODO: Will this happen? When?
-        return true
+        return throwInternalError(
+            `Unexpectedly ran out of nodes while checking:\n${stringifyData(
+                data
+            )}\nagainst type\n${root}`
+        )
     }
-
-    const traverseObject = (root: any, data: Dictionary, state: State) => {}
-
-    const traverseArray = (root: any, data: unknown[], state: State) => {}
 
     export const traverse = (root: any, data: unknown, state: State) => {
         const shallowResult = checkData(root, data, state)
-        const isStructured = typeof data === "object" && data !== null
-        if (isStructured) {
-            // TODO: Root structure nodes
+        if (typeof data === "object" && data !== null) {
             if (Array.isArray(data)) {
                 for (let i = 0; i < data.length; i++) {
                     traverse(root, data[i], state)
                 }
             } else {
                 for (const k in data) {
-                    traverse(root, data[k], state)
+                    traverse(root, (data as Dictionary)[k], state)
                 }
             }
-        } else {
-            checkData()
         }
     }
 

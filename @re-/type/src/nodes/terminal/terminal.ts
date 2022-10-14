@@ -3,7 +3,7 @@ import { Base } from "../base.js"
 export namespace Terminal {
     export abstract class Node extends Base.Node {
         children: undefined
-        hasStructure = false
+        definitionHasStructure = false
 
         abstract readonly definition: string
 

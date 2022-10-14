@@ -1,6 +1,6 @@
-import { toString, uncapitalize } from "@re-/tools"
+import { uncapitalize } from "@re-/tools"
 import { isIntegerLike } from "../../parser/str/operand/numeric.js"
-import { pathToString } from "../base.js"
+import { pathToString, stringifyData } from "../base.js"
 import type { Base } from "../base.js"
 import type { Check } from "./check.js"
 
@@ -8,11 +8,6 @@ export type Stringifiable<Data> = {
     raw: Data
     toString(): string
 }
-
-const stringifyData = (data: unknown) =>
-    toString(data, {
-        maxNestedStringLength: 50
-    })
 
 const stringifiableFrom = <Data>(raw: Data) => ({
     raw,

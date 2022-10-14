@@ -1,5 +1,6 @@
 import type { Base } from "../base.js"
 import { ObjectKind } from "../base.js"
+import { Keyword } from "../terminal/keyword.js"
 import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
 
@@ -11,14 +12,9 @@ export namespace Arr {
             if (!ObjectKind.check(this, "array", state)) {
                 return false
             }
-            const rootData: any[] = state.data
-            for (let i = 0; i < rootData.length; i++) {
-                state.path.push(String(i))
-                state.data = rootData[i]
-                this.children[0].allows(state)
-                state.path.pop()
+            if (Keyword.isTopType(this.children[0])) {
+                return true
             }
-            state.data = rootData
         }
 
         toString() {

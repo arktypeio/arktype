@@ -42,11 +42,11 @@ export namespace Expression {
             ...childResults: MappedChildren<Children>
         ): Readonly<Tuple>
 
-        hasStructure: boolean
+        definitionHasStructure: boolean
 
         constructor(public children: Children) {
             super()
-            this.hasStructure = children.some(childHasStructure)
+            this.definitionHasStructure = children.some(childHasStructure)
         }
 
         get ast() {
@@ -58,7 +58,7 @@ export namespace Expression {
         }
 
         get definition() {
-            return this.hasStructure
+            return this.definitionHasStructure
                 ? this.toTuple(
                       ...(this.children.map(
                           (child) => child.definition
@@ -68,5 +68,5 @@ export namespace Expression {
         }
     }
 
-    const childHasStructure = (child: Base.Node) => child.hasStructure
+    const childHasStructure = (child: Base.Node) => child.definitionHasStructure
 }

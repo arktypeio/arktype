@@ -21,7 +21,7 @@ export namespace Branching {
 
         pushChild(child: Base.Node) {
             this.children.push(child)
-            this.hasStructure ||= child.hasStructure
+            this.definitionHasStructure ||= child.definitionHasStructure
         }
 
         toString() {

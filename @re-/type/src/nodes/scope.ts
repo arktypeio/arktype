@@ -21,7 +21,7 @@ export namespace Scope {
         constructor(child: Base.Node, protected context: Context) {
             super()
             this.children = [child]
-            this.hasStructure = child.hasStructure
+            this.hasStructure = child.definitionHasStructure
         }
 
         allows(state: Check.State) {

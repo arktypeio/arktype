@@ -1,13 +1,24 @@
-import { Base, ObjectKind } from "../base.js"
+import { Base } from "../base.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace Tuple {
-    export class Node extends Base.Node<"tuple"> {
+    export class Node extends Base.Node {
         readonly kind = "tuple"
-        hasStructure = true
+        definitionHasStructure = true
 
         constructor(public children: Base.Node[]) {
             super()
+        }
+
+        allows(data: unknown) {
+            if (!ObjectKind.check(this, "array", state)) {
+                return
+            }
+            const expectedLength = this.children.length
+            const actualLength = state.data.length
+            if (expectedLength !== actualLength) {
+                return
+            }
         }
 
         get ast() {
@@ -32,17 +43,6 @@ export namespace Tuple {
 
         get mustBe() {
             return `an array of length ${this.children.length}`
-        }
-
-        allows(state: Check.State) {
-            if (!ObjectKind.check(this, "array", state)) {
-                return
-            }
-            const expectedLength = this.children.length
-            const actualLength = state.data.length
-            if (expectedLength !== actualLength) {
-                return
-            }
         }
     }
 }

@@ -1,47 +1,28 @@
-import type { InstanceOf } from "@re-/tools"
+import type { Dictionary, InstanceOf } from "@re-/tools"
+import type { Base } from "../base.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Keyword {
     export type Definition = keyof Inferences
 
-    export type Infer<D extends Definition> = Inferences[D]
+    export type Infer<definition extends Definition> = Inferences[definition]
 
     export const matches = (token: string): token is Definition =>
         token in nodes
 
-    export const getNode = <Keyword extends Definition>(keyword: Keyword) => {
-        if (keyword in cache) {
-            return cache[keyword]
-        }
-    }
-
     type Nodes = typeof nodes
 
-    type I = { [K in keyof Nodes]: InstanceOf<Nodes[K]> }
+    type Instances = { [K in keyof Nodes]: InstanceOf<Nodes[K]> }
 
-    export type Inferences = {
-        any: any
-        bigint: bigint
-        boolean: boolean
-        never: never
-        null: null
-        number: number
-        object: object
-        string: string
-        symbol: symbol
-        undefined: undefined
-        unknown: unknown
-        void: void
-        Function: Function
-        email: string
-        alphaonly: string
-        alphanumeric: string
-        lowercase: string
-        uppercase: string
-        integer: number
+    type Inferences = {
+        [K in keyof Instances]: Instances[K]["allows"] extends (
+            data: unknown
+        ) => data is infer T
+            ? T
+            : Parameters<Instances[K]["allows"]>[0]
     }
 
-    export const StringNode = class extends Terminal.Node {
+    export class StringNode extends Terminal.Node {
         kind = "keyword"
         definition = "string"
         mustBe = "a string"
@@ -50,7 +31,7 @@ export namespace Keyword {
         }
     }
 
-    export const NumberNode = class extends Terminal.Node {
+    export class NumberNode extends Terminal.Node {
         kind = "keyword"
         definition = "number"
         mustBe = "a number"
@@ -62,7 +43,22 @@ export namespace Keyword {
     const cache = {
         string: new StringNode(),
         number: new NumberNode()
+    } as {
+        string: StringNode
+        number: NumberNode
+    } & Dictionary<Terminal.Node>
+
+    export const getNode = <Keyword extends Definition>(keyword: Keyword) => {
+        if (!(keyword in cache)) {
+            cache[keyword] = new nodes[keyword]() as any
+        }
+        return cache[keyword] as Instances[Keyword]
     }
+
+    export const isTopType = (
+        node: Base.Node
+    ): node is Instances["any" | "unknown"] =>
+        node === getNode("any") || node === getNode("unknown")
 
     const nodes = {
         any: class extends Terminal.Node {
@@ -109,7 +105,7 @@ export namespace Keyword {
         object: class extends Terminal.Node {
             kind = "keyword"
             definition = "object"
-            mustBe = "an object or array"
+            mustBe = "an object"
             allows(data: unknown): data is object {
                 return typeof data === "object" && data !== null
             }
