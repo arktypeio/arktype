@@ -9,15 +9,6 @@ const config = {
     onBrokenLinks: "throw",
     onBrokenMarkdownLinks: "warn",
     favicon: "img/logo.svg",
-    webpack: {
-        jsLoader: (isServer) => ({
-            loader: require.resolve("esbuild-loader"),
-            options: {
-                loader: "tsx",
-                target: isServer ? "node12" : "es2017"
-            }
-        })
-    },
     // Even if you don't use internalization, you can use this field to set useful
     // metadata like html lang. For example, if your site is Chinese, you may want
     // to replace "en" with "zh-Hans".
@@ -106,9 +97,6 @@ const config = {
                     }
                 ],
                 copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`
-            },
-            colorMode: {
-                defaultMode: "dark"
             }
         })
 }
