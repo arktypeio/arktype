@@ -1,8 +1,8 @@
 import { chainableNoOpProxy, toString } from "@arktype/tools"
 import type { DynamicArktype } from "../type.js"
 import type { Keyword } from "./terminal/keyword/keyword.js"
-import type { Traversal } from "./traversal/traversal.js"
-import { initializeTraversal } from "./traversal/traversal.js"
+import type { TraversalState } from "./traversal/traversal.js"
+import { initializeTraversalState } from "./traversal/traversal.js"
 
 export namespace Base {
     export abstract class Node implements DynamicArktype {
@@ -10,7 +10,7 @@ export namespace Base {
         abstract readonly kind: string //NodeKind
 
         check(data: unknown) {
-            const state = initializeTraversal(data)
+            const state = initializeTraversalState(data)
             this.traverse(state)
             return state.errors.length
                 ? {
@@ -29,27 +29,27 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        readonly precondition?: Base.Node
-
-        traverse(state: Traversal) {
+        traverse(state: TraversalState) {
             if (this.precondition?.allows(state.data) === false) {
-                return false
+                return
             }
             const allowed = this.allows(state.data as InferPrecondition<this>)
             if (!allowed) {
                 if (allowed === false) {
                     state.errors.push()
                 } else {
-                    this.next(state)
+                    this.next?.(state)
                 }
             }
         }
+
+        readonly precondition?: Base.Node
 
         protected abstract allows(
             data: InferPrecondition<this>
         ): boolean | undefined
 
-        abstract next(state: Traversal): void
+        abstract next?(state: TraversalState): void
 
         abstract toString(): string
         abstract readonly mustBe: string

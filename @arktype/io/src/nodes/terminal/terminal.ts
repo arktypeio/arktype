@@ -6,6 +6,7 @@ export namespace Terminal {
         definitionRequiresStructure = false
 
         abstract readonly definition: string
+        next = undefined
 
         toString() {
             return this.definition

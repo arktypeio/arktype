@@ -1,5 +1,5 @@
 import { Base } from "../base.js"
-import type { Traversal } from "../traversal/traversal.js"
+import type { TraversalState } from "../traversal/traversal.js"
 
 export namespace Tuple {
     export class Node extends Base.Node {
@@ -10,7 +10,7 @@ export namespace Tuple {
             super()
         }
 
-        allows(state: Traversal) {
+        allows(state: TraversalState) {
             if (!Structure.checkKind(this, "array", state)) {
                 return
             }
@@ -23,7 +23,7 @@ export namespace Tuple {
             this.checkChildren(state)
         }
 
-        private checkChildren(state: Traversal) {
+        private checkChildren(state: TraversalState) {
             const rootData: any = state.data
             for (let i = 0; i < this.children.length; i++) {
                 state.path.push(String(i))

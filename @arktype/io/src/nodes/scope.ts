@@ -1,7 +1,7 @@
 import type { Dictionary } from "@arktype/tools"
 import type { ArktypeOptions } from "../type.js"
 import { Base } from "./base.js"
-import type { Traversal } from "./traversal/traversal.js"
+import type { TraversalState } from "./traversal/traversal.js"
 
 export class Scope extends Base.Node {
     readonly kind = "scope"
@@ -20,7 +20,7 @@ export class Scope extends Base.Node {
         return undefined
     }
 
-    next(state: Traversal) {
+    next(state: TraversalState) {
         state.scopes.push(this)
         this.child.traverse(state)
         state.scopes.pop()

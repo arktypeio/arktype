@@ -2,7 +2,7 @@ import { uncapitalize } from "@arktype/tools"
 import { isIntegerLike } from "../../parser/str/operand/numeric.js"
 import { pathToString, stringifyData } from "../base.js"
 import type { Base } from "../base.js"
-import type { Traversal } from "./traversal.js"
+import type { TraversalState } from "./traversal.js"
 
 export type Stringifiable<Data> = {
     raw: Data
@@ -20,7 +20,7 @@ export class Problem<Node extends Base.Node> {
     private branchPath: string[]
     protected omitActualByDefault?: true
 
-    constructor(public type: Node, traversal: Traversal) {
+    constructor(public type: Node, traversal: TraversalState) {
         this.data = stringifiableFrom(traversal.data)
         this.path = [...traversal.path]
         this.branchPath = traversal.branchPath

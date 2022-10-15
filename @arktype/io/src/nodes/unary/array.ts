@@ -1,6 +1,6 @@
 import type { Base } from "../base.js"
 import { Keyword, keywords } from "../terminal/keyword/keyword.js"
-import type { Traversal } from "../traversal/traversal.js"
+import type { TraversalState } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Array {
@@ -17,7 +17,7 @@ export namespace Array {
             }
         }
 
-        override next(state: Traversal<unknown[]>) {
+        override next(state: TraversalState<unknown[]>) {
             if (Keyword.isTopType(this.child)) {
                 return true
             }
@@ -25,7 +25,7 @@ export namespace Array {
             for (let i = 0; i < rootData.length; i++) {
                 state.path.push(String(i))
                 state.data = rootData[i] as any
-                this.child.allows(state)
+                this.child.traverse(state)
                 state.path.pop()
             }
             state.data = rootData

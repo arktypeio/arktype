@@ -1,20 +1,23 @@
 import { Problems } from "./problems.js"
 import { Scopes } from "./scopes.js"
 
-export const initializeTraversal = (data: unknown): Traversal => ({
+export const initializeTraversalState = (data: unknown): TraversalState => ({
     data,
     path: [],
     branchPath: [],
     errors: new Problems(),
-    checkedDataByAlias: {},
-    scopes: new Scopes()
+    scopes: new Scopes(),
+    resolvedEntries: []
 })
 
-export type Traversal<Data = unknown> = {
+export type TraversalState<Data = unknown> = {
     data: Data
     path: string[]
     branchPath: string[]
     errors: Problems
-    checkedDataByAlias: Record<string, unknown[]>
     scopes: Scopes
+    resolvedEntries: ResolvedEntry[]
 }
+
+// TODO: Test weak map perf
+export type ResolvedEntry = [alias: string, data: unknown]

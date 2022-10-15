@@ -2,7 +2,6 @@ import { keySet } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base.js"
 import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
-import type { Traversal } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Bound {
@@ -89,9 +88,11 @@ export namespace Bound {
             super()
         }
 
-        allows(state: Traversal) {
-            // TODO: Fix
-            const actual = boundableToNumber(state.data as any)
+        // TODO: Actually narrow based on this?
+        precondition = this.child
+
+        allows(data: any) {
+            const actual = boundableToNumber(data)
             return isWithin(
                 invertedComparators[this.comparator],
                 this.limit,
@@ -143,9 +144,11 @@ export namespace Bound {
             super()
         }
 
-        allows(data: unknown) {
-            // TODO: Fix
-            const actual = boundableToNumber(data as any)
+        // TODO: Actually narrow based on this?
+        precondition = this.child
+
+        allows(data: any) {
+            const actual = boundableToNumber(data)
             return isWithin(this.comparator, this.limit, actual)
         }
 
@@ -176,14 +179,14 @@ export namespace Bound {
     const boundableToNumber = (data: BoundableData) =>
         typeof data === "number" ? data : data.length
 
-    type BoundableKind = "number" | "string" | "array"
+    // type BoundableKind = "number" | "string" | "array"
 
-    const toBoundableKind = (data: unknown) =>
-        typeof data === "number"
-            ? "number"
-            : typeof data === "string"
-            ? "string"
-            : Array.isArray(data)
-            ? "array"
-            : "unboundable"
+    // const toBoundableKind = (data: unknown) =>
+    //     typeof data === "number"
+    //         ? "number"
+    //         : typeof data === "string"
+    //         ? "string"
+    //         : Array.isArray(data)
+    //         ? "array"
+    //         : "unboundable"
 }

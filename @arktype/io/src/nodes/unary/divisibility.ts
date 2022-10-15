@@ -1,4 +1,5 @@
 import type { Base } from "../base.js"
+import { keywords } from "../terminal/keyword/keyword.js"
 import { Unary } from "./unary.js"
 
 export namespace Divisibility {
@@ -8,6 +9,8 @@ export namespace Divisibility {
         constructor(public child: Base.Node, public divisor: number) {
             super()
         }
+
+        precondition = keywords.number
 
         allows(data: number) {
             return data % this.divisor ? false : undefined

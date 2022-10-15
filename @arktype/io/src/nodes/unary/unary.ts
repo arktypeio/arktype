@@ -1,5 +1,5 @@
 import { Base } from "../base.js"
-import type { Traversal } from "../traversal/traversal.js"
+import type { TraversalState } from "../traversal/traversal.js"
 import { Bound } from "./bound.js"
 
 export namespace Unary {
@@ -19,7 +19,7 @@ export namespace Unary {
             return this.child.definitionRequiresStructure
         }
 
-        next(state: Traversal) {
+        next(state: TraversalState) {
             this.child.traverse(state)
         }
 

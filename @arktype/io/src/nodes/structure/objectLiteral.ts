@@ -1,7 +1,7 @@
 import type { Dictionary } from "@arktype/tools"
 import { Base, ObjectKind } from "../base.js"
 import { Optional } from "../expression/optional.js.js"
-import type { Traversal } from "../traversal/traversal.js"
+import type { TraversalState } from "../traversal/traversal.js"
 
 export namespace ObjectLiteral {
     export class Node extends Base.Node {
@@ -12,7 +12,7 @@ export namespace ObjectLiteral {
             super()
         }
 
-        allows(state: Traversal) {
+        allows(state: TraversalState) {
             if (!ObjectKind.check(this, "object", state)) {
                 return
             }
@@ -21,7 +21,7 @@ export namespace ObjectLiteral {
 
         /** Returns any extraneous keys, if the options is enabled and they exist */
         private checkChildrenAndGetIllegalKeys(
-            state: Traversal<Dictionary>
+            state: TraversalState<Dictionary>
         ): string[] {
             const rootData: any = state.data
             const uncheckedData: any = {}

@@ -1,4 +1,5 @@
-import type { Traversal } from "../traversal/traversal.js"
+import { throwInternalError } from "../../internal.js"
+import type { TraversalState } from "../traversal/traversal.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Alias {
@@ -9,19 +10,27 @@ export namespace Alias {
             super()
         }
 
-        allows(state: Traversal) {
-            const resolution = state.resolve(this.definition)
-            const checkedValues = state.checkedDataByAlias[this.definition]
-            if (!checkedValues) {
-                state.checkedDataByAlias[this.definition] = [state.data]
-            } else if (checkedValues.some((value) => value === state.data)) {
+        traverse(state: TraversalState) {
+            if (
+                state.resolvedEntries.some(
+                    (entry) =>
+                        entry[0] === this.definition && entry[1] === state.data
+                )
+            ) {
+                // If data has already been checked by this alias during this
+                // traversal, it must be valid or we wouldn't be here, so we can
+                // stop traversing.
                 return
-            } else {
-                state.checkedDataByAlias[this.definition].push(state.data)
             }
-            const priorContexts = state.clearContexts()
-            resolution.allows(state)
-            state.restoreContexts(priorContexts)
+            state.resolvedEntries.push([this.definition, state.data])
+            state.scopes.resolve(this.definition).traverse(state)
+            state.scopes.restoreResolved()
+        }
+
+        allows() {
+            return throwInternalError(
+                "Unexpected alias allows invocation (aliases should always checked via the overridden 'traverse' method)."
+            )
         }
 
         get mustBe() {
