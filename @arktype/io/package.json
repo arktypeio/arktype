@@ -1,0 +1,43 @@
+{
+    "name": "@arktype/io",
+    "version": "2.0.10-alpha",
+    "description": "One type from editor to runtime 🧭",
+    "author": {
+        "name": "David Blass",
+        "email": "david@arktype.io",
+        "url": "https://arktype.io"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/arktypeio/arktype.git",
+        "directory": "@arktype/io"
+    },
+    "type": "module",
+    "main": "./dist/cjs/api.js",
+    "types": "./dist/types/api.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/types/api.d.ts",
+            "import": "./dist/mjs/api.js",
+            "require": "./dist/cjs/api.js"
+        }
+    },
+    "scripts": {
+        "build": "ts-node ../../scripts/build.ts",
+        "typecheck": "tsc --noEmit",
+        "test": "c8 reassert --cmd mocha",
+        "tnt": "reassert --skipTypes --cmd mocha",
+        "testBuild": "ts-node ../../scripts/testBuild.ts",
+        "bench": "reassert bench",
+        "generateBenchData": "ts-node ./scripts/generateBenchData.ts",
+        "diag": "tsc --composite false --noEmit --diagnostics --incremental false"
+    },
+    "dependencies": {
+        "@arktype/tools": "workspace:*"
+    },
+    "devDependencies": {
+        "@arktype/assert": "workspace:*",
+        "@arktype/node": "workspace:*",
+        "fast-check": "3.1.4"
+    }
+}

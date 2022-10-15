@@ -13,7 +13,7 @@ Hello.
 
 ```ts
 //@snipLine:line
-import { type } from "@arktype/type"
+import { type } from "@arktype/io"
 
 //@snipStatement:employee
 const employee = type({

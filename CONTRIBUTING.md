@@ -103,7 +103,7 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@arktype/type](@arktype/type): Beautiful types from IDE to runtime 🧬
+-   [@arktype/io](@arktype/io): Beautiful types from IDE to runtime 🧬
 -   [@arktype/assert](@arktype/assert): Seamless testing for types and code ✅
 -   [@arktype/tools](@arktype/tools): Lightweight utilities and types shared across Redo packages 🧰
 -   [@arktype/node](@arktype/node): Node-based utilities, scripts, and configs for Redo packages ⚙️

@@ -1,4 +1,4 @@
-import { space } from "@arktype/io"
+import { space } from "../api.js"
 
 // Spaces are collections of types that can reference each other.
 export const types = space({

@@ -21,7 +21,7 @@ const fromTypePackageRoot = (...segments: string[]) =>
 export const config: DocGenConfig = {
     packages: [
         {
-            path: "@arktype/type",
+            path: "@arktype/io",
             api: {
                 outDir: fromTypeDocsDir("api")
             },

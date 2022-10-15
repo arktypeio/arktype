@@ -60,7 +60,7 @@ const config = {
                         className: "navbar-versions"
                     },
                     {
-                        href: "https://github.com/arktypeio/arktype/tree/main/@arktype/type",
+                        href: "https://github.com/arktypeio/arktype/tree/main/@arktype/io",
                         position: "right",
                         className: "navbar-github"
                     }

@@ -21,7 +21,7 @@
 
 ### Patch Changes
 
--   11f7cf6c: @arktype/type 2.0.
+-   11f7cf6c: @arktype/io 2.0.
 -   Updated dependencies [11f7cf6c]
     -   @arktype/node@2.2.3
     -   @arktype/tools@2.2.2
@@ -30,7 +30,7 @@
 
 ### Patch Changes
 
--   79d1f8e7: @arktype/type 2.0.
+-   79d1f8e7: @arktype/io 2.0.
 -   Updated dependencies [79d1f8e7]
     -   @arktype/node@2.2.2
     -   @arktype/tools@2.2.1

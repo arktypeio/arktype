@@ -27,8 +27,8 @@ export const createStackblitzDemo = ({
             description,
             template: "typescript",
             dependencies: {
-                // @lineFrom:@arktype/type/package.json:version => "@arktype/type": {?},
-                "@arktype/type": "2.0.10-alpha",
+                // @lineFrom:@arktype/io/package.json:version => "@arktype/io": {?},
+                "@arktype/io": "2.0.10-alpha",
                 // @lineFrom:@arktype/tools/package.json:version => "@arktype/tools": {?}
                 "@arktype/tools": "2.2.3"
             },

@@ -108,7 +108,7 @@ const getUpdatedLines = (
     const filePath = lineFromRefeferenceParts[1]
     if (!filePath) {
         throw new Error(
-            `${token} expression '${line}' required a file path, e.g. '${token}:@arktype/type/package.json:version'.`
+            `${token} expression '${line}' required a file path, e.g. '${token}:@arktype/io/package.json:version'.`
         )
     }
     if (filePath.endsWith(".json")) {

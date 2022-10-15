@@ -14,7 +14,7 @@
 
 We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@arktype/type](@arktype/type): Type-first validation from editor to runtime 🧬
+-   [@arktype/io](@arktype/io): Type-first validation from editor to runtime 🧬
 
 You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
 

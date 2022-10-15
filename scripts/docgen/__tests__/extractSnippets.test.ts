@@ -44,7 +44,7 @@ describe("Extracts snippets from file path", () => {
     })
     test("@snipLine", () => {
         assert(snippets[TEST_FILE_KEY]["line"].text).snap(
-            `import { type } from "@arktype/type"`
+            `import { type } from "@arktype/io"`
         )
     })
     test("@snipStart - @snipEnd", () => {

@@ -1,5 +1,5 @@
 ---
-"@arktype/type": patch
+"@arktype/io": patch
 ---
 
 add support for modulo operator

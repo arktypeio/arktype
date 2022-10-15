@@ -12,7 +12,7 @@ export type Narrow<T> = CastWithExclusion<T, NarrowRecurse<T>, []>
 /**
  * NOTE: Narrowing 'unknown' results in an empty object ({}).
  * I'm not sure how to change this without breaking complex types
- * in packages like @arktype/type that rely heavily on Narrow.
+ * in packages like @arktype/io that rely heavily on Narrow.
  *
  */
 export const narrow = <T>(arg: Narrow<T>) => arg as T

@@ -87,7 +87,7 @@ importers:
     devDependencies:
       '@arktype/assert': link:../assert
 
-  '@arktype/type':
+  '@arktype/io':
     specifiers:
       '@arktype/assert': workspace:*
       '@arktype/node': workspace:*
