@@ -1,7 +1,7 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
+import { ensureDir } from "@arktype/node"
 import type { DocGenSnippetConsumer } from "../config.js"
-import { ensureDir } from "@re-/node"
 
 export type CreateWriteFilesConsumerOptions = {
     rootOutDir: string

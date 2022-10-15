@@ -27,10 +27,10 @@ export const createStackblitzDemo = ({
             description,
             template: "typescript",
             dependencies: {
-                // @lineFrom:@re-/type/package.json:version => "@re-/type": {?},
-                "@re-/type": "2.0.10-alpha",
-                // @lineFrom:@re-/tools/package.json:version => "@re-/tools": {?}
-                "@re-/tools": "2.2.3"
+                // @lineFrom:@arktype/type/package.json:version => "@arktype/type": {?},
+                "@arktype/type": "2.0.10-alpha",
+                // @lineFrom:@arktype/tools/package.json:version => "@arktype/tools": {?}
+                "@arktype/tools": "2.2.3"
             },
             settings: {
                 compile: {

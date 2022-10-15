@@ -1,5 +1,5 @@
-name: Setup re-po
-description: Install dependencies and perform setup re-do/re-po
+name: Setup repo
+description: Install dependencies and perform setup arktypeio/arktype
 
 inputs:
     node:

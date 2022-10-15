@@ -1,10 +1,10 @@
 import { statSync } from "node:fs"
 import { relative } from "node:path"
+import { fromPackageRoot, readFile, walkPaths } from "@arktype/node"
 import type { Project } from "ts-morph"
 import type { DocGenSnippetExtractionConfig } from "../config.js"
 import type { PackageMetadata } from "../extract.js"
 import { getTransformedText } from "./transformFileText.js"
-import { fromPackageRoot, readFile, walkPaths } from "@re-/node"
 
 /** Represents paths mapped to snippet data for a file */
 export type PackageSnippets = Record<string, FileSnippets>
@@ -104,7 +104,7 @@ const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
             } else {
                 throw new Error(`Unrecognized snip '${parsedSnip.kind}'`)
             }
-            labeledSnippets[parsedSnip.id] = { text: text }
+            labeledSnippets[parsedSnip.id] = { text }
         }
     }
     if (openBlocks.length) {

@@ -2,7 +2,7 @@
 
 Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible.
 
-We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.dev 😻
+We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@arktype.io 😻
 
 ## Code of Conduct
 
@@ -15,7 +15,7 @@ Working on your first Pull Request? You can learn how from this free video serie
 
 [How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github)
 
-To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/re-do/re-po/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
+To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/arktypeio/arktype/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
 
 If you decide to fix an issue, please be sure to check the comment thread in case somebody is already working on a fix. If nobody is working on it at the moment, please leave a comment stating that you have started to work on it so other people don’t accidentally duplicate your effort.
 
@@ -32,7 +32,7 @@ When in doubt, keep your Pull Requests small. To give a Pull Request the best ch
 2. Clone the fork to your local machine and add upstream remote:
 
 ```sh
-git clone git@github.com:<yourname>/re-po.git && cd redo && git remote add upstream git@github.com:re-do/re-po.git
+git clone git@github.com:<yourname>/arktype.git && cd arktype && git remote add upstream git@github.com:arktypeio/arktype.git
 ```
 
 3. Synchronize your local `main` branch with the upstream one:
@@ -59,7 +59,7 @@ pnpm build # builds all packages
 
 We use a pnpm workspace to manage our packages. The most important things to keep in mind are:
 
--   The `package.json` at the re-po root contains devDependencies which are not directly imported (like `typescript`, `eslint`, etc.) and scripts that operate on the workspace as a whole (like `build`, which sequentially builds each package in the re-po).
+-   The `package.json` at the repo root contains devDependencies which are not directly imported (like `typescript`, `eslint`, etc.) and scripts that operate on the workspace as a whole (like `build`, which sequentially builds each package in the repo).
 -   Each package has its own `package.json`. These are used the usual way: to manage dependencies directly imported by the code, and to define scripts that run within the scope of that package (those scripts are sometimes called from scripts at the monorepo root).
 
 Take a look at [their documentation](https://pnpm.io/workspaces) if you are confused about the way packages are linked together or need to learn more.
@@ -95,7 +95,7 @@ All of these command will run as part of our CI process and must succeed in orde
 git push -u
 ```
 
-8. Go to [the repository](https://github.com/re-do/re-po) and make a Pull Request.
+8. Go to [the repository](https://github.com/arktypeio/arktype) and make a Pull Request.
 
 The core team is monitoring for Pull Requests. We will review your Pull Request and either merge it, request changes to it, or close it with an explanation.
 
@@ -103,19 +103,19 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@re-/type](@re-/type): Beautiful types from IDE to runtime 🧬
--   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
--   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
--   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
--   [redo.dev](./redo.dev): Source code for [redo.dev](https://redo.dev) 🔁
+-   [@arktype/type](@arktype/type): Beautiful types from IDE to runtime 🧬
+-   [@arktype/assert](@arktype/assert): Seamless testing for types and code ✅
+-   [@arktype/tools](@arktype/tools): Lightweight utilities and types shared across Redo packages 🧰
+-   [@arktype/node](@arktype/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
+-   [arktype.io](./arktype.io): Source code for [arktype.io](https://arktype.io) 🔁
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+Our current and planned work can always be found [here](https://github.com/arktypeio/arktype/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
 
 ## License
 
-By contributing your code to the re-do/re-po GitHub repository, you agree to license your contribution under the MIT license.
+By contributing your code to the arktypeio/arktype GitHub repository, you agree to license your contribution under the MIT license.
 
 ### Attribution note
 

@@ -6,7 +6,7 @@ import {
     requireResolve,
     shell,
     writeJson
-} from "../@re-/node/src/index.js"
+} from "../@arktype/node/src/index.js"
 import { getPackageDataFromCwd, isProd } from "./common.js"
 
 const {
@@ -22,7 +22,7 @@ const {
 
 const successMessage = `🎁 Successfully built ${packageName}!`
 
-export const redoTsc = (config: RedoTscConfig) => {
+export const arktypeTsc = (config: RedoTscConfig) => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
     if (!config?.skip?.types) {
@@ -105,7 +105,7 @@ export type RedoTscOptions = {
 
 export type RedoTscConfig = Required<RedoTscOptions>
 
-redoTsc({
+arktypeTsc({
     skip: {
         esm: process.argv.includes("--skipEsm"),
         cjs: process.argv.includes("--skipCjs"),

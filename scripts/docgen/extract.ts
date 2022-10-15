@@ -1,11 +1,11 @@
 import { join } from "node:path"
+import { fromHere, readPackageJson } from "@arktype/node"
 import { Project } from "ts-morph"
 import type { ApiEntryPoint } from "./api/index.js"
 import { extractPackageApi } from "./api/index.js"
 import type { DocGenConfig, DocGenPackageConfig } from "./config.js"
 import type { PackageSnippets } from "./snippets/index.js"
 import { extractPackageSnippets } from "./snippets/index.js"
-import { fromHere, readPackageJson } from "@re-/node"
 
 const REPO_ROOT = fromHere("..", "..")
 

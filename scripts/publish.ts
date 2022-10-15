@@ -6,11 +6,11 @@ import {
     shell,
     walkPaths,
     writeFile
-} from "@re-/node"
+} from "@arktype/node"
 
 const repoRoot = fromPackageRoot()
 const packageNames = ["assert", "node", "tools", "type"]
-const packageRoots = packageNames.map((_) => join(repoRoot, "@re-", _))
+const packageRoots = packageNames.map((_) => join(repoRoot, "@artkype", _))
 
 const cleanupNonDistributed = (outRoot: string) => {
     const nonDistributedDirs = walkPaths(outRoot, {

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { type } from "@re-/type"
+import { type } from "@arktype/type"
 
 //@snipStart:snip1
 // Most common TypeScript expressions just work...

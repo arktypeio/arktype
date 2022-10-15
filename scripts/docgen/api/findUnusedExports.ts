@@ -1,12 +1,16 @@
 import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
+import {
+    findPackageRoot,
+    fromPackageRoot,
+    readPackageJson
+} from "@arktype/node"
 import type { ExportedDeclarations, Node, SourceFile, ts } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
-import { findPackageRoot, fromPackageRoot, readPackageJson } from "@re-/node"
 
 const ignoreUnusedComment = "@ignore-unused"
-const rootDir = fromPackageRoot("@re-")
+const rootDir = fromPackageRoot("@artkype")
 const publicApis = ["assert", "type"]
 const exportAllRegex = /export \*/
 

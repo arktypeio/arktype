@@ -1,11 +1,11 @@
 {
     "extends": "./tsconfig.json",
-    "include": ["./@re-/*/src", "./@re-/*/docs", "./scripts"],
+    "include": ["./@arktype/*/src", "./@arktype/*/docs", "./scripts"],
     "exclude": ["**/node_modules", "**/dist"],
     "compilerOptions": {
         "noEmit": true,
         "paths": {
-            "@re-/*": ["./@re-/*/src/index.js"]
+            "@arktype/*": ["./@arktype/*/src/index.js"]
         }
     }
 }

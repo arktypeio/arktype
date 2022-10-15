@@ -1,4 +1,3 @@
 packages:
-    - "@re-/*"
-    - "redo.dev"
+    - "@arktype/*"
     - "arktype.io"

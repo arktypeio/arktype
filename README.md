@@ -1,12 +1,8 @@
 <div align="center">
-  <img src="./redo.dev/static/img/logo.svg" height="120px" />
-  <h1>re-do</h1>
+  <img src="./arktype.io/static/img/logo.svg" height="120px" />
+  <h1>arktype</h1>
 </div>
 <div align="center">
-
-Redo is a set of devtools that make it easier to build and test JS/TS. Their shared goal is to abstract some of the ecosystem's ugliest problems behind beautiful code that is fun to write and intuitive to read so that you can focus on creating something new instead of understanding something old.
-
-In other words, you can finally get back to doing what you love.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
@@ -14,18 +10,18 @@ In other words, you can finally get back to doing what you love.
 
 </div>
 
-## re-po
+## repo
 
 We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@re-/type](@re-/type): Type-first validation from editor to runtime 🧬
+-   [@arktype/type](@arktype/type): Type-first validation from editor to runtime 🧬
 
 You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
 
--   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
--   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
--   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
--   [redo.dev](./redo.dev): Source code for [redo.dev](https://redo.dev) 🔁
+-   [@arktype/assert](@arktype/assert): Seamless testing for types and code ✅
+-   [@arktype/tools](@arktype/tools): Lightweight utilities and types shared across Redo packages 🧰
+-   [@arktype/node](@arktype/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
+-   [arktype.io](./arktype.io): Source code for [arktype.io](https://arktype.io) 🔁
 
 ## Contributing
 
@@ -36,7 +32,7 @@ If you're interested in contributing to one of our packages for the first time:
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1).
+Our current and planned work can always be found [here](https://github.com/arktypeio/arktype/projects/1).
 
 ## License
 

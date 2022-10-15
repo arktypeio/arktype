@@ -1,4 +1,4 @@
-import { declare } from "@re-/type"
+import { declare } from "@arktype/type"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")

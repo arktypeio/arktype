@@ -1,6 +1,6 @@
 :root {
-    --redo-main: #264bcf;
-    --redo-secondary: #ffc40c;
+    --arktype-main: #264bcf;
+    --arktype-secondary: #ffc40c;
 }
 
 .rollerContainer {
@@ -41,7 +41,7 @@
 .roller div:nth-child(1):after {
     top: 73px;
     left: 73px;
-    background-color: var(--redo-main);
+    background-color: var(--arktype-main);
 }
 .roller div:nth-child(2) {
     animation-delay: -0.072s;
@@ -65,7 +65,7 @@
 .roller div:nth-child(4):after {
     top: 82px;
     left: 50px;
-    background-color: var(--redo-main);
+    background-color: var(--arktype-main);
 }
 .roller div:nth-child(5) {
     animation-delay: -0.18s;
@@ -73,7 +73,7 @@
 .roller div:nth-child(5):after {
     top: 81px;
     left: 42px;
-    background-color: var(--redo-main);
+    background-color: var(--arktype-main);
 }
 .roller div:nth-child(6) {
     animation-delay: -0.216s;
@@ -81,7 +81,7 @@
 .roller div:nth-child(6):after {
     top: 78px;
     left: 34px;
-    background-color: var(--redo-main);
+    background-color: var(--arktype-main);
 }
 .roller div:nth-child(7) {
     animation-delay: -0.252s;
@@ -89,7 +89,7 @@
 .roller div:nth-child(7):after {
     top: 73px;
     left: 27px;
-    background-color: var(--redo-main);
+    background-color: var(--arktype-main);
 }
 .roller div:nth-child(8) {
     animation-delay: -0.288s;
@@ -97,7 +97,7 @@
 .roller div:nth-child(8):after {
     top: 66px;
     left: 22px;
-    background-color: var(--redo-secondary);
+    background-color: var(--arktype-secondary);
 }
 @keyframes roller {
     0% {

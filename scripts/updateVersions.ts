@@ -1,6 +1,5 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { join } from "node:path"
-import { docgen } from "./docgen/main.js"
 import {
     fromHere,
     fromPackageRoot,
@@ -10,7 +9,8 @@ import {
     shell,
     writeFile,
     writeJson
-} from "@re-/node"
+} from "@arktype/node"
+import { docgen } from "./docgen/main.js"
 
 const suffixes = {
     type: "alpha"
@@ -18,7 +18,7 @@ const suffixes = {
 
 const forEachPackageWithSuffix = (transformer: SuffixTransformer) => {
     for (const [name, suffix] of Object.entries(suffixes)) {
-        const packagePath = fromHere("..", "@re-", name)
+        const packagePath = fromHere("..", "@artkype", name)
         const packageJsonPath = join(packagePath, "package.json")
         const changelogPath = join(packagePath, "CHANGELOG.md")
         const packageJson = readJson(packageJsonPath)
@@ -72,11 +72,11 @@ type SuffixTransformer = (args: {
 
 docgen()
 
-const REDO_DEV_DIR = fromPackageRoot("redo.dev")
+const REDO_DEV_DIR = fromPackageRoot("arktype.io")
 
 const docusaurusVersionedPackages = [
     {
-        packageRoot: fromPackageRoot("@re-", "type"),
+        packageRoot: fromPackageRoot("@artkype", "type"),
         docsName: "type"
     }
 ]

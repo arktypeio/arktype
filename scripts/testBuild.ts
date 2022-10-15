@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import { shell } from "../@re-/node/src/index.js"
+import { shell } from "../@arktype/node/src/index.js"
 import { cjsOut, mjsOut } from "./common.js"
 
 export const testBuild = (outDir: string) =>

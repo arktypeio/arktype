@@ -1,7 +1,7 @@
 const { join } = require("path")
 
 /**
- * SWC source maps seem to have problems on windows, breaking our @re-/assert tests.
+ * SWC source maps seem to have problems on windows, breaking our @arktype/assert tests.
  * As a workaround, we use a custom tsconfig to disable the SWC transpiler that is
  * our default on other platforms.
  *

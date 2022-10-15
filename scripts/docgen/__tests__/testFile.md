@@ -13,12 +13,12 @@ Hello.
 
 ```ts
 //@snipLine:line
-import { type } from "@re-/type"
+import { type } from "@arktype/type"
 
 //@snipStatement:employee
 const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
-    email: `/[a-z]*@redo.dev/`,
+    email: `/[a-z]*@arktype.io/`,
     about: {
         // Single or double bound numeric types
         age: "18<=integer<125",
@@ -32,7 +32,7 @@ type Employee = typeof employee.type
 
 // The error messages are so nice you might be tempted to break your code more often ;)
 const { error } = employee.validate({
-    email: "david@redo.biz",
+    email: "david@arktype.biz",
     about: {
         age: 17,
         bio: "I am very interesting.".repeat(5)

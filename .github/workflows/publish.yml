@@ -9,33 +9,33 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
-            - name: Checkout re-po
+            - name: Checkout repo
               uses: actions/checkout@v3
               with:
                   fetch-depth: 0
 
-            - name: Setup re-po
+            - name: Setup repo
               uses: ./.github/actions/setup
 
-            # - name: Build and publish redo.dev
+            # - name: Build and publish arktype.io
             #   run: pnpm build-pages
 
             # - name: Deploy to GitHub Pages
             #   uses: peaceiris/actions-gh-pages@v3
             #   with:
             #       github_token: ${{ secrets.GITHUB_TOKEN }}
-            #       publish_dir: ./redo.dev/dist
+            #       publish_dir: ./arktype.io/dist
 
     create-release-pr:
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
-            - name: Checkout re-po
+            - name: Checkout repo
               uses: actions/checkout@v3
               with:
                   fetch-depth: 0
 
-            - name: Setup re-po
+            - name: Setup repo
               uses: ./.github/actions/setup
 
             - name: Create and publish versions

@@ -60,7 +60,7 @@ const config = {
                         className: "navbar-versions"
                     },
                     {
-                        href: "https://github.com/re-do/re-po/tree/main/@re-/type",
+                        href: "https://github.com/arktypeio/arktype/tree/main/@arktype/type",
                         position: "right",
                         className: "navbar-github"
                     }
@@ -83,7 +83,7 @@ const config = {
                         items: [
                             {
                                 label: "GitHub",
-                                href: "https://github.com/re-do/re-po"
+                                href: "https://github.com/arktypeio/arktype"
                             },
                             {
                                 label: "Discord",

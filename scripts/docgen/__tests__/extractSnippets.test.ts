@@ -1,11 +1,11 @@
 import { relative } from "node:path"
+import { assert } from "@arktype/assert"
+import { fromHere, fromPackageRoot, readPackageJson } from "@arktype/node"
 import { describe, test } from "mocha"
 import { Project } from "ts-morph"
 import type { DocGenSnippetExtractionConfig } from "../config.js"
 import type { PackageMetadata } from "../extract.js"
 import { extractPackageSnippets } from "../snippets/extractSnippets.js"
-import { assert } from "@re-/assert"
-import { fromHere, fromPackageRoot, readPackageJson } from "@re-/node"
 
 const repoRoot = fromPackageRoot()
 const packageJsonData = readPackageJson(repoRoot)
@@ -44,7 +44,7 @@ describe("Extracts snippets from file path", () => {
     })
     test("@snipLine", () => {
         assert(snippets[TEST_FILE_KEY]["line"].text).snap(
-            `import { type } from "@re-/type"`
+            `import { type } from "@arktype/type"`
         )
     })
     test("@snipStart - @snipEnd", () => {

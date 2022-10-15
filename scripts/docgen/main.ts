@@ -1,10 +1,10 @@
 import { basename } from "node:path"
 import { stdout } from "node:process"
+import { fromPackageRoot } from "@arktype/node"
 import type { DocGenConfig } from "./config.js"
 import { extractRepo } from "./extract.js"
 import { createWriteFilesConsumer } from "./snippets/writeFilesConsumer.js"
 import { writeRepo } from "./write.js"
-import { fromPackageRoot } from "@re-/node"
 
 const fromRedoDevDir = (...segments: string[]) =>
     fromPackageRoot("arktype.io", ...segments)
@@ -16,12 +16,12 @@ const fromTypeDemosDir = (...segments: string[]) =>
     fromTypeDocsDir("demos", ...segments)
 
 const fromTypePackageRoot = (...segments: string[]) =>
-    fromPackageRoot("@re-", "type", ...segments)
+    fromPackageRoot("@artkype", "type", ...segments)
 
 export const config: DocGenConfig = {
     packages: [
         {
-            path: "@re-/type",
+            path: "@arktype/type",
             api: {
                 outDir: fromTypeDocsDir("api")
             },
@@ -53,11 +53,11 @@ export const config: DocGenConfig = {
 }
 
 export const docgen = () => {
-    console.group(`Generating docs for re-po...✍️`)
-    stdout.write("Extracting re-po metadata...")
+    console.group(`Generating docs for repo...✍️`)
+    stdout.write("Extracting repo metadata...")
     const packages = extractRepo(config)
     stdout.write("✅\n")
-    stdout.write("Updating re-po docs...")
+    stdout.write("Updating repo docs...")
     writeRepo({ config, packages })
     stdout.write("✅\n")
     console.log(`Enjoy your new docs! 📚`)

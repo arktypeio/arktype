@@ -3,7 +3,7 @@ import {
     findPackageRoot,
     readPackageJson,
     walkPaths
-} from "../@re-/node/src/index.js"
+} from "../@arktype/node/src/index.js"
 
 export const repoRoot = findPackageRoot()
 export const isProd = () => process.argv.includes("--prod") || !!process.env.CI

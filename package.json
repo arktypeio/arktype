@@ -1,10 +1,10 @@
 {
-    "name": "@re-/po",
+    "name": "@arktype/po",
     "private": true,
     "packageManager": "pnpm@7.11.0",
     "type": "module",
     "scripts": {
-        "build": "pnpm --filter '@re-/*' build",
+        "build": "pnpm --filter '@arktype/*' build",
         "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
         "test": "pnpm -r test && pnpm -r testBuild && pnpm test-repo-scripts",
         "lint": "eslint --max-warnings=0 .",
@@ -21,8 +21,8 @@
         "ci:publish": "ts-node ./scripts/publish.ts"
     },
     "devDependencies": {
-        "@re-/assert": "link:./@re-/assert",
-        "@re-/node": "link:./@re-/node",
+        "@arktype/assert": "link:./@arktype/assert",
+        "@arktype/node": "link:./@arktype/node",
         "@changesets/cli": "2.24.4",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.3.2",

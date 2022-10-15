@@ -10,9 +10,9 @@
 
 ```ts
 def: <Def>(
-    def: import("@re-/tools").CastWithExclusion<
+    def: import("@arktype/tools").CastWithExclusion<
         Def,
-        import("@re-/tools").NarrowRecurse<Def>,
+        import("@arktype/tools").NarrowRecurse<Def>,
         []
     >,
     options?: TypeOptions
