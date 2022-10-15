@@ -13,8 +13,7 @@ export namespace Check {
     export type ConfigKey<K1 extends RootKey> =
         keyof Required<Scope.Context>[K1]
 
-    export class State {
-        data: unknown
+    export class State<Data = unknown> {
         path: string[] = []
         contexts: Scope.Context[] = []
         unionDepth = 0
@@ -22,7 +21,7 @@ export namespace Check {
         checkedDataByAlias: Record<string, unknown[]> = {}
         errors: Diagnostics
 
-        constructor() {
+        constructor(public data: Data) {
             this.errors = new Diagnostics()
         }
 

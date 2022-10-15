@@ -1,16 +1,24 @@
-import type { Base } from "../../base.js"
-import { Keyword, keywords } from "../../terminal/keyword/keyword.js"
-import type { Check } from "../../traverse/check.js"
-import { Expression } from "../expression.js"
+import type { Base } from "../base.js"
+import { Keyword, keywords } from "../terminal/keyword/keyword.js"
+import type { Check } from "../traverse/check.js"
+import { Unary } from "./unary.js"
 
 export namespace Array {
-    export class Node extends Expression.Node<[Base.Node]> {
+    export class Node extends Unary.Node {
         readonly kind = "array"
 
-        precondition = keywords.array
+        constructor(public child: Base.Node) {
+            super()
+        }
 
-        allows(state: Check.State) {
-            if (Keyword.isTopType(this.children[0])) {
+        allows(data: unknown) {
+            if (!keywords.array.allows(data)) {
+                return false
+            }
+        }
+
+        override next(state: Check.State<unknown[]>) {
+            if (Keyword.isTopType(this.child)) {
                 return true
             }
             const rootData = state.data
@@ -21,15 +29,14 @@ export namespace Array {
                 state.path.pop()
             }
             state.data = rootData
-            return data.length
         }
 
         toString() {
-            return `${this.children[0].toString()}[]` as const
+            return `${this.child.toString()}[]` as const
         }
 
-        toTuple(child: unknown) {
-            return [child, "[]"] as const
+        tupleWrap(next: unknown) {
+            return [next, "[]"] as const
         }
 
         get mustBe() {

@@ -1,34 +1,24 @@
 import type { Base } from "../base.js"
-import { Expression } from "../expression.js"
-import { Keyword, keywords } from "../terminal/keyword/keyword.js"
-import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
+import { Unary } from "./unary.js"
 
 export namespace Divisibility {
-    export type Token = "%"
-
-    export type Tuple = [unknown, Token, NumberLiteral.Definition]
-
-    export class Node extends Expression.Node<[Base.Node]> {
+    export class Node extends Unary.Node {
         readonly kind = "divisibility"
 
-        constructor(child: Base.Node, public divisor: number) {
-            super([child])
+        constructor(public child: Base.Node, public divisor: number) {
+            super()
         }
 
-        precondition = keywords.number
-
         allows(data: number) {
-            if (data % this.divisor !== 0) {
-                return false
-            }
+            return data % this.divisor ? false : undefined
         }
 
         toString() {
-            return `${this.children[0].toString()}%${this.divisor}` as const
+            return `${this.child.toString()}%${this.divisor}` as const
         }
 
-        toTuple(child: unknown) {
-            return [child, "%", `${this.divisor}`] as const
+        tupleWrap(next: unknown) {
+            return [next, "%", `${this.divisor}`] as const
         }
 
         get mustBe() {

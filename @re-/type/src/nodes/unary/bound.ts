@@ -1,9 +1,9 @@
 import { keySet } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base.js"
-import { Expression } from "../expression.js"
 import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check.js"
+import { Unary } from "./unary.js"
 
 export namespace Bound {
     export const tokensToKinds = {
@@ -78,15 +78,15 @@ export namespace Bound {
         RightTuple<true>
     ]
 
-    export class LeftNode extends Expression.Node<[RightNode]> {
+    export class LeftNode extends Unary.Node {
         readonly kind = "bound"
 
         constructor(
             public limit: number,
             public comparator: DoublableToken,
-            child: RightNode
+            public child: RightNode
         ) {
-            super([child])
+            super()
         }
 
         allows(state: Check.State) {
@@ -102,11 +102,11 @@ export namespace Bound {
         toString() {
             return `${this.limit}${
                 this.comparator
-            }${this.children[0].toString()}` as const
+            }${this.child.toString()}` as const
         }
 
-        toTuple(child: RightTuple<true>) {
-            return [`${this.limit}`, this.comparator, child] as const
+        tupleWrap(next: RightTuple<true>) {
+            return [`${this.limit}`, this.comparator, next] as const
         }
 
         get mustBe() {
@@ -132,32 +132,32 @@ export namespace Bound {
 
     export class RightNode<
         HasLeft extends boolean = boolean
-    > extends Expression.Node<[Base.Node]> {
+    > extends Unary.Node {
         readonly kind = "bound"
 
         constructor(
-            child: Base.Node,
-            public comparator: DoublableToken,
+            public child: Base.Node,
+            public comparator: HasLeft extends true ? DoublableToken : Token,
             public limit: number
         ) {
-            super([child])
+            super()
         }
 
-        allows(state: Check.State) {
+        allows(data: unknown) {
             // TODO: Fix
-            const actual = boundableToNumber(state.data as any)
+            const actual = boundableToNumber(data as any)
             return isWithin(this.comparator, this.limit, actual)
         }
 
         toString() {
-            return `${this.children[0].toString()}${this.comparator}${
+            return `${this.child.toString()}${this.comparator}${
                 this.limit
             }` as const
         }
 
-        toTuple(child: unknown) {
+        tupleWrap(next: unknown) {
             return [
-                child,
+                next,
                 this.comparator,
                 `${this.limit}`
             ] as RightTuple<HasLeft>
@@ -170,15 +170,6 @@ export namespace Bound {
             }` as const
         }
     }
-
-    export const describe = (
-        comparator: Token,
-        limit: number,
-        kind: BoundableKind
-    ) =>
-        `Must be ${comparatorDescriptions[comparator]} ${limit}${
-            kind === "string" ? " characters" : kind === "array" ? " items" : ""
-        }`
 
     type BoundableData = number | string | readonly unknown[]
 

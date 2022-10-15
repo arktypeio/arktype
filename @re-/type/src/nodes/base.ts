@@ -1,6 +1,5 @@
 import { chainableNoOpProxy, toString } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
-import type { Keyword } from "./terminal/keyword/keyword.js"
 import { Check } from "./traverse/check.js"
 
 export namespace Base {
@@ -9,8 +8,8 @@ export namespace Base {
         abstract readonly kind: string //NodeKind
 
         check(data: unknown) {
-            const state = new Check.State()
-            Check.traverse(this, data, state)
+            const state = new Check.State(data)
+            this.traverse(state)
             return state.errors.length
                 ? {
                       errors: state.errors

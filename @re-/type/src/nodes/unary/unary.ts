@@ -1,21 +1,26 @@
-import { keySet } from "@re-/tools"
-import { Base } from "../../base.js"
+import { Base } from "../base.js"
+import type { Check } from "../traverse/check.js"
+import { Bound } from "./bound.js"
 
 export namespace Unary {
-    export const tokens = keySet({
-        "?": 1,
-        "[]": 1,
-        "%": 1
-    })
+    export const tokensToKinds = {
+        "?": "optional",
+        "[]": "array",
+        "%": "divisibility",
+        ...Bound.tokensToKinds
+    } as const
 
-    export type Token = keyof typeof tokens
+    export type Token = keyof typeof tokensToKinds
 
     export abstract class Node extends Base.Node {
-        definitionRequiresStructure: boolean
+        abstract child: Base.Node
 
-        constructor(public child: Base.Node) {
-            super()
-            this.definitionRequiresStructure = child.definitionRequiresStructure
+        get definitionRequiresStructure() {
+            return this.child.definitionRequiresStructure
+        }
+
+        next(state: Check.State) {
+            this.child.traverse(state)
         }
 
         abstract tupleWrap(
@@ -23,13 +28,15 @@ export namespace Unary {
         ): readonly [left: unknown, token: Token, right?: unknown]
 
         get ast() {
-            return this.tupleWrap(this.child.ast)
+            return this.tupleWrap(this.child.ast) as ReturnType<
+                this["tupleWrap"]
+            >
         }
 
-        get definition() {
+        get definition(): ReturnType<this["toString" | "tupleWrap"]> {
             return this.definitionRequiresStructure
                 ? this.tupleWrap(this.child.definition)
-                : this.toString()
+                : (this.toString() as any)
         }
     }
 }

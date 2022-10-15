@@ -1,25 +1,24 @@
 import type { Base } from "../base.js"
-import { Expression } from "../expression.js"
+import { Unary } from "./unary.js"
 
 export namespace Optional {
-    export class Node extends Expression.Node<[Base.Node]> {
+    export class Node extends Unary.Node {
         readonly kind = "optional"
 
-        allows(state: Check.State) {
-            if (state.data === undefined) {
-                return
-            }
-            this.children[0].allows(state)
+        constructor(public child: Base.Node) {
+            super()
         }
 
-        postcondition = this.children[0]
+        allows(data: unknown) {
+            return data === undefined || undefined
+        }
 
         toString() {
-            return `${this.children[0].toString()}?` as const
+            return `${this.child.toString()}?` as const
         }
 
-        toTuple(child: unknown) {
-            return [child, "?"] as const
+        tupleWrap(next: unknown) {
+            return [next, "?"] as const
         }
 
         get mustBe() {
