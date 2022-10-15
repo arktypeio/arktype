@@ -1,6 +1,6 @@
 {
     "name": "@arktype/tools",
-    "version": "2.2.3",
+    "version": "0.0.1",
     "description": "Lightweight utilities and types shared across Redo packages 🧰",
     "author": {
         "name": "David Blass",

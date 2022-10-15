@@ -1,6 +1,6 @@
 {
     "name": "@arktype/io",
-    "version": "2.0.10-alpha",
+    "version": "1.0.0-alpha",
     "description": "One type from editor to runtime 🧭",
     "author": {
         "name": "David Blass",
