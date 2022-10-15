@@ -1,7 +1,7 @@
 import type { Dictionary } from "@re-/tools"
 import { Base, ObjectKind } from "../base.js"
 import { Optional } from "../expression/optional.js"
-import type { Check } from "../traverse/check.js"
+import type { Traversal } from "../traversal/traversal.js"
 
 export namespace ObjectLiteral {
     export class Node extends Base.Node {
@@ -12,7 +12,7 @@ export namespace ObjectLiteral {
             super()
         }
 
-        allows(state: Check.State) {
+        allows(state: Traversal) {
             if (!ObjectKind.check(this, "object", state)) {
                 return
             }
@@ -21,7 +21,7 @@ export namespace ObjectLiteral {
 
         /** Returns any extraneous keys, if the options is enabled and they exist */
         private checkChildrenAndGetIllegalKeys(
-            state: Check.State<Dictionary>
+            state: Traversal<Dictionary>
         ): string[] {
             const rootData: any = state.data
             const uncheckedData: any = {}

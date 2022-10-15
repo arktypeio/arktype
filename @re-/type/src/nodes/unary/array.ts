@@ -1,6 +1,6 @@
 import type { Base } from "../base.js"
 import { Keyword, keywords } from "../terminal/keyword/keyword.js"
-import type { Check } from "../traverse/check.js"
+import type { Traversal } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Array {
@@ -17,7 +17,7 @@ export namespace Array {
             }
         }
 
-        override next(state: Check.State<unknown[]>) {
+        override next(state: Traversal<unknown[]>) {
             if (Keyword.isTopType(this.child)) {
                 return true
             }

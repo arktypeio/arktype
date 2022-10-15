@@ -1,49 +1,44 @@
 import type { Dictionary } from "@re-/tools"
 import type { ArktypeOptions } from "../type.js"
 import { Base } from "./base.js"
-import type { Check } from "./traverse/check.js"
+import type { Traversal } from "./traversal/traversal.js"
 
-export namespace Scope {
-    export type Context = ArktypeOptions & {
-        resolutions?: Dictionary<Base.Node>
+export class Scope extends Base.Node {
+    readonly kind = "scope"
+    definitionRequiresStructure: boolean
+
+    constructor(
+        public child: Base.Node,
+        public options: ArktypeOptions,
+        public resolutions?: Dictionary<Base.Node>
+    ) {
+        super()
+        this.definitionRequiresStructure = child.definitionRequiresStructure
     }
 
-    export const merge = (base: Context, merged: Context): Context => ({
-        errors: { ...base.errors, ...merged.errors },
-        resolutions: base.resolutions
-    })
+    allows() {
+        return undefined
+    }
 
-    export class Node extends Base.Node {
-        readonly kind = "scope"
-        children: [Base.Node]
-        hasStructure: boolean
+    next(state: Traversal) {
+        state.scopes.push(this)
+        this.child.traverse(state)
+        state.scopes.pop()
+    }
 
-        constructor(child: Base.Node, protected context: Context) {
-            super()
-            this.children = [child]
-            this.hasStructure = child.definitionRequiresStructure
-        }
+    toString() {
+        return this.child.toString()
+    }
 
-        allows(state: Check.State) {
-            state.pushContext(this.context)
-            this.children[0].allows(state)
-            state.popContext()
-        }
+    get ast() {
+        return this.child.ast
+    }
 
-        toString() {
-            return this.children[0].toString()
-        }
+    get definition() {
+        return this.child.definition
+    }
 
-        get ast() {
-            return this.children[0].ast
-        }
-
-        get definition() {
-            return this.children[0].definition
-        }
-
-        get mustBe() {
-            return this.children[0].mustBe
-        }
+    get mustBe() {
+        return this.child.mustBe
     }
 }

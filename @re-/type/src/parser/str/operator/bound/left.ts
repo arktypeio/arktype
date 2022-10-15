@@ -2,7 +2,7 @@ import { isKeyOf } from "@re-/tools"
 import type { Base } from "../../../../nodes/base.js"
 import { Bound } from "../../../../nodes/expression/bound.js"
 import type { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
-import type { toString } from "../../../../nodes/traverse/ast/toString.js"
+import type { toString } from "../../../../nodes/traversal/ast/toString.js"
 import { ParserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 

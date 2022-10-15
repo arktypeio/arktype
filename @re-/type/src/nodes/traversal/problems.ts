@@ -2,7 +2,7 @@ import { uncapitalize } from "@re-/tools"
 import { isIntegerLike } from "../../parser/str/operand/numeric.js"
 import { pathToString, stringifyData } from "../base.js"
 import type { Base } from "../base.js"
-import type { Check } from "./check.js"
+import type { Traversal } from "./traversal.js"
 
 export type Stringifiable<Data> = {
     raw: Data
@@ -14,21 +14,22 @@ const stringifiableFrom = <Data>(raw: Data) => ({
     toString: () => stringifyData(raw)
 })
 
-export abstract class Diagnostic<Node extends Base.Node> {
+export class Problem<Node extends Base.Node> {
     data: Stringifiable<Data>
     path: string[]
-    private unionDepth: number
+    private branchPath: string[]
     protected omitActualByDefault?: true
 
-    constructor(public type: Node, state: Check.State) {
-        this.data = stringifiableFrom(state.data as Data)
-        this.path = [...state.path]
-        this.unionDepth = state.unionDepth
-        this.options = (state.queryContext("errors", this.code) as any) ?? {}
+    constructor(public type: Node, traversal: Traversal) {
+        this.data = stringifiableFrom(traversal.data)
+        this.path = [...traversal.path]
+        this.branchPath = traversal.branchPath
+        this.options =
+            (traversal.scopes.query("errors", this.code) as any) ?? {}
     }
 
     get defaultMessage() {
-        let message = `Must be ${this.conditionDescription}`
+        let message = `Must be ${this.type.mustBe}`
         if (!this.options.omitActual) {
             if ("actual" in context) {
                 message += ` (was ${context.actual})`
@@ -36,7 +37,7 @@ export abstract class Diagnostic<Node extends Base.Node> {
                 !this.omitActualByDefault &&
                 // If we're in a union, don't redundandtly include data (other
                 // "actual" context is still included)
-                !this.unionDepth
+                !this.branchPath.length
             ) {
                 message += ` (was ${this.data.toString()})`
             }
@@ -46,15 +47,15 @@ export abstract class Diagnostic<Node extends Base.Node> {
 
     get message() {
         let result = this.options.message?.(this) ?? this.defaultMessage
-        if (this.unionDepth) {
-            const branchIndentation = "  ".repeat(this.unionDepth)
+        if (this.branchPath.length) {
+            const branchIndentation = "  ".repeat(this.branchPath.length)
             result = branchIndentation + result
         }
         return result
     }
 }
 
-export class Diagnostics extends Array<Diagnostic<Base.Node>> {
+export class Problems extends Array<Problem<Base.Node>> {
     get summary() {
         if (this.length === 1) {
             const error = this[0]
@@ -82,9 +83,9 @@ export class Diagnostics extends Array<Diagnostic<Base.Node>> {
 }
 
 export class ArktypeError extends TypeError {
-    cause: Diagnostics
+    cause: Problems
 
-    constructor(diagnostics: Diagnostics) {
+    constructor(diagnostics: Problems) {
         super(diagnostics.summary)
         this.cause = diagnostics
     }

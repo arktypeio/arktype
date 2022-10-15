@@ -2,9 +2,9 @@ import type { MutuallyExclusiveProps } from "@re-/tools"
 import type { LazyDynamicWrap } from "./internal.js"
 import { lazyDynamicWrap } from "./internal.js"
 import { Scope } from "./nodes/scope.js"
-import type { inferAst } from "./nodes/traverse/ast/infer.js"
-import type { validate } from "./nodes/traverse/ast/validate.js"
-import type { Diagnostics } from "./nodes/traverse/diagnostics.js"
+import type { inferAst } from "./nodes/traversal/ast/infer.js"
+import type { validate } from "./nodes/traversal/ast/validate.js"
+import type { Problems } from "./nodes/traversal/problems.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace } from "./space.js"
@@ -61,7 +61,7 @@ export type CheckFn<Inferred> = (data: unknown) => CheckResult<Inferred>
 export type CheckResult<Inferred> = MutuallyExclusiveProps<
     { data: Inferred },
     {
-        errors: Diagnostics
+        errors: Problems
     }
 >
 

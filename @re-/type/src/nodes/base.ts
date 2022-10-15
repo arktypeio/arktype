@@ -1,6 +1,7 @@
 import { chainableNoOpProxy, toString } from "@re-/tools"
 import type { DynamicArktype } from "../type.js"
-import { Check } from "./traverse/check.js"
+import type { Traversal } from "./traversal/traversal.js"
+import { initializeTraversal } from "./traversal/traversal.js"
 
 export namespace Base {
     export abstract class Node implements DynamicArktype {
@@ -8,7 +9,7 @@ export namespace Base {
         abstract readonly kind: string //NodeKind
 
         check(data: unknown) {
-            const state = new Check.State(data)
+            const state = initializeTraversal(data)
             this.traverse(state)
             return state.errors.length
                 ? {
@@ -27,7 +28,7 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        traverse(state: Check.State) {
+        traverse(state: Traversal) {
             const allowed = this.allows(state.data)
             if (!allowed) {
                 if (allowed === false) {
@@ -38,9 +39,9 @@ export namespace Base {
             }
         }
 
-        abstract allows(data: unknown): boolean | undefined
+        protected abstract allows(data: unknown): boolean | undefined
 
-        abstract next(state: Check.State): void
+        abstract next(state: Traversal): void
 
         abstract toString(): string
         abstract readonly mustBe: string

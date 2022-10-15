@@ -1,4 +1,4 @@
-import type { Check } from "../traverse/check.js"
+import type { Traversal } from "../traversal/traversal.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Alias {
@@ -9,7 +9,7 @@ export namespace Alias {
             super()
         }
 
-        allows(state: Check.State) {
+        allows(state: Traversal) {
             const resolution = state.resolve(this.definition)
             const checkedValues = state.checkedDataByAlias[this.definition]
             if (!checkedValues) {

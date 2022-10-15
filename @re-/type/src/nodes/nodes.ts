@@ -1,5 +1,5 @@
-import type { Union } from "./expression/branching/union.js"
-import type { Optional } from "./expression/optional.js"
+import type { Union } from "./branching/union.js"
+import type { Optional } from "./unary/optional.js"
 
 export type NodeKinds = {
     optional: Optional.Node

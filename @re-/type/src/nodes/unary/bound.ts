@@ -2,7 +2,7 @@ import { keySet } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base.js"
 import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
-import type { Check } from "../traverse/check.js"
+import type { Traversal } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Bound {
@@ -89,7 +89,7 @@ export namespace Bound {
             super()
         }
 
-        allows(state: Check.State) {
+        allows(state: Traversal) {
             // TODO: Fix
             const actual = boundableToNumber(state.data as any)
             return isWithin(
