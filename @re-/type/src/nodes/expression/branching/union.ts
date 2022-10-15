@@ -7,7 +7,7 @@ export namespace Union {
         readonly token = "|"
         readonly kind = "union"
 
-        allows(data: unknown) {
+        allows(state: Check.State) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
             const rootErrors = state.errors
             state.unionDepth++

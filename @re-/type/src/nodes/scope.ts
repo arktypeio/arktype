@@ -1,6 +1,7 @@
 import type { Dictionary } from "@re-/tools"
 import type { ArktypeOptions } from "../type.js"
 import { Base } from "./base.js"
+import type { Check } from "./traverse/check.js"
 
 export namespace Scope {
     export type Context = ArktypeOptions & {
@@ -23,7 +24,7 @@ export namespace Scope {
             this.hasStructure = child.definitionHasStructure
         }
 
-        allows(data: unknown) {
+        allows(state: Check.State) {
             state.pushContext(this.context)
             this.children[0].allows(state)
             state.popContext()

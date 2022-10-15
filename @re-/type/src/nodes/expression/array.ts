@@ -1,5 +1,6 @@
 import type { Base } from "../base.js"
 import { Keyword, keywords } from "../terminal/keyword/keyword.js"
+import type { Check } from "../traverse/check.js"
 import { Expression } from "./expression.js"
 
 export namespace Array {
@@ -8,10 +9,18 @@ export namespace Array {
 
         precondition = keywords.array
 
-        allows(data: unknown[]) {
+        allows(state: Check.State) {
             if (Keyword.isTopType(this.children[0])) {
                 return true
             }
+            const rootData = state.data
+            for (let i = 0; i < rootData.length; i++) {
+                state.path.push(String(i))
+                state.data = rootData[i] as any
+                this.child.allows(state)
+                state.path.pop()
+            }
+            state.data = rootData
             return data.length
         }
 

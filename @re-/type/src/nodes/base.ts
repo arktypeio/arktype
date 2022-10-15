@@ -29,13 +29,7 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        protected abstract allows(data: inferPrecondition<this>): AllowsResult
-
-        childForKey?(key: string): Node
-        childForKey?(key: number): Node
-
-        readonly precondition?: Node
-        readonly postcondition?: Node
+        abstract allows(data: inferPrecondition<this>): AllowsResult
 
         abstract toString(): string
         abstract readonly mustBe: string

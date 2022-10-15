@@ -5,10 +5,11 @@ export namespace Optional {
     export class Node extends Expression.Node<[Base.Node]> {
         readonly kind = "optional"
 
-        allows(data: unknown) {
-            if (data === undefined) {
-                return true
+        allows(state: Check.State) {
+            if (state.data === undefined) {
+                return
             }
+            this.children[0].allows(state)
         }
 
         postcondition = this.children[0]

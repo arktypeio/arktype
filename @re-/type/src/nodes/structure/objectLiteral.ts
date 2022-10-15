@@ -4,7 +4,7 @@ import { Optional } from "../expression/optional.js"
 import type { Check } from "../traverse/check.js"
 
 export namespace ObjectLiteral {
-    export class Node extends Base.Node<"objectLiteral"> {
+    export class Node extends Base.Node {
         readonly kind = "objectLiteral"
         hasStructure = true
 

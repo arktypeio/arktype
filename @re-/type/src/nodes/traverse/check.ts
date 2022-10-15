@@ -13,41 +13,6 @@ export namespace Check {
     export type ConfigKey<K1 extends RootKey> =
         keyof Required<Scope.Context>[K1]
 
-    // TODO: Compare recursion perf
-    export const checkRoot = (root: Base.Node, data: any, state: State) => {
-        const stack = [root]
-        do {
-            const precondition = stack[stack.length - 1].precondition
-            if (precondition) {
-                stack.push(precondition)
-            } else {
-                const node = stack.pop()!
-                const result = node.allows(data)
-                if (typeof result === "boolean") {
-                    if (!result) {
-                        state.errors.push()
-                    }
-                    return result
-                }
-            }
-        } while (true)
-        return lastResult
-    }
-
-    export const traverse = (root: Base.Node, data: any, state: State) => {
-        const result = checkRoot(root, data, state)
-        if (typeof result === "number") {
-            for (let i = 0; i < result; i++) {
-                traverse(root.childForKey!(i), data[i], state)
-            }
-        } else if (Array.isArray(result)) {
-            for (const childKey of result) {
-                traverse(root.childForKey!(childKey), data[childKey], state)
-            }
-        }
-        return state
-    }
-
     export class State {
         path: string[] = []
         private contexts: Scope.Context[] = []
