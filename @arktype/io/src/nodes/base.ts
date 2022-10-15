@@ -1,5 +1,6 @@
 import { chainableNoOpProxy, toString } from "@arktype/tools"
 import type { DynamicArktype } from "../type.js"
+import type { Keyword } from "./terminal/keyword/keyword.js"
 import type { Traversal } from "./traversal/traversal.js"
 import { initializeTraversal } from "./traversal/traversal.js"
 
@@ -28,8 +29,13 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
+        readonly precondition?: Base.Node
+
         traverse(state: Traversal) {
-            const allowed = this.allows(state.data)
+            if (this.precondition?.allows(state.data) === false) {
+                return false
+            }
+            const allowed = this.allows(state.data as InferPrecondition<this>)
             if (!allowed) {
                 if (allowed === false) {
                     state.errors.push()
@@ -39,7 +45,9 @@ export namespace Base {
             }
         }
 
-        protected abstract allows(data: unknown): boolean | undefined
+        protected abstract allows(
+            data: InferPrecondition<this>
+        ): boolean | undefined
 
         abstract next(state: Traversal): void
 
@@ -75,6 +83,12 @@ export namespace Base {
          */
         abstract definition: unknown
     }
+
+    type InferPrecondition<node extends Node> = node["precondition"] extends {
+        definition: Keyword.Definition
+    }
+        ? Keyword.Infer<node["precondition"]["definition"]>
+        : unknown
 }
 
 export const pathToString = (path: string[]) =>
