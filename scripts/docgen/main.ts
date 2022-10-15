@@ -7,10 +7,10 @@ import { writeRepo } from "./write.js"
 import { fromPackageRoot } from "@re-/node"
 
 const fromRedoDevDir = (...segments: string[]) =>
-    fromPackageRoot("redo.dev", ...segments)
+    fromPackageRoot("arktype.io", ...segments)
 
 const fromTypeDocsDir = (...segments: string[]) =>
-    fromRedoDevDir("docs", "type", ...segments)
+    fromRedoDevDir("docs", ...segments)
 
 const fromTypeDemosDir = (...segments: string[]) =>
     fromTypeDocsDir("demos", ...segments)

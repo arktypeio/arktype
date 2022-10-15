@@ -4,7 +4,7 @@
 </div>
 <div align="center">
 
-Type-first validation from editor to runtime🧬
+One type from editor to runtime ⛵
 
 ![Coverage: 98%](https://img.shields.io/badge/Coverage-98%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

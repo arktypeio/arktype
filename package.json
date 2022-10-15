@@ -8,7 +8,7 @@
         "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
         "test": "pnpm -r test && pnpm -r testBuild && pnpm test-repo-scripts",
         "lint": "eslint --max-warnings=0 .",
-        "build-pages": "pnpm --filter 'redo.dev' build",
+        "build-pages": "pnpm --filter 'arktype.io' build",
         "docgen": "ts-node ./scripts/docgen.ts && pnpm build-pages",
         "test-repo-scripts": "ts-node ./scripts/testScripts.ts",
         "changeset": "changeset",

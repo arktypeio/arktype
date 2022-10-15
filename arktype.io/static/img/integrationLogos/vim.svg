@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" viewBox="0 0 544.17 544.86" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <filter id="filter4121" x="-.019649" y="-.032676" width="1.0394" height="1.0654" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4151" x="-.039156" y="-.074004" width="1.0908" height="1.148" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4181" x="-.0026684" y="-.0028461" width="1.0044" height="1.0044" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4211" x="-.0015393" y="-.0016656" width="1.0031" height="1.0033" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4241" x="-.016618" y="-.0054324" width="1.0332" height="1.0064" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4271" x="-.0020906" y="-.0027017" width="1.0054" height="1.0045" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4301" x="-.030417" y="-.072581" width="1.0908" height="1.1452" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4331" x="-.049459" y="-.0043725" width="1.1074" height="1.0074" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4361" x="-.0015393" y="-.0016656" width="1.0031" height="1.0033" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4391" x="-.0039039" y="-.01313" width="1.01" height="1.037" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4421" x="-.011386" y="-.011386" width="1.0228" height="1.0228" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4451" x="-.0028139" y="-.0025563" width="1.0092" height="1.0092" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4481" x="-.03119" y="-.030635" width="1.0624" height="1.0613" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4511" x="-.0063579" y="-.0025563" width="1.0092" height="1.0092" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4541" x="-.0028139" y="-.0066155" width="1.0092" height="1.0092" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4571" x="-.0063579" y="-.0066155" width="1.0092" height="1.0092" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+  <filter id="filter4601" x="-.0020715" y="-.0020715" width="1.0041" height="1.0041" color-interpolation-filters="sRGB">
+   <feColorMatrix in="SourceGraphic" result="r" values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="g" values="0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 1 "/>
+   <feColorMatrix in="SourceGraphic" result="b" values="0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 1 "/>
+   <feBlend in="r" in2="g" mode="darken" result="minrg"/>
+   <feBlend in="minrg" in2="b" mode="darken" result="p"/>
+   <feBlend in="r" in2="g" mode="lighten" result="maxrg"/>
+   <feBlend in="maxrg" in2="b" mode="lighten" result="q"/>
+   <feComponentTransfer in="q" result="q2">
+    <feFuncR slope="0" type="linear"/>
+   </feComponentTransfer>
+   <feBlend in="p" in2="q2" mode="lighten" result="pq"/>
+   <feColorMatrix in="pq" result="qminp" values="-1 1 0 0 0 -1 1 0 0 0 -1 1 0 0 0 0 0 0 0 1 "/>
+   <feComposite in="qminp" in2="qminp" k3="1" operator="arithmetic" result="qminpc"/>
+   <feBlend in2="SourceGraphic" mode="screen" result="result2"/>
+   <feComposite in="result2" in2="SourceGraphic" operator="in" result="result1"/>
+  </filter>
+ </defs>
+ <g transform="translate(-69.981 -160.33)">
+  <g transform="matrix(1.5324 0 0 1.394 -54.912 -41.792)" stroke="#000">
+   <g stroke-width=".94572px">
+    <path d="m260.51 170.7-154.52 170.1 153.88 169.39 154.52-170.1-153.88-169.39z" fill="#019833" filter="url(#filter4601)"/>
+    <path d="m259.86 171.4v-14.883l-168.04 184.98h14.165l153.88-170.1z" fill="#66fe98" filter="url(#filter4571)"/>
+    <path d="m259.48 171.4v-14.883l168.04 184.98h-14.165l-153.88-170.1z" fill="#45fe02" filter="url(#filter4541)"/>
+    <path d="m259.86 511.17v14.883l-168.04-184.98h14.165l153.88 170.1z" fill="#017d17" filter="url(#filter4511)"/>
+   </g>
+   <path d="m122.99 175.31h108.35l6.6014 7.2666v22.301l-5.2356 7.0161h-11.837v110.75l101.98-110.75h-16.845l-5.9185-7.0161v-23.554l5.4632-5.5126h109.72l5.4632 6.0138v22.051l-248.12 280.14h-28.227l-8.1703-5.1925v-267.93h-13.683l-5.008-5.5126v-23.554l5.4632-6.5149z" fill="none" filter="url(#filter4481)" stroke-width="18.914"/>
+   <path d="m259.48 511.17v14.883l168.04-184.98h-14.165l-153.88 170.1z" fill="#005d04" filter="url(#filter4451)" stroke-width=".94572px"/>
+   <path d="m259.41 155.15-168.68 185.67 167.97 184.9 168.68-185.67-167.97-184.9z" fill="none" filter="url(#filter4421)" stroke-width="5.6743"/>
+   <path d="m232.5 186.64 6.1166-3.5437-6.2775-6.9101h-109.29l-5.5532 6.1128v23.122l6.1568 6.7772 2.9376-6.7772-3.8631-4.2524v-16.301l2.8973-2.8349h104.3l2.5754 4.6068z" fill="#fefefe" filter="url(#filter4391)" stroke-width=".94572px"/>
+   <path transform="matrix(.90139 0 0 .99223 -437.42 -185.31)" d="m828.94 369.5-4.2812 4.2812v15.719l3.75 3.75h19.812v15.188l-131.06 132.84v-147.84h21.781l4.4688-4.4688v-15.906l-4.125-3.1875h-114.62l-3.75 3.75v16.25l3.8125 3.8125h19.938v272.25l3.75 3.75h22.656l274.66-283.41v-12.5l-4.2812-4.2812h-112.5z" fill="none" filter="url(#filter4361)" stroke-width="1px"/>
+   <g>
+    <g stroke-width=".94572px">
+     <path d="m143.48 204.87v270.62l3.1869 4.0092-2.4992 5.243-7.0615-7.7488v-265.11z" fill="#fefefe" filter="url(#filter4331)"/>
+     <path d="m125.82 204.87-1.8211 6.5149h13.203l7.2843-6.5149h-18.666z" fill="#808080" filter="url(#filter4301)"/>
+     <path d="m307.19 212.19 2.8973-6.5558-4.185-4.2524v-14.529l4.8289-5.3155h100.76l3.8631 5.6699 5.4727-4.2524-5.6337-6.2014h-108.33l-5.3922 5.9356v23.3l5.5934 5.8028m-87.543 111.88-10.523 28.106 118.79-131.12v-15.592l-108.27 118.6z" fill="#fefefe" filter="url(#filter4271)"/>
+     <path d="m232.26 185.83 5.2356-3.7586v22.802l-6.0323 6.6402h-11.723v112.38l-10.699 27.814v-146.84h19.577l3.6421-3.2575v-15.786z" fill="#808080" filter="url(#filter4241)"/>
+    </g>
+    <path transform="matrix(.90139 0 0 .99223 -437.42 -185.31)" d="m828.94 369.5-4.2812 4.2812v15.719l3.75 3.75h19.812v15.188l-131.06 132.84v-147.84h21.781l4.4688-4.4688v-15.906l-4.125-3.1875h-114.62l-3.75 3.75v16.25l3.8125 3.8125h19.938v272.25l3.75 3.75h22.656l274.66-283.41v-12.5l-4.2812-4.2812h-112.5z" fill="#ccc" filter="url(#filter4211)" stroke-width="1px"/>
+    <path d="m415.35 185.93 5.4985-3.4945v21.922l-249.39 280.52h-26.477l2.5297-5.5331h20.281l247.24-281.01z" fill="#808080" filter="url(#filter4181)" stroke-width=".94572px"/>
+    <path d="m327.3 205.25-5.577 6.3897h-14.569l3.4145-6.3897h16.731z" fill="#808080" filter="url(#filter4151)" stroke-width=".94572px"/>
+   </g>
+   <g transform="matrix(.90139 0 0 .99223 -92.53 -192.24)" fill="#ccc" filter="url(#filter4121)" stroke-miterlimit="10">
+    <path d="m399.78 560a1.233 1.233 0 0 0-0.5625 0.28125l-5.3125 4.5625a1.233 1.233 0 0 0-0.34375 0.53125l-5.3125 14.875a1.233 1.233 0 0 0 0.28125 1.2812l4.0625 4.0625a1.233 1.233 0 0 0 0.875 0.34375h16.406a1.233 1.233 0 0 0 0.875-0.34375l4.2812-4.3125a1.233 1.233 0 0 0 0.3125-0.53125l4.5625-15.656a1.233 1.233 0 0 0-0.3125-1.2188l-3.5312-3.5312a1.233 1.233 0 0 0-0.875-0.34375h-15.156a1.233 1.233 0 0 0-0.25 0zm-30.062 41.938a1.233 1.233 0 0 0-0.9375 0.90625l-2.0312 8.0625a1.233 1.233 0 0 0 1.1875 1.5312h9.6562l-23.938 68.344a1.233 1.233 0 0 0 1.1562 1.625h34.844a1.233 1.233 0 0 0 1.1875-0.84375l2.2812-7.3438a1.233 1.233 0 0 0-1.1875-1.5938h-7.875l23.688-69.062a1.233 1.233 0 0 0-1.1562-1.625h-36.625a1.233 1.233 0 0 0-0.25 0zm110.88 0.25a1.233 1.233 0 0 0-0.6875 0.40625l-7.25 8.1875h-11.531l-7.6875-7.9688a1.233 1.233 0 0 0-0.875-0.375h-27.531a1.233 1.233 0 0 0-1.1562 0.8125l-2.5312 7.5625a1.233 1.233 0 0 0 1.1562 1.625h7.375l-22.938 67.594a1.233 1.233 0 0 0 1.1562 1.625h29.312a1.233 1.233 0 0 0 1.1562-0.8125l2.25-6.5938a1.233 1.233 0 0 0-1.1562-1.625h-5.125l14.625-46.031h26.469l-16.688 53.469a1.233 1.233 0 0 0 1.1875 1.5938h28.281a1.233 1.233 0 0 0 1.125-0.75l2.5312-6.0625a1.233 1.233 0 0 0-1.125-1.6875h-5.125l14.875-46.812h25.188l-16.938 53.719a1.233 1.233 0 0 0 1.1875 1.5938h31.062a1.233 1.233 0 0 0 1.1562-0.78125l2.5312-6.5938a1.233 1.233 0 0 0-1.1562-1.6562h-6.1562l18.719-60.781a1.233 1.233 0 0 0-0.1875-1.125l-5.8125-7.8125a1.233 1.233 0 0 0-1-0.46875h-22.219a1.233 1.233 0 0 0-0.90625 0.375l-7 7.6875h-12.25l-7.25-7.9375a1.233 1.233 0 0 0-0.90625-0.375h-17.906a1.233 1.233 0 0 0-0.25 0z" stroke-width="8"/>
+    <path d="m400.03 561.22-5.3125 4.5625-5.3125 14.875 4.0625 4.0625h16.406l4.2812-4.3125 4.5625-15.656-3.5312-3.5312h-15.156zm-30.062 41.938-2.0312 8.0625h11.375l-24.5 69.969h34.844l2.2812-7.3438h-9.5938l24.25-70.688h-36.625zm110.88 0.25-7.5938 8.5938h-12.625l-8.0625-8.3438h-27.531l-2.5312 7.5625h9.0938l-23.5 69.219h29.312l2.25-6.5938h-6.8125l15.406-48.469h29.062l-17.188 55.062h28.281l2.5312-6.0625h-6.8125l15.656-49.25h27.781l-17.438 55.312h31.062l2.5312-6.5938h-7.8438l19.219-62.375-5.8125-7.8125h-22.219l-7.3438 8.0625h-13.375l-7.5938-8.3125h-17.906z"/>
+   </g>
+  </g>
+ </g>
+</svg>
