@@ -1,9 +1,9 @@
 import { keySet } from "@re-/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base.js"
+import { Expression } from "../expression.js"
 import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
 import type { Check } from "../traverse/check.js"
-import { Expression } from "./expression.js"
 
 export namespace Bound {
     export const tokensToKinds = {

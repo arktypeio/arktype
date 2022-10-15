@@ -1,5 +1,5 @@
 import type { Base } from "../base.js"
-import { Expression } from "./expression.js"
+import { Expression } from "../expression.js"
 
 export namespace Optional {
     export class Node extends Expression.Node<[Base.Node]> {

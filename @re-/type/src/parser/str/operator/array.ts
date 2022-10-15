@@ -1,4 +1,4 @@
-import { Array } from "../../../nodes/expression/array.js"
+import { Array } from "../../../nodes/expression/unary/array.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 

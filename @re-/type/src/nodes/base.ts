@@ -5,8 +5,7 @@ import { Check } from "./traverse/check.js"
 
 export namespace Base {
     export abstract class Node implements DynamicArktype {
-        abstract children?: Node[]
-        abstract definitionHasStructure: boolean
+        abstract definitionRequiresStructure: boolean
         abstract readonly kind: string //NodeKind
 
         check(data: unknown) {
@@ -29,7 +28,20 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract allows(data: inferPrecondition<this>): AllowsResult
+        traverse(state: Check.State) {
+            const allowed = this.allows(state.data)
+            if (!allowed) {
+                if (allowed === false) {
+                    state.errors.push()
+                } else {
+                    this.next(state)
+                }
+            }
+        }
+
+        abstract allows(data: unknown): boolean | undefined
+
+        abstract next(state: Check.State): void
 
         abstract toString(): string
         abstract readonly mustBe: string
@@ -63,20 +75,6 @@ export namespace Base {
          */
         abstract definition: unknown
     }
-
-    export type inferPrecondition<node extends Node> =
-        node["precondition"] extends {
-            definition: Keyword.Definition
-        }
-            ? Keyword.Infer<node["precondition"]["definition"]>
-            : unknown
-
-    export type AllowsFn<node extends Node> = (
-        node: node,
-        data: inferPrecondition<node>
-    ) => AllowsResult
-
-    export type AllowsResult = boolean | Node[] | string[] | number
 }
 
 export const pathToString = (path: string[]) =>

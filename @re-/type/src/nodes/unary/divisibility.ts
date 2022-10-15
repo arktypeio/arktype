@@ -1,7 +1,7 @@
 import type { Base } from "../base.js"
+import { Expression } from "../expression.js"
 import { Keyword, keywords } from "../terminal/keyword/keyword.js"
 import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
-import { Expression } from "./expression.js"
 
 export namespace Divisibility {
     export type Token = "%"

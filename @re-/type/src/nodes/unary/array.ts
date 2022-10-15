@@ -1,7 +1,7 @@
-import type { Base } from "../base.js"
-import { Keyword, keywords } from "../terminal/keyword/keyword.js"
-import type { Check } from "../traverse/check.js"
-import { Expression } from "./expression.js"
+import type { Base } from "../../base.js"
+import { Keyword, keywords } from "../../terminal/keyword/keyword.js"
+import type { Check } from "../../traverse/check.js"
+import { Expression } from "../expression.js"
 
 export namespace Array {
     export class Node extends Expression.Node<[Base.Node]> {

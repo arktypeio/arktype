@@ -14,33 +14,16 @@ export namespace Check {
         keyof Required<Scope.Context>[K1]
 
     export class State {
+        data: unknown
         path: string[] = []
-        private contexts: Scope.Context[] = []
+        contexts: Scope.Context[] = []
         unionDepth = 0
         // TODO: More efficient structure?
         checkedDataByAlias: Record<string, unknown[]> = {}
         errors: Diagnostics
 
         constructor() {
-            this.errors = new Diagnostics(this)
-        }
-
-        clearContexts() {
-            const priorContexts = this.contexts
-            this.contexts = []
-            return priorContexts
-        }
-
-        restoreContexts(contexts: Scope.Context[]) {
-            this.contexts = contexts
-        }
-
-        pushContext(context: Scope.Context) {
-            this.contexts.push(context)
-        }
-
-        popContext() {
-            this.contexts.pop()
+            this.errors = new Diagnostics()
         }
 
         queryContext<K1 extends RootKey, K2 extends ConfigKey<K1>>(

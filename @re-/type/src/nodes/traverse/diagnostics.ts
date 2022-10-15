@@ -55,10 +55,6 @@ export abstract class Diagnostic<Node extends Base.Node> {
 }
 
 export class Diagnostics extends Array<Diagnostic<Base.Node>> {
-    constructor(private state: Check.State) {
-        super()
-    }
-
     get summary() {
         if (this.length === 1) {
             const error = this[0]

@@ -4,7 +4,7 @@ import type { Check } from "../traverse/check.js"
 export namespace Tuple {
     export class Node extends Base.Node {
         readonly kind = "tuple"
-        definitionHasStructure = true
+        definitionRequiresStructure = true
 
         constructor(public children: Base.Node[]) {
             super()

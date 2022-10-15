@@ -1,4 +1,4 @@
-import { Array } from "../../nodes/expression/array.js"
+import { Array } from "../../nodes/expression/unary/array.js"
 import { Optional } from "../../nodes/expression/optional.js"
 import type { ParserContext, parserContext } from "../common.js"
 import type { FullParse } from "./full.js"
