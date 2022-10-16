@@ -1,4 +1,3 @@
-import { throwInternalError } from "../../internal.js"
 import type { TraversalState } from "../traversal/traversal.js"
 import { Terminal } from "./terminal.js"
 
@@ -10,7 +9,7 @@ export namespace Alias {
             super()
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: TraversalState): state is TraversalState<unknown> {
             if (
                 state.resolvedEntries.some(
                     (entry) =>
@@ -20,17 +19,12 @@ export namespace Alias {
                 // If data has already been checked by this alias during this
                 // traversal, it must be valid or we wouldn't be here, so we can
                 // stop traversing.
-                return
+                return true
             }
             state.resolvedEntries.push([this.definition, state.data])
             state.scopes.resolve(this.definition).traverse(state)
             state.scopes.restoreResolved()
-        }
-
-        allows() {
-            return throwInternalError(
-                "Unexpected alias allows invocation (aliases should always checked via the overridden 'traverse' method)."
-            )
+            return true
         }
 
         get mustBe() {

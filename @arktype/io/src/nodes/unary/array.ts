@@ -11,15 +11,11 @@ export namespace Array {
             super()
         }
 
-        allows(data: unknown) {
-            if (!keywords.array.allows(data)) {
-                return false
+        traverse(state: TraversalState) {
+            if (!keywords.array.traverse()) {
             }
-        }
-
-        override next(state: TraversalState<unknown[]>) {
             if (Keyword.isTopType(this.child)) {
-                return true
+                return
             }
             const rootData = state.data
             for (let i = 0; i < rootData.length; i++) {

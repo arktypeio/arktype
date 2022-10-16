@@ -1,4 +1,4 @@
-import { Base } from "../../base.js.js"
+import { Base } from "../base.js"
 
 export namespace Branching {
     export type Token = "|" | "&"
@@ -7,8 +7,6 @@ export namespace Branching {
         "|": "or",
         "&": "and"
     } as const
-
-    type TokenConjunctions = typeof tokenConjunctions
 
     export abstract class Node<
         Token extends Branching.Token
@@ -33,12 +31,16 @@ export namespace Branching {
             return this.mapChildren("toString").join(this.token)
         }
 
-        toBinaryTuple(...branches: unknown[]) {
-            let root = branches[0]
-            for (let i = 1; i < branches.length; i++) {
-                root = [root, this.token, branches[i]]
+        toBinaryTuple(...children: unknown[]) {
+            let root = children[0]
+            for (let i = 1; i < children.length; i++) {
+                root = [root, this.token, children[i]]
             }
             return root as readonly [unknown, Token, unknown]
+        }
+
+        get ast() {
+            return this.toBinaryTuple(this.mapChildren("ast"))
         }
 
         get definition() {
@@ -53,7 +55,7 @@ export namespace Branching {
             )
         }
 
-        mapChildren<prop extends keyof Base.Node>(prop: prop) {
+        protected mapChildren<prop extends keyof Base.Node>(prop: prop) {
             return this.children.map((child) => child[prop])
         }
     }

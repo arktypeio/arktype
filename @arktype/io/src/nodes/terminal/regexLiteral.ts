@@ -1,3 +1,4 @@
+import type { TraversalState } from "../traversal/traversal.js"
 import { keywords } from "./keyword/keyword.js"
 import { Terminal } from "./terminal.js"
 
@@ -6,18 +7,19 @@ export namespace RegexLiteral {
 
     export class Node extends Terminal.Node {
         readonly kind = "regexLiteral"
-        private expression: RegExp
+        public expression: RegExp
 
         constructor(public definition: Definition) {
             super()
             this.expression = new RegExp(definition.slice(1, -1))
         }
 
-        allows(data: string) {
-            return this.expression.test(data)
+        traverse(state: TraversalState): state is TraversalState<string> {
+            return (
+                keywords.string.traverse(state) &&
+                this.expression.test(state.data)
+            )
         }
-
-        precondition = keywords.string
 
         get mustBe() {
             return `matched by ${this.definition}` as const

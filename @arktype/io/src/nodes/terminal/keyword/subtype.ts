@@ -6,7 +6,7 @@ class EmailNode extends Terminal.Node {
     readonly definition = "email"
     readonly mustBe = "a valid email"
     expression = /^(.+)@(.+)\.(.+)$/
-    allows(data: string) {
+    allows(data: string): data is string {
         return this.expression.test(data)
     }
     readonly precondition = tsKeywords.string

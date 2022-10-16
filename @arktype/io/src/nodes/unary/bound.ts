@@ -2,6 +2,7 @@ import { keySet } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base.js"
 import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
+import type { TraversalState } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Bound {
@@ -91,7 +92,7 @@ export namespace Bound {
         // TODO: Actually narrow based on this?
         precondition = this.child
 
-        allows(data: any) {
+        traverse(data: any) {
             const actual = boundableToNumber(data)
             return isWithin(
                 invertedComparators[this.comparator],
@@ -144,11 +145,8 @@ export namespace Bound {
             super()
         }
 
-        // TODO: Actually narrow based on this?
-        precondition = this.child
-
-        allows(data: any) {
-            const actual = boundableToNumber(data)
+        traverse(state: TraversalState) {
+            const actual = boundableToNumber(state.data)
             return isWithin(this.comparator, this.limit, actual)
         }
 

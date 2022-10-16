@@ -1,5 +1,4 @@
 import { Base } from "../base.js"
-import type { TraversalState } from "../traversal/traversal.js"
 import { Bound } from "./bound.js"
 
 export namespace Unary {
@@ -17,10 +16,6 @@ export namespace Unary {
 
         get definitionRequiresStructure() {
             return this.child.definitionRequiresStructure
-        }
-
-        next(state: TraversalState) {
-            this.child.traverse(state)
         }
 
         abstract tupleWrap(

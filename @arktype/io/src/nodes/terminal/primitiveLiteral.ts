@@ -1,3 +1,4 @@
+import type { TraversalState } from "../traversal/traversal.js"
 import { Terminal } from "./terminal.js"
 
 export namespace NumberLiteral {
@@ -12,8 +13,10 @@ export namespace NumberLiteral {
             super()
         }
 
-        allows(data: unknown): data is this["value"] {
-            return data === this.value
+        traverse(
+            state: TraversalState
+        ): state is TraversalState<this["value"]> {
+            return state.data === this.value
         }
 
         get mustBe() {
@@ -36,8 +39,10 @@ export namespace BigintLiteral {
             super()
         }
 
-        allows(data: unknown): data is this["value"] {
-            return data === this.value
+        traverse(
+            state: TraversalState
+        ): state is TraversalState<this["value"]> {
+            return state.data === this.value
         }
 
         get mustBe() {
@@ -65,8 +70,10 @@ export namespace StringLiteral {
             super()
         }
 
-        allows(data: unknown): data is this["value"] {
-            return data === this.value
+        traverse(
+            state: TraversalState
+        ): state is TraversalState<this["value"]> {
+            return state.data === this.value
         }
 
         get mustBe() {

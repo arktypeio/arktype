@@ -1,37 +1,37 @@
 import { Base } from "../base.js"
+import { keywords } from "../terminal/keyword/keyword.js"
 import type { TraversalState } from "../traversal/traversal.js"
+import { Bound } from "../unary/bound.js"
 
 export namespace Tuple {
     export class Node extends Base.Node {
         readonly kind = "tuple"
         definitionRequiresStructure = true
+        readonly length: number
+        private precondition: Bound.RightNode
 
         constructor(public children: Base.Node[]) {
             super()
+            this.length = children.length
+            this.precondition = new Bound.RightNode(
+                keywords.array,
+                "==",
+                this.length
+            )
         }
 
-        allows(state: TraversalState) {
-            if (!Structure.checkKind(this, "array", state)) {
+        traverse(state: TraversalState) {
+            if (!this.precondition.traverse(state)) {
                 return
             }
-            const expectedLength = this.children.length
-            const actualLength = state.data.length
-            if (expectedLength !== actualLength) {
-                this.addTupleLengthError(state, expectedLength, actualLength)
-                return
-            }
-            this.checkChildren(state)
-        }
-
-        private checkChildren(state: TraversalState) {
-            const rootData: any = state.data
-            for (let i = 0; i < this.children.length; i++) {
+            const elements: any = state.data
+            for (let i = 0; i < this.length; i++) {
                 state.path.push(String(i))
-                state.data = rootData[i]
-                this.children[i].allows(state)
+                state.data = elements[i]
+                this.children[i].traverse(state)
                 state.path.pop()
             }
-            state.data = rootData
+            state.data = elements
         }
 
         get ast() {
@@ -43,19 +43,19 @@ export namespace Tuple {
         }
 
         toString() {
-            if (!this.children.length) {
+            if (!this.length) {
                 return "[]"
             }
             let result = "["
             let i = 0
-            for (i; i < this.children.length - 1; i++) {
+            for (i; i < this.length - 1; i++) {
                 result += this.children[i] + ", "
             }
             return result + this.children[i] + "]"
         }
 
         get mustBe() {
-            return `an array of length ${this.children.length}`
+            return `${this.length} elements`
         }
     }
 }

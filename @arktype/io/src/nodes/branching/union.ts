@@ -1,5 +1,5 @@
-import type { Check } from "../../traverse/check.js.js"
-import { Diagnostics } from "../../traverse/diagnostics.js.js"
+import type { Problems } from "../traversal/problems.js"
+import type { TraversalState } from "../traversal/traversal.js"
 import { Branching } from "./branching.js"
 
 export namespace Union {
@@ -7,13 +7,13 @@ export namespace Union {
         readonly token = "|"
         readonly kind = "union"
 
-        allows(state: Check.State) {
+        traverse(state: TraversalState) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
             const rootErrors = state.errors
             state.unionDepth++
             for (const child of this.children) {
                 state.errors = new Diagnostics(state)
-                child.allows(state)
+                child.traverse(state)
                 if (!state.errors.length) {
                     break
                 }
@@ -40,5 +40,5 @@ export namespace Union {
         return branchDiagnosticSummary
     }
 
-    export type BranchDiagnosticsEntry = [string, Diagnostics]
+    export type BranchDiagnosticsEntry = [string, Problems]
 }
