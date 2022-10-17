@@ -11,20 +11,25 @@ export namespace Array {
             super()
         }
 
-        traverse(state: TraversalState) {
-            if (!keywords.array.traverse()) {
+        allows(state: TraversalState) {
+            if (!keywords.array.allows(state)) {
+                return false
             }
             if (Keyword.isTopType(this.child)) {
-                return
+                return true
             }
-            const rootData = state.data
-            for (let i = 0; i < rootData.length; i++) {
+            let allowsAllElements = true
+            const elements = state.data
+            for (let i = 0; i < elements.length; i++) {
                 state.path.push(String(i))
-                state.data = rootData[i] as any
-                this.child.traverse(state)
+                state.data = elements[i] as any
+                if (!this.child.allows(state)) {
+                    allowsAllElements = false
+                }
                 state.path.pop()
             }
-            state.data = rootData
+            state.data = elements
+            return allowsAllElements
         }
 
         toString() {
@@ -36,7 +41,7 @@ export namespace Array {
         }
 
         get mustBe() {
-            return "an array" as const
+            return `${this.child.mustBe} array` as const
         }
     }
 }

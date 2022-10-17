@@ -56,13 +56,17 @@ export class Problem<Node extends Base.Node> {
 }
 
 export class Problems extends Array<Problem<Base.Node>> {
+    add(node: Base.Node): false {
+        return false
+    }
+
     get summary() {
         if (this.length === 1) {
             const error = this[0]
             if (error.path.length) {
                 const pathPrefix =
                     error.path.length === 1 && isIntegerLike(error.path[0])
-                        ? `Value at index ${error.path[0]}`
+                        ? `Item ${error.path[0]}`
                         : pathToString(error.path)
                 return `${pathPrefix} ${uncapitalize(error.message)}`
             }

@@ -11,10 +11,17 @@ export namespace Divisibility {
             super()
         }
 
-        precondition = keywords.number
-
-        traverse(data: number) {
-            return data % this.divisor ? false : undefined
+        allows(state: TraversalState): boolean {
+            // TODO: Figure out subtypes here
+            if (!keywords.number.allows(state)) {
+                return false
+            }
+            const allowedByChild = this.child.allows(state)
+            const allowedByDivisbility =
+                state.data % this.divisor === 0
+                    ? true
+                    : state.problems.add(this)
+            return allowedByChild && allowedByDivisbility
         }
 
         toString() {
@@ -26,7 +33,7 @@ export namespace Divisibility {
         }
 
         get mustBe() {
-            return `divisible by ${this.divisor}` as const
+            return `${this.child.mustBe} divisible by ${this.divisor}` as const
         }
     }
 }

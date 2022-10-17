@@ -6,10 +6,10 @@ export namespace Intersection {
         readonly token = "&"
         readonly kind = "intersection"
 
-        traverse(state: TraversalState) {
+        allows(state: TraversalState) {
             // TODO: Ensure redundant errors aren't specified for subtypes
             for (const child of this.children) {
-                child.traverse(state)
+                child.allows(state)
             }
         }
     }

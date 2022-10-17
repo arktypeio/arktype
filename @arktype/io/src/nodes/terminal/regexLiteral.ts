@@ -14,10 +14,10 @@ export namespace RegexLiteral {
             this.expression = new RegExp(definition.slice(1, -1))
         }
 
-        traverse(state: TraversalState): state is TraversalState<string> {
+        allows(state: TraversalState): state is TraversalState<string> {
             return (
-                keywords.string.traverse(state) &&
-                this.expression.test(state.data)
+                keywords.string.allows(state) &&
+                (this.expression.test(state.data) || state.problems.add(this))
             )
         }
 

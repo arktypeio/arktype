@@ -7,20 +7,23 @@ export namespace Union {
         readonly token = "|"
         readonly kind = "union"
 
-        traverse(state: TraversalState) {
+        allows(state: TraversalState) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
-            const rootErrors = state.errors
+            const rootErrors = state.problems
             state.unionDepth++
             for (const child of this.children) {
-                state.errors = new Diagnostics(state)
-                child.traverse(state)
-                if (!state.errors.length) {
+                state.problems = new Diagnostics(state)
+                child.allows(state)
+                if (!state.problems.length) {
                     break
                 }
-                branchDiagnosticsEntries.push([child.toString(), state.errors])
+                branchDiagnosticsEntries.push([
+                    child.toString(),
+                    state.problems
+                ])
             }
             state.unionDepth--
-            state.errors = rootErrors
+            state.problems = rootErrors
             if (branchDiagnosticsEntries.length === this.children.length) {
                 return
             }

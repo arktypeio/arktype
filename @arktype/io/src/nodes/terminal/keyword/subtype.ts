@@ -1,69 +1,59 @@
+import type { TraversalState } from "../../traversal/traversal.js"
 import { Terminal } from "../terminal.js"
-import { tsKeywords } from "./ts.js"
+import { typeKeywords } from "./type.js"
 
-class EmailNode extends Terminal.Node {
-    readonly kind = "keyword"
+abstract class RegexKeywordNode extends Terminal.Node {
+    readonly kind = "regexKeyword"
+
+    allows(state: TraversalState): state is TraversalState<string> {
+        return (
+            typeKeywords.string.allows(state) &&
+            (this.expression.test(state.data) || state.problems.add(this))
+        )
+    }
+
+    abstract readonly expression: RegExp
+}
+
+class EmailNode extends RegexKeywordNode {
     readonly definition = "email"
     readonly mustBe = "a valid email"
     expression = /^(.+)@(.+)\.(.+)$/
-    allows(data: string): data is string {
-        return this.expression.test(data)
-    }
-    readonly precondition = tsKeywords.string
 }
 
-class AlphaonlyNode extends Terminal.Node {
-    readonly kind = "keyword"
+class AlphaonlyNode extends RegexKeywordNode {
     readonly definition = "alphaonly"
     readonly mustBe = "only letters"
     expression = /^[A-Za-z]+$/
-    allows(data: string) {
-        return this.expression.test(data)
-    }
-    readonly precondition = tsKeywords.string
 }
 
-class AlphanumericNode extends Terminal.Node {
-    readonly kind = "keyword"
+class AlphanumericNode extends RegexKeywordNode {
     readonly definition = "alphanumeric"
     readonly mustBe = "only letters and digits"
     expression = /^[\dA-Za-z]+$/
-    allows(data: string) {
-        return this.expression.test(data)
-    }
-    readonly precondition = tsKeywords.string
 }
 
-class LowercaseNode extends Terminal.Node {
-    readonly kind = "keyword"
+class LowercaseNode extends RegexKeywordNode {
     readonly definition = "lowercase"
     readonly mustBe = "only lowercase letters"
     expression = /^[a-z]*$/
-    allows(data: string) {
-        return this.expression.test(data)
-    }
-    readonly precondition = tsKeywords.string
 }
 
-class UppercaseNode extends Terminal.Node {
-    readonly kind = "keyword"
+class UppercaseNode extends RegexKeywordNode {
     readonly definition = "uppercase"
     readonly mustBe = "only uppercase letters"
     expression = /^[A-Z]*$/
-    allows(data: string) {
-        return this.expression.test(data)
-    }
-    readonly precondition = tsKeywords.string
 }
 
 class IntegerNode extends Terminal.Node {
     readonly kind = "keyword"
     readonly definition = "integer"
     readonly mustBe = "an integer"
-    allows(data: number) {
-        return Number.isInteger(data)
+    allows(state: TraversalState): state is TraversalState<number> {
+        return typeKeywords.number.allows(state) && Number.isInteger(state.data)
+            ? true
+            : state.problems.add(this)
     }
-    readonly precondition = tsKeywords.number
 }
 
 export const stringSubtypeKeywords = {

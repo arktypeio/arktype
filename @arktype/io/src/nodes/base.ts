@@ -10,10 +10,10 @@ export namespace Base {
 
         check(data: unknown) {
             const state = initializeTraversalState(data)
-            this.traverse(state)
-            return state.errors.length
+            this.allows(state)
+            return state.problems.length
                 ? {
-                      errors: state.errors
+                      errors: state.problems
                   }
                 : { data }
         }
@@ -28,7 +28,7 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract traverse(state: TraversalState): void
+        abstract allows(state: TraversalState): boolean
         abstract toString(): string
         abstract readonly mustBe: string
         abstract readonly ast: unknown

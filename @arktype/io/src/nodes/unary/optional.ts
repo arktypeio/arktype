@@ -10,10 +10,11 @@ export namespace Optional {
             super()
         }
 
-        traverse(state: TraversalState) {
+        allows(state: TraversalState) {
             if (state.data !== undefined) {
-                this.child.traverse(state)
+                return this.child.allows(state)
             }
+            return true
         }
 
         toString() {
@@ -25,7 +26,7 @@ export namespace Optional {
         }
 
         get mustBe() {
-            return "anything" as const
+            return `${this.child.mustBe} if defined` as const
         }
     }
 }

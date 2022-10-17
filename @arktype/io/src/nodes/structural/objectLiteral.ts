@@ -11,7 +11,7 @@ export namespace ObjectLiteral {
             super()
         }
 
-        traverse(state: TraversalState<Dictionary>) {
+        allows(state: TraversalState<Dictionary>) {
             const root = state.data
             for (let i = 0; i < this.children.length; i++) {
                 const k = this.keys[i]
@@ -19,7 +19,7 @@ export namespace ObjectLiteral {
                 state.path.push(k)
                 if (k in root) {
                     state.data = root[k] as any
-                    child.traverse(state)
+                    child.allows(state)
                     // TODO: Kind check
                 } else if (child.kind !== "optional") {
                     // this.addMissingKeyDiagnostic(state, k)

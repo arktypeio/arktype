@@ -79,7 +79,7 @@ export namespace Bound {
     ]
 
     export class LeftNode extends Unary.Node {
-        readonly kind = "bound"
+        readonly kind = "leftBound"
 
         constructor(
             public limit: number,
@@ -89,11 +89,8 @@ export namespace Bound {
             super()
         }
 
-        // TODO: Actually narrow based on this?
-        precondition = this.child
-
-        traverse(data: any) {
-            const actual = boundableToNumber(data)
+        allows(state: TraversalState) {
+            const actual = boundableToNumber(state.data)
             return isWithin(
                 invertedComparators[this.comparator],
                 this.limit,
@@ -145,7 +142,8 @@ export namespace Bound {
             super()
         }
 
-        traverse(state: TraversalState) {
+        allows(state: TraversalState) {
+            // TODO: Check if data is of the expected type
             const actual = boundableToNumber(state.data)
             return isWithin(this.comparator, this.limit, actual)
         }
