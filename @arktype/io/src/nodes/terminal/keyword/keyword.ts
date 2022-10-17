@@ -1,4 +1,5 @@
 import type { Base } from "../../base.js"
+import type { TraversalState } from "../../traversal/traversal.js"
 import { jsKeywords } from "./js.js"
 import { numberSubtypeKeywords, stringSubtypeKeywords } from "./subtype.js"
 import { tsKeywords } from "./ts.js"
@@ -20,11 +21,11 @@ export namespace Keyword {
     type Nodes = typeof keywords
 
     type Inferences = {
-        [K in Definition]: Nodes[K]["allows"] extends (
+        [K in Definition]: Nodes[K]["traverse"] extends (
             data: unknown
-        ) => data is infer T
+        ) => data is TraversalState<infer T>
             ? T
-            : Parameters<Nodes[K]["allows"]>[0]
+            : never
     }
 
     export const isTopType = (

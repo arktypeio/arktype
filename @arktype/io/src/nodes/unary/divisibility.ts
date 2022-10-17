@@ -17,11 +17,6 @@ export namespace Divisibility {
             return data % this.divisor ? false : undefined
         }
 
-        traverse(state: TraversalState) {
-            if (keywords.number.traverse(state.data)) {
-            }
-        }
-
         toString() {
             return `${this.child.toString()}%${this.divisor}` as const
         }
