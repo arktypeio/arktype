@@ -5,7 +5,7 @@ import { Terminal } from "../terminal.js"
 abstract class TypeKeywordNode extends Terminal.Node {
     readonly kind = "keyword"
 
-    allows(
+    traverse(
         state: TraversalState
     ): state is TraversalState<InferPostcondition<this>> {
         if (!this.allowsData(state.data)) {

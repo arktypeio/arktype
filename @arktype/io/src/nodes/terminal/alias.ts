@@ -9,7 +9,7 @@ export namespace Alias {
             super()
         }
 
-        allows(state: TraversalState) {
+        traverse(state: TraversalState) {
             if (
                 state.resolvedEntries.some(
                     (entry) =>
@@ -22,8 +22,8 @@ export namespace Alias {
                 return true
             }
             state.resolvedEntries.push([this.definition, state.data])
-            state.scopes.resolve(this.definition).allows(state)
-            state.scopes.restoreResolved()
+            state.resolve(this.definition).allows(state)
+            state.popResolution()
             return true
         }
 

@@ -14,9 +14,9 @@ export namespace RegexLiteral {
             this.expression = new RegExp(definition.slice(1, -1))
         }
 
-        allows(state: TraversalState): state is TraversalState<string> {
+        traverse(state: TraversalState): state is TraversalState<string> {
             return (
-                keywords.string.allows(state) &&
+                keywords.string.traverse(state) &&
                 (this.expression.test(state.data) || state.problems.add(this))
             )
         }

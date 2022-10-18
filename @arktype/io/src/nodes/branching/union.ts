@@ -7,13 +7,13 @@ export namespace Union {
         readonly token = "|"
         readonly kind = "union"
 
-        allows(state: TraversalState) {
+        traverse(state: TraversalState) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
             const rootErrors = state.problems
             state.unionDepth++
             for (const child of this.children) {
                 state.problems = new Diagnostics(state)
-                child.allows(state)
+                child.traverse(state)
                 if (!state.problems.length) {
                     break
                 }

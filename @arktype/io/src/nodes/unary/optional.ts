@@ -10,9 +10,9 @@ export namespace Optional {
             super()
         }
 
-        allows(state: TraversalState) {
+        traverse(state: TraversalState) {
             if (state.data !== undefined) {
-                return this.child.allows(state)
+                return this.child.traverse(state)
             }
             return true
         }

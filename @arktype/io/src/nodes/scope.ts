@@ -1,4 +1,3 @@
-import type { Dictionary } from "@arktype/tools"
 import type { ArktypeOptions } from "../type.js"
 import { Base } from "./base.js"
 import type { TraversalState } from "./traversal/traversal.js"
@@ -7,19 +6,15 @@ export class Scope extends Base.Node {
     readonly kind = "scope"
     definitionRequiresStructure: boolean
 
-    constructor(
-        public child: Base.Node,
-        public options: ArktypeOptions,
-        public resolutions?: Dictionary<Base.Node>
-    ) {
+    constructor(public child: Base.Node, public options: ArktypeOptions) {
         super()
         this.definitionRequiresStructure = child.definitionRequiresStructure
     }
 
-    allows(state: TraversalState) {
-        state.scopes.push(this)
-        this.child.allows(state)
-        state.scopes.pop()
+    traverse(state: TraversalState) {
+        state.pushScope(this)
+        this.child.traverse(state)
+        state.popScope()
     }
 
     toString() {

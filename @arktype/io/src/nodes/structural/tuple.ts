@@ -20,15 +20,15 @@ export namespace Tuple {
             )
         }
 
-        allows(state: TraversalState) {
-            if (!this.precondition.allows(state)) {
+        traverse(state: TraversalState) {
+            if (!this.precondition.traverse(state)) {
                 return
             }
             const elements: any = state.data
             for (let i = 0; i < this.length; i++) {
                 state.path.push(String(i))
                 state.data = elements[i]
-                this.children[i].allows(state)
+                this.children[i].traverse(state)
                 state.path.pop()
             }
             state.data = elements

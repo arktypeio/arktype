@@ -11,12 +11,12 @@ export namespace Divisibility {
             super()
         }
 
-        allows(state: TraversalState): boolean {
+        traverse(state: TraversalState): boolean {
             // TODO: Figure out subtypes here
-            if (!keywords.number.allows(state)) {
+            if (!keywords.number.traverse(state)) {
                 return false
             }
-            const allowedByChild = this.child.allows(state)
+            const allowedByChild = this.child.traverse(state)
             const allowedByDivisbility =
                 state.data % this.divisor === 0
                     ? true

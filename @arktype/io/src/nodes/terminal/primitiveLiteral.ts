@@ -13,7 +13,9 @@ export namespace NumberLiteral {
             super()
         }
 
-        allows(state: TraversalState): state is TraversalState<this["value"]> {
+        traverse(
+            state: TraversalState
+        ): state is TraversalState<this["value"]> {
             return state.data === this.value
         }
 
@@ -37,7 +39,9 @@ export namespace BigintLiteral {
             super()
         }
 
-        allows(state: TraversalState): state is TraversalState<this["value"]> {
+        traverse(
+            state: TraversalState
+        ): state is TraversalState<this["value"]> {
             return state.data === this.value
         }
 
@@ -66,7 +70,9 @@ export namespace StringLiteral {
             super()
         }
 
-        allows(state: TraversalState): state is TraversalState<this["value"]> {
+        traverse(
+            state: TraversalState
+        ): state is TraversalState<this["value"]> {
             return state.data === this.value
         }
 

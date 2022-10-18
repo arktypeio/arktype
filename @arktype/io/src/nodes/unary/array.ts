@@ -11,25 +11,21 @@ export namespace Array {
             super()
         }
 
-        allows(state: TraversalState) {
-            if (!keywords.array.allows(state)) {
+        traverse(state: TraversalState) {
+            if (!keywords.array.traverse(state)) {
                 return false
             }
             if (Keyword.isTopType(this.child)) {
                 return true
             }
-            let allowsAllElements = true
             const elements = state.data
             for (let i = 0; i < elements.length; i++) {
                 state.path.push(String(i))
                 state.data = elements[i] as any
-                if (!this.child.allows(state)) {
-                    allowsAllElements = false
-                }
+                this.child.traverse(state)
                 state.path.pop()
             }
             state.data = elements
-            return allowsAllElements
         }
 
         toString() {

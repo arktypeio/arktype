@@ -2,7 +2,7 @@ import { InternalArktypeError } from "../../internal.js"
 import type { DynamicSpace } from "../../space.js"
 import type { Base } from "../base.js"
 import type { Scope } from "../scope.js"
-import type { Keyword } from "../terminal/keyword/keyword.js"
+import type { Terminal } from "../terminal/terminal.js"
 import { Problem } from "./problems.js"
 
 export class TraversalState<Data = unknown> {
@@ -30,7 +30,7 @@ export class TraversalState<Data = unknown> {
         ;(this.data as any) = this.traversalStack.pop()!
     }
 
-    addAttribute(source: Base.Node, allowed: boolean) {
+    addAttribute(source: Terminal.Node, allowed: boolean) {
         // TODO: Add problems to list as they occur at path so we don't have to filter attributes later?
         const attributeValue = allowed ? true : new Problem(source, this)
         if (this.path in this.attributes) {
@@ -85,13 +85,8 @@ export class TraversalState<Data = unknown> {
     }
 }
 
-export type AttributeName = Keyword.Definition
-
-// TODO: Could attributeName be node kind? Each node could define it's own type.
-//  keywords would just be true or false, but other scould have parameters
-export type Attributes = Partial<
-    Record<AttributeName, true | Problem<Base.Node>>
->
+// Keys are terminal definitions
+export type Attributes = Partial<Record<string, true | Problem<Base.Node>>>
 
 const pushedPath = (path: string, key: string, delimiter = ".") =>
     path === "" ? key : path + delimiter + key

@@ -5,9 +5,9 @@ import { typeKeywords } from "./type.js"
 abstract class RegexKeywordNode extends Terminal.Node {
     readonly kind = "regexKeyword"
 
-    allows(state: TraversalState): state is TraversalState<string> {
+    traverse(state: TraversalState): state is TraversalState<string> {
         return (
-            typeKeywords.string.allows(state) &&
+            typeKeywords.string.traverse(state) &&
             (this.expression.test(state.data) || state.problems.add(this))
         )
     }
@@ -49,8 +49,9 @@ class IntegerNode extends Terminal.Node {
     readonly kind = "keyword"
     readonly definition = "integer"
     readonly mustBe = "an integer"
-    allows(state: TraversalState): state is TraversalState<number> {
-        return typeKeywords.number.allows(state) && Number.isInteger(state.data)
+    traverse(state: TraversalState): state is TraversalState<number> {
+        return typeKeywords.number.traverse(state) &&
+            Number.isInteger(state.data)
             ? true
             : state.problems.add(this)
     }
