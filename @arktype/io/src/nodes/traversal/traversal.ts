@@ -105,11 +105,6 @@ const poppedPath = (path: string, delimiter = ".") => {
     return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }
 
-export type PathData = {
-    attributes?: DataAttributes
-    problems?: Problems
-}
-
 export type ResolvedData = {
     alias: string
     data: unknown

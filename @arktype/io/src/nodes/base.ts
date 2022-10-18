@@ -1,7 +1,6 @@
 import { chainableNoOpProxy, toString } from "@arktype/tools"
 import type { DynamicArktype } from "../type.js"
-import type { TraversalState } from "./traversal/traversal.js"
-import { initializeTraversalState } from "./traversal/traversal.js"
+import { TraversalState } from "./traversal/traversal.js"
 
 export namespace Base {
     export abstract class Node implements DynamicArktype {
@@ -9,7 +8,7 @@ export namespace Base {
         abstract readonly kind: string //NodeKind
 
         check(data: unknown) {
-            const state = initializeTraversalState(data)
+            const state = new TraversalState(data)
             this.allows(state)
             return state.problems.length
                 ? {

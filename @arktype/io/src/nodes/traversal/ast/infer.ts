@@ -1,5 +1,4 @@
 import type { Evaluate } from "@arktype/tools"
-import type { Expression } from "../../expression/expression.js.js"
 import type { Keyword } from "../../terminal/keyword/keyword.js"
 import type {
     BigintLiteral,
@@ -7,6 +6,7 @@ import type {
     StringLiteral
 } from "../../terminal/primitiveLiteral.js"
 import type { RegexLiteral } from "../../terminal/regexLiteral.js"
+import type { Bound } from "../../unary/bound.js"
 
 export type inferAst<node, resolutions> = node extends string
     ? inferTerminal<node, resolutions>
@@ -21,10 +21,12 @@ export type inferAst<node, resolutions> = node extends string
         ? Evaluate<
               inferAst<node[0], resolutions> & inferAst<node[2], resolutions>
           >
-        : node extends Expression.LeftTypedAst
+        : node[1] extends Bound.Token
+        ? node[0] extends NumberLiteral.Definition
+            ? inferAst<node[2], resolutions>
+            : inferAst<node[0], resolutions>
+        : node[1] extends "%"
         ? inferAst<node[0], resolutions>
-        : node extends Expression.RightTypedAst
-        ? inferAst<node[2], resolutions>
         : // If the value at index 1 was none of the above, it's a normal tuple definition
           Evaluate<{
               [I in keyof node]: inferAst<node[I], resolutions>

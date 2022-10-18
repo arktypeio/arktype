@@ -1,9 +1,8 @@
 import type { IsAny } from "@arktype/tools"
 import type { ParseError } from "../../../parser/common.js"
-import type { Bound } from "../../expression/bound.js.js"
-import type { Branching } from "../../expression/branching/branching.js.js"
-import type { Divisibility } from "../../expression/divisibility.js.js"
+import type { Branching } from "../../branching/branching.js"
 import type { NumberLiteral } from "../../terminal/primitiveLiteral.js"
+import type { Bound } from "../../unary/bound.js"
 import type { inferAst } from "./infer.js"
 import type { toString } from "./toString.js"
 
@@ -33,7 +32,7 @@ type checkAst<ast, resolutions> = ast extends string
             : isBoundable<inferAst<left, resolutions>> extends true
             ? checkAst<left, resolutions>
             : [buildUnboundableMessage<toString<ast[0]>>]
-        : token extends Divisibility.Token
+        : token extends "%"
         ? isDivisible<inferAst<left, resolutions>> extends true
             ? checkAst<left, resolutions>
             : [buildIndivisibleMessage<toString<ast[0]>>]

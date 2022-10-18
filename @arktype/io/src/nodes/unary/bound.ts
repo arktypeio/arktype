@@ -1,7 +1,6 @@
 import { keySet } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base.js"
-import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
 import type { TraversalState } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
@@ -66,18 +65,6 @@ export namespace Bound {
         }
     }
 
-    export type LeftAst<Child extends RightAst = RightAst> = [
-        NumberLiteral.Definition,
-        DoublableToken,
-        Child
-    ]
-
-    export type LeftTuple = [
-        NumberLiteral.Definition,
-        DoublableToken,
-        RightTuple<true>
-    ]
-
     export class LeftNode extends Unary.Node {
         readonly kind = "leftBound"
 
@@ -104,7 +91,7 @@ export namespace Bound {
             }${this.child.toString()}` as const
         }
 
-        tupleWrap(next: RightTuple<true>) {
+        tupleWrap(next: ReturnType<RightNode["tupleWrap"]>) {
             return [`${this.limit}`, this.comparator, next] as const
         }
 
@@ -115,19 +102,6 @@ export namespace Bound {
             } ${this.limit}` as const
         }
     }
-
-    // TODO: Remove these?
-    export type RightAst<Child = unknown> = [
-        Child,
-        Token,
-        NumberLiteral.Definition
-    ]
-
-    export type RightTuple<HasLeft extends boolean = boolean> = [
-        unknown,
-        HasLeft extends true ? DoublableToken : Token,
-        NumberLiteral.Definition
-    ]
 
     export class RightNode<
         HasLeft extends boolean = boolean
@@ -155,11 +129,7 @@ export namespace Bound {
         }
 
         tupleWrap(next: unknown) {
-            return [
-                next,
-                this.comparator,
-                `${this.limit}`
-            ] as RightTuple<HasLeft>
+            return [next, this.comparator, `${this.limit}`] as const
         }
 
         get mustBe() {
