@@ -3,11 +3,10 @@ import type { DynamicSpace } from "../../space.js"
 import type { Base } from "../base.js"
 import type { Scope } from "../scope.js"
 import type { Keyword } from "../terminal/keyword/keyword.js"
-import { Problem, Problems } from "./problems.js"
+import { Problem } from "./problems.js"
 
 export class TraversalState<Data = unknown> {
-    private attributesByPath: Record<string, DataAttributes> = {}
-    private problemsByPath: Record<string, Problems> = {}
+    private attributes: Record<string, Attributes> = {}
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
     private scopes: Scope[]
@@ -31,21 +30,14 @@ export class TraversalState<Data = unknown> {
         ;(this.data as any) = this.traversalStack.pop()!
     }
 
-    addAttribute(name: AttributeName) {
-        if (this.path in this.attributesByPath) {
-            this.attributesByPath[this.path][name] = 1
+    addAttribute(source: Base.Node, allowed: boolean) {
+        // TODO: Add problems to list as they occur at path so we don't have to filter attributes later?
+        const attributeValue = allowed ? true : new Problem(source, this)
+        if (this.path in this.attributes) {
+            // TODO: Maybe not kind, something similar but more flexible?
+            this.attributes[this.path][source.kind] = attributeValue
         } else {
-            this.attributesByPath[this.path] = { [name]: 1 }
-        }
-    }
-
-    addProblem(source: Base.Node) {
-        if (this.path in this.problemsByPath) {
-            this.problemsByPath[this.path].add(source)
-        } else {
-            this.problemsByPath[this.path] = new Problems(
-                new Problem(source, this)
-            )
+            this.attributes[this.path] = { [source.kind]: attributeValue }
         }
     }
 
@@ -95,7 +87,11 @@ export class TraversalState<Data = unknown> {
 
 export type AttributeName = Keyword.Definition
 
-export type DataAttributes = Partial<Record<AttributeName, 1>>
+// TODO: Could attributeName be node kind? Each node could define it's own type.
+//  keywords would just be true or false, but other scould have parameters
+export type Attributes = Partial<
+    Record<AttributeName, true | Problem<Base.Node>>
+>
 
 const pushedPath = (path: string, key: string, delimiter = ".") =>
     path === "" ? key : path + delimiter + key
