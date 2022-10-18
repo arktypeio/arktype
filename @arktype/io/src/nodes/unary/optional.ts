@@ -1,3 +1,4 @@
+import type { TraversalState } from "../../traverse/traversal.js"
 import type { Base } from "../base.js"
 import { Unary } from "./unary.js"
 

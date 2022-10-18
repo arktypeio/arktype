@@ -27,7 +27,7 @@ export namespace Base {
             return chainableNoOpProxy
         }
 
-        abstract allows(data: unknown): boolean
+        abstract traverse(state: TraversalState): void
 
         abstract toString(): string
         abstract readonly mustBe: string

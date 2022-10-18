@@ -1,7 +1,7 @@
 import { uncapitalize } from "@arktype/tools"
-import { isIntegerLike } from "../../parser/str/operand/numeric.js"
-import { pathToString, stringifyData } from "../base.js"
-import type { Base } from "../base.js"
+import type { Base } from "../nodes/base.js"
+import { pathToString, stringifyData } from "../nodes/base.js"
+import { isIntegerLike } from "../parse/str/operand/numeric.js"
 import type { TraversalState } from "./traversal.js"
 
 export type Stringifiable<Data> = {
@@ -53,6 +53,10 @@ export class Problem<Node extends Base.Node> {
         }
         return result
     }
+}
+
+export class ProblemSet {
+    constructor() {}
 }
 
 export class Problems extends Array<Problem<Base.Node>> {

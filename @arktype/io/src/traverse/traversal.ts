@@ -1,12 +1,12 @@
-import { InternalArktypeError } from "../../internal.js"
-import type { DynamicSpace } from "../../space.js"
-import type { Base } from "../base.js"
-import type { Scope } from "../scope.js"
-import type { Terminal } from "../terminal/terminal.js"
-import { Problem } from "./problems.js"
+import { InternalArktypeError } from "../internal.js"
+import type { Base } from "../nodes/base.js"
+import type { Scope } from "../nodes/scope.js"
+import type { Terminal } from "../nodes/terminal/terminal.js"
+import type { DynamicSpace } from "../space.js"
+import { Problem, Problems } from "./problems.js"
 
 export class TraversalState<Data = unknown> {
-    private attributes: Record<string, Attributes> = {}
+    private problemsByPath: Record<string, Problems> = {}
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
     private scopes: Scope[]
@@ -30,14 +30,14 @@ export class TraversalState<Data = unknown> {
         ;(this.data as any) = this.traversalStack.pop()!
     }
 
-    addAttribute(source: Terminal.Node, allowed: boolean) {
-        // TODO: Add problems to list as they occur at path so we don't have to filter attributes later?
-        const attributeValue = allowed ? true : new Problem(source, this)
-        if (this.path in this.attributes) {
-            // TODO: Maybe not kind, something similar but more flexible?
-            this.attributes[this.path][source.kind] = attributeValue
+    addProblem(source: Terminal.Node) {
+        if (!this.problemsByPath[this.path]) {
+            this.problemsByPath[this.path] = new Problems()
+        }
+        if (this.path in this.problemsByPath) {
+            this.problemsByPath[this.path][source.definition] = attributeValue
         } else {
-            this.attributes[this.path] = { [source.kind]: attributeValue }
+            this.problemsByPath[this.path] = { [source.kind]: attributeValue }
         }
     }
 
@@ -84,9 +84,6 @@ export class TraversalState<Data = unknown> {
         this.scopes = this.resolutionStack.pop()!.priorScopes
     }
 }
-
-// Keys are terminal definitions
-export type Attributes = Partial<Record<string, true | Problem<Base.Node>>>
 
 const pushedPath = (path: string, key: string, delimiter = ".") =>
     path === "" ? key : path + delimiter + key

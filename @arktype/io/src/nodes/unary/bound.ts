@@ -66,7 +66,7 @@ export namespace Bound {
     }
 
     export class LeftNode extends Unary.Node {
-        readonly kind = "leftBound"
+        readonly kind = "bound"
 
         constructor(
             public limit: number,
@@ -78,10 +78,13 @@ export namespace Bound {
 
         traverse(state: TraversalState) {
             const actual = boundableToNumber(state.data)
+        }
+
+        allows(size: number) {
             return isWithin(
                 invertedComparators[this.comparator],
                 this.limit,
-                actual
+                size
             )
         }
 

@@ -1,3 +1,4 @@
+import type { TraversalState } from "../../traverse/traversal.js"
 import type { Base } from "../base.js"
 import { Unary } from "./unary.js"
 
@@ -14,6 +15,8 @@ export namespace Divisibility {
         allows(data: number) {
             return data % this.divisor === 0
         }
+
+        traverse(state: TraversalState) {}
 
         toString() {
             return `${this.child.toString()}%${this.divisor}` as const
