@@ -54,7 +54,7 @@ export class TraversalState<Data = unknown> {
         }
     }
 
-    pushResolve(alias: string) {
+    resolve(alias: string) {
         const resolution = this.space?.[alias]
         if (!resolution) {
             throw new InternalArktypeError(
