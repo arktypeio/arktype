@@ -1,6 +1,4 @@
 import type { Base } from "../base.js"
-import { keywords } from "../terminal/keyword/keyword.js"
-import type { TraversalState } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Divisibility {
@@ -11,17 +9,10 @@ export namespace Divisibility {
             super()
         }
 
-        traverse(state: TraversalState): boolean {
-            // TODO: Figure out subtypes here
-            if (!keywords.number.traverse(state)) {
-                return false
-            }
-            const allowedByChild = this.child.traverse(state)
-            const allowedByDivisbility =
-                state.data % this.divisor === 0
-                    ? true
-                    : state.problems.add(this)
-            return allowedByChild && allowedByDivisbility
+        requires = "number"
+
+        allows(data: number) {
+            return data % this.divisor === 0
         }
 
         toString() {

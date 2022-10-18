@@ -5,8 +5,8 @@ import { lazyDynamicWrap } from "./internal.js"
 import { Scope } from "./nodes/scope.js"
 import type { inferAst } from "./nodes/traversal/ast/infer.js"
 import type { validate } from "./nodes/traversal/ast/validate.js"
-import { Root } from "./parser/root.js"
-import type { ParseSpace } from "./parser/space.js"
+import { Root } from "./parse/root.js"
+import type { ParseSpace } from "./parse/space.js"
 import type {
     Arktype,
     ArktypeOptions,
