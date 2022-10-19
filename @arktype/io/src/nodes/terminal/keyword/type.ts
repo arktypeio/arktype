@@ -3,20 +3,27 @@ import type { Base } from "../../base/base.js"
 import type { Traversal } from "../../base/traversal.js"
 import { Terminal } from "../terminal.js"
 
-abstract class TypeKeywordNode extends Terminal.Node {
+abstract class TypeKeywordNode
+    extends Terminal.Node
+    implements Base.ProblemSource
+{
     readonly kind = "keyword"
 
     traverse(
-        state: Base.Traversal
-    ): state is Traversal<InferPostcondition<this>> {
-        if (!this.allowsData(state.data)) {
-            state.addProblem(this)
+        traversal: Base.Traversal
+    ): traversal is Traversal<InferPostcondition<this>> {
+        if (!this.allowsData(traversal.data)) {
+            traversal.addProblem(this)
             return false
         }
         return true
     }
 
     abstract allowsData(data: unknown): data is unknown
+
+    defaultMessage(traversal: Base.Traversal) {
+        return ""
+    }
 }
 
 type InferPostcondition<node> = node extends {

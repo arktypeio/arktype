@@ -1,6 +1,5 @@
 import type { ArktypeOptions } from "../type.js"
 import { Base } from "./base/base.js"
-import type { TraversalState } from "./traversal/traversal.js"
 
 export class Scope extends Base.Node {
     readonly kind = "scope"
@@ -11,10 +10,10 @@ export class Scope extends Base.Node {
         this.definitionRequiresStructure = child.definitionRequiresStructure
     }
 
-    traverse(state: Base.TraversalState) {
-        state.pushScope(this)
-        this.child.traverse(state)
-        state.popScope()
+    traverse(traversal: Base.Traversal) {
+        traversal.pushScope(this)
+        this.child.traverse(traversal)
+        traversal.popScope()
     }
 
     toString() {

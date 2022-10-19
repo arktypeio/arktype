@@ -77,8 +77,8 @@ export namespace Bound {
             super()
         }
 
-        traverse(state: Base.Traversal) {
-            const actual = boundableToNumber(state.data)
+        traverse(traversal: Base.Traversal) {
+            const actual = boundableToNumber(traversal.data)
             if (
                 !isWithin(
                     invertedComparators[this.comparator],
@@ -86,7 +86,7 @@ export namespace Bound {
                     actual
                 )
             ) {
-                state.addProblem(this)
+                traversal.addProblem(this)
             }
         }
 
@@ -129,9 +129,9 @@ export namespace Bound {
             super()
         }
 
-        traverse(state: Base.Traversal) {
+        traverse(traversal: Base.Traversal) {
             // TODO: Check if data is of the expected type
-            const actual = boundableToNumber(state.data)
+            const actual = boundableToNumber(traversal.data)
             return isWithin(this.comparator, this.limit, actual)
         }
 

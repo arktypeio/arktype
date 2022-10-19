@@ -14,9 +14,9 @@ export namespace NumberLiteral {
         }
 
         traverse(
-            state: Base.Traversal
-        ): state is Base.Traversal<this["value"]> {
-            return state.data === this.value
+            traversal: Base.Traversal
+        ): traversal is Base.Traversal<this["value"]> {
+            return traversal.data === this.value
         }
 
         get mustBe() {
@@ -40,9 +40,9 @@ export namespace BigintLiteral {
         }
 
         traverse(
-            state: Base.Traversal
-        ): state is Base.Traversal<this["value"]> {
-            return state.data === this.value
+            traversal: Base.Traversal
+        ): traversal is Base.Traversal<this["value"]> {
+            return traversal.data === this.value
         }
 
         get mustBe() {
@@ -71,9 +71,9 @@ export namespace StringLiteral {
         }
 
         traverse(
-            state: Base.Traversal
-        ): state is Base.Traversal<this["value"]> {
-            return state.data === this.value
+            traversal: Base.Traversal
+        ): traversal is Base.Traversal<this["value"]> {
+            return traversal.data === this.value
         }
 
         get mustBe() {

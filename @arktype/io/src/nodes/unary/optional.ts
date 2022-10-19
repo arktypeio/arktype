@@ -10,9 +10,9 @@ export namespace Optional {
             super()
         }
 
-        traverse(state: Base.Traversal) {
-            if (state.data !== undefined) {
-                this.child.traverse(state)
+        traverse(traversal: Base.Traversal) {
+            if (traversal.data !== undefined) {
+                this.child.traverse(traversal)
             }
         }
 

@@ -10,12 +10,12 @@ export namespace Divisibility {
             super()
         }
 
-        traverse(state: Base.Traversal) {
-            if (!keywords.number.traverse(state)) {
+        traverse(traversal: Base.Traversal) {
+            if (!keywords.number.traverse(traversal)) {
                 return
             }
-            if (state.data % this.divisor !== 0) {
-                state.addProblem(this)
+            if (traversal.data % this.divisor !== 0) {
+                traversal.addProblem(this)
             }
         }
 

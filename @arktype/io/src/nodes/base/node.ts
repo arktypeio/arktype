@@ -26,7 +26,7 @@ export abstract class Node implements DynamicArktype {
         return chainableNoOpProxy
     }
 
-    abstract traverse(state: Base.Traversal): void
+    abstract traverse(traversal: Traversal): void
 
     abstract toString(): string
     abstract readonly mustBe: string

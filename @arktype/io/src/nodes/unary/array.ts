@@ -1,6 +1,5 @@
 import type { Base } from "../base/base.js"
 import { Keyword, keywords } from "../terminal/keyword/keyword.js"
-import type { TraversalState } from "../traversal/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Array {
@@ -11,17 +10,17 @@ export namespace Array {
             super()
         }
 
-        traverse(state: Base.TraversalState) {
-            if (!keywords.array.traverse(state)) {
+        traverse(traversal: Base.Traversal) {
+            if (!keywords.array.traverse(traversal)) {
                 return false
             }
             if (Keyword.isTopType(this.child)) {
                 return true
             }
-            const length = state.data.length
+            const length = traversal.data.length
             for (let i = 0; i < length; i++) {
-                state.pushKey(i)
-                this.child.traverse(state)
+                traversal.pushKey(i)
+                this.child.traverse(traversal)
             }
         }
 

@@ -1,8 +1,8 @@
 import { InternalArktypeError } from "../../internal.js"
 import type { DynamicSpace } from "../../space.js"
 import type { Scope } from "../scope.js"
-import type { Terminal } from "../terminal/terminal.js"
-import { Problems } from "./problems.js"
+
+import type { ProblemSource } from "./problems.js"
 
 export class Traversal<Data = unknown> {
     private problemsByPath: Record<string, Problems> = {}
@@ -38,7 +38,7 @@ export class Traversal<Data = unknown> {
         ;(this.data as any) = this.traversalStack.pop()!
     }
 
-    addProblem(source: Terminal.Node) {
+    addProblem(source: ProblemSource) {
         if (!this.problemsByPath[this.path]) {
             this.problemsByPath[this.path] = new Problems()
         } else {

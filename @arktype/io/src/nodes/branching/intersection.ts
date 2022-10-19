@@ -1,4 +1,4 @@
-import type { TraversalState } from "../traversal/traversal.js"
+import type { Base } from "../base/base.js"
 import { Branching } from "./branching.js"
 
 export namespace Intersection {
@@ -6,10 +6,10 @@ export namespace Intersection {
         readonly token = "&"
         readonly kind = "intersection"
 
-        traverse(state: Base.TraversalState) {
+        traverse(traversal: Base.Traversal) {
             // TODO: Ensure redundant errors aren't specified for subtypes
             for (const child of this.children) {
-                child.traverse(state)
+                child.traverse(traversal)
             }
         }
     }

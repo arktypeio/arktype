@@ -1,5 +1,4 @@
-import type { Problems } from "../traversal/problems.js"
-import type { TraversalState } from "../traversal/traversal.js"
+import type { Base } from "../base/base.js"
 import { Branching } from "./branching.js"
 
 export namespace Union {
@@ -7,23 +6,23 @@ export namespace Union {
         readonly token = "|"
         readonly kind = "union"
 
-        traverse(state: Base.TraversalState) {
+        traverse(traversal: Base.Traversal) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
-            const rootErrors = state.problems
-            state.unionDepth++
+            const rootErrors = traversal.problems
+            traversal.unionDepth++
             for (const child of this.children) {
-                state.problems = new Diagnostics(state)
-                child.traverse(state)
-                if (!state.problems.length) {
+                traversal.problems = new Diagnostics(traversal)
+                child.traverse(traversal)
+                if (!traversal.problems.length) {
                     break
                 }
                 branchDiagnosticsEntries.push([
                     child.toString(),
-                    state.problems
+                    traversal.problems
                 ])
             }
-            state.unionDepth--
-            state.problems = rootErrors
+            traversal.unionDepth--
+            traversal.problems = rootErrors
             if (branchDiagnosticsEntries.length === this.children.length) {
                 return
             }

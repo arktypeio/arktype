@@ -14,10 +14,13 @@ export namespace RegexLiteral {
             this.expression = new RegExp(definition.slice(1, -1))
         }
 
-        traverse(state: Base.Traversal): state is Base.Traversal<string> {
+        traverse(
+            traversal: Base.Traversal
+        ): traversal is Base.Traversal<string> {
             return (
-                keywords.string.traverse(state) &&
-                (this.expression.test(state.data) || state.problems.add(this))
+                keywords.string.traverse(traversal) &&
+                (this.expression.test(traversal.data) ||
+                    traversal.problems.add(this))
             )
         }
 

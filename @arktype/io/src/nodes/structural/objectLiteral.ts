@@ -1,6 +1,5 @@
 import type { Dictionary } from "@arktype/tools"
 import { Base } from "../base/base.js"
-import type { TraversalState } from "../traversal/traversal.js"
 
 export namespace ObjectLiteral {
     export class Node extends Base.Node {
@@ -11,22 +10,22 @@ export namespace ObjectLiteral {
             super()
         }
 
-        traverse(state: Base.TraversalState<Dictionary>) {
-            const root = state.data
+        traverse(traversal: Base.Traversal<Dictionary>) {
+            const root = traversal.data
             for (let i = 0; i < this.children.length; i++) {
                 const k = this.keys[i]
                 const child = this.children[i]
-                state.path.push(k)
+                traversal.path.push(k)
                 if (k in root) {
-                    state.data = root[k] as any
-                    child.traverse(state)
+                    traversal.data = root[k] as any
+                    child.traverse(traversal)
                     // TODO: Kind check
                 } else if (child.kind !== "optional") {
                     // this.addMissingKeyDiagnostic(state, k)
                 }
-                state.path.pop()
+                traversal.path.pop()
             }
-            state.data = root
+            traversal.data = root
         }
 
         get definition() {

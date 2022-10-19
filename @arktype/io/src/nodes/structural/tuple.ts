@@ -1,6 +1,5 @@
 import { Base } from "../base/base.js"
 import { keywords } from "../terminal/keyword/keyword.js"
-import type { TraversalState } from "../traversal/traversal.js"
 import { Bound } from "../unary/bound.js"
 
 export namespace Tuple {
@@ -20,18 +19,18 @@ export namespace Tuple {
             )
         }
 
-        traverse(state: Base.TraversalState) {
-            if (!this.precondition.traverse(state)) {
+        traverse(traversal: Base.Traversal) {
+            if (!this.precondition.traverse(traversal)) {
                 return
             }
-            const elements: any = state.data
+            const elements: any = traversal.data
             for (let i = 0; i < this.length; i++) {
-                state.path.push(String(i))
-                state.data = elements[i]
-                this.children[i].traverse(state)
-                state.path.pop()
+                traversal.path.push(String(i))
+                traversal.data = elements[i]
+                this.children[i].traverse(traversal)
+                traversal.path.pop()
             }
-            state.data = elements
+            traversal.data = elements
         }
 
         get ast() {

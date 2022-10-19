@@ -9,11 +9,12 @@ export namespace Alias {
             super()
         }
 
-        traverse(state: Base.Traversal) {
+        traverse(traversal: Base.Traversal) {
             if (
-                state.resolvedEntries.some(
+                traversal.resolvedEntries.some(
                     (entry) =>
-                        entry[0] === this.definition && entry[1] === state.data
+                        entry[0] === this.definition &&
+                        entry[1] === traversal.data
                 )
             ) {
                 // If data has already been checked by this alias during this
@@ -21,9 +22,9 @@ export namespace Alias {
                 // stop traversing.
                 return true
             }
-            state.resolvedEntries.push([this.definition, state.data])
-            state.resolve(this.definition).allows(state)
-            state.popResolution()
+            traversal.resolvedEntries.push([this.definition, traversal.data])
+            traversal.resolve(this.definition).allows(traversal)
+            traversal.popResolution()
             return true
         }
 

@@ -1,7 +1,7 @@
 {
     "name": "@arktype/io",
     "version": "1.0.0-alpha",
-    "description": "One type from editor to runtime 🧭",
+    "description": "Native type syntax optimized from editor to runtime",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
