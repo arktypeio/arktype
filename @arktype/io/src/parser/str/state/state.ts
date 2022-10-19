@@ -1,5 +1,5 @@
 import type { ClassOf, InstanceOf } from "@arktype/tools"
-import type { Base } from "../../../nodes/base.js"
+import type { Base } from "../../../nodes/base/base.js"
 import type { Bound } from "../../../nodes/expression/bound.js.js"
 import type { Intersection } from "../../../nodes/expression/branching/intersection.js.js"
 import type { Union } from "../../../nodes/expression/branching/union.js.js"

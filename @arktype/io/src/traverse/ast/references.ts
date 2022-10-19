@@ -1,6 +1,6 @@
 import type { ElementOf, UnionToTuple } from "@arktype/tools"
-import type { Branching } from "../../branching/branching.js"
-import type { Unary } from "../../unary/unary.js"
+import type { Branching } from "../../nodes/branching/branching.js"
+import type { Unary } from "../../nodes/unary/unary.js"
 
 export type ReferencesOf<Ast, By extends string = string> = Filter<
     References<Ast>,

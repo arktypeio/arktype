@@ -1,4 +1,4 @@
-import type { Base } from "../../base.js"
+import type { Base } from "../../base/base.js"
 import type { TraversalState } from "../../traversal/traversal.js"
 import { numberSubtypeKeywords, stringSubtypeKeywords } from "./subtype.js"
 import { typeKeywords } from "./type.js"

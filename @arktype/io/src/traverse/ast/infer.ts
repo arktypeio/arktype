@@ -1,12 +1,12 @@
 import type { Evaluate } from "@arktype/tools"
-import type { Keyword } from "../../terminal/keyword/keyword.js"
+import type { Keyword } from "../../nodes/terminal/keyword/keyword.js"
 import type {
     BigintLiteral,
     NumberLiteral,
     StringLiteral
-} from "../../terminal/primitiveLiteral.js"
-import type { RegexLiteral } from "../../terminal/regexLiteral.js"
-import type { Bound } from "../../unary/bound.js"
+} from "../../nodes/terminal/primitiveLiteral.js"
+import type { RegexLiteral } from "../../nodes/terminal/regexLiteral.js"
+import type { Bound } from "../../nodes/unary/bound.js"
 
 export type inferAst<node, resolutions> = node extends string
     ? inferTerminal<node, resolutions>

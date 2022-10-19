@@ -1,6 +1,6 @@
 import { chainableNoOpProxy, toString } from "@arktype/tools"
-import type { DynamicArktype } from "../type.js"
-import { TraversalState } from "./traversal/traversal.js"
+import { TraversalState } from "../../traverse/traversal.js"
+import type { DynamicArktype } from "../../type.js"
 
 export namespace Base {
     export abstract class Node implements DynamicArktype {

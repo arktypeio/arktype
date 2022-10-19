@@ -1,5 +1,5 @@
 import type { Dictionary } from "@arktype/tools"
-import { Base } from "../base.js"
+import { Base } from "../base/base.js"
 import type { TraversalState } from "../traversal/traversal.js"
 
 export namespace ObjectLiteral {

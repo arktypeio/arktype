@@ -1,4 +1,4 @@
-import { Base } from "../base.js"
+import { Base } from "../base/base.js"
 
 export namespace Branching {
     export type Token = "|" | "&"

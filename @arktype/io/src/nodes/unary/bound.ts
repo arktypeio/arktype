@@ -1,7 +1,8 @@
 import { keySet } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
-import type { Base } from "../base.js"
-import type { TraversalState } from "../traversal/traversal.js"
+import type { TraversalState } from "../../traverse/traversal.js"
+import type { Base } from "../base/base.js"
+
 import { Unary } from "./unary.js"
 
 export namespace Bound {
@@ -78,6 +79,15 @@ export namespace Bound {
 
         traverse(state: TraversalState) {
             const actual = boundableToNumber(state.data)
+            if (
+                !isWithin(
+                    invertedComparators[this.comparator],
+                    this.limit,
+                    actual
+                )
+            ) {
+                state.addProblem(this)
+            }
         }
 
         allows(size: number) {

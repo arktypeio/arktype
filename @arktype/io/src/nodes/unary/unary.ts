@@ -1,4 +1,4 @@
-import { Base } from "../base.js"
+import { Base } from "../base/base.js"
 import { Bound } from "./bound.js"
 
 export namespace Unary {

@@ -1,31 +1,34 @@
-import { uncapitalize } from "@arktype/tools"
-import type { Base } from "../nodes/base.js"
-import { pathToString, stringifyData } from "../nodes/base.js"
-import { isIntegerLike } from "../parse/str/operand/numeric.js"
-import type { TraversalState } from "./traversal.js"
+import type { NormalizedJsTypeOf } from "@arktype/tools"
+import { jsTypeOf, uncapitalize } from "@arktype/tools"
+import type { Base } from "../nodes/base/base.js"
+import { pathToString, stringifyData } from "../nodes/base/base.js"
+import { isIntegerLike } from "../parser/str/operand/numeric.js"
 
 export type Stringifiable<Data> = {
     raw: Data
+    typeOf: NormalizedJsTypeOf<Data>
     toString(): string
 }
 
 const stringifiableFrom = <Data>(raw: Data) => ({
     raw,
+    typeOf: jsTypeOf(raw),
     toString: () => stringifyData(raw)
 })
 
-export class Problem<Node extends Base.Node> {
+export class Problem<Code extends ProblemCode> {
     data: Stringifiable<Data>
-    path: string[]
     private branchPath: string[]
     protected omitActualByDefault?: true
 
-    constructor(public type: Node, traversal: TraversalState) {
-        this.data = stringifiableFrom(traversal.data)
-        this.path = [...traversal.path]
-        this.branchPath = traversal.branchPath
-        this.options =
-            (traversal.scopes.query("errors", this.code) as any) ?? {}
+    constructor(
+        public code: Code,
+        public type: Base.Node,
+        public path: string
+    ) {
+        this.data = stringifiableFrom(state.data)
+        this.branchPath = state.branchPath
+        this.options = (state.scopes.query("errors", this.code) as any) ?? {}
     }
 
     get defaultMessage() {
@@ -55,11 +58,27 @@ export class Problem<Node extends Base.Node> {
     }
 }
 
-export class ProblemSet {
-    constructor() {}
+export type ProblemKinds = {
+    type: {}
+    regex: {}
+    numberSubtype: {}
+    divisibility: {}
+    bound: {}
+    multiple: {}
 }
 
-export class Problems extends Array<Problem<Base.Node>> {
+export type ProblemCode = keyof ProblemKinds
+
+export class ArktypeError extends TypeError {
+    cause: List
+
+    constructor(problems: List) {
+        super(problems.summary)
+        this.cause = problems
+    }
+}
+
+export class List extends Array<Problem<ProblemCode>> {
     add(node: Base.Node): false {
         return false
     }
@@ -87,14 +106,5 @@ export class Problems extends Array<Problem<Base.Node>> {
 
     throw() {
         throw new ArktypeError(this)
-    }
-}
-
-export class ArktypeError extends TypeError {
-    cause: Problems
-
-    constructor(diagnostics: Problems) {
-        super(diagnostics.summary)
-        this.cause = diagnostics
     }
 }

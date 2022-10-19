@@ -1,5 +1,5 @@
 import { InternalArktypeError } from "../internal.js"
-import type { Base } from "../nodes/base.js"
+import type { Base } from "../nodes/base/base.js"
 import type { Scope } from "../nodes/scope.js"
 import type { Terminal } from "../nodes/terminal/terminal.js"
 import type { DynamicSpace } from "../space.js"
@@ -10,6 +10,8 @@ export class TraversalState<Data = unknown> {
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
     private scopes: Scope[]
+    // TODO: Option
+    private delimiter = "."
 
     private path = ""
 
@@ -18,13 +20,20 @@ export class TraversalState<Data = unknown> {
         this.scopes = []
     }
 
-    pushKey(key: string) {
+    pushKey(key: string | number) {
         this.traversalStack.push(this.data)
-        this.path = pushedPath(this.path, key)
+        this.path =
+            this.path === ""
+                ? String(key)
+                : `${this.path}${this.delimiter}${key}`
     }
 
     popKey() {
-        this.path = poppedPath(this.path)
+        const lastDelimiterIndex = this.path.lastIndexOf(this.delimiter)
+        this.path =
+            lastDelimiterIndex === -1
+                ? ""
+                : this.path.slice(0, lastDelimiterIndex)
         // readonly modifier is to guide external use, but it is still most efficient
         // to directly set the value here.
         ;(this.data as any) = this.traversalStack.pop()!
@@ -83,14 +92,6 @@ export class TraversalState<Data = unknown> {
     popResolution() {
         this.scopes = this.resolutionStack.pop()!.priorScopes
     }
-}
-
-const pushedPath = (path: string, key: string, delimiter = ".") =>
-    path === "" ? key : path + delimiter + key
-
-const poppedPath = (path: string, delimiter = ".") => {
-    const lastDelimiterIndex = path.lastIndexOf(delimiter)
-    return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }
 
 export type ResolvedData = {

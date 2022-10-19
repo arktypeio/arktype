@@ -1,5 +1,5 @@
 import type { ArktypeOptions } from "../type.js"
-import { Base } from "./base.js"
+import { Base } from "./base/base.js"
 import type { TraversalState } from "./traversal/traversal.js"
 
 export class Scope extends Base.Node {

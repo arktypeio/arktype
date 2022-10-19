@@ -1,5 +1,5 @@
 import type { Dictionary } from "@arktype/tools"
-import type { Base } from "../nodes/base.js"
+import type { Base } from "../nodes/base/base.js"
 
 export type ParserContext = {
     aliases: unknown

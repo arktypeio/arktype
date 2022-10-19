@@ -5,8 +5,8 @@ import { Scope } from "./nodes/scope.js"
 import type { inferAst } from "./nodes/traversal/ast/infer.js"
 import type { validate } from "./nodes/traversal/ast/validate.js"
 import type { Problems } from "./nodes/traversal/problems.js"
-import type { ParseError } from "./parse/common.js"
-import { Root } from "./parse/root.js"
+import type { ParseError } from "./parser/common.js"
+import { Root } from "./parser/root.js"
 import type { ResolvedSpace } from "./space.js"
 
 const emptyAliases = { aliases: {} }

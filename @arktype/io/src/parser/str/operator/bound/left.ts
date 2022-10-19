@@ -1,5 +1,5 @@
 import { isKeyOf } from "@arktype/tools"
-import type { Base } from "../../../../nodes/base.js"
+import type { Base } from "../../../../nodes/base/base.js"
 import { Bound } from "../../../../nodes/expression/bound.js.js"
 import type { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
 import type { toString } from "../../../../nodes/traversal/ast/toString.js"
