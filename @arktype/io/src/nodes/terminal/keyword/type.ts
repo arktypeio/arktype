@@ -1,5 +1,5 @@
 import { hasJsType } from "@arktype/tools"
-import type { TraversalState } from "../../../traverse/traversal.js"
+import type { TraversalState } from "../../base/traversal.js"
 import { Terminal } from "../terminal.js"
 
 abstract class TypeKeywordNode extends Terminal.Node {

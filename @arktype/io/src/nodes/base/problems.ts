@@ -1,8 +1,8 @@
 import type { NormalizedJsTypeOf } from "@arktype/tools"
 import { jsTypeOf, uncapitalize } from "@arktype/tools"
-import type { Base } from "../nodes/base/base.js"
-import { pathToString, stringifyData } from "../nodes/base/base.js"
-import { isIntegerLike } from "../parser/str/operand/numeric.js"
+import { isIntegerLike } from "../../parser/str/operand/numeric.js"
+import type { Base } from "./base.js"
+import { pathToString, stringifyData } from "./base.js"
 
 export type Stringifiable<Data> = {
     raw: Data
@@ -23,8 +23,8 @@ export class Problem<Code extends ProblemCode> {
 
     constructor(
         public code: Code,
-        public type: Base.Node,
-        public path: string
+        public path: string,
+        public type: Base.Node
     ) {
         this.data = stringifiableFrom(state.data)
         this.branchPath = state.branchPath
@@ -70,15 +70,15 @@ export type ProblemKinds = {
 export type ProblemCode = keyof ProblemKinds
 
 export class ArktypeError extends TypeError {
-    cause: List
+    cause: Problems
 
-    constructor(problems: List) {
+    constructor(problems: Problems) {
         super(problems.summary)
         this.cause = problems
     }
 }
 
-export class List extends Array<Problem<ProblemCode>> {
+export class Problems extends Array<Problem<ProblemCode>> {
     add(node: Base.Node): false {
         return false
     }

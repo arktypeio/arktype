@@ -1,8 +1,8 @@
-import { InternalArktypeError } from "../internal.js"
-import type { Base } from "../nodes/base/base.js"
-import type { Scope } from "../nodes/scope.js"
-import type { Terminal } from "../nodes/terminal/terminal.js"
-import type { DynamicSpace } from "../space.js"
+import { InternalArktypeError } from "../../internal.js"
+import type { DynamicSpace } from "../../space.js"
+import type { Scope } from "../scope.js"
+import type { Terminal } from "../terminal/terminal.js"
+import type { Base } from "./base.js"
 import { Problem, Problems } from "./problems.js"
 
 export class TraversalState<Data = unknown> {
@@ -42,11 +42,8 @@ export class TraversalState<Data = unknown> {
     addProblem(source: Terminal.Node) {
         if (!this.problemsByPath[this.path]) {
             this.problemsByPath[this.path] = new Problems()
-        }
-        if (this.path in this.problemsByPath) {
-            this.problemsByPath[this.path][source.definition] = attributeValue
         } else {
-            this.problemsByPath[this.path] = { [source.kind]: attributeValue }
+            this.problemsByPath[this.path]
         }
     }
 
@@ -58,7 +55,7 @@ export class TraversalState<Data = unknown> {
         this.scopes.pop()
     }
 
-    queryOption<K1 extends RootKey, K2 extends ConfigKey<K1>>(
+    queryScopes<K1 extends RootKey, K2 extends ConfigKey<K1>>(
         baseKey: K1,
         specifierKey: K2
     ): OptionQueryResult<K1, K2> {

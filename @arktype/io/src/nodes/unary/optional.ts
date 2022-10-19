@@ -1,5 +1,5 @@
-import type { TraversalState } from "../../traverse/traversal.js"
 import type { Base } from "../base/base.js"
+import type { TraversalState } from "../base/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Optional {

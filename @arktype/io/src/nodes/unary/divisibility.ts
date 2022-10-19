@@ -1,4 +1,4 @@
-import type { TraversalState } from "../../traverse/traversal.js"
+import type { TraversalState } from "../base/traversal.js"
 import type { Base } from "../base/base.js"
 import { keywords } from "../terminal/keyword/keyword.js"
 import { Unary } from "./unary.js"
