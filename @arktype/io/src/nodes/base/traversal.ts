@@ -1,11 +1,11 @@
 import { InternalArktypeError } from "../../internal.js"
 import type { DynamicSpace } from "../../space.js"
 import type { Scope } from "../scope.js"
-
 import type { ProblemSource } from "./problems.js"
+import { Problem, ProblemSet, Stringifiable } from "./problems.js"
 
 export class Traversal<Data = unknown> {
-    private problemsByPath: Record<string, Problems> = {}
+    private problemsByPath: Record<string, ProblemSet> = {}
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
     private scopes: Scope[]
@@ -39,10 +39,15 @@ export class Traversal<Data = unknown> {
     }
 
     addProblem(source: ProblemSource) {
-        if (!this.problemsByPath[this.path]) {
-            this.problemsByPath[this.path] = new Problems()
+        const atPath = this.problemsByPath[this.path]
+        if (!atPath) {
+            this.problemsByPath[this.path] = new ProblemSet(
+                source,
+                this.path,
+                new Stringifiable(this.data as any)
+            )
         } else {
-            this.problemsByPath[this.path]
+            atPath.addIfUnique(source)
         }
     }
 

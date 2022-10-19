@@ -1,44 +1,57 @@
 import { jsTypeOf, toString } from "@arktype/tools"
 import type { Node } from "./node.js"
 
-export type ProblemSource<Data> = Node & {
+export type ProblemSource<Data = unknown> = Node & {
     defaultMessage(problem: Problem<Data>): string
 }
 
-export class Problem<Data> {
-    public data: Stringifiable<Data>
-
+export class Problem<Data = unknown> {
     constructor(
         public type: ProblemSource<Data>,
         public path: string,
-        data: Data
-    ) {
-        this.data = new Stringifiable(data)
-    }
+        public data: Stringifiable<Data>
+    ) {}
 
     message() {
         return this.type.defaultMessage(this)
     }
 }
 
-export class ProblemSet<Data> {
-    public data: Stringifiable<Data>
+export class ProblemSet<Data = unknown> {
+    problems: Problem<Data>[]
 
     constructor(
-        public type: ProblemSource<Data>,
+        initial: ProblemSource<Data>,
         public path: string,
-        data: Data
+        public data: Stringifiable<Data>
     ) {
-        this.data = new Stringifiable(data)
+        this.problems = [new Problem(initial, path, data)]
+    }
+
+    addIfUnique(source: ProblemSource<Data>) {
+        // TODO: Is mustBe best way to check for duplication?
+        if (
+            !this.problems.some(
+                (problem) => problem.type.mustBe === source.mustBe
+            )
+        ) {
+            this.problems.push(new Problem(source, this.path, this.data))
+        }
     }
 
     message() {
-        let aggregated = {}
-        return this.type.defaultMessage(this)
+        if (this.problems.length === 1) {
+            return this.problems[0].message
+        }
+        let aggregated = ""
+        for (const problem of this.problems) {
+            aggregated += `• ${problem.message}\n`
+        }
+        return aggregated
     }
 }
 
-export class Stringifiable<Data> {
+export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
     get typeOf() {
