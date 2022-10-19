@@ -1,12 +1,8 @@
 {
     "name": "@arktype/io",
     "version": "0.0.1",
-    "description2": "TS-powered syntax for types in JS, extended and optimized from editor to runtime",
-    "description2": "Typesafe definition syntax for JS, optimized from editor to runtime",
-    "description2": "Typesafe syntax for typed JS, optimized from editor to runtime",
-    "description2": "Inferable type syntax JS, optimized from editor to runtime",
-    "description2": "Portable, typesafe definition syntax for JS, optimized from editor to runtime",
-    "description": "Native type syntax optimized from editor to runtime",
+    "description": "Typesafe syntax for typed JS, optimized from editor to runtime",
+    "description2": "Typesafe definition syntax for isomorphic TS/JS, optimized from editor to runtime",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
