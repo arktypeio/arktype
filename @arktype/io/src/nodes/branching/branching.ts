@@ -49,7 +49,7 @@ export namespace Branching {
                 : this.toString()
         }
 
-        get mustBe() {
+        get description() {
             return this.mapChildren("mustBe").join(
                 ` ${tokenConjunctions[this.token]} `
             )

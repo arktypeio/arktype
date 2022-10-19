@@ -28,7 +28,7 @@ export namespace Alias {
             return true
         }
 
-        get mustBe() {
+        get description() {
             return `a valid ${this.definition}` as const
         }
     }

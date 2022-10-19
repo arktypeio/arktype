@@ -3,10 +3,7 @@ import type { Base } from "../../base/base.js"
 import type { Traversal } from "../../base/traversal.js"
 import { Terminal } from "../terminal.js"
 
-abstract class TypeKeywordNode
-    extends Terminal.Node
-    implements Base.ProblemSource
-{
+abstract class TypeKeywordNode extends Terminal.Node {
     readonly kind = "keyword"
 
     traverse(
@@ -20,10 +17,6 @@ abstract class TypeKeywordNode
     }
 
     abstract allowsData(data: unknown): data is unknown
-
-    defaultMessage(traversal: Base.Traversal) {
-        return ""
-    }
 }
 
 type InferPostcondition<node> = node extends {
@@ -34,7 +27,7 @@ type InferPostcondition<node> = node extends {
 
 class AnyNode extends TypeKeywordNode {
     readonly definition = "any"
-    readonly mustBe = "anything"
+    readonly description = "anything"
     allowsData(data: unknown): data is any {
         return true
     }
@@ -42,7 +35,7 @@ class AnyNode extends TypeKeywordNode {
 
 class BigintNode extends TypeKeywordNode {
     readonly definition = "bigint"
-    readonly mustBe = "a bigint"
+    readonly description = "a bigint"
     allowsData(data: unknown): data is bigint {
         return typeof data === "bigint"
     }
@@ -50,7 +43,7 @@ class BigintNode extends TypeKeywordNode {
 
 class BooleanNode extends TypeKeywordNode {
     readonly definition = "boolean"
-    readonly mustBe = "a boolean"
+    readonly description = "a boolean"
     allowsData(data: unknown): data is boolean {
         return typeof data === "boolean"
     }
@@ -58,7 +51,7 @@ class BooleanNode extends TypeKeywordNode {
 
 class FalseNode extends TypeKeywordNode {
     readonly definition = "false"
-    readonly mustBe = "false"
+    readonly description = "false"
     allowsData(data: unknown): data is false {
         return data === false
     }
@@ -66,7 +59,7 @@ class FalseNode extends TypeKeywordNode {
 
 class NeverNode extends TypeKeywordNode {
     readonly definition = "never"
-    readonly mustBe = "nothing"
+    readonly description = "nothing"
     allowsData(data: unknown): data is never {
         return false
     }
@@ -74,7 +67,7 @@ class NeverNode extends TypeKeywordNode {
 
 class NullNode extends TypeKeywordNode {
     readonly definition = "null"
-    readonly mustBe = "null"
+    readonly description = "null"
     allowsData(data: unknown): data is null {
         return data === null
     }
@@ -82,7 +75,7 @@ class NullNode extends TypeKeywordNode {
 
 class NumberNode extends TypeKeywordNode {
     readonly definition = "number"
-    readonly mustBe = "a number"
+    readonly description = "a number"
     allowsData(data: unknown): data is number {
         return typeof data === "number"
     }
@@ -90,7 +83,7 @@ class NumberNode extends TypeKeywordNode {
 
 class ObjectNode extends TypeKeywordNode {
     readonly definition = "object"
-    readonly mustBe = "an object"
+    readonly description = "an object"
     allowsData(data: unknown): data is object {
         return typeof data === "object" && data !== null
     }
@@ -98,7 +91,7 @@ class ObjectNode extends TypeKeywordNode {
 
 class StringNode extends TypeKeywordNode {
     readonly definition = "string"
-    readonly mustBe = "a string"
+    readonly description = "a string"
     allowsData(data: unknown): data is string {
         return typeof data === "string"
     }
@@ -106,7 +99,7 @@ class StringNode extends TypeKeywordNode {
 
 class SymbolNode extends TypeKeywordNode {
     readonly definition = "symbol"
-    readonly mustBe = "a symbol"
+    readonly description = "a symbol"
     allowsData(data: unknown): data is symbol {
         return typeof data === "symbol"
     }
@@ -114,7 +107,7 @@ class SymbolNode extends TypeKeywordNode {
 
 class TrueNode extends TypeKeywordNode {
     readonly definition = "true"
-    readonly mustBe = "true"
+    readonly description = "true"
     allowsData(data: unknown): data is true {
         return data === true
     }
@@ -122,7 +115,7 @@ class TrueNode extends TypeKeywordNode {
 
 class UndefinedNode extends TypeKeywordNode {
     readonly definition = "undefined"
-    readonly mustBe = "undefined"
+    readonly description = "undefined"
     allowsData(data: unknown): data is undefined {
         return data === undefined
     }
@@ -130,7 +123,7 @@ class UndefinedNode extends TypeKeywordNode {
 
 class UnknownNode extends TypeKeywordNode {
     readonly definition = "unknown"
-    readonly mustBe = "anything"
+    readonly description = "anything"
     allowsData(data: unknown): data is unknown {
         return true
     }
@@ -138,7 +131,7 @@ class UnknownNode extends TypeKeywordNode {
 
 class VoidNode extends TypeKeywordNode {
     readonly definition = "void"
-    readonly mustBe = "undefined"
+    readonly description = "undefined"
     allowsData(data: unknown): data is void {
         return data === undefined
     }
@@ -148,7 +141,7 @@ class VoidNode extends TypeKeywordNode {
 
 class FunctionNode extends TypeKeywordNode {
     readonly definition = "Function"
-    readonly mustBe = "a function"
+    readonly description = "a function"
     allowsData(data: unknown): data is Function {
         return typeof data === "function"
     }
@@ -158,7 +151,7 @@ class FunctionNode extends TypeKeywordNode {
 
 class ArrayNode extends TypeKeywordNode {
     readonly definition = "array"
-    readonly mustBe = "an array"
+    readonly description = "an array"
     allowsData(data: unknown): data is unknown[] {
         return Array.isArray(data)
     }
@@ -166,7 +159,7 @@ class ArrayNode extends TypeKeywordNode {
 
 class DictionaryNode extends TypeKeywordNode {
     readonly definition = "dictionary"
-    readonly mustBe = "a non-array object"
+    readonly description = "a non-array object"
     allowsData(data: unknown): data is Record<string, unknown> {
         return hasJsType(data, "object")
     }

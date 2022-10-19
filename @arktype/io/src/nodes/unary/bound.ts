@@ -1,8 +1,6 @@
 import { keySet } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base/base.js"
-import type { Traversal } from "../base/traversal.js"
-
 import { Unary } from "./unary.js"
 
 export namespace Bound {
@@ -108,7 +106,7 @@ export namespace Bound {
             return [`${this.limit}`, this.comparator, next] as const
         }
 
-        get mustBe() {
+        get description() {
             // TODO: Add units description
             return `${
                 comparatorDescriptions[invertedComparators[this.comparator]]
@@ -145,7 +143,7 @@ export namespace Bound {
             return [next, this.comparator, `${this.limit}`] as const
         }
 
-        get mustBe() {
+        get description() {
             // TODO: Add units description
             return `${comparatorDescriptions[this.comparator]} ${
                 this.limit

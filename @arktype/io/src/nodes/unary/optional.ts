@@ -1,5 +1,4 @@
 import type { Base } from "../base/base.js"
-import type { Traversal } from "../base/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Optional {
@@ -24,8 +23,8 @@ export namespace Optional {
             return [next, "?"] as const
         }
 
-        get mustBe() {
-            return `${this.child.mustBe} if defined` as const
+        get description() {
+            return `${this.child.description} if defined` as const
         }
     }
 }

@@ -6,11 +6,14 @@ abstract class RegexKeywordNode extends Terminal.Node {
     readonly kind = "regexKeyword"
 
     traverse(traversal: Base.Traversal): traversal is Base.Traversal<string> {
-        return (
-            typeKeywords.string.traverse(traversal) &&
-            (this.expression.test(traversal.data) ||
-                traversal.problems.add(this))
-        )
+        if (!typeKeywords.string.traverse(traversal)) {
+            return false
+        }
+        if (!this.expression.test(traversal.data)) {
+            traversal.addProblem(this)
+            return false
+        }
+        return true
     }
 
     abstract readonly expression: RegExp
@@ -18,43 +21,48 @@ abstract class RegexKeywordNode extends Terminal.Node {
 
 class EmailNode extends RegexKeywordNode {
     readonly definition = "email"
-    readonly mustBe = "a valid email"
+    readonly description = "a valid email"
     expression = /^(.+)@(.+)\.(.+)$/
 }
 
 class AlphaonlyNode extends RegexKeywordNode {
     readonly definition = "alphaonly"
-    readonly mustBe = "only letters"
+    readonly description = "only letters"
     expression = /^[A-Za-z]+$/
 }
 
 class AlphanumericNode extends RegexKeywordNode {
     readonly definition = "alphanumeric"
-    readonly mustBe = "only letters and digits"
+    readonly description = "only letters and digits"
     expression = /^[\dA-Za-z]+$/
 }
 
 class LowercaseNode extends RegexKeywordNode {
     readonly definition = "lowercase"
-    readonly mustBe = "only lowercase letters"
+    readonly description = "only lowercase letters"
     expression = /^[a-z]*$/
 }
 
 class UppercaseNode extends RegexKeywordNode {
     readonly definition = "uppercase"
-    readonly mustBe = "only uppercase letters"
+    readonly description = "only uppercase letters"
     expression = /^[A-Z]*$/
 }
 
 class IntegerNode extends Terminal.Node {
     readonly kind = "keyword"
     readonly definition = "integer"
-    readonly mustBe = "an integer"
+    readonly description = "an integer"
+
     traverse(traversal: Base.Traversal): traversal is Base.Traversal<number> {
-        return typeKeywords.number.traverse(traversal) &&
-            Number.isInteger(traversal.data)
-            ? true
-            : traversal.problems.add(this)
+        if (!typeKeywords.number.traverse(traversal)) {
+            return false
+        }
+        if (!Number.isInteger(traversal.data)) {
+            traversal.addProblem(this)
+            return false
+        }
+        return true
     }
 }
 

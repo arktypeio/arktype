@@ -21,6 +21,7 @@ export namespace Array {
             for (let i = 0; i < length; i++) {
                 traversal.pushKey(i)
                 this.child.traverse(traversal)
+                traversal.popKey()
             }
         }
 
@@ -32,8 +33,8 @@ export namespace Array {
             return [next, "[]"] as const
         }
 
-        get mustBe() {
-            return `${this.child.mustBe} array` as const
+        get description() {
+            return `${this.child.description} array` as const
         }
     }
 }

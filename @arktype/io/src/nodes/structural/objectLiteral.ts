@@ -1,5 +1,6 @@
 import type { Dictionary } from "@arktype/tools"
 import { Base } from "../base/base.js"
+import { keywords } from "../terminal/keyword/keyword.js"
 
 export namespace ObjectLiteral {
     export class Node extends Base.Node {
@@ -10,22 +11,22 @@ export namespace ObjectLiteral {
             super()
         }
 
-        traverse(traversal: Base.Traversal<Dictionary>) {
-            const root = traversal.data
+        traverse(traversal: Base.Traversal) {
+            if (!keywords.dictionary.traverse(traversal)) {
+                return
+            }
             for (let i = 0; i < this.children.length; i++) {
                 const k = this.keys[i]
                 const child = this.children[i]
-                traversal.path.push(k)
-                if (k in root) {
-                    traversal.data = root[k] as any
+                if (k in traversal.data) {
+                    traversal.pushKey(k)
                     child.traverse(traversal)
-                    // TODO: Kind check
+                    traversal.popKey()
+                    // TODO: Narrowed kind check
                 } else if (child.kind !== "optional") {
                     // this.addMissingKeyDiagnostic(state, k)
                 }
-                traversal.path.pop()
             }
-            traversal.data = root
         }
 
         get definition() {
@@ -51,13 +52,14 @@ export namespace ObjectLiteral {
             let result = "{"
             let i = 0
             for (i; i < this.children.length - 1; i++) {
-                result += this.keys[i] + ": " + this.children[i] + ", "
+                result +=
+                    this.keys[i] + ": " + this.children[i].toString() + ", "
             }
             return result + this.children[i] + "}"
         }
 
-        get mustBe() {
-            return "anything" as const
+        get description() {
+            return this.toString()
         }
     }
 }

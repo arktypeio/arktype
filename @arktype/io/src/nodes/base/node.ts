@@ -29,7 +29,7 @@ export abstract class Node implements DynamicArktype {
     abstract traverse(traversal: Traversal): void
 
     abstract toString(): string
-    abstract readonly mustBe: string
+    abstract readonly description: string
     abstract readonly ast: unknown
 
     /**

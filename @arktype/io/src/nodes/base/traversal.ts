@@ -2,7 +2,7 @@ import { InternalArktypeError } from "../../internal.js"
 import type { DynamicSpace } from "../../space.js"
 import type { Scope } from "../scope.js"
 import type { ProblemSource } from "./problems.js"
-import { Problem, ProblemSet, Stringifiable } from "./problems.js"
+import { ProblemSet, Stringifiable } from "./problems.js"
 
 export class Traversal<Data = unknown> {
     private problemsByPath: Record<string, ProblemSet> = {}

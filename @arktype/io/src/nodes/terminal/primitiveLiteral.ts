@@ -19,7 +19,7 @@ export namespace NumberLiteral {
             return traversal.data === this.value
         }
 
-        get mustBe() {
+        get description() {
             return `${this.definition}` as const
         }
 
@@ -45,7 +45,7 @@ export namespace BigintLiteral {
             return traversal.data === this.value
         }
 
-        get mustBe() {
+        get description() {
             return this.definition
         }
 
@@ -76,7 +76,7 @@ export namespace StringLiteral {
             return traversal.data === this.value
         }
 
-        get mustBe() {
+        get description() {
             return this.definition
         }
 

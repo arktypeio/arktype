@@ -23,14 +23,11 @@ export namespace Tuple {
             if (!this.precondition.traverse(traversal)) {
                 return
             }
-            const elements: any = traversal.data
             for (let i = 0; i < this.length; i++) {
-                traversal.path.push(String(i))
-                traversal.data = elements[i]
+                traversal.pushKey(i)
                 this.children[i].traverse(traversal)
-                traversal.path.pop()
+                traversal.popKey()
             }
-            traversal.data = elements
         }
 
         get ast() {
@@ -53,8 +50,8 @@ export namespace Tuple {
             return result + this.children[i] + "]"
         }
 
-        get mustBe() {
-            return `${this.length} elements`
+        get description() {
+            return this.toString()
         }
     }
 }

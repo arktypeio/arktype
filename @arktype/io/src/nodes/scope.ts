@@ -28,7 +28,7 @@ export class Scope extends Base.Node {
         return this.child.definition
     }
 
-    get mustBe() {
-        return this.child.mustBe
+    get description() {
+        return this.child.description
     }
 }

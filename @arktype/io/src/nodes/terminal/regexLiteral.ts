@@ -17,14 +17,18 @@ export namespace RegexLiteral {
         traverse(
             traversal: Base.Traversal
         ): traversal is Base.Traversal<string> {
-            return (
-                keywords.string.traverse(traversal) &&
-                (this.expression.test(traversal.data) ||
-                    traversal.problems.add(this))
-            )
+            if (!keywords.string.traverse(traversal)) {
+                return false
+            }
+            if (!this.expression.test(traversal.data)) {
+                traversal.addProblem(this)
+                return false
+            }
+            return true
         }
 
-        get mustBe() {
+        get description() {
+            // TODO: Check for name here?
             return `matched by ${this.definition}` as const
         }
     }

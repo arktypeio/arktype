@@ -1,19 +1,19 @@
 import { jsTypeOf, toString } from "@arktype/tools"
 import type { Node } from "./node.js"
 
-export type ProblemSource<Data = unknown> = Node & {
-    defaultMessage(problem: Problem<Data>): string
+export type ProblemSource = Node & {
+    mustBe: string
 }
 
 export class Problem<Data = unknown> {
     constructor(
-        public type: ProblemSource<Data>,
+        public type: ProblemSource,
         public path: string,
         public data: Stringifiable<Data>
     ) {}
 
     message() {
-        return this.type.defaultMessage(this)
+        return `Must be ${this.type.mustBe}`
     }
 }
 
@@ -21,15 +21,14 @@ export class ProblemSet<Data = unknown> {
     problems: Problem<Data>[]
 
     constructor(
-        initial: ProblemSource<Data>,
+        initial: ProblemSource,
         public path: string,
         public data: Stringifiable<Data>
     ) {
         this.problems = [new Problem(initial, path, data)]
     }
 
-    addIfUnique(source: ProblemSource<Data>) {
-        // TODO: Is mustBe best way to check for duplication?
+    addIfUnique(source: ProblemSource) {
         if (
             !this.problems.some(
                 (problem) => problem.type.mustBe === source.mustBe
