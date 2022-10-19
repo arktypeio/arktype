@@ -50,7 +50,7 @@ export namespace Branching {
         }
 
         get description() {
-            return this.mapChildren("mustBe").join(
+            return this.mapChildren("description").join(
                 ` ${tokenConjunctions[this.token]} `
             )
         }

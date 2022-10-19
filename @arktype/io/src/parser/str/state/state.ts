@@ -122,11 +122,12 @@ export namespace ParserState {
 
     export const rooted = <
         s extends ParserState.Base,
-        nodeClass extends ClassOf<Base.Node> = ClassOf<Base.Node>
+        nodeClass extends Base.Node = Base.Node
     >(
         s: s,
-        ofClass?: nodeClass
-    ): s is s & { root: InstanceOf<nodeClass> } =>
+        ofClass?: ClassOf<nodeClass>
+        // @ts-expect-error
+    ): s is Omit<s, "root"> & { root: nodeClass } =>
         ofClass ? s.root instanceof ofClass : !!s.root
 
     export type rooted<ast = {}> = { root: ast }

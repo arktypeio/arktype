@@ -7,6 +7,7 @@ import { Problems, Stringifiable } from "./problems.js"
 
 export class Traversal<Data = unknown> {
     public problems = new Problems()
+    private problemsStack: Problems[] = []
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
     private space?: DynamicInternalSpace
@@ -14,6 +15,7 @@ export class Traversal<Data = unknown> {
     // TODO: Option
     private delimiter = "."
     private path = ""
+    private unionDepth = 0
 
     constructor(public readonly data: Data, space?: DynamicSpace) {
         // TODO: Add space scope,start alias
@@ -70,6 +72,17 @@ export class Traversal<Data = unknown> {
                 }
             }
         }
+    }
+
+    pushBranch() {
+        this.problemsStack.push(this.problems)
+        this.problems = new Problems()
+        this.unionDepth++
+    }
+
+    popBranch() {
+        this.problems = this.problemsStack.pop()!
+        this.unionDepth--
     }
 
     resolve(alias: string) {

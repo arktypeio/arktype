@@ -1,6 +1,7 @@
 import { assert } from "@arktype/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../../type.js"
+import { type } from "../../../type.js"
+
 import {
     buildIndivisibleMessage,
     buildUnboundableMessage

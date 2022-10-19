@@ -1,17 +1,19 @@
 import type { Base } from "../base/base.js"
+import type { Problems } from "../base/problems.js"
 import { Branching } from "./branching.js"
 
 export namespace Union {
-    export class Node extends Branching.Node<"|"> {
+    export class Node
+        extends Branching.Node<"|">
+        implements Base.ProblemSource
+    {
         readonly token = "|"
         readonly kind = "union"
 
         traverse(traversal: Base.Traversal) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
-            const rootErrors = traversal.problems
-            traversal.unionDepth++
             for (const child of this.children) {
-                traversal.problems = new Diagnostics(traversal)
+                traversal.pushBranch()
                 child.traverse(traversal)
                 if (!traversal.problems.length) {
                     break
@@ -20,12 +22,15 @@ export namespace Union {
                     child.toString(),
                     traversal.problems
                 ])
+                traversal.popBranch()
             }
-            traversal.unionDepth--
-            traversal.problems = rootErrors
             if (branchDiagnosticsEntries.length === this.children.length) {
-                return
+                traversal.addProblem(this)
             }
+        }
+
+        get mustBe() {
+            return this.description
         }
     }
 

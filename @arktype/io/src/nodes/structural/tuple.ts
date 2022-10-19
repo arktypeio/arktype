@@ -1,26 +1,19 @@
 import { Base } from "../base/base.js"
 import { keywords } from "../terminal/keyword/keyword.js"
-import { Bound } from "../unary/bound.js"
 
 export namespace Tuple {
     export class Node extends Base.Node {
         readonly kind = "tuple"
         definitionRequiresStructure = true
         readonly length: number
-        private precondition: Bound.RightNode
 
         constructor(public children: Base.Node[]) {
             super()
             this.length = children.length
-            this.precondition = new Bound.RightNode(
-                keywords.array,
-                "==",
-                this.length
-            )
         }
 
         traverse(traversal: Base.Traversal) {
-            if (!this.precondition.traverse(traversal)) {
+            if (!keywords.array.traverse(traversal)) {
                 return
             }
             for (let i = 0; i < this.length; i++) {

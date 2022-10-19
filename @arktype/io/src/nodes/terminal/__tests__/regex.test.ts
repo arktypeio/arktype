@@ -11,11 +11,11 @@ describe("regex keywords", () => {
             `Must be a valid email (was "david@arktype@dev")`
         )
     })
-    test("alpha", () => {
-        const alpha = type("alpha")
-        assert(alpha.infer).typed as string
-        assert(alpha.check("aBc").errors).is(undefined)
-        assert(alpha.check("a B c").errors?.summary).snap(
+    test("alphaonly", () => {
+        const alphaonly = type("alphaonly")
+        assert(alphaonly.infer).typed as string
+        assert(alphaonly.check("aBc").errors).is(undefined)
+        assert(alphaonly.check("a B c").errors?.summary).snap(
             `Must include only letters (was "a B c")`
         )
     })
