@@ -13,7 +13,7 @@ export const Boat = () => {
                 opacity: 0.4,
                 zIndex: 1
             }}
-            initial={{ left: "0%" }}
+            initial={{ left: "-5%" }}
             animate={{ left: "100%" }}
             transition={{
                 duration: LOOP_DURATION,
