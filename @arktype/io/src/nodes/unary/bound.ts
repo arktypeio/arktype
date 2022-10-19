@@ -64,7 +64,7 @@ export namespace Bound {
         }
     }
 
-    export class LeftNode extends Unary.Node {
+    export class LeftNode extends Unary.Node implements Base.ProblemSource {
         readonly kind = "bound"
 
         constructor(
@@ -76,7 +76,7 @@ export namespace Bound {
         }
 
         traverse(traversal: Base.Traversal) {
-            const actual = boundableToNumber(traversal.data)
+            const actual = boundableToNumber(traversal.data as any)
             if (
                 !isWithin(
                     invertedComparators[this.comparator],
@@ -86,14 +86,6 @@ export namespace Bound {
             ) {
                 traversal.addProblem(this)
             }
-        }
-
-        allows(size: number) {
-            return isWithin(
-                invertedComparators[this.comparator],
-                this.limit,
-                size
-            )
         }
 
         toString() {
@@ -107,6 +99,10 @@ export namespace Bound {
         }
 
         get description() {
+            return `${this.child.description} ${this.mustBe}` as const
+        }
+
+        get mustBe() {
             // TODO: Add units description
             return `${
                 comparatorDescriptions[invertedComparators[this.comparator]]
@@ -129,8 +125,10 @@ export namespace Bound {
 
         traverse(traversal: Base.Traversal) {
             // TODO: Check if data is of the expected type
-            const actual = boundableToNumber(traversal.data)
-            return isWithin(this.comparator, this.limit, actual)
+            const actual = boundableToNumber(traversal.data as any)
+            if (!isWithin(this.comparator, this.limit, actual)) {
+                traversal.addProblem(this)
+            }
         }
 
         toString() {
@@ -144,7 +142,10 @@ export namespace Bound {
         }
 
         get description() {
-            // TODO: Add units description
+            return `${this.child.description} ${this.mustBe}` as const
+        }
+
+        get mustBe() {
             return `${comparatorDescriptions[this.comparator]} ${
                 this.limit
             }` as const

@@ -1,4 +1,4 @@
-import { Optional } from "../../../nodes/expression/optional.js.js"
+import { Optional } from "../../../nodes/unary/optional.js"
 import { ParserState } from "../state/state.js"
 
 export namespace OptionalOperator {
@@ -7,7 +7,7 @@ export namespace OptionalOperator {
             return ParserState.error(nonTerminatingMessage)
         }
         ParserState.finalize(s)
-        s.root = new Optional.Node([s.root])
+        s.root = new Optional.Node(s.root)
         return s
     }
 

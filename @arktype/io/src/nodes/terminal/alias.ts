@@ -10,22 +10,11 @@ export namespace Alias {
         }
 
         traverse(traversal: Base.Traversal) {
-            if (
-                traversal.resolvedEntries.some(
-                    (entry) =>
-                        entry[0] === this.definition &&
-                        entry[1] === traversal.data
-                )
-            ) {
-                // If data has already been checked by this alias during this
-                // traversal, it must be valid or we wouldn't be here, so we can
-                // stop traversing.
-                return true
+            const resolutionIfNonCyclic = traversal.resolve(this.definition)
+            if (resolutionIfNonCyclic) {
+                resolutionIfNonCyclic.traverse(traversal)
+                traversal.popResolution()
             }
-            traversal.resolvedEntries.push([this.definition, traversal.data])
-            traversal.resolve(this.definition).allows(traversal)
-            traversal.popResolution()
-            return true
         }
 
         get description() {

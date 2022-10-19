@@ -1,23 +1,25 @@
 import { assert } from "@arktype/assert"
 import * as fc from "fast-check"
 import type { DynamicArktype } from "../../../type.js"
-import { ConstrainedKeyword } from "../../terminal/keyword/subtypes.js.js"
-import { Keyword } from "../../terminal/keyword/keyword.js"
-import { RegexKeyword } from "../../terminal/keyword/regex.js.js"
+import { keywords } from "../../terminal/keyword/keyword.js"
+import {
+    numberSubtypeKeywords,
+    stringSubtypeKeywords
+} from "../../terminal/keyword/subtype.js"
 import { Bound } from "../bound.js"
 
 const keysOf = (o: object) => Object.keys(o)
 
 export const arbitraryKeywordList = fc.constantFrom(
-    ...keysOf(Keyword.nodes).map((_) => `${_}[]`)
+    ...keysOf(keywords).map((_) => `${_}[]`)
 )
 export const arbitraryNumberKeyword = fc.constantFrom([
     "number",
-    ...keysOf(ConstrainedKeyword.nodes)
+    ...keysOf(numberSubtypeKeywords)
 ])
 export const arbitraryStringKeyword = fc.constantFrom([
     "string",
-    ...keysOf(RegexKeyword.nodes)
+    ...keysOf(stringSubtypeKeywords)
 ])
 
 export const aribtraryBoundable = fc.oneof(
@@ -26,7 +28,7 @@ export const aribtraryBoundable = fc.oneof(
     arbitraryKeywordList
 )
 export const arbitraryComparator = fc.constantFrom(
-    ...(Object.keys(Bound.tokens) as Bound.Token[])
+    ...(Object.keys(Bound.tokensToKinds) as Bound.Token[])
 )
 export const arbitraryDoubleComparator = fc.constantFrom(
     ...(Object.keys(Bound.doublableTokens) as Bound.DoublableToken[])
@@ -42,7 +44,7 @@ export type ExpectedBounds = [Bound.Token, number][]
 
 const expectedCheckResult = (expectedBounds: ExpectedBounds, data: number) => {
     for (const [comparator, limit] of expectedBounds) {
-        const reason = Bound.describe(comparator, limit, "number")
+        const reason = "" //Bound.describe(comparator, limit, "number")
         const expectedMessageIfOutOfBound = `${reason} (was ${data})`
         if (data > limit && !comparator.includes(">")) {
             return expectedMessageIfOutOfBound

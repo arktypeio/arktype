@@ -2,9 +2,10 @@ import type { Dictionary, Evaluate } from "@arktype/tools"
 import { chainableNoOpProxy } from "@arktype/tools"
 import type { LazyDynamicWrap } from "./internal.js"
 import { lazyDynamicWrap } from "./internal.js"
+import type { inferAst } from "./nodes/ast/infer.js"
+import type { validate } from "./nodes/ast/validate.js"
+import type { Base } from "./nodes/base/base.js"
 import { Scope } from "./nodes/scope.js"
-import type { inferAst } from "./nodes/traversal/ast/infer.js"
-import type { validate } from "./nodes/traversal/ast/validate.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type {
@@ -18,7 +19,7 @@ const rawSpace = (aliases: Dictionary, opts: ArktypeOptions = {}) => {
     const ctx = opts as SpaceContext
     ctx.resolutions = {}
     for (const name in aliases) {
-        ctx.resolutions[name] = new Scope.Node(
+        ctx.resolutions[name] = new Scope(
             Root.parse(aliases[name], { aliases }),
             ctx
         )
@@ -86,7 +87,7 @@ export type InferSpaceRoot<Resolutions> = Evaluate<{
     [Name in keyof Resolutions]: inferAst<Resolutions[Name], Resolutions>
 }>
 
-type SpaceContext = Scope.Context & { resolutions: {} }
+type SpaceContext = ArktypeOptions & { resolutions: Dictionary<Base.Node> }
 
 // TODO: Ensure there are no extraneous types/space calls from testing
 // TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space
@@ -95,7 +96,7 @@ export class ArktypeSpace {
 
     type(def: unknown, typeContext: ArktypeOptions = {}) {
         const root = Root.parse(def, { aliases: this.context.resolutions })
-        return new Scope.Node(root, Scope.merge(this.context, typeContext))
+        return new Scope(root, (this.context, typeContext))
     }
 
     get infer() {

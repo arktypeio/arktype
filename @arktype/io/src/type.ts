@@ -1,10 +1,10 @@
 import type { MutuallyExclusiveProps } from "@arktype/tools"
 import type { LazyDynamicWrap } from "./internal.js"
 import { lazyDynamicWrap } from "./internal.js"
+import type { inferAst } from "./nodes/ast/infer.js"
+import type { validate } from "./nodes/ast/validate.js"
+import type { Problems } from "./nodes/base/problems.js"
 import { Scope } from "./nodes/scope.js"
-import type { inferAst } from "./nodes/traversal/ast/infer.js"
-import type { validate } from "./nodes/traversal/ast/validate.js"
-import type { Problems } from "./nodes/traversal/problems.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ResolvedSpace } from "./space.js"
@@ -13,7 +13,7 @@ const emptyAliases = { aliases: {} }
 const rawTypeFn: DynamicTypeFn = (def, ctx) => {
     const root = Root.parse(def, emptyAliases)
     if (ctx) {
-        return new Scope.Node(root, ctx)
+        return new Scope(root, ctx)
     }
     return root
 }

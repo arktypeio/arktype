@@ -11,11 +11,11 @@ export namespace Terminal {
         }
 
         toString() {
-            return this.definition
+            return this.definition as this["definition"]
         }
 
         get ast() {
-            return this.definition
+            return this.definition as this["definition"]
         }
     }
 }

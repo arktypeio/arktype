@@ -19,12 +19,12 @@ export namespace NumberLiteral {
             return traversal.data === this.value
         }
 
-        get description() {
-            return `${this.definition}` as const
-        }
-
         get definition() {
             return `${this.value}` as const
+        }
+
+        get description() {
+            return `${this.definition}` as const
         }
     }
 }
@@ -45,12 +45,12 @@ export namespace BigintLiteral {
             return traversal.data === this.value
         }
 
-        get description() {
-            return this.definition
-        }
-
         get definition() {
             return `${this.value}n` as const
+        }
+
+        get description() {
+            return this.definition
         }
     }
 }
@@ -76,12 +76,12 @@ export namespace StringLiteral {
             return traversal.data === this.value
         }
 
-        get description() {
-            return this.definition
-        }
-
         get definition() {
             return `${this.quote}${this.value}${this.quote}` as const
+        }
+
+        get description() {
+            return this.definition
         }
     }
 }

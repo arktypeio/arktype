@@ -1,22 +1,24 @@
 import { InternalArktypeError } from "../../internal.js"
-import type { DynamicSpace } from "../../space.js"
+import type { DynamicSpace, DynamicSpaceRoot } from "../../space.js"
 import type { Scope } from "../scope.js"
+import type { Node } from "./node.js"
 import type { ProblemSource } from "./problems.js"
-import { ProblemSet, Stringifiable } from "./problems.js"
+import { Problems, Stringifiable } from "./problems.js"
 
 export class Traversal<Data = unknown> {
-    private problemsByPath: Record<string, ProblemSet> = {}
+    public problems = new Problems()
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
+    private space?: DynamicInternalSpace
     private scopes: Scope[]
     // TODO: Option
     private delimiter = "."
-
     private path = ""
 
-    constructor(public readonly data: Data, private space?: DynamicSpace) {
+    constructor(public readonly data: Data, space?: DynamicSpace) {
         // TODO: Add space scope,start alias
         this.scopes = []
+        this.space = space as DynamicInternalSpace
     }
 
     pushKey(key: string | number) {
@@ -39,16 +41,11 @@ export class Traversal<Data = unknown> {
     }
 
     addProblem(source: ProblemSource) {
-        const atPath = this.problemsByPath[this.path]
-        if (!atPath) {
-            this.problemsByPath[this.path] = new ProblemSet(
-                source,
-                this.path,
-                new Stringifiable(this.data as any)
-            )
-        } else {
-            atPath.addIfUnique(source)
-        }
+        this.problems.addIfUnique(
+            source,
+            this.path,
+            new Stringifiable(this.data as any)
+        )
     }
 
     pushScope(scope: Scope) {
@@ -82,11 +79,24 @@ export class Traversal<Data = unknown> {
                 `Unexpectedly failed to resolve alias '${alias}'`
             )
         }
+        if (
+            this.resolutionStack.some(
+                (previouslyResolved) =>
+                    alias === previouslyResolved.alias &&
+                    this.data === previouslyResolved.data
+            )
+        ) {
+            // If data has already been checked by this alias during this
+            // traversal, it must be valid or we wouldn't be here, so we can
+            // stop traversing.
+            return
+        }
         this.resolutionStack.push({
             alias,
             data: this.data,
             priorScopes: this.scopes
         })
+        this.scopes = []
         return resolution
     }
 
@@ -108,3 +118,5 @@ type OptionQueryResult<K1 extends RootKey, K2 extends ConfigKey<K1>> =
 type RootKey = keyof Scope
 
 type ConfigKey<K1 extends RootKey> = keyof Required<Scope>[K1]
+
+type DynamicInternalSpace = Record<string, Node> & { $: DynamicSpaceRoot }

@@ -1,8 +1,8 @@
 import { isKeyOf } from "@arktype/tools"
+import type { toString } from "../../../../nodes/ast/toString.js"
 import type { Base } from "../../../../nodes/base/base.js"
-import { Bound } from "../../../../nodes/expression/bound.js.js"
 import type { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
-import type { toString } from "../../../../nodes/traversal/ast/toString.js"
+import { Bound } from "../../../../nodes/unary/bound.js"
 import { ParserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 
@@ -16,7 +16,7 @@ export namespace LeftBoundOperator {
                 ? ParserState.error(
                       buildBoundLiteralMessage(
                           s.root.toString(),
-                          s.branches.leftBound[0],
+                          String(s.branches.leftBound[0]),
                           s.branches.leftBound[1]
                       )
                   )

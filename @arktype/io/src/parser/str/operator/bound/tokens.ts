@@ -1,5 +1,5 @@
 import { keySet } from "@arktype/tools"
-import type { Bound } from "../../../../nodes/expression/bound.js.js"
+import type { Bound } from "../../../../nodes/unary/bound.js"
 
 export namespace Comparators {
     export const startChar = keySet({

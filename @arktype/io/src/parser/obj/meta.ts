@@ -1,14 +1,20 @@
 import type { Base } from "../../nodes/base/base.js"
-import { Expression } from "../../nodes/expression/expression.js.js"
+import type { Branching } from "../../nodes/branching/branching.js"
+import type { Bound } from "../../nodes/unary/bound.js"
+import type { Unary } from "../../nodes/unary/unary.js"
 import type { ParseError, parseFn, ParserContext } from "../common.js"
 import type { Root } from "../root.js"
 import type { Operand } from "../str/operand/operand.js"
 
+// TODO: Centralize
+type Token = Unary.Token | Branching.Token
+type InfixToken = Bound.Token | Branching.Token | "%"
+
 // TODO: Test inferring from  meta def generic perf
-export type MetaDefinition = [unknown, Expression.Token, ...unknown[]]
+export type MetaDefinition = [unknown, Token, ...unknown[]]
 
 export const isMetaDefinition = (def: unknown[]): def is MetaDefinition =>
-    (def[1] as any) in Expression.tokensToKinds
+    (def[1] as any) in {}
 
 export const parseMetaDefinition: parseFn<MetaDefinition> = (
     [definition, token, ...args],
@@ -18,7 +24,7 @@ export const parseMetaDefinition: parseFn<MetaDefinition> = (
 export type ParseMetaDefinition<
     Def extends MetaDefinition,
     Ctx extends ParserContext
-> = Def[1] extends Expression.BinaryToken
+> = Def[1] extends InfixToken
     ? Def[2] extends undefined
         ? [
               Root.parse<Def[0], Ctx>,

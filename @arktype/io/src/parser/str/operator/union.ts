@@ -1,4 +1,4 @@
-import { Union } from "../../../nodes/expression/branching/union.js.js"
+import { Union } from "../../../nodes/branching/union.js"
 import type { maybePush } from "../../common.js"
 import type { ParserState } from "../state/state.js"
 import type { LeftBoundOperator } from "./bound/left.js"

@@ -1,4 +1,4 @@
-import { Array } from "../../../nodes/expression/unary/array.js.js"
+import { Arr } from "../../../nodes/unary/array.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 
@@ -8,7 +8,7 @@ export namespace ArrayOperator {
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
         }
-        s.root = new Array.Node(s.root)
+        s.root = new Arr.Node(s.root)
         return s
     }
 

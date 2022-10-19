@@ -1,5 +1,5 @@
-import { Divisibility } from "../../../nodes/expression/divisibility.js.js"
 import type { NumberLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import { Divisibility } from "../../../nodes/unary/divisibility.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"

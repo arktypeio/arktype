@@ -1,4 +1,4 @@
-import { jsTypeOf, toString } from "@arktype/tools"
+import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
 import type { Node } from "./node.js"
 
 export type ProblemSource = Node & {
@@ -6,47 +6,49 @@ export type ProblemSource = Node & {
 }
 
 export class Problem<Data = unknown> {
+    next?: Problem<Data>
+
     constructor(
         public type: ProblemSource,
         public path: string,
         public data: Stringifiable<Data>
     ) {}
 
-    message() {
+    chainIfUnique(source: ProblemSource) {
+        if (this.type.mustBe !== source.mustBe) {
+            if (this.next) {
+                this.next.chainIfUnique(source)
+            } else {
+                this.next = new Problem(source, this.path, this.data)
+            }
+        }
+    }
+
+    get message() {
         return `Must be ${this.type.mustBe}`
     }
 }
 
-export class ProblemSet<Data = unknown> {
-    problems: Problem<Data>[]
-
+export class ProblemSet<Data = unknown> extends Array<Problem<Data>> {
     constructor(
         initial: ProblemSource,
         public path: string,
         public data: Stringifiable<Data>
     ) {
-        this.problems = [new Problem(initial, path, data)]
+        super(new Problem(initial, path, data))
     }
 
     addIfUnique(source: ProblemSource) {
-        if (
-            !this.problems.some(
-                (problem) => problem.type.mustBe === source.mustBe
-            )
-        ) {
-            this.problems.push(new Problem(source, this.path, this.data))
+        if (!this.some((problem) => problem.type.mustBe === source.mustBe)) {
+            this.push(new Problem(source, this.path, this.data))
         }
     }
 
-    message() {
-        if (this.problems.length === 1) {
-            return this.problems[0].message
+    get message() {
+        if (this.length === 1) {
+            return this[0].message
         }
-        let aggregated = ""
-        for (const problem of this.problems) {
-            aggregated += `• ${problem.message}\n`
-        }
-        return aggregated
+        return "• " + this.map((problem) => problem.message).join("\n• ")
     }
 }
 
@@ -61,6 +63,45 @@ export class Stringifiable<Data = unknown> {
         return toString(this.raw, {
             maxNestedStringLength: 50
         })
+    }
+}
+
+export class ArktypeError extends TypeError {
+    cause: Problems
+
+    constructor(problems: Problems) {
+        super(problems.summary)
+        this.cause = problems
+    }
+}
+
+export class Problems extends Array<ProblemSet> {
+    byPath: Record<string, ProblemSet> = {}
+
+    addIfUnique(source: ProblemSource, path: string, data: Stringifiable) {
+        if (path in this.byPath) {
+            this.byPath[path].addIfUnique(source)
+        } else {
+            this.byPath[path] = new ProblemSet(source, path, data)
+            this.push(this.byPath[path])
+        }
+    }
+
+    get summary() {
+        if (this.length === 1) {
+            const error = this[0]
+            if (error.path !== "") {
+                return `${error.path} ${uncapitalize(error.message)}`
+            }
+            return error.message
+        }
+        return this.map(
+            (problemSet) => `${problemSet.path}: ${problemSet.message}`
+        ).join("\n")
+    }
+
+    throw() {
+        throw new ArktypeError(this)
     }
 }
 
@@ -103,56 +144,5 @@ export class Stringifiable<Data = unknown> {
 //             result = branchIndentation + result
 //         }
 //         return result
-//     }
-// }
-
-export type ProblemKinds = {
-    type: {}
-    regex: {}
-    numberSubtype: {}
-    divisibility: {}
-    bound: {}
-    multiple: {}
-}
-
-export type ProblemCode = keyof ProblemKinds
-
-// export class ArktypeError extends TypeError {
-//     cause: Problems
-
-//     constructor(problems: Problems) {
-//         super(problems.summary)
-//         this.cause = problems
-//     }
-// }
-
-// export class Problems extends Array<Problem<ProblemCode>> {
-//     add(node: Base.Node): false {
-//         return false
-//     }
-
-//     get summary() {
-//         if (this.length === 1) {
-//             const error = this[0]
-//             if (error.path.length) {
-//                 const pathPrefix =
-//                     error.path.length === 1 && isIntegerLike(error.path[0])
-//                         ? `Item ${error.path[0]}`
-//                         : pathToString(error.path)
-//                 return `${pathPrefix} ${uncapitalize(error.message)}`
-//             }
-//             return error.message
-//         }
-//         let aggregatedMessage = ""
-//         for (const error of this) {
-//             aggregatedMessage += `${pathToString(error.path)}: ${
-//                 error.message
-//             }\n`
-//         }
-//         return aggregatedMessage.slice(0, -1)
-//     }
-
-//     throw() {
-//         throw new ArktypeError(this)
 //     }
 // }
