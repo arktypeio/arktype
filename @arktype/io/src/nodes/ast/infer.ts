@@ -6,7 +6,7 @@ import type {
     StringLiteral
 } from "../../nodes/terminal/primitiveLiteral.js"
 import type { RegexLiteral } from "../../nodes/terminal/regexLiteral.js"
-import type { Bound } from "../../nodes/unary/bound.js"
+import type { Tokens } from "../expression/tokens.js"
 
 export type inferAst<node, resolutions> = node extends string
     ? inferTerminal<node, resolutions>
@@ -21,7 +21,7 @@ export type inferAst<node, resolutions> = node extends string
         ? Evaluate<
               inferAst<node[0], resolutions> & inferAst<node[2], resolutions>
           >
-        : node[1] extends Bound.Token
+        : node[1] extends Tokens.Bound
         ? node[0] extends NumberLiteral.Definition
             ? inferAst<node[2], resolutions>
             : inferAst<node[0], resolutions>

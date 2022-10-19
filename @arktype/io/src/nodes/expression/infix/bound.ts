@@ -4,16 +4,6 @@ import type { Base } from "../base/base.js"
 import { Unary } from "./unary.js"
 
 export namespace Bound {
-    export const tokensToKinds = {
-        "<": "bound",
-        ">": "bound",
-        "<=": "bound",
-        ">=": "bound",
-        "==": "bound"
-    } as const
-
-    export type Token = keyof typeof tokensToKinds
-
     export const doublableTokens = keySet({
         "<=": 1,
         "<": 1

@@ -1,16 +1,6 @@
-import { Base } from "../base/base.js"
-import { Bound } from "./bound.js"
+import { Base } from "../../base/base.js"
 
-export namespace Unary {
-    export const tokensToKinds = {
-        "?": "optional",
-        "[]": "array",
-        "%": "divisibility",
-        ...Bound.tokensToKinds
-    } as const
-
-    export type Token = keyof typeof tokensToKinds
-
+export namespace Postfix {
     export abstract class Node extends Base.Node {
         abstract child: Base.Node
 
@@ -20,7 +10,7 @@ export namespace Unary {
 
         abstract tupleWrap(
             next: unknown
-        ): readonly [left: unknown, token: Token, right?: unknown]
+        ): readonly [left: unknown, token: Tokens, right?: unknown]
 
         get ast() {
             return this.tupleWrap(this.child.ast) as ReturnType<

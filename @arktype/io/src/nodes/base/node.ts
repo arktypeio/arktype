@@ -5,6 +5,7 @@ import { Traversal } from "./traversal.js"
 export abstract class Node implements DynamicArktype {
     abstract definitionRequiresStructure: boolean
     abstract readonly kind: string //NodeKind
+    abstract children?: Node[]
 
     check(data: unknown) {
         const state = new Traversal(data)
