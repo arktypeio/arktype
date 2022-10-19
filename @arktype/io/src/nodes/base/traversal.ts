@@ -1,6 +1,6 @@
 import { InternalArktypeError } from "../../internal.js"
 import type { DynamicSpace, DynamicSpaceRoot } from "../../space.js"
-import type { Scope } from "../scope.js"
+import type { Scope } from "../expression/infix/scope.js"
 import type { Node } from "./node.js"
 import type { ProblemSource } from "./problems.js"
 import { Problems, Stringifiable } from "./problems.js"

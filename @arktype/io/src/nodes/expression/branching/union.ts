@@ -1,5 +1,5 @@
-import type { Base } from "../base/base.js"
-import type { Problems } from "../base/problems.js"
+import type { Base } from "../../base/base.js"
+import type { Problems } from "../../base/problems.js"
 import { Branching } from "./branching.js"
 
 export namespace Union {

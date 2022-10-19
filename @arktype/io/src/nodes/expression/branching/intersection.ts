@@ -1,4 +1,4 @@
-import type { Base } from "../base/base.js"
+import type { Base } from "../../base/base.js"
 import { Branching } from "./branching.js"
 
 export namespace Intersection {

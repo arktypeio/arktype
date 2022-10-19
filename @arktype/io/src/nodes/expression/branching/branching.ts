@@ -1,12 +1,17 @@
-import { Base } from "../base/base.js"
+import { Base } from "../../base/base.js"
 
 export namespace Branching {
-    export type Token = "|" | "&"
-
     const tokenConjunctions = {
         "|": "or",
         "&": "and"
     } as const
+
+    export const tokens = {
+        "|": 1,
+        "&": 1
+    }
+
+    export type Token = keyof typeof tokens
 
     export abstract class Node<
         Token extends Branching.Token

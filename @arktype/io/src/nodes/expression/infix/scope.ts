@@ -1,13 +1,12 @@
-import type { ArktypeOptions } from "../type.js"
-import { Base } from "./base/base.js"
+import type { ArktypeOptions } from "../../../type.js"
+import type { Base } from "../../base/base.js"
+import { Infix } from "./infix.js"
 
-export class Scope extends Base.Node {
+export class Scope extends Infix.Node {
     readonly kind = "scope"
-    definitionRequiresStructure: boolean
 
     constructor(public child: Base.Node, public options: ArktypeOptions) {
         super()
-        this.definitionRequiresStructure = child.definitionRequiresStructure
     }
 
     traverse(traversal: Base.Traversal) {
@@ -20,12 +19,8 @@ export class Scope extends Base.Node {
         return this.child.toString()
     }
 
-    get ast() {
-        return this.child.ast
-    }
-
-    get definition() {
-        return this.child.definition
+    tupleWrap(next: unknown) {
+        return [next, "$", this.options] as const
     }
 
     get description() {

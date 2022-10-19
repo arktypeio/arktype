@@ -1,6 +1,6 @@
 import { assert } from "@arktype/assert"
 import { describe, test } from "mocha"
-import { space, type } from "../../../api.js"
+import { space, type } from "../../../../api.js"
 
 describe("union node", () => {
     describe("check", () => {

@@ -1,4 +1,4 @@
-import { Optional } from "../../../nodes/unary/optional.js"
+import { Optional } from "../../../nodes/expression/postfix/optional.js"
 import { ParserState } from "../state/state.js"
 
 export namespace OptionalOperator {

@@ -1,8 +1,8 @@
 import type { IsAny } from "@arktype/tools"
-import type { Branching } from "../../nodes/branching/branching.js"
 import type { NumberLiteral } from "../../nodes/terminal/primitiveLiteral.js"
-import type { Bound } from "../../nodes/unary/bound.js"
 import type { ParseError } from "../../parser/common.js"
+import type { Branching } from "../expression/branching/branching.js"
+import type { Bound } from "../expression/infix/bound.js"
 import type { inferAst } from "./infer.js"
 import type { toString } from "./toString.js"
 

@@ -1,7 +1,6 @@
 {
     "name": "@arktype/io",
     "version": "0.0.1",
-    "description": "Typesafe syntax for typed JS, optimized from editor to runtime",
     "description2": "Typesafe definition syntax for isomorphic TS/JS, optimized from editor to runtime",
     "author": {
         "name": "David Blass",

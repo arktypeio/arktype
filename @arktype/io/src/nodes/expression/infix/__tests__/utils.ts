@@ -1,11 +1,11 @@
 import { assert } from "@arktype/assert"
 import * as fc from "fast-check"
-import type { DynamicArktype } from "../../../type.js"
-import { keywords } from "../../terminal/keyword/keyword.js"
+import type { DynamicArktype } from "../../../../type.js"
+import { keywords } from "../../../terminal/keyword/keyword.js"
 import {
     numberSubtypeKeywords,
     stringSubtypeKeywords
-} from "../../terminal/keyword/subtype.js"
+} from "../../../terminal/keyword/subtype.js"
 import { Bound } from "../bound.js"
 
 const keysOf = (o: object) => Object.keys(o)
@@ -28,7 +28,7 @@ export const aribtraryBoundable = fc.oneof(
     arbitraryKeywordList
 )
 export const arbitraryComparator = fc.constantFrom(
-    ...(Object.keys(Bound.tokensToKinds) as Bound.Token[])
+    ...(Object.keys(Bound.tokens) as Bound.Token[])
 )
 export const arbitraryDoubleComparator = fc.constantFrom(
     ...(Object.keys(Bound.doublableTokens) as Bound.DoublableToken[])

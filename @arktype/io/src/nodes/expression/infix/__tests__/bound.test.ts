@@ -1,7 +1,7 @@
 import { assert } from "@arktype/assert"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
-import { type } from "../../../type.js"
+import { type } from "../../../../api.js"
 import { Bound } from "../bound.js"
 import type { ExpectedBounds } from "./utils.js"
 import {

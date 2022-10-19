@@ -1,6 +1,6 @@
 import { assert } from "@arktype/assert"
 import { describe, test } from "mocha"
-import { type } from "../../../api.js"
+import { type } from "../../../../api.js"
 
 describe("intersection node", () => {
     test("infer", () => {

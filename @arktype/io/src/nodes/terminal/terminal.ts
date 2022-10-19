@@ -4,6 +4,7 @@ export namespace Terminal {
     export abstract class Node extends Base.Node implements Base.ProblemSource {
         definitionRequiresStructure = false
 
+        children: undefined
         abstract readonly definition: string
 
         get mustBe() {

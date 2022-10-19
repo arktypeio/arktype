@@ -1,9 +1,13 @@
 import { keySet } from "@arktype/tools"
-import { InternalArktypeError } from "../../internal.js"
-import type { Base } from "../base/base.js"
-import { Unary } from "./unary.js"
+import { InternalArktypeError } from "../../../internal.js"
+import type { Base } from "../../base/base.js"
+import { Infix } from "./infix.js"
 
 export namespace Bound {
+    export const tokens = Infix.comparators
+
+    export type Token = keyof typeof tokens
+
     export const doublableTokens = keySet({
         "<=": 1,
         "<": 1
@@ -54,7 +58,7 @@ export namespace Bound {
         }
     }
 
-    export class LeftNode extends Unary.Node implements Base.ProblemSource {
+    export class LeftNode extends Infix.Node implements Base.ProblemSource {
         readonly kind = "bound"
 
         constructor(
@@ -102,7 +106,7 @@ export namespace Bound {
 
     export class RightNode<
         HasLeft extends boolean = boolean
-    > extends Unary.Node {
+    > extends Infix.Node {
         readonly kind = "bound"
 
         constructor(

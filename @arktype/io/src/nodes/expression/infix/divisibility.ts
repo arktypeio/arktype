@@ -1,9 +1,9 @@
-import type { Base } from "../base/base.js"
-import { keywords } from "../terminal/keyword/keyword.js"
-import { Unary } from "./unary.js"
+import type { Base } from "../../base/base.js"
+import { keywords } from "../../terminal/keyword/keyword.js"
+import { Infix } from "./infix.js"
 
 export namespace Divisibility {
-    export class Node extends Unary.Node implements Base.ProblemSource {
+    export class Node extends Infix.Node implements Base.ProblemSource {
         readonly kind = "divisibility"
 
         constructor(public child: Base.Node, public divisor: number) {

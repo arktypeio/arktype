@@ -1,5 +1,5 @@
 import type { Base } from "../../base/base.js"
-import { Postfix } from "./unary.js"
+import { Postfix } from "./postfix.js"
 
 export namespace Optional {
     export class Node extends Postfix.Node {

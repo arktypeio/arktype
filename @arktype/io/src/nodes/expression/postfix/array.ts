@@ -1,6 +1,6 @@
-import type { Base } from "../base/base.js"
-import { Keyword, keywords } from "../terminal/keyword/keyword.js"
-import { Postfix } from "./unary.js"
+import type { Base } from "../../base/base.js"
+import { Keyword, keywords } from "../../terminal/keyword/keyword.js"
+import { Postfix } from "./postfix.js"
 
 export namespace Arr {
     export class Node extends Postfix.Node {

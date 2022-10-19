@@ -1,5 +1,4 @@
-import type { Branching } from "../../../nodes/branching/branching.js"
-import type { Bound } from "../../../nodes/unary/bound.js"
+import type { Tokens } from "../../../nodes/expression/tokens.js"
 import type { parserContext, ParserContext } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
@@ -45,24 +44,22 @@ export namespace Operand {
             : buildMissingRightOperandMessage(lastOperator, s.scanner.unscanned)
     }
 
-    type InfixToken = Branching.Token | Bound.Token | "%"
-
     export type buildMissingOperandMessage<
         s extends ParserState.T.Unfinished,
-        lastOperator extends InfixToken | null = ParserState.lastOperator<s>
+        lastOperator extends Tokens.Binary | null = ParserState.lastOperator<s>
     > = lastOperator extends {}
         ? buildMissingRightOperandMessage<lastOperator, s["unscanned"]>
         : buildExpressionExpectedMessage<s["unscanned"]>
 
     export type buildMissingRightOperandMessage<
-        token extends InfixToken,
+        token extends Tokens.Binary,
         unscanned extends string
     > = `Token '${token}' requires a right operand${unscanned extends ""
         ? ""
         : ` before '${unscanned}'`}`
 
     export const buildMissingRightOperandMessage = <
-        token extends InfixToken,
+        token extends Tokens.Binary,
         unscanned extends string
     >(
         token: token,

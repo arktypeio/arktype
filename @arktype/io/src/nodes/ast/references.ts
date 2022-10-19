@@ -1,21 +1,24 @@
 import type { ElementOf, UnionToTuple } from "@arktype/tools"
-import type { Branching } from "../../nodes/branching/branching.js"
-import type { Unary } from "../../nodes/unary/unary.js"
+import type { Branching } from "../expression/branching/branching.js"
+import type { Infix } from "../expression/infix/infix.js"
+import type { Postfix } from "../expression/postfix/postfix.js"
+import type { NumberLiteral } from "../terminal/primitiveLiteral.js"
 
 export type ReferencesOf<Ast, By extends string = string> = Filter<
     References<Ast>,
     By
 >
 
-// For extracting references, we only care about the node at index 0
-// TODO: Fix left bounds if we're keeping references
-type UnaryTypedToken = Unary.Token
+type SingleChildToken = Postfix.Token | Infix.Token
 
 type References<Ast> = Ast extends string
     ? [Ast]
     : Ast extends readonly unknown[]
-    ? Ast[1] extends UnaryTypedToken
-        ? References<Ast[0]>
+    ? Ast[1] extends SingleChildToken
+        ? Ast[0] extends NumberLiteral.Definition
+            ? // If it's a left bound, the child is on the right
+              References<Ast[2]>
+            : References<Ast[0]>
         : Ast[1] extends Branching.Token
         ? [...References<Ast[0]>, ...References<Ast[2]>]
         : StructuralReferences<Ast>

@@ -1,46 +1,19 @@
+import { Branching } from "./branching/branching.js"
+import { Infix } from "./infix/infix.js"
+import { Postfix } from "./postfix/postfix.js"
+
 export namespace Tokens {
-    export const postfix = {
-        "?": "optional",
-        "[]": "array"
-    } as const
+    export const binary = {
+        ...Branching.tokens,
+        ...Infix.tokens
+    }
 
-    export type Postfix = keyof typeof postfix
-
-    export const bound = {
-        "<": "bound",
-        ">": "bound",
-        "<=": "bound",
-        ">=": "bound",
-        "==": "bound"
-    } as const
-
-    export type Bound = keyof typeof bound
-
-    export const constraint = {
-        "%": "divisibility",
-        ...bound
-    } as const
-
-    export type Constraint = keyof typeof constraint
-
-    export const branching = {
-        "|": "union",
-        "&": "intersection"
-    } as const
-
-    export type Branching = keyof typeof branching
-
-    export const infix = {
-        ...constraint,
-        ...branching
-    } as const
-
-    export type Infix = keyof typeof infix
+    export type Binary = keyof typeof binary
 
     export const base = {
-        ...infix,
-        ...postfix
-    } as const
+        ...Postfix.tokens,
+        ...binary
+    }
 
     export type Base = keyof typeof base
 }

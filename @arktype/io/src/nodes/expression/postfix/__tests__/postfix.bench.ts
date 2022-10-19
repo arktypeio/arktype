@@ -1,5 +1,5 @@
 import { bench, suite } from "@arktype/assert"
-import { type } from "../../../api.js"
+import { type } from "../../../../api.js"
 
 suite("unary", () => {
     suite("optional", () => {

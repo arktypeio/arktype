@@ -1,4 +1,4 @@
-import { Arr } from "../../../nodes/unary/array.js"
+import { Arr } from "../../../nodes/expression/postfix/array.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 

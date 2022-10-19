@@ -1,8 +1,30 @@
 import { Base } from "../../base/base.js"
 
-export namespace Postfix {
+export namespace Infix {
+    export const comparators = {
+        "<": "bound",
+        ">": "bound",
+        "<=": "bound",
+        ">=": "bound",
+        "==": "bound"
+    } as const
+
+    export type Comparator = keyof typeof comparators
+
+    export const tokens = {
+        "%": "divisibility",
+        $: "scope",
+        ...comparators
+    } as const
+
+    export type Token = keyof typeof tokens
+
     export abstract class Node extends Base.Node {
         abstract child: Base.Node
+
+        get children() {
+            return [this.child]
+        }
 
         get definitionRequiresStructure() {
             return this.child.definitionRequiresStructure
@@ -10,7 +32,7 @@ export namespace Postfix {
 
         abstract tupleWrap(
             next: unknown
-        ): readonly [left: unknown, token: Tokens, right?: unknown]
+        ): readonly [left: unknown, token: Token, right: unknown]
 
         get ast() {
             return this.tupleWrap(this.child.ast) as ReturnType<
