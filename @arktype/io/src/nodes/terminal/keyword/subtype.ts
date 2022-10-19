@@ -1,11 +1,11 @@
-import type { TraversalState } from "../../traversal/traversal.js"
+import type { Base } from "../../base/base.js"
 import { Terminal } from "../terminal.js"
 import { typeKeywords } from "./type.js"
 
 abstract class RegexKeywordNode extends Terminal.Node {
     readonly kind = "regexKeyword"
 
-    traverse(state: TraversalState): state is TraversalState<string> {
+    traverse(state: Base.Traversal): state is Base.Traversal<string> {
         return (
             typeKeywords.string.traverse(state) &&
             (this.expression.test(state.data) || state.problems.add(this))
@@ -49,7 +49,7 @@ class IntegerNode extends Terminal.Node {
     readonly kind = "keyword"
     readonly definition = "integer"
     readonly mustBe = "an integer"
-    traverse(state: TraversalState): state is TraversalState<number> {
+    traverse(state: Base.Traversal): state is Base.Traversal<number> {
         return typeKeywords.number.traverse(state) &&
             Number.isInteger(state.data)
             ? true

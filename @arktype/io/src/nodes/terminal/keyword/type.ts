@@ -1,13 +1,14 @@
 import { hasJsType } from "@arktype/tools"
-import type { TraversalState } from "../../base/traversal.js"
+import type { Base } from "../../base/base.js"
+import type { Traversal } from "../../base/traversal.js"
 import { Terminal } from "../terminal.js"
 
 abstract class TypeKeywordNode extends Terminal.Node {
     readonly kind = "keyword"
 
     traverse(
-        state: TraversalState
-    ): state is TraversalState<InferPostcondition<this>> {
+        state: Base.Traversal
+    ): state is Traversal<InferPostcondition<this>> {
         if (!this.allowsData(state.data)) {
             state.addProblem(this)
             return false

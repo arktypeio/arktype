@@ -1,20 +1,7 @@
 import type { NormalizedJsTypeOf } from "@arktype/tools"
-import { jsTypeOf, uncapitalize } from "@arktype/tools"
+import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
 import { isIntegerLike } from "../../parser/str/operand/numeric.js"
 import type { Base } from "./base.js"
-import { pathToString, stringifyData } from "./base.js"
-
-export type Stringifiable<Data> = {
-    raw: Data
-    typeOf: NormalizedJsTypeOf<Data>
-    toString(): string
-}
-
-const stringifiableFrom = <Data>(raw: Data) => ({
-    raw,
-    typeOf: jsTypeOf(raw),
-    toString: () => stringifyData(raw)
-})
 
 export class Problem<Code extends ProblemCode> {
     data: Stringifiable<Data>
@@ -58,6 +45,23 @@ export class Problem<Code extends ProblemCode> {
     }
 }
 
+const stringifyData = (data: unknown) =>
+    toString(data, {
+        maxNestedStringLength: 50
+    })
+
+const stringifiableFrom = <Data>(raw: Data) => ({
+    raw,
+    typeOf: jsTypeOf(raw),
+    toString: () => stringifyData(raw)
+})
+
+export type Stringifiable<Data> = {
+    raw: Data
+    typeOf: NormalizedJsTypeOf<Data>
+    toString(): string
+}
+
 export type ProblemKinds = {
     type: {}
     regex: {}
@@ -69,42 +73,42 @@ export type ProblemKinds = {
 
 export type ProblemCode = keyof ProblemKinds
 
-export class ArktypeError extends TypeError {
-    cause: Problems
+// export class ArktypeError extends TypeError {
+//     cause: Problems
 
-    constructor(problems: Problems) {
-        super(problems.summary)
-        this.cause = problems
-    }
-}
+//     constructor(problems: Problems) {
+//         super(problems.summary)
+//         this.cause = problems
+//     }
+// }
 
-export class Problems extends Array<Problem<ProblemCode>> {
-    add(node: Base.Node): false {
-        return false
-    }
+// export class Problems extends Array<Problem<ProblemCode>> {
+//     add(node: Base.Node): false {
+//         return false
+//     }
 
-    get summary() {
-        if (this.length === 1) {
-            const error = this[0]
-            if (error.path.length) {
-                const pathPrefix =
-                    error.path.length === 1 && isIntegerLike(error.path[0])
-                        ? `Item ${error.path[0]}`
-                        : pathToString(error.path)
-                return `${pathPrefix} ${uncapitalize(error.message)}`
-            }
-            return error.message
-        }
-        let aggregatedMessage = ""
-        for (const error of this) {
-            aggregatedMessage += `${pathToString(error.path)}: ${
-                error.message
-            }\n`
-        }
-        return aggregatedMessage.slice(0, -1)
-    }
+//     get summary() {
+//         if (this.length === 1) {
+//             const error = this[0]
+//             if (error.path.length) {
+//                 const pathPrefix =
+//                     error.path.length === 1 && isIntegerLike(error.path[0])
+//                         ? `Item ${error.path[0]}`
+//                         : pathToString(error.path)
+//                 return `${pathPrefix} ${uncapitalize(error.message)}`
+//             }
+//             return error.message
+//         }
+//         let aggregatedMessage = ""
+//         for (const error of this) {
+//             aggregatedMessage += `${pathToString(error.path)}: ${
+//                 error.message
+//             }\n`
+//         }
+//         return aggregatedMessage.slice(0, -1)
+//     }
 
-    throw() {
-        throw new ArktypeError(this)
-    }
-}
+//     throw() {
+//         throw new ArktypeError(this)
+//     }
+// }

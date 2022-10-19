@@ -1,5 +1,4 @@
 import type { Base } from "../../base/base.js"
-import type { TraversalState } from "../../traversal/traversal.js"
 import { numberSubtypeKeywords, stringSubtypeKeywords } from "./subtype.js"
 import { typeKeywords } from "./type.js"
 
@@ -17,9 +16,9 @@ export namespace Keyword {
     type Nodes = typeof keywords
 
     type Inferences = {
-        [K in Definition]: Nodes[K]["allows"] extends (
-            state: TraversalState
-        ) => state is TraversalState<infer T>
+        [K in Definition]: Nodes[K]["traverse"] extends (
+            traversal: Base.Traversal
+        ) => traversal is Base.Traversal<infer T>
             ? T
             : never
     }

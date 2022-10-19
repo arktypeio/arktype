@@ -1,4 +1,4 @@
-import type { TraversalState } from "../traversal/traversal.js"
+import type { Base } from "../base/base.js"
 import { Terminal } from "./terminal.js"
 
 export namespace Alias {
@@ -9,7 +9,7 @@ export namespace Alias {
             super()
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.Traversal) {
             if (
                 state.resolvedEntries.some(
                     (entry) =>

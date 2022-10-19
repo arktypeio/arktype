@@ -1,4 +1,4 @@
-import type { TraversalState } from "../traversal/traversal.js"
+import type { Base } from "../base/base.js"
 import { keywords } from "./keyword/keyword.js"
 import { Terminal } from "./terminal.js"
 
@@ -14,7 +14,7 @@ export namespace RegexLiteral {
             this.expression = new RegExp(definition.slice(1, -1))
         }
 
-        traverse(state: TraversalState): state is TraversalState<string> {
+        traverse(state: Base.Traversal): state is Base.Traversal<string> {
             return (
                 keywords.string.traverse(state) &&
                 (this.expression.test(state.data) || state.problems.add(this))

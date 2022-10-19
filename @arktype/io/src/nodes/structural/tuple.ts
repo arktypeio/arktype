@@ -20,7 +20,7 @@ export namespace Tuple {
             )
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.TraversalState) {
             if (!this.precondition.traverse(state)) {
                 return
             }

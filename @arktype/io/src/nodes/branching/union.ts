@@ -7,7 +7,7 @@ export namespace Union {
         readonly token = "|"
         readonly kind = "union"
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.TraversalState) {
             const branchDiagnosticsEntries: BranchDiagnosticsEntry[] = []
             const rootErrors = state.problems
             state.unionDepth++

@@ -11,7 +11,7 @@ export namespace ObjectLiteral {
             super()
         }
 
-        traverse(state: TraversalState<Dictionary>) {
+        traverse(state: Base.TraversalState<Dictionary>) {
             const root = state.data
             for (let i = 0; i < this.children.length; i++) {
                 const k = this.keys[i]

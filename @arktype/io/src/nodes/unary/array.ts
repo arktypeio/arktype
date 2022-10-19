@@ -11,7 +11,7 @@ export namespace Array {
             super()
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.TraversalState) {
             if (!keywords.array.traverse(state)) {
                 return false
             }

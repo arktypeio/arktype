@@ -11,7 +11,7 @@ export class Scope extends Base.Node {
         this.definitionRequiresStructure = child.definitionRequiresStructure
     }
 
-    traverse(state: TraversalState) {
+    traverse(state: Base.TraversalState) {
         state.pushScope(this)
         this.child.traverse(state)
         state.popScope()

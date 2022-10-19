@@ -2,10 +2,9 @@ import { InternalArktypeError } from "../../internal.js"
 import type { DynamicSpace } from "../../space.js"
 import type { Scope } from "../scope.js"
 import type { Terminal } from "../terminal/terminal.js"
-import type { Base } from "./base.js"
-import { Problem, Problems } from "./problems.js"
+import { Problems } from "./problems.js"
 
-export class TraversalState<Data = unknown> {
+export class Traversal<Data = unknown> {
     private problemsByPath: Record<string, Problems> = {}
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
@@ -91,7 +90,7 @@ export class TraversalState<Data = unknown> {
     }
 }
 
-export type ResolvedData = {
+type ResolvedData = {
     alias: string
     data: unknown
     priorScopes: Scope[]
@@ -101,6 +100,6 @@ type OptionQueryResult<K1 extends RootKey, K2 extends ConfigKey<K1>> =
     | Required<Scope>[K1][K2]
     | undefined
 
-export type RootKey = keyof Scope
+type RootKey = keyof Scope
 
-export type ConfigKey<K1 extends RootKey> = keyof Required<Scope>[K1]
+type ConfigKey<K1 extends RootKey> = keyof Required<Scope>[K1]

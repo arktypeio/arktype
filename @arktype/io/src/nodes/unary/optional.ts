@@ -1,5 +1,5 @@
 import type { Base } from "../base/base.js"
-import type { TraversalState } from "../base/traversal.js"
+import type { Traversal } from "../base/traversal.js"
 import { Unary } from "./unary.js"
 
 export namespace Optional {
@@ -10,7 +10,7 @@ export namespace Optional {
             super()
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.Traversal) {
             if (state.data !== undefined) {
                 this.child.traverse(state)
             }

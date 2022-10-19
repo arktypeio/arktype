@@ -1,4 +1,3 @@
-import type { TraversalState } from "../base/traversal.js"
 import type { Base } from "../base/base.js"
 import { keywords } from "../terminal/keyword/keyword.js"
 import { Unary } from "./unary.js"
@@ -11,7 +10,7 @@ export namespace Divisibility {
             super()
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.Traversal) {
             if (!keywords.number.traverse(state)) {
                 return
             }

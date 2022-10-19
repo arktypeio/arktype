@@ -1,7 +1,7 @@
 import { keySet } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { Base } from "../base/base.js"
-import type { TraversalState } from "../base/traversal.js"
+import type { Traversal } from "../base/traversal.js"
 
 import { Unary } from "./unary.js"
 
@@ -77,7 +77,7 @@ export namespace Bound {
             super()
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.Traversal) {
             const actual = boundableToNumber(state.data)
             if (
                 !isWithin(
@@ -129,7 +129,7 @@ export namespace Bound {
             super()
         }
 
-        traverse(state: TraversalState) {
+        traverse(state: Base.Traversal) {
             // TODO: Check if data is of the expected type
             const actual = boundableToNumber(state.data)
             return isWithin(this.comparator, this.limit, actual)
