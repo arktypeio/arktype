@@ -1,7 +1,7 @@
 {
     "name": "@arktype/io",
     "version": "0.0.1",
-    "description2": "Expressive type syntax for isomorphic TS/JS, optimized from editor to runtime",
+    "description": "Isomorphic type syntax for TS/JS",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
