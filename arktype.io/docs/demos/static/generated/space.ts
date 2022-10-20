@@ -1,4 +1,4 @@
-import { space } from "@arktype/io"
+export default `import { space } from "@arktype/io"
 
 // Spaces are collections of types that can reference each other.
 export const types = space({
@@ -24,7 +24,8 @@ export const readPackageData = () => ({
     contributors: [{ email: "david@araktypeio" }]
 })
 
-// `Encountered errors at the following paths:
+// \`Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
-//   contributors/0/email: "david@araktypeio" is not assignable to email.`
-export const { errors } = types.package.check(readPackageData())
+//   contributors/0/email: "david@araktypeio" is not assignable to email.\`
+export const { problems: errors } = types.package.check(readPackageData())
+`

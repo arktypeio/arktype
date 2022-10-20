@@ -1,4 +1,4 @@
-import { type } from "@arktype/io"
+export default `import { type } from "@arktype/io"
 
 // Define a type...
 export const user = type({
@@ -20,9 +20,10 @@ export const fetchUser = () => ({
 })
 
 // Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { errors, data } = user.check(fetchUser())
+export const { problems: errors, data } = user.check(fetchUser())
 
 if (errors) {
-    // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+    // TODO: Add actual error
     console.log(errors.summary)
 }
+`

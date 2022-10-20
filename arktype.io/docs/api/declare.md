@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-declare: DeclareFn
+declare: (...names: any[]) => any
 ```

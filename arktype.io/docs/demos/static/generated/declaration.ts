@@ -1,4 +1,4 @@
-import { groupDef } from "./group"
+export default `import { groupDef } from "./group"
 import { compile } from "./names"
 import { userDef } from "./user"
 
@@ -20,3 +20,4 @@ export const getGroupsForCurrentUser = () => ({
 
 // Try changing the definitions in "group.ts"/"user.ts" or the data in "getGroupsForCurrentUser"
 export const { errors } = types.group.check(getGroupsForCurrentUser())
+`

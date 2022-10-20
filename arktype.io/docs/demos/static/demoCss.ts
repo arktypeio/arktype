@@ -1,3 +1,4 @@
+export default `
 body {
     font-family: "Cascadia Code", sans-serif;
     background-color: hsl(220 18% 10%);
@@ -59,3 +60,4 @@ h3 {
 .val {
     color: #ffc40c;
 }
+`

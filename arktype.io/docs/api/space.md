@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-space: CreateSpaceFn
+space: SpaceFn
 ```

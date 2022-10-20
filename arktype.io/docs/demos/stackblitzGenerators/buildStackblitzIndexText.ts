@@ -6,27 +6,37 @@ export const buildStackblitzIndexText = (embedId: EmbedId) => {
     const dataObject = demoInfo[1]
 
     return `import {populateDemo} from "./populateDemo"
-${fileImports}
-populateDemo(${dataObject})`
+(async () => {
+    try {
+        ${fileImports}
+        populateDemo(${dataObject})
+    } catch(e) {
+        populateDemo({ 
+            definition: {},
+            data: {},
+            error: "ParseError: " + e.originalErr.message,
+          })
+    }
+})()`
 }
 
 type DemoAdapter = [importFromDemo: string, dataFromImports: string]
 
 const demoAdapters: Record<EmbedId, DemoAdapter> = {
     type: [
-        `import { user, fetchUser, errors } from "./type"`,
+        `const { user, fetchUser, errors } = await import("./type")`,
         `{ definition: user.definition, data: fetchUser(), error: errors?.summary }`
     ],
     space: [
-        `import { types, readPackageData, errors } from "./space"`,
+        `const { types, readPackageData, errors } = await import("./space")`,
         "{ definition: types.$root.dictionary, data: readPackageData(), error: errors?.summary }"
     ],
     constraints: [
-        `import { employee, queryEmployee, errors } from "./constraints"`,
+        `const { employee, queryEmployee, errors } = await import("./constraints")`,
         "{ definition: employee.definition, data: queryEmployee(), error: errors?.summary }"
     ],
     declaration: [
-        `import { types, getGroupsForCurrentUser, errors } from "./declaration"`,
+        `const { types, getGroupsForCurrentUser, errors } = await import("./declaration")`,
         "{ definition: types.$root.dictionary, data: getGroupsForCurrentUser(), error: errors?.summary }"
     ]
 }

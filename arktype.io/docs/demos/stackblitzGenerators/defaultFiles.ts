@@ -1,6 +1,6 @@
-import indexHtml from "raw-loader!../static/index.html"
-import populateDemoTsText from "raw-loader!../static/populateDemo.ts"
-import demoCssText from "!!raw-loader!../static/demo.css"
+import demoCssText from "../static/demoCss"
+import indexHtml from "../static/indexHtml"
+import populateDemoTsText from "../static/populateDemo"
 
 const tsConfig = {
     compilerOptions: {

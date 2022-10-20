@@ -56,10 +56,10 @@ export const fetchUser = () => ({
 })
 
 // Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { errors, data } = user.check(fetchUser())
+export const { problems: errors, data } = user.check(fetchUser())
 
 if (errors) {
-    // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+    // TODO: Add actual error
     console.log(errors.summary)
 }
 ```
@@ -98,7 +98,7 @@ export const readPackageData = () => ({
 // `Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
 //   contributors/0/email: "david@araktypeio" is not assignable to email.`
-export const { errors } = types.package.check(readPackageData())
+export const { problems: errors } = types.package.check(readPackageData())
 ```
 
 ### Definitions that split ✂️
@@ -198,12 +198,9 @@ export const queryEmployee = () => ({
 })
 
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { errors } = employee.check(queryEmployee())
+export const { problems: errors } = employee.check(queryEmployee())
 
-// Encountered errors at the following paths:
-//   email: 'david@arktype.biz' does not match expression /[a-z]*@arktype.io/.
-//   about/age: 17 must be greater than or equal to 18.
-//   about/bio: "I am very interesting.I am very interesting.I am ..." must be less than or equal to 80 characters (was 110).
+// TODO: Add error message.
 console.log(errors?.summary ?? "Flawless. Obviously.")
 ```
 

@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-type: TypeFunction
+type: TypeFn
 ```

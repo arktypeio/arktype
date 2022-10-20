@@ -1,8 +1,8 @@
-import { type } from "@arktype/io"
+export default `import { type } from "@arktype/io"
 
 export const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type.
-    email: `/[a-z]*@arktype.io/`,
+    email: \`/[a-z]*@arktype.io/\`,
     about: {
         // Single or double bound numeric types
         age: "18<=integer<125",
@@ -23,10 +23,8 @@ export const queryEmployee = () => ({
 })
 
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { errors } = employee.check(queryEmployee())
+export const { problems: errors } = employee.check(queryEmployee())
 
-// Encountered errors at the following paths:
-//   email: 'david@arktype.biz' does not match expression /[a-z]*@arktype.io/.
-//   about/age: 17 must be greater than or equal to 18.
-//   about/bio: "I am very interesting.I am very interesting.I am ..." must be less than or equal to 80 characters (was 110).
+// TODO: Add error message.
 console.log(errors?.summary ?? "Flawless. Obviously.")
+`

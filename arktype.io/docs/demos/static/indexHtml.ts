@@ -1,3 +1,4 @@
+export default `
 <head>
     <link href="http://fonts.cdnfonts.com/css/cascadia-code" rel="stylesheet" />
 </head>
@@ -23,3 +24,4 @@
         </div>
     </div>
 </div>
+`

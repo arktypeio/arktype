@@ -2,15 +2,12 @@ import { Box } from "@mui/material"
 import React, { useEffect } from "react"
 import type { AddonFile, DemoProps } from "./stackblitzGenerators/index"
 import {
-    buildStackblitzIndexText,
     contentsByAddonFile,
-    contentsByEmbedId,
     createStackblitzDemo,
-    defaultStaticFiles,
     DEMO_ELEMENT_ID
 } from "./stackblitzGenerators/index"
 
-const getAddonFiles = (addonFiles: AddonFile[]) => {
+export const getAddonFiles = (addonFiles: AddonFile[]) => {
     const addon: Record<string, string> = {}
     for (const file of addonFiles) {
         addon[`${file}.ts`] = contentsByAddonFile[file]
@@ -18,19 +15,9 @@ const getAddonFiles = (addonFiles: AddonFile[]) => {
     return addon
 }
 
-export const StackBlitzDemo = ({ embedId, addonFiles }: DemoProps) => {
+export const StackBlitzDemo = (demoProps: DemoProps) => {
     useEffect(() => {
-        createStackblitzDemo({
-            files: {
-                [`${embedId}.ts`]: contentsByEmbedId[embedId],
-                "index.ts": buildStackblitzIndexText(embedId),
-                ...defaultStaticFiles,
-                ...getAddonFiles(addonFiles ?? [])
-            },
-            title: `${embedId}`,
-            description: `Demo for ${embedId}`,
-            embedId
-        })
+        createStackblitzDemo(demoProps)
     }, [])
     return (
         <Box

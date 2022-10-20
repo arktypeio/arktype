@@ -1,36 +1,37 @@
 import sdk from "@stackblitz/sdk"
+import { getAddonFiles } from "../StackBlitzDemo"
+import { buildStackblitzIndexText } from "./buildStackblitzIndexText"
+import { defaultStaticFiles } from "./defaultFiles"
+import { addonFilesByEmdedId, contentsByEmbedId } from "./rawDemoFiles"
 
-export type EmbedId = "type" | "space" | "constraints" | "declaration"
+export const embedIds = { type: 1, space: 1, constraints: 1, declaration: 1 }
+export type EmbedId = keyof typeof embedIds
 export type AddonFile = "user" | "group" | "names"
 export type DemoProps = {
     embedId: EmbedId
     addonFiles?: AddonFile[]
 }
-type DemoArgs = {
-    files: Record<string, string>
-    title: string
-    description: string
-    embedId: EmbedId
-}
-export const DEMO_ELEMENT_ID = "re-type-demo"
-export const createStackblitzDemo = ({
-    files,
-    title,
-    description,
-    embedId
-}: DemoArgs) => {
+
+export const DEMO_ELEMENT_ID = "arktype-demo"
+
+export const createStackblitzDemo = ({ embedId }: DemoProps) => {
     sdk.embedProject(
         DEMO_ELEMENT_ID,
         {
-            files,
-            title,
-            description,
+            files: {
+                [`${embedId}.ts`]: contentsByEmbedId[embedId],
+                "index.ts": buildStackblitzIndexText(embedId),
+                ...defaultStaticFiles,
+                ...getAddonFiles(addonFilesByEmdedId[embedId] ?? [])
+            },
+            title: embedId,
+            description: `Demo for ${embedId}`,
             template: "typescript",
             dependencies: {
                 // @lineFrom:@arktype/io/package.json:version => "@arktype/io": {?},
-                "@arktype/io": "2.0.10-alpha",
-                // @lineFrom:@arktype/tools/package.json:version => "@arktype/tools": {?}
-                "@arktype/tools": "2.2.3"
+                "@arktype/io": "0.0.1",
+                // @lineFrom:@arktype/io/package.json:version => "@arktype/tools": {?}
+                "@arktype/tools": "0.0.1"
             },
             settings: {
                 compile: {

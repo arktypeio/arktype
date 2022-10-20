@@ -1,10 +1,10 @@
 import { basename } from "node:path"
 import { stdout } from "node:process"
-import { fromPackageRoot } from "@arktype/node"
 import type { DocGenConfig } from "./config.js"
 import { extractRepo } from "./extract.js"
 import { createWriteFilesConsumer } from "./snippets/writeFilesConsumer.js"
 import { writeRepo } from "./write.js"
+import { fromPackageRoot } from "@arktype/node"
 
 const fromRedoDevDir = (...segments: string[]) =>
     fromPackageRoot("arktype.io", ...segments)
@@ -16,7 +16,7 @@ const fromTypeDemosDir = (...segments: string[]) =>
     fromTypeDocsDir("demos", ...segments)
 
 const fromTypePackageRoot = (...segments: string[]) =>
-    fromPackageRoot("@artkype", "type", ...segments)
+    fromPackageRoot("@arktype", "io", ...segments)
 
 export const config: DocGenConfig = {
     packages: [
@@ -41,10 +41,14 @@ export const config: DocGenConfig = {
                 consumers: [
                     createWriteFilesConsumer({
                         rootOutDir: fromTypeDemosDir("static", "generated"),
-                        transformRelativePath: (path) =>
-                            `${basename(path)}.raw`,
+                        transformRelativePath: (path) => basename(path),
                         transformJsImports: (snippet) =>
-                            snippet.replaceAll(".js", "")
+                            snippet.replaceAll(".js", ""),
+                        transformContents: (content) =>
+                            `export default \`${content.replaceAll(
+                                "`",
+                                "\\`"
+                            )}\``
                     })
                 ]
             }
@@ -53,11 +57,11 @@ export const config: DocGenConfig = {
 }
 
 export const docgen = () => {
-    console.group(`Generating docs for repo...✍️`)
-    stdout.write("Extracting repo metadata...")
+    console.group(`Generating docs for re-po...✍️`)
+    stdout.write("Extracting re-po metadata...")
     const packages = extractRepo(config)
     stdout.write("✅\n")
-    stdout.write("Updating repo docs...")
+    stdout.write("Updating re-po docs...")
     writeRepo({ config, packages })
     stdout.write("✅\n")
     console.log(`Enjoy your new docs! 📚`)

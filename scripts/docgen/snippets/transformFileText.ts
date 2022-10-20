@@ -31,7 +31,7 @@ export const transformRelativeImports = (
     )
     for (const declaration of importDeclarations) {
         const specifier = declaration.getModuleSpecifier()
-        if (specifier.getLiteralText().endsWith("../index.js")) {
+        if (specifier.getLiteralText().endsWith("../api.js")) {
             specifier.replaceWithText(`"${packageName}"`)
         }
     }

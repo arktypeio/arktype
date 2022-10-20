@@ -1,10 +1,11 @@
-import constraints from "raw-loader!../static/generated/constraints.ts.raw"
-import declaration from "raw-loader!../static/generated/declaration.ts.raw"
-import group from "raw-loader!../static/generated/group.ts.raw"
-import names from "raw-loader!../static/generated/names.ts.raw"
-import space from "raw-loader!../static/generated/space.ts.raw"
-import type from "raw-loader!../static/generated/type.ts.raw"
-import user from "raw-loader!../static/generated/user.ts.raw"
+import constraints from "../static/generated/constraints"
+import declaration from "../static/generated/declaration"
+import group from "../static/generated/group"
+import names from "../static/generated/names"
+import space from "../static/generated/space"
+import type from "../static/generated/type"
+import user from "../static/generated/user"
+
 import type { AddonFile, EmbedId } from "./createStackblitzDemo"
 
 export const contentsByAddonFile: Record<AddonFile, string> = {
@@ -18,4 +19,7 @@ export const contentsByEmbedId: Record<EmbedId, string> = {
     space,
     constraints,
     declaration
+}
+export const addonFilesByEmdedId: Partial<Record<EmbedId, AddonFile[]>> = {
+    declaration: ["user", "group", "names"]
 }
