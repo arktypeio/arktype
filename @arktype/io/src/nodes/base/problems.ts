@@ -90,7 +90,7 @@ export class Problems extends Array<Problem> {
         ).join("\n")
     }
 
-    throw() {
+    throw(): never {
         throw new ArktypeError(this)
     }
 }

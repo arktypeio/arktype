@@ -11,7 +11,7 @@ describe("snippets", () => {
                 version?: number | undefined
             }
         }
-        assert(modelSnippet.errors?.summary).snap(
+        assert(modelSnippet.problems?.summary).snap(
             `browser/kind must be one of 'chrome'|'firefox'|'safari' (was "Internet Explorer")`
         )
     })
@@ -20,13 +20,13 @@ describe("snippets", () => {
         assert(spaceSnippet.types.package.infer).type.toString.snap(
             "{ name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }"
         )
-        assert(spaceSnippet.errors?.summary)
+        assert(spaceSnippet.problems?.summary)
             .snap(`dependencies/0/contributors: contributors is required
 contributors/0/email: Must be a valid email (was "david@araktypeio")`)
     })
     test("constraints", async () => {
         const constraintsSnippet = await import("../constraints.js")
-        assert(constraintsSnippet.errors?.summary)
+        assert(constraintsSnippet.problems?.summary)
             .snap(`email: Must match expression /[a-z]*@arktype.io/ (was "david@arktype.biz")
 about/age: Must be at least 18 (was 17)
 about/bio: Must be at most 80 characters (was 110)`)

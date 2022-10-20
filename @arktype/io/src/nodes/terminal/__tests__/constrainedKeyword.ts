@@ -6,14 +6,14 @@ describe("constrained keyword", () => {
     test("integer", () => {
         const integer = type("integer")
         assert(integer.infer).typed as number
-        assert(integer.check(5).errors).is(undefined)
-        assert(integer.check(5.0001).errors?.summary).snap(
+        assert(integer.check(5).problems).is(undefined)
+        assert(integer.check(5.0001).problems?.summary).snap(
             `Must be an integer (was 5.0001)`
         )
-        assert(integer.check(Infinity).errors?.summary).snap(
+        assert(integer.check(Infinity).problems?.summary).snap(
             `Must be an integer (was Infinity)`
         )
-        assert(integer.check(NaN).errors?.summary).snap(
+        assert(integer.check(NaN).problems?.summary).snap(
             `Must be an integer (was NaN)`
         )
     })

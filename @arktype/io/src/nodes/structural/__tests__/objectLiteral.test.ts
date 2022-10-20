@@ -36,26 +36,27 @@ describe("object", () => {
         const shallow = type.lazy(shallowInputDef)
         const nested = type.lazy({ nest: { ed: "string" } })
         test("standard", () => {
-            assert(shallow.check({ a: "ok", b: 4.321, c: 67 }).errors).is(
+            assert(shallow.check({ a: "ok", b: 4.321, c: 67 }).problems).is(
                 undefined
             )
         })
         test("nested", () => {
-            assert(nested.check({ nest: { ed: "!" } }).errors).is(undefined)
+            assert(nested.check({ nest: { ed: "!" } }).problems).is(undefined)
         })
         describe("errors", () => {
             test("bad value", () => {
                 assert(
-                    shallow.check({ a: "ko", b: 123.4, c: 76 }).errors?.summary
+                    shallow.check({ a: "ko", b: 123.4, c: 76 }).problems
+                        ?.summary
                 ).snap(`c must be 67 (was 76)`)
             })
             test("bad nested value", () => {
                 assert(
-                    nested.check({ nest: { ed: null } }).errors?.summary
+                    nested.check({ nest: { ed: null } }).problems?.summary
                 ).snap(`nest/ed must be a string (was null)`)
             })
             test("missing keys", () => {
-                assert(shallow.check({ a: "ok" }).errors?.summary)
+                assert(shallow.check({ a: "ok" }).problems?.summary)
                     .snap(`b: b is required
 c: c is required`)
             })

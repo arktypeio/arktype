@@ -23,7 +23,7 @@ export const queryEmployee = () => ({
 })
 
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { errors } = employee.check(queryEmployee())
+export const { problems: errors } = employee.check(queryEmployee())
 
 // TODO: Add error message.
 console.log(errors?.summary ?? "Flawless. Obviously.")

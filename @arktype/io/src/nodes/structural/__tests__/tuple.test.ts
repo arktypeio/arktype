@@ -10,8 +10,8 @@ describe("tuple", () => {
             assert(empty.infer).typed as []
         })
         test("validation", () => {
-            assert(empty.check([]).errors).is(undefined)
-            assert(empty.check({}).errors?.summary).snap(
+            assert(empty.check([]).problems).is(undefined)
+            assert(empty.check({}).problems?.summary).snap(
                 "Must be an array (was object)"
             )
         })
@@ -34,22 +34,22 @@ describe("tuple", () => {
     })
     describe("check", () => {
         test("standard", () => {
-            assert(shallow.check(["violin", 42, 6]).errors).is(undefined)
+            assert(shallow.check(["violin", 42, 6]).problems).is(undefined)
         })
         describe("errors", () => {
             test("bad item value", () => {
-                assert(shallow.check(["violin", 42n, 6]).errors?.summary).snap(
-                    `Value at index 1 must be a number (was bigint)`
-                )
+                assert(
+                    shallow.check(["violin", 42n, 6]).problems?.summary
+                ).snap(`Value at index 1 must be a number (was bigint)`)
             })
             test("too short", () => {
-                assert(shallow.check(["violin", 42]).errors?.summary).snap(
+                assert(shallow.check(["violin", 42]).problems?.summary).snap(
                     "Length must be 3 (was 2)"
                 )
             })
             test("too long", () => {
                 assert(
-                    shallow.check(["violin", 42, 6, null]).errors?.summary
+                    shallow.check(["violin", 42, 6, null]).problems?.summary
                 ).snap(`Length must be 3 (was 4)`)
             })
         })

@@ -1,14 +1,13 @@
-import { Base } from "../base/base.js"
+import type { Base } from "../base/base.js"
 import { keywords } from "../terminal/keyword/keyword.js"
 
 export namespace Tuple {
-    export class Node extends Base.Node {
+    export class Node implements Base.Node {
         readonly kind = "tuple"
         definitionRequiresStructure = true
         readonly length: number
 
         constructor(public children: Base.Node[]) {
-            super()
             this.length = children.length
         }
 

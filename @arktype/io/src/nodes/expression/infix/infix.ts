@@ -1,4 +1,4 @@
-import { Base } from "../../base/base.js"
+import type { Base } from "../../base/base.js"
 
 export namespace Infix {
     export const comparators = {
@@ -19,8 +19,12 @@ export namespace Infix {
 
     export type Token = keyof typeof tokens
 
-    export abstract class Node extends Base.Node {
+    export abstract class Node implements Base.Node {
         abstract child: Base.Node
+        abstract kind: string
+        abstract traverse(traversal: Base.Traversal): void
+        abstract description: string
+        abstract toString(): string
 
         get children() {
             return [this.child]

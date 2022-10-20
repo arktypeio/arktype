@@ -20,7 +20,7 @@ describe("space validation", () => {
                     { circumference: 4.832321, type: "Granny Smith" },
                     { length: 15, description: "nice" }
                 ]
-            }).errors
+            }).problems
         ).equals(undefined)
         assert(
             groceries.check({
@@ -31,7 +31,7 @@ describe("space validation", () => {
                     },
                     { circumference: 3.14159, description: "Fuji" }
                 ]
-            }).errors?.summary
+            }).problems?.summary
         )
             .snap(`fruits/0: Must be one of banana|apple (was {length: 5000, type: "slippery"})
 fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description: "Fuji"})`)
@@ -54,7 +54,7 @@ fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description:
                     { isA: false, a: { isA: true } },
                     { isA: true, b: { isA: false } }
                 ]
-            }).errors
+            }).problems
         ).equals(undefined)
         assert(
             bicycle.check({
@@ -101,7 +101,7 @@ fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description:
                     { isA: false },
                     { isA: "the duck goes quack" }
                 ]
-            }).errors?.summary
+            }).problems?.summary
         ).snap(`c/8 must be one of a|b (was {isA: "the duck goes quack"})`)
     })
     const recursiveDict = narrow({ dejaVu: { dejaVu: "dejaVu?" } })
@@ -110,7 +110,7 @@ fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description:
         type DejaVu = typeof recursive.$.infer.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
-        assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
+        assert(recursive.dejaVu.check(dejaVu).problems).equals(undefined)
     })
     test("validates deep objects", () => {
         const recursive = space(recursiveDict)
@@ -122,9 +122,9 @@ fruits/1: Must be one of banana|apple (was {circumference: 3.14159, description:
             current = current.dejaVu
             i++
         }
-        assert(recursive.dejaVu.check(dejaVu).errors).equals(undefined)
+        assert(recursive.dejaVu.check(dejaVu).problems).equals(undefined)
         current.dejaVu = "whoops" as any
-        assert(recursive.dejaVu.check(dejaVu).errors?.summary).snap(
+        assert(recursive.dejaVu.check(dejaVu).problems?.summary).snap(
             "dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu must be a non-array object (was string)"
         )
     })

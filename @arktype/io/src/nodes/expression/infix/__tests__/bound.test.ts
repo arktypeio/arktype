@@ -70,8 +70,8 @@ describe("bound", () => {
     describe("string", () => {
         test("check", () => {
             const gte3 = type("string>=3")
-            assert(gte3.check("yes").errors).equals(undefined)
-            assert(gte3.check("no").errors?.summary).snap(
+            assert(gte3.check("yes").problems).equals(undefined)
+            assert(gte3.check("no").problems?.summary).snap(
                 "Must be at least 3 characters (was 2)"
             )
         })
@@ -79,8 +79,8 @@ describe("bound", () => {
     describe("array", () => {
         test("check", () => {
             const twoNulls = type("null[]==2")
-            assert(twoNulls.check([null, null]).errors).equals(undefined)
-            assert(twoNulls.check([null]).errors?.summary).snap(
+            assert(twoNulls.check([null, null]).problems).equals(undefined)
+            assert(twoNulls.check([null]).problems?.summary).snap(
                 `Must be exactly 2 items (was 1)`
             )
         })

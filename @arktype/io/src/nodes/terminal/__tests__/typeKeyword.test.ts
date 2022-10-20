@@ -9,9 +9,9 @@ describe("type keywords", () => {
             assert(b.infer).typed as boolean
         })
         test("check", () => {
-            assert(b.check(true).errors).is(undefined)
-            assert(b.check(false).errors).is(undefined)
-            assert(b.check(0).errors?.summary).snap(
+            assert(b.check(true).problems).is(undefined)
+            assert(b.check(false).problems).is(undefined)
+            assert(b.check(0).problems?.summary).snap(
                 `Must be boolean (was number)`
             )
         })
@@ -22,8 +22,8 @@ describe("type keywords", () => {
             assert(b.infer).typed as bigint
         })
         test("check", () => {
-            assert(b.check(999n).errors).is(undefined)
-            assert(b.check(999).errors?.summary).snap(
+            assert(b.check(999n).problems).is(undefined)
+            assert(b.check(999).problems?.summary).snap(
                 `Must be a bigint (was number)`
             )
         })
@@ -34,8 +34,8 @@ describe("type keywords", () => {
             assert(s.infer).typed as symbol
         })
         test("check", () => {
-            assert(s.check(Symbol("")).errors).is(undefined)
-            assert(s.check("@").errors?.summary).snap(
+            assert(s.check(Symbol("")).problems).is(undefined)
+            assert(s.check("@").problems?.summary).snap(
                 `Must be a symbol (was string)`
             )
         })
@@ -46,8 +46,8 @@ describe("type keywords", () => {
             assert(f.infer).typed as Function
         })
         test("check", () => {
-            assert(f.check(() => ({})).errors).is(undefined)
-            assert(f.check({}).errors?.summary).snap(
+            assert(f.check(() => ({})).problems).is(undefined)
+            assert(f.check({}).problems?.summary).snap(
                 `Must be a function (was object)`
             )
         })
@@ -58,9 +58,9 @@ describe("type keywords", () => {
             assert(o.infer).typed as object
         })
         test("check", () => {
-            assert(o.check([]).errors).is(undefined)
-            assert(o.check({}).errors).is(undefined)
-            assert(o.check(null).errors?.summary).snap(
+            assert(o.check([]).problems).is(undefined)
+            assert(o.check({}).problems).is(undefined)
+            assert(o.check(null).problems?.summary).snap(
                 `Must be an object (was null)`
             )
         })
@@ -71,8 +71,8 @@ describe("type keywords", () => {
             assert(u.infer).typed as undefined
         })
         test("check", () => {
-            assert(u.check(undefined).errors).is(undefined)
-            assert(u.check(null).errors?.summary).snap(
+            assert(u.check(undefined).problems).is(undefined)
+            assert(u.check(null).problems?.summary).snap(
                 `Must be undefined (was null)`
             )
         })
@@ -83,8 +83,8 @@ describe("type keywords", () => {
             assert(n.infer).typed as null
         })
         test("check", () => {
-            assert(n.check(null).errors).is(undefined)
-            assert(n.check(undefined).errors?.summary).snap(
+            assert(n.check(null).problems).is(undefined)
+            assert(n.check(undefined).problems?.summary).snap(
                 `Must be null (was undefined)`
             )
         })
@@ -95,8 +95,8 @@ describe("type keywords", () => {
             assert(v.infer).typed as void
         })
         test("check", () => {
-            assert(v.check(undefined).errors).is(undefined)
-            assert(v.check(null).errors?.summary).snap(
+            assert(v.check(undefined).problems).is(undefined)
+            assert(v.check(null).problems?.summary).snap(
                 `Must be undefined (was null)`
             )
         })
@@ -107,9 +107,9 @@ describe("type keywords", () => {
             assert(a.infer).typed as any
         })
         test("check", () => {
-            assert(a.check(-34_324n).errors).is(undefined)
-            assert(a.check({ yes: "no" }).errors).is(undefined)
-            assert(a.check([0, "1", 2, "3"]).errors).is(undefined)
+            assert(a.check(-34_324n).problems).is(undefined)
+            assert(a.check({ yes: "no" }).problems).is(undefined)
+            assert(a.check([0, "1", 2, "3"]).problems).is(undefined)
         })
     })
     describe("unknown", () => {
@@ -118,9 +118,9 @@ describe("type keywords", () => {
             assert(u.infer).typed as unknown
         })
         test("check", () => {
-            assert(u.check(34_324n).errors).is(undefined)
-            assert(u.check({ no: "yes" }).errors).is(undefined)
-            assert(u.check(["0", 1, "2", 3]).errors).is(undefined)
+            assert(u.check(34_324n).problems).is(undefined)
+            assert(u.check({ no: "yes" }).problems).is(undefined)
+            assert(u.check(["0", 1, "2", 3]).problems).is(undefined)
         })
     })
     describe("never", () => {
@@ -129,10 +129,10 @@ describe("type keywords", () => {
             assert(n.infer).typed as never
         })
         test("check", () => {
-            assert(n.check("sometimes").errors?.summary).snap(
+            assert(n.check("sometimes").problems?.summary).snap(
                 `Never allowed (was string)`
             )
-            assert(n.check(undefined).errors?.summary).snap(
+            assert(n.check(undefined).problems?.summary).snap(
                 `Never allowed (was undefined)`
             )
         })
@@ -143,8 +143,8 @@ describe("type keywords", () => {
             assert(s.infer).typed as string
         })
         test("check", () => {
-            assert(s.check("KEKW").errors).is(undefined)
-            assert(s.check(["whoops"]).errors?.summary).snap(
+            assert(s.check("KEKW").problems).is(undefined)
+            assert(s.check(["whoops"]).problems?.summary).snap(
                 `Must be a string (was array)`
             )
         })
@@ -155,13 +155,13 @@ describe("type keywords", () => {
             assert(n.infer).typed as number
         })
         test("check", () => {
-            assert(n.check(-83).errors).is(undefined)
-            assert(n.check(0.999).errors).is(undefined)
-            assert(n.check("42").errors?.summary).snap(
+            assert(n.check(-83).problems).is(undefined)
+            assert(n.check(0.999).problems).is(undefined)
+            assert(n.check("42").problems?.summary).snap(
                 `Must be a number (was string)`
             )
-            assert(n.check(Infinity).errors).is(undefined)
-            assert(n.check(NaN).errors).is(undefined)
+            assert(n.check(Infinity).problems).is(undefined)
+            assert(n.check(NaN).problems).is(undefined)
         })
     })
 })

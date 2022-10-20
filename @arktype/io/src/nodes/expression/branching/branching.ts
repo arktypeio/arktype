@@ -1,4 +1,4 @@
-import { Base } from "../../base/base.js"
+import type { Base } from "../../base/base.js"
 
 export namespace Branching {
     const tokenConjunctions = {
@@ -13,14 +13,16 @@ export namespace Branching {
 
     export type Token = keyof typeof tokens
 
-    export abstract class Node<
-        Token extends Branching.Token
-    > extends Base.Node {
+    export abstract class Node<Token extends Branching.Token>
+        implements Base.Node
+    {
         abstract token: Token
+        abstract traverse(traversal: Base.Traversal<unknown>): void
+        abstract kind: string
+
         definitionRequiresStructure: boolean
 
         constructor(public children: Base.Node[]) {
-            super()
             this.definitionRequiresStructure = children.some(
                 (child) => child.definitionRequiresStructure
             )

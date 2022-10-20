@@ -1,37 +1,15 @@
-import { chainableNoOpProxy } from "@arktype/tools"
-import type { DynamicArktype } from "../../type.js"
-import { Traversal } from "./traversal.js"
+import type { Traversal } from "./traversal.js"
 
-export abstract class Node implements DynamicArktype {
-    abstract definitionRequiresStructure: boolean
-    abstract readonly kind: string //NodeKind
-    abstract children?: Node[]
+export type Node = {
+    definitionRequiresStructure: boolean
+    readonly kind: string //NodeKind
+    children?: Node[]
 
-    check(data: unknown) {
-        const state = new Traversal(data)
-        this.traverse(state)
-        return state.problems.length
-            ? {
-                  errors: state.problems
-              }
-            : { data }
-    }
+    traverse(traversal: Traversal): void
 
-    assert(data: unknown) {
-        const result = this.check(data)
-        result.errors?.throw()
-        return result.data
-    }
-
-    get infer() {
-        return chainableNoOpProxy
-    }
-
-    abstract traverse(traversal: Traversal): void
-
-    abstract toString(): string
-    abstract readonly description: string
-    abstract readonly ast: unknown
+    toString(): string
+    readonly description: string
+    readonly ast: unknown
 
     /**
      * This generates an isomorphic definition that can be parsed and
@@ -59,5 +37,5 @@ export abstract class Node implements DynamicArktype {
      *
      *     [{a: "string?"}, "&", {b: "boolean?"}]
      */
-    abstract definition: unknown
+    definition: unknown
 }

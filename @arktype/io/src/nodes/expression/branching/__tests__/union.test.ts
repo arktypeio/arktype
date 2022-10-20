@@ -5,21 +5,22 @@ import { space, type } from "../../../../api.js"
 describe("union node", () => {
     describe("check", () => {
         test("two types", () => {
-            assert(type("true|false").check(false).errors).is(undefined)
+            assert(type("true|false").check(false).problems).is(undefined)
         })
         test("several types", () => {
             assert(
-                type("0|false|undefined|null|'zero'|void").check("zero").errors
+                type("0|false|undefined|null|'zero'|void").check("zero")
+                    .problems
             ).is(undefined)
         })
         describe("errors", () => {
             test("two types", () => {
-                assert(type("'yes'|'no'").check("maybe").errors?.summary).snap(
-                    `Must be one of 'yes'|'no' (was "maybe")`
-                )
+                assert(
+                    type("'yes'|'no'").check("maybe").problems?.summary
+                ).snap(`Must be one of 'yes'|'no' (was "maybe")`)
             })
             test("several types", () => {
-                assert(type("2|4|6|8").check(5).errors?.summary).snap(
+                assert(type("2|4|6|8").check(5).problems?.summary).snap(
                     `Must be one of 2|4|6|8 (was 5)`
                 )
             })
@@ -38,7 +39,7 @@ describe("union node", () => {
                         {
                             errors: { union: { explainBranches: true } }
                         }
-                    ).a.check(4).errors?.summary
+                    ).a.check(4).problems?.summary
                 ).snap(`Must be one of b|c (was 4):
 b: Must be one of d|e (was 4):
 d: Must be 0 (was 4)

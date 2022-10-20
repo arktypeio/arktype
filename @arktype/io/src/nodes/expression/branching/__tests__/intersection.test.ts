@@ -11,15 +11,15 @@ describe("intersection node", () => {
     describe("check", () => {
         test("two types", () => {
             const numberInteger = type("number&integer")
-            assert(numberInteger.check(100).errors).equals(undefined)
-            assert(numberInteger.check(99.9).errors?.summary).snap(
+            assert(numberInteger.check(100).problems).equals(undefined)
+            assert(numberInteger.check(99.9).problems?.summary).snap(
                 `Must be an integer (was 99.9)`
             )
         })
         test("several types", () => {
             const unknownBooleanFalse = type("unknown&boolean&false")
-            assert(unknownBooleanFalse.check(false).errors).equals(undefined)
-            assert(unknownBooleanFalse.check("false").errors?.summary)
+            assert(unknownBooleanFalse.check(false).problems).equals(undefined)
+            assert(unknownBooleanFalse.check("false").problems?.summary)
                 .snap(`/: Must be boolean (was string)
 /: Must be false (was "false")`)
         })
