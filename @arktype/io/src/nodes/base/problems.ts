@@ -1,4 +1,5 @@
 import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
+import { keywords } from "../terminal/keyword/keyword.js"
 import type { Node } from "./node.js"
 
 export type ProblemSource = Node & {
@@ -6,7 +7,7 @@ export type ProblemSource = Node & {
 }
 
 export class Problem<Data = unknown> {
-    next?: Problem<Data>
+    nested?: Problem<Data>[]
 
     constructor(
         public type: ProblemSource,
@@ -14,41 +15,30 @@ export class Problem<Data = unknown> {
         public data: Stringifiable<Data>
     ) {}
 
-    chainIfUnique(source: ProblemSource) {
-        if (this.type.mustBe !== source.mustBe) {
-            if (this.next) {
-                this.next.chainIfUnique(source)
-            } else {
-                this.next = new Problem(source, this.path, this.data)
+    attachIfUnique(source: ProblemSource) {
+        if (this.nested) {
+            if (
+                !this.nested.some(
+                    (problem) => problem.type.mustBe === source.mustBe
+                )
+            ) {
+                this.nested.push(new Problem(source, this.path, this.data))
             }
+        } else if (this.type.mustBe !== source.mustBe) {
+            this.nested = [this, new Problem(source, this.path, this.data)]
+            // TODO: Create custom multi keyword?
+            this.type = keywords.never
         }
     }
 
-    get message() {
+    get message(): string {
+        if (this.nested) {
+            return (
+                "• " +
+                this.nested.map((problem) => problem.message).join("\n• ")
+            )
+        }
         return `Must be ${this.type.mustBe}`
-    }
-}
-
-export class ProblemSet<Data = unknown> extends Array<Problem<Data>> {
-    constructor(
-        initial: ProblemSource,
-        public path: string,
-        public data: Stringifiable<Data>
-    ) {
-        super(new Problem(initial, path, data))
-    }
-
-    addIfUnique(source: ProblemSource) {
-        if (!this.some((problem) => problem.type.mustBe === source.mustBe)) {
-            this.push(new Problem(source, this.path, this.data))
-        }
-    }
-
-    get message() {
-        if (this.length === 1) {
-            return this[0].message
-        }
-        return "• " + this.map((problem) => problem.message).join("\n• ")
     }
 }
 
@@ -75,14 +65,14 @@ export class ArktypeError extends TypeError {
     }
 }
 
-export class Problems extends Array<ProblemSet> {
-    byPath: Record<string, ProblemSet> = {}
+export class Problems extends Array<Problem> {
+    byPath: Record<string, Problem> = {}
 
     addIfUnique(source: ProblemSource, path: string, data: Stringifiable) {
         if (path in this.byPath) {
-            this.byPath[path].addIfUnique(source)
+            this.byPath[path].attachIfUnique(source)
         } else {
-            this.byPath[path] = new ProblemSet(source, path, data)
+            this.byPath[path] = new Problem(source, path, data)
             this.push(this.byPath[path])
         }
     }
