@@ -72,12 +72,6 @@ export namespace UnenclosedNumber {
     const isKindLike = (def: string, kind: ValidationKind) =>
         kind === "number" ? isNumberLike(def) : isIntegerLike(def)
 
-    const assertWellFormed = (def: string, kind: ValidationKind) => {
-        if (!isWellFormed(def, kind)) {
-            throwParseError(buildMalformedNumericLiteralMessage(def, kind))
-        }
-    }
-
     export type assertWellFormed<
         def extends string,
         inferredValue extends number,

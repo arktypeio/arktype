@@ -9,3 +9,4 @@ tmp
 .docusaurus
 .cache-loader
 .reassert
+coverage

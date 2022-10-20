@@ -36,7 +36,7 @@ export namespace Branching {
             return this.mapChildren("toString").join(this.token)
         }
 
-        toBinaryTuple(...children: unknown[]) {
+        toBinaryTuple(children: unknown[]) {
             let root = children[0]
             for (let i = 1; i < children.length; i++) {
                 root = [root, this.token, children[i]]

@@ -50,11 +50,11 @@ export namespace Unenclosed {
 
     const maybeParseUnenclosedLiteral = (token: string) => {
         const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
-        if (maybeNumber) {
+        if (maybeNumber !== undefined) {
             return new NumberLiteral.Node(maybeNumber)
         }
         const maybeBigint = UnenclosedBigint.parseWellFormed(token)
-        if (maybeBigint) {
+        if (maybeBigint !== undefined) {
             return new BigintLiteral.Node(maybeBigint)
         }
     }
