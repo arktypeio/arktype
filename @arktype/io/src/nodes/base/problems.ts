@@ -1,5 +1,5 @@
 import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
-import { keywords } from "../terminal/keyword/keyword.js"
+import { Intersection } from "../expression/branching/intersection.js"
 import type { Node } from "./node.js"
 
 export type ProblemSource = Node & {
@@ -7,37 +7,27 @@ export type ProblemSource = Node & {
 }
 
 export class Problem<Data = unknown> {
-    nested?: Problem<Data>[]
-
     constructor(
         public type: ProblemSource,
         public path: string,
         public data: Stringifiable<Data>
     ) {}
 
-    attachIfUnique(source: ProblemSource) {
-        if (this.nested) {
+    intersectIfUnique(source: ProblemSource) {
+        if (this.type.kind === "intersection") {
+            const problemChildren = this.type.children as ProblemSource[]
             if (
-                !this.nested.some(
-                    (problem) => problem.type.mustBe === source.mustBe
-                )
+                !problemChildren.some((child) => child.mustBe === source.mustBe)
             ) {
-                this.nested.push(new Problem(source, this.path, this.data))
+                // TODO: Add narrow
+                ;(this.type as Intersection.Node).pushChild(source)
             }
         } else if (this.type.mustBe !== source.mustBe) {
-            this.nested = [this, new Problem(source, this.path, this.data)]
-            // TODO: Create custom multi keyword?
-            this.type = keywords.never
+            this.type = new Intersection.Node([this.type, source])
         }
     }
 
-    get message(): string {
-        if (this.nested) {
-            return (
-                "• " +
-                this.nested.map((problem) => problem.message).join("\n• ")
-            )
-        }
+    get message() {
         return `Must be ${this.type.mustBe}`
     }
 }
@@ -70,7 +60,7 @@ export class Problems extends Array<Problem> {
 
     addIfUnique(source: ProblemSource, path: string, data: Stringifiable) {
         if (path in this.byPath) {
-            this.byPath[path].attachIfUnique(source)
+            this.byPath[path].intersectIfUnique(source)
         } else {
             this.byPath[path] = new Problem(source, path, data)
             this.push(this.byPath[path])

@@ -1,11 +1,6 @@
 import type { Base } from "../../base/base.js"
 
 export namespace Branching {
-    const tokenConjunctions = {
-        "|": "or",
-        "&": "and"
-    } as const
-
     export const tokens = {
         "|": 1,
         "&": 1
@@ -13,11 +8,9 @@ export namespace Branching {
 
     export type Token = keyof typeof tokens
 
-    export abstract class Node<Token extends Branching.Token>
-        implements Base.Node
-    {
+    export abstract class Node implements Base.Node, Base.ProblemSource {
         abstract token: Token
-        abstract traverse(traversal: Base.Traversal<unknown>): void
+        abstract traverse(traversal: Base.Traversal): void
         abstract kind: string
 
         definitionRequiresStructure: boolean
@@ -43,7 +36,7 @@ export namespace Branching {
             for (let i = 1; i < children.length; i++) {
                 root = [root, this.token, children[i]]
             }
-            return root as readonly [unknown, Token, unknown]
+            return root as readonly [unknown, this["token"], unknown]
         }
 
         get ast() {
@@ -58,8 +51,13 @@ export namespace Branching {
 
         get description() {
             return this.mapChildren("description").join(
-                ` ${tokenConjunctions[this.token]} `
+                ` ${this.token === "|" ? "or" : "and"} `
             )
+        }
+
+        get mustBe() {
+            const intro = `${this.token === "|" ? "either" : ""}...\n• `
+            return intro + this.mapChildren("description").join("\n• ")
         }
 
         protected mapChildren<prop extends keyof Base.Node>(prop: prop) {

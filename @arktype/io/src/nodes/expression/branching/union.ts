@@ -3,10 +3,7 @@ import type { Problems } from "../../base/problems.js"
 import { Branching } from "./branching.js"
 
 export namespace Union {
-    export class Node
-        extends Branching.Node<"|">
-        implements Base.ProblemSource
-    {
+    export class Node extends Branching.Node {
         readonly token = "|"
         readonly kind = "union"
 
@@ -27,10 +24,6 @@ export namespace Union {
             if (branchDiagnosticsEntries.length === this.children.length) {
                 traversal.addProblem(this)
             }
-        }
-
-        get mustBe() {
-            return this.description
         }
     }
 
