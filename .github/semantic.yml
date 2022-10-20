@@ -1,7 +1,7 @@
 titleOnly: true
 scopes:
     - assert
-    - type
+    - arktype
     - node
     - tools
     - redo.dev
