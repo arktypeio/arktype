@@ -1,8 +1,7 @@
 import { InternalArktypeError } from "../../internal.js"
-import type { DynamicSpace, DynamicSpaceRoot } from "../../space.js"
-import type { Arktype } from "../../type.js"
+import type { ArktypeSpace } from "../../space.js"
+import type { ArktypeConfig } from "../../type.js"
 import type { Scope } from "../expression/infix/scope.js"
-import type { Node } from "./node.js"
 import type { ProblemSource } from "./problems.js"
 import { Problems, Stringifiable } from "./problems.js"
 
@@ -12,17 +11,15 @@ export class Traversal<Data = unknown> {
     private problemsStack: Problems[] = []
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
-    private space?: DynamicInternalSpace
     private scopes: Scope[]
     // TODO: Option
     private delimiter = "."
     private path = ""
     private unionDepth = 0
 
-    constructor(public readonly data: Data, space?: DynamicSpace) {
+    constructor(public readonly data: Data, private space?: ArktypeSpace) {
         // TODO: Add space scope,start alias
         this.scopes = []
-        this.space = space as DynamicInternalSpace
     }
 
     pushKey(key: string | number) {
@@ -65,7 +62,7 @@ export class Traversal<Data = unknown> {
         specifierKey: K2
     ): OptionQueryResult<K1, K2> {
         for (let i = this.scopes.length - 1; i >= 0; i--) {
-            const baseConfig = this.scopes[i][baseKey] as any
+            const baseConfig = this.scopes[i].config[baseKey] as any
             if (baseConfig) {
                 const specifierConfig =
                     baseConfig[specifierKey] ?? baseConfig["$"]
@@ -74,7 +71,7 @@ export class Traversal<Data = unknown> {
                 }
             }
         }
-        return this.space?.$.options[baseKey]?.[specifierKey]
+        return this.space?.$.config[baseKey]?.[specifierKey]
     }
 
     pushBranch() {
@@ -128,13 +125,9 @@ type ResolvedData = {
 }
 
 type OptionQueryResult<K1 extends RootKey, K2 extends ConfigKey<K1>> =
-    | Required<Scope>[K1][K2]
+    | Required<ArktypeConfig>[K1][K2]
     | undefined
 
-type RootKey = keyof Scope
+type RootKey = keyof ArktypeConfig
 
-type ConfigKey<K1 extends RootKey> = keyof Required<Scope>[K1]
-
-type DynamicInternalSpace = Record<string, Arktype> & {
-    $: DynamicSpaceRoot
-}
+type ConfigKey<K1 extends RootKey> = keyof Required<ArktypeConfig>[K1]

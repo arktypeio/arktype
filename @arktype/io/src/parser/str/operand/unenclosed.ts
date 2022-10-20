@@ -78,7 +78,7 @@ export namespace Unenclosed {
     export type isResolvableIdentifier<
         token,
         ctx extends ParserContext
-    > = token extends Keyword.Definition
+    > = token extends Keyword
         ? true
         : token extends keyof ctx["aliases"]
         ? true

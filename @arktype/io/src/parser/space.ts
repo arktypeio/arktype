@@ -1,8 +1,9 @@
+import type { Evaluate } from "@arktype/tools"
 import type { Root } from "./root.js"
 
-export type ParseSpace<Aliases> = {
+export type ParseSpace<Aliases> = Evaluate<{
     [Name in keyof Aliases]: Root.parse<Aliases[Name], { aliases: Aliases }>
-}
+}>
 
 // export type ValidateStringResolution<
 //     Name extends keyof Ctx["aliases"],

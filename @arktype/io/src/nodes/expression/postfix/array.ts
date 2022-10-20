@@ -14,9 +14,10 @@ export namespace Arr {
             if (!keywords.array.traverse(traversal)) {
                 return false
             }
-            if (Keyword.isTopType(this.child)) {
-                return true
-            }
+            // TODO: Reenable
+            // if (Keyword.isTopType(this.child)) {
+            //     return true
+            // }
             const length = traversal.data.length
             for (let i = 0; i < length; i++) {
                 traversal.pushKey(i)

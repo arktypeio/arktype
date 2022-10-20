@@ -4,100 +4,63 @@ import type { LazyDynamicWrap } from "./internal.js"
 import { lazyDynamicWrap } from "./internal.js"
 import type { inferAst } from "./nodes/ast/infer.js"
 import type { validate } from "./nodes/ast/validate.js"
-import { Scope } from "./nodes/expression/infix/scope.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
-import type { ArktypeOptions, InferredTypeFn } from "./type.js"
+import type { ArktypeConfig } from "./type.js"
 import { Arktype } from "./type.js"
 
-const rawSpace = (aliases: Dictionary, opts: ArktypeOptions = {}) => {
-    const ctx = opts as SpaceContext
-    ctx.resolutions = {}
+const rawSpace = (aliases: Dictionary, config: ArktypeConfig = {}) => {
+    const result: ArktypeSpace = {
+        $: { infer: chainableNoOpProxy, config } as any
+    }
     for (const name in aliases) {
-        ctx.resolutions[name] = new Arktype(
-            Root.parse(aliases[name], { aliases })
+        result[name] = new Arktype(
+            Root.parse(aliases[name], { aliases }),
+            config,
+            result
         )
     }
-    ctx.resolutions.$ = new ArktypeSpace(ctx) as any
-    return ctx.resolutions as any as DynamicSpace
+    return result
 }
 
-export const space = lazyDynamicWrap(rawSpace) as SpaceFn
+export const space = lazyDynamicWrap(rawSpace) as any as LazyDynamicWrap<
+    InferredSpaceFn,
+    DynamicSpaceFn
+>
 
 type InferredSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
     aliases: validate<Aliases, Resolutions, Resolutions>,
-    options?: ArktypeOptions
-) => SpaceOutput<{ aliases: Aliases; resolutions: Resolutions }>
+    config?: ArktypeConfig
+) => ArktypeSpace<Resolutions>
 
 type DynamicSpaceFn = <Aliases extends Dictionary>(
     aliases: Aliases,
-    options?: ArktypeOptions
-) => DynamicSpace<Aliases>
+    config?: ArktypeConfig
+) => ArktypeSpace<Aliases>
 
-export type SpaceFn = LazyDynamicWrap<InferredSpaceFn, DynamicSpaceFn>
+export type ArktypeSpace<resolutions = Dictionary> = {
+    $: SpaceMeta<resolutions>
+} & resolutionsToArktypes<resolutions>
 
-export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
-    keyof Aliases,
-    Arktype
-> & {
-    $: DynamicSpaceRoot
-}
-
-export type DynamicSpaceRoot = SpaceRootFrom<{
-    aliases: Dictionary
-    resolutions: Dictionary
-}>
-
-export type ResolvedSpace = {
-    aliases: unknown
-    resolutions: unknown
-}
-
-export namespace ResolvedSpace {
-    export type From<S extends ResolvedSpace> = S
-
-    export type Empty = From<{ aliases: {}; resolutions: {} }>
-}
-
-export type SpaceOutput<Space extends ResolvedSpace> = SpaceTypeRoots<
-    Space["resolutions"]
-> & {
-    $: SpaceRootFrom<Space>
-}
-
-export type SpaceRootFrom<Space extends ResolvedSpace> = {
-    infer: InferSpaceRoot<Space["resolutions"]>
-    type: InferredTypeFn<Space>
-}
-
-export type SpaceTypeRoots<Resolutions> = Evaluate<{
-    [Name in keyof Resolutions]: Arktype<
-        inferAst<Resolutions[Name], Resolutions>,
-        Resolutions[Name]
+type resolutionsToArktypes<resolutions> = {
+    [alias in keyof resolutions]: Arktype<
+        inferAst<resolutions[alias], resolutions>,
+        resolutions[alias]
     >
-}>
+}
 
-export type InferSpaceRoot<Resolutions> = Evaluate<{
-    [Name in keyof Resolutions]: inferAst<Resolutions[Name], Resolutions>
-}>
+export type SpaceMeta<resolutions = Dictionary> = {
+    infer: inferResolutions<resolutions>
+    config: ArktypeConfig
+    ast: resolutions
+}
 
-type SpaceContext = ArktypeOptions & { resolutions: Dictionary<Arktype> }
+export type inferResolutions<resolutions> = Evaluate<{
+    [alias in keyof resolutions]: inferAst<resolutions[alias], resolutions>
+}>
 
 // TODO: Ensure there are no extraneous types/space calls from testing
 // TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space
-export class ArktypeSpace {
-    constructor(private context: SpaceContext) {}
-
-    type(def: unknown, typeContext: ArktypeOptions = {}) {
-        const root = Root.parse(def, { aliases: this.context.resolutions })
-        return new Scope(root, (this.context, typeContext))
-    }
-
-    get infer() {
-        return chainableNoOpProxy
-    }
-}
-
 // export type ExtendFn<S> = <ExtensionDefinitions, ExtensionRoot>(
 //     dictionary: ValidateDictionaryExtension<S, ExtensionDefinitions>,
 //     options?: ValidateSpaceOptions<

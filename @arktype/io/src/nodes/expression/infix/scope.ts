@@ -1,11 +1,11 @@
-import type { ArktypeOptions } from "../../../type.js"
+import type { ArktypeConfig } from "../../../type.js"
 import type { Base } from "../../base/base.js"
 import { Infix } from "./infix.js"
 
 export class Scope extends Infix.Node {
     readonly kind = "scope"
 
-    constructor(public child: Base.Node, public options: ArktypeOptions) {
+    constructor(public child: Base.Node, public config: ArktypeConfig) {
         super()
     }
 
@@ -20,7 +20,7 @@ export class Scope extends Infix.Node {
     }
 
     tupleWrap(next: unknown) {
-        return [next, "$", this.options] as const
+        return [next, "$", this.config] as const
     }
 
     get description() {

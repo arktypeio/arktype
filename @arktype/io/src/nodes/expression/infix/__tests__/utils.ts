@@ -1,6 +1,6 @@
 import { assert } from "@arktype/assert"
 import * as fc from "fast-check"
-import type { DynamicArktype } from "../../../../type.js"
+import type { Arktype } from "../../../../type.js"
 import { keywords } from "../../../terminal/keyword/keyword.js"
 import {
     numberSubtypeKeywords,
@@ -57,7 +57,7 @@ const expectedCheckResult = (expectedBounds: ExpectedBounds, data: number) => {
 }
 
 const assertCheckResult = (
-    t: DynamicArktype,
+    t: Arktype,
     expectedBounds: [Bound.Token, number][],
     data: number
 ) => {
@@ -68,7 +68,7 @@ const assertCheckResult = (
 }
 
 export const assertCheckResults = (
-    t: DynamicArktype,
+    t: Arktype,
     expectedBounds: [Bound.Token, number][]
 ) => {
     for (const bound of expectedBounds) {
