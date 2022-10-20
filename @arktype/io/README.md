@@ -4,7 +4,7 @@
 </div>
 <div align="center">
 
-One type from editor to runtime ⛵
+Isomorphic type syntax for TS/JS
 
 ![Coverage: 98%](https://img.shields.io/badge/Coverage-98%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,7 +13,7 @@ One type from editor to runtime ⛵
 
 </div>
 
-## What's a (re) type? 🤷
+## What's an arktype? 🤷
 
 @arktype/io is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of TypeScript in your editor and build and a validator like Yup or JOI at runtime.
 
