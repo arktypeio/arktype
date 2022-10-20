@@ -11,7 +11,9 @@ describe("parse unenclosed", () => {
             assert(type("string").ast).narrowedValue("string")
         })
         test("alias", () => {
-            assert(space({ a: "string" }).$.type("a").ast).narrowedValue("a")
+            assert(
+                type("a", { space: space({ a: "string" }) }).ast
+            ).narrowedValue("a")
         })
         describe("errors", () => {
             test("unresolvable", () => {

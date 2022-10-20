@@ -24,6 +24,9 @@ export class Traversal<Data = unknown> {
 
     pushKey(key: string | number) {
         this.traversalStack.push(this.data)
+        // readonly modifier is to guide external use, but it is still most efficient
+        // to directly set the value here.
+        ;(this.data as any) = (this.data as any)[key]
         this.path =
             this.path === ""
                 ? String(key)
@@ -36,8 +39,6 @@ export class Traversal<Data = unknown> {
             lastDelimiterIndex === -1
                 ? ""
                 : this.path.slice(0, lastDelimiterIndex)
-        // readonly modifier is to guide external use, but it is still most efficient
-        // to directly set the value here.
         ;(this.data as any) = this.traversalStack.pop()!
     }
 
@@ -71,6 +72,8 @@ export class Traversal<Data = unknown> {
                 }
             }
         }
+        // TODO: Fix with real config
+        // @ts-expect-error
         return this.space?.$.config[baseKey]?.[specifierKey]
     }
 

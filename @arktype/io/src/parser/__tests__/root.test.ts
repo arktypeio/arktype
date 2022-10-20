@@ -13,21 +13,29 @@ describe("root definition", () => {
             assert(dynamicStringArray.infer).typed as unknown
             assert(dynamicStringArray.ast).equals(["string", "[]"])
         })
-        test("uninferred spaces", () => {
+        test("uninferred aliases", () => {
             const s = space.dynamic({
                 a: "str" + "ing[" + "]",
                 b: "a?"
             })
-            // TODO: Figure this out
-            // assert(s.$.aliases).typed as Dictionary<unknown>
             // Types are inferred as unknown
             assert(s.a.infer).typed as unknown
-            // Allows all references, but will throw if they're not defined at runtime
+            // Doesn't allow bad references
             assert(() => {
-                s.$.type({ a: "st" })
-            }).throws(Unenclosed.buildUnresolvableMessage("st"))
-            // Runtime nodes created correctly
-            // assert(s.$.toAst()).equals({ a: ["string", "[]"], b: ["a", "?"] })
+                // @ts-expect-error
+                type({ a: "st" }, { space: s })
+            }).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("st"))
+        })
+        test("uninferred space", () => {
+            const unknownSpace = space.dynamic({ a: "string" } as Dictionary)
+            assert(unknownSpace.a.infer).typed as unknown
+            // Allows any references but will throw at runtime
+            assert(() => unknownSpace.b.infer).throws.snap(
+                `TypeError: Cannot read properties of undefined (reading 'infer')`
+            )
+            assert(() => type("b", { space: unknownSpace })).throws(
+                Unenclosed.buildUnresolvableMessage("b")
+            )
         })
     })
     describe("bad def types", () => {

@@ -25,9 +25,9 @@ suite("parse/str/operand", () => {
         })
             .median()
             .type()
-        const spaceRoot = space({ strung: "string" }).$
+        const spaceRoot = space({ strung: "string" })
         bench("alias", () => {
-            const _ = spaceRoot.type("strung")
+            const _ = type("strung", { space: spaceRoot })
         })
             .median()
             .type()

@@ -11,7 +11,7 @@ import { Arktype } from "./type.js"
 
 const rawSpace = (aliases: Dictionary, config: ArktypeConfig = {}) => {
     const result: ArktypeSpace = {
-        $: { infer: chainableNoOpProxy, config } as any
+        $: { infer: chainableNoOpProxy, config, aliases } as any
     }
     for (const name in aliases) {
         result[name] = new Arktype(
@@ -53,6 +53,7 @@ export type SpaceMeta<resolutions = Dictionary> = {
     infer: inferResolutions<resolutions>
     config: ArktypeConfig
     ast: resolutions
+    aliases: Record<keyof resolutions, unknown>
 }
 
 export type inferResolutions<resolutions> = Evaluate<{

@@ -12,9 +12,9 @@ import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
 
 const emptyAliases = { aliases: {} }
-const rawTypeFn: DynamicTypeFn = (definition, config) => {
-    const root = Root.parse(definition, emptyAliases)
-    return new Arktype(root, config)
+const rawTypeFn: DynamicTypeFn = (definition, options) => {
+    const root = Root.parse(definition, options?.space?.$ ?? emptyAliases)
+    return new Arktype(root, options, options?.space as any)
 }
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
@@ -35,15 +35,18 @@ export type InferredTypeFn = <
     options?: TypeFnOptions<resolutions>
 ) => ast extends ParseError<string> ? never : Arktype<inferred, ast>
 
-type DynamicTypeFn = (definition: unknown, options?: ArktypeConfig) => Arktype
+type DynamicTypeFn = <resolutions = {}>(
+    definition: unknown,
+    options?: TypeFnOptions<resolutions>
+) => Arktype
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class Arktype<Inferred = unknown, Ast = unknown> {
     constructor(
         public root: Base.Node,
-        public config?: ArktypeConfig,
-        public space?: ArktypeSpace
+        public config: ArktypeConfig | undefined,
+        public space: ArktypeSpace | undefined
     ) {
         if (config) {
             this.root = new Scope(root, config)
@@ -55,7 +58,7 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
     }
 
     check(data: unknown) {
-        const state = new Traversal(data)
+        const state = new Traversal(data, this.space)
         this.root.traverse(state)
         return state.problems.length
             ? {

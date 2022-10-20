@@ -12,7 +12,7 @@ export namespace Arr {
 
         traverse(traversal: Base.Traversal) {
             if (!keywords.array.traverse(traversal)) {
-                return false
+                return
             }
             // TODO: Reenable
             // if (Keyword.isTopType(this.child)) {
