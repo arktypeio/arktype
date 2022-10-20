@@ -1,6 +1,6 @@
 <div align="center">
   <img src="../../arktype.io/static/img/logo.svg" height="64px" />
-  <h1>@arktype/io</h1>
+  <h1>arktype</h1>
 </div>
 <div align="center">
 
