@@ -6,6 +6,7 @@ import type { ProblemSource } from "./problems.js"
 import { Problems, Stringifiable } from "./problems.js"
 
 export class Traversal<Data = unknown> {
+    // TODO: Is perf better if these don't get initialized?
     public problems = new Problems()
     private problemsStack: Problems[] = []
     private traversalStack: unknown[] = []

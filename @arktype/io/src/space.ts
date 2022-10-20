@@ -8,12 +8,7 @@ import type { Base } from "./nodes/base/base.js"
 import { Scope } from "./nodes/expression/infix/scope.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
-import type {
-    Arktype,
-    ArktypeOptions,
-    DynamicArktype,
-    InferredTypeFn
-} from "./type.js"
+import type { Arktype, ArktypeOptions, InferredTypeFn } from "./type.js"
 
 const rawSpace = (aliases: Dictionary, opts: ArktypeOptions = {}) => {
     const ctx = opts as SpaceContext
@@ -44,7 +39,7 @@ export type SpaceFn = LazyDynamicWrap<InferredSpaceFn, DynamicSpaceFn>
 
 export type DynamicSpace<Aliases extends Dictionary = Dictionary> = Record<
     keyof Aliases,
-    DynamicArktype
+    Arktype
 > & {
     $: DynamicSpaceRoot
 }
