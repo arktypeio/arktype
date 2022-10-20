@@ -4,19 +4,18 @@ import type { LazyDynamicWrap } from "./internal.js"
 import { lazyDynamicWrap } from "./internal.js"
 import type { inferAst } from "./nodes/ast/infer.js"
 import type { validate } from "./nodes/ast/validate.js"
-import type { Base } from "./nodes/base/base.js"
 import { Scope } from "./nodes/expression/infix/scope.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
-import type { Arktype, ArktypeOptions, InferredTypeFn } from "./type.js"
+import type { ArktypeOptions, InferredTypeFn } from "./type.js"
+import { Arktype } from "./type.js"
 
 const rawSpace = (aliases: Dictionary, opts: ArktypeOptions = {}) => {
     const ctx = opts as SpaceContext
     ctx.resolutions = {}
     for (const name in aliases) {
-        ctx.resolutions[name] = new Scope(
-            Root.parse(aliases[name], { aliases }),
-            ctx
+        ctx.resolutions[name] = new Arktype(
+            Root.parse(aliases[name], { aliases })
         )
     }
     ctx.resolutions.$ = new ArktypeSpace(ctx) as any
@@ -82,7 +81,7 @@ export type InferSpaceRoot<Resolutions> = Evaluate<{
     [Name in keyof Resolutions]: inferAst<Resolutions[Name], Resolutions>
 }>
 
-type SpaceContext = ArktypeOptions & { resolutions: Dictionary<Base.Node> }
+type SpaceContext = ArktypeOptions & { resolutions: Dictionary<Arktype> }
 
 // TODO: Ensure there are no extraneous types/space calls from testing
 // TODO: Ensure "Dict"/"dictionary" etc. is not used anywhere referencing space

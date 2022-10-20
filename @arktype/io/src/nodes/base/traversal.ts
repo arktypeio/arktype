@@ -1,5 +1,6 @@
 import { InternalArktypeError } from "../../internal.js"
 import type { DynamicSpace, DynamicSpaceRoot } from "../../space.js"
+import type { Arktype } from "../../type.js"
 import type { Scope } from "../expression/infix/scope.js"
 import type { Node } from "./node.js"
 import type { ProblemSource } from "./problems.js"
@@ -73,6 +74,7 @@ export class Traversal<Data = unknown> {
                 }
             }
         }
+        return this.space?.$.options[baseKey]?.[specifierKey]
     }
 
     pushBranch() {
@@ -87,7 +89,7 @@ export class Traversal<Data = unknown> {
     }
 
     resolve(alias: string) {
-        const resolution = this.space?.[alias]
+        const resolution = this.space?.[alias].root
         if (!resolution) {
             throw new InternalArktypeError(
                 `Unexpectedly failed to resolve alias '${alias}'`
@@ -133,4 +135,6 @@ type RootKey = keyof Scope
 
 type ConfigKey<K1 extends RootKey> = keyof Required<Scope>[K1]
 
-type DynamicInternalSpace = Record<string, Node> & { $: DynamicSpaceRoot }
+type DynamicInternalSpace = Record<string, Arktype> & {
+    $: DynamicSpaceRoot
+}

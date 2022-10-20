@@ -11,8 +11,6 @@ import { IntersectionOperator } from "./intersection.js"
 import { OptionalOperator } from "./optional.js"
 import { UnionOperator } from "./union.js"
 
-export namespace operator {}
-
 export namespace Operator {
     export const parse = (s: ParserState.WithRoot): ParserState.Base => {
         const lookahead = s.scanner.shift()

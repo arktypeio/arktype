@@ -8,7 +8,7 @@ import { Traversal } from "./nodes/base/traversal.js"
 import { Scope } from "./nodes/expression/infix/scope.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
-import type { ResolvedSpace } from "./space.js"
+import type { ArktypeSpace, ResolvedSpace } from "./space.js"
 
 const emptyAliases = { aliases: {} }
 const rawTypeFn: DynamicTypeFn = (def, ctx) => {
@@ -39,7 +39,7 @@ export type TypeFn<Space extends ResolvedSpace = ResolvedSpace.Empty> =
     LazyDynamicWrap<InferredTypeFn<Space>, DynamicTypeFn>
 
 export class Arktype<Inferred = unknown, Ast = unknown> {
-    constructor(private root: Base.Node) {}
+    constructor(public root: Base.Node, public space?: ArktypeSpace) {}
 
     infer(): Inferred {
         return chainableNoOpProxy
