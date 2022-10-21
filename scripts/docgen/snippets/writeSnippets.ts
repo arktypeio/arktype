@@ -19,6 +19,7 @@ export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
 const LINE_FROM_TOKEN = "@lineFrom"
 const TEMPLATE_REPLACE_TOKEN = "{?}"
 const BLOCK_FROM_TOKEN = "@blockFrom"
+const BLOCK_END_TOKEN = "@blockEnd"
 
 // eslint-disable-next-line max-lines-per-function, max-statements
 const updateSnippetReferencesIfNeeded = (
@@ -34,7 +35,10 @@ const updateSnippetReferencesIfNeeded = (
         if (skipNextLine) {
             skipNextLine = false
         } else if (waitingForBlockEnd) {
-            if (originalLine.trim() === "```") {
+            if (
+                originalLine.includes(BLOCK_END_TOKEN) ||
+                originalLine.trim() === "```"
+            ) {
                 transformedLines.push(originalLine)
                 waitingForBlockEnd = false
             }

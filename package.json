@@ -1,5 +1,5 @@
 {
-    "name": "arktype-repo",
+    "name": "@arktype",
     "private": true,
     "packageManager": "pnpm@7.13.5",
     "type": "module",
