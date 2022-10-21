@@ -3,15 +3,15 @@ import { describe, test } from "mocha"
 
 describe("snippets", () => {
     test("type", async () => {
-        const modelSnippet = await import("../type.js")
-        assert(modelSnippet.user.infer).typed as {
+        const typeSnippet = await import("../type.js")
+        assert(typeSnippet.user.infer).typed as {
             name: string
             browser: {
                 kind: "chrome" | "firefox" | "safari"
                 version?: number | undefined
             }
         }
-        assert(modelSnippet.problems?.summary).snap(
+        assert(typeSnippet.problems?.summary).snap(
             `browser/kind must be one of 'chrome'|'firefox'|'safari' (was "Internet Explorer")`
         )
     })

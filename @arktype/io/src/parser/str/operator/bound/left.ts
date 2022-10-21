@@ -2,7 +2,7 @@ import { isKeyOf } from "@arktype/tools"
 import type { toString } from "../../../../nodes/ast/toString.js"
 import type { Base } from "../../../../nodes/base/base.js"
 import { Bound } from "../../../../nodes/expression/infix/bound.js"
-import type { NumberLiteral } from "../../../../nodes/terminal/literal/bigint.js"
+import type { NumberLiteral } from "../../../../nodes/terminal/literal/number.js"
 import { ParserState } from "../../state/state.js"
 import { Comparators } from "./tokens.js"
 

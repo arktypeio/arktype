@@ -1,11 +1,8 @@
 import { isKeyOf } from "@arktype/tools"
 import { Alias } from "../../../nodes/terminal/alias.js"
-import type { Keyword } from "../../../nodes/terminal/keyword/keyword.js"
-import { keywords } from "../../../nodes/terminal/keyword/keyword.js"
-import {
-    BigintLiteral,
-    NumberLiteral
-} from "../../../nodes/terminal/literal/bigint.js"
+import { Keyword } from "../../../nodes/terminal/keyword/keyword.js"
+import { BigintLiteral } from "../../../nodes/terminal/literal/bigint.js"
+import { NumberLiteral } from "../../../nodes/terminal/literal/number.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -42,8 +39,8 @@ export namespace Unenclosed {
         )
 
     export const maybeParseIdentifier = (token: string, ctx: parserContext) =>
-        isKeyOf(token, keywords)
-            ? keywords[token]
+        isKeyOf(token, Keyword.nodes)
+            ? Keyword.nodes[token]
             : token in ctx.aliases
             ? new Alias.Node(token)
             : undefined
@@ -78,7 +75,7 @@ export namespace Unenclosed {
     export type isResolvableIdentifier<
         token,
         ctx extends ParserContext
-    > = token extends Keyword
+    > = token extends Keyword.Definition
         ? true
         : token extends keyof ctx["aliases"]
         ? true

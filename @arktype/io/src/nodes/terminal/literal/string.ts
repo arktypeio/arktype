@@ -1,31 +1,31 @@
-import type { Base } from "../../base/base.js"
-import { Terminal } from "../terminal.js"
+import { PrimitiveLiteral } from "./literal.js"
 
 export namespace StringLiteral {
-    export type Definition<
-        Text extends string = string,
-        EnclosedBy extends Quote = Quote
-    > = `${EnclosedBy}${Text}${EnclosedBy}`
+    export type Definition<Text extends string = string> =
+        | DoubleQuoted<Text>
+        | SingleQuoted<Text>
+
+    export type DoubleQuoted<Text extends string = string> = `"${Text}"`
+
+    export type SingleQuoted<Text extends string = string> = `'${Text}'`
 
     export type Quote = "'" | '"'
 
-    export class Node extends Terminal.Node {
-        public definition: Definition
-        readonly kind = "stringLiteral"
-
-        constructor(public value: string, public quote: Quote) {
+    export class DoubleQuotedNode extends PrimitiveLiteral.Node {
+        readonly kind = "doubleQuotedStringLiteral"
+        public value: string
+        constructor(public definition: DoubleQuoted) {
             super()
-            this.definition = `${quote}${value}${quote}`
+            this.value = definition.slice(1, -1)
         }
+    }
 
-        traverse(
-            traversal: Base.Traversal
-        ): traversal is Base.Traversal<this["value"]> {
-            return traversal.data === this.value
-        }
-
-        get description() {
-            return this.definition
+    export class SingleQuotedNode extends PrimitiveLiteral.Node {
+        readonly kind = "singleQuotedStringLiteral"
+        public value: string
+        constructor(public definition: SingleQuoted) {
+            super()
+            this.value = definition.slice(1, -1)
         }
     }
 }

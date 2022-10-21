@@ -1,6 +1,6 @@
 import { keySet } from "@arktype/tools"
-import { StringLiteral } from "../../../nodes/terminal/literal/bigint.js"
 import { RegexLiteral } from "../../../nodes/terminal/literal/regexLiteral.js"
+import { StringLiteral } from "../../../nodes/terminal/literal/string.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
@@ -15,7 +15,13 @@ export namespace Enclosed {
         s.root =
             enclosing === "/"
                 ? new RegexLiteral.Node(token as RegexLiteral.Definition)
-                : new StringLiteral.Node(token.slice(1, -1), enclosing)
+                : enclosing === "'"
+                ? new StringLiteral.SingleQuotedNode(
+                      token as StringLiteral.SingleQuoted
+                  )
+                : new StringLiteral.DoubleQuotedNode(
+                      token as StringLiteral.DoubleQuoted
+                  )
         return s
     }
 

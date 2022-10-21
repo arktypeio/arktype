@@ -1,4 +1,4 @@
-import type { NumberLiteral } from "../../../nodes/terminal/literal/bigint.js"
+import type { NumberLiteral } from "../../../nodes/terminal/literal/number.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 

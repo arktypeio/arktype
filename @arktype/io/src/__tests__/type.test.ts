@@ -78,17 +78,4 @@ describe("space", () => {
     //     assert(space({ a: {} as any }).$.type(["number", "a"]).infer)
     //         .typed as [number, any]
     // })
-    test("model from space", () => {
-        const anotherCyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
-        assert(anotherCyclicSpace.$.type("a|b|null").infer).typed as
-            | { b: { a: { b: { a: any } } } }
-            | { a: { b: { a: { b: any } } } }
-            | null
-        assert(() =>
-            anotherCyclicSpace.$.type(
-                // @ts-expect-error
-                { nested: { a: "a", b: "b", c: "c" } }
-            )
-        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("c"))
-    })
 })

@@ -1,25 +1,23 @@
 import { assert } from "@arktype/assert"
 import * as fc from "fast-check"
 import type { Arktype } from "../../../../type.js"
-import { keywords } from "../../../terminal/keyword/keyword.js"
-import {
-    numberSubtypeKeywords,
-    stringSubtypeKeywords
-} from "../../../terminal/keyword/regex.js"
+import { Keyword } from "../../../terminal/keyword/keyword.js"
+import { NumericKeyword } from "../../../terminal/keyword/numeric.js"
+import { RegexKeyword } from "../../../terminal/keyword/regex.js"
 import { Bound } from "../bound.js"
 
 const keysOf = (o: object) => Object.keys(o)
 
 export const arbitraryKeywordList = fc.constantFrom(
-    ...keysOf(keywords).map((_) => `${_}[]`)
+    ...keysOf(Keyword.nodes).map((_) => `${_}[]`)
 )
 export const arbitraryNumberKeyword = fc.constantFrom([
     "number",
-    ...keysOf(numberSubtypeKeywords)
+    ...keysOf(NumericKeyword.nodes)
 ])
 export const arbitraryStringKeyword = fc.constantFrom([
     "string",
-    ...keysOf(stringSubtypeKeywords)
+    ...keysOf(RegexKeyword.nodes)
 ])
 
 export const aribtraryBoundable = fc.oneof(

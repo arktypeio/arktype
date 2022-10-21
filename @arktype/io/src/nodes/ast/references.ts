@@ -2,7 +2,7 @@ import type { ElementOf, UnionToTuple } from "@arktype/tools"
 import type { Branching } from "../expression/branching/branching.js"
 import type { Infix } from "../expression/infix/infix.js"
 import type { Postfix } from "../expression/postfix/postfix.js"
-import type { NumberLiteral } from "../terminal/literal/bigint.js"
+import type { NumberLiteral } from "../terminal/literal/number.js"
 
 export type ReferencesOf<Ast, By extends string = string> = Filter<
     References<Ast>,
