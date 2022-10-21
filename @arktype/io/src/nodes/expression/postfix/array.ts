@@ -1,5 +1,5 @@
 import type { Base } from "../../base/base.js"
-import { hasKindIn, topKinds } from "../../base/kinds.js"
+import { topKinds } from "../../base/kinds.js"
 import { Keyword } from "../../terminal/keyword/keyword.js"
 import { Postfix } from "./postfix.js"
 
@@ -15,7 +15,7 @@ export namespace Arr {
             if (!Keyword.nodes.array.traverse(traversal)) {
                 return
             }
-            if (hasKindIn(this.child, topKinds)) {
+            if (this.child.hasKindIn(topKinds)) {
                 return true
             }
             const length = traversal.data.length

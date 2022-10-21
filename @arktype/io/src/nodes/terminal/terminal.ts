@@ -1,20 +1,18 @@
-import type { Base } from "../base/base.js"
+import { Base } from "../base/base.js"
 import type { Alias } from "./alias.js"
 import type { Keyword } from "./keyword/keyword.js"
 import type { Literal } from "./literal/literal.js"
 
 export namespace Terminal {
-    export abstract class Node implements Base.Node {
+    export abstract class Node extends Base.Node {
         readonly definitionRequiresStructure = false
 
         children: undefined
         abstract readonly definition: string
-        abstract description: string
-        abstract kind: Base.NodeKind
-        abstract traverse(traversal: Base.Traversal): void
+        abstract kind: KindName
 
         get mustBe() {
-            return this.description
+            return this.description as this["description"]
         }
 
         toString() {
@@ -26,5 +24,7 @@ export namespace Terminal {
         }
     }
 
-    export type Nodes = Keyword.Kinds & Literal.Kinds & { alias: Alias.Node }
+    export type Kinds = Keyword.Kinds & Literal.Kinds & { alias: Alias.Node }
+
+    export type KindName = keyof Kinds
 }

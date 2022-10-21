@@ -1,17 +1,29 @@
-import type { KindName } from "./kinds.js"
+import type { KindName, Kinds } from "./kinds.js"
 import type { Traversal } from "./traversal.js"
 export type { KindName as NodeKind } from "./kinds.js"
 
-export type Node = {
-    definitionRequiresStructure: boolean
-    readonly kind: KindName
-    children?: Node[]
+export abstract class Node {
+    abstract children?: Node[]
 
-    traverse(traversal: Traversal): void
+    abstract readonly kind: KindName
 
-    toString(): string
-    readonly description: string
-    readonly ast: unknown
+    hasKind<Name extends KindName>(name: Name): this is Kinds[Name] {
+        return this.kind === name
+    }
+
+    hasKindIn<Names extends KindName>(
+        names: Record<Names, unknown>
+    ): this is Kinds[Names] {
+        return this.kind in names
+    }
+
+    abstract definitionRequiresStructure: boolean
+
+    abstract traverse(traversal: Traversal): void
+
+    abstract toString(): string
+    abstract readonly description: string
+    abstract readonly ast: unknown
 
     /**
      * This generates an isomorphic definition that can be parsed and
@@ -39,5 +51,5 @@ export type Node = {
      *
      *     [{a: "string?"}, "&", {b: "boolean?"}]
      */
-    definition: unknown
+    abstract definition: unknown
 }

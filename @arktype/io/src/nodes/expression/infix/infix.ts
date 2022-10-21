@@ -1,4 +1,4 @@
-import type { Base } from "../../base/base.js"
+import { Base } from "../../base/base.js"
 import type { Bound } from "./bound.js"
 import type { Divisibility } from "./divisibility.js"
 import type { Scope } from "./scope.js"
@@ -22,12 +22,9 @@ export namespace Infix {
 
     export type Token = keyof typeof tokens
 
-    export abstract class Node implements Base.Node {
+    export abstract class Node extends Base.Node {
         abstract child: Base.Node
         abstract kind: KindName
-        abstract traverse(traversal: Base.Traversal): void
-        abstract description: string
-        abstract toString(): string
 
         get children() {
             return [this.child] as [this["child"]]

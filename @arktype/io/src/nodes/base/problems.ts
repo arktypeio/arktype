@@ -1,6 +1,5 @@
 import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
 import { Intersection } from "../expression/branching/intersection.js"
-import { hasKind } from "./kinds.js"
 import type { Node } from "./node.js"
 
 export type ProblemSource = Node & {
@@ -15,7 +14,7 @@ export class Problem<Data = unknown> {
     ) {}
 
     intersectIfUnique(source: ProblemSource) {
-        if (hasKind(this.type, "intersection")) {
+        if (this.type.hasKind("intersection")) {
             const problemChildren = this.type.children as ProblemSource[]
             if (
                 !problemChildren.some((child) => child.mustBe === source.mustBe)
