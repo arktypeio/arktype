@@ -15,7 +15,6 @@ export namespace Arr {
             if (!Keyword.nodes.array.traverse(traversal)) {
                 return
             }
-            // TODO: Reenable
             if (hasKindIn(this.child, topKinds)) {
                 return true
             }
