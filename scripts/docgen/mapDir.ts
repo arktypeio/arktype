@@ -2,23 +2,26 @@ import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import type { DocGenMappedDirsConfig } from "./main.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"
-import { ensureDir } from "@arktype/node"
+import { ensureDir, walkPaths } from "@arktype/node"
 
 export const mapDir = (
     snippetsByPath: SnippetsByPath,
     options: DocGenMappedDirsConfig
 ) => {
-    const fileContentsByRelativeDestination = Object.entries(
-        snippetsByPath
-    ).map(([path, snippets]) => {
-        let transformedContents = snippets.all.text
+    const fileContentsByRelativeDestination = walkPaths(options.from, {
+        excludeDirs: true
+    }).map((sourcePath) => {
+        if (!(sourcePath in snippetsByPath)) {
+            throw new Error(`Expected to find ${sourcePath} in snippets.`)
+        }
+        let transformedContents = snippetsByPath[sourcePath].all.text
         if (options.transformContents) {
             transformedContents = options.transformContents(transformedContents)
         }
         return [
             options.transformRelativePaths
-                ? options.transformRelativePaths(path)
-                : path,
+                ? options.transformRelativePaths(sourcePath)
+                : sourcePath,
             transformedContents
         ]
     })
