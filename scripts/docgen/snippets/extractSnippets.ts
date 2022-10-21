@@ -28,13 +28,16 @@ export const extractSnippets = (
         const fileText = TS_FILE_REGEX.test(path)
             ? transformTsFileContents(path, project)
             : readFile(path)
-        snippetsByPath[path] = extractSnippetsFromFile(fileText)
+        snippetsByPath[path] = extractSnippetsFromFile(path, fileText)
     }
     return snippetsByPath
 }
 
-const extractSnippetsFromFile = (sourceFileText: string): SnippetsByLabel => {
-    const byLabel = extractLabeledSnippets(sourceFileText)
+const extractSnippetsFromFile = (
+    path: string,
+    sourceFileText: string
+): SnippetsByLabel => {
+    const byLabel = extractLabeledSnippets(path, sourceFileText)
     const text = linesToOutput(sourceFileText.split("\n"))
     return {
         all: {
@@ -47,11 +50,14 @@ const extractSnippetsFromFile = (sourceFileText: string): SnippetsByLabel => {
 export type SnippetsByLabel = Record<string, Snippet>
 
 // eslint-disable-next-line max-lines-per-function, max-statements
-const extractLabeledSnippets = (sourceFileText: string): SnippetsByLabel => {
+const extractLabeledSnippets = (
+    filePath: string,
+    sourceText: string
+): SnippetsByLabel => {
     const labeledSnippets: Record<string, Snippet> = {}
     const openBlocks: SnipStart[] = []
 
-    const lines = sourceFileText.split("\n")
+    const lines = sourceText.split("\n")
     for (const [i, lineText] of lines.entries()) {
         let text
         const lineNumber = i + 1
@@ -71,7 +77,9 @@ const extractLabeledSnippets = (sourceFileText: string): SnippetsByLabel => {
             } else if (parsedSnip.kind === "@snipLine") {
                 text = linesToOutput(lines.slice(lineNumber, lineNumber + 1))
             } else {
-                throw new Error(`Unrecognized snip '${parsedSnip.kind}'`)
+                throw new Error(
+                    `Unrecognized snip '${parsedSnip.kind}' at ${filePath}:${lineNumber}`
+                )
             }
             labeledSnippets[parsedSnip.id] = { text }
         }
