@@ -12,7 +12,11 @@ export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
         updateSnippetReferencesIfNeeded(path, snippetsByPath)
     )
     if (updatedPaths.length) {
-        shell(`pnpm exec prettier --write ${updatedPaths.join(" ")}`)
+        shell(
+            `pnpm exec prettier --write --ignore-unknown ${updatedPaths.join(
+                " "
+            )}`
+        )
     }
 }
 

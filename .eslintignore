@@ -1,4 +1,17 @@
 # @blockFrom:.gitignore
+dist
+node_modules
+temp
+tmp
+*.temp.*
+*.log
+*.tsbuildinfo
+.DS_Store
+.docusaurus
+.cache-loader
+.reassert
+coverage
+
 # @blockEnd 
 
 # @blockFrom:.prettierignore:unformatted
