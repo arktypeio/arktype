@@ -18,7 +18,6 @@ export class Traversal<Data = unknown> {
     private unionDepth = 0
 
     constructor(public readonly data: Data, private space?: ArktypeSpace) {
-        // TODO: Add space scope,start alias
         this.scopes = []
     }
 
@@ -72,8 +71,6 @@ export class Traversal<Data = unknown> {
                 }
             }
         }
-        // TODO: Fix with real config
-        // @ts-expect-error
         return this.space?.$.config[baseKey]?.[specifierKey]
     }
 
