@@ -8,6 +8,7 @@ import type {
 } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
+import { readPackageJson } from "@arktype/node"
 
 export type ApiEntryPoint = {
     subpath: string
@@ -20,7 +21,39 @@ export type ExtractPackageApiContext = {
     rootDir: string
 }
 
-export const extractPackageApi = ({
+export type PackageExtractionData = {
+    metadata: PackageMetadata
+    api: ApiEntryPoint[]
+}
+
+export type PackageMetadata = {
+    name: string
+    version: string
+    rootDir: string
+    packageJsonData: Record<string, unknown>
+}
+
+export const extractApi = (project: Project, packageRoot: string) => {
+    const packageJsonData = readPackageJson(packageRoot)
+    const metadata: PackageMetadata = {
+        name: packageJsonData.name!,
+        version: packageJsonData.version!,
+        rootDir: packageRoot,
+        packageJsonData
+    }
+    const api = extractEntryPoints({
+        project,
+        packageJson: packageJsonData,
+        rootDir: packageRoot
+    })
+
+    return {
+        metadata,
+        api
+    }
+}
+
+export const extractEntryPoints = ({
     project,
     packageJson,
     rootDir

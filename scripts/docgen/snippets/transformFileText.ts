@@ -1,20 +1,24 @@
 import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import type { PackageMetadata } from "../extract.js"
-import type { SnippetTransformToggles } from "./index.js"
+import type { PackageMetadata } from "../api/extractApi.js"
+import { config } from "../main.js"
+import type { SnippetTransformToggles } from "./extractSnippets.js"
+import { findPackageRoot, readPackageJson } from "@arktype/node"
 
 export type ExtractFileSnippetContext = {
     packageMetadata: PackageMetadata
     transforms: SnippetTransformToggles
 }
-export const getTransformedText = (
+export const transformTsFileContents = (
     path: string,
-    ctx: ExtractFileSnippetContext,
     project: Project
 ): string => {
     const sourceFile = project.addSourceFileAtPath(path)
-    if (ctx.transforms.imports) {
-        transformRelativeImports(sourceFile, ctx.packageMetadata.name)
+    if (config.snippets.universalTransforms.imports) {
+        transformRelativeImports(
+            sourceFile,
+            findPackageRoot(sourceFile.getFilePath())
+        )
     }
     transformSnipStatementComments(sourceFile)
     sourceFile.refreshFromFileSystem()
@@ -24,15 +28,16 @@ export const getTransformedText = (
 // Replace relative internal imports with standard external imports
 export const transformRelativeImports = (
     sourceFile: SourceFile,
-    packageName: string
+    packageRoot: string
 ) => {
+    const packageJson = readPackageJson(packageRoot)
     const importDeclarations = sourceFile.getDescendantsOfKind(
         SyntaxKind.ImportDeclaration
     )
     for (const declaration of importDeclarations) {
         const specifier = declaration.getModuleSpecifier()
         if (specifier.getLiteralText().endsWith("../api.js")) {
-            specifier.replaceWithText(`"${packageName}"`)
+            specifier.replaceWithText(`"${packageJson.name}"`)
         }
     }
 }

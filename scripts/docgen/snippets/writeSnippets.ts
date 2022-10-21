@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs"
+import type { SnippetsByPath } from "./extractSnippets.js"
 import {
     fromPackageRoot,
     readFile,
@@ -6,44 +6,13 @@ import {
     shell,
     writeFile
 } from "@arktype/node"
-import type { DocGenPackageConfig, DocGenSnippetConsumer } from "../config.js"
-import type { PackageExtractionData } from "../extract.js"
 
-export type WriteSnippetsContext = {
-    packageConfig: DocGenPackageConfig
-    extractedPackage: PackageExtractionData
-}
-
-export const writePackageSnippets = (ctx: WriteSnippetsContext) => {
-    if (!ctx.packageConfig.snippets) {
-        return
-    }
-    if (ctx.packageConfig.snippets.targets) {
-        updateTargets(ctx.packageConfig.snippets.targets, ctx)
-    }
-    if (ctx.packageConfig.snippets.consumers) {
-        runConsumers(ctx.packageConfig.snippets.consumers, ctx)
-    }
-}
-
-const updateTargets = (targets: string[], ctx: WriteSnippetsContext) => {
-    for (const path of targets) {
-        if (!existsSync(path)) {
-            throw new Error(`Target did not exist at path '${path}'.`)
-        }
-        updateTextTarget(path, ctx)
-    }
-    if (targets.length) {
-        shell(`pnpm exec prettier --write ${targets.join(" ")}`)
-    }
-}
-
-const runConsumers = (
-    consumers: DocGenSnippetConsumer[],
-    ctx: WriteSnippetsContext
-) => {
-    for (const consumer of consumers) {
-        consumer(ctx.extractedPackage.snippets ?? {})
+export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
+    const updatedPaths = Object.keys(snippetsByPath).filter((path) =>
+        updateSnippetReferencesIfNeeded(path, snippetsByPath)
+    )
+    if (updatedPaths.length) {
+        shell(`pnpm exec prettier --write ${updatedPaths.join(" ")}`)
     }
 }
 
@@ -52,8 +21,12 @@ const TEMPLATE_REPLACE_TOKEN = "{?}"
 const BLOCK_FROM_TOKEN = "@blockFrom"
 
 // eslint-disable-next-line max-lines-per-function, max-statements
-const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
-    const originalLines = readFile(targetPath).split("\n")
+const updateSnippetReferencesIfNeeded = (
+    path: string,
+    snippetsByPath: SnippetsByPath
+) => {
+    let requiresUpdate = false
+    const originalLines = readFile(path).split("\n")
     const transformedLines = []
     let waitingForBlockEnd = false
     let skipNextLine = false
@@ -66,19 +39,21 @@ const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
                 waitingForBlockEnd = false
             }
         } else if (originalLine.includes(BLOCK_FROM_TOKEN)) {
+            requiresUpdate = true
             const updatedBlock = getUpdatedLines(
                 originalLine,
                 BLOCK_FROM_TOKEN,
-                ctx
+                snippetsByPath
             )
             transformedLines.push(originalLine, ...updatedBlock)
             // Until we reach a block end token, skip pushing originalLines to transformedLines
             waitingForBlockEnd = true
         } else if (originalLine.includes(LINE_FROM_TOKEN)) {
+            requiresUpdate = true
             const updatedLines = getUpdatedLines(
                 originalLine,
                 LINE_FROM_TOKEN,
-                ctx
+                snippetsByPath
             )
             if (updatedLines.length !== 1) {
                 throw new Error(
@@ -91,14 +66,18 @@ const updateTextTarget = (targetPath: string, ctx: WriteSnippetsContext) => {
             transformedLines.push(originalLine)
         }
     }
-    writeFile(targetPath, transformedLines.join("\n"))
+    if (requiresUpdate) {
+        writeFile(path, transformedLines.join("\n"))
+        return true
+    }
+    return false
 }
 
 // eslint-disable-next-line max-lines-per-function, max-statements
 const getUpdatedLines = (
     line: string,
     token: string,
-    ctx: WriteSnippetsContext
+    snippetsByPath: SnippetsByPath
 ) => {
     let lines: string[]
     const lineFromRefeferenceParts = line
@@ -118,7 +97,11 @@ const getUpdatedLines = (
             token
         )
     } else {
-        lines = getSnippedBlockLines(filePath, lineFromRefeferenceParts[2], ctx)
+        lines = getSnippedBlockLines(
+            filePath,
+            lineFromRefeferenceParts[2],
+            snippetsByPath
+        )
     }
     const possibleTemplate = line.split("=>")[1]
     if (possibleTemplate) {
@@ -159,12 +142,12 @@ const getLinesFromJsonFile = (
 const getSnippedBlockLines = (
     pathToFile: string,
     label: string,
-    ctx: WriteSnippetsContext
+    snippetsByPath: SnippetsByPath
 ) => {
-    if (!(pathToFile in ctx.extractedPackage.snippets)) {
+    if (!(pathToFile in snippetsByPath)) {
         throw new Error(`No snippets were extracted from ${pathToFile}.`)
     }
-    const fileSnippets = ctx.extractedPackage.snippets[pathToFile]
+    const fileSnippets = snippetsByPath[pathToFile]
     let snippetTextToCopy: string
     if (label) {
         if (!(label in fileSnippets)) {

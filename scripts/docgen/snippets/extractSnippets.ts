@@ -1,70 +1,42 @@
-import { statSync } from "node:fs"
 import { relative } from "node:path"
-import { fromPackageRoot, readFile, walkPaths } from "@arktype/node"
 import type { Project } from "ts-morph"
-import type { DocGenSnippetExtractionConfig } from "../config.js"
-import type { PackageMetadata } from "../extract.js"
-import { getTransformedText } from "./transformFileText.js"
+import { transformTsFileContents } from "./transformFileText.js"
+import { fromPackageRoot, readFile } from "@arktype/node"
 
 /** Represents paths mapped to snippet data for a file */
-export type PackageSnippets = Record<string, FileSnippets>
+export type SnippetsByPath = Record<string, SnippetsByLabel>
 
 export type Snippet = {
     text: string
 }
 
-export type SnippetTransformToggleOptions = {
-    imports?: boolean
+export type SnippetTransformToggles = {
+    imports: boolean
 }
 
-export type SnippetTransformToggles = Required<SnippetTransformToggleOptions>
-
-export type ExtractPackageSnippetsArgs = {
+export type ExtractSnippetsArgs = {
     project: Project
-    sources: DocGenSnippetExtractionConfig[]
-    packageMetadata: PackageMetadata
 }
-
-export const addDefaultsToTransformOptions = (
-    options: SnippetTransformToggleOptions | undefined
-): SnippetTransformToggles => ({
-    imports: true,
-    ...options
-})
 
 const TS_FILE_REGEX = /^.*\.(c|m)?tsx?$/
+const REPO_ROOT = fromPackageRoot()
 
-export const extractPackageSnippets = ({
-    project,
-    sources,
-    packageMetadata
-}: ExtractPackageSnippetsArgs): PackageSnippets => {
-    const packageSnippets: PackageSnippets = {}
-    for (const source of sources) {
-        const paths = statSync(source.path).isDirectory()
-            ? walkPaths(source.path, {
-                  excludeDirs: true,
-                  exclude: (path) => path.includes("__tests__")
-              })
-            : [source.path]
-        for (const path of paths) {
-            const fileKey = relative(fromPackageRoot(), path)
-            const ctx = {
-                packageMetadata,
-                transforms: addDefaultsToTransformOptions(source.transforms)
-            }
-            const fileText = TS_FILE_REGEX.test(path)
-                ? getTransformedText(path, ctx, project)
-                : readFile(path)
-            packageSnippets[fileKey] = extractSnippetsFromFile(fileText)
-        }
+export const extractSnippets = (
+    sourcePaths: string[],
+    project: Project
+): SnippetsByPath => {
+    const snippetsByPath: SnippetsByPath = {}
+    for (const path of sourcePaths) {
+        const fileKey = relative(REPO_ROOT, path)
+        const fileText = TS_FILE_REGEX.test(path)
+            ? transformTsFileContents(path, project)
+            : readFile(path)
+        snippetsByPath[fileKey] = extractSnippetsFromFile(fileText)
     }
-    return packageSnippets
+    return snippetsByPath
 }
 
-export type FileSnippets = LabeledSnippets
-
-const extractSnippetsFromFile = (sourceFileText: string): FileSnippets => {
+const extractSnippetsFromFile = (sourceFileText: string): SnippetsByLabel => {
     const byLabel = extractLabeledSnippets(sourceFileText)
     const text = linesToOutput(sourceFileText.split("\n"))
     return {
@@ -75,10 +47,10 @@ const extractSnippetsFromFile = (sourceFileText: string): FileSnippets => {
     }
 }
 
-export type LabeledSnippets = Record<string, Snippet>
+export type SnippetsByLabel = Record<string, Snippet>
 
 // eslint-disable-next-line max-lines-per-function, max-statements
-const extractLabeledSnippets = (sourceFileText: string): LabeledSnippets => {
+const extractLabeledSnippets = (sourceFileText: string): SnippetsByLabel => {
     const labeledSnippets: Record<string, Snippet> = {}
     const openBlocks: SnipStart[] = []
 

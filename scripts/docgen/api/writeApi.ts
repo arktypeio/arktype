@@ -1,29 +1,27 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import type { DocGenApiConfig } from "../config.js"
-import type { PackageExtractionData } from "../extract.js"
-import type { ApiEntryPoint, ExportData } from "./extractApi.js"
+import type { DocGenApiConfig } from "../main.js"
+import type {
+    ApiEntryPoint,
+    ExportData,
+    PackageExtractionData
+} from "./extractApi.js"
 import { ensureDir, shell, writeFile } from "@arktype/node"
 
-export type WritePackageApiContext = {
-    packageApiConfig: DocGenApiConfig
-    extractedPackage: PackageExtractionData
-}
-
-export const writePackageApi = ({
-    extractedPackage,
-    packageApiConfig
-}: WritePackageApiContext) => {
-    rmSync(packageApiConfig.outDir, { recursive: true, force: true })
-    for (const entryPoint of extractedPackage.api) {
+export const writeApi = (
+    apiConfig: DocGenApiConfig,
+    extractedData: PackageExtractionData
+) => {
+    rmSync(apiConfig.outDir, { recursive: true, force: true })
+    for (const entryPoint of extractedData.api) {
         const entryPointOutDir =
             entryPoint.subpath === "."
-                ? packageApiConfig.outDir
-                : join(packageApiConfig.outDir, entryPoint.subpath)
+                ? apiConfig.outDir
+                : join(apiConfig.outDir, entryPoint.subpath)
         ensureDir(entryPointOutDir)
         writeEntryPoint(entryPoint, entryPointOutDir)
     }
-    shell(`prettier --write ${packageApiConfig.outDir}`)
+    shell(`prettier --write ${apiConfig.outDir}`)
 }
 
 const writeEntryPoint = (

@@ -1,4 +1,3 @@
-import { useColorMode } from "@docusaurus/theme-common"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
@@ -10,10 +9,8 @@ import { LogoCloud } from "../components/logoCloud"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
-    const { colorMode } = useColorMode()
-    const isDark = colorMode === "dark"
     return (
-        <ThemeProvider theme={getTheme({ isDark })}>
+        <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
             <main>
                 <StackBlitzDemo embedId="type" />
@@ -47,7 +44,7 @@ const Header = ({ title, tagline }: Record<string, string>) => {
                 <Typography component="h1" variant="h2" color="common.white">
                     {title}
                 </Typography>
-                <Typography component="h2" variant="h5" color="common.white">
+                <Typography component="h2" variant="h5" color="secondary">
                     {tagline}
                 </Typography>
             </Stack>

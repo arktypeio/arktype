@@ -1,68 +1,105 @@
-import { basename } from "node:path"
+import { basename, join } from "node:path"
 import { stdout } from "node:process"
-import type { DocGenConfig } from "./config.js"
-import { extractRepo } from "./extract.js"
-import { createWriteFilesConsumer } from "./snippets/writeFilesConsumer.js"
-import { writeRepo } from "./write.js"
-import { fromPackageRoot } from "@arktype/node"
+import { Project } from "ts-morph"
+import { extractApi } from "./api/extractApi.js"
+import { writeApi } from "./api/writeApi.js"
+import { mapDir } from "./mapDir.js"
+import type { SnippetTransformToggles } from "./snippets/extractSnippets.js"
+import { extractSnippets } from "./snippets/extractSnippets.js"
+import { updateSnippetReferences } from "./snippets/writeSnippets.js"
+import { fromHere, shell } from "@arktype/node"
 
-const fromRedoDevDir = (...segments: string[]) =>
-    fromPackageRoot("arktype.io", ...segments)
+export type DocGenConfig = {
+    apis: DocGenApiConfig[]
+    snippets: DocGenSnippetsConfig
+    mappedDirs: DocGenMappedDirsConfig[]
+}
 
-const fromTypeDocsDir = (...segments: string[]) =>
-    fromRedoDevDir("docs", ...segments)
+export type DocGenApiConfig = {
+    packageRoot: string
+    outDir: string
+}
 
-const fromTypeDemosDir = (...segments: string[]) =>
-    fromTypeDocsDir("demos", ...segments)
+export type DocGenSnippetsConfig = {
+    universalTransforms: SnippetTransformToggles
+}
 
-const fromTypePackageRoot = (...segments: string[]) =>
-    fromPackageRoot("@arktype", "io", ...segments)
+export type DocGenMappedDirsConfig = {
+    from: string
+    to: string
+    transformRelativePaths?: (path: string) => string
+    transformContents?: (content: string) => string
+}
 
-export const config: DocGenConfig = {
-    packages: [
+const createConfig = <Config extends DocGenConfig>(config: Config) => config
+
+const repoRoot = fromHere("..", "..")
+const arktypePackageRoot = join(repoRoot, "@arktype", "io")
+const arktypeIoDocsDir = join(repoRoot, "arktype.io", "docs")
+
+const dirs = {
+    repoRoot,
+    arktypePackageRoot,
+    arktypeIoDocsDir
+}
+
+export const config = createConfig({
+    dirs,
+    apis: [
         {
-            path: "@arktype/io",
-            api: {
-                outDir: fromTypeDocsDir("api")
-            },
-            snippets: {
-                sources: [
-                    {
-                        path: "src/__snippets__"
-                    }
-                ],
-                targets: [
-                    fromTypePackageRoot("README.md"),
-                    fromTypeDemosDir(
-                        "stackblitzGenerators",
-                        "createStackblitzDemo.ts"
-                    )
-                ],
-                consumers: [
-                    createWriteFilesConsumer({
-                        rootOutDir: fromTypeDemosDir("static", "generated"),
-                        transformRelativePath: (path) => basename(path),
-                        transformJsImports: (snippet) =>
-                            snippet.replaceAll(".js", ""),
-                        transformContents: (content) =>
-                            `export default \`${content.replaceAll(
-                                "`",
-                                "\\`"
-                            )}\``
-                    })
-                ]
+            packageRoot: arktypePackageRoot,
+            outDir: join(arktypeIoDocsDir, "api")
+        }
+    ],
+    snippets: {
+        universalTransforms: {
+            imports: true
+        }
+    },
+    mappedDirs: [
+        {
+            from: join(arktypePackageRoot, "src", "__snippets__"),
+            to: join(arktypeIoDocsDir, "demos", "static", "generated"),
+            transformRelativePaths: (path) => basename(path),
+            transformContents: (content) => {
+                let transformed = content
+                transformed = transformed.replaceAll(".js", "")
+                return `export default \`${transformed.replaceAll(
+                    /`|\${/g,
+                    "\\$&"
+                )}\``
             }
         }
     ]
-}
+})
 
+// eslint-disable-next-line max-statements
 export const docgen = () => {
-    console.group(`Generating docs for re-po...✍️`)
-    stdout.write("Extracting re-po metadata...")
-    const packages = extractRepo(config)
+    console.group(`Generating docs...✍️`)
+    stdout.write("Extracting metadata...")
+    const project = new Project({
+        tsConfigFilePath: join(
+            config.dirs.repoRoot,
+            "tsconfig.references.json"
+        ),
+        skipAddingFilesFromTsConfig: true
+    })
     stdout.write("✅\n")
-    stdout.write("Updating re-po docs...")
-    writeRepo({ config, packages })
+    stdout.write("Updating api docs...")
+    for (const api of config.apis) {
+        const data = extractApi(project, api.packageRoot)
+        writeApi(api, data)
+    }
+    stdout.write("✅\n")
+    stdout.write("Updating snippets...")
+    const sourceControlPaths = shell("git ls-files").toString().split("\n")
+    const snippets = extractSnippets(sourceControlPaths, project)
+    updateSnippetReferences(snippets)
+    stdout.write("✅\n")
+    stdout.write("Mapping dirs...")
+    for (const mapConfig of config.mappedDirs) {
+        mapDir(snippets, mapConfig)
+    }
     stdout.write("✅\n")
     console.log(`Enjoy your new docs! 📚`)
     console.groupEnd()
