@@ -1,7 +1,6 @@
-import { relative } from "node:path"
 import type { Project } from "ts-morph"
 import { transformTsFileContents } from "./transformFileText.js"
-import { fromPackageRoot, readFile } from "@arktype/node"
+import { readFile } from "@arktype/node"
 
 /** Represents paths mapped to snippet data for a file */
 export type SnippetsByPath = Record<string, SnippetsByLabel>
@@ -19,7 +18,6 @@ export type ExtractSnippetsArgs = {
 }
 
 const TS_FILE_REGEX = /^.*\.(c|m)?tsx?$/
-const REPO_ROOT = fromPackageRoot()
 
 export const extractSnippets = (
     sourcePaths: string[],
@@ -27,11 +25,10 @@ export const extractSnippets = (
 ): SnippetsByPath => {
     const snippetsByPath: SnippetsByPath = {}
     for (const path of sourcePaths) {
-        const fileKey = relative(REPO_ROOT, path)
         const fileText = TS_FILE_REGEX.test(path)
             ? transformTsFileContents(path, project)
             : readFile(path)
-        snippetsByPath[fileKey] = extractSnippetsFromFile(fileText)
+        snippetsByPath[path] = extractSnippetsFromFile(fileText)
     }
     return snippetsByPath
 }

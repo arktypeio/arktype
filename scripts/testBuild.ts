@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { shell } from "../@arktype/node/src/index.js"
-import { cjsOut, mjsOut } from "./common.js"
+import { getPackageDataFromCwd } from "./common.js"
 
 export const testBuild = (outDir: string) =>
     shell(
@@ -11,5 +11,6 @@ export const testBuild = (outDir: string) =>
         )}`
     )
 
-testBuild(mjsOut)
-testBuild(cjsOut)
+const packageData = getPackageDataFromCwd()
+testBuild(packageData.mjsOut)
+testBuild(packageData.cjsOut)

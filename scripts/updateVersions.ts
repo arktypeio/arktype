@@ -1,5 +1,6 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { join } from "node:path"
+import { docgen } from "./docgen/main.js"
 import {
     fromHere,
     fromPackageRoot,
@@ -10,7 +11,6 @@ import {
     writeFile,
     writeJson
 } from "@arktype/node"
-import { docgen } from "./docgen/main.js"
 
 const suffixes = {
     type: "alpha"

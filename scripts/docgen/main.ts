@@ -1,12 +1,19 @@
+import { statSync } from "node:fs"
 import { basename, join } from "node:path"
 import { stdout } from "node:process"
 import { Project } from "ts-morph"
 import { extractApi } from "./api/extractApi.js"
 import { writeApi } from "./api/writeApi.js"
 import { mapDir } from "./mapDir.js"
-import type { SnippetTransformToggles } from "./snippets/extractSnippets.js"
+import type {
+    SnippetsByPath,
+    SnippetTransformToggles
+} from "./snippets/extractSnippets.js"
 import { extractSnippets } from "./snippets/extractSnippets.js"
-import { updateSnippetReferences } from "./snippets/writeSnippets.js"
+import {
+    updateSnippetReferences as getSnippetsAndUpdateReferences,
+    updateSnippetReferences
+} from "./snippets/writeSnippets.js"
 import { fromHere, shell } from "@arktype/node"
 
 export type DocGenConfig = {
@@ -73,9 +80,17 @@ export const config = createConfig({
     ]
 })
 
-// eslint-disable-next-line max-statements
 export const docgen = () => {
     console.group(`Generating docs...✍️`)
+    const project = getProject()
+    updateApiDocs(project)
+    const snippets = getSnippetsAndUpdateReferences(project)
+    mapDirs(snippets)
+    console.log(`Enjoy your new docs! 📚`)
+    console.groupEnd()
+}
+
+const getProject = () => {
     stdout.write("Extracting metadata...")
     const project = new Project({
         tsConfigFilePath: join(
@@ -85,24 +100,34 @@ export const docgen = () => {
         skipAddingFilesFromTsConfig: true
     })
     stdout.write("✅\n")
+    return project
+}
+
+const updateApiDocs = (project: Project) => {
     stdout.write("Updating api docs...")
     for (const api of config.apis) {
         const data = extractApi(project, api.packageRoot)
         writeApi(api, data)
     }
     stdout.write("✅\n")
+}
+
+const getSnippetsAndUpdateReferences = (project: Project) => {
     stdout.write("Updating snippets...")
     const sourceControlPaths = shell("git ls-files", { stdio: "pipe" })
         .toString()
         .split("\n")
+        .filter((path) => statSync(path).isFile)
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
     stdout.write("✅\n")
+    return snippets
+}
+
+export const mapDirs = (snippets: SnippetsByPath) => {
     stdout.write("Mapping dirs...")
     for (const mapConfig of config.mappedDirs) {
         mapDir(snippets, mapConfig)
     }
     stdout.write("✅\n")
-    console.log(`Enjoy your new docs! 📚`)
-    console.groupEnd()
 }
