@@ -3,7 +3,7 @@ import { dirname, join, relative } from "node:path"
 import type { DocGenMappedDirsConfig } from "./main.js"
 import { config } from "./main.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"
-import { ensureDir, walkPaths } from "@arktype/node"
+import { ensureDir, shell, walkPaths } from "@arktype/node"
 
 // eslint-disable-next-line max-lines-per-function
 export const mapDir = (
@@ -47,5 +47,6 @@ export const mapDir = (
             ensureDir(dirname(resolvedPath))
             writeFileSync(resolvedPath, contents)
         }
+        shell(`prettier --write ${target}`)
     }
 }
