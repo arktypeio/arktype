@@ -1,1 +1,6 @@
-.prettierignore
+# @blockFrom:.gitignore
+# @blockEnd 
+
+# @blockFrom:.prettierignore:unformatted
+pnpm-lock.yaml
+# @blockEnd

@@ -59,48 +59,34 @@ const extractLabeledSnippets = (
 
     const lines = sourceText.split("\n")
     for (const [i, lineText] of lines.entries()) {
-        let text
         const lineNumber = i + 1
-        const location = `${filePath}:${lineNumber}`
         if (lineText.includes("@snip")) {
-            const parsedSnip = parseSnipComment(lineText, location)
+            const parsedSnip = parseSnipComment(lineText, filePath, lineNumber)
             if (parsedSnip.kind === "@snipStart") {
                 openBlocks.push({ ...parsedSnip, lineNumber })
-                continue
             } else if (parsedSnip.kind === "@snipEnd") {
-                const matchingSnipStart = spliceMatchingSnipStart(
-                    openBlocks,
-                    parsedSnip.id
-                )
-                text = linesToOutput(
-                    lines.slice(matchingSnipStart.lineNumber, lineNumber)
-                )
-            } else if (parsedSnip.kind === "@snipLine") {
-                text = linesToOutput(lines.slice(lineNumber, lineNumber + 1))
+                const lastOpenBlock = openBlocks.pop()
+                if (!lastOpenBlock) {
+                    throw new Error(
+                        `At ${filePath}:${lineNumber}, @snipEnd has no matching @snipStart`
+                    )
+                }
+                labeledSnippets[lastOpenBlock.id] = {
+                    text: linesToOutput(
+                        lines.slice(lastOpenBlock.lineNumber, lineNumber)
+                    )
+                }
             } else {
-                throw new Error(
-                    `Unrecognized snip '${parsedSnip.kind}' at ${location}`
-                )
+                labeledSnippets[parsedSnip.id] = {
+                    text: linesToOutput(lines.slice(lineNumber, lineNumber + 1))
+                }
             }
-            labeledSnippets[parsedSnip.id] = { text }
         }
     }
     if (openBlocks.length) {
         throw new Error(buildOpenBlocksErrorMessage(openBlocks, filePath))
     }
     return labeledSnippets
-}
-
-const spliceMatchingSnipStart = (openBlocks: SnipStart[], id: string) => {
-    const matchingSnipStartIndex = openBlocks.findIndex(
-        (block) => block.id === id
-    )
-    if (matchingSnipStartIndex === -1) {
-        throw new Error(
-            `Found no matching @snipStart for @snipEnd with id ${id}.`
-        )
-    }
-    return openBlocks.splice(matchingSnipStartIndex, 1)[0]
 }
 
 const buildOpenBlocksErrorMessage = (openBlocks: SnipStart[], path: string) =>
@@ -113,31 +99,53 @@ const linesToOutput = (lines: string[]) =>
 
 type SnipKind = `@snip${"Start" | "End" | "Line"}`
 
-type SnipStart = ParsedSnip & {
+type SnipEnd = {
+    kind: "@snipEnd"
+}
+
+type SnipLine = {
+    kind: "@snipLine"
+    id: string
+}
+
+type SnipStart = {
+    kind: "@snipStart"
+    id: string
     lineNumber: number
 }
 
-type ParsedSnip = {
-    id: string
-    kind: SnipKind
-}
+type ParsedSnip = SnipStart | SnipLine | SnipEnd
 
 const parseSnipComment = (
     snipComment: string,
-    location: string
+    filePath: string,
+    lineNumber: number
 ): ParsedSnip => {
     const snipText = snipComment.slice(snipComment.indexOf("@snip"))
     const parts = snipText.split(" ")
     const [kind, id] = parts[0].split(":") as [SnipKind, string | undefined]
+    if (kind === "@snipEnd") {
+        return { kind }
+    }
     if (!id) {
         throw new Error(
-            `At ${location}, snip comment '${snipText}' requires a label like '@snipStatement:mySnipLabel'.`
+            `At ${filePath}:${lineNumber}, snip comment '${snipText}' requires a label like '@snipStatement:mySnipLabel'.`
         )
     }
-    return {
-        id,
-        kind
+    if (kind === "@snipLine") {
+        return {
+            id,
+            kind
+        }
     }
+    if (kind === "@snipStart") {
+        return {
+            id,
+            kind,
+            lineNumber
+        }
+    }
+    throw new Error(`Unrecognized snip '${kind}' at ${filePath}:${lineNumber}`)
 }
 
 const outputShouldInclude = (line: string) => {

@@ -13,6 +13,6 @@ tmp
 coverage
 # @blockEnd 
 
-# NOTE: This file is symlinked from .prettierignore to .eslintignore
-# FORMATTING (add files here that we want in git but don't want to format)
+# @snipStart:unformatted
 pnpm-lock.yaml
+# @snipEnd
