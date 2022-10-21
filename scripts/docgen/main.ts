@@ -92,7 +92,9 @@ export const docgen = () => {
     }
     stdout.write("✅\n")
     stdout.write("Updating snippets...")
-    const sourceControlPaths = shell("git ls-files").toString().split("\n")
+    const sourceControlPaths = shell("git ls-files", { stdio: "pipe" })
+        .toString()
+        .split("\n")
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
     stdout.write("✅\n")
