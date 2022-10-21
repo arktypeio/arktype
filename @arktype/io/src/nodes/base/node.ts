@@ -1,6 +1,5 @@
 import type { KindName, Kinds } from "./kinds.js"
 import type { Traversal } from "./traversal.js"
-export type { KindName as NodeKind } from "./kinds.js"
 
 export abstract class Node {
     abstract children?: Node[]
@@ -24,6 +23,10 @@ export abstract class Node {
     abstract toString(): string
     abstract readonly description: string
     abstract readonly ast: unknown
+
+    queryConfig(traversal: Traversal) {
+        traversal.queryScopes(this.kind, "describe")
+    }
 
     /**
      * This generates an isomorphic definition that can be parsed and

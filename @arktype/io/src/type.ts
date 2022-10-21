@@ -5,6 +5,7 @@ import { lazyDynamicWrap } from "./internal.js"
 import type { inferAst } from "./nodes/ast/infer.js"
 import type { validate } from "./nodes/ast/validate.js"
 import type { Base } from "./nodes/base/base.js"
+import type { NodeConfigs } from "./nodes/base/kinds.js"
 import { Traversal } from "./nodes/base/traversal.js"
 import { Scope } from "./nodes/expression/infix/scope.js"
 import type { ParseError } from "./parser/common.js"
@@ -86,6 +87,4 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
     }
 }
 
-export type ArktypeConfig = {
-    errors?: Dictionary
-}
+export type ArktypeConfig = NodeConfigs
