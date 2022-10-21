@@ -38,10 +38,12 @@ export const mapDir = (
                 ]
             })
     )
-    rmSync(options.outDir, { recursive: true, force: true })
-    for (const [path, contents] of fileContentsByRelativeDestination) {
-        const resolvedPath = join(options.outDir, path)
-        ensureDir(dirname(resolvedPath))
-        writeFileSync(resolvedPath, contents)
+    for (const target of options.targets) {
+        rmSync(target, { recursive: true, force: true })
+        for (const [path, contents] of fileContentsByRelativeDestination) {
+            const resolvedPath = join(target, path)
+            ensureDir(dirname(resolvedPath))
+            writeFileSync(resolvedPath, contents)
+        }
     }
 }
