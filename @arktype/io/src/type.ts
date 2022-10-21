@@ -12,9 +12,9 @@ import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
 
 const emptyAliases = { aliases: {} }
-const rawTypeFn: DynamicTypeFn = (definition, options) => {
-    const root = Root.parse(definition, options?.space?.$ ?? emptyAliases)
-    return new Arktype(root, options, options?.space as any)
+const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {
+    const root = Root.parse(definition, space?.$ ?? emptyAliases)
+    return new Arktype(root, config, space as any)
 }
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
@@ -45,10 +45,10 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 export class Arktype<Inferred = unknown, Ast = unknown> {
     constructor(
         public root: Base.Node,
-        public config: ArktypeConfig | undefined,
+        public config: ArktypeConfig,
         public space: ArktypeSpace | undefined
     ) {
-        if (config) {
+        if (Object.keys(config).length) {
             this.root = new Scope(root, config)
         }
     }

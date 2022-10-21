@@ -19,7 +19,7 @@ Isomorphic type syntax for TS/JS
 
 ## Installation 📦
 
-`npm install @arktype/io`
+`npm install arktype`
 
 (feel free to substitute `yarn`, `pnpm`, et al.)
 

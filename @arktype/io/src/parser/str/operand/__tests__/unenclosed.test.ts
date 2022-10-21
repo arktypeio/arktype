@@ -11,9 +11,9 @@ describe("parse unenclosed", () => {
             assert(type("string").ast).narrowedValue("string")
         })
         test("alias", () => {
-            assert(
-                type("a", { space: space({ a: "string" }) }).ast
-            ).narrowedValue("a")
+            const types = space({ a: "string" })
+            const a = type("a", { space: types })
+            assert(a.ast).narrowedValue("a")
         })
         describe("errors", () => {
             test("unresolvable", () => {
