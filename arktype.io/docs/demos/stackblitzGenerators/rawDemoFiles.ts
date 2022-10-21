@@ -1,10 +1,10 @@
-import constraints from "../static/generated/constraints"
-import declaration from "../static/generated/declaration"
-import group from "../static/generated/group"
-import names from "../static/generated/names"
-import space from "../static/generated/space"
-import type from "../static/generated/type"
-import user from "../static/generated/user"
+import constraints from "../generated/constraints"
+import declaration from "../generated/declaration"
+import group from "../generated/group"
+import names from "../generated/names"
+import space from "../generated/space"
+import type from "../generated/type"
+import user from "../generated/user"
 
 import type { AddonFile, EmbedId } from "./createStackblitzDemo"
 

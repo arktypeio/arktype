@@ -29,8 +29,8 @@ export type DocGenSnippetsConfig = {
 }
 
 export type DocGenMappedDirsConfig = {
-    from: string
-    to: string
+    sources: string[]
+    outDir: string
     transformRelativePaths?: (path: string) => string
     transformContents?: (content: string) => string
 }
@@ -62,8 +62,11 @@ export const config = createConfig({
     },
     mappedDirs: [
         {
-            from: join(arktypePackageRoot, "src", "__snippets__"),
-            to: join(arktypeIoDocsDir, "demos", "static", "generated"),
+            sources: [
+                join(arktypePackageRoot, "src", "__snippets__"),
+                join(arktypeIoDocsDir, "demos", "layout")
+            ],
+            outDir: join(arktypeIoDocsDir, "demos", "generated"),
             transformRelativePaths: (path) => basename(path),
             transformContents: (content) => {
                 let transformed = content

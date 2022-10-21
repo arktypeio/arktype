@@ -9,7 +9,7 @@ export const mapDir = (
     snippetsByPath: SnippetsByPath,
     options: DocGenMappedDirsConfig
 ) => {
-    const fileContentsByRelativeDestination = walkPaths(options.from, {
+    const fileContentsByRelativeDestination = walkPaths(options.sources, {
         excludeDirs: true
     }).map((sourcePath) => {
         const relativeSourcePath = relative(config.dirs.repoRoot, sourcePath)
@@ -29,9 +29,9 @@ export const mapDir = (
             transformedContents
         ]
     })
-    rmSync(options.to, { recursive: true, force: true })
+    rmSync(options.outDir, { recursive: true, force: true })
     for (const [path, contents] of fileContentsByRelativeDestination) {
-        const resolvedPath = join(options.to, path)
+        const resolvedPath = join(options.outDir, path)
         ensureDir(dirname(resolvedPath))
         writeFileSync(resolvedPath, contents)
     }
