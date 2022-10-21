@@ -5,7 +5,7 @@ import { keywords } from "../../../terminal/keyword/keyword.js"
 import {
     numberSubtypeKeywords,
     stringSubtypeKeywords
-} from "../../../terminal/keyword/subtype.js"
+} from "../../../terminal/keyword/regex.js"
 import { Bound } from "../bound.js"
 
 const keysOf = (o: object) => Object.keys(o)

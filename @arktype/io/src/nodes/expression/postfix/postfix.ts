@@ -1,4 +1,6 @@
 import type { Base } from "../../base/base.js"
+import type { Arr } from "./array.js"
+import type { Optional } from "./optional.js"
 
 export namespace Postfix {
     export const tokens = {
@@ -10,7 +12,7 @@ export namespace Postfix {
 
     export abstract class Node implements Base.Node {
         abstract child: Base.Node
-        abstract kind: string
+        abstract kind: KindName
         abstract traverse(traversal: Base.Traversal): void
         abstract description: string
         abstract toString(): string
@@ -39,4 +41,11 @@ export namespace Postfix {
                 : (this.toString() as any)
         }
     }
+
+    export type Kinds = {
+        array: Arr.Node
+        optional: Optional.Node
+    }
+
+    export type KindName = keyof Kinds
 }

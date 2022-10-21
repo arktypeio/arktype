@@ -1,4 +1,7 @@
 import type { Base } from "../../base/base.js"
+import type { Bound } from "./bound.js"
+import type { Divisibility } from "./divisibility.js"
+import type { Scope } from "./scope.js"
 
 export namespace Infix {
     export const comparators = {
@@ -21,13 +24,13 @@ export namespace Infix {
 
     export abstract class Node implements Base.Node {
         abstract child: Base.Node
-        abstract kind: string
+        abstract kind: KindName
         abstract traverse(traversal: Base.Traversal): void
         abstract description: string
         abstract toString(): string
 
         get children() {
-            return [this.child]
+            return [this.child] as [this["child"]]
         }
 
         get definitionRequiresStructure() {
@@ -50,4 +53,13 @@ export namespace Infix {
                 : (this.toString() as any)
         }
     }
+
+    export type Kinds = {
+        leftBound: Bound.LeftNode
+        rightBound: Bound.RightNode
+        divisibility: Divisibility.Node
+        scope: Scope.Node
+    }
+
+    export type KindName = keyof Kinds
 }

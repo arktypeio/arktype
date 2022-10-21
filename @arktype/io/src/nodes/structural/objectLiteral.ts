@@ -1,16 +1,16 @@
 import type { Dictionary } from "@arktype/tools"
 import type { Base } from "../base/base.js"
-import { keywords } from "../terminal/keyword/keyword.js"
+import { Keyword } from "../terminal/keyword/keyword.js"
 
 export namespace ObjectLiteral {
     export class Node implements Base.Node {
         readonly kind = "objectLiteral"
-        definitionRequiresStructure = true
+        readonly definitionRequiresStructure = true
 
         constructor(public children: Base.Node[], public keys: string[]) {}
 
         traverse(traversal: Base.Traversal) {
-            if (!keywords.dictionary.traverse(traversal)) {
+            if (!Keyword.nodes.dictionary.traverse(traversal)) {
                 return
             }
             for (let i = 0; i < this.children.length; i++) {

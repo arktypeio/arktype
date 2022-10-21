@@ -1,6 +1,6 @@
 import { isKeyOf } from "@arktype/tools"
 import { Bound } from "../../../../nodes/expression/infix/bound.js"
-import type { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../../../nodes/terminal/literal/bigint.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"

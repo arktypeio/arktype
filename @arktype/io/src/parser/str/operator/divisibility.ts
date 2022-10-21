@@ -1,5 +1,5 @@
 import { Divisibility } from "../../../nodes/expression/infix/divisibility.js"
-import type { NumberLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
+import type { NumberLiteral } from "../../../nodes/terminal/literal/bigint.js"
 
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"

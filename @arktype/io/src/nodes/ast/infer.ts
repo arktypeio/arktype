@@ -1,12 +1,10 @@
 import type { Evaluate } from "@arktype/tools"
-import type { Keyword, Keywords } from "../../nodes/terminal/keyword/keyword.js"
-import type {
-    BigintLiteral,
-    NumberLiteral,
-    StringLiteral
-} from "../../nodes/terminal/primitiveLiteral.js"
-import type { RegexLiteral } from "../../nodes/terminal/regexLiteral.js"
 import type { Bound } from "../expression/infix/bound.js"
+import type { Keyword } from "../terminal/keyword/keyword.js"
+import type { BigintLiteral } from "../terminal/literal/bigint.js"
+import type { NumberLiteral } from "../terminal/literal/number.js"
+import type { RegexLiteral } from "../terminal/literal/regexLiteral.js"
+import type { StringLiteral } from "../terminal/literal/string.js"
 
 export type inferAst<ast, resolutions> = ast extends string
     ? inferTerminal<ast, resolutions>
@@ -33,8 +31,11 @@ export type inferAst<ast, resolutions> = ast extends string
           }>
     : inferObjectLiteral<ast, resolutions>
 
-type inferTerminal<token extends string, resolutions> = token extends Keyword
-    ? Keywords[token]
+type inferTerminal<
+    token extends string,
+    resolutions
+> = token extends Keyword.Definition
+    ? Keyword.Inferences[token]
     : token extends keyof resolutions
     ? inferAst<resolutions[token], resolutions>
     : token extends StringLiteral.Definition<infer Text>

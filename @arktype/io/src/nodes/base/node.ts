@@ -1,8 +1,10 @@
+import type { KindName } from "./kinds.js"
 import type { Traversal } from "./traversal.js"
+export type { KindName as NodeKind } from "./kinds.js"
 
 export type Node = {
     definitionRequiresStructure: boolean
-    readonly kind: string //NodeKind
+    readonly kind: KindName
     children?: Node[]
 
     traverse(traversal: Traversal): void

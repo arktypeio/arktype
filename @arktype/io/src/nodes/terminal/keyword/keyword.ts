@@ -1,46 +1,37 @@
-import type { Dictionary } from "@arktype/tools"
 import type { Base } from "../../base/base.js"
-import { numberSubtypeKeywords, stringSubtypeKeywords } from "./subtype.js"
-import { typeKeywords } from "./type.js"
+import { NumericKeyword } from "./numeric.js"
+import { RegexKeyword } from "./regex.js"
+import { TypeKeyword } from "./type.js"
 
-// TODO: ensure all keywords matched to their nodes
-export const keywords = {
-    ...typeKeywords,
-    ...stringSubtypeKeywords,
-    ...numberSubtypeKeywords
+export namespace Keyword {
+    export const nodes = {
+        ...TypeKeyword.nodes,
+        ...RegexKeyword.nodes,
+        ...NumericKeyword.nodes
+    }
+
+    export type Nodes = typeof nodes
+
+    export type Kinds = {
+        [K in `${keyof Nodes}Keyword`]: K extends `${infer OriginalName}Keyword`
+            ? OriginalName extends keyof Nodes
+                ? Nodes[OriginalName]
+                : never
+            : never
+    }
+
+    export type Definition = keyof Nodes
+
+    export type Inferences = {
+        [K in Definition]: Nodes[K]["traverse"] extends (
+            traversal: Base.Traversal
+        ) => traversal is Base.Traversal<infer T>
+            ? T
+            : never
+    }
+
+    // export const isTopType = (
+    //     node: Base.Node
+    // ): node is typeof typeKeywords["any"] | typeof typeKeywords["unknown"] =>
+    //     node === keywords.any || node === keywords.unknown
 }
-
-export type Keyword = keyof Keywords
-
-export type Keywords = {
-    any: any
-    bigint: bigint
-    boolean: boolean
-    false: false
-    never: never
-    null: null
-    number: number
-    object: object
-    string: string
-    symbol: symbol
-    true: true
-    undefined: undefined
-    unknown: unknown
-    void: void
-    array: unknown[]
-    dictionary: Dictionary
-    Function: Function
-    // String subtypes
-    email: string
-    alphaonly: string
-    alphanumeric: string
-    lowercase: string
-    uppercase: string
-    // Number subtypes
-    integer: number
-}
-
-export const isTopType = (
-    node: Base.Node
-): node is typeof typeKeywords["any"] | typeof typeKeywords["unknown"] =>
-    node === keywords.any || node === keywords.unknown

@@ -49,7 +49,7 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
         public space: ArktypeSpace | undefined
     ) {
         if (Object.keys(config).length) {
-            this.root = new Scope(root, config)
+            this.root = new Scope.Node(root, config)
         }
     }
 

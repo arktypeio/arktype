@@ -1,4 +1,4 @@
-import type { Tokens } from "../../../nodes/expression/tokens.js"
+import type { Expression } from "../../../nodes/expression/expression.js"
 import type { parserContext, ParserContext } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
@@ -46,20 +46,20 @@ export namespace Operand {
 
     export type buildMissingOperandMessage<
         s extends ParserState.T.Unfinished,
-        lastOperator extends Tokens.Binary | null = ParserState.lastOperator<s>
+        lastOperator extends Expression.BinaryToken | null = ParserState.lastOperator<s>
     > = lastOperator extends {}
         ? buildMissingRightOperandMessage<lastOperator, s["unscanned"]>
         : buildExpressionExpectedMessage<s["unscanned"]>
 
     export type buildMissingRightOperandMessage<
-        token extends Tokens.Binary,
+        token extends Expression.BinaryToken,
         unscanned extends string
     > = `Token '${token}' requires a right operand${unscanned extends ""
         ? ""
         : ` before '${unscanned}'`}`
 
     export const buildMissingRightOperandMessage = <
-        token extends Tokens.Binary,
+        token extends Expression.BinaryToken,
         unscanned extends string
     >(
         token: token,

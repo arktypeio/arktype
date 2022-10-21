@@ -1,5 +1,5 @@
 import type { Base } from "../../base/base.js"
-import { keywords } from "../../terminal/keyword/keyword.js"
+import { Keyword } from "../../terminal/keyword/keyword.js"
 import { Infix } from "./infix.js"
 
 export namespace Divisibility {
@@ -11,7 +11,7 @@ export namespace Divisibility {
         }
 
         traverse(traversal: Base.Traversal) {
-            if (!keywords.number.traverse(traversal)) {
+            if (!Keyword.nodes.number.traverse(traversal)) {
                 return
             }
             if (traversal.data % this.divisor !== 0) {

@@ -1,10 +1,10 @@
 import type { Base } from "../base/base.js"
-import { keywords } from "../terminal/keyword/keyword.js"
+import { Keyword } from "../terminal/keyword/keyword.js"
 
 export namespace Tuple {
     export class Node implements Base.Node {
         readonly kind = "tuple"
-        definitionRequiresStructure = true
+        readonly definitionRequiresStructure = true
         readonly length: number
 
         constructor(public children: Base.Node[]) {
@@ -12,7 +12,7 @@ export namespace Tuple {
         }
 
         traverse(traversal: Base.Traversal) {
-            if (!keywords.array.traverse(traversal)) {
+            if (!Keyword.nodes.array.traverse(traversal)) {
                 return
             }
             for (let i = 0; i < this.length; i++) {

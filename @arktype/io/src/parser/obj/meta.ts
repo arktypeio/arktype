@@ -1,11 +1,11 @@
 import type { Base } from "../../nodes/base/base.js"
-import type { Tokens } from "../../nodes/expression/tokens.js"
+import type { Expression } from "../../nodes/expression/expression.js"
 
 import type { ParseError, parseFn, ParserContext } from "../common.js"
 import type { Root } from "../root.js"
 import type { Operand } from "../str/operand/operand.js"
 
-export type MetaDefinition = [unknown, Tokens.Base, ...unknown[]]
+export type MetaDefinition = [unknown, Expression.BaseToken, ...unknown[]]
 
 export const isMetaDefinition = (def: unknown[]): def is MetaDefinition =>
     (def[1] as any) in {}
@@ -18,7 +18,7 @@ export const parseMetaDefinition: parseFn<MetaDefinition> = (
 export type ParseMetaDefinition<
     Def extends MetaDefinition,
     Ctx extends ParserContext
-> = Def[1] extends Tokens.Binary
+> = Def[1] extends Expression.BinaryToken
     ? Def[2] extends undefined
         ? [
               Root.parse<Def[0], Ctx>,

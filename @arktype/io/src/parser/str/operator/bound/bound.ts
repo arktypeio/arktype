@@ -1,6 +1,6 @@
 import { isKeyOf } from "@arktype/tools"
 import type { Bound } from "../../../../nodes/expression/infix/bound.js"
-import { NumberLiteral } from "../../../../nodes/terminal/primitiveLiteral.js"
+import { NumberLiteral } from "../../../../nodes/terminal/literal/bigint.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
 import { LeftBoundOperator } from "./left.js"

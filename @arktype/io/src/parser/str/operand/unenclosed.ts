@@ -5,7 +5,7 @@ import { keywords } from "../../../nodes/terminal/keyword/keyword.js"
 import {
     BigintLiteral,
     NumberLiteral
-} from "../../../nodes/terminal/primitiveLiteral.js"
+} from "../../../nodes/terminal/literal/bigint.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"

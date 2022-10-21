@@ -59,12 +59,12 @@ export namespace Bound {
     }
 
     export class LeftNode extends Infix.Node implements Base.ProblemSource {
-        readonly kind = "bound"
+        readonly kind = "leftBound"
 
         constructor(
             public limit: number,
             public comparator: DoublableToken,
-            public child: RightNode
+            public child: RightNode<true>
         ) {
             super()
         }
@@ -107,7 +107,7 @@ export namespace Bound {
     export class RightNode<
         HasLeft extends boolean = boolean
     > extends Infix.Node {
-        readonly kind = "bound"
+        readonly kind = "rightBound"
 
         constructor(
             public child: Base.Node,

@@ -11,7 +11,7 @@ export class Traversal<Data = unknown> {
     private problemsStack: Problems[] = []
     private traversalStack: unknown[] = []
     private resolutionStack: ResolvedData[] = []
-    private scopes: Scope[]
+    private scopes: Scope.Node[]
     // TODO: Option
     private delimiter = "."
     private path = ""
@@ -50,7 +50,7 @@ export class Traversal<Data = unknown> {
         )
     }
 
-    pushScope(scope: Scope) {
+    pushScope(scope: Scope.Node) {
         this.scopes.push(scope)
     }
 
@@ -124,7 +124,7 @@ export class Traversal<Data = unknown> {
 type ResolvedData = {
     alias: string
     data: unknown
-    priorScopes: Scope[]
+    priorScopes: Scope.Node[]
 }
 
 type OptionQueryResult<K1 extends RootKey, K2 extends ConfigKey<K1>> =

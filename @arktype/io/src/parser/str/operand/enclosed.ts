@@ -1,6 +1,6 @@
 import { keySet } from "@arktype/tools"
-import { StringLiteral } from "../../../nodes/terminal/primitiveLiteral.js"
-import { RegexLiteral } from "../../../nodes/terminal/regexLiteral.js"
+import { StringLiteral } from "../../../nodes/terminal/literal/bigint.js"
+import { RegexLiteral } from "../../../nodes/terminal/literal/regexLiteral.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"

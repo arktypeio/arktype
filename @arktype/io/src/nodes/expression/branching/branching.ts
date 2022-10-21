@@ -1,4 +1,6 @@
 import type { Base } from "../../base/base.js"
+import type { Intersection } from "./intersection.js"
+import type { Union } from "./union.js"
 
 export namespace Branching {
     export const tokens = {
@@ -11,7 +13,7 @@ export namespace Branching {
     export abstract class Node implements Base.Node, Base.ProblemSource {
         abstract token: Token
         abstract traverse(traversal: Base.Traversal): void
-        abstract kind: string
+        abstract kind: KindName
 
         definitionRequiresStructure: boolean
 
@@ -64,4 +66,11 @@ export namespace Branching {
             return this.children.map((child) => child[prop])
         }
     }
+
+    export type Kinds = {
+        union: Union.Node
+        intersection: Intersection.Node
+    }
+
+    export type KindName = keyof Kinds
 }

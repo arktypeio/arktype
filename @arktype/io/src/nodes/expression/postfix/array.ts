@@ -1,5 +1,6 @@
 import type { Base } from "../../base/base.js"
-import { Keyword, keywords } from "../../terminal/keyword/keyword.js"
+import { hasKindIn, topKinds } from "../../base/kinds.js"
+import { Keyword } from "../../terminal/keyword/keyword.js"
 import { Postfix } from "./postfix.js"
 
 export namespace Arr {
@@ -11,13 +12,13 @@ export namespace Arr {
         }
 
         traverse(traversal: Base.Traversal) {
-            if (!keywords.array.traverse(traversal)) {
+            if (!Keyword.nodes.array.traverse(traversal)) {
                 return
             }
             // TODO: Reenable
-            // if (Keyword.isTopType(this.child)) {
-            //     return true
-            // }
+            if (hasKindIn(this.child, topKinds)) {
+                return true
+            }
             const length = traversal.data.length
             for (let i = 0; i < length; i++) {
                 traversal.pushKey(i)
