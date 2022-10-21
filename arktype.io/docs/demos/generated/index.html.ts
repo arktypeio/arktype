@@ -1,5 +1,4 @@
-export default `
-<head>
+export default `<head>
     <link href="http://fonts.cdnfonts.com/css/cascadia-code" rel="stylesheet" />
 </head>
 <div id="demo">

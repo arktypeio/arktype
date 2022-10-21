@@ -1,5 +1,4 @@
-export default `
-import "./demo.css"
+export default `import "./demo.css"
 
 type PopulateDemoArgs = {
     data: object
@@ -18,8 +17,8 @@ export const populateDemo = ({ data, definition, error }: PopulateDemoArgs) => {
     document.querySelector("#result")!.textContent = error ?? "Looks good!"
 }
 
-function recolor(input: string) {
-    const lines = input.split("\\n")
+const recolor = (input: string) => {
+    const lines = input.split("\n")
     const fixedInput: string[] = []
     for (const line of lines) {
         if (line.includes(":")) {
@@ -29,12 +28,13 @@ function recolor(input: string) {
             fixedInput.push(line)
         }
     }
-    return fixedInput.join("\\n")
+    return fixedInput.join("\n")
 }
-function buildKey(key: string) {
+
+const buildKey = (key: string) => {
     return \`<span class='key'>\${key}</span>\`
 }
-function buildVal(val: string) {
+const buildVal = (val: string) => {
     const formatted = val.trim()
     if (formatted.at(-1) === ",") {
         return \`<span class='val'>\${formatted.replace(",", "")}</span>,\`

@@ -1,5 +1,4 @@
-export default `
-body {
+export default `body {
     font-family: "Cascadia Code", sans-serif;
     background-color: hsl(220 18% 10%);
 }

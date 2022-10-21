@@ -1,6 +1,6 @@
-import demoCssText from "../static/demoCss"
-import indexHtml from "../static/indexHtml"
-import populateDemoTsText from "../static/populateDemo"
+import demoCssText from "../generated/demo.css"
+import indexHtmlText from "../generated/index.html"
+import populateDemoTsText from "../generated/populateDemo"
 
 const tsConfig = {
     compilerOptions: {
@@ -11,7 +11,7 @@ const tsConfig = {
 }
 
 export const defaultStaticFiles = {
-    "index.html": indexHtml,
+    "index.html": indexHtmlText,
     "demo.css": demoCssText,
     "populateDemo.ts": populateDemoTsText,
     "tsconfig.json": JSON.stringify(tsConfig, null, 4)

@@ -67,7 +67,13 @@ export const config = createConfig({
                 join(arktypeIoDocsDir, "demos", "layout")
             ],
             outDir: join(arktypeIoDocsDir, "demos", "generated"),
-            transformRelativePaths: (path) => basename(path),
+            transformRelativePaths: (path) => {
+                let outputFileName = basename(path)
+                if (!outputFileName.endsWith(".ts")) {
+                    outputFileName = outputFileName + ".ts"
+                }
+                return outputFileName
+            },
             transformContents: (content) => {
                 let transformed = content
                 transformed = transformed.replaceAll(".js", "")
