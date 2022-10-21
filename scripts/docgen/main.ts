@@ -114,7 +114,12 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
     const sourceControlPaths = shell("git ls-files", { stdio: "pipe" })
         .toString()
         .split("\n")
-        .filter((path) => existsSync(path) && statSync(path).isFile())
+        .filter(
+            (path) =>
+                existsSync(path) &&
+                statSync(path).isFile() &&
+                !path.startsWith(join("scripts", "docgen"))
+        )
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
     stdout.write("✅\n")
