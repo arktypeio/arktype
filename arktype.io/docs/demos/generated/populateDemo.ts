@@ -18,7 +18,7 @@ export const populateDemo = ({ data, definition, error }: PopulateDemoArgs) => {
 }
 
 const recolor = (input: string) => {
-    const lines = input.split("\n")
+    const lines = input.split("\\n")
     const fixedInput: string[] = []
     for (const line of lines) {
         if (line.includes(":")) {
@@ -28,7 +28,7 @@ const recolor = (input: string) => {
             fixedInput.push(line)
         }
     }
-    return fixedInput.join("\n")
+    return fixedInput.join("\\n")
 }
 
 const buildKey = (key: string) => {

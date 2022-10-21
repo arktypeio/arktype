@@ -4,7 +4,7 @@ import Layout from "@theme/Layout"
 import React from "react"
 import { StackBlitzDemo } from "../../docs/demos"
 import { getTheme } from "../components"
-import { Boat } from "../components/boat"
+import { Ark } from "../components/ark"
 import { LogoCloud } from "../components/logoCloud"
 
 const Contents = () => {
@@ -12,7 +12,7 @@ const Contents = () => {
     return (
         <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
-            <main>
+            <main style={{ width: "100vw" }}>
                 <StackBlitzDemo embedId="type" />
             </main>
         </ThemeProvider>
@@ -41,15 +41,15 @@ const Header = ({ title, tagline }: Record<string, string>) => {
         >
             <LogoCloud names={["typescript", "vscode", "intellij", "vim"]} />
             <Stack flexGrow={1}>
-                <Typography component="h1" variant="h2" color="common.white">
+                <Typography component="h1" variant="h2" color="secondary">
                     {title}
                 </Typography>
-                <Typography component="h2" variant="h5" color="secondary">
+                <Typography component="h2" variant="h5" color="common.white">
                     {tagline}
                 </Typography>
             </Stack>
             <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
-            <Boat />
+            <Ark />
         </header>
     )
 }

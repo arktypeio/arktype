@@ -3,15 +3,13 @@
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: "Arktype",
-    tagline: "One type from editor to runtime",
+    // @lineFrom:@arktype/io/package.json:description => tagline: {?},
+    tagline: "Isomorphic type syntax for TS/JS",
     url: "https://arktype.io",
     baseUrl: "/",
     onBrokenLinks: "throw",
     onBrokenMarkdownLinks: "warn",
     favicon: "img/logo.svg",
-    // Even if you don't use internalization, you can use this field to set useful
-    // metadata like html lang. For example, if your site is Chinese, you may want
-    // to replace "en" with "zh-Hans".
     i18n: {
         defaultLocale: "en",
         locales: ["en"]
@@ -44,7 +42,7 @@ const config = {
             navbar: {
                 title: "Arktype",
                 logo: {
-                    alt: "My Site Logo",
+                    alt: "Arktype Logo",
                     src: "img/logo.svg"
                 },
                 items: [

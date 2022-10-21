@@ -1,5 +1,5 @@
-import { Box } from "@mui/material"
-import React, { useEffect } from "react"
+import { Box, CircularProgress } from "@mui/material"
+import React, { useEffect, useState } from "react"
 import type { AddonFile, DemoProps } from "./stackblitzGenerators/index"
 import {
     contentsByAddonFile,
@@ -15,9 +15,14 @@ export const getAddonFiles = (addonFiles: AddonFile[]) => {
     return addon
 }
 
+// eslint-disable-next-line max-lines-per-function
 export const StackBlitzDemo = (demoProps: DemoProps) => {
+    const [isLoading, setIsLoading] = useState(true)
     useEffect(() => {
-        createStackblitzDemo(demoProps)
+        ;(async () => {
+            await createStackblitzDemo(demoProps)
+            setIsLoading(false)
+        })()
     }, [])
     return (
         <Box
@@ -29,10 +34,19 @@ export const StackBlitzDemo = (demoProps: DemoProps) => {
                 marginRight: -8,
                 padding: 16,
                 overflow: "hidden",
-                borderRadius: "8px"
+                borderRadius: "8px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center"
             }}
         >
-            <div id={DEMO_ELEMENT_ID} />
+            {isLoading ? (
+                <CircularProgress
+                    style={{ position: "absolute" }}
+                    color="secondary"
+                />
+            ) : null}
+            <div style={{ opacity: isLoading ? 0 : 1 }} id={DEMO_ELEMENT_ID} />
         </Box>
     )
 }

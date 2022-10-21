@@ -14,7 +14,7 @@ export type DemoProps = {
 
 export const DEMO_ELEMENT_ID = "arktype-demo"
 
-export const createStackblitzDemo = ({ embedId }: DemoProps) => {
+export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
     sdk.embedProject(
         DEMO_ELEMENT_ID,
         {
@@ -44,4 +44,3 @@ export const createStackblitzDemo = ({ embedId }: DemoProps) => {
             openFile: `${embedId}.ts`
         }
     )
-}
