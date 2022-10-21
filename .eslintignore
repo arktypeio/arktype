@@ -1,2 +1,18 @@
 # @blockFrom:.prettierignore
+dist
+node_modules
+temp
+tmp
+*.temp.*
+*.log
+*.tsbuildinfo
+.DS_Store
+.docusaurus
+.cache-loader
+.reassert
+coverage
+
+
+pnpm-lock.yaml
+
 # @blockEnd
