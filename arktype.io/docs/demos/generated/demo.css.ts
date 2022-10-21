@@ -54,9 +54,9 @@ h3 {
 }
 
 .key {
-    color: #264bcf;
+    color: #0067a5;
 }
 .val {
-    color: #ffc40c;
+    color: #e3ab57;
 }
 `

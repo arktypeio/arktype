@@ -1,5 +1,11 @@
 import type { Project } from "ts-morph"
-import { transformTsFileContents } from "./transformFileText.js"
+import type { ExtractionToken } from "./snipTokens.js"
+import {
+    extractionTokens,
+    includesTokenFrom,
+    snipTokens
+} from "./snipTokens.js"
+import { transformTsFileContents } from "./transformTsFileText.js"
 import { readFile } from "@arktype/node"
 
 /** Represents paths mapped to snippet data for a file */
@@ -60,15 +66,15 @@ const extractLabeledSnippets = (
     const lines = sourceText.split("\n")
     for (const [i, lineText] of lines.entries()) {
         const lineNumber = i + 1
-        if (lineText.includes("@snip")) {
+        if (includesTokenFrom(lineText, extractionTokens)) {
             const parsedSnip = parseSnipComment(lineText, filePath, lineNumber)
-            if (parsedSnip.kind === "@snipStart") {
+            if (parsedSnip.kind === extractionTokens["@snipStart"]) {
                 openBlocks.push({ ...parsedSnip, lineNumber })
-            } else if (parsedSnip.kind === "@snipEnd") {
+            } else if (parsedSnip.kind === extractionTokens["@snipEnd"]) {
                 const lastOpenBlock = openBlocks.pop()
                 if (!lastOpenBlock) {
                     throw new Error(
-                        `At ${filePath}:${lineNumber}, @snipEnd has no matching @snipStart`
+                        `At ${filePath}:${lineNumber}, ${extractionTokens["@snipEnd"]} has no matching ${extractionTokens["@snipStart"]}`
                     )
                 }
                 labeledSnippets[lastOpenBlock.id] = {
@@ -90,14 +96,14 @@ const extractLabeledSnippets = (
 }
 
 const buildOpenBlocksErrorMessage = (openBlocks: SnipStart[], path: string) =>
-    `At ${path}, no @snipEnd comments were found corresponding to the following @snipStart ids: ${openBlocks
-        .map((block) => block.id)
-        .join(",")}.`
+    `At ${path}, no ${
+        extractionTokens["@snipEnd"]
+    } comments were found corresponding to the following ${
+        extractionTokens["@snipStart"]
+    } ids: ${openBlocks.map((block) => block.id).join(",")}.`
 
 const linesToOutput = (lines: string[]) =>
     lines.filter((line) => outputShouldInclude(line)).join("\n")
-
-type SnipKind = `@snip${"Start" | "End" | "Line"}`
 
 type SnipEnd = {
     kind: "@snipEnd"
@@ -116,6 +122,7 @@ type SnipStart = {
 
 type ParsedSnip = SnipStart | SnipLine | SnipEnd
 
+// eslint-disable-next-line max-lines-per-function
 const parseSnipComment = (
     snipComment: string,
     filePath: string,
@@ -123,22 +130,25 @@ const parseSnipComment = (
 ): ParsedSnip => {
     const snipText = snipComment.slice(snipComment.indexOf("@snip"))
     const parts = snipText.split(" ")
-    const [kind, id] = parts[0].split(":") as [SnipKind, string | undefined]
-    if (kind === "@snipEnd") {
+    const [kind, id] = parts[0].split(":") as [
+        ExtractionToken,
+        string | undefined
+    ]
+    if (kind === extractionTokens["@snipEnd"]) {
         return { kind }
     }
     if (!id) {
         throw new Error(
-            `At ${filePath}:${lineNumber}, snip comment '${snipText}' requires a label like '@snipStatement:mySnipLabel'.`
+            `At ${filePath}:${lineNumber}, snip comment '${snipText}' requires a label like '${extractionTokens["@snipStatement"]}:mySnipLabel'.`
         )
     }
-    if (kind === "@snipLine") {
+    if (kind === extractionTokens["@snipLine"]) {
         return {
             id,
             kind
         }
     }
-    if (kind === "@snipStart") {
+    if (kind === extractionTokens["@snipStart"]) {
         return {
             id,
             kind,
@@ -149,5 +159,5 @@ const parseSnipComment = (
 }
 
 const outputShouldInclude = (line: string) => {
-    return !line.includes("@snip")
+    return !includesTokenFrom(line, snipTokens)
 }

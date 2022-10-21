@@ -1,4 +1,5 @@
 import type { SnippetsByPath } from "./extractSnippets.js"
+import { referenceTokens } from "./snipTokens.js"
 import {
     fromPackageRoot,
     readFile,
@@ -20,10 +21,7 @@ export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
     }
 }
 
-const LINE_FROM_TOKEN = "@lineFrom"
 const TEMPLATE_REPLACE_TOKEN = "{?}"
-const BLOCK_FROM_TOKEN = "@blockFrom"
-const BLOCK_END_TOKEN = "@blockEnd"
 
 // eslint-disable-next-line max-lines-per-function, max-statements
 const updateSnippetReferencesIfNeeded = (
@@ -40,32 +38,32 @@ const updateSnippetReferencesIfNeeded = (
             skipNextLine = false
         } else if (waitingForBlockEnd) {
             if (
-                originalLine.includes(BLOCK_END_TOKEN) ||
+                originalLine.includes(referenceTokens["@blockEnd"]) ||
                 originalLine.trim() === "```"
             ) {
                 transformedLines.push(originalLine)
                 waitingForBlockEnd = false
             }
-        } else if (originalLine.includes(BLOCK_FROM_TOKEN)) {
+        } else if (originalLine.includes(referenceTokens["@blockFrom"])) {
             requiresUpdate = true
             const updatedBlock = getUpdatedLines(
                 originalLine,
-                BLOCK_FROM_TOKEN,
+                referenceTokens["@blockFrom"],
                 snippetsByPath
             )
             transformedLines.push(originalLine, ...updatedBlock)
             // Until we reach a block end token, skip pushing originalLines to transformedLines
             waitingForBlockEnd = true
-        } else if (originalLine.includes(LINE_FROM_TOKEN)) {
+        } else if (originalLine.includes(referenceTokens["@lineFrom"])) {
             requiresUpdate = true
             const updatedLines = getUpdatedLines(
                 originalLine,
-                LINE_FROM_TOKEN,
+                referenceTokens["@lineFrom"],
                 snippetsByPath
             )
             if (updatedLines.length !== 1) {
                 throw new Error(
-                    `Expected ${LINE_FROM_TOKEN} result to have exactly one line (got ${updatedLines.length}).`
+                    `Expected ${referenceTokens["@lineFrom"]} result to have exactly one line (got ${updatedLines.length}).`
                 )
             }
             transformedLines.push(originalLine, updatedLines[0])
@@ -138,9 +136,9 @@ const getLinesFromJsonFile = (
         }
     }
     switch (token) {
-        case LINE_FROM_TOKEN:
+        case referenceTokens["@lineFrom"]:
             return [JSON.stringify(result)]
-        case BLOCK_FROM_TOKEN:
+        case referenceTokens["@blockFrom"]:
             return JSON.stringify(result, null, 4).split("\n")
         default:
             throw new Error(`Unexpected token ${token}.`)
