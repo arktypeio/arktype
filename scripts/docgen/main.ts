@@ -1,4 +1,4 @@
-import { statSync } from "node:fs"
+import { existsSync, statSync } from "node:fs"
 import { basename, join } from "node:path"
 import { stdout } from "node:process"
 import { Project } from "ts-morph"
@@ -10,10 +10,7 @@ import type {
     SnippetTransformToggles
 } from "./snippets/extractSnippets.js"
 import { extractSnippets } from "./snippets/extractSnippets.js"
-import {
-    updateSnippetReferences as getSnippetsAndUpdateReferences,
-    updateSnippetReferences
-} from "./snippets/writeSnippets.js"
+import { updateSnippetReferences } from "./snippets/writeSnippets.js"
 import { fromHere, shell } from "@arktype/node"
 
 export type DocGenConfig = {
@@ -117,7 +114,7 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
     const sourceControlPaths = shell("git ls-files", { stdio: "pipe" })
         .toString()
         .split("\n")
-        .filter((path) => statSync(path).isFile)
+        .filter((path) => existsSync(path) && statSync(path).isFile())
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
     stdout.write("✅\n")
