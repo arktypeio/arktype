@@ -11,31 +11,33 @@ export const mapDir = (
     options: DocGenMappedDirsConfig
 ) => {
     const fileContentsByRelativeDestination = options.sources.flatMap(
-        (source) =>
-            walkPaths(source, {
+        (sourceDir) =>
+            walkPaths(sourceDir, {
                 excludeDirs: true
-            }).map((sourcePath) => {
-                const relativeSourcePath = relative(
+            }).map((sourceFilePath) => {
+                const sourceRelativePath = relative(sourceDir, sourceFilePath)
+                const repoRelativePath = relative(
                     config.dirs.repoRoot,
-                    sourcePath
+                    sourceFilePath
                 )
-                if (!(relativeSourcePath in snippetsByPath)) {
+                if (!(repoRelativePath in snippetsByPath)) {
                     throw new Error(
-                        `Expected to find ${relativeSourcePath} in snippets.`
+                        `Expected to find ${repoRelativePath} in snippets.`
                     )
                 }
                 let transformedContents =
-                    snippetsByPath[relativeSourcePath].all.text
+                    snippetsByPath[repoRelativePath].all.text
                 if (options.transformContents) {
                     transformedContents =
                         options.transformContents(transformedContents)
                 }
-                return [
-                    options.transformRelativePaths
-                        ? options.transformRelativePaths(relativeSourcePath)
-                        : relativeSourcePath,
-                    transformedContents
-                ]
+                let transformedOutputPath = sourceRelativePath
+                if (options.transformOutputPaths) {
+                    transformedOutputPath = options.transformOutputPaths(
+                        transformedOutputPath
+                    )
+                }
+                return [transformedOutputPath, transformedContents]
             })
     )
     for (const target of options.targets) {

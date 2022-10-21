@@ -31,7 +31,7 @@ export type DocGenSnippetsConfig = {
 export type DocGenMappedDirsConfig = {
     sources: string[]
     targets: string[]
-    transformRelativePaths?: (path: string) => string
+    transformOutputPaths?: (path: string) => string
     transformContents?: (content: string) => string
 }
 
@@ -75,7 +75,7 @@ export const config = createConfig({
                 join(arktypeIoDocsDir, "demos", "layout")
             ],
             targets: [join(arktypeIoDocsDir, "demos", "generated")],
-            transformRelativePaths: (path) => {
+            transformOutputPaths: (path) => {
                 let outputFileName = basename(path)
                 if (!outputFileName.endsWith(".ts")) {
                     outputFileName = outputFileName + ".ts"
