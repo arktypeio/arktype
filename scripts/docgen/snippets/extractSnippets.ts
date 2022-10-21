@@ -61,8 +61,9 @@ const extractLabeledSnippets = (
     for (const [i, lineText] of lines.entries()) {
         let text
         const lineNumber = i + 1
+        const location = `${filePath}:${lineNumber}`
         if (lineText.includes("@snip")) {
-            const parsedSnip = parseSnipComment(lineText)
+            const parsedSnip = parseSnipComment(lineText, location)
             if (parsedSnip.kind === "@snipStart") {
                 openBlocks.push({ ...parsedSnip, lineNumber })
                 continue
@@ -78,14 +79,14 @@ const extractLabeledSnippets = (
                 text = linesToOutput(lines.slice(lineNumber, lineNumber + 1))
             } else {
                 throw new Error(
-                    `Unrecognized snip '${parsedSnip.kind}' at ${filePath}:${lineNumber}`
+                    `Unrecognized snip '${parsedSnip.kind}' at ${location}`
                 )
             }
             labeledSnippets[parsedSnip.id] = { text }
         }
     }
     if (openBlocks.length) {
-        throw new Error(buildOpenBlocksErrorMessage(openBlocks))
+        throw new Error(buildOpenBlocksErrorMessage(openBlocks, filePath))
     }
     return labeledSnippets
 }
@@ -102,8 +103,8 @@ const spliceMatchingSnipStart = (openBlocks: SnipStart[], id: string) => {
     return openBlocks.splice(matchingSnipStartIndex, 1)[0]
 }
 
-const buildOpenBlocksErrorMessage = (openBlocks: SnipStart[]) =>
-    `No @snipEnd comments were found corresponding to the following @snipStart ids: ${openBlocks
+const buildOpenBlocksErrorMessage = (openBlocks: SnipStart[], path: string) =>
+    `At ${path}, no @snipEnd comments were found corresponding to the following @snipStart ids: ${openBlocks
         .map((block) => block.id)
         .join(",")}.`
 
@@ -121,13 +122,16 @@ type ParsedSnip = {
     kind: SnipKind
 }
 
-const parseSnipComment = (snipComment: string): ParsedSnip => {
+const parseSnipComment = (
+    snipComment: string,
+    location: string
+): ParsedSnip => {
     const snipText = snipComment.slice(snipComment.indexOf("@snip"))
     const parts = snipText.split(" ")
     const [kind, id] = parts[0].split(":") as [SnipKind, string | undefined]
     if (!id) {
         throw new Error(
-            `Snip comment '${snipText}' requires a label like '@snipStatement:mySnipLabel'.`
+            `At ${location}, snip comment '${snipText}' requires a label like '@snipStatement:mySnipLabel'.`
         )
     }
     return {
