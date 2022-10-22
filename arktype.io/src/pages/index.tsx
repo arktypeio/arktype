@@ -5,6 +5,7 @@ import React from "react"
 import { StackBlitzDemo } from "../../docs/demos"
 import { getTheme } from "../components"
 import { Ark } from "../components/ark"
+import { Features } from "../components/features"
 import { LogoCloud } from "../components/logoCloud"
 
 const Contents = () => {
@@ -12,8 +13,9 @@ const Contents = () => {
     return (
         <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
-            <main style={{ width: "100vw" }}>
+            <main style={{ maxWidth: "100vw" }}>
                 <StackBlitzDemo embedId="type" />
+                <Features />
             </main>
         </ThemeProvider>
     )
