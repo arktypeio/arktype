@@ -30,6 +30,7 @@ export namespace Infix {
             return [this.child] as [this["child"]]
         }
 
+        // TODO: This should be precalculated ater freeze?
         get definitionRequiresStructure() {
             return this.child.definitionRequiresStructure
         }

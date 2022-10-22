@@ -1,9 +1,9 @@
+import { jsTypeOf, toString } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { ArktypeSpace } from "../../space.js"
 import type { Scope } from "../expression/infix/scope.js"
 import type { Config, KindName } from "./kinds.js"
-import type { ProblemSource } from "./problems.js"
-import { Problems, Stringifiable } from "./problems.js"
+import { Problems } from "./problems.js"
 
 export class Traversal<Data = unknown> {
     // TODO: Is perf better if these don't get initialized?
@@ -41,12 +41,8 @@ export class Traversal<Data = unknown> {
         ;(this.data as any) = this.traversalStack.pop()!
     }
 
-    addProblem(source: ProblemSource) {
-        this.problems.addIfUnique(
-            source,
-            this.path,
-            new Stringifiable(this.data as any)
-        )
+    addProblem(reason: string) {
+        this.problems.addIfUnique(this.path, reason)
     }
 
     pushScope(scope: Scope.Node) {
@@ -122,4 +118,18 @@ type ResolvedData = {
     alias: string
     data: unknown
     priorScopes: Scope.Node[]
+}
+
+export class Stringifiable<Data = unknown> {
+    constructor(public raw: Data) {}
+
+    get typeOf() {
+        return jsTypeOf(this.raw)
+    }
+
+    toString() {
+        return toString(this.raw, {
+            maxNestedStringLength: 50
+        })
+    }
 }

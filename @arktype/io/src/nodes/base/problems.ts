@@ -1,47 +1,19 @@
 import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
-import { Intersection } from "../expression/branching/intersection.js"
-import type { Node } from "./node.js"
 
-export type ProblemSource = Node & {
-    mustBe: string
-}
+export class Problem {
+    constructor(public path: string, public reasons: string[]) {}
 
-export class Problem<Data = unknown> {
-    constructor(
-        public type: ProblemSource,
-        public path: string,
-        public data: Stringifiable<Data>
-    ) {}
-
-    intersectIfUnique(source: ProblemSource) {
-        if (this.type.hasKind("intersection")) {
-            const problemChildren = this.type.children as ProblemSource[]
-            if (
-                !problemChildren.some((child) => child.mustBe === source.mustBe)
-            ) {
-                this.type.pushChild(source)
-            }
-        } else if (this.type.mustBe !== source.mustBe) {
-            this.type = new Intersection.Node([this.type, source])
+    addIfUnique(reason: string) {
+        if (!this.reasons.includes(reason)) {
+            this.reasons.push(reason)
         }
     }
 
     get message() {
-        return `Must be ${this.type.mustBe}`
-    }
-}
-
-export class Stringifiable<Data = unknown> {
-    constructor(public raw: Data) {}
-
-    get typeOf() {
-        return jsTypeOf(this.raw)
-    }
-
-    toString() {
-        return toString(this.raw, {
-            maxNestedStringLength: 50
-        })
+        if (this.reasons.length === 1) {
+            return this.reasons[0]
+        }
+        return "• " + this.reasons.join("\n• ")
     }
 }
 
@@ -57,11 +29,11 @@ export class ArktypeError extends TypeError {
 export class Problems extends Array<Problem> {
     byPath: Record<string, Problem> = {}
 
-    addIfUnique(source: ProblemSource, path: string, data: Stringifiable) {
+    addIfUnique(path: string, reason: string) {
         if (path in this.byPath) {
-            this.byPath[path].intersectIfUnique(source)
+            this.byPath[path].addIfUnique(reason)
         } else {
-            this.byPath[path] = new Problem(source, path, data)
+            this.byPath[path] = new Problem(path, [reason])
             this.push(this.byPath[path])
         }
     }
@@ -75,7 +47,7 @@ export class Problems extends Array<Problem> {
             return error.message
         }
         return this.map(
-            (problemSet) => `${problemSet.path}: ${problemSet.message}`
+            (problem) => `${problem.path}: ${problem.message}`
         ).join("\n")
     }
 
