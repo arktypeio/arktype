@@ -10,7 +10,7 @@ export namespace Branching {
 
     export type Token = keyof typeof tokens
 
-    export abstract class Node extends Base.Node implements Base.ProblemSource {
+    export abstract class Node extends Base.Node {
         abstract token: Token
         abstract traverse(traversal: Base.Traversal): void
         abstract kind: KindName
@@ -56,11 +56,6 @@ export namespace Branching {
             return this.mapChildren("description").join(
                 ` ${this.token === "|" ? "or" : "and"} `
             )
-        }
-
-        get mustBe() {
-            const intro = `${this.token === "|" ? "either" : ""}...\n• `
-            return intro + this.mapChildren("description").join("\n• ")
         }
 
         protected mapChildren<prop extends keyof Base.Node>(prop: prop) {

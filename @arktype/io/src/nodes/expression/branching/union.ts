@@ -27,18 +27,18 @@ export namespace Union {
         }
     }
 
-    const buildBranchDiagnosticsExplanation = (
-        branchDiagnosticsEntries: BranchDiagnosticsEntry[]
-    ) => {
-        let branchDiagnosticSummary = ":"
-        for (const [
-            branchDefinition,
-            branchDiagnostics
-        ] of branchDiagnosticsEntries) {
-            branchDiagnosticSummary += `\n${branchDefinition}: ${branchDiagnostics.summary}`
-        }
-        return branchDiagnosticSummary
-    }
+    // const buildBranchDiagnosticsExplanation = (
+    //     branchDiagnosticsEntries: BranchDiagnosticsEntry[]
+    // ) => {
+    //     let branchDiagnosticSummary = ":"
+    //     for (const [
+    //         branchDefinition,
+    //         branchDiagnostics
+    //     ] of branchDiagnosticsEntries) {
+    //         branchDiagnosticSummary += `\n${branchDefinition}: ${branchDiagnostics.summary}`
+    //     }
+    //     return branchDiagnosticSummary
+    // }
 
     export type BranchDiagnosticsEntry = [string, Problems]
 }

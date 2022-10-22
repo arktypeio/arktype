@@ -11,8 +11,8 @@ export namespace Terminal {
         abstract readonly definition: string
         abstract kind: KindName
 
-        get mustBe() {
-            return this.description as this["description"]
+        addProblem(traversal: Base.Traversal) {
+            traversal.addProblem(`Must be ${this.description}`)
         }
 
         toString() {

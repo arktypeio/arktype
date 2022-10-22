@@ -13,7 +13,7 @@ import { Unenclosed } from "./operand/unenclosed.js"
  * Hence, this repetitive (but efficient) shallow parse that decides whether to
  * delegate parsing in a single pass.
  */
-export type TryNaiveParse<
+export type tryNaiveParse<
     Def extends string,
     Ctx extends ParserContext
 > = Def extends `${infer Child}?`

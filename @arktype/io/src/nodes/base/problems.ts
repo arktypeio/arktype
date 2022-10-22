@@ -1,6 +1,11 @@
 import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
+import type { Node } from "./node.js"
 
-export class Problem {
+export type BaseProblemConfig = {
+    omitActual?: boolean
+}
+
+export class ProblemO {
     constructor(public path: string, public reasons: string[]) {}
 
     addIfUnique(reason: string) {
@@ -14,6 +19,82 @@ export class Problem {
             return this.reasons[0]
         }
         return "• " + this.reasons.join("\n• ")
+    }
+}
+
+export class ProblemTwo {
+    constructor(public path: string, public reasons: string[]) {}
+
+    addIfUnique(reason: string) {
+        if (!this.reasons.includes(reason)) {
+            this.reasons.push(reason)
+        }
+    }
+
+    get message() {
+        if (this.reasons.length === 1) {
+            return this.reasons[0]
+        }
+        return "• " + this.reasons.join("\n• ")
+    }
+}
+
+// export abstract class Problem<
+//     Data = unknown,
+//     Config extends BaseProblemConfig = BaseProblemConfig
+// > {
+//     constructor(
+//         public path: string,
+//         public type: Node,
+//         private rawData: Data,
+//         public config: Config
+//     ) {}
+
+//     abstract defaultMessage: string
+
+//     get data() {
+//         return new Stringifiable(this.rawData)
+//     }
+
+//     // get defaultMessage() {
+//     //     let message = `Must be ${this.type.description}`
+//     //     if (!this.config.omitActual) {
+//     //         if ("actual" in context) {
+//     //             message += ` (was ${context.actual})`
+//     //         } else if (
+//     //             !this.omitActualByDefault &&
+//     //             // If we're in a union, don't redundandtly include data (other
+//     //             // "actual" context is still included)
+//     //             !this.branchPath.length
+//     //         ) {
+//     //             message += ` (was ${this.data.toString()})`
+//     //         }
+//     //     }
+//     //     return message
+//     // }
+
+//     get message() {
+//         let result = this.config.message?.(this) ?? this.defaultMessage
+//         if (this.branchPath.length) {
+//             const branchIndentation = "  ".repeat(this.branchPath.length)
+//             result = branchIndentation + result
+//         }
+//         return result
+//     }
+// }
+
+export type Problem = {
+    path: string
+    reason: string
+}
+
+export class ProblemIntersection implements Problem {
+    constructor(public path: string, public reasons: string[]) {}
+
+    get defaultMessage() {
+        return (
+            "• " + this.problems.map((problem) => problem.message).join("\n• ")
+        )
     }
 }
 
@@ -56,44 +137,16 @@ export class Problems extends Array<Problem> {
     }
 }
 
-// export class Problem<Code extends ProblemCode> {
-//     data: Stringifiable<Data>
-//     private branchPath: string[]
-//     protected omitActualByDefault?: true
+export class Stringifiable<Data = unknown> {
+    constructor(public raw: Data) {}
 
-//     constructor(
-//         public code: Code,
-//         public path: string,
-//         public type: Base.Node
-//     ) {
-//         this.data = stringifiableFrom(state.data)
-//         this.branchPath = state.branchPath
-//         this.options = (state.scopes.query("errors", this.code) as any) ?? {}
-//     }
+    get typeOf() {
+        return jsTypeOf(this.raw)
+    }
 
-//     get defaultMessage() {
-//         let message = `Must be ${this.type.mustBe}`
-//         if (!this.options.omitActual) {
-//             if ("actual" in context) {
-//                 message += ` (was ${context.actual})`
-//             } else if (
-//                 !this.omitActualByDefault &&
-//                 // If we're in a union, don't redundandtly include data (other
-//                 // "actual" context is still included)
-//                 !this.branchPath.length
-//             ) {
-//                 message += ` (was ${this.data.toString()})`
-//             }
-//         }
-//         return message
-//     }
-
-//     get message() {
-//         let result = this.options.message?.(this) ?? this.defaultMessage
-//         if (this.branchPath.length) {
-//             const branchIndentation = "  ".repeat(this.branchPath.length)
-//             result = branchIndentation + result
-//         }
-//         return result
-//     }
-// }
+    toString() {
+        return toString(this.raw, {
+            maxNestedStringLength: 50
+        })
+    }
+}

@@ -15,7 +15,7 @@ export namespace TypeKeyword {
             traversal: Base.Traversal
         ): traversal is Traversal<InferPostcondition<this>> {
             if (!this.allowsData(traversal.data)) {
-                traversal.addProblem(this)
+                traversal.addProblem(`Must be ${this.description}`)
                 return false
             }
             return true

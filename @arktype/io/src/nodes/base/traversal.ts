@@ -119,17 +119,3 @@ type ResolvedData = {
     data: unknown
     priorScopes: Scope.Node[]
 }
-
-export class Stringifiable<Data = unknown> {
-    constructor(public raw: Data) {}
-
-    get typeOf() {
-        return jsTypeOf(this.raw)
-    }
-
-    toString() {
-        return toString(this.raw, {
-            maxNestedStringLength: 50
-        })
-    }
-}
