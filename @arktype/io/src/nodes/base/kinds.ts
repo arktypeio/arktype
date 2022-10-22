@@ -39,8 +39,8 @@ type ExternalizeChildren<children extends Node[]> = {
     [i in keyof children]: ExternalizeNode<children[i]>
 }
 
-export type NodeConfigs = { [Name in KindName]: Config<Name> }
+export type NodeConfigs = { [Name in KindName]?: Config<Name> }
 
 export type Config<Name extends KindName> = {
-    describe(children: ExternalNodes[Name]["children"]): string
+    describe?: (children: ExternalNodes[Name]["children"]) => string
 }

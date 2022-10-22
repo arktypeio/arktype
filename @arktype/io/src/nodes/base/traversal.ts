@@ -1,7 +1,7 @@
 import { InternalArktypeError } from "../../internal.js"
 import type { ArktypeSpace } from "../../space.js"
-import type { ArktypeConfig } from "../../type.js"
 import type { Scope } from "../expression/infix/scope.js"
+import type { Config, KindName } from "./kinds.js"
 import type { ProblemSource } from "./problems.js"
 import { Problems, Stringifiable } from "./problems.js"
 
@@ -57,12 +57,12 @@ export class Traversal<Data = unknown> {
         this.scopes.pop()
     }
 
-    queryScopes<K1 extends RootKey, K2 extends ConfigKey<K1>>(
-        baseKey: K1,
-        specifierKey: K2
-    ): OptionQueryResult<K1, K2> {
+    queryScopes<Name extends KindName, Key extends keyof Config<Name>>(
+        kind: Name,
+        specifierKey: Key
+    ): Config<Name>[Key] {
         for (let i = this.scopes.length - 1; i >= 0; i--) {
-            const baseConfig = this.scopes[i].config[baseKey] as any
+            const baseConfig = this.scopes[i].config[kind] as any
             if (baseConfig) {
                 const specifierConfig =
                     baseConfig[specifierKey] ?? baseConfig["$"]
@@ -71,7 +71,7 @@ export class Traversal<Data = unknown> {
                 }
             }
         }
-        return this.space?.$.config[baseKey]?.[specifierKey]
+        return this.space?.$.config[kind]?.[specifierKey]
     }
 
     pushBranch() {
@@ -123,11 +123,3 @@ type ResolvedData = {
     data: unknown
     priorScopes: Scope.Node[]
 }
-
-type OptionQueryResult<K1 extends RootKey, K2 extends ConfigKey<K1>> =
-    | Required<ArktypeConfig>[K1][K2]
-    | undefined
-
-type RootKey = keyof ArktypeConfig
-
-type ConfigKey<K1 extends RootKey> = keyof Required<ArktypeConfig>[K1]
