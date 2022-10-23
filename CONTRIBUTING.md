@@ -83,8 +83,7 @@ pnpm install
 pnpm build
 pnpm lint
 pnpm test
-pnpm bench
-pnpm build-pages
+pnpm build-docs
 ```
 
 All of these command will run as part of our CI process and must succeed in order for us to accept your Pull Request.

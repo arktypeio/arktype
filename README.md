@@ -20,7 +20,7 @@ If you're using TypeScript, you'll need at least `4.6`.
 
 [Try it out.](https://arktype.io/type/intro#start-quick-%EF%B8%8F)
 
-```ts @blockFrom:@arktype/io/src/__snippets__/type.ts
+```ts @blockFrom:src/__snippets__/type.ts
 import { type } from "@arktype/io"
 
 // Define a type...
@@ -55,7 +55,7 @@ if (errors) {
 
 [Try it out.](https://arktype.io/type/spaces)
 
-```ts @blockFrom:@arktype/io/src/__snippets__/space.ts
+```ts @blockFrom:src/__snippets__/space.ts
 import { space } from "@arktype/io"
 
 // Spaces are collections of types that can reference each other.
@@ -96,7 +96,7 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 
 `names.ts`
 
-```ts @blockFrom:@arktype/io/src/__snippets__/declaration/names.ts
+```ts @blockFrom:src/__snippets__/declaration/names.ts
 import { declare } from "@arktype/io"
 
 // Declare the models you will define
@@ -105,7 +105,7 @@ export const { define, compile } = declare("user", "group")
 
 `declaration.ts`
 
-```ts @blockFrom:@arktype/io/src/__snippets__/declaration/declaration.ts
+```ts @blockFrom:src/__snippets__/declaration/declaration.ts
 import { groupDef } from "./group.js"
 import { compile } from "./names.js"
 import { userDef } from "./user.js"
@@ -132,7 +132,7 @@ export const { errors } = types.group.check(getGroupsForCurrentUser())
 
 `user.ts`
 
-```ts @blockFrom:@arktype/io/src/__snippets__/declaration/user.ts
+```ts @blockFrom:src/__snippets__/declaration/user.ts
 import { define } from "./names.js"
 
 export const userDef = define.user({
@@ -144,7 +144,7 @@ export const userDef = define.user({
 
 `group.ts`
 
-```ts @blockFrom:@arktype/io/src/__snippets__/declaration/group.ts
+```ts @blockFrom:src/__snippets__/declaration/group.ts
 import { define } from "./names.js"
 
 export const groupDef = define.group({
@@ -159,7 +159,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://arktype.io/type/constraints)
 
-```ts @blockFrom:@arktype/io/src/__snippets__/constraints.ts
+```ts @blockFrom:src/__snippets__/constraints.ts
 import { type } from "@arktype/io"
 
 export const employee = type({

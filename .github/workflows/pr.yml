@@ -28,7 +28,7 @@ jobs:
               run: pnpm test
 
             - name: Website
-              run: pnpm build-pages
+              run: pnpm build-docs
 
     compatibility:
         needs: core

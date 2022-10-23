@@ -1,7 +1,4 @@
 titleOnly: true
 scopes:
-    - assert
-    - io
-    - node
-    - tools
+    - check
     - arktype.io

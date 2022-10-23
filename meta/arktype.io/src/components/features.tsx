@@ -5,7 +5,31 @@ import Two from "@site/static/img/features/2.svg"
 import Three from "@site/static/img/features/3.svg"
 import Four from "@site/static/img/features/4.svg"
 import React from "react"
-import details from "../featuresConfig.json"
+
+const details = [
+    {
+        image: "Two",
+        title: "Error customization",
+        description:
+            "We provide top-tier error messages but give you the freedom to customize them for your users!"
+    },
+    {
+        image: "Three",
+        title: "Infers TypeScript types from its own syntax",
+        description: ""
+    },
+    {
+        image: "Four",
+        title: "Recursive and cyclic types",
+        description: "Spaces, with recursive types!?!"
+    },
+    {
+        image: "One",
+        title: "One definition from editor to runtime",
+        description:
+            "Use those amazing types you built in typescript at runtime!"
+    }
+]
 
 const features = {
     One: <One />,
@@ -39,7 +63,7 @@ const Feature = ({ image, title, description }: FeatureProps) => (
     </Box>
 )
 
-const feats = details.features.map((feature, i) => (
+const feats = details.map((feature, i) => (
     <Feature
         image={features[feature.image as keyof typeof features]}
         title={feature.title}

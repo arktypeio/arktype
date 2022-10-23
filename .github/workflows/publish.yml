@@ -18,13 +18,13 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Build and publish arktype.io
-              run: pnpm build-pages
+              run: pnpm build-docs
 
             - name: Deploy to GitHub Pages
               uses: peaceiris/actions-gh-pages@v3
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: ./arktype.io/dist
+                  publish_dir: ./meta/arktype.io/dist
 
     create-release-pr:
         runs-on: ubuntu-latest

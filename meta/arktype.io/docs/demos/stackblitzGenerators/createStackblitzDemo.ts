@@ -28,10 +28,8 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
             description: `Demo for ${embedId}`,
             template: "typescript",
             dependencies: {
-                // @lineFrom:@arktype/io/package.json:version => "@arktype/io": {?},
-                "@arktype/io": "0.0.1",
-                // @lineFrom:@arktype/io/package.json:version => "@arktype/tools": {?}
-                "@arktype/tools": "0.0.1"
+                // @lineFrom:package.json:version => "arktype": {?},
+                arktype: "0.0.1"
             },
             settings: {
                 compile: {

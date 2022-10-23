@@ -2,8 +2,8 @@
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-    title: "Arktype",
-    // @lineFrom:@arktype/io/package.json:description => tagline: {?},
+    title: "ArkType",
+    // @lineFrom:package.json:description => tagline: {?},
     tagline: "Isomorphic type syntax for TS/JS",
     url: "https://arktype.io",
     baseUrl: "/",
@@ -40,7 +40,6 @@ const config = {
         /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
         ({
             navbar: {
-                title: "Arktype",
                 logo: {
                     alt: "Arktype Logo",
                     src: "img/logo.svg"
@@ -58,7 +57,7 @@ const config = {
                         className: "navbar-versions"
                     },
                     {
-                        href: "https://github.com/arktypeio/arktype/tree/main/@arktype/io",
+                        href: "https://github.com/arktypeio/arktype",
                         position: "right",
                         className: "navbar-github"
                     }
@@ -86,11 +85,11 @@ const config = {
                             {
                                 label: "Discord",
                                 href: "https://discord.gg/WSNF3Kc4xh"
-                            },
-                            {
-                                label: "Twitch",
-                                href: "https://twitch.tv/ArkTypeCode"
                             }
+                            // {
+                            //     label: "Twitch",
+                            //     href: "https://twitch.tv/ArkTypeCode"
+                            // }
                         ]
                     }
                 ],
