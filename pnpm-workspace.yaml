@@ -1,4 +1,4 @@
 packages:
     - "."
-    - "check"
+    - "@arktype/*"
     - "meta/arktype.io"

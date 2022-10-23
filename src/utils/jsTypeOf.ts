@@ -1,4 +1,4 @@
-import type { Dictionary, IsAnyOrUnknown } from "./common.js"
+import type { IsTopType } from "./common.js"
 import type { Evaluate } from "./evaluate.js"
 
 export type BuiltinJsTypes = {
@@ -32,7 +32,7 @@ export type BuiltinJsTypeName = keyof BuiltinJsTypes
 
 export type NormalizedJsTypes = Evaluate<
     Omit<BuiltinJsTypes, "object"> & {
-        object: Dictionary
+        object: Record<string, unknown>
         array: unknown[]
         null: null
     }
@@ -40,7 +40,7 @@ export type NormalizedJsTypes = Evaluate<
 
 export type NormalizedJsTypeName = keyof NormalizedJsTypes
 
-export type NormalizedJsTypeOf<Data> = IsAnyOrUnknown<Data> extends true
+export type NormalizedJsTypeOf<Data> = IsTopType<Data> extends true
     ? NormalizedJsTypeName
     : Data extends readonly unknown[]
     ? "array"

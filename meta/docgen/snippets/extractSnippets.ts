@@ -1,5 +1,5 @@
 import type { Project } from "ts-morph"
-import { readFile } from "../../node/index.js"
+import { readFile } from "../../../@arktype/node/api.js"
 import type { ExtractionToken } from "./snipTokens.js"
 import {
     extractionTokens,

@@ -1,5 +1,9 @@
 import { join, relative } from "node:path"
-import { findPackageRoot, readPackageJson, walkPaths } from "./node/index.js"
+import {
+    findPackageRoot,
+    readPackageJson,
+    walkPaths
+} from "../@arktype/node/api.js"
 
 const root = findPackageRoot()
 const metaDir = join(root, "meta")

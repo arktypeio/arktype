@@ -9,7 +9,7 @@ tmp
 .DS_Store
 .docusaurus
 .cache-loader
-.reassert
+.attest
 coverage
 
 # @blockEnd 

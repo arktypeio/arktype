@@ -4,7 +4,7 @@ import {
     readJson,
     shell,
     writeFile
-} from "../../node/index.js"
+} from "../../../@arktype/node/api.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 

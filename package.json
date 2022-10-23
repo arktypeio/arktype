@@ -21,6 +21,7 @@
             "require": "./dist/cjs/api.js"
         }
     },
+    "imports": {},
     "packageManager": "pnpm@7.14.0",
     "scripts": {
         "build": "pnpm buildRoot && pnpm buildScoped",
@@ -28,7 +29,7 @@
         "buildScoped": "pnpm -r --filter '@arktype/*' build",
         "buildDocs": "pnpm --filter 'arktype.io' build",
         "prChecks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
-        "test": "c8 reassert --cmd mocha",
+        "test": "c8 attest --cmd mocha",
         "lint": "eslint --max-warnings=0 .",
         "docgen": "ts-node ./meta/scripts/docgen.ts && pnpm buildDocs",
         "changeset": "changeset",
@@ -39,14 +40,15 @@
         "ci:version": "ts-node ./meta/scripts/updateVersions.ts && pnpm buildDocs",
         "ci:publish": "ts-node ./meta/scripts/publish.ts",
         "typecheck": "tsc --noEmit",
-        "tnt": "reassert --skipTypes --cmd mocha",
+        "tnt": "attest --skipTypes --cmd mocha",
         "testBuild": "ts-node ./meta/scripts/testBuild.ts",
-        "bench": "reassert bench --benchmarksPath ./src/__tests__/benchmarks.json",
+        "bench": "attest bench --benchmarksPath ./src/__tests__/benchmarks.json",
         "generateBenchData": "ts-node ./src/__tests__/generateBenchData.ts",
         "diag": "tsc --composite false --noEmit --diagnostics --incremental false"
     },
     "devDependencies": {
-        "@arktype/check": "workspace:*",
+        "@arktype/node": "link:./@arktype/node",
+        "@arktype/check": "link:./@arktype/check",
         "@changesets/cli": "2.25.0",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.3.9",

@@ -1,7 +1,7 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
+import { ensureDir, shell, walkPaths } from "../../@arktype/node/api.js"
 import { repoDirs } from "../common.js"
-import { ensureDir, shell, walkPaths } from "../node/index.js"
 import type { DocGenMappedDirsConfig } from "./main.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"
 

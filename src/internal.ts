@@ -1,4 +1,4 @@
-import type { EvaluateFunction } from "@arktype/tools"
+import type { EvaluateFunction } from "./utils/evaluate.js"
 
 export class InternalArktypeError extends Error {}
 

@@ -1,8 +1,13 @@
 import { existsSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
+import {
+    readJson,
+    requireResolve,
+    shell,
+    writeJson
+} from "../../@arktype/node/api.js"
 import { getPackageDataFromCwd, isProd } from "../common.js"
-import { readJson, requireResolve, shell, writeJson } from "../node/index.js"
 
 const {
     cjsOut,

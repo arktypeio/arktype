@@ -1,6 +1,6 @@
 import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { findPackageRoot, readPackageJson } from "../../node/index.js"
+import { findPackageRoot, readPackageJson } from "../../../@arktype/node/api.js"
 import type { PackageMetadata } from "../api/extractApi.js"
 import { config } from "../main.js"
 import type { SnippetTransformToggles } from "./extractSnippets.js"

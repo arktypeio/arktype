@@ -1,4 +1,6 @@
-import type { CastWithExclusion } from "./common.js"
+export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
+    ? T
+    : CastTo
 
 export type Narrowable = string | boolean | number | bigint
 
