@@ -364,10 +364,6 @@ If you're interested in contributing to `@arktype/io`...
 1.  Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
 2.  Check out our [guide](../../CONTRIBUTING.md) to get started!
 
-## About Redo
-
-`@arktype/io` is part of a set of devtools designed to help you navigate the JS/TS ecosystem and get back to doing what you love. Learn more [at the root of this repo](https://github.com/arktypeio/arktype).
-
 ## License
 
 This project is licensed under the terms of the

@@ -1,7 +1,9 @@
-import { existsSync, readdirSync, statSync } from "node:fs"
+import { existsSync, statSync } from "node:fs"
 import { basename, join } from "node:path"
 import { stdout } from "node:process"
 import { Project } from "ts-morph"
+import { shell } from "../../node/src/index.js"
+import { repoDirs } from "../common.js"
 import { extractApi } from "./api/extractApi.js"
 import { writeApi } from "./api/writeApi.js"
 import { mapDir } from "./mapDir.js"
@@ -11,7 +13,6 @@ import type {
 } from "./snippets/extractSnippets.js"
 import { extractSnippets } from "./snippets/extractSnippets.js"
 import { updateSnippetReferences } from "./snippets/writeSnippets.js"
-import { fromHere, shell } from "@arktype/node"
 
 export type DocGenConfig = {
     apis: DocGenApiConfig[]
@@ -37,30 +38,11 @@ export type DocGenMappedDirsConfig = {
 
 const createConfig = <Config extends DocGenConfig>(config: Config) => config
 
-const repoRoot = fromHere("..", "..")
-const packagesDir = join(repoRoot, "@arktype")
-const packageRoots = {
-    arktype: join(packagesDir, "io"),
-    assert: join(packagesDir, "assert"),
-    tools: join(packagesDir, "tools"),
-    node: join(packagesDir, "node")
-}
-
-const arktypeIoDocsDir = join(repoRoot, "arktype.io", "docs")
-
-const dirs = {
-    repoRoot,
-    packagesDir,
-    packageRoots,
-    arktypeIoDocsDir
-}
-
 export const config = createConfig({
-    dirs,
     apis: [
         {
-            packageRoot: dirs.packageRoots.arktype,
-            outDir: join(arktypeIoDocsDir, "api")
+            packageRoot: repoDirs.root,
+            outDir: join(repoDirs.docsDir, "api")
         }
     ],
     snippets: {
@@ -71,10 +53,10 @@ export const config = createConfig({
     mappedDirs: [
         {
             sources: [
-                join(dirs.packageRoots.arktype, "src", "__snippets__"),
-                join(arktypeIoDocsDir, "demos", "layout")
+                join(repoDirs.root, "src", "__snippets__"),
+                join(repoDirs.docsDir, "demos", "layout")
             ],
-            targets: [join(arktypeIoDocsDir, "demos", "generated")],
+            targets: [join(repoDirs.docsDir, "demos", "generated")],
             transformOutputPaths: (path) => {
                 let outputFileName = basename(path)
                 if (!outputFileName.endsWith(".ts")) {
@@ -92,8 +74,8 @@ export const config = createConfig({
             }
         },
         {
-            sources: [join(repoRoot, ".vscode")],
-            targets: Object.values(dirs.packageRoots).map((packageRoot) =>
+            sources: [join(repoDirs.root, ".vscode")],
+            targets: Object.values(repoDirs.packageRoots).map((packageRoot) =>
                 join(packageRoot, ".vscode")
             ),
             transformContents: (content) => {
@@ -123,10 +105,7 @@ export const docgen = () => {
 const getProject = () => {
     stdout.write("Extracting metadata...")
     const project = new Project({
-        tsConfigFilePath: join(
-            config.dirs.repoRoot,
-            "tsconfig.references.json"
-        ),
+        tsConfigFilePath: join(repoDirs.root, "tsconfig.json"),
         skipAddingFilesFromTsConfig: true
     })
     stdout.write("✅\n")
@@ -151,6 +130,8 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
             (path) =>
                 existsSync(path) &&
                 statSync(path).isFile() &&
+                // Avoid conflicts between snip matching and the source
+                // code defining those matchers
                 !path.startsWith(join("scripts", "docgen"))
         )
     const snippets = extractSnippets(sourceControlPaths, project)

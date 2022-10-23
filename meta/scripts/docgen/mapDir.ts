@@ -1,9 +1,9 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
+import { ensureDir, shell, walkPaths } from "../../node/src/index.js"
+import { repoDirs } from "../common.js"
 import type { DocGenMappedDirsConfig } from "./main.js"
-import { config } from "./main.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"
-import { ensureDir, shell, walkPaths } from "@arktype/node"
 
 // eslint-disable-next-line max-lines-per-function
 export const mapDir = (
@@ -16,10 +16,7 @@ export const mapDir = (
                 excludeDirs: true
             }).map((sourceFilePath) => {
                 const sourceRelativePath = relative(sourceDir, sourceFilePath)
-                const repoRelativePath = relative(
-                    config.dirs.repoRoot,
-                    sourceFilePath
-                )
+                const repoRelativePath = relative(repoDirs.root, sourceFilePath)
                 if (!(repoRelativePath in snippetsByPath)) {
                     throw new Error(
                         `Expected to find ${repoRelativePath} in snippets.`

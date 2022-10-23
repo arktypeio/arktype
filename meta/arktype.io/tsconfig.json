@@ -1,5 +1,5 @@
 {
-    "extends": "../../tsconfig.base",
+    "extends": "../../tsconfig",
     "compilerOptions": {
         "noEmit": true,
         "module": "CommonJS",

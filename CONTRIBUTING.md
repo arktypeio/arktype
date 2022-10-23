@@ -1,12 +1,12 @@
 # Contributing
 
-Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible.
+Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the ArkType repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible.
 
 We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@arktype.io 😻
 
 ## Code of Conduct
 
-Redo has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
+ArkType has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
 Please read [the full text](/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
 ## Your first Pull Request
@@ -23,7 +23,7 @@ If somebody claims an issue but doesn’t follow up for more than a week, it’s
 
 ## Sending a Pull Request
 
-Redo is a community project, so Pull Requests are always welcome, but, before working on a large change, it is best to open an issue first to discuss it with the maintainers.
+ArkType is a community project, so Pull Requests are always welcome, but, before working on a large change, it is best to open an issue first to discuss it with the maintainers.
 
 When in doubt, keep your Pull Requests small. To give a Pull Request the best chance of getting accepted, don't bundle more than one feature or bug fix per Pull Request. It's often best to create two smaller Pull Requests than one big one.
 
@@ -105,8 +105,8 @@ We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. Yo
 
 -   [@arktype/io](@arktype/io): Beautiful types from IDE to runtime 🧬
 -   [@arktype/check](@arktype/check): Seamless testing for types and code ✅
--   [@arktype/tools](@arktype/tools): Lightweight utilities and types shared across Redo packages 🧰
--   [@arktype/node](@arktype/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
+-   [@arktype/tools](@arktype/tools): Lightweight utilities and types shared across ArkType packages 🧰
+-   [@arktype/node](@arktype/node): Node-based utilities, scripts, and configs for ArkType packages ⚙️
 -   [arktype.io](./arktype.io): Source code for [arktype.io](https://arktype.io) 🔁
 
 ## Project
@@ -116,7 +116,3 @@ Our current and planned work can always be found [here](https://github.com/arkty
 ## License
 
 By contributing your code to the arktypeio/arktype GitHub repository, you agree to license your contribution under the MIT license.
-
-### Attribution note
-
-At Redo, we're huge fans of [material-ui](https://mui.com/). In addition to depending on them for many of our React components, we borrowed parts of this contributing guide from their repo.

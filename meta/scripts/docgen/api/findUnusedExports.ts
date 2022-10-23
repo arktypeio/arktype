@@ -2,20 +2,16 @@ import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
 import type { ExportedDeclarations, Node, SourceFile, ts } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
+import { findPackageRoot, readPackageJson } from "../../../node/src/index.js"
+import { repoDirs } from "../../common.js"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
-import {
-    findPackageRoot,
-    fromPackageRoot,
-    readPackageJson
-} from "@arktype/node"
 
 const ignoreUnusedComment = "@ignore-unused"
-const rootDir = fromPackageRoot("@artkype")
-const publicApis = ["assert", "type"]
+const publicApiRoots = [repoDirs.root, repoDirs.packageRoots.check]
 const exportAllRegex = /export \*/
 
 const project = new Project({
-    tsConfigFilePath: fromPackageRoot("tsconfig.references.json")
+    tsConfigFilePath: join(repoDirs.root, "tsconfig.json")
 })
 
 const unusedExports: Record<string, string[]> = {}
@@ -193,8 +189,7 @@ export type ApiExports = {
 
 export const getPublicApiExports = (project: Project): ApiExports[] => {
     const apiExports: ApiExports[] = []
-    for (const publicApi of publicApis) {
-        const packageRoot = join(rootDir, publicApi)
+    for (const packageRoot of publicApiRoots) {
         if (!existsSync(packageRoot)) {
             throw new Error(`${packageRoot} does not exist.`)
         }

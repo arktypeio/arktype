@@ -6,7 +6,7 @@ import {
     shell,
     walkPaths,
     writeFile
-} from "@arktype/node"
+} from "../node/src/index.js"
 
 const repoRoot = fromPackageRoot()
 const packageNames = ["assert", "node", "tools", "type"]

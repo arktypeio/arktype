@@ -1,26 +1,20 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { join } from "node:path"
-import { docgen } from "./docgen/main.js"
 import {
-    fromHere,
-    fromPackageRoot,
     readFile,
     readJson,
     readPackageJson,
     shell,
     writeFile,
     writeJson
-} from "@arktype/node"
+} from "../node/src/index.js"
+import { repoDirs } from "./common.js"
+import { docgen } from "./docgen/main.js"
 
-// TODO: Fix
-
-const suffixes = {
-    type: "alpha"
-}
+const suffixedPackageEntries: [rootDir: string, suffix: string][] = []
 
 const forEachPackageWithSuffix = (transformer: SuffixTransformer) => {
-    for (const [name, suffix] of Object.entries(suffixes)) {
-        const packagePath = fromHere("..", "@artkype", name)
+    for (const [packagePath, suffix] of suffixedPackageEntries) {
         const packageJsonPath = join(packagePath, "package.json")
         const changelogPath = join(packagePath, "CHANGELOG.md")
         const packageJson = readJson(packageJsonPath)
@@ -28,7 +22,6 @@ const forEachPackageWithSuffix = (transformer: SuffixTransformer) => {
         const transformed = transformer({
             packageJson,
             changelog,
-            name,
             suffix
         })
         if (transformed.packageJson) {
@@ -65,7 +58,6 @@ forEachPackageWithSuffix(({ packageJson, changelog, suffix }) => {
 type SuffixTransformer = (args: {
     packageJson: any
     changelog: string
-    name: string
     suffix: string
 }) => {
     packageJson?: any
@@ -74,26 +66,12 @@ type SuffixTransformer = (args: {
 
 docgen()
 
-const REDO_DEV_DIR = fromPackageRoot("arktype.io")
-
-const docusaurusVersionedPackages = [
-    {
-        packageRoot: fromPackageRoot("@artkype", "type"),
-        docsName: "type"
-    }
-]
-
-for (const { packageRoot, docsName } of docusaurusVersionedPackages) {
-    const packageJson = readPackageJson(packageRoot)
-    const existingVersions: string[] = readJson(
-        join(REDO_DEV_DIR, `${docsName}_versions.json`)
-    )
-    if (!existingVersions.includes(packageJson.version)) {
-        shell(
-            `pnpm docusaurus docs:version:${docsName} ${packageJson.version}`,
-            {
-                cwd: REDO_DEV_DIR
-            }
-        )
-    }
+const packageJson = readPackageJson(repoDirs.root)
+const existingVersions: string[] = readJson(
+    join(repoDirs.packageRoots.arktypeIo, `versions.json`)
+)
+if (!existingVersions.includes(packageJson.version)) {
+    shell(`pnpm docusaurus docs:version ${packageJson.version}`, {
+        cwd: repoDirs.packageRoots.arktypeIo
+    })
 }

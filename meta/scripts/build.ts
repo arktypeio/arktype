@@ -6,7 +6,7 @@ import {
     requireResolve,
     shell,
     writeJson
-} from "../@arktype/node/src/index.js"
+} from "../node/src/index.js"
 import { getPackageDataFromCwd, isProd } from "./common.js"
 
 const {
@@ -22,7 +22,7 @@ const {
 
 const successMessage = `🎁 Successfully built ${packageName}!`
 
-export const arktypeTsc = (config: RedoTscConfig) => {
+export const arktypeTsc = (config: ArktypeTscConfig) => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
     if (!config?.skip?.types) {
@@ -41,6 +41,7 @@ export const buildTypes = () => {
     const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
     writeJson(tempTsConfig, {
         ...config,
+        // TODO: Do I need this and something similar in publish?
         files: inFiles.filter((path) => !/__tests__|__snippets__/.test(path))
     })
     try {
@@ -55,7 +56,7 @@ export const buildTypes = () => {
     stdout.write(`✅\n`)
 }
 
-export const transpile = (config: RedoTscConfig) => {
+export const transpile = (config: ArktypeTscConfig) => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     if (!config.skip.esm) {
         buildEsm()
@@ -95,7 +96,7 @@ export const buildCjs = () => {
     writeJson(join(cjsOut, "package.json"), { type: "commonjs" })
 }
 
-export type RedoTscOptions = {
+export type ArktypeTscOptions = {
     skip?: {
         cjs?: boolean
         esm?: boolean
@@ -103,7 +104,7 @@ export type RedoTscOptions = {
     }
 }
 
-export type RedoTscConfig = Required<RedoTscOptions>
+export type ArktypeTscConfig = Required<ArktypeTscOptions>
 
 arktypeTsc({
     skip: {

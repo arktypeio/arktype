@@ -1,7 +1,7 @@
 {
     "name": "@arktype/node",
     "version": "0.0.1",
-    "description": "Node-based utilities, scripts, and configs for Redo packages ⚙️",
+    "description": "Node-based utilities, scripts, and configs⚙️",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",

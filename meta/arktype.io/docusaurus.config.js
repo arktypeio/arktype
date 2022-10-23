@@ -89,7 +89,7 @@ const config = {
                             },
                             {
                                 label: "Twitch",
-                                href: "https://twitch.tv/RedoCode"
+                                href: "https://twitch.tv/ArkTypeCode"
                             }
                         ]
                     }

@@ -3,9 +3,26 @@ import {
     findPackageRoot,
     readPackageJson,
     walkPaths
-} from "../@arktype/node/src/index.js"
+} from "../node/src/index.js"
 
-export const repoRoot = findPackageRoot()
+const root = findPackageRoot()
+const metaDir = join(root, "meta")
+const packageRoots = {
+    check: join(root, "check"),
+    tools: join(metaDir, "tools"),
+    node: join(metaDir, "node"),
+    arktypeIo: join(metaDir, "arktype.io")
+}
+
+const docsDir = join(packageRoots.arktypeIo, "docs")
+
+export const repoDirs = {
+    root,
+    metaDir,
+    packageRoots,
+    docsDir
+}
+
 export const isProd = () => process.argv.includes("--prod") || !!process.env.CI
 
 export const getPackageDataFromCwd = () => {

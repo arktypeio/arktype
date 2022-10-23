@@ -1,12 +1,12 @@
-import type { SnippetsByPath } from "./extractSnippets.js"
-import { referenceTokens } from "./snipTokens.js"
 import {
     fromPackageRoot,
     readFile,
     readJson,
     shell,
     writeFile
-} from "@arktype/node"
+} from "../../../node/src/index.js"
+import type { SnippetsByPath } from "./extractSnippets.js"
+import { referenceTokens } from "./snipTokens.js"
 
 export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
     const updatedPaths = Object.keys(snippetsByPath).filter((path) =>
@@ -93,7 +93,7 @@ const getUpdatedLines = (
     const filePath = lineFromRefeferenceParts[1]
     if (!filePath) {
         throw new Error(
-            `${token} expression '${line}' required a file path, e.g. '${token}:@arktype/io/package.json:version'.`
+            `${token} expression '${line}' required a file path, e.g. '${token}:check/package.json:version'.`
         )
     }
     if (filePath.endsWith(".json")) {
