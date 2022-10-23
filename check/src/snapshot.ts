@@ -12,7 +12,7 @@ import { writeUpdates } from "./writeSnapshot.js"
 export type SnapshotArgs = {
     position: SourcePosition
     serializedValue: unknown
-    benchFormat: BenchFormat
+    benchFormat: Required<BenchFormat>
     snapFunctionName?: string
     baselinePath?: string[]
 }
@@ -103,7 +103,7 @@ export type QueuedUpdate = {
     newArgText: string
     baselinePath: string[] | undefined
     transient: boolean
-    benchFormat: BenchFormat
+    benchFormat: Required<BenchFormat>
 }
 
 /**

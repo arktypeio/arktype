@@ -15,26 +15,26 @@ export const runThenGetContents = (
     { precache, includeBenches, benchFormat }: RunThenGetContentsOptions = {}
 ) => {
     const testFileCopyPath = templatePath + ".temp.ts"
-    let RE_ASSERT_CMD = includeBenches ? " --bench" : ""
+    let ARKTYPE_CHECK_CMD = includeBenches ? " --bench" : ""
     if (benchFormat?.noExternal) {
-        RE_ASSERT_CMD += " --no-external"
+        ARKTYPE_CHECK_CMD += " --no-external"
     }
     if (benchFormat?.noInline) {
-        RE_ASSERT_CMD += " --no-inline"
+        ARKTYPE_CHECK_CMD += " --no-inline"
     }
     copyFileSync(templatePath, testFileCopyPath)
     let testFileContents
     try {
         if (precache) {
-            RE_ASSERT_CMD += ` --precache --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
+            ARKTYPE_CHECK_CMD += ` --precache --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
             shell(`npx ts-node ${testFileCopyPath} --reassertTestPreCached`, {
                 env: {
-                    RE_ASSERT_CMD
+                    ARKTYPE_CHECK_CMD
                 }
             })
         } else {
             shell(`npx ts-node ${testFileCopyPath}`, {
-                env: { RE_ASSERT_CMD }
+                env: { ARKTYPE_CHECK_CMD }
             })
         }
     } finally {

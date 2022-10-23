@@ -41,7 +41,7 @@
         "typecheck": "tsc --noEmit",
         "tnt": "reassert --skipTypes --cmd mocha",
         "testBuild": "ts-node ./meta/scripts/testBuild.ts",
-        "bench": "reassert bench",
+        "bench": "reassert bench --benchmarksPath ./src/__tests__/benchmarks.json",
         "generateBenchData": "ts-node ./src/__tests__/generateBenchData.ts",
         "diag": "tsc --composite false --noEmit --diagnostics --incremental false"
     },

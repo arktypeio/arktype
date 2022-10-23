@@ -1,13 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
-import {
-    fromCwd,
-    readJson,
-    requireResolve,
-    shell,
-    writeJson
-} from "@arktype/node"
+import { readJson, requireResolve, shell, writeJson } from "@arktype/node"
 import type { Node, ts } from "ts-morph"
 import type { BenchData } from "./bench/history.js"
 import { updateIsBench, upsertBenchResult } from "./bench/history.js"
@@ -21,6 +15,7 @@ import {
 export type BenchFormat = {
     noInline?: boolean
     noExternal?: boolean
+    path?: string
 }
 
 export interface ExternalSnapshotArgs extends SnapshotArgs {
@@ -85,15 +80,14 @@ export const writeInlineSnapshotUpdateToCacheDir = (args: SnapshotArgs) => {
     )
 }
 
-const benchHistoryPath = join(fromCwd(), "benchmarks.json")
-
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
 export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
     if (!queuedUpdates.length) {
         return
     }
-    const benchData: BenchData = existsSync(benchHistoryPath)
-        ? readJson(benchHistoryPath)
+    const benchmarksPath = queuedUpdates[0].benchFormat.path
+    const benchData: BenchData = existsSync(benchmarksPath)
+        ? readJson(benchmarksPath)
         : {}
     for (const update of queuedUpdates) {
         updateIsBench(update) && upsertBenchResult(update, benchData)
@@ -105,7 +99,7 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
             writeUpdateToFile(originalArgs, update)
         }
         if (!update.benchFormat.noExternal) {
-            writeJson(benchHistoryPath, benchData)
+            writeJson(benchmarksPath, benchData)
         }
         summarizeSnapUpdate(originalArgs, update, previousValue)
     }

@@ -24,7 +24,7 @@ export const positionToString = (position: SourcePosition) =>
 
 export type ReAssertConfig = Required<ReAssertJson> & {
     updateSnapshots: boolean
-    benchFormat: BenchFormat
+    benchFormat: Required<BenchFormat>
     cacheDir: string
     assertionCacheFile: string
     snapCacheDir: string
@@ -56,7 +56,6 @@ const checkArgsForParam = (args: string[], param: `-${string}`) => {
 
 export const getFileKey = (path: string) => relative(".", path)
 
-// TODO: Improve this type
 export type Serialized<T> = T extends undefined | symbol | bigint | Function
     ? string
     : T extends number | string | boolean
@@ -94,9 +93,9 @@ export const literalSerialize = <T>(
 }
 
 const getArgsToCheck = () => {
-    if (process.env.RE_ASSERT_CMD) {
-        // If using @arktype/check runner, RE_ASSERT_CMD will be set to the original cmd.
-        return process.env.RE_ASSERT_CMD.split(" ")
+    if (process.env.ARKTYPE_CHECK_CMD) {
+        // If using @arktype/check runner, ARKTYPE_CHECK_CMD will be set to the original cmd.
+        return process.env.ARKTYPE_CHECK_CMD.split(" ")
     } else if (process.env.JEST_WORKER_ID) {
         // If we're in a jest worker process, check the parent process cmd args
         const parentCmd = getCmdFromPid(process.ppid)
@@ -122,14 +121,13 @@ const getFilter = (argsToCheck: string[]) => {
         checkArgsForParam(argsToCheck, "--filter") ||
         checkArgsForParam(argsToCheck, "-f")
     if (filter) {
-        // Removing logging until we only run this once per CLI invocation
         if (filter.startsWith("/")) {
-            // console.log(`Running benches at path '${filter}'...`)
+            console.log(`Running benches at path '${filter}'...`)
             return filter.split("/").slice(1)
         } else {
-            // console.log(
-            //     `Running benches including a segment named '${filter}'...`
-            // )
+            console.log(
+                `Running benches including a segment named '${filter}'...`
+            )
             return filter
         }
     }
@@ -167,7 +165,10 @@ export const getReAssertConfig = (): ReAssertConfig => {
         benchFormat: {
             noInline:
                 argsToCheck.includes("--no-inline") || noWrite || transient,
-            noExternal: argsToCheck.includes("--no-external") || noWrite
+            noExternal: argsToCheck.includes("--no-external") || noWrite,
+            path:
+                checkArgsForParam(argsToCheck, "--benchmarksPath") ||
+                join(process.cwd(), "benchmarks.json")
         },
         filter: getFilter(argsToCheck),
         tsconfig,

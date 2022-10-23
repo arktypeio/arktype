@@ -26,7 +26,7 @@ if (process.argv[reassertArgIndex + 1] === "bench") {
         try {
             shell(`npx ts-node ${path}`, {
                 env: {
-                    RE_ASSERT_CMD: process.argv
+                    ARKTYPE_CHECK_CMD: process.argv
                         .slice(reassertArgIndex + 1)
                         .join(" ")
                 }
@@ -81,7 +81,7 @@ try {
     const runnerStart = Date.now()
     shell(runTestsCmd, {
         stdio: "inherit",
-        env: { RE_ASSERT_CMD: reassertArgs.join(" ") }
+        env: { ARKTYPE_CHECK_CMD: reassertArgs.join(" ") }
     })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(

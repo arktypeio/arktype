@@ -16,7 +16,7 @@
         "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"
     ],
-    "mochaExplorer.env": { "RE_ASSERT_CMD": "--skipTypes" },
+    "mochaExplorer.env": { "ARKTYPE_CHECK_CMD": "--skipTypes" },
     "typescript.tsdk": "../../node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true
 }
