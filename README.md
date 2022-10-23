@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="../../arktype.io/static/img/logo.svg" height="64px" />
-  <h1>arktype</h1>
+  <img src="./meta/arktype.io/static/img/logo.svg" height="64px" />
+  <h1>ArkType</h1>
 </div>
 <div align="center">
 
@@ -8,21 +8,13 @@ Isomorphic type syntax for TS/JS
 
 </div>
 
-## What's an arktype? 🤷
-
-@arktype/io is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of TypeScript in your editor and build and a validator like Yup or JOI at runtime.
-
 ## Installation 📦
 
 `npm install arktype`
 
 (feel free to substitute `yarn`, `pnpm`, et al.)
 
-If you're using TypeScript, you'll need at least `4.5`.
-
-## Getting Started
-
-Modify any of these examples in our live editor to see the types and validation results change in realtime.
+If you're using TypeScript, you'll need at least `4.6`.
 
 ### Your first type (⏱️30s)
 
@@ -96,7 +88,7 @@ export const readPackageData = () => ({
 export const { problems: errors } = types.package.check(readPackageData())
 ```
 
-### Definitions that split ✂️
+### Declarations
 
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
@@ -161,7 +153,7 @@ export const groupDef = define.group({
 })
 ```
 
-### Validation that fits 🧩
+### Runtime syntax
 
 TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
 
