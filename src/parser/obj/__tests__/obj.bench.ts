@@ -1,4 +1,4 @@
-import { bench, suite } from "@arktype/assert"
+import { bench, suite } from "@arktype/check"
 import { type } from "../../../api.js"
 
 suite("parse/obj", () => {

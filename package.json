@@ -25,7 +25,7 @@
     "scripts": {
         "build": "pnpm build-scoped && pnpm build-arktype",
         "build-arktype": "ts-node ./scripts/build.ts",
-        "build-scoped": "pnpm -r --filter '!arktype.io' build",
+        "build-scoped": "pnpm -r --filter '!@arktype/io' build",
         "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
         "test": "c8 reassert --cmd mocha",
         "lint": "eslint --max-warnings=0 .",
@@ -49,7 +49,7 @@
         "@arktype/tools": "workspace:*"
     },
     "devDependencies": {
-        "@arktype/assert": "workspace:*",
+        "@arktype/check": "workspace:*",
         "@arktype/node": "workspace:*",
         "@changesets/cli": "2.25.0",
         "@swc/cli": "0.1.57",
@@ -85,5 +85,25 @@
                 "@algolia/client-search"
             ]
         }
+    },
+    "c8": {
+        "checkCoverage": true,
+        "lines": 98,
+        "src": "src",
+        "extension": ".ts",
+        "reporter": "lcovonly"
+    },
+    "prettier": {
+        "tabWidth": 4,
+        "semi": false,
+        "trailingComma": "none"
+    },
+    "mocha": {
+        "spec": "**/*.test.ts",
+        "ignore": "**/node_modules/*",
+        "node-option": [
+            "loader=ts-node/esm",
+            "no-warnings=ExperimentalWarning"
+        ]
     }
 }

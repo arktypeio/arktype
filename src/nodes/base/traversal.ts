@@ -5,6 +5,7 @@ import type { Config, KindName } from "./kinds.js"
 import { Problems } from "./problems.js"
 import { jsTypeOf, toString } from "@arktype/tools"
 
+// TODO: Try callback traversal?
 export class Traversal<Data = unknown> {
     // TODO: Is perf better if these don't get initialized?
     public problems = new Problems()

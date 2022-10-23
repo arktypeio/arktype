@@ -1,6 +1,6 @@
 import { platform } from "node:os"
 import { basename } from "node:path"
-import { assert } from "@arktype/assert"
+import { assert } from "@arktype/check"
 import { describe, test } from "mocha"
 import { caller, fileName, getCallStack } from "../index.js"
 import { callMeFromDir, callPipeSeperated } from "./fromDir/reflectedFromDir.js"

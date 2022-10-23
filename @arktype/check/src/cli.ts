@@ -10,7 +10,7 @@ const reassertArgIndex = process.argv.findIndex((arg) =>
 )
 if (reassertArgIndex === -1) {
     throw new Error(
-        `Unable to parse @arktype/assert CLI args '${process.argv.join(
+        `Unable to parse @arktype/check CLI args '${process.argv.join(
             " "
         )}' (expected to find a reference to ${fileName()}).`
     )
@@ -69,15 +69,15 @@ try {
             "✅ Skipping type assertions because --skipTypes was passed."
         )
     } else {
-        console.log(`⏳ @arktype/assert: Analyzing type assertions...`)
+        console.log(`⏳ @arktype/check: Analyzing type assertions...`)
         const cacheStart = Date.now()
         cacheAssertions({ forcePrecache: true })
         const cacheSeconds = (Date.now() - cacheStart) / 1000
         console.log(
-            `✅ @arktype/assert: Finished caching type assertions in ${cacheSeconds} seconds.\n`
+            `✅ @arktype/check: Finished caching type assertions in ${cacheSeconds} seconds.\n`
         )
     }
-    console.log(`⏳ @arktype/assert: Using ${testCmd} to run your tests...`)
+    console.log(`⏳ @arktype/check: Using ${testCmd} to run your tests...`)
     const runnerStart = Date.now()
     shell(runTestsCmd, {
         stdio: "inherit",
@@ -85,19 +85,19 @@ try {
     })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(
-        `✅ @arktype/assert: ${testCmd} completed in ${runnerSeconds} seconds.\n`
+        `✅ @arktype/check: ${testCmd} completed in ${runnerSeconds} seconds.\n`
     )
 } catch (error) {
     processError = error
 } finally {
     console.log(
-        `⏳ @arktype/assert: Updating inline snapshots and cleaning up cache...`
+        `⏳ @arktype/check: Updating inline snapshots and cleaning up cache...`
     )
     const cleanupStart = Date.now()
     cleanupAssertions()
     const cleanupSeconds = (Date.now() - cleanupStart) / 1000
     console.log(
-        `✅ @arktype/assert: Finished cleanup in ${cleanupSeconds} seconds.`
+        `✅ @arktype/check: Finished cleanup in ${cleanupSeconds} seconds.`
     )
 }
 if (processError) {

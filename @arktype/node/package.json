@@ -30,6 +30,6 @@
         "get-current-line": "6.6.0"
     },
     "devDependencies": {
-        "@arktype/assert": "link:../assert"
+        "@arktype/check": "link:../assert"
     }
 }

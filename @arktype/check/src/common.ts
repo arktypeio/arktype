@@ -95,7 +95,7 @@ export const literalSerialize = <T>(
 
 const getArgsToCheck = () => {
     if (process.env.RE_ASSERT_CMD) {
-        // If using @arktype/assert runner, RE_ASSERT_CMD will be set to the original cmd.
+        // If using @arktype/check runner, RE_ASSERT_CMD will be set to the original cmd.
         return process.env.RE_ASSERT_CMD.split(" ")
     } else if (process.env.JEST_WORKER_ID) {
         // If we're in a jest worker process, check the parent process cmd args

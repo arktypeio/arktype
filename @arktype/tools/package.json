@@ -28,6 +28,6 @@
         "testBuild": "ts-node ../../scripts/testBuild.ts"
     },
     "devDependencies": {
-        "@arktype/assert": "link:../assert"
+        "@arktype/check": "link:../assert"
     }
 }

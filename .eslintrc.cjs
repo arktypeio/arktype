@@ -47,10 +47,6 @@ module.exports = defineConfig({
         "@typescript-eslint/consistent-type-imports": "warn",
         "object-shorthand": ["warn"],
         /**
-         * Conventions
-         */
-        "import/no-default-export": "warn",
-        /**
          * Require the use of arrow functions where possible
          */
         "func-style": ["warn", "expression"],
@@ -139,21 +135,6 @@ module.exports = defineConfig({
             rules: {
                 // Assignment to a variable is required to ensure types are parsed
                 "@typescript-eslint/no-unused-vars": "off"
-            }
-        },
-        // Docusaurus requires pages export a default component
-        {
-            files: ["arktype.io/src/pages/*", "arktype.io/src/pages/*"],
-            rules: {
-                "import/no-default-export": "off"
-            }
-        },
-        // Components that are mostly just SVG data with some theme injections
-        {
-            files: ["arktype.io/**/svg/*.tsx", "arktype.io/**/svg/*.tsx"],
-            rules: {
-                "max-lines": "off",
-                "max-lines-per-function": "off"
             }
         }
     ]

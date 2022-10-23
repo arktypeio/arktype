@@ -1,5 +1,5 @@
 import { AssertionError } from "node:assert"
-import { assert } from "@arktype/assert"
+import { assert } from "@arktype/check"
 import { describe, test } from "mocha"
 import { isKeyOf, keySet } from "../index.js"
 

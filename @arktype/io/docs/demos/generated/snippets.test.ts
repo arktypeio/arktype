@@ -1,4 +1,4 @@
-export default `import { assert } from "@arktype/assert"
+export default `import { assert } from "@arktype/check"
 import { describe, test } from "mocha"
 
 describe("snippets", () => {

@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
 import { space, type } from "../api.js"
-import { assert } from "@arktype/assert"
+import { assert } from "@arktype/check"
 import { narrow } from "@arktype/tools"
 
 describe("space validation", () => {

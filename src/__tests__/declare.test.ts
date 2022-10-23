@@ -1,4 +1,4 @@
-// import { assert } from "@arktype/assert"
+// import { assert } from "@arktype/check"
 // import { describe, test } from "mocha"
 // import { declare } from "../../index.js"
 // import { unresolvableMessage } from "../../parser/str/operand/unenclosed.js"

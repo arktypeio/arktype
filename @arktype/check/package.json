@@ -1,5 +1,5 @@
 {
-    "name": "@arktype/assert",
+    "name": "@arktype/check",
     "version": "0.0.1",
     "description": "Seamless testing for types and code✅",
     "author": {
@@ -10,7 +10,7 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/arktypeio/arktype.git",
-        "directory": "@arktype/assert"
+        "directory": "@arktype/check"
     },
     "type": "module",
     "main": "./dist/cjs/index.js",

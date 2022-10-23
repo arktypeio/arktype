@@ -1,4 +1,4 @@
-import { assert } from "@arktype/assert"
+import { assert } from "@arktype/check"
 import { test } from "mocha"
 import type { UnionToTuple } from "../unionToTuple.js"
 

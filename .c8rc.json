@@ -1,8 +1,0 @@
-{
-    "checkCoverage": true,
-    "lines": 98,
-    "all": true,
-    "src": "src",
-    "extension": ".ts",
-    "reporter": "lcovonly"
-}
