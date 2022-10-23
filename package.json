@@ -23,8 +23,9 @@
         }
     },
     "scripts": {
-        "build": "ts-node ./scripts/build.ts",
-        "build-repo": "pnpm -r build",
+        "build": "pnpm build-scoped && pnpm build-arktype",
+        "build-arktype": "ts-node ./scripts/build.ts",
+        "build-scoped": "pnpm -r --filter '!arktype.io' build",
         "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
         "test": "c8 reassert --cmd mocha",
         "lint": "eslint --max-warnings=0 .",
