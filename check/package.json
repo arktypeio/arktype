@@ -1,7 +1,7 @@
 {
     "name": "@arktype/check",
     "version": "0.0.1",
-    "description": "Seamless testing for types and code✅",
+    "description": "Seamless testing for types and code",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
@@ -10,7 +10,7 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/arktypeio/arktype.git",
-        "directory": "@arktype/check"
+        "directory": "check"
     },
     "type": "module",
     "main": "./dist/cjs/index.js",
@@ -23,7 +23,7 @@
         }
     },
     "scripts": {
-        "build": "pnpm ts-node ../../scripts/build.ts",
+        "build": "pnpm ts-node ../meta/scripts/build.ts",
         "test": "pnpm ts-node ./src/cli.ts --cmd mocha",
         "reassert": "./cli.cjs"
     },

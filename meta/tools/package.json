@@ -10,7 +10,7 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/arktypeio/arktype.git",
-        "directory": "@arktype/tools"
+        "directory": "meta/tools"
     },
     "type": "module",
     "main": "./dist/cjs/index.js",
@@ -23,11 +23,11 @@
         }
     },
     "scripts": {
-        "build": "pnpm ts-node ../../scripts/build.ts",
+        "build": "pnpm ts-node ../scripts/build.ts",
         "test": "c8 reassert --cmd mocha",
-        "testBuild": "ts-node ../../scripts/testBuild.ts"
+        "testBuild": "ts-node ../scripts/testBuild.ts"
     },
     "devDependencies": {
-        "@arktype/check": "link:../assert"
+        "@arktype/check": "link:../../check"
     }
 }

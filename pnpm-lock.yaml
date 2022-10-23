@@ -134,9 +134,9 @@ importers:
 
     meta/tools:
         specifiers:
-            "@arktype/check": link:../assert
+            "@arktype/check": link:../../check
         devDependencies:
-            "@arktype/check": link:../assert
+            "@arktype/check": link:../../check
 
 packages:
     /@algolia/autocomplete-core/1.7.1:
