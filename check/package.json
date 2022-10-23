@@ -1,7 +1,7 @@
 {
     "name": "@arktype/check",
     "version": "0.0.1",
-    "description": "Seamless testing for types and code",
+    "description": "Assertion framework for isomorphic TS/JS",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
@@ -33,6 +33,7 @@
     "dependencies": {
         "@arktype/node": "workspace:*",
         "@arktype/tools": "workspace:*",
+        "arktype": "workspace:*",
         "ts-morph": "16.0.0",
         "source-map-js": "1.0.2",
         "convert-source-map": "1.8.0"

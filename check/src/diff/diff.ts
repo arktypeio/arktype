@@ -1,8 +1,8 @@
-import type { MutuallyExclusiveProps } from "../common.js"
-import { isRecursible } from "../common.js"
-import type { Merge } from "../merge.js"
-import type { Narrow } from "../narrow.js"
-import { narrow } from "../narrow.js"
+// import type { MutuallyExclusiveProps } from "../common.js"
+// import { isRecursible } from "../common.js"
+// import type { Merge } from "../merge.js"
+// import type { Narrow } from "../narrow.js"
+// import { narrow } from "../narrow.js"
 import { diffPermutables } from "./permutables.js"
 import { diffSets } from "./sets.js"
 import type { SetChange } from "./unordered.js"
@@ -14,11 +14,11 @@ export type DiffOptions = {
     listComparison?: ListComparisonMode
 }
 
-export const defaultDiffOptions = narrow({
+export const defaultDiffOptions = {
     baseKey: "base",
     compareKey: "compare",
     listComparison: "ordered"
-})
+} as const
 
 type DefaultDiffOptions = typeof defaultDiffOptions
 

@@ -1,9 +1,5 @@
 import { join, relative } from "node:path"
-import {
-    findPackageRoot,
-    readPackageJson,
-    walkPaths
-} from "./node/src/index.js"
+import { findPackageRoot, readPackageJson, walkPaths } from "./node/index.js"
 
 const root = findPackageRoot()
 const metaDir = join(root, "meta")

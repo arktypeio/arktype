@@ -9,7 +9,7 @@ import {
     shell,
     writeFile,
     writeJson
-} from "../node/src/index.js"
+} from "../node/index.js"
 
 const suffixedPackageEntries: [rootDir: string, suffix: string][] = []
 

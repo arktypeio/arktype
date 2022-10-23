@@ -1,25 +1,6 @@
 # Contributing
 
-Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the ArkType repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible.
-
-We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@arktype.io 😻
-
-## Code of Conduct
-
-ArkType has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
-Please read [the full text](/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
-
-## Your first Pull Request
-
-Working on your first Pull Request? You can learn how from this free video series:
-
-[How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github)
-
-To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/arktypeio/arktype/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
-
-If you decide to fix an issue, please be sure to check the comment thread in case somebody is already working on a fix. If nobody is working on it at the moment, please leave a comment stating that you have started to work on it so other people don’t accidentally duplicate your effort.
-
-If somebody claims an issue but doesn’t follow up for more than a week, it’s fine to take it over but you should still leave a comment.
+ArkType values the time of its users and contributors as much as its maintainers, so our goal is for the process to be as efficient and straightforward as possible. Whether this is your first pull request or you're a seasoned open source contributor, this guide is the perfect place to start. If you have any other questions, please don't hesitate to [create an issue on GitHub](https://github.com/arktypeio/arktype/issues/new) or reach out [on our Discord](https://discord.gg/WSNF3Kc4xh).
 
 ## Sending a Pull Request
 
@@ -57,13 +38,6 @@ pnpm i # install package.json dependencies across all packages
 pnpm build # builds all packages
 ```
 
-We use a pnpm workspace to manage our packages. The most important things to keep in mind are:
-
--   The `package.json` at the repo root contains devDependencies which are not directly imported (like `typescript`, `eslint`, etc.) and scripts that operate on the workspace as a whole (like `build`, which sequentially builds each package in the repo).
--   Each package has its own `package.json`. These are used the usual way: to manage dependencies directly imported by the code, and to define scripts that run within the scope of that package (those scripts are sometimes called from scripts at the monorepo root).
-
-Take a look at [their documentation](https://pnpm.io/workspaces) if you are confused about the way packages are linked together or need to learn more.
-
 5. Create a new topic branch:
 
 ```sh
@@ -100,17 +74,16 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 ## Packages
 
-We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
-
--   [@arktype/io](@arktype/io): Beautiful types from IDE to runtime 🧬
--   [@arktype/check](@arktype/check): Seamless testing for types and code ✅
--   [@arktype/tools](@arktype/tools): Lightweight utilities and types shared across ArkType packages 🧰
--   [@arktype/node](@arktype/node): Node-based utilities, scripts, and configs for ArkType packages ⚙️
--   [arktype.io](./arktype.io): Source code for [arktype.io](https://arktype.io) 🔁
+We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages.
 
 ## Project
 
 Our current and planned work can always be found [here](https://github.com/arktypeio/arktype/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+
+## Code of Conduct
+
+ArkType has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
+Please read [the full text](/meta/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
 ## License
 

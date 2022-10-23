@@ -6,7 +6,7 @@ import {
     shell,
     walkPaths,
     writeFile
-} from "../node/src/index.js"
+} from "../node/index.js"
 
 const repoRoot = fromPackageRoot()
 const packageNames = ["assert", "node", "tools", "type"]

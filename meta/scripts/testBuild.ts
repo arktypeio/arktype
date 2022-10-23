@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { getPackageDataFromCwd } from "../common.js"
-import { shell } from "../node/src/index.js"
+import { shell } from "../node/index.js"
 
 export const testBuild = (outDir: string) =>
     shell(

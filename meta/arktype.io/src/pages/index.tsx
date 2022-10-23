@@ -2,10 +2,10 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
-import { StackBlitzDemo } from "../../docs/demos"
-import { getTheme } from "../components"
+import { StackBlitzDemo } from "../../docs/demos/index"
 import { Ark } from "../components/ark"
 import { Features } from "../components/features"
+import { getTheme } from "../components/index"
 import { LogoCloud } from "../components/logoCloud"
 
 const Contents = () => {

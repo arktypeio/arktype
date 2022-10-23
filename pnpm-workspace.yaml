@@ -2,5 +2,3 @@ packages:
     - "."
     - "check"
     - "meta/arktype.io"
-    - "meta/node"
-    - "meta/tools"
