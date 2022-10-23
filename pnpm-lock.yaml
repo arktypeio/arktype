@@ -4,8 +4,9 @@ importers:
 
   .:
     specifiers:
-      '@arktype/assert': link:./@arktype/assert
-      '@arktype/node': link:./@arktype/node
+      '@arktype/assert': workspace:*
+      '@arktype/node': workspace:*
+      '@arktype/tools': workspace:*
       '@changesets/cli': 2.25.0
       '@swc/cli': 0.1.57
       '@swc/core': 1.3.9
@@ -22,6 +23,7 @@ importers:
       eslint-plugin-only-warn: 1.0.3
       eslint-plugin-prefer-arrow: 1.2.3
       eslint-plugin-unicorn: 44.0.2
+      fast-check: 3.2.0
       husky: 8.0.1
       mocha: 10.1.0
       prettier: 2.7.1
@@ -30,6 +32,8 @@ importers:
       ts-morph: 16.0.0
       ts-node: 10.9.1
       typescript: 4.9.1-beta
+    dependencies:
+      '@arktype/tools': link:@arktype/tools
     devDependencies:
       '@arktype/assert': link:@arktype/assert
       '@arktype/node': link:@arktype/node
@@ -49,6 +53,7 @@ importers:
       eslint-plugin-only-warn: 1.0.3
       eslint-plugin-prefer-arrow: 1.2.3
       eslint-plugin-unicorn: 44.0.2_eslint@8.25.0
+      fast-check: 3.2.0
       husky: 8.0.1
       mocha: 10.1.0
       prettier: 2.7.1
@@ -71,19 +76,6 @@ importers:
       convert-source-map: 1.8.0
       source-map-js: 1.0.2
       ts-morph: 16.0.0
-
-  '@arktype/io':
-    specifiers:
-      '@arktype/assert': workspace:*
-      '@arktype/node': workspace:*
-      '@arktype/tools': workspace:*
-      fast-check: 3.2.0
-    dependencies:
-      '@arktype/tools': link:../tools
-    devDependencies:
-      '@arktype/assert': link:../assert
-      '@arktype/node': link:../node
-      fast-check: 3.2.0
 
   '@arktype/node':
     specifiers:

@@ -1,27 +1,55 @@
 {
-    "name": "@arktype/repo",
-    "private": true,
+    "name": "arktype",
     "packageManager": "pnpm@7.13.5",
     "type": "module",
+    "version": "0.0.1",
+    "description": "Isomorphic type syntax for TS/JS",
+    "author": {
+        "name": "David Blass",
+        "email": "david@arktype.io",
+        "url": "https://arktype.io"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/arktypeio/arktype.git"
+    },
+    "main": "./dist/cjs/api.js",
+    "types": "./dist/types/api.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/types/api.d.ts",
+            "import": "./dist/mjs/api.js",
+            "require": "./dist/cjs/api.js"
+        }
+    },
     "scripts": {
-        "build": "pnpm --filter '@arktype/*' build",
+        "build": "ts-node ./scripts/build.ts",
+        "build-repo": "pnpm -r build",
         "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
-        "test": "pnpm -r test && pnpm -r testBuild && pnpm test-repo-scripts",
+        "test": "c8 reassert --cmd mocha",
         "lint": "eslint --max-warnings=0 .",
         "build-pages": "pnpm --filter 'arktype.io' build",
         "docgen": "ts-node ./scripts/docgen.ts && pnpm build-pages",
-        "test-repo-scripts": "ts-node ./scripts/testScripts.ts",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
         "unused": "ts-node ./scripts/runUnusedExports.ts",
         "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-pages",
-        "ci:publish": "ts-node ./scripts/publish.ts"
+        "ci:publish": "ts-node ./scripts/publish.ts",
+        "typecheck": "tsc --noEmit",
+        "tnt": "reassert --skipTypes --cmd mocha",
+        "testBuild": "ts-node ./scripts/testBuild.ts",
+        "bench": "reassert bench",
+        "generateBenchData": "ts-node ./src/__tests__/generateBenchData.ts",
+        "diag": "tsc --composite false --noEmit --diagnostics --incremental false"
+    },
+    "dependencies": {
+        "@arktype/tools": "workspace:*"
     },
     "devDependencies": {
-        "@arktype/assert": "link:./@arktype/assert",
-        "@arktype/node": "link:./@arktype/node",
+        "@arktype/assert": "workspace:*",
+        "@arktype/node": "workspace:*",
         "@changesets/cli": "2.25.0",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.3.9",
@@ -45,7 +73,8 @@
         "ts-node": "10.9.1",
         "typescript": "4.9.1-beta",
         "mocha": "10.1.0",
-        "@types/mocha": "10.0.0"
+        "@types/mocha": "10.0.0",
+        "fast-check": "3.2.0"
     },
     "pnpm": {
         "peerDependencyRules": {

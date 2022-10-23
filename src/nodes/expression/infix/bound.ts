@@ -1,7 +1,7 @@
-import { keySet } from "@arktype/tools"
 import { InternalArktypeError } from "../../../internal.js"
 import type { Base } from "../../base/base.js"
 import { Infix } from "./infix.js"
+import { keySet } from "@arktype/tools"
 
 export namespace Bound {
     export const tokens = Infix.comparators
@@ -58,7 +58,7 @@ export namespace Bound {
         }
     }
 
-    export class LeftNode extends Infix.Node implements Base.ProblemSource {
+    export class LeftNode extends Infix.Node {
         readonly kind = "leftBound"
 
         constructor(

@@ -1,5 +1,5 @@
-import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
 import type { Node } from "./node.js"
+import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
 
 export type BaseProblemConfig = {
     omitActual?: boolean
@@ -88,13 +88,11 @@ export type Problem = {
     reason: string
 }
 
-export class ProblemIntersection implements Problem {
+export class ProblemIntersection {
     constructor(public path: string, public reasons: string[]) {}
 
     get defaultMessage() {
-        return (
-            "• " + this.problems.map((problem) => problem.message).join("\n• ")
-        )
+        return "• " + this.reasons.join("\n• ")
     }
 }
 
@@ -111,25 +109,26 @@ export class Problems extends Array<Problem> {
     byPath: Record<string, Problem> = {}
 
     addIfUnique(path: string, reason: string) {
-        if (path in this.byPath) {
-            this.byPath[path].addIfUnique(reason)
-        } else {
-            this.byPath[path] = new Problem(path, [reason])
-            this.push(this.byPath[path])
-        }
+        // if (path in this.byPath) {
+        //     this.byPath[path].addIfUnique(reason)
+        // } else {
+        //     this.byPath[path] = new Problem(path, [reason])
+        //     this.push(this.byPath[path])
+        // }
     }
 
     get summary() {
-        if (this.length === 1) {
-            const error = this[0]
-            if (error.path !== "") {
-                return `${error.path} ${uncapitalize(error.message)}`
-            }
-            return error.message
-        }
-        return this.map(
-            (problem) => `${problem.path}: ${problem.message}`
-        ).join("\n")
+        return ""
+        // if (this.length === 1) {
+        //     const error = this[0]
+        //     if (error.path !== "") {
+        //         return `${error.path} ${uncapitalize(error.message)}`
+        //     }
+        //     return error.message
+        // }
+        // return this.map(
+        //     (problem) => `${problem.path}: ${problem.message}`
+        // ).join("\n")
     }
 
     throw(): never {

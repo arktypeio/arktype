@@ -12,6 +12,8 @@ import {
     writeJson
 } from "@arktype/node"
 
+// TODO: Fix
+
 const suffixes = {
     type: "alpha"
 }

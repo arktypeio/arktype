@@ -1,5 +1,3 @@
-import type { Dictionary } from "@arktype/tools"
-import { chainableNoOpProxy } from "@arktype/tools"
 import type { LazyDynamicWrap } from "./internal.js"
 import { lazyDynamicWrap } from "./internal.js"
 import type { inferAst } from "./nodes/ast/infer.js"
@@ -11,6 +9,7 @@ import { Scope } from "./nodes/expression/infix/scope.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
+import { chainableNoOpProxy } from "@arktype/tools"
 
 const emptyAliases = { aliases: {} }
 const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {

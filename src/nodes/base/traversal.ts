@@ -1,9 +1,9 @@
-import { jsTypeOf, toString } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { ArktypeSpace } from "../../space.js"
 import type { Scope } from "../expression/infix/scope.js"
 import type { Config, KindName } from "./kinds.js"
 import { Problems } from "./problems.js"
+import { jsTypeOf, toString } from "@arktype/tools"
 
 export class Traversal<Data = unknown> {
     // TODO: Is perf better if these don't get initialized?
@@ -41,7 +41,8 @@ export class Traversal<Data = unknown> {
         ;(this.data as any) = this.traversalStack.pop()!
     }
 
-    addProblem(reason: string) {
+    // TODO: Fix
+    addProblem(reason: any) {
         this.problems.addIfUnique(this.path, reason)
     }
 

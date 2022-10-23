@@ -1,5 +1,3 @@
-import type { Dictionary, Evaluate } from "@arktype/tools"
-import { chainableNoOpProxy } from "@arktype/tools"
 import type { LazyDynamicWrap } from "./internal.js"
 import { lazyDynamicWrap } from "./internal.js"
 import type { inferAst } from "./nodes/ast/infer.js"
@@ -8,6 +6,8 @@ import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type { ArktypeConfig } from "./type.js"
 import { Arktype } from "./type.js"
+import { chainableNoOpProxy } from "@arktype/tools"
+import type { Dictionary, Evaluate } from "@arktype/tools"
 
 const rawSpace = (aliases: Dictionary, config: ArktypeConfig = {}) => {
     const result: ArktypeSpace = {
