@@ -2,8 +2,8 @@ import { existsSync, statSync } from "node:fs"
 import { basename, join } from "node:path"
 import { stdout } from "node:process"
 import { Project } from "ts-morph"
-import { shell } from "../../node/src/index.js"
 import { repoDirs } from "../common.js"
+import { shell } from "../node/src/index.js"
 import { extractApi } from "./api/extractApi.js"
 import { writeApi } from "./api/writeApi.js"
 import { mapDir } from "./mapDir.js"
@@ -132,7 +132,7 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
                 statSync(path).isFile() &&
                 // Avoid conflicts between snip matching and the source
                 // code defining those matchers
-                !path.startsWith(join("scripts", "docgen"))
+                !path.startsWith(join("meta", "docgen"))
         )
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)

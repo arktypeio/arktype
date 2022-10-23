@@ -3,7 +3,7 @@ import {
     findPackageRoot,
     readPackageJson,
     walkPaths
-} from "../node/src/index.js"
+} from "./node/src/index.js"
 
 const root = findPackageRoot()
 const metaDir = join(root, "meta")

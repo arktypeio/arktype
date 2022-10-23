@@ -11,6 +11,7 @@
         "@typescript-eslint/consistent-type-imports",
         "object-shorthand"
     ],
+    "prettier.ignorePath": "meta/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"

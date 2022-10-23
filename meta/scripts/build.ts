@@ -1,13 +1,13 @@
 import { existsSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
+import { getPackageDataFromCwd, isProd } from "../common.js"
 import {
     readJson,
     requireResolve,
     shell,
     writeJson
 } from "../node/src/index.js"
-import { getPackageDataFromCwd, isProd } from "./common.js"
 
 const {
     cjsOut,

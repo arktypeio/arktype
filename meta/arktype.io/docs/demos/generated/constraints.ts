@@ -1,4 +1,4 @@
-export default `import { type } from "@arktype/io"
+export default `import { type } from "arktype"
 
 export const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type.
@@ -23,8 +23,8 @@ export const queryEmployee = () => ({
 })
 
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { problems: errors } = employee.check(queryEmployee())
+export const { problems } = employee.check(queryEmployee())
 
 // TODO: Add error message.
-console.log(errors?.summary ?? "Flawless. Obviously.")
+console.log(problems?.summary ?? "Flawless. Obviously.")
 `

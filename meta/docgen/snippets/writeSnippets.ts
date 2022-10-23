@@ -4,7 +4,7 @@ import {
     readJson,
     shell,
     writeFile
-} from "../../../node/src/index.js"
+} from "../../node/src/index.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 

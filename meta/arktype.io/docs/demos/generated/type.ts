@@ -1,4 +1,4 @@
-export default `import { type } from "@arktype/io"
+export default `import { type } from "arktype"
 
 // Define a type...
 export const user = type({
@@ -20,10 +20,10 @@ export const fetchUser = () => ({
 })
 
 // Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { problems: errors, data } = user.check(fetchUser())
+export const { problems, data } = user.check(fetchUser())
 
-if (errors) {
+if (problems) {
     // TODO: Add actual error
-    console.log(errors.summary)
+    console.log(problems.summary)
 }
 `

@@ -21,7 +21,7 @@ If you're using TypeScript, you'll need at least `4.6`.
 [Try it out.](https://arktype.io/type/intro#start-quick-%EF%B8%8F)
 
 ```ts @blockFrom:src/__snippets__/type.ts
-import { type } from "@arktype/io"
+import { type } from "arktype"
 
 // Define a type...
 export const user = type({
@@ -43,11 +43,11 @@ export const fetchUser = () => ({
 })
 
 // Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { problems: errors, data } = user.check(fetchUser())
+export const { problems, data } = user.check(fetchUser())
 
-if (errors) {
+if (problems) {
     // TODO: Add actual error
-    console.log(errors.summary)
+    console.log(problems.summary)
 }
 ```
 
@@ -56,7 +56,7 @@ if (errors) {
 [Try it out.](https://arktype.io/type/spaces)
 
 ```ts @blockFrom:src/__snippets__/space.ts
-import { space } from "@arktype/io"
+import { space } from "arktype"
 
 // Spaces are collections of types that can reference each other.
 export const types = space({
@@ -79,13 +79,13 @@ export type Package = typeof types.package.infer
 export const readPackageData = () => ({
     name: "@arktype/io",
     dependencies: [{ name: "@arktype/tools", dependencies: [] }],
-    contributors: [{ email: "david@araktypeio" }]
+    contributors: [{ email: "david@sharktypeio" }]
 })
 
 // `Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
-//   contributors/0/email: "david@araktypeio" is not assignable to email.`
-export const { problems: errors } = types.package.check(readPackageData())
+//   contributors/0/email: "david@sharktypeio" is not assignable to email.`
+export const { problems } = types.package.check(readPackageData())
 ```
 
 ### Declarations
@@ -97,7 +97,7 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 `names.ts`
 
 ```ts @blockFrom:src/__snippets__/declaration/names.ts
-import { declare } from "@arktype/io"
+import { declare } from "arktype"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
@@ -160,7 +160,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 [**Constraints** have you covered.](https://arktype.io/type/constraints)
 
 ```ts @blockFrom:src/__snippets__/constraints.ts
-import { type } from "@arktype/io"
+import { type } from "arktype"
 
 export const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type.
@@ -185,10 +185,10 @@ export const queryEmployee = () => ({
 })
 
 // The error messages are so nice you might be tempted to break your code more often ;)
-export const { problems: errors } = employee.check(queryEmployee())
+export const { problems } = employee.check(queryEmployee())
 
 // TODO: Add error message.
-console.log(errors?.summary ?? "Flawless. Obviously.")
+console.log(problems?.summary ?? "Flawless. Obviously.")
 ```
 
 ## Syntax

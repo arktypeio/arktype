@@ -9,5 +9,5 @@
 ## text
 
 ```ts
-space: SpaceFn
+space: LazyDynamicWrap<InferredSpaceFn, DynamicSpaceFn>
 ```
