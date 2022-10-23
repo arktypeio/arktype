@@ -44,10 +44,10 @@ pnpm build # builds all packages
 git checkout -b my-topic-branch
 ```
 
-6. Once you've made the changes you want to and added corresponding unit tests, run the `pr-checks` command in the project root and address any problems:
+6. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:
 
 ```sh
-pnpm pr-checks
+pnpm prChecks
 ```
 
 You can also run any of the commands individually:
@@ -57,7 +57,7 @@ pnpm install
 pnpm build
 pnpm lint
 pnpm test
-pnpm build-docs
+pnpm buildDocs
 ```
 
 All of these command will run as part of our CI process and must succeed in order for us to accept your Pull Request.

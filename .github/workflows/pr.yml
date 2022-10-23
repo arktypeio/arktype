@@ -28,7 +28,7 @@ jobs:
               run: pnpm test
 
             - name: Website
-              run: pnpm build-docs
+              run: pnpm buildDocs
 
     compatibility:
         needs: core
@@ -58,7 +58,7 @@ jobs:
             - name: Test
               run: pnpm test
 
-    pr-checks:
+    prChecks:
         needs: compatibility
         timeout-minutes: 1
         runs-on: ubuntu-latest
