@@ -1,3 +1,6 @@
 packages:
     - "."
-    - "@arktype/*"
+    - "check"
+    - "meta/arktype.io"
+    - "meta/node"
+    - "meta/tools"

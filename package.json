@@ -33,7 +33,7 @@
         "docgen": "ts-node ./scripts/docgen.ts && pnpm build-pages",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
-        "prepare": "husky install",
+        "prepare": "husky install meta/configs/.husky",
         "pre-commit": "pretty-quick --staged",
         "unused": "ts-node ./scripts/runUnusedExports.ts",
         "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-pages",
@@ -105,5 +105,8 @@
             "loader=ts-node/esm",
             "no-warnings=ExperimentalWarning"
         ]
+    },
+    "eslintConfig": {
+        "extends": "./meta/configs/.eslintrc.cjs"
     }
 }
