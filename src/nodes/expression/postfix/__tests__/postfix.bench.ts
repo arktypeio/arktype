@@ -1,5 +1,5 @@
+import { bench, suite } from "@arktype/test"
 import { type } from "../../../../api.js"
-import { bench, suite } from "#testing"
 
 suite("unary", () => {
     suite("optional", () => {

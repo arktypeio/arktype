@@ -17,9 +17,6 @@ jobs:
             - name: Setup repo
               uses: ./.github/actions/setup
 
-            - name: Build and publish arktype.io
-              run: pnpm buildDocs
-
             - name: Deploy to GitHub Pages
               uses: peaceiris/actions-gh-pages@v3
               with:

@@ -1,6 +1,7 @@
 import { existsSync, statSync } from "node:fs"
-import { basename, join } from "node:path"
+import { basename, join, relative } from "node:path"
 import { stdout } from "node:process"
+import { dirName, shell } from "@arktype/runtime"
 import { Project } from "ts-morph"
 import { repoDirs } from "../common.js"
 import { extractApi } from "./api/extractApi.js"
@@ -12,7 +13,6 @@ import type {
 } from "./snippets/extractSnippets.js"
 import { extractSnippets } from "./snippets/extractSnippets.js"
 import { updateSnippetReferences } from "./snippets/writeSnippets.js"
-import { shell } from "#runtime"
 
 export type DocGenConfig = {
     apis: DocGenApiConfig[]
@@ -116,7 +116,7 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
                 statSync(path).isFile() &&
                 // Avoid conflicts between snip matching and the source
                 // code defining those matchers
-                !path.startsWith(join("meta", "docgen"))
+                !path.startsWith(relative(repoDirs.root, dirName()))
         )
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)

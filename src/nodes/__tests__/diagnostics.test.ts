@@ -1,6 +1,6 @@
+import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../api.js"
-import { assert } from "#testing"
 
 describe("diagnostics", () => {
     // TODO: Reenable
@@ -13,6 +13,6 @@ describe("diagnostics", () => {
     //             }
     //         }
     //     })
-    //     assert(myNumber.check(0).errors?.summary).equals("0 not >3")
+    //     attest(myNumber.check(0).errors?.summary).equals("0 not >3")
     // })
 })

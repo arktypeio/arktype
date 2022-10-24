@@ -1,4 +1,4 @@
-// import { assert } from "#testing"
+// import { attest } from "@arktype/test"
 // import { describe, test } from "mocha"
 // import { space, type } from "../api.js"
 
@@ -25,8 +25,8 @@
 //                 narrow: palindromeValidator
 //             }
 //         )
-//         assert(palindrome.check("step on no pets").errors).equals(undefined)
-//         assert(palindrome.check("step on your cat").errors?.summary).equals(
+//         attest(palindrome.check("step on no pets").errors).equals(undefined)
+//         attest(palindrome.check("step on your cat").errors?.summary).equals(
 //             `step on your cat is not a palindrome!`
 //         )
 //     })
@@ -37,8 +37,8 @@
 //     //             narrow: palindromeValidator
 //     //         })
 //     //     })
-//     //     assert(mySpace.palindrome.check("redivider").errors).is(undefined)
-//     //     assert(mySpace.palindrome.check("predivider").errors?.summary).is(
+//     //     attest(mySpace.palindrome.check("redivider").errors).is(undefined)
+//     //     attest(mySpace.palindrome.check("predivider").errors?.summary).is(
 //     //         `predivider is not a palindrome!`
 //     //     )
 //     // })
@@ -49,8 +49,8 @@
 //     //         }),
 //     //         yourPal: { name: "palindrome" }
 //     //     })
-//     //     assert(mySpace.yourPal.check({ name: "bob" }).errors).is(undefined)
-//     //     assert(mySpace.yourPal.check({ name: "rob" }).errors?.summary).snap(
+//     //     attest(mySpace.yourPal.check({ name: "bob" }).errors).is(undefined)
+//     //     attest(mySpace.yourPal.check({ name: "rob" }).errors?.summary).snap(
 //     //         `name rob is not a palindrome!`
 //     //     )
 //     // })

@@ -1,4 +1,4 @@
-// import { assert } from "#testing"
+// import { attest } from "@arktype/test"
 // import { describe, test } from "mocha"
 // import { space } from "../../index.js"
 // import { shallowCycleMessage } from "../../space/parse.js"
@@ -9,10 +9,10 @@
 //         // TODO: Reenable
 //         try {
 //             // @ts-expect-error
-//             assert(() => space({ a: "a" })).throwsAndHasTypeError(
+//             attest(() => space({ a: "a" })).throwsAndHasTypeError(
 //                 shallowCycleMessage(["a", "a"])
 //             )
-//             assert(() =>
+//             attest(() =>
 //                 // @ts-expect-error
 //                 space({ a: "b", b: "c", c: "a|b|c" })
 //             ).throwsAndHasTypeError(shallowCycleMessage(["a", "b", "c", "a"]))

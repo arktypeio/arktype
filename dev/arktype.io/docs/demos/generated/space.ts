@@ -4,8 +4,9 @@ export default `import { space } from "arktype"
 export const types = space({
     package: {
         name: "string",
-        dependencies: "package[]",
-        contributors: "contributor[]"
+        dependencies: "package[]?",
+        devDependencies: "package[]?",
+        contributors: "contributor[]?"
     },
     contributor: {
         // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
@@ -18,12 +19,20 @@ export const types = space({
 export type Package = typeof types.package.infer
 
 // And can validate cyclic data.
-export const readPackageData = () => ({
-    name: "@arktype/io",
-    dependencies: [{ name: "@arktype/tools", dependencies: [] }],
-    contributors: [{ email: "david@sharktypeio" }]
-})
+export const readPackageData = () => {
+    const arktypePackageData = {
+        name: "arktype",
+        dependencies: [],
+        devDependencies: [
+            { name: "@arktype/test", dependencies: [] as Package[] }
+        ],
+        contributors: [{ email: "david@sharktypeio" }]
+    }
+    arktypePackageData.devDependencies[0].dependencies.push(arktypePackageData)
+    return arktypePackageData
+}
 
+// TODO: Update
 // \`Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
 //   contributors/0/email: "david@sharktypeio" is not assignable to email.\`

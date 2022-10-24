@@ -1,11 +1,11 @@
-// import { assert } from "#testing"
+// import { attest } from "@arktype/test"
 // import { describe, test } from "mocha"
 // import { space } from "../../index.js"
 
 // describe("extend space", () => {
 //     test("type", () => {
 //         const extended = getExtendedSpace()
-//         assert(extended.$.infer).typed as {
+//         attest(extended.$.infer).typed as {
 //             user: {
 //                 first: string
 //                 last: string
@@ -32,7 +32,7 @@
 //     })
 //     test("dictionary", () => {
 //         const extended = getExtendedSpace()
-//         assert(extended.$.definitions).snap({
+//         attest(extended.$.definitions).snap({
 //             user: { first: `string`, last: `string` },
 //             group: {
 //                 // @ts-expect-error (values returned from define() don't match their declared types by design)
@@ -56,7 +56,7 @@
 //     })
 //     test("options", () => {
 //         const extended = getExtendedSpace()
-//         assert(extended.$.options).snap({
+//         attest(extended.$.options).snap({
 //             parse: {
 //                 onCycle: "boolean"
 //             },

@@ -1,9 +1,9 @@
+import { findPackageRoot, readPackageJson } from "@arktype/runtime"
 import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import type { PackageMetadata } from "../api/extractApi.js"
 import { config } from "../main.js"
 import type { SnippetTransformToggles } from "./extractSnippets.js"
-import { findPackageRoot, readPackageJson } from "#runtime"
 
 export type ExtractFileSnippetContext = {
     packageMetadata: PackageMetadata

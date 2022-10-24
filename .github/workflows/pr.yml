@@ -25,10 +25,7 @@ jobs:
               run: pnpm lint
 
             - name: Test
-              run: pnpm test
-
-            - name: Website
-              run: pnpm buildDocs
+              run: pnpm testRepo
 
     compatibility:
         needs: core
@@ -56,7 +53,7 @@ jobs:
                   node: ${{ matrix.node }}
 
             - name: Test
-              run: pnpm test
+              run: pnpm testRepo
 
     prChecks:
         needs: compatibility

@@ -1,20 +1,20 @@
+import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
-import { assert } from "#testing"
 
 describe("optional node", () => {
     test("infer", () => {
-        assert(type("string?").infer).typed as string | undefined
+        attest(type("string?").infer).typed as string | undefined
     })
     describe("check", () => {
         test("preserves original type", () => {
-            assert(type("false?").check(false).problems).is(undefined)
+            attest(type("false?").check(false).problems).is(undefined)
         })
         test("allows undefined", () => {
-            assert(type("false?").check(undefined).problems).is(undefined)
+            attest(type("false?").check(undefined).problems).is(undefined)
         })
         test("allows omission of key", () => {
-            assert(
+            attest(
                 type({
                     required: "string",
                     optional: "string?"
@@ -23,7 +23,7 @@ describe("optional node", () => {
         })
         describe("errors", () => {
             test("bad inner type", () => {
-                assert(type("true?").check(false).problems?.summary).snap(
+                attest(type("true?").check(false).problems?.summary).snap(
                     `Must be true (was false)`
                 )
             })

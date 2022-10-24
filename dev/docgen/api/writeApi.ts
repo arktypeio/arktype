@@ -1,12 +1,12 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
+import { ensureDir, shell, writeFile } from "@arktype/runtime"
 import type { DocGenApiConfig } from "../main.js"
 import type {
     ApiEntryPoint,
     ExportData,
     PackageExtractionData
 } from "./extractApi.js"
-import { ensureDir, shell, writeFile } from "#runtime"
 
 export const writeApi = (
     apiConfig: DocGenApiConfig,

@@ -1,8 +1,13 @@
 import { existsSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
-import { getPackageDataFromCwd, isProd } from "../common.js"
-import { readJson, requireResolve, shell, writeJson } from "#runtime"
+import { getPackageDataFromCwd, isProd, repoDirs } from "../common.js"
+import {
+    readJson,
+    requireResolve,
+    shell,
+    writeJson
+} from "../runtime/src/api.js"
 
 const {
     cjsOut,
@@ -29,10 +34,10 @@ export const arktypeTsc = (config: ArktypeTscConfig) => {
 
 export const buildTypes = () => {
     stdout.write("⏳ Building types...".padEnd(successMessage.length))
-    if (!existsSync(tsConfig)) {
-        throw new Error(`Expected config at '${tsConfig}' did not exist.`)
-    }
-    const config = readJson(tsConfig)
+    const config = existsSync(tsConfig)
+        ? readJson(tsConfig)
+        : readJson(join(repoDirs.root, "tsconfig.json"))
+    config.files = inFiles
     const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
     writeJson(tempTsConfig, config)
     try {

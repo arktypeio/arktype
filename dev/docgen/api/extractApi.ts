@@ -1,4 +1,5 @@
 import { join } from "node:path"
+import { readPackageJson } from "@arktype/runtime"
 import type {
     ExportedDeclarations,
     JSDoc,
@@ -8,7 +9,6 @@ import type {
 } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
-import { readPackageJson } from "#runtime"
 
 export type ApiEntryPoint = {
     subpath: string
@@ -59,15 +59,17 @@ export const extractEntryPoints = ({
     rootDir
 }: ExtractPackageApiContext): ApiEntryPoint[] => {
     const entryPoints = getEntryPointsToRelativeDtsPaths(packageJson)
-    return entryPoints.map(([subpath, relativeDtsPath]) => {
-        const entryPointDts = project.addSourceFileAtPath(
-            join(rootDir, relativeDtsPath)
-        )
-        return {
-            subpath,
-            exports: extractExportsFromDts(entryPointDts)
-        }
-    })
+    return entryPoints
+        .filter(([subpath]) => !subpath.includes("internal"))
+        .map(([subpath, relativeDtsPath]) => {
+            const entryPointDts = project.addSourceFileAtPath(
+                join(rootDir, relativeDtsPath)
+            )
+            return {
+                subpath,
+                exports: extractExportsFromDts(entryPointDts)
+            }
+        })
 }
 
 export type ExportData = {

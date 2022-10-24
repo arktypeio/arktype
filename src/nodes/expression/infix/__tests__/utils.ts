@@ -1,10 +1,10 @@
+import { attest } from "@arktype/test"
 import * as fc from "fast-check"
 import type { Arktype } from "../../../../type.js"
 import { Keyword } from "../../../terminal/keyword/keyword.js"
 import { NumericKeyword } from "../../../terminal/keyword/numeric.js"
 import { RegexKeyword } from "../../../terminal/keyword/regex.js"
 import { Bound } from "../bound.js"
-import { assert } from "#testing"
 
 const keysOf = (o: object) => Object.keys(o)
 
@@ -60,7 +60,7 @@ const assertCheckResult = (
     data: number
 ) => {
     const actualErrors = t.check(data).problems
-    assert(actualErrors?.summary).equals(
+    attest(actualErrors?.summary).equals(
         expectedCheckResult(expectedBounds, data)
     )
 }

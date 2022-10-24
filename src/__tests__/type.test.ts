@@ -1,21 +1,21 @@
+import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { space } from "../api.js"
 import { Unenclosed } from "../parser/str/operand/unenclosed.js"
-import { assert } from "#testing"
 
 describe("space", () => {
     test("single", () => {
-        assert(space({ a: "string" }).$.infer.a).typed as string
-        assert(() =>
+        attest(space({ a: "string" }).$.infer.a).typed as string
+        attest(() =>
             // @ts-expect-error
             space({ a: "strig" })
         ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("strig"))
     })
     test("independent", () => {
-        assert(space({ a: "string", b: { c: "boolean" } }).$.infer.b).typed as {
+        attest(space({ a: "string", b: { c: "boolean" } }).$.infer.b).typed as {
             c: boolean
         }
-        assert(() =>
+        attest(() =>
             space(
                 // @ts-expect-error
                 { a: "string", b: { c: "uhoh" } }
@@ -23,9 +23,9 @@ describe("space", () => {
         ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("uhoh"))
     })
     test("interdependent", () => {
-        assert(space({ a: "string", b: { c: "a" } }).$.infer.b.c)
+        attest(space({ a: "string", b: { c: "a" } }).$.infer.b.c)
             .typed as string
-        assert(() =>
+        attest(() =>
             // @ts-expect-error
             space({ a: "yikes", b: { c: "a" } })
         ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("yikes"))
@@ -33,7 +33,7 @@ describe("space", () => {
     test("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         // Type hint displays as any on hitting cycle
-        assert(cyclicSpace.$.infer.a).typed as {
+        attest(cyclicSpace.$.infer.a).typed as {
             b: {
                 a: {
                     b: {
@@ -43,18 +43,18 @@ describe("space", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        assert(cyclicSpace.$.infer.b.a.b.a.b.a.b.a).typed as {
+        attest(cyclicSpace.$.infer.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        assert(cyclicSpace.$.infer.a.b.a.b.c).type.errors.snap(
+        attest(cyclicSpace.$.infer.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
     test("object array", () => {
-        assert(space({ a: "string", b: [{ c: "a" }] }).$.infer.b).typed as [
+        attest(space({ a: "string", b: [{ c: "a" }] }).$.infer.b).typed as [
             {
                 c: string
             }
@@ -67,15 +67,15 @@ describe("space", () => {
         //         // @ts-expect-error Still complains about unknown keys
         //         alias: "myType"
         //     })
-        // assert({} as ReturnType<typeof parseWithAnySpace>["infer"]).typed as {
+        // attest({} as ReturnType<typeof parseWithAnySpace>["infer"]).typed as {
         //     alias: unknown
         //     literal: string
         // }
-        // assert(parseWithAnySpace).throws(unresolvableMessage("myType"))
+        // attest(parseWithAnySpace).throws(unresolvableMessage("myType"))
     })
     // TODO: Reenable
     // test("doesn't try to validate any as a dictionary member", () => {
-    //     assert(space({ a: {} as any }).$.type(["number", "a"]).infer)
+    //     attest(space({ a: {} as any }).$.type(["number", "a"]).infer)
     //         .typed as [number, any]
     // })
 })

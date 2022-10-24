@@ -24,7 +24,7 @@ export const readPackageData = () => {
         name: "arktype",
         dependencies: [],
         devDependencies: [
-            { name: "@arktype/check", dependencies: [] as Package[] }
+            { name: "@arktype/test", dependencies: [] as Package[] }
         ],
         contributors: [{ email: "david@sharktypeio" }]
     }

@@ -1,5 +1,9 @@
 import { join, relative } from "node:path"
-import { findPackageRoot, readPackageJson, walkPaths } from "#runtime"
+import {
+    findPackageRoot,
+    readPackageJson,
+    walkPaths
+} from "./runtime/src/api.js"
 
 const root = findPackageRoot()
 const dev = join(root, "dev")
@@ -15,6 +19,8 @@ export const repoDirs = {
 
 export const isProd = () => process.argv.includes("--prod") || !!process.env.CI
 
+export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
+
 export const getPackageDataFromCwd = () => {
     const cwd = process.cwd()
     const packageRoot = findPackageRoot(cwd)
@@ -27,7 +33,8 @@ export const getPackageDataFromCwd = () => {
     const mjsOut = join(outRoot, "mjs")
     const cjsOut = join(outRoot, "cjs")
     const inFiles = walkPaths(srcRoot, {
-        excludeDirs: true
+        ignoreDirsMatching: /__tests__|__snippets__/,
+        include: (path) => tsFileMatcher.test(path)
     })
     return {
         packageRoot,

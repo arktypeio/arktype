@@ -1,17 +1,17 @@
+import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { Operand } from "../../operand/operand.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
-import { assert } from "#testing"
 
 describe("intersection", () => {
     describe("parse", () => {
         test("two types", () => {
             const booleanAndTrue = type("boolean&true")
-            assert(booleanAndTrue.ast).narrowedValue(["boolean", "&", "true"])
+            attest(booleanAndTrue.ast).narrowedValue(["boolean", "&", "true"])
         })
         test("several types", () => {
-            assert(type("unknown&boolean&false").ast).narrowedValue([
+            attest(type("unknown&boolean&false").ast).narrowedValue([
                 ["unknown", "&", "boolean"],
                 "&",
                 "false"
@@ -20,13 +20,13 @@ describe("intersection", () => {
         describe("errors", () => {
             test("bad reference", () => {
                 // @ts-expect-error
-                assert(() => type("boolean&tru")).throwsAndHasTypeError(
+                attest(() => type("boolean&tru")).throwsAndHasTypeError(
                     Unenclosed.buildUnresolvableMessage("tru")
                 )
             })
             test("double and", () => {
                 // @ts-expect-error
-                assert(() => type("boolean&&true")).throwsAndHasTypeError(
+                attest(() => type("boolean&&true")).throwsAndHasTypeError(
                     Operand.buildMissingRightOperandMessage("&", "&true")
                 )
             })

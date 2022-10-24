@@ -1,18 +1,18 @@
+import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { assert } from "#testing"
 
 describe("object", () => {
     describe("infer", () => {
         test("base", () => {
-            assert(
+            attest(
                 type({
                     a: "0"
                 }).infer
             ).typed as { a: 0 }
         })
         test("with optional key", () => {
-            assert(
+            attest(
                 type({
                     required: "boolean",
                     optional: "boolean?"
@@ -23,7 +23,7 @@ describe("object", () => {
             }
         })
         test("empty", () => {
-            assert(type({}).infer).typed as {}
+            attest(type({}).infer).typed as {}
         })
     })
     describe("check", () => {
@@ -35,33 +35,33 @@ describe("object", () => {
         const shallow = type.lazy(shallowInputDef)
         const nested = type.lazy({ nest: { ed: "string" } })
         test("standard", () => {
-            assert(shallow.check({ a: "ok", b: 4.321, c: 67 }).problems).is(
+            attest(shallow.check({ a: "ok", b: 4.321, c: 67 }).problems).is(
                 undefined
             )
         })
         test("nested", () => {
-            assert(nested.check({ nest: { ed: "!" } }).problems).is(undefined)
+            attest(nested.check({ nest: { ed: "!" } }).problems).is(undefined)
         })
         describe("errors", () => {
             test("bad value", () => {
-                assert(
+                attest(
                     shallow.check({ a: "ko", b: 123.4, c: 76 }).problems
                         ?.summary
                 ).snap(`c must be 67 (was 76)`)
             })
             test("bad nested value", () => {
-                assert(
+                attest(
                     nested.check({ nest: { ed: null } }).problems?.summary
                 ).snap(`nest/ed must be a string (was null)`)
             })
             test("missing keys", () => {
-                assert(shallow.check({ a: "ok" }).problems?.summary)
+                attest(shallow.check({ a: "ok" }).problems?.summary)
                     .snap(`b: b is required
 c: c is required`)
             })
             // TODO: Reenable
             // test("extraneous keys", () => {
-            //     assert(
+            //     attest(
             //         type(shallowInputDef, {
             //             // errors: {
             //             //     extraneousKeys: { enabled: true }
@@ -74,7 +74,7 @@ c: c is required`)
             //     ).snap()
             // })
             // test("single extraneous", () => {
-            //     assert(
+            //     attest(
             //         type(shallowInputDef, {
             //             // errors: {
             //             //     extraneousKeys: { enabled: true }

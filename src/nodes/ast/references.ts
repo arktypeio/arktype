@@ -64,7 +64,7 @@ type UnionToTuple<Union> = UnionToTupleRecurse<Union, []> extends infer X
     ? Conform<X, Union[]>
     : never
 
-// import { assert } from "#testing"
+// import { attest } from "@artkype/test"
 // import type { ElementOf } from "@arktype/tools"
 // import { isNumeric, narrow } from "@arktype/tools"
 // import { describe, test } from "mocha"

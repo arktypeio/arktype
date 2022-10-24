@@ -1,4 +1,6 @@
+import { readFile } from "@arktype/runtime"
 import type { Project } from "ts-morph"
+import { tsFileMatcher } from "../../common.js"
 import type { ExtractionToken } from "./snipTokens.js"
 import {
     extractionTokens,
@@ -6,7 +8,6 @@ import {
     snipTokens
 } from "./snipTokens.js"
 import { transformTsFileContents } from "./transformTsFileText.js"
-import { readFile } from "#runtime"
 
 /** Represents paths mapped to snippet data for a file */
 export type SnippetsByPath = Record<string, SnippetsByLabel>
@@ -23,15 +24,13 @@ export type ExtractSnippetsArgs = {
     project: Project
 }
 
-const TS_FILE_REGEX = /^.*\.(c|m)?tsx?$/
-
 export const extractSnippets = (
     sourcePaths: string[],
     project: Project
 ): SnippetsByPath => {
     const snippetsByPath: SnippetsByPath = {}
     for (const path of sourcePaths) {
-        const fileText = TS_FILE_REGEX.test(path)
+        const fileText = tsFileMatcher.test(path)
             ? transformTsFileContents(path, project)
             : readFile(path)
         snippetsByPath[path] = extractSnippetsFromFile(path, fileText)

@@ -1,4 +1,4 @@
-import { assert } from "../../dev/testing/api.js"
+import { attest } from "@arktype/test"
 // import { describe, test } from "mocha"
 // import { declare } from "../../index.js"
 // import { unresolvableMessage } from "../../parser/str/operand/unenclosed.js"
@@ -12,7 +12,7 @@ import { assert } from "../../dev/testing/api.js"
 //     test("compiles", () => {
 //         // Creates your space (or tells you which definition you forgot to include)
 //         const space = compile({ ...userDef, ...groupDef })
-//         assert(space.$.toAst()).narrowedValue({
+//         attest(space.$.toAst()).narrowedValue({
 //             group: {
 //                 name: "string",
 //                 members: ["user", "[]"]
@@ -30,7 +30,7 @@ import { assert } from "../../dev/testing/api.js"
 //             { ...userDef, ...groupDef },
 //             { parse: { onCycle: "'cycle'" } }
 //         )
-//         assert(space.$.infer).typed as {
+//         attest(space.$.infer).typed as {
 //             group: {
 //                 name: string
 //                 members: {
@@ -52,16 +52,16 @@ import { assert } from "../../dev/testing/api.js"
 //     test("single", () => {
 //         const { define, compile } = declare("gottaDefineThis")
 //         const gottaDefineThis = define.gottaDefineThis("boolean")
-//         assert(() =>
+//         attest(() =>
 //             // @ts-expect-error
 //             define.somethingUndeclared("string")
 //         ).throwsAndHasTypeError("somethingUndeclared")
 //         // @ts-expect-error
-//         assert(() => define.gottaDefineThis("whoops")).throwsAndHasTypeError(
+//         attest(() => define.gottaDefineThis("whoops")).throwsAndHasTypeError(
 //             unresolvableMessage("whoops")
 //         )
 //         const space = compile(gottaDefineThis)
-//         assert(space.$.toAst()).narrowedValue({ gottaDefineThis: "boolean" })
+//         attest(space.$.toAst()).narrowedValue({ gottaDefineThis: "boolean" })
 //     })
 //     test("errors on compile with declared type undefined", () => {
 //         const { define, compile } = declare(
@@ -72,14 +72,14 @@ import { assert } from "../../dev/testing/api.js"
 //             a: "string"
 //         })
 //         // @ts-expect-error
-//         assert(() => compile(gottaDefineThis))
+//         attest(() => compile(gottaDefineThis))
 //             .throws("Declared types 'gottaDefineThisToo' were never defined.")
 //             .type.errors("Property 'gottaDefineThisToo' is missing")
 //     })
 //     test("errors on compile with undeclared type defined", () => {
 //         const { define, compile } = declare("gottaDefineThis")
 //         const gottaDefineThis = define.gottaDefineThis("boolean")
-//         assert(() =>
+//         attest(() =>
 //             compile({
 //                 ...gottaDefineThis,
 //                 // @ts-expect-error

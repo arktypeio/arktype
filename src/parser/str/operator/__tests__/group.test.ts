@@ -1,27 +1,27 @@
+import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { GroupOpen } from "../../operand/groupOpen.js"
 import { Operand } from "../../operand/operand.js"
 import { GroupClose } from "../groupClose.js"
-import { assert } from "#testing"
 
 describe("group", () => {
     test("entire expression", () => {
-        assert(type("(string)").ast).narrowedValue("string")
+        attest(type("(string)").ast).narrowedValue("string")
     })
     test("overrides default precedence", () => {
-        assert(type("boolean|number[]").ast).narrowedValue([
+        attest(type("boolean|number[]").ast).narrowedValue([
             "boolean",
             "|",
             ["number", "[]"]
         ])
-        assert(type("(boolean|number)[]").ast).narrowedValue([
+        attest(type("(boolean|number)[]").ast).narrowedValue([
             ["boolean", "|", "number"],
             "[]"
         ])
     })
     test("nested", () => {
-        assert(
+        attest(
             type("((boolean|number)[]|(string|undefined)[])[]").ast
         ).narrowedValue([
             [
@@ -34,7 +34,7 @@ describe("group", () => {
     })
     describe("errors", () => {
         test("empty", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type("()")
             }).throwsAndHasTypeError(
@@ -42,19 +42,19 @@ describe("group", () => {
             )
         })
         test("unmatched (", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type("string|(boolean|number[]")
             }).throwsAndHasTypeError(GroupOpen.unclosedMessage)
         })
         test("unmatched )", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)")
             }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage(""))
         })
         test("lone )", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type(")")
             }).throwsAndHasTypeError(
@@ -62,25 +62,25 @@ describe("group", () => {
             )
         })
         test("lone (", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type("(")
             }).throwsAndHasTypeError(Operand.buildExpressionExpectedMessage(""))
         })
         test("deep unmatched (", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type("(null|(undefined|(1))|2")
             }).throwsAndHasTypeError(GroupOpen.unclosedMessage)
         })
         test("deep unmatched )", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))[]")
             }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage("[]"))
         })
         test("starting )", () => {
-            assert(() => {
+            attest(() => {
                 // @ts-expect-error
                 type(")number(")
             }).throwsAndHasTypeError(

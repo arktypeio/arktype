@@ -1,3 +1,4 @@
+import { attest } from "@arktype/test"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
@@ -9,13 +10,12 @@ import {
     arbitraryLimit,
     assertCheckResults
 } from "./utils.js"
-import { assert } from "#testing"
 
 // TODO: Add subtype tests for bounds and divisibility
 describe("bound", () => {
     describe("check", () => {
         test("single", () => {
-            fc.assert(
+            fc.attest(
                 fc.property(
                     arbitraryComparator,
                     arbitraryLimit,
@@ -23,7 +23,7 @@ describe("bound", () => {
                         const singleBound = type.dynamic(
                             `number${comparator}${limit}`
                         )
-                        assert(singleBound.ast).equals([
+                        attest(singleBound.ast).equals([
                             "number",
                             comparator,
                             String(limit)
@@ -34,7 +34,7 @@ describe("bound", () => {
             )
         })
         test("double", () => {
-            fc.assert(
+            fc.attest(
                 fc.property(
                     arbitraryLimit,
                     arbitraryDoubleComparator,
@@ -56,7 +56,7 @@ describe("bound", () => {
                             ],
                             [upperComparator, upperLimit]
                         ]
-                        assert(doubleBound.ast).equals([
+                        attest(doubleBound.ast).equals([
                             String(lowerLimit),
                             lowerComparator,
                             ["number", upperComparator, String(upperLimit)]
@@ -70,8 +70,8 @@ describe("bound", () => {
     describe("string", () => {
         test("check", () => {
             const gte3 = type("string>=3")
-            assert(gte3.check("yes").problems).equals(undefined)
-            assert(gte3.check("no").problems?.summary).snap(
+            attest(gte3.check("yes").problems).equals(undefined)
+            attest(gte3.check("no").problems?.summary).snap(
                 "Must be at least 3 characters (was 2)"
             )
         })
@@ -79,8 +79,8 @@ describe("bound", () => {
     describe("array", () => {
         test("check", () => {
             const twoNulls = type("null[]==2")
-            assert(twoNulls.check([null, null]).problems).equals(undefined)
-            assert(twoNulls.check([null]).problems?.summary).snap(
+            attest(twoNulls.check([null, null]).problems).equals(undefined)
+            attest(twoNulls.check([null]).problems?.summary).snap(
                 `Must be exactly 2 items (was 1)`
             )
         })

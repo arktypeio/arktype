@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs"
-import { fromHere } from "#runtime"
+import { fromHere } from "@arktype/runtime"
 
 const randomInRange = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min

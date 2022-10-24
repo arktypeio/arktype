@@ -1,6 +1,6 @@
+import { bench } from "@arktype/test"
 import { space } from "../api.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
-import { bench } from "#testing"
 
 const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })
 const dejaVu: typeof recursive.$.infer.dejaVu = {}

@@ -19,50 +19,46 @@
             "types": "./dist/types/api.d.ts",
             "import": "./dist/mjs/api.js",
             "require": "./dist/cjs/api.js"
-        }
-    },
-    "imports": {
-        "#testing": {
-            "default": "./dev/testing/api.ts"
         },
-        "#runtime": {
-            "node": "./dev/node/api.ts"
-        },
-        "#arktype": {
-            "default": "./src/api.ts"
-        },
-        "#arktype/utils": {
-            "default": "./src/utils/exports.ts"
+        "./internal": {
+            "types": "./dist/types/internal.d.ts",
+            "import": "./dist/mjs/internal.js",
+            "require": "./dist/cjs/internal.js"
         }
     },
     "packageManager": "pnpm@7.14.0",
     "scripts": {
-        "prChecks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
+        "prChecks": "pnpm install && pnpm buildRepo && pnpm lint && pnpm testRepo",
         "typecheck": "tsc --noEmit",
+        "typecheckRepo": "pnpm typecheck && pnpm -r typecheck",
         "build": "ts-node ./dev/scripts/build.ts",
-        "buildDocs": "ts-node ./dev/scripts/build.ts",
-        "docgen": "ts-node ./dev/scripts/docgen.ts && pnpm buildDocs",
-        "test": "c8 ts-node ./dev/testing/cli.ts --cmd mocha",
-        "tnt": "c8 ts-node ./dev/testing/cli.ts --skipTypes --cmd mocha",
-        "testBuild": "ts-node ./dev/scripts/testBuild.ts",
-        "bench": "ts-node ./dev/testing/cli.ts bench --benchmarksPath ./src/__tests__/benchmarks.json",
+        "buildDev": "pnpm -r --filter=!arktype.io build",
+        "buildDocs": "pnpm docgen && pnpm -r --filter=arktype.io build",
+        "buildRepo": "pnpm build && pnpm buildDev && pnpm buildDocs",
+        "docgen": "ts-node ./dev/scripts/docgen.ts",
+        "test": "c8 attest --cmd mocha",
+        "tnt": "c8 attest --skipTypes --cmd mocha",
+        "testRepo": "ts-node ./dev/scripts/testRepo.ts",
+        "bench": "attest bench --benchmarksPath ./src/__tests__/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "findUnused": "ts-node ./dev/scripts/runUnusedExports.ts",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install dev/configs/.husky",
-        "ci:version": "ts-node ./dev/scripts/updateVersions.ts && pnpm buildDocs",
-        "ci:publish": "ts-node ./dev/scripts/publish.ts"
+        "ci:version": "ts-node ./dev/scripts/updateVersions.ts",
+        "ci:publish": "changeset publish"
     },
     "devDependencies": {
+        "@arktype/runtime": "workspace:*",
+        "@arktype/test": "link:./dev/test",
         "@changesets/cli": "2.25.0",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.3.9",
-        "@types/node": "18.11.2",
+        "@types/node": "18.11.4",
         "@typescript-eslint/eslint-plugin": "5.40.1",
         "@typescript-eslint/parser": "5.40.1",
         "c8": "7.12.0",
-        "eslint": "8.25.0",
+        "eslint": "8.26.0",
         "eslint-config-prettier": "8.5.0",
         "eslint-define-config": "1.7.0",
         "eslint-import-resolver-typescript": "3.5.1",
@@ -79,15 +75,15 @@
         "typescript": "4.9.1-beta",
         "mocha": "10.1.0",
         "@types/mocha": "10.0.0",
-        "fast-check": "3.2.0",
-        "get-current-line": "6.6.0"
+        "fast-check": "3.2.0"
     },
     "pnpm": {
         "peerDependencyRules": {
+            "//": "Docusaurus/webpack nonsense",
             "ignoreMissing": [
-                "webpack",
+                "@algolia/client-search",
                 "@babel/core",
-                "@algolia/client-search"
+                "typescript"
             ]
         }
     },
@@ -104,7 +100,7 @@
         "trailingComma": "none"
     },
     "mocha": {
-        "spec": "**/*.test.ts",
+        "spec": "src/**/*.test.ts",
         "ignore": "**/node_modules/*",
         "node-option": [
             "loader=ts-node/esm",

@@ -1,7 +1,7 @@
 // @ts-nocheck TODO: Add a real snippet here
 import { narrow, Narrow } from "@arktype/tools"
-import { type } from "./testing/index.js.js.js"
-import type { TypeOptions } from "./testing/type.js.js"
+import { type } from "./src/index.js.js.js"
+import type { TypeOptions } from "./src/type.js.js"
 
 const type = {} as any
 const io = {} as any

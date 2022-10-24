@@ -1,6 +1,6 @@
+import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { space, type } from "../api.js"
-import { assert } from "#testing"
 
 describe("space validation", () => {
     test("simple space", () => {
@@ -13,7 +13,7 @@ describe("space validation", () => {
             fruit: "banana|apple"
         })
         const list = type({ fruits: "fruit[]" }, { space: groceries })
-        assert(
+        attest(
             list.check({
                 fruits: [
                     { length: 10, description: "ripe" },
@@ -22,7 +22,7 @@ describe("space validation", () => {
                 ]
             }).problems
         ).equals(undefined)
-        assert(
+        attest(
             list.check({
                 fruits: [
                     {
@@ -45,7 +45,7 @@ describe("space validation", () => {
             { a: "a", b: "b", c: "either[]" },
             { space: bicycle }
         )
-        assert(
+        attest(
             bicyclic.check({
                 a: {
                     isA: true,
@@ -59,7 +59,7 @@ describe("space validation", () => {
                 ]
             }).problems
         ).equals(undefined)
-        assert(
+        attest(
             bicyclic.check({
                 a: {
                     isA: true,
@@ -112,7 +112,7 @@ describe("space validation", () => {
         type DejaVu = typeof recursive.$.infer.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
-        assert(recursive.dejaVu.check(dejaVu).problems).equals(undefined)
+        attest(recursive.dejaVu.check(dejaVu).problems).equals(undefined)
     })
     test("validates deep objects", () => {
         const dejaVu: typeof recursive.$.infer.dejaVu = {}
@@ -123,9 +123,9 @@ describe("space validation", () => {
             current = current.dejaVu
             i++
         }
-        assert(recursive.dejaVu.check(dejaVu).problems).equals(undefined)
+        attest(recursive.dejaVu.check(dejaVu).problems).equals(undefined)
         current.dejaVu = "whoops" as any
-        assert(recursive.dejaVu.check(dejaVu).problems?.summary).snap(
+        attest(recursive.dejaVu.check(dejaVu).problems?.summary).snap(
             "dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu/dejaVu must be a non-array object (was string)"
         )
     })

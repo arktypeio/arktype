@@ -4,8 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "pnpm exec ts-node ./build.ts",
-        "typecheck": "pnpm exec tsc",
+        "build": "ts-node ./build.mts",
+        "typecheck": "tsc",
         "serve": "docusaurus serve --dir dist"
     },
     "dependencies": {
@@ -26,6 +26,7 @@
         "framer-motion": "6.5.1"
     },
     "devDependencies": {
+        "@arktype/runtime": "workspace:*",
         "@docusaurus/module-type-aliases": "2.1.0",
         "@docusaurus/types": "2.1.0",
         "@tsconfig/docusaurus": "1.0.6",

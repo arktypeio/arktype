@@ -1,7 +1,5 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { join } from "node:path"
-import { repoDirs } from "../common.js"
-import { docgen } from "../docgen/main.js"
 import {
     readFile,
     readJson,
@@ -9,7 +7,9 @@ import {
     shell,
     writeFile,
     writeJson
-} from "#runtime"
+} from "@arktype/runtime"
+import { repoDirs } from "../common.js"
+import { docgen } from "../docgen/main.js"
 
 const suffixedPackageEntries: [rootDir: string, suffix: string][] = []
 
@@ -71,7 +71,7 @@ const existingVersions: string[] = readJson(
     join(repoDirs.arktypeIo, `versions.json`)
 )
 if (!existingVersions.includes(packageJson.version)) {
-    shell(`pnpm docusaurus docs:version ${packageJson.version}`, {
+    shell(`pnpm docusaurus docs:version ${packageJson.version} && pnpm build`, {
         cwd: repoDirs.arktypeIo
     })
 }
