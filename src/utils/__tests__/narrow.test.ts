@@ -1,6 +1,6 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { narrow } from "../index.js"
+import { assert } from "#testing"
 
 describe("narrow", () => {
     test("literals", () => {
@@ -40,10 +40,4 @@ describe("narrow", () => {
     test("any", () => {
         assert(narrow({} as any)).typed as any
     })
-    /*
-     * See note in narrow.ts.
-     * it("unknown", () => {
-     *     assert(narrow({} as unknown)).typed as unknown
-     * })
-     */
 })

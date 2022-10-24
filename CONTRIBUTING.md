@@ -83,7 +83,7 @@ Our current and planned work can always be found [here](https://github.com/arkty
 ## Code of Conduct
 
 ArkType has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
-Please read [the full text](/meta/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
+Please read [the full text](/dev/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
 ## License
 

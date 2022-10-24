@@ -1,6 +1,6 @@
-import type { Evaluate } from "@arktype/tools"
 import { ObjectLiteral } from "../../nodes/structural/objectLiteral.js"
 import { Tuple } from "../../nodes/structural/tuple.js"
+import type { Evaluate } from "../../utils/evaluate.js"
 import type { parseFn, ParserContext } from "../common.js"
 import { Root } from "../root.js"
 import type { MetaDefinition, ParseMetaDefinition } from "./meta.js"

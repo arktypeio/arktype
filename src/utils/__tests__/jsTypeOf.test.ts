@@ -1,7 +1,7 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import type { NormalizedJsTypeName } from "../index.js"
 import { hasJsType, hasJsTypeIn, jsTypeOf } from "../index.js"
+import { assert } from "#testing"
 
 describe("jsTypeOf", () => {
     test("builtin", () => {

@@ -1,7 +1,7 @@
 import { AssertionError } from "node:assert"
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { isKeyOf, keySet } from "../index.js"
+import { assert } from "#testing"
 
 const throwBadPresenceResultError = (
     key: string | number,

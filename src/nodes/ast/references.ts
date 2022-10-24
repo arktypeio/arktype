@@ -1,17 +1,11 @@
-import type { ElementOf, UnionToTuple } from "@arktype/tools"
 import type { Branching } from "../expression/branching/branching.js"
 import type { Infix } from "../expression/infix/infix.js"
 import type { Postfix } from "../expression/postfix/postfix.js"
 import type { NumberLiteral } from "../terminal/literal/number.js"
 
-export type ReferencesOf<Ast, By extends string = string> = Filter<
-    References<Ast>,
-    By
->
-
 type SingleChildToken = Postfix.Token | Infix.Token
 
-type References<Ast> = Ast extends string
+type References<Ast, Filter extends string = string> = Ast extends string
     ? [Ast]
     : Ast extends readonly unknown[]
     ? Ast[1] extends SingleChildToken
@@ -20,47 +14,54 @@ type References<Ast> = Ast extends string
               References<Ast[2]>
             : References<Ast[0]>
         : Ast[1] extends Branching.Token
-        ? [...References<Ast[0]>, ...References<Ast[2]>]
-        : StructuralReferences<Ast>
-    : StructuralReferences<Ast>
+        ? [...References<Ast[0], Filter>, ...References<Ast[2], Filter>]
+        : StructuralReferences<Ast, Filter>
+    : StructuralReferences<Ast, Filter>
 
-type StructuralReferences<Ast> = CollectStructuralReferences<
+type StructuralReferences<
+    Ast,
+    Filter extends string
+> = CollectStructuralReferences<
     Ast extends readonly unknown[] ? Ast : UnionToTuple<Ast[keyof Ast]>,
-    []
+    [],
+    Filter
 >
 
 type CollectStructuralReferences<
     Children extends readonly unknown[],
-    Result extends readonly unknown[]
+    Result extends readonly unknown[],
+    Filter extends string
 > = Children extends [infer Head, ...infer Tail]
-    ? CollectStructuralReferences<Tail, [...Result, ...References<Head>]>
-    : Result
-
-export type ReferenceTypeOptions<Filter extends string = string> = {
-    filter?: Filter
-}
-
-type Filter<Arr extends string[], By extends string> = FilterRecurse<
-    Arr,
-    By,
-    []
->
-
-type FilterRecurse<
-    References extends unknown[],
-    By extends string,
-    Result extends string[]
-> = References extends [infer Head, ...infer Tail]
-    ? FilterRecurse<
+    ? CollectStructuralReferences<
           Tail,
-          By,
-          Head extends By
-              ? Head extends ElementOf<Result>
-                  ? Result
-                  : [...Result, Head]
-              : Result
+          [...Result, ...References<Head>],
+          Filter
       >
     : Result
+
+type IntersectionOf<Union> = (
+    Union extends unknown ? (_: Union) => void : never
+) extends (_: infer Intersection) => void
+    ? Intersection
+    : never
+
+type GetLastUnionMember<T> = IntersectionOf<
+    T extends unknown ? (t: T) => void : never
+> extends (t: infer Next) => void
+    ? Next
+    : never
+
+type UnionToTupleRecurse<
+    Union,
+    Result extends unknown[],
+    Current = GetLastUnionMember<Union>
+> = [Union] extends [never]
+    ? Result
+    : UnionToTupleRecurse<Exclude<Union, Current>, [Current, ...Result]>
+
+type UnionToTuple<Union> = UnionToTupleRecurse<Union, []> extends infer X
+    ? Conform<X, Union[]>
+    : never
 
 // import { assert } from "#testing"
 // import type { ElementOf } from "@arktype/tools"

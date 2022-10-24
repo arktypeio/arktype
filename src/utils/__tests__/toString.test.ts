@@ -1,6 +1,6 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { toString } from "../index.js"
+import { assert } from "#testing"
 
 const o = Object.freeze({
     a: {

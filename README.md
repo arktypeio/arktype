@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./meta/arktype.io/static/img/logo.svg" height="64px" />
+  <img src="./dev/arktype.io/static/img/logo.svg" height="64px" />
   <h1>ArkType</h1>
 </div>
 <div align="center">
