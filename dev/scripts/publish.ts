@@ -1,16 +1,9 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import {
-    fromPackageRoot,
-    readFile,
-    shell,
-    walkPaths,
-    writeFile
-} from "#runtime"
+import { repoDirs } from "../common.js"
+import { shell, walkPaths } from "#runtime"
 
-const repoRoot = fromPackageRoot()
-const packageNames = ["assert", "node", "tools", "type"]
-const packageRoots = packageNames.map((_) => join(repoRoot, "@artkype", _))
+const packageRoots = [repoDirs.root]
 
 const cleanupNonDistributed = (outRoot: string) => {
     const nonDistributedDirs = walkPaths(outRoot, {
@@ -25,18 +18,5 @@ const cleanupNonDistributed = (outRoot: string) => {
 for (const packageRoot of packageRoots) {
     cleanupNonDistributed(join(packageRoot, "dist"))
 }
-
-const NPM_TOKEN = process.env.NPM_TOKEN
-if (!NPM_TOKEN) {
-    throw new Error(
-        `Unable to publish as NPM_TOKEN is not set in your environment.`
-    )
-}
-const npmrcPath = fromPackageRoot(".npmrc")
-const contents = readFile(npmrcPath)
-writeFile(
-    npmrcPath,
-    contents + "\n" + `//registry.npmjs.org/:_authToken=${NPM_TOKEN}`
-)
 
 shell("pnpm changeset publish")

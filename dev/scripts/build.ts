@@ -1,8 +1,8 @@
 import { existsSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
-import { readJson, requireResolve, shell, writeJson } from "#runtime"
 import { getPackageDataFromCwd, isProd } from "../common.js"
+import { readJson, requireResolve, shell, writeJson } from "#runtime"
 
 const {
     cjsOut,
@@ -34,11 +34,7 @@ export const buildTypes = () => {
     }
     const config = readJson(tsConfig)
     const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
-    writeJson(tempTsConfig, {
-        ...config,
-        // TODO: Do I need this and something similar in publish?
-        files: inFiles.filter((path) => !/__tests__|__snippets__/.test(path))
-    })
+    writeJson(tempTsConfig, config)
     try {
         const cmd = `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot} --emitDeclarationOnly`
         shell(cmd, {

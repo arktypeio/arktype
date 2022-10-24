@@ -31,31 +31,24 @@
     },
     "packageManager": "pnpm@7.14.0",
     "scripts": {
-        "build": "pnpm buildRoot && pnpm buildScoped",
-        "buildRoot": "ts-node ./meta/scripts/build.ts",
-        "buildScoped": "pnpm -r --filter '@arktype/*' build",
-        "buildDocs": "pnpm --filter 'arktype.io' build",
         "prChecks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm docgen",
-        "test": "c8 attest --cmd mocha",
+        "typecheck": "tsc --noEmit",
+        "build": "ts-node ./dev/scripts/build.ts",
+        "buildDocs": "ts-node ./dev/scripts/build.ts",
+        "docgen": "ts-node ./dev/scripts/docgen.ts && pnpm buildDocs",
+        "test": "c8 ts-node ./dev/testing/cli.ts --cmd mocha",
+        "tnt": "c8 ts-node ./dev/testing/cli.ts --skipTypes --cmd mocha",
+        "testBuild": "ts-node ./dev/scripts/testBuild.ts",
+        "bench": "ts-node ./dev/testing/cli.ts bench --benchmarksPath ./src/__tests__/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
-        "docgen": "ts-node ./meta/scripts/docgen.ts && pnpm buildDocs",
+        "findUnused": "ts-node ./dev/scripts/runUnusedExports.ts",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
-        "prepare": "husky install meta/configs/.husky",
-        "preCommit": "pretty-quick --staged",
-        "findUnused": "ts-node ./meta/scripts/runUnusedExports.ts",
-        "ci:version": "ts-node ./meta/scripts/updateVersions.ts && pnpm buildDocs",
-        "ci:publish": "ts-node ./meta/scripts/publish.ts",
-        "typecheck": "tsc --noEmit",
-        "tnt": "attest --skipTypes --cmd mocha",
-        "testBuild": "ts-node ./meta/scripts/testBuild.ts",
-        "bench": "attest bench --benchmarksPath ./src/__tests__/benchmarks.json",
-        "generateBenchData": "ts-node ./src/__tests__/generateBenchData.ts",
-        "diag": "tsc --composite false --noEmit --diagnostics --incremental false"
+        "prepare": "husky install dev/configs/.husky",
+        "ci:version": "ts-node ./dev/scripts/updateVersions.ts && pnpm buildDocs",
+        "ci:publish": "ts-node ./dev/scripts/publish.ts"
     },
     "devDependencies": {
-        "@arktype/node": "link:./@arktype/node",
-        "@arktype/check": "link:./@arktype/check",
         "@changesets/cli": "2.25.0",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.3.9",
@@ -112,6 +105,6 @@
         ]
     },
     "eslintConfig": {
-        "extends": "./meta/configs/.eslintrc.cjs"
+        "extends": "./dev/configs/.eslintrc.cjs"
     }
 }

@@ -3,11 +3,9 @@
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "docusaurus": "docusaurus",
         "dev": "docusaurus start",
         "build": "pnpm ts-node ./build.mts",
         "typecheck": "tsc",
-        "test": "echo No tests for docs!",
         "serve": "docusaurus serve --dir dist"
     },
     "dependencies": {

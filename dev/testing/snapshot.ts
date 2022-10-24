@@ -1,5 +1,4 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
-import { readJson } from "#runtime"
 import { toString } from "@arktype/tools"
 import type { CallExpression, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
@@ -8,6 +7,7 @@ import { getAtTestConfig, positionToString } from "./common.js"
 import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 import { writeUpdates } from "./writeSnapshot.js"
+import { readJson } from "#runtime"
 
 export type SnapshotArgs = {
     position: SourcePosition

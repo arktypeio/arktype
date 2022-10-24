@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
-import { readJson, requireResolve, shell, writeJson } from "#runtime"
 import type { Node, ts } from "ts-morph"
 import type { BenchData } from "./bench/history.js"
 import { updateIsBench, upsertBenchResult } from "./bench/history.js"
-import { getFileKey, getAtTestConfig } from "./common.js"
+import { getAtTestConfig, getFileKey } from "./common.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import {
     queueInlineSnapshotWriteOnProcessExit,
     resolveSnapshotPath
 } from "./snapshot.js"
+import { readJson, requireResolve, shell, writeJson } from "#runtime"
 
 export type BenchFormat = {
     noInline?: boolean
