@@ -1,4 +1,4 @@
-// import { assert } from "@arktype/check"
+// import { assert } from "#testing"
 // import { describe, test } from "mocha"
 // import { space } from "../../index.js"
 // import { shallowCycleMessage } from "../../space/parse.js"

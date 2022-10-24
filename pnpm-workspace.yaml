@@ -1,4 +1,0 @@
-packages:
-    - "."
-    - "@arktype/*"
-    - "meta/arktype.io"

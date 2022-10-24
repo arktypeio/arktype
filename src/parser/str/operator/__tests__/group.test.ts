@@ -1,4 +1,4 @@
-import { assert } from "@arktype/check"
+import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { GroupOpen } from "../../operand/groupOpen.js"

@@ -1,4 +1,4 @@
-import { assert } from "@arktype/check"
+import { assert } from "#testing"
 import * as fc from "fast-check"
 import type { Arktype } from "../../../../type.js"
 import { Keyword } from "../../../terminal/keyword/keyword.js"

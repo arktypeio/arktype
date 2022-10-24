@@ -62,7 +62,7 @@ type FilterRecurse<
       >
     : Result
 
-// import { assert } from "@arktype/check"
+// import { assert } from "#testing"
 // import type { ElementOf } from "@arktype/tools"
 // import { isNumeric, narrow } from "@arktype/tools"
 // import { describe, test } from "mocha"

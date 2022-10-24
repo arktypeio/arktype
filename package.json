@@ -21,7 +21,14 @@
             "require": "./dist/cjs/api.js"
         }
     },
-    "imports": {},
+    "imports": {
+        "#testing": {
+            "default": "./dev/testing/api.ts"
+        },
+        "#runtime": {
+            "node": "./dev/node/api.ts"
+        }
+    },
     "packageManager": "pnpm@7.14.0",
     "scripts": {
         "build": "pnpm buildRoot && pnpm buildScoped",

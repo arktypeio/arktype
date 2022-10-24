@@ -1,4 +1,4 @@
-import { assert } from "@arktype/check"
+import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { BoundOperator } from "../bound/bound.js"

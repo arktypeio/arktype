@@ -1,4 +1,4 @@
-import { assert } from "@arktype/check"
+import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { deepMerge, merge, narrow } from "../index.js"
 

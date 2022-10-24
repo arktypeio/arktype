@@ -1,4 +1,4 @@
-import { bench, suite } from "@arktype/check"
+import { bench, suite } from "#testing"
 import { type } from "../../../../api.js"
 
 const buildBranchDef = (token: string, size: number) =>
