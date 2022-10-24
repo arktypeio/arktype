@@ -5,37 +5,53 @@ export type BaseProblemConfig = {
     omitActual?: boolean
 }
 
-export class ProblemO {
-    constructor(public path: string, public reasons: string[]) {}
+export type Problem = {
+    path: string
+    reason: string
+    parts?: string[]
+}
 
-    addIfUnique(reason: string) {
-        if (!this.reasons.includes(reason)) {
-            this.reasons.push(reason)
-        }
-    }
+export class ArktypeError extends TypeError {
+    cause: Problems
 
-    get message() {
-        if (this.reasons.length === 1) {
-            return this.reasons[0]
-        }
-        return "• " + this.reasons.join("\n• ")
+    constructor(problems: Problems) {
+        super(problems.summary)
+        this.cause = problems
     }
 }
 
-export class ProblemTwo {
-    constructor(public path: string, public reasons: string[]) {}
+export class Problems extends Array<Problem> {
+    byPath: Record<string, Problem> = {}
 
-    addIfUnique(reason: string) {
-        if (!this.reasons.includes(reason)) {
-            this.reasons.push(reason)
-        }
+    get summary() {
+        return ""
+        // if (this.length === 1) {
+        //     const error = this[0]
+        //     if (error.path !== "") {
+        //         return `${error.path} ${uncapitalize(error.message)}`
+        //     }
+        //     return error.message
+        // }
+        // return this.map(
+        //     (problem) => `${problem.path}: ${problem.message}`
+        // ).join("\n")
     }
 
-    get message() {
-        if (this.reasons.length === 1) {
-            return this.reasons[0]
-        }
-        return "• " + this.reasons.join("\n• ")
+    throw(): never {
+        throw new ArktypeError(this)
+    }
+}
+
+export class Stringifiable<Data = unknown> {
+    constructor(public raw: Data) {}
+
+    get typeOf() {
+        return JsType.of(this.raw)
+    }
+
+    // TODO: Fix
+    toString() {
+        return JSON.stringify(this.raw)
     }
 }
 
@@ -82,69 +98,3 @@ export class ProblemTwo {
 //         return result
 //     }
 // }
-
-export type Problem = {
-    path: string
-    reason: string
-}
-
-export class ProblemIntersection {
-    constructor(public path: string, public reasons: string[]) {}
-
-    get defaultMessage() {
-        return "• " + this.reasons.join("\n• ")
-    }
-}
-
-export class ArktypeError extends TypeError {
-    cause: Problems
-
-    constructor(problems: Problems) {
-        super(problems.summary)
-        this.cause = problems
-    }
-}
-
-export class Problems extends Array<Problem> {
-    byPath: Record<string, Problem> = {}
-
-    addIfUnique(path: string, reason: string) {
-        // if (path in this.byPath) {
-        //     this.byPath[path].addIfUnique(reason)
-        // } else {
-        //     this.byPath[path] = new Problem(path, [reason])
-        //     this.push(this.byPath[path])
-        // }
-    }
-
-    get summary() {
-        return ""
-        // if (this.length === 1) {
-        //     const error = this[0]
-        //     if (error.path !== "") {
-        //         return `${error.path} ${uncapitalize(error.message)}`
-        //     }
-        //     return error.message
-        // }
-        // return this.map(
-        //     (problem) => `${problem.path}: ${problem.message}`
-        // ).join("\n")
-    }
-
-    throw(): never {
-        throw new ArktypeError(this)
-    }
-}
-
-export class Stringifiable<Data = unknown> {
-    constructor(public raw: Data) {}
-
-    get typeOf() {
-        return JsType.of(this.raw)
-    }
-
-    // TODO: Fix
-    toString() {
-        return JSON.stringify(this.raw)
-    }
-}

@@ -42,8 +42,21 @@ export class Traversal<Data = unknown> {
     }
 
     // TODO: Fix
-    addProblem(reason: any) {
-        this.problems.addIfUnique(this.path, reason)
+    addProblem(reason: string) {
+        const existingProblem = this.problems.byPath[this.path]
+        if (!existingProblem) {
+            this.problems.byPath[this.path] = { path: this.path, reason }
+            return
+        }
+        if (existingProblem.parts) {
+            if (existingProblem.parts.includes(reason)) {
+                return
+            }
+            existingProblem.parts.push(reason)
+        } else {
+            existingProblem.parts = [existingProblem.reason, reason]
+        }
+        existingProblem.reason = "• " + existingProblem.parts.join("\n• ")
     }
 
     pushScope(scope: Scope.Node) {
