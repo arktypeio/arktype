@@ -1,9 +1,9 @@
 import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { findPackageRoot, readPackageJson } from "#runtime"
 import type { PackageMetadata } from "../api/extractApi.js"
 import { config } from "../main.js"
 import type { SnippetTransformToggles } from "./extractSnippets.js"
+import { findPackageRoot, readPackageJson } from "#runtime"
 
 export type ExtractFileSnippetContext = {
     packageMetadata: PackageMetadata

@@ -1,5 +1,5 @@
-import type { Node } from "./node.js"
 import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
+import type { Node } from "./node.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean

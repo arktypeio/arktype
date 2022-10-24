@@ -1,4 +1,3 @@
-import { caller } from "#runtime"
 import { chainableNoOpProxy } from "@arktype/tools"
 import type { AtTestConfig, SourcePosition } from "../common.js"
 import { getAtTestConfig } from "../common.js"
@@ -7,6 +6,7 @@ import type { TimeAssertionName } from "./call.js"
 import { BenchAssertions } from "./call.js"
 import type { BenchTypeAssertions } from "./type.js"
 import { createBenchTypeAssertion } from "./type.js"
+import { caller } from "#runtime"
 
 export type UntilOptions = {
     ms?: number

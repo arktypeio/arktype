@@ -1,9 +1,9 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { BoundOperator } from "../bound/bound.js"
 import { LeftBoundOperator } from "../bound/left.js"
 import { Comparators } from "../bound/tokens.js"
+import { assert } from "#testing"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {

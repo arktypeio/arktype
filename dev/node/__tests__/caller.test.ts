@@ -1,10 +1,10 @@
 import { platform } from "node:os"
 import { basename } from "node:path"
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { caller, fileName, getCallStack } from "../api.js"
 import { callMeFromDir, callPipeSeperated } from "./fromDir/reflectedFromDir.js"
 import { callMe, callMeAnonymous } from "./reflected.js"
+import { assert } from "#testing"
 
 describe("caller", () => {
     test("named", () => {

@@ -1,7 +1,7 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 import { Unenclosed } from "../../../parser/str/operand/unenclosed.js"
+import { assert } from "#testing"
 
 describe("tuple", () => {
     describe("empty", () => {

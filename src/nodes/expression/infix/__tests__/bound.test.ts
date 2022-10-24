@@ -1,4 +1,3 @@
-import { assert } from "#testing"
 import * as fc from "fast-check"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
@@ -10,6 +9,7 @@ import {
     arbitraryLimit,
     assertCheckResults
 } from "./utils.js"
+import { assert } from "#testing"
 
 // TODO: Add subtype tests for bounds and divisibility
 describe("bound", () => {

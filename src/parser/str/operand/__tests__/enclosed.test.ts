@@ -1,7 +1,7 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../type.js"
 import { Enclosed } from "../enclosed.js"
+import { assert } from "#testing"
 
 describe("parse enclosed", () => {
     test("with spaces", () => {

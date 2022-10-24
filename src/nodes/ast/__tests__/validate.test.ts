@@ -1,4 +1,3 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
 
@@ -6,6 +5,7 @@ import {
     buildIndivisibleMessage,
     buildUnboundableMessage
 } from "../validate.js"
+import { assert } from "#testing"
 
 describe("validate", () => {
     describe("bound", () => {

@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
-import { ensureDir, readJson } from "#runtime"
 import { getCmdFromPid } from "./util.js"
 import type { BenchFormat } from "./writeSnapshot.js"
+import { ensureDir, readJson } from "#runtime"
 
 export type LinePosition = {
     line: number

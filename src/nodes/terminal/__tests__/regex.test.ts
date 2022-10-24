@@ -1,6 +1,6 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
+import { assert } from "#testing"
 
 describe("regex keywords", () => {
     test("email", () => {

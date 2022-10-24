@@ -1,5 +1,5 @@
-import { bench, suite } from "#testing"
 import { space, type } from "../../../../api.js"
+import { bench, suite } from "#testing"
 
 suite("parse/str/operand", () => {
     suite("enclosed", () => {

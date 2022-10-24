@@ -1,9 +1,9 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { GroupOpen } from "../../operand/groupOpen.js"
 import { Operand } from "../../operand/operand.js"
 import { GroupClose } from "../groupClose.js"
+import { assert } from "#testing"
 
 describe("group", () => {
     test("entire expression", () => {

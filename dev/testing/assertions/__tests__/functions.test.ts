@@ -1,8 +1,8 @@
 import { strict } from "node:assert"
 import { basename } from "node:path"
-import { fileName } from "#runtime"
 import { describe, test } from "mocha"
 import { assert } from "../../api.js"
+import { fileName } from "#runtime"
 
 const n = 5
 const o = { re: "do" }

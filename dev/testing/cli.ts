@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { basename, join } from "node:path"
 import { version, versions } from "node:process"
-import { fileName, findPackageRoot, shell, walkPaths } from "#runtime"
 import { cacheAssertions, cleanupAssertions } from "./type/index.js"
+import { fileName, findPackageRoot, shell, walkPaths } from "#runtime"
 
 let runTestsCmd = ""
 const attestArgIndex = process.argv.findIndex((arg) =>

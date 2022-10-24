@@ -1,10 +1,10 @@
 import { fileURLToPath } from "node:url"
-import { caller, getCallStack } from "#runtime"
 import type { ValueAssertion } from "./assertions/index.js"
 import { Assertions } from "./assertions/index.js"
 import type { AtTestConfig, SourcePosition } from "./common.js"
 import { getAtTestConfig } from "./common.js"
 import { fixVitestPos, isVitest } from "./vitest.js"
+import { caller, getCallStack } from "#runtime"
 
 export type AvailableAssertions<T> = ValueAssertion<T, true>
 

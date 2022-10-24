@@ -1,5 +1,4 @@
 import { performance } from "node:perf_hooks"
-import { caller } from "#runtime"
 import { chainableNoOpProxy } from "@arktype/tools"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
@@ -8,6 +7,7 @@ import type { MarkMeasure, Measure, TimeUnit } from "./measure/index.js"
 import { createTimeComparison, createTimeMeasure } from "./measure/index.js"
 import type { BenchTypeAssertions } from "./type.js"
 import { createBenchTypeAssertion } from "./type.js"
+import { caller } from "#runtime"
 
 export type StatName = keyof typeof stats
 

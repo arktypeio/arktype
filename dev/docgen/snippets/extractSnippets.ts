@@ -1,5 +1,4 @@
 import type { Project } from "ts-morph"
-import { readFile } from "#runtime"
 import type { ExtractionToken } from "./snipTokens.js"
 import {
     extractionTokens,
@@ -7,6 +6,7 @@ import {
     snipTokens
 } from "./snipTokens.js"
 import { transformTsFileContents } from "./transformTsFileText.js"
+import { readFile } from "#runtime"
 
 /** Represents paths mapped to snippet data for a file */
 export type SnippetsByPath = Record<string, SnippetsByLabel>

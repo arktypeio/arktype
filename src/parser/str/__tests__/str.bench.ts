@@ -1,5 +1,5 @@
-import { bench, suite } from "#testing"
 import { type } from "../../../api.js"
+import { bench, suite } from "#testing"
 
 suite("legacy", () => {
     bench("validate undefined", () => {

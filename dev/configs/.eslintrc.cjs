@@ -16,16 +16,6 @@ module.exports = defineConfig({
         "plugin:import/typescript",
         "prettier"
     ],
-    settings: {
-        "import/resolver": {
-            typescript: {
-                project: ["@arktype/*/tsconfig.json"]
-            }
-        }
-    },
-    parserOptions: {
-        project: ["tsconfig.json", "@arktype/*/tsconfig.json"]
-    },
     ignorePatterns: [
         "**/dist/**",
         "**/__snippets__/**",
@@ -60,9 +50,10 @@ module.exports = defineConfig({
         ],
         "prefer-arrow-callback": ["warn", { allowNamedFunctions: true }],
         /**
-         * Organize imports
+         * Imports
          */
         "import/no-duplicates": "warn",
+        "import/no-cycle": "warn",
         // Sort import statements
         "import/order": [
             "warn",

@@ -1,8 +1,8 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
 import { OptionalOperator } from "../optional.js"
+import { assert } from "#testing"
 
 describe("parse optional", () => {
     test("valid", () => {

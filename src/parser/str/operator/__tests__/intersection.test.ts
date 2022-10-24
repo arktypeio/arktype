@@ -1,8 +1,8 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { Operand } from "../../operand/operand.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
+import { assert } from "#testing"
 
 describe("intersection", () => {
     describe("parse", () => {

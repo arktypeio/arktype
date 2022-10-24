@@ -1,9 +1,9 @@
+import { jsTypeOf, toString } from "@arktype/tools"
 import { InternalArktypeError } from "../../internal.js"
 import type { ArktypeSpace } from "../../space.js"
 import type { Scope } from "../expression/infix/scope.js"
 import type { Config, KindName } from "./kinds.js"
 import { Problems } from "./problems.js"
-import { jsTypeOf, toString } from "@arktype/tools"
 
 // TODO: Try callback traversal?
 export class Traversal<Data = unknown> {

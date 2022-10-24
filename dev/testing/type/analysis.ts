@@ -1,4 +1,4 @@
-import { getFileKey, getAtTestConfig } from "../common.js"
+import { getAtTestConfig, getFileKey } from "../common.js"
 import { getDefaultTsMorphProject } from "./getTsMorphProject.js"
 import type { AssertionData } from "./internal/index.js"
 import {

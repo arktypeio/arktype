@@ -1,7 +1,7 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { DivisibilityOperator } from "../divisibility.js"
+import { assert } from "#testing"
 
 describe("divisibility", () => {
     describe("parse", () => {

@@ -1,9 +1,9 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { space } from "../../../../space.js"
 import { type } from "../../../../type.js"
 import { buildMalformedNumericLiteralMessage } from "../numeric.js"
 import { Unenclosed } from "../unenclosed.js"
+import { assert } from "#testing"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {

@@ -1,9 +1,9 @@
-import { assert } from "#testing"
 import type { Dictionary } from "@arktype/tools"
 import { describe, test } from "mocha"
 import { space, type } from "../../api.js"
 import { Root } from "../root.js"
 import { Unenclosed } from "../str/operand/unenclosed.js"
+import { assert } from "#testing"
 
 describe("root definition", () => {
     // TODO: Add lazy tests

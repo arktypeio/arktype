@@ -1,6 +1,5 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
-import { caller } from "#runtime"
 import type { Fn } from "@arktype/tools"
 import { chainableNoOpProxy } from "@arktype/tools"
 import type { AssertionContext } from "../assert.js"
@@ -26,6 +25,7 @@ import {
     callAssertedFunction,
     getThrownMessage
 } from "./utils.js"
+import { caller } from "#runtime"
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean

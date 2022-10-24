@@ -1,9 +1,9 @@
-import { assert } from "#testing"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 import { Operand } from "../operand/operand.js"
 import { Unenclosed } from "../operand/unenclosed.js"
 import { Scanner } from "../state/scanner.js"
+import { assert } from "#testing"
 
 describe("str", () => {
     test("errors on empty string", () => {
