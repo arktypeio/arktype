@@ -23,3 +23,11 @@ export const contentsByEmbedId: Record<EmbedId, string> = {
 export const addonFilesByEmdedId: Partial<Record<EmbedId, AddonFile[]>> = {
     declaration: ["user", "group", "names"]
 }
+
+export const getAddonFiles = (addonFiles: AddonFile[]) => {
+    const contentsByRequestedFile: Record<string, string> = {}
+    for (const file of addonFiles) {
+        contentsByRequestedFile[`${file}.ts`] = contentsByAddonFile[file]
+    }
+    return contentsByRequestedFile
+}

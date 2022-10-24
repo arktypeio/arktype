@@ -1,19 +1,10 @@
 import { Box, CircularProgress } from "@mui/material"
 import React, { useEffect, useState } from "react"
-import type { AddonFile, DemoProps } from "./stackblitzGenerators/index"
+import type { DemoProps } from "./stackblitzGenerators/index"
 import {
-    contentsByAddonFile,
     createStackblitzDemo,
     DEMO_ELEMENT_ID
 } from "./stackblitzGenerators/index"
-
-export const getAddonFiles = (addonFiles: AddonFile[]) => {
-    const addon: Record<string, string> = {}
-    for (const file of addonFiles) {
-        addon[`${file}.ts`] = contentsByAddonFile[file]
-    }
-    return addon
-}
 
 // eslint-disable-next-line max-lines-per-function
 export const StackBlitzDemo = (demoProps: DemoProps) => {

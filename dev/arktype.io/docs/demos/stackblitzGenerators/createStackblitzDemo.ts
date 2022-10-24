@@ -1,8 +1,11 @@
 import sdk from "@stackblitz/sdk"
-import { getAddonFiles } from "../StackBlitzDemo"
 import { buildStackblitzIndexText } from "./buildStackblitzIndexText"
 import { defaultStaticFiles } from "./defaultFiles"
-import { addonFilesByEmdedId, contentsByEmbedId } from "./rawDemoFiles"
+import {
+    addonFilesByEmdedId,
+    contentsByEmbedId,
+    getAddonFiles
+} from "./rawDemoFiles"
 
 export const embedIds = { type: 1, space: 1, constraints: 1, declaration: 1 }
 export type EmbedId = keyof typeof embedIds

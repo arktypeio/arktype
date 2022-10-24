@@ -74,7 +74,6 @@ module.exports = defineConfig({
         /**
          * Keep functions and files concise and readable
          */
-        "max-statements": ["warn", 16],
         "max-lines-per-function": [
             "warn",
             { max: 32, skipComments: true, skipBlankLines: true }
