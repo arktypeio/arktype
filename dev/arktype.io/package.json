@@ -4,8 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "pnpm ts-node ./build.mts",
-        "typecheck": "tsc",
+        "build": "pnpm exec ts-node ./build.ts",
+        "typecheck": "pnpm exec tsc",
         "serve": "docusaurus serve --dir dist"
     },
     "dependencies": {
@@ -23,8 +23,7 @@
         "@mui/icons-material": "5.8.4",
         "@mui/material": "5.8.5",
         "@stackblitz/sdk": "1.8.0",
-        "framer-motion": "6.5.1",
-        "raw-loader": "4.0.2"
+        "framer-motion": "6.5.1"
     },
     "devDependencies": {
         "@docusaurus/module-type-aliases": "2.1.0",

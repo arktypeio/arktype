@@ -9,7 +9,6 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
-        "jsx": "react",
         "lib": ["ESNext"],
         "paths": {
             "get-current-line": [

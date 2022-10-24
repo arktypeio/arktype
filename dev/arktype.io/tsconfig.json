@@ -5,6 +5,7 @@
         "module": "CommonJS",
         "moduleResolution": "node",
         "target": "ES2017",
+        "jsx": "react",
         "types": [
             "@types/node",
             "@docusaurus/module-type-aliases",
@@ -12,5 +13,6 @@
         ],
         "lib": ["DOM"]
     },
-    "include": ["src", "docs"]
+    "include": ["src", "docs"],
+    "exclude": ["./node_modules", "./dist"]
 }

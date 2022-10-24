@@ -1,8 +1,11 @@
+import { execSync } from "node:child_process"
 import { rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { fromHere, shell } from "#runtime"
 
-const OUT_DIR = fromHere("dist")
+const OUT_DIR = "dist"
+
+const shell = (cmd: string) =>
+    execSync(cmd, { env: process.env, stdio: "inherit" })
 
 rmSync(OUT_DIR, { recursive: true, force: true })
 shell("pnpm run typecheck")
