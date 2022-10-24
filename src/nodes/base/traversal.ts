@@ -1,5 +1,5 @@
 import { jsTypeOf, toString } from "@arktype/tools"
-import { InternalArktypeError } from "../../internal.js"
+import { InternalArktypeError } from "../../utils.js"
 import type { ArktypeSpace } from "../../space.js"
 import type { Scope } from "../expression/infix/scope.js"
 import type { Config, KindName } from "./kinds.js"

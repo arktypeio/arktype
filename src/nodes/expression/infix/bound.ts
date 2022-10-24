@@ -1,5 +1,5 @@
 import { keySet } from "@arktype/tools"
-import { InternalArktypeError } from "../../../internal.js"
+import { InternalArktypeError } from "../../../utils.js"
 import type { Base } from "../../base/base.js"
 import { Infix } from "./infix.js"
 
