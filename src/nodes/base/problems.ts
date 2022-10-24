@@ -1,4 +1,4 @@
-import { jsTypeOf, toString, uncapitalize } from "@arktype/tools"
+import { JsType } from "../../utils/jsType.js"
 import type { Node } from "./node.js"
 
 export type BaseProblemConfig = {
@@ -140,12 +140,11 @@ export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
     get typeOf() {
-        return jsTypeOf(this.raw)
+        return JsType.of(this.raw)
     }
 
+    // TODO: Fix
     toString() {
-        return toString(this.raw, {
-            maxNestedStringLength: 50
-        })
+        return JSON.stringify(this.raw)
     }
 }

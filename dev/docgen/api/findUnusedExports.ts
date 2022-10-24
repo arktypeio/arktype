@@ -7,7 +7,7 @@ import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 import { findPackageRoot, readPackageJson } from "#runtime"
 
 const ignoreUnusedComment = "@ignore-unused"
-const publicApiRoots = [repoDirs.root, repoDirs.packageRoots.check]
+const publicApiRoots = [repoDirs.root]
 const exportAllRegex = /export \*/
 
 const project = new Project({

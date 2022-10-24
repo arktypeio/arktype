@@ -5,18 +5,18 @@ import type { ParseError, parseFn, ParserContext } from "../common.js"
 import type { Root } from "../root.js"
 import type { Operand } from "../str/operand/operand.js"
 
-export type MetaDefinition = [unknown, Expression.BaseToken, ...unknown[]]
+export type TupleExpression = [unknown, Expression.BaseToken, ...unknown[]]
 
-export const isMetaDefinition = (def: unknown[]): def is MetaDefinition =>
+export const isTupleExpression = (def: unknown[]): def is TupleExpression =>
     (def[1] as any) in {}
 
-export const parseMetaDefinition: parseFn<MetaDefinition> = (
+export const parseTupleExpression: parseFn<TupleExpression> = (
     [definition, token, ...args],
     context
 ) => ({} as Base.Node)
 
-export type ParseMetaDefinition<
-    Def extends MetaDefinition,
+export type parseTupleExpression<
+    Def extends TupleExpression,
     Ctx extends ParserContext
 > = Def[1] extends Expression.BinaryToken
     ? Def[2] extends undefined

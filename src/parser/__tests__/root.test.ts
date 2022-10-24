@@ -1,6 +1,6 @@
-import type { Dictionary } from "@arktype/tools"
 import { describe, test } from "mocha"
 import { space, type } from "../../api.js"
+import type { Dictionary } from "../../utils/generics.js"
 import { Root } from "../root.js"
 import { Unenclosed } from "../str/operand/unenclosed.js"
 import { assert } from "#testing"

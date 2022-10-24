@@ -1,5 +1,3 @@
-import type { StringReplace, UnionToTuple } from "@arktype/tools"
-import type { Type } from "ts-morph"
 import { bench } from "../../api.js"
 
 const fakeCallOptions = {
@@ -32,20 +30,22 @@ bench(
     fakeCallOptions
 ).mark({ mean: [2, "ms"], median: [2, "ms"] })
 
-type MakeComplexType<S extends string> = UnionToTuple<
-    StringReplace<keyof Type, "e", S>
->
+type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
+    ? head | tail | MakeComplexType<tail>
+    : S
 
 bench("bench type", () => {
-    return [] as any as MakeComplexType<"!">
-}).type([44667, "instantiations"])
+    return [] as any as MakeComplexType<"defenestration">
+}).type()
 
 bench(
     "bench call and type",
     () => {
-        return /.*foo.*/.test("boofoozoo") as any as MakeComplexType<"?">
+        return /.*foo.*/.test(
+            "boofoozoo"
+        ) as any as MakeComplexType<"antidisestablishmenttarianism">
     },
     fakeCallOptions
 )
-    .mean([2, "ms"])
-    .type([44667, "instantiations"])
+    .mean()
+    .type()

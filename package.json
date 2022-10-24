@@ -27,6 +27,12 @@
         },
         "#runtime": {
             "node": "./dev/node/api.ts"
+        },
+        "#arktype": {
+            "default": "./src/api.ts"
+        },
+        "#arktype/utils": {
+            "default": "./src/utils/exports.ts"
         }
     },
     "packageManager": "pnpm@7.14.0",
@@ -73,7 +79,8 @@
         "typescript": "4.9.1-beta",
         "mocha": "10.1.0",
         "@types/mocha": "10.0.0",
-        "fast-check": "3.2.0"
+        "fast-check": "3.2.0",
+        "get-current-line": "6.6.0"
     },
     "pnpm": {
         "peerDependencyRules": {

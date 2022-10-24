@@ -1,5 +1,5 @@
-import { isKeyOf } from "@arktype/tools"
-import { throwInternalError } from "../../../utils.js"
+import { isKeyOf } from "../../../utils/generics.js"
+import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 import { ArrayOperator } from "./array.js"

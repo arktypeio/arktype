@@ -1,5 +1,4 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
-import { toString } from "@arktype/tools"
 import type { CallExpression, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import type { SourcePosition } from "./common.js"
@@ -77,12 +76,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     const project = getDefaultTsMorphProject()
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
-    const newArgText = toString(serializedValue, {
-        // Bench snapshots don't include newlines and should be JSON parsable,
-        // so use double quotes instead of backticks
-        quote: baselinePath ? "double" : "backtick",
-        keyQuote: "double"
-    })
+    const newArgText = JSON.stringify(serializedValue)
     queuedUpdates.push({
         file,
         position,

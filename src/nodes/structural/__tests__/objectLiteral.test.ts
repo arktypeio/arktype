@@ -1,4 +1,3 @@
-import { narrow } from "@arktype/tools"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 import { assert } from "#testing"
@@ -28,11 +27,11 @@ describe("object", () => {
         })
     })
     describe("check", () => {
-        const shallowInputDef = narrow({
+        const shallowInputDef = {
             a: "string",
             b: "number",
             c: "67"
-        })
+        } as const
         const shallow = type.lazy(shallowInputDef)
         const nested = type.lazy({ nest: { ed: "string" } })
         test("standard", () => {

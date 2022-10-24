@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
-import { getCmdFromPid } from "./util.js"
+import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 import { ensureDir, readJson } from "#runtime"
 
@@ -56,40 +56,60 @@ const checkArgsForParam = (args: string[], param: `-${string}`) => {
 
 export const getFileKey = (path: string) => relative(".", path)
 
+export const isRecursible = (value: unknown): value is object =>
+    typeof value === "object" && value !== null
+
 export type Serialized<T> = T extends undefined | symbol | bigint | Function
     ? string
     : T extends number | string | boolean
     ? T
     : { [K in keyof T]: Serialized<T[K]> }
 
-export const literalSerialize = <T>(
+export const literalSerialize = <T>(value: T): Serialized<T> =>
+    serialize(value, false, [])
+
+export const stringSerialize = (value: unknown) => serialize(value, true, [])
+
+const serialize = <T>(
     value: T,
-    seen: unknown[] = []
-): Serialized<T> => {
-    const result =
-        typeof value === "object"
-            ? value === null
-                ? null
-                : seen.includes(value)
-                ? "<cyclic>"
-                : Array.isArray(value)
-                ? value.map((v) => literalSerialize(v, [...seen, value]))
+    alwaysStringify: boolean,
+    seen: unknown[]
+): any => {
+    if (isRecursible(value)) {
+        if (seen.includes(value)) {
+            return "<cyclic>"
+        } else {
+            seen.push(value)
+            const serializedObject = Array.isArray(value)
+                ? value.map((_) => serialize(_, alwaysStringify, seen))
                 : Object.fromEntries(
                       Object.entries(value).map(([k, v]) => [
                           k,
-                          literalSerialize(v, [...seen, value])
+                          serialize(v, alwaysStringify, seen)
                       ])
                   )
-            : typeof value === "symbol"
-            ? `<symbol ${value.description ?? "(anonymous)"}>`
-            : typeof value === "function"
-            ? `<function ${value.name ?? "(anonymous)"}>`
-            : typeof value === "undefined"
-            ? "<undefined>"
-            : typeof value === "bigint"
-            ? `<bigint ${value}>`
-            : value
-    return result as Serialized<T>
+            return alwaysStringify
+                ? JSON.stringify(serializedObject)
+                : serializedObject
+        }
+    } else {
+        return serializePrimitive(value, alwaysStringify)
+    }
+}
+
+const serializePrimitive = (value: unknown, stringify?: boolean) => {
+    switch (typeof value) {
+        case "symbol":
+            return `<symbol ${value.description ?? "(anonymous)"}>`
+        case "function":
+            return `<function ${value.name ?? "(anonymous)"}>`
+        case "undefined":
+            return "<undefined>"
+        case "bigint":
+            return `<bigint ${value}>`
+        default:
+            return stringify ? JSON.stringify(value) : value
+    }
 }
 
 const getArgsToCheck = () => {

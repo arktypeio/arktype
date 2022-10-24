@@ -1,5 +1,4 @@
-import type { NormalizedJsTypeName, NormalizedJsTypeOf } from "@arktype/tools"
-import { jsTypeOf } from "@arktype/tools"
+import { JsType } from "../utils/jsType.js"
 import type { ParseError, parseFn, ParserContext } from "./common.js"
 import { throwParseError } from "./common.js"
 import { Obj } from "./obj/obj.js"
@@ -7,7 +6,7 @@ import { Str } from "./str/str.js"
 
 export namespace Root {
     export const parse: parseFn = (def, space) => {
-        const defType = jsTypeOf(def)
+        const defType = JsType.of(def)
         return defType === "string"
             ? Str.parse(def as any, space)
             : defType === "object" || defType === "array"
@@ -18,7 +17,7 @@ export namespace Root {
     export type parse<def, ctx extends ParserContext> = def extends string
         ? Str.Parse<def, ctx>
         : def extends BadDefinitionType
-        ? ParseError<buildBadDefinitionTypeMessage<NormalizedJsTypeOf<def>>>
+        ? ParseError<buildBadDefinitionTypeMessage<JsType.NormalizedOf<def>>>
         : Obj.Parse<def, ctx>
 
     export type BadDefinitionType =
@@ -31,12 +30,12 @@ export namespace Root {
         | symbol
 
     export const buildBadDefinitionTypeMessage = <
-        actual extends NormalizedJsTypeName
+        actual extends JsType.NormalizedName
     >(
         actual: actual
     ): buildBadDefinitionTypeMessage<actual> =>
         `Type definitions must be strings or objects (was ${actual}).`
 
-    type buildBadDefinitionTypeMessage<actual extends NormalizedJsTypeName> =
+    type buildBadDefinitionTypeMessage<actual extends JsType.NormalizedName> =
         `Type definitions must be strings or objects (was ${actual}).`
 }

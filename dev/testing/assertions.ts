@@ -1,7 +1,6 @@
 import { strict } from "node:assert"
-import type { DiffOptions } from "@arktype/tools"
-import { diff, isRecursible, toString } from "@arktype/tools"
 import type { AssertionContext } from "./assert.js"
+import { isRecursible } from "./common.js"
 
 export type ThrowAsertionErrorContext = {
     message: string
@@ -19,49 +18,24 @@ export const throwAssertionError = ({
     throw e
 }
 
-export type AssertEqualsContext = AssertionContext & {
-    options?: DiffOptions
-}
-
-export const assertDeepEquals = (
-    expected: unknown,
-    actual: unknown,
-    ctx: AssertEqualsContext
-) => {
-    const changes = diff(expected, actual, ctx.options)
-    if (changes) {
-        throwAssertionError({
-            message: `Values differed at the following paths:\n${toString(
-                changes,
-                { indent: 2 }
-            )}`,
-            expected,
-            actual,
-            ctx
-        })
-    }
-}
-
 export const assertEquals = (
     expected: unknown,
     actual: unknown,
-    ctx: AssertEqualsContext
+    ctx: AssertionContext
 ) => {
     if (isRecursible(expected) && isRecursible(actual)) {
-        assertDeepEquals(expected, actual, {
-            ...ctx,
-            options: {
-                ...ctx.options,
-                baseKey: "expected",
-                compareKey: "actual"
-            }
-        })
+        try {
+            strict.deepStrictEqual(actual, expected)
+        } catch (e: any) {
+            e.stack = ctx.assertionStack
+            throw e
+        }
     } else if (actual !== expected) {
-        throwAssertionError({
-            message: `${actual}!==${expected}`,
-            expected,
-            actual,
-            ctx
-        })
+        try {
+            strict.strictEqual(actual, expected)
+        } catch (e: any) {
+            e.stack = ctx.assertionStack
+            throw e
+        }
     }
 }

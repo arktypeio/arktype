@@ -1,8 +1,6 @@
-import type { Dictionary } from "@arktype/tools"
-import { throwInternalError } from "../../utils.js"
+import type { Dictionary } from "../../utils/generics.js"
 import { Base } from "../base/base.js"
 import { Keyword } from "../terminal/keyword/keyword.js"
-import { Terminal } from "../terminal/terminal.js"
 
 export namespace ObjectLiteral {
     export class Node extends Base.Node {

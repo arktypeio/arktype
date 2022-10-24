@@ -1,4 +1,4 @@
-import type { Evaluate } from "@arktype/tools"
+import type { Evaluate } from "../../utils/generics.js"
 import type { Bound } from "../expression/infix/bound.js"
 import type { Keyword } from "../terminal/keyword/keyword.js"
 import type { BigintLiteral } from "../terminal/literal/bigint.js"

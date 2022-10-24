@@ -1,5 +1,2 @@
 export * from "./assertions.js"
-export type {
-    RootAssertions as ValueAssertion,
-    EqualsOptions
-} from "./types.js"
+export type { RootAssertions as ValueAssertion } from "./types.js"

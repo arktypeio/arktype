@@ -1,9 +1,8 @@
-import type { ElementOf } from "@arktype/tools"
 import type { Measure, MeasureComparison } from "./measure.js"
 
 export const TYPE_UNITS = ["instantiations"] as const
 
-export type TypeUnit = ElementOf<typeof TYPE_UNITS>
+export type TypeUnit = typeof TYPE_UNITS[number]
 
 export const createTypeComparison = (
     value: number,

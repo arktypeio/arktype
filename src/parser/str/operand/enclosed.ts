@@ -1,4 +1,3 @@
-import { keySet } from "@arktype/tools"
 import { RegexLiteral } from "../../../nodes/terminal/literal/regexLiteral.js"
 import { StringLiteral } from "../../../nodes/terminal/literal/string.js"
 import { throwParseError } from "../../common.js"
@@ -44,11 +43,11 @@ export namespace Enclosed {
               >
         : never
 
-    export const startChars = keySet({
+    export const startChars = {
         "'": 1,
         '"': 1,
         "/": 1
-    })
+    }
 
     export type StartChar = keyof typeof startChars
 

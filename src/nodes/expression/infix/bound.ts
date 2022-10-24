@@ -1,5 +1,4 @@
-import { keySet } from "@arktype/tools"
-import { InternalArktypeError } from "../../../utils.js"
+import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import type { Base } from "../../base/base.js"
 import { Infix } from "./infix.js"
 
@@ -8,10 +7,10 @@ export namespace Bound {
 
     export type Token = keyof typeof tokens
 
-    export const doublableTokens = keySet({
+    export const doublableTokens = {
         "<=": 1,
         "<": 1
-    })
+    }
 
     export type DoublableToken = keyof typeof doublableTokens
 
@@ -52,7 +51,7 @@ export namespace Bound {
             default:
                 // TODO: Does this work?
                 // c8 ignore next
-                throw new InternalArktypeError(
+                return throwInternalError(
                     `Unexpected comparator '${normalizedComparator}'.`
                 )
         }

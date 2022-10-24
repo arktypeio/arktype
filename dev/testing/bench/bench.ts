@@ -1,4 +1,3 @@
-import { chainableNoOpProxy } from "@arktype/tools"
 import type { AtTestConfig, SourcePosition } from "../common.js"
 import { getAtTestConfig } from "../common.js"
 import type { BenchFormat } from "../writeSnapshot.js"
@@ -6,6 +5,7 @@ import type { TimeAssertionName } from "./call.js"
 import { BenchAssertions } from "./call.js"
 import type { BenchTypeAssertions } from "./type.js"
 import { createBenchTypeAssertion } from "./type.js"
+import { chainableNoOpProxy } from "#arktype/utils"
 import { caller } from "#runtime"
 
 export type UntilOptions = {

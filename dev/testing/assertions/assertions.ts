@@ -1,7 +1,5 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
-import type { Fn } from "@arktype/tools"
-import { chainableNoOpProxy } from "@arktype/tools"
 import type { AssertionContext } from "../assert.js"
 import { assertEquals, throwAssertionError } from "../assertions.js"
 import { literalSerialize } from "../common.js"
@@ -15,16 +13,13 @@ import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
 } from "../writeSnapshot.js"
-import type {
-    AnyValueAssertion,
-    EqualsOptions,
-    ExternalSnapshotArgs
-} from "./types.js"
+import type { AnyValueAssertion, ExternalSnapshotArgs } from "./types.js"
 import {
     assertEqualOrMatching,
     callAssertedFunction,
     getThrownMessage
 } from "./utils.js"
+import { chainableNoOpProxy } from "#arktype/utils"
 import { caller } from "#runtime"
 
 export type ChainableAssertionOptions = {
@@ -69,8 +64,8 @@ export class Assertions implements AssertionRecord {
         strict.equal(this.actual, expected)
         return this
     }
-    equals(expected: unknown, options?: EqualsOptions) {
-        assertEquals(expected, this.actual, { ...this.ctx, options })
+    equals(expected: unknown) {
+        assertEquals(expected, this.actual, this.ctx)
         return this
     }
 
@@ -168,7 +163,7 @@ export class Assertions implements AssertionRecord {
     }
 
     get returns() {
-        const result = callAssertedFunction(this.actual as Fn, this.ctx)
+        const result = callAssertedFunction(this.actual as Function, this.ctx)
         if (!("returned" in result)) {
             throwAssertionError({ message: result.threw!, ctx: this.ctx })
         }
@@ -178,7 +173,7 @@ export class Assertions implements AssertionRecord {
     }
 
     get throws() {
-        const result = callAssertedFunction(this.actual as Fn, this.ctx)
+        const result = callAssertedFunction(this.actual as Function, this.ctx)
         this.ctx.actual = getThrownMessage(result, this.ctx)
         this.ctx.allowRegex = true
         this.ctx.defaultExpected = ""
@@ -189,7 +184,7 @@ export class Assertions implements AssertionRecord {
         assertEqualOrMatching(
             matchValue,
             getThrownMessage(
-                callAssertedFunction(this.actual as Fn, this.ctx),
+                callAssertedFunction(this.actual as Function, this.ctx),
                 this.ctx
             ),
             this.ctx

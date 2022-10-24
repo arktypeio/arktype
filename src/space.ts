@@ -4,8 +4,10 @@ import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type { ArktypeConfig } from "./type.js"
 import { Arktype } from "./type.js"
-import { chainableNoOpProxy, lazyDynamicWrap } from "./utils.js"
-import type { Dictionary, Evaluate, LazyDynamicWrap } from "./utils.js"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { Dictionary, Evaluate } from "./utils/generics.js"
+import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawSpace = (aliases: Dictionary, config: ArktypeConfig = {}) => {
     const result: ArktypeSpace = {

@@ -1,5 +1,4 @@
 import { AssertionError, strict } from "node:assert"
-import { narrow } from "@arktype/tools"
 import { describe, test } from "mocha"
 import { assert } from "../../api.js"
 const o = { re: "do" }
@@ -57,7 +56,9 @@ describe("Assertions", () => {
         assert(() => {}).is
     })
     test("narrowedValue", () => {
-        assert(narrow({ a: "narrow" })).narrowedValue({ a: "narrow" })
+        assert({ a: "narrow" } as { a: "narrow" }).narrowedValue({
+            a: "narrow"
+        })
         strict.throws(
             () => {
                 assert({ a: "narrow" }).narrowedValue({ a: "narrow" })

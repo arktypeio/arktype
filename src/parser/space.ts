@@ -1,4 +1,4 @@
-import type { Evaluate } from "@arktype/tools"
+import type { Evaluate } from "../utils/generics.js"
 import type { Root } from "./root.js"
 
 export type ParseSpace<Aliases> = Evaluate<{

@@ -7,8 +7,9 @@ import { Scope } from "./nodes/expression/infix/scope.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
-import { chainableNoOpProxy, lazyDynamicWrap } from "./utils.js"
-import type { LazyDynamicWrap } from "./utils.js"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const emptyAliases = { aliases: {} }
 const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {

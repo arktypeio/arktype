@@ -3,7 +3,6 @@ import type { ValueAssertion } from "./assertions/index.js"
 import { Assertions } from "./assertions/index.js"
 import type { AtTestConfig, SourcePosition } from "./common.js"
 import { getAtTestConfig } from "./common.js"
-import { fixVitestPos, isVitest } from "./vitest.js"
 import { caller, getCallStack } from "#runtime"
 
 export type AvailableAssertions<T> = ValueAssertion<T, true>
@@ -29,10 +28,7 @@ export const assert: AssertFn = (
     value: unknown,
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
-    let position = caller()
-    if (isVitest()) {
-        position = fixVitestPos(position)
-    }
+    const position = caller()
     if (position.file.startsWith("file:///")) {
         position.file = fileURLToPath(position.file)
     }

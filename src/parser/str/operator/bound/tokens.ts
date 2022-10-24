@@ -1,19 +1,18 @@
-import { keySet } from "@arktype/tools"
 import type { Bound } from "../../../../nodes/expression/infix/bound.js"
 
 export namespace Comparators {
-    export const startChar = keySet({
+    export const startChar = {
         "<": 1,
         ">": 1,
         "=": 1
-    })
+    }
 
     export type StartChar = keyof typeof startChar
 
-    export const oneChar = keySet({
+    export const oneChar = {
         "<": 1,
         ">": 1
-    })
+    }
 
     export type OneChar = keyof typeof oneChar
 

@@ -1,8 +1,8 @@
-import { isKeyOf } from "@arktype/tools"
 import type { StatName } from "../call.js"
 import type { TimeUnit } from "./time.js"
 import { stringifyTimeMeasure, TIME_UNIT_RATIOS } from "./time.js"
 import type { TypeUnit } from "./types.js"
+import { isKeyOf } from "#arktype/utils"
 
 type MeasureUnit = TimeUnit | TypeUnit
 

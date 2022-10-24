@@ -1,4 +1,4 @@
-import type { Evaluate } from "@arktype/tools"
+import type { Evaluate } from "../../utils/generics.js"
 import type { Expression } from "../expression/expression.js"
 import type { Structural } from "../structural/structural.js"
 import type { Terminal } from "../terminal/terminal.js"

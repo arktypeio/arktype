@@ -20,13 +20,15 @@ export type Package = typeof types.package.infer
 
 // And can validate cyclic data.
 export const readPackageData = () => {
-    const arktypePackageData: Package = {
+    const arktypePackageData = {
         name: "arktype",
         dependencies: [],
-        devDependencies: [{ name: "@arktype/check" }],
+        devDependencies: [
+            { name: "@arktype/check", dependencies: [] as Package[] }
+        ],
         contributors: [{ email: "david@sharktypeio" }]
     }
-    arktypePackageData.devDependencies[0].dependencies = [arktypePackageData]
+    arktypePackageData.devDependencies[0].dependencies.push(arktypePackageData)
     return arktypePackageData
 }
 

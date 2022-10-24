@@ -1,4 +1,3 @@
-import { narrow } from "@arktype/tools"
 import { describe, test } from "mocha"
 import { space, type } from "../api.js"
 import { assert } from "#testing"
@@ -108,16 +107,14 @@ describe("space validation", () => {
             }).problems?.summary
         ).snap(`c/8 must be one of a|b (was {isA: "the duck goes quack"})`)
     })
-    const recursiveDict = narrow({ dejaVu: { dejaVu: "dejaVu?" } })
+    const recursive = space.lazy({ dejaVu: { dejaVu: "dejaVu?" } })
     test("validates recursive objects", () => {
-        const recursive = space(recursiveDict)
         type DejaVu = typeof recursive.$.infer.dejaVu
         const dejaVu: DejaVu = {}
         dejaVu.dejaVu = dejaVu
         assert(recursive.dejaVu.check(dejaVu).problems).equals(undefined)
     })
     test("validates deep objects", () => {
-        const recursive = space(recursiveDict)
         const dejaVu: typeof recursive.$.infer.dejaVu = {}
         let i = 0
         let current = dejaVu

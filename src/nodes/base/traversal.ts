@@ -1,6 +1,5 @@
-import { jsTypeOf, toString } from "@arktype/tools"
-import { InternalArktypeError } from "../../utils.js"
 import type { ArktypeSpace } from "../../space.js"
+import { throwInternalError } from "../../utils/internalArktypeError.js"
 import type { Scope } from "../expression/infix/scope.js"
 import type { Config, KindName } from "./kinds.js"
 import { Problems } from "./problems.js"
@@ -86,7 +85,7 @@ export class Traversal<Data = unknown> {
     resolve(alias: string) {
         const resolution = this.space?.[alias].root
         if (!resolution) {
-            throw new InternalArktypeError(
+            return throwInternalError(
                 `Unexpectedly failed to resolve alias '${alias}'`
             )
         }

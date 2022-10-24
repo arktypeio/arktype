@@ -1,5 +1,4 @@
-import type { KeySet } from "@arktype/tools"
-import { keySet } from "@arktype/tools"
+import type { Dictionary } from "../../../utils/generics.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -50,7 +49,7 @@ export class Scanner<Lookahead extends string = string> {
         return this.lookahead === char
     }
 
-    lookaheadIsIn<Tokens extends KeySet>(
+    lookaheadIsIn<Tokens extends Dictionary>(
         tokens: Tokens
     ): this is Scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens
@@ -71,7 +70,7 @@ export namespace Scanner {
     export const lookaheadIsTerminator: UntilCondition = (r: Scanner) =>
         r.lookahead in terminatingChars
 
-    export const terminatingChars = keySet({
+    export const terminatingChars = {
         "<": 1,
         ">": 1,
         "=": 1,
@@ -82,7 +81,7 @@ export namespace Scanner {
         "[": 1,
         "%": 1,
         " ": 1
-    })
+    }
 
     export type TerminatingChar = keyof typeof Scanner.terminatingChars
 

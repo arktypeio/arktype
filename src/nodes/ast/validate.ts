@@ -1,5 +1,5 @@
-import type { IsAny } from "@arktype/tools"
 import type { ParseError } from "../../parser/common.js"
+import type { IsAny } from "../../utils/generics.js"
 import type { Branching } from "../expression/branching/branching.js"
 import type { Bound } from "../expression/infix/bound.js"
 import type { NumberLiteral } from "../terminal/literal/number.js"

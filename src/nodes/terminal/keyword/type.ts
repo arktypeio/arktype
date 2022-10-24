@@ -1,4 +1,4 @@
-import { hasJsType } from "@arktype/tools"
+import { JsType } from "../../../utils/jsType.js"
 import type { Base } from "../../base/base.js"
 import type { Traversal } from "../../base/traversal.js"
 import { Terminal } from "../terminal.js"
@@ -166,7 +166,7 @@ export namespace TypeKeyword {
         readonly definition = "dictionary"
         readonly description = "a non-array object"
         allowsData(data: unknown): data is Record<string, unknown> {
-            return hasJsType(data, "object")
+            return JsType.is(data, "object")
         }
     }
 

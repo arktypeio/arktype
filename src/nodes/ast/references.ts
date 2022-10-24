@@ -1,3 +1,4 @@
+import type { Conform } from "../../utils/generics.js"
 import type { Branching } from "../expression/branching/branching.js"
 import type { Infix } from "../expression/infix/infix.js"
 import type { Postfix } from "../expression/postfix/postfix.js"

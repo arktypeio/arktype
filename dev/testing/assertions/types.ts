@@ -1,10 +1,5 @@
-import type {
-    Fn,
-    IsAnyOrUnknown,
-    ListComparisonMode,
-    Narrow
-} from "@arktype/tools"
 import type { Serialized } from "../common.js"
+import type { IsTopType, Narrow } from "#arktype/utils"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
     AllowTypeAssertions extends true ? TypeAssertionsRoot : {}
@@ -12,7 +7,7 @@ export type NextAssertions<AllowTypeAssertions extends boolean> =
 export type RootAssertions<
     T,
     AllowTypeAssertions extends boolean
-> = (IsAnyOrUnknown<T> extends true
+> = (IsTopType<T> extends true
     ? AnyValueAssertion<T, AllowTypeAssertions>
     : TypedValueAssertions<T, AllowTypeAssertions>) &
     TypeAssertionsRoot
@@ -43,7 +38,7 @@ export type AnyValueAssertion<
 
 export type TypedValueAssertions<T, AllowTypeAssertions extends boolean> = [
     T
-] extends [Fn<infer Args, infer Return>]
+] extends [(...args: infer Args) => infer Return]
     ? FunctionAssertions<Args, Return, AllowTypeAssertions>
     : ComparableValueAssertion<T, AllowTypeAssertions>
 
@@ -105,10 +100,7 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
     snapToFile: (
         args: ExternalSnapshotArgs
     ) => NextAssertions<AllowTypeAssertions>
-    equals: (
-        value: T,
-        options?: EqualsOptions
-    ) => NextAssertions<AllowTypeAssertions>
+    equals: (value: T) => NextAssertions<AllowTypeAssertions>
     // This can be used to assert values without type constraints
     unknown: Omit<
         ComparableValueAssertion<unknown, AllowTypeAssertions>,
@@ -121,8 +113,4 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
 export type ExternalSnapshotArgs = {
     id: string
     path?: string
-}
-
-export type EqualsOptions = {
-    listComparison?: ListComparisonMode
 }
