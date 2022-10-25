@@ -10,6 +10,7 @@ export type RunThenGetContentsOptions = {
     benchFormat?: BenchFormat
 }
 
+// eslint-disable-next-line max-lines-per-function
 export const runThenGetContents = (
     templatePath: string,
     { precache, includeBenches, benchFormat }: RunThenGetContentsOptions = {}

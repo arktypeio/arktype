@@ -14,7 +14,7 @@ import { Scanner } from "./scanner.js"
 // TODO: Check namespace parse output
 export namespace ParserState {
     export type Base = {
-        attributes: Base.Attributes
+        attributes?: Base.Attributes
         root: Base.Node | null
         branches: OpenBranches
         groups: OpenBranches[]

@@ -12,6 +12,7 @@ export namespace UnionOperator {
         } else {
             s.branches.union.pushChild(s.root)
         }
+        s.attributes?.branch()
         s.root = undefined as any
         return s
     }

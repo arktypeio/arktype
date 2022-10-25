@@ -9,14 +9,10 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
-        "lib": ["ESNext"],
-        "paths": {
-            "get-current-line": [
-                "./node_modules/get-current-line/compiled-types/index.d.ts"
-            ]
-        }
+        "lib": ["ESNext"]
     },
-    "exclude": ["**/node_modules", "**/dist", "./dev/arktype.io"],
+    "include": ["src"],
+    "exclude": ["**/node_modules", "**/dist"],
     "ts-node": {
         "esm": true,
         "swc": true,

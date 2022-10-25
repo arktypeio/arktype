@@ -13,6 +13,5 @@
         ],
         "lib": ["DOM"]
     },
-    "include": ["src", "docs"],
-    "exclude": ["./node_modules", "./dist"]
+    "include": ["src", "docs"]
 }

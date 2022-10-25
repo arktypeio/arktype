@@ -20,9 +20,9 @@ type Composed = {
     values?: Attributes
 }
 
-type CompiledAttributes = Atomic & Composed
+type RawAttributes = Atomic & Composed
 
-type AttributeName = keyof CompiledAttributes
+type AttributeName = keyof RawAttributes
 
 type ParamsByName = {
     type: [JsType.NormalizedName]
@@ -36,7 +36,9 @@ type ParamsByName = {
 type InputName = keyof ParamsByName
 
 export class Attributes {
-    constructor(private attributes: CompiledAttributes) {}
+    private branches?: RawAttributes[]
+
+    constructor(private attributes: RawAttributes) {}
 
     get<Name extends AttributeName>(name: Name) {
         return this.attributes[name]
@@ -44,7 +46,7 @@ export class Attributes {
 
     add<Name extends InputName>(name: Name, ...params: ParamsByName[Name]) {}
 
-    forProp(key: string | number) {
+    addProp(key: string | number) {
         if (!this.attributes.props) {
             this.attributes.props = {}
         }
@@ -54,11 +56,11 @@ export class Attributes {
         return this.attributes.props[key]
     }
 
-    addBranch(branchAttributes: Attributes) {
-        if (!this.attributes.branches) {
-            this.attributes.branches = [branchAttributes]
-            return
+    branch() {
+        if (!this.branches) {
+            this.branches = []
         }
-        this.attributes.branches.push(branchAttributes)
+        this.branches.push(this.attributes)
+        this.attributes = {}
     }
 }

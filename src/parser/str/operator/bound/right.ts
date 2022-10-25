@@ -42,7 +42,7 @@ export namespace RightBoundOperator {
         limit: number
     ) => {
         if (!isLeftBounded(s)) {
-            s.attributes.add("bound", comparator, limit)
+            s.attributes?.add("bound", comparator, limit)
             s.root = new Bound.RightNode<false>(s.root, comparator, limit)
             return s
         }
@@ -51,12 +51,12 @@ export namespace RightBoundOperator {
                 Comparators.buildInvalidDoubleMessage(comparator)
             )
         }
-        s.attributes.add(
+        s.attributes?.add(
             "bound",
             s.branches.leftBound[1],
             s.branches.leftBound[0]
         )
-        s.attributes.add("bound", comparator, limit)
+        s.attributes?.add("bound", comparator, limit)
         s.root = new Bound.LeftNode(
             s.branches.leftBound[0],
             s.branches.leftBound[1],

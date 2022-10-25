@@ -38,7 +38,7 @@ export namespace DivisibilityOperator {
         if (parseResult === 0) {
             return ParserState.error(buildInvalidDivisorMessage("0"))
         }
-        s.attributes.add("divisor", parseResult)
+        s.attributes?.add("divisor", parseResult)
         s.root = new Divisibility.Node(s.root, parseResult) as any
         return s
     }

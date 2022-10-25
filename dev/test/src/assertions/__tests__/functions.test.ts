@@ -2,7 +2,7 @@ import { strict } from "node:assert"
 import { basename } from "node:path"
 import { fileName } from "@arktype/runtime"
 import { describe, test } from "mocha"
-import { assert } from "../../api.js"
+import { attest } from "../../api.js"
 
 const n = 5
 const o = { re: "do" }
