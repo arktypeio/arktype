@@ -1,7 +1,7 @@
 import type { Dictionary, Evaluate, JsType } from "../internal.js"
 import type { Comparator } from "../parser/str/operator/bound/comparator.js"
 
-type Atomic = {
+export type Attributes = Readonly<{
     type?: JsType.NormalizedName
     value?: unknown
     // TODO: Multiple regex
@@ -13,49 +13,15 @@ type Atomic = {
     inclusiveMax?: true
     optional?: true
     config?: Dictionary
-}
-
-type Composed = {
     branches?: Attributes[]
     props?: Dictionary<Attributes>
     values?: Attributes
-}
-
-export type Attributes = Atomic & Composed
-
-// Calculate the GCD, then divide the product by that to determine the LCM:
-// https://en.wikipedia.org/wiki/Euclidean_algorithm
-const leastCommonMultiple = (first: number, second: number) => {
-    let previous
-    let greatestCommonDivisor = first
-    let current = second
-    while (current !== 0) {
-        previous = current
-        current = greatestCommonDivisor % current
-        greatestCommonDivisor = previous
-    }
-    return Math.abs((first * second) / greatestCommonDivisor)
-}
-
-// export type EntriesOf<o extends object> =
-//     <
-//         {
-//             [k in keyof o]: [k, o[k]]
-//         }[keyof o]
-//     >
-
-export type EntryOf<T> = Evaluate<
-    Required<{ [K in keyof T]: [K, T[K]] }>[T extends unknown[]
-        ? keyof T & number
-        : keyof T]
->
-
-export type EntriesOf<T> = EntryOf<T>[]
-
-type Z = EntriesOf<Attributes>
+}>
 
 export namespace Attributes {
-    export type Name = keyof Attributes
+    export type Name = Evaluate<keyof Attributes>
+
+    type MutableAttributes = { -readonly [k in Name]?: Attributes[k] }
 
     export type ParamsByName = {
         type: [JsType.NormalizedName]
@@ -97,39 +63,57 @@ export namespace Attributes {
         }
         return attributes.props[key]
     }
-    // "string|number"
 
-    const root = { type: "string" }
-
-    export const intersectionOf = (left: Attributes, right: Attributes) => {
-        for (const [name, value] of Object.entries(right)) {
-            addRaw(left, name, value)
+    export const intersectionOf = (base: Attributes, branch: Attributes) => {
+        let k: Name
+        for (k in branch) {
+            addRaw(base, k, branch[k])
         }
+        return base
     }
 
     // Only when union is finalized
     export const unionOf = (base: Attributes, branch: Attributes) => {
-        let branchAttributes
-        const branchAttributeEntries = Object.entries(
-            branch
-        ) as EntriesOf<Attributes>
-        for (const [name, value] of branchAttributeEntries) {
-            if (base[name] === value) {
+        let k: Name
+        let branchHasAUniqueAttribute = false
+        for (k in branch) {
+            if (base[k] === branch[k]) {
+                // The branch attribute is redundant and can be removed.
+                delete branch[k]
                 continue
             }
-            if (name in base) {
-                base.branches ||= []
-                for (const branch of base.branches) {
-                    branch[name] = base[name]
-                }
-                delete base[name]
+            branchHasAUniqueAttribute = true
+            if (!(k in base)) {
+                // The branch attribute was not previously part of base and is safe to push to branches.
+                continue
             }
-            branchAttributes ||= {} as Attributes
-            branchAttributes[name] = value
+            // The attribute had distinct values for base and branch.
+            // Distribute the base value to each existing branch and remove it
+            // from base.
+            base.branches ??= []
+            for (const existingBranch of base.branches) {
+                existingBranch[k] = base[k] as any
+            }
+            delete base[k]
         }
-        if (branchAttributes) {
-            base.branches ||= []
-            base.branches.push(branchAttributes)
+        if (branchHasAUniqueAttribute) {
+            base.branches ??= []
+            base.branches.push(branch)
         }
+        return base
     }
+}
+
+// Calculate the GCD, then divide the product by that to determine the LCM:
+// https://en.wikipedia.org/wiki/Euclidean_algorithm
+const leastCommonMultiple = (first: number, second: number) => {
+    let previous
+    let greatestCommonDivisor = first
+    let current = second
+    while (current !== 0) {
+        previous = current
+        current = greatestCommonDivisor % current
+        greatestCommonDivisor = previous
+    }
+    return Math.abs((first * second) / greatestCommonDivisor)
 }

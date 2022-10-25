@@ -1,15 +1,16 @@
+import { Attributes } from "../../../attributes/attributes.js"
 import type { maybePush } from "../../common.js"
-import type { ParserState } from "../state/state.js"
+import { ParserState } from "../state/state.js"
 import type { LeftBoundOperator } from "./bound/left.js"
 import { IntersectionOperator } from "./intersection.js"
 
 export namespace UnionOperator {
     export const reduce = (s: ParserState.WithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
-        if (!s.branches.union?.push(s.root)) {
-            s.branches.union = [s.root]
-        }
-        s.root = null as any
+        s.branches.union = s.branches.union
+            ? Attributes.unionOf(s.branches.union, s.root)
+            : s.root
+        s.root = ParserState.emptyRoot
         return s
     }
 
@@ -41,9 +42,8 @@ export namespace UnionOperator {
         if (!s.branches.union) {
             return s
         }
-        s.branches.union.push(s.root)
-        s.root = s.branches.union
-        s.branches.union = undefined
+        s.root = Attributes.unionOf(s.branches.union, s.root)
+        delete s.branches.union
         return s
     }
 }

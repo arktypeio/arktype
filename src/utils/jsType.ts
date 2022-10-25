@@ -28,7 +28,7 @@ export namespace JsType {
         ? "bigint"
         : "symbol"
 
-    type NormalizedInferences = Evaluate<
+    export type NormalizedInferences = Evaluate<
         Omit<BuiltinInferences, "object"> & {
             object: Record<string, unknown>
             array: unknown[]

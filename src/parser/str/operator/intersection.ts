@@ -1,3 +1,4 @@
+import { Attributes } from "../../../attributes/attributes.js"
 import type { maybePush } from "../../common.js"
 import { ParserState } from "../state/state.js"
 import { LeftBoundOperator } from "./bound/left.js"
@@ -7,10 +8,10 @@ export namespace IntersectionOperator {
         if (ParserState.openLeftBounded(s)) {
             return LeftBoundOperator.unpairedError(s)
         }
-        if (!s.branches.intersection?.push(s.root)) {
-            s.branches.intersection = [s.root]
-        }
-        s.root = null as any
+        s.branches.intersection = s.branches.intersection
+            ? Attributes.intersectionOf(s.branches.intersection, s.root)
+            : s.root
+        s.root = ParserState.emptyRoot
         return s
     }
 
@@ -44,9 +45,8 @@ export namespace IntersectionOperator {
         if (!s.branches.intersection) {
             return s
         }
-        s.branches.intersection.push(s.root)
-        s.root = s.branches.intersection
-        s.branches.intersection = undefined
+        s.root = Attributes.intersectionOf(s.branches.intersection, s.root)
+        delete s.branches.intersection
         return s
     }
 }

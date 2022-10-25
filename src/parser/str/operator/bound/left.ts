@@ -5,7 +5,7 @@ import { Comparator } from "./comparator.js"
 
 export namespace LeftBoundOperator {
     export const reduce = (
-        s: ParserState.WithRoot<NumberLiteral.Node>,
+        s: ParserState.WithRoot<{ value: number }>,
         comparator: Comparator.Token
     ) =>
         isKeyOf(comparator, Bound.doublableTokens)
@@ -42,7 +42,7 @@ export namespace LeftBoundOperator {
         token: Comparator.PairableToken
     ) => {
         s.branches.leftBound = [s.root.value, token]
-        s.root = null as any
+        s.root = ParserState.emptyRoot
         return s
     }
 

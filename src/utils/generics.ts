@@ -67,3 +67,14 @@ export const isKeyOf = <Obj extends object, K extends string | number>(
     key: K,
     obj: Obj
 ): key is Extract<keyof Obj, K> => key in obj
+
+export type entryOf<o> = Evaluate<
+    { [k in keyof o]: [k, o[k]] }[o extends unknown[]
+        ? keyof o & number
+        : keyof o] & {}
+>
+
+export type entriesOf<o extends object> = entryOf<o>[]
+
+export const entriesOf = <o extends object>(o: o) =>
+    Object.entries(o) as entriesOf<o>

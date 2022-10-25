@@ -38,7 +38,7 @@ export namespace BoundOperator {
         s: ParserState.WithRoot,
         comparator: Comparator.Token
     ) =>
-        s.root.get("value")
+        ParserState.hasRootAttributeType(s, "value", "number")
             ? LeftBoundOperator.reduce(s, comparator)
             : RightBoundOperator.parse(s, comparator)
 

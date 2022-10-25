@@ -1,4 +1,5 @@
 import type { Attributes } from "../../../attributes/attributes.js"
+import { JsType } from "../../../internal.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
@@ -56,6 +57,9 @@ export namespace ParserState {
         export type UnscannedOrReturnCode = ValidUnscanned | 1
     }
 
+    /** More transparent mutation of root in a function with a constrained input state */
+    export const emptyRoot = null as any
+
     export type Preconditions = {
         root?: Attributes | null
         branches?: Partial<OpenBranches>
@@ -79,10 +83,32 @@ export namespace ParserState {
         }>
     }
 
+    export const hasRootAttribute = <
+        s extends ParserState.Base,
+        k extends Attributes.Name,
+        v extends Attributes[k]
+    >(
+        s: s,
+        k: k,
+        v: v
+    ): s is s & { root: { [_ in k]: v } } =>
+        s.root !== null && k in s.root && s.root[k] === v
+
+    export const hasRootAttributeType = <
+        s extends ParserState.Base,
+        k extends Attributes.Name,
+        t extends JsType.NormalizedOf<Attributes[k]>
+    >(
+        s: s,
+        k: k,
+        typeName: t
+    ): s is s & { root: { [_ in k]: JsType.NormalizedInferences[t] } } =>
+        s.root !== null && JsType.is(s.root[k], typeName)
+
     export type OpenBranches = {
         leftBound?: OpenLeftBound
-        union?: Attributes[]
-        intersection?: Attributes[]
+        union?: Attributes
+        intersection?: Attributes
     }
 
     export namespace T {
