@@ -4,7 +4,7 @@ import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
-import { Comparators } from "./tokens.js"
+import { Comparator } from "./tokens.js"
 
 export namespace RightBoundOperator {
     export const parse = (s: ParserState.WithRoot, comparator: Bound.Token) => {
@@ -48,7 +48,7 @@ export namespace RightBoundOperator {
         }
         if (!isKeyOf(comparator, Bound.doublableTokens)) {
             return ParserState.error(
-                Comparators.buildInvalidDoubleMessage(comparator)
+                Comparator.buildInvalidDoubleMessage(comparator)
             )
         }
         s.attributes?.add(
@@ -88,7 +88,7 @@ export namespace RightBoundOperator {
                       unscanned: s["unscanned"]
                   }>
                 : ParserState.error<
-                      Comparators.buildInvalidDoubleMessage<comparator>
+                      Comparator.buildInvalidDoubleMessage<comparator>
                   >
             : ParserState.setRoot<s, [s["root"], comparator, limitTokenOrError]>
         : ParserState.error<limitTokenOrError>

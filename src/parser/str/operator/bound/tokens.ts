@@ -1,6 +1,21 @@
-import type { Bound } from "../../../../nodes/expression/infix/bound.js"
+export namespace Comparator {
+    export const tokens = {
+        "<": "less than",
+        ">": "greater than",
+        "<=": "at most",
+        ">=": "at least",
+        "==": "exactly"
+    } as const
 
-export namespace Comparators {
+    export type Token = keyof typeof tokens
+
+    export const pairableTokens = {
+        "<": 1,
+        "<=": 1
+    } as const
+
+    export type PairableToken = keyof typeof pairableTokens
+
     export const startChar = {
         "<": 1,
         ">": 1,
@@ -9,17 +24,17 @@ export namespace Comparators {
 
     export type StartChar = keyof typeof startChar
 
-    export const oneChar = {
+    export const oneCharTokens = {
         "<": 1,
         ">": 1
     }
 
-    export type OneChar = keyof typeof oneChar
+    export type OneCharToken = keyof typeof oneCharTokens
 
-    export type buildInvalidDoubleMessage<comparator extends Bound.Token> =
+    export type buildInvalidDoubleMessage<comparator extends Token> =
         `Double-bound expressions must specify their bounds using < or <= (was ${comparator}).`
 
-    export const buildInvalidDoubleMessage = <comparator extends Bound.Token>(
+    export const buildInvalidDoubleMessage = <comparator extends Token>(
         comparator: comparator
     ): buildInvalidDoubleMessage<comparator> =>
         `Double-bound expressions must specify their bounds using < or <= (was ${comparator}).`

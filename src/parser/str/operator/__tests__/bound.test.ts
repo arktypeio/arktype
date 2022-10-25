@@ -3,7 +3,7 @@ import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { BoundOperator } from "../bound/bound.js"
 import { LeftBoundOperator } from "../bound/left.js"
-import { Comparators } from "../bound/tokens.js"
+import { Comparator } from "../bound/tokens.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
@@ -67,13 +67,13 @@ describe("bound", () => {
             test("invalid left comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3>number<5")).throwsAndHasTypeError(
-                    Comparators.buildInvalidDoubleMessage(">")
+                    Comparator.buildInvalidDoubleMessage(">")
                 )
             })
             test("invalid right double-bound comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3<number==5")).throwsAndHasTypeError(
-                    Comparators.buildInvalidDoubleMessage("==")
+                    Comparator.buildInvalidDoubleMessage("==")
                 )
             })
             test("unpaired left", () => {

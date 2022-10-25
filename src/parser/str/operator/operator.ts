@@ -4,7 +4,7 @@ import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 import { ArrayOperator } from "./array.js"
 import { BoundOperator } from "./bound/bound.js"
-import { Comparators } from "./bound/tokens.js"
+import { Comparator } from "./bound/tokens.js"
 import { DivisibilityOperator } from "./divisibility.js"
 import { GroupClose } from "./groupClose.js"
 import { IntersectionOperator } from "./intersection.js"
@@ -26,7 +26,7 @@ export namespace Operator {
             ? IntersectionOperator.reduce(s)
             : lookahead === ")"
             ? GroupClose.reduce(s)
-            : isKeyOf(lookahead, Comparators.startChar)
+            : isKeyOf(lookahead, Comparator.startChar)
             ? BoundOperator.parse(s, lookahead)
             : lookahead === "%"
             ? DivisibilityOperator.parse(s)
@@ -47,7 +47,7 @@ export namespace Operator {
                 ? IntersectionOperator.reduce<s, unscanned>
                 : lookahead extends ")"
                 ? GroupClose.reduce<s, unscanned>
-                : lookahead extends Comparators.StartChar
+                : lookahead extends Comparator.StartChar
                 ? BoundOperator.parse<s, lookahead, unscanned>
                 : lookahead extends "%"
                 ? DivisibilityOperator.parse<s, unscanned>

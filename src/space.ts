@@ -1,5 +1,6 @@
-import type { inferAst } from "./nodes/ast/infer.js"
-import type { validate } from "./nodes/ast/validate.js"
+import type { inferAst } from "./ast/infer.js"
+import type { validate } from "./ast/validate.js"
+import { Attributes } from "./attributes/attributes.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type { ArktypeConfig } from "./type.js"
@@ -15,7 +16,10 @@ const rawSpace = (aliases: Dictionary, config: ArktypeConfig = {}) => {
     }
     for (const name in aliases) {
         result[name] = new Arktype(
-            Root.parse(aliases[name], { aliases }),
+            Root.parse(aliases[name], {
+                aliases,
+                attributes: new Attributes({})
+            }),
             config,
             result
         )

@@ -13,7 +13,7 @@ export namespace GroupOpen {
     > = ParserState.from<{
         groups: [...s["groups"], s["branches"]]
         branches: ParserState.initialBranches
-        root: undefined
+        root: null
         unscanned: unscanned
     }>
 

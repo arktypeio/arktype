@@ -1,21 +1,17 @@
-import { Base } from "../../../nodes/base/base.js"
-import type { Intersection } from "../../../nodes/expression/branching/intersection.js"
-import type { Union } from "../../../nodes/expression/branching/union.js"
-import type { Bound } from "../../../nodes/expression/infix/bound.js"
-import type { NumberLiteral } from "../../../nodes/terminal/literal/number.js"
+import { Attributes } from "../../../attributes/attributes.js"
 import type { ClassOf } from "../../../utils/generics.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import type { LeftBoundOperator } from "../operator/bound/left.js"
+import type { Comparator } from "../operator/bound/tokens.js"
 import { UnionOperator } from "../operator/union.js"
 import { Scanner } from "./scanner.js"
 
 // TODO: Check namespace parse output
 export namespace ParserState {
     export type Base = {
-        attributes?: Base.Attributes
-        root: Base.Node | null
+        root: Attributes | null
         branches: OpenBranches
         groups: OpenBranches[]
         scanner: Scanner
@@ -62,7 +58,7 @@ export namespace ParserState {
     }
 
     export type Preconditions = {
-        root?: Base.Node | null
+        root?: Attributes | null
         branches?: Partial<OpenBranches>
         groups?: OpenBranches[]
     }
@@ -74,18 +70,16 @@ export namespace ParserState {
             groups?: OpenBranches[]
         }
     }
-    export type WithRoot<Root extends Base.Node = Base.Node> = Of<{
-        root: Root
-    }>
+    export type WithRoot = Base & { root: Attributes }
 
     export namespace T {
-        export type WithRoot<Root = {}> = Unfinished<{ root: Root }>
+        export type WithRoot = Unfinished<{ root: Attributes }>
     }
 
     export type OpenBranches = {
         leftBound?: OpenLeftBound
-        union?: Union.Node
-        intersection?: Intersection.Node
+        union?: Attributes[]
+        intersection?: Attributes[]
     }
 
     export namespace T {
@@ -96,19 +90,12 @@ export namespace ParserState {
         }
     }
 
-    export type OpenLeftBound = [number, Bound.DoublableToken]
-
-    export namespace T {
-        export type OpenLeftBound = [
-            NumberLiteral.Definition,
-            Bound.DoublableToken
-        ]
-    }
+    export type OpenLeftBound = [number, Comparator.PairableToken]
 
     export type from<s extends T.Base> = s
 
     export const initialize = (def: string): Base => ({
-        attributes: new Base.Attributes({}),
+        attributes: new Attributes({}),
         root: null,
         branches: initializeBranches(),
         groups: [],
@@ -121,18 +108,6 @@ export namespace ParserState {
         groups: []
         unscanned: def
     }>
-
-    export const rooted = <
-        s extends ParserState.Base,
-        nodeClass extends Base.Node = Base.Node
-    >(
-        s: s,
-        ofClass?: ClassOf<nodeClass>
-        // @ts-expect-error
-    ): s is Omit<s, "root"> & { root: nodeClass } =>
-        ofClass ? s.root instanceof ofClass : !!s.root
-
-    export type rooted<ast = {}> = { root: ast }
 
     export const openLeftBounded = <s extends ParserState.Base>(
         s: s

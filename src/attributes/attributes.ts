@@ -12,6 +12,7 @@ type Atomic = {
     max?: number
     inclusiveMax?: true
     optional?: true
+    config?: Dictionary
 }
 
 type Composed = {
@@ -31,6 +32,7 @@ type ParamsByName = {
     divisor: [number]
     bound: [Bound.Token, number]
     optional: []
+    config: [Dictionary]
 }
 
 type InputName = keyof ParamsByName

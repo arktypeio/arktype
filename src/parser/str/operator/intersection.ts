@@ -13,7 +13,7 @@ export namespace IntersectionOperator {
         } else {
             s.branches.intersection.pushChild(s.root)
         }
-        s.root = undefined as any
+        s.root = null as any
         return s
     }
 

@@ -4,7 +4,7 @@ import { Bound } from "../../../../nodes/expression/infix/bound.js"
 import type { NumberLiteral } from "../../../../nodes/terminal/literal/number.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { ParserState } from "../../state/state.js"
-import { Comparators } from "./tokens.js"
+import { Comparator } from "./tokens.js"
 
 export namespace LeftBoundOperator {
     export const reduce = (
@@ -22,7 +22,7 @@ export namespace LeftBoundOperator {
                   )
                 : reduceValidated(s, comparator)
             : ParserState.error(
-                  Comparators.buildInvalidDoubleMessage(comparator)
+                  Comparator.buildInvalidDoubleMessage(comparator)
               )
 
     export type reduce<
@@ -38,14 +38,14 @@ export namespace LeftBoundOperator {
                   >
               >
             : reduceValidated<s, comparator>
-        : ParserState.error<Comparators.buildInvalidDoubleMessage<comparator>>
+        : ParserState.error<Comparator.buildInvalidDoubleMessage<comparator>>
 
     const reduceValidated = (
         s: ParserState.WithRoot<NumberLiteral.Node>,
         token: Bound.DoublableToken
     ) => {
         s.branches.leftBound = [s.root.value, token]
-        s.root = undefined as any
+        s.root = null as any
         return s
     }
 

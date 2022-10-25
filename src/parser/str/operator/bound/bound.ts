@@ -5,31 +5,31 @@ import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
 import { LeftBoundOperator } from "./left.js"
 import { RightBoundOperator } from "./right.js"
-import { Comparators } from "./tokens.js"
+import { Comparator } from "./tokens.js"
 
 export namespace BoundOperator {
     const shift = (
         s: ParserState.WithRoot,
-        start: Comparators.StartChar
+        start: Comparator.StartChar
     ): Bound.Token =>
         s.scanner.lookaheadIs("=")
             ? `${start}${s.scanner.shift()}`
-            : isKeyOf(start, Comparators.oneChar)
+            : isKeyOf(start, Comparator.oneCharTokens)
             ? start
             : ParserState.error(singleEqualsMessage)
 
     export const parse = (
         s: ParserState.WithRoot,
-        start: Comparators.StartChar
+        start: Comparator.StartChar
     ) => delegateReduction(s, shift(s, start))
 
     export type parse<
         s extends ParserState.T.WithRoot,
-        start extends Comparators.StartChar,
+        start extends Comparator.StartChar,
         unscanned extends string
     > = unscanned extends Scanner.shift<"=", infer nextUnscanned>
         ? delegateReduction<ParserState.scanTo<s, nextUnscanned>, `${start}=`>
-        : start extends Comparators.OneChar
+        : start extends Comparator.OneCharToken
         ? delegateReduction<ParserState.scanTo<s, unscanned>, start>
         : ParserState.error<singleEqualsMessage>
 

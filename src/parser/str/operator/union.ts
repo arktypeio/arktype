@@ -1,4 +1,3 @@
-import { Union } from "../../../nodes/expression/branching/union.js"
 import type { maybePush } from "../../common.js"
 import type { ParserState } from "../state/state.js"
 import type { LeftBoundOperator } from "./bound/left.js"
@@ -7,13 +6,10 @@ import { IntersectionOperator } from "./intersection.js"
 export namespace UnionOperator {
     export const reduce = (s: ParserState.WithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
-        if (!s.branches.union) {
-            s.branches.union = new Union.Node([s.root])
-        } else {
-            s.branches.union.pushChild(s.root)
+        if (!s.branches.union?.push(s.root)) {
+            s.branches.union = [s.root]
         }
-        s.attributes?.branch()
-        s.root = undefined as any
+        s.root = null as any
         return s
     }
 
@@ -23,7 +19,7 @@ export namespace UnionOperator {
     > = s extends ParserState.openLeftBounded
         ? LeftBoundOperator.unpairedError<s>
         : ParserState.from<{
-              root: undefined
+              root: null
               branches: {
                   leftBound: null
                   intersection: null
@@ -45,7 +41,7 @@ export namespace UnionOperator {
         if (!s.branches.union) {
             return s
         }
-        s.branches.union.pushChild(s.root)
+        s.branches.union.push(s.root)
         s.root = s.branches.union
         s.branches.union = undefined
         return s

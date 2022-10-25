@@ -1,9 +1,7 @@
-import type { inferAst } from "./nodes/ast/infer.js"
-import type { validate } from "./nodes/ast/validate.js"
-import type { Base } from "./nodes/base/base.js"
-import type { NodeConfigs } from "./nodes/base/kinds.js"
-import { Traversal } from "./nodes/base/traversal.js"
-import { Scope } from "./nodes/expression/infix/scope.js"
+import type { inferAst } from "./ast/infer.js"
+import type { validate } from "./ast/validate.js"
+import { Attributes } from "./attributes/attributes.js"
+import type { Dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
@@ -11,9 +9,11 @@ import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const emptyAliases = { aliases: {} }
 const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {
-    const root = Root.parse(definition, space?.$ ?? emptyAliases)
+    const root = Root.parse(definition, {
+        aliases: space?.$.aliases ?? {},
+        attributes: new Attributes({})
+    })
     return new Arktype(root, config, space as any)
 }
 
@@ -44,12 +44,12 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class Arktype<Inferred = unknown, Ast = unknown> {
     constructor(
-        public root: Base.Node,
+        public root: Attributes,
         public config: ArktypeConfig,
         public space: ArktypeSpace | undefined
     ) {
         if (Object.keys(config).length) {
-            this.root = new Scope.Node(root, config)
+            this.root.add("config", config)
         }
     }
 
@@ -58,8 +58,7 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
     }
 
     check(data: unknown) {
-        const state = new Traversal(data, this.space)
-        this.root.traverse(state)
+        const state = {} as any
         return state.problems.length
             ? {
                   problems: state.problems
@@ -72,18 +71,6 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
         result.problems?.throw()
         return result.data as Inferred
     }
-
-    toString() {
-        return this.root.toString()
-    }
-
-    get ast() {
-        return this.root.ast as Ast
-    }
-
-    get definition() {
-        return this.root.definition
-    }
 }
 
-export type ArktypeConfig = NodeConfigs
+export type ArktypeConfig = Dictionary

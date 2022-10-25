@@ -1,4 +1,4 @@
-import type { Base } from "../nodes/base/base.js"
+import type { Attributes } from "../attributes/attributes.js"
 import type { Dictionary } from "../utils/generics.js"
 
 export type ParserContext = {
@@ -7,13 +7,13 @@ export type ParserContext = {
 
 export type parserContext = {
     aliases: Dictionary
-    attributes: Base.Attributes
+    attributes: Attributes
 }
 
 export type parseFn<DefType = unknown> = (
     def: DefType,
     ctx: parserContext
-) => Base.Node
+) => Attributes
 
 export class parseError extends Error {}
 
