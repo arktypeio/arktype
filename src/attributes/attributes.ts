@@ -1,5 +1,5 @@
-import type { Dictionary, JsType } from "../internal.js"
-import type { Bound } from "../nodes/expression/infix/bound.js"
+import type { Dictionary, Evaluate, JsType } from "../internal.js"
+import type { Comparator } from "../parser/str/operator/bound/comparator.js"
 
 type Atomic = {
     type?: JsType.NormalizedName
@@ -21,48 +21,115 @@ type Composed = {
     values?: Attributes
 }
 
-type RawAttributes = Atomic & Composed
+export type Attributes = Atomic & Composed
 
-type AttributeName = keyof RawAttributes
-
-type ParamsByName = {
-    type: [JsType.NormalizedName]
-    value: [unknown]
-    regex: [RegExp]
-    divisor: [number]
-    bound: [Bound.Token, number]
-    optional: []
-    config: [Dictionary]
+// Calculate the GCD, then divide the product by that to determine the LCM:
+// https://en.wikipedia.org/wiki/Euclidean_algorithm
+const leastCommonMultiple = (first: number, second: number) => {
+    let previous
+    let greatestCommonDivisor = first
+    let current = second
+    while (current !== 0) {
+        previous = current
+        current = greatestCommonDivisor % current
+        greatestCommonDivisor = previous
+    }
+    return Math.abs((first * second) / greatestCommonDivisor)
 }
 
-type InputName = keyof ParamsByName
+// export type EntriesOf<o extends object> =
+//     <
+//         {
+//             [k in keyof o]: [k, o[k]]
+//         }[keyof o]
+//     >
 
-export class Attributes {
-    private branches?: RawAttributes[]
+export type EntryOf<T> = Evaluate<
+    Required<{ [K in keyof T]: [K, T[K]] }>[T extends unknown[]
+        ? keyof T & number
+        : keyof T]
+>
 
-    constructor(private attributes: RawAttributes) {}
+export type EntriesOf<T> = EntryOf<T>[]
 
-    get<Name extends AttributeName>(name: Name) {
-        return this.attributes[name]
+type Z = EntriesOf<Attributes>
+
+export namespace Attributes {
+    export type Name = keyof Attributes
+
+    export type ParamsByName = {
+        type: [JsType.NormalizedName]
+        value: [unknown]
+        regex: [RegExp]
+        divisor: [number]
+        bound: [Comparator.Token, number]
+        optional: []
+        config: [Dictionary]
     }
 
-    add<Name extends InputName>(name: Name, ...params: ParamsByName[Name]) {}
+    export type InputName = keyof ParamsByName
 
-    addProp(key: string | number) {
-        if (!this.attributes.props) {
-            this.attributes.props = {}
+    export const add = <name extends InputName>(
+        attributes: Attributes,
+        name: name,
+        ...params: ParamsByName[name]
+    ) => {}
+
+    const addRaw = <name extends Name>(
+        attributes: Attributes,
+        name: name,
+        value: Attributes[name]
+    ) => {
+        if (name === "divisor") {
+            attributes.divisor =
+                attributes.divisor === undefined
+                    ? value
+                    : leastCommonMultiple(value, attributes.divisor)
         }
-        if (!this.attributes.props[key]) {
-            this.attributes.props[key] = new Attributes({})
-        }
-        return this.attributes.props[key]
     }
 
-    branch() {
-        if (!this.branches) {
-            this.branches = []
+    export const addProp = (attributes: Attributes, key: string | number) => {
+        if (!attributes.props) {
+            attributes.props = {}
         }
-        this.branches.push(this.attributes)
-        this.attributes = {}
+        if (!attributes.props[key]) {
+            attributes.props[key] = {}
+        }
+        return attributes.props[key]
+    }
+    // "string|number"
+
+    const root = { type: "string" }
+
+    export const intersectionOf = (left: Attributes, right: Attributes) => {
+        for (const [name, value] of Object.entries(right)) {
+            addRaw(left, name, value)
+        }
+    }
+
+    // Only when union is finalized
+    export const unionOf = (base: Attributes, branch: Attributes) => {
+        let branchAttributes
+        const branchAttributeEntries = Object.entries(
+            branch
+        ) as EntriesOf<Attributes>
+        for (const [name, value] of branchAttributeEntries) {
+            if (base[name] === value) {
+                continue
+            }
+            if (name in base) {
+                base.branches ||= []
+                for (const branch of base.branches) {
+                    branch[name] = base[name]
+                }
+                delete base[name]
+            }
+            branchAttributes ||= {} as Attributes
+            branchAttributes[name] = value
+        }
+        if (branchAttributes) {
+            base.branches ||= []
+            base.branches.push(branchAttributes)
+        }
     }
 }

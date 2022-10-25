@@ -1,17 +1,15 @@
-import type { Bound } from "../../../../nodes/expression/infix/bound.js"
-import { NumberLiteral } from "../../../../nodes/terminal/literal/number.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
+import { Comparator } from "./comparator.js"
 import { LeftBoundOperator } from "./left.js"
 import { RightBoundOperator } from "./right.js"
-import { Comparator } from "./tokens.js"
 
 export namespace BoundOperator {
     const shift = (
         s: ParserState.WithRoot,
         start: Comparator.StartChar
-    ): Bound.Token =>
+    ): Comparator.Token =>
         s.scanner.lookaheadIs("=")
             ? `${start}${s.scanner.shift()}`
             : isKeyOf(start, Comparator.oneCharTokens)
@@ -38,18 +36,19 @@ export namespace BoundOperator {
 
     const delegateReduction = (
         s: ParserState.WithRoot,
-        comparator: Bound.Token
+        comparator: Comparator.Token
     ) =>
-        ParserState.rooted(s, NumberLiteral.Node) &&
-        typeof s.root.value === "number"
+        s.root.get("value")
             ? LeftBoundOperator.reduce(s, comparator)
             : RightBoundOperator.parse(s, comparator)
 
     type delegateReduction<
         s extends ParserState.T.WithRoot,
-        comparator extends Bound.Token
+        comparator extends Comparator.Token
     > = s extends {
-        root: NumberLiteral.Definition
+        root: {
+            value: number
+        }
     }
         ? LeftBoundOperator.reduce<s, comparator>
         : RightBoundOperator.parse<s, comparator>

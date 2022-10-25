@@ -9,6 +9,16 @@ export namespace Comparator {
 
     export type Token = keyof typeof tokens
 
+    export const invertedComparators = {
+        "<": ">",
+        ">": "<",
+        "<=": ">=",
+        ">=": "<=",
+        "==": "=="
+    } as const
+
+    export type InvertedComparators = typeof invertedComparators
+
     export const pairableTokens = {
         "<": 1,
         "<=": 1

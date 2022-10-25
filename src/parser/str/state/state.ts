@@ -1,10 +1,9 @@
-import { Attributes } from "../../../attributes/attributes.js"
-import type { ClassOf } from "../../../utils/generics.js"
+import type { Attributes } from "../../../attributes/attributes.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
+import type { Comparator } from "../operator/bound/comparator.js"
 import type { LeftBoundOperator } from "../operator/bound/left.js"
-import type { Comparator } from "../operator/bound/tokens.js"
 import { UnionOperator } from "../operator/union.js"
 import { Scanner } from "./scanner.js"
 
@@ -70,10 +69,14 @@ export namespace ParserState {
             groups?: OpenBranches[]
         }
     }
-    export type WithRoot = Base & { root: Attributes }
+    export type WithRoot<attributes extends Attributes = {}> = Base & {
+        root: attributes
+    }
 
     export namespace T {
-        export type WithRoot = Unfinished<{ root: Attributes }>
+        export type WithRoot<attributes extends Attributes = {}> = Unfinished<{
+            root: attributes
+        }>
     }
 
     export type OpenBranches = {
@@ -95,7 +98,6 @@ export namespace ParserState {
     export type from<s extends T.Base> = s
 
     export const initialize = (def: string): Base => ({
-        attributes: new Attributes({}),
         root: null,
         branches: initializeBranches(),
         groups: [],

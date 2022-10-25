@@ -1,15 +1,12 @@
-import type { toString } from "../../../../nodes/ast/toString.js"
-import type { Base } from "../../../../nodes/base/base.js"
-import { Bound } from "../../../../nodes/expression/infix/bound.js"
-import type { NumberLiteral } from "../../../../nodes/terminal/literal/number.js"
 import { isKeyOf } from "../../../../utils/generics.js"
+import type { NumberLiteral } from "../../operand/numeric.js"
 import { ParserState } from "../../state/state.js"
-import { Comparator } from "./tokens.js"
+import { Comparator } from "./comparator.js"
 
 export namespace LeftBoundOperator {
     export const reduce = (
         s: ParserState.WithRoot<NumberLiteral.Node>,
-        comparator: Bound.Token
+        comparator: Comparator.Token
     ) =>
         isKeyOf(comparator, Bound.doublableTokens)
             ? ParserState.openLeftBounded(s)
@@ -27,8 +24,8 @@ export namespace LeftBoundOperator {
 
     export type reduce<
         s extends ParserState.T.WithRoot<NumberLiteral.Definition>,
-        comparator extends Bound.Token
-    > = comparator extends Bound.DoublableToken
+        comparator extends Comparator.Token
+    > = comparator extends Comparator.PairableToken
         ? s extends ParserState.openLeftBounded
             ? ParserState.error<
                   buildBoundLiteralMessage<
@@ -42,7 +39,7 @@ export namespace LeftBoundOperator {
 
     const reduceValidated = (
         s: ParserState.WithRoot<NumberLiteral.Node>,
-        token: Bound.DoublableToken
+        token: Comparator.PairableToken
     ) => {
         s.branches.leftBound = [s.root.value, token]
         s.root = null as any
@@ -51,7 +48,7 @@ export namespace LeftBoundOperator {
 
     type reduceValidated<
         s extends ParserState.T.WithRoot<NumberLiteral.Definition>,
-        comparator extends Bound.DoublableToken
+        comparator extends Comparator.PairableToken
     > = ParserState.from<{
         root: null
         branches: {
@@ -66,7 +63,7 @@ export namespace LeftBoundOperator {
     export type unpairedError<
         s extends ParserState.T.Unfinished<{
             root: {}
-            branches: { leftBound: ParserState.T.OpenLeftBound }
+            branches: { leftBound: ParserState.OpenLeftBound }
         }>
     > = ParserState.error<
         buildUnpairedMessage<
@@ -91,9 +88,9 @@ export namespace LeftBoundOperator {
         )
 
     export const buildBoundLiteralMessage = <
-        literal extends NumberLiteral.Definition,
-        limit extends string,
-        token extends Bound.Token
+        literal extends NumberLiteral,
+        limit extends number,
+        token extends Comparator.Token
     >(
         literal: literal,
         limit: limit,
@@ -102,25 +99,25 @@ export namespace LeftBoundOperator {
         `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
 
     export type buildBoundLiteralMessage<
-        literal extends NumberLiteral.Definition,
-        limit extends string,
-        comparator extends Bound.Token
+        literal extends NumberLiteral,
+        limit extends number,
+        comparator extends Comparator.Token
     > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
 
     export const buildUnpairedMessage = <
         root extends string,
-        limit extends string,
-        token extends Bound.Token
+        limit extends number,
+        token extends Comparator.Token
     >(
         root: root,
         limit: limit,
         comparator: token
     ): buildUnpairedMessage<root, limit, token> =>
-        `Left bounds are only valid when paired with right bounds. Consider using ${root}${Bound.invertedComparators[comparator]}${limit} instead.`
+        `Left bounds are only valid when paired with right bounds. Consider using ${root}${Comparator.invertedComparators[comparator]}${limit} instead.`
 
     export type buildUnpairedMessage<
         root extends string,
-        limit extends string,
-        token extends Bound.Token
-    > = `Left bounds are only valid when paired with right bounds. Consider using ${root}${Bound.InvertedComparators[token]}${limit} instead.`
+        limit extends number,
+        token extends Comparator.Token
+    > = `Left bounds are only valid when paired with right bounds. Consider using ${root}${Comparator.InvertedComparators[token]}${limit} instead.`
 }

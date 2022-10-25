@@ -1,6 +1,9 @@
-import type { NumberLiteral } from "../../../nodes/terminal/literal/number.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
+
+export type NumberLiteral<Value extends number = number> = `${Value}`
+
+export type IntegerLiteral<Value extends bigint = bigint> = `${Value}`
 
 /**
  * The goal of the number literal and bigint literal regular expressions is to:
@@ -104,7 +107,7 @@ export namespace UnenclosedNumber {
     export type parseWellFormedNumber<
         token extends string,
         badNumberMessage extends string
-    > = token extends NumberLiteral.Definition<infer Value>
+    > = token extends NumberLiteral<infer Value>
         ? number extends Value
             ? buildMalformedNumericLiteralMessage<token, "number">
             : token
@@ -113,7 +116,7 @@ export namespace UnenclosedNumber {
     export type parseWellFormedInteger<
         token extends string,
         badIntegerMessage extends string
-    > = token extends NumberLiteral.IntegerDefinition<infer Value>
+    > = token extends NumberLiteral<infer Value>
         ? bigint extends Value
             ? buildMalformedNumericLiteralMessage<token, "integer">
             : token

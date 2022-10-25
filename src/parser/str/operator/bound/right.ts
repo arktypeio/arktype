@@ -4,10 +4,13 @@ import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
-import { Comparator } from "./tokens.js"
+import { Comparator } from "./comparator.js"
 
 export namespace RightBoundOperator {
-    export const parse = (s: ParserState.WithRoot, comparator: Bound.Token) => {
+    export const parse = (
+        s: ParserState.WithRoot,
+        comparator: Comparator.Token
+    ) => {
         const limitToken = s.scanner.shiftUntilNextTerminator()
         const limit = UnenclosedNumber.parseWellFormed(
             limitToken,
@@ -22,7 +25,7 @@ export namespace RightBoundOperator {
 
     export type parse<
         s extends ParserState.T.WithRoot,
-        comparator extends Bound.Token
+        comparator extends Comparator.Token
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
@@ -38,7 +41,7 @@ export namespace RightBoundOperator {
 
     const reduce = (
         s: ParserState.WithRoot,
-        comparator: Bound.Token,
+        comparator: Comparator.Token,
         limit: number
     ) => {
         if (!isLeftBounded(s)) {
@@ -68,7 +71,7 @@ export namespace RightBoundOperator {
 
     type reduce<
         s extends ParserState.T.WithRoot,
-        comparator extends Bound.Token,
+        comparator extends Comparator.Token,
         limitTokenOrError extends string
     > = limitTokenOrError extends NumberLiteral.Definition
         ? s["branches"]["leftBound"] extends {}
@@ -94,7 +97,7 @@ export namespace RightBoundOperator {
         : ParserState.error<limitTokenOrError>
 
     export const buildInvalidLimitMessage = <
-        comparator extends Bound.Token,
+        comparator extends Comparator.Token,
         limit extends string
     >(
         comparator: comparator,
@@ -103,7 +106,7 @@ export namespace RightBoundOperator {
         `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
 
     type buildInvalidLimitMessage<
-        comparator extends Bound.Token,
+        comparator extends Comparator.Token,
         limit extends string
     > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
 

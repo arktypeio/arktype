@@ -1,5 +1,4 @@
-import { Divisibility } from "../../../nodes/expression/infix/divisibility.js"
-import type { NumberLiteral } from "../../../nodes/terminal/literal/number.js"
+import type { IntegerLiteral } from "../operand/numeric.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -34,12 +33,15 @@ export namespace DivisibilityOperator {
           >
         : never
 
+    // [{n: "number%5"}, "&" , {n: "number%7"}]
+
+    // "number%5%7"
+
     const reduce = (s: ParserState.WithRoot, parseResult: number) => {
         if (parseResult === 0) {
             return ParserState.error(buildInvalidDivisorMessage("0"))
         }
-        s.attributes?.add("divisor", parseResult)
-        s.root = new Divisibility.Node(s.root, parseResult) as any
+        s.root.divisor = parseResult
         return s
     }
 
@@ -47,7 +49,7 @@ export namespace DivisibilityOperator {
         s extends ParserState.T.WithRoot,
         divisorTokenOrError extends string,
         unscanned extends string
-    > = divisorTokenOrError extends NumberLiteral.IntegerDefinition
+    > = divisorTokenOrError extends IntegerLiteral
         ? divisorTokenOrError extends "0"
             ? ParserState.error<buildInvalidDivisorMessage<"0">>
             : ParserState.setRoot<

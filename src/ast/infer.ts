@@ -19,7 +19,7 @@ export type inferAst<ast, resolutions> = ast extends string
         ? Evaluate<
               inferAst<ast[0], resolutions> & inferAst<ast[2], resolutions>
           >
-        : ast[1] extends Bound.Token
+        : ast[1] extends Comparator.Token
         ? ast[0] extends NumberLiteral.Definition
             ? inferAst<ast[2], resolutions>
             : inferAst<ast[0], resolutions>

@@ -26,7 +26,7 @@ type checkAst<ast, resolutions> = ast extends string
     : ast extends [infer left, infer token, infer right]
     ? token extends Branching.Token
         ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
-        : token extends Bound.Token
+        : token extends Comparator.Token
         ? left extends NumberLiteral.Definition
             ? checkAst<right, resolutions>
             : isBoundable<inferAst<left, resolutions>> extends true
