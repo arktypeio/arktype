@@ -1,5 +1,5 @@
-import type { Dictionary, JsType } from "../../internal.js"
-import type { Bound } from "../expression/infix/bound.js"
+import type { Dictionary, JsType } from "../internal.js"
+import type { Bound } from "../nodes/expression/infix/bound.js"
 
 type Atomic = {
     type?: JsType.NormalizedName
