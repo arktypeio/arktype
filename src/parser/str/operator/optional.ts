@@ -1,4 +1,3 @@
-import { Optional } from "../../../nodes/expression/postfix/optional.js"
 import { ParserState } from "../state/state.js"
 
 export namespace OptionalOperator {
@@ -7,8 +6,7 @@ export namespace OptionalOperator {
             return ParserState.error(nonTerminatingMessage)
         }
         ParserState.finalize(s)
-        s.attributes.add("optional")
-        s.root = new Optional.Node(s.root)
+        s.root.add("optional")
         return s
     }
 

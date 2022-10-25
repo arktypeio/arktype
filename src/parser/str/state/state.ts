@@ -14,8 +14,7 @@ import { Scanner } from "./scanner.js"
 // TODO: Check namespace parse output
 export namespace ParserState {
     export type Base = {
-        attributes: Base.Attributes
-        root: Base.Node | null
+        root: Base.Attributes | null
         branches: OpenBranches
         groups: OpenBranches[]
         scanner: Scanner
@@ -29,12 +28,6 @@ export namespace ParserState {
             unscanned: UnscannedOrReturnCode
         }
     }
-
-    export type Of<Conditions extends Preconditions> = Omit<
-        Base,
-        keyof Conditions
-    > &
-        Conditions
 
     export namespace T {
         export type Unvalidated<Conditions extends Preconditions = {}> = Base &
@@ -59,24 +52,17 @@ export namespace ParserState {
         export type ValidUnscanned = string | 0
 
         export type UnscannedOrReturnCode = ValidUnscanned | 1
-    }
 
-    export type Preconditions = {
-        root?: Base.Node | null
-        branches?: Partial<OpenBranches>
-        groups?: OpenBranches[]
-    }
-
-    export namespace T {
         export type Preconditions = {
             root?: unknown
             branches?: Partial<OpenBranches>
             groups?: OpenBranches[]
         }
     }
-    export type WithRoot<Root extends Base.Node = Base.Node> = Of<{
-        root: Root
-    }>
+
+    export type WithRoot = Base & {
+        root: {}
+    }
 
     export namespace T {
         export type WithRoot<Root = {}> = Unfinished<{ root: Root }>
@@ -84,6 +70,7 @@ export namespace ParserState {
 
     export type OpenBranches = {
         leftBound?: OpenLeftBound
+        // TODO: Remove?
         union?: Union.Node
         intersection?: Intersection.Node
     }
@@ -108,7 +95,6 @@ export namespace ParserState {
     export type from<s extends T.Base> = s
 
     export const initialize = (def: string): Base => ({
-        attributes: new Base.Attributes({}),
         root: null,
         branches: initializeBranches(),
         groups: [],
