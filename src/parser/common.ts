@@ -7,6 +7,7 @@ export type ParserContext = {
 
 export type parserContext = {
     aliases: Dictionary
+    attributes: Base.Attributes
 }
 
 export type parseFn<DefType = unknown> = (

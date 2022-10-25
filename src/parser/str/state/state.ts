@@ -1,4 +1,4 @@
-import type { Base } from "../../../nodes/base/base.js"
+import { Base } from "../../../nodes/base/base.js"
 import type { Intersection } from "../../../nodes/expression/branching/intersection.js"
 import type { Union } from "../../../nodes/expression/branching/union.js"
 import type { Bound } from "../../../nodes/expression/infix/bound.js"
@@ -14,6 +14,7 @@ import { Scanner } from "./scanner.js"
 // TODO: Check namespace parse output
 export namespace ParserState {
     export type Base = {
+        attributes: Base.Attributes
         root: Base.Node | null
         branches: OpenBranches
         groups: OpenBranches[]
@@ -107,6 +108,7 @@ export namespace ParserState {
     export type from<s extends T.Base> = s
 
     export const initialize = (def: string): Base => ({
+        attributes: new Base.Attributes({}),
         root: null,
         branches: initializeBranches(),
         groups: [],

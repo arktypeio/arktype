@@ -7,6 +7,7 @@ export namespace OptionalOperator {
             return ParserState.error(nonTerminatingMessage)
         }
         ParserState.finalize(s)
+        s.attributes.add("optional")
         s.root = new Optional.Node(s.root)
         return s
     }
