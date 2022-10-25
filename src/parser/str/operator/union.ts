@@ -1,4 +1,3 @@
-import { Base } from "../../../nodes/base/base.js"
 import { Union } from "../../../nodes/expression/branching/union.js"
 import type { maybePush } from "../../common.js"
 import type { ParserState } from "../state/state.js"
@@ -8,8 +7,6 @@ import { IntersectionOperator } from "./intersection.js"
 export namespace UnionOperator {
     export const reduce = (s: ParserState.WithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
-        const branchAttributes = new Base.Attributes({})
-        s.root.addBranch()
         if (!s.branches.union) {
             s.branches.union = new Union.Node([s.root])
         } else {

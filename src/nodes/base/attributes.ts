@@ -36,8 +36,6 @@ type ParamsByName = {
 type InputName = keyof ParamsByName
 
 export class Attributes {
-    private branches: CompiledAttributes[]
-
     constructor(private attributes: CompiledAttributes) {}
 
     get<Name extends AttributeName>(name: Name) {
@@ -56,7 +54,7 @@ export class Attributes {
         return this.attributes.props[key]
     }
 
-    branch() {
+    addBranch(branchAttributes: Attributes) {
         if (!this.attributes.branches) {
             this.attributes.branches = [branchAttributes]
             return

@@ -1,4 +1,5 @@
 import { Base } from "../../../nodes/base/base.js"
+import { Arr } from "../../../nodes/expression/postfix/array.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 
@@ -8,10 +9,11 @@ export namespace ArrayOperator {
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
         }
-        s.root = new Base.Attributes({
+        s.attributes = new Base.Attributes({
             type: "array",
-            values: s.root
+            values: s.attributes
         })
+        s.root = new Arr.Node(s.root)
         return s
     }
 
