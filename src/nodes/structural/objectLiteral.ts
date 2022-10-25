@@ -11,21 +11,10 @@ export namespace ObjectLiteral {
             super()
         }
 
-        traverse(traversal: Base.Traversal) {
-            if (!Keyword.nodes.dictionary.traverse(traversal)) {
-                return
-            }
+        addAttributes(attributes: Base.Attributes) {
+            attributes.add("type", "object")
             for (let i = 0; i < this.children.length; i++) {
-                const k = this.keys[i]
-                const child = this.children[i]
-                if (k in traversal.data) {
-                    traversal.pushKey(k)
-                    child.traverse(traversal)
-                    traversal.popKey()
-                    // TODO: Narrowed kind check
-                } else if (child.kind !== "optional") {
-                    // this.addMissingKeyDiagnostic(state, k)
-                }
+                this.children[i].addAttributes(attributes.forProp(this.keys[i]))
             }
         }
 

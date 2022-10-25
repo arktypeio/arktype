@@ -11,15 +11,7 @@ export namespace TypeKeyword {
             return `${this.definition as this["definition"]}Keyword` as const
         }
 
-        traverse(
-            traversal: Base.Traversal
-        ): traversal is Traversal<InferPostcondition<this>> {
-            if (!this.allowsData(traversal.data)) {
-                traversal.addProblem(`Must be ${this.description}`)
-                return false
-            }
-            return true
-        }
+        addAttributes(attributes: Base.Attributes) {}
 
         abstract allowsData(data: unknown): data is unknown
     }

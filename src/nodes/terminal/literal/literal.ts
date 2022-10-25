@@ -18,6 +18,10 @@ export namespace PrimitiveLiteral {
             return traversal.data === this.value
         }
 
+        addAttributes(attributes: Base.Attributes) {
+            attributes.add("value", this.value)
+        }
+
         get description() {
             return this.definition as this["definition"]
         }

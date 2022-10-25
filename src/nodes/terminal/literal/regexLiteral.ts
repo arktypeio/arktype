@@ -14,17 +14,8 @@ export namespace RegexLiteral {
             this.expression = new RegExp(definition.slice(1, -1))
         }
 
-        traverse(
-            traversal: Base.Traversal
-        ): traversal is Base.Traversal<string> {
-            if (!Keyword.nodes.string.traverse(traversal)) {
-                return false
-            }
-            if (!this.expression.test(traversal.data)) {
-                traversal.addProblem(this)
-                return false
-            }
-            return true
+        addAttributes(attributes: Base.Attributes) {
+            attributes.add("regex", this.expression)
         }
 
         get description() {

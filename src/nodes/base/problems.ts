@@ -1,5 +1,4 @@
 import { JsType } from "../../utils/jsType.js"
-import type { Node } from "./node.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean

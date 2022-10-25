@@ -12,14 +12,10 @@ export namespace Tuple {
             this.length = children.length
         }
 
-        traverse(traversal: Base.Traversal) {
-            if (!Keyword.nodes.array.traverse(traversal)) {
-                return
-            }
-            for (let i = 0; i < this.length; i++) {
-                traversal.pushKey(i)
-                this.children[i].traverse(traversal)
-                traversal.popKey()
+        addAttributes(attributes: Base.Attributes) {
+            attributes.add("type", "array")
+            for (let i = 0; i < this.children.length; i++) {
+                this.children[i].addAttributes(attributes.forProp(i))
             }
         }
 

@@ -1,3 +1,4 @@
+import type { Attributes } from "./attributes.js"
 import type { KindName, Kinds } from "./kinds.js"
 import type { Traversal } from "./traversal.js"
 
@@ -16,9 +17,9 @@ export abstract class Node {
         return this.kind in names
     }
 
-    abstract definitionRequiresStructure: boolean
+    abstract addAttributes(attributes: Attributes): void
 
-    abstract traverse(traversal: Traversal): void
+    abstract definitionRequiresStructure: boolean
 
     abstract toString(): string
     abstract readonly description: string

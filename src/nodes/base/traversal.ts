@@ -75,6 +75,7 @@ export class Traversal<Data = unknown> {
             const baseConfig = this.scopes[i].config[kind] as any
             if (baseConfig) {
                 const specifierConfig =
+                    // TODO: Meta key?
                     baseConfig[specifierKey] ?? baseConfig["$"]
                 if (specifierConfig !== undefined) {
                     return specifierConfig
