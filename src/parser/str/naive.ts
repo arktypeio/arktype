@@ -1,5 +1,4 @@
-import { Arr } from "../../nodes/expression/postfix/array.js"
-import { Optional } from "../../nodes/expression/postfix/optional.js"
+import { Attributes } from "../../attributes/attributes.js"
 import type { ParserContext, parserContext } from "../common.js"
 import type { FullParse } from "./full.js"
 import { Unenclosed } from "./operand/unenclosed.js"
@@ -34,9 +33,9 @@ export type tryNaiveParse<
 
 export const tryNaiveParse = (def: string, ctx: parserContext) => {
     if (def.endsWith("?")) {
-        const possibleIdentifierNode = tryNaiveParseArray(def.slice(0, -1), ctx)
-        if (possibleIdentifierNode) {
-            return new Optional.Node(possibleIdentifierNode)
+        const maybeParsedAttributes = tryNaiveParseArray(def.slice(0, -1), ctx)
+        if (maybeParsedAttributes) {
+            Attributes.add(maybeParsedAttributes, "optional")
         }
     }
     return tryNaiveParseArray(def, ctx)
@@ -44,12 +43,15 @@ export const tryNaiveParse = (def: string, ctx: parserContext) => {
 
 const tryNaiveParseArray = (def: string, ctx: parserContext) => {
     if (def.endsWith("[]")) {
-        const possibleIdentifierNode = Unenclosed.maybeParseIdentifier(
+        const maybeParsedAttributes = Unenclosed.maybeParseIdentifier(
             def.slice(0, -2),
             ctx
         )
-        if (possibleIdentifierNode) {
-            return new Arr.Node(possibleIdentifierNode)
+        if (maybeParsedAttributes) {
+            return Attributes.initialize({
+                type: "array",
+                values: maybeParsedAttributes
+            })
         }
     }
     return Unenclosed.maybeParseIdentifier(def, ctx)

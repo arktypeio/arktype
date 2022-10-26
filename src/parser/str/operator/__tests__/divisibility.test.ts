@@ -7,7 +7,7 @@ describe("divisibility", () => {
     describe("parse", () => {
         describe("valid", () => {
             test("integerLiteralDefinition", () => {
-                attest(type("number%2").ast).narrowedValue(["number", "%", "2"])
+                attest(type("number%2").ast).narrowedValue(["number", "%", 2])
             })
         })
         describe("invalid", () => {
@@ -26,7 +26,7 @@ describe("divisibility", () => {
             test("zero divisor", () => {
                 // @ts-expect-error
                 attest(() => type("number%0")).throwsAndHasTypeError(
-                    DivisibilityOperator.buildInvalidDivisorMessage("0")
+                    DivisibilityOperator.buildInvalidDivisorMessage(0)
                 )
             })
         })

@@ -25,3 +25,13 @@ export namespace OptionalOperator {
 
     type nonTerminatingMessage = typeof nonTerminatingMessage
 }
+export const hasRootAttribute = <
+    s extends ParserState.Base,
+    k extends Attributes.Name,
+    v extends Attributes[k]
+>(
+    s: s,
+    k: k,
+    v: v
+): s is s & { root: { [_ in k]: v } } =>
+    s.root !== null && k in s.root && s.root[k] === v

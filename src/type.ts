@@ -1,6 +1,6 @@
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
-import { Attributes } from "./attributes/attributes.js"
+import type { Attributes } from "./attributes/attributes.js"
 import type { Dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
@@ -12,7 +12,7 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {
     const root = Root.parse(definition, {
         aliases: space?.$.aliases ?? {},
-        attributes: new Attributes({})
+        attributes: {}
     })
     return new Arktype(root, config, space as any)
 }
@@ -48,12 +48,14 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
         public config: ArktypeConfig,
         public space: ArktypeSpace | undefined
     ) {
-        if (Object.keys(config).length) {
-            this.root.add("config", config)
-        }
+        // TODO: Integrate config
     }
 
     get infer(): Inferred {
+        return chainableNoOpProxy
+    }
+
+    get ast(): Ast {
         return chainableNoOpProxy
     }
 

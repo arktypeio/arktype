@@ -25,9 +25,9 @@ type Loop<
 > = s extends ParserState.T.Incomplete ? Loop<Next<s, ctx>, ctx> : s["root"]
 
 const next = (s: ParserState.Base, ctx: parserContext): ParserState.Base =>
-    ParserState.rooted(s) ? Operator.parse(s) : Operand.parse(s, ctx)
+    ParserState.hasRoot(s) ? Operator.parse(s) : Operand.parse(s, ctx)
 
 type Next<
     s extends ParserState.T.Unfinished,
     ctx extends ParserContext
-> = s extends ParserState.rooted ? Operator.parse<s> : Operand.parse<s, ctx>
+> = s extends { root: {} } ? Operator.parse<s> : Operand.parse<s, ctx>

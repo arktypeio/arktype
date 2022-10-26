@@ -1,3 +1,4 @@
+import type { Attributes } from "../../../attributes/attributes.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
@@ -10,7 +11,7 @@ import { Operand } from "./operand.js"
 export namespace Unenclosed {
     export const parse = (s: ParserState.Base, ctx: parserContext) => {
         const token = s.scanner.shiftUntilNextTerminator()
-        s.root = unenclosedToNode(s, token, ctx)
+        s.root = unenclosedToAttributes(s, token, ctx)
         return s
     }
 
@@ -23,7 +24,7 @@ export namespace Unenclosed {
         ? reduce<s, resolve<s, scanned, ctx>, nextUnscanned>
         : never
 
-    const unenclosedToNode = (
+    const unenclosedToAttributes = (
         s: ParserState.Base,
         token: string,
         ctx: parserContext
@@ -36,7 +37,10 @@ export namespace Unenclosed {
                 : buildUnresolvableMessage(token)
         )
 
-    export const maybeParseIdentifier = (token: string, ctx: parserContext) =>
+    export const maybeParseIdentifier = (
+        token: string,
+        ctx: parserContext
+    ): Attributes | undefined =>
         isKeyOf(token, Keyword.attributeMap)
             ? Keyword.attributeMap[token]
             : token in ctx.aliases

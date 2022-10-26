@@ -63,10 +63,10 @@ export type InstanceOf<Class extends ClassOf<unknown>> = Class extends ClassOf<
 
 export type Conform<T, Base> = T extends Base ? T : Base
 
-export const isKeyOf = <Obj extends object, K extends string | number>(
-    key: K,
-    obj: Obj
-): key is Extract<keyof Obj, K> => key in obj
+export const isKeyOf = <k extends string | number, obj extends object>(
+    k: k,
+    obj: obj
+): k is Extract<keyof obj, k> => k in obj
 
 export type entryOf<o> = Evaluate<
     { [k in keyof o]: [k, o[k]] }[o extends unknown[]

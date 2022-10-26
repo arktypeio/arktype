@@ -45,20 +45,20 @@ export namespace Operand {
 
     export type buildMissingOperandMessage<
         s extends ParserState.T.Unfinished,
-        lastOperator extends Expression.BinaryToken | null = ParserState.lastOperator<s>
+        lastOperator extends Scanner.InfixToken | null = ParserState.lastOperator<s>
     > = lastOperator extends {}
         ? buildMissingRightOperandMessage<lastOperator, s["unscanned"]>
         : buildExpressionExpectedMessage<s["unscanned"]>
 
     export type buildMissingRightOperandMessage<
-        token extends Expression.BinaryToken,
+        token extends Scanner.InfixToken,
         unscanned extends string
     > = `Token '${token}' requires a right operand${unscanned extends ""
         ? ""
         : ` before '${unscanned}'`}`
 
     export const buildMissingRightOperandMessage = <
-        token extends Expression.BinaryToken,
+        token extends Scanner.InfixToken,
         unscanned extends string
     >(
         token: token,

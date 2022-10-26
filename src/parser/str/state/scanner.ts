@@ -70,20 +70,85 @@ export namespace Scanner {
     export const lookaheadIsTerminator: UntilCondition = (r: Scanner) =>
         r.lookahead in terminatingChars
 
+    export const comparatorStartChars = {
+        "<": true,
+        ">": true,
+        "=": true
+    } as const
+
     export const terminatingChars = {
-        "<": 1,
-        ">": 1,
-        "=": 1,
-        "?": 1,
-        "|": 1,
-        "&": 1,
-        ")": 1,
-        "[": 1,
-        "%": 1,
-        " ": 1
-    }
+        ...comparatorStartChars,
+        "?": true,
+        "|": true,
+        "&": true,
+        ")": true,
+        "[": true,
+        "%": true,
+        " ": true
+    } as const
 
     export type TerminatingChar = keyof typeof Scanner.terminatingChars
+
+    export const comparators = {
+        "<": true,
+        ">": true,
+        "<=": true,
+        ">=": true,
+        "==": true
+    } as const
+
+    export type Comparator = keyof typeof comparators
+
+    export const pairableComparators = {
+        "<": true,
+        "<=": true
+    } as const
+
+    export type PairableComparator = keyof typeof pairableComparators
+
+    export type ComparatorStartChar = keyof typeof comparatorStartChars
+
+    export const oneCharComparators = {
+        "<": true,
+        ">": true
+    } as const
+
+    export type OneCharComparator = keyof typeof oneCharComparators
+
+    export const naryTokens = {
+        "|": true,
+        "&": true
+    } as const
+
+    export type NaryToken = keyof typeof naryTokens
+
+    export const binaryTokens = {
+        ...comparators,
+        "%": true
+    } as const
+
+    export type BinaryToken = keyof typeof binaryTokens
+
+    export const infixTokens = {
+        ...naryTokens,
+        ...binaryTokens
+    } as const
+
+    export type InfixToken = keyof typeof infixTokens
+
+    export const unaryTokens = {
+        "[]": true,
+        "?": true
+    } as const
+
+    export type UnaryToken = keyof typeof unaryTokens
+
+    export const operatorTokens = {
+        ...infixTokens,
+        ...unaryTokens
+    } as const
+
+    export type OperatorToken = keyof typeof operatorTokens
 
     export type shift<
         Lookahead extends string,

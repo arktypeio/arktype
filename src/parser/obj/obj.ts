@@ -1,5 +1,4 @@
-import { ObjectLiteral } from "../../nodes/structural/objectLiteral.js"
-import { Tuple } from "../../nodes/structural/tuple.js"
+import { Attributes } from "../../attributes/attributes.js"
 import type { Evaluate } from "../../utils/generics.js"
 import type { parseFn, ParserContext } from "../common.js"
 import { Root } from "../root.js"
@@ -16,18 +15,26 @@ export namespace Obj {
               [K in keyof Def]: Root.parse<Def[K], Ctx>
           }>
 
-    export const parse: parseFn<object> = (def, ctx) => {
+    export const parse: parseFn<Record<string | number, unknown>> = (
+        def,
+        ctx
+    ) => {
         if (Array.isArray(def)) {
             if (isTupleExpression(def)) {
                 return parseTupleExpression(def, ctx)
             }
-            return new Tuple.Node(
-                def.map((itemDef) => Root.parse(itemDef, ctx))
-            )
+            // TODO: Need to have path so attributes can intersect
         }
-        return new ObjectLiteral.Node(
-            Object.values(def).map((child) => Root.parse(child, ctx)),
-            Object.keys(def)
-        )
+        const props: Record<string | number, Attributes> = {}
+        // TODO: is this more efficient than const k?
+        let k
+        // TODO: What happens if symbol here? nothing?
+        for (k in def) {
+            props[k] = Root.parse(def[k], ctx)
+        }
+        return Attributes.initialize({
+            type: Array.isArray(def) ? "array" : "object",
+            props
+        })
     }
 }

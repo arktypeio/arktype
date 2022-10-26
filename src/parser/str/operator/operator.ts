@@ -1,10 +1,9 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
-import type { Scanner } from "../state/scanner.js"
+import { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 import { ArrayOperator } from "./array.js"
 import { BoundOperator } from "./bound/bound.js"
-import { Comparator } from "./bound/comparator.js"
 import { DivisibilityOperator } from "./divisibility.js"
 import { GroupClose } from "./groupClose.js"
 import { IntersectionOperator } from "./intersection.js"
@@ -26,7 +25,7 @@ export namespace Operator {
             ? IntersectionOperator.reduce(s)
             : lookahead === ")"
             ? GroupClose.reduce(s)
-            : isKeyOf(lookahead, Comparator.startChar)
+            : isKeyOf(lookahead, Scanner.comparatorStartChars)
             ? BoundOperator.parse(s, lookahead)
             : lookahead === "%"
             ? DivisibilityOperator.parse(s)
@@ -47,7 +46,7 @@ export namespace Operator {
                 ? IntersectionOperator.reduce<s, unscanned>
                 : lookahead extends ")"
                 ? GroupClose.reduce<s, unscanned>
-                : lookahead extends Comparator.StartChar
+                : lookahead extends Scanner.ComparatorStartChar
                 ? BoundOperator.parse<s, lookahead, unscanned>
                 : lookahead extends "%"
                 ? DivisibilityOperator.parse<s, unscanned>

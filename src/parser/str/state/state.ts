@@ -3,7 +3,6 @@ import { JsType } from "../../../internal.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
-import type { Comparator } from "../operator/bound/comparator.js"
 import type { LeftBoundOperator } from "../operator/bound/left.js"
 import { UnionOperator } from "../operator/union.js"
 import { Scanner } from "./scanner.js"
@@ -78,10 +77,14 @@ export namespace ParserState {
     }
 
     export namespace T {
-        export type WithRoot<attributes extends Attributes = {}> = Unfinished<{
-            root: attributes
+        export type WithRoot<ast = {}> = Unfinished<{
+            root: ast
         }>
     }
+
+    export const hasRoot = <s extends ParserState.Base>(
+        s: s
+    ): s is s & { root: {} } => s.root !== null
 
     export const hasRootAttribute = <
         s extends ParserState.Base,
@@ -119,7 +122,7 @@ export namespace ParserState {
         }
     }
 
-    export type OpenLeftBound = [number, Comparator.PairableToken]
+    export type OpenLeftBound = [number, Scanner.PairableComparator]
 
     export type from<s extends T.Base> = s
 

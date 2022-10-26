@@ -83,7 +83,7 @@ export namespace UnenclosedNumber {
         kind extends ValidationKind
     > = number extends inferredValue
         ? ParseError<buildMalformedNumericLiteralMessage<def, kind>>
-        : def
+        : inferredValue
 
     export const parseWellFormed = <ErrorOnFail extends string | undefined>(
         token: string,
@@ -109,19 +109,24 @@ export namespace UnenclosedNumber {
     export type parseWellFormedNumber<
         token extends string,
         badNumberMessage extends string
-    > = token extends NumberLiteral<infer Value>
-        ? number extends Value
+    > = token extends NumberLiteral<infer value>
+        ? number extends value
             ? buildMalformedNumericLiteralMessage<token, "number">
-            : token
+            : value
         : badNumberMessage
 
+    // We use bigint to check if the string matches an integer, but here we
+    // convert it to a plain number by exploiting the fact that TS stringifies
+    // numbers and bigints the same way.
     export type parseWellFormedInteger<
         token extends string,
         badIntegerMessage extends string
-    > = token extends NumberLiteral<infer Value>
-        ? bigint extends Value
+    > = token extends IntegerLiteral<infer value>
+        ? bigint extends value
             ? buildMalformedNumericLiteralMessage<token, "integer">
-            : token
+            : `${value}` extends NumberLiteral<infer valueAsNumber>
+            ? valueAsNumber
+            : never
         : badIntegerMessage
 }
 
@@ -154,5 +159,5 @@ export namespace UnenclosedBigint {
         inferredValue extends bigint
     > = bigint extends inferredValue
         ? ParseError<buildMalformedNumericLiteralMessage<def, "bigint">>
-        : def
+        : inferredValue
 }

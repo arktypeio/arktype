@@ -1,10 +1,11 @@
-import type { Evaluate } from "../../utils/generics.js"
-import type { Bound } from "../expression/infix/bound.js"
-import type { Keyword } from "../terminal/keyword/keyword.js"
-import type { BigintLiteral } from "../terminal/literal/bigint.js"
-import type { NumberLiteral } from "../terminal/literal/number.js"
-import type { RegexLiteral } from "../terminal/literal/regexLiteral.js"
-import type { StringLiteral } from "../terminal/literal/string.js"
+import type { Evaluate } from "../internal.js"
+import type { Enclosed } from "../parser/str/operand/enclosed.js"
+import type { Keyword } from "../parser/str/operand/keyword.js"
+import type {
+    BigintLiteral,
+    NumberLiteral
+} from "../parser/str/operand/numeric.js"
+import type { Scanner } from "../parser/str/state/scanner.js"
 
 export type inferAst<ast, resolutions> = ast extends string
     ? inferTerminal<ast, resolutions>
@@ -19,8 +20,8 @@ export type inferAst<ast, resolutions> = ast extends string
         ? Evaluate<
               inferAst<ast[0], resolutions> & inferAst<ast[2], resolutions>
           >
-        : ast[1] extends Comparator.Token
-        ? ast[0] extends NumberLiteral.Definition
+        : ast[1] extends Scanner.Comparator
+        ? ast[0] extends NumberLiteral
             ? inferAst<ast[2], resolutions>
             : inferAst<ast[0], resolutions>
         : ast[1] extends "%"
@@ -31,21 +32,16 @@ export type inferAst<ast, resolutions> = ast extends string
           }>
     : inferObjectLiteral<ast, resolutions>
 
-type inferTerminal<
-    token extends string,
-    resolutions
-> = token extends Keyword.Definition
+type inferTerminal<token extends string, resolutions> = token extends Keyword
     ? Keyword.Inferences[token]
     : token extends keyof resolutions
     ? inferAst<resolutions[token], resolutions>
-    : token extends StringLiteral.Definition<infer Text>
+    : token extends Enclosed.StringLiteral<infer Text>
     ? Text
-    : token extends RegexLiteral.Definition
+    : token extends Enclosed.RegexLiteral
     ? string
-    : token extends NumberLiteral.Definition<infer Value>
-    ? Value
-    : token extends BigintLiteral.Definition<infer Value>
-    ? Value
+    : token extends number | bigint
+    ? token
     : unknown
 
 type inferObjectLiteral<

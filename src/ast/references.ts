@@ -1,20 +1,18 @@
-import type { Conform } from "../../utils/generics.js"
-import type { Branching } from "../expression/branching/branching.js"
-import type { Infix } from "../expression/infix/infix.js"
-import type { Postfix } from "../expression/postfix/postfix.js"
-import type { NumberLiteral } from "../terminal/literal/number.js"
+import type { Conform } from "../internal.js"
+import type { NumberLiteral } from "../parser/str/operand/numeric.js"
+import type { Scanner } from "../parser/str/state/scanner.js"
 
-type SingleChildToken = Postfix.Token | Infix.Token
+type SingleChildToken = Scanner.UnaryToken | Scanner.Comparator | "%"
 
 type References<Ast, Filter extends string = string> = Ast extends string
     ? [Ast]
     : Ast extends readonly unknown[]
     ? Ast[1] extends SingleChildToken
-        ? Ast[0] extends NumberLiteral.Definition
+        ? Ast[0] extends NumberLiteral
             ? // If it's a left bound, the child is on the right
               References<Ast[2]>
             : References<Ast[0]>
-        : Ast[1] extends Branching.Token
+        : Ast[1] extends Scanner.NaryToken
         ? [...References<Ast[0], Filter>, ...References<Ast[2], Filter>]
         : StructuralReferences<Ast, Filter>
     : StructuralReferences<Ast, Filter>

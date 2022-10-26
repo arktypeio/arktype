@@ -1,8 +1,6 @@
-import type { ParseError } from "../../parser/common.js"
-import type { IsAny } from "../../utils/generics.js"
-import type { Branching } from "../expression/branching/branching.js"
-import type { Bound } from "../expression/infix/bound.js"
-import type { NumberLiteral } from "../terminal/literal/number.js"
+import type { IsAny } from "../internal.js"
+import type { ParseError } from "../parser/common.js"
+import type { Scanner } from "../parser/str/state/scanner.js"
 import type { inferAst } from "./infer.js"
 import type { toString } from "./toString.js"
 
@@ -24,10 +22,10 @@ type checkAst<ast, resolutions> = ast extends string
     : ast extends [infer child, unknown]
     ? checkAst<child, resolutions>
     : ast extends [infer left, infer token, infer right]
-    ? token extends Branching.Token
+    ? token extends Scanner.NaryToken
         ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
-        : token extends Comparator.Token
-        ? left extends NumberLiteral.Definition
+        : token extends Scanner.Comparator
+        ? left extends number
             ? checkAst<right, resolutions>
             : isBoundable<inferAst<left, resolutions>> extends true
             ? checkAst<left, resolutions>

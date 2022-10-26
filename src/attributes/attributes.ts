@@ -1,5 +1,5 @@
 import type { Dictionary, Evaluate, JsType } from "../internal.js"
-import type { Comparator } from "../parser/str/operator/bound/comparator.js"
+import type { Scanner } from "../parser/str/state/scanner.js"
 
 export type Attributes = Readonly<{
     type?: JsType.NormalizedName
@@ -23,14 +23,18 @@ export namespace Attributes {
 
     export const initialize = (attributes: Attributes) => attributes
 
-    type MutableAttributes = { -readonly [k in Name]?: Attributes[k] }
+    type MutableAttributes = { -readonly [k in Name]?: Attributes[k] } & {
+        branches?: MutableAttributes[]
+        props?: Dictionary<MutableAttributes>
+        values?: MutableAttributes
+    }
 
     export type ParamsByName = {
         type: [JsType.NormalizedName]
         value: [unknown]
         regex: [RegExp]
         divisor: [number]
-        bound: [Comparator.Token, number]
+        bound: [Scanner.Comparator, number]
         optional: []
         config: [Dictionary]
     }
@@ -48,15 +52,19 @@ export namespace Attributes {
         name: name,
         value: Attributes[name]
     ) => {
-        if (name === "divisor") {
-            attributes.divisor =
-                attributes.divisor === undefined
-                    ? value
-                    : leastCommonMultiple(value, attributes.divisor)
-        }
+        // if (name === "divisor") {
+        //     attributes.divisor =
+        //         attributes.divisor === undefined
+        //             ? value
+        //             : leastCommonMultiple(value, attributes.divisor)
+        // }
     }
 
-    export const addProp = (attributes: Attributes, key: string | number) => {
+    export const addProp = (
+        externalAttributes: Attributes,
+        key: string | number
+    ) => {
+        const attributes = externalAttributes as MutableAttributes
         if (!attributes.props) {
             attributes.props = {}
         }
@@ -75,7 +83,8 @@ export namespace Attributes {
     }
 
     // Only when union is finalized
-    export const unionOf = (base: Attributes, branch: Attributes) => {
+    export const unionOf = (externalBase: Attributes, branch: Attributes) => {
+        const base = externalBase as MutableAttributes
         let k: Name
         let branchHasAUniqueAttribute = false
         for (k in branch) {

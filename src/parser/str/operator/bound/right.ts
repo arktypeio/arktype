@@ -2,14 +2,14 @@ import { Attributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import type { NumberLiteral } from "../../operand/numeric.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
-import type { Scanner } from "../../state/scanner.js"
+import { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
-import { Comparator } from "./comparator.js"
+import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
 export namespace RightBoundOperator {
     export const parse = (
         s: ParserState.WithRoot,
-        comparator: Comparator.Token
+        comparator: Scanner.Comparator
     ) => {
         const limitToken = s.scanner.shiftUntilNextTerminator()
         const limit = UnenclosedNumber.parseWellFormed(
@@ -25,7 +25,7 @@ export namespace RightBoundOperator {
 
     export type parse<
         s extends ParserState.T.WithRoot,
-        comparator extends Comparator.Token
+        comparator extends Scanner.Comparator
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
@@ -41,22 +41,20 @@ export namespace RightBoundOperator {
 
     const reduce = (
         s: ParserState.WithRoot,
-        comparator: Comparator.Token,
+        comparator: Scanner.Comparator,
         limit: number
     ) => {
         if (!isLeftBounded(s)) {
             Attributes.add(s.root, "bound", comparator, limit)
             return s
         }
-        if (!isKeyOf(comparator, Comparator.pairableTokens)) {
-            return ParserState.error(
-                Comparator.buildInvalidDoubleMessage(comparator)
-            )
+        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
+            return ParserState.error(buildInvalidDoubleMessage(comparator))
         }
         Attributes.add(
             s.root,
             "bound",
-            Comparator.invertedTokens[s.branches.leftBound[1]],
+            invertedComparators[s.branches.leftBound[1]],
             s.branches.leftBound[0]
         )
         Attributes.add(s.root, "bound", comparator, limit)
@@ -66,16 +64,16 @@ export namespace RightBoundOperator {
 
     type reduce<
         s extends ParserState.T.WithRoot,
-        comparator extends Comparator.Token,
-        limitTokenOrError extends string
-    > = limitTokenOrError extends NumberLiteral
+        comparator extends Scanner.Comparator,
+        limitOrError extends string | number
+    > = limitOrError extends number
         ? s["branches"]["leftBound"] extends {}
-            ? comparator extends Comparator.PairableToken
+            ? comparator extends Scanner.PairableComparator
                 ? ParserState.from<{
                       root: [
                           s["branches"]["leftBound"][0],
                           s["branches"]["leftBound"][1],
-                          [s["root"], comparator, limitTokenOrError]
+                          [s["root"], comparator, limitOrError]
                       ]
                       branches: {
                           leftBound: null
@@ -85,14 +83,12 @@ export namespace RightBoundOperator {
                       groups: s["groups"]
                       unscanned: s["unscanned"]
                   }>
-                : ParserState.error<
-                      Comparator.buildInvalidDoubleMessage<comparator>
-                  >
-            : ParserState.setRoot<s, [s["root"], comparator, limitTokenOrError]>
-        : ParserState.error<limitTokenOrError>
+                : ParserState.error<buildInvalidDoubleMessage<comparator>>
+            : ParserState.setRoot<s, [s["root"], comparator, limitOrError]>
+        : ParserState.error<`${limitOrError}`>
 
     export const buildInvalidLimitMessage = <
-        comparator extends Comparator.Token,
+        comparator extends Scanner.Comparator,
         limit extends string
     >(
         comparator: comparator,
@@ -101,7 +97,7 @@ export namespace RightBoundOperator {
         `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
 
     type buildInvalidLimitMessage<
-        comparator extends Comparator.Token,
+        comparator extends Scanner.Comparator,
         limit extends string
     > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
 

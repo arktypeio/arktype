@@ -1,11 +1,10 @@
-import type { Base } from "../../nodes/base/base.js"
-import type { Expression } from "../../nodes/expression/expression.js"
-
+import type { Attributes } from "../../attributes/attributes.js"
 import type { ParseError, parseFn, ParserContext } from "../common.js"
 import type { Root } from "../root.js"
 import type { Operand } from "../str/operand/operand.js"
+import type { Scanner } from "../str/state/scanner.js"
 
-export type TupleExpression = [unknown, Expression.BaseToken, ...unknown[]]
+export type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 
 export const isTupleExpression = (def: unknown[]): def is TupleExpression =>
     (def[1] as any) in {}
@@ -13,12 +12,12 @@ export const isTupleExpression = (def: unknown[]): def is TupleExpression =>
 export const parseTupleExpression: parseFn<TupleExpression> = (
     [definition, token, ...args],
     context
-) => ({} as Base.Node)
+) => ({} as Attributes)
 
 export type parseTupleExpression<
     Def extends TupleExpression,
     Ctx extends ParserContext
-> = Def[1] extends Expression.BinaryToken
+> = Def[1] extends Scanner.InfixToken
     ? Def[2] extends undefined
         ? [
               Root.parse<Def[0], Ctx>,

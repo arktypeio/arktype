@@ -1,26 +1,32 @@
-import { RegexLiteral } from "../../../nodes/terminal/literal/regexLiteral.js"
-import { StringLiteral } from "../../../nodes/terminal/literal/string.js"
+import { Attributes } from "../../../attributes/attributes.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 
 export namespace Enclosed {
+    export type StringLiteral<Text extends string = string> =
+        | DoubleQuotedStringLiteral<Text>
+        | SingleQuotedStringLiteral<Text>
+
+    export type DoubleQuotedStringLiteral<Text extends string = string> =
+        `"${Text}"`
+
+    export type SingleQuotedStringLiteral<Text extends string = string> =
+        `'${Text}'`
+
+    export type RegexLiteral<Source extends string = string> = `/${Source}/`
+
     export const parse = (s: ParserState.Base, enclosing: StartChar) => {
         const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
             appendTo: enclosing,
             inclusive: true,
             onInputEnd: throwUnterminatedEnclosed
         })
-        s.root =
+        s.root = Attributes.initialize(
             enclosing === "/"
-                ? new RegexLiteral.Node(token as RegexLiteral.Definition)
-                : enclosing === "'"
-                ? new StringLiteral.SingleQuotedNode(
-                      token as StringLiteral.SingleQuoted
-                  )
-                : new StringLiteral.DoubleQuotedNode(
-                      token as StringLiteral.DoubleQuoted
-                  )
+                ? { type: "string", regex: new RegExp(token.slice(1, -1)) }
+                : { type: "string", value: token.slice(1, -1) }
+        )
         return s
     }
 

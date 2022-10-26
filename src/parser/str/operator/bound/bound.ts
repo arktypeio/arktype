@@ -1,33 +1,32 @@
 import { isKeyOf } from "../../../../utils/generics.js"
-import type { Scanner } from "../../state/scanner.js"
+import { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
-import { Comparator } from "./comparator.js"
 import { LeftBoundOperator } from "./left.js"
 import { RightBoundOperator } from "./right.js"
 
 export namespace BoundOperator {
     const shift = (
         s: ParserState.WithRoot,
-        start: Comparator.StartChar
-    ): Comparator.Token =>
+        start: Scanner.ComparatorStartChar
+    ): Scanner.Comparator =>
         s.scanner.lookaheadIs("=")
             ? `${start}${s.scanner.shift()}`
-            : isKeyOf(start, Comparator.oneCharTokens)
+            : isKeyOf(start, Scanner.oneCharComparators)
             ? start
             : ParserState.error(singleEqualsMessage)
 
     export const parse = (
         s: ParserState.WithRoot,
-        start: Comparator.StartChar
+        start: Scanner.ComparatorStartChar
     ) => delegateReduction(s, shift(s, start))
 
     export type parse<
         s extends ParserState.T.WithRoot,
-        start extends Comparator.StartChar,
+        start extends Scanner.ComparatorStartChar,
         unscanned extends string
     > = unscanned extends Scanner.shift<"=", infer nextUnscanned>
         ? delegateReduction<ParserState.scanTo<s, nextUnscanned>, `${start}=`>
-        : start extends Comparator.OneCharToken
+        : start extends Scanner.OneCharComparator
         ? delegateReduction<ParserState.scanTo<s, unscanned>, start>
         : ParserState.error<singleEqualsMessage>
 
@@ -36,7 +35,7 @@ export namespace BoundOperator {
 
     const delegateReduction = (
         s: ParserState.WithRoot,
-        comparator: Comparator.Token
+        comparator: Scanner.Comparator
     ) =>
         ParserState.hasRootAttributeType(s, "value", "number")
             ? LeftBoundOperator.reduce(s, comparator)
@@ -44,11 +43,9 @@ export namespace BoundOperator {
 
     type delegateReduction<
         s extends ParserState.T.WithRoot,
-        comparator extends Comparator.Token
+        comparator extends Scanner.Comparator
     > = s extends {
-        root: {
-            value: number
-        }
+        root: number
     }
         ? LeftBoundOperator.reduce<s, comparator>
         : RightBoundOperator.parse<s, comparator>

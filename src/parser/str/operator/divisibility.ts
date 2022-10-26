@@ -1,5 +1,4 @@
 import { Attributes } from "../../../attributes/attributes.js"
-import type { IntegerLiteral } from "../operand/numeric.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -36,7 +35,7 @@ export namespace DivisibilityOperator {
 
     const reduce = (s: ParserState.WithRoot, parseResult: number) => {
         if (parseResult === 0) {
-            return ParserState.error(buildInvalidDivisorMessage("0"))
+            return ParserState.error(buildInvalidDivisorMessage(0))
         }
         Attributes.add(s.root, "divisor", parseResult)
         return s
@@ -44,23 +43,23 @@ export namespace DivisibilityOperator {
 
     type reduce<
         s extends ParserState.T.WithRoot,
-        divisorTokenOrError extends string,
+        divisorOrError extends string | number,
         unscanned extends string
-    > = divisorTokenOrError extends IntegerLiteral
-        ? divisorTokenOrError extends "0"
-            ? ParserState.error<buildInvalidDivisorMessage<"0">>
+    > = divisorOrError extends number
+        ? divisorOrError extends 0
+            ? ParserState.error<buildInvalidDivisorMessage<0>>
             : ParserState.setRoot<
                   s,
-                  [s["root"], "%", divisorTokenOrError],
+                  [s["root"], "%", divisorOrError],
                   unscanned
               >
-        : ParserState.error<divisorTokenOrError>
+        : ParserState.error<`${divisorOrError}`>
 
-    export const buildInvalidDivisorMessage = <divisor extends string>(
+    export const buildInvalidDivisorMessage = <divisor extends string | number>(
         divisor: divisor
     ): buildInvalidDivisorMessage<divisor> =>
         `% operator must be followed by a non-zero integer literal (was ${divisor})`
 
-    type buildInvalidDivisorMessage<divisor extends string> =
+    type buildInvalidDivisorMessage<divisor extends string | number> =
         `% operator must be followed by a non-zero integer literal (was ${divisor})`
 }
