@@ -27,7 +27,7 @@ export namespace OptionalOperator {
 }
 export const hasRootAttribute = <
     s extends ParserState.Base,
-    k extends Attributes.Name,
+    k extends Attributes.Key,
     v extends Attributes[k]
 >(
     s: s,

@@ -88,7 +88,7 @@ export namespace ParserState {
 
     export const hasRootAttribute = <
         s extends ParserState.Base,
-        k extends Attributes.Name,
+        k extends Attributes.Key,
         v extends Attributes[k]
     >(
         s: s,
@@ -99,7 +99,7 @@ export namespace ParserState {
 
     export const hasRootAttributeType = <
         s extends ParserState.Base,
-        k extends Attributes.Name,
+        k extends Attributes.Key,
         t extends JsType.NormalizedOf<Attributes[k]>
     >(
         s: s,

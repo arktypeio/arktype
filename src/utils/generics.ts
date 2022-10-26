@@ -53,14 +53,6 @@ type TopTypeIsUnknown<T> = (T extends {} ? true : false) extends false
 
 export type Dictionary<Of = unknown> = Record<string, Of>
 
-export type ClassOf<Instance> = new (...constructorArgs: any[]) => Instance
-
-export type InstanceOf<Class extends ClassOf<unknown>> = Class extends ClassOf<
-    infer Instance
->
-    ? Instance
-    : never
-
 export type Conform<T, Base> = T extends Base ? T : Base
 
 export const isKeyOf = <k extends string | number, obj extends object>(
@@ -68,13 +60,15 @@ export const isKeyOf = <k extends string | number, obj extends object>(
     obj: obj
 ): k is Extract<keyof obj, k> => k in obj
 
-export type entryOf<o> = Evaluate<
-    { [k in keyof o]: [k, o[k]] }[o extends unknown[]
-        ? keyof o & number
-        : keyof o] & {}
->
+export type entryOf<o> = { [k in keyof o]: [k, o[k]] }[o extends unknown[]
+    ? keyof o & number
+    : keyof o]
 
 export type entriesOf<o extends object> = entryOf<o>[]
 
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
+
+export type mutable<o> = {
+    -readonly [k in keyof o]: o[k]
+}

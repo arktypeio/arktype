@@ -1,7 +1,8 @@
-import type { Dictionary, Evaluate, JsType } from "../internal.js"
+import type { Dictionary } from "../internal.js"
+import { JsType } from "../internal.js"
 import type { Scanner } from "../parser/str/state/scanner.js"
 
-export type Attributes = Readonly<{
+type Attributes = {
     type?: JsType.NormalizedName
     value?: unknown
     // TODO: Multiple regex
@@ -11,93 +12,93 @@ export type Attributes = Readonly<{
     inclusiveMin?: true
     max?: number
     inclusiveMax?: true
-    optional?: true
-    config?: Dictionary
+    optional?: boolean
     branches?: Attributes[]
     props?: Dictionary<Attributes>
     values?: Attributes
-}>
+}
 
-export namespace Attributes {
-    export type Name = Evaluate<keyof Attributes>
+type AttributeKey = keyof Attributes
 
-    export const initialize = (attributes: Attributes) => attributes
+type AttributeReducers = {
+    type: [name: JsType.NormalizedName]
+    value: [unknown]
+    regex: [RegExp]
+    divisor: [number]
+    bound: [comparator: Scanner.Comparator, limit: number]
+    optional: [boolean]
+    prop: [key: string | true, node: AttributeNode]
+    intersection: [node: AttributeNode]
+    union: [node: AttributeNode]
+}
 
-    type MutableAttributes = { -readonly [k in Name]?: Attributes[k] } & {
-        branches?: MutableAttributes[]
-        props?: Dictionary<MutableAttributes>
-        values?: MutableAttributes
+type ReducerName = keyof AttributeReducers
+
+type DeepImmutableAttributes = {
+    readonly [k in AttributeKey]?: Attributes[k]
+} & {
+    branches?: DeepImmutableAttributes[]
+    props?: Dictionary<DeepImmutableAttributes>
+    values?: DeepImmutableAttributes
+}
+
+export class AttributeNode {
+    constructor(private attributes: Attributes) {}
+
+    get<key extends AttributeKey>(key: key): DeepImmutableAttributes[key] {
+        return this.attributes[key]
     }
 
-    export type ParamsByName = {
-        type: [JsType.NormalizedName]
-        value: [unknown]
-        regex: [RegExp]
-        divisor: [number]
-        bound: [Scanner.Comparator, number]
-        optional: []
-        config: [Dictionary]
-    }
-
-    export type InputName = keyof ParamsByName
-
-    export const add = <name extends InputName>(
-        attributes: Attributes,
+    reduce<name extends ReducerName>(
         name: name,
-        ...params: ParamsByName[name]
-    ) => {}
+        ...args: AttributeReducers[name]
+    ) {}
 
-    const addRaw = <name extends Name>(
-        attributes: Attributes,
-        name: name,
-        value: Attributes[name]
-    ) => {
-        // if (name === "divisor") {
-        //     attributes.divisor =
-        //         attributes.divisor === undefined
-        //             ? value
-        //             : leastCommonMultiple(value, attributes.divisor)
-        // }
+    // TODO: Make the object unusable after this
+    eject() {
+        return this.attributes
     }
 
-    export const intersection = (base: Attributes, branch: Attributes) => {
-        let k: Name
+    flatten() {
+        return []
+    }
+
+    private reduceIntersection(node: AttributeNode) {
+        const branch = node.eject()
+        let k: AttributeKey
         for (k in branch) {
-            addRaw(base, k, branch[k])
+            // addRaw(base, k, branch[k])
         }
-        return base
     }
 
-    // Only when union is finalized
-    export const union = (externalBase: Attributes, branch: Attributes) => {
-        const base = externalBase as MutableAttributes
-        let k: Name
+    private reduceUnion(node: AttributeNode) {
+        const branch = node.eject()
+        let k: AttributeKey
         let branchHasAUniqueAttribute = false
         for (k in branch) {
-            if (base[k] === branch[k]) {
+            if (areDeeplyEqual(this.attributes[k], branch[k])) {
                 // The branch attribute is redundant and can be removed.
                 delete branch[k]
                 continue
             }
             branchHasAUniqueAttribute = true
-            if (!(k in base)) {
-                // The branch attribute was not previously part of base and is safe to push to branches.
+            if (!(k in this.attributes)) {
+                // The branch attribute was not previously part of this.attributes and is safe to push to branches.
                 continue
             }
-            // The attribute had distinct values for base and branch.
-            // Distribute the base value to each existing branch and remove it
-            // from base.
-            base.branches ??= []
-            for (const existingBranch of base.branches) {
-                existingBranch[k] = base[k] as any
+            // The attribute had distinct values for this.attributes and branch.
+            // Distribute the this.attributes value to each existing branch and remove it
+            // from this.attributes.
+            this.attributes.branches ??= []
+            for (const existingBranch of this.attributes.branches) {
+                existingBranch[k] = this.attributes[k] as any
             }
-            delete base[k]
+            delete this.attributes[k]
         }
         if (branchHasAUniqueAttribute) {
-            base.branches ??= []
-            base.branches.push(branch)
+            this.attributes.branches ??= []
+            this.attributes.branches.push(branch)
         }
-        return base
     }
 }
 
@@ -113,4 +114,42 @@ const leastCommonMultiple = (first: number, second: number) => {
         greatestCommonDivisor = previous
     }
     return Math.abs((first * second) / greatestCommonDivisor)
+}
+
+const areDeeplyEqual = (a: unknown, b: unknown) => {
+    const typeOfA = JsType.of(a)
+    const typeOfB = JsType.of(b)
+    return typeOfA !== typeOfB
+        ? false
+        : typeOfA === "object"
+        ? objectsAreDeeplyEqual(a as Dictionary, b as Dictionary)
+        : typeOfA === "array"
+        ? arraysAreDeeplyEqual(a as unknown[], b as unknown[])
+        : a === b
+}
+
+const objectsAreDeeplyEqual = (a: Dictionary, b: Dictionary) => {
+    const unseenBKeys = { ...b }
+    for (const k in a) {
+        if (a[k] !== b[k]) {
+            return false
+        }
+        delete unseenBKeys[k]
+    }
+    if (Object.keys(unseenBKeys).length) {
+        return false
+    }
+    return true
+}
+
+const arraysAreDeeplyEqual = (a: unknown[], b: unknown[]) => {
+    if (a.length !== b.length) {
+        return false
+    }
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+            return false
+        }
+    }
+    return true
 }
