@@ -75,13 +75,13 @@ describe("bound", () => {
             test("unpaired left", () => {
                 // @ts-expect-error
                 attest(() => type("3<number")).throwsAndHasTypeError(
-                    LeftBoundOperator.buildUnpairedMessage("number", 3, "<")
+                    LeftBoundOperator.buildUnpairedMessage(3, "<")
                 )
             })
             test("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    LeftBoundOperator.buildBoundLiteralMessage("5", 3, "<")
+                    LeftBoundOperator.buildBoundLiteralMessage(5, 3, "<")
                 )
             })
         })

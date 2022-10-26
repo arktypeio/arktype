@@ -1,6 +1,5 @@
 import type { Attributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
-import type { NumberLiteral } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
 import type { InvertedComparators } from "./shared.js"
@@ -15,8 +14,8 @@ export namespace LeftBoundOperator {
             ? ParserState.openLeftBounded(s)
                 ? ParserState.error(
                       buildBoundLiteralMessage(
-                          s.root.toString(),
-                          String(s.branches.leftBound[0]),
+                          s.root.value,
+                          s.branches.leftBound[0],
                           s.branches.leftBound[1]
                       )
                   )
@@ -68,7 +67,6 @@ export namespace LeftBoundOperator {
         }>
     > = ParserState.error<
         buildUnpairedMessage<
-            toString<s["root"]>,
             s["branches"]["leftBound"][0],
             s["branches"]["leftBound"][1]
         >
@@ -82,14 +80,13 @@ export namespace LeftBoundOperator {
     ) =>
         ParserState.error(
             buildUnpairedMessage(
-                s.root.toString(),
                 s.branches.leftBound[0],
                 s.branches.leftBound[1]
             )
         )
 
     export const buildBoundLiteralMessage = <
-        literal extends NumberLiteral,
+        literal extends number,
         limit extends number,
         token extends Scanner.Comparator
     >(
@@ -100,25 +97,22 @@ export namespace LeftBoundOperator {
         `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
 
     export type buildBoundLiteralMessage<
-        literal extends NumberLiteral,
+        literal extends number,
         limit extends number,
         comparator extends Scanner.Comparator
     > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
 
     export const buildUnpairedMessage = <
-        root extends string,
         limit extends number,
-        token extends Scanner.Comparator
+        comparator extends Scanner.Comparator
     >(
-        root: root,
         limit: limit,
-        comparator: token
-    ): buildUnpairedMessage<root, limit, token> =>
-        `Left bounds are only valid when paired with right bounds. Consider using ${root}${invertedComparators[comparator]}${limit} instead.`
+        comparator: comparator
+    ): buildUnpairedMessage<limit, comparator> =>
+        `Left bounds are only valid when paired with right bounds. Consider using ${invertedComparators[comparator]}${limit} instead.`
 
     export type buildUnpairedMessage<
-        root extends string,
         limit extends number,
-        token extends Scanner.Comparator
-    > = `Left bounds are only valid when paired with right bounds. Consider using ${root}${InvertedComparators[token]}${limit} instead.`
+        comparator extends Scanner.Comparator
+    > = `Left bounds are only valid when paired with right bounds. Consider using ${InvertedComparators[comparator]}${limit} instead.`
 }

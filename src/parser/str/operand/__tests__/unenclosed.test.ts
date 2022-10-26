@@ -27,28 +27,28 @@ describe("parse unenclosed", () => {
     describe("number", () => {
         describe("positive", () => {
             test("whole", () => {
-                attest(type("4").ast).narrowedValue("4")
+                attest(type("4").ast).narrowedValue(4)
             })
             test("decimal", () => {
-                attest(type("3.14159").ast).narrowedValue("3.14159")
+                attest(type("3.14159").ast).narrowedValue(3.14159)
             })
             test("decimal with zero whole portion", () => {
-                attest(type("0.5").ast).narrowedValue("0.5")
+                attest(type("0.5").ast).narrowedValue(0.5)
             })
         })
         describe("negative", () => {
             test("whole", () => {
-                attest(type("-12").ast).narrowedValue("-12")
+                attest(type("-12").ast).narrowedValue(-12)
             })
             test("decimal", () => {
-                attest(type("-1.618").ast).narrowedValue("-1.618")
+                attest(type("-1.618").ast).narrowedValue(-1.618)
             })
             test("decimal with zero whole portion", () => {
-                attest(type("-0.001").ast).narrowedValue("-0.001")
+                attest(type("-0.001").ast).narrowedValue(-0.001)
             })
         })
         test("zero", () => {
-            attest(type("0").ast).narrowedValue("0")
+            attest(type("0").ast).narrowedValue(0)
         })
         describe("errors", () => {
             test("multiple decimals", () => {
@@ -88,14 +88,14 @@ describe("parse unenclosed", () => {
         test("positive", () => {
             // Is prime :D
             attest(type("12345678910987654321n").ast).narrowedValue(
-                "12345678910987654321n"
+                12345678910987654321n
             )
         })
         test("negative", () => {
-            attest(type("-9801n").ast).narrowedValue("-9801n")
+            attest(type("-9801n").ast).narrowedValue(-9801n)
         })
         test("zero", () => {
-            attest(type("0n").ast).narrowedValue("0n")
+            attest(type("0n").ast).narrowedValue(0n)
         })
         describe("errors", () => {
             test("decimal", () => {
