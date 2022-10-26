@@ -23,13 +23,9 @@ export namespace Obj {
             if (isTupleExpression(def)) {
                 return parseTupleExpression(def, ctx)
             }
-            // TODO: Need to have path so attributes can intersect
         }
         const props: Record<string | number, Attributes> = {}
-        // TODO: is this more efficient than const k?
-        let k
-        // TODO: What happens if symbol here? nothing?
-        for (k in def) {
+        for (const k in def) {
             props[k] = Root.parse(def[k], ctx)
         }
         return Attributes.initialize({

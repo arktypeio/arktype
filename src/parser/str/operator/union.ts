@@ -8,7 +8,7 @@ export namespace UnionOperator {
     export const reduce = (s: ParserState.WithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         s.branches.union = s.branches.union
-            ? Attributes.unionOf(s.branches.union, s.root)
+            ? Attributes.union(s.branches.union, s.root)
             : s.root
         s.root = ParserState.unset
         return s
@@ -42,7 +42,7 @@ export namespace UnionOperator {
         if (!s.branches.union) {
             return s
         }
-        s.root = Attributes.unionOf(s.branches.union, s.root)
+        s.root = Attributes.union(s.branches.union, s.root)
         delete s.branches.union
         return s
     }

@@ -9,7 +9,7 @@ export namespace IntersectionOperator {
             return LeftBoundOperator.unpairedError(s)
         }
         s.branches.intersection = s.branches.intersection
-            ? Attributes.intersectionOf(s.branches.intersection, s.root)
+            ? Attributes.intersection(s.branches.intersection, s.root)
             : s.root
         s.root = ParserState.unset
         return s
@@ -45,7 +45,7 @@ export namespace IntersectionOperator {
         if (!s.branches.intersection) {
             return s
         }
-        s.root = Attributes.intersectionOf(s.branches.intersection, s.root)
+        s.root = Attributes.intersection(s.branches.intersection, s.root)
         delete s.branches.intersection
         return s
     }

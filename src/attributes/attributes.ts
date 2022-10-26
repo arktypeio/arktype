@@ -60,21 +60,7 @@ export namespace Attributes {
         // }
     }
 
-    export const addProp = (
-        externalAttributes: Attributes,
-        key: string | number
-    ) => {
-        const attributes = externalAttributes as MutableAttributes
-        if (!attributes.props) {
-            attributes.props = {}
-        }
-        if (!attributes.props[key]) {
-            attributes.props[key] = {}
-        }
-        return attributes.props[key]
-    }
-
-    export const intersectionOf = (base: Attributes, branch: Attributes) => {
+    export const intersection = (base: Attributes, branch: Attributes) => {
         let k: Name
         for (k in branch) {
             addRaw(base, k, branch[k])
@@ -83,7 +69,7 @@ export namespace Attributes {
     }
 
     // Only when union is finalized
-    export const unionOf = (externalBase: Attributes, branch: Attributes) => {
+    export const union = (externalBase: Attributes, branch: Attributes) => {
         const base = externalBase as MutableAttributes
         let k: Name
         let branchHasAUniqueAttribute = false
