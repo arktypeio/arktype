@@ -8,10 +8,7 @@ export namespace ArrayOperator {
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
         }
-        s.root = new Attributes({
-            type: "array",
-            values: s.root
-        })
+        s.root = Attributes.initialize({ type: "array", values: s.root })
         return s
     }
 

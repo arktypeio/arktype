@@ -57,8 +57,8 @@ export namespace ParserState {
         export type UnscannedOrReturnCode = ValidUnscanned | 1
     }
 
-    /** More transparent mutation of root in a function with a constrained input state */
-    export const emptyRoot = null as any
+    /** More transparent mutation in a function with a constrained input state */
+    export const unset = null as any
 
     export type Preconditions = {
         root?: Attributes | null
@@ -106,9 +106,9 @@ export namespace ParserState {
         s.root !== null && JsType.is(s.root[k], typeName)
 
     export type OpenBranches = {
-        leftBound?: OpenLeftBound
-        union?: Attributes
-        intersection?: Attributes
+        leftBound?: OpenLeftBound | null
+        union?: Attributes | null
+        intersection?: Attributes | null
     }
 
     export namespace T {

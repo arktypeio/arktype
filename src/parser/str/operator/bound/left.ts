@@ -1,3 +1,4 @@
+import type { Attributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import type { NumberLiteral } from "../../operand/numeric.js"
 import { ParserState } from "../../state/state.js"
@@ -8,7 +9,7 @@ export namespace LeftBoundOperator {
         s: ParserState.WithRoot<{ value: number }>,
         comparator: Comparator.Token
     ) =>
-        isKeyOf(comparator, Bound.doublableTokens)
+        isKeyOf(comparator, Comparator.pairableTokens)
             ? ParserState.openLeftBounded(s)
                 ? ParserState.error(
                       buildBoundLiteralMessage(
@@ -23,7 +24,7 @@ export namespace LeftBoundOperator {
               )
 
     export type reduce<
-        s extends ParserState.T.WithRoot<NumberLiteral.Definition>,
+        s extends ParserState.T.WithRoot<{ value: number }>,
         comparator extends Comparator.Token
     > = comparator extends Comparator.PairableToken
         ? s extends ParserState.openLeftBounded
@@ -38,23 +39,23 @@ export namespace LeftBoundOperator {
         : ParserState.error<Comparator.buildInvalidDoubleMessage<comparator>>
 
     const reduceValidated = (
-        s: ParserState.WithRoot<NumberLiteral.Node>,
+        s: ParserState.WithRoot<{ value: number }>,
         token: Comparator.PairableToken
     ) => {
         s.branches.leftBound = [s.root.value, token]
-        s.root = ParserState.emptyRoot
+        s.root = ParserState.unset
         return s
     }
 
     type reduceValidated<
-        s extends ParserState.T.WithRoot<NumberLiteral.Definition>,
+        s extends ParserState.T.WithRoot<{ value: number }>,
         comparator extends Comparator.PairableToken
     > = ParserState.from<{
         root: null
         branches: {
             union: s["branches"]["union"]
             intersection: s["branches"]["intersection"]
-            leftBound: [s["root"], comparator]
+            leftBound: [s["root"]["value"], comparator]
         }
         groups: s["groups"]
         unscanned: s["unscanned"]
@@ -75,14 +76,14 @@ export namespace LeftBoundOperator {
 
     export const unpairedError = (
         s: ParserState.Of<{
-            root: Base.Node
+            root: Attributes
             branches: { leftBound: ParserState.OpenLeftBound }
         }>
     ) =>
         ParserState.error(
             buildUnpairedMessage(
                 s.root.toString(),
-                s.branches.leftBound[0].toString(),
+                s.branches.leftBound[0],
                 s.branches.leftBound[1]
             )
         )
@@ -113,11 +114,11 @@ export namespace LeftBoundOperator {
         limit: limit,
         comparator: token
     ): buildUnpairedMessage<root, limit, token> =>
-        `Left bounds are only valid when paired with right bounds. Consider using ${root}${Comparator.invertedComparators[comparator]}${limit} instead.`
+        `Left bounds are only valid when paired with right bounds. Consider using ${root}${Comparator.invertedTokens[comparator]}${limit} instead.`
 
     export type buildUnpairedMessage<
         root extends string,
         limit extends number,
         token extends Comparator.Token
-    > = `Left bounds are only valid when paired with right bounds. Consider using ${root}${Comparator.InvertedComparators[token]}${limit} instead.`
+    > = `Left bounds are only valid when paired with right bounds. Consider using ${root}${Comparator.InvertedTokens[token]}${limit} instead.`
 }

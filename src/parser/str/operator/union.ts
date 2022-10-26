@@ -10,7 +10,7 @@ export namespace UnionOperator {
         s.branches.union = s.branches.union
             ? Attributes.unionOf(s.branches.union, s.root)
             : s.root
-        s.root = ParserState.emptyRoot
+        s.root = ParserState.unset
         return s
     }
 

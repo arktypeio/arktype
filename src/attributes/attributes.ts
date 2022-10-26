@@ -21,6 +21,8 @@ export type Attributes = Readonly<{
 export namespace Attributes {
     export type Name = Evaluate<keyof Attributes>
 
+    export const initialize = (attributes: Attributes) => attributes
+
     type MutableAttributes = { -readonly [k in Name]?: Attributes[k] }
 
     export type ParamsByName = {

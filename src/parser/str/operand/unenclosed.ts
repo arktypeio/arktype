@@ -1,11 +1,9 @@
-import { Alias } from "../../../nodes/terminal/alias.js"
-import { Keyword } from "../../../nodes/terminal/keyword/keyword.js"
-import { BigintLiteral } from "../../../nodes/terminal/literal/bigint.js"
-import { NumberLiteral } from "../../../nodes/terminal/literal/number.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type { ParseError, parserContext, ParserContext } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
+import { Keyword } from "./keyword.js"
+import type { BigintLiteral, NumberLiteral } from "./numeric.js"
 import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 import { Operand } from "./operand.js"
 
@@ -39,20 +37,20 @@ export namespace Unenclosed {
         )
 
     export const maybeParseIdentifier = (token: string, ctx: parserContext) =>
-        isKeyOf(token, Keyword.nodes)
-            ? Keyword.nodes[token]
+        isKeyOf(token, Keyword.attributeMap)
+            ? Keyword.attributeMap[token]
             : token in ctx.aliases
-            ? new Alias.Node(token)
+            ? { value: "alias" }
             : undefined
 
     const maybeParseUnenclosedLiteral = (token: string) => {
         const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
         if (maybeNumber !== undefined) {
-            return new NumberLiteral.Node(maybeNumber)
+            return { value: maybeNumber }
         }
         const maybeBigint = UnenclosedBigint.parseWellFormed(token)
         if (maybeBigint !== undefined) {
-            return new BigintLiteral.Node(maybeBigint)
+            return { value: maybeBigint }
         }
     }
 
@@ -75,7 +73,7 @@ export namespace Unenclosed {
     export type isResolvableIdentifier<
         token,
         ctx extends ParserContext
-    > = token extends Keyword.Definition
+    > = token extends Keyword
         ? true
         : token extends keyof ctx["aliases"]
         ? true
@@ -87,9 +85,9 @@ export namespace Unenclosed {
         ctx extends ParserContext
     > = isResolvableIdentifier<token, ctx> extends true
         ? token
-        : token extends NumberLiteral.Definition<infer Value>
+        : token extends NumberLiteral<infer Value>
         ? UnenclosedNumber.assertWellFormed<token, Value, "number">
-        : token extends BigintLiteral.Definition<infer Value>
+        : token extends BigintLiteral<infer Value>
         ? UnenclosedBigint.assertWellFormed<token, Value>
         : ParseError<
               token extends ""

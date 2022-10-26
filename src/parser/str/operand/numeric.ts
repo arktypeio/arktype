@@ -1,6 +1,8 @@
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 
+export type BigintLiteral<Value extends bigint = bigint> = `${Value}n`
+
 export type NumberLiteral<Value extends number = number> = `${Value}`
 
 export type IntegerLiteral<Value extends bigint = bigint> = `${Value}`

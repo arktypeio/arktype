@@ -1,4 +1,3 @@
-import type { Expression } from "../../../nodes/expression/expression.js"
 import type { parserContext, ParserContext } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"

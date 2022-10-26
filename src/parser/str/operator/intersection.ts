@@ -11,7 +11,7 @@ export namespace IntersectionOperator {
         s.branches.intersection = s.branches.intersection
             ? Attributes.intersectionOf(s.branches.intersection, s.root)
             : s.root
-        s.root = ParserState.emptyRoot
+        s.root = ParserState.unset
         return s
     }
 

@@ -2,8 +2,8 @@ import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../../api.js"
 import { BoundOperator } from "../bound/bound.js"
-import { LeftBoundOperator } from "../bound/left.js"
 import { Comparator } from "../bound/comparator.js"
+import { LeftBoundOperator } from "../bound/left.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {

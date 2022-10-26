@@ -1,6 +1,6 @@
-import { Bound } from "../../../../nodes/expression/infix/bound.js"
-import type { NumberLiteral } from "../../../../nodes/terminal/literal/number.js"
+import { Attributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
+import type { NumberLiteral } from "../../operand/numeric.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import type { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
@@ -45,27 +45,22 @@ export namespace RightBoundOperator {
         limit: number
     ) => {
         if (!isLeftBounded(s)) {
-            s.attributes?.add("bound", comparator, limit)
-            s.root = new Bound.RightNode<false>(s.root, comparator, limit)
+            Attributes.add(s.root, "bound", comparator, limit)
             return s
         }
-        if (!isKeyOf(comparator, Bound.doublableTokens)) {
+        if (!isKeyOf(comparator, Comparator.pairableTokens)) {
             return ParserState.error(
                 Comparator.buildInvalidDoubleMessage(comparator)
             )
         }
-        s.attributes?.add(
+        Attributes.add(
+            s.root,
             "bound",
-            s.branches.leftBound[1],
+            Comparator.invertedTokens[s.branches.leftBound[1]],
             s.branches.leftBound[0]
         )
-        s.attributes?.add("bound", comparator, limit)
-        s.root = new Bound.LeftNode(
-            s.branches.leftBound[0],
-            s.branches.leftBound[1],
-            new Bound.RightNode(s.root, comparator, limit)
-        )
-        s.branches.leftBound = undefined as any
+        Attributes.add(s.root, "bound", comparator, limit)
+        s.branches.leftBound = ParserState.unset
         return s
     }
 
@@ -73,9 +68,9 @@ export namespace RightBoundOperator {
         s extends ParserState.T.WithRoot,
         comparator extends Comparator.Token,
         limitTokenOrError extends string
-    > = limitTokenOrError extends NumberLiteral.Definition
+    > = limitTokenOrError extends NumberLiteral
         ? s["branches"]["leftBound"] extends {}
-            ? comparator extends Bound.DoublableToken
+            ? comparator extends Comparator.PairableToken
                 ? ParserState.from<{
                       root: [
                           s["branches"]["leftBound"][0],
