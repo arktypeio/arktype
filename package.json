@@ -32,7 +32,7 @@
         "typecheck": "tsc --noEmit",
         "typecheckRepo": "pnpm typecheck && pnpm -r typecheck",
         "build": "ts-node ./dev/scripts/build.ts",
-        "buildDev": "pnpm -r --filter=!arktype.io build",
+        "buildDev": "pnpm build && pnpm -r --filter=!arktype.io build",
         "buildDocs": "pnpm docgen && pnpm -r --filter=arktype.io build",
         "buildRepo": "pnpm build && pnpm buildDev && pnpm buildDocs",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
