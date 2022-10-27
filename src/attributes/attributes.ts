@@ -1,10 +1,11 @@
+/* eslint-disable max-lines-per-function */
 import type {
     array,
     dictionary,
     DynamicTypeName,
     Mutable
 } from "../internal.js"
-import { dynamicTypeOf } from "../internal.js"
+import { dynamicTypeOf, throwInternalError } from "../internal.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
 
 declare const safe: unique symbol
@@ -15,29 +16,29 @@ type SafeProp = {
 
 type Safe<Type> = Type & SafeProp
 
-export type Attributes = Safe<
-    Readonly<{
-        type?: DynamicTypeName
-        value?: unknown
-        // TODO: Multiple regex
-        regex?: RegExp
-        divisor?: number
-        min?: number
-        inclusiveMin?: true
-        max?: number
-        inclusiveMax?: true
-        optional?: boolean
-        branches?: Readonly<Attributes[]>
-        props?: Readonly<dictionary<Attributes>>
-        values?: Attributes
-    }>
->
+export type Attributes = Safe<InternalAttributes>
 
-export type AttributeKey = keyof Attributes & string
+type InternalAttributes = Readonly<{
+    type?: Attributes.Type
+    value?: unknown
+    // TODO: Multiple regex
+    regex?: RegExp
+    divisor?: number
+    min?: number
+    inclusiveMin?: boolean
+    max?: number
+    inclusiveMax?: boolean
+    optional?: boolean
+    branches?: Readonly<Attributes[]>
+    props?: Readonly<dictionary<Attributes>>
+    values?: Attributes
+}>
 
 export namespace Attributes {
-    export type With<constraints extends Partial<Attributes>> = constraints &
-        SafeProp
+    export type Key = keyof InternalAttributes
+
+    export type With<requiredAttributes extends InternalAttributes> =
+        Safe<requiredAttributes>
 
     export const initEmpty = () => ({} as Attributes)
 
@@ -60,15 +61,124 @@ export namespace Attributes {
     }) => reducers
 
     const reducers = createReducers({
-        type: (base) => base,
+        type: (base, type) =>
+            base.type === type
+                ? base
+                : // TODO: Figure out how to help users avoid this
+                  { ...base, type: base.type ? "never" : type },
         value: (base) => base,
         regex: (base) => base,
-        divisor: (base) => base,
-        bound: (base) => base,
-        optional: (base) => base,
-        prop: (base) => base,
+        divisor: (base, value) => ({
+            ...reducers.type(base, "number"),
+            divisor:
+                base.divisor !== undefined
+                    ? leastCommonMultiple(base.divisor, value)
+                    : value
+        }),
+        bound: (base, comparator, limit) => {
+            if (comparator === "==") {
+                if (
+                    (base.max &&
+                        (limit > base.max ||
+                            (limit === base.max && !base.inclusiveMax))) ||
+                    (base.min &&
+                        (limit < base.min ||
+                            (limit === base.min && !base.inclusiveMin)))
+                ) {
+                    return reducers.type(base, "never")
+                }
+                return {
+                    ...base,
+                    min: limit,
+                    inclusiveMin: true,
+                    max: limit,
+                    inclusiveMax: true
+                }
+            }
+            const boundAttributeUpdates: Pick<
+                Mutable<InternalAttributes>,
+                "inclusiveMax" | "inclusiveMin" | "max" | "min"
+            > = {}
+            if (comparator === "<" || comparator === "<=") {
+                if (base.max === undefined || limit < base.max) {
+                    if (base.min && limit < base.min) {
+                        return reducers.type(base, "never")
+                    }
+                    boundAttributeUpdates.max = limit
+                    if (comparator === "<=") {
+                        boundAttributeUpdates.inclusiveMax = true
+                    }
+                } else if (
+                    limit === base.max &&
+                    comparator === "<" &&
+                    base.inclusiveMax
+                ) {
+                    boundAttributeUpdates.inclusiveMax = false
+                } else {
+                    return base
+                }
+                if (limit === base.min && !base.inclusiveMin) {
+                    return reducers.type(base, "never")
+                }
+                return {
+                    ...base,
+                    ...boundAttributeUpdates
+                }
+            } else if (comparator === ">" || comparator === ">=") {
+                if (base.min === undefined || limit > base.min) {
+                    if (base.max && limit > base.max) {
+                        return reducers.type(base, "never")
+                    }
+                    boundAttributeUpdates.min = limit
+                    if (comparator === ">=") {
+                        boundAttributeUpdates.inclusiveMin = true
+                    }
+                } else if (
+                    limit === base.min &&
+                    comparator === ">" &&
+                    base.inclusiveMin
+                ) {
+                    boundAttributeUpdates.inclusiveMin = false
+                } else {
+                    return base
+                }
+                if (limit === base.max && !base.inclusiveMax) {
+                    return reducers.type(base, "never")
+                }
+                return {
+                    ...base,
+                    ...boundAttributeUpdates
+                }
+            }
+            return throwInternalError(`Unexpected comparator '${comparator}'.`)
+        },
+        optional: (base, value) =>
+            base.optional === value ? base : { ...base, optional: value },
+        prop: (base, key, attributes) => {
+            // TODO: Should add type here?
+            // TODO: Should universal props be intersected with non-universal?
+            if (key === true) {
+                return base.values
+                    ? {
+                          ...base,
+                          values: reducers.intersection(base.values, attributes)
+                      }
+                    : attributes
+            }
+            // Even though externally props are readonly, internally we
+            // mutate them to avoid creating many unnecessary objects.
+            const mutableProps: Mutable<dictionary<Attributes>> =
+                base.props ?? {}
+            if (key in mutableProps) {
+                return throwInternalError(
+                    `Unexpectedly tried to overwrite prop '${key}'.`
+                )
+            }
+            mutableProps[key] = attributes
+            return base
+        },
         union: ({ ...base }: Attributes, { ...branch }: Attributes) => {
-            let k: AttributeKey
+            let k: Key
             const baseAttributesToDistribute = {} as Mutable<Attributes>
             for (k in branch) {
                 if (deepEquals(base[k], branch[k])) {
@@ -100,11 +210,13 @@ export namespace Attributes {
         intersection: (base) => base
     })
 
+    export type Type = DynamicTypeName | "never"
+
     type ReducerParams = {
-        type: [name: DynamicTypeName]
+        type: [type: Type]
         value: [value: unknown]
-        regex: [regex: RegExp]
-        divisor: [divisor: number]
+        regex: [value: RegExp]
+        divisor: [value: number]
         bound: [comparator: Scanner.Comparator, limit: number]
         optional: [value: boolean]
         prop: [key: string | true, attributes: Attributes]

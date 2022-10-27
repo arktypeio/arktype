@@ -54,7 +54,7 @@ export namespace Keyword {
         boolean: Attributes.init("type", "boolean"),
         false: Attributes.init("value", false),
         // TODO: Add never
-        never: Attributes.init("value", "never"),
+        never: Attributes.init("type", "never"),
         null: Attributes.init("value", null),
         number: Attributes.init("type", "number"),
         object:
