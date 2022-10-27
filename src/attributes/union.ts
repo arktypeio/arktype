@@ -2,6 +2,21 @@
 import type { Mutable } from "../internal.js"
 import { deepEquals } from "../utils/deepEquals.js"
 import type { Attributes } from "./attributes.js"
+import { reduceIntersection } from "./intersection.js"
+
+export const mapIntersectionToBranches = (
+    branches: Attributes[],
+    attributes: Attributes
+) => {
+    const viableBranches: Attributes[] = []
+    for (const branch of branches) {
+        const branchWithAttributes = reduceIntersection(branch, attributes)
+        if (branchWithAttributes.hasType !== "never") {
+            viableBranches.push(branchWithAttributes)
+        }
+    }
+    return viableBranches
+}
 
 export const reduceUnion: Attributes.Reducer<[branch: Attributes]> = (
     { ...base },
@@ -29,10 +44,10 @@ export const reduceUnion: Attributes.Reducer<[branch: Attributes]> = (
         return base
     }
     const reducedBranches =
-        base.branches?.map((preexistingBranch) => ({
+        base.satisfiesOneOf?.map((preexistingBranch) => ({
             ...preexistingBranch,
             ...baseAttributesToDistribute
         })) ?? []
-    base.branches = [...reducedBranches, branch]
+    base.satisfiesOneOf = [...reducedBranches, branch]
     return base
 }

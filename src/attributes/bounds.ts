@@ -1,27 +1,29 @@
 import type { Scanner } from "../parser/string/state/scanner.js"
-import type { Attributes } from "./attributes.js"
-import { reduceType } from "./type.js"
 
 export type BoundsAttribute = Readonly<{
     lower?: Bound
     upper?: Bound
 }>
 
+export type ReduceResult<T> = T | "never"
+
 type Bound = Readonly<{
     limit: number
     inclusive: boolean
 }>
 
-export const reduceBound: Attributes.Reducer<
-    [comparator: Scanner.Comparator, limit: number]
-> = (base, comparator, limit) => {
+export const reduceBounds = (
+    base: BoundsAttribute,
+    comparator: Scanner.Comparator,
+    limit: number
+): ReduceResult<BoundsAttribute> => {
     if (comparator === "==") {
         const equalityBound: Bound = { limit, inclusive: true }
-        return reduceLimit(
-            reduceLimit(base, "lower", equalityBound),
-            "upper",
-            equalityBound
-        )
+        const lowerBoundResult = reduceLimit(base, "lower", equalityBound)
+        if (lowerBoundResult === "never") {
+            return "never"
+        }
+        return reduceLimit(lowerBoundResult, "upper", equalityBound)
     } else if (comparator === ">" || comparator === ">=") {
         return reduceLimit(base, "lower", {
             limit,
@@ -61,24 +63,21 @@ const isStricter = (
 }
 
 export const reduceLimit = (
-    base: Attributes,
+    base: BoundsAttribute,
     kind: BoundKind,
     bound: Bound
-): Attributes => {
+): ReduceResult<BoundsAttribute> => {
     const invertedKind = invertedKinds[kind]
-    const baseCompeting = base.bounds?.[kind]
-    const baseOpposing = base.bounds?.[invertedKind]
+    const baseCompeting = base?.[kind]
+    const baseOpposing = base?.[invertedKind]
     if (baseCompeting && !isStricter(kind, bound, baseCompeting)) {
         return base
     }
     if (baseOpposing && isStricter(invertedKind, bound, baseOpposing)) {
-        return reduceType(base, "never")
+        return "never"
     }
     return {
-        ...base,
-        bounds: {
-            [kind]: bound,
-            [invertedKind]: baseOpposing
-        }
+        [kind]: bound,
+        [invertedKind]: baseOpposing
     }
 }

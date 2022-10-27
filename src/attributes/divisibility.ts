@@ -6,9 +6,9 @@ export const reduceDivisibility: Attributes.Reducer<[divisor: number]> = (
     divisor
 ) => ({
     ...reduceType(base, "number"),
-    divisor:
-        base.divisor !== undefined
-            ? leastCommonMultiple(base.divisor, divisor)
+    isDivisibleBy:
+        base.isDivisibleBy !== undefined
+            ? leastCommonMultiple(base.isDivisibleBy, divisor)
             : divisor
 })
 

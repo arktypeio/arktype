@@ -18,7 +18,7 @@ export const reduceProp: Attributes.Reducer<
     }
     // Even though externally props are readonly, internally we
     // mutate them to avoid creating many unnecessary objects.
-    const mutableProps: Mutable<dictionary<Attributes>> = base.props ?? {}
+    const mutableProps: Mutable<dictionary<Attributes>> = base.children ?? {}
     if (key in mutableProps) {
         return throwInternalError(
             `Unexpectedly tried to overwrite prop '${key}'.`

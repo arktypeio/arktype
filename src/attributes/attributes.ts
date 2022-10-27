@@ -1,6 +1,5 @@
 import type { dictionary } from "../internal.js"
-import type { BoundsAttribute } from "./bound.js"
-import { reduceBound } from "./bound.js"
+import type { BoundsAttribute } from "./bounds.js"
 import { reduceDivisibility } from "./divisibility.js"
 import { reduceIntersection } from "./intersection.js"
 import { reduceNoop } from "./noop.js"
@@ -21,16 +20,16 @@ type SafeProp = {
 type Safe<Type> = Type & SafeProp
 
 type InternalAttributes = Readonly<{
-    type?: TypeAttribute
-    value?: unknown
+    parent?: Attributes
+    children?: Readonly<dictionary<Attributes>>
+    hasType?: TypeAttribute
+    equals?: unknown
     // TODO: Multiple regex
-    regex?: RegExp
-    divisor?: number
-    bounds?: BoundsAttribute
-    optional?: boolean
-    branches?: Readonly<Attributes[]>
-    props?: Readonly<dictionary<Attributes>>
-    values?: Attributes
+    matchesRegex?: RegExp
+    isDivisibleBy?: number
+    isBoundedBy?: BoundsAttribute
+    isOptional?: boolean
+    satisfiesOneOf?: Readonly<Attributes[]>
 }>
 
 export type Attributes = Safe<InternalAttributes>
@@ -53,6 +52,19 @@ export namespace Attributes {
     ) =>
         // @ts-expect-error (rest args are fine here)
         reducers[key](base, ...args)
+
+    export type ReduceResult<key extends KeyOf> =
+        | (Attributes & {
+              [_ in key]: Attributes[key] | "never"
+          })
+        | null
+
+    const defineReducers = (reducers: {
+        [key in KeyOf]: (
+            base: Attributes[key],
+            value: Attributes[key]
+        ) => ReduceResult<key>
+    }) => reducers
 
     const reducers = {
         bound: reduceBound,
