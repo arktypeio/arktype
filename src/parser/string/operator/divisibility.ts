@@ -1,10 +1,11 @@
 import { Attributes } from "../../../attributes/attributes.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
-import { ParserState } from "../state/state.js"
+import type { StaticState } from "../state/state.js"
+import { DynamicState } from "../state/state.js"
 
 export namespace DivisibilityOperator {
-    export const parse = (s: ParserState.WithRoot) => {
+    export const parse = (s: DynamicState.WithRoot) => {
         const divisorToken = s.scanner.shiftUntilNextTerminator()
         return reduce(
             s,
@@ -17,7 +18,7 @@ export namespace DivisibilityOperator {
     }
 
     export type parse<
-        s extends ParserState.T.WithRoot,
+        s extends StaticState.WithRoot,
         unscanned extends string
     > = Scanner.shiftUntil<
         unscanned,
@@ -33,27 +34,27 @@ export namespace DivisibilityOperator {
           >
         : never
 
-    const reduce = (s: ParserState.WithRoot, parseResult: number) => {
+    const reduce = (s: DynamicState.WithRoot, parseResult: number) => {
         if (parseResult === 0) {
-            return ParserState.error(buildInvalidDivisorMessage(0))
+            return DynamicState.error(buildInvalidDivisorMessage(0))
         }
         s.root = Attributes.reduce("divisor", s.root, parseResult)
         return s
     }
 
     type reduce<
-        s extends ParserState.T.WithRoot,
+        s extends StaticState.WithRoot,
         divisorOrError extends string | number,
         unscanned extends string
     > = divisorOrError extends number
         ? divisorOrError extends 0
-            ? ParserState.error<buildInvalidDivisorMessage<0>>
-            : ParserState.setRoot<
+            ? StaticState.error<buildInvalidDivisorMessage<0>>
+            : StaticState.setRoot<
                   s,
                   [s["root"], "%", divisorOrError],
                   unscanned
               >
-        : ParserState.error<`${divisorOrError}`>
+        : StaticState.error<`${divisorOrError}`>
 
     export const buildInvalidDivisorMessage = <divisor extends string | number>(
         divisor: divisor

@@ -1,7 +1,7 @@
 import { Attributes } from "../../../attributes/attributes.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
-import type { ParserState } from "../state/state.js"
+import type { DynamicState, StaticState } from "../state/state.js"
 
 export namespace Enclosed {
     export type StringLiteral<Text extends string = string> =
@@ -16,7 +16,7 @@ export namespace Enclosed {
 
     export type RegexLiteral<Source extends string = string> = `/${Source}/`
 
-    export const parse = (s: ParserState.Base, enclosing: StartChar) => {
+    export const parse = (s: DynamicState, enclosing: StartChar) => {
         const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
             appendTo: enclosing,
             inclusive: true,
@@ -30,7 +30,7 @@ export namespace Enclosed {
     }
 
     export type parse<
-        s extends ParserState.T.Unfinished,
+        s extends StaticState,
         enclosing extends StartChar,
         unscanned extends string
     > = Scanner.shiftUntil<unscanned, enclosing> extends Scanner.ShiftResult<
@@ -38,10 +38,10 @@ export namespace Enclosed {
         infer nextUnscanned
     >
         ? nextUnscanned extends ""
-            ? ParserState.error<
+            ? StaticState.error<
                   buildUnterminatedMessage<s["unscanned"], enclosing>
               >
-            : ParserState.setRoot<
+            : StaticState.setRoot<
                   s,
                   `${enclosing}${scanned}${enclosing}`,
                   Scanner.tailOf<nextUnscanned>

@@ -1,53 +1,57 @@
 import type { ParserContext, StaticParserContext } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
-import { ParserState } from "../state/state.js"
+import type { StaticState } from "../state/state.js"
+import { DynamicState } from "../state/state.js"
 import { Enclosed } from "./enclosed.js"
 import { GroupOpen } from "./groupOpen.js"
 import { Unenclosed } from "./unenclosed.js"
 
 export namespace Operand {
     export const parse = (
-        s: ParserState.Base,
+        s: DynamicState,
         context: ParserContext
-    ): ParserState.Base =>
+    ): DynamicState =>
         s.scanner.lookahead === ""
             ? throwParseError(buildMissingOperandMessage(s))
             : s.scanner.lookahead === "("
-            ? GroupOpen.reduce(ParserState.shifted(s))
+            ? GroupOpen.parse(DynamicState.shifted(s))
             : s.scanner.lookaheadIsIn(Enclosed.startChars)
             ? Enclosed.parse(s, s.scanner.shift())
             : s.scanner.lookahead === " "
-            ? parse(ParserState.shifted(s), context)
+            ? parse(DynamicState.shifted(s), context)
             : Unenclosed.parse(s, context)
 
     export type parse<
-        s extends ParserState.T.Unfinished,
+        s extends StaticState,
         context extends StaticParserContext
     > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
         ? lookahead extends "("
-            ? GroupOpen.reduce<s, unscanned>
+            ? GroupOpen.parse<s, unscanned>
             : lookahead extends Enclosed.StartChar
             ? Enclosed.parse<s, lookahead, unscanned>
             : lookahead extends " "
-            ? parse<ParserState.scanTo<s, unscanned>, context>
+            ? parse<StaticState.scanTo<s, unscanned>, context>
             : Unenclosed.parse<s, context>
-        : ParserState.error<buildMissingOperandMessage<s>>
+        : StaticState.error<buildMissingOperandMessage<s>>
 
-    export const buildMissingOperandMessage = <s extends ParserState.Base>(
+    export const buildMissingOperandMessage = <s extends DynamicState>(
         s: s
     ) => {
-        const lastOperator = ParserState.lastOperator(s)
-        return lastOperator === null
+        const previousOperator = DynamicState.previousOperator(s)
+        return previousOperator === null
             ? buildExpressionExpectedMessage(s.scanner.unscanned)
-            : buildMissingRightOperandMessage(lastOperator, s.scanner.unscanned)
+            : buildMissingRightOperandMessage(
+                  previousOperator,
+                  s.scanner.unscanned
+              )
     }
 
     export type buildMissingOperandMessage<
-        s extends ParserState.T.Unfinished,
-        lastOperator extends Scanner.InfixToken | null = ParserState.lastOperator<s>
-    > = lastOperator extends {}
-        ? buildMissingRightOperandMessage<lastOperator, s["unscanned"]>
+        s extends StaticState,
+        previousOperator extends Scanner.InfixToken | null = StaticState.previousOperator<s>
+    > = previousOperator extends {}
+        ? buildMissingRightOperandMessage<previousOperator, s["unscanned"]>
         : buildExpressionExpectedMessage<s["unscanned"]>
 
     export type buildMissingRightOperandMessage<

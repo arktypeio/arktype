@@ -1,18 +1,19 @@
 import type { ParserContext, StaticParserContext } from "../common.js"
 import { Operand } from "./operand/operand.js"
 import { Operator } from "./operator/operator.js"
-import { ParserState } from "./state/state.js"
+import type { StaticState } from "./state/state.js"
+import { DynamicState } from "./state/state.js"
 
 export const fullParse = (def: string, context: ParserContext) =>
-    loop(Operand.parse(ParserState.initialize(def), context), context)
+    loop(Operand.parse(DynamicState.initialize(def), context), context)
 
 export type fullParse<
     Def extends string,
     Ctx extends StaticParserContext
-> = Loop<Operand.parse<ParserState.initialize<Def>, Ctx>, Ctx>
+> = Loop<Operand.parse<StaticState.initialize<Def>, Ctx>, Ctx>
 
 // TODO: Recursion perf?
-const loop = (s: ParserState.Base, context: ParserContext) => {
+const loop = (s: DynamicState, context: ParserContext) => {
     while (!s.scanner.hasBeenFinalized) {
         next(s, context)
     }
@@ -20,16 +21,16 @@ const loop = (s: ParserState.Base, context: ParserContext) => {
 }
 
 type Loop<
-    s extends ParserState.T.Base,
+    s extends StaticState.Unvalidated,
     context extends StaticParserContext
-> = s extends ParserState.T.Incomplete
+> = s extends { unscanned: string }
     ? Loop<Next<s, context>, context>
     : s["root"]
 
-const next = (s: ParserState.Base, context: ParserContext): ParserState.Base =>
-    ParserState.hasRoot(s) ? Operator.parse(s) : Operand.parse(s, context)
+const next = (s: DynamicState, context: ParserContext): DynamicState =>
+    DynamicState.hasRoot(s) ? Operator.parse(s) : Operand.parse(s, context)
 
 type Next<
-    s extends ParserState.T.Unfinished,
+    s extends StaticState,
     context extends StaticParserContext
 > = s extends { root: {} } ? Operator.parse<s> : Operand.parse<s, context>

@@ -1,18 +1,19 @@
-import { ParserState } from "../state/state.js"
+import type { StaticState } from "../state/state.js"
+import { DynamicState } from "../state/state.js"
 
 export namespace GroupOpen {
-    export const reduce = (s: ParserState.Base) => {
+    export const parse = (s: DynamicState) => {
         s.groups.push(s.branches)
-        s.branches = ParserState.initializeBranches()
+        s.branches = DynamicState.initializeBranches()
         return s
     }
 
-    export type reduce<
-        s extends ParserState.T.Unfinished,
+    export type parse<
+        s extends StaticState,
         unscanned extends string
-    > = ParserState.from<{
+    > = StaticState.from<{
         groups: [...s["groups"], s["branches"]]
-        branches: ParserState.initialBranches
+        branches: StaticState.initialBranches
         root: null
         unscanned: unscanned
     }>

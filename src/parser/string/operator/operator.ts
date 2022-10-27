@@ -1,7 +1,8 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import { Scanner } from "../state/scanner.js"
-import { ParserState } from "../state/state.js"
+import { DynamicState } from "../state/state.js"
+import type { StaticState } from "../state/state.js"
 import { ArrayOperator } from "./array.js"
 import { BoundOperator } from "./bound/bound.js"
 import { DivisibilityOperator } from "./divisibility.js"
@@ -11,20 +12,20 @@ import { OptionalOperator } from "./optional.js"
 import { UnionOperator } from "./union.js"
 
 export namespace Operator {
-    export const parse = (s: ParserState.WithRoot): ParserState.Base => {
+    export const parse = (s: DynamicState.WithRoot): DynamicState => {
         const lookahead = s.scanner.shift()
         return lookahead === ""
-            ? ParserState.finalize(s)
+            ? DynamicState.finalize(s)
             : lookahead === "?"
             ? OptionalOperator.finalize(s)
             : lookahead === "["
             ? ArrayOperator.parse(s)
             : lookahead === "|"
-            ? UnionOperator.reduce(s)
+            ? UnionOperator.parse(s)
             : lookahead === "&"
-            ? IntersectionOperator.reduce(s)
+            ? IntersectionOperator.parse(s)
             : lookahead === ")"
-            ? GroupClose.reduce(s)
+            ? GroupClose.parse(s)
             : isKeyOf(lookahead, Scanner.comparatorStartChars)
             ? BoundOperator.parse(s, lookahead)
             : lookahead === "%"
@@ -34,26 +35,26 @@ export namespace Operator {
             : throwInternalError(buildUnexpectedCharacterMessage(lookahead))
     }
 
-    export type parse<s extends ParserState.T.WithRoot> =
+    export type parse<s extends StaticState.WithRoot> =
         s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
             ? lookahead extends "?"
                 ? OptionalOperator.finalize<s>
                 : lookahead extends "["
                 ? ArrayOperator.parse<s, unscanned>
                 : lookahead extends "|"
-                ? UnionOperator.reduce<s, unscanned>
+                ? UnionOperator.parse<StaticState.scanTo<s, unscanned>>
                 : lookahead extends "&"
-                ? IntersectionOperator.reduce<s, unscanned>
+                ? IntersectionOperator.parse<StaticState.scanTo<s, unscanned>>
                 : lookahead extends ")"
-                ? GroupClose.reduce<s, unscanned>
+                ? GroupClose.parse<StaticState.scanTo<s, unscanned>>
                 : lookahead extends Scanner.ComparatorStartChar
                 ? BoundOperator.parse<s, lookahead, unscanned>
                 : lookahead extends "%"
                 ? DivisibilityOperator.parse<s, unscanned>
                 : lookahead extends " "
-                ? parse<ParserState.scanTo<s, unscanned>>
-                : ParserState.error<buildUnexpectedCharacterMessage<lookahead>>
-            : ParserState.finalize<s, 0>
+                ? parse<StaticState.scanTo<s, unscanned>>
+                : StaticState.error<buildUnexpectedCharacterMessage<lookahead>>
+            : StaticState.finalize<s, 0>
 
     export const buildUnexpectedCharacterMessage = <char extends string>(
         char: char

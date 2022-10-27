@@ -1,52 +1,53 @@
 import { isKeyOf } from "../../../../utils/generics.js"
 import { Scanner } from "../../state/scanner.js"
-import { ParserState } from "../../state/state.js"
+import type { StaticState } from "../../state/state.js"
+import { DynamicState } from "../../state/state.js"
 import { LeftBoundOperator } from "./left.js"
 import { RightBoundOperator } from "./right.js"
 
 export namespace BoundOperator {
     const shift = (
-        s: ParserState.WithRoot,
+        s: DynamicState.WithRoot,
         start: Scanner.ComparatorStartChar
     ): Scanner.Comparator =>
         s.scanner.lookaheadIs("=")
             ? `${start}${s.scanner.shift()}`
             : isKeyOf(start, Scanner.oneCharComparators)
             ? start
-            : ParserState.error(singleEqualsMessage)
+            : DynamicState.error(singleEqualsMessage)
 
     export const parse = (
-        s: ParserState.WithRoot,
+        s: DynamicState.WithRoot,
         start: Scanner.ComparatorStartChar
     ) => delegateReduction(s, shift(s, start))
 
     export type parse<
-        s extends ParserState.T.WithRoot,
+        s extends StaticState.WithRoot,
         start extends Scanner.ComparatorStartChar,
         unscanned extends string
     > = unscanned extends Scanner.shift<"=", infer nextUnscanned>
-        ? delegateReduction<ParserState.scanTo<s, nextUnscanned>, `${start}=`>
+        ? delegateReduction<StaticState.scanTo<s, nextUnscanned>, `${start}=`>
         : start extends Scanner.OneCharComparator
-        ? delegateReduction<ParserState.scanTo<s, unscanned>, start>
-        : ParserState.error<singleEqualsMessage>
+        ? delegateReduction<StaticState.scanTo<s, unscanned>, start>
+        : StaticState.error<singleEqualsMessage>
 
     export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
     type singleEqualsMessage = typeof singleEqualsMessage
 
     const delegateReduction = (
-        s: ParserState.WithRoot,
+        s: DynamicState.WithRoot,
         comparator: Scanner.Comparator
     ) =>
-        ParserState.rootAttributeHasType(s, "value", "number")
-            ? LeftBoundOperator.reduce(s, comparator)
+        DynamicState.rootAttributeHasType(s, "value", "number")
+            ? LeftBoundOperator.parse(s, comparator)
             : RightBoundOperator.parse(s, comparator)
 
     type delegateReduction<
-        s extends ParserState.T.WithRoot,
+        s extends StaticState.WithRoot,
         comparator extends Scanner.Comparator
     > = s extends {
         root: number
     }
-        ? LeftBoundOperator.reduce<s, comparator>
+        ? LeftBoundOperator.parse<s, comparator>
         : RightBoundOperator.parse<s, comparator>
 }

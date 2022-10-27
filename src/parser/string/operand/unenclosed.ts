@@ -5,21 +5,22 @@ import type {
     StaticParserContext
 } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
-import { ParserState } from "../state/state.js"
+import type { StaticState } from "../state/state.js"
+import { DynamicState } from "../state/state.js"
 import { Keyword } from "./keyword.js"
 import type { BigintLiteral, NumberLiteral } from "./numeric.js"
 import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 import { Operand } from "./operand.js"
 
 export namespace Unenclosed {
-    export const parse = (s: ParserState.Base, context: ParserContext) => {
+    export const parse = (s: DynamicState, context: ParserContext) => {
         const token = s.scanner.shiftUntilNextTerminator()
         s.root = unenclosedToAttributes(s, token, context)
         return s
     }
 
     export type parse<
-        s extends ParserState.T.Unfinished,
+        s extends StaticState,
         context extends StaticParserContext
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
@@ -28,13 +29,13 @@ export namespace Unenclosed {
         : never
 
     const unenclosedToAttributes = (
-        s: ParserState.Base,
+        s: DynamicState,
         token: string,
         context: ParserContext
     ) =>
         maybeParseIdentifier(token, context) ??
         maybeParseUnenclosedLiteral(token) ??
-        ParserState.error(
+        DynamicState.error(
             token === ""
                 ? Operand.buildMissingOperandMessage(s)
                 : buildUnresolvableMessage(token)
@@ -62,12 +63,12 @@ export namespace Unenclosed {
     }
 
     type reduce<
-        s extends ParserState.T.Unfinished,
+        s extends StaticState,
         resolved extends string,
         unscanned extends string
     > = resolved extends ParseError<infer message>
-        ? ParserState.error<message>
-        : ParserState.setRoot<s, resolved, unscanned>
+        ? StaticState.error<message>
+        : StaticState.setRoot<s, resolved, unscanned>
 
     export const buildUnresolvableMessage = <token extends string>(
         token: token
@@ -87,7 +88,7 @@ export namespace Unenclosed {
         : false
 
     type resolve<
-        s extends ParserState.T.Unfinished,
+        s extends StaticState,
         token extends string,
         context extends StaticParserContext
     > = isResolvableIdentifier<token, context> extends true

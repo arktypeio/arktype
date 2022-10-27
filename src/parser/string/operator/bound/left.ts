@@ -1,54 +1,55 @@
 import { isKeyOf } from "../../../../utils/generics.js"
 import { Scanner } from "../../state/scanner.js"
-import { ParserState } from "../../state/state.js"
+import type { StaticState } from "../../state/state.js"
+import { DynamicState } from "../../state/state.js"
 import type { InvertedComparators } from "./shared.js"
 import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
 export namespace LeftBoundOperator {
-    export const reduce = (
-        s: ParserState.WithRoot<{ value: number }>,
+    export const parse = (
+        s: DynamicState.WithRoot<{ value: number }>,
         comparator: Scanner.Comparator
     ) =>
         isKeyOf(comparator, Scanner.pairableComparators)
-            ? ParserState.openLeftBounded(s)
-                ? ParserState.error(
+            ? DynamicState.hasOpenLeftBound(s)
+                ? DynamicState.error(
                       buildBoundLiteralMessage(
                           s.root.value,
                           s.branches.leftBound[0],
                           s.branches.leftBound[1]
                       )
                   )
-                : reduceValidated(s, comparator)
-            : ParserState.error(buildInvalidDoubleMessage(comparator))
+                : parseValidated(s, comparator)
+            : DynamicState.error(buildInvalidDoubleMessage(comparator))
 
-    export type reduce<
-        s extends ParserState.T.WithRoot<number>,
+    export type parse<
+        s extends StaticState.WithRoot<number>,
         comparator extends Scanner.Comparator
     > = comparator extends Scanner.PairableComparator
-        ? s extends ParserState.openLeftBounded
-            ? ParserState.error<
+        ? s extends StaticState.WithOpenLeftBound
+            ? StaticState.error<
                   buildBoundLiteralMessage<
                       s["root"],
                       s["branches"]["leftBound"][0],
                       s["branches"]["leftBound"][1]
                   >
               >
-            : reduceValidated<s, comparator>
-        : ParserState.error<buildInvalidDoubleMessage<comparator>>
+            : parseValidated<s, comparator>
+        : StaticState.error<buildInvalidDoubleMessage<comparator>>
 
-    const reduceValidated = (
-        s: ParserState.WithRoot<{ value: number }>,
+    const parseValidated = (
+        s: DynamicState.WithRoot<{ value: number }>,
         token: Scanner.PairableComparator
     ) => {
         s.branches.leftBound = [s.root.value, token]
-        s.root = ParserState.unset
+        s.root = DynamicState.unset
         return s
     }
 
-    type reduceValidated<
-        s extends ParserState.T.WithRoot<number>,
+    type parseValidated<
+        s extends StaticState.WithRoot<number>,
         comparator extends Scanner.PairableComparator
-    > = ParserState.from<{
+    > = StaticState.from<{
         root: null
         branches: {
             union: s["branches"]["union"]
@@ -60,11 +61,11 @@ export namespace LeftBoundOperator {
     }>
 
     export type unpairedError<
-        s extends ParserState.T.Unfinished<{
+        s extends StaticState<{
             root: {}
-            branches: { leftBound: ParserState.OpenLeftBound }
+            branches: { leftBound: DynamicState.OpenLeftBound }
         }>
-    > = ParserState.error<
+    > = StaticState.error<
         buildUnpairedMessage<
             s["branches"]["leftBound"][0],
             s["branches"]["leftBound"][1]
@@ -72,11 +73,11 @@ export namespace LeftBoundOperator {
     >
 
     export const unpairedError = (
-        s: ParserState.Of<{
-            branches: { leftBound: ParserState.OpenLeftBound }
+        s: DynamicState<{
+            branches: { leftBound: DynamicState.OpenLeftBound }
         }>
     ) =>
-        ParserState.error(
+        DynamicState.error(
             buildUnpairedMessage(
                 s.branches.leftBound[0],
                 s.branches.leftBound[1]

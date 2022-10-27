@@ -1,24 +1,25 @@
-import { ParserState } from "../state/state.js"
+import type { StaticState } from "../state/state.js"
+import { DynamicState } from "../state/state.js"
 
 export namespace GroupClose {
-    export const reduce = (s: ParserState.WithRoot) => {
+    export const parse = (s: DynamicState.WithRoot) => {
         const previousOpenBranches = s.groups.pop()
         if (!previousOpenBranches) {
-            return ParserState.error(buildUnmatchedMessage(s.scanner.unscanned))
+            return DynamicState.error(
+                buildUnmatchedMessage(s.scanner.unscanned)
+            )
         }
-        return ParserState.finalizeGroup(s, previousOpenBranches)
+        return DynamicState.finalizeGroup(s, previousOpenBranches)
     }
 
-    export type reduce<
-        s extends ParserState.T.WithRoot,
-        unscanned extends string
-    > = s["groups"] extends popGroup<infer stack, infer top>
-        ? ParserState.finalizeGroup<s, top, stack, unscanned>
-        : ParserState.error<buildUnmatchedMessage<unscanned>>
+    export type parse<s extends StaticState.WithRoot> =
+        s["groups"] extends popGroup<infer stack, infer top>
+            ? StaticState.finalizeGroup<s, top, stack>
+            : StaticState.error<buildUnmatchedMessage<s["unscanned"]>>
 
     type popGroup<
-        stack extends ParserState.T.OpenBranches[],
-        top extends ParserState.T.OpenBranches
+        stack extends StaticState.OpenBranches[],
+        top extends StaticState.OpenBranches
     > = [...stack, top]
 
     export const buildUnmatchedMessage = <unscanned extends string>(
