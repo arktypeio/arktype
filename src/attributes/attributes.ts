@@ -75,6 +75,7 @@ export namespace Attributes {
                     ? leastCommonMultiple(base.divisor, value)
                     : value
         }),
+        // TODO: Adding a type here? Should be safe to check branch types.
         bound: (base, comparator, limit) => {
             if (comparator === "==") {
                 if (
