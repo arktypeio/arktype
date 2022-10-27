@@ -1,4 +1,4 @@
-import { Attributes } from "../../attributes/attributes2.js"
+import { Attributes } from "../../attributes/attributes.js"
 import type { ParserContext, StaticParserContext } from "../common.js"
 import type { fullParse } from "./full.js"
 import { Unenclosed } from "./operand/unenclosed.js"

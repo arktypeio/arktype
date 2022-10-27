@@ -1,7 +1,4 @@
-import type {
-    AttributeKey,
-    Attributes
-} from "../../../attributes/attributes2.js"
+import type { Attributes } from "../../../attributes/attributes.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
 import { hasDynamicType } from "../../../internal.js"
 import type { ParseError } from "../../common.js"
@@ -236,7 +233,7 @@ export namespace DynamicState {
 
     export const rootAttributeEquals = <
         s extends DynamicState,
-        k extends AttributeKey,
+        k extends Attributes.KeyOf,
         v extends Attributes[k]
     >(
         s: s,
@@ -248,7 +245,7 @@ export namespace DynamicState {
 
     export const rootAttributeHasType = <
         s extends DynamicState,
-        k extends AttributeKey,
+        k extends Attributes.KeyOf,
         typeName extends dynamicTypeOf<Attributes[k]>
     >(
         s: s,

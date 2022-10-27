@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes2.js"
+import { Attributes } from "../../../attributes/attributes.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import type { StaticState } from "../state/state.js"
@@ -38,7 +38,7 @@ export namespace DivisibilityOperator {
         if (parseResult === 0) {
             return DynamicState.error(buildInvalidDivisorMessage(0))
         }
-        s.root = Attributes.reduce("divisor", s.root, parseResult)
+        s.root = Attributes.reduce("divisibility", s.root, parseResult)
         return s
     }
 

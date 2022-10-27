@@ -1,4 +1,4 @@
-import { Attributes } from "../../../../attributes/attributes2.js"
+import { Attributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"

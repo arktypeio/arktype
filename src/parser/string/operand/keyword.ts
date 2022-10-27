@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes2.js"
+import { Attributes } from "../../../attributes/attributes.js"
 import type { array, Conform, dictionary } from "../../../internal.js"
 
 export type Keyword = keyof Keyword.Inferences
@@ -50,7 +50,7 @@ export namespace Keyword {
     // TODO: Impact of freezing these?
     const attributes = defineKeywordAttributes({
         // TS keywords
-        any: Attributes.initEmpty(),
+        any: Attributes.init("noop"),
         bigint: Attributes.init("type", "bigint"),
         boolean: Attributes.init("type", "boolean"),
         false: Attributes.init("value", false),
@@ -75,7 +75,7 @@ export namespace Keyword {
         symbol: Attributes.init("type", "symbol"),
         true: Attributes.init("value", true),
         undefined: Attributes.init("value", undefined),
-        unknown: Attributes.initEmpty(),
+        unknown: Attributes.init("noop"),
         void: Attributes.init("value", undefined),
         // JS Object types
         Function: Attributes.init("type", "function"),
@@ -89,6 +89,6 @@ export namespace Keyword {
         lowercase: Attributes.init("regex", /^[a-z]*$/),
         uppercase: Attributes.init("regex", /^[A-Z]*$/),
         // Numeric
-        integer: Attributes.init("divisor", 1)
+        integer: Attributes.init("divisibility", 1)
     })
 }
