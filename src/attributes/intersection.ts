@@ -16,8 +16,6 @@ export const mapIntersectionToBranches = (
     return viableBranches
 }
 
-export const reduceIntersection: Attributes.Reducer<
-    [attributes: Attributes]
-> = (base, attributes) => {
-    return base
-}
+// export const reduceIntersection: Attributes.Reduce = (base, attributes) => {
+//     return base
+// }

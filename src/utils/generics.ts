@@ -70,3 +70,12 @@ export const entriesOf = <o extends object>(o: o) =>
 export type Mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
+
+/** Either:
+ * A, with all properties of B as undefined
+ * OR
+ * B, with all properties of A as undefined
+ **/
+export type xor<A, B> =
+    | Evaluate<A & { [k in keyof B]?: undefined }>
+    | Evaluate<B & { [k in keyof A]?: undefined }>
