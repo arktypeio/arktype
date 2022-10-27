@@ -1,13 +1,13 @@
-import type { Attributes } from "../../../attributes/attributes.js"
-import type { Conform } from "../../../internal.js"
+import { AttributeNode } from "../../../attributes/attributes.js"
+import type { array, Conform, dictionary } from "../../../internal.js"
 
 export type Keyword = keyof Keyword.Inferences
 
 export namespace Keyword {
-    const defineKeywordAttributes = <keywordsToAttributes>(
+    const defineKeywordNodes = <keywordsToAttributes>(
         keywordsToAttributes: Conform<
             keywordsToAttributes,
-            Record<Keyword, Attributes>
+            Record<Keyword, () => AttributeNode>
         >
     ) => keywordsToAttributes
 
@@ -30,8 +30,8 @@ export namespace Keyword {
         // JS Object types
         Function: Function
         // Supplemental types
-        array: unknown[]
-        dictionary: Record<string, unknown>
+        array: array
+        dictionary: dictionary
         // Regex
         email: string
         alphanumeric: string
@@ -42,39 +42,48 @@ export namespace Keyword {
         integer: number
     }
 
-    // TODO: is this a problem if branches mutate?
-    export const attributeMap = defineKeywordAttributes({
+    export const matches = (token: string): token is Keyword =>
+        token in nodeGetters
+
+    export const getNode = (keyword: Keyword) => nodeGetters[keyword]()
+
+    const nodeGetters = defineKeywordNodes({
         // TS keywords
-        any: {},
-        bigint: { type: "bigint" },
-        boolean: { type: "boolean" },
-        false: { type: "boolean", value: false },
+        any: () => new AttributeNode(),
+        bigint: () => AttributeNode.from("type", "bigint"),
+        boolean: () => AttributeNode.from("type", "boolean"),
+        false: () => AttributeNode.from("value", false),
         // TODO: Add never
-        never: {},
-        null: {
-            type: "null",
-            value: null
+        never: () => {
+            throw new Error("Never?")
         },
-        number: { type: "number" },
-        object: { branches: [{ type: "object" }, { type: "array" }] },
-        string: { type: "string" },
-        symbol: { type: "symbol" },
-        true: { type: "boolean", value: true },
-        undefined: { type: "undefined", value: undefined },
-        unknown: {},
-        void: { type: "undefined", value: undefined },
+        null: () => AttributeNode.from("value", null),
+        number: () => AttributeNode.from("type", "number"),
+        object: () =>
+            // Unfortunately, since the TS object keyword can be one of three
+            // types within our dynamic type system, creating an accurate node
+            // is cumbersome.
+            AttributeNode.from("type", "dictionary")
+                .reduce("union", AttributeNode.from("type", "array"))
+                .reduce("union", AttributeNode.from("type", "function")),
+        string: () => AttributeNode.from("type", "string"),
+        symbol: () => AttributeNode.from("type", "symbol"),
+        true: () => AttributeNode.from("value", true),
+        undefined: () => AttributeNode.from("value", undefined),
+        unknown: () => new AttributeNode(),
+        void: () => AttributeNode.from("value", undefined),
         // JS Object types
-        Function: { type: "function" },
+        Function: () => AttributeNode.from("type", "function"),
         // Supplemental types
-        array: { type: "array" },
-        dictionary: { type: "object" },
+        array: () => AttributeNode.from("type", "array"),
+        dictionary: () => AttributeNode.from("type", "dictionary"),
         // Regex
-        email: { regex: /^(.+)@(.+)\.(.+)$/, type: "string" },
-        alphanumeric: { regex: /^[\dA-Za-z]+$/, type: "string" },
-        alphaonly: { regex: /^[A-Za-z]+$/, type: "string" },
-        lowercase: { regex: /^[a-z]*$/, type: "string" },
-        uppercase: { regex: /^[A-Z]*$/, type: "string" },
+        email: () => AttributeNode.from("regex", /^(.+)@(.+)\.(.+)$/),
+        alphanumeric: () => AttributeNode.from("regex", /^[\dA-Za-z]+$/),
+        alphaonly: () => AttributeNode.from("regex", /^[A-Za-z]+$/),
+        lowercase: () => AttributeNode.from("regex", /^[a-z]*$/),
+        uppercase: () => AttributeNode.from("regex", /^[A-Z]*$/),
         // Numeric
-        integer: { divisor: 1, type: "number" }
+        integer: () => AttributeNode.from("divisor", 1)
     })
 }

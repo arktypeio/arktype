@@ -1,20 +1,22 @@
-import type { ParseError, parseFn, ParserContext } from "../common.js"
+import type {
+    ParseError,
+    ParserContext,
+    StaticParserContext
+} from "../common.js"
 import { fullParse } from "./full.js"
 import { tryNaiveParse } from "./naive.js"
 
 export namespace Str {
-    export type Parse<
-        Def extends string,
-        Ctx extends ParserContext
-    > = tryNaiveParse<Def, Ctx>
+    export type parse<
+        def extends string,
+        context extends StaticParserContext
+    > = tryNaiveParse<def, context>
 
-    export type Validate<Def extends string, Ctx extends ParserContext> = Parse<
-        Def,
-        Ctx
-    > extends ParseError<infer Message>
-        ? Message
-        : Def
+    export type validate<
+        def extends string,
+        context extends StaticParserContext
+    > = parse<def, context> extends ParseError<infer Message> ? Message : def
 
-    export const parse: parseFn<string> = (def, ctx) =>
-        tryNaiveParse(def, ctx) ?? fullParse(def, ctx)
+    export const parse = (def: string, context: ParserContext) =>
+        tryNaiveParse(def, context) ?? fullParse(def, context)
 }

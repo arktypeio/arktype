@@ -1,5 +1,9 @@
-import type { Attributes } from "../../attributes/attributes.js"
-import type { ParseError, parseFn, ParserContext } from "../common.js"
+import type { AttributeNode } from "../../attributes/attributes.js"
+import type {
+    ParseError,
+    ParserContext,
+    StaticParserContext
+} from "../common.js"
 import type { Root } from "../root.js"
 import type { Operand } from "../str/operand/operand.js"
 import type { Scanner } from "../str/state/scanner.js"
@@ -9,14 +13,14 @@ export type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 export const isTupleExpression = (def: unknown[]): def is TupleExpression =>
     (def[1] as any) in {}
 
-export const parseTupleExpression: parseFn<TupleExpression> = (
-    [definition, token, ...args],
-    context
-) => ({} as Attributes)
+export const parseTupleExpression = (
+    [definition, token, ...args]: TupleExpression,
+    context: ParserContext
+) => ({} as AttributeNode)
 
 export type parseTupleExpression<
     Def extends TupleExpression,
-    Ctx extends ParserContext
+    Ctx extends StaticParserContext
 > = Def[1] extends Scanner.InfixToken
     ? Def[2] extends undefined
         ? [

@@ -1,24 +1,32 @@
-import { JsType } from "../utils/jsType.js"
-import type { ParseError, parseFn, ParserContext } from "./common.js"
+import type { DynamicTypeName } from "../internal.js"
+import { dynamicTypeOf } from "../internal.js"
+import type {
+    ParseError,
+    ParserContext,
+    StaticParserContext
+} from "./common.js"
 import { throwParseError } from "./common.js"
-import { Obj } from "./obj/obj.js"
 import { Str } from "./str/str.js"
+import { Struct } from "./struct/struct.js"
 
 export namespace Root {
-    export const parse: parseFn = (def, space) => {
-        const defType = JsType.of(def)
+    export const parse = (def: unknown, context: ParserContext) => {
+        const defType = dynamicTypeOf(def)
         return defType === "string"
-            ? Str.parse(def as any, space)
-            : defType === "object" || defType === "array"
-            ? Obj.parse(def as any, space)
+            ? Str.parse(def as any, context)
+            : defType === "dictionary" || defType === "array"
+            ? Struct.parse(def as any, defType, context)
             : throwParseError(buildBadDefinitionTypeMessage(defType))
     }
 
-    export type parse<def, ctx extends ParserContext> = def extends string
-        ? Str.Parse<def, ctx>
+    export type parse<
+        def,
+        context extends StaticParserContext
+    > = def extends string
+        ? Str.parse<def, context>
         : def extends BadDefinitionType
-        ? ParseError<buildBadDefinitionTypeMessage<JsType.NormalizedOf<def>>>
-        : Obj.Parse<def, ctx>
+        ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
+        : Struct.Parse<def, context>
 
     export type BadDefinitionType =
         | undefined
@@ -30,12 +38,12 @@ export namespace Root {
         | symbol
 
     export const buildBadDefinitionTypeMessage = <
-        actual extends JsType.NormalizedName
+        actual extends DynamicTypeName
     >(
         actual: actual
     ): buildBadDefinitionTypeMessage<actual> =>
         `Type definitions must be strings or objects (was ${actual}).`
 
-    type buildBadDefinitionTypeMessage<actual extends JsType.NormalizedName> =
+    type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
         `Type definitions must be strings or objects (was ${actual}).`
 }

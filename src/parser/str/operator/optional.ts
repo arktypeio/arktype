@@ -1,4 +1,3 @@
-import { Attributes } from "../../../attributes/attributes.js"
 import { ParserState } from "../state/state.js"
 
 export namespace OptionalOperator {
@@ -7,7 +6,7 @@ export namespace OptionalOperator {
             return ParserState.error(nonTerminatingMessage)
         }
         ParserState.finalize(s)
-        Attributes.add(s.root, "optional")
+        s.root.reduce("optional", true)
         return s
     }
 
@@ -25,13 +24,3 @@ export namespace OptionalOperator {
 
     type nonTerminatingMessage = typeof nonTerminatingMessage
 }
-export const hasRootAttribute = <
-    s extends ParserState.Base,
-    k extends Attributes.Key,
-    v extends Attributes[k]
->(
-    s: s,
-    k: k,
-    v: v
-): s is s & { root: { [_ in k]: v } } =>
-    s.root !== null && k in s.root && s.root[k] === v

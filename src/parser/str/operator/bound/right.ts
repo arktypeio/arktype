@@ -1,6 +1,4 @@
-import { Attributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
-import type { NumberLiteral } from "../../operand/numeric.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
@@ -45,19 +43,18 @@ export namespace RightBoundOperator {
         limit: number
     ) => {
         if (!isLeftBounded(s)) {
-            Attributes.add(s.root, "bound", comparator, limit)
+            s.root.reduce("bound", comparator, limit)
             return s
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return ParserState.error(buildInvalidDoubleMessage(comparator))
         }
-        Attributes.add(
-            s.root,
+        s.root.reduce(
             "bound",
             invertedComparators[s.branches.leftBound[1]],
             s.branches.leftBound[0]
         )
-        Attributes.add(s.root, "bound", comparator, limit)
+        s.root.reduce("bound", comparator, limit)
         s.branches.leftBound = ParserState.unset
         return s
     }

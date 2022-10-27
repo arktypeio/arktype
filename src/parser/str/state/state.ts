@@ -1,5 +1,10 @@
-import type { Attributes } from "../../../attributes/attributes.js"
-import { JsType } from "../../../internal.js"
+import type {
+    AttributeKey,
+    AttributeNode,
+    Attributes
+} from "../../../attributes/attributes.js"
+import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
+import { hasDynamicType } from "../../../internal.js"
 import type { ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
@@ -10,7 +15,7 @@ import { Scanner } from "./scanner.js"
 // TODO: Check namespace parse output
 export namespace ParserState {
     export type Base = {
-        root: Attributes | null
+        root: AttributeNode | null
         branches: OpenBranches
         groups: OpenBranches[]
         scanner: Scanner
@@ -60,7 +65,7 @@ export namespace ParserState {
     export const unset = null as any
 
     export type Preconditions = {
-        root?: Attributes | null
+        root?: AttributeNode | null
         branches?: Partial<OpenBranches>
         groups?: OpenBranches[]
     }
@@ -72,8 +77,11 @@ export namespace ParserState {
             groups?: OpenBranches[]
         }
     }
-    export type WithRoot<attributes extends Attributes = {}> = Base & {
-        root: attributes
+    export type WithRoot<attributes extends Attributes = Attributes> = Omit<
+        Base,
+        "root"
+    > & {
+        root: AttributeNode<attributes>
     }
 
     export namespace T {
@@ -86,32 +94,34 @@ export namespace ParserState {
         s: s
     ): s is s & { root: {} } => s.root !== null
 
-    export const hasRootAttribute = <
-        s extends ParserState.Base,
-        k extends Attributes.Key,
+    export const rootAttributeEquals = <
+        s extends Base,
+        k extends AttributeKey,
         v extends Attributes[k]
     >(
         s: s,
         k: k,
         v: v
-    ): s is s & { root: { [_ in k]: v } } =>
-        s.root !== null && k in s.root && s.root[k] === v
+    ): s is s & {
+        root: AttributeNode<{ [_ in k]: v }>
+    } => s.root?.get(k) === v
 
-    export const hasRootAttributeType = <
-        s extends ParserState.Base,
-        k extends Attributes.Key,
-        t extends JsType.NormalizedOf<Attributes[k]>
+    export const rootAttributeHasType = <
+        s extends Base,
+        k extends AttributeKey,
+        typeName extends dynamicTypeOf<Attributes[k]>
     >(
         s: s,
         k: k,
-        typeName: t
-    ): s is s & { root: { [_ in k]: JsType.NormalizedInferences[t] } } =>
-        s.root !== null && JsType.is(s.root[k], typeName)
+        typeName: typeName
+    ): s is s & {
+        root: AttributeNode<{ [_ in k]: DynamicTypes[typeName] }>
+    } => hasDynamicType(s.root?.get(k), typeName)
 
     export type OpenBranches = {
         leftBound?: OpenLeftBound | null
-        union?: Attributes | null
-        intersection?: Attributes | null
+        union?: AttributeNode | null
+        intersection?: AttributeNode | null
     }
 
     export namespace T {

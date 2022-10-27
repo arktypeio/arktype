@@ -1,7 +1,7 @@
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
-import type { Attributes } from "./attributes/attributes.js"
-import type { Dictionary } from "./internal.js"
+import type { AttributeNode } from "./attributes/attributes.js"
+import type { dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
@@ -11,8 +11,7 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {
     const root = Root.parse(definition, {
-        aliases: space?.$.aliases ?? {},
-        attributes: {}
+        aliases: space?.$.aliases ?? {}
     })
     return new Arktype(root, config, space as any)
 }
@@ -44,7 +43,7 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class Arktype<Inferred = unknown, Ast = unknown> {
     constructor(
-        public root: Attributes,
+        public root: AttributeNode,
         public config: ArktypeConfig,
         public space: ArktypeSpace | undefined
     ) {
@@ -75,4 +74,4 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
     }
 }
 
-export type ArktypeConfig = Dictionary
+export type ArktypeConfig = dictionary

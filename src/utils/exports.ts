@@ -1,5 +1,5 @@
 export * from "./chainableNoOpProxy.js"
 export * from "./generics.js"
 export * from "./internalArktypeError.js"
-export * from "./jsType.js"
+export * from "./dynamicTypes.js"
 export * from "./lazyDynamicWrap.js"

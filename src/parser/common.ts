@@ -1,19 +1,12 @@
-import type { Attributes } from "../attributes/attributes.js"
-import type { Dictionary } from "../utils/generics.js"
+import type { dictionary } from "../internal.js"
 
 export type ParserContext = {
+    aliases: dictionary
+}
+
+export type StaticParserContext = {
     aliases: unknown
 }
-
-export type parserContext = {
-    aliases: Dictionary
-    attributes: Attributes
-}
-
-export type parseFn<DefType = unknown> = (
-    def: DefType,
-    ctx: parserContext
-) => Attributes
 
 export class parseError extends Error {}
 

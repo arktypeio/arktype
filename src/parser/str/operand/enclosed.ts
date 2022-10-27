@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { AttributeNode } from "../../../attributes/attributes.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
@@ -22,11 +22,10 @@ export namespace Enclosed {
             inclusive: true,
             onInputEnd: throwUnterminatedEnclosed
         })
-        s.root = Attributes.initialize(
+        s.root =
             enclosing === "/"
-                ? { type: "string", regex: new RegExp(token.slice(1, -1)) }
-                : { type: "string", value: token.slice(1, -1) }
-        )
+                ? AttributeNode.from("regex", new RegExp(token.slice(1, -1)))
+                : AttributeNode.from("value", token.slice(1, -1))
         return s
     }
 

@@ -1,4 +1,3 @@
-import type { Attributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { Scanner } from "../../state/scanner.js"
 import { ParserState } from "../../state/state.js"
@@ -14,7 +13,7 @@ export namespace LeftBoundOperator {
             ? ParserState.openLeftBounded(s)
                 ? ParserState.error(
                       buildBoundLiteralMessage(
-                          s.root.value,
+                          s.root.get("value"),
                           s.branches.leftBound[0],
                           s.branches.leftBound[1]
                       )
@@ -41,7 +40,7 @@ export namespace LeftBoundOperator {
         s: ParserState.WithRoot<{ value: number }>,
         token: Scanner.PairableComparator
     ) => {
-        s.branches.leftBound = [s.root.value, token]
+        s.branches.leftBound = [s.root.get("value"), token]
         s.root = ParserState.unset
         return s
     }
@@ -74,7 +73,6 @@ export namespace LeftBoundOperator {
 
     export const unpairedError = (
         s: ParserState.Of<{
-            root: Attributes
             branches: { leftBound: ParserState.OpenLeftBound }
         }>
     ) =>

@@ -1,9 +1,14 @@
-import type { Dictionary } from "../internal.js"
-import { JsType } from "../internal.js"
+import type {
+    array,
+    dictionary,
+    DynamicTypeName,
+    DynamicTypes
+} from "../internal.js"
+import { dynamicTypeOf, hasDynamicType } from "../internal.js"
 import type { Scanner } from "../parser/str/state/scanner.js"
 
-type Attributes = {
-    type?: JsType.NormalizedName
+export type Attributes = {
+    type?: DynamicTypeName
     value?: unknown
     // TODO: Multiple regex
     regex?: RegExp
@@ -14,14 +19,14 @@ type Attributes = {
     inclusiveMax?: true
     optional?: boolean
     branches?: Attributes[]
-    props?: Dictionary<Attributes>
+    props?: Record<string, Attributes>
     values?: Attributes
 }
 
-type AttributeKey = keyof Attributes
+export type AttributeKey = keyof Attributes
 
 type AttributeReducers = {
-    type: [name: JsType.NormalizedName]
+    type: [name: DynamicTypeName]
     value: [unknown]
     regex: [RegExp]
     divisor: [number]
@@ -38,21 +43,34 @@ type DeepImmutableAttributes = {
     readonly [k in AttributeKey]?: Attributes[k]
 } & {
     branches?: DeepImmutableAttributes[]
-    props?: Dictionary<DeepImmutableAttributes>
+    props?: dictionary<DeepImmutableAttributes>
     values?: DeepImmutableAttributes
 }
 
-export class AttributeNode {
-    constructor(private attributes: Attributes) {}
+export class AttributeNode<
+    knownAttributes extends DeepImmutableAttributes = DeepImmutableAttributes
+> {
+    private attributes = {} as knownAttributes
 
-    get<key extends AttributeKey>(key: key): DeepImmutableAttributes[key] {
+    static from<name extends ReducerName>(
+        name: name,
+        ...args: AttributeReducers[name]
+    ) {
+        const node = new AttributeNode()
+        node.reduce(name, ...args)
+        return node
+    }
+
+    get<key extends AttributeKey>(key: key): knownAttributes[key] {
         return this.attributes[key]
     }
 
     reduce<name extends ReducerName>(
         name: name,
         ...args: AttributeReducers[name]
-    ) {}
+    ) {
+        return this
+    }
 
     // TODO: Make the object unusable after this
     eject() {
@@ -76,7 +94,7 @@ export class AttributeNode {
         let k: AttributeKey
         let branchHasAUniqueAttribute = false
         for (k in branch) {
-            if (areDeeplyEqual(this.attributes[k], branch[k])) {
+            if (deepEquals(this.attributes[k], branch[k])) {
                 // The branch attribute is redundant and can be removed.
                 delete branch[k]
                 continue
@@ -116,19 +134,19 @@ const leastCommonMultiple = (first: number, second: number) => {
     return Math.abs((first * second) / greatestCommonDivisor)
 }
 
-const areDeeplyEqual = (a: unknown, b: unknown) => {
-    const typeOfA = JsType.of(a)
-    const typeOfB = JsType.of(b)
+const deepEquals = (a: unknown, b: unknown) => {
+    const typeOfA = dynamicTypeOf(a)
+    const typeOfB = dynamicTypeOf(b)
     return typeOfA !== typeOfB
         ? false
-        : typeOfA === "object"
-        ? objectsAreDeeplyEqual(a as Dictionary, b as Dictionary)
+        : typeOfA === "dictionary"
+        ? deepEqualsObject(a as dictionary, b as dictionary)
         : typeOfA === "array"
-        ? arraysAreDeeplyEqual(a as unknown[], b as unknown[])
+        ? deepEqualsArray(a as array, b as array)
         : a === b
 }
 
-const objectsAreDeeplyEqual = (a: Dictionary, b: Dictionary) => {
+const deepEqualsObject = (a: dictionary, b: dictionary) => {
     const unseenBKeys = { ...b }
     for (const k in a) {
         if (a[k] !== b[k]) {
@@ -142,7 +160,7 @@ const objectsAreDeeplyEqual = (a: Dictionary, b: Dictionary) => {
     return true
 }
 
-const arraysAreDeeplyEqual = (a: unknown[], b: unknown[]) => {
+const deepEqualsArray = (a: array, b: array) => {
     if (a.length !== b.length) {
         return false
     }

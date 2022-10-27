@@ -1,23 +1,23 @@
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
+import type { dictionary } from "./internal.js"
 import { Root } from "./parser/root.js"
 import type { ParseSpace } from "./parser/space.js"
 import type { ArktypeConfig } from "./type.js"
 import { Arktype } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Dictionary, Evaluate } from "./utils/generics.js"
+import type { Evaluate } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rawSpace = (aliases: Dictionary, config: ArktypeConfig = {}) => {
+const rawSpace = (aliases: dictionary, config: ArktypeConfig = {}) => {
     const result: ArktypeSpace = {
         $: { infer: chainableNoOpProxy, config, aliases } as any
     }
     for (const name in aliases) {
         result[name] = new Arktype(
             Root.parse(aliases[name], {
-                aliases,
-                attributes: {}
+                aliases
             }),
             config,
             result
@@ -36,12 +36,12 @@ type InferredSpaceFn = <Aliases, Resolutions = ParseSpace<Aliases>>(
     config?: ArktypeConfig
 ) => ArktypeSpace<Resolutions>
 
-type DynamicSpaceFn = <Aliases extends Dictionary>(
+type DynamicSpaceFn = <Aliases extends dictionary>(
     aliases: Aliases,
     config?: ArktypeConfig
 ) => ArktypeSpace<Aliases>
 
-export type ArktypeSpace<resolutions = Dictionary> = {
+export type ArktypeSpace<resolutions = dictionary> = {
     $: SpaceMeta<resolutions>
 } & resolutionsToArktypes<resolutions>
 
@@ -52,7 +52,7 @@ type resolutionsToArktypes<resolutions> = {
     >
 }
 
-export type SpaceMeta<resolutions = Dictionary> = {
+export type SpaceMeta<resolutions = dictionary> = {
     infer: inferResolutions<resolutions>
     config: ArktypeConfig
     ast: resolutions

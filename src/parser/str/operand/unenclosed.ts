@@ -1,6 +1,9 @@
-import type { Attributes } from "../../../attributes/attributes.js"
-import { isKeyOf } from "../../../utils/generics.js"
-import type { ParseError, parserContext, ParserContext } from "../../common.js"
+import { AttributeNode } from "../../../attributes/attributes.js"
+import type {
+    ParseError,
+    ParserContext,
+    StaticParserContext
+} from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
 import { Keyword } from "./keyword.js"
@@ -9,27 +12,27 @@ import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 import { Operand } from "./operand.js"
 
 export namespace Unenclosed {
-    export const parse = (s: ParserState.Base, ctx: parserContext) => {
+    export const parse = (s: ParserState.Base, context: ParserContext) => {
         const token = s.scanner.shiftUntilNextTerminator()
-        s.root = unenclosedToAttributes(s, token, ctx)
+        s.root = unenclosedToAttributes(s, token, context)
         return s
     }
 
     export type parse<
         s extends ParserState.T.Unfinished,
-        ctx extends ParserContext
+        context extends StaticParserContext
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-        ? reduce<s, resolve<s, scanned, ctx>, nextUnscanned>
+        ? reduce<s, resolve<s, scanned, context>, nextUnscanned>
         : never
 
     const unenclosedToAttributes = (
         s: ParserState.Base,
         token: string,
-        ctx: parserContext
+        context: ParserContext
     ) =>
-        maybeParseIdentifier(token, ctx) ??
+        maybeParseIdentifier(token, context) ??
         maybeParseUnenclosedLiteral(token) ??
         ParserState.error(
             token === ""
@@ -39,22 +42,22 @@ export namespace Unenclosed {
 
     export const maybeParseIdentifier = (
         token: string,
-        ctx: parserContext
-    ): Attributes | undefined =>
-        isKeyOf(token, Keyword.attributeMap)
-            ? Keyword.attributeMap[token]
-            : token in ctx.aliases
-            ? { value: "alias" }
+        context: ParserContext
+    ): AttributeNode | undefined =>
+        Keyword.matches(token)
+            ? Keyword.getNode(token)
+            : token in context.aliases
+            ? AttributeNode.from("value", "alias")
             : undefined
 
     const maybeParseUnenclosedLiteral = (token: string) => {
         const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
         if (maybeNumber !== undefined) {
-            return { value: maybeNumber }
+            return AttributeNode.from("value", maybeNumber)
         }
         const maybeBigint = UnenclosedBigint.parseWellFormed(token)
         if (maybeBigint !== undefined) {
-            return { value: maybeBigint }
+            return AttributeNode.from("value", maybeBigint)
         }
     }
 
@@ -76,18 +79,18 @@ export namespace Unenclosed {
 
     export type isResolvableIdentifier<
         token,
-        ctx extends ParserContext
+        context extends StaticParserContext
     > = token extends Keyword
         ? true
-        : token extends keyof ctx["aliases"]
+        : token extends keyof context["aliases"]
         ? true
         : false
 
     type resolve<
         s extends ParserState.T.Unfinished,
         token extends string,
-        ctx extends ParserContext
-    > = isResolvableIdentifier<token, ctx> extends true
+        context extends StaticParserContext
+    > = isResolvableIdentifier<token, context> extends true
         ? token
         : token extends NumberLiteral<infer Value>
         ? UnenclosedNumber.assertWellFormed<token, Value, "number">

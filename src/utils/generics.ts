@@ -51,8 +51,6 @@ type TopTypeIsUnknown<T> = (T extends {} ? true : false) extends false
     ? true
     : false
 
-export type Dictionary<Of = unknown> = Record<string, Of>
-
 export type Conform<T, Base> = T extends Base ? T : Base
 
 export const isKeyOf = <k extends string | number, obj extends object>(

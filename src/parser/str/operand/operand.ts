@@ -1,4 +1,4 @@
-import type { parserContext, ParserContext } from "../../common.js"
+import type { ParserContext, StaticParserContext } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -9,7 +9,7 @@ import { Unenclosed } from "./unenclosed.js"
 export namespace Operand {
     export const parse = (
         s: ParserState.Base,
-        ctx: parserContext
+        context: ParserContext
     ): ParserState.Base =>
         s.scanner.lookahead === ""
             ? throwParseError(buildMissingOperandMessage(s))
@@ -18,20 +18,20 @@ export namespace Operand {
             : s.scanner.lookaheadIsIn(Enclosed.startChars)
             ? Enclosed.parse(s, s.scanner.shift())
             : s.scanner.lookahead === " "
-            ? parse(ParserState.shifted(s), ctx)
-            : Unenclosed.parse(s, ctx)
+            ? parse(ParserState.shifted(s), context)
+            : Unenclosed.parse(s, context)
 
     export type parse<
         s extends ParserState.T.Unfinished,
-        ctx extends ParserContext
+        context extends StaticParserContext
     > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
         ? lookahead extends "("
             ? GroupOpen.reduce<s, unscanned>
             : lookahead extends Enclosed.StartChar
             ? Enclosed.parse<s, lookahead, unscanned>
             : lookahead extends " "
-            ? parse<ParserState.scanTo<s, unscanned>, ctx>
-            : Unenclosed.parse<s, ctx>
+            ? parse<ParserState.scanTo<s, unscanned>, context>
+            : Unenclosed.parse<s, context>
         : ParserState.error<buildMissingOperandMessage<s>>
 
     export const buildMissingOperandMessage = <s extends ParserState.Base>(
