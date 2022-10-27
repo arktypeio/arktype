@@ -1,4 +1,4 @@
-import { dynamicTypeOf } from "../internal.js"
+import { dynamicTypeOf } from "./internal.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean

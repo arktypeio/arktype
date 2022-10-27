@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { Attributes } from "../../../attributes/attributes2.js"
 import type { StaticState } from "../state/state.js"
 import { DynamicState } from "../state/state.js"
 

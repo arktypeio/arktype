@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { Attributes } from "../../../attributes/attributes2.js"
 import type { array, Conform, dictionary } from "../../../internal.js"
 
 export type Keyword = keyof Keyword.Inferences

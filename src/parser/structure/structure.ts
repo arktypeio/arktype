@@ -1,4 +1,4 @@
-import { Attributes } from "../../attributes/attributes.js"
+import { Attributes } from "../../attributes/attributes2.js"
 import type { array, dictionary } from "../../internal.js"
 import type { Evaluate } from "../../utils/generics.js"
 import type { ParserContext, StaticParserContext } from "../common.js"

@@ -1,4 +1,4 @@
-import type { Attributes } from "../../attributes/attributes.js"
+import type { Attributes } from "../../attributes/attributes2.js"
 import type {
     ParseError,
     ParserContext,

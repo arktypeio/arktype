@@ -1,7 +1,7 @@
 import type {
     AttributeKey,
     Attributes
-} from "../../../attributes/attributes.js"
+} from "../../../attributes/attributes2.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
 import { hasDynamicType } from "../../../internal.js"
 import type { ParseError } from "../../common.js"

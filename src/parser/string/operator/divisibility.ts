@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { Attributes } from "../../../attributes/attributes2.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import type { StaticState } from "../state/state.js"

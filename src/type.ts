@@ -1,6 +1,6 @@
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
-import type { Attributes } from "./attributes/attributes.js"
+import type { Attributes } from "./attributes/attributes2.js"
 import type { dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
