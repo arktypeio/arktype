@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
+import type { Dictionary } from "../../../dist/types/internal.js"
 import { space, type } from "../../api.js"
-import type { Dictionary } from "../../utils/generics.js"
 import { Root } from "../root.js"
 import { Unenclosed } from "../str/operand/unenclosed.js"
 

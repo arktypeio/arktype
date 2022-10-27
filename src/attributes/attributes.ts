@@ -1,10 +1,5 @@
-import type {
-    array,
-    dictionary,
-    DynamicTypeName,
-    DynamicTypes
-} from "../internal.js"
-import { dynamicTypeOf, hasDynamicType } from "../internal.js"
+import type { array, dictionary, DynamicTypeName } from "../internal.js"
+import { dynamicTypeOf } from "../internal.js"
 import type { Scanner } from "../parser/str/state/scanner.js"
 
 export type Attributes = {
