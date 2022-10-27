@@ -1,9 +1,9 @@
-import type { AllowedImplications, Reducer } from "./shared.js"
+import type { AllowedImplications, KeyReducer } from "./shared.js"
 
 export namespace Divisible {
     const implications: AllowedImplications<"divisible"> = { typed: "number" }
 
-    export const reduce: Reducer<"divisible"> = (base, divisor) => {
+    export const reduce: KeyReducer<"divisible"> = (base, divisor) => {
         if (base === undefined) {
             return [divisor, implications]
         }

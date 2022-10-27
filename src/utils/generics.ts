@@ -79,3 +79,5 @@ export type Mutable<o> = {
 export type xor<A, B> =
     | Evaluate<A & { [k in keyof B]?: undefined }>
     | Evaluate<B & { [k in keyof A]?: undefined }>
+
+export type EmptyObject = Record<string | number | symbol, never>

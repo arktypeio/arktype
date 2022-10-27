@@ -1,21 +1,22 @@
 import type { Attributes } from "./attributes.js"
+import type { RootReducer } from "./shared.js"
 
-export const reduceAttribute = {}
-
-export const mapIntersectionToBranches = (
-    branches: Attributes[],
-    attributes: Attributes
-) => {
-    const viableBranches: Attributes[] = []
-    for (const branch of branches) {
-        const branchWithAttributes = reduceIntersection(branch, attributes)
-        if (branchWithAttributes.hasType !== "never") {
-            viableBranches.push(branchWithAttributes)
+export namespace Intersection {
+    export const mapIntersectionToBranches = (
+        branches: Attributes[],
+        attributes: Attributes
+    ) => {
+        const viableBranches: Attributes[] = []
+        for (const branch of branches) {
+            const branchWithAttributes = reduce(branch, attributes)
+            // if (branchWithAttributes.hasType !== "never") {
+            //     viableBranches.push(branchWithAttributes)
+            // }
         }
+        return viableBranches
     }
-    return viableBranches
-}
 
-// export const reduceIntersection: Attributes.Reduce = (base, attributes) => {
-//     return base
-// }
+    export const reduce: RootReducer = (base, attributes) => {
+        return base
+    }
+}
