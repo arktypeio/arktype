@@ -47,6 +47,7 @@ export namespace Keyword {
         >
     ) => keywordsToAttributes
 
+    // TODO: Impact of freezing these?
     const attributes = defineKeywordAttributes({
         // TS keywords
         any: Attributes.initEmpty(),
