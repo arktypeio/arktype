@@ -1,117 +1,129 @@
-import type { array, dictionary, DynamicTypeName } from "../internal.js"
+import type {
+    array,
+    dictionary,
+    DynamicTypeName,
+    Mutable
+} from "../internal.js"
 import { dynamicTypeOf } from "../internal.js"
 import type { Scanner } from "../parser/str/state/scanner.js"
 
-export type Attributes = {
-    type?: DynamicTypeName
-    value?: unknown
-    // TODO: Multiple regex
-    regex?: RegExp
-    divisor?: number
-    min?: number
-    inclusiveMin?: true
-    max?: number
-    inclusiveMax?: true
-    optional?: boolean
-    branches?: Attributes[]
-    props?: Record<string, Attributes>
-    values?: Attributes
+declare const safe: unique symbol
+
+export type Safe<Type> = Type & {
+    readonly [safe]: never
 }
 
-export type AttributeKey = keyof Attributes
+export type Attributes = Safe<
+    Readonly<{
+        type?: DynamicTypeName
+        value?: unknown
+        // TODO: Multiple regex
+        regex?: RegExp
+        divisor?: number
+        min?: number
+        inclusiveMin?: true
+        max?: number
+        inclusiveMax?: true
+        optional?: boolean
+        branches?: Readonly<Attributes[]>
+        props?: Readonly<dictionary<Attributes>>
+        values?: Attributes
+    }>
+>
 
-type AttributeReducers = {
-    type: [name: DynamicTypeName]
-    value: [unknown]
-    regex: [RegExp]
-    divisor: [number]
-    bound: [comparator: Scanner.Comparator, limit: number]
-    optional: [boolean]
-    prop: [key: string | true, node: AttributeNode]
-    intersection: [node: AttributeNode]
-    union: [node: AttributeNode]
-}
+export type AttributeKey = keyof Attributes & string
 
-type ReducerName = keyof AttributeReducers
+export namespace Attributes {
+    export const reduce = <key extends ReducerKey>(
+        attributes: Attributes,
+        key: key,
+        ...args: ReducerParams[key]
+    ) => reducers[key](attributes, ...args)
 
-type DeepImmutableAttributes = {
-    readonly [k in AttributeKey]?: Attributes[k]
-} & {
-    branches?: DeepImmutableAttributes[]
-    props?: dictionary<DeepImmutableAttributes>
-    values?: DeepImmutableAttributes
-}
+    const type = (base: Attributes, name: DynamicTypeName) => base
 
-export class AttributeNode<
-    knownAttributes extends DeepImmutableAttributes = DeepImmutableAttributes
-> {
-    private attributes = {} as knownAttributes
+    const value = (base: Attributes, value: unknown) => base
 
-    static from<name extends ReducerName>(
-        name: name,
-        ...args: AttributeReducers[name]
-    ) {
-        const node = new AttributeNode()
-        node.reduce(name, ...args)
-        return node
-    }
+    const regex = (base: Attributes, regex: RegExp) => base
 
-    get<key extends AttributeKey>(key: key): knownAttributes[key] {
-        return this.attributes[key]
-    }
+    const divisor = (base: Attributes, divisor: number) => base
 
-    reduce<name extends ReducerName>(
-        name: name,
-        ...args: AttributeReducers[name]
-    ) {
-        return this
-    }
+    const bound = (
+        base: Attributes,
+        comparator: Scanner.Comparator,
+        limit: number
+    ) => base
 
-    // TODO: Make the object unusable after this
-    eject() {
-        return this.attributes
-    }
+    const optional = (base: Attributes, value: boolean) => base
 
-    flatten() {
-        return []
-    }
+    const prop = (
+        base: Attributes,
+        key: string | true,
+        attributes: Attributes
+    ) => base
 
-    private reduceIntersection(node: AttributeNode) {
-        const branch = node.eject()
+    const union = ({ ...base }: Attributes, { ...branch }: Attributes) => {
         let k: AttributeKey
+        const baseAttributesToDistribute = {} as Mutable<Attributes>
         for (k in branch) {
-            // addRaw(base, k, branch[k])
-        }
-    }
-
-    private reduceUnion(node: AttributeNode) {
-        const branch = node.eject()
-        let k: AttributeKey
-        let branchHasAUniqueAttribute = false
-        for (k in branch) {
-            if (deepEquals(this.attributes[k], branch[k])) {
+            if (deepEquals(base[k], branch[k])) {
                 // The branch attribute is redundant and can be removed.
                 delete branch[k]
                 continue
             }
-            branchHasAUniqueAttribute = true
-            if (!(k in this.attributes)) {
-                // The branch attribute was not previously part of this.attributes and is safe to push to branches.
+            if (!(k in base)) {
+                // The branch attribute was not previously part of base and is safe to push to branches.
                 continue
             }
-            // The attribute had distinct values for this.attributes and branch.
-            // Distribute the this.attributes value to each existing branch and remove it
-            // from this.attributes.
-            this.attributes.branches ??= []
-            for (const existingBranch of this.attributes.branches) {
-                existingBranch[k] = this.attributes[k] as any
-            }
-            delete this.attributes[k]
+            // The attribute had distinct values for base and branch. Once we're
+            // done looping over branch attributes, distribute it to each
+            // existing branch and remove it from base.
+            baseAttributesToDistribute[k] = base[k] as any
         }
-        if (branchHasAUniqueAttribute) {
-            this.attributes.branches ??= []
-            this.attributes.branches.push(branch)
+        if (!Object.keys(branch).length) {
+            // All keys were redundant, no need to push the new branch
+            return base
         }
+        const reducedBranches =
+            base.branches?.map((preexistingBranch) => ({
+                ...preexistingBranch,
+                ...baseAttributesToDistribute
+            })) ?? []
+        base.branches = [...reducedBranches, branch]
+        return base
+    }
+
+    const intersection = (base: Attributes, branch: Attributes) => {
+        let k: AttributeKey
+        for (k in branch) {
+            // Add
+        }
+        return base
+    }
+
+    const reducers = {
+        type,
+        value,
+        regex,
+        divisor,
+        bound,
+        optional,
+        prop,
+        union,
+        intersection
+    }
+
+    type Reducers = typeof reducers
+
+    type ReducerKey = keyof Reducers
+
+    type ReducerParams = {
+        [key in ReducerKey]: Reducers[key] extends (
+            attributes: Attributes,
+            ...args: infer Params
+        ) => Attributes
+            ? Params
+            : never
     }
 }
 

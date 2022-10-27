@@ -67,6 +67,6 @@ export type entriesOf<o extends object> = entryOf<o>[]
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
-export type mutable<o> = {
+export type Mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
