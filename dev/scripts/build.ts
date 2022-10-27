@@ -37,17 +37,16 @@ export const buildTypes = () => {
     const config = existsSync(tsConfig)
         ? readJson(tsConfig)
         : readJson(join(repoDirs.root, "tsconfig.json"))
-    config.files = inFiles
-    const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
-    writeJson(tempTsConfig, config)
+    const tempTsConfigPath = join(packageRoot, "tsconfig.temp.json")
+    writeJson(tempTsConfigPath, { ...config, include: inFiles })
     try {
-        const cmd = `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot} --emitDeclarationOnly`
+        const cmd = `pnpm tsc --project ${tempTsConfigPath} --outDir ${outRoot} --emitDeclarationOnly`
         shell(cmd, {
             cwd: packageRoot
         })
         renameSync(join(outRoot, "src"), typesOut)
     } finally {
-        rmSync(tempTsConfig)
+        rmSync(tempTsConfigPath)
     }
     stdout.write(`✅\n`)
 }
