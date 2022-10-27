@@ -4,13 +4,6 @@ import type { array, Conform, dictionary } from "../../../internal.js"
 export type Keyword = keyof Keyword.Inferences
 
 export namespace Keyword {
-    const defineKeywordNodes = <keywordsToAttributes>(
-        keywordsToAttributes: Conform<
-            keywordsToAttributes,
-            Record<Keyword, () => Attributes>
-        >
-    ) => keywordsToAttributes
-
     export type Inferences = {
         // TS keywords
         any: any
@@ -43,23 +36,28 @@ export namespace Keyword {
     }
 
     export const matches = (token: string): token is Keyword =>
-        token in nodeGetters
+        token in attributes
 
-    export const getNode = (keyword: Keyword) => nodeGetters[keyword]()
+    export const attributesOf = (keyword: Keyword) => attributes[keyword]
 
-    const nodeGetters = defineKeywordNodes({
+    const defineKeywordAttributes = <keywordsToAttributes>(
+        keywordsToAttributes: Conform<
+            keywordsToAttributes,
+            Record<Keyword, Attributes>
+        >
+    ) => keywordsToAttributes
+
+    const attributes = defineKeywordAttributes({
         // TS keywords
-        any: () => Attributes.initEmpty(),
-        bigint: () => Attributes.init("type", "bigint"),
-        boolean: () => Attributes.init("type", "boolean"),
-        false: () => Attributes.init("value", false),
+        any: Attributes.initEmpty(),
+        bigint: Attributes.init("type", "bigint"),
+        boolean: Attributes.init("type", "boolean"),
+        false: Attributes.init("value", false),
         // TODO: Add never
-        never: () => {
-            throw new Error("Never?")
-        },
-        null: () => Attributes.init("value", null),
-        number: () => Attributes.init("type", "number"),
-        object: () =>
+        never: Attributes.init("value", "never"),
+        null: Attributes.init("value", null),
+        number: Attributes.init("type", "number"),
+        object:
             // Unfortunately, since the TS object keyword can be one of three
             // types within our dynamic type system, creating an accurate node
             // is cumbersome.
@@ -72,24 +70,24 @@ export namespace Keyword {
                 ),
                 Attributes.init("type", "function")
             ),
-        string: () => Attributes.init("type", "string"),
-        symbol: () => Attributes.init("type", "symbol"),
-        true: () => Attributes.init("value", true),
-        undefined: () => Attributes.init("value", undefined),
-        unknown: () => Attributes.initEmpty(),
-        void: () => Attributes.init("value", undefined),
+        string: Attributes.init("type", "string"),
+        symbol: Attributes.init("type", "symbol"),
+        true: Attributes.init("value", true),
+        undefined: Attributes.init("value", undefined),
+        unknown: Attributes.initEmpty(),
+        void: Attributes.init("value", undefined),
         // JS Object types
-        Function: () => Attributes.init("type", "function"),
+        Function: Attributes.init("type", "function"),
         // Supplemental types
-        array: () => Attributes.init("type", "array"),
-        dictionary: () => Attributes.init("type", "dictionary"),
+        array: Attributes.init("type", "array"),
+        dictionary: Attributes.init("type", "dictionary"),
         // Regex
-        email: () => Attributes.init("regex", /^(.+)@(.+)\.(.+)$/),
-        alphanumeric: () => Attributes.init("regex", /^[\dA-Za-z]+$/),
-        alphaonly: () => Attributes.init("regex", /^[A-Za-z]+$/),
-        lowercase: () => Attributes.init("regex", /^[a-z]*$/),
-        uppercase: () => Attributes.init("regex", /^[A-Z]*$/),
+        email: Attributes.init("regex", /^(.+)@(.+)\.(.+)$/),
+        alphanumeric: Attributes.init("regex", /^[\dA-Za-z]+$/),
+        alphaonly: Attributes.init("regex", /^[A-Za-z]+$/),
+        lowercase: Attributes.init("regex", /^[a-z]*$/),
+        uppercase: Attributes.init("regex", /^[A-Z]*$/),
         // Numeric
-        integer: () => Attributes.init("divisor", 1)
+        integer: Attributes.init("divisor", 1)
     })
 }

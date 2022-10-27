@@ -45,7 +45,7 @@ export namespace Unenclosed {
         context: ParserContext
     ): Attributes | undefined =>
         Keyword.matches(token)
-            ? Keyword.getNode(token)
+            ? Keyword.attributesOf(token)
             : token in context.aliases
             ? Attributes.init("value", "alias")
             : undefined
