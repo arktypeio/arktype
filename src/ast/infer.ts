@@ -1,11 +1,11 @@
 import type { Evaluate } from "../internal.js"
-import type { Enclosed } from "../parser/str/operand/enclosed.js"
-import type { Keyword } from "../parser/str/operand/keyword.js"
+import type { Enclosed } from "../parser/string/operand/enclosed.js"
+import type { Keyword } from "../parser/string/operand/keyword.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../parser/str/operand/numeric.js"
-import type { Scanner } from "../parser/str/state/scanner.js"
+} from "../parser/string/operand/numeric.js"
+import type { Scanner } from "../parser/string/state/scanner.js"
 
 export type inferAst<ast, resolutions> = ast extends string
     ? inferTerminal<ast, resolutions>

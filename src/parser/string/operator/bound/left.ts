@@ -13,7 +13,7 @@ export namespace LeftBoundOperator {
             ? ParserState.openLeftBounded(s)
                 ? ParserState.error(
                       buildBoundLiteralMessage(
-                          s.root.get("value"),
+                          s.root.value,
                           s.branches.leftBound[0],
                           s.branches.leftBound[1]
                       )
@@ -40,7 +40,7 @@ export namespace LeftBoundOperator {
         s: ParserState.WithRoot<{ value: number }>,
         token: Scanner.PairableComparator
     ) => {
-        s.branches.leftBound = [s.root.get("value"), token]
+        s.branches.leftBound = [s.root.value, token]
         s.root = ParserState.unset
         return s
     }

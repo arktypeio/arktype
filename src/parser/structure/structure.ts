@@ -1,4 +1,4 @@
-import { AttributeNode } from "../../attributes/attributes.js"
+import { Attributes } from "../../attributes/attributes.js"
 import type { array, dictionary } from "../../internal.js"
 import type { Evaluate } from "../../utils/generics.js"
 import type { ParserContext, StaticParserContext } from "../common.js"
@@ -6,7 +6,7 @@ import { Root } from "../root.js"
 import type { TupleExpression } from "./tupleExpression.js"
 import { isTupleExpression, parseTupleExpression } from "./tupleExpression.js"
 
-export namespace Struct {
+export namespace Structure {
     export type Definition = Kinds[Kind]
 
     export type Kinds = {
@@ -34,10 +34,15 @@ export namespace Struct {
         if (type === "array" && isTupleExpression(definition as array)) {
             return parseTupleExpression(definition as TupleExpression, context)
         }
-        const node = AttributeNode.from("type", type)
+        const attributes = Attributes.init("type", type)
         for (const k in definition) {
-            node.reduce("prop", k, Root.parse(definition[k], context))
+            Attributes.reduce(
+                "prop",
+                attributes,
+                k,
+                Root.parse(definition[k], context)
+            )
         }
-        return node
+        return attributes
     }
 }

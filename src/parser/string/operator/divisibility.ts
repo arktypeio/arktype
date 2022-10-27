@@ -1,3 +1,4 @@
+import { Attributes } from "../../../attributes/attributes.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { ParserState } from "../state/state.js"
@@ -36,7 +37,7 @@ export namespace DivisibilityOperator {
         if (parseResult === 0) {
             return ParserState.error(buildInvalidDivisorMessage(0))
         }
-        s.root.reduce("divisor", parseResult)
+        s.root = Attributes.reduce("divisor", s.root, parseResult)
         return s
     }
 

@@ -1,3 +1,4 @@
+import { Attributes } from "../../../attributes/attributes.js"
 import { ParserState } from "../state/state.js"
 
 export namespace OptionalOperator {
@@ -6,7 +7,7 @@ export namespace OptionalOperator {
             return ParserState.error(nonTerminatingMessage)
         }
         ParserState.finalize(s)
-        s.root.reduce("optional", true)
+        s.root = Attributes.reduce("optional", s.root, true)
         return s
     }
 

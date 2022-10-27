@@ -1,4 +1,4 @@
-import { AttributeNode } from "../../../attributes/attributes.js"
+import { Attributes } from "../../../attributes/attributes.js"
 import type { Scanner } from "../state/scanner.js"
 import type { ParserState } from "../state/state.js"
 
@@ -8,7 +8,7 @@ export namespace ArrayOperator {
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
         }
-        s.root = reduceNode(s.root)
+        s.root = arrayOf(s.root)
         return s
     }
 
@@ -19,8 +19,13 @@ export namespace ArrayOperator {
         ? ParserState.setRoot<s, [s["root"], "[]"], remaining>
         : ParserState.error<incompleteTokenMessage>
 
-    export const reduceNode = (node: AttributeNode) =>
-        AttributeNode.from("type", "array").reduce("prop", true, node)
+    export const arrayOf = (elementAttributes: Attributes) =>
+        Attributes.reduce(
+            "prop",
+            Attributes.init("type", "array"),
+            true,
+            elementAttributes
+        )
 
     export const incompleteTokenMessage = `Missing expected ']'.`
 

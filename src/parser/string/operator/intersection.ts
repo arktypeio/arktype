@@ -1,3 +1,4 @@
+import { Attributes } from "../../../attributes/attributes.js"
 import type { maybePush } from "../../common.js"
 import { ParserState } from "../state/state.js"
 import { LeftBoundOperator } from "./bound/left.js"
@@ -8,7 +9,7 @@ export namespace IntersectionOperator {
             return LeftBoundOperator.unpairedError(s)
         }
         s.branches.intersection = s.branches.intersection
-            ? s.branches.intersection.reduce("intersection", s.root)
+            ? Attributes.reduce("intersection", s.branches.intersection, s.root)
             : s.root
         s.root = ParserState.unset
         return s
@@ -44,7 +45,11 @@ export namespace IntersectionOperator {
         if (!s.branches.intersection) {
             return s
         }
-        s.root = s.branches.intersection.reduce("intersection", s.root)
+        s.root = Attributes.reduce(
+            "intersection",
+            s.branches.intersection,
+            s.root
+        )
         delete s.branches.intersection
         return s
     }

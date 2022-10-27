@@ -5,13 +5,15 @@ import type {
     Mutable
 } from "../internal.js"
 import { dynamicTypeOf } from "../internal.js"
-import type { Scanner } from "../parser/str/state/scanner.js"
+import type { Scanner } from "../parser/string/state/scanner.js"
 
 declare const safe: unique symbol
 
-export type Safe<Type> = Type & {
+type SafeProp = {
     readonly [safe]: never
 }
+
+type Safe<Type> = Type & SafeProp
 
 export type Attributes = Safe<
     Readonly<{
@@ -34,97 +36,83 @@ export type Attributes = Safe<
 export type AttributeKey = keyof Attributes & string
 
 export namespace Attributes {
-    export const reduce = <key extends ReducerKey>(
-        attributes: Attributes,
+    export type With<constraints extends Partial<Attributes>> = constraints &
+        SafeProp
+
+    export const initEmpty = () => ({} as Attributes)
+
+    export const init = <key extends ReducerKey>(
         key: key,
         ...args: ReducerParams[key]
-    ) => reducers[key](attributes, ...args)
+    ) => reduce(key, {} as SafeProp, ...args)
 
-    const type = (base: Attributes, name: DynamicTypeName) => base
-
-    const value = (base: Attributes, value: unknown) => base
-
-    const regex = (base: Attributes, regex: RegExp) => base
-
-    const divisor = (base: Attributes, divisor: number) => base
-
-    const bound = (
+    export const reduce = <key extends ReducerKey>(
+        key: key,
         base: Attributes,
-        comparator: Scanner.Comparator,
-        limit: number
-    ) => base
+        ...args: ReducerParams[key]
+    ) => reducers[key](base, ...args)
 
-    const optional = (base: Attributes, value: boolean) => base
+    const createReducers = (reducers: {
+        [key in ReducerKey]: (
+            base: Attributes,
+            ...args: ReducerParams[key]
+        ) => Attributes
+    }) => reducers
 
-    const prop = (
-        base: Attributes,
-        key: string | true,
-        attributes: Attributes
-    ) => base
-
-    const union = ({ ...base }: Attributes, { ...branch }: Attributes) => {
-        let k: AttributeKey
-        const baseAttributesToDistribute = {} as Mutable<Attributes>
-        for (k in branch) {
-            if (deepEquals(base[k], branch[k])) {
-                // The branch attribute is redundant and can be removed.
-                delete branch[k]
-                continue
+    const reducers = createReducers({
+        type: (base) => base,
+        value: (base) => base,
+        regex: (base) => base,
+        divisor: (base) => base,
+        bound: (base) => base,
+        optional: (base) => base,
+        prop: (base) => base,
+        union: ({ ...base }: Attributes, { ...branch }: Attributes) => {
+            let k: AttributeKey
+            const baseAttributesToDistribute = {} as Mutable<Attributes>
+            for (k in branch) {
+                if (deepEquals(base[k], branch[k])) {
+                    // The branch attribute is redundant and can be removed.
+                    delete branch[k]
+                    continue
+                }
+                if (!(k in base)) {
+                    // The branch attribute was not previously part of base and is safe to push to branches.
+                    continue
+                }
+                // The attribute had distinct values for base and branch. Once we're
+                // done looping over branch attributes, distribute it to each
+                // existing branch and remove it from base.
+                baseAttributesToDistribute[k] = base[k] as any
             }
-            if (!(k in base)) {
-                // The branch attribute was not previously part of base and is safe to push to branches.
-                continue
+            if (!Object.keys(branch).length) {
+                // All keys were redundant, no need to push the new branch
+                return base
             }
-            // The attribute had distinct values for base and branch. Once we're
-            // done looping over branch attributes, distribute it to each
-            // existing branch and remove it from base.
-            baseAttributesToDistribute[k] = base[k] as any
-        }
-        if (!Object.keys(branch).length) {
-            // All keys were redundant, no need to push the new branch
+            const reducedBranches =
+                base.branches?.map((preexistingBranch) => ({
+                    ...preexistingBranch,
+                    ...baseAttributesToDistribute
+                })) ?? []
+            base.branches = [...reducedBranches, branch]
             return base
-        }
-        const reducedBranches =
-            base.branches?.map((preexistingBranch) => ({
-                ...preexistingBranch,
-                ...baseAttributesToDistribute
-            })) ?? []
-        base.branches = [...reducedBranches, branch]
-        return base
-    }
-
-    const intersection = (base: Attributes, branch: Attributes) => {
-        let k: AttributeKey
-        for (k in branch) {
-            // Add
-        }
-        return base
-    }
-
-    const reducers = {
-        type,
-        value,
-        regex,
-        divisor,
-        bound,
-        optional,
-        prop,
-        union,
-        intersection
-    }
-
-    type Reducers = typeof reducers
-
-    type ReducerKey = keyof Reducers
+        },
+        intersection: (base) => base
+    })
 
     type ReducerParams = {
-        [key in ReducerKey]: Reducers[key] extends (
-            attributes: Attributes,
-            ...args: infer Params
-        ) => Attributes
-            ? Params
-            : never
+        type: [name: DynamicTypeName]
+        value: [value: unknown]
+        regex: [regex: RegExp]
+        divisor: [divisor: number]
+        bound: [comparator: Scanner.Comparator, limit: number]
+        optional: [value: boolean]
+        prop: [key: string | true, attributes: Attributes]
+        union: [branch: Attributes]
+        intersection: [branch: Attributes]
     }
+
+    type ReducerKey = keyof ReducerParams
 }
 
 // Calculate the GCD, then divide the product by that to determine the LCM:

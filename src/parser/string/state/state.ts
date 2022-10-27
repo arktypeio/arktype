@@ -1,6 +1,5 @@
 import type {
     AttributeKey,
-    AttributeNode,
     Attributes
 } from "../../../attributes/attributes.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
@@ -15,7 +14,7 @@ import { Scanner } from "./scanner.js"
 // TODO: Check namespace parse output
 export namespace ParserState {
     export type Base = {
-        root: AttributeNode | null
+        root: Attributes | null
         branches: OpenBranches
         groups: OpenBranches[]
         scanner: Scanner
@@ -65,7 +64,7 @@ export namespace ParserState {
     export const unset = null as any
 
     export type Preconditions = {
-        root?: AttributeNode | null
+        root?: Attributes | null
         branches?: Partial<OpenBranches>
         groups?: OpenBranches[]
     }
@@ -77,11 +76,11 @@ export namespace ParserState {
             groups?: OpenBranches[]
         }
     }
-    export type WithRoot<attributes extends Attributes = Attributes> = Omit<
+    export type WithRoot<constraints extends Partial<Attributes> = {}> = Omit<
         Base,
         "root"
     > & {
-        root: AttributeNode<attributes>
+        root: Attributes.With<constraints>
     }
 
     export namespace T {
@@ -103,8 +102,8 @@ export namespace ParserState {
         k: k,
         v: v
     ): s is s & {
-        root: AttributeNode<{ [_ in k]: v }>
-    } => s.root?.get(k) === v
+        root: { [_ in k]: v }
+    } => s.root?.[k] === v
 
     export const rootAttributeHasType = <
         s extends Base,
@@ -115,13 +114,13 @@ export namespace ParserState {
         k: k,
         typeName: typeName
     ): s is s & {
-        root: AttributeNode<{ [_ in k]: DynamicTypes[typeName] }>
-    } => hasDynamicType(s.root?.get(k), typeName)
+        root: { [_ in k]: DynamicTypes[typeName] }
+    } => hasDynamicType(s.root?.[k], typeName)
 
     export type OpenBranches = {
         leftBound?: OpenLeftBound | null
-        union?: AttributeNode | null
-        intersection?: AttributeNode | null
+        union?: Attributes | null
+        intersection?: Attributes | null
     }
 
     export namespace T {

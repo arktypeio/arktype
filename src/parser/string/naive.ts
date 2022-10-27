@@ -1,3 +1,4 @@
+import { Attributes } from "../../attributes/attributes.js"
 import type { ParserContext, StaticParserContext } from "../common.js"
 import type { fullParse } from "./full.js"
 import { Unenclosed } from "./operand/unenclosed.js"
@@ -38,7 +39,7 @@ export const tryNaiveParse = (def: string, context: ParserContext) => {
             context
         )
         if (maybeParsedAttributes) {
-            return maybeParsedAttributes.reduce("optional", true)
+            return Attributes.reduce("optional", maybeParsedAttributes, true)
         }
     }
     return tryNaiveParseArray(def, context)
@@ -51,7 +52,7 @@ const tryNaiveParseArray = (def: string, context: ParserContext) => {
             context
         )
         if (maybeParsedAttributes) {
-            return ArrayOperator.reduceNode(maybeParsedAttributes)
+            return ArrayOperator.arrayOf(maybeParsedAttributes)
         }
     }
     return Unenclosed.maybeParseIdentifier(def, context)

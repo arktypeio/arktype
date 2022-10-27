@@ -6,8 +6,8 @@ import type {
     StaticParserContext
 } from "./common.js"
 import { throwParseError } from "./common.js"
-import { Str } from "./str/str.js"
-import { Struct } from "./struct/struct.js"
+import { Str } from "./string/str.js"
+import { Structure } from "./structure/structure.js"
 
 export namespace Root {
     export const parse = (def: unknown, context: ParserContext) => {
@@ -15,7 +15,7 @@ export namespace Root {
         return defType === "string"
             ? Str.parse(def as any, context)
             : defType === "dictionary" || defType === "array"
-            ? Struct.parse(def as any, defType, context)
+            ? Structure.parse(def as any, defType, context)
             : throwParseError(buildBadDefinitionTypeMessage(defType))
     }
 
@@ -26,7 +26,7 @@ export namespace Root {
         ? Str.parse<def, context>
         : def extends BadDefinitionType
         ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
-        : Struct.Parse<def, context>
+        : Structure.Parse<def, context>
 
     export type BadDefinitionType =
         | undefined

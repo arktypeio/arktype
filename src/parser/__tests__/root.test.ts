@@ -3,7 +3,7 @@ import { describe, test } from "mocha"
 import type { Dictionary } from "../../../dist/types/internal.js"
 import { space, type } from "../../api.js"
 import { Root } from "../root.js"
-import { Unenclosed } from "../str/operand/unenclosed.js"
+import { Unenclosed } from "../string/operand/unenclosed.js"
 
 describe("root definition", () => {
     // TODO: Add lazy tests
