@@ -1,4 +1,5 @@
 import type { dictionary } from "../internal.js"
+import type { BoundsAttribute } from "./bound.js"
 import { reduceBound } from "./bound.js"
 import { reduceDivisibility } from "./divisibility.js"
 import { reduceIntersection } from "./intersection.js"
@@ -25,10 +26,7 @@ type InternalAttributes = Readonly<{
     // TODO: Multiple regex
     regex?: RegExp
     divisor?: number
-    min?: number
-    inclusiveMin?: boolean
-    max?: number
-    inclusiveMax?: boolean
+    bounds?: BoundsAttribute
     optional?: boolean
     branches?: Readonly<Attributes[]>
     props?: Readonly<dictionary<Attributes>>

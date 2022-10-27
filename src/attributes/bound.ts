@@ -1,86 +1,84 @@
-/* eslint-disable max-lines-per-function */
-import type { Mutable } from "../internal.js"
-import { throwInternalError } from "../internal.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
 import type { Attributes } from "./attributes.js"
 import { reduceType } from "./type.js"
+
+export type BoundsAttribute = Readonly<{
+    lower?: Bound
+    upper?: Bound
+}>
+
+type Bound = Readonly<{
+    limit: number
+    inclusive: boolean
+}>
 
 export const reduceBound: Attributes.Reducer<
     [comparator: Scanner.Comparator, limit: number]
 > = (base, comparator, limit) => {
     if (comparator === "==") {
-        if (
-            (base.max &&
-                (limit > base.max ||
-                    (limit === base.max && !base.inclusiveMax))) ||
-            (base.min &&
-                (limit < base.min ||
-                    (limit === base.min && !base.inclusiveMin)))
-        ) {
-            return reduceType(base, "never")
-        }
-        return {
-            ...base,
-            min: limit,
-            inclusiveMin: true,
-            max: limit,
-            inclusiveMax: true
-        }
-    }
-    const boundAttributeUpdates: Pick<
-        Mutable<Attributes>,
-        "inclusiveMax" | "inclusiveMin" | "max" | "min"
-    > = {}
-    if (comparator === "<" || comparator === "<=") {
-        if (base.max === undefined || limit < base.max) {
-            if (base.min && limit < base.min) {
-                return reduceType(base, "never")
-            }
-            boundAttributeUpdates.max = limit
-            if (comparator === "<=") {
-                boundAttributeUpdates.inclusiveMax = true
-            }
-        } else if (
-            limit === base.max &&
-            comparator === "<" &&
-            base.inclusiveMax
-        ) {
-            boundAttributeUpdates.inclusiveMax = false
-        } else {
-            return base
-        }
-        if (limit === base.min && !base.inclusiveMin) {
-            return reduceType(base, "never")
-        }
-        return {
-            ...base,
-            ...boundAttributeUpdates
-        }
+        const equalityBound: Bound = { limit, inclusive: true }
+        return reduceLimit(
+            reduceLimit(base, "lower", equalityBound),
+            "upper",
+            equalityBound
+        )
     } else if (comparator === ">" || comparator === ">=") {
-        if (base.min === undefined || limit > base.min) {
-            if (base.max && limit > base.max) {
-                return reduceType(base, "never")
-            }
-            boundAttributeUpdates.min = limit
-            if (comparator === ">=") {
-                boundAttributeUpdates.inclusiveMin = true
-            }
-        } else if (
-            limit === base.min &&
-            comparator === ">" &&
-            base.inclusiveMin
-        ) {
-            boundAttributeUpdates.inclusiveMin = false
-        } else {
-            return base
-        }
-        if (limit === base.max && !base.inclusiveMax) {
-            return reduceType(base, "never")
-        }
-        return {
-            ...base,
-            ...boundAttributeUpdates
+        return reduceLimit(base, "lower", {
+            limit,
+            inclusive: comparator === ">="
+        })
+    } else {
+        return reduceLimit(base, "upper", {
+            limit,
+            inclusive: comparator === "<="
+        })
+    }
+}
+
+const invertedKinds = {
+    lower: "upper",
+    upper: "lower"
+} as const
+
+type BoundKind = keyof BoundsAttribute
+
+const isStricter = (
+    kind: BoundKind,
+    candidateBound: Bound,
+    baseBound: Bound
+) => {
+    if (
+        candidateBound.limit === baseBound.limit &&
+        candidateBound.inclusive === false &&
+        baseBound.inclusive === true
+    ) {
+        return true
+    } else if (kind === "lower") {
+        return candidateBound.limit > baseBound.limit
+    } else {
+        return candidateBound.limit < baseBound.limit
+    }
+}
+
+export const reduceLimit = (
+    base: Attributes,
+    kind: BoundKind,
+    bound: Bound
+): Attributes => {
+    const invertedKind = invertedKinds[kind]
+    const baseCompeting = base.bounds?.[kind]
+    const baseOpposing = base.bounds?.[invertedKind]
+    if (baseCompeting && !isStricter(kind, bound, baseCompeting)) {
+        return base
+    }
+    if (baseOpposing && isStricter(invertedKind, bound, baseOpposing)) {
+        return reduceType(base, "never")
+    }
+    return {
+        ...base,
+        bounds: {
+            [kind]: bound,
+            [invertedKind]: baseOpposing
         }
     }
-    return throwInternalError(`Unexpected comparator '${comparator}'.`)
 }
