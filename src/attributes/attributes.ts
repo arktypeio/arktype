@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */ // TODO: Remove
 import type { dictionary, DynamicTypeName } from "../internal.js"
 import { isKeyOf } from "../internal.js"
+import type { Enclosed } from "../parser/string/operand/enclosed.js"
 
 export type Attributes<ejected extends boolean = false> = Partial<
     Attributes.Types<ejected>
@@ -17,17 +18,25 @@ export namespace Attributes {
     type AtomicTypes = {
         typed: DynamicTypeName
         equals: unknown
-        matches: string
+        matches: Enclosed.RegexLiteral
         divisible: number
         bounded: Bounds
-        optional: true
+        optional: boolean
     }
 
-    type ComposedTypes<ejected extends boolean> = {
+    type ComposedTypes<ejected extends boolean = false> = {
         baseProp: MaybeEjected<ejected>
         props: dictionary<MaybeEjected<ejected>>
-        // TODO: Fix
-        branches: MaybeEjected<ejected>[]
+        branches: Branches<ejected>
+        irreducible: Irreducible<ejected>
+    }
+
+    export type Branches<ejected extends boolean = false> =
+        MaybeEjected<ejected>[]
+
+    export type Irreducible<ejected extends boolean = false> = {
+        branches?: Branches<ejected>[]
+        matches?: Enclosed.RegexLiteral[]
     }
 
     type MaybeEjected<ejected extends boolean> = ejected extends true
@@ -57,11 +66,11 @@ class PrivateNode implements AttributeIntersectionHandler {
         return this.attributes
     }
 
-    add<key extends Attributes.Key>(key: key) {
+    add<key extends Attributes.AtomicKey>(key: key) {
         return this.attributes[key]
     }
 
-    intersect(attributes: Attributes) {
+    intersect(node: Attributes.Node) {
         let k: keyof Attributes
         for (k in attributes) {
             ;(this[`${k}Intersection`] as any)(attributes[k])
@@ -169,36 +178,65 @@ class PrivateNode implements AttributeIntersectionHandler {
         return true
     }
 
-    matchesIntersection(expression: string) {
+    matchesIntersection(literalDefinition: Enclosed.RegexLiteral) {
+        if (this.attributes.matches !== undefined) {
+            this.attributes.irreducible ??= {}
+            this.attributes.irreducible.matches ??= []
+            this.attributes.irreducible.matches.push(literalDefinition)
+        } else {
+            this.attributes.matches = literalDefinition
+            this.typedIntersection("string")
+        }
         return true
     }
 
-    // TODO: Unsure how to handle for intersecting
     optionalIntersection(value: boolean) {
-        return true
+        if (!!this.attributes.optional !== value) {
+            this.attributes.optional = value
+            return true
+        }
+        return false
     }
 
     basePropIntersection(attributes: Attributes.Node) {
         if (this.attributes.baseProp) {
-            this.attributes.baseProp.intersect(attributes.root)
+            this.attributes.baseProp.intersect(attributes)
         } else {
             this.attributes.baseProp = attributes
         }
     }
 
     propsIntersection(props: dictionary<Attributes.Node>) {
-        this.attributes.props ??= {}
+        if (!this.attributes.props) {
+            this.attributes.props = props
+            return
+        }
         for (const k in props) {
             if (this.attributes.props?.[k]) {
-                this.attributes.props[k].intersect(props[k].root)
+                this.attributes.props[k].intersect(props[k])
             } else {
                 this.attributes.props[k] = props[k]
             }
         }
     }
 
-    branchesIntersection(branches: AttributeNode[]) {
-        return true
+    branchesIntersection(branches: Attributes.Branches) {
+        if (this.attributes.branches) {
+            this.attributes.irreducible ??= {}
+            this.attributes.irreducible.branches ??= []
+            this.attributes.irreducible.branches.push(branches)
+        } else {
+            this.attributes.branches = branches
+        }
+    }
+
+    irreducibleIntersection(irreducible: Attributes.Irreducible) {
+        let k: keyof Attributes.Irreducible
+        this.attributes.irreducible ??= {}
+        for (k in irreducible) {
+            this.attributes.irreducible[k] ??= []
+            this.attributes.irreducible[k]!.push(irreducible[k] as any)
+        }
     }
 
     addBranch(branch: Attributes.Node) {
