@@ -1,32 +1,36 @@
 import type { dictionary, DynamicTypeName, xor } from "../internal.js"
 import type { Attributes } from "./attributes.js"
 import type { Bounded } from "./bounded.js"
-import type { Typed } from "./type.js"
+import type { Typed } from "./typed.js"
 
 export type InternalAttributeState = Readonly<Partial<AttributeTypes>>
 
 export type AttributeTypes = {
     parent: Attributes
-    children: Readonly<dictionary<Attributes>>
+    props: Readonly<dictionary<Attributes>>
+    children: Attributes
     typed: Typed.Attribute
     equals: unknown
-    // TODO: Multiple regex
-    matches: RegExp
+    matches: string[]
     divisible: number
     bounded: Bounded.Attribute
     optional: boolean
     branched: Readonly<Attributes[]>
 }
 
-export type AllowedImplications<key extends Attributes.KeyOf> =
-    key extends "equals"
-        ? never
-        : key extends "typed"
-        ? { readonly equals: unknown }
-        : xor<{ readonly typed: DynamicTypeName }, { readonly equals: unknown }>
+export type AttributeKey = keyof AttributeTypes
 
-export type ReduceResult<key extends Attributes.KeyOf> =
-    | [reducesTo?: AttributeTypes[key], implies?: AllowedImplications<key>]
+type AllowedImplications<key extends AttributeKey> = key extends "equals"
+    ? never
+    : key extends "typed"
+    ? { readonly equals: unknown }
+    : xor<{ readonly typed: DynamicTypeName }, { readonly equals: unknown }>
+
+type AttributeReduceResult<key extends AttributeKey> =
+    | [
+          updatedValue?: AttributeTypes[key],
+          implications?: AllowedImplications<key>
+      ]
     | "never"
 
 export type RootReducer = (
@@ -34,7 +38,10 @@ export type RootReducer = (
     attributes: Attributes
 ) => Attributes | "never"
 
-export type KeyReducer<key extends Attributes.KeyOf> = (
+export type AttributeReducer<
+    key extends AttributeKey,
+    params extends unknown[] = [value: AttributeTypes[key]]
+> = (
     base: AttributeTypes[key] | undefined,
-    value: AttributeTypes[key]
-) => ReduceResult<key>
+    ...args: params
+) => AttributeReduceResult<key>

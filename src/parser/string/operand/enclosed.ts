@@ -24,8 +24,8 @@ export namespace Enclosed {
         })
         s.root =
             enclosing === "/"
-                ? Attributes.init("regex", new RegExp(token.slice(1, -1)))
-                : Attributes.init("value", token.slice(1, -1))
+                ? Attributes.init("matches", token)
+                : Attributes.init("equals", token.slice(1, -1))
         return s
     }
 

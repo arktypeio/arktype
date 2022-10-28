@@ -1,15 +1,11 @@
-import type { AllowedImplications, KeyReducer } from "./shared.js"
+import type { AttributeReducer } from "./shared.js"
 
 export namespace Divisible {
-    const implications: AllowedImplications<"divisible"> = { typed: "number" }
-
-    export const reduce: KeyReducer<"divisible"> = (base, divisor) => {
+    export const reduce: AttributeReducer<"divisible"> = (base, divisor) => {
         if (base === undefined) {
-            return [divisor, implications]
+            return [divisor, { typed: "number" }]
         }
-        return base === divisor
-            ? []
-            : [leastCommonMultiple(base, divisor), implications]
+        return base === divisor ? [] : [leastCommonMultiple(base, divisor)]
     }
 
     // Calculate the GCD, then divide the product by that to determine the LCM:

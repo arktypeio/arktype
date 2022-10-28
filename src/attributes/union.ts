@@ -3,7 +3,7 @@ import type { Mutable } from "../internal.js"
 import { deepEquals } from "../utils/deepEquals.js"
 import type { Attributes } from "./attributes.js"
 import { Intersection } from "./intersection.js"
-import type { RootReducer } from "./shared.js"
+import type { AttributeKey, RootReducer } from "./shared.js"
 
 export namespace Union {
     export const mapIntersectionToBranches = (
@@ -24,7 +24,7 @@ export namespace Union {
         { ...base }: Attributes,
         { ...branch }: Attributes
     ) => {
-        let k: Attributes.KeyOf
+        let k: AttributeKey
         const baseAttributesToDistribute = {} as Mutable<Attributes>
         for (k in branch) {
             if (deepEquals(base[k], branch[k])) {

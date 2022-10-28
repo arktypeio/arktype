@@ -1,4 +1,4 @@
-import type { KeyReducer } from "./shared.js"
+import type { AttributeReducer } from "./shared.js"
 
 export namespace Bounded {
     export type Attribute = Readonly<{
@@ -11,7 +11,7 @@ export namespace Bounded {
         inclusive: boolean
     }>
 
-    export const reduce: KeyReducer<"bounded"> = (base, candidate) => {
+    export const reduce: AttributeReducer<"bounded"> = (base, candidate) => {
         if (!base) {
             return [candidate]
         }

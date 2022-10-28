@@ -1,7 +1,7 @@
 import type { dictionary, Mutable } from "../internal.js"
 import { throwInternalError } from "../internal.js"
 import type { Attributes } from "./attributes.js"
-import type { KeyReducer } from "./shared.js"
+import type { AttributeReducer } from "./shared.js"
 
 // export const reduceProp: Reducer<
 //     "children"
