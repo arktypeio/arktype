@@ -1,103 +1,76 @@
-/* eslint-disable max-lines */
+/* eslint-disable max-lines */ // TODO: Remove
 import type { dictionary, DynamicTypeName } from "../internal.js"
 import { isKeyOf } from "../internal.js"
 
-type AtomicAttributeTypes = {
-    typed: DynamicTypeName
-    equals: unknown
-    matches: string
-    divisible: number
-    bounded: Bounds
-    optional: true
-}
-
-type AtomicAttributes = Partial<AtomicAttributeTypes>
-
-type AtomicKey = keyof AtomicAttributes
-
-type MaybeEjectedAttributes<ejected extends boolean> = ejected extends true
-    ? EjectedAttributes
-    : Attributes
-
-type ComposedAttributeTypes<ejected extends boolean> = {
-    baseProp: MaybeEjectedAttributes<ejected>
-    props: dictionary<MaybeEjectedAttributes<ejected>>
-    // Fix
-    branches: MaybeEjectedAttributes<ejected>[]
-}
-
-type ComposedAttributes<ejected extends boolean> = Partial<
-    ComposedAttributeTypes<ejected>
+export type Attributes<ejected extends boolean = false> = Partial<
+    Attributes.Types<ejected>
 >
 
-type AttributeTypes<ejected extends boolean> = AtomicAttributeTypes &
-    ComposedAttributeTypes<ejected>
-
-export type UnejectedAttributes = AtomicAttributes & ComposedAttributes<false>
-
-export type EjectedAttributes = AtomicAttributes & ComposedAttributes<true>
-
-export type AttributeKey = keyof UnejectedAttributes
-
-export type Contradiction<key extends AtomicKey = AtomicKey> = {
-    key: key
-    base: AtomicAttributeTypes[key]
-    intersection: AtomicAttributeTypes[key]
-}
-
-type IntersectionMethodName<key extends AttributeKey = AttributeKey> =
-    `${key}Intersection`
-
-type IntersectionSignatureFromMethodName<
-    methodName extends IntersectionMethodName<AttributeKey>
-> = methodName extends IntersectionMethodName<infer originalKey>
-    ? (value: AttributeTypes<false>[originalKey]) => any
-    : never
-
-type AttributeIntersectionHandler = {
-    [methodName in IntersectionMethodName<AttributeKey>]: IntersectionSignatureFromMethodName<methodName>
-}
-
-export type Attributes = Omit<PrivateAttributes, IntersectionMethodName>
-
 export namespace Attributes {
+    export type Key = keyof Attributes
+
+    export type AtomicKey = keyof AtomicTypes
+
+    export type Types<ejected extends boolean = false> = AtomicTypes &
+        ComposedTypes<ejected>
+
+    type AtomicTypes = {
+        typed: DynamicTypeName
+        equals: unknown
+        matches: string
+        divisible: number
+        bounded: Bounds
+        optional: true
+    }
+
+    type ComposedTypes<ejected extends boolean> = {
+        baseProp: MaybeEjected<ejected>
+        props: dictionary<MaybeEjected<ejected>>
+        // TODO: Fix
+        branches: MaybeEjected<ejected>[]
+    }
+
+    type MaybeEjected<ejected extends boolean> = ejected extends true
+        ? Attributes<true>
+        : Node
+
+    export type Node = Omit<PrivateNode, IntersectionMethodName>
+
     export const from = (
-        ...args: ConstructorParameters<typeof PrivateAttributes>
-    ): Attributes => new PrivateAttributes(...args)
+        ...args: ConstructorParameters<typeof PrivateNode>
+    ): Node => new PrivateNode(...args)
 }
 
-class PrivateAttributes implements AttributeIntersectionHandler {
+class PrivateNode implements AttributeIntersectionHandler {
     private contradictions?: Contradiction[]
 
     constructor(
-        private attributes: UnejectedAttributes,
-        private parent?: Attributes
+        private attributes: Attributes,
+        private parent?: Attributes.Node
     ) {}
 
-    get<key extends AttributeKey>(
-        key: key
-    ): Readonly<UnejectedAttributes[key]> {
+    get<key extends Attributes.Key>(key: key): Readonly<Attributes[key]> {
         return this.attributes[key]
     }
 
-    get root(): Readonly<UnejectedAttributes> {
+    get root(): Readonly<Attributes> {
         return this.attributes
     }
 
-    add<key extends AttributeKey>(key: key) {
+    add<key extends Attributes.Key>(key: key) {
         return this.attributes[key]
     }
 
-    intersect(attributes: UnejectedAttributes) {
-        let k: keyof UnejectedAttributes
+    intersect(attributes: Attributes) {
+        let k: keyof Attributes
         for (k in attributes) {
             ;(this[`${k}Intersection`] as any)(attributes[k])
         }
         // TODO: Update branches
     }
 
-    eject(): EjectedAttributes {
-        const ejected: ComposedAttributes<true> = {}
+    eject(): Attributes<true> {
+        const ejected = this.attributes as Attributes<true>
         if (this.attributes.baseProp) {
             ejected.baseProp = this.attributes.baseProp.eject()
         }
@@ -113,22 +86,24 @@ class PrivateAttributes implements AttributeIntersectionHandler {
             )
         }
         // TODO: Ensure not used after ejection if risk?
-        return Object.assign(this.attributes, ejected)
+        return ejected
     }
 
-    addContradiction<key extends AtomicKey>(
-        key: key,
-        base: AtomicAttributes[key],
-        intersection: AtomicAttributes[key]
+    addContradiction<key extends Attributes.AtomicKey>(
+        contradiction: Contradiction<key>
     ) {
         this.contradictions ??= []
-        this.contradictions.push({ key, base, intersection })
+        this.contradictions.push(contradiction)
     }
 
     equalsIntersection(value: unknown) {
         if ("equals" in this.attributes) {
             if (this.attributes.equals !== value) {
-                this.addContradiction("equals", this.attributes.equals, value)
+                this.addContradiction({
+                    key: "equals",
+                    base: this.attributes.equals,
+                    intersected: value
+                })
             }
         } else {
             this.attributes.equals = value
@@ -138,7 +113,11 @@ class PrivateAttributes implements AttributeIntersectionHandler {
     typedIntersection(name: DynamicTypeName) {
         if (this.attributes.typed !== undefined) {
             if (this.attributes.typed !== name) {
-                this.addContradiction("typed", this.attributes.typed, name)
+                this.addContradiction({
+                    key: "typed",
+                    base: this.attributes.typed,
+                    intersected: name
+                })
             }
         } else {
             this.attributes.typed = name
@@ -163,11 +142,11 @@ class PrivateAttributes implements AttributeIntersectionHandler {
         this.attributes.bounded ??= {}
         const result = intersectBound(kind, this.attributes.bounded, bound)
         if (result === "never") {
-            this.addContradiction(
-                "bounded",
-                { [kind]: this.attributes.bounded },
-                { [kind]: bound }
-            )
+            this.addContradiction({
+                key: "bounded",
+                base: { [kind]: this.attributes.bounded },
+                intersected: { [kind]: bound }
+            })
             return false
         }
         return result
@@ -199,7 +178,7 @@ class PrivateAttributes implements AttributeIntersectionHandler {
         return true
     }
 
-    basePropIntersection(attributes: Attributes) {
+    basePropIntersection(attributes: Attributes.Node) {
         if (this.attributes.baseProp) {
             this.attributes.baseProp.intersect(attributes.root)
         } else {
@@ -207,7 +186,7 @@ class PrivateAttributes implements AttributeIntersectionHandler {
         }
     }
 
-    propsIntersection(props: dictionary<Attributes>) {
+    propsIntersection(props: dictionary<Attributes.Node>) {
         this.attributes.props ??= {}
         for (const k in props) {
             if (this.attributes.props?.[k]) {
@@ -218,12 +197,12 @@ class PrivateAttributes implements AttributeIntersectionHandler {
         }
     }
 
-    branchesIntersection(branches: Attributes[]) {
+    branchesIntersection(branches: AttributeNode[]) {
         return true
     }
 
-    addBranch(branch: Attributes) {
-        // let k: AttributeKey
+    addBranch(branch: Attributes.Node) {
+        // let k: Attributes.Key
         // const baseAttributesToDistribute: EjectedAttributes = {}
         // for (k in branch) {
         //     if (!isKeyOf(k, this.atomic)) {
@@ -250,6 +229,27 @@ class PrivateAttributes implements AttributeIntersectionHandler {
         // }
         // this.attributes.branches.push(branch)
     }
+}
+
+export type Contradiction<
+    key extends Attributes.AtomicKey = Attributes.AtomicKey
+> = {
+    key: key
+    base: Attributes.Types[key]
+    intersected: Attributes.Types[key]
+}
+
+type IntersectionMethodName<key extends Attributes.Key = Attributes.Key> =
+    `${key}Intersection`
+
+type IntersectionSignatureFromMethodName<
+    methodName extends IntersectionMethodName<Attributes.Key>
+> = methodName extends IntersectionMethodName<infer originalKey>
+    ? (value: Attributes.Types[originalKey]) => any
+    : never
+
+type AttributeIntersectionHandler = {
+    [methodName in IntersectionMethodName<Attributes.Key>]: IntersectionSignatureFromMethodName<methodName>
 }
 
 const literalTypes = {
