@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import type { dictionary, DynamicTypeName } from "../internal.js"
+import type { dictionary, DynamicTypeName, Mutable } from "../internal.js"
 import { isKeyOf } from "../internal.js"
 import { deepEquals } from "../utils/deepEquals.js"
 
@@ -119,42 +119,47 @@ export class Attributes {
     }
 
     addBounds(bounds: Bounds) {
+        this.intersect({ bounded: bounds })
+    }
+
+    private intersectBounds(bounds: Bounds) {
         if (this.attributes.bounded !== undefined) {
-            let baseWithPossibleUpdates = this.attributes.bounded
-            let updateLower = false
-            let updateUpper = false
+            const baseWithPossibleUpdates = {
+                ...this.attributes.bounded
+            }
+            let updated = false
             if (bounds.lower) {
-                updateLower = this.shouldUpdateBound(
+                updated = this.intersectBound(
                     "lower",
                     baseWithPossibleUpdates,
                     bounds.lower
                 )
-                if (updateLower) {
-                    baseWithPossibleUpdates.lower = bounds.lower
-                }
             }
             if (bounds.upper) {
-                updateUpper = this.shouldUpdateBound(
+                updated ||= this.intersectBound(
                     "upper",
                     baseWithPossibleUpdates,
                     bounds.upper
                 )
-                if (updateUpper) {
-                    baseWithPossibleUpdates.upper = bounds.upper
-                }
             }
-            if (updateLower || updateUpper) {
-                this.intersect({ bounded: baseWithPossibleUpdates })
+            if (updated) {
+                return { bounded: baseWithPossibleUpdates }
             }
         } else {
             // TODO: Add type
-            this.intersect({ bounded: bounds })
+            return { bounded: bounds }
         }
     }
 
-    private shouldUpdateBound(kind: BoundKind, base: Bounds, bound: Bound) {
+    private intersectBound(
+        kind: BoundKind,
+        base: Mutable<Bounds>,
+        bound: Bound
+    ) {
         const shouldUpdate = shouldUpdateBound(kind, base, bound)
-        if (shouldUpdate === "never") {
+        if (shouldUpdate === true) {
+            base[kind] = bound
+        } else if (shouldUpdate === "never") {
             this.addContradiction(
                 "bounded",
                 { [kind]: this.attributes.bounded },
@@ -262,15 +267,15 @@ const literalTypes = {
     null: null
 } as const
 
-type Bounds = {
+type Bounds = Readonly<{
     lower?: Bound
     upper?: Bound
-}
+}>
 
-type Bound = {
+type Bound = Readonly<{
     limit: number
     inclusive: boolean
-}
+}>
 
 type BoundKind = keyof Bounds
 
