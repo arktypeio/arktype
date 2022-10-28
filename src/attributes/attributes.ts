@@ -29,6 +29,7 @@ export namespace Attributes {
 
     export const initEmpty = () => ({} as Attributes)
 
+    // TODO: Switch to just having these functions exposed directly.
     export const reduce = <key extends ReducibleKey>(
         base: Attributes,
         key: key,
