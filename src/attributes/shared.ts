@@ -1,6 +1,6 @@
 import type { dictionary, DynamicTypeName, xor } from "../internal.js"
 import type { Attributes } from "./attributes.js"
-import type { Bounded } from "./bounded.js"
+import type { Bounded } from "./bounds.js"
 import type { Typed } from "./typed.js"
 
 export type InternalAttributeState = Readonly<Partial<AttributeTypes>>
@@ -13,7 +13,7 @@ export type AttributeTypes = {
     equals: unknown
     matches: string[]
     divisible: number
-    bounded: Bounded.Attribute
+    bounded: Bounded.Bounds
     optional: boolean
     branched: Readonly<Attributes[]>
 }

@@ -1,5 +1,5 @@
-import { isKeyOf } from "../internal.js"
-import { Bounded } from "./bounded.js"
+import { dictionary, isKeyOf } from "../internal.js"
+import { Bounded } from "./bounds.js"
 import { Divisible } from "./divisible.js"
 import { Equals } from "./equals.js"
 import { Intersection } from "./intersection.js"
@@ -63,7 +63,7 @@ export namespace Attributes {
     type RootReducerKey = keyof RootReducers
 
     const attributeReducers = {
-        bounded: Bounded.reduce,
+        bounded: Bounded.assignIntersection,
         divisible: Divisible.reduce,
         equals: Equals.reduce,
         matches: Matches.reduce,
