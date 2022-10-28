@@ -1,4 +1,6 @@
+/* eslint-disable max-lines */
 import type { dictionary, DynamicTypeName } from "../internal.js"
+import { isKeyOf } from "../internal.js"
 import { deepEquals } from "../utils/deepEquals.js"
 
 type AtomicAttributeTypes = {
@@ -18,14 +20,25 @@ type MaybeEjectedAttributes<ejected extends boolean> = ejected extends true
     ? EjectedAttributes
     : Attributes
 
-type ComposedAttributes<ejected extends boolean> = Partial<{
+type ComposedAttributeTypes<ejected extends boolean> = {
     baseProp: MaybeEjectedAttributes<ejected>
     props: dictionary<MaybeEjectedAttributes<ejected>>
     // Fix
     branches: MaybeEjectedAttributes<ejected>[]
-}>
+}
+
+type ComposedAttributes<ejected extends boolean> = Partial<
+    ComposedAttributeTypes<ejected>
+>
+
+type AttributeTypes<ejected extends boolean> = AtomicAttributeTypes &
+    ComposedAttributeTypes<ejected>
+
+export type UnejectedAttributes = AtomicAttributes & ComposedAttributes<false>
 
 export type EjectedAttributes = AtomicAttributes & ComposedAttributes<true>
+
+export type AttributeKey = keyof EjectedAttributes
 
 export type Contradiction<key extends AtomicKey = AtomicKey> = {
     key: key
@@ -35,30 +48,29 @@ export type Contradiction<key extends AtomicKey = AtomicKey> = {
 
 export class Attributes {
     private contradictions?: Contradiction[]
-    private composed: ComposedAttributes<false> = {}
 
     constructor(
-        private atomic: AtomicAttributes = {},
+        public attributes: Readonly<UnejectedAttributes> = {},
         private parent?: Attributes
     ) {}
 
     eject(): EjectedAttributes {
         const ejectedComposed: ComposedAttributes<true> = {}
-        if (this.composed.baseProp) {
-            ejectedComposed.baseProp = this.composed.baseProp.eject()
+        if (this.attributes.baseProp) {
+            ejectedComposed.baseProp = this.attributes.baseProp.eject()
         }
-        if (this.composed.props) {
+        if (this.attributes.props) {
             ejectedComposed.props = {}
-            for (const k in this.composed.props) {
-                ejectedComposed.props[k] = this.composed.props[k].eject()
+            for (const k in this.attributes.props) {
+                ejectedComposed.props[k] = this.attributes.props[k].eject()
             }
         }
-        if (this.composed.branches) {
-            ejectedComposed.branches = this.composed.branches.map((branch) =>
+        if (this.attributes.branches) {
+            ejectedComposed.branches = this.attributes.branches.map((branch) =>
                 branch.eject()
             )
         }
-        return Object.assign(this.atomic, ejectedComposed)
+        return Object.assign(this.attributes, ejectedComposed)
     }
 
     addContradiction<key extends AtomicKey>(
@@ -70,112 +82,185 @@ export class Attributes {
         this.contradictions.push({ key, base, intersection })
     }
 
+    get equals() {
+        return this.attributes.equals
+    }
+
     addEquality(value: unknown) {
-        if ("equals" in this.atomic) {
-            if (this.atomic.equals !== value) {
-                this.addContradiction("equals", this.atomic.equals, value)
+        if ("equals" in this.attributes) {
+            if (this.attributes.equals !== value) {
+                this.addContradiction("equals", this.attributes.equals, value)
             }
         } else {
-            this.atomic.equals = value
+            this.intersect({ equals: value })
         }
+    }
+
+    get typed() {
+        return this.attributes.typed
     }
 
     addType(name: DynamicTypeName) {
-        if (this.atomic.typed !== undefined) {
-            if (this.atomic.typed !== name) {
-                this.addContradiction("typed", this.atomic.typed, name)
+        if (this.attributes.typed !== undefined) {
+            if (this.attributes.typed !== name) {
+                this.addContradiction("typed", this.attributes.typed, name)
             }
         } else {
-            this.atomic.typed = name
+            this.intersect(
+                isKeyOf(name, literalTypes)
+                    ? { typed: name, equals: literalTypes[name] }
+                    : { typed: name }
+            )
         }
     }
 
-    addBound(kind: BoundKind, bound: Bound) {
-        if (this.atomic.bounded !== undefined) {
-            if (!assignIntersectionToBounds(kind, this.atomic.bounded, bound)) {
-                this.addContradiction(
-                    "bounded",
-                    { [kind]: this.atomic.bounded },
-                    { [kind]: bound }
+    get bounded() {
+        return this.attributes.bounded
+    }
+
+    addBounds(bounds: Bounds) {
+        if (this.attributes.bounded !== undefined) {
+            let baseWithPossibleUpdates = this.attributes.bounded
+            let updateLower = false
+            let updateUpper = false
+            if (bounds.lower) {
+                updateLower = this.shouldUpdateBound(
+                    "lower",
+                    baseWithPossibleUpdates,
+                    bounds.lower
                 )
+                if (updateLower) {
+                    baseWithPossibleUpdates.lower = bounds.lower
+                }
+            }
+            if (bounds.upper) {
+                updateUpper = this.shouldUpdateBound(
+                    "upper",
+                    baseWithPossibleUpdates,
+                    bounds.upper
+                )
+                if (updateUpper) {
+                    baseWithPossibleUpdates.upper = bounds.upper
+                }
+            }
+            if (updateLower || updateUpper) {
+                this.intersect({ bounded: baseWithPossibleUpdates })
             }
         } else {
-            this.atomic.bounded = { [kind]: bound }
             // TODO: Add type
+            this.intersect({ bounded: bounds })
         }
+    }
+
+    private shouldUpdateBound(kind: BoundKind, base: Bounds, bound: Bound) {
+        const shouldUpdate = shouldUpdateBound(kind, base, bound)
+        if (shouldUpdate === "never") {
+            this.addContradiction(
+                "bounded",
+                { [kind]: this.attributes.bounded },
+                { [kind]: bound }
+            )
+            return false
+        }
+        return shouldUpdate
+    }
+
+    get divisible() {
+        return this.attributes.divisible
     }
 
     addDivisor(divisor: number) {
-        if (this.atomic.divisible !== undefined) {
-            this.atomic.divisible = leastCommonMultiple(
-                this.atomic.divisible,
+        if (this.attributes.divisible !== undefined) {
+            this.attributes.divisible = leastCommonMultiple(
+                this.attributes.divisible,
                 divisor
             )
         } else {
-            this.atomic.divisible = divisor
+            this.attributes.divisible = divisor
             this.addType("number")
         }
     }
 
+    get optional() {
+        return this.attributes.optional
+    }
+
     addOptional(value: true | undefined) {
-        this.atomic.optional &&= value
+        this.attributes.optional &&= value
+    }
+
+    get baseProp() {
+        return this.attributes.baseProp
     }
 
     addBaseProp(attributes: Attributes) {
-        if (this.composed.baseProp) {
-            this.composed.baseProp.intersect(attributes.eject())
+        if (this.attributes.baseProp) {
+            this.attributes.baseProp.intersect(attributes.eject())
         } else {
-            this.composed.baseProp = attributes
+            this.attributes.baseProp = attributes
         }
     }
 
-    addProp(key: string, attributes: Attributes) {
-        if (this.composed.props?.[key]) {
-            this.composed.props[key].intersect(attributes.eject())
+    get props() {
+        return this.attributes.props
+    }
+
+    addProp(key: string) {
+        if (this.attributes.props?.[key]) {
+            this.attributes.props[key].intersect(attributes.eject())
         } else {
-            this.composed.props ??= {}
-            this.composed.props[key] = attributes
+            this.attributes.props ??= {}
+            this.attributes.props[key] = attributes
         }
     }
 
     addBranch(branch: Attributes) {
-        // let k: KeyOf
-        // const baseAttributesToDistribute = {} as EjectedAttributes
+        // let k: AttributeKey
+        // const baseAttributesToDistribute: EjectedAttributes = {}
         // for (k in branch) {
-        //     if (deepEquals(this.atomic[k], branch[k])) {
-        //         // The branch attribute is redundant and can be removed.
-        //         delete branch[k]
-        //         continue
-        //     }
-        //     if (!(k in this.atomic)) {
+        //     if (!isKeyOf(k, this.atomic)) {
         //         // The branch attribute was not previously part of base and is safe to push to branches.
         //         continue
         //     }
-        //     // The attribute had distinct values for base and branch. Once we're
-        //     // done looping over branch attributes, distribute it to each
-        //     // existing branch and remove it from base.
-        //     baseAttributesToDistribute[k] = this.atomic[k] as any
+        //     if (deepEquals(this.atomic[k], branch[k])) {
+        //         // The branch attribute is redundant and can be removed.
+        //         delete branch[k]
+        //     } else {
+        //         // The attribute had distinct values for base and branch. Once we're
+        //         // done looping over branch attributes, distribute it to each
+        //         // existing branch and remove it from base.
+        //         baseAttributesToDistribute[k] = this.atomic[k] as any
+        //     }
         // }
         // if (!Object.keys(branch).length) {
         //     // All keys were redundant, no need to push the new branch
         //     return
         // }
-        // this.atomic.branches ??= []
-        // // distr
-        // this.atomic.branches.push(branch)
+        // this.attributes.branches ??= []
+        // for (const branch of this.attributes.branches) {
+        //     branch.intersect(baseAttributesToDistribute)
+        // }
+        // this.attributes.branches.push(branch)
     }
 
-    intersect(attributes: EjectedAttributes) {
-        // if (attributes.baseProp) {
-        //     if (this.composed.baseProp) {
-        //         this.composed.baseProp.intersect(attributes.baseProp)
-        //     } else {
-        //         this.composed.baseProp =
-        //     }
-        //     this.composed.baseProp?.this.addType(attributes.typed)
-        // }
+    intersect(attributes: UnejectedAttributes) {
+        attributes.bounded?.lower &&
+            this.addBound("lower", attributes.bounded.lower)
+        attributes.bounded?.upper &&
+            this.addBound("upper", attributes.bounded.upper)
+        attributes.baseProp && this.addBaseProp(attributes.baseProp)
+        if (attributes.props) {
+            for (const k in attributes.props) {
+                this.addProp(k, attributes.props[k])
+            }
+        }
     }
 }
+
+const literalTypes = {
+    undefined,
+    null: null
+} as const
 
 type Bounds = {
     lower?: Bound
@@ -189,21 +274,21 @@ type Bound = {
 
 type BoundKind = keyof Bounds
 
-const assignIntersectionToBounds = (
+const shouldUpdateBound = (
     kind: BoundKind,
     base: Bounds,
     bound: Bound
-): boolean => {
+): boolean | "never" => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = base?.[kind]
     const baseOpposing = base?.[invertedKind]
     if (baseOpposing && isStricter(invertedKind, bound, baseOpposing)) {
-        return false
+        return "never"
     }
     if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
-        base[kind] = bound
+        return true
     }
-    return true
+    return false
 }
 
 const invertedKinds = {
