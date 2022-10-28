@@ -1,82 +1,309 @@
-import { dictionary, isKeyOf } from "../internal.js"
-import { Bounded } from "./bounds.js"
-import { Divisible } from "./divisible.js"
-import { Equals } from "./equals.js"
-import { Intersection } from "./intersection.js"
-import { Matches } from "./matches.js"
-import type { InternalAttributeState } from "./shared.js"
-import { Typed } from "./typed.js"
-import { Union } from "./union.js"
+/* eslint-disable max-lines */
+import type { dictionary, DynamicTypeName } from "../internal.js"
+import { isKeyOf } from "../internal.js"
 
-declare const safe: unique symbol
-
-type SafeProp = {
-    readonly [safe]: never
+type AtomicAttributeTypes = {
+    typed: DynamicTypeName
+    equals: unknown
+    matches: string
+    divisible: number
+    bounded: Bounds
+    optional: true
 }
 
-type Safe<Type> = Type & SafeProp
+type AtomicAttributes = Partial<AtomicAttributeTypes>
 
-export type Attributes = Safe<InternalAttributeState>
+type AtomicKey = keyof AtomicAttributes
 
-export namespace Attributes {
-    export type With<requiredAttributes extends InternalAttributeState> =
-        Safe<requiredAttributes>
+type MaybeEjectedAttributes<ejected extends boolean> = ejected extends true
+    ? EjectedAttributes
+    : Attributes
 
-    export const init = <key extends ReducibleKey>(
-        key: key,
-        input: ReducerInputs[key]
-    ) => reduce({} as Attributes, key, input)
+type ComposedAttributeTypes<ejected extends boolean> = {
+    baseProp: MaybeEjectedAttributes<ejected>
+    props: dictionary<MaybeEjectedAttributes<ejected>>
+    // Fix
+    branches: MaybeEjectedAttributes<ejected>[]
+}
 
-    export const initEmpty = () => ({} as Attributes)
+type ComposedAttributes<ejected extends boolean> = Partial<
+    ComposedAttributeTypes<ejected>
+>
 
-    // TODO: Switch to just having these functions exposed directly.
-    export const reduce = <key extends ReducibleKey>(
-        base: Attributes,
-        key: key,
-        input: ReducerInputs[key]
-    ) => {
-        if (isKeyOf(key, attributeReducers)) {
-            const result =
-                key === "equals"
-                    ? attributeReducers.equals(
-                          base[key],
-                          input,
-                          "equals" in base
-                      )
-                    : attributeReducers[key](base[key] as any, input as any)
-            return base
+type AttributeTypes<ejected extends boolean> = AtomicAttributeTypes &
+    ComposedAttributeTypes<ejected>
+
+export type UnejectedAttributes = AtomicAttributes & ComposedAttributes<false>
+
+export type EjectedAttributes = AtomicAttributes & ComposedAttributes<true>
+
+export type AttributeKey = keyof UnejectedAttributes
+
+export type Contradiction<key extends AtomicKey = AtomicKey> = {
+    key: key
+    base: AtomicAttributeTypes[key]
+    intersection: AtomicAttributeTypes[key]
+}
+
+type IntersectionMethodName<key extends AttributeKey> = `${key}Intersection`
+
+type AttributeIntersectionHandler = {
+    [methodName in IntersectionMethodName<AttributeKey>]: methodName extends IntersectionMethodName<
+        infer originalKey
+    >
+        ? (value: AttributeTypes<false>[originalKey]) => any
+        : never
+}
+
+export class Attributes implements AttributeIntersectionHandler {
+    private contradictions?: Contradiction[]
+
+    constructor(
+        private attributes: UnejectedAttributes = {},
+        private parent?: Attributes
+    ) {}
+
+    eject(): EjectedAttributes {
+        const ejectedComposed: ComposedAttributes<true> = {}
+        if (this.attributes.baseProp) {
+            ejectedComposed.baseProp = this.attributes.baseProp.eject()
         }
-        const result = rootReducers[key as RootReducerKey](
-            base,
-            input as ReducerInputs[RootReducerKey]
-        )
-        return base
+        if (this.attributes.props) {
+            ejectedComposed.props = {}
+            for (const k in this.attributes.props) {
+                ejectedComposed.props[k] = this.attributes.props[k].eject()
+            }
+        }
+        if (this.attributes.branches) {
+            ejectedComposed.branches = this.attributes.branches.map((branch) =>
+                branch.eject()
+            )
+        }
+        return Object.assign(this.attributes, ejectedComposed)
     }
 
-    const rootReducers = {
-        union: Union.reduce,
-        intersection: Intersection.reduce
-    } as const
-
-    type RootReducers = typeof rootReducers
-
-    type RootReducerKey = keyof RootReducers
-
-    const attributeReducers = {
-        bounded: Bounded.assignIntersection,
-        divisible: Divisible.reduce,
-        equals: Equals.reduce,
-        matches: Matches.reduce,
-        typed: Typed.reduce
-    } as const
-
-    type AttributeReducers = typeof attributeReducers
-
-    type Reducers = RootReducers & AttributeReducers
-
-    type ReducibleKey = keyof Reducers
-
-    type ReducerInputs = {
-        [k in keyof Reducers]: Parameters<Reducers[k]>[1]
+    addContradiction<key extends AtomicKey>(
+        key: key,
+        base: AtomicAttributes[key],
+        intersection: AtomicAttributes[key]
+    ) {
+        this.contradictions ??= []
+        this.contradictions.push({ key, base, intersection })
     }
+
+    get root(): Readonly<UnejectedAttributes> {
+        return this.attributes
+    }
+
+    get<key extends AttributeKey>(
+        key: key
+    ): Readonly<UnejectedAttributes[key]> {
+        return this.attributes[key]
+    }
+
+    private equalsIntersection(value: unknown) {
+        if ("equals" in this.attributes) {
+            if (this.attributes.equals !== value) {
+                this.addContradiction("equals", this.attributes.equals, value)
+            }
+        } else {
+            this.attributes.equals = value
+        }
+    }
+
+    private typedIntersection(name: DynamicTypeName) {
+        if (this.attributes.typed !== undefined) {
+            if (this.attributes.typed !== name) {
+                this.addContradiction("typed", this.attributes.typed, name)
+            }
+        } else {
+            this.attributes.typed = name
+            if (isKeyOf(name, literalTypes)) {
+                this.equalsIntersection(literalTypes[name])
+            }
+        }
+    }
+
+    private boundedIntersection(bounds: Bounds) {
+        let updated = false
+        if (bounds.lower) {
+            updated = this.intersectBound("lower", bounds.lower)
+        }
+        if (bounds.upper) {
+            updated ||= this.intersectBound("upper", bounds.upper)
+        }
+        return updated
+    }
+
+    private intersectBound(kind: BoundKind, bound: Bound) {
+        this.attributes.bounded ??= {}
+        const result = intersectBound(kind, this.attributes.bounded, bound)
+        if (result === "never") {
+            this.addContradiction(
+                "bounded",
+                { [kind]: this.attributes.bounded },
+                { [kind]: bound }
+            )
+            return false
+        }
+        return result
+    }
+
+    private divisibleIntersection(divisor: number) {
+        if (this.attributes.divisible !== undefined) {
+            if (this.attributes.divisible === divisor) {
+                // TODO: maybe universally check if value is === first
+                return false
+            }
+            this.attributes.divisible = leastCommonMultiple(
+                this.attributes.divisible,
+                divisor
+            )
+        } else {
+            this.attributes.divisible = divisor
+            this.typedIntersection("number")
+        }
+        return true
+    }
+
+    private matchesIntersection(expression: string) {
+        return true
+    }
+
+    // TODO: Unsure how to handle for intersecting
+    private optionalIntersection(value: boolean) {
+        return true
+    }
+
+    private basePropIntersection(attributes: Attributes) {
+        if (this.attributes.baseProp) {
+            this.attributes.baseProp.add(attributes.root)
+        } else {
+            this.attributes.baseProp = attributes
+        }
+    }
+
+    private propsIntersection(props: dictionary<Attributes>) {
+        this.attributes.props ??= {}
+        for (const k in props) {
+            if (this.attributes.props?.[k]) {
+                this.attributes.props[k].add(props[k].root)
+            } else {
+                this.attributes.props[k] = props[k]
+            }
+        }
+    }
+
+    private branchesIntersection(branches: Attributes[]) {
+        return true
+    }
+
+    addBranch(branch: Attributes) {
+        // let k: AttributeKey
+        // const baseAttributesToDistribute: EjectedAttributes = {}
+        // for (k in branch) {
+        //     if (!isKeyOf(k, this.atomic)) {
+        //         // The branch attribute was not previously part of base and is safe to push to branches.
+        //         continue
+        //     }
+        //     if (deepEquals(this.atomic[k], branch[k])) {
+        //         // The branch attribute is redundant and can be removed.
+        //         delete branch[k]
+        //     } else {
+        //         // The attribute had distinct values for base and branch. Once we're
+        //         // done looping over branch attributes, distribute it to each
+        //         // existing branch and remove it from base.
+        //         baseAttributesToDistribute[k] = this.atomic[k] as any
+        //     }
+        // }
+        // if (!Object.keys(branch).length) {
+        //     // All keys were redundant, no need to push the new branch
+        //     return
+        // }
+        // this.attributes.branches ??= []
+        // for (const branch of this.attributes.branches) {
+        //     branch.intersect(baseAttributesToDistribute)
+        // }
+        // this.attributes.branches.push(branch)
+    }
+
+    add(attributes: UnejectedAttributes) {
+        let k: keyof UnejectedAttributes
+        for (k in attributes) {
+            ;(this[`${k}Intersection`] as any)(attributes[k])
+        }
+        // TODO: Update branches
+    }
+}
+
+const literalTypes = {
+    undefined,
+    null: null
+} as const
+
+type Bounds = {
+    lower?: Bound
+    upper?: Bound
+}
+
+type Bound = {
+    limit: number
+    inclusive: boolean
+}
+
+type BoundKind = keyof Bounds
+
+const intersectBound = (
+    kind: BoundKind,
+    base: Bounds,
+    bound: Bound
+): boolean | "never" => {
+    const invertedKind = invertedKinds[kind]
+    const baseCompeting = base?.[kind]
+    const baseOpposing = base?.[invertedKind]
+    if (baseOpposing && isStricter(invertedKind, bound, baseOpposing)) {
+        return "never"
+    }
+    if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
+        base[kind] = bound
+        return true
+    }
+    return false
+}
+
+const invertedKinds = {
+    lower: "upper",
+    upper: "lower"
+} as const
+
+const isStricter = (
+    kind: BoundKind,
+    candidateBound: Bound,
+    baseBound: Bound
+) => {
+    if (
+        candidateBound.limit === baseBound.limit &&
+        candidateBound.inclusive === false &&
+        baseBound.inclusive === true
+    ) {
+        return true
+    } else if (kind === "lower") {
+        return candidateBound.limit > baseBound.limit
+    } else {
+        return candidateBound.limit < baseBound.limit
+    }
+}
+
+// Calculate the GCD, then divide the product by that to determine the LCM:
+// https://en.wikipedia.org/wiki/Euclidean_algorithm
+const leastCommonMultiple = (x: number, y: number) => {
+    let previous
+    let greatestCommonDivisor = x
+    let current = y
+    while (current !== 0) {
+        previous = current
+        current = greatestCommonDivisor % current
+        greatestCommonDivisor = previous
+    }
+    return Math.abs((x * y) / greatestCommonDivisor)
 }
