@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { InternalAttributes } from "../../../attributes/attributes.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { DynamicState, StaticState } from "../state/state.js"
@@ -24,8 +24,8 @@ export namespace Enclosed {
         })
         s.root =
             enclosing === "/"
-                ? Attributes.init("matches", token)
-                : Attributes.init("equals", token.slice(1, -1))
+                ? InternalAttributes.init("matches", token)
+                : InternalAttributes.init("equals", token.slice(1, -1))
         return s
     }
 

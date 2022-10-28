@@ -1,6 +1,6 @@
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
-import type { Attributes } from "./attributes/attributes.js"
+import type { InternalAttributes } from "./attributes/attributes.js"
 import type { dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
@@ -43,7 +43,7 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class Arktype<Inferred = unknown, Ast = unknown> {
     constructor(
-        public root: Attributes,
+        public root: InternalAttributes,
         public config: ArktypeConfig,
         public space: ArktypeSpace | undefined
     ) {

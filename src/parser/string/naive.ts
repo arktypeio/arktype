@@ -1,4 +1,4 @@
-import { Attributes } from "../../attributes/attributes.js"
+import { InternalAttributes } from "../../attributes/attributes.js"
 import type { ParserContext, StaticParserContext } from "../common.js"
 import type { fullParse } from "./full.js"
 import { Unenclosed } from "./operand/unenclosed.js"
@@ -39,7 +39,11 @@ export const tryNaiveParse = (def: string, context: ParserContext) => {
             context
         )
         if (maybeParsedAttributes) {
-            return Attributes.reduce("optional", maybeParsedAttributes, true)
+            return InternalAttributes.reduce(
+                "optional",
+                maybeParsedAttributes,
+                true
+            )
         }
     }
     return tryNaiveParseArray(def, context)

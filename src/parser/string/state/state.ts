@@ -1,4 +1,4 @@
-import type { Attributes } from "../../../attributes/attributes.js"
+import type { InternalAttributes } from "../../../attributes/attributes.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
 import { hasDynamicType } from "../../../internal.js"
 import type { ParseError } from "../../common.js"
@@ -11,7 +11,7 @@ import { Scanner } from "./scanner.js"
 // TODO: Check namespace parse output
 
 type BaseDynamicState = {
-    root: Attributes | null
+    root: InternalAttributes | null
     branches: DynamicState.OpenBranches
     groups: DynamicState.OpenBranches[]
     scanner: Scanner
@@ -35,7 +35,7 @@ export type StaticState<preconditions extends StaticState.Preconditions = {}> =
 
 export namespace DynamicState {
     export type Preconditions = {
-        root?: Attributes
+        root?: InternalAttributes
         branches?: Partial<OpenBranches>
         groups?: OpenBranches[]
     }
@@ -56,7 +56,7 @@ export namespace StaticState {
 
 export namespace DynamicState {
     export type WithRoot<
-        attributePreconditions extends Partial<Attributes> = {}
+        attributePreconditions extends Partial<InternalAttributes> = {}
     > = DynamicState<{
         root: Attributes.With<attributePreconditions>
     }>
@@ -91,8 +91,8 @@ type SharedOpenLeftBound = [number, Scanner.PairableComparator]
 export namespace DynamicState {
     export type OpenBranches = {
         leftBound?: OpenLeftBound | null
-        union?: Attributes | null
-        intersection?: Attributes | null
+        union?: InternalAttributes | null
+        intersection?: InternalAttributes | null
     }
 
     export type OpenLeftBound = SharedOpenLeftBound
@@ -234,7 +234,7 @@ export namespace DynamicState {
     export const rootAttributeEquals = <
         s extends DynamicState,
         k extends Attributes.KeyOf,
-        v extends Attributes[k]
+        v extends InternalAttributes[k]
     >(
         s: s,
         k: k,
@@ -246,7 +246,7 @@ export namespace DynamicState {
     export const rootAttributeHasType = <
         s extends DynamicState,
         k extends Attributes.KeyOf,
-        typeName extends dynamicTypeOf<Attributes[k]>
+        typeName extends dynamicTypeOf<InternalAttributes[k]>
     >(
         s: s,
         k: k,

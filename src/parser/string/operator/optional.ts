@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { InternalAttributes } from "../../../attributes/attributes.js"
 import type { StaticState } from "../state/state.js"
 import { DynamicState } from "../state/state.js"
 
@@ -8,7 +8,7 @@ export namespace OptionalOperator {
             return DynamicState.error(nonTerminatingMessage)
         }
         DynamicState.finalize(s)
-        s.root = Attributes.reduce("optional", s.root, true)
+        s.root = InternalAttributes.reduce("optional", s.root, true)
         return s
     }
 

@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { InternalAttributes } from "../../../attributes/attributes.js"
 import type { array, Conform, dictionary } from "../../../internal.js"
 
 export type Keyword = keyof Keyword.Inferences
@@ -43,52 +43,52 @@ export namespace Keyword {
     const defineKeywordAttributes = <keywordsToAttributes>(
         keywordsToAttributes: Conform<
             keywordsToAttributes,
-            Record<Keyword, Attributes>
+            Record<Keyword, InternalAttributes>
         >
     ) => keywordsToAttributes
 
     // TODO: Impact of freezing these?
     const attributes = defineKeywordAttributes({
         // TS keywords
-        any: Attributes.init("noop"),
-        bigint: Attributes.init("type", "bigint"),
-        boolean: Attributes.init("type", "boolean"),
-        false: Attributes.init("value", false),
+        any: InternalAttributes.init("noop"),
+        bigint: InternalAttributes.init("type", "bigint"),
+        boolean: InternalAttributes.init("type", "boolean"),
+        false: InternalAttributes.init("value", false),
         // TODO: Add never
-        never: Attributes.init("type", "never"),
-        null: Attributes.init("value", null),
-        number: Attributes.init("type", "number"),
+        never: InternalAttributes.init("type", "never"),
+        null: InternalAttributes.init("value", null),
+        number: InternalAttributes.init("type", "number"),
         object:
             // Unfortunately, since the TS object keyword can be one of three
             // types within our dynamic type system, creating an accurate node
             // is cumbersome.
-            Attributes.reduce(
+            InternalAttributes.reduce(
                 "union",
-                Attributes.reduce(
+                InternalAttributes.reduce(
                     "union",
-                    Attributes.init("type", "dictionary"),
-                    Attributes.init("type", "array")
+                    InternalAttributes.init("type", "dictionary"),
+                    InternalAttributes.init("type", "array")
                 ),
-                Attributes.init("type", "function")
+                InternalAttributes.init("type", "function")
             ),
-        string: Attributes.init("type", "string"),
-        symbol: Attributes.init("type", "symbol"),
-        true: Attributes.init("value", true),
-        undefined: Attributes.init("value", undefined),
-        unknown: Attributes.init("noop"),
-        void: Attributes.init("value", undefined),
+        string: InternalAttributes.init("type", "string"),
+        symbol: InternalAttributes.init("type", "symbol"),
+        true: InternalAttributes.init("value", true),
+        undefined: InternalAttributes.init("value", undefined),
+        unknown: InternalAttributes.init("noop"),
+        void: InternalAttributes.init("value", undefined),
         // JS Object types
-        Function: Attributes.init("type", "function"),
+        Function: InternalAttributes.init("type", "function"),
         // Supplemental types
-        array: Attributes.init("type", "array"),
-        dictionary: Attributes.init("type", "dictionary"),
+        array: InternalAttributes.init("type", "array"),
+        dictionary: InternalAttributes.init("type", "dictionary"),
         // Regex
-        email: Attributes.init("regex", /^(.+)@(.+)\.(.+)$/),
-        alphanumeric: Attributes.init("regex", /^[\dA-Za-z]+$/),
-        alphaonly: Attributes.init("regex", /^[A-Za-z]+$/),
-        lowercase: Attributes.init("regex", /^[a-z]*$/),
-        uppercase: Attributes.init("regex", /^[A-Z]*$/),
+        email: InternalAttributes.init("regex", /^(.+)@(.+)\.(.+)$/),
+        alphanumeric: InternalAttributes.init("regex", /^[\dA-Za-z]+$/),
+        alphaonly: InternalAttributes.init("regex", /^[A-Za-z]+$/),
+        lowercase: InternalAttributes.init("regex", /^[a-z]*$/),
+        uppercase: InternalAttributes.init("regex", /^[A-Z]*$/),
         // Numeric
-        integer: Attributes.init("divisibility", 1)
+        integer: InternalAttributes.init("divisibility", 1)
     })
 }

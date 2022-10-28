@@ -45,41 +45,75 @@ export type Contradiction<key extends AtomicKey = AtomicKey> = {
     intersection: AtomicAttributeTypes[key]
 }
 
-type IntersectionMethodName<key extends AttributeKey> = `${key}Intersection`
+type IntersectionMethodName<key extends AttributeKey = AttributeKey> =
+    `${key}Intersection`
+
+type IntersectionSignatureFromMethodName<
+    methodName extends IntersectionMethodName<AttributeKey>
+> = methodName extends IntersectionMethodName<infer originalKey>
+    ? (value: AttributeTypes<false>[originalKey]) => any
+    : never
 
 type AttributeIntersectionHandler = {
-    [methodName in IntersectionMethodName<AttributeKey>]: methodName extends IntersectionMethodName<
-        infer originalKey
-    >
-        ? (value: AttributeTypes<false>[originalKey]) => any
-        : never
+    [methodName in IntersectionMethodName<AttributeKey>]: IntersectionSignatureFromMethodName<methodName>
 }
 
-export class Attributes implements AttributeIntersectionHandler {
+export type Attributes = Omit<PrivateAttributes, IntersectionMethodName>
+
+export namespace Attributes {
+    export const from = (
+        ...args: ConstructorParameters<typeof PrivateAttributes>
+    ): Attributes => new PrivateAttributes(...args)
+}
+
+class PrivateAttributes implements AttributeIntersectionHandler {
     private contradictions?: Contradiction[]
 
     constructor(
-        private attributes: UnejectedAttributes = {},
+        private attributes: UnejectedAttributes,
         private parent?: Attributes
     ) {}
 
+    get<key extends AttributeKey>(
+        key: key
+    ): Readonly<UnejectedAttributes[key]> {
+        return this.attributes[key]
+    }
+
+    get root(): Readonly<UnejectedAttributes> {
+        return this.attributes
+    }
+
+    add<key extends AttributeKey>(key: key) {
+        return this.attributes[key]
+    }
+
+    intersect(attributes: UnejectedAttributes) {
+        let k: keyof UnejectedAttributes
+        for (k in attributes) {
+            ;(this[`${k}Intersection`] as any)(attributes[k])
+        }
+        // TODO: Update branches
+    }
+
     eject(): EjectedAttributes {
-        const ejectedComposed: ComposedAttributes<true> = {}
+        const ejected: ComposedAttributes<true> = {}
         if (this.attributes.baseProp) {
-            ejectedComposed.baseProp = this.attributes.baseProp.eject()
+            ejected.baseProp = this.attributes.baseProp.eject()
         }
         if (this.attributes.props) {
-            ejectedComposed.props = {}
+            ejected.props = {}
             for (const k in this.attributes.props) {
-                ejectedComposed.props[k] = this.attributes.props[k].eject()
+                ejected.props[k] = this.attributes.props[k].eject()
             }
         }
         if (this.attributes.branches) {
-            ejectedComposed.branches = this.attributes.branches.map((branch) =>
+            ejected.branches = this.attributes.branches.map((branch) =>
                 branch.eject()
             )
         }
-        return Object.assign(this.attributes, ejectedComposed)
+        // TODO: Ensure not used after ejection if risk?
+        return Object.assign(this.attributes, ejected)
     }
 
     addContradiction<key extends AtomicKey>(
@@ -91,17 +125,7 @@ export class Attributes implements AttributeIntersectionHandler {
         this.contradictions.push({ key, base, intersection })
     }
 
-    get root(): Readonly<UnejectedAttributes> {
-        return this.attributes
-    }
-
-    get<key extends AttributeKey>(
-        key: key
-    ): Readonly<UnejectedAttributes[key]> {
-        return this.attributes[key]
-    }
-
-    private equalsIntersection(value: unknown) {
+    equalsIntersection(value: unknown) {
         if ("equals" in this.attributes) {
             if (this.attributes.equals !== value) {
                 this.addContradiction("equals", this.attributes.equals, value)
@@ -111,7 +135,7 @@ export class Attributes implements AttributeIntersectionHandler {
         }
     }
 
-    private typedIntersection(name: DynamicTypeName) {
+    typedIntersection(name: DynamicTypeName) {
         if (this.attributes.typed !== undefined) {
             if (this.attributes.typed !== name) {
                 this.addContradiction("typed", this.attributes.typed, name)
@@ -124,7 +148,7 @@ export class Attributes implements AttributeIntersectionHandler {
         }
     }
 
-    private boundedIntersection(bounds: Bounds) {
+    boundedIntersection(bounds: Bounds) {
         let updated = false
         if (bounds.lower) {
             updated = this.intersectBound("lower", bounds.lower)
@@ -135,7 +159,7 @@ export class Attributes implements AttributeIntersectionHandler {
         return updated
     }
 
-    private intersectBound(kind: BoundKind, bound: Bound) {
+    intersectBound(kind: BoundKind, bound: Bound) {
         this.attributes.bounded ??= {}
         const result = intersectBound(kind, this.attributes.bounded, bound)
         if (result === "never") {
@@ -149,7 +173,7 @@ export class Attributes implements AttributeIntersectionHandler {
         return result
     }
 
-    private divisibleIntersection(divisor: number) {
+    divisibleIntersection(divisor: number) {
         if (this.attributes.divisible !== undefined) {
             if (this.attributes.divisible === divisor) {
                 // TODO: maybe universally check if value is === first
@@ -166,35 +190,35 @@ export class Attributes implements AttributeIntersectionHandler {
         return true
     }
 
-    private matchesIntersection(expression: string) {
+    matchesIntersection(expression: string) {
         return true
     }
 
     // TODO: Unsure how to handle for intersecting
-    private optionalIntersection(value: boolean) {
+    optionalIntersection(value: boolean) {
         return true
     }
 
-    private basePropIntersection(attributes: Attributes) {
+    basePropIntersection(attributes: Attributes) {
         if (this.attributes.baseProp) {
-            this.attributes.baseProp.add(attributes.root)
+            this.attributes.baseProp.intersect(attributes.root)
         } else {
             this.attributes.baseProp = attributes
         }
     }
 
-    private propsIntersection(props: dictionary<Attributes>) {
+    propsIntersection(props: dictionary<Attributes>) {
         this.attributes.props ??= {}
         for (const k in props) {
             if (this.attributes.props?.[k]) {
-                this.attributes.props[k].add(props[k].root)
+                this.attributes.props[k].intersect(props[k].root)
             } else {
                 this.attributes.props[k] = props[k]
             }
         }
     }
 
-    private branchesIntersection(branches: Attributes[]) {
+    branchesIntersection(branches: Attributes[]) {
         return true
     }
 
@@ -225,14 +249,6 @@ export class Attributes implements AttributeIntersectionHandler {
         //     branch.intersect(baseAttributesToDistribute)
         // }
         // this.attributes.branches.push(branch)
-    }
-
-    add(attributes: UnejectedAttributes) {
-        let k: keyof UnejectedAttributes
-        for (k in attributes) {
-            ;(this[`${k}Intersection`] as any)(attributes[k])
-        }
-        // TODO: Update branches
     }
 }
 

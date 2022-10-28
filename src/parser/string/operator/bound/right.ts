@@ -1,4 +1,4 @@
-import { Attributes } from "../../../../attributes/attributes.js"
+import { InternalAttributes } from "../../../../attributes/attributes.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
@@ -44,14 +44,14 @@ export namespace RightBoundOperator {
         comparator: Scanner.Comparator,
         limit: number
     ) => {
-        s.root = Attributes.reduce("bound", s.root, comparator, limit)
+        s.root = InternalAttributes.reduce("bound", s.root, comparator, limit)
         if (!isLeftBounded(s)) {
             return s
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return DynamicState.error(buildInvalidDoubleMessage(comparator))
         }
-        s.root = Attributes.reduce(
+        s.root = InternalAttributes.reduce(
             "bound",
             s.root,
             invertedComparators[s.branches.leftBound[1]],

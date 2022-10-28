@@ -1,4 +1,4 @@
-import { Attributes } from "../../attributes/attributes.js"
+import { InternalAttributes } from "../../attributes/attributes.js"
 import type { array, dictionary } from "../../internal.js"
 import type { Evaluate } from "../../utils/generics.js"
 import type { ParserContext, StaticParserContext } from "../common.js"
@@ -34,9 +34,9 @@ export namespace Structure {
         if (type === "array" && isTupleExpression(definition as array)) {
             return parseTupleExpression(definition as TupleExpression, context)
         }
-        const attributes = Attributes.init("type", type)
+        const attributes = InternalAttributes.init("type", type)
         for (const k in definition) {
-            Attributes.reduce(
+            InternalAttributes.reduce(
                 "prop",
                 attributes,
                 k,

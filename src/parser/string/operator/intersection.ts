@@ -1,4 +1,4 @@
-import { Attributes } from "../../../attributes/attributes.js"
+import { InternalAttributes } from "../../../attributes/attributes.js"
 import type { maybePush } from "../../common.js"
 import type { StaticState } from "../state/state.js"
 import { DynamicState } from "../state/state.js"
@@ -10,7 +10,11 @@ export namespace IntersectionOperator {
             return LeftBoundOperator.unpairedError(s)
         }
         s.branches.intersection = s.branches.intersection
-            ? Attributes.reduce("intersection", s.branches.intersection, s.root)
+            ? InternalAttributes.reduce(
+                  "intersection",
+                  s.branches.intersection,
+                  s.root
+              )
             : s.root
         s.root = DynamicState.unset
         return s
@@ -44,7 +48,7 @@ export namespace IntersectionOperator {
         if (!s.branches.intersection) {
             return s
         }
-        s.root = Attributes.reduce(
+        s.root = InternalAttributes.reduce(
             "intersection",
             s.branches.intersection,
             s.root
