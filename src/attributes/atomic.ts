@@ -1,49 +1,38 @@
 import type { DynamicTypeName } from "../internal.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 
-export type DiffResult = {
-    diverging: DivergingAttributes
-    intersecting: Attributes
-}
+// TODO: Think about concrete situations with these.
 
-export const compare = (left: Attributes, right: Attributes) => {
-    const diverging: DivergingAttributes = {}
-    const intersecting = { ...left, ...right }
-    let k: keyof Attributes
-    for (k in intersecting) {
-        if (k in left && k in right) {
-            if (left[k] !== right[k]) {
-                diverging[k] = [left[k], right[k]] as any
-                delete intersecting[k]
-            }
-            delete left[k]
-            delete right[k]
-        } else {
-            delete intersecting[k]
-        }
-    }
-}
-
-export type UnionResult = [
-    left: Attributes,
-    intersection: Attributes,
-    right: Attributes
-]
-
-export const union = (left: Attributes, right: Attributes) => {
-    const intersection = { ...left, ...right }
+export const compressUnion = (
+    { ...left }: Attributes,
+    { ...right }: Attributes
+) => {
+    const intersection: Attributes = { ...left, ...right }
     let k: keyof Attributes
     for (k in intersection) {
         if (left[k] === right[k]) {
+            intersection[k] = left[k] as any
             delete left[k]
             delete right[k]
+        } else {
+            delete intersection[k]
         }
     }
-    return [left, intersection, right]
+    return [intersection, left, right]
 }
 
-type DivergingAttributes = {
-    [k in keyof Attributes]: [Attributes[k], Attributes[k]]
+export const distributableIntersection = (
+    left: Attributes,
+    right: Attributes
+) => {
+    const intersection: Attributes = {}
+    let k: keyof Attributes
+    for (k in intersection) {
+        if (left[k] === right[k]) {
+            intersection[k] = left[k] as any
+        }
+    }
+    return intersection
 }
 
 type Attributes = Partial<{
