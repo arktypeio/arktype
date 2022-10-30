@@ -3,45 +3,52 @@ import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import { UnenclosedNumber } from "../parser/string/operand/numeric.js"
 
 // TODO: Figure out mutations
-export const compressUnion = (
-    { ...base }: Attributes,
-    { ...branch }: Attributes
-) => {
+export const union = ({ ...left }: Attributes, { ...right }: Attributes) => {
     let k: keyof Attributes
     const baseAttributesToDistribute: Attributes = {}
-    for (k in branch) {
-        if (k in base) {
-            if (base[k] === branch[k]) {
+    for (k in right) {
+        if (k in left) {
+            // TODO: What to do with composable here
+            // if (
+            //     (left.branches && left.branches.length > 1) ||
+            //     (right.branches && right.branches.length > 1)
+            // ) {
+            //     // If left or right is already a branch intersection, create a new root for the union
+            //     return {
+            //         branches: [left, right]
+            //     }
+            // }
+            if (left[k] === right[k]) {
                 // The branch attribute is redundant and can be removed.
-                delete branch[k]
+                delete right[k]
             } else {
                 // The attribute had distinct values for base and branch. Once we're
                 // done looping over branch attributes, distribute it to each
                 // existing branch and remove it from base.
-                baseAttributesToDistribute[k] = base[k] as any
-                delete base[k]
+                baseAttributesToDistribute[k] = left[k] as any
+                delete left[k]
             }
         }
         // The branch attribute was not previously part of base and is safe to push to branches.
     }
-    if (!Object.keys(branch).length) {
+    if (!Object.keys(right).length) {
         // All keys were redundant, no need to push the new branch
         return
     }
-    base.branches ??= []
-    for (const branch of base.branches) {
+    left.branches ??= []
+    for (const branch of left.branches) {
         intersect(branch, baseAttributesToDistribute)
     }
-    base.branches.push(branch)
-    return base
+    left.branches.push(right)
+    return left
 }
 
-export const intersect = (left: Attributes, right: Attributes) => {
-    const intersection: Attributes = { ...left, ...right }
+export const intersect = (base: Attributes, attributes: Attributes) => {
+    const intersection: Attributes = { ...base, ...attributes }
     let k: keyof Attributes
-    for (k in left) {
-        if (intersection[k] !== left[k]) {
-            intersection[k] = merge(intersection[k], left[k])
+    for (k in base) {
+        if (intersection[k] !== base[k]) {
+            intersection[k] = merge(intersection[k], base[k])
         }
     }
     return intersection
@@ -52,75 +59,69 @@ const merge = (left: any, right: any) => left
 const defineIntersectionReducers = <
     intersections extends {
         [key in ReducibleKey]?: (
-            base: Attributes & { [k in key]: AttributeTypes[k] },
+            base: AttributeTypes[key],
             value: AttributeTypes[key]
-        ) => AttributeTypes[key]
+        ) => AttributeTypes[key] | Contradiction
     }
 >(
     intersections: intersections
 ) => intersections
 
 const reducers = defineIntersectionReducers({
-    value: (base, intersected) => {
-        base.contradiction = {
-            key: "value",
-            base: base.value,
-            intersected
-        }
-        return base.value
-    },
-    type: (base, intersected) => {
-        base.contradiction = {
-            key: "type",
-            base: base.type,
-            intersected
-        }
-        return base.type
-    },
-    divisor: (base, intersected) =>
-        leastCommonMultiple(base.divisor, intersected),
-    regex: (base, intersected) => `${base.regex}${intersected}`,
-    bounds: (base, intersected) => {
-        let updatableBounds = parseBounds(base.bounds)
-        const { min, max } = parseBounds(intersected)
+    value: (base, value) => ({
+        key: "value",
+        base,
+        conflicting: value
+    }),
+    type: (base, value) => ({
+        key: "type",
+        base,
+        conflicting: value
+    }),
+    divisor: (base, value) => leastCommonMultiple(base, value),
+    regex: (base, value) => `${base}${value}`,
+    bounds: (base, value) => {
+        let updatableBounds = parseBounds(base)
+        const { min, max } = parseBounds(value)
         if (min) {
             const result = intersectBound("min", updatableBounds, min)
-            if (!result) {
-                base.contradiction = createBoundsContradiction(
-                    "min",
-                    updatableBounds,
-                    min
-                )
-                return base.bounds
+            if (isContradiction(result)) {
+                return result
             }
             updatableBounds = result
         }
         if (max) {
             const result = intersectBound("max", updatableBounds, max)
-            if (!result) {
-                base.contradiction = createBoundsContradiction(
-                    "max",
-                    updatableBounds,
-                    max
-                )
-                return base.bounds
+            if (isContradiction(result)) {
+                return result
             }
             updatableBounds = result
         }
         return encodeBounds(updatableBounds)
-    }
+    },
+    baseProp: (base, value) => intersect(base, value),
+    props: (base, value) => {
+        const intersection = { ...base, ...value }
+        for (const k in intersection) {
+            if (k in base && k in value) {
+                intersection[k] = intersect(base[k], value[k])
+            }
+        }
+        return intersection
+    },
+    branches: (base, value) => [...base, ...value]
 })
 
 type EncodedMin = `${">" | ">="}${number}` | ""
 type EncodedMax = `${"<" | "<="}${number}` | ""
-type BoundsString = `${EncodedMin},${EncodedMax}`
+type EncodedBounds = `${EncodedMin},${EncodedMax}`
 
 type AtomicAttributeTypes = {
     value: string | number | boolean | bigint | null | undefined
     type: DynamicTypeName
     divisor: number
     regex: Enclosed.RegexLiteral
-    bounds: BoundsString
+    bounds: EncodedBounds
 }
 
 type AtomicKey = keyof AtomicAttributeTypes
@@ -128,7 +129,7 @@ type AtomicKey = keyof AtomicAttributeTypes
 type ComposedAttributeTypes = {
     baseProp: Attributes
     props: dictionary<Attributes>
-    branches: Attributes[]
+    branches: Attributes[][]
 }
 
 type ReducibleKey = AtomicKey | keyof ComposedAttributeTypes
@@ -147,8 +148,11 @@ type Attributes = Partial<AttributeTypes>
 type Contradiction<key extends AtomicKey = AtomicKey> = {
     key: key
     base: AtomicAttributeTypes[key]
-    intersected: AtomicAttributeTypes[key]
+    conflicting: AtomicAttributeTypes[key]
 }
+
+const isContradiction = (result: object): result is Contradiction =>
+    "conflicting" in result
 
 // Calculate the GCD, then divide the product by that to determine the LCM:
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
@@ -165,8 +169,8 @@ const leastCommonMultiple = (x: number, y: number) => {
 }
 
 type ParsedBounds = {
-    min: ParsedBound | undefined
-    max: ParsedBound | undefined
+    min?: ParsedBound
+    max?: ParsedBound
 }
 
 type ParsedBound = {
@@ -183,9 +187,9 @@ const encodeBounds = (bounds: ParsedBounds) =>
         bounds.max
             ? `<${bounds.max.inclusive ? "=" : ""}${bounds.max.limit}`
             : ""
-    }` as BoundsString
+    }` as EncodedBounds
 
-const parseBounds = (boundsString: BoundsString): ParsedBounds => {
+const parseBounds = (boundsString: EncodedBounds): ParsedBounds => {
     const [lowerString, upperString] = boundsString.split(",") as [
         EncodedMin,
         EncodedMax
@@ -207,7 +211,7 @@ const parseBound = (
         limit: UnenclosedNumber.parseWellFormed(
             boundString.slice(inclusive ? 2 : 1),
             "number",
-            "Unexpectedly failed to parse bound."
+            true
         ),
         inclusive
     }
@@ -217,28 +221,27 @@ const intersectBound = (
     kind: BoundKind,
     base: ParsedBounds,
     bound: ParsedBound
-): ParsedBounds | false => {
+): ParsedBounds | Contradiction<"bounds"> => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = base[kind]
     const baseOpposing = base[invertedKind]
     if (baseOpposing && isStricter(invertedKind, bound, baseOpposing)) {
-        return false
+        return createBoundsContradiction(kind, baseOpposing, bound)
     }
     if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
-        return { ...base, [kind]: bound }
+        base[kind] = bound
     }
     return base
 }
 
 const createBoundsContradiction = (
     kind: BoundKind,
-    base: ParsedBounds,
+    baseOpposing: ParsedBound,
     bound: ParsedBound
-): Contradiction => ({
+): Contradiction<"bounds"> => ({
     key: "bounds",
-    base: encodeBounds(base),
-    intersected: encodeBounds({
-        ...base,
+    base: encodeBounds({ [invertedKinds[kind]]: baseOpposing }),
+    conflicting: encodeBounds({
         [kind]: bound
     })
 })

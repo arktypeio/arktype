@@ -85,11 +85,11 @@ export namespace UnenclosedNumber {
         ? ParseError<buildMalformedNumericLiteralMessage<def, kind>>
         : inferredValue
 
-    export const parseWellFormed = <ErrorOnFail extends string | undefined>(
+    export const parseWellFormed = <ErrorOnFail extends boolean | string>(
         token: string,
         kind: ValidationKind,
         errorOnFail?: ErrorOnFail
-    ): ErrorOnFail extends string ? number : number | undefined => {
+    ): ErrorOnFail extends true | string ? number : number | undefined => {
         const value = parseKind(token, kind)
         if (!Number.isNaN(value)) {
             if (isWellFormed(token, kind)) {
@@ -103,7 +103,15 @@ export namespace UnenclosedNumber {
                 )
             }
         }
-        return (errorOnFail ? throwParseError(errorOnFail) : undefined) as any
+        return (
+            errorOnFail
+                ? throwParseError(
+                      errorOnFail === true
+                          ? `Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
+                          : errorOnFail
+                  )
+                : undefined
+        ) as any
     }
 
     export type parseWellFormedNumber<
