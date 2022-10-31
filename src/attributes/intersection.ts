@@ -1,28 +1,12 @@
-import { isKeyOf, throwInternalError } from "../internal.js"
+import { throwInternalError } from "../internal.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
     AttributeBranches,
     AttributeKey,
     Attributes,
-    AttributeTypes,
     IntersectionReducer
 } from "./shared.js"
-
-export const add = <key extends AttributeKey>(
-    base: Attributes,
-    key: key,
-    value: AttributeTypes[key]
-) =>
-    intersection(
-        base,
-        isKeyOf(key, implications)
-            ? {
-                  [key]: value,
-                  ...implications[key]
-              }
-            : { [key]: value }
-    )
 
 export const intersection = (left: Attributes, right: Attributes) => {
     const intersection = { ...left, ...right }
@@ -33,6 +17,13 @@ export const intersection = (left: Attributes, right: Attributes) => {
                 left: any,
                 right: any
             ) => any
+            // TODO: Add implications
+            // isKeyOf(key, implications)
+            //     ? {
+            //           [key]: value,
+            //           ...implications[key]
+            //       }
+            //     : { [key]: value }
             intersection[k] = reducer(left[k], right[k])
         }
     }
