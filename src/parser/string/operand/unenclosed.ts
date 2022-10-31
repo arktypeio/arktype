@@ -1,7 +1,7 @@
 import type { Attributes } from "../../../attributes/shared.js"
 import type {
+    DynamicParserContext,
     ParseError,
-    ParserContext,
     StaticParserContext
 } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
@@ -12,7 +12,7 @@ import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 import { Operand } from "./operand.js"
 
 export namespace Unenclosed {
-    export const parse = (s: State.Dynamic, context: ParserContext) => {
+    export const parse = (s: State.Dynamic, context: DynamicParserContext) => {
         const token = s.scanner.shiftUntilNextTerminator()
         s.root = unenclosedToAttributes(s, token, context)
         return s
@@ -30,7 +30,7 @@ export namespace Unenclosed {
     const unenclosedToAttributes = (
         s: State.Dynamic,
         token: string,
-        context: ParserContext
+        context: DynamicParserContext
     ) =>
         maybeParseIdentifier(token, context) ??
         maybeParseUnenclosedLiteral(token) ??
@@ -42,7 +42,7 @@ export namespace Unenclosed {
 
     export const maybeParseIdentifier = (
         token: string,
-        context: ParserContext
+        context: DynamicParserContext
     ): Attributes | undefined =>
         Keyword.matches(token)
             ? Keyword.attributesOf(token)

@@ -1,6 +1,7 @@
 import type { dictionary } from "../internal.js"
 
-export type ParserContext = {
+export type DynamicParserContext = {
+    path: string
     aliases: dictionary
 }
 

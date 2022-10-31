@@ -1,4 +1,4 @@
-import type { ParserContext, StaticParserContext } from "../common.js"
+import type { DynamicParserContext, StaticParserContext } from "../common.js"
 import type { fullParse } from "./full.js"
 import { Unenclosed } from "./operand/unenclosed.js"
 import { ArrayOperator } from "./operator/array.js"
@@ -31,7 +31,7 @@ export type tryNaiveParse<
     ? def
     : fullParse<def, context>
 
-export const tryNaiveParse = (def: string, context: ParserContext) => {
+export const tryNaiveParse = (def: string, context: DynamicParserContext) => {
     if (def.endsWith("?")) {
         const maybeParsedAttributes = tryNaiveParseArray(
             def.slice(0, -1),
@@ -45,7 +45,7 @@ export const tryNaiveParse = (def: string, context: ParserContext) => {
     return tryNaiveParseArray(def, context)
 }
 
-const tryNaiveParseArray = (def: string, context: ParserContext) => {
+const tryNaiveParseArray = (def: string, context: DynamicParserContext) => {
     if (def.endsWith("[]")) {
         const maybeParsedAttributes = Unenclosed.maybeParseIdentifier(
             def.slice(0, -2),

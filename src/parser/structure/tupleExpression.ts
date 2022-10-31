@@ -1,7 +1,7 @@
 import type { Attributes } from "../../attributes/shared.js"
 import type {
+    DynamicParserContext,
     ParseError,
-    ParserContext,
     StaticParserContext
 } from "../common.js"
 import type { Root } from "../root.js"
@@ -15,7 +15,7 @@ export const isTupleExpression = (def: unknown[]): def is TupleExpression =>
 
 export const parseTupleExpression = (
     [definition, token, ...args]: TupleExpression,
-    context: ParserContext
+    context: DynamicParserContext
 ) => ({} as Attributes)
 
 export type parseTupleExpression<

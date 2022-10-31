@@ -1,9 +1,9 @@
-import type { ParserContext, StaticParserContext } from "../common.js"
+import type { DynamicParserContext, StaticParserContext } from "../common.js"
 import { Operand } from "./operand/operand.js"
 import { Operator } from "./operator/operator.js"
 import { State } from "./state/state.js"
 
-export const fullParse = (def: string, context: ParserContext) =>
+export const fullParse = (def: string, context: DynamicParserContext) =>
     loop(Operand.parse(State.initialize(def), context), context)
 
 export type fullParse<
@@ -12,7 +12,7 @@ export type fullParse<
 > = Loop<Operand.parse<State.initialize<Def>, Ctx>, Ctx>
 
 // TODO: Recursion perf?
-const loop = (s: State.Dynamic, context: ParserContext) => {
+const loop = (s: State.Dynamic, context: DynamicParserContext) => {
     while (!s.scanner.hasBeenFinalized) {
         next(s, context)
     }
@@ -26,7 +26,7 @@ type Loop<
     ? Loop<Next<s, context>, context>
     : s["root"]
 
-const next = (s: State.Dynamic, context: ParserContext): State.Dynamic =>
+const next = (s: State.Dynamic, context: DynamicParserContext): State.Dynamic =>
     State.hasRoot(s) ? Operator.parse(s) : Operand.parse(s, context)
 
 type Next<

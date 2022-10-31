@@ -1,4 +1,4 @@
-import type { ParserContext, StaticParserContext } from "../../common.js"
+import type { DynamicParserContext, StaticParserContext } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
@@ -9,7 +9,7 @@ import { Unenclosed } from "./unenclosed.js"
 export namespace Operand {
     export const parse = (
         s: State.Dynamic,
-        context: ParserContext
+        context: DynamicParserContext
     ): State.Dynamic =>
         s.scanner.lookahead === ""
             ? throwParseError(buildMissingOperandMessage(s))
