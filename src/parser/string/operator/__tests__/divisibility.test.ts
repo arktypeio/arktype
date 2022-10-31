@@ -8,8 +8,11 @@ describe("divisibility", () => {
         describe("valid", () => {
             test("integerLiteralDefinition", () => {
                 const divisibleByTwo = type("number%2")
-                attest(divisibleByTwo.root).equals({ divisor: 2 })
-                attest(divisibleByTwo.ast).narrowedValue(["number", "%", 2])
+                attest(divisibleByTwo.root).equals({
+                    type: "number",
+                    divisor: 2
+                })
+                attest(divisibleByTwo.ast).typed as ["number", "%", 2]
             })
         })
         describe("invalid", () => {

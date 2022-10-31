@@ -1,4 +1,4 @@
-import { throwInternalError } from "../internal.js"
+import { isKeyOf, throwInternalError } from "../internal.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
@@ -10,10 +10,19 @@ import type {
 } from "./shared.js"
 
 export const add = <key extends AttributeKey>(
-    attributes: Attributes,
+    base: Attributes,
     key: key,
     value: AttributeTypes[key]
-) => intersection(attributes, { [key]: value })
+) =>
+    intersection(
+        base,
+        isKeyOf(key, implications)
+            ? {
+                  [key]: value,
+                  ...implications[key]
+              }
+            : { [key]: value }
+    )
 
 export const intersection = (left: Attributes, right: Attributes) => {
     const intersection = { ...left, ...right }
@@ -82,4 +91,27 @@ const intersectionReducers = defineIntersectionReducers({
             )}\n${JSON.stringify(right)}`
         )
     }
+})
+
+type Implications = Pick<Attributes, "type" | "value" | "branches">
+
+type AttributeImplications = {
+    [k in AttributeKey]?: Implications
+}
+
+const defineImplications = <implications extends AttributeImplications>(
+    implications: implications
+) => implications
+
+const implications = defineImplications({
+    divisor: { type: "number" },
+    bounds: {
+        branches: [
+            "|",
+            { type: "number" },
+            { type: "string" },
+            { type: "array" }
+        ]
+    },
+    regex: { type: "string" }
 })
