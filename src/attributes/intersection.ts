@@ -1,51 +1,78 @@
-import type { Attributes } from "./attributes.js"
+import { throwInternalError } from "../internal.js"
 import { intersectBounds } from "./bounds.js"
-import type { AttributeKey, IntersectionReducer } from "./shared.js"
+import { intersectDivisors } from "./divisor.js"
+import type {
+    AttributeBranches,
+    AttributeKey,
+    Attributes,
+    IntersectionReducer
+} from "./shared.js"
 
-export const intersection = (base: Attributes, attributes: Attributes) => {
-    const intersection = { ...base, ...attributes }
+export const intersection = (left: Attributes, right: Attributes) => {
+    const intersection = { ...left, ...right }
     let k: keyof Attributes
-    for (k in base) {
-        if (intersection[k] !== base[k]) {
-            intersection[k] = merge(intersection[k], base[k])
+    for (k in intersection) {
+        if (k in left && k in right) {
+            const reducer = intersectionReducers[k] as (
+                left: any,
+                right: any
+            ) => any
+            intersection[k] = reducer(left[k], right[k])
         }
     }
     return intersection
 }
 
-const merge = (left: any, right: any) => left
-
 const defineIntersectionReducers = <
     intersections extends {
-        [key in AttributeKey]?: IntersectionReducer<key>
+        [key in AttributeKey]: IntersectionReducer<key>
     }
 >(
     intersections: intersections
 ) => intersections
 
 const intersectionReducers = defineIntersectionReducers({
-    value: (base, value) => ({
+    value: (left, right) => ({
         key: "value",
-        base,
-        conflicting: value
+        contradiction: [left, right]
     }),
-    type: (base, value) => ({
+    type: (left, right) => ({
         key: "type",
-        base,
-        conflicting: value
+        contradiction: [left, right]
     }),
-    divisor: (base, value) => leastCommonMultiple(base, value),
-    regex: (base, value) => `${base}${value}`,
+    divisor: (left, right) => intersectDivisors(left, right),
+    regex: (left, right) => `${left}${right}`,
     bounds: intersectBounds,
-    baseProp: (base, value) => intersection(base, value),
-    props: (base, value) => {
-        const intersection = { ...base, ...value }
+    baseProp: (left, right) => intersection(left, right),
+    props: (left, right) => {
+        const intersection = { ...left, ...right }
         for (const k in intersection) {
-            if (k in base && k in value) {
-                intersection[k] = intersection(base[k], value[k])
+            if (k in left && k in right) {
+                intersection[k] = intersection(left[k], right[k])
             }
         }
         return intersection
     },
-    branches: (base, value) => [...base, ...value]
+    branches: (
+        ...leftAndRightBranches: [AttributeBranches, AttributeBranches]
+    ) => {
+        const intersectionBranches: AttributeBranches = ["&"]
+        for (const operandBranches of leftAndRightBranches) {
+            if (operandBranches[0] === "|") {
+                intersectionBranches.push(operandBranches)
+            } else {
+                for (let i = 1; i < operandBranches.length; i++) {
+                    intersectionBranches.push(operandBranches[i])
+                }
+            }
+        }
+        return intersectionBranches
+    },
+    parent: (left, right) => {
+        return throwInternalError(
+            `Unexpectedly tried to intersect parents:\n${JSON.stringify(
+                left
+            )}\n${JSON.stringify(right)}`
+        )
+    }
 })

@@ -26,43 +26,27 @@ export const atomicAttributes: Record<AtomicKey, true> = {
 type AtomicKey = keyof AtomicAttributeTypes
 
 type ComposedAttributeTypes = {
+    parent: Attributes
     baseProp: Attributes
     props: dictionary<Attributes>
-    branches: Attributes[][]
+    branches: AttributeBranches
 }
 
-type TransientAttributeTypes = {
-    parent: Attributes
-    contradiction: Contradiction
-}
+export type AttributeBranches = [
+    "|" | "&",
+    ...(Attributes | AttributeBranches)[]
+]
 
 export type Contradiction<key extends AtomicKey = AtomicKey> = {
     key: key
-    base: AtomicAttributeTypes[key]
-    conflicting: AtomicAttributeTypes[key]
+    contradiction: [AtomicAttributeTypes[key], AtomicAttributeTypes[key]]
 }
 
 export const isContradiction = (result: object): result is Contradiction =>
-    "conflicting" in result
+    "contradiction" in result
 
-export type AttributeTypes = AtomicAttributeTypes &
-    ComposedAttributeTypes &
-    TransientAttributeTypes
+export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 
 export type Attributes = Partial<AttributeTypes>
 
 export type AttributeKey = keyof AttributeTypes
-
-// Calculate the GCD, then divide the product by that to determine the LCM:
-// https://en.wikipedia.org/wiki/Euclidean_algorithm
-const leastCommonMultiple = (x: number, y: number) => {
-    let previous
-    let greatestCommonDivisor = x
-    let current = y
-    while (current !== 0) {
-        previous = current
-        current = greatestCommonDivisor % current
-        greatestCommonDivisor = previous
-    }
-    return Math.abs((x * y) / greatestCommonDivisor)
-}

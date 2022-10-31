@@ -63,10 +63,12 @@ const createBoundsContradiction = (
     bound: BoundData
 ): Contradiction<"bounds"> => ({
     key: "bounds",
-    base: stringifyBounds({ [invertedKinds[kind]]: baseOpposing }),
-    conflicting: stringifyBounds({
-        [kind]: bound
-    })
+    contradiction: [
+        stringifyBounds({ [invertedKinds[kind]]: baseOpposing }),
+        stringifyBounds({
+            [kind]: bound
+        })
+    ]
 })
 
 const invertedKinds = {
