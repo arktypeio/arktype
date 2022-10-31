@@ -19,10 +19,11 @@ export namespace ArrayOperator {
         ? StaticState.setRoot<s, [s["root"], "[]"], remaining>
         : StaticState.error<incompleteTokenMessage>
 
-    export const arrayOf = (elementAttributes: Attributes) => ({
-        type: "array",
-        baseProp: elementAttributes
-    })
+    export const arrayOf = (elementAttributes: Attributes) =>
+        ({
+            type: "array",
+            baseProp: elementAttributes
+        } as const)
 
     export const incompleteTokenMessage = `Missing expected ']'.`
 

@@ -29,15 +29,18 @@ export namespace Structure {
         definition: Kinds[kind],
         kind: kind,
         context: ParserContext
-    ) => {
+    ): Attributes => {
         const type = Array.isArray(definition) ? "array" : "dictionary"
         if (type === "array" && isTupleExpression(definition as array)) {
             return parseTupleExpression(definition as TupleExpression, context)
         }
-        const attributes = { type, props: {} as dictionary<Attributes> }
+        const props: dictionary<Attributes> = {}
         for (const k in definition) {
-            attributes.props[k] = Root.parse(definition[k], context)
+            props[k] = Root.parse(definition[k], context) as any
         }
-        return attributes
+        return {
+            type,
+            props
+        }
     }
 }

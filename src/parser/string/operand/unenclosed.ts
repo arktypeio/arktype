@@ -48,7 +48,7 @@ export namespace Unenclosed {
         Keyword.matches(token)
             ? Keyword.attributesOf(token)
             : token in context.aliases
-            ? { value: "alias" }
+            ? ({ value: "alias" } as const)
             : undefined
 
     const maybeParseUnenclosedLiteral = (token: string) => {

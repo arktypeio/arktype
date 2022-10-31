@@ -38,7 +38,8 @@ export namespace Keyword {
     export const matches = (token: string): token is Keyword =>
         token in attributes
 
-    export const attributesOf = (keyword: Keyword) => attributes[keyword]
+    export const attributesOf = (keyword: Keyword): Attributes =>
+        attributes[keyword]
 
     const defineKeywordAttributes = <keywordsToAttributes>(
         keywordsToAttributes: Conform<

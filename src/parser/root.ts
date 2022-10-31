@@ -1,3 +1,4 @@
+import type { Attributes } from "../attributes/shared.js"
 import type { DynamicTypeName } from "../internal.js"
 import { dynamicTypeOf } from "../internal.js"
 import type {
@@ -10,7 +11,7 @@ import { Str } from "./string/str.js"
 import { Structure } from "./structure/structure.js"
 
 export namespace Root {
-    export const parse = (def: unknown, context: ParserContext) => {
+    export const parse = (def: unknown, context: ParserContext): Attributes => {
         const defType = dynamicTypeOf(def)
         return defType === "string"
             ? Str.parse(def as any, context)

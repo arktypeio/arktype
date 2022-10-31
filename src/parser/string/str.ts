@@ -1,3 +1,4 @@
+import type { Attributes } from "../../attributes/shared.js"
 import type {
     ParseError,
     ParserContext,
@@ -17,6 +18,6 @@ export namespace Str {
         context extends StaticParserContext
     > = parse<def, context> extends ParseError<infer Message> ? Message : def
 
-    export const parse = (def: string, context: ParserContext) =>
+    export const parse = (def: string, context: ParserContext): Attributes =>
         tryNaiveParse(def, context) ?? fullParse(def, context)
 }

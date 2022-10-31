@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import type { Dictionary } from "../../../dist/types/internal.js"
 import { space, type } from "../../api.js"
+import type { dictionary } from "../../internal.js"
 import { Root } from "../root.js"
 import { Unenclosed } from "../string/operand/unenclosed.js"
 
@@ -27,7 +27,7 @@ describe("root definition", () => {
             }).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("st"))
         })
         test("uninferred space", () => {
-            const unknownSpace = space.dynamic({ a: "string" } as Dictionary)
+            const unknownSpace = space.dynamic({ a: "string" } as dictionary)
             attest(unknownSpace.a.infer).typed as unknown
             // Allows any references but will throw at runtime
             attest(() => unknownSpace.b.infer).throws.snap(
