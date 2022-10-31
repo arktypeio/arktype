@@ -6,18 +6,27 @@ import { atomicAttributes } from "./shared.js"
 // {a: "string"} | {a: "string", b: "number"}
 // props
 
-export type CompressUnionResult = {
+const compressUnion = (base: Attributes, branch: Attributes) => {
+    const comparison = compare(base, branch)
+    if (!comparison.branched) {
+    }
+    if (!base.branches) {
+    }
+    comparison.branched
+}
+
+type AttributesComparison = {
     shared: Attributes
     diverged: Attributes
-    branch: Attributes
+    branched: Attributes
 }
 
 // TODO: Figure out mutations
-const compressUnion = (
+const compare = (
     base: Attributes,
     branch: Attributes
-): CompressUnionResult => {
-    const result = initializeCompressedUnion()
+): AttributesComparison => {
+    const result = initializeAttributesComparison()
     let k: AttributeKey
     for (k in branch) {
         if (k in base) {
@@ -30,13 +39,13 @@ const compressUnion = (
                     // done looping over branch attributes, distribute it to each
                     // existing branch and remove it from base.
                     result.diverged[k] = base[k] as any
-                    result.branch[k] = branch[k] as any
+                    result.branched[k] = branch[k] as any
                 }
             } else if (k === "baseProp") {
                 addComposedAttributeResult(
                     "baseProp",
                     result,
-                    compressUnion(base.baseProp!, branch.baseProp!)
+                    compare(base.baseProp!, branch.baseProp!)
                 )
             } else if (k === "props") {
                 const allProps = { ...base.props!, ...branch.props! }
@@ -45,7 +54,7 @@ const compressUnion = (
                         addPropResult(
                             propKey,
                             result,
-                            compressUnion(
+                            compare(
                                 base.props![propKey],
                                 branch.props![propKey]
                             )
@@ -54,16 +63,30 @@ const compressUnion = (
                         result.diverged.props ??= {}
                         result.diverged.props[propKey] = base.props![propKey]
                     } else {
-                        result.branch.props ??= {}
-                        result.branch.props[propKey] = branch.props![propKey]
+                        result.branched.props ??= {}
+                        result.branched.props[propKey] = branch.props![propKey]
                     }
+                }
+            } else if (k === "branches") {
+                if (
+                    base.branches!.length === 1 &&
+                    branch.branches!.length === 1
+                ) {
+                    result.shared.branches = [
+                        [...base.branches![0], ...branch.branches![0]]
+                    ]
+                } else {
+                    // TODO: Figure out what has to happen here for intersection of branches
+                    result.shared.branches = base.branches
+                    result.branched.branches = branch.branches
                 }
             }
         } else {
             // The branch attribute was not previously part of base and is safe to push to branches.
-            result.branch[k] = branch[k] as any
+            result.branched[k] = branch[k] as any
         }
     }
+    return result
     // base.branches ??= []
     // for (const branch of base.branches) {
     //     intersect(branch, baseAttributesToDistribute)
@@ -74,28 +97,28 @@ const compressUnion = (
 
 const addComposedAttributeResult = (
     key: AttributeKey,
-    result: CompressUnionResult,
-    composedResult: CompressUnionResult
+    result: AttributesComparison,
+    composedResult: AttributesComparison
 ) => {
     result.shared[key] = composedResult.shared as any
     result.diverged[key] = composedResult.diverged as any
-    result.branch[key] = composedResult.branch as any
+    result.branched[key] = composedResult.branched as any
 }
 
 const addPropResult = (
     propKey: string,
-    result: CompressUnionResult,
-    propResult: CompressUnionResult
+    result: AttributesComparison,
+    propResult: AttributesComparison
 ) => {
     result.shared.props![propKey] = propResult.shared as any
     result.diverged.props![propKey] = propResult.diverged as any
-    result.branch.props![propKey] = propResult.branch as any
+    result.branched.props![propKey] = propResult.branched as any
 }
 
-const initializeCompressedUnion = (): CompressUnionResult => ({
+const initializeAttributesComparison = (): AttributesComparison => ({
     shared: {},
     diverged: {},
-    branch: {}
+    branched: {}
 })
 
 // TODO: What to do with composable here
