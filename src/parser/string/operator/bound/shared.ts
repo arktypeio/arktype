@@ -1,3 +1,5 @@
+import type { BoundData } from "../../../../attributes/bounds.js"
+import { stringifyBounds } from "../../../../attributes/bounds.js"
 import type { Scanner } from "../../state/scanner.js"
 
 export const comparatorDescriptions = {
@@ -28,21 +30,23 @@ export const buildInvalidDoubleMessage = <
 ): buildInvalidDoubleMessage<comparator> =>
     `Double-bound expressions must specify their bounds using < or <= (was ${comparator}).`
 
-// if (comparator === "==") {
-//     const equalityBound: Bound = { limit, inclusive: true }
-//     const lowerBoundResult = reduceLimit(base, "lower", equalityBound)
-//     if (lowerBoundResult === "never") {
-//         return "never"
-//     }
-//     return reduceLimit(lowerBoundResult, "upper", equalityBound)
-// } else if (comparator === ">" || comparator === ">=") {
-//     return reduceLimit(base, "lower", {
-//         limit,
-//         inclusive: comparator === ">="
-//     })
-// } else {
-//     return reduceLimit(base, "upper", {
-//         limit,
-//         inclusive: comparator === "<="
-//     })
-// }
+export const toBoundString = (
+    comparator: Scanner.Comparator,
+    limit: number
+) => {
+    const bound: BoundData = {
+        limit,
+        inclusive: comparator[1] === "="
+    }
+    if (comparator === "==") {
+        return stringifyBounds({ min: bound, max: bound })
+    } else if (comparator === ">" || comparator === ">=") {
+        return stringifyBounds({
+            min: bound
+        })
+    } else {
+        return stringifyBounds({
+            max: bound
+        })
+    }
+}

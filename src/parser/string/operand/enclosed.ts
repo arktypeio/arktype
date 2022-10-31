@@ -1,4 +1,3 @@
-import { InternalAttributes } from "../../../attributes/attributes.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import type { DynamicState, StaticState } from "../state/state.js"
@@ -24,8 +23,8 @@ export namespace Enclosed {
         })
         s.root =
             enclosing === "/"
-                ? InternalAttributes.init("matches", token)
-                : InternalAttributes.init("equals", token.slice(1, -1))
+                ? { regex: token as RegexLiteral }
+                : { value: token.slice(1, -1) }
         return s
     }
 

@@ -1,10 +1,7 @@
 import type { Evaluate } from "../internal.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import type { Keyword } from "../parser/string/operand/keyword.js"
-import type {
-    BigintLiteral,
-    NumberLiteral
-} from "../parser/string/operand/numeric.js"
+import type { NumberLiteral } from "../parser/string/operand/numeric.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
 
 export type inferAst<ast, resolutions> = ast extends string
@@ -28,7 +25,7 @@ export type inferAst<ast, resolutions> = ast extends string
         ? inferAst<ast[0], resolutions>
         : // If the value at index 1 was none of the above, it's a normal tuple definition
           Evaluate<{
-              [I in keyof ast]: inferAst<ast[I], resolutions>
+              [i in keyof ast]: inferAst<ast[i], resolutions>
           }>
     : inferObjectLiteral<ast, resolutions>
 

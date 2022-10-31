@@ -1,4 +1,4 @@
-import type { InternalAttributes } from "../../../attributes/attributes.js"
+import type { AttributeKey, Attributes } from "../../../attributes/shared.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
 import { hasDynamicType } from "../../../internal.js"
 import type { ParseError } from "../../common.js"
@@ -8,10 +8,8 @@ import type { LeftBoundOperator } from "../operator/bound/left.js"
 import { UnionOperator } from "../operator/union.js"
 import { Scanner } from "./scanner.js"
 
-// TODO: Check namespace parse output
-
 type BaseDynamicState = {
-    root: InternalAttributes | null
+    root: Attributes | null
     branches: DynamicState.OpenBranches
     groups: DynamicState.OpenBranches[]
     scanner: Scanner
@@ -35,7 +33,7 @@ export type StaticState<preconditions extends StaticState.Preconditions = {}> =
 
 export namespace DynamicState {
     export type Preconditions = {
-        root?: InternalAttributes
+        root?: Attributes
         branches?: Partial<OpenBranches>
         groups?: OpenBranches[]
     }
@@ -55,11 +53,10 @@ export namespace StaticState {
 }
 
 export namespace DynamicState {
-    export type WithRoot<
-        attributePreconditions extends Partial<InternalAttributes> = {}
-    > = DynamicState<{
-        root: Attributes.With<attributePreconditions>
-    }>
+    export type WithRoot<attributePreconditions extends Attributes = {}> =
+        DynamicState<{
+            root: attributePreconditions
+        }>
 }
 
 export namespace StaticState {
@@ -91,8 +88,8 @@ type SharedOpenLeftBound = [number, Scanner.PairableComparator]
 export namespace DynamicState {
     export type OpenBranches = {
         leftBound?: OpenLeftBound | null
-        union?: InternalAttributes | null
-        intersection?: InternalAttributes | null
+        union?: Attributes | null
+        intersection?: Attributes | null
     }
 
     export type OpenLeftBound = SharedOpenLeftBound
@@ -233,8 +230,8 @@ export namespace DynamicState {
 
     export const rootAttributeEquals = <
         s extends DynamicState,
-        k extends Attributes.KeyOf,
-        v extends InternalAttributes[k]
+        k extends AttributeKey,
+        v extends Attributes[k]
     >(
         s: s,
         k: k,
@@ -245,8 +242,8 @@ export namespace DynamicState {
 
     export const rootAttributeHasType = <
         s extends DynamicState,
-        k extends Attributes.KeyOf,
-        typeName extends dynamicTypeOf<InternalAttributes[k]>
+        k extends AttributeKey,
+        typeName extends dynamicTypeOf<Attributes[k]>
     >(
         s: s,
         k: k,

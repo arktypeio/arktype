@@ -1,4 +1,4 @@
-import { InternalAttributes } from "../../../attributes/attributes.js"
+import { union } from "../../../attributes/union.js"
 import type { maybePush } from "../../common.js"
 import type { StaticState } from "../state/state.js"
 import { DynamicState } from "../state/state.js"
@@ -9,7 +9,7 @@ export namespace UnionOperator {
     export const parse = (s: DynamicState.WithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         s.branches.union = s.branches.union
-            ? InternalAttributes.reduce("union", s.branches.union, s.root)
+            ? union(s.branches.union, s.root)
             : s.root
         s.root = DynamicState.unset
         return s
@@ -41,7 +41,7 @@ export namespace UnionOperator {
         if (!s.branches.union) {
             return s
         }
-        s.root = InternalAttributes.reduce("union", s.branches.union, s.root)
+        s.root = union(s.branches.union, s.root)
         delete s.branches.union
         return s
     }

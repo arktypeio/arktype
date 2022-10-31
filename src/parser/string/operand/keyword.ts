@@ -1,4 +1,4 @@
-import { InternalAttributes } from "../../../attributes/attributes.js"
+import type { Attributes } from "../../../attributes/shared.js"
 import type { array, Conform, dictionary } from "../../../internal.js"
 
 export type Keyword = keyof Keyword.Inferences
@@ -43,52 +43,47 @@ export namespace Keyword {
     const defineKeywordAttributes = <keywordsToAttributes>(
         keywordsToAttributes: Conform<
             keywordsToAttributes,
-            Record<Keyword, InternalAttributes>
+            Record<Keyword, Attributes>
         >
     ) => keywordsToAttributes
 
     // TODO: Impact of freezing these?
     const attributes = defineKeywordAttributes({
         // TS keywords
-        any: InternalAttributes.init("noop"),
-        bigint: InternalAttributes.init("type", "bigint"),
-        boolean: InternalAttributes.init("type", "boolean"),
-        false: InternalAttributes.init("value", false),
+        any: {},
+        bigint: { type: "bigint" },
+        boolean: { type: "boolean" },
+        false: { value: false },
         // TODO: Add never
-        never: InternalAttributes.init("type", "never"),
-        null: InternalAttributes.init("value", null),
-        number: InternalAttributes.init("type", "number"),
-        object:
-            // Unfortunately, since the TS object keyword can be one of three
-            // types within our dynamic type system, creating an accurate node
-            // is cumbersome.
-            InternalAttributes.reduce(
-                "union",
-                InternalAttributes.reduce(
-                    "union",
-                    InternalAttributes.init("type", "dictionary"),
-                    InternalAttributes.init("type", "array")
-                ),
-                InternalAttributes.init("type", "function")
-            ),
-        string: InternalAttributes.init("type", "string"),
-        symbol: InternalAttributes.init("type", "symbol"),
-        true: InternalAttributes.init("value", true),
-        undefined: InternalAttributes.init("value", undefined),
-        unknown: InternalAttributes.init("noop"),
-        void: InternalAttributes.init("value", undefined),
+        never: { value: "never" },
+        null: { value: null },
+        number: { type: "number" },
+        object: {
+            branches: [
+                "|",
+                { type: "dictionary" },
+                { type: "array" },
+                { type: "function" }
+            ]
+        },
+        string: { type: "string" },
+        symbol: { type: "symbol" },
+        true: { value: true },
+        undefined: { value: undefined },
+        unknown: {},
+        void: { value: undefined },
         // JS Object types
-        Function: InternalAttributes.init("type", "function"),
+        Function: { type: "function" },
         // Supplemental types
-        array: InternalAttributes.init("type", "array"),
-        dictionary: InternalAttributes.init("type", "dictionary"),
+        array: { type: "array" },
+        dictionary: { type: "dictionary" },
         // Regex
-        email: InternalAttributes.init("regex", /^(.+)@(.+)\.(.+)$/),
-        alphanumeric: InternalAttributes.init("regex", /^[\dA-Za-z]+$/),
-        alphaonly: InternalAttributes.init("regex", /^[A-Za-z]+$/),
-        lowercase: InternalAttributes.init("regex", /^[a-z]*$/),
-        uppercase: InternalAttributes.init("regex", /^[A-Z]*$/),
+        email: { regex: "/^(.+)@(.+)\\.(.+)$/" },
+        alphanumeric: { regex: "/^[dA-Za-z]+$/" },
+        alphaonly: { regex: "/^[A-Za-z]+$/" },
+        lowercase: { regex: "/^[a-z]*$/" },
+        uppercase: { regex: "/^[A-Z]*$/" },
         // Numeric
-        integer: InternalAttributes.init("divisibility", 1)
+        integer: { divisor: 1 }
     })
 }

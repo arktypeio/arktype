@@ -1,26 +1,11 @@
-import type { Evaluate, IsTopType } from "./generics.js"
+import type { IsTopType } from "./generics.js"
 
 export type dictionary<of = unknown> = Record<string, of>
 
 export type array<of = unknown> = of[]
 
-type BuiltinDynamicObject = dictionary | array | null
-
-type BuiltinDynamicTypes = {
-    bigint: bigint
-    boolean: boolean
-    function: Function
-    number: number
-    object: BuiltinDynamicObject
-    string: string
-    symbol: symbol
-    undefined: undefined
-}
-
-type builtinDyanmicTypeOf<data> = data extends Function
+type builtinDyanmicTypeOfNonObject<data> = data extends Function
     ? "function"
-    : data extends BuiltinDynamicObject
-    ? "object"
     : data extends string
     ? "string"
     : data extends number
@@ -33,13 +18,18 @@ type builtinDyanmicTypeOf<data> = data extends Function
     ? "bigint"
     : "symbol"
 
-export type DynamicTypes = Evaluate<
-    Omit<BuiltinDynamicTypes, "object"> & {
-        dictionary: dictionary
-        array: array
-        null: null
-    }
->
+export type DynamicTypes = {
+    bigint: bigint
+    boolean: boolean
+    function: Function
+    number: number
+    string: string
+    symbol: symbol
+    undefined: undefined
+    dictionary: dictionary
+    array: array
+    null: null
+}
 
 export type dynamicTypeOf<data> = IsTopType<data> extends true
     ? DynamicTypeName
@@ -47,7 +37,7 @@ export type dynamicTypeOf<data> = IsTopType<data> extends true
     ? "array"
     : data extends null
     ? "null"
-    : builtinDyanmicTypeOf<data>
+    : builtinDyanmicTypeOfNonObject<data>
 
 export type DynamicTypeName = keyof DynamicTypes
 

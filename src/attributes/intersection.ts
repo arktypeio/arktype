@@ -5,8 +5,15 @@ import type {
     AttributeBranches,
     AttributeKey,
     Attributes,
+    AttributeTypes,
     IntersectionReducer
 } from "./shared.js"
+
+export const add = <key extends AttributeKey>(
+    attributes: Attributes,
+    key: key,
+    value: AttributeTypes[key]
+) => intersection(attributes, { [key]: value })
 
 export const intersection = (left: Attributes, right: Attributes) => {
     const intersection = { ...left, ...right }
@@ -45,13 +52,13 @@ const intersectionReducers = defineIntersectionReducers({
     bounds: intersectBounds,
     baseProp: (left, right) => intersection(left, right),
     props: (left, right) => {
-        const intersection = { ...left, ...right }
-        for (const k in intersection) {
+        const intersectedProps = { ...left, ...right }
+        for (const k in intersectedProps) {
             if (k in left && k in right) {
-                intersection[k] = intersection(left[k], right[k])
+                intersectedProps[k] = intersection(left[k], right[k])
             }
         }
-        return intersection
+        return intersectedProps
     },
     branches: (
         ...leftAndRightBranches: [AttributeBranches, AttributeBranches]

@@ -24,17 +24,17 @@ export const intersectBounds: IntersectionReducer<"bounds"> = (base, value) => {
 
 export type BoundsString = Nominal<string, "BoundsString">
 
-type BoundsData = {
+export type BoundsData = {
     min?: BoundData
     max?: BoundData
 }
 
-type BoundData = {
+export type BoundData = {
     limit: number
     inclusive: boolean
 }
 
-const stringifyBounds = (boundsData: BoundsData) =>
+export const stringifyBounds = (boundsData: BoundsData) =>
     JSON.stringify(boundsData) as BoundsString
 
 const parseBounds = (boundsString: BoundsString) =>

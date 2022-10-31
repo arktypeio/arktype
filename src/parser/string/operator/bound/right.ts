@@ -1,10 +1,14 @@
-import { InternalAttributes } from "../../../../attributes/attributes.js"
+import { add } from "../../../../attributes/intersection.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
 import type { StaticState } from "../../state/state.js"
 import { DynamicState } from "../../state/state.js"
-import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
+import {
+    buildInvalidDoubleMessage,
+    invertedComparators,
+    toBoundString
+} from "./shared.js"
 
 export namespace RightBoundOperator {
     export const parse = (
@@ -44,18 +48,20 @@ export namespace RightBoundOperator {
         comparator: Scanner.Comparator,
         limit: number
     ) => {
-        s.root = InternalAttributes.reduce("bound", s.root, comparator, limit)
+        s.root = add(s.root, "bounds", toBoundString(comparator, limit))
         if (!isLeftBounded(s)) {
             return s
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return DynamicState.error(buildInvalidDoubleMessage(comparator))
         }
-        s.root = InternalAttributes.reduce(
-            "bound",
+        s.root = add(
             s.root,
-            invertedComparators[s.branches.leftBound[1]],
-            s.branches.leftBound[0]
+            "bounds",
+            toBoundString(
+                invertedComparators[s.branches.leftBound[1]],
+                s.branches.leftBound[0]
+            )
         )
         s.branches.leftBound = DynamicState.unset
         return s

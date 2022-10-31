@@ -1,4 +1,4 @@
-import { InternalAttributes } from "../../../attributes/attributes.js"
+import type { Attributes } from "../../../attributes/shared.js"
 import type { Scanner } from "../state/scanner.js"
 import type { DynamicState, StaticState } from "../state/state.js"
 
@@ -19,13 +19,10 @@ export namespace ArrayOperator {
         ? StaticState.setRoot<s, [s["root"], "[]"], remaining>
         : StaticState.error<incompleteTokenMessage>
 
-    export const arrayOf = (elementAttributes: InternalAttributes) =>
-        InternalAttributes.reduce(
-            "prop",
-            InternalAttributes.init("type", "array"),
-            true,
-            elementAttributes
-        )
+    export const arrayOf = (elementAttributes: Attributes) => ({
+        type: "array",
+        baseProp: elementAttributes
+    })
 
     export const incompleteTokenMessage = `Missing expected ']'.`
 

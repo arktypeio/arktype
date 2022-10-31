@@ -1,4 +1,4 @@
-import { InternalAttributes } from "../../../attributes/attributes.js"
+import type { Attributes } from "../../../attributes/shared.js"
 import type {
     ParseError,
     ParserContext,
@@ -44,21 +44,21 @@ export namespace Unenclosed {
     export const maybeParseIdentifier = (
         token: string,
         context: ParserContext
-    ): InternalAttributes | undefined =>
+    ): Attributes | undefined =>
         Keyword.matches(token)
             ? Keyword.attributesOf(token)
             : token in context.aliases
-            ? InternalAttributes.init("value", "alias")
+            ? { value: "alias" }
             : undefined
 
     const maybeParseUnenclosedLiteral = (token: string) => {
         const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
         if (maybeNumber !== undefined) {
-            return InternalAttributes.init("value", maybeNumber)
+            return { value: maybeNumber }
         }
         const maybeBigint = UnenclosedBigint.parseWellFormed(token)
         if (maybeBigint !== undefined) {
-            return InternalAttributes.init("value", maybeBigint)
+            return { value: maybeBigint }
         }
     }
 

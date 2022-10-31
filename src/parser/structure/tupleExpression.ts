@@ -1,4 +1,4 @@
-import type { InternalAttributes } from "../../attributes/attributes.js"
+import type { Attributes } from "../../attributes/shared.js"
 import type {
     ParseError,
     ParserContext,
@@ -16,7 +16,7 @@ export const isTupleExpression = (def: unknown[]): def is TupleExpression =>
 export const parseTupleExpression = (
     [definition, token, ...args]: TupleExpression,
     context: ParserContext
-) => ({} as InternalAttributes)
+) => ({} as Attributes)
 
 export type parseTupleExpression<
     Def extends TupleExpression,
