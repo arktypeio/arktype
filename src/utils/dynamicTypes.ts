@@ -1,24 +1,4 @@
-export type IsTopType<T> = (any extends T ? true : false) extends true
-    ? true
-    : false
-
-export type IsAny<T> = (any extends T ? TopTypeIsAny<T> : false) extends true
-    ? true
-    : false
-
-export type IsUnknown<T> = (
-    any extends T ? TopTypeIsUnknown<T> : false
-) extends true
-    ? true
-    : false
-
-type TopTypeIsAny<T> = (T extends {} ? true : false) extends false
-    ? false
-    : true
-
-type TopTypeIsUnknown<T> = (T extends {} ? true : false) extends false
-    ? true
-    : false
+import type { IsTopType } from "./generics.js"
 
 export type dictionary<of = unknown> = Record<string, of>
 
