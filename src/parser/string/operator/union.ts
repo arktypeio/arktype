@@ -1,24 +1,23 @@
 import { union } from "../../../attributes/union.js"
 import type { maybePush } from "../../common.js"
-import type { StaticState } from "../state/state.js"
-import { DynamicState } from "../state/state.js"
+import { State } from "../state/state.js"
 import type { LeftBoundOperator } from "./bound/left.js"
 import { IntersectionOperator } from "./intersection.js"
 
 export namespace UnionOperator {
-    export const parse = (s: DynamicState.WithRoot) => {
+    export const parse = (s: State.DynamicWithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         s.branches.union = s.branches.union
             ? union(s.branches.union, s.root)
             : s.root
-        s.root = DynamicState.unset
+        s.root = State.unset
         return s
     }
 
-    export type parse<s extends StaticState.WithRoot> =
-        s extends StaticState.WithOpenLeftBound
+    export type parse<s extends State.StaticWithRoot> =
+        s extends State.StaticWithOpenLeftBound
             ? LeftBoundOperator.unpairedError<s>
-            : StaticState.from<{
+            : State.from<{
                   root: null
                   branches: {
                       leftBound: null
@@ -29,13 +28,13 @@ export namespace UnionOperator {
                   unscanned: s["unscanned"]
               }>
 
-    export type collectBranches<s extends StaticState.WithRoot> = maybePush<
+    export type collectBranches<s extends State.StaticWithRoot> = maybePush<
         s["branches"]["union"],
         IntersectionOperator.collectBranches<s>
     >
 
     export const mergeDescendantsToRootIfPresent = (
-        s: DynamicState.WithRoot
+        s: State.DynamicWithRoot
     ) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         if (!s.branches.union) {

@@ -1,19 +1,18 @@
-import type { StaticState } from "../state/state.js"
-import { DynamicState } from "../state/state.js"
+import { State } from "../state/state.js"
 
 export namespace GroupOpen {
-    export const parse = (s: DynamicState) => {
+    export const parse = (s: State.Dynamic) => {
         s.groups.push(s.branches)
-        s.branches = DynamicState.initializeBranches()
+        s.branches = State.initializeBranches()
         return s
     }
 
     export type parse<
-        s extends StaticState,
+        s extends State.Static,
         unscanned extends string
-    > = StaticState.from<{
+    > = State.from<{
         groups: [...s["groups"], s["branches"]]
-        branches: StaticState.initialBranches
+        branches: State.initialBranches
         root: null
         unscanned: unscanned
     }>

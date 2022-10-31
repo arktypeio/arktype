@@ -1,8 +1,7 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import { Scanner } from "../state/scanner.js"
-import { DynamicState } from "../state/state.js"
-import type { StaticState } from "../state/state.js"
+import { State } from "../state/state.js"
 import { ArrayOperator } from "./array.js"
 import { BoundOperator } from "./bound/bound.js"
 import { DivisibilityOperator } from "./divisibility.js"
@@ -12,10 +11,10 @@ import { OptionalOperator } from "./optional.js"
 import { UnionOperator } from "./union.js"
 
 export namespace Operator {
-    export const parse = (s: DynamicState.WithRoot): DynamicState => {
+    export const parse = (s: State.DynamicWithRoot): State.Dynamic => {
         const lookahead = s.scanner.shift()
         return lookahead === ""
-            ? DynamicState.finalize(s)
+            ? State.finalize(s)
             : lookahead === "?"
             ? OptionalOperator.finalize(s)
             : lookahead === "["
@@ -35,26 +34,26 @@ export namespace Operator {
             : throwInternalError(buildUnexpectedCharacterMessage(lookahead))
     }
 
-    export type parse<s extends StaticState.WithRoot> =
+    export type parse<s extends State.StaticWithRoot> =
         s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
             ? lookahead extends "?"
                 ? OptionalOperator.finalize<s>
                 : lookahead extends "["
                 ? ArrayOperator.parse<s, unscanned>
                 : lookahead extends "|"
-                ? UnionOperator.parse<StaticState.scanTo<s, unscanned>>
+                ? UnionOperator.parse<State.scanTo<s, unscanned>>
                 : lookahead extends "&"
-                ? IntersectionOperator.parse<StaticState.scanTo<s, unscanned>>
+                ? IntersectionOperator.parse<State.scanTo<s, unscanned>>
                 : lookahead extends ")"
-                ? GroupClose.parse<StaticState.scanTo<s, unscanned>>
+                ? GroupClose.parse<State.scanTo<s, unscanned>>
                 : lookahead extends Scanner.ComparatorStartChar
                 ? BoundOperator.parse<s, lookahead, unscanned>
                 : lookahead extends "%"
                 ? DivisibilityOperator.parse<s, unscanned>
                 : lookahead extends " "
-                ? parse<StaticState.scanTo<s, unscanned>>
-                : StaticState.error<buildUnexpectedCharacterMessage<lookahead>>
-            : StaticState.finalize<s, 0>
+                ? parse<State.scanTo<s, unscanned>>
+                : State.error<buildUnexpectedCharacterMessage<lookahead>>
+            : State.finalize<s, 0>
 
     export const buildUnexpectedCharacterMessage = <char extends string>(
         char: char

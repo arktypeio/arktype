@@ -8,145 +8,120 @@ import type { LeftBoundOperator } from "../operator/bound/left.js"
 import { UnionOperator } from "../operator/union.js"
 import { Scanner } from "./scanner.js"
 
-type BaseDynamicState = {
-    root: Attributes | null
-    branches: DynamicState.OpenBranches
-    groups: DynamicState.OpenBranches[]
-    scanner: Scanner
-}
+export namespace State {
+    type BaseDynamic = {
+        root: Attributes | null
+        branches: DynamicOpenBranches
+        groups: DynamicOpenBranches[]
+        scanner: Scanner
+    }
 
-export type DynamicState<
-    preconditions extends DynamicState.Preconditions = {}
-> = Omit<BaseDynamicState, keyof preconditions> & preconditions
+    export type Dynamic<preconditions extends DynamicPreconditions = {}> = Omit<
+        BaseDynamic,
+        keyof preconditions
+    > &
+        preconditions
 
-type BaseStaticState = {
-    root: unknown
-    branches: StaticState.OpenBranches
-    groups: StaticState.OpenBranches[]
-    unscanned: StaticState.StringOrReturnCode
-}
+    type BaseStatic = {
+        root: unknown
+        branches: StaticOpenBranches
+        groups: StaticOpenBranches[]
+        unscanned: StringOrReturnCode
+    }
 
-export type StaticState<preconditions extends StaticState.Preconditions = {}> =
-    Omit<BaseStaticState, keyof preconditions> & {
+    export type Static<preconditions extends StaticPreconditions = {}> = Omit<
+        BaseStatic,
+        keyof preconditions
+    > & {
         unscanned: string
     } & preconditions
 
-export namespace DynamicState {
-    export type Preconditions = {
+    export type DynamicPreconditions = {
         root?: Attributes
-        branches?: Partial<OpenBranches>
-        groups?: OpenBranches[]
+        branches?: Partial<DynamicOpenBranches>
+        groups?: DynamicOpenBranches[]
     }
-}
 
-export namespace StaticState {
-    export type Preconditions = {
+    export type StaticPreconditions = {
         root?: unknown
-        branches?: Partial<OpenBranches>
-        groups?: OpenBranches[]
+        branches?: Partial<StaticOpenBranches>
+        groups?: StaticOpenBranches[]
         unscanned?: StringOrReturnCode
     }
 
     export type ReturnCode = 0 | 1
 
     export type StringOrReturnCode = string | ReturnCode
-}
 
-export namespace DynamicState {
-    export type WithRoot<attributePreconditions extends Attributes = {}> =
-        DynamicState<{
-            root: attributePreconditions
-        }>
-}
+    export type DynamicWithRoot<
+        attributePreconditions extends Attributes = {}
+    > = Dynamic<{
+        root: attributePreconditions
+    }>
 
-export namespace StaticState {
-    export type WithRoot<ast = {}> = StaticState<{
+    export type StaticWithRoot<ast = {}> = Static<{
         root: ast
     }>
-}
 
-export namespace DynamicState {
-    export const initialize = (def: string): DynamicState => ({
+    export const initialize = (def: string): Dynamic => ({
         root: null,
         branches: initializeBranches(),
         groups: [],
         scanner: new Scanner(def)
     })
-}
 
-export namespace StaticState {
     export type initialize<def extends string> = from<{
         root: null
         branches: initialBranches
         groups: []
         unscanned: def
     }>
-}
 
-type SharedOpenLeftBound = [number, Scanner.PairableComparator]
+    export type OpenLeftBound = [number, Scanner.PairableComparator]
 
-export namespace DynamicState {
-    export type OpenBranches = {
+    export type DynamicOpenBranches = {
         leftBound?: OpenLeftBound | null
         union?: Attributes | null
         intersection?: Attributes | null
     }
 
-    export type OpenLeftBound = SharedOpenLeftBound
-
-    export const hasOpenLeftBound = <s extends DynamicState>(
+    export const hasOpenLeftBound = <s extends Dynamic>(
         s: s
     ): s is s & { branches: { leftBound: OpenLeftBound } } =>
         !!s.branches.leftBound
-}
 
-export namespace StaticState {
-    export type OpenBranches = {
+    export type StaticOpenBranches = {
         leftBound: OpenLeftBound | null
         union: [unknown, "|"] | null
         intersection: [unknown, "&"] | null
     }
 
-    export type OpenLeftBound = SharedOpenLeftBound
+    export type StaticWithOpenLeftBound = { branches: { leftBound: {} } }
 
-    export type WithOpenLeftBound = { branches: { leftBound: {} } }
-}
-
-export namespace DynamicState {
     export const error = (message: string) => throwParseError(message)
-}
 
-export namespace StaticState {
     export type error<message extends string> = unvalidatedFrom<{
         root: ParseError<message>
         branches: initialBranches
         groups: []
         unscanned: 1
     }>
-}
 
-export namespace DynamicState {
-    export const initializeBranches = (): OpenBranches => ({})
-}
+    export const initializeBranches = (): DynamicOpenBranches => ({})
 
-export namespace StaticState {
     export type initialBranches = {
         leftBound: null
         union: null
         intersection: null
     }
-}
 
-export namespace DynamicState {
-    export const finalizeBranches = (s: WithRoot) => {
+    export const finalizeBranches = (s: DynamicWithRoot) => {
         UnionOperator.mergeDescendantsToRootIfPresent(s)
         return s
     }
-}
 
-export namespace StaticState {
-    export type finalizeBranches<s extends WithRoot> =
-        s extends WithOpenLeftBound
+    export type finalizeBranches<s extends StaticWithRoot> =
+        s extends StaticWithOpenLeftBound
             ? LeftBoundOperator.unpairedError<s>
             : from<{
                   root: UnionOperator.collectBranches<s>
@@ -154,10 +129,8 @@ export namespace StaticState {
                   branches: initialBranches
                   unscanned: s["unscanned"]
               }>
-}
 
-export namespace DynamicState {
-    export const finalize = (s: DynamicState.WithRoot) => {
+    export const finalize = (s: DynamicWithRoot) => {
         if (s.groups.length) {
             return error(GroupOpen.unclosedMessage)
         }
@@ -165,11 +138,9 @@ export namespace DynamicState {
         s.scanner.hasBeenFinalized = true
         return s
     }
-}
 
-export namespace StaticState {
     export type finalize<
-        s extends WithRoot,
+        s extends StaticWithRoot,
         returnCode extends ReturnCode
     > = s["groups"] extends []
         ? scanTo<
@@ -177,59 +148,48 @@ export namespace StaticState {
               returnCode
           >
         : error<GroupOpen.unclosedMessage>
-}
 
-export namespace DynamicState {
     export const finalizeGroup = (
-        s: DynamicState.WithRoot,
-        nextBranches: OpenBranches
+        s: DynamicWithRoot,
+        nextBranches: DynamicOpenBranches
     ) => {
         finalizeBranches(s)
         s.branches = nextBranches
-        return s as DynamicState
+        return s as Dynamic
     }
-}
 
-export namespace StaticState {
     export type finalizeGroup<
-        s extends StaticState.WithRoot,
-        nextBranches extends OpenBranches,
-        nextGroups extends OpenBranches[]
+        s extends StaticWithRoot,
+        nextBranches extends StaticOpenBranches,
+        nextGroups extends StaticOpenBranches[]
     > = from<{
         groups: nextGroups
         branches: nextBranches
         root: UnionOperator.collectBranches<s>
         unscanned: s["unscanned"]
     }>
-}
 
-export namespace DynamicState {
-    export const previousOperator = (s: DynamicState) =>
+    export const previousOperator = (s: Dynamic) =>
         s.branches.leftBound?.[1] ?? s.branches.intersection
             ? "&"
             : s.branches.union
             ? "|"
             : null
-}
 
-export namespace StaticState {
-    export type previousOperator<s extends StaticState> =
-        s extends WithOpenLeftBound
+    export type previousOperator<s extends Static> =
+        s extends StaticWithOpenLeftBound
             ? s["branches"]["leftBound"][1]
             : s["branches"]["intersection"] extends {}
             ? "&"
             : s["branches"]["union"] extends {}
             ? "|"
             : null
-}
 
-export namespace DynamicState {
-    export const hasRoot = <s extends DynamicState>(
-        s: s
-    ): s is s & { root: {} } => s.root !== null
+    export const hasRoot = <s extends Dynamic>(s: s): s is s & { root: {} } =>
+        s.root !== null
 
     export const rootAttributeEquals = <
-        s extends DynamicState,
+        s extends Dynamic,
         k extends AttributeKey,
         v extends Attributes[k]
     >(
@@ -241,7 +201,7 @@ export namespace DynamicState {
     } => s.root?.[k] === v
 
     export const rootAttributeHasType = <
-        s extends DynamicState,
+        s extends Dynamic,
         k extends AttributeKey,
         typeName extends dynamicTypeOf<Attributes[k]>
     >(
@@ -255,21 +215,19 @@ export namespace DynamicState {
     /** More transparent mutation in a function with a constrained input state */
     export const unset = null as any
 
-    export const shifted = (s: DynamicState) => {
+    export const shifted = (s: Dynamic) => {
         s.scanner.shift()
         return s
     }
-}
 
-export namespace StaticState {
-    export type Unvalidated = BaseStaticState
+    export type Unvalidated = BaseStatic
 
-    export type from<s extends StaticState> = s
+    export type from<s extends Static> = s
 
-    export type unvalidatedFrom<s extends BaseStaticState> = s
+    export type unvalidatedFrom<s extends BaseStatic> = s
 
     export type scanTo<
-        s extends StaticState,
+        s extends Static,
         unscanned extends StringOrReturnCode
     > = unvalidatedFrom<{
         root: s["root"]
@@ -279,7 +237,7 @@ export namespace StaticState {
     }>
 
     export type setRoot<
-        s extends StaticState,
+        s extends Static,
         node,
         scanTo extends string = s["unscanned"]
     > = from<{

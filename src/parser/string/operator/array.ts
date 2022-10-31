@@ -1,9 +1,9 @@
 import type { Attributes } from "../../../attributes/shared.js"
 import type { Scanner } from "../state/scanner.js"
-import type { DynamicState, StaticState } from "../state/state.js"
+import type { State } from "../state/state.js"
 
 export namespace ArrayOperator {
-    export const parse = (s: DynamicState.WithRoot) => {
+    export const parse = (s: State.DynamicWithRoot) => {
         const next = s.scanner.shift()
         if (next !== "]") {
             throw new Error(incompleteTokenMessage)
@@ -13,11 +13,11 @@ export namespace ArrayOperator {
     }
 
     export type parse<
-        s extends StaticState.WithRoot,
+        s extends State.StaticWithRoot,
         unscanned extends string
     > = unscanned extends Scanner.shift<"]", infer remaining>
-        ? StaticState.setRoot<s, [s["root"], "[]"], remaining>
-        : StaticState.error<incompleteTokenMessage>
+        ? State.setRoot<s, [s["root"], "[]"], remaining>
+        : State.error<incompleteTokenMessage>
 
     export const arrayOf = (elementAttributes: Attributes) =>
         ({

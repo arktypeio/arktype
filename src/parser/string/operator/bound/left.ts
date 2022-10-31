@@ -1,18 +1,17 @@
 import { isKeyOf } from "../../../../utils/generics.js"
 import { Scanner } from "../../state/scanner.js"
-import type { StaticState } from "../../state/state.js"
-import { DynamicState } from "../../state/state.js"
+import { State } from "../../state/state.js"
 import type { InvertedComparators } from "./shared.js"
 import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
 export namespace LeftBoundOperator {
     export const parse = (
-        s: DynamicState.WithRoot<{ value: number }>,
+        s: State.DynamicWithRoot<{ value: number }>,
         comparator: Scanner.Comparator
     ) =>
         isKeyOf(comparator, Scanner.pairableComparators)
-            ? DynamicState.hasOpenLeftBound(s)
-                ? DynamicState.error(
+            ? State.hasOpenLeftBound(s)
+                ? State.error(
                       buildBoundLiteralMessage(
                           s.root.value,
                           s.branches.leftBound[0],
@@ -20,14 +19,14 @@ export namespace LeftBoundOperator {
                       )
                   )
                 : parseValidated(s, comparator)
-            : DynamicState.error(buildInvalidDoubleMessage(comparator))
+            : State.error(buildInvalidDoubleMessage(comparator))
 
     export type parse<
-        s extends StaticState.WithRoot<number>,
+        s extends State.StaticWithRoot<number>,
         comparator extends Scanner.Comparator
     > = comparator extends Scanner.PairableComparator
-        ? s extends StaticState.WithOpenLeftBound
-            ? StaticState.error<
+        ? s extends State.StaticWithOpenLeftBound
+            ? State.error<
                   buildBoundLiteralMessage<
                       s["root"],
                       s["branches"]["leftBound"][0],
@@ -35,21 +34,21 @@ export namespace LeftBoundOperator {
                   >
               >
             : parseValidated<s, comparator>
-        : StaticState.error<buildInvalidDoubleMessage<comparator>>
+        : State.error<buildInvalidDoubleMessage<comparator>>
 
     const parseValidated = (
-        s: DynamicState.WithRoot<{ value: number }>,
+        s: State.DynamicWithRoot<{ value: number }>,
         token: Scanner.PairableComparator
     ) => {
         s.branches.leftBound = [s.root.value, token]
-        s.root = DynamicState.unset
+        s.root = State.unset
         return s
     }
 
     type parseValidated<
-        s extends StaticState.WithRoot<number>,
+        s extends State.StaticWithRoot<number>,
         comparator extends Scanner.PairableComparator
-    > = StaticState.from<{
+    > = State.from<{
         root: null
         branches: {
             union: s["branches"]["union"]
@@ -61,11 +60,11 @@ export namespace LeftBoundOperator {
     }>
 
     export type unpairedError<
-        s extends StaticState<{
+        s extends State.Static<{
             root: {}
-            branches: { leftBound: DynamicState.OpenLeftBound }
+            branches: { leftBound: State.OpenLeftBound }
         }>
-    > = StaticState.error<
+    > = State.error<
         buildUnpairedMessage<
             s["branches"]["leftBound"][0],
             s["branches"]["leftBound"][1]
@@ -73,11 +72,11 @@ export namespace LeftBoundOperator {
     >
 
     export const unpairedError = (
-        s: DynamicState<{
-            branches: { leftBound: DynamicState.OpenLeftBound }
+        s: State.Dynamic<{
+            branches: { leftBound: State.OpenLeftBound }
         }>
     ) =>
-        DynamicState.error(
+        State.error(
             buildUnpairedMessage(
                 s.branches.leftBound[0],
                 s.branches.leftBound[1]

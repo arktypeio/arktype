@@ -1,27 +1,26 @@
-import type { StaticState } from "../state/state.js"
-import { DynamicState } from "../state/state.js"
+import { State } from "../state/state.js"
 
 export namespace OptionalOperator {
-    export const finalize = (s: DynamicState.WithRoot) => {
+    export const finalize = (s: State.DynamicWithRoot) => {
         if (s.scanner.lookahead !== "") {
-            return DynamicState.error(nonTerminatingMessage)
+            return State.error(nonTerminatingMessage)
         }
-        DynamicState.finalize(s)
+        State.finalize(s)
+        // TODO: Fix optional
         s.root = s.root //InternalAttributes.reduce("optional", s.root, true)
         return s
     }
 
-    export type finalize<s extends StaticState.WithRoot> =
+    export type finalize<s extends State.StaticWithRoot> =
         s["unscanned"] extends "?"
-            ? wrapWithOptionalIfValid<StaticState.finalize<s, 0>>
-            : StaticState.error<nonTerminatingMessage>
+            ? wrapWithOptionalIfValid<State.finalize<s, 0>>
+            : State.error<nonTerminatingMessage>
 
-    type wrapWithOptionalIfValid<s extends StaticState.Unvalidated> =
-        s extends {
-            unscanned: string
-        }
-            ? StaticState.setRoot<s, [s["root"], "?"]>
-            : s
+    type wrapWithOptionalIfValid<s extends State.Unvalidated> = s extends {
+        unscanned: string
+    }
+        ? State.setRoot<s, [s["root"], "?"]>
+        : s
 
     export const nonTerminatingMessage = `Suffix '?' is only valid at the end of a definition.`
 

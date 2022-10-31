@@ -2,8 +2,7 @@ import { add } from "../../../../attributes/intersection.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
-import type { StaticState } from "../../state/state.js"
-import { DynamicState } from "../../state/state.js"
+import { State } from "../../state/state.js"
 import {
     buildInvalidDoubleMessage,
     invertedComparators,
@@ -12,7 +11,7 @@ import {
 
 export namespace RightBoundOperator {
     export const parse = (
-        s: DynamicState.WithRoot,
+        s: State.DynamicWithRoot,
         comparator: Scanner.Comparator
     ) => {
         const limitToken = s.scanner.shiftUntilNextTerminator()
@@ -28,13 +27,13 @@ export namespace RightBoundOperator {
     }
 
     export type parse<
-        s extends StaticState.WithRoot,
+        s extends State.StaticWithRoot,
         comparator extends Scanner.Comparator
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
         ? reduce<
-              StaticState.scanTo<s, nextUnscanned>,
+              State.scanTo<s, nextUnscanned>,
               comparator,
               UnenclosedNumber.parseWellFormedNumber<
                   scanned,
@@ -44,7 +43,7 @@ export namespace RightBoundOperator {
         : never
 
     const reduce = (
-        s: DynamicState.WithRoot,
+        s: State.DynamicWithRoot,
         comparator: Scanner.Comparator,
         limit: number
     ) => {
@@ -53,7 +52,7 @@ export namespace RightBoundOperator {
             return s
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-            return DynamicState.error(buildInvalidDoubleMessage(comparator))
+            return State.error(buildInvalidDoubleMessage(comparator))
         }
         s.root = add(
             s.root,
@@ -63,18 +62,18 @@ export namespace RightBoundOperator {
                 s.branches.leftBound[0]
             )
         )
-        s.branches.leftBound = DynamicState.unset
+        s.branches.leftBound = State.unset
         return s
     }
 
     type reduce<
-        s extends StaticState.WithRoot,
+        s extends State.StaticWithRoot,
         comparator extends Scanner.Comparator,
         limitOrError extends string | number
     > = limitOrError extends number
         ? s["branches"]["leftBound"] extends {}
             ? comparator extends Scanner.PairableComparator
-                ? StaticState.from<{
+                ? State.from<{
                       root: [
                           s["branches"]["leftBound"][0],
                           s["branches"]["leftBound"][1],
@@ -88,9 +87,9 @@ export namespace RightBoundOperator {
                       groups: s["groups"]
                       unscanned: s["unscanned"]
                   }>
-                : StaticState.error<buildInvalidDoubleMessage<comparator>>
-            : StaticState.setRoot<s, [s["root"], comparator, limitOrError]>
-        : StaticState.error<`${limitOrError}`>
+                : State.error<buildInvalidDoubleMessage<comparator>>
+            : State.setRoot<s, [s["root"], comparator, limitOrError]>
+        : State.error<`${limitOrError}`>
 
     export const buildInvalidLimitMessage = <
         comparator extends Scanner.Comparator,
@@ -106,8 +105,8 @@ export namespace RightBoundOperator {
         limit extends string
     > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
 
-    const isLeftBounded = <s extends DynamicState>(
+    const isLeftBounded = <s extends State.DynamicWithRoot>(
         s: s
-    ): s is s & { branches: { leftBound: DynamicState.OpenLeftBound } } =>
+    ): s is s & { branches: { leftBound: State.OpenLeftBound } } =>
         !!s.branches.leftBound
 }
