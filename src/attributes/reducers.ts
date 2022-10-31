@@ -3,9 +3,9 @@ import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import { UnenclosedNumber } from "../parser/string/operand/numeric.js"
 
 // TODO: Figure out mutations
-export const union = ({ ...left }: Attributes, { ...right }: Attributes) => {
-    let k: keyof Attributes
+export const union = (left: Attributes, right: Attributes) => {
     const baseAttributesToDistribute: Attributes = {}
+    let k: keyof Attributes
     for (k in right) {
         if (k in left) {
             // TODO: What to do with composable here
@@ -43,6 +43,8 @@ export const union = ({ ...left }: Attributes, { ...right }: Attributes) => {
     return left
 }
 
+const compressRedundant = (left: Attributes, right: Attributes) => {}
+
 export const intersect = (base: Attributes, attributes: Attributes) => {
     const intersection: Attributes = { ...base, ...attributes }
     let k: keyof Attributes
@@ -67,7 +69,18 @@ const defineIntersectionReducers = <
     intersections: intersections
 ) => intersections
 
-const reducers = defineIntersectionReducers({
+const defineUnionReducers = <
+    intersections extends {
+        [key in ReducibleKey]?: (
+            base: AttributeTypes[key],
+            value: AttributeTypes[key]
+        ) => AttributeTypes[key] | Contradiction
+    }
+>(
+    intersections: intersections
+) => intersections
+
+const intersectionReducers = defineIntersectionReducers({
     value: (base, value) => ({
         key: "value",
         base,
