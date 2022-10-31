@@ -81,3 +81,9 @@ export type xor<A, B> =
     | Evaluate<B & { [k in keyof A]?: undefined }>
 
 export type EmptyObject = Record<string | number | symbol, never>
+
+declare const id: unique symbol
+
+export type Nominal<T, id extends string> = T & {
+    readonly [id]: id
+}
