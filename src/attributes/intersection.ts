@@ -28,7 +28,7 @@ export const intersection = (left: Attributes, right: Attributes) => {
     const intersection = { ...left, ...right }
     let k: keyof Attributes
     for (k in intersection) {
-        if (k in left && k in right) {
+        if (k in left && k in right && left[k] !== right[k]) {
             const reducer = intersectionReducers[k] as (
                 left: any,
                 right: any
