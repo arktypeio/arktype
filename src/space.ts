@@ -17,7 +17,8 @@ const rawSpace = (aliases: dictionary, config: ArktypeConfig = {}) => {
     for (const name in aliases) {
         result[name] = new Arktype(
             Root.parse(aliases[name], {
-                aliases
+                aliases,
+                path: ""
             }),
             config,
             result

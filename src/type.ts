@@ -11,7 +11,8 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {
     const root = Root.parse(definition, {
-        aliases: space?.$.aliases ?? {}
+        aliases: space?.$.aliases ?? {},
+        path: ""
     })
     return new Arktype(root, config, space as any)
 }
