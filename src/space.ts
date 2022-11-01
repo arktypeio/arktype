@@ -1,3 +1,5 @@
+import type { ArktypeConfig } from "./arktype.js"
+import { Arktype } from "./arktype.js"
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
@@ -5,8 +7,6 @@ import type { dictionary, evaluate } from "./internal.js"
 import { initializeParserContext } from "./parser/common.js"
 import type { parseAliases } from "./parser/space.js"
 import { Str } from "./parser/string/string.js"
-import type { ArktypeConfig } from "./type.js"
-import { Arktype } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -43,8 +43,6 @@ type DynamicSpaceFn = <aliases extends dictionary>(
 export type ArktypeSpace<inferred extends dictionary = dictionary> = {
     $: SpaceRoot<inferred>
 } & resolutionsToArktypes<inferred>
-
-export const defaultSpace = rawSpace({})
 
 type resolutionsToArktypes<inferred> = {
     [alias in keyof inferred]: Arktype<inferred[alias]>

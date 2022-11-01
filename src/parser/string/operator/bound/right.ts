@@ -4,7 +4,7 @@ import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
-import { buildInvalidDoubleMessage, toBounds } from "./shared.js"
+import { buildInvalidDoubleMessage, toBoundsAttribute } from "./shared.js"
 
 export namespace RightBoundOperator {
     export const parse = (
@@ -44,7 +44,7 @@ export namespace RightBoundOperator {
         comparator: Scanner.Comparator,
         limit: number
     ) => {
-        const boundsData = toBounds(comparator, limit)
+        const boundsData = toBoundsAttribute(comparator, limit)
         if (!isLeftBounded(s)) {
             s.root = assignIntersection(
                 s.root,

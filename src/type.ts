@@ -1,19 +1,21 @@
+import type { ArktypeConfig } from "./arktype.js"
+import { Arktype } from "./arktype.js"
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
-import type { Attributes } from "./attributes/shared.js"
 import type { dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
 import { initializeParserContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
-import { defaultSpace } from "./space.js"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import { space } from "./space.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
+const emptySpace: ArktypeSpace = space({})
+
 const rawTypeFn: DynamicTypeFn = (
     definition,
-    { space = defaultSpace, ...config } = {}
+    { space = emptySpace, ...config } = {}
 ) =>
     new Arktype(
         Root.parse(definition, initializeParserContext(space.$)),
@@ -45,34 +47,3 @@ type DynamicTypeFn = (
 ) => Arktype
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
-
-export class Arktype<Inferred = unknown> {
-    constructor(
-        public attributes: Attributes,
-        public config: ArktypeConfig,
-        public space: ArktypeSpace
-    ) {
-        // TODO: Integrate config
-    }
-
-    get infer(): Inferred {
-        return chainableNoOpProxy
-    }
-
-    check(data: unknown) {
-        const state = {} as any
-        return state.problems.length
-            ? {
-                  problems: state.problems
-              }
-            : { data: data as Inferred }
-    }
-
-    assert(data: unknown) {
-        const result = this.check(data)
-        result.problems?.throw()
-        return result.data as Inferred
-    }
-}
-
-export type ArktypeConfig = dictionary

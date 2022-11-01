@@ -1,5 +1,4 @@
 import type { BoundData, BoundsData } from "../../../../attributes/bounds.js"
-import { stringifyBounds } from "../../../../attributes/bounds.js"
 import type { Scanner } from "../../state/scanner.js"
 
 export const comparatorDescriptions = {
@@ -30,7 +29,7 @@ export const buildInvalidDoubleMessage = <
 ): buildInvalidDoubleMessage<comparator> =>
     `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
-export const toBounds = (
+export const toBoundsAttribute = (
     comparator: Scanner.Comparator,
     limit: number
 ): BoundsData => {
