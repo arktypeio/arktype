@@ -29,7 +29,7 @@ export const atomicAttributes: Record<AtomicKey, true> = {
 type AtomicKey = keyof AtomicAttributeTypes
 
 type ComposedAttributeTypes = {
-    parent: Attributes
+    contradictions: Contradiction[]
     baseProp: Attributes
     props: dictionary<Attributes>
     branches: AttributeBranches

@@ -1,4 +1,4 @@
-import { isKeyOf, throwInternalError } from "../internal.js"
+import { isKeyOf } from "../internal.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
@@ -8,7 +8,6 @@ import type {
     AttributeTypes,
     IntersectionReducer
 } from "./shared.js"
-import { isContradiction } from "./shared.js"
 
 export const intersect = (left: Attributes, right: Attributes) => {
     const intersection = { ...left, ...right }
@@ -40,8 +39,11 @@ const intersectKey = <k extends AttributeKey>(
         }
     }
     if (k in intersection) {
-        const result = intersectionReducers[k](intersection[k] as any, value)
-        if (isContradiction(result)) {
+        if (intersection[k] !== value) {
+            intersection[k] = intersectionReducers[k](
+                intersection[k] as any,
+                value
+            ) as any
         }
     } else {
         intersection[k] = value
@@ -85,13 +87,7 @@ const intersectionReducers: IntersectionReducers = {
         }
         return intersectionBranches
     },
-    parent: (left, right) => {
-        return throwInternalError(
-            `Unexpectedly tried to intersect parents:\n${JSON.stringify(
-                left
-            )}\n${JSON.stringify(right)}`
-        )
-    }
+    contradictions: (left, right) => [...left, ...right]
 }
 
 type Implications = Pick<Attributes, ImpliableKey>
