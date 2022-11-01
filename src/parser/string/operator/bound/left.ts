@@ -92,13 +92,13 @@ export namespace LeftBoundOperator {
         limit: limit,
         comparator: token
     ): buildBoundLiteralMessage<literal, limit, token> =>
-        `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
+        `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
 
     export type buildBoundLiteralMessage<
         literal extends number,
         limit extends number,
         comparator extends Scanner.Comparator
-    > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}.`
+    > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
 
     export const buildUnpairedMessage = <
         limit extends number,
@@ -107,10 +107,10 @@ export namespace LeftBoundOperator {
         limit: limit,
         comparator: comparator
     ): buildUnpairedMessage<limit, comparator> =>
-        `Left bounds are only valid when paired with right bounds. Consider using ${invertedComparators[comparator]}${limit} instead.`
+        `Left bounds are only valid when paired with right bounds. Consider using ${invertedComparators[comparator]}${limit} instead`
 
     export type buildUnpairedMessage<
         limit extends number,
         comparator extends Scanner.Comparator
-    > = `Left bounds are only valid when paired with right bounds. Consider using ${InvertedComparators[comparator]}${limit} instead.`
+    > = `Left bounds are only valid when paired with right bounds. Consider using ${InvertedComparators[comparator]}${limit} instead`
 }

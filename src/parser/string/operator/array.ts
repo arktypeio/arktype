@@ -24,7 +24,7 @@ export namespace ArrayOperator {
         baseProp: elementAttributes
     })
 
-    export const incompleteTokenMessage = `Missing expected ']'.`
+    export const incompleteTokenMessage = `Missing expected ']'`
 
     type incompleteTokenMessage = typeof incompleteTokenMessage
 }

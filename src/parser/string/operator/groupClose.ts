@@ -22,8 +22,8 @@ export namespace GroupClose {
     export const buildUnmatchedMessage = <unscanned extends string>(
         unscanned: unscanned
     ): buildUnmatchedMessage<unscanned> =>
-        `Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}.`
+        `Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}`
 
     type buildUnmatchedMessage<unscanned extends string> =
-        `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}.`
+        `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}`
 }

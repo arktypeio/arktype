@@ -57,9 +57,8 @@ export namespace Operator {
 
     export const buildUnexpectedCharacterMessage = <char extends string>(
         char: char
-    ): buildUnexpectedCharacterMessage<char> =>
-        `Unexpected character '${char}'.`
+    ): buildUnexpectedCharacterMessage<char> => `Unexpected character '${char}'`
 
     type buildUnexpectedCharacterMessage<char extends string> =
-        `Unexpected character '${char}'.`
+        `Unexpected character '${char}'`
 }

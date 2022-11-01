@@ -1,4 +1,4 @@
-import { throwInternalError } from "../internal.js"
+import { isKeyOf, throwInternalError } from "../internal.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
@@ -10,35 +10,38 @@ import type {
 
 export const intersection = (left: Attributes, right: Attributes) => {
     const intersection = { ...left, ...right }
-    let k: keyof Attributes
+    let k: AttributeKey
     for (k in intersection) {
+        if (isKeyOf(k, implicationReducers)) {
+            const implications = implicationReducers[k]()
+            let impliedKey: ImpliableKey
+            for (impliedKey in implications) {
+                intersection[impliedKey] =
+                    impliedKey in intersection
+                        ? (intersectionReducers as DynamicIntersectionReducers)[
+                              impliedKey
+                          ](intersection[impliedKey], implications[impliedKey])
+                        : implications[impliedKey]
+            }
+        }
         if (k in left && k in right && left[k] !== right[k]) {
-            const reducer = intersectionReducers[k] as (
-                left: any,
-                right: any
-            ) => any
-            // TODO: Add implications
-            // isKeyOf(key, implications)
-            //     ? {
-            //           [key]: value,
-            //           ...implications[key]
-            //       }
-            //     : { [key]: value }
-            intersection[k] = reducer(left[k], right[k])
+            intersection[k] = (
+                intersectionReducers as DynamicIntersectionReducers
+            )[k](left[k], right[k])
         }
     }
     return intersection
 }
 
-const defineIntersectionReducers = <
-    intersections extends {
-        [key in AttributeKey]: IntersectionReducer<key>
-    }
->(
-    intersections: intersections
-) => intersections
+type DynamicIntersectionReducers = {
+    [k in AttributeKey]: (left: any, right: any) => any
+}
 
-const intersectionReducers = defineIntersectionReducers({
+type IntersectionReducers = {
+    [k in AttributeKey]: IntersectionReducer<k>
+}
+
+const intersectionReducers: IntersectionReducers = {
     value: (left, right) => ({
         key: "value",
         contradiction: [left, right]
@@ -82,27 +85,23 @@ const intersectionReducers = defineIntersectionReducers({
             )}\n${JSON.stringify(right)}`
         )
     }
-})
-
-type Implications = Pick<Attributes, "type" | "value" | "branches">
-
-type AttributeImplications = {
-    [k in AttributeKey]?: Implications
 }
 
-const defineImplications = <implications extends AttributeImplications>(
-    implications: implications
-) => implications
+type Implications = Pick<Attributes, ImpliableKey>
 
-const implications = defineImplications({
-    divisor: { type: "number" },
-    bounds: {
+type ImpliableKey = "type" | "branches"
+
+type KeyWithImplications = "divisor" | "bounds" | "regex"
+
+const implicationReducers: Record<KeyWithImplications, () => Implications> = {
+    divisor: () => ({ type: "number" }),
+    bounds: () => ({
         branches: [
             "|",
             { type: "number" },
             { type: "string" },
             { type: "array" }
         ]
-    },
-    regex: { type: "string" }
-})
+    }),
+    regex: () => ({ type: "string" })
+}

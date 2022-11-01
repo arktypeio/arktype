@@ -21,14 +21,14 @@ export const invertedComparators = {
 export type InvertedComparators = typeof invertedComparators
 
 export type buildInvalidDoubleMessage<comparator extends Scanner.Comparator> =
-    `Double-bound expressions must specify their bounds using < or <= (was ${comparator}).`
+    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
 export const buildInvalidDoubleMessage = <
     comparator extends Scanner.Comparator
 >(
     comparator: comparator
 ): buildInvalidDoubleMessage<comparator> =>
-    `Double-bound expressions must specify their bounds using < or <= (was ${comparator}).`
+    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
 export const toBoundString = (
     comparator: Scanner.Comparator,

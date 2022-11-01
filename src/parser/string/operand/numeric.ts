@@ -54,7 +54,7 @@ type numericLiteralDescriptions = typeof numericLiteralDescriptions
 type buildMalformedNumericLiteralMessage<
     def extends string,
     kind extends NumericLiteralKind
-> = `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
+> = `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation`
 
 export const buildMalformedNumericLiteralMessage = <
     def extends string,
@@ -63,7 +63,7 @@ export const buildMalformedNumericLiteralMessage = <
     def: def,
     kind: kind
 ): buildMalformedNumericLiteralMessage<def, kind> =>
-    `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation.`
+    `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation`
 
 export namespace UnenclosedNumber {
     export type ValidationKind = "number" | "integer"

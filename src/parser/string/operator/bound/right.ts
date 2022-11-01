@@ -99,12 +99,12 @@ export namespace RightBoundOperator {
         comparator: comparator,
         limit: limit
     ): buildInvalidLimitMessage<comparator, limit> =>
-        `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
+        `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
     type buildInvalidLimitMessage<
         comparator extends Scanner.Comparator,
         limit extends string
-    > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}').`
+    > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
     const isLeftBounded = <s extends State.DynamicWithRoot>(
         s: s

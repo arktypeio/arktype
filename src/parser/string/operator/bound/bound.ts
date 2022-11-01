@@ -30,7 +30,7 @@ export namespace BoundOperator {
         ? delegateReduction<State.scanTo<s, unscanned>, start>
         : State.error<singleEqualsMessage>
 
-    export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality.`
+    export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
     type singleEqualsMessage = typeof singleEqualsMessage
 
     const delegateReduction = (
