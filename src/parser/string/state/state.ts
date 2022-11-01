@@ -190,6 +190,26 @@ export namespace State {
             ? "|"
             : null
 
+    export const setRoot = (
+        s: Dynamic,
+        attributes: Attributes,
+        context: DynamicParserContext
+    ) => {
+        s.root = attributes
+        return s as DynamicWithRoot
+    }
+
+    export type setRoot<
+        s extends Static,
+        node,
+        scanTo extends string = s["unscanned"]
+    > = from<{
+        root: node
+        branches: s["branches"]
+        groups: s["groups"]
+        unscanned: scanTo
+    }>
+
     export const hasRoot = <s extends Dynamic>(s: s): s is s & { root: {} } =>
         s.root !== null
 
@@ -239,16 +259,5 @@ export namespace State {
         branches: s["branches"]
         groups: s["groups"]
         unscanned: unscanned
-    }>
-
-    export type setRoot<
-        s extends Static,
-        node,
-        scanTo extends string = s["unscanned"]
-    > = from<{
-        root: node
-        branches: s["branches"]
-        groups: s["groups"]
-        unscanned: scanTo
     }>
 }
