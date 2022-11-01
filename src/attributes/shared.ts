@@ -1,4 +1,5 @@
 import type { dictionary, DynamicTypeName } from "../internal.js"
+import { hasDynamicType } from "../internal.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import type { BoundsString } from "./bounds.js"
 
@@ -44,8 +45,8 @@ export type Contradiction<key extends AtomicKey = AtomicKey> = {
     contradiction: [AtomicAttributeTypes[key], AtomicAttributeTypes[key]]
 }
 
-export const isContradiction = (result: object): result is Contradiction =>
-    "contradiction" in result
+export const isContradiction = (result: unknown): result is Contradiction =>
+    hasDynamicType(result, "dictionary") && "contradiction" in result
 
 export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 

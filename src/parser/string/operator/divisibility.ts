@@ -1,4 +1,4 @@
-import { intersection } from "../../../attributes/intersection.js"
+import { intersect } from "../../../attributes/intersection.js"
 import { UnenclosedNumber } from "../operand/numeric.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
@@ -37,7 +37,7 @@ export namespace DivisibilityOperator {
         if (parseResult === 0) {
             return State.error(buildInvalidDivisorMessage(0))
         }
-        s.root = intersection(s.root, { divisor: parseResult })
+        s.root = intersect(s.root, { divisor: parseResult })
         return s
     }
 

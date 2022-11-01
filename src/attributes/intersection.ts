@@ -5,40 +5,47 @@ import type {
     AttributeBranches,
     AttributeKey,
     Attributes,
+    AttributeTypes,
     IntersectionReducer
 } from "./shared.js"
+import { isContradiction } from "./shared.js"
 
-export const intersection = (left: Attributes, right: Attributes) => {
+export const intersect = (left: Attributes, right: Attributes) => {
     const intersection = { ...left, ...right }
     let k: AttributeKey
     for (k in intersection) {
-        if (isKeyOf(k, implicationReducers)) {
-            const implications = implicationReducers[k]()
-            let impliedKey: ImpliableKey
-            for (impliedKey in implications) {
-                intersection[impliedKey] =
-                    impliedKey in intersection
-                        ? (intersectionReducers as DynamicIntersectionReducers)[
-                              impliedKey
-                          ](intersection[impliedKey], implications[impliedKey])
-                        : implications[impliedKey]
-            }
-        }
-        if (k in left && k in right && left[k] !== right[k]) {
-            intersection[k] = (
-                intersectionReducers as DynamicIntersectionReducers
-            )[k](left[k], right[k])
-        }
+        intersectKey(intersection, k, intersection[k])
     }
     return intersection
 }
 
-type DynamicIntersectionReducers = {
-    [k in AttributeKey]: (left: any, right: any) => any
-}
-
 type IntersectionReducers = {
     [k in AttributeKey]: IntersectionReducer<k>
+}
+
+const intersectKey = <k extends AttributeKey>(
+    intersection: Attributes,
+    k: k,
+    value: AttributeTypes[k]
+) => {
+    if (isKeyOf(k, implicationReducers)) {
+        const implications = implicationReducers[k]()
+        let impliedKey: ImpliableKey
+        for (impliedKey in implications) {
+            intersectKey(
+                intersection,
+                impliedKey,
+                implications[impliedKey] as any
+            )
+        }
+    }
+    if (k in intersection) {
+        const result = intersectionReducers[k](intersection[k] as any, value)
+        if (isContradiction(result)) {
+        }
+    } else {
+        intersection[k] = value
+    }
 }
 
 const intersectionReducers: IntersectionReducers = {
@@ -53,12 +60,12 @@ const intersectionReducers: IntersectionReducers = {
     divisor: (left, right) => intersectDivisors(left, right),
     regex: (left, right) => `${left}${right}`,
     bounds: intersectBounds,
-    baseProp: (left, right) => intersection(left, right),
+    baseProp: (left, right) => intersect(left, right),
     props: (left, right) => {
         const intersectedProps = { ...left, ...right }
         for (const k in intersectedProps) {
             if (k in left && k in right) {
-                intersectedProps[k] = intersection(left[k], right[k])
+                intersectedProps[k] = intersect(left[k], right[k])
             }
         }
         return intersectedProps
