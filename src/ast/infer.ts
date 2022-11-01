@@ -4,59 +4,59 @@ import type { Keyword } from "../parser/string/operand/keyword.js"
 import type { NumberLiteral } from "../parser/string/operand/numeric.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
 
-export type InferAst<Ast, Resolutions> = Ast extends TerminalAst
-    ? InferTerminal<Ast, Resolutions>
-    : Ast extends readonly unknown[]
-    ? Ast[1] extends "?"
-        ? InferAst<Ast[0], Resolutions> | undefined
-        : Ast[1] extends "[]"
-        ? InferAst<Ast[0], Resolutions>[]
-        : Ast[1] extends "|"
-        ? InferAst<Ast[0], Resolutions> | InferAst<Ast[2], Resolutions>
-        : Ast[1] extends "&"
+export type inferAst<node, resolutions> = node extends TerminalAst
+    ? inferTerminal<node, resolutions>
+    : node extends readonly unknown[]
+    ? node[1] extends "?"
+        ? inferAst<node[0], resolutions> | undefined
+        : node[1] extends "[]"
+        ? inferAst<node[0], resolutions>[]
+        : node[1] extends "|"
+        ? inferAst<node[0], resolutions> | inferAst<node[2], resolutions>
+        : node[1] extends "&"
         ? Evaluate<
-              InferAst<Ast[0], Resolutions> & InferAst<Ast[2], Resolutions>
+              inferAst<node[0], resolutions> & inferAst<node[2], resolutions>
           >
-        : Ast[1] extends Scanner.Comparator
-        ? Ast[0] extends NumberLiteral
-            ? InferAst<Ast[2], Resolutions>
-            : InferAst<Ast[0], Resolutions>
-        : Ast[1] extends "%"
-        ? InferAst<Ast[0], Resolutions>
+        : node[1] extends Scanner.Comparator
+        ? node[0] extends NumberLiteral
+            ? inferAst<node[2], resolutions>
+            : inferAst<node[0], resolutions>
+        : node[1] extends "%"
+        ? inferAst<node[0], resolutions>
         : // If the value at index 1 was none of the above, it's a normal tuple definition
           Evaluate<{
-              [i in keyof Ast]: InferAst<Ast[i], Resolutions>
+              [i in keyof node]: inferAst<node[i], resolutions>
           }>
-    : InferObjectLiteral<Ast, Resolutions>
+    : inferObjectLiteral<node, resolutions>
 
-type InferTerminal<
-    Token extends TerminalAst,
-    Resolutions
-> = Token extends Keyword
-    ? Keyword.Inferences[Token]
-    : Token extends keyof Resolutions
-    ? InferAst<Resolutions[Token], Resolutions>
-    : Token extends Enclosed.StringLiteral<infer Text>
+type inferTerminal<
+    token extends TerminalAst,
+    resolutions
+> = token extends Keyword
+    ? Keyword.Inferences[token]
+    : token extends keyof resolutions
+    ? resolutions[token]
+    : token extends Enclosed.StringLiteral<infer Text>
     ? Text
-    : Token extends Enclosed.RegexLiteral
+    : token extends Enclosed.RegexLiteral
     ? string
-    : Token extends number | bigint
-    ? Token
+    : token extends number | bigint
+    ? token
     : unknown
 
 type TerminalAst = string | number | bigint
 
-type InferObjectLiteral<
-    Node,
-    Resolutions,
-    OptionalKey extends keyof Node = {
-        [K in keyof Node]: Node[K] extends [unknown, "?"] ? K : never
-    }[keyof Node],
-    RequiredKey extends keyof Node = Exclude<keyof Node, OptionalKey>
+type inferObjectLiteral<
+    node,
+    resolutions,
+    optionalKey extends keyof node = {
+        [K in keyof node]: node[K] extends [unknown, "?"] ? K : never
+    }[keyof node],
+    requiredKey extends keyof node = Exclude<keyof node, optionalKey>
 > = Evaluate<
     {
-        [k in RequiredKey]: InferAst<Node[k], Resolutions>
+        [k in requiredKey]: inferAst<node[k], resolutions>
     } & {
-        [k in OptionalKey]?: InferAst<Node[k], Resolutions>
+        [k in optionalKey]?: inferAst<node[k], resolutions>
     }
 >

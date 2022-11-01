@@ -4,62 +4,62 @@ import type { Scanner } from "../parser/string/state/scanner.js"
 
 type SingleChildToken = Scanner.UnaryToken | Scanner.Comparator | "%"
 
-type References<Ast, Filter extends string = string> = Ast extends string
-    ? [Ast]
-    : Ast extends readonly unknown[]
-    ? Ast[1] extends SingleChildToken
-        ? Ast[0] extends NumberLiteral
+type references<node, filter extends string = string> = node extends string
+    ? [node]
+    : node extends readonly unknown[]
+    ? node[1] extends SingleChildToken
+        ? node[0] extends NumberLiteral
             ? // If it's a left bound, the child is on the right
-              References<Ast[2]>
-            : References<Ast[0]>
-        : Ast[1] extends Scanner.NaryToken
-        ? [...References<Ast[0], Filter>, ...References<Ast[2], Filter>]
-        : StructuralReferences<Ast, Filter>
-    : StructuralReferences<Ast, Filter>
+              references<node[2]>
+            : references<node[0]>
+        : node[1] extends Scanner.NaryToken
+        ? [...references<node[0], filter>, ...references<node[2], filter>]
+        : structuralReferences<node, filter>
+    : structuralReferences<node, filter>
 
-type StructuralReferences<
+type structuralReferences<
     Ast,
     Filter extends string
-> = CollectStructuralReferences<
-    Ast extends readonly unknown[] ? Ast : UnionToTuple<Ast[keyof Ast]>,
+> = collectStructuralReferences<
+    Ast extends readonly unknown[] ? Ast : unionToTuple<Ast[keyof Ast]>,
     [],
     Filter
 >
 
-type CollectStructuralReferences<
+type collectStructuralReferences<
     Children extends readonly unknown[],
     Result extends readonly unknown[],
     Filter extends string
 > = Children extends [infer Head, ...infer Tail]
-    ? CollectStructuralReferences<
+    ? collectStructuralReferences<
           Tail,
-          [...Result, ...References<Head>],
+          [...Result, ...references<Head>],
           Filter
       >
     : Result
 
-type IntersectionOf<Union> = (
-    Union extends unknown ? (_: Union) => void : never
+type intersectionOf<union> = (
+    union extends unknown ? (_: union) => void : never
 ) extends (_: infer Intersection) => void
     ? Intersection
     : never
 
-type GetLastUnionMember<T> = IntersectionOf<
-    T extends unknown ? (t: T) => void : never
+type getLastUnionMember<union> = intersectionOf<
+    union extends unknown ? (t: union) => void : never
 > extends (t: infer Next) => void
     ? Next
     : never
 
-type UnionToTupleRecurse<
-    Union,
-    Result extends unknown[],
-    Current = GetLastUnionMember<Union>
-> = [Union] extends [never]
-    ? Result
-    : UnionToTupleRecurse<Exclude<Union, Current>, [Current, ...Result]>
+type unionToTupleRecurse<
+    union,
+    result extends unknown[],
+    current = getLastUnionMember<union>
+> = [union] extends [never]
+    ? result
+    : unionToTupleRecurse<Exclude<union, current>, [current, ...result]>
 
-type UnionToTuple<Union> = UnionToTupleRecurse<Union, []> extends infer X
-    ? Conform<X, Union[]>
+type unionToTuple<union> = unionToTupleRecurse<union, []> extends infer X
+    ? Conform<X, union[]>
     : never
 
 // import { attest } from "@artkype/test"

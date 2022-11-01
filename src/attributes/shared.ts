@@ -17,6 +17,7 @@ type AtomicAttributeTypes = {
     regex: Enclosed.RegexLiteral
     bounds: BoundsString
     optional: true | undefined
+    alias: string
 }
 
 export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
@@ -27,7 +28,8 @@ export const atomicAttributes: Record<AtomicKey, true> = {
     divisor: true,
     regex: true,
     bounds: true,
-    optional: true
+    optional: true,
+    alias: true
 }
 
 type AtomicKey = keyof AtomicAttributeTypes

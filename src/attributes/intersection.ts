@@ -59,6 +59,7 @@ const reducers: Reducers = {
     regex: (left, right) => `${left}${right}`,
     bounds: intersectBounds,
     optional: (left, right) => left && right,
+    alias: (left, right) => `${left}&${right}`,
     baseProp: (left, right, context) =>
         assignIntersection(left, right, context),
     props: (left, right, context) => {

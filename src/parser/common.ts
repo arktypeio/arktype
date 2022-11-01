@@ -7,6 +7,13 @@ export type DynamicParserContext = {
     seen: dictionary<string>
 }
 
+// TODO: How much of this do we need?
+export const initializeParserContext = (spaceRoot: SpaceRoot) => ({
+    spaceRoot,
+    path: "",
+    seen: {}
+})
+
 export type StaticParserContext = {
     aliases: unknown
 }

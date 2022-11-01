@@ -1,8 +1,9 @@
-import type { InferAst } from "./ast/infer.js"
-import type { Validate } from "./ast/validate.js"
+import type { inferAst } from "./ast/infer.js"
+import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
+import { initializeParserContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
 import { defaultSpace } from "./space.js"
@@ -13,30 +14,29 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { space = defaultSpace, ...config } = {}
-) => new Arktype(parse(definition, space), config, space)
-
-export const parse = (definition: unknown, space: ArktypeSpace) =>
-    Root.parse(definition, {
-        spaceRoot: space.$,
-        seen: {},
-        path: ""
-    })
+) =>
+    new Arktype(
+        Root.parse(definition, initializeParserContext(space.$)),
+        config,
+        space
+    )
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type TypeFnOptions<resolutions = {}> = ArktypeConfig & {
-    space?: ArktypeSpace<resolutions>
-}
+export type TypeFnOptions<resolutions extends dictionary = {}> =
+    ArktypeConfig & {
+        space?: ArktypeSpace<resolutions>
+    }
 
 export type InferredTypeFn = <
     definition,
-    resolutions = {},
+    resolutions extends dictionary = {},
     ast = Root.parse<definition, { aliases: resolutions }>,
-    inferred = InferAst<ast, resolutions>
+    inferred = inferAst<ast, resolutions>
 >(
-    definition: Validate<definition, ast, resolutions>,
+    definition: validate<definition, ast, resolutions>,
     options?: TypeFnOptions<resolutions>
 ) => ast extends ParseError<string> ? never : Arktype<inferred>
 

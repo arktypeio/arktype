@@ -1,5 +1,5 @@
 import type { Attributes } from "../attributes/shared.js"
-import type { DynamicTypeName } from "../internal.js"
+import type { array, dictionary, DynamicTypeName } from "../internal.js"
 import { dynamicTypeOf } from "../internal.js"
 import type {
     DynamicParserContext,
@@ -7,7 +7,7 @@ import type {
     StaticParserContext
 } from "./common.js"
 import { throwParseError } from "./common.js"
-import { Str } from "./string/string.js"
+import type { Str } from "./string/string.js"
 import { Structure } from "./structure/structure.js"
 
 export namespace Root {
@@ -17,9 +17,9 @@ export namespace Root {
     ): Attributes => {
         const defType = dynamicTypeOf(def)
         return defType === "string"
-            ? Str.parse(def as any, context)
+            ? context.spaceRoot.parseMemoizable(def as string)
             : defType === "dictionary" || defType === "array"
-            ? Structure.parse(def as any, defType, context)
+            ? Structure.parse(def as dictionary | array, defType, context)
             : throwParseError(buildBadDefinitionTypeMessage(defType))
     }
 

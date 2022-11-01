@@ -1,63 +1,63 @@
 import type { IsAny } from "../internal.js"
 import type { ParseError } from "../parser/common.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
-import type { InferAst } from "./infer.js"
-import type { ToString } from "./toString.js"
+import type { inferAst } from "./infer.js"
+import type { astToString } from "./toString.js"
 
-export type Validate<def, ast, resolutions> = def extends []
+export type validate<def, ast, resolutions> = def extends []
     ? def
     : ast extends ParseError<infer message>
     ? message
     : def extends string
-    ? CatchErrorOrFallback<CheckAst<ast, resolutions>, def>
+    ? catchErrorOrFallback<checkAst<ast, resolutions>, def>
     : // @ts-expect-error We know K will also be in AST here because it must be structural
-      { [K in keyof def]: Validate<def[K], ast[K], resolutions> }
+      { [K in keyof def]: validate<def[K], ast[K], resolutions> }
 
-type CatchErrorOrFallback<errors extends string[], def> = [] extends errors
+type catchErrorOrFallback<errors extends string[], def> = [] extends errors
     ? def
     : errors[0]
 
-type CheckAst<ast, resolutions> = ast extends string
+type checkAst<node, resolutions> = node extends string
     ? []
-    : ast extends [infer child, unknown]
-    ? CheckAst<child, resolutions>
-    : ast extends [infer left, infer token, infer right]
+    : node extends [infer child, unknown]
+    ? checkAst<child, resolutions>
+    : node extends [infer left, infer token, infer right]
     ? token extends Scanner.NaryToken
-        ? [...CheckAst<left, resolutions>, ...CheckAst<right, resolutions>]
+        ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
         : token extends Scanner.Comparator
         ? left extends number
-            ? CheckAst<right, resolutions>
-            : IsBoundable<InferAst<left, resolutions>> extends true
-            ? CheckAst<left, resolutions>
-            : [buildUnboundableMessage<ToString<ast[0]>>]
+            ? checkAst<right, resolutions>
+            : isBoundable<inferAst<left, resolutions>> extends true
+            ? checkAst<left, resolutions>
+            : [buildUnboundableMessage<astToString<node[0]>>]
         : token extends "%"
-        ? IsDivisible<InferAst<left, resolutions>> extends true
-            ? CheckAst<left, resolutions>
-            : [buildIndivisibleMessage<ToString<ast[0]>>]
-        : CheckAst<left, resolutions>
+        ? isDivisible<inferAst<left, resolutions>> extends true
+            ? checkAst<left, resolutions>
+            : [buildIndivisibleMessage<astToString<node[0]>>]
+        : checkAst<left, resolutions>
     : []
 
-type IsNonLiteralNumber<t> = t extends number
+type isNonLiteralNumber<t> = t extends number
     ? number extends t
         ? true
         : false
     : false
 
-type IsNonLiteralString<t> = t extends string
+type isNonLiteralString<t> = t extends string
     ? string extends t
         ? true
         : false
     : false
 
-type IsDivisible<inferred> = IsAny<inferred> extends true
+type isDivisible<inferred> = IsAny<inferred> extends true
     ? true
-    : IsNonLiteralNumber<inferred>
+    : isNonLiteralNumber<inferred>
 
-type IsBoundable<inferred> = IsAny<inferred> extends true
+type isBoundable<inferred> = IsAny<inferred> extends true
     ? true
-    : IsNonLiteralNumber<inferred> extends true
+    : isNonLiteralNumber<inferred> extends true
     ? true
-    : IsNonLiteralString<inferred> extends true
+    : isNonLiteralString<inferred> extends true
     ? true
     : inferred extends readonly unknown[]
     ? true
