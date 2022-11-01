@@ -5,7 +5,7 @@ import { ArrayOperator } from "../array.js"
 
 describe("parse array", () => {
     test("parse", () => {
-        attest(type("string[]").ast).narrowedValue(["string", "[]"])
+        attest(type("string[]").infer).typed as string[]
     })
     describe("errors", () => {
         test("incomplete token", () => {

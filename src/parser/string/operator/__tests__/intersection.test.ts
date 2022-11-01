@@ -7,15 +7,10 @@ import { Unenclosed } from "../../operand/unenclosed.js"
 describe("intersection", () => {
     describe("parse", () => {
         test("two types", () => {
-            const booleanAndTrue = type("boolean&true")
-            attest(booleanAndTrue.ast).narrowedValue(["boolean", "&", "true"])
+            attest(type("boolean&true").infer).typed as true
         })
         test("several types", () => {
-            attest(type("unknown&boolean&false").ast).narrowedValue([
-                ["unknown", "&", "boolean"],
-                "&",
-                "false"
-            ])
+            attest(type("unknown&boolean&false").infer).typed as false
         })
         describe("errors", () => {
             test("bad reference", () => {

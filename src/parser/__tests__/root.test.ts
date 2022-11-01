@@ -11,7 +11,10 @@ describe("root definition", () => {
         test("uninferred types", () => {
             const dynamicStringArray = type.dynamic("str" + "ing[" + "]")
             attest(dynamicStringArray.infer).typed as unknown
-            attest(dynamicStringArray.ast).equals(["string", "[]"])
+            attest(dynamicStringArray.root).equals({
+                type: "array",
+                baseProp: { type: "string" }
+            })
         })
         test("uninferred aliases", () => {
             const s = space.dynamic({

@@ -7,30 +7,15 @@ import { GroupClose } from "../groupClose.js"
 
 describe("group", () => {
     test("entire expression", () => {
-        attest(type("(string)").ast).narrowedValue("string")
+        attest(type("(string)").infer).typed as string
     })
     test("overrides default precedence", () => {
-        attest(type("boolean|number[]").ast).narrowedValue([
-            "boolean",
-            "|",
-            ["number", "[]"]
-        ])
-        attest(type("(boolean|number)[]").ast).narrowedValue([
-            ["boolean", "|", "number"],
-            "[]"
-        ])
+        attest(type("boolean|number[]").infer).typed as boolean | number[]
+        attest(type("(boolean|number)[]").infer).typed as (boolean | number)[]
     })
     test("nested", () => {
-        attest(
-            type("((boolean|number)[]|(string|undefined)[])[]").ast
-        ).narrowedValue([
-            [
-                [["boolean", "|", "number"], "[]"],
-                "|",
-                [["string", "|", "undefined"], "[]"]
-            ],
-            "[]"
-        ])
+        attest(type("((boolean|number)[]|(string|undefined)[])[]").infer)
+            .typed as ((number | boolean)[] | (string | undefined)[])[]
     })
     describe("errors", () => {
         test("empty", () => {

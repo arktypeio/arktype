@@ -6,7 +6,7 @@ import { OptionalOperator } from "../optional.js"
 
 describe("parse optional", () => {
     test("valid", () => {
-        attest(type("object?").ast).narrowedValue(["object", "?"])
+        attest(type("object?").infer).typed as object | undefined
     })
     describe("errors", () => {
         test("bad inner type", () => {

@@ -10,24 +10,16 @@ import {
 describe("validate", () => {
     describe("bound", () => {
         test("number", () => {
-            attest(type("number==-3.14159").ast).narrowedValue([
-                "number",
-                "==",
-                -3.14159
-            ])
+            attest(type("number==-3.14159").infer).typed as number
         })
         test("string", () => {
-            attest(type("string<=5").ast).narrowedValue(["string", "<=", 5])
+            attest(type("string<=5").infer).typed as string
         })
         test("array", () => {
-            attest(type("87<=boolean[]<89").ast).narrowedValue([
-                87,
-                "<=",
-                [["boolean", "[]"], "<", 89]
-            ])
+            attest(type("87<=boolean[]<89").infer).typed as boolean[]
         })
         test("any", () => {
-            attest(type("any>5").ast).narrowedValue(["any", ">", 5])
+            attest(type("any>5").infer).typed as any
         })
         describe("errors", () => {
             test("unboundable", () => {
@@ -48,10 +40,10 @@ describe("validate", () => {
     })
     describe("divisibility", () => {
         test("number", () => {
-            attest(type("number%2").ast).narrowedValue(["number", "%", 2])
+            attest(type("number%2").infer).typed as number
         })
         test("any", () => {
-            attest(type("any%1").ast).narrowedValue(["any", "%", 1])
+            attest(type("any%1").infer).typed as any
         })
         describe("errors", () => {
             test("indivisible", () => {

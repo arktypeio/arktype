@@ -10,47 +10,27 @@ describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
-                attest(type("number>0").ast).narrowedValue(["number", ">", 0])
+                attest(type("number>0").infer).typed as number
             })
             test("<", () => {
-                attest(type("number<10").ast).narrowedValue(["number", "<", 10])
+                attest(type("number<10").infer).typed as number
             })
             test(">=", () => {
-                attest(type("number>=3.14159").ast).narrowedValue([
-                    "number",
-                    ">=",
-                    3.14159
-                ])
+                attest(type("number>=3.14159").infer).typed as number
             })
             test("<=", () => {
-                attest(type("number<=-49").ast).narrowedValue([
-                    "number",
-                    "<=",
-                    -49
-                ])
+                attest(type("number<=-49").infer).typed as number
             })
             test("==", () => {
-                attest(type("number==3211993").ast).narrowedValue([
-                    "number",
-                    "==",
-                    3211993
-                ])
+                attest(type("number==3211993").infer).typed as number
             })
         })
         describe("double", () => {
             test("<,<=", () => {
-                attest(type("-5<number<=5").ast).narrowedValue([
-                    -5,
-                    "<",
-                    ["number", "<=", 5]
-                ])
+                attest(type("-5<number<=5").infer).typed as number
             })
             test("<=,<", () => {
-                attest(type("-3.23<=number<4.654").ast).narrowedValue([
-                    -3.23,
-                    "<=",
-                    ["number", "<", 4.654]
-                ])
+                attest(type("-3.23<=number<4.654").infer).typed as number
             })
         })
         describe("errors", () => {

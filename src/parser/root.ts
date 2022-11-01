@@ -46,8 +46,8 @@ export namespace Root {
     >(
         actual: actual
     ): buildBadDefinitionTypeMessage<actual> =>
-        `Type definitions must be strings or objects (was ${actual}).`
+        `Type definitions must be strings or objects (was ${actual})`
 
     type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
-        `Type definitions must be strings or objects (was ${actual}).`
+        `Type definitions must be strings or objects (was ${actual})`
 }

@@ -4,7 +4,7 @@ import type { Keyword } from "../parser/string/operand/keyword.js"
 import type { NumberLiteral } from "../parser/string/operand/numeric.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
 
-export type inferAst<ast, resolutions> = ast extends string
+export type inferAst<ast, resolutions> = ast extends TerminalAst
     ? inferTerminal<ast, resolutions>
     : ast extends readonly unknown[]
     ? ast[1] extends "?"
@@ -29,7 +29,10 @@ export type inferAst<ast, resolutions> = ast extends string
           }>
     : inferObjectLiteral<ast, resolutions>
 
-type inferTerminal<token extends string, resolutions> = token extends Keyword
+type inferTerminal<
+    token extends TerminalAst,
+    resolutions
+> = token extends Keyword
     ? Keyword.Inferences[token]
     : token extends keyof resolutions
     ? inferAst<resolutions[token], resolutions>
@@ -40,6 +43,8 @@ type inferTerminal<token extends string, resolutions> = token extends Keyword
     : token extends number | bigint
     ? token
     : unknown
+
+type TerminalAst = string | number | bigint
 
 type inferObjectLiteral<
     node,

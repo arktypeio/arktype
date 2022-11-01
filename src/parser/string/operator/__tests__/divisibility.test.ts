@@ -12,7 +12,7 @@ describe("divisibility", () => {
                     type: "number",
                     divisor: 2
                 })
-                attest(divisibleByTwo.ast).typed as ["number", "%", 2]
+                attest(divisibleByTwo.infer).typed as number
             })
         })
         describe("invalid", () => {

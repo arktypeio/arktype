@@ -8,12 +8,12 @@ import { Unenclosed } from "../unenclosed.js"
 describe("parse unenclosed", () => {
     describe("identifier", () => {
         test("keyword", () => {
-            attest(type("string").ast).narrowedValue("string")
+            attest(type("string").infer).typed as "string"
         })
         test("alias", () => {
             const types = space({ a: "string" })
             const a = type("a", { space: types })
-            attest(a.ast).narrowedValue("a")
+            attest(a.infer).typed as string
         })
         describe("errors", () => {
             test("unresolvable", () => {
@@ -27,28 +27,28 @@ describe("parse unenclosed", () => {
     describe("number", () => {
         describe("positive", () => {
             test("whole", () => {
-                attest(type("4").ast).narrowedValue(4)
+                attest(type("4").infer).typed as 4
             })
             test("decimal", () => {
-                attest(type("3.14159").ast).narrowedValue(3.14159)
+                attest(type("3.14159").infer).typed as 3.14159
             })
             test("decimal with zero whole portion", () => {
-                attest(type("0.5").ast).narrowedValue(0.5)
+                attest(type("0.5").infer).typed as 0.5
             })
         })
         describe("negative", () => {
             test("whole", () => {
-                attest(type("-12").ast).narrowedValue(-12)
+                attest(type("-12").infer).typed as -12
             })
             test("decimal", () => {
-                attest(type("-1.618").ast).narrowedValue(-1.618)
+                attest(type("-1.618").infer).typed as -1.618
             })
             test("decimal with zero whole portion", () => {
-                attest(type("-0.001").ast).narrowedValue(-0.001)
+                attest(type("-0.001").infer).typed as -0.001
             })
         })
         test("zero", () => {
-            attest(type("0").ast).narrowedValue(0)
+            attest(type("0").infer).typed as 0
         })
         describe("errors", () => {
             test("multiple decimals", () => {
@@ -87,15 +87,14 @@ describe("parse unenclosed", () => {
     describe("bigint", () => {
         test("positive", () => {
             // Is prime :D
-            attest(type("12345678910987654321n").ast).narrowedValue(
-                12345678910987654321n
-            )
+            attest(type("12345678910987654321n").infer)
+                .typed as 12345678910987654321n
         })
         test("negative", () => {
-            attest(type("-9801n").ast).narrowedValue(-9801n)
+            attest(type("-9801n").infer).typed as -9801n
         })
         test("zero", () => {
-            attest(type("0n").ast).narrowedValue(0n)
+            attest(type("0n").infer).typed as 0n
         })
         describe("errors", () => {
             test("decimal", () => {

@@ -7,18 +7,15 @@ import { Unenclosed } from "../../operand/unenclosed.js"
 describe("union", () => {
     describe("infer", () => {
         test("two types", () => {
-            attest(type("number|string").ast).narrowedValue([
-                "number",
-                "|",
-                "string"
-            ])
+            attest(type("number|string").infer).typed as number | string
         })
         test("several types", () => {
-            attest(type("false|null|undefined|0|''").ast).narrowedValue([
-                [[["false", "|", "null"], "|", "undefined"], "|", 0],
-                "|",
-                "''"
-            ])
+            attest(type("false|null|undefined|0|''").infer).typed as
+                | false
+                | ""
+                | 0
+                | null
+                | undefined
         })
         describe("errors", () => {
             test("bad reference", () => {

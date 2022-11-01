@@ -4,10 +4,6 @@ import { type } from "../../../../api.js"
 
 describe("branch", () => {
     test("intersection parsed before union", () => {
-        attest(type("'0'|'1'&'2'|'3'").ast).narrowedValue([
-            ["'0'", "|", ["'1'", "&", "'2'"]],
-            "|",
-            "'3'"
-        ])
+        attest(type("'0'|'1'&'2'|'3'").infer).typed as "0" | "3"
     })
 })

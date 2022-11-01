@@ -33,7 +33,7 @@ export type InferredTypeFn = <
 >(
     definition: validate<definition, ast, resolutions>,
     options?: TypeFnOptions<resolutions>
-) => ast extends ParseError<string> ? never : Arktype<inferred, ast>
+) => ast extends ParseError<string> ? never : Arktype<inferred>
 
 type DynamicTypeFn = <resolutions = {}>(
     definition: unknown,
@@ -42,7 +42,7 @@ type DynamicTypeFn = <resolutions = {}>(
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export class Arktype<Inferred = unknown, Ast = unknown> {
+export class Arktype<Inferred = unknown> {
     constructor(
         public root: Attributes,
         public config: ArktypeConfig,
@@ -52,10 +52,6 @@ export class Arktype<Inferred = unknown, Ast = unknown> {
     }
 
     get infer(): Inferred {
-        return chainableNoOpProxy
-    }
-
-    get ast(): Ast {
         return chainableNoOpProxy
     }
 

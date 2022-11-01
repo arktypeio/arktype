@@ -8,14 +8,10 @@ describe("parse enclosed", () => {
         attest(type("'this has spaces'").infer).typed as "this has spaces"
     })
     test("isolated", () => {
-        attest(type('"alone"').ast).narrowedValue('"alone"')
+        attest(type('"alone"').infer).typed as '"alone"'
     })
     test("with neighbors", () => {
-        attest(type("'foo'|/.*/[]").ast).narrowedValue([
-            "'foo'",
-            "|",
-            ["/.*/", "[]"]
-        ])
+        attest(type("'foo'|/.*/[]").infer).typed as "foo" | string[]
     })
     describe("errors", () => {
         describe("unterminated", () => {
@@ -40,13 +36,13 @@ describe("parse enclosed", () => {
         })
     })
     test("single-quoted", () => {
-        attest(type("'hello'").ast).narrowedValue("'hello'")
+        attest(type("'hello'").infer).typed as "'hello'"
     })
     test("double-quoted", () => {
-        attest(type('"goodbye"').ast).narrowedValue('"goodbye"')
+        attest(type('"goodbye"').infer).typed as '"goodbye"'
     })
     test("regex literal", () => {
-        attest(type("/.*/").ast).narrowedValue("/.*/")
+        attest(type("/.*/").infer).typed as string
     })
     test("invalid regex", () => {
         attest(() => type("/[/")).throws.snap(
@@ -54,21 +50,16 @@ describe("parse enclosed", () => {
         )
     })
     test("mixed quote types", () => {
-        attest(type(`"'single-quoted'"`).ast).narrowedValue(
-            "\"'single-quoted'\""
-        )
-        attest(type(`'"double-quoted"'`).ast).narrowedValue(
-            "'\"double-quoted\"'"
-        )
+        attest(type(`"'single-quoted'"`).infer).typed as "\"'single-quoted'\""
+
+        attest(type(`'"double-quoted"'`).infer).typed as "'\"double-quoted\"'"
     })
     test("ignores enclosed tokens", () => {
-        attest(type("'yes|no|maybe'").ast).narrowedValue("'yes|no|maybe'")
+        attest(type("'yes|no|maybe'").infer).typed as "'yes|no|maybe'"
     })
     test("mix of enclosed and unenclosed tokens", () => {
-        attest(type("'yes|no'|'true|false'").ast).narrowedValue([
-            "'yes|no'",
-            "|",
-            "'true|false'"
-        ])
+        attest(type("'yes|no'|'true|false'").infer).typed as
+            | "yes|no"
+            | "true|false"
     })
 })
