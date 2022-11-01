@@ -45,7 +45,7 @@ export namespace Unenclosed {
         context: DynamicParserContext
     ): Attributes | undefined =>
         Keyword.matches(token)
-            ? Keyword.attributesOf(token)
+            ? Keyword.attributesFrom(token)
             : token in context.aliases
             ? ({ value: "alias" } as const)
             : undefined

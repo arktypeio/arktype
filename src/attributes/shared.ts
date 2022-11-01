@@ -1,14 +1,19 @@
 import type { dictionary, DynamicTypeName } from "../internal.js"
 import { hasDynamicType } from "../internal.js"
+import type { DynamicParserContext } from "../parser/common.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import type { BoundsString } from "./bounds.js"
 
+type AttributesContext = DynamicParserContext
+
 export type IntersectionReducer<key extends AttributeKey> = (
     base: AttributeTypes[key],
-    value: AttributeTypes[key]
+    value: AttributeTypes[key],
+    context: DynamicParserContext
 ) => AttributeTypes[key] | Contradiction
 
 type AtomicAttributeTypes = {
+    alias: string
     value: string | number | boolean | bigint | null | undefined
     type: TypeAttribute
     divisor: number
@@ -19,6 +24,7 @@ type AtomicAttributeTypes = {
 export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
 
 export const atomicAttributes: Record<AtomicKey, true> = {
+    alias: true,
     value: true,
     type: true,
     divisor: true,

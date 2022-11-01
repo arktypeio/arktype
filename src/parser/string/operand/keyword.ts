@@ -1,5 +1,5 @@
 import type { Attributes } from "../../../attributes/shared.js"
-import type { array, Conform, dictionary } from "../../../internal.js"
+import type { array, dictionary } from "../../../internal.js"
 
 export type Keyword = keyof Keyword.Inferences
 
@@ -36,20 +36,13 @@ export namespace Keyword {
     }
 
     export const matches = (token: string): token is Keyword =>
-        token in attributes
+        token in attributesByKeyword
 
-    export const attributesOf = (keyword: Keyword): Attributes =>
-        attributes[keyword]
+    export const attributesFrom = (keyword: Keyword): Attributes => ({
+        ...attributesByKeyword[keyword]
+    })
 
-    const defineKeywordAttributes = <keywordsToAttributes>(
-        keywordsToAttributes: Conform<
-            keywordsToAttributes,
-            Record<Keyword, Attributes>
-        >
-    ) => keywordsToAttributes
-
-    // TODO: Impact of freezing these?
-    const attributes = defineKeywordAttributes({
+    const attributesByKeyword: Record<Keyword, Attributes> = {
         // TS keywords
         any: {},
         bigint: { type: "bigint" },
@@ -86,5 +79,5 @@ export namespace Keyword {
         uppercase: { regex: "/^[A-Z]*$/" },
         // Numeric
         integer: { divisor: 1 }
-    })
+    }
 }

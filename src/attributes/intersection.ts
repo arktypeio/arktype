@@ -1,4 +1,5 @@
 import { isKeyOf } from "../internal.js"
+import type { DynamicParserContext } from "../parser/common.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
@@ -9,11 +10,15 @@ import type {
     IntersectionReducer
 } from "./shared.js"
 
-export const intersect = (left: Attributes, right: Attributes) => {
+export const intersect = (
+    left: Attributes,
+    right: Attributes,
+    context: DynamicParserContext
+) => {
     const intersection = { ...left, ...right }
     let k: AttributeKey
     for (k in intersection) {
-        intersectKey(intersection, k, intersection[k])
+        intersectKey(intersection, k, intersection[k], context)
     }
     return intersection
 }
@@ -25,7 +30,8 @@ type IntersectionReducers = {
 const intersectKey = <k extends AttributeKey>(
     intersection: Attributes,
     k: k,
-    value: AttributeTypes[k]
+    value: AttributeTypes[k],
+    context: DynamicParserContext
 ) => {
     if (isKeyOf(k, implicationReducers)) {
         const implications = implicationReducers[k]()
@@ -34,7 +40,8 @@ const intersectKey = <k extends AttributeKey>(
             intersectKey(
                 intersection,
                 impliedKey,
-                implications[impliedKey] as any
+                implications[impliedKey] as any,
+                context
             )
         }
     }
@@ -42,7 +49,8 @@ const intersectKey = <k extends AttributeKey>(
         if (intersection[k] !== value) {
             intersection[k] = intersectionReducers[k](
                 intersection[k] as any,
-                value
+                value,
+                context
             ) as any
         }
     } else {
@@ -62,12 +70,13 @@ const intersectionReducers: IntersectionReducers = {
     divisor: (left, right) => intersectDivisors(left, right),
     regex: (left, right) => `${left}${right}`,
     bounds: intersectBounds,
-    baseProp: (left, right) => intersect(left, right),
+    alias: (left, right, context) => left,
+    baseProp: (left, right, context) => intersect(left, right, context),
     props: (left, right) => {
         const intersectedProps = { ...left, ...right }
         for (const k in intersectedProps) {
             if (k in left && k in right) {
-                intersectedProps[k] = intersect(left[k], right[k])
+                intersectedProps[k] = intersect(left[k], right[k], context)
             }
         }
         return intersectedProps

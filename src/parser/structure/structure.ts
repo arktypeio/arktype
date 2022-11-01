@@ -36,21 +36,11 @@ export namespace Structure {
         }
         const props: dictionary<Attributes> = {}
         for (const k in definition) {
-            context.path = pushKey(context.path, k)
             props[k] = Root.parse(definition[k], context) as any
-            context.path = popKey(context.path)
         }
         return {
             type,
             props
         }
     }
-}
-
-const pushKey = (path: string, key: string, delimiter = ".") =>
-    path === "" ? key : `${path}${delimiter}${key}`
-
-const popKey = (path: string, delimiter = ".") => {
-    const lastDelimiterIndex = path.lastIndexOf(delimiter)
-    return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }
