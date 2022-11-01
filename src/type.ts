@@ -5,17 +5,20 @@ import type { dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { ArktypeSpace } from "./space.js"
+import { defaultSpace } from "./space.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) =>
-    new Arktype(parse(definition, space), config, space as any)
+const rawTypeFn: DynamicTypeFn = (
+    definition,
+    { space = defaultSpace, ...config } = {}
+) => new Arktype(parse(definition, space), config, space)
 
-export const parse = (definition: unknown, space: ArktypeSpace | undefined) =>
+export const parse = (definition: unknown, space: ArktypeSpace) =>
     Root.parse(definition, {
-        spaceRoot: space?.$,
-        shallowSeen: {},
+        spaceRoot: space.$,
+        seen: {},
         path: ""
     })
 
@@ -48,7 +51,7 @@ export class Arktype<Inferred = unknown> {
     constructor(
         public attributes: Attributes,
         public config: ArktypeConfig,
-        public space: ArktypeSpace | undefined
+        public space: ArktypeSpace
     ) {
         // TODO: Integrate config
     }

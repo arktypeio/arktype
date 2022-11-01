@@ -3,7 +3,7 @@ import type { SpaceRoot } from "../space.js"
 
 export type DynamicParserContext = {
     path: string
-    spaceRoot: SpaceRoot | undefined
+    spaceRoot: SpaceRoot
     seen: dictionary<string>
 }
 

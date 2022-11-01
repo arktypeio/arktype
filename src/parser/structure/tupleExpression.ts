@@ -19,13 +19,13 @@ export const parseTupleExpression = (
 ) => ({} as Attributes)
 
 export type parseTupleExpression<
-    Def extends TupleExpression,
-    Ctx extends StaticParserContext
-> = Def[1] extends Scanner.InfixToken
-    ? Def[2] extends undefined
+    def extends TupleExpression,
+    context extends StaticParserContext
+> = def[1] extends Scanner.InfixToken
+    ? def[2] extends undefined
         ? [
-              Root.parse<Def[0], Ctx>,
-              ParseError<Operand.buildMissingRightOperandMessage<Def[1], "">>
+              Root.parse<def[0], context>,
+              ParseError<Operand.buildMissingRightOperandMessage<def[1], "">>
           ]
-        : [Root.parse<Def[0], Ctx>, Def[1], Root.parse<Def[2], Ctx>]
-    : [Root.parse<Def[0], Ctx>, Def[1]]
+        : [Root.parse<def[0], context>, def[1], Root.parse<def[2], context>]
+    : [Root.parse<def[0], context>, def[1]]

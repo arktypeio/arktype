@@ -2,7 +2,7 @@ import type { InferAst } from "./ast/infer.js"
 import type { Validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary } from "./internal.js"
-import type { ParseAliases } from "./parser/space.js"
+import type { parseAliases } from "./parser/space.js"
 import type { ArktypeConfig } from "./type.js"
 import { Arktype, parse } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -15,7 +15,8 @@ const rawSpace = (aliases: dictionary, config: ArktypeConfig = {}) => {
         infer: chainableNoOpProxy,
         config,
         aliases,
-        attributes: {}
+        attributes: {},
+        cache: {}
     }
     const compiled: ArktypeSpace = { $: root as any }
     for (const name in aliases) {
@@ -31,10 +32,10 @@ export const space = lazyDynamicWrap(rawSpace) as any as LazyDynamicWrap<
     DynamicSpaceFn
 >
 
-type InferredSpaceFn = <aliases, resolutions = ParseAliases<aliases>>(
+type InferredSpaceFn = <aliases, resolutions = parseAliases<aliases>>(
     aliases: Validate<aliases, resolutions, resolutions>,
     config?: ArktypeConfig
-) => ArktypeSpace<InferResolutions<resolutions>>
+) => ArktypeSpace<inferResolutions<resolutions>>
 
 type DynamicSpaceFn = <aliases extends dictionary>(
     aliases: aliases,
@@ -43,9 +44,11 @@ type DynamicSpaceFn = <aliases extends dictionary>(
 
 export type ArktypeSpace<inferred = dictionary> = {
     $: SpaceRoot<inferred>
-} & ResolutionsToArktypes<inferred>
+} & resolutionsToArktypes<inferred>
 
-type ResolutionsToArktypes<resolutions> = {
+export const defaultSpace = rawSpace({})
+
+type resolutionsToArktypes<resolutions> = {
     [alias in keyof resolutions]: Arktype<
         InferAst<resolutions[alias], resolutions>
     >
@@ -54,11 +57,12 @@ type ResolutionsToArktypes<resolutions> = {
 export type SpaceRoot<inferred = dictionary> = {
     aliases: Record<keyof inferred, unknown>
     attributes: Record<keyof inferred, Attributes>
-    infer: InferResolutions<inferred>
+    infer: inferResolutions<inferred>
     config: ArktypeConfig
+    cache: dictionary<Attributes>
 }
 
-export type InferResolutions<resolutions> = Evaluate<{
+export type inferResolutions<resolutions> = Evaluate<{
     [k in keyof resolutions]: InferAst<resolutions[k], resolutions>
 }>
 

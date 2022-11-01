@@ -6,6 +6,7 @@ import type {
 } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
+import { Alias } from "./alias.js"
 import { Keyword } from "./keyword.js"
 import type { BigintLiteral, NumberLiteral } from "./numeric.js"
 import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
@@ -42,8 +43,8 @@ export namespace Unenclosed {
     ): Attributes | undefined =>
         Keyword.matches(token)
             ? Keyword.attributesFrom[token]()
-            : context.spaceRoot?.aliases[token]
-            ? ({ value: "alias" } as const)
+            : context.spaceRoot.aliases[token]
+            ? Alias.resolveAttributes(token, context)
             : undefined
 
     const maybeParseUnenclosedLiteral = (token: string) => {

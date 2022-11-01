@@ -9,7 +9,7 @@ export const fullParse = (def: string, context: DynamicParserContext) =>
 export type fullParse<
     Def extends string,
     Ctx extends StaticParserContext
-> = Loop<Operand.parse<State.initialize<Def>, Ctx>, Ctx>
+> = loop<Operand.parse<State.initialize<Def>, Ctx>, Ctx>
 
 // TODO: Recursion perf?
 const loop = (s: State.Dynamic) => {
@@ -19,17 +19,17 @@ const loop = (s: State.Dynamic) => {
     return s.root!
 }
 
-type Loop<
+type loop<
     s extends State.Unvalidated,
     context extends StaticParserContext
 > = s extends { unscanned: string }
-    ? Loop<Next<s, context>, context>
+    ? loop<next<s, context>, context>
     : s["root"]
 
 const next = (s: State.Dynamic): State.Dynamic =>
     State.hasRoot(s) ? Operator.parse(s) : Operand.parse(s)
 
-type Next<
+type next<
     s extends State.Static,
     context extends StaticParserContext
 > = s extends { root: {} } ? Operator.parse<s> : Operand.parse<s, context>

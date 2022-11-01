@@ -1,8 +1,8 @@
 import type { Evaluate } from "../utils/generics.js"
 import type { Root } from "./root.js"
 
-export type ParseAliases<Aliases> = Evaluate<{
-    [Name in keyof Aliases]: Root.parse<Aliases[Name], { aliases: Aliases }>
+export type parseAliases<aliases> = Evaluate<{
+    [name in keyof aliases]: Root.parse<aliases[name], { aliases: aliases }>
 }>
 
 // export type ValidateStringResolution<

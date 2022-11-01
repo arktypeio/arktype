@@ -7,7 +7,7 @@ import type {
     StaticParserContext
 } from "./common.js"
 import { throwParseError } from "./common.js"
-import { Str } from "./string/str.js"
+import { Str } from "./string/string.js"
 import { Structure } from "./structure/structure.js"
 
 export namespace Root {
@@ -30,7 +30,7 @@ export namespace Root {
         ? Str.parse<def, context>
         : def extends BadDefinitionType
         ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
-        : Structure.Parse<def, context>
+        : Structure.parse<def, context>
 
     export type BadDefinitionType =
         | undefined

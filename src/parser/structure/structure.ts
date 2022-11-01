@@ -16,13 +16,13 @@ export namespace Structure {
 
     export type Kind = keyof Kinds
 
-    export type Parse<
-        Def,
-        Ctx extends StaticParserContext
-    > = Def extends TupleExpression
-        ? parseTupleExpression<Def, Ctx>
+    export type parse<
+        def,
+        context extends StaticParserContext
+    > = def extends TupleExpression
+        ? parseTupleExpression<def, context>
         : Evaluate<{
-              [K in keyof Def]: Root.parse<Def[K], Ctx>
+              [K in keyof def]: Root.parse<def[K], context>
           }>
 
     export const parse = <kind extends Kind>(

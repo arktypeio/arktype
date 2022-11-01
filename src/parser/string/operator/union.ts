@@ -8,7 +8,7 @@ export namespace UnionOperator {
     export const parse = (s: State.DynamicWithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         s.branches.union = s.branches.union
-            ? assignUnion(s.branches.union, s.root, context)
+            ? assignUnion(s.branches.union, s.root, s.context)
             : s.root
         s.root = State.unset
         return s

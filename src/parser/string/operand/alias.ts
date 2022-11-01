@@ -9,7 +9,7 @@ export namespace Alias {
         name: string,
         context: DynamicParserContext
     ): Attributes => {
-        if (!context.spaceRoot?.aliases[name]) {
+        if (!context.spaceRoot.aliases[name]) {
             return throwInternalError(
                 `Unexpectedly failed to resolve alias ${name}`
             )
