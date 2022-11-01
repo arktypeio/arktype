@@ -1,7 +1,10 @@
 import type { dictionary } from "../internal.js"
+import type { SpaceRoot } from "../space.js"
 
 export type DynamicParserContext = {
-    aliases: dictionary
+    path: string
+    spaceRoot: SpaceRoot | undefined
+    shallowSeen: dictionary<true>
 }
 
 export type StaticParserContext = {

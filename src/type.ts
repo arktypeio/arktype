@@ -1,5 +1,5 @@
-import type { inferAst } from "./ast/infer.js"
-import type { validate } from "./ast/validate.js"
+import type { InferAst } from "./ast/infer.js"
+import type { Validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary } from "./internal.js"
 import type { ParseError } from "./parser/common.js"
@@ -9,12 +9,15 @@ import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) => {
-    const root = Root.parse(definition, {
-        aliases: space?.$.aliases ?? {}
+const rawTypeFn: DynamicTypeFn = (definition, { space, ...config } = {}) =>
+    new Arktype(parse(definition, space), config, space as any)
+
+export const parse = (definition: unknown, space: ArktypeSpace | undefined) =>
+    Root.parse(definition, {
+        spaceRoot: space?.$,
+        shallowSeen: {},
+        path: ""
     })
-    return new Arktype(root, config, space as any)
-}
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
@@ -28,22 +31,22 @@ export type InferredTypeFn = <
     definition,
     resolutions = {},
     ast = Root.parse<definition, { aliases: resolutions }>,
-    inferred = inferAst<ast, resolutions>
+    inferred = InferAst<ast, resolutions>
 >(
-    definition: validate<definition, ast, resolutions>,
+    definition: Validate<definition, ast, resolutions>,
     options?: TypeFnOptions<resolutions>
 ) => ast extends ParseError<string> ? never : Arktype<inferred>
 
-type DynamicTypeFn = <resolutions = {}>(
+type DynamicTypeFn = (
     definition: unknown,
-    options?: TypeFnOptions<resolutions>
+    options?: TypeFnOptions<dictionary<unknown>>
 ) => Arktype
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class Arktype<Inferred = unknown> {
     constructor(
-        public root: Attributes,
+        public attributes: Attributes,
         public config: ArktypeConfig,
         public space: ArktypeSpace | undefined
     ) {

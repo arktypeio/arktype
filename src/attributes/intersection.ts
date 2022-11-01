@@ -11,51 +11,38 @@ import type {
 } from "./shared.js"
 
 export const intersect = (
-    left: Attributes,
-    right: Attributes,
+    base: Attributes,
+    assign: Attributes,
     context: DynamicParserContext
 ) => {
-    const intersection = { ...left, ...right }
     let k: AttributeKey
-    for (k in intersection) {
-        intersectKey(intersection, k, intersection[k], context)
+    for (k in assign) {
+        // TODO: Value undefined?
+        if (base[k] === assign[k]) {
+            continue
+        }
+        if (isKeyOf(k, implicationReducers)) {
+            intersect(
+                base,
+                dynamicImplicationReducers[k](assign[k], context),
+                context
+            )
+        }
+        if (k in base) {
+            base[k] = dynamicIntersectionReducers[k](
+                base[k],
+                assign[k],
+                context
+            )
+        } else {
+            base[k] = assign[k] as any
+        }
     }
-    return intersection
+    return base
 }
 
 type IntersectionReducers = {
     [k in AttributeKey]: IntersectionReducer<k>
-}
-
-const intersectKey = <k extends AttributeKey>(
-    intersection: Attributes,
-    k: k,
-    value: AttributeTypes[k],
-    context: DynamicParserContext
-) => {
-    if (isKeyOf(k, implicationReducers)) {
-        const implications = implicationReducers[k]()
-        let impliedKey: ImpliableKey
-        for (impliedKey in implications) {
-            intersectKey(
-                intersection,
-                impliedKey,
-                implications[impliedKey] as any,
-                context
-            )
-        }
-    }
-    if (k in intersection) {
-        if (intersection[k] !== value) {
-            intersection[k] = intersectionReducers[k](
-                intersection[k] as any,
-                value,
-                context
-            ) as any
-        }
-    } else {
-        intersection[k] = value
-    }
 }
 
 const intersectionReducers: IntersectionReducers = {
@@ -70,9 +57,8 @@ const intersectionReducers: IntersectionReducers = {
     divisor: (left, right) => intersectDivisors(left, right),
     regex: (left, right) => `${left}${right}`,
     bounds: intersectBounds,
-    alias: (left, right, context) => left,
     baseProp: (left, right, context) => intersect(left, right, context),
-    props: (left, right) => {
+    props: (left, right, context) => {
         const intersectedProps = { ...left, ...right }
         for (const k in intersectedProps) {
             if (k in left && k in right) {
@@ -99,13 +85,24 @@ const intersectionReducers: IntersectionReducers = {
     contradictions: (left, right) => [...left, ...right]
 }
 
-type Implications = Pick<Attributes, ImpliableKey>
+const dynamicIntersectionReducers = intersectionReducers as {
+    [k in AttributeKey]: (
+        left: unknown,
+        right: unknown,
+        context: DynamicParserContext
+    ) => any
+}
 
-type ImpliableKey = "type" | "branches"
+type KeyWithImplications = "divisor" | "bounds" | "regex" | "alias"
 
-type KeyWithImplications = "divisor" | "bounds" | "regex"
+type ImplicationReducer<K extends KeyWithImplications> = (
+    value: AttributeTypes[K],
+    context: DynamicParserContext
+) => Attributes
 
-const implicationReducers: Record<KeyWithImplications, () => Implications> = {
+const implicationReducers: {
+    [k in KeyWithImplications]: ImplicationReducer<k>
+} = {
     divisor: () => ({ type: "number" }),
     bounds: () => ({
         branches: [
@@ -116,4 +113,11 @@ const implicationReducers: Record<KeyWithImplications, () => Implications> = {
         ]
     }),
     regex: () => ({ type: "string" })
+}
+
+const dynamicImplicationReducers = implicationReducers as {
+    [k in KeyWithImplications]: (
+        value: unknown,
+        context: DynamicParserContext
+    ) => Attributes
 }

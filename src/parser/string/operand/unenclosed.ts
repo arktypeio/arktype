@@ -46,7 +46,7 @@ export namespace Unenclosed {
     ): Attributes | undefined =>
         Keyword.matches(token)
             ? Keyword.attributesFrom(token)
-            : token in context.aliases
+            : context.spaceRoot?.aliases[token]
             ? ({ value: "alias" } as const)
             : undefined
 

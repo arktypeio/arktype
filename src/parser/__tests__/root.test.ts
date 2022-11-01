@@ -11,7 +11,7 @@ describe("root definition", () => {
         test("uninferred types", () => {
             const dynamicStringArray = type.dynamic("str" + "ing[" + "]")
             attest(dynamicStringArray.infer).typed as unknown
-            attest(dynamicStringArray.root).equals({
+            attest(dynamicStringArray.attributes).equals({
                 type: "array",
                 baseProp: { type: "string" }
             })
