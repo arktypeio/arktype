@@ -1,6 +1,6 @@
 import type { Attributes } from "../../attributes/shared.js"
 import type { array, dictionary } from "../../internal.js"
-import type { Evaluate } from "../../utils/generics.js"
+import type { evaluate } from "../../utils/generics.js"
 import type { DynamicParserContext, StaticParserContext } from "../common.js"
 import { Root } from "../root.js"
 import type { TupleExpression } from "./tupleExpression.js"
@@ -21,7 +21,7 @@ export namespace Structure {
         context extends StaticParserContext
     > = def extends TupleExpression
         ? parseTupleExpression<def, context>
-        : Evaluate<{
+        : evaluate<{
               [K in keyof def]: Root.parse<def[K], context>
           }>
 

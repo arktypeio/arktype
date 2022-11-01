@@ -1,4 +1,4 @@
-import type { Nominal } from "../internal.js"
+import type { nominal } from "../internal.js"
 import type { Contradiction, IntersectionReducer } from "./shared.js"
 import { isContradiction } from "./shared.js"
 
@@ -22,7 +22,7 @@ export const intersectBounds: IntersectionReducer<"bounds"> = (base, value) => {
     return stringifyBounds(updatableBounds)
 }
 
-export type BoundsString = Nominal<string, "BoundsString">
+export type BoundsString = nominal<string, "BoundsString">
 
 export type BoundsData = {
     min?: BoundData

@@ -1,4 +1,4 @@
-import type { IsTopType } from "./generics.js"
+import type { isTopType } from "./generics.js"
 
 export type dictionary<of = unknown> = Record<string, of>
 
@@ -31,7 +31,7 @@ export type DynamicTypes = {
     null: null
 }
 
-export type dynamicTypeOf<data> = IsTopType<data> extends true
+export type dynamicTypeOf<data> = isTopType<data> extends true
     ? DynamicTypeName
     : data extends readonly unknown[]
     ? "array"

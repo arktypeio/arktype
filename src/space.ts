@@ -9,7 +9,7 @@ import type { ArktypeConfig } from "./type.js"
 import { Arktype } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
-import type { Evaluate } from "./utils/generics.js"
+import type { evaluate } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -74,7 +74,7 @@ export class SpaceRoot<resolutions extends dictionary = dictionary> {
     }
 }
 
-export type inferResolutions<resolutions> = Evaluate<{
+export type inferResolutions<resolutions> = evaluate<{
     [k in keyof resolutions]: inferAst<resolutions[k], resolutions>
 }>
 

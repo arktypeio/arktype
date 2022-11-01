@@ -1,4 +1,4 @@
-import type { Conform } from "../internal.js"
+import type { conform } from "../internal.js"
 import type { NumberLiteral } from "../parser/string/operand/numeric.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
 
@@ -59,7 +59,7 @@ type unionToTupleRecurse<
     : unionToTupleRecurse<Exclude<union, current>, [current, ...result]>
 
 type unionToTuple<union> = unionToTupleRecurse<union, []> extends infer X
-    ? Conform<X, union[]>
+    ? conform<X, union[]>
     : never
 
 // import { attest } from "@artkype/test"

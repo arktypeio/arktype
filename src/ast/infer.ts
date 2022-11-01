@@ -1,4 +1,4 @@
-import type { Evaluate } from "../internal.js"
+import type { evaluate } from "../internal.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import type { Keyword } from "../parser/string/operand/keyword.js"
 import type { NumberLiteral } from "../parser/string/operand/numeric.js"
@@ -14,7 +14,7 @@ export type inferAst<node, resolutions> = node extends TerminalAst
         : node[1] extends "|"
         ? inferAst<node[0], resolutions> | inferAst<node[2], resolutions>
         : node[1] extends "&"
-        ? Evaluate<
+        ? evaluate<
               inferAst<node[0], resolutions> & inferAst<node[2], resolutions>
           >
         : node[1] extends Scanner.Comparator
@@ -24,7 +24,7 @@ export type inferAst<node, resolutions> = node extends TerminalAst
         : node[1] extends "%"
         ? inferAst<node[0], resolutions>
         : // If the value at index 1 was none of the above, it's a normal tuple definition
-          Evaluate<{
+          evaluate<{
               [i in keyof node]: inferAst<node[i], resolutions>
           }>
     : inferObjectLiteral<node, resolutions>
@@ -53,7 +53,7 @@ type inferObjectLiteral<
         [K in keyof node]: node[K] extends [unknown, "?"] ? K : never
     }[keyof node],
     requiredKey extends keyof node = Exclude<keyof node, optionalKey>
-> = Evaluate<
+> = evaluate<
     {
         [k in requiredKey]: inferAst<node[k], resolutions>
     } & {

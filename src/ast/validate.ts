@@ -1,4 +1,4 @@
-import type { IsAny } from "../internal.js"
+import type { isAny } from "../internal.js"
 import type { ParseError } from "../parser/common.js"
 import type { Scanner } from "../parser/string/state/scanner.js"
 import type { inferAst } from "./infer.js"
@@ -49,11 +49,11 @@ type isNonLiteralString<t> = t extends string
         : false
     : false
 
-type isDivisible<inferred> = IsAny<inferred> extends true
+type isDivisible<inferred> = isAny<inferred> extends true
     ? true
     : isNonLiteralNumber<inferred>
 
-type isBoundable<inferred> = IsAny<inferred> extends true
+type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : isNonLiteralNumber<inferred> extends true
     ? true
