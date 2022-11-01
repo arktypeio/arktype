@@ -1,6 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { space } from "../api.js"
+import { stringifyBounds } from "../attributes/bounds.js"
 import { Unenclosed } from "../parser/string/operand/unenclosed.js"
 
 describe("space", () => {
@@ -11,24 +12,17 @@ describe("space", () => {
             space({ a: "strig" })
         ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("strig"))
     })
-    test("independent", () => {
-        attest(space({ a: "string", b: { c: "boolean" } }).$.infer.b).typed as {
-            c: boolean
-        }
-        attest(() =>
-            space(
-                // @ts-expect-error
-                { a: "string", b: { c: "uhoh" } }
-            )
-        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("uhoh"))
-    })
     test("interdependent", () => {
-        attest(space({ a: "string", b: { c: "a" } }).$.infer.b.c)
-            .typed as string
-        attest(() =>
-            // @ts-expect-error
-            space({ a: "yikes", b: { c: "a" } })
-        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("yikes"))
+        const types = space({ a: "string>5", b: "email<=10", c: "a&b" })
+        attest(types.c.attributes).equals({
+            type: "string",
+            regex: "/^(.+)@(.+)\\.(.+)$/",
+            bounds: stringifyBounds({
+                min: { limit: 5, inclusive: false },
+                max: { limit: 10, inclusive: true }
+            })
+        })
+        attest(types.$.infer.c).typed as string
     })
     test("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })

@@ -24,7 +24,7 @@ export namespace Unenclosed {
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-        ? reduce<s, resolve<s, scanned, context>, nextUnscanned>
+        ? setRootOrCatch<s, resolve<s, scanned, context>, nextUnscanned>
         : never
 
     const unenclosedToAttributes = (s: State.Dynamic, token: string) =>
@@ -57,7 +57,7 @@ export namespace Unenclosed {
         }
     }
 
-    type reduce<
+    type setRootOrCatch<
         s extends State.Static,
         resolved extends string,
         unscanned extends string

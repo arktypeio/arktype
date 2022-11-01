@@ -5,6 +5,7 @@ import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary, evaluate } from "./internal.js"
 import { initializeParserContext } from "./parser/common.js"
+import { Root } from "./parser/root.js"
 import type { parseAliases } from "./parser/space.js"
 import { Str } from "./parser/string/string.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -42,19 +43,26 @@ type DynamicSpaceFn = <aliases extends dictionary>(
 
 export type ArktypeSpace<inferred extends dictionary = dictionary> = {
     $: SpaceRoot<inferred>
-} & resolutionsToArktypes<inferred>
+} & inferredSpaceToArktypes<inferred>
 
-type resolutionsToArktypes<inferred> = {
-    [alias in keyof inferred]: Arktype<inferred[alias]>
+type inferredSpaceToArktypes<inferred> = {
+    [name in keyof inferred]: Arktype<inferred[name]>
 }
 
 export class SpaceRoot<inferred extends dictionary = dictionary> {
-    private parseCache: dictionary<Attributes> = {}
+    private parseCache: dictionary<Attributes | undefined> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
         public config: ArktypeConfig
-    ) {}
+    ) {
+        for (const name in aliases) {
+            this.parseCache[name] = Root.parse(
+                aliases[name],
+                initializeParserContext(this)
+            )
+        }
+    }
 
     get infer(): inferred {
         return chainableNoOpProxy
@@ -67,12 +75,12 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
                 initializeParserContext(this)
             )
         }
-        return deepClone(this.parseCache[definition])
+        return deepClone(this.parseCache[definition]!)
     }
 }
 
 export type inferSpaceAst<root> = evaluate<{
-    [k in keyof root]: inferAst<root[k], root>
+    [name in keyof root]: inferAst<root[name], root>
 }>
 
 // TODO: Ensure there are no extraneous types/space calls from testing

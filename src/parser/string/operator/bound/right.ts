@@ -20,7 +20,7 @@ export namespace RightBoundOperator {
                 limitToken + s.scanner.unscanned
             )
         )
-        return reduce(s, comparator, limit)
+        return setValidatedRoot(s, comparator, limit)
     }
 
     export type parse<
@@ -29,7 +29,7 @@ export namespace RightBoundOperator {
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-        ? reduce<
+        ? setValidatedRootOrCatch<
               State.scanTo<s, nextUnscanned>,
               comparator,
               UnenclosedNumber.parseWellFormedNumber<
@@ -39,7 +39,7 @@ export namespace RightBoundOperator {
           >
         : never
 
-    const reduce = (
+    const setValidatedRoot = (
         s: State.DynamicWithRoot,
         comparator: Scanner.Comparator,
         limit: number
@@ -71,7 +71,7 @@ export namespace RightBoundOperator {
         return s
     }
 
-    type reduce<
+    type setValidatedRootOrCatch<
         s extends State.StaticWithRoot,
         comparator extends Scanner.Comparator,
         limitOrError extends string | number

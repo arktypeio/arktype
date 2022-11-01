@@ -1,3 +1,4 @@
+import { reduce } from "../../../attributes/reduce.js"
 import type { AttributeKey, Attributes } from "../../../attributes/shared.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
 import { hasDynamicType } from "../../../internal.js"
@@ -140,6 +141,7 @@ export namespace State {
             return error(GroupOpen.unclosedMessage)
         }
         finalizeGroup(s, {})
+        s.root = reduce(s.root, s.context)
         s.scanner.hasBeenFinalized = true
         return s
     }

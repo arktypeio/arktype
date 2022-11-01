@@ -6,10 +6,11 @@ import type {
     AttributeBranches,
     AttributeKey,
     Attributes,
-    AttributeTypes,
-    IntersectionReducer
+    Intersector
 } from "./shared.js"
+import { isContradiction } from "./shared.js"
 
+// eslint-disable-next-line max-lines-per-function
 export const assignIntersection = (
     base: Attributes,
     assign: Attributes,
@@ -27,14 +28,21 @@ export const assignIntersection = (
             continue
         }
         if (k in base) {
-            base[k] = dynamicReducers[k](base[k], assign[k], context)
+            const result = dynamicReducers[k](base[k], assign[k], context)
+            // TODO: Better way to do deal with contradictions?
+            if (isContradiction(result)) {
+                base.contradictions ??= []
+                base.contradictions.push(result)
+            } else {
+                base[k] = result
+            }
         } else {
             base[k] = assign[k] as any
         }
-        if (isKeyOf(k, implicationReducers)) {
+        if (isKeyOf(k, implicationMap)) {
             assignIntersection(
                 base,
-                dynamicImplicationReducers[k](base[k], context),
+                dynamicImplicationMap[k](base[k], context),
                 context
             )
         }
@@ -42,11 +50,11 @@ export const assignIntersection = (
     return base
 }
 
-type Reducers = {
-    [k in AttributeKey]: IntersectionReducer<k>
+type IntersectorsByKey = {
+    [k in AttributeKey]: Intersector<k>
 }
 
-const reducers: Reducers = {
+const intersectors: IntersectorsByKey = {
     value: (left, right) => ({
         key: "value",
         contradiction: [left, right]
@@ -93,7 +101,7 @@ const reducers: Reducers = {
     contradictions: (left, right) => [...left, ...right]
 }
 
-const dynamicReducers = reducers as {
+const dynamicReducers = intersectors as {
     [k in AttributeKey]: (
         left: unknown,
         right: unknown,
@@ -101,29 +109,26 @@ const dynamicReducers = reducers as {
     ) => any
 }
 
-type KeyWithImplications = "divisor" | "bounds" | "regex"
+type KeyWithImplications = "divisor" | "regex" //| "bounds"
 
-type ImplicationReducer<k extends KeyWithImplications> = (
-    value: AttributeTypes[k],
-    context: DynamicParserContext
-) => Attributes
+type ImplicationsThunk = () => Attributes
 
-const implicationReducers: {
-    [k in KeyWithImplications]: ImplicationReducer<k>
+const implicationMap: {
+    [k in KeyWithImplications]: ImplicationsThunk
 } = {
     divisor: () => ({ type: "number" }),
-    bounds: () => ({
-        branches: [
-            "|",
-            { type: "number" },
-            { type: "string" },
-            { type: "array" }
-        ]
-    }),
+    // bounds: () => ({
+    //     branches: [
+    //         "|",
+    //         { type: "number" },
+    //         { type: "string" },
+    //         { type: "array" }
+    //     ]
+    // }),
     regex: () => ({ type: "string" })
 }
 
-const dynamicImplicationReducers = implicationReducers as {
+const dynamicImplicationMap = implicationMap as {
     [k in KeyWithImplications]: (
         value: unknown,
         context: DynamicParserContext

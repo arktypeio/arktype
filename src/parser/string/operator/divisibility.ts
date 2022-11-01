@@ -6,7 +6,7 @@ import { State } from "../state/state.js"
 export namespace DivisibilityOperator {
     export const parse = (s: State.DynamicWithRoot) => {
         const divisorToken = s.scanner.shiftUntilNextTerminator()
-        return reduce(
+        return setRootOrCatch(
             s,
             UnenclosedNumber.parseWellFormed(
                 divisorToken,
@@ -23,7 +23,7 @@ export namespace DivisibilityOperator {
         unscanned,
         Scanner.TerminatingChar
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-        ? reduce<
+        ? setRootOrCatch<
               s,
               UnenclosedNumber.parseWellFormedInteger<
                   scanned,
@@ -33,7 +33,7 @@ export namespace DivisibilityOperator {
           >
         : never
 
-    const reduce = (s: State.DynamicWithRoot, parseResult: number) => {
+    const setRootOrCatch = (s: State.DynamicWithRoot, parseResult: number) => {
         if (parseResult === 0) {
             return State.error(buildInvalidDivisorMessage(0))
         }
@@ -41,7 +41,7 @@ export namespace DivisibilityOperator {
         return s
     }
 
-    type reduce<
+    type setRootOrCatch<
         s extends State.StaticWithRoot,
         divisorOrError extends string | number,
         unscanned extends string

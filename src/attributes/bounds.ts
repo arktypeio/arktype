@@ -1,8 +1,8 @@
 import type { nominal } from "../internal.js"
-import type { Contradiction, IntersectionReducer } from "./shared.js"
+import type { Contradiction, Intersector } from "./shared.js"
 import { isContradiction } from "./shared.js"
 
-export const intersectBounds: IntersectionReducer<"bounds"> = (base, value) => {
+export const intersectBounds: Intersector<"bounds"> = (base, value) => {
     let updatableBounds = parseBounds(base)
     const { min, max } = parseBounds(value)
     if (min) {
@@ -48,7 +48,7 @@ const intersectBound = (
     const invertedKind = invertedKinds[kind]
     const baseCompeting = base[kind]
     const baseOpposing = base[invertedKind]
-    if (baseOpposing && isStricter(invertedKind, bound, baseOpposing)) {
+    if (baseOpposing && isStricter(kind, bound, baseOpposing)) {
         return createBoundsContradiction(kind, baseOpposing, bound)
     }
     if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
@@ -78,20 +78,16 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const isStricter = (
-    kind: BoundKind,
-    candidateBound: BoundData,
-    baseBound: BoundData
-) => {
+const isStricter = (kind: BoundKind, candidate: BoundData, base: BoundData) => {
     if (
-        candidateBound.limit === baseBound.limit &&
-        candidateBound.inclusive === false &&
-        baseBound.inclusive === true
+        candidate.limit === base.limit &&
+        candidate.inclusive === false &&
+        base.inclusive === true
     ) {
         return true
     } else if (kind === "min") {
-        return candidateBound.limit > baseBound.limit
+        return candidate.limit > base.limit
     } else {
-        return candidateBound.limit < baseBound.limit
+        return candidate.limit < base.limit
     }
 }
