@@ -1,4 +1,4 @@
-import type { BoundData } from "../../../../attributes/bounds.js"
+import type { BoundData, BoundsData } from "../../../../attributes/bounds.js"
 import { stringifyBounds } from "../../../../attributes/bounds.js"
 import type { Scanner } from "../../state/scanner.js"
 
@@ -30,23 +30,23 @@ export const buildInvalidDoubleMessage = <
 ): buildInvalidDoubleMessage<comparator> =>
     `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
-export const toBoundString = (
+export const toBounds = (
     comparator: Scanner.Comparator,
     limit: number
-) => {
+): BoundsData => {
     const bound: BoundData = {
         limit,
         inclusive: comparator[1] === "="
     }
     if (comparator === "==") {
-        return stringifyBounds({ min: bound, max: bound })
+        return { min: bound, max: bound }
     } else if (comparator === ">" || comparator === ">=") {
-        return stringifyBounds({
+        return {
             min: bound
-        })
+        }
     } else {
-        return stringifyBounds({
+        return {
             max: bound
-        })
+        }
     }
 }

@@ -4,37 +4,37 @@ import type { Scanner } from "../parser/string/state/scanner.js"
 import type { inferAst } from "./infer.js"
 import type { astToString } from "./toString.js"
 
-export type validate<def, ast, resolutions> = def extends []
+export type validate<def, ast, spaceAst> = def extends []
     ? def
     : ast extends ParseError<infer message>
     ? message
     : def extends string
-    ? catchErrorOrFallback<checkAst<ast, resolutions>, def>
+    ? catchErrorOrFallback<checkAst<ast, spaceAst>, def>
     : // @ts-expect-error We know K will also be in AST here because it must be structural
-      { [K in keyof def]: validate<def[K], ast[K], resolutions> }
+      { [K in keyof def]: validate<def[K], ast[K], spaceAst> }
 
 type catchErrorOrFallback<errors extends string[], def> = [] extends errors
     ? def
     : errors[0]
 
-type checkAst<node, resolutions> = node extends string
+type checkAst<node, spaceAst> = node extends string
     ? []
     : node extends [infer child, unknown]
-    ? checkAst<child, resolutions>
+    ? checkAst<child, spaceAst>
     : node extends [infer left, infer token, infer right]
     ? token extends Scanner.NaryToken
-        ? [...checkAst<left, resolutions>, ...checkAst<right, resolutions>]
+        ? [...checkAst<left, spaceAst>, ...checkAst<right, spaceAst>]
         : token extends Scanner.Comparator
         ? left extends number
-            ? checkAst<right, resolutions>
-            : isBoundable<inferAst<left, resolutions>> extends true
-            ? checkAst<left, resolutions>
+            ? checkAst<right, spaceAst>
+            : isBoundable<inferAst<left, spaceAst>> extends true
+            ? checkAst<left, spaceAst>
             : [buildUnboundableMessage<astToString<node[0]>>]
         : token extends "%"
-        ? isDivisible<inferAst<left, resolutions>> extends true
-            ? checkAst<left, resolutions>
+        ? isDivisible<inferAst<left, spaceAst>> extends true
+            ? checkAst<left, spaceAst>
             : [buildIndivisibleMessage<astToString<node[0]>>]
-        : checkAst<left, resolutions>
+        : checkAst<left, spaceAst>
     : []
 
 type isNonLiteralNumber<t> = t extends number

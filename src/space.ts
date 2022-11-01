@@ -1,7 +1,7 @@
 import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
-import type { dictionary } from "./internal.js"
+import type { dictionary, evaluate } from "./internal.js"
 import { initializeParserContext } from "./parser/common.js"
 import type { parseAliases } from "./parser/space.js"
 import { Str } from "./parser/string/string.js"
@@ -9,7 +9,6 @@ import type { ArktypeConfig } from "./type.js"
 import { Arktype } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
-import type { evaluate } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -31,35 +30,35 @@ export const space = lazyDynamicWrap(rawSpace) as any as LazyDynamicWrap<
     DynamicSpaceFn
 >
 
-type InferredSpaceFn = <aliases, resolutions = parseAliases<aliases>>(
-    aliases: validate<aliases, resolutions, resolutions>,
+type InferredSpaceFn = <aliases, ast = parseAliases<aliases>>(
+    aliases: validate<aliases, ast, ast>,
     config?: ArktypeConfig
-) => ArktypeSpace<inferResolutions<resolutions>>
+) => ArktypeSpace<inferSpaceAst<ast>>
 
 type DynamicSpaceFn = <aliases extends dictionary>(
     aliases: aliases,
     config?: ArktypeConfig
 ) => ArktypeSpace<aliases>
 
-export type ArktypeSpace<resolutions extends dictionary = dictionary> = {
-    $: SpaceRoot<resolutions>
-} & resolutionsToArktypes<resolutions>
+export type ArktypeSpace<inferred extends dictionary = dictionary> = {
+    $: SpaceRoot<inferred>
+} & resolutionsToArktypes<inferred>
 
 export const defaultSpace = rawSpace({})
 
-type resolutionsToArktypes<resolutions> = {
-    [alias in keyof resolutions]: Arktype<resolutions[alias]>
+type resolutionsToArktypes<inferred> = {
+    [alias in keyof inferred]: Arktype<inferred[alias]>
 }
 
-export class SpaceRoot<resolutions extends dictionary = dictionary> {
+export class SpaceRoot<inferred extends dictionary = dictionary> {
     private parseCache: dictionary<Attributes> = {}
 
     constructor(
-        public aliases: Record<keyof resolutions, unknown>,
+        public aliases: Record<keyof inferred, unknown>,
         public config: ArktypeConfig
     ) {}
 
-    get infer(): resolutions {
+    get infer(): inferred {
         return chainableNoOpProxy
     }
 
@@ -74,8 +73,8 @@ export class SpaceRoot<resolutions extends dictionary = dictionary> {
     }
 }
 
-export type inferResolutions<resolutions> = evaluate<{
-    [k in keyof resolutions]: inferAst<resolutions[k], resolutions>
+export type inferSpaceAst<root> = evaluate<{
+    [k in keyof root]: inferAst<root[k], root>
 }>
 
 // TODO: Ensure there are no extraneous types/space calls from testing

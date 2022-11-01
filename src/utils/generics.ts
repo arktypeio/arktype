@@ -73,6 +73,6 @@ export type mutable<o> = {
 
 declare const id: unique symbol
 
-export type nominal<T, id extends string> = T & {
+export type nominal<t, id extends string> = t & {
     readonly [id]: id
 }

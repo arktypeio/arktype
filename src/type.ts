@@ -32,13 +32,12 @@ export type TypeFnOptions<resolutions extends dictionary = {}> =
 
 export type InferredTypeFn = <
     definition,
-    resolutions extends dictionary = {},
-    ast = Root.parse<definition, { aliases: resolutions }>,
-    inferred = inferAst<ast, resolutions>
+    spaceAst extends dictionary = {},
+    ast = Root.parse<definition, { aliases: spaceAst }>
 >(
-    definition: validate<definition, ast, resolutions>,
-    options?: TypeFnOptions<resolutions>
-) => ast extends ParseError<string> ? never : Arktype<inferred>
+    definition: validate<definition, ast, spaceAst>,
+    options?: TypeFnOptions<spaceAst>
+) => ast extends ParseError<string> ? never : Arktype<inferAst<ast, spaceAst>>
 
 type DynamicTypeFn = (
     definition: unknown,

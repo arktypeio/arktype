@@ -1,13 +1,10 @@
-import { intersect } from "../../../../attributes/intersection.js"
+import { stringifyBounds } from "../../../../attributes/bounds.js"
+import { assignIntersection } from "../../../../attributes/intersection.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
-import {
-    buildInvalidDoubleMessage,
-    invertedComparators,
-    toBoundString
-} from "./shared.js"
+import { buildInvalidDoubleMessage, toBounds } from "./shared.js"
 
 export namespace RightBoundOperator {
     export const parse = (
@@ -47,22 +44,29 @@ export namespace RightBoundOperator {
         comparator: Scanner.Comparator,
         limit: number
     ) => {
-        s.root = intersect(s.root, {
-            bounds: toBoundString(comparator, limit)
-        })
+        const boundsData = toBounds(comparator, limit)
         if (!isLeftBounded(s)) {
+            s.root = assignIntersection(
+                s.root,
+                { bounds: stringifyBounds(boundsData) },
+                s.context
+            )
             return s
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return State.error(buildInvalidDoubleMessage(comparator))
         }
-        // TODO: Add both bounds at the same time here
-        s.root = intersect(s.root, {
-            bounds: toBoundString(
-                invertedComparators[s.branches.leftBound[1]],
-                s.branches.leftBound[0]
-            )
-        })
+        boundsData.min = {
+            limit: s.branches.leftBound[0],
+            inclusive: s.branches.leftBound[1] === "<="
+        }
+        s.root = assignIntersection(
+            s.root,
+            {
+                bounds: stringifyBounds(boundsData)
+            },
+            s.context
+        )
         s.branches.leftBound = State.unset
         return s
     }
