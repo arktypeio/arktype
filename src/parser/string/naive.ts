@@ -1,3 +1,4 @@
+import { assignIntersection } from "../../attributes/intersection.js"
 import type { DynamicParserContext, StaticParserContext } from "../common.js"
 import type { fullParse } from "./full.js"
 import { Unenclosed } from "./operand/unenclosed.js"
@@ -38,8 +39,11 @@ export const tryNaiveParse = (def: string, context: DynamicParserContext) => {
             context
         )
         if (maybeParsedAttributes) {
-            // TODO: Add optional
-            return maybeParsedAttributes
+            return assignIntersection(
+                maybeParsedAttributes,
+                { optional: true },
+                context
+            )
         }
     }
     return tryNaiveParseArray(def, context)

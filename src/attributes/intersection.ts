@@ -16,28 +16,32 @@ export const assignIntersection = (
     context: DynamicParserContext
 ) => {
     let k: AttributeKey
+    for (k in alwaysIntersectedKeys) {
+        if (k in base && !(k in assign)) {
+            assign[k] = undefined
+        }
+    }
     for (k in assign) {
         // TODO: Value undefined?
         if (base[k] === assign[k]) {
             continue
-        }
-        if (isKeyOf(k, implicationReducers)) {
-            assignIntersection(
-                base,
-                dynamicImplicationReducers[k](assign[k], context),
-                context
-            )
         }
         if (k in base) {
             base[k] = dynamicReducers[k](base[k], assign[k], context)
         } else {
             base[k] = assign[k] as any
         }
+        if (isKeyOf(k, implicationReducers)) {
+            assignIntersection(
+                base,
+                dynamicImplicationReducers[k](base[k], context),
+                context
+            )
+        }
     }
     return base
 }
 
-// TODO: Do most reducers not need context? only alias?
 type Reducers = {
     [k in AttributeKey]: IntersectionReducer<k>
 }
@@ -54,7 +58,7 @@ const reducers: Reducers = {
     divisor: (left, right) => intersectDivisors(left, right),
     regex: (left, right) => `${left}${right}`,
     bounds: intersectBounds,
-    alias: (left, right) => `${left}${right}`,
+    optional: (left, right) => left && right,
     baseProp: (left, right, context) =>
         assignIntersection(left, right, context),
     props: (left, right, context) => {
@@ -123,4 +127,8 @@ const dynamicImplicationReducers = implicationReducers as {
         value: unknown,
         context: DynamicParserContext
     ) => Attributes
+}
+
+const alwaysIntersectedKeys = {
+    optional: true
 }

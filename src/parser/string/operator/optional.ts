@@ -1,3 +1,4 @@
+import { assignIntersection } from "../../../attributes/intersection.js"
 import { State } from "../state/state.js"
 
 export namespace OptionalOperator {
@@ -6,8 +7,7 @@ export namespace OptionalOperator {
             return State.error(nonTerminatingMessage)
         }
         State.finalize(s)
-        // TODO: Fix optional
-        s.root = s.root //InternalAttributes.reduce("optional", s.root, true)
+        s.root = assignIntersection(s.root, { optional: true }, s.context)
         return s
     }
 

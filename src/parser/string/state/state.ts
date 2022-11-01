@@ -190,15 +190,6 @@ export namespace State {
             ? "|"
             : null
 
-    export const setRoot = (
-        s: Dynamic,
-        attributes: Attributes,
-        context: DynamicParserContext
-    ) => {
-        s.root = attributes
-        return s as DynamicWithRoot
-    }
-
     export type setRoot<
         s extends Static,
         node,

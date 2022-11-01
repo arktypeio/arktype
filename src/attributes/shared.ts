@@ -11,23 +11,23 @@ export type IntersectionReducer<key extends AttributeKey> = (
 ) => AttributeTypes[key] | Contradiction
 
 type AtomicAttributeTypes = {
-    alias: string
     value: string | number | boolean | bigint | null | undefined
     type: TypeAttribute
     divisor: number
     regex: Enclosed.RegexLiteral
     bounds: BoundsString
+    optional: true | undefined
 }
 
 export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
 
 export const atomicAttributes: Record<AtomicKey, true> = {
-    alias: true,
     value: true,
     type: true,
     divisor: true,
     regex: true,
-    bounds: true
+    bounds: true,
+    optional: true
 }
 
 type AtomicKey = keyof AtomicAttributeTypes
