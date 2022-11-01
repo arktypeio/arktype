@@ -14,22 +14,23 @@
  *
  */
 import { existsSync, rmSync, writeFileSync } from "node:fs"
-import { shell } from "@arktype/runtime"
-import type { VariableDeclaration } from "ts-morph"
+import type { VariableDeclaration, VariableStatement } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
-import { addNumber } from "./atcEx.js"
+import ts from "typescript"
+import { addNumber } from "./atcAddNumberEx.js"
 
 const functionRegexMatcher = /addNumber(.+)/g
 
 export const findArktypeReferenceCalls = (paths: string[]): string => {
     const project = new Project({})
-    let f: VariableDeclaration[] = []
+    let filteredDeclarations: VariableStatement[] = []
+    const output: string[] = []
     for (const path of paths) {
         project.addSourceFileAtPathIfExists(path)
     }
     for (const file of project.getSourceFiles()) {
-        f = file
-            .getDescendantsOfKind(SyntaxKind.VariableDeclaration)
+        filteredDeclarations = file
+            .getDescendantsOfKind(SyntaxKind.VariableStatement)
             .filter(
                 (dec) =>
                     dec.getDescendantsOfKind(SyntaxKind.ArrowFunction)
@@ -37,10 +38,11 @@ export const findArktypeReferenceCalls = (paths: string[]): string => {
             )
     }
 
-    for (const atc of f) {
-        const callExpression = atc.getFirstDescendantByKindOrThrow(
-            SyntaxKind.CallExpression
-        )
+    for (const filteredDeclaration of filteredDeclarations) {
+        const callExpression =
+            filteredDeclaration.getFirstDescendantByKindOrThrow(
+                SyntaxKind.CallExpression
+            )
         const functionName = callExpression.getFirstDescendantByKindOrThrow(
             SyntaxKind.Identifier
         )
@@ -48,45 +50,24 @@ export const findArktypeReferenceCalls = (paths: string[]): string => {
             SyntaxKind.NumericLiteral
         )
 
-        // callExpression.getArguments
-
-        //MAKE OP DESERIALIZER
-        // const breakParamsDown = (param) => {
-        //     //just eval and done?
-
-        //     //object -> do this
-        //     //function -> do that
-        //     return JSON.parse(param.getText()) as [
-        //         number,
-        //         number
-        //     ]
-        // }
         if (functionName.getText() === "addNumber") {
-            const res = addNumber(
-                ...(parameters.map((param) => parseInt(param.getText())) as [
-                    number,
-                    number
-                ])
+            const returnValue = addNumber(
+                ...(parameters.map((param) =>
+                    eval(ts.transpile(param.getText()))
+                ) as [number, number])
             )
-            //res is thing i want.
-            //Json stringify output
-            // callExpression.replaceWithText
-            console.log(res)
+
+            callExpression.replaceWithText(returnValue.toString())
         }
-
-        // extract function
-
-        // extract params
-        // call and get result
-        // write that result
+        //sourceFile.emit() should do this
+        output.push(`${filteredDeclaration.getText()}`)
     }
-    return "[]"
+    return output.join("\n")
 }
 
 const writeToTsFile = (data: string) => {
     const outputPath = "./atcOutput.ts"
-    const atcImports = `import { space, type } from "../../src/api"`
-    const contents = `${atcImports}\n${data}`
+    const contents = `${data}`
     if (existsSync(outputPath)) {
         rmSync(outputPath)
     }
@@ -94,7 +75,7 @@ const writeToTsFile = (data: string) => {
 }
 
 const runnerScript = () => {
-    const data = findArktypeReferenceCalls(["./atcEx.ts"])
-    // writeToTsFile(data)
+    const precompiledData = findArktypeReferenceCalls(["./atcAddNumberEx.ts"])
+    writeToTsFile(precompiledData)
 }
 runnerScript()
