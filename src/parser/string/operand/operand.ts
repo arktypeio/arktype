@@ -1,4 +1,4 @@
-import type { DynamicParserContext, StaticParserContext } from "../../common.js"
+import type { StaticParserContext } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
@@ -7,10 +7,7 @@ import { GroupOpen } from "./groupOpen.js"
 import { Unenclosed } from "./unenclosed.js"
 
 export namespace Operand {
-    export const parse = (
-        s: State.Dynamic,
-        context: DynamicParserContext
-    ): State.Dynamic =>
+    export const parse = (s: State.Dynamic): State.Dynamic =>
         s.scanner.lookahead === ""
             ? throwParseError(buildMissingOperandMessage(s))
             : s.scanner.lookahead === "("
@@ -18,8 +15,8 @@ export namespace Operand {
             : s.scanner.lookaheadIsIn(Enclosed.startChars)
             ? Enclosed.parse(s, s.scanner.shift())
             : s.scanner.lookahead === " "
-            ? parse(State.shifted(s), context)
-            : Unenclosed.parse(s, context)
+            ? parse(State.shifted(s))
+            : Unenclosed.parse(s)
 
     export type parse<
         s extends State.Static,

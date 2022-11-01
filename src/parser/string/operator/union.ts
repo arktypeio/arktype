@@ -1,4 +1,4 @@
-import { union } from "../../../attributes/union.js"
+import { assignUnion } from "../../../attributes/union.js"
 import type { maybePush } from "../../common.js"
 import { State } from "../state/state.js"
 import type { LeftBoundOperator } from "./bound/left.js"
@@ -8,7 +8,7 @@ export namespace UnionOperator {
     export const parse = (s: State.DynamicWithRoot) => {
         IntersectionOperator.mergeDescendantsToRootIfPresent(s)
         s.branches.union = s.branches.union
-            ? union(s.branches.union, s.root)
+            ? assignUnion(s.branches.union, s.root, context)
             : s.root
         s.root = State.unset
         return s
@@ -40,7 +40,7 @@ export namespace UnionOperator {
         if (!s.branches.union) {
             return s
         }
-        s.root = union(s.branches.union, s.root)
+        s.root = assignUnion(s.branches.union, s.root, s.context)
         delete s.branches.union
         return s
     }

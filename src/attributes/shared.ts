@@ -4,8 +4,6 @@ import type { DynamicParserContext } from "../parser/common.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import type { BoundsString } from "./bounds.js"
 
-type AttributesContext = DynamicParserContext
-
 export type IntersectionReducer<key extends AttributeKey> = (
     base: AttributeTypes[key],
     value: AttributeTypes[key],

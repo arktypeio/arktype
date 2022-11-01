@@ -1,7 +1,7 @@
 import type { AttributeKey, Attributes } from "../../../attributes/shared.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../../internal.js"
 import { hasDynamicType } from "../../../internal.js"
-import type { ParseError } from "../../common.js"
+import type { DynamicParserContext, ParseError } from "../../common.js"
 import { throwParseError } from "../../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import type { LeftBoundOperator } from "../operator/bound/left.js"
@@ -14,6 +14,7 @@ export namespace State {
         branches: DynamicOpenBranches
         groups: DynamicOpenBranches[]
         scanner: Scanner
+        context: DynamicParserContext
     }
 
     export type Dynamic<preconditions extends DynamicPreconditions = {}> = Omit<
@@ -63,11 +64,15 @@ export namespace State {
         root: ast
     }>
 
-    export const initialize = (def: string): Dynamic => ({
+    export const initialize = (
+        def: string,
+        context: DynamicParserContext
+    ): Dynamic => ({
         root: null,
         branches: initializeBranches(),
         groups: [],
-        scanner: new Scanner(def)
+        scanner: new Scanner(def),
+        context
     })
 
     export type initialize<def extends string> = from<{

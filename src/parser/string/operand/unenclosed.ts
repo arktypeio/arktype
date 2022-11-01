@@ -12,9 +12,9 @@ import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 import { Operand } from "./operand.js"
 
 export namespace Unenclosed {
-    export const parse = (s: State.Dynamic, context: DynamicParserContext) => {
+    export const parse = (s: State.Dynamic) => {
         const token = s.scanner.shiftUntilNextTerminator()
-        s.root = unenclosedToAttributes(s, token, context)
+        s.root = unenclosedToAttributes(s, token)
         return s
     }
 
@@ -27,12 +27,8 @@ export namespace Unenclosed {
         ? reduce<s, resolve<s, scanned, context>, nextUnscanned>
         : never
 
-    const unenclosedToAttributes = (
-        s: State.Dynamic,
-        token: string,
-        context: DynamicParserContext
-    ) =>
-        maybeParseIdentifier(token, context) ??
+    const unenclosedToAttributes = (s: State.Dynamic, token: string) =>
+        maybeParseIdentifier(token, s.context) ??
         maybeParseUnenclosedLiteral(token) ??
         State.error(
             token === ""
@@ -45,7 +41,7 @@ export namespace Unenclosed {
         context: DynamicParserContext
     ): Attributes | undefined =>
         Keyword.matches(token)
-            ? Keyword.attributesFrom(token)
+            ? Keyword.attributesFrom[token]()
             : context.spaceRoot?.aliases[token]
             ? ({ value: "alias" } as const)
             : undefined

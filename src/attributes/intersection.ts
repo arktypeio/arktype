@@ -10,7 +10,7 @@ import type {
     IntersectionReducer
 } from "./shared.js"
 
-export const intersect = (
+export const assignIntersection = (
     base: Attributes,
     assign: Attributes,
     context: DynamicParserContext
@@ -22,18 +22,14 @@ export const intersect = (
             continue
         }
         if (isKeyOf(k, implicationReducers)) {
-            intersect(
+            assignIntersection(
                 base,
                 dynamicImplicationReducers[k](assign[k], context),
                 context
             )
         }
         if (k in base) {
-            base[k] = dynamicIntersectionReducers[k](
-                base[k],
-                assign[k],
-                context
-            )
+            base[k] = dynamicReducers[k](base[k], assign[k], context)
         } else {
             base[k] = assign[k] as any
         }
@@ -41,11 +37,12 @@ export const intersect = (
     return base
 }
 
-type IntersectionReducers = {
+// TODO: Do most reducers not need context? only alias?
+type Reducers = {
     [k in AttributeKey]: IntersectionReducer<k>
 }
 
-const intersectionReducers: IntersectionReducers = {
+const reducers: Reducers = {
     value: (left, right) => ({
         key: "value",
         contradiction: [left, right]
@@ -57,12 +54,18 @@ const intersectionReducers: IntersectionReducers = {
     divisor: (left, right) => intersectDivisors(left, right),
     regex: (left, right) => `${left}${right}`,
     bounds: intersectBounds,
-    baseProp: (left, right, context) => intersect(left, right, context),
+    alias: (left, right) => `${left}${right}`,
+    baseProp: (left, right, context) =>
+        assignIntersection(left, right, context),
     props: (left, right, context) => {
         const intersectedProps = { ...left, ...right }
         for (const k in intersectedProps) {
             if (k in left && k in right) {
-                intersectedProps[k] = intersect(left[k], right[k], context)
+                intersectedProps[k] = assignIntersection(
+                    left[k],
+                    right[k],
+                    context
+                )
             }
         }
         return intersectedProps
@@ -85,7 +88,7 @@ const intersectionReducers: IntersectionReducers = {
     contradictions: (left, right) => [...left, ...right]
 }
 
-const dynamicIntersectionReducers = intersectionReducers as {
+const dynamicReducers = reducers as {
     [k in AttributeKey]: (
         left: unknown,
         right: unknown,
@@ -93,10 +96,10 @@ const dynamicIntersectionReducers = intersectionReducers as {
     ) => any
 }
 
-type KeyWithImplications = "divisor" | "bounds" | "regex" | "alias"
+type KeyWithImplications = "divisor" | "bounds" | "regex"
 
-type ImplicationReducer<K extends KeyWithImplications> = (
-    value: AttributeTypes[K],
+type ImplicationReducer<k extends KeyWithImplications> = (
+    value: AttributeTypes[k],
     context: DynamicParserContext
 ) => Attributes
 

@@ -4,7 +4,7 @@ import { Operator } from "./operator/operator.js"
 import { State } from "./state/state.js"
 
 export const fullParse = (def: string, context: DynamicParserContext) =>
-    loop(Operand.parse(State.initialize(def), context), context)
+    loop(Operand.parse(State.initialize(def, context)))
 
 export type fullParse<
     Def extends string,
@@ -12,9 +12,9 @@ export type fullParse<
 > = Loop<Operand.parse<State.initialize<Def>, Ctx>, Ctx>
 
 // TODO: Recursion perf?
-const loop = (s: State.Dynamic, context: DynamicParserContext) => {
+const loop = (s: State.Dynamic) => {
     while (!s.scanner.hasBeenFinalized) {
-        next(s, context)
+        next(s)
     }
     return s.root!
 }
@@ -26,8 +26,8 @@ type Loop<
     ? Loop<Next<s, context>, context>
     : s["root"]
 
-const next = (s: State.Dynamic, context: DynamicParserContext): State.Dynamic =>
-    State.hasRoot(s) ? Operator.parse(s) : Operand.parse(s, context)
+const next = (s: State.Dynamic): State.Dynamic =>
+    State.hasRoot(s) ? Operator.parse(s) : Operand.parse(s)
 
 type Next<
     s extends State.Static,
