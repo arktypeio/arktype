@@ -18,5 +18,5 @@ export const getGroupsForCurrentUser = () => ({
     ]
 })
 
-// Try changing the definitions in "group.ts"/"user.ts" or the data in "getGroupsForCurrentUser"
+// Try changing the definitions in "group.js"/"user.js" or the data in "getGroupsForCurrentUser"
 export const { errors } = types.group.check(getGroupsForCurrentUser())

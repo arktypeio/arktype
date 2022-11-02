@@ -86,7 +86,7 @@ export const docgen = () => {
     console.groupEnd()
 }
 
-const getProject = () => {
+export const getProject = () => {
     stdout.write("Extracting metadata...")
     const project = new Project({
         tsConfigFilePath: join(repoDirs.root, "tsconfig.json"),
