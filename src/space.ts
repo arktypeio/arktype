@@ -4,10 +4,7 @@ import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary, evaluate } from "./internal.js"
-import {
-    DynamicParserContext,
-    initializeParserContext
-} from "./parser/common.js"
+import { initializeParserContext } from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { parseAliases } from "./parser/space.js"
 import { Str } from "./parser/string/string.js"
