@@ -56,7 +56,7 @@ type IntersectorsByKey = {
 }
 
 const intersectors: IntersectorsByKey = {
-    value: (base, assign) => [base, assign],
+    value: (base, assign) => (base === assign ? base : [base, assign]),
     type: (base, assign) => {
         if (typeof base === "string") {
             if (typeof assign === "string") {
@@ -140,6 +140,7 @@ const intersectAttributeSets = <t extends string | number>(
     }
     if (typeof assign === "string") {
         ;(base as AttributeSet<t>)[assign] = true
+        return base
     }
     return Object.assign(base, assign)
 }
