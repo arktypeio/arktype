@@ -1,14 +1,6 @@
-import type { dictionary, DynamicTypeName } from "../internal.js"
-import { hasDynamicType } from "../internal.js"
-import type { DynamicParserContext } from "../parser/common.js"
+import type { array, dictionary, DynamicTypeName, xor } from "../internal.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import type { BoundsString } from "./bounds.js"
-
-export type Intersector<key extends AttributeKey> = (
-    base: AttributeTypes[key],
-    value: AttributeTypes[key],
-    context: DynamicParserContext
-) => AttributeTypes[key] | Contradiction
 
 type AtomicAttributeTypes = {
     value: string | number | boolean | bigint | null | undefined
@@ -19,6 +11,12 @@ type AtomicAttributeTypes = {
     optional: true | undefined
     alias: string
 }
+
+export type Contradictions = {
+    [k in ContradictableKey]?: AtomicAttributeTypes[k][]
+}
+
+export type ContradictableKey = "value" | "type" | "bounds"
 
 export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
 
@@ -32,27 +30,23 @@ export const atomicAttributes: Record<AtomicKey, true> = {
     alias: true
 }
 
-type AtomicKey = keyof AtomicAttributeTypes
+export type AtomicKey = keyof AtomicAttributeTypes
 
 type ComposedAttributeTypes = {
-    contradictions: Contradiction[]
+    contradictions: Contradictions
     baseProp: Attributes
     props: dictionary<Attributes>
     branches: AttributeBranches
 }
 
-export type AttributeBranches = [
-    "|" | "&",
-    ...(Attributes | AttributeBranches)[]
-]
-
-export type Contradiction<key extends AtomicKey = AtomicKey> = {
-    key: key
-    contradiction: [AtomicAttributeTypes[key], AtomicAttributeTypes[key]]
-}
-
-export const isContradiction = (result: unknown): result is Contradiction =>
-    hasDynamicType(result, "dictionary") && "contradiction" in result
+export type AttributeBranches = xor<
+    {
+        "|": array<Attributes | AttributeBranches>
+    },
+    {
+        "&": array<Attributes | AttributeBranches>
+    }
+>
 
 export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 

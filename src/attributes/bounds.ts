@@ -1,20 +1,19 @@
 import type { nominal } from "../internal.js"
-import type { Contradiction, Intersector } from "./shared.js"
-import { isContradiction } from "./shared.js"
+import type { EmptyIntersectionResult, Intersector } from "./intersection.js"
 
 export const intersectBounds: Intersector<"bounds"> = (base, value) => {
     let updatableBounds = parseBounds(base)
     const { min, max } = parseBounds(value)
     if (min) {
         const result = intersectBound("min", updatableBounds, min)
-        if (isContradiction(result)) {
+        if (Array.isArray(result)) {
             return result
         }
         updatableBounds = result
     }
     if (max) {
         const result = intersectBound("max", updatableBounds, max)
-        if (isContradiction(result)) {
+        if (Array.isArray(result)) {
             return result
         }
         updatableBounds = result
@@ -44,7 +43,7 @@ const intersectBound = (
     kind: BoundKind,
     base: BoundsData,
     bound: BoundData
-): BoundsData | Contradiction<"bounds"> => {
+): BoundsData | EmptyIntersectionResult<"bounds"> => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = base[kind]
     const baseOpposing = base[invertedKind]
@@ -61,15 +60,12 @@ const createBoundsContradiction = (
     kind: BoundKind,
     baseOpposing: BoundData,
     bound: BoundData
-): Contradiction<"bounds"> => ({
-    key: "bounds",
-    contradiction: [
-        stringifyBounds({ [invertedKinds[kind]]: baseOpposing }),
-        stringifyBounds({
-            [kind]: bound
-        })
-    ]
-})
+): EmptyIntersectionResult<"bounds"> => [
+    stringifyBounds({ [invertedKinds[kind]]: baseOpposing }),
+    stringifyBounds({
+        [kind]: bound
+    })
+]
 
 const invertedKinds = {
     min: "max",

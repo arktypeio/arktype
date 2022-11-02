@@ -56,7 +56,7 @@ export namespace State {
     export type StringOrReturnCode = string | ReturnCode
 
     export type DynamicWithRoot<
-        attributePreconditions extends Attributes = {}
+        attributePreconditions extends Attributes = Attributes
     > = Dynamic<{
         root: attributePreconditions
     }>

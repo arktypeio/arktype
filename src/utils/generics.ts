@@ -76,3 +76,12 @@ declare const id: unique symbol
 export type nominal<t, id extends string> = t & {
     readonly [id]: id
 }
+
+/** Either:
+ * A, with all properties of B as undefined
+ * OR
+ * B, with all properties of A as undefined
+ **/
+export type xor<A, B> =
+    | evaluate<A & { [k in keyof B]?: undefined }>
+    | evaluate<B & { [k in keyof A]?: undefined }>
