@@ -1,28 +1,32 @@
 import type { dictionary, DynamicTypeName } from "../internal.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
-import type { BoundsString } from "./bounds.js"
+import type { BoundsData } from "./bounds.js"
 
 type AtomicAttributeTypes = {
     value: string | number | boolean | bigint | null | undefined
     type: TypeAttribute
     divisor: number
-    regex: Enclosed.RegexLiteral
-    bounds: BoundsString
+    regex: RegexAttribute
+    bounds: BoundsData
     optional: true | undefined
-    alias: string
+    aliases: MaybeSetOf<string>
 }
 
 export type Contradictions = {
     [k in ContradictableKey]?: AtomicAttributeTypes[k][]
 }
 
-export type ContradictableKey = "value" | "type" | "bounds"
+export type TypeAttribute = MaybeSetOf<TypeAttributeName>
 
-export type TypeAttribute = TypeAttributeName | TypeAttributeNameUnion
+export type RegexAttribute = MaybeSetOf<Enclosed.RegexLiteral>
+
+export type ContradictableKey = "value" | "type" | "bounds"
 
 export type TypeAttributeName = Exclude<DynamicTypeName, "undefined" | "null">
 
-export type TypeAttributeNameUnion = Partial<Record<TypeAttributeName, true>>
+export type AttributeSet<t extends string | number> = Partial<Record<t, true>>
+
+export type MaybeSetOf<t extends string | number> = t | AttributeSet<t>
 
 export const atomicAttributes: Record<AtomicKey, true> = {
     value: true,
@@ -31,7 +35,7 @@ export const atomicAttributes: Record<AtomicKey, true> = {
     regex: true,
     bounds: true,
     optional: true,
-    alias: true
+    aliases: true
 }
 
 export type AtomicKey = keyof AtomicAttributeTypes

@@ -1,4 +1,3 @@
-import { stringifyBounds } from "../../../../attributes/bounds.js"
 import { assignIntersection } from "../../../../attributes/intersection.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
@@ -48,7 +47,7 @@ export namespace RightBoundOperator {
         if (!isLeftBounded(s)) {
             s.root = assignIntersection(
                 s.root,
-                { bounds: stringifyBounds(boundsData) },
+                { bounds: boundsData },
                 s.context
             )
             return s
@@ -63,7 +62,7 @@ export namespace RightBoundOperator {
         s.root = assignIntersection(
             s.root,
             {
-                bounds: stringifyBounds(boundsData)
+                bounds: boundsData
             },
             s.context
         )

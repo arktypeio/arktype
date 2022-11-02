@@ -1,7 +1,6 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { space } from "../api.js"
-import { stringifyBounds } from "../attributes/bounds.js"
 import { Unenclosed } from "../parser/string/operand/unenclosed.js"
 
 describe("space", () => {
@@ -17,10 +16,10 @@ describe("space", () => {
         attest(types.c.attributes).equals({
             type: "string",
             regex: "/^(.+)@(.+)\\.(.+)$/",
-            bounds: stringifyBounds({
+            bounds: {
                 min: { limit: 5, inclusive: false },
                 max: { limit: 10, inclusive: true }
-            })
+            }
         })
         attest(types.$.infer.c).typed as string
     })
@@ -28,7 +27,7 @@ describe("space", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         attest(cyclicSpace.a.attributes).snap({
             type: "dictionary",
-            props: { b: { type: "dictionary", props: { a: { alias: "a" } } } }
+            props: { b: { type: "dictionary", props: { a: { aliases: "a" } } } }
         })
         // Type hint displays as any on hitting cycle
         attest(cyclicSpace.$.infer.a).typed as {

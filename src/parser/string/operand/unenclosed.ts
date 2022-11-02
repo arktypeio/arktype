@@ -1,4 +1,3 @@
-import type { Attributes } from "../../../attributes/shared.js"
 import type {
     DynamicParserContext,
     ParseError,

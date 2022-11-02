@@ -61,7 +61,7 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
         if (!this.parseCache[name]) {
             // Set the resolution to a shallow reference until the alias has
             // been fully parsed in case it cyclicly references itself
-            this.parseCache[name] = { alias: name }
+            this.parseCache[name] = { aliases: name }
             this.parseCache[name] = Root.parse(
                 this.aliases[name],
                 initializeParserContext(this)

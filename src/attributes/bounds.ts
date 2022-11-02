@@ -1,27 +1,19 @@
-import type { nominal } from "../internal.js"
 import type { EmptyIntersectionResult, Intersector } from "./intersection.js"
+import { isEmptyIntersection } from "./intersection.js"
 
-export const intersectBounds: Intersector<"bounds"> = (base, value) => {
-    let updatableBounds = parseBounds(base)
-    const { min, max } = parseBounds(value)
+export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
+    let intersectedBounds: BoundsData | EmptyIntersectionResult<"bounds"> = base
     if (min) {
-        const result = intersectBound("min", updatableBounds, min)
-        if (Array.isArray(result)) {
-            return result
+        intersectedBounds = intersectBound("min", base, min)
+        if (isEmptyIntersection(intersectedBounds)) {
+            return intersectedBounds
         }
-        updatableBounds = result
     }
     if (max) {
-        const result = intersectBound("max", updatableBounds, max)
-        if (Array.isArray(result)) {
-            return result
-        }
-        updatableBounds = result
+        intersectedBounds = intersectBound("max", base, max)
     }
-    return stringifyBounds(updatableBounds)
+    return intersectedBounds
 }
-
-export type BoundsString = nominal<string, "BoundsString">
 
 export type BoundsData = {
     min?: BoundData
@@ -32,12 +24,6 @@ export type BoundData = {
     limit: number
     inclusive: boolean
 }
-
-export const stringifyBounds = (boundsData: BoundsData) =>
-    JSON.stringify(boundsData) as BoundsString
-
-const parseBounds = (boundsString: BoundsString) =>
-    JSON.parse(boundsString) as BoundsData
 
 const intersectBound = (
     kind: BoundKind,
@@ -61,10 +47,10 @@ const createBoundsContradiction = (
     baseOpposing: BoundData,
     bound: BoundData
 ): EmptyIntersectionResult<"bounds"> => [
-    stringifyBounds({ [invertedKinds[kind]]: baseOpposing }),
-    stringifyBounds({
+    { [invertedKinds[kind]]: baseOpposing },
+    {
         [kind]: bound
-    })
+    }
 ]
 
 const invertedKinds = {

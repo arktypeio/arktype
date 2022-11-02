@@ -1,21 +1,22 @@
-import { isKeyOf } from "../internal.js"
+import { isKeyOf, keysOf } from "../internal.js"
 import type { DynamicParserContext } from "../parser/common.js"
 import { assignIntersection } from "./intersection.js"
-import type { AttributeKey, Attributes } from "./shared.js"
+import type { AttributeKey, Attributes, AttributeTypes } from "./shared.js"
 import { atomicAttributes } from "./shared.js"
 
 export const reduce = (root: Attributes, context: DynamicParserContext) => {
-    if (root.alias) {
-        reduceAliases(root, root.alias.split("&"), context)
+    if (root.aliases) {
+        reduceAliases(root, root.aliases, context)
     }
     return root
 }
 
 const reduceAliases = (
     root: Attributes,
-    names: string[],
+    aliases: AttributeTypes["aliases"],
     context: DynamicParserContext
 ) => {
+    const names = typeof aliases === "string" ? [aliases] : keysOf(aliases)
     for (const name of names) {
         const attributes = context.spaceRoot.parseAlias(name)
         let k: AttributeKey
