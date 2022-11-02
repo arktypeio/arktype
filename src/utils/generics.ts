@@ -71,21 +71,10 @@ export type keysOf<o extends object> = (keyof o)[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 
-export type mutable<o> = {
-    -readonly [k in keyof o]: o[k]
+export const pushKey = (path: string, key: string, delimiter = ".") =>
+    path === "" ? key : `${path}${delimiter}${key}`
+
+export const withoutLastKey = (path: string, delimiter = ".") => {
+    const lastDelimiterIndex = path.lastIndexOf(delimiter)
+    return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }
-
-declare const id: unique symbol
-
-export type nominal<t, id extends string> = t & {
-    readonly [id]: id
-}
-
-/** Either:
- * A, with all properties of B as undefined
- * OR
- * B, with all properties of A as undefined
- **/
-export type xor<A, B> =
-    | evaluate<A & { [k in keyof B]?: undefined }>
-    | evaluate<B & { [k in keyof A]?: undefined }>

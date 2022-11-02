@@ -1,5 +1,5 @@
 import type { dictionary, DynamicTypeName } from "../internal.js"
-import type { Enclosed } from "../parser/string/operand/enclosed.js"
+import type { Enclosed } from "../parser/operand/enclosed.js"
 import type { BoundsData } from "./bounds.js"
 
 type AtomicAttributeTypes = {

@@ -4,7 +4,7 @@ import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
 import type { ParseError } from "./parser/common.js"
 import { initializeParserContext } from "./parser/common.js"
-import { Root } from "./parser/root.js"
+import { parse } from "./parser/parse.js"
 import type { ArktypeSpace } from "./space.js"
 import { space } from "./space.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -19,7 +19,7 @@ const rawTypeFn: DynamicTypeFn = (
     { space = emptySpace, ...config } = {}
 ) =>
     new Arktype(
-        Root.parse(definition, initializeParserContext(space.$)),
+        parse(definition, initializeParserContext(space.$)),
         config,
         space as ArktypeSpace
     )
@@ -35,7 +35,7 @@ export type TypeFnOptions<space> = ArktypeConfig & {
 export type InferredTypeFn = <
     definition,
     space = EmptySpace,
-    ast = Root.parse<definition, { aliases: space }>
+    ast = parse<definition, { aliases: space }>
 >(
     definition: validate<definition, ast, space>,
     options?: TypeFnOptions<space>

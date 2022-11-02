@@ -1,6 +1,6 @@
 import type { isAny } from "../internal.js"
 import type { ParseError } from "../parser/common.js"
-import type { Scanner } from "../parser/string/state/scanner.js"
+import type { Scanner } from "../parser/state/scanner.js"
 import type { inferAst } from "./infer.js"
 import type { astToString } from "./toString.js"
 
@@ -11,7 +11,7 @@ export type validate<def, ast, spaceAst> = def extends []
     : def extends string
     ? catchErrorOrFallback<checkAst<ast, spaceAst>, def>
     : // @ts-expect-error We know K will also be in AST here because it must be structural
-      { [K in keyof def]: validate<def[K], ast[K], spaceAst> }
+      { [k in keyof def]: validate<def[k], ast[k], spaceAst> }
 
 type catchErrorOrFallback<errors extends string[], def> = [] extends errors
     ? def

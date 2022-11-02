@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { space } from "../api.js"
-import { Unenclosed } from "../parser/string/operand/unenclosed.js"
+import { Unenclosed } from "../parser/operand/unenclosed.js"
 
 describe("space", () => {
     test("single", () => {

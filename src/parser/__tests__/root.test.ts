@@ -2,8 +2,8 @@ import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { space, type } from "../../api.js"
 import type { dictionary } from "../../internal.js"
-import { Root } from "../root.js"
-import { Unenclosed } from "../string/operand/unenclosed.js"
+import { Unenclosed } from "../operand/unenclosed.js"
+import { buildBadDefinitionTypeMessage } from "../parse.js"
 
 describe("root definition", () => {
     // TODO: Add lazy tests
@@ -45,43 +45,43 @@ describe("root definition", () => {
         test("undefined", () => {
             // @ts-expect-error
             attest(() => type({ bad: undefined })).throwsAndHasTypeError(
-                Root.buildBadDefinitionTypeMessage("undefined")
+                buildBadDefinitionTypeMessage("undefined")
             )
         })
         test("null", () => {
             // @ts-expect-error
             attest(() => type({ bad: null })).throwsAndHasTypeError(
-                Root.buildBadDefinitionTypeMessage("null")
+                buildBadDefinitionTypeMessage("null")
             )
         })
         test("boolean", () => {
             // @ts-expect-error
             attest(() => type({ bad: true })).throwsAndHasTypeError(
-                Root.buildBadDefinitionTypeMessage("boolean")
+                buildBadDefinitionTypeMessage("boolean")
             )
         })
         test("number", () => {
             // @ts-expect-error
             attest(() => type({ bad: 5 })).throwsAndHasTypeError(
-                Root.buildBadDefinitionTypeMessage("number")
+                buildBadDefinitionTypeMessage("number")
             )
         })
         test("bigint", () => {
             // @ts-expect-error
             attest(() => type({ bad: 99999n })).throwsAndHasTypeError(
-                Root.buildBadDefinitionTypeMessage("bigint")
+                buildBadDefinitionTypeMessage("bigint")
             )
         })
         test("function", () => {
             // @ts-expect-error
             attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
-                Root.buildBadDefinitionTypeMessage("function")
+                buildBadDefinitionTypeMessage("function")
             )
         })
         test("symbol", () => {
             // @ts-expect-error
             attest(() => type({ bad: Symbol() })).throwsAndHasTypeError(
-                Root.buildBadDefinitionTypeMessage("symbol")
+                buildBadDefinitionTypeMessage("symbol")
             )
         })
     })
