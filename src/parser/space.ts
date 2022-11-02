@@ -1,8 +1,11 @@
 import type { evaluate } from "../utils/generics.js"
-import type { parse } from "./parse.js"
+import type { parseDefinition } from "./parse.js"
 
 export type parseAliases<aliases> = evaluate<{
-    [name in keyof aliases]: parse<aliases[name], { aliases: aliases }>
+    [name in keyof aliases]: parseDefinition<
+        aliases[name],
+        { aliases: aliases }
+    >
 }>
 
 // export type ValidateStringResolution<

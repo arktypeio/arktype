@@ -12,17 +12,7 @@ import { tryNaiveParse } from "./naive.js"
 import type { Operand } from "./operand/operand.js"
 import type { Scanner } from "./state/scanner.js"
 
-export const parse = (def: unknown, context: DynamicParserContext) => {
-    return parseDefinition(def, context)
-}
-
-export type parse<def, context extends StaticParserContext> = def extends string
-    ? parseString<def, context>
-    : def extends BadDefinitionType
-    ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
-    : parseStructure<def, context>
-
-const parseDefinition = (
+export const parseDefinition = (
     def: unknown,
     context: DynamicParserContext
 ): Attributes => {
@@ -33,6 +23,15 @@ const parseDefinition = (
         ? parseStructure(def as any, context)
         : throwParseError(buildBadDefinitionTypeMessage(defType))
 }
+
+export type parseDefinition<
+    def,
+    context extends StaticParserContext
+> = def extends string
+    ? parseString<def, context>
+    : def extends BadDefinitionType
+    ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
+    : parseStructure<def, context>
 
 export type BadDefinitionType =
     | undefined
@@ -76,7 +75,7 @@ export type parseStructure<
 > = def extends TupleExpression
     ? parseTupleExpression<def, context>
     : evaluate<{
-          [K in keyof def]: parse<def[K], context>
+          [K in keyof def]: parseDefinition<def[K], context>
       }>
 
 export type parseString<
@@ -103,11 +102,15 @@ export type parseTupleExpression<
 > = def[1] extends Scanner.InfixToken
     ? def[2] extends undefined
         ? [
-              parse<def[0], context>,
+              parseDefinition<def[0], context>,
               ParseError<Operand.buildMissingRightOperandMessage<def[1], "">>
           ]
-        : [parse<def[0], context>, def[1], parse<def[2], context>]
-    : [parse<def[0], context>, def[1]]
+        : [
+              parseDefinition<def[0], context>,
+              def[1],
+              parseDefinition<def[2], context>
+          ]
+    : [parseDefinition<def[0], context>, def[1]]
 
 export type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 
