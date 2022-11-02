@@ -24,7 +24,8 @@
         }
     },
     "scripts": {
-        "build": "pnpm ts-node ../scripts/build.ts"
+        "build": "pnpm ts-node ../scripts/build.ts",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "get-current-line": "6.6.0"

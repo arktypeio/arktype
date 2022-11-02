@@ -1,38 +1,10 @@
-/* eslint-disable max-lines-per-function */
-import type { Mutable } from "../internal.js"
-import { deepEquals } from "../utils/deepEquals.js"
-import type { Attributes } from "./attributes.js"
+import type { DynamicParserContext } from "../parser/common.js"
+import type { Attributes } from "./shared.js"
 
-export const reduceUnion: Attributes.Reducer<[branch: Attributes]> = (
-    { ...base },
-    { ...branch }
-) => {
-    let k: Attributes.KeyOf
-    const baseAttributesToDistribute = {} as Mutable<Attributes>
-    for (k in branch) {
-        if (deepEquals(base[k], branch[k])) {
-            // The branch attribute is redundant and can be removed.
-            delete branch[k]
-            continue
-        }
-        if (!(k in base)) {
-            // The branch attribute was not previously part of base and is safe to push to branches.
-            continue
-        }
-        // The attribute had distinct values for base and branch. Once we're
-        // done looping over branch attributes, distribute it to each
-        // existing branch and remove it from base.
-        baseAttributesToDistribute[k] = base[k] as any
-    }
-    if (!Object.keys(branch).length) {
-        // All keys were redundant, no need to push the new branch
-        return base
-    }
-    const reducedBranches =
-        base.branches?.map((preexistingBranch) => ({
-            ...preexistingBranch,
-            ...baseAttributesToDistribute
-        })) ?? []
-    base.branches = [...reducedBranches, branch]
-    return base
+export const assignUnion = (
+    base: Attributes,
+    assign: Attributes,
+    context: DynamicParserContext
+): Attributes => {
+    return { branches: ["|", base, assign] }
 }

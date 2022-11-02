@@ -1,10 +1,10 @@
-export type Narrow<T> = CastWithExclusion<T, NarrowRecurse<T>, []>
+export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
 
-type NarrowRecurse<T> = {
-    [K in keyof T]: T[K] extends Narrowable | [] ? T[K] : NarrowRecurse<T[K]>
+type narrowRecurse<t> = {
+    [k in keyof t]: t[k] extends Narrowable | [] ? t[k] : narrowRecurse<t[k]>
 }
 
-type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded ? T : CastTo
+type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
 
 type Narrowable = string | boolean | number | bigint
 
@@ -14,44 +14,44 @@ type Narrowable = string | boolean | number | bigint
  * but I'm unsure how to fix this without breaking the types that rely on it.
  *
  */
-export type Evaluate<T> = {
-    [K in keyof T]: T[K]
+export type evaluate<t> = {
+    [k in keyof t]: t[k]
 } & unknown
 
 // Currently returns never if string and number keys of the same name are merged, e.g.:
 // type Result = Merge<{1: false}, {"1": true}> //never
 // This feels too niche to fix at the cost of performance and complexity, but that could change.
 // It also overrides values with undefined, unlike the associated function. We'll have to see if this is problematic.
-export type Merge<Base, Merged> = Evaluate<
-    Omit<ExtractMergeable<Base>, Extract<keyof Base, keyof Merged>> &
-        ExtractMergeable<Merged>
+export type merge<base, merged> = evaluate<
+    Omit<extractMergeable<base>, Extract<keyof base, keyof merged>> &
+        extractMergeable<merged>
 >
 
-type ExtractMergeable<T> = T extends {} ? T : {}
+type extractMergeable<t> = t extends {} ? t : {}
 
-export type IsTopType<T> = (any extends T ? true : false) extends true
+export type isTopType<t> = (any extends t ? true : false) extends true
     ? true
     : false
 
-export type IsAny<T> = (any extends T ? TopTypeIsAny<T> : false) extends true
+export type isAny<t> = (any extends t ? topTypeIsAny<t> : false) extends true
     ? true
     : false
 
-export type IsUnknown<T> = (
-    any extends T ? TopTypeIsUnknown<T> : false
+export type isUnknown<t> = (
+    any extends t ? topTypeIsUnknown<t> : false
 ) extends true
     ? true
     : false
 
-type TopTypeIsAny<T> = (T extends {} ? true : false) extends false
+type topTypeIsAny<t> = (t extends {} ? true : false) extends false
     ? false
     : true
 
-type TopTypeIsUnknown<T> = (T extends {} ? true : false) extends false
+type topTypeIsUnknown<t> = (t extends {} ? true : false) extends false
     ? true
     : false
 
-export type Conform<T, Base> = T extends Base ? T : Base
+export type conform<t, base> = t extends base ? t : base
 
 export const isKeyOf = <k extends string | number, obj extends object>(
     k: k,
@@ -67,6 +67,14 @@ export type entriesOf<o extends object> = entryOf<o>[]
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
-export type Mutable<o> = {
-    -readonly [k in keyof o]: o[k]
+export type keysOf<o extends object> = (keyof o)[]
+
+export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
+
+export const pushKey = (path: string, key: string, delimiter = ".") =>
+    path === "" ? key : `${path}${delimiter}${key}`
+
+export const withoutLastKey = (path: string, delimiter = ".") => {
+    const lastDelimiterIndex = path.lastIndexOf(delimiter)
+    return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }

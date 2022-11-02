@@ -1,4 +1,5 @@
 import { join, relative } from "node:path"
+import type { WalkOptions } from "./runtime/src/api.js"
 import {
     findPackageRoot,
     readPackageJson,
@@ -21,6 +22,11 @@ export const isProd = () => process.argv.includes("--prod") || !!process.env.CI
 
 export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
 
+export const inFileFilter: WalkOptions = {
+    ignoreDirsMatching: /__tests__|__snippets__/,
+    include: (path) => tsFileMatcher.test(path)
+}
+
 export const getPackageDataFromCwd = () => {
     const cwd = process.cwd()
     const packageRoot = findPackageRoot(cwd)
@@ -32,10 +38,7 @@ export const getPackageDataFromCwd = () => {
     const typesOut = join(outRoot, "types")
     const mjsOut = join(outRoot, "mjs")
     const cjsOut = join(outRoot, "cjs")
-    const inFiles = walkPaths(srcRoot, {
-        ignoreDirsMatching: /__tests__|__snippets__/,
-        include: (path) => tsFileMatcher.test(path)
-    })
+    const inFiles = walkPaths(srcRoot, inFileFilter)
     return {
         packageRoot,
         packageJson,

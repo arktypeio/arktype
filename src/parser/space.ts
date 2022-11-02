@@ -1,8 +1,11 @@
-import type { Evaluate } from "../utils/generics.js"
-import type { Root } from "./root.js"
+import type { evaluate } from "../utils/generics.js"
+import type { parseDefinition } from "./parse.js"
 
-export type ParseSpace<Aliases> = Evaluate<{
-    [Name in keyof Aliases]: Root.parse<Aliases[Name], { aliases: Aliases }>
+export type parseAliases<aliases> = evaluate<{
+    [name in keyof aliases]: parseDefinition<
+        aliases[name],
+        { aliases: aliases }
+    >
 }>
 
 // export type ValidateStringResolution<

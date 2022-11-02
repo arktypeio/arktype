@@ -1,0 +1,6 @@
+{
+    "imports": {
+        "@arktype/test": "../test/src/api.ts",
+        "@arktype/runtime": "../runtime/src/api.ts"
+    }
+}

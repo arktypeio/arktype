@@ -1,8 +1,18 @@
 import type { dictionary } from "../internal.js"
+import type { SpaceRoot } from "../space.js"
 
-export type ParserContext = {
-    aliases: dictionary
+export type DynamicParserContext = {
+    path: string
+    spaceRoot: SpaceRoot
+    seen: dictionary<string>
 }
+
+// TODO: How much of this do we need?
+export const initializeParserContext = (spaceRoot: SpaceRoot) => ({
+    spaceRoot,
+    path: "",
+    seen: {}
+})
 
 export type StaticParserContext = {
     aliases: unknown

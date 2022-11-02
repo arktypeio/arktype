@@ -1,6 +1,7 @@
 import { existsSync, statSync } from "node:fs"
 import { basename, join, relative } from "node:path"
 import { stdout } from "node:process"
+import type { WalkOptions } from "@arktype/runtime"
 import { dirName, shell } from "@arktype/runtime"
 import { Project } from "ts-morph"
 import { repoDirs } from "../common.js"
@@ -32,6 +33,8 @@ export type DocGenSnippetsConfig = {
 export type DocGenMappedDirsConfig = {
     sources: string[]
     targets: string[]
+    sourceOptions?: WalkOptions
+    skipFormatting?: boolean
     transformOutputPaths?: (path: string) => string
     transformContents?: (content: string) => string
 }
@@ -86,7 +89,7 @@ export const docgen = () => {
     console.groupEnd()
 }
 
-const getProject = () => {
+export const getProject = () => {
     stdout.write("Extracting metadata...")
     const project = new Project({
         tsConfigFilePath: join(repoDirs.root, "tsconfig.json"),

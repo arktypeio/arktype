@@ -1,7 +1,15 @@
 import { existsSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
-import { getPackageDataFromCwd, isProd, repoDirs } from "../common.js"
+import {
+    getPackageDataFromCwd,
+    inFileFilter,
+    isProd,
+    repoDirs
+} from "../common.js"
+import { getProject } from "../docgen/main.js"
+import { mapDir } from "../docgen/mapDir.js"
+import { extractSnippets } from "../docgen/snippets/extractSnippets.js"
 import {
     readJson,
     requireResolve,
@@ -22,13 +30,11 @@ const {
 
 const successMessage = `🎁 Successfully built ${packageName}!`
 
-export const arktypeTsc = (config: ArktypeTscConfig) => {
+export const arktypeTsc = () => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
-    if (!config?.skip?.types) {
-        buildTypes()
-    }
-    transpile(config)
+    buildTypes()
+    transpile()
     console.log(successMessage)
 }
 
@@ -51,13 +57,12 @@ export const buildTypes = () => {
     stdout.write(`✅\n`)
 }
 
-export const transpile = (config: ArktypeTscConfig) => {
+export const transpile = () => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
-    if (!config.skip.esm) {
-        buildEsm()
-    }
-    if (!config.skip.cjs) {
-        buildCjs()
+    buildEsm()
+    buildCjs()
+    if (packageName === "arktype") {
+        buildDeno()
     }
     stdout.write("✅\n")
 }
@@ -91,20 +96,15 @@ export const buildCjs = () => {
     writeJson(join(cjsOut, "package.json"), { type: "commonjs" })
 }
 
-export type ArktypeTscOptions = {
-    skip?: {
-        cjs?: boolean
-        esm?: boolean
-        types?: boolean
-    }
+export const buildDeno = () => {
+    const sources = extractSnippets(inFiles, getProject())
+    mapDir(sources, {
+        sources: ["src"],
+        targets: ["dist/deno"],
+        sourceOptions: inFileFilter,
+        skipFormatting: true,
+        transformContents: (content) => content.replaceAll(/\.js"/g, '.ts"')
+    })
 }
 
-export type ArktypeTscConfig = Required<ArktypeTscOptions>
-
-arktypeTsc({
-    skip: {
-        esm: process.argv.includes("--skipEsm"),
-        cjs: process.argv.includes("--skipCjs"),
-        types: process.argv.includes("--skipTypes")
-    }
-})
+arktypeTsc()
