@@ -1,4 +1,4 @@
-import { space, type } from "../../../src/api.js"
+import { type } from "../../../src/api.js"
 
 export const user = type({
     name: "string",
@@ -7,5 +7,3 @@ export const user = type({
         version: "number?"
     }
 })
-
-type User = typeof user.infer

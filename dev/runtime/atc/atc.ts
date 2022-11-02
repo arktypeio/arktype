@@ -9,6 +9,7 @@
 import type { VariableStatement } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
 import ts from "typescript"
+import { type } from "../../../src/type.js"
 import { addNumber } from "./atcAddNumberEx.js"
 
 export const findArktypeReferenceCalls = (paths: string[]): string => {
@@ -45,8 +46,26 @@ export const findArktypeReferenceCalls = (paths: string[]): string => {
                 )
 
                 callExpression.replaceWithText(returnValue.toString())
+            } else if (functionName.getText() === "type") {
+                const args = callExpression.getArguments()
+                console.log(
+                    type(
+                        ...(args.map((arg) =>
+                            eval(ts.transpile(JSON.stringify(arg.getText())))
+                        ) as Parameters<typeof type>)
+                    )
+                )
+                // evalArg function plz
+                // const returnValue = type(
+                //     ...(args.map((arg) =>
+                //         eval(ts.transpile(JSON.stringify(arg.getText())))
+                //     ) as Parameters<typeof type>)
+                // )
+                // console.log(returnValue)
+                // callExpression.replaceWithText(returnValue.toString())
             }
-            file.emitSync()
+
+            // file.emitSync()
         }
     }
 
@@ -54,7 +73,7 @@ export const findArktypeReferenceCalls = (paths: string[]): string => {
 }
 
 const runnerScript = () => {
-    findArktypeReferenceCalls(["./atcAddNumberEx.ts"])
+    findArktypeReferenceCalls(["./atcTypeEx.ts"])
 }
 
 runnerScript()
