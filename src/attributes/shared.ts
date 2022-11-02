@@ -18,7 +18,11 @@ export type Contradictions = {
 
 export type ContradictableKey = "value" | "type" | "bounds"
 
-export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
+export type TypeAttribute = TypeAttributeName | TypeAttributeNameUnion
+
+export type TypeAttributeName = Exclude<DynamicTypeName, "undefined" | "null">
+
+export type TypeAttributeNameUnion = Partial<Record<TypeAttributeName, true>>
 
 export const atomicAttributes: Record<AtomicKey, true> = {
     value: true,

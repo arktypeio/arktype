@@ -46,7 +46,7 @@ type inferredSpaceToArktypes<inferred> = {
 }
 
 export class SpaceRoot<inferred extends dictionary = dictionary> {
-    private parseCache: dictionary<Attributes | undefined> = {}
+    private parseCache: dictionary<Attributes> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -59,13 +59,15 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
 
     parseAlias(name: string) {
         if (!this.parseCache[name]) {
+            // Set the resolution to a shallow reference until the alias has
+            // been fully parsed in case it cyclicly references itself
             this.parseCache[name] = { alias: name }
             this.parseCache[name] = Root.parse(
                 this.aliases[name],
                 initializeParserContext(this)
             )
         }
-        return deepClone(this.parseCache[name]!)
+        return deepClone(this.parseCache[name])
     }
 
     parseMemoizable(definition: string) {
@@ -75,7 +77,7 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
                 initializeParserContext(this)
             )
         }
-        return deepClone(this.parseCache[definition]!)
+        return deepClone(this.parseCache[definition])
     }
 }
 

@@ -1,4 +1,4 @@
-import { isKeyOf } from "../internal.js"
+import { hasDynamicType, isKeyOf } from "../internal.js"
 import type { DynamicParserContext } from "../parser/common.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
@@ -7,7 +7,9 @@ import type {
     AttributeKey,
     Attributes,
     AttributeTypes,
-    ContradictableKey
+    ContradictableKey,
+    TypeAttributeName,
+    TypeAttributeNameUnion
 } from "./shared.js"
 
 // TODO: Remove
@@ -58,7 +60,32 @@ type IntersectorsByKey = {
 
 const intersectors: IntersectorsByKey = {
     value: (base, assign) => [base, assign],
-    type: (base, assign) => [base, assign],
+    type: (base, assign) => {
+        if (hasDynamicType(base, "dictionary")) {
+            if (hasDynamicType(assign, "dictionary")) {
+                const intersectingTypeNames: TypeAttributeNameUnion = {}
+                let typeName: TypeAttributeName
+                for (typeName in base) {
+                    if (assign[typeName]) {
+                        intersectingTypeNames[typeName] = true
+                    }
+                }
+                const intersectingKeys = Object.keys(
+                    intersectingTypeNames
+                ) as TypeAttributeName[]
+                return intersectingKeys.length === 0
+                    ? [base, assign]
+                    : intersectingKeys.length === 1
+                    ? intersectingKeys[0]
+                    : intersectingTypeNames
+            }
+            return assign in base ? assign : [base, assign]
+        }
+        if (hasDynamicType(assign, "dictionary")) {
+            return base in assign ? base : [base, assign]
+        }
+        return [base, assign]
+    },
     divisor: (base, assign) => intersectDivisors(base, assign),
     regex: (base, assign) => `${base}${assign}`,
     bounds: intersectBounds,
@@ -120,12 +147,11 @@ const implicationMap: {
 } = {
     divisor: () => ({ type: "number" }),
     bounds: () => ({
-        branches: [
-            "|",
-            { type: "number" },
-            { type: "string" },
-            { type: "array" }
-        ]
+        type: {
+            number: true,
+            string: true,
+            array: true
+        }
     }),
     regex: () => ({ type: "string" })
 }
