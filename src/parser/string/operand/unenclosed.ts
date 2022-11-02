@@ -39,11 +39,11 @@ export namespace Unenclosed {
     export const maybeParseIdentifier = (
         token: string,
         context: DynamicParserContext
-    ): Attributes | undefined =>
+    ) =>
         Keyword.matches(token)
             ? Keyword.attributesFrom[token]()
             : context.spaceRoot.aliases[token]
-            ? { alias: token }
+            ? context.spaceRoot.parseAlias(token)
             : undefined
 
     const maybeParseUnenclosedLiteral = (token: string) => {

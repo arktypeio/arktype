@@ -4,7 +4,10 @@ import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary, evaluate } from "./internal.js"
-import { initializeParserContext } from "./parser/common.js"
+import {
+    DynamicParserContext,
+    initializeParserContext
+} from "./parser/common.js"
 import { Root } from "./parser/root.js"
 import type { parseAliases } from "./parser/space.js"
 import { Str } from "./parser/string/string.js"
@@ -17,11 +20,7 @@ const rawSpace = (aliases: dictionary, config: ArktypeConfig = {}) => {
     const root = new SpaceRoot(aliases, config)
     const compiled: ArktypeSpace = { $: root as any }
     for (const name in aliases) {
-        compiled[name] = new Arktype(
-            root.parseMemoizable(name),
-            config,
-            compiled
-        )
+        compiled[name] = new Arktype(root.parseAlias(name), config, compiled)
     }
     return compiled
 }
@@ -55,17 +54,21 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
     constructor(
         public aliases: Record<keyof inferred, unknown>,
         public config: ArktypeConfig
-    ) {
-        for (const name in aliases) {
-            this.parseCache[name] = Root.parse(
-                aliases[name],
-                initializeParserContext(this)
-            )
-        }
-    }
+    ) {}
 
     get infer(): inferred {
         return chainableNoOpProxy
+    }
+
+    parseAlias(name: string) {
+        if (!this.parseCache[name]) {
+            this.parseCache[name] = { alias: name }
+            this.parseCache[name] = Root.parse(
+                this.aliases[name],
+                initializeParserContext(this)
+            )
+        }
+        return deepClone(this.parseCache[name]!)
     }
 
     parseMemoizable(definition: string) {
