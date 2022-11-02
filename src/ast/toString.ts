@@ -1,4 +1,3 @@
-// TODO: Update to include objects
 export type astToString<node, result extends string = ""> = node extends [
     infer head,
     ...infer tail

@@ -8,6 +8,7 @@ import type {
     Attributes,
     AttributeSet,
     AttributeTypes,
+    BranchIntersection,
     ContradictableKey,
     MaybeSetOf,
     TypeAttributeName
@@ -104,16 +105,21 @@ const intersectors: IntersectorsByKey = {
         return intersectedProps
     },
     branches: (base, assign) => {
-        const intersectedBranches: AttributeBranches =
-            base[0] === "&" ? base : ["&", base]
-        if (assign[0] === "&") {
-            for (let i = 1; i < assign.length; i++) {
-                intersectedBranches.push(assign[i])
+        if (base[0] === "&") {
+            if (assign[0] === "&") {
+                for (let i = 1; i < assign.length; i++) {
+                    base.push(assign[i])
+                }
+                return base
             }
-        } else {
-            intersectedBranches.push(assign)
+            base.push(assign)
+            return base
         }
-        return intersectedBranches
+        if (assign[0] === "&") {
+            assign.push(base)
+            return assign
+        }
+        return ["&", base, assign]
     },
     contradictions: (base, assign) => {
         let k: ContradictableKey

@@ -47,11 +47,11 @@ type ComposedAttributeTypes = {
     branches: AttributeBranches
 }
 
-export type BranchingOperator = "|" | "&"
+export type AttributeBranches = BranchUnion | BranchIntersection
 
-export type AttributeBranches<
-    operator extends BranchingOperator = BranchingOperator
-> = [operator, ...(Attributes | AttributeBranches)[]]
+export type BranchUnion = ["|", ...(Attributes | BranchIntersection)[]]
+
+export type BranchIntersection = ["&", ...BranchUnion[]]
 
 export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 

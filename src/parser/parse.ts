@@ -1,3 +1,4 @@
+import { reduce } from "../attributes/reduce.js"
 import type { Attributes } from "../attributes/shared.js"
 import type { dictionary, DynamicTypeName, evaluate } from "../internal.js"
 import { dynamicTypeOf, pushKey, withoutLastKey } from "../internal.js"
@@ -13,11 +14,9 @@ import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
 
 export const parseRoot = (definition: unknown, space: SpaceRoot) => {
-    const rawAttributes = parseDefinition(
-        definition,
-        initializeParserContext(space)
-    )
-    return rawAttributes
+    const context = initializeParserContext(space)
+    const rawAttributes = parseDefinition(definition, context)
+    return reduce(rawAttributes, context)
 }
 
 export type parseRoot<
