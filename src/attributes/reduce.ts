@@ -1,5 +1,6 @@
 import { isKeyOf, keysOf } from "../internal.js"
 import type { DynamicParserContext } from "../parser/common.js"
+import { parseString } from "../parser/string.js"
 import { assignIntersection } from "./intersection.js"
 import type { AttributeKey, Attributes, AttributeTypes } from "./shared.js"
 import { atomicAttributes } from "./shared.js"
@@ -18,7 +19,7 @@ const reduceAliases = (
 ) => {
     const names = typeof aliases === "string" ? [aliases] : keysOf(aliases)
     for (const name of names) {
-        const attributes = context.spaceRoot.parseAlias(name)
+        const attributes = parseString(name, context)
         let k: AttributeKey
         for (k in attributes) {
             if (!isKeyOf(k, atomicAttributes)) {
