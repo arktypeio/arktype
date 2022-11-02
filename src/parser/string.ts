@@ -1,4 +1,5 @@
 import { assignIntersection } from "../attributes/intersection.js"
+import { deepClone } from "../utils/deepClone.js"
 import type {
     DynamicParserContext,
     ParseError,
@@ -10,8 +11,18 @@ import { ArrayOperator } from "./operator/array.js"
 import { Operator } from "./operator/operator.js"
 import { State } from "./state/state.js"
 
-export const parseString = (def: string, context: DynamicParserContext) =>
-    tryNaiveStringParse(def, context) ?? fullStringParse(def, context)
+export const parseString = (
+    definition: string,
+    context: DynamicParserContext
+) => {
+    const cache = context.spaceRoot.parseCache
+    if (!cache[definition]) {
+        cache[definition] =
+            tryNaiveStringParse(definition, context) ??
+            fullStringParse(definition, context)
+    }
+    return deepClone(cache[definition]!)
+}
 
 export type parseString<
     def extends string,

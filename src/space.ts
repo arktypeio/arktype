@@ -4,12 +4,9 @@ import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary, evaluate } from "./internal.js"
-import type { DynamicParserContext } from "./parser/common.js"
-import { parse } from "./parser/parse.js"
+import { parseRoot } from "./parser/parse.js"
 import type { parseAliases } from "./parser/space.js"
-import { parseString } from "./parser/string.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import { deepClone } from "./utils/deepClone.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -17,7 +14,11 @@ const rawSpace = (aliases: dictionary, config: ArktypeConfig = {}) => {
     const root = new SpaceRoot(aliases, config)
     const compiled: ArktypeSpace = { $: root as any }
     for (const name in aliases) {
-        compiled[name] = new Arktype(root.parseAlias(name), config, compiled)
+        compiled[name] = new Arktype(
+            parseRoot(aliases[name], root),
+            config,
+            compiled
+        )
     }
     return compiled
 }
@@ -46,7 +47,7 @@ type inferredSpaceToArktypes<inferred> = {
 }
 
 export class SpaceRoot<inferred extends dictionary = dictionary> {
-    private parseCache: dictionary<Attributes> = {}
+    parseCache: dictionary<Attributes | undefined> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -55,23 +56,6 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
 
     get infer(): inferred {
         return chainableNoOpProxy
-    }
-
-    parseAlias(name: string) {
-        if (!this.parseCache[name]) {
-            // Set the resolution to a shallow reference until the alias has
-            // been fully parsed in case it cyclicly references itself
-            this.parseCache[name] = { aliases: name }
-            this.parseCache[name] = parse(this.aliases[name], this)
-        }
-        return deepClone(this.parseCache[name])
-    }
-
-    parseMemoizable(definition: string, context: DynamicParserContext) {
-        if (!this.parseCache[definition]) {
-            this.parseCache[definition] = parseString(definition, context)
-        }
-        return deepClone(this.parseCache[definition])
     }
 }
 

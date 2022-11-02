@@ -10,9 +10,9 @@ import type {
 import { initializeParserContext, throwParseError } from "./common.js"
 import type { Operand } from "./operand/operand.js"
 import type { Scanner } from "./state/scanner.js"
-import type { parseString } from "./string.js"
+import { parseString } from "./string.js"
 
-export const parse = (definition: unknown, space: SpaceRoot) => {
+export const parseRoot = (definition: unknown, space: SpaceRoot) => {
     const rawAttributes = parseDefinition(
         definition,
         initializeParserContext(space)
@@ -20,19 +20,24 @@ export const parse = (definition: unknown, space: SpaceRoot) => {
     return rawAttributes
 }
 
-export const parseDefinition = (
+export type parseRoot<
+    def,
+    context extends StaticParserContext
+> = parseDefinition<def, context>
+
+const parseDefinition = (
     def: unknown,
     context: DynamicParserContext
 ): Attributes => {
     const defType = dynamicTypeOf(def)
     return defType === "string"
-        ? context.spaceRoot.parseMemoizable(def as string, context)
+        ? parseString(def as string, context)
         : defType === "dictionary" || defType === "array"
         ? parseStructure(def as any, context)
         : throwParseError(buildBadDefinitionTypeMessage(defType))
 }
 
-export type parseDefinition<
+type parseDefinition<
     def,
     context extends StaticParserContext
 > = def extends string
@@ -58,7 +63,7 @@ export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
 type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
     `Type definitions must be strings or objects (was ${actual})`
 
-export const parseStructure = (
+const parseStructure = (
     definition: Record<string | number, unknown>,
     context: DynamicParserContext
 ): Attributes => {
@@ -77,16 +82,16 @@ export const parseStructure = (
     }
 }
 
-export type parseStructure<
+type parseStructure<
     def,
     context extends StaticParserContext
 > = def extends TupleExpression
     ? parseTupleExpression<def, context>
     : evaluate<{
-          [K in keyof def]: parseDefinition<def[K], context>
+          [K in keyof def]: parseRoot<def[K], context>
       }>
 
-export const parseTupleExpression = (
+const parseTupleExpression = (
     expression: TupleExpression,
     context: DynamicParserContext
 ) => {
@@ -94,23 +99,19 @@ export const parseTupleExpression = (
     return {} as Attributes
 }
 
-export type parseTupleExpression<
+type parseTupleExpression<
     def extends TupleExpression,
     context extends StaticParserContext
 > = def[1] extends Scanner.InfixToken
     ? def[2] extends undefined
         ? [
-              parseDefinition<def[0], context>,
+              parseRoot<def[0], context>,
               ParseError<Operand.buildMissingRightOperandMessage<def[1], "">>
           ]
-        : [
-              parseDefinition<def[0], context>,
-              def[1],
-              parseDefinition<def[2], context>
-          ]
-    : [parseDefinition<def[0], context>, def[1]]
+        : [parseRoot<def[0], context>, def[1], parseRoot<def[2], context>]
+    : [parseRoot<def[0], context>, def[1]]
 
-export type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
+type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 
-export const isTupleExpression = (def: unknown): def is TupleExpression =>
+const isTupleExpression = (def: unknown): def is TupleExpression =>
     Array.isArray(def) && (def[1] as any) in {}

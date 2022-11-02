@@ -1,8 +1,10 @@
+import { deepClone } from "../../utils/deepClone.js"
 import type {
     DynamicParserContext,
     ParseError,
     StaticParserContext
 } from "../common.js"
+import { parseRoot } from "../parse.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
 import { Keyword } from "./keyword.js"
@@ -42,8 +44,22 @@ export namespace Unenclosed {
         Keyword.matches(token)
             ? Keyword.attributesFrom[token]()
             : context.spaceRoot.aliases[token]
-            ? context.spaceRoot.parseAlias(token)
+            ? parseAlias(token, context)
             : undefined
+
+    const parseAlias = (name: string, context: DynamicParserContext) => {
+        const cache = context.spaceRoot.parseCache
+        if (!cache[name]) {
+            // Set the resolution to a shallow reference until the alias has
+            // been fully parsed in case it cyclicly references itself
+            cache[name] = { aliases: name }
+            cache[name] = parseRoot(
+                context.spaceRoot.aliases[name],
+                context.spaceRoot
+            )
+        }
+        return deepClone(cache[name])
+    }
 
     const maybeParseUnenclosedLiteral = (token: string) => {
         const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
