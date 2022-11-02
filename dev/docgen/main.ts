@@ -34,6 +34,7 @@ export type DocGenMappedDirsConfig = {
     sources: string[]
     targets: string[]
     sourceOptions?: WalkOptions
+    skipFormatting?: boolean
     transformOutputPaths?: (path: string) => string
     transformContents?: (content: string) => string
 }

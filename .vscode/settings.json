@@ -20,5 +20,6 @@
     },
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
-    "deno.config": "./dev/configs/deno.jsonc"
+    "deno.config": "./dev/configs/deno.jsonc",
+    "deno.enablePaths": ["./dist/deno"]
 }

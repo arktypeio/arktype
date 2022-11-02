@@ -33,9 +33,8 @@ const successMessage = `🎁 Successfully built ${packageName}!`
 export const arktypeTsc = () => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
-    buildDeno()
-    // buildTypes()
-    // transpile()
+    buildTypes()
+    transpile()
     console.log(successMessage)
 }
 
@@ -101,6 +100,7 @@ export const buildDeno = () => {
         sources: ["src"],
         targets: ["dist/deno"],
         sourceOptions: inFileFilter,
+        skipFormatting: true,
         transformContents: (content) => content.replaceAll(/\.js"/g, '.ts"')
     })
 }

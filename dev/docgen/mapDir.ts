@@ -45,6 +45,8 @@ export const mapDir = (
             ensureDir(dirname(resolvedPath))
             writeFileSync(resolvedPath, contents)
         }
-        shell(`prettier --write ${target}`)
+        if (!options.skipFormatting) {
+            shell(`prettier --write ${target}`)
+        }
     }
 }
