@@ -61,7 +61,9 @@ export const transpile = () => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     buildEsm()
     buildCjs()
-    buildDeno()
+    if (packageName === "arktype") {
+        buildDeno()
+    }
     stdout.write("✅\n")
 }
 

@@ -1,4 +1,4 @@
-import type { IsTopType, Narrow } from "arktype/internal"
+import type { isTopType, narrow } from "arktype/internal"
 import type { Serialized } from "../common.js"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
@@ -7,7 +7,7 @@ export type NextAssertions<AllowTypeAssertions extends boolean> =
 export type RootAssertions<
     T,
     AllowTypeAssertions extends boolean
-> = (IsTopType<T> extends true
+> = (isTopType<T> extends true
     ? AnyValueAssertion<T, AllowTypeAssertions>
     : TypedValueAssertions<T, AllowTypeAssertions>) &
     TypeAssertionsRoot
@@ -107,7 +107,7 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
         "unknown"
     >
     typedValue: (expected: T) => undefined
-    narrowedValue: <Expected extends T>(expected: Narrow<Expected>) => undefined
+    narrowedValue: <Expected extends T>(expected: narrow<Expected>) => undefined
 }
 
 export type ExternalSnapshotArgs = {

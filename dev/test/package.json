@@ -25,6 +25,7 @@
     },
     "scripts": {
         "build": "pnpm ts-node ../scripts/build.ts",
+        "typecheck": "tsc --noEmit",
         "test": "pnpm ts-node ./src/cli.ts --cmd mocha"
     },
     "bin": {

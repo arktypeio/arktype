@@ -30,7 +30,7 @@
     "scripts": {
         "prChecks": "pnpm install && pnpm buildRepo && pnpm lint && pnpm testRepo",
         "typecheck": "tsc --noEmit",
-        "typecheckRepo": "pnpm typecheck && pnpm -r typecheck",
+        "typecheckRepo": "pnpm typecheck; pnpm -r typecheck",
         "build": "ts-node ./dev/scripts/build.ts",
         "buildDev": "pnpm build && pnpm -r --filter=!arktype.io build",
         "buildDocs": "pnpm docgen && pnpm -r --filter=arktype.io build",
