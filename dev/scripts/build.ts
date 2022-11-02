@@ -1,7 +1,12 @@
 import { existsSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
-import { getPackageDataFromCwd, isProd, repoDirs } from "../common.js"
+import {
+    getPackageDataFromCwd,
+    inFileFilter,
+    isProd,
+    repoDirs
+} from "../common.js"
 import { getProject } from "../docgen/main.js"
 import { mapDir } from "../docgen/mapDir.js"
 import { extractSnippets } from "../docgen/snippets/extractSnippets.js"
@@ -28,8 +33,9 @@ const successMessage = `🎁 Successfully built ${packageName}!`
 export const arktypeTsc = () => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
-    buildTypes()
-    transpile()
+    buildDeno()
+    // buildTypes()
+    // transpile()
     console.log(successMessage)
 }
 
@@ -92,8 +98,9 @@ export const buildCjs = () => {
 export const buildDeno = () => {
     const sources = extractSnippets(inFiles, getProject())
     mapDir(sources, {
-        sources: inFiles,
+        sources: ["src"],
         targets: ["dist/deno"],
+        sourceOptions: inFileFilter,
         transformContents: (content) => content.replaceAll(/\.js"/g, '.ts"')
     })
 }

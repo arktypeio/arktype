@@ -13,6 +13,7 @@ export const mapDir = (
     const fileContentsByRelativeDestination = options.sources.flatMap(
         (sourceDir) =>
             walkPaths(sourceDir, {
+                ...options.sourceOptions,
                 excludeDirs: true
             }).map((sourceFilePath) => {
                 const sourceRelativePath = relative(sourceDir, sourceFilePath)
