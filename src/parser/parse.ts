@@ -1,16 +1,24 @@
 import type { Attributes } from "../attributes/shared.js"
 import type { dictionary, DynamicTypeName, evaluate } from "../internal.js"
 import { dynamicTypeOf, pushKey, withoutLastKey } from "../internal.js"
+import type { SpaceRoot } from "../space.js"
 import type {
     DynamicParserContext,
     ParseError,
     StaticParserContext
 } from "./common.js"
-import { throwParseError } from "./common.js"
-import { fullParse } from "./full.js"
-import { tryNaiveParse } from "./naive.js"
+import { initializeParserContext, throwParseError } from "./common.js"
 import type { Operand } from "./operand/operand.js"
 import type { Scanner } from "./state/scanner.js"
+import type { parseString } from "./string.js"
+
+export const parse = (definition: unknown, space: SpaceRoot) => {
+    const rawAttributes = parseDefinition(
+        definition,
+        initializeParserContext(space)
+    )
+    return rawAttributes
+}
 
 export const parseDefinition = (
     def: unknown,
@@ -18,7 +26,7 @@ export const parseDefinition = (
 ): Attributes => {
     const defType = dynamicTypeOf(def)
     return defType === "string"
-        ? context.spaceRoot.parseMemoizable(def as string)
+        ? context.spaceRoot.parseMemoizable(def as string, context)
         : defType === "dictionary" || defType === "array"
         ? parseStructure(def as any, context)
         : throwParseError(buildBadDefinitionTypeMessage(defType))
@@ -78,23 +86,13 @@ export type parseStructure<
           [K in keyof def]: parseDefinition<def[K], context>
       }>
 
-export type parseString<
-    def extends string,
-    context extends StaticParserContext
-> = tryNaiveParse<def, context>
-
-export type validateString<
-    def extends string,
-    context extends StaticParserContext
-> = parseString<def, context> extends ParseError<infer Message> ? Message : def
-
-export const parseString = (def: string, context: DynamicParserContext) =>
-    tryNaiveParse(def, context) ?? fullParse(def, context)
-
 export const parseTupleExpression = (
-    [definition, token, ...args]: TupleExpression,
+    expression: TupleExpression,
     context: DynamicParserContext
-) => ({} as Attributes)
+) => {
+    console.log(expression, context)
+    return {} as Attributes
+}
 
 export type parseTupleExpression<
     def extends TupleExpression,

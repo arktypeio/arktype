@@ -4,9 +4,10 @@ import type { inferAst } from "./ast/infer.js"
 import type { validate } from "./ast/validate.js"
 import type { Attributes } from "./attributes/shared.js"
 import type { dictionary, evaluate } from "./internal.js"
-import { initializeParserContext } from "./parser/common.js"
-import { parseDefinition, parseString } from "./parser/parse.js"
+import type { DynamicParserContext } from "./parser/common.js"
+import { parse } from "./parser/parse.js"
 import type { parseAliases } from "./parser/space.js"
+import { parseString } from "./parser/string.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -61,20 +62,14 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
             // Set the resolution to a shallow reference until the alias has
             // been fully parsed in case it cyclicly references itself
             this.parseCache[name] = { aliases: name }
-            this.parseCache[name] = parseDefinition(
-                this.aliases[name],
-                initializeParserContext(this)
-            )
+            this.parseCache[name] = parse(this.aliases[name], this)
         }
         return deepClone(this.parseCache[name])
     }
 
-    parseMemoizable(definition: string) {
+    parseMemoizable(definition: string, context: DynamicParserContext) {
         if (!this.parseCache[definition]) {
-            this.parseCache[definition] = parseString(
-                definition,
-                initializeParserContext(this)
-            )
+            this.parseCache[definition] = parseString(definition, context)
         }
         return deepClone(this.parseCache[definition])
     }
