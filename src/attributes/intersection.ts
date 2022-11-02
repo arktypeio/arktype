@@ -3,6 +3,7 @@ import type { DynamicParserContext } from "../parser/common.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
+    AttributeBranches,
     AttributeKey,
     Attributes,
     AttributeTypes,
@@ -81,12 +82,16 @@ const intersectors: IntersectorsByKey = {
         return intersectedProps
     },
     branches: (base, assign) => {
-        const assignBranches: any[] = assign["&"] ?? [assign["|"]]
-        if (base["|"]) {
-            return { "&": [base["|"], ...assignBranches] }
+        const intersectedBranches: AttributeBranches =
+            base[0] === "&" ? base : ["&", base]
+        if (assign[0] === "&") {
+            for (let i = 1; i < assign.length; i++) {
+                intersectedBranches.push(assign[i])
+            }
+        } else {
+            intersectedBranches.push(assign)
         }
-        base["&"].push(...assignBranches)
-        return base
+        return intersectedBranches
     },
     contradictions: (base, assign) => {
         let k: ContradictableKey
@@ -106,7 +111,7 @@ const dynamicReducers = intersectors as {
     ) => any
 }
 
-type KeyWithImplications = "divisor" | "regex" //| "bounds"
+type KeyWithImplications = "divisor" | "regex" | "bounds"
 
 type ImplicationsThunk = () => Attributes
 
@@ -114,14 +119,14 @@ const implicationMap: {
     [k in KeyWithImplications]: ImplicationsThunk
 } = {
     divisor: () => ({ type: "number" }),
-    // bounds: () => ({
-    //     branches: [
-    //         "|",
-    //         { type: "number" },
-    //         { type: "string" },
-    //         { type: "array" }
-    //     ]
-    // }),
+    bounds: () => ({
+        branches: [
+            "|",
+            { type: "number" },
+            { type: "string" },
+            { type: "array" }
+        ]
+    }),
     regex: () => ({ type: "string" })
 }
 

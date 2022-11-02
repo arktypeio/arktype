@@ -1,4 +1,4 @@
-import type { array, dictionary, DynamicTypeName, xor } from "../internal.js"
+import type { dictionary, DynamicTypeName } from "../internal.js"
 import type { Enclosed } from "../parser/string/operand/enclosed.js"
 import type { BoundsString } from "./bounds.js"
 
@@ -39,14 +39,11 @@ type ComposedAttributeTypes = {
     branches: AttributeBranches
 }
 
-export type AttributeBranches = xor<
-    {
-        "|": array<Attributes | AttributeBranches>
-    },
-    {
-        "&": array<Attributes | AttributeBranches>
-    }
->
+export type BranchingOperator = "|" | "&"
+
+export type AttributeBranches<
+    operator extends BranchingOperator = BranchingOperator
+> = [operator, ...(Attributes | AttributeBranches)[]]
 
 export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 
