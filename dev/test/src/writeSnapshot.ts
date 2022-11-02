@@ -90,16 +90,20 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
         ? readJson(benchmarksPath)
         : {}
     for (const update of queuedUpdates) {
-        updateIsBench(update) && upsertBenchResult(update, benchData)
         const originalArgs = update.snapCall.getArguments()
         const previousValue = originalArgs.length
             ? originalArgs[0].getText()
             : undefined
-        if (!update.benchFormat.noInline) {
+        if (updateIsBench(update)) {
+            upsertBenchResult(update, benchData)
+            if (!update.benchFormat.noInline) {
+                writeUpdateToFile(originalArgs, update)
+            }
+            if (!update.benchFormat.noExternal) {
+                writeJson(benchmarksPath, benchData)
+            }
+        } else {
             writeUpdateToFile(originalArgs, update)
-        }
-        if (!update.benchFormat.noExternal) {
-            writeJson(benchmarksPath, benchData)
         }
         summarizeSnapUpdate(originalArgs, update, previousValue)
     }
@@ -147,13 +151,6 @@ const writeUpdateToFile = (
     for (const originalArg of originalArgs) {
         update.snapCall.removeArgument(originalArg)
     }
-    // let formattedNewArgText = update.newArgText
-    // if (formattedNewArgText.match(/^".*(\n|").*"$/)) {
-    //     formattedNewArgText = formattedNewArgText
-    //         .replace(/`/, "\\`")
-    //         .replace(/\\"/, `"`)
-    //     formattedNewArgText = "`" + formattedNewArgText.slice(1, -1) + "`"
-    // }
     update.snapCall.addArgument(update.newArgText)
     update.file.saveSync()
 }
