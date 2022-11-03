@@ -1,11 +1,4 @@
-import type { inferAst } from "../ast/infer.js"
-import { validate } from "../ast/validate.js"
-import type {
-    dictionary,
-    DynamicTypeName,
-    dynamicTypeOf,
-    DynamicTypes
-} from "../internal.js"
+import type { dictionary, DynamicTypeName, DynamicTypes } from "../internal.js"
 import { isKeyOf } from "../internal.js"
 import type { Enclosed } from "../parser/operand/enclosed.js"
 import type { BigintLiteral, NumberLiteral } from "../parser/operand/numeric.js"
@@ -13,16 +6,19 @@ import {
     UnenclosedBigint,
     UnenclosedNumber
 } from "../parser/operand/numeric.js"
-import { Unenclosed } from "../parser/operand/unenclosed.js"
-import type { parseString, validateString } from "../parser/string.js"
 import type { BoundsData } from "./bounds.js"
 
+// TODO: Should they all be strings? Could have objects represent unions and
+// arrays intersections, though not sure how often it'd work since branches with
+// sets of attributes are not mergeable
 type AtomicAttributeTypes = {
     value: ValueAttribute
     type: TypeAttribute
     divisor: number
     regex: RegexAttribute
     bounds: BoundsData
+    // TODO: Fix. Do not need to worry about alias resolutions, only relevant
+    // whether the parent explicitly specifies it.
     optional: true | undefined
     aliases: MaybeSetOf<string>
 }
