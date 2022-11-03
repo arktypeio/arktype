@@ -1,10 +1,10 @@
+import { reduce } from "../../attributes/reduce.js"
+import type { AttributeKey, Attributes } from "../../attributes/shared.js"
 import type {
     SerializablePrimitive,
     SerializedPrimitives
-} from "../../attributes/equality.js"
-import { deserializePrimitive } from "../../attributes/equality.js"
-import { reduce } from "../../attributes/reduce.js"
-import type { AttributeKey, Attributes } from "../../attributes/shared.js"
+} from "../../attributes/value.js"
+import { deserializePrimitive } from "../../attributes/value.js"
 
 import type { dynamicTypeOf, DynamicTypes } from "../../internal.js"
 import { hasDynamicType } from "../../internal.js"

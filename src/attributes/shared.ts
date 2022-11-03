@@ -1,7 +1,7 @@
 import type { dictionary, DynamicTypeName } from "../internal.js"
 import type { Enclosed } from "../parser/operand/enclosed.js"
 import type { BoundsData } from "./bounds.js"
-import type { ValueAttribute } from "./equality.js"
+import type { ValueAttribute } from "./value.js"
 
 // TODO: Should they all be strings? Could have objects represent unions and
 // arrays intersections, though not sure how often it'd work since branches with
