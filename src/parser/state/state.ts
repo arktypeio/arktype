@@ -1,5 +1,11 @@
 import { reduce } from "../../attributes/reduce.js"
-import type { AttributeKey, Attributes } from "../../attributes/shared.js"
+import type {
+    AttributeKey,
+    Attributes,
+    SerializablePrimitive,
+    SerializedPrimitives
+} from "../../attributes/shared.js"
+import { deserializePrimitive } from "../../attributes/shared.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../internal.js"
 import { hasDynamicType } from "../../internal.js"
 import type { DynamicParserContext, ParseError } from "../common.js"
@@ -229,6 +235,18 @@ export namespace State {
     ): s is s & {
         root: { [_ in k]: DynamicTypes[typeName] }
     } => hasDynamicType(s.root?.[k], typeName)
+
+    export const rootValueHasSerializedType = <
+        s extends DynamicWithRoot,
+        typeName extends dynamicTypeOf<SerializablePrimitive>
+    >(
+        s: s,
+        typeName: typeName
+    ): s is s & {
+        root: { value: SerializedPrimitives[typeName] }
+    } =>
+        typeof s.root.value === "string" &&
+        hasDynamicType(deserializePrimitive(s.root.value), typeName)
 
     /** More transparent mutation in a function with a constrained input state */
     export const unset = null as any

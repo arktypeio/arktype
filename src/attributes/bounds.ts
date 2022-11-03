@@ -2,7 +2,8 @@ import type { EmptyIntersectionResult, Intersector } from "./intersection.js"
 import { isEmptyIntersection } from "./intersection.js"
 
 export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
-    let intersectedBounds: BoundsData | EmptyIntersectionResult<"bounds"> = base
+    let intersectedBounds: BoundsData | EmptyIntersectionResult<BoundsData> =
+        base
     if (min) {
         intersectedBounds = intersectBound("min", base, min)
         if (isEmptyIntersection(intersectedBounds)) {
@@ -29,7 +30,7 @@ const intersectBound = (
     kind: BoundKind,
     base: BoundsData,
     bound: BoundData
-): BoundsData | EmptyIntersectionResult<"bounds"> => {
+): BoundsData | EmptyIntersectionResult<BoundsData> => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = base[kind]
     const baseOpposing = base[invertedKind]
@@ -46,7 +47,7 @@ const createBoundsContradiction = (
     kind: BoundKind,
     baseOpposing: BoundData,
     bound: BoundData
-): EmptyIntersectionResult<"bounds"> => [
+): EmptyIntersectionResult<BoundsData> => [
     { [invertedKinds[kind]]: baseOpposing },
     {
         [kind]: bound

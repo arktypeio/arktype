@@ -64,11 +64,11 @@ export namespace Unenclosed {
     const maybeParseUnenclosedLiteral = (token: string) => {
         const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
         if (maybeNumber !== undefined) {
-            return { value: maybeNumber }
+            return { value: token as NumberLiteral }
         }
         const maybeBigint = UnenclosedBigint.parseWellFormed(token)
         if (maybeBigint !== undefined) {
-            return { value: maybeBigint }
+            return { value: token as BigintLiteral }
         }
     }
 

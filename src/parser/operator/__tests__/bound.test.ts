@@ -61,7 +61,7 @@ describe("bound", () => {
             test("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    LeftBoundOperator.buildBoundLiteralMessage(5, 3, "<")
+                    LeftBoundOperator.buildBoundLiteralMessage("5", 3, "<")
                 )
             })
         })

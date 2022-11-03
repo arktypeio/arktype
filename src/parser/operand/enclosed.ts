@@ -24,7 +24,12 @@ export namespace Enclosed {
         s.root =
             enclosing === "/"
                 ? { regex: token as RegexLiteral }
-                : { value: token.slice(1, -1) }
+                : {
+                      value:
+                          enclosing === "'"
+                              ? (token as SingleQuotedStringLiteral)
+                              : `'${token.slice(1, -1)}'`
+                  }
         return s
     }
 

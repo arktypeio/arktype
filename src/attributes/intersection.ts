@@ -3,15 +3,12 @@ import type { DynamicParserContext } from "../parser/common.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
-    AttributeBranches,
     AttributeKey,
     Attributes,
     AttributeSet,
     AttributeTypes,
-    BranchIntersection,
     ContradictableKey,
-    MaybeSetOf,
-    TypeAttributeName
+    MaybeSetOf
 } from "./shared.js"
 
 // TODO: Remove
@@ -52,43 +49,67 @@ export const assignIntersection = (
     return base
 }
 
+const intersectAdditiveAttribute = <t extends string>(
+    base: MaybeSetOf<t>,
+    assign: MaybeSetOf<t>
+): MaybeSetOf<t> => {
+    if (typeof base === "string") {
+        if (typeof assign === "string") {
+            return base === assign
+                ? base
+                : ({ [base]: true, [assign]: true } as AttributeSet<t>)
+        }
+        ;(assign as AttributeSet<t>)[base] = true
+        return assign
+    }
+    if (typeof assign === "string") {
+        ;(base as AttributeSet<t>)[assign] = true
+        return base
+    }
+    return Object.assign(base, assign)
+}
+
+const intersectDisjointAttribute = <t extends string>(
+    base: MaybeSetOf<t>,
+    assign: MaybeSetOf<t>
+): MaybeEmptyIntersection<MaybeSetOf<t>> => {
+    if (typeof base === "string") {
+        if (typeof assign === "string") {
+            return base === assign ? base : [base, assign]
+        }
+        return base in assign ? base : [base, assign]
+    }
+    if (typeof assign === "string") {
+        return assign in base ? assign : [base, assign]
+    }
+    const intersectionSet: AttributeSet<t> = {}
+    for (const k in base) {
+        if (assign[k]) {
+            intersectionSet[k] = true
+        }
+    }
+    const intersectingKeys = keysOf(intersectionSet)
+    return intersectingKeys.length === 0
+        ? [base, assign]
+        : intersectingKeys.length === 1
+        ? intersectingKeys[0]
+        : intersectionSet
+}
+
 type IntersectorsByKey = {
     [k in AttributeKey]: Intersector<k>
 }
 
 const intersectors: IntersectorsByKey = {
-    value: (base, assign) => (base === assign ? base : [base, assign]),
-    type: (base, assign) => {
-        if (typeof base === "string") {
-            if (typeof assign === "string") {
-                return base === assign ? base : [base, assign]
-            }
-            return base in assign ? base : [base, assign]
-        }
-        if (typeof assign === "string") {
-            return assign in base ? assign : [base, assign]
-        }
-        const intersectingTypeNames: AttributeSet<TypeAttributeName> = {}
-        let typeName: TypeAttributeName
-        for (typeName in base) {
-            if (assign[typeName]) {
-                intersectingTypeNames[typeName] = true
-            }
-        }
-        const intersectingKeys = keysOf(intersectingTypeNames)
-        return intersectingKeys.length === 0
-            ? [base, assign]
-            : intersectingKeys.length === 1
-            ? intersectingKeys[0]
-            : intersectingTypeNames
-    },
+    value: intersectDisjointAttribute,
+    type: intersectDisjointAttribute,
     divisor: (base, assign) => intersectDivisors(base, assign),
-    regex: (base, assign) => intersectAttributeSets(base, assign),
+    regex: (base, assign) => intersectAdditiveAttribute(base, assign),
     bounds: intersectBounds,
     // TODO: Figure out where this gets merged. Should require both if
     // finalized, but otherwise not.
     optional: (base, assign) => base && assign,
-    aliases: (base, assign) => intersectAttributeSets(base, assign),
+    aliases: intersectAdditiveAttribute,
     baseProp: (base, assign, context) =>
         assignIntersection(base, assign, context),
     props: (base, assign, context) => {
@@ -131,26 +152,6 @@ const intersectors: IntersectorsByKey = {
     }
 }
 
-const intersectAttributeSets = <t extends string | number>(
-    base: MaybeSetOf<t>,
-    assign: MaybeSetOf<t>
-): MaybeSetOf<t> => {
-    if (typeof base === "string") {
-        if (typeof assign === "string") {
-            return base === assign
-                ? base
-                : ({ [base]: true, [assign]: true } as AttributeSet<t>)
-        }
-        ;(assign as AttributeSet<t>)[base] = true
-        return assign
-    }
-    if (typeof assign === "string") {
-        ;(base as AttributeSet<t>)[assign] = true
-        return base
-    }
-    return Object.assign(base, assign)
-}
-
 const dynamicReducers = intersectors as {
     [k in AttributeKey]: (
         base: unknown,
@@ -183,11 +184,15 @@ const alwaysIntersectedKeys = {
 
 export const isEmptyIntersection = (
     intersection: unknown
-): intersection is EmptyIntersectionResult => Array.isArray(intersection)
+): intersection is EmptyIntersectionResult<unknown> =>
+    Array.isArray(intersection)
 
-export type EmptyIntersectionResult<
-    k extends ContradictableKey = ContradictableKey
-> = [baseConflicting: AttributeTypes[k], assignConflicting: AttributeTypes[k]]
+type MaybeEmptyIntersection<t> = t | EmptyIntersectionResult<t>
+
+export type EmptyIntersectionResult<t> = [
+    baseConflicting: t,
+    assignConflicting: t
+]
 
 export type Intersector<k extends AttributeKey> = (
     base: AttributeTypes[k],
@@ -195,4 +200,6 @@ export type Intersector<k extends AttributeKey> = (
     context: DynamicParserContext
 ) =>
     | AttributeTypes[k]
-    | (k extends ContradictableKey ? EmptyIntersectionResult<k> : never)
+    | (k extends ContradictableKey
+          ? EmptyIntersectionResult<AttributeTypes[k]>
+          : never)

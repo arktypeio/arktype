@@ -1,4 +1,6 @@
 import { isKeyOf } from "../../../utils/generics.js"
+import type { NumberLiteral } from "../../operand/numeric.js"
+import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
 import type { InvertedComparators } from "./shared.js"
@@ -6,7 +8,7 @@ import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
 export namespace LeftBoundOperator {
     export const parse = (
-        s: State.DynamicWithRoot<{ value: number }>,
+        s: State.DynamicWithRoot<{ value: NumberLiteral }>,
         comparator: Scanner.Comparator
     ) =>
         isKeyOf(comparator, Scanner.pairableComparators)
@@ -28,7 +30,7 @@ export namespace LeftBoundOperator {
         ? s extends State.StaticWithOpenLeftBound
             ? State.error<
                   buildBoundLiteralMessage<
-                      s["root"],
+                      `${s["root"]}`,
                       s["branches"]["leftBound"][0],
                       s["branches"]["leftBound"][1]
                   >
@@ -37,10 +39,13 @@ export namespace LeftBoundOperator {
         : State.error<buildInvalidDoubleMessage<comparator>>
 
     const parseValidated = (
-        s: State.DynamicWithRoot<{ value: number }>,
+        s: State.DynamicWithRoot<{ value: NumberLiteral }>,
         token: Scanner.PairableComparator
     ) => {
-        s.branches.leftBound = [s.root.value, token]
+        s.branches.leftBound = [
+            UnenclosedNumber.parseWellFormed(s.root.value, "number", true),
+            token
+        ]
         s.root = State.unset
         return s
     }
@@ -84,7 +89,7 @@ export namespace LeftBoundOperator {
         )
 
     export const buildBoundLiteralMessage = <
-        literal extends number,
+        literal extends NumberLiteral,
         limit extends number,
         token extends Scanner.Comparator
     >(
@@ -95,7 +100,7 @@ export namespace LeftBoundOperator {
         `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
 
     export type buildBoundLiteralMessage<
-        literal extends number,
+        literal extends NumberLiteral,
         limit extends number,
         comparator extends Scanner.Comparator
     > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`

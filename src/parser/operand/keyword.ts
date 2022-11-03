@@ -43,25 +43,24 @@ export namespace Keyword {
         any: () => ({}),
         bigint: () => ({ type: "bigint" }),
         boolean: () => ({ type: "boolean" }),
-        false: () => ({ value: false }),
+        false: () => ({ value: "false" }),
         // TODO: Add never
-        never: () => ({ value: "never" }),
-        null: () => ({ value: null }),
+        never: () => ({ value: "'never'" }),
+        null: () => ({ value: "null" }),
         number: () => ({ type: "number" }),
         object: () => ({
-            branches: [
-                "|",
-                { type: "dictionary" },
-                { type: "array" },
-                { type: "function" }
-            ]
+            type: {
+                dictionary: true,
+                array: true,
+                function: true
+            }
         }),
         string: () => ({ type: "string" }),
         symbol: () => ({ type: "symbol" }),
-        true: () => ({ value: true }),
-        undefined: () => ({ value: undefined }),
+        true: () => ({ value: "true" }),
+        undefined: () => ({ value: "undefined" }),
         unknown: () => ({}),
-        void: () => ({ value: undefined }),
+        void: () => ({ value: "undefined" }),
         // JS Object types
         Function: () => ({ type: "function" }),
         // Supplemental types

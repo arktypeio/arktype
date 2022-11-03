@@ -37,7 +37,7 @@ export namespace BoundOperator {
         s: State.DynamicWithRoot,
         comparator: Scanner.Comparator
     ) =>
-        State.rootAttributeHasType(s, "value", "number")
+        State.rootValueHasSerializedType(s, "number")
             ? LeftBoundOperator.parse(s, comparator)
             : RightBoundOperator.parse(s, comparator)
 
