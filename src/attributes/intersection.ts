@@ -1,40 +1,31 @@
+import type { mutable } from "../internal.js"
 import { isKeyOf, keysOf } from "../internal.js"
-import type { DynamicParserContext } from "../parser/common.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectDivisors } from "./divisor.js"
 import type {
     AttributeKey,
     Attributes,
     AttributeTypes,
+    BranchUnion,
     ContradictableKey,
     ContradictionKind,
+    Contradictions,
     keyOrKeySet,
-    keySet
+    keySet,
+    TypeAttribute
 } from "./shared.js"
 
-// TODO: Make immutable.
 export const add = <k extends AttributeKey>(
-    base: Attributes,
+    attributes: Attributes,
     k: k,
     value: AttributeTypes[k]
-) => {
-    if (k in base) {
-        const intersection = dynamicReducers[k](base[k], value)
-        if (isEmptyIntersection(intersection)) {
-            base.contradictions ??= {}
-            intersectors.contradictions(base.contradictions, {
-                [k]: intersection
-            })
-        } else {
-            base[k] = intersection
-        }
-    } else {
-        base[k] = value
+): Attributes => {
+    const attributesToAdd: mutable<Attributes> = { [k]: value }
+    if (!attributes[k] && isKeyOf(k, impliedTypes)) {
+        attributesToAdd.type = impliedTypes[k]
     }
-    if (isKeyOf(k, implicationMap)) {
-        intersect(base, implicationMap[k]())
-    }
-} //intersect(base, { [key]: value })
+    return intersect(attributes, attributesToAdd)
+}
 
 export const intersection = (branches: Attributes[]) => {
     while (branches.length > 1) {
@@ -43,63 +34,77 @@ export const intersection = (branches: Attributes[]) => {
     return branches[0]
 }
 
-const intersect = (base: Attributes, assign: Attributes) => {
+const intersect = (left: Attributes, right: Attributes): Attributes => {
+    const result = { ...left }
+    let contradictions: mutable<Contradictions> | undefined
     let k: AttributeKey
-    for (k in assign) {
-        add(base, k, assign[k] as any)
+    for (k in right) {
+        if (k in left) {
+            const intersectedValue = dynamicReducers[k](left[k], right[k])
+            if (isEmptyIntersection(intersectedValue)) {
+                contradictions ??= {}
+                contradictions[k as ContradictableKey] = intersectedValue as any
+            }
+            result[k] = intersectedValue
+        } else {
+            result[k] = right[k] as any
+        }
     }
-    return base
+    if (contradictions) {
+        result.contradictions = result.contradictions
+            ? intersectors.contradictions(result.contradictions, contradictions)
+            : contradictions
+    }
+    return result
 }
 
 const intersectAdditiveAttribute = <t extends string>(
-    base: keyOrKeySet<t>,
-    assign: keyOrKeySet<t>
+    left: keyOrKeySet<t>,
+    right: keyOrKeySet<t>
 ): keyOrKeySet<t> => {
-    if (typeof base === "string") {
-        if (typeof assign === "string") {
-            return base === assign
-                ? base
-                : ({ [base]: true, [assign]: true } as keySet<t>)
+    if (typeof left === "string") {
+        if (typeof right === "string") {
+            return left === right
+                ? left
+                : ({ [left]: true, [right]: true } as keySet<t>)
         }
-        ;(assign as keySet<t>)[base] = true
-        return assign
+        return { ...right, [left]: true }
     }
-    if (typeof assign === "string") {
-        ;(base as keySet<t>)[assign] = true
-        return base
+    if (typeof right === "string") {
+        return { ...left, [right]: true }
     }
-    return Object.assign(base, assign)
+    return { ...left, ...right }
 }
 
 const intersectDisjointAttribute = <k extends string>(
-    base: keyOrKeySet<k>,
-    assign: keyOrKeySet<k>
+    left: keyOrKeySet<k>,
+    right: keyOrKeySet<k>
 ): MaybeEmptyIntersection<keyOrKeySet<k>> => {
-    if (typeof base === "string") {
-        if (typeof assign === "string") {
-            return base === assign ? base : [base, assign]
+    if (typeof left === "string") {
+        if (typeof right === "string") {
+            return left === right ? left : [left, right]
         }
-        return base in assign ? base : [base, assign]
+        return left in right ? left : [left, right]
     }
-    if (typeof assign === "string") {
-        return assign in base ? assign : [base, assign]
+    if (typeof right === "string") {
+        return right in left ? right : [left, right]
     }
-    const intersectionSet = intersectKeySets(base, assign)
+    const intersectionSet = intersectKeySets(left, right)
     const intersectingKeys = keysOf(intersectionSet)
     return intersectingKeys.length === 0
-        ? [base, assign]
+        ? [left, right]
         : intersectingKeys.length === 1
         ? intersectingKeys[0]
         : intersectionSet
 }
 
 const intersectKeySets = <k extends string>(
-    base: keySet<k>,
-    assign: keySet<k>
-) => {
-    const intersectionSet: keySet<k> = {}
-    for (const k in base) {
-        if (assign[k]) {
+    left: keySet<k>,
+    right: keySet<k>
+): keySet<k> => {
+    const intersectionSet = {} as mutable<keySet<k>>
+    for (const k in left) {
+        if (right[k]) {
             intersectionSet[k] = true
         }
     }
@@ -113,70 +118,64 @@ type IntersectorsByKey = {
 const intersectors: IntersectorsByKey = {
     value: intersectDisjointAttribute,
     type: intersectDisjointAttribute,
-    divisor: (base, assign) => intersectDivisors(base, assign),
-    regex: (base, assign) => intersectAdditiveAttribute(base, assign),
+    divisor: (left, right) => intersectDivisors(left, right),
+    regex: (left, right) => intersectAdditiveAttribute(left, right),
     bounds: intersectBounds,
-    requiredKeys: (base, assign) => intersectKeySets(base, assign),
+    requiredKeys: (left, right) => intersectKeySets(left, right),
     aliases: intersectAdditiveAttribute,
-    baseProp: (base, assign) => intersect(base, assign),
-    props: (base, assign) => {
-        const intersectedProps = { ...base, ...assign }
+    baseProp: (left, right) => intersect(left, right),
+    props: (left, right) => {
+        const intersectedProps = { ...left, ...right }
         for (const k in intersectedProps) {
-            if (k in base && k in assign) {
-                intersectedProps[k] = intersect(base[k], assign[k])
+            if (k in left && k in right) {
+                intersectedProps[k] = intersect(left[k], right[k])
             }
         }
         return intersectedProps
     },
-    branches: (base, assign) => {
-        if (base[0] === "&") {
-            if (assign[0] === "&") {
-                for (let i = 1; i < assign.length; i++) {
-                    base.push(assign[i])
-                }
-                return base
+    branches: (left, right) => {
+        if (left[0] === "&") {
+            if (right[0] === "&") {
+                return [...left, ...(right.slice(1) as BranchUnion[])]
             }
-            base.push(assign)
-            return base
+            return [...left, right]
         }
-        if (assign[0] === "&") {
-            assign.push(base)
-            return assign
+        if (right[0] === "&") {
+            return [...right, left]
         }
-        return ["&", base, assign]
+        return ["&", left, right]
     },
-    contradictions: (base, assign) => {
+    contradictions: (left, right) => {
+        const result = { ...left }
         let k: ContradictionKind
-        for (k in assign) {
+        for (k in right) {
             if (k === "never") {
-                base.never = true
+                result.never = true
             } else {
-                base[k] ??= []
-                base[k]!.push(assign[k] as any)
+                result[k] ??= []
+                left[k]!.push(right[k] as any)
             }
         }
-        return base
+        return result
     }
 }
 
 const dynamicReducers = intersectors as {
-    [k in AttributeKey]: (base: unknown, assign: unknown) => any
+    [k in AttributeKey]: (left: unknown, right: unknown) => any
 }
 
-type KeyWithImplications = "divisor" | "regex" | "bounds"
+type TypeImplyingKey = "divisor" | "regex" | "bounds"
 
-const implicationMap: {
-    [k in KeyWithImplications]: () => Attributes
+const impliedTypes: {
+    [k in TypeImplyingKey]: TypeAttribute
 } = {
-    divisor: () => ({ type: "number" }),
-    bounds: () => ({
-        type: {
-            number: true,
-            string: true,
-            array: true
-        }
-    }),
-    regex: () => ({ type: "string" })
+    divisor: "number",
+    bounds: {
+        number: true,
+        string: true,
+        array: true
+    },
+    regex: "string"
 }
 
 export const isEmptyIntersection = (
@@ -184,15 +183,15 @@ export const isEmptyIntersection = (
 ): intersection is EmptyIntersectionResult<unknown> =>
     Array.isArray(intersection)
 
-type MaybeEmptyIntersection<t> = t | EmptyIntersectionResult<t>
+export type MaybeEmptyIntersection<t> = t | EmptyIntersectionResult<t>
 
 export type EmptyIntersectionResult<t> = [
-    baseConflicting: t,
-    assignConflicting: t
+    leftConflicting: t,
+    rightConflicting: t
 ]
 
 export type Intersector<k extends AttributeKey> = (
-    base: AttributeTypes[k],
+    left: AttributeTypes[k],
     value: AttributeTypes[k]
 ) =>
     | AttributeTypes[k]

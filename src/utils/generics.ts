@@ -71,6 +71,10 @@ export type keysOf<o extends object> = (keyof o)[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 
+export type mutable<o> = {
+    -readonly [k in keyof o]: o[k]
+}
+
 export const pushKey = (path: string, key: string, delimiter = ".") =>
     path === "" ? key : `${path}${delimiter}${key}`
 

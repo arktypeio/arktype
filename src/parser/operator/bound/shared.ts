@@ -1,4 +1,5 @@
-import type { BoundData, BoundsData } from "../../../attributes/bounds.js"
+import type { BoundData, BoundsAttribute } from "../../../attributes/bounds.js"
+import type { mutable } from "../../../internal.js"
 import type { Scanner } from "../../state/scanner.js"
 
 export const comparatorDescriptions = {
@@ -32,7 +33,7 @@ export const buildInvalidDoubleMessage = <
 export const toBoundsAttribute = (
     comparator: Scanner.Comparator,
     limit: number
-): BoundsData => {
+): mutable<BoundsAttribute> => {
     const bound: BoundData = {
         limit,
         inclusive: comparator[1] === "="

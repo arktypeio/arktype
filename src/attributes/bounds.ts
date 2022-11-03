@@ -1,9 +1,12 @@
-import type { EmptyIntersectionResult, Intersector } from "./intersection.js"
+import type {
+    EmptyIntersectionResult,
+    Intersector,
+    MaybeEmptyIntersection
+} from "./intersection.js"
 import { isEmptyIntersection } from "./intersection.js"
 
 export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
-    let intersectedBounds: BoundsData | EmptyIntersectionResult<BoundsData> =
-        base
+    let intersectedBounds: MaybeEmptyIntersection<BoundsAttribute> = base
     if (min) {
         intersectedBounds = intersectBound("min", base, min)
         if (isEmptyIntersection(intersectedBounds)) {
@@ -16,21 +19,21 @@ export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
     return intersectedBounds
 }
 
-export type BoundsData = {
-    min?: BoundData
-    max?: BoundData
+export type BoundsAttribute = {
+    readonly min?: BoundData
+    readonly max?: BoundData
 }
 
 export type BoundData = {
-    limit: number
-    inclusive: boolean
+    readonly limit: number
+    readonly inclusive: boolean
 }
 
 const intersectBound = (
     kind: BoundKind,
-    base: BoundsData,
+    base: BoundsAttribute,
     bound: BoundData
-): BoundsData | EmptyIntersectionResult<BoundsData> => {
+): BoundsAttribute | EmptyIntersectionResult<BoundsAttribute> => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = base[kind]
     const baseOpposing = base[invertedKind]
@@ -38,7 +41,7 @@ const intersectBound = (
         return createBoundsContradiction(kind, baseOpposing, bound)
     }
     if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
-        base[kind] = bound
+        return { ...base, [kind]: bound }
     }
     return base
 }
@@ -47,7 +50,7 @@ const createBoundsContradiction = (
     kind: BoundKind,
     baseOpposing: BoundData,
     bound: BoundData
-): EmptyIntersectionResult<BoundsData> => [
+): EmptyIntersectionResult<BoundsAttribute> => [
     { [invertedKinds[kind]]: baseOpposing },
     {
         [kind]: bound

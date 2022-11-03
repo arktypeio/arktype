@@ -1,6 +1,11 @@
 import { reduce } from "../attributes/reduce.js"
 import type { Attributes, keySet } from "../attributes/shared.js"
-import type { dictionary, DynamicTypeName, evaluate } from "../internal.js"
+import type {
+    dictionary,
+    DynamicTypeName,
+    evaluate,
+    mutable
+} from "../internal.js"
 import {
     dynamicTypeOf,
     pushKey,
@@ -75,7 +80,7 @@ const parseStructure = (
         return parseTupleExpression(definition, context)
     }
     const props: dictionary<Attributes> = {}
-    const requiredKeys: keySet<string> = {}
+    const requiredKeys: mutable<keySet<string>> = {}
     for (const definitionKey in definition) {
         let keyName = definitionKey
         if (definitionKey.endsWith("?")) {
