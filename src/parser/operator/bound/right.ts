@@ -1,4 +1,4 @@
-import { assignIntersection } from "../../../attributes/intersection.js"
+import { add, intersection } from "../../../attributes/intersection.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
@@ -45,11 +45,7 @@ export namespace RightBoundOperator {
     ) => {
         const boundsData = toBoundsAttribute(comparator, limit)
         if (!isLeftBounded(s)) {
-            s.root = assignIntersection(
-                s.root,
-                { bounds: boundsData },
-                s.context
-            )
+            s.root = add(s.root, "bounds", boundsData)
             return s
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
@@ -59,13 +55,7 @@ export namespace RightBoundOperator {
             limit: s.branches.leftBound[0],
             inclusive: s.branches.leftBound[1] === "<="
         }
-        s.root = assignIntersection(
-            s.root,
-            {
-                bounds: boundsData
-            },
-            s.context
-        )
+        s.root = add(s.root, "bounds", boundsData)
         s.branches.leftBound = State.unset
         return s
     }
@@ -84,7 +74,7 @@ export namespace RightBoundOperator {
                           [s["root"], comparator, limitOrError]
                       ]
                       branches: {
-                          leftBound: null
+                          leftBound: undefined
                           intersection: s["branches"]["intersection"]
                           union: s["branches"]["union"]
                       }

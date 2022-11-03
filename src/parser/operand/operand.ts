@@ -35,17 +35,19 @@ export namespace Operand {
         s: s
     ) => {
         const previousOperator = State.previousOperator(s)
-        return previousOperator === null
-            ? buildExpressionExpectedMessage(s.scanner.unscanned)
-            : buildMissingRightOperandMessage(
+        return previousOperator
+            ? buildMissingRightOperandMessage(
                   previousOperator,
                   s.scanner.unscanned
               )
+            : buildExpressionExpectedMessage(s.scanner.unscanned)
     }
 
     export type buildMissingOperandMessage<
         s extends State.Static,
-        previousOperator extends Scanner.InfixToken | null = State.previousOperator<s>
+        previousOperator extends
+            | Scanner.InfixToken
+            | undefined = State.previousOperator<s>
     > = previousOperator extends {}
         ? buildMissingRightOperandMessage<previousOperator, s["unscanned"]>
         : buildExpressionExpectedMessage<s["unscanned"]>

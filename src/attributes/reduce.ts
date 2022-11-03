@@ -1,7 +1,7 @@
 import { isKeyOf, keysOf } from "../internal.js"
 import type { DynamicParserContext } from "../parser/common.js"
 import { parseString } from "../parser/string.js"
-import { assignIntersection } from "./intersection.js"
+import { intersection } from "./intersection.js"
 import type {
     AttributeBranches,
     AttributeKey,
@@ -11,31 +11,10 @@ import type {
 import { atomicAttributes } from "./shared.js"
 
 export const reduce = (root: Attributes, context: DynamicParserContext) => {
-    if (root.aliases) {
-        reduceAliasIntersection(root, root.aliases, context)
-    }
     if (root.branches) {
         reduceBranches(root, root.branches, context)
     }
     return root
-}
-
-const reduceAliasIntersection = (
-    root: Attributes,
-    aliases: AttributeTypes["aliases"],
-    context: DynamicParserContext
-) => {
-    const names = typeof aliases === "string" ? [aliases] : keysOf(aliases)
-    for (const name of names) {
-        const attributes = parseString(name, context)
-        let k: AttributeKey
-        for (k in attributes) {
-            if (!isKeyOf(k, atomicAttributes)) {
-                delete attributes[k]
-            }
-        }
-        assignIntersection(root, attributes, context)
-    }
 }
 
 const reduceBranches = (

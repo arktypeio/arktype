@@ -2,12 +2,8 @@ import { bench, suite } from "@arktype/test"
 import { type } from "../../api.js"
 
 suite("legacy", () => {
-    bench("validate undefined", () => {
-        type("string?").check(undefined)
-    }).median([106.0, "ns"])
-
     bench("validate string", () => {
-        type("string?").check("test")
+        type("string").check("test")
     }).median([119.0, "ns"])
 
     const deepStringDef = "string|".repeat(20).slice(0, -1)

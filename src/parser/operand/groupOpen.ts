@@ -13,7 +13,7 @@ export namespace GroupOpen {
     > = State.from<{
         groups: [...s["groups"], s["branches"]]
         branches: State.initialBranches
-        root: null
+        root: undefined
         unscanned: unscanned
     }>
 

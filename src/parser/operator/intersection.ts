@@ -1,4 +1,4 @@
-import { assignIntersection } from "../../attributes/intersection.js"
+import { intersection } from "../../attributes/intersection.js"
 import type { maybePush } from "../common.js"
 import { State } from "../state/state.js"
 import { LeftBoundOperator } from "./bound/left.js"
@@ -8,9 +8,8 @@ export namespace IntersectionOperator {
         if (State.hasOpenLeftBound(s)) {
             return LeftBoundOperator.unpairedError(s)
         }
-        s.branches.intersection = s.branches.intersection
-            ? assignIntersection(s.branches.intersection, s.root, s.context)
-            : s.root
+        s.branches.intersection ??= []
+        s.branches.intersection.push(s.root)
         s.root = State.unset
         return s
     }
@@ -19,9 +18,9 @@ export namespace IntersectionOperator {
         s extends State.StaticWithOpenLeftBound
             ? LeftBoundOperator.unpairedError<s>
             : State.from<{
-                  root: null
+                  root: undefined
                   branches: {
-                      leftBound: null
+                      leftBound: undefined
                       union: s["branches"]["union"]
                       intersection: [collectBranches<s>, "&"]
                   }
@@ -43,7 +42,7 @@ export namespace IntersectionOperator {
         if (!s.branches.intersection) {
             return s
         }
-        s.root = assignIntersection(s.branches.intersection, s.root, s.context)
+        s.root = intersection(s.branches.intersection)
         delete s.branches.intersection
         return s
     }

@@ -10,7 +10,7 @@ export namespace Keyword {
         bigint: bigint
         boolean: boolean
         false: false
-        never: null
+        never: never
         null: null
         number: number
         object: object

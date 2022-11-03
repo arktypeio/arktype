@@ -54,7 +54,7 @@ export namespace LeftBoundOperator {
         s extends State.StaticWithRoot<number>,
         comparator extends Scanner.PairableComparator
     > = State.from<{
-        root: null
+        root: undefined
         branches: {
             union: s["branches"]["union"]
             intersection: s["branches"]["intersection"]

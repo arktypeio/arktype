@@ -12,26 +12,29 @@ import type {
     keySet
 } from "./shared.js"
 
-// TODO: Remove
-// eslint-disable-next-line max-lines-per-function
-export const assignIntersection = (
+export const add = <k extends AttributeKey>(
     base: Attributes,
-    assign: Attributes,
-    context: DynamicParserContext
-) => {
+    key: k,
+    value: AttributeTypes[k]
+) => intersect(base, { [key]: value })
+
+export const intersection = (branches: Attributes[]) => {
+    while (branches.length > 1) {
+        branches.unshift(intersect(branches.pop()!, branches.pop()!))
+    }
+    return branches[0]
+}
+
+const intersect = (base: Attributes, assign: Attributes) => {
     let k: AttributeKey
     for (k in assign) {
         if (k in base) {
-            const intersection = dynamicReducers[k](base[k], assign[k], context)
+            const intersection = dynamicReducers[k](base[k], assign[k])
             if (isEmptyIntersection(intersection)) {
                 base.contradictions ??= {}
-                intersectors.contradictions(
-                    base.contradictions,
-                    {
-                        [k]: intersection
-                    },
-                    context
-                )
+                intersectors.contradictions(base.contradictions, {
+                    [k]: intersection
+                })
             } else {
                 base[k] = intersection
             }
@@ -39,7 +42,7 @@ export const assignIntersection = (
             base[k] = assign[k] as any
         }
         if (isKeyOf(k, implicationMap)) {
-            assignIntersection(base, implicationMap[k](), context)
+            intersect(base, implicationMap[k]())
         }
     }
     return base
@@ -112,17 +115,12 @@ const intersectors: IntersectorsByKey = {
     bounds: intersectBounds,
     requiredKeys: (base, assign) => intersectKeySets(base, assign),
     aliases: intersectAdditiveAttribute,
-    baseProp: (base, assign, context) =>
-        assignIntersection(base, assign, context),
-    props: (base, assign, context) => {
+    baseProp: (base, assign) => intersect(base, assign),
+    props: (base, assign) => {
         const intersectedProps = { ...base, ...assign }
         for (const k in intersectedProps) {
             if (k in base && k in assign) {
-                intersectedProps[k] = assignIntersection(
-                    base[k],
-                    assign[k],
-                    context
-                )
+                intersectedProps[k] = intersect(base[k], assign[k])
             }
         }
         return intersectedProps
@@ -159,19 +157,13 @@ const intersectors: IntersectorsByKey = {
 }
 
 const dynamicReducers = intersectors as {
-    [k in AttributeKey]: (
-        base: unknown,
-        assign: unknown,
-        context: DynamicParserContext
-    ) => any
+    [k in AttributeKey]: (base: unknown, assign: unknown) => any
 }
 
 type KeyWithImplications = "divisor" | "regex" | "bounds"
 
-type ImplicationsThunk = () => Attributes
-
 const implicationMap: {
-    [k in KeyWithImplications]: ImplicationsThunk
+    [k in KeyWithImplications]: () => Attributes
 } = {
     divisor: () => ({ type: "number" }),
     bounds: () => ({
@@ -198,8 +190,7 @@ export type EmptyIntersectionResult<t> = [
 
 export type Intersector<k extends AttributeKey> = (
     base: AttributeTypes[k],
-    value: AttributeTypes[k],
-    context: DynamicParserContext
+    value: AttributeTypes[k]
 ) =>
     | AttributeTypes[k]
     | (k extends ContradictableKey

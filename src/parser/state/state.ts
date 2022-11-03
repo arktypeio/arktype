@@ -16,7 +16,7 @@ import { Scanner } from "./scanner.js"
 
 export namespace State {
     type BaseDynamic = {
-        root: Attributes | null
+        root: Attributes | undefined
         branches: DynamicOpenBranches
         groups: DynamicOpenBranches[]
         scanner: Scanner
@@ -74,7 +74,7 @@ export namespace State {
         def: string,
         context: DynamicParserContext
     ): Dynamic => ({
-        root: null,
+        root: undefined,
         branches: initializeBranches(),
         groups: [],
         scanner: new Scanner(def),
@@ -82,7 +82,7 @@ export namespace State {
     })
 
     export type initialize<def extends string> = from<{
-        root: null
+        root: undefined
         branches: initialBranches
         groups: []
         unscanned: def
@@ -94,9 +94,9 @@ export namespace State {
     ]
 
     export type DynamicOpenBranches = {
-        leftBound?: OpenLeftBound | null
-        union?: Attributes | null
-        intersection?: Attributes | null
+        leftBound?: OpenLeftBound
+        union?: Attributes[]
+        intersection?: Attributes[]
     }
 
     export const hasOpenLeftBound = <s extends Dynamic>(
@@ -104,10 +104,11 @@ export namespace State {
     ): s is s & { branches: { leftBound: OpenLeftBound } } =>
         !!s.branches.leftBound
 
+    // TODO: Try as list
     export type StaticOpenBranches = {
-        leftBound: OpenLeftBound | null
-        union: [unknown, "|"] | null
-        intersection: [unknown, "&"] | null
+        leftBound: OpenLeftBound | undefined
+        union: [unknown, "|"] | undefined
+        intersection: [unknown, "&"] | undefined
     }
 
     export type StaticWithOpenLeftBound = { branches: { leftBound: {} } }
@@ -124,9 +125,9 @@ export namespace State {
     export const initializeBranches = (): DynamicOpenBranches => ({})
 
     export type initialBranches = {
-        leftBound: null
-        union: null
-        intersection: null
+        leftBound: undefined
+        union: undefined
+        intersection: undefined
     }
 
     export const finalizeBranches = (s: DynamicWithRoot) => {
@@ -189,7 +190,7 @@ export namespace State {
             ? "&"
             : s.branches.union
             ? "|"
-            : null
+            : undefined
 
     export type previousOperator<s extends Static> =
         s extends StaticWithOpenLeftBound
@@ -198,7 +199,7 @@ export namespace State {
             ? "&"
             : s["branches"]["union"] extends {}
             ? "|"
-            : null
+            : undefined
 
     export type setRoot<
         s extends Static,
@@ -212,7 +213,7 @@ export namespace State {
     }>
 
     export const hasRoot = <s extends Dynamic>(s: s): s is s & { root: {} } =>
-        s.root !== null
+        s.root !== undefined
 
     export const rootAttributeEquals = <
         s extends Dynamic,
@@ -251,7 +252,7 @@ export namespace State {
         hasDynamicType(deserializePrimitive(s.root.value), typeName)
 
     /** More transparent mutation in a function with a constrained input state */
-    export const unset = null as any
+    export const unset = undefined as any
 
     export const shifted = (s: Dynamic) => {
         s.scanner.shift()
