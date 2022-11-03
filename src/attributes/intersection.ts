@@ -12,11 +12,29 @@ import type {
     keySet
 } from "./shared.js"
 
+// TODO: Make immutable.
 export const add = <k extends AttributeKey>(
     base: Attributes,
-    key: k,
+    k: k,
     value: AttributeTypes[k]
-) => intersect(base, { [key]: value })
+) => {
+    if (k in base) {
+        const intersection = dynamicReducers[k](base[k], value)
+        if (isEmptyIntersection(intersection)) {
+            base.contradictions ??= {}
+            intersectors.contradictions(base.contradictions, {
+                [k]: intersection
+            })
+        } else {
+            base[k] = intersection
+        }
+    } else {
+        base[k] = value
+    }
+    if (isKeyOf(k, implicationMap)) {
+        intersect(base, implicationMap[k]())
+    }
+} //intersect(base, { [key]: value })
 
 export const intersection = (branches: Attributes[]) => {
     while (branches.length > 1) {
@@ -28,22 +46,7 @@ export const intersection = (branches: Attributes[]) => {
 const intersect = (base: Attributes, assign: Attributes) => {
     let k: AttributeKey
     for (k in assign) {
-        if (k in base) {
-            const intersection = dynamicReducers[k](base[k], assign[k])
-            if (isEmptyIntersection(intersection)) {
-                base.contradictions ??= {}
-                intersectors.contradictions(base.contradictions, {
-                    [k]: intersection
-                })
-            } else {
-                base[k] = intersection
-            }
-        } else {
-            base[k] = assign[k] as any
-        }
-        if (isKeyOf(k, implicationMap)) {
-            intersect(base, implicationMap[k]())
-        }
+        add(base, k, assign[k] as any)
     }
     return base
 }
