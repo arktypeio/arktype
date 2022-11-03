@@ -2,7 +2,7 @@ import { bench } from "@arktype/test"
 import { space } from "../api.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
-const recursive = space({ dejaVu: { dejaVu: "dejaVu?" } })
+const recursive = space({ dejaVu: { "dejaVu?": "dejaVu" } })
 const dejaVu: typeof recursive.$.infer.dejaVu = {}
 let i = 0
 let current = dejaVu

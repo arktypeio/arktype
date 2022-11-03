@@ -11,12 +11,6 @@ suite("parse/str/operator", () => {
         .median()
         .type()
 
-    bench("optional", () => {
-        const _ = type("number?")
-    })
-        .median()
-        .type()
-
     suite("union", () => {
         bench("binary", () => {
             const _ = type("number|string")

@@ -5,7 +5,6 @@ import type {
     SerializedPrimitives
 } from "../../attributes/value.js"
 import { deserializePrimitive } from "../../attributes/value.js"
-
 import type { dynamicTypeOf, DynamicTypes } from "../../internal.js"
 import { hasDynamicType } from "../../internal.js"
 import type { DynamicParserContext, ParseError } from "../common.js"
@@ -89,7 +88,10 @@ export namespace State {
         unscanned: def
     }>
 
-    export type OpenLeftBound = [number, Scanner.PairableComparator]
+    export type OpenLeftBound = [
+        limit: number,
+        comparator: Scanner.PairableComparator
+    ]
 
     export type DynamicOpenBranches = {
         leftBound?: OpenLeftBound | null

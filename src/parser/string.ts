@@ -1,4 +1,3 @@
-import { assignIntersection } from "../attributes/intersection.js"
 import { deepClone } from "../utils/deepClone.js"
 import type {
     DynamicParserContext,
@@ -77,40 +76,15 @@ type next<
 type tryNaiveStringParse<
     def extends string,
     context extends StaticParserContext
-> = def extends `${infer Child}?`
-    ? Child extends `${infer GrandChild}[]`
-        ? Unenclosed.isResolvableIdentifier<GrandChild, context> extends true
-            ? [[GrandChild, "[]"], "?"]
-            : fullStringParse<def, context>
-        : Unenclosed.isResolvableIdentifier<Child, context> extends true
-        ? [Child, "?"]
-        : fullStringParse<def, context>
-    : def extends `${infer Child}[]`
-    ? Unenclosed.isResolvableIdentifier<Child, context> extends true
-        ? [Child, "[]"]
+> = def extends `${infer child}[]`
+    ? Unenclosed.isResolvableIdentifier<child, context> extends true
+        ? [child, "[]"]
         : fullStringParse<def, context>
     : Unenclosed.isResolvableIdentifier<def, context> extends true
     ? def
     : fullStringParse<def, context>
 
 const tryNaiveStringParse = (def: string, context: DynamicParserContext) => {
-    if (def.endsWith("?")) {
-        const maybeParsedAttributes = tryNaiveArrayParse(
-            def.slice(0, -1),
-            context
-        )
-        if (maybeParsedAttributes) {
-            return assignIntersection(
-                maybeParsedAttributes,
-                { optional: true },
-                context
-            )
-        }
-    }
-    return tryNaiveArrayParse(def, context)
-}
-
-const tryNaiveArrayParse = (def: string, context: DynamicParserContext) => {
     if (def.endsWith("[]")) {
         const maybeParsedAttributes = Unenclosed.maybeParseIdentifier(
             def.slice(0, -2),

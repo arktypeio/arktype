@@ -8,9 +8,7 @@ import type { ArktypeSpace } from "../space.js"
 export type inferAst<node, space> = node extends TerminalAst
     ? inferTerminal<node, space>
     : node extends readonly unknown[]
-    ? node[1] extends "?"
-        ? inferAst<node[0], space> | undefined
-        : node[1] extends "[]"
+    ? node[1] extends "[]"
         ? inferAst<node[0], space>[]
         : node[1] extends "|"
         ? inferAst<node[0], space> | inferAst<node[2], space>
@@ -53,14 +51,27 @@ type TerminalAst = string | number | bigint
 type inferObjectLiteral<
     node,
     spaceAst,
-    optionalKey extends keyof node = {
-        [K in keyof node]: node[K] extends [unknown, "?"] ? K : never
-    }[keyof node],
+    optionalKey extends optionalKeyOf<node> = optionalKeyOf<node>,
     requiredKey extends keyof node = Exclude<keyof node, optionalKey>
 > = evaluate<
     {
-        [k in requiredKey]: inferAst<node[k], spaceAst>
+        [requiredKeyName in requiredKey]: inferAst<
+            node[requiredKeyName],
+            spaceAst
+        >
     } & {
-        [k in optionalKey]?: inferAst<node[k], spaceAst>
+        [optionalKeyName in extractNameOfOptionalKey<optionalKey>]?: inferAst<
+            node[`${optionalKeyName}?` & keyof node],
+            spaceAst
+        >
     }
 >
+
+type optionalKeyWithName<name extends string = string> = `${name}?`
+
+type optionalKeyOf<node> = {
+    [k in keyof node]: k extends optionalKeyWithName ? k : never
+}[keyof node]
+
+type extractNameOfOptionalKey<k extends optionalKeyWithName> =
+    k extends optionalKeyWithName<infer name> ? name : never

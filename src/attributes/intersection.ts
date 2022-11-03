@@ -7,6 +7,7 @@ import type {
     Attributes,
     AttributeTypes,
     ContradictableKey,
+    ContradictionKind,
     keyOrKeySet,
     keySet
 } from "./shared.js"
@@ -19,11 +20,6 @@ export const assignIntersection = (
     context: DynamicParserContext
 ) => {
     let k: AttributeKey
-    for (k in alwaysIntersectedKeys) {
-        if (k in base && !(k in assign)) {
-            assign[k] = undefined
-        }
-    }
     for (k in assign) {
         if (k in base) {
             const intersection = dynamicReducers[k](base[k], assign[k], context)
@@ -69,10 +65,10 @@ const intersectAdditiveAttribute = <t extends string>(
     return Object.assign(base, assign)
 }
 
-const intersectDisjointAttribute = <t extends string>(
-    base: keyOrKeySet<t>,
-    assign: keyOrKeySet<t>
-): MaybeEmptyIntersection<keyOrKeySet<t>> => {
+const intersectDisjointAttribute = <k extends string>(
+    base: keyOrKeySet<k>,
+    assign: keyOrKeySet<k>
+): MaybeEmptyIntersection<keyOrKeySet<k>> => {
     if (typeof base === "string") {
         if (typeof assign === "string") {
             return base === assign ? base : [base, assign]
@@ -82,18 +78,26 @@ const intersectDisjointAttribute = <t extends string>(
     if (typeof assign === "string") {
         return assign in base ? assign : [base, assign]
     }
-    const intersectionSet: keySet<t> = {}
-    for (const k in base) {
-        if (assign[k]) {
-            intersectionSet[k] = true
-        }
-    }
+    const intersectionSet = intersectKeySets(base, assign)
     const intersectingKeys = keysOf(intersectionSet)
     return intersectingKeys.length === 0
         ? [base, assign]
         : intersectingKeys.length === 1
         ? intersectingKeys[0]
         : intersectionSet
+}
+
+const intersectKeySets = <k extends string>(
+    base: keySet<k>,
+    assign: keySet<k>
+) => {
+    const intersectionSet: keySet<k> = {}
+    for (const k in base) {
+        if (assign[k]) {
+            intersectionSet[k] = true
+        }
+    }
+    return intersectionSet
 }
 
 type IntersectorsByKey = {
@@ -106,9 +110,7 @@ const intersectors: IntersectorsByKey = {
     divisor: (base, assign) => intersectDivisors(base, assign),
     regex: (base, assign) => intersectAdditiveAttribute(base, assign),
     bounds: intersectBounds,
-    // TODO: Figure out where this gets merged. Should require both if
-    // finalized, but otherwise not.
-    optional: (base, assign) => base && assign,
+    requiredKeys: (base, assign) => intersectKeySets(base, assign),
     aliases: intersectAdditiveAttribute,
     baseProp: (base, assign, context) =>
         assignIntersection(base, assign, context),
@@ -143,10 +145,14 @@ const intersectors: IntersectorsByKey = {
         return ["&", base, assign]
     },
     contradictions: (base, assign) => {
-        let k: ContradictableKey
+        let k: ContradictionKind
         for (k in assign) {
-            base[k] ??= []
-            base[k]!.push(assign[k] as any)
+            if (k === "never") {
+                base.never = true
+            } else {
+                base[k] ??= []
+                base[k]!.push(assign[k] as any)
+            }
         }
         return base
     }
@@ -176,10 +182,6 @@ const implicationMap: {
         }
     }),
     regex: () => ({ type: "string" })
-}
-
-const alwaysIntersectedKeys = {
-    optional: true
 }
 
 export const isEmptyIntersection = (

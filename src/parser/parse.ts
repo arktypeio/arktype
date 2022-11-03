@@ -1,7 +1,12 @@
 import { reduce } from "../attributes/reduce.js"
-import type { Attributes } from "../attributes/shared.js"
+import type { Attributes, keySet } from "../attributes/shared.js"
 import type { dictionary, DynamicTypeName, evaluate } from "../internal.js"
-import { dynamicTypeOf, pushKey, withoutLastKey } from "../internal.js"
+import {
+    dynamicTypeOf,
+    pushKey,
+    throwInternalError,
+    withoutLastKey
+} from "../internal.js"
 import type { SpaceRoot } from "../space.js"
 import type {
     DynamicParserContext,
@@ -70,14 +75,25 @@ const parseStructure = (
         return parseTupleExpression(definition, context)
     }
     const props: dictionary<Attributes> = {}
-    for (const k in definition) {
-        context.path = pushKey(context.path, k)
-        props[k] = parseDefinition(definition[k], context) as any
+    const requiredKeys: keySet<string> = {}
+    for (const definitionKey in definition) {
+        let keyName = definitionKey
+        if (definitionKey.endsWith("?")) {
+            keyName = definitionKey.slice(0, -1)
+        } else {
+            requiredKeys[definitionKey] = true
+        }
+        context.path = pushKey(context.path, keyName)
+        props[keyName] = parseDefinition(
+            definition[definitionKey],
+            context
+        ) as any
         context.path = withoutLastKey(context.path)
     }
     return {
         type: Array.isArray(definition) ? "array" : "dictionary",
-        props
+        props,
+        requiredKeys
     }
 }
 
@@ -87,15 +103,14 @@ type parseStructure<
 > = def extends TupleExpression
     ? parseTupleExpression<def, context>
     : evaluate<{
-          [K in keyof def]: parseRoot<def[K], context>
+          [k in keyof def]: parseRoot<def[k], context>
       }>
 
 const parseTupleExpression = (
     expression: TupleExpression,
     context: DynamicParserContext
 ) => {
-    console.log(expression, context)
-    return {} as Attributes
+    return throwInternalError("Not yet implemented.")
 }
 
 type parseTupleExpression<

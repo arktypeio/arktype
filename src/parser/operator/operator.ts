@@ -7,7 +7,6 @@ import { BoundOperator } from "./bound/bound.js"
 import { DivisibilityOperator } from "./divisibility.js"
 import { GroupClose } from "./groupClose.js"
 import { IntersectionOperator } from "./intersection.js"
-import { OptionalOperator } from "./optional.js"
 import { UnionOperator } from "./union.js"
 
 export namespace Operator {
@@ -15,8 +14,6 @@ export namespace Operator {
         const lookahead = s.scanner.shift()
         return lookahead === ""
             ? State.finalize(s)
-            : lookahead === "?"
-            ? OptionalOperator.finalize(s)
             : lookahead === "["
             ? ArrayOperator.parse(s)
             : lookahead === "|"
@@ -36,9 +33,7 @@ export namespace Operator {
 
     export type parse<s extends State.StaticWithRoot> =
         s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
-            ? lookahead extends "?"
-                ? OptionalOperator.finalize<s>
-                : lookahead extends "["
+            ? lookahead extends "["
                 ? ArrayOperator.parse<s, unscanned>
                 : lookahead extends "|"
                 ? UnionOperator.parse<State.scanTo<s, unscanned>>

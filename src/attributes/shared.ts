@@ -12,9 +12,7 @@ type AtomicAttributeTypes = {
     divisor: number
     regex: RegexAttribute
     bounds: BoundsData
-    // TODO: Fix. Do not need to worry about alias resolutions, only relevant
-    // whether the parent explicitly specifies it.
-    optional: true | undefined
+    requiredKeys: keySet<string>
     aliases: keyOrKeySet<string>
 }
 
@@ -32,7 +30,9 @@ export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 export type AttributeKey = keyof AttributeTypes
 
 export type Contradictions = {
-    [k in ContradictableKey]?: AtomicAttributeTypes[k][]
+    [k in ContradictionKind]?: k extends ContradictableKey
+        ? AtomicAttributeTypes[k][]
+        : true
 }
 
 export type TypeAttribute = keyOrKeySet<TypeAttributeName>
@@ -40,6 +40,8 @@ export type TypeAttribute = keyOrKeySet<TypeAttributeName>
 export type RegexAttribute = keyOrKeySet<Enclosed.RegexLiteral>
 
 export type ContradictableKey = "value" | "type" | "bounds"
+
+export type ContradictionKind = ContradictableKey | "never"
 
 export type TypeAttributeName = Exclude<DynamicTypeName, "undefined" | "null">
 
@@ -53,7 +55,7 @@ export const atomicAttributes: Record<AtomicKey, true> = {
     divisor: true,
     regex: true,
     bounds: true,
-    optional: true,
+    requiredKeys: true,
     aliases: true
 }
 

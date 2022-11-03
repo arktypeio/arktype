@@ -37,8 +37,8 @@ describe("space validation", () => {
     })
     test("cyclic space", () => {
         const bicycle = space({
-            a: { a: "a?", b: "b?", isA: "true" },
-            b: { a: "a?", b: "b?", isA: "false" },
+            a: { "a?": "a", "b?": "b", isA: "true" },
+            b: { "a?": "a", "b?": "b", isA: "false" },
             either: "a|b"
         })
         const bicyclic = type(
@@ -107,7 +107,7 @@ describe("space validation", () => {
             }).problems?.summary
         ).snap(`c/8 must be one of a|b (was {isA: "the duck goes quack"})`)
     })
-    const recursive = space.lazy({ dejaVu: { dejaVu: "dejaVu?" } })
+    const recursive = space.lazy({ dejaVu: { "dejaVu?": "dejaVu" } })
     test("validates recursive objects", () => {
         type DejaVu = typeof recursive.$.infer.dejaVu
         const dejaVu: DejaVu = {}

@@ -78,7 +78,6 @@ export namespace Scanner {
 
     export const terminatingChars = {
         ...comparatorStartChars,
-        "?": true,
         "|": true,
         "&": true,
         ")": true,
@@ -137,8 +136,7 @@ export namespace Scanner {
     export type InfixToken = keyof typeof infixTokens
 
     export const unaryTokens = {
-        "[]": true,
-        "?": true
+        "[]": true
     } as const
 
     export type UnaryToken = keyof typeof unaryTokens
