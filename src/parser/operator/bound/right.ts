@@ -1,4 +1,4 @@
-import { add, intersection } from "../../../attributes/intersection.js"
+import { add } from "../../../attributes/intersection.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
 import { Scanner } from "../../state/scanner.js"
