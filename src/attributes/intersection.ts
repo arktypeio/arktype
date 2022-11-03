@@ -5,10 +5,10 @@ import { intersectDivisors } from "./divisor.js"
 import type {
     AttributeKey,
     Attributes,
-    AttributeSet,
     AttributeTypes,
     ContradictableKey,
-    MaybeSetOf
+    keyOrKeySet,
+    keySet
 } from "./shared.js"
 
 // TODO: Remove
@@ -50,29 +50,29 @@ export const assignIntersection = (
 }
 
 const intersectAdditiveAttribute = <t extends string>(
-    base: MaybeSetOf<t>,
-    assign: MaybeSetOf<t>
-): MaybeSetOf<t> => {
+    base: keyOrKeySet<t>,
+    assign: keyOrKeySet<t>
+): keyOrKeySet<t> => {
     if (typeof base === "string") {
         if (typeof assign === "string") {
             return base === assign
                 ? base
-                : ({ [base]: true, [assign]: true } as AttributeSet<t>)
+                : ({ [base]: true, [assign]: true } as keySet<t>)
         }
-        ;(assign as AttributeSet<t>)[base] = true
+        ;(assign as keySet<t>)[base] = true
         return assign
     }
     if (typeof assign === "string") {
-        ;(base as AttributeSet<t>)[assign] = true
+        ;(base as keySet<t>)[assign] = true
         return base
     }
     return Object.assign(base, assign)
 }
 
 const intersectDisjointAttribute = <t extends string>(
-    base: MaybeSetOf<t>,
-    assign: MaybeSetOf<t>
-): MaybeEmptyIntersection<MaybeSetOf<t>> => {
+    base: keyOrKeySet<t>,
+    assign: keyOrKeySet<t>
+): MaybeEmptyIntersection<keyOrKeySet<t>> => {
     if (typeof base === "string") {
         if (typeof assign === "string") {
             return base === assign ? base : [base, assign]
@@ -82,7 +82,7 @@ const intersectDisjointAttribute = <t extends string>(
     if (typeof assign === "string") {
         return assign in base ? assign : [base, assign]
     }
-    const intersectionSet: AttributeSet<t> = {}
+    const intersectionSet: keySet<t> = {}
     for (const k in base) {
         if (assign[k]) {
             intersectionSet[k] = true
