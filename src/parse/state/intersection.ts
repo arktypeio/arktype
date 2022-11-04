@@ -5,7 +5,6 @@ import { Divisor } from "../operator/divisor.js"
 import type {
     AttributeKey,
     Attributes,
-    AttributeTypes,
     ContradictableKey,
     ContradictionKind,
     Contradictions,
@@ -17,7 +16,7 @@ import type {
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
     k: k,
-    value: AttributeTypes[k]
+    value: Attributes[k]
 ): Attributes => {
     const attributesToAdd: mutable<Attributes> = { [k]: value }
     if (!attributes[k] && isKeyOf(k, impliedTypes)) {
@@ -181,10 +180,10 @@ export type EmptyIntersectionResult<t> = [
 ]
 
 export type Intersector<k extends AttributeKey> = (
-    left: AttributeTypes[k],
-    value: AttributeTypes[k]
+    left: Exclude<Attributes[k], undefined>,
+    value: Exclude<Attributes[k], undefined>
 ) =>
-    | AttributeTypes[k]
+    | Exclude<Attributes[k], undefined>
     | (k extends ContradictableKey
-          ? EmptyIntersectionResult<AttributeTypes[k]>
+          ? EmptyIntersectionResult<Attributes[k]>
           : never)

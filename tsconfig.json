@@ -9,6 +9,7 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
+        "exactOptionalPropertyTypes": true,
         "lib": ["ESNext"]
     },
     "include": ["src"],
