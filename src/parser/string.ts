@@ -1,4 +1,3 @@
-import { deepClone } from "../utils/deepClone.js"
 import type {
     DynamicParserContext,
     ParseError,
@@ -20,7 +19,7 @@ export const parseString = (
             tryNaiveStringParse(definition, context) ??
             fullStringParse(definition, context)
     }
-    return deepClone(cache[definition]!)
+    return cache[definition]
 }
 
 export type parseString<

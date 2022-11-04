@@ -1,4 +1,4 @@
-import type { dictionary, DynamicTypeName } from "../internal.js"
+import type { deepImmutable, dictionary, DynamicTypeName } from "../internal.js"
 import type { Enclosed } from "../parser/operand/enclosed.js"
 import type { BoundsAttribute } from "./bounds.js"
 import type { ValueAttribute } from "./value.js"
@@ -6,7 +6,7 @@ import type { ValueAttribute } from "./value.js"
 // TODO: Should they all be strings? Could have objects represent unions and
 // arrays intersections, though not sure how often it'd work since branches with
 // sets of attributes are not mergeable
-type AtomicAttributeTypes = Readonly<{
+type AtomicAttributeTypes = deepImmutable<{
     value: ValueAttribute
     type: TypeAttribute
     divisor: number
@@ -16,10 +16,10 @@ type AtomicAttributeTypes = Readonly<{
     aliases: keyOrKeySet<string>
 }>
 
-type ComposedAttributeTypes = Readonly<{
+type ComposedAttributeTypes = deepImmutable<{
     contradictions: Contradictions
     baseProp: Attributes
-    props: Readonly<dictionary<Attributes>>
+    props: dictionary<Attributes>
     branches: AttributeBranches
 }>
 
@@ -30,7 +30,7 @@ export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 export type AttributeKey = keyof AttributeTypes
 
 export type Contradictions = {
-    readonly [k in ContradictionKind]?: k extends ContradictableKey
+    [k in ContradictionKind]?: k extends ContradictableKey
         ? AtomicAttributeTypes[k][]
         : true
 }
@@ -45,7 +45,7 @@ export type ContradictionKind = ContradictableKey | "never"
 
 export type TypeAttributeName = Exclude<DynamicTypeName, "undefined" | "null">
 
-export type keySet<key extends string> = { readonly [_ in key]?: true }
+export type keySet<key extends string> = { [_ in key]?: true }
 
 export type keyOrKeySet<key extends string> = key | keySet<key>
 

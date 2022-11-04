@@ -4,7 +4,7 @@ import { type } from "../../api.js"
 import { Operand } from "../operand/operand.js"
 import { Unenclosed } from "../operand/unenclosed.js"
 
-describe("str", () => {
+describe("string", () => {
     test("errors on empty string", () => {
         // @ts-expect-error
         attest(() => type("")).throwsAndHasTypeError(

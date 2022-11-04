@@ -75,6 +75,14 @@ export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
 
+export type deepImmutable<o> = {
+    readonly [k in keyof o]: o[k] extends Readonly<
+        Record<string | number | symbol, unknown>
+    >
+        ? deepImmutable<o[k]>
+        : o[k]
+}
+
 export const pushKey = (path: string, key: string, delimiter = ".") =>
     path === "" ? key : `${path}${delimiter}${key}`
 

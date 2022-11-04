@@ -1,4 +1,3 @@
-import { deepClone } from "../../utils/deepClone.js"
 import type {
     DynamicParserContext,
     ParseError,
@@ -58,7 +57,7 @@ export namespace Unenclosed {
                 context.spaceRoot
             )
         }
-        return deepClone(cache[name])
+        return cache[name]
     }
 
     const maybeParseUnenclosedLiteral = (token: string) => {
