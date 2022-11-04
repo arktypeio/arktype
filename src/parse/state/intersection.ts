@@ -6,7 +6,6 @@ import type {
     AttributeKey,
     Attributes,
     AttributeTypes,
-    BranchUnion,
     ContradictableKey,
     ContradictionKind,
     Contradictions,
@@ -134,16 +133,8 @@ const intersectors: IntersectorsByKey = {
         return intersectedProps
     },
     branches: (left, right) => {
-        if (left[0] === "&") {
-            if (right[0] === "&") {
-                return [...left, ...(right.slice(1) as BranchUnion[])]
-            }
-            return [...left, right]
-        }
-        if (right[0] === "&") {
-            return [...right, left]
-        }
-        return ["&", left, right]
+        // TODO: Fix
+        return left
     },
     contradictions: (left, right) => {
         const result = { ...left }

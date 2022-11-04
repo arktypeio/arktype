@@ -27,11 +27,8 @@ export type Contradictions = {
         : true
 }
 
-export type AttributeBranches = BranchUnion | BranchIntersection
-
-export type BranchUnion = readonly ["|", ...(Attributes | BranchIntersection)[]]
-
-export type BranchIntersection = readonly ["&", ...BranchUnion[]]
+// TODO: Narrow which attributes can discriminate
+export type AttributeBranches = [Attributes, Attributes][]
 
 export type Attributes = Partial<AttributeTypes>
 
