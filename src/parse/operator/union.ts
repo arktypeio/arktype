@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* eslint-disable max-lines-per-function */
 import type { maybePush } from "../common.js"
 import type { Attributes, keySet } from "../state/attributes.js"
@@ -41,218 +42,222 @@ export namespace Union {
             return s
         }
         s.branches.union.push(s.root)
-        s.root = discriminate(s.branches.union)
+        s.root = union(s.branches.union)
         delete s.branches.union
         return s
     }
 
-    type AppearancesByPath = Record<string, Record<string, number[]>>
-    type DiscriminatingPaths = Record<string, DiscriminatedBranchMap>
-    type DiscriminatedBranchMap = Record<number, BranchSet>
-    type BranchSet = Record<number, true>
-    type DiscriminatingPathsByDistinctValueCount = Record<number, string[]>
+    type DistributionPathMap = Record<string, BranchIndicesByValue>
+    type BranchIndicesByValue = Record<string, number[]>
+    type DiscriminantEntry = [path: string, discriminants: DiscriminantGraph]
+    type DiscriminantGraph = Record<number, DiscriminantNeighbors> & {
+        size: number
+    }
+    type DiscriminantNeighbors = Record<number, true>
 
-    const discriminate = (branches: Attributes[]): Attributes => {
-        const appearances: AppearancesByPath = {}
+    const union = (branches: Attributes[]): Attributes => {
+        const appearances: DistributionPathMap = {}
         for (const branch of branches) {
             addBranchPaths(appearances, branch)
         }
-        const discriminatingPaths: DiscriminatingPaths = {}
-        let discriminatingPathsByDistinctValueCount: DiscriminatingPathsByDistinctValueCount =
-            {}
+        const discriminantEntries = graphDiscriminants(
+            appearances,
+            branches.length
+        )
+        // TODO: No entries?
+        const [initialPath, initialDiscriminants] = discriminantEntries.shift()!
+        const undiscriminated = substractDiscriminants(
+            initializeUndiscriminated(branches.length),
+            initialDiscriminants
+        )
+        const optimalDiscriminantSequence = [
+            initialPath,
+            ...discriminate(undiscriminated, discriminantEntries)
+        ]
+
+        // // const root: Attributes = {}
+        // // const value = values[0]
+        // // const branchAppearances = pathAppearances[value]
+        // // if (branchAppearances.length === branches.length) {
+        // //     addAtPath(root, path, value)
+        // // } else {
+        // //     for (const branchIndex of branchAppearances) {
+        // //         addAtPath(discriminatedBranches[branchIndex], path, value)
+        // //     }
+        // // }
+        return {
+            branches: []
+        }
+    }
+
+    const graphDiscriminants = (
+        appearances: DistributionPathMap,
+        branchCount: number
+    ): DiscriminantEntry[] => {
+        const discriminantEntries: DiscriminantEntry[] = []
+        const maxPossibleSize = branchCount * (branchCount - 1)
         for (const path in appearances) {
             const pathAppearances = appearances[path]
             const values = Object.keys(pathAppearances)
             if (values.length > 1) {
-                const discriminatedBranchMap: DiscriminatedBranchMap = {}
-                for (const value of values) {
-                    const branchesWithValue = pathAppearances[value]
-                    const branchesWithDisjointValue: BranchSet = {}
-                    for (const possibleDisjointValue of values) {
-                        if (possibleDisjointValue !== value) {
-                            const disjoinedBranchIndices =
-                                pathAppearances[possibleDisjointValue]
-                            for (const i of disjoinedBranchIndices) {
-                                branchesWithDisjointValue[i] = true
+                const graph: DiscriminantGraph = { size: 0 }
+                for (
+                    let valueIndex = 0;
+                    valueIndex < values.length;
+                    valueIndex++
+                ) {
+                    const branchesWithValue =
+                        pathAppearances[values[valueIndex]]
+                    const discriminantNeighbors: DiscriminantNeighbors = {}
+                    for (
+                        let neighboringValueIndex = 0;
+                        neighboringValueIndex < values.length;
+                        neighboringValueIndex++
+                    ) {
+                        if (valueIndex !== neighboringValueIndex) {
+                            for (const branchIndex of pathAppearances[
+                                values[neighboringValueIndex]
+                            ]) {
+                                discriminantNeighbors[branchIndex] = true
+                                graph.size++
                             }
                         }
                     }
                     for (const branchIndex of branchesWithValue) {
-                        discriminatedBranchMap[branchIndex] =
-                            branchesWithDisjointValue
+                        graph[branchIndex] = discriminantNeighbors
                     }
                 }
-                discriminatingPaths[path] = discriminatedBranchMap
-                if (values.length === branches.length) {
-                    // If the value is disjoint across all branches, it is
-                    // sufficient to discriminate the union by itself, so we can
-                    // ignore all other discriminating paths and stop looping.
-                    discriminatingPathsByDistinctValueCount = {
-                        [values.length]: [path]
-                    }
-                    break
-                } else {
-                    discriminatingPathsByDistinctValueCount[values.length] ??=
-                        []
-                    discriminatingPathsByDistinctValueCount[values.length].push(
-                        path
-                    )
+                const pathEntry: DiscriminantEntry = [path, graph]
+                if (graph.size === maxPossibleSize) {
+                    return [pathEntry]
                 }
-            }
-        }
-        // TODO: Case where no discriminating paths
-        const discriminatingValueCounts = Object.keys(
-            discriminatingPathsByDistinctValueCount
-        )
-            .map((lengthKey) => Number(lengthKey))
-            .sort((a, b) => b - a)
-        const bestInitialPath =
-            discriminatingPathsByDistinctValueCount[
-                discriminatingValueCounts[discriminatingValueCounts.length - 1]
-            ][0]
-        let undiscriminated = substractDiscriminatedBranchMap(
-            initializeUndiscriminated(branches.length),
-            discriminatingPaths[bestInitialPath]
-        )
-        const bestTraversal = [bestInitialPath]
-        delete discriminatingPaths[bestInitialPath]
-        while (Object.keys(undiscriminated).length) {
-            let bestPath
-            let bestResult: DiscriminatedBranchDifference | undefined
-            for (const path in discriminatingPaths) {
-                const candidate = substractDiscriminatedBranchMap(
-                    undiscriminated,
-                    discriminatingPaths[path]
-                )
                 if (
-                    candidate.count <
-                    (bestResult ? bestResult.count : undiscriminated.count)
+                    discriminantEntries[0] &&
+                    graph.size > discriminantEntries[0][1].size
                 ) {
-                    bestPath = path
-                    bestResult = candidate
-                    if (candidate.count === 0) {
-                        break
-                    }
-                } else if (candidate.count === undiscriminated.count) {
-                    delete discriminatingPaths[path]
+                    discriminantEntries.unshift(pathEntry)
+                } else {
+                    discriminantEntries.push(pathEntry)
                 }
-                // TODO: Should update discriminatingPaths to reflect current discriminating? Could be cleaner with loop.
-            }
-            if (bestPath) {
-                undiscriminated = bestResult!
-                bestTraversal.push(bestPath)
             }
         }
-        // const root: Attributes = {}
-        // const value = values[0]
-        // const branchAppearances = pathAppearances[value]
-        // if (branchAppearances.length === branches.length) {
-        //     addAtPath(root, path, value)
-        // } else {
-        //     for (const branchIndex of branchAppearances) {
-        //         addAtPath(discriminatedBranches[branchIndex], path, value)
-        //     }
-        // }
-        return {
-            branches: []
+        return discriminantEntries
+    }
+
+    const discriminate = (
+        undiscriminated: DiscriminantGraph,
+        discriminantEntries: DiscriminantEntry[]
+    ) => {
+        let currentMinCount = undiscriminated.size
+        const nextDiscriminantEntries: DiscriminantEntry[] = []
+        for (const [path, discriminants] of discriminantEntries) {
+            const candidate = substractDiscriminants(
+                undiscriminated,
+                discriminants
+            )
+            if (candidate.size < currentMinCount) {
+                nextDiscriminantEntries.unshift([path, candidate.graph])
+                currentMinCount = candidate.size
+                if (candidate.size === 0) {
+                    optimalDiscriminantSequence.push(path)
+                    return optimalDiscriminantSequence
+                }
+            } else if (candidate.size < undiscriminated.size) {
+                nextDiscriminantEntries.push([path, candidate.graph])
+            }
         }
     }
 
     const addAtPath = (o: any, path: string, value: unknown) => {}
 
     const addBranchPaths = (
-        appearances: AppearancesByPath,
+        appearances: DistributionPathMap,
         branch: Attributes
     ) => {}
 
-    type UndiscriminatedBranches = Record<number, number[]>
-
-    const initializeUndiscriminated = (branchCount: number) => {
-        const undiscriminatedBranches: UndiscriminatedBranches = {}
+    const initializeUndiscriminated = (
+        branchCount: number
+    ): DiscriminantGraph => {
+        const graph: DiscriminantGraph = {
+            size: branchCount * (branchCount - 1)
+        }
         for (let i = 0; i < branchCount; i++) {
-            undiscriminatedBranches[i] = []
+            graph[i] = []
             for (let j = 0; j < branchCount; j++) {
                 if (i !== j) {
-                    undiscriminatedBranches[i].push(j)
+                    graph[i][j] = true
                 }
             }
         }
-        return undiscriminatedBranches
+        return graph
     }
 
-    type DiscriminatedBranchDifference = {
-        branches: UndiscriminatedBranches
-        count: number
-    }
-
-    const substractDiscriminatedBranchMap = (
-        undiscriminated: UndiscriminatedBranches,
-        discriminatedBranchMap: DiscriminatedBranchMap
+    const substractDiscriminants = (
+        undiscriminated: DiscriminantGraph,
+        discriminants: DiscriminantGraph
     ): DiscriminatedBranchDifference => {
-        const branches: UndiscriminatedBranches = {}
+        const difference: DiscriminantGraph = {}
         let count = 0
-        for (const branchIndex in discriminatedBranchMap) {
-            const discriminatedAtBranch = discriminatedBranchMap[branchIndex]
-            const remainingUndiscriminatedForBranch = undiscriminated[
-                branchIndex
-            ].filter((i) => !discriminatedAtBranch[i])
-            if (remainingUndiscriminatedForBranch.length) {
-                branches[branchIndex] = remainingUndiscriminatedForBranch
-                count += remainingUndiscriminatedForBranch.length
+        for (const branchIndex in discriminants) {
+            const undiscriminatedBranch = undiscriminated[branchIndex]
+            for (const neighborIndex in undiscriminatedBranch) {
+                if (!discriminants[branchIndex][neighborIndex]) {
+                    difference[branchIndex] ??= {}
+                    difference[branchIndex][neighborIndex] = true
+                    count++
+                }
             }
         }
-        return { branches, count }
+        return { graph: difference, count }
     }
 }
 
-type AppearancesByPath = Record<string, Record<string, number[]>>
+// export const testBranches: Attributes[] = [
+//     { type: "dictionary", props: { a: { type: "string" } } },
+//     {
+//         type: "dictionary",
+//         props: { a: { type: "string" }, c: { type: "number" } },
+//         requiredKeys: { a: true }
+//     },
+//     {
+//         type: "dictionary",
+//         props: { a: { type: "number" }, b: { type: "boolean" } }
+//     }
+// ]
 
-export const testBranches: Attributes[] = [
-    { type: "dictionary", props: { a: { type: "string" } } },
-    {
-        type: "dictionary",
-        props: { a: { type: "string" }, c: { type: "number" } },
-        requiredKeys: { a: true }
-    },
-    {
-        type: "dictionary",
-        props: { a: { type: "number" }, b: { type: "boolean" } }
-    }
-]
+// export const goal: AppearancesByPath = {
+//     type: {
+//         dictionary: [0, 1, 2]
+//     },
+//     "props/a/type": {
+//         string: [0, 1],
+//         number: [2]
+//     },
+//     "props/b/type": {
+//         boolean: [2]
+//     },
+//     "props/c/type": {
+//         number: [1]
+//     },
+//     "props/requiredKeys/a": {
+//         true: [1]
+//     }
+// }
 
-export const goal: AppearancesByPath = {
-    type: {
-        dictionary: [0, 1, 2]
-    },
-    "props/a/type": {
-        string: [0, 1],
-        number: [2]
-    },
-    "props/b/type": {
-        boolean: [2]
-    },
-    "props/c/type": {
-        number: [1]
-    },
-    "props/requiredKeys/a": {
-        true: [1]
-    }
-}
-
-const discriminatingPaths: Record<
-    string,
-    Record<number, Record<number, true>>
-> = {
-    "props/a/type": {
-        0: { 2: true, 3: true }, // 0: {1: true}
-        1: { 2: true, 3: true }, // 1: {0: true}
-        2: { 0: true, 1: true }, // 2: {3: true}
-        3: { 0: true, 1: true } // 3: {2: true}
-    },
-    "props/b/type": {
-        0: { 1: true, 3: true },
-        1: { 0: true, 2: true },
-        2: { 1: true, 3: true },
-        3: { 0: true, 2: true }
-    }
-}
+// const discriminatingPaths: Record<
+//     string,
+//     Record<number, Record<number, true>>
+// > = {
+//     "props/a/type": {
+//         0: { 2: true, 3: true }, // 0: {1: true}
+//         1: { 2: true, 3: true }, // 1: {0: true}
+//         2: { 0: true, 1: true }, // 2: {3: true}
+//         3: { 0: true, 1: true } // 3: {2: true}
+//     },
+//     "props/b/type": {
+//         0: { 1: true, 3: true },
+//         1: { 0: true, 2: true },
+//         2: { 1: true, 3: true },
+//         3: { 0: true, 2: true }
+//     }
+// }
