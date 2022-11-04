@@ -117,10 +117,15 @@ importers:
             "@arktype/runtime": workspace:*
             arktype: workspace:*
             ts-morph: 16.0.0
+            ts-morph-ts-4.7: npm:ts-morph@15.0.0
+            tsconfig-paths: 4.1.0
         dependencies:
             "@arktype/runtime": link:../runtime
             arktype: link:../..
             ts-morph: 16.0.0
+        devDependencies:
+            ts-morph-ts-4.7: /ts-morph/15.0.0
+            tsconfig-paths: 4.1.0
 
 packages:
     /@algolia/autocomplete-core/1.7.1:
@@ -4619,6 +4624,18 @@ packages:
             }
         engines: { node: ">=10.13.0" }
         dev: false
+
+    /@ts-morph/common/0.15.0:
+        resolution:
+            {
+                integrity: sha512-QefRbadcwfBnd3HWrltpjRJprHgeKfQsnbyGbRF8pEjMqISAljJwq4wfRETxxojsmN4GWuJv3PWG+W7kBIHMMw==
+            }
+        dependencies:
+            fast-glob: 3.2.12
+            minimatch: 5.1.0
+            mkdirp: 1.0.4
+            path-browserify: 1.0.1
+        dev: true
 
     /@ts-morph/common/0.17.0:
         resolution:
@@ -10273,7 +10290,6 @@ packages:
             }
         engines: { node: ">=6" }
         hasBin: true
-        dev: false
 
     /jsonfile/4.0.0:
         resolution:
@@ -14503,6 +14519,16 @@ packages:
             }
         dev: false
 
+    /ts-morph/15.0.0:
+        resolution:
+            {
+                integrity: sha512-OZkg0TI1h6FVe8DZXyBo6p7NfCN9EZZkkA736f243KzQ3cypYWtaLc9eyNn/JH/fWYfQ4d6wIA4oM0vElRTGcQ==
+            }
+        dependencies:
+            "@ts-morph/common": 0.15.0
+            code-block-writer: 11.0.3
+        dev: true
+
     /ts-morph/16.0.0:
         resolution:
             {
@@ -14557,6 +14583,18 @@ packages:
         dependencies:
             "@types/json5": 0.0.29
             json5: 1.0.1
+            minimist: 1.2.7
+            strip-bom: 3.0.0
+        dev: true
+
+    /tsconfig-paths/4.1.0:
+        resolution:
+            {
+                integrity: sha512-AHx4Euop/dXFC+Vx589alFba8QItjF+8hf8LtmuiCwHyI4rHXQtOOENaM8kvYf5fR0dRChy3wzWIZ9WbB7FWow==
+            }
+        engines: { node: ">=6" }
+        dependencies:
+            json5: 2.2.1
             minimist: 1.2.7
             strip-bom: 3.0.0
         dev: true
