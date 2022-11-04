@@ -1,5 +1,7 @@
 /* eslint-disable max-lines */
 /* eslint-disable max-lines-per-function */
+import type { subtype } from "../../utils/generics.js"
+import { pushKey } from "../../utils/generics.js"
 import type { AttributeKey, Attributes } from "./attributes.js"
 
 type DistributionPathMap = Record<string, BranchIndicesByValue>
@@ -115,6 +117,11 @@ const discriminate = (
     ]
 }
 
+type DiscriminatableKey = subtype<
+    AttributeKey,
+    "type" | "value" | "props" | "baseProp"
+>
+
 const addBranchPaths = (
     result: DistributionPathMap,
     attributes: Attributes,
@@ -123,20 +130,24 @@ const addBranchPaths = (
 ) => {
     let k: AttributeKey
     for (k in attributes) {
-        const pathWithKey = `${path}/${k}`
         if (k === "type" || k === "value") {
             const value = String(attributes[k])
-            result[pathWithKey] ??= {}
-            result[pathWithKey][value] ??= []
-            result[pathWithKey][value].push(branchIndex)
+            result[path] ??= {}
+            result[path][value] ??= []
+            result[path][value].push(branchIndex)
         } else if (k === "baseProp") {
-            addBranchPaths(result, attributes[k]!, pathWithKey, branchIndex)
+            addBranchPaths(
+                result,
+                attributes[k]!,
+                pushKey(path, "baseProp"),
+                branchIndex
+            )
         } else if (k === "props") {
             for (const propKey in attributes[k]) {
                 addBranchPaths(
                     result,
                     attributes[k]![propKey],
-                    `${pathWithKey}/${propKey}`,
+                    pushKey(path, "props." + propKey),
                     branchIndex
                 )
             }

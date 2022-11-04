@@ -82,3 +82,5 @@ export const withoutLastKey = (path: string, delimiter = ".") => {
     const lastDelimiterIndex = path.lastIndexOf(delimiter)
     return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }
+
+export type subtype<t, u extends t> = u
