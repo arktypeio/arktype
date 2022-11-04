@@ -8,16 +8,21 @@ import type {
     Attributes
 } from "./attributes.js"
 
-type DistributionPathMap = Record<string, BranchIndicesByValue>
+type PathDistribution = Record<string, AttributeDistribution>
+type AttributeDistribution = { [key in AttributeKey]?: BranchIndicesByValue }
 type BranchIndicesByValue = Record<string, number[]>
-type DiscriminantEntry = [path: string, discriminants: DiscriminantGraph]
+type DiscriminantEntry = [
+    path: string,
+    key: AttributeKey,
+    discriminants: DiscriminantGraph
+]
 type DiscriminantGraph = Record<number, DiscriminantNeighbors> & {
     size: number
 }
 type DiscriminantNeighbors = Record<number, true>
 
 export const union = (branches: Attributes[]): Attributes => {
-    const distribution: DistributionPathMap = {}
+    const distribution: PathDistribution = {}
     for (let i = 0; i < branches.length; i++) {
         addBranchPaths(distribution, branches[i], "", i)
     }
@@ -29,54 +34,63 @@ export const union = (branches: Attributes[]): Attributes => {
         branches: createDiscriminatedBranches(
             initializeUndiscriminated(branches.length),
             discriminantEntries,
-            distribution
+            distribution,
+            branches
         )
     }
 }
 
 const graphDiscriminants = (
-    appearances: DistributionPathMap,
+    distribution: PathDistribution,
     branchCount: number
 ): DiscriminantEntry[] => {
     const discriminantEntries: DiscriminantEntry[] = []
     const maxPossibleSize = branchCount * (branchCount - 1)
-    for (const path in appearances) {
-        const pathAppearances = appearances[path]
-        const values = Object.keys(pathAppearances)
-        if (values.length > 1) {
-            const graph: DiscriminantGraph = { size: 0 }
-            for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
-                const branchesWithValue = pathAppearances[values[valueIndex]]
-                const discriminantNeighbors: DiscriminantNeighbors = {}
+    for (const path in distribution) {
+        const pathAttributes = distribution[path]
+        let k: AttributeKey
+        for (k in pathAttributes) {
+            const pathAttribute = pathAttributes[k]!
+            const values = Object.keys(pathAttribute)
+            if (values.length > 1) {
+                const graph: DiscriminantGraph = { size: 0 }
                 for (
-                    let neighboringValueIndex = 0;
-                    neighboringValueIndex < values.length;
-                    neighboringValueIndex++
+                    let valueIndex = 0;
+                    valueIndex < values.length;
+                    valueIndex++
                 ) {
-                    if (valueIndex !== neighboringValueIndex) {
-                        for (const branchIndex of pathAppearances[
-                            values[neighboringValueIndex]
-                        ]) {
-                            discriminantNeighbors[branchIndex] = true
-                            graph.size += branchesWithValue.length
+                    const branchesWithValue = pathAttribute[values[valueIndex]]
+                    const discriminantNeighbors: DiscriminantNeighbors = {}
+                    for (
+                        let neighboringValueIndex = 0;
+                        neighboringValueIndex < values.length;
+                        neighboringValueIndex++
+                    ) {
+                        if (valueIndex !== neighboringValueIndex) {
+                            for (const branchIndex of pathAttribute[
+                                values[neighboringValueIndex]
+                            ]) {
+                                discriminantNeighbors[branchIndex] = true
+                                graph.size += branchesWithValue.length
+                            }
                         }
                     }
+                    for (const branchIndex of branchesWithValue) {
+                        graph[branchIndex] = discriminantNeighbors
+                    }
                 }
-                for (const branchIndex of branchesWithValue) {
-                    graph[branchIndex] = discriminantNeighbors
+                const pathEntry: DiscriminantEntry = [path, k, graph]
+                if (graph.size === maxPossibleSize) {
+                    return [pathEntry]
                 }
-            }
-            const pathEntry: DiscriminantEntry = [path, graph]
-            if (graph.size === maxPossibleSize) {
-                return [pathEntry]
-            }
-            if (
-                discriminantEntries[0] &&
-                graph.size > discriminantEntries[0][1].size
-            ) {
-                discriminantEntries.unshift(pathEntry)
-            } else {
-                discriminantEntries.push(pathEntry)
+                if (
+                    discriminantEntries[0] &&
+                    graph.size > discriminantEntries[0][2].size
+                ) {
+                    discriminantEntries.unshift(pathEntry)
+                } else {
+                    discriminantEntries.push(pathEntry)
+                }
             }
         }
     }
@@ -85,53 +99,57 @@ const graphDiscriminants = (
 
 const createDiscriminatedBranches = (
     undiscriminated: DiscriminantGraph,
-
     discriminantEntries: DiscriminantEntry[],
-    distribution: DistributionPathMap
+    distribution: PathDistribution,
+    originalBranches: Attributes[]
 ) => {
     const nextEntry = discriminantEntries.shift()
     if (!nextEntry) {
         return {}
     }
-    const valuesAtPath = distribution[nextEntry[0]]
+    const valuesAtPath = distribution[nextEntry[0]][nextEntry[1]]
     const branches: mutable<AttributeBranches[1]> = {}
     for (const value in valuesAtPath) {
-        if (valuesAtPath[value].length === 1) {
-            branches[value] = valuesAtPath[value][0]
+        const branchIndices = valuesAtPath[value]
+        if (branchIndices.length === 1) {
+            branches[value] = originalBranches[branchIndices[0]] as any
         } else {
             branches[value] = discriminate(
-                substractDiscriminants(undiscriminated, nextEntry[1]),
+                substractDiscriminants(undiscriminated, nextEntry[2]),
                 discriminantEntries,
-                distribution
+                distribution,
+                originalBranches
             )
         }
     }
-    return [nextEntry[0], branches]
+    return [nextEntry[0], { [nextEntry[1]]: branches }]
 }
 
 const discriminate = (
     undiscriminated: DiscriminantGraph,
     discriminantEntries: DiscriminantEntry[],
-    distribution: DistributionPathMap
-): any => {
+    distribution: PathDistribution,
+    originalBranches: Attributes[]
+) => {
     let currentMinCount = undiscriminated.size
     const nextDiscriminantEntries: DiscriminantEntry[] = []
-    for (const [path, discriminants] of discriminantEntries) {
+    for (const [path, key, discriminants] of discriminantEntries) {
         const candidate = substractDiscriminants(undiscriminated, discriminants)
         if (candidate.size < currentMinCount) {
-            nextDiscriminantEntries.unshift([path, candidate])
+            nextDiscriminantEntries.unshift([path, key, candidate])
             currentMinCount = candidate.size
             if (candidate.size === 0) {
                 break
             }
         } else if (candidate.size < undiscriminated.size) {
-            nextDiscriminantEntries.push([path, candidate])
+            nextDiscriminantEntries.push([path, key, candidate])
         }
     }
     return createDiscriminatedBranches(
         undiscriminated,
         nextDiscriminantEntries,
-        distribution
+        distribution,
+        originalBranches
     )
 }
 
@@ -141,7 +159,7 @@ type DiscriminatableKey = subtype<
 >
 
 const addBranchPaths = (
-    result: DistributionPathMap,
+    result: PathDistribution,
     attributes: Attributes,
     path: string,
     branchIndex: number
@@ -151,8 +169,9 @@ const addBranchPaths = (
         if (k === "type" || k === "value") {
             const value = String(attributes[k])
             result[path] ??= {}
-            result[path][value] ??= []
-            result[path][value].push(branchIndex)
+            result[path][k] ??= {}
+            result[path][k]![value] ??= []
+            result[path][k]![value].push(branchIndex)
         } else if (k === "baseProp") {
             addBranchPaths(
                 result,

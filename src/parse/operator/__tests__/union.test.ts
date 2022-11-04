@@ -6,30 +6,61 @@ import { Unenclosed } from "../../operand/unenclosed.js"
 import type { Attributes } from "../../state/attributes.js"
 import { union } from "../../state/union.js"
 
-export const testBranches: Attributes[] = [
-    {
-        type: "dictionary",
-        props: { a: { type: "string" }, c: { type: "bigint" } }
-    },
-    {
-        type: "dictionary",
-        props: { a: { type: "string" }, c: { type: "number" } },
-        requiredKeys: { a: true }
-    },
-    {
-        type: "dictionary",
-        props: { a: { type: "number" }, b: { type: "boolean" } }
-    }
-]
-
 describe("union", () => {
     test("discriminate", () => {
+        const testBranches: Attributes[] = [
+            {
+                type: "dictionary",
+                props: { a: { type: "string" }, c: { type: "bigint" } }
+            },
+            {
+                type: "dictionary",
+                props: { a: { type: "string" }, c: { type: "number" } },
+                requiredKeys: { a: true }
+            },
+            {
+                type: "dictionary",
+                props: { a: { type: "number" }, b: { type: "boolean" } }
+            }
+        ]
         attest(union(testBranches)).snap({
             branches: [
                 "props.a",
-                { string: ["props.c", { bigint: 0, number: 1 }], number: 2 }
+                {
+                    type: {
+                        string: [
+                            "props.c",
+                            {
+                                type: {
+                                    bigint: {
+                                        type: "dictionary",
+                                        props: {
+                                            a: { type: "string" },
+                                            c: { type: "bigint" }
+                                        }
+                                    },
+                                    number: {
+                                        type: "dictionary",
+                                        props: {
+                                            a: { type: "string" },
+                                            c: { type: "number" }
+                                        },
+                                        requiredKeys: { a: true }
+                                    }
+                                }
+                            }
+                        ],
+                        number: {
+                            type: "dictionary",
+                            props: {
+                                a: { type: "number" },
+                                b: { type: "boolean" }
+                            }
+                        }
+                    }
+                }
             ]
-        })
+        } as any)
     })
     describe("infer", () => {
         test("two types", () => {
