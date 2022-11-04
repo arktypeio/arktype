@@ -1,6 +1,6 @@
 /* eslint-disable max-lines-per-function */
 import type { maybePush } from "../common.js"
-import type { Attributes } from "../state/attributes.js"
+import type { Attributes, keySet } from "../state/attributes.js"
 import { State } from "../state/state.js"
 import type { LeftBound } from "./bounds/left.js"
 import { Intersection } from "./intersection.js"
@@ -100,35 +100,48 @@ export namespace Union {
             }
         }
         // TODO: Case where no discriminating paths
-        const bestDiscriminatingValueCount = Object.keys(
+        const bestInitialDiscriminatingValueCount = Object.keys(
             discriminatingPathsByDistinctValueCount
         )
             .map((lengthKey) => Number(lengthKey))
             .sort()
             .slice(-1)[0]
-        const bestPath =
+        const bestInitialPath =
             discriminatingPathsByDistinctValueCount[
-                bestDiscriminatingValueCount
+                bestInitialDiscriminatingValueCount
             ][0]
-        const bestTraversal = [bestPath]
-        const undiscriminatedBranches: DiscriminatedBranchMap = {}
-        for (const branchIndex in discriminatingPaths[bestPath]) {
-        }
-
-        while (discriminated)
-            // const root: Attributes = {}
-            // const value = values[0]
-            // const branchAppearances = pathAppearances[value]
-            // if (branchAppearances.length === branches.length) {
-            //     addAtPath(root, path, value)
-            // } else {
-            //     for (const branchIndex of branchAppearances) {
-            //         addAtPath(discriminatedBranches[branchIndex], path, value)
-            //     }
-            // }
-            return {
-                branches: []
+        const undiscriminated = initializeUndiscriminated(branches.length)
+        const bestTraversal = [bestInitialPath]
+        let currentPath: string | undefined = bestInitialPath
+        while (Object.keys(undiscriminated).length) {
+            if (!currentPath) {
+                currentPath = ""
             }
+            const discriminated = discriminatingPaths[currentPath]
+            for (const branchIndex in discriminated) {
+                undiscriminated[branchIndex] = undiscriminated[
+                    branchIndex
+                ].filter((i) => !discriminated[i])
+                if (!undiscriminated[branchIndex].length) {
+                    delete undiscriminated[branchIndex]
+                }
+            }
+            delete discriminatingPaths[currentPath]
+            currentPath = undefined
+        }
+        // const root: Attributes = {}
+        // const value = values[0]
+        // const branchAppearances = pathAppearances[value]
+        // if (branchAppearances.length === branches.length) {
+        //     addAtPath(root, path, value)
+        // } else {
+        //     for (const branchIndex of branchAppearances) {
+        //         addAtPath(discriminatedBranches[branchIndex], path, value)
+        //     }
+        // }
+        return {
+            branches: []
+        }
     }
 
     const addAtPath = (o: any, path: string, value: unknown) => {}
@@ -137,6 +150,19 @@ export namespace Union {
         appearances: AppearancesByPath,
         branch: Attributes
     ) => {}
+
+    const initializeUndiscriminated = (branchCount: number) => {
+        const undiscriminatedBranches: Record<number, number[]> = {}
+        for (let i = 0; i < branchCount; i++) {
+            undiscriminatedBranches[i] = []
+            for (let j = 0; j < branchCount; j++) {
+                if (i !== j) {
+                    undiscriminatedBranches[i].push(j)
+                }
+            }
+        }
+        return undiscriminatedBranches
+    }
 }
 
 type AppearancesByPath = Record<string, Record<string, number[]>>
@@ -173,26 +199,15 @@ export const goal: AppearancesByPath = {
     }
 }
 
-const discriminatingPaths: Record<string, Record<number, string>[]> = {
-    "props/a/type": [
-        { 0: "string", 1: "string" },
-        { 2: "number", 3: "number" }
-    ],
-    "props/b/type": [
-        { 0: "string", 2: "string" },
-        { 1: "number", 3: "number" }
-    ]
-}
-
-const discriminatingPaths2: Record<
+const discriminatingPaths: Record<
     string,
     Record<number, Record<number, true>>
 > = {
     "props/a/type": {
-        0: { 2: true, 3: true },
-        1: { 2: true, 3: true },
-        2: { 0: true, 1: true },
-        3: { 0: true, 1: true }
+        0: { 2: true, 3: true }, // 0: {1: true}
+        1: { 2: true, 3: true }, // 1: {0: true}
+        2: { 0: true, 1: true }, // 2: {3: true}
+        3: { 0: true, 1: true } // 3: {2: true}
     },
     "props/b/type": {
         0: { 1: true, 3: true },
