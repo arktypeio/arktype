@@ -1,20 +1,12 @@
 /* eslint-disable max-lines-per-function */
-/**
- * Extract them via ts-morph in isolation of the rest of the code,
- * run them and get the results. If there is an error,
- * e.g. because they reference a variable that is defined outside the type
- * call or use another import, throw an error. type/space calls should be
- * self-contained to be precompilable.
- */
+
 import type { VariableStatement } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
 import ts from "typescript"
 import { type } from "../../../src/type.js"
-import { addNumber } from "./atcAddNumberEx.js"
 
-export const findArktypeReferenceCalls = (paths: string[]): string => {
+export const findArktypeReferenceCalls = (paths: string[]) => {
     const project = new Project({})
-    const output: string[] = []
     for (const path of paths) {
         project.addSourceFileAtPathIfExists(path)
     }
@@ -34,42 +26,26 @@ export const findArktypeReferenceCalls = (paths: string[]): string => {
             const functionName = callExpression.getFirstDescendantByKindOrThrow(
                 SyntaxKind.Identifier
             )
-            const args = callExpression.getDescendantsOfKind(
-                SyntaxKind.NumericLiteral
-            )
-
-            if (functionName.getText() === "addNumber") {
-                const returnValue = addNumber(
-                    ...(args.map((param) =>
-                        eval(ts.transpile(param.getText()))
-                    ) as [number, number])
-                )
-
-                callExpression.replaceWithText(returnValue.toString())
-            } else if (functionName.getText() === "type") {
-                const args = callExpression.getArguments()
-                console.log(
-                    type(
-                        ...(args.map((arg) =>
-                            eval(ts.transpile(JSON.stringify(arg.getText())))
-                        ) as Parameters<typeof type>)
-                    )
-                )
+            if (functionName.getText() === "type") {
                 // evalArg function plz
-                // const returnValue = type(
-                //     ...(args.map((arg) =>
-                //         eval(ts.transpile(JSON.stringify(arg.getText())))
-                //     ) as Parameters<typeof type>)
-                // )
-                // console.log(returnValue)
-                // callExpression.replaceWithText(returnValue.toString())
+
+                const returnValue = type(
+                    ...(callExpression.getArguments().map((arg) => {
+                        return eval(ts.transpile(`(${arg.getText()})`))
+                    }) as Parameters<typeof type>)
+                )
+
+                const stringifiedAttributes = JSON.stringify(
+                    returnValue.attributes,
+                    (key, val) =>
+                        typeof val === "function" ? String(val) : val
+                )
+                callExpression.replaceWithText(stringifiedAttributes)
             }
 
-            // file.emitSync()
+            file.emitSync()
         }
     }
-
-    return output.join("\n")
 }
 
 const runnerScript = () => {
