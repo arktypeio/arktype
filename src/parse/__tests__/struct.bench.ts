@@ -1,7 +1,7 @@
 import { bench, suite } from "@arktype/test"
 import { type } from "../../api.js"
 
-suite("parse/obj", () => {
+suite("parse/struct", () => {
     bench("dictionary", () => {
         const dict = type({
             a: "string[]",
@@ -9,8 +9,8 @@ suite("parse/obj", () => {
             c: { nested: "boolean[]" }
         })
     })
-        .median()
-        .type()
+        // .median()
+        .type([960, "instantiations"])
 
     bench("dictionary with optional keys", () => {
         const dict = type({
@@ -19,12 +19,12 @@ suite("parse/obj", () => {
             "c?": { "nested?": "boolean[]" }
         })
     })
-        .median()
-        .type()
+        // .median()
+        .type([990, "instantiations"])
 
     bench("tuple", () => {
         const tuple = type(["string[]", "number[]", ["boolean[]"]])
     })
-        .median()
-        .type()
+        // .median()
+        .type([1320, "instantiations"])
 })

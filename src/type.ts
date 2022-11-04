@@ -1,11 +1,11 @@
 import type { ArktypeConfig } from "./arktype.js"
 import { Arktype } from "./arktype.js"
-import type { inferAst } from "./ast/infer.js"
-import type { validate } from "./ast/validate.js"
 import type { ParseError } from "./parse/common.js"
 import { parseRoot } from "./parse/parse.js"
 import type { ArktypeSpace } from "./space.js"
 import { space } from "./space.js"
+import type { inferAst } from "./traverse/infer.js"
+import type { validate } from "./traverse/validate.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 

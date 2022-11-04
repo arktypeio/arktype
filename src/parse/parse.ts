@@ -2,6 +2,8 @@ import type {
     dictionary,
     DynamicTypeName,
     evaluate,
+    isAny,
+    isTopType,
     mutable
 } from "../internal.js"
 import {
@@ -48,7 +50,13 @@ const parseDefinition = (
 type parseDefinition<
     def,
     context extends StaticParserContext
-> = def extends string
+> = isTopType<def> extends true
+    ? ParseError<
+          buildUninferableDefinitionMessage<
+              isAny<def> extends true ? "any" : "unknown"
+          >
+      >
+    : def extends string
     ? parseString<def, context>
     : def extends BadDefinitionType
     ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
@@ -62,6 +70,10 @@ export type BadDefinitionType =
     | bigint
     | Function
     | symbol
+
+export type buildUninferableDefinitionMessage<
+    typeName extends "any" | "unknown"
+> = `Cannot statically parse a definition inferred as ${typeName}. If the type you are trying to use is not known at compile time, use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
     actual: actual

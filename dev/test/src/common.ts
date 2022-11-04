@@ -142,12 +142,8 @@ const getFilter = (argsToCheck: string[]) => {
         checkArgsForParam(argsToCheck, "-f")
     if (filter) {
         if (filter.startsWith("/")) {
-            console.log(`Running benches at path '${filter}'...`)
             return filter.split("/").slice(1)
         } else {
-            console.log(
-                `Running benches including a segment named '${filter}'...`
-            )
             return filter
         }
     }
