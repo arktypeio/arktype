@@ -4,9 +4,6 @@ import type { BoundsAttribute } from "../operator/bounds/shared.js"
 import type { EmptyIntersectionResult } from "./intersection.js"
 import type { ValueAttribute } from "./value.js"
 
-// TODO: Should they all be strings? Could have objects represent unions and
-// arrays intersections, though not sure how often it'd work since branches with
-// sets of attributes are not mergeable
 type AtomicAttributeTypes = Readonly<{
     value: ValueAttribute
     type: TypeAttribute

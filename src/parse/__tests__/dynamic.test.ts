@@ -17,7 +17,7 @@ describe("dynamic", () => {
     test("uninferred aliases", () => {
         const s = space.dynamic({
             a: "str" + "ing[" + "]",
-            b: "a?"
+            "b?": "a"
         })
         // Types are inferred as unknown
         attest(s.a.infer).typed as unknown

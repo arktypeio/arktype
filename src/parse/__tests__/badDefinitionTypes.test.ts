@@ -11,7 +11,9 @@ describe("bad definition types", () => {
     })
     test("unknown", () => {
         // @ts-expect-error
-        attest(type({} as unknown)).type.errors.snap()
+        attest(type({} as unknown)).type.errors.snap(
+            "Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead."
+        )
     })
     test("undefined", () => {
         // @ts-expect-error

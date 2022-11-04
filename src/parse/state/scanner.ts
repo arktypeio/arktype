@@ -67,8 +67,8 @@ export namespace Scanner {
         appendTo?: string
     }
 
-    export const lookaheadIsTerminator: UntilCondition = (r: Scanner) =>
-        r.lookahead in terminatingChars
+    export const lookaheadIsTerminator: UntilCondition = (scanner: Scanner) =>
+        scanner.lookahead in terminatingChars
 
     export const comparatorStartChars = {
         "<": true,

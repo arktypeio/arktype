@@ -73,7 +73,7 @@ export type BadDefinitionType =
 
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"
-> = `Cannot statically parse a definition inferred as ${typeName}. If the type you are trying to use is not known at compile time, use 'type.dynamic(...)' instead.`
+> = `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
     actual: actual
