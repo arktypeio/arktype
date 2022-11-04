@@ -3,8 +3,29 @@ import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 import { Operand } from "../../operand/operand.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
+import type { Attributes } from "../../state/attributes.js"
+import { union } from "../../state/union.js"
+
+export const testBranches: Attributes[] = [
+    {
+        type: "dictionary",
+        props: { a: { type: "string" }, c: { type: "bigint" } }
+    },
+    {
+        type: "dictionary",
+        props: { a: { type: "string" }, c: { type: "number" } },
+        requiredKeys: { a: true }
+    },
+    {
+        type: "dictionary",
+        props: { a: { type: "number" }, b: { type: "boolean" } }
+    }
+]
 
 describe("union", () => {
+    describe("discriminate", () => {
+        attest(union(testBranches)).snap(["/props/a/type", "/props/c/type"])
+    })
     describe("infer", () => {
         test("two types", () => {
             attest(type("number|string").infer).typed as number | string
