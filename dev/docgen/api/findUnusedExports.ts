@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
-import { findPackageRoot, readPackageJson } from "@arktype/runtime"
 import type { ExportedDeclarations, Node, SourceFile, ts } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
 import { repoDirs } from "../../common.js"
+import { findPackageRoot, readPackageJson } from "../../runtime/src/api.js"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 const ignoreUnusedComment = "@ignore-unused"

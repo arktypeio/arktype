@@ -21,19 +21,20 @@ export const union = (branches: Attributes[]) => {
         distribution,
         branches.length
     )
-    const initialEntry = discriminantEntries.shift()
-    if (!initialEntry) {
-        return []
-    }
-    const undiscriminated = substractDiscriminants(
-        initializeUndiscriminated(branches.length),
-        initialEntry[1]
-    )
-    const optimalDiscriminantSequence = [
-        initialEntry[0],
-        ...discriminate(undiscriminated, discriminantEntries)
-    ]
-    return optimalDiscriminantSequence
+    return discriminantEntries
+    // const initialEntry = discriminantEntries.shift()
+    // if (!initialEntry) {
+    //     return []
+    // }
+    // const undiscriminated = substractDiscriminants(
+    //     initializeUndiscriminated(branches.length),
+    //     initialEntry[1]
+    // )
+    // const optimalDiscriminantSequence = [
+    //     initialEntry[0],
+    //     ...discriminate(undiscriminated, discriminantEntries)
+    // ]
+    // return optimalDiscriminantSequence
 }
 
 const graphDiscriminants = (
@@ -60,7 +61,7 @@ const graphDiscriminants = (
                             values[neighboringValueIndex]
                         ]) {
                             discriminantNeighbors[branchIndex] = true
-                            graph.size++
+                            graph.size += values.length
                         }
                     }
                 }

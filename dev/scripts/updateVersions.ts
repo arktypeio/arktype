@@ -1,5 +1,7 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { join } from "node:path"
+import { repoDirs } from "../common.js"
+import { docgen } from "../docgen/main.js"
 import {
     readFile,
     readJson,
@@ -7,9 +9,7 @@ import {
     shell,
     writeFile,
     writeJson
-} from "@arktype/runtime"
-import { repoDirs } from "../common.js"
-import { docgen } from "../docgen/main.js"
+} from "../runtime/src/api.js"
 
 const suffixedPackageEntries: [rootDir: string, suffix: string][] = []
 

@@ -1,3 +1,4 @@
+import type { ProjectOptions } from "ts-morph"
 import { Project } from "ts-morph"
 import { getAtTestConfig } from "../common.js"
 
@@ -9,9 +10,7 @@ export const forceCreateTsMorphProject = ({
     addFiles
 }: ForceGetTsProjectOptions = {}) => {
     const config = getAtTestConfig()
-    const tsConfigFilePath = config.tsconfig ? config.tsconfig : undefined
-    const project = new Project({
-        tsConfigFilePath,
+    const options: ProjectOptions = {
         compilerOptions: {
             diagnostics: true,
             noEmit: true,
@@ -19,8 +18,12 @@ export const forceCreateTsMorphProject = ({
             incremental: false
         },
         skipAddingFilesFromTsConfig: !addFiles
-    })
-    if (!tsConfigFilePath && addFiles) {
+    }
+    if (config.tsconfig) {
+        options.tsConfigFilePath = config.tsconfig
+    }
+    const project = new Project(options)
+    if (!config.tsconfig && addFiles) {
         project.addSourceFilesAtPaths(["**"])
     }
     return project
