@@ -1,8 +1,12 @@
 /* eslint-disable max-lines */
 /* eslint-disable max-lines-per-function */
-import type { subtype } from "../../utils/generics.js"
+import type { mutable, subtype } from "../../utils/generics.js"
 import { pushKey } from "../../utils/generics.js"
-import type { AttributeKey, Attributes } from "./attributes.js"
+import type {
+    AttributeBranches,
+    AttributeKey,
+    Attributes
+} from "./attributes.js"
 
 type DistributionPathMap = Record<string, BranchIndicesByValue>
 type BranchIndicesByValue = Record<string, number[]>
@@ -12,7 +16,7 @@ type DiscriminantGraph = Record<number, DiscriminantNeighbors> & {
 }
 type DiscriminantNeighbors = Record<number, true>
 
-export const union = (branches: Attributes[]) => {
+export const union = (branches: Attributes[]): Attributes => {
     const distribution: DistributionPathMap = {}
     for (let i = 0; i < branches.length; i++) {
         addBranchPaths(distribution, branches[i], "", i)
@@ -21,20 +25,13 @@ export const union = (branches: Attributes[]) => {
         distribution,
         branches.length
     )
-    return discriminantEntries
-    // const initialEntry = discriminantEntries.shift()
-    // if (!initialEntry) {
-    //     return []
-    // }
-    // const undiscriminated = substractDiscriminants(
-    //     initializeUndiscriminated(branches.length),
-    //     initialEntry[1]
-    // )
-    // const optimalDiscriminantSequence = [
-    //     initialEntry[0],
-    //     ...discriminate(undiscriminated, discriminantEntries)
-    // ]
-    // return optimalDiscriminantSequence
+    return {
+        branches: createDiscriminatedBranches(
+            initializeUndiscriminated(branches.length),
+            discriminantEntries,
+            distribution
+        )
+    }
 }
 
 const graphDiscriminants = (
@@ -61,7 +58,7 @@ const graphDiscriminants = (
                             values[neighboringValueIndex]
                         ]) {
                             discriminantNeighbors[branchIndex] = true
-                            graph.size += values.length
+                            graph.size += branchesWithValue.length
                         }
                     }
                 }
@@ -86,36 +83,56 @@ const graphDiscriminants = (
     return discriminantEntries
 }
 
+const createDiscriminatedBranches = (
+    undiscriminated: DiscriminantGraph,
+
+    discriminantEntries: DiscriminantEntry[],
+    distribution: DistributionPathMap
+) => {
+    const nextEntry = discriminantEntries.shift()
+    if (!nextEntry) {
+        return {}
+    }
+    const valuesAtPath = distribution[nextEntry[0]]
+    const branches: mutable<AttributeBranches[1]> = {}
+    for (const value in valuesAtPath) {
+        if (valuesAtPath[value].length === 1) {
+            branches[value] = valuesAtPath[value][0]
+        } else {
+            branches[value] = discriminate(
+                substractDiscriminants(undiscriminated, nextEntry[1]),
+                discriminantEntries,
+                distribution
+            )
+        }
+    }
+    return [nextEntry[0], branches]
+}
+
 const discriminate = (
     undiscriminated: DiscriminantGraph,
-    discriminantEntries: DiscriminantEntry[]
-): string[] => {
+    discriminantEntries: DiscriminantEntry[],
+    distribution: DistributionPathMap
+): any => {
     let currentMinCount = undiscriminated.size
     const nextDiscriminantEntries: DiscriminantEntry[] = []
     for (const [path, discriminants] of discriminantEntries) {
         const candidate = substractDiscriminants(undiscriminated, discriminants)
-        if (candidate.size === 0) {
-            return [path]
-        }
         if (candidate.size < currentMinCount) {
             nextDiscriminantEntries.unshift([path, candidate])
             currentMinCount = candidate.size
+            if (candidate.size === 0) {
+                break
+            }
         } else if (candidate.size < undiscriminated.size) {
             nextDiscriminantEntries.push([path, candidate])
         }
     }
-    const optimalEntry = nextDiscriminantEntries.shift()
-    if (!optimalEntry) {
-        return []
-    }
-    const [path, discriminants] = optimalEntry
-    return [
-        path,
-        ...discriminate(
-            substractDiscriminants(undiscriminated, discriminants),
-            nextDiscriminantEntries
-        )
-    ]
+    return createDiscriminatedBranches(
+        undiscriminated,
+        nextDiscriminantEntries,
+        distribution
+    )
 }
 
 type DiscriminatableKey = subtype<

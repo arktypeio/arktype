@@ -24,7 +24,12 @@ export const testBranches: Attributes[] = [
 
 describe("union", () => {
     test("discriminate", () => {
-        attest(union(testBranches)).snap()
+        attest(union(testBranches)).snap({
+            branches: [
+                "props.a",
+                { string: ["props.c", { bigint: 0, number: 1 }], number: 2 }
+            ]
+        })
     })
     describe("infer", () => {
         test("two types", () => {

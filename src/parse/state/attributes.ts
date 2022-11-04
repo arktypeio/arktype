@@ -27,8 +27,12 @@ export type Contradictions = {
         : true
 }
 
-// TODO: Narrow which attributes can discriminate
-export type AttributeBranches = [Attributes, Attributes][]
+export type AttributeBranches = readonly [
+    path: string,
+    attributesOrBranches: {
+        readonly [k in string]: Attributes | AttributeBranches
+    }
+]
 
 export type Attributes = AtomicAttributeTypes & ComposedAttributeTypes
 
