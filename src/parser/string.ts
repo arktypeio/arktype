@@ -19,7 +19,7 @@ export const parseString = (
             tryNaiveStringParse(definition, context) ??
             fullStringParse(definition, context)
     }
-    return cache[definition]
+    return cache[definition]!
 }
 
 export type parseString<

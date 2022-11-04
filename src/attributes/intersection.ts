@@ -152,8 +152,7 @@ const intersectors: IntersectorsByKey = {
             if (k === "never") {
                 result.never = true
             } else {
-                result[k] ??= []
-                left[k]!.push(right[k] as any)
+                result[k] ??= right[k] as any
             }
         }
         return result

@@ -1,12 +1,12 @@
-import type { deepImmutable, dictionary, DynamicTypeName } from "../internal.js"
+import type { dictionary, DynamicTypeName } from "../internal.js"
 import type { Enclosed } from "../parser/operand/enclosed.js"
-import type { BoundsAttribute } from "./bounds.js"
+import type { EmptyIntersectionResult } from "./intersection.js"
 import type { ValueAttribute } from "./value.js"
 
 // TODO: Should they all be strings? Could have objects represent unions and
 // arrays intersections, though not sure how often it'd work since branches with
 // sets of attributes are not mergeable
-type AtomicAttributeTypes = deepImmutable<{
+type AtomicAttributeTypes = Readonly<{
     value: ValueAttribute
     type: TypeAttribute
     divisor: number
@@ -16,24 +16,40 @@ type AtomicAttributeTypes = deepImmutable<{
     aliases: keyOrKeySet<string>
 }>
 
-type ComposedAttributeTypes = deepImmutable<{
+type ComposedAttributeTypes = Readonly<{
     contradictions: Contradictions
     baseProp: Attributes
-    props: dictionary<Attributes>
+    props: Readonly<dictionary<Attributes>>
     branches: AttributeBranches
 }>
+
+export type Contradictions = {
+    readonly [k in ContradictionKind]?: k extends ContradictableKey
+        ? EmptyIntersectionResult<k>
+        : true
+}
+
+export type AttributeBranches = BranchUnion | BranchIntersection
+
+export type BranchUnion = readonly ["|", ...(Attributes | BranchIntersection)[]]
+
+export type BranchIntersection = readonly ["&", ...BranchUnion[]]
+
+export type BoundsAttribute = {
+    readonly min?: BoundData
+    readonly max?: BoundData
+}
+
+export type BoundData = {
+    readonly limit: number
+    readonly inclusive: boolean
+}
 
 export type Attributes = Partial<AttributeTypes>
 
 export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
 
 export type AttributeKey = keyof AttributeTypes
-
-export type Contradictions = {
-    [k in ContradictionKind]?: k extends ContradictableKey
-        ? AtomicAttributeTypes[k][]
-        : true
-}
 
 export type TypeAttribute = keyOrKeySet<TypeAttributeName>
 
@@ -60,9 +76,3 @@ export const atomicAttributes: keySet<AtomicKey> = {
 }
 
 export type AtomicKey = keyof AtomicAttributeTypes
-
-export type AttributeBranches = BranchUnion | BranchIntersection
-
-export type BranchUnion = readonly ["|", ...(Attributes | BranchIntersection)[]]
-
-export type BranchIntersection = readonly ["&", ...BranchUnion[]]

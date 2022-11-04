@@ -41,7 +41,7 @@ export namespace Unenclosed {
         context: DynamicParserContext
     ) =>
         Keyword.matches(token)
-            ? Keyword.attributesFrom[token]()
+            ? Keyword.attributes[token]
             : context.spaceRoot.aliases[token]
             ? parseAlias(token, context)
             : undefined

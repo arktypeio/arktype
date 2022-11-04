@@ -1,4 +1,4 @@
-import type { BoundData, BoundsAttribute } from "../../../attributes/bounds.js"
+import type { BoundData, BoundsAttribute } from "../../../attributes/shared.js"
 import type { mutable } from "../../../internal.js"
 import type { Scanner } from "../../state/scanner.js"
 

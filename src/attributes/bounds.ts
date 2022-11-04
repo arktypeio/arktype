@@ -4,6 +4,7 @@ import type {
     MaybeEmptyIntersection
 } from "./intersection.js"
 import { isEmptyIntersection } from "./intersection.js"
+import type { BoundData, BoundsAttribute } from "./shared.js"
 
 export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
     let intersectedBounds: MaybeEmptyIntersection<BoundsAttribute> = base
@@ -17,16 +18,6 @@ export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
         intersectedBounds = intersectBound("max", base, max)
     }
     return intersectedBounds
-}
-
-export type BoundsAttribute = {
-    readonly min?: BoundData
-    readonly max?: BoundData
-}
-
-export type BoundData = {
-    readonly limit: number
-    readonly inclusive: boolean
 }
 
 const intersectBound = (

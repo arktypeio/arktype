@@ -36,46 +36,46 @@ export namespace Keyword {
     }
 
     export const matches = (token: string): token is Keyword =>
-        token in attributesFrom
+        token in attributes
 
-    export const attributesFrom: Record<Keyword, () => Attributes> = {
+    export const attributes: { readonly [k in Keyword]: Attributes } = {
         // TS keywords
-        any: () => ({}),
-        bigint: () => ({ type: "bigint" }),
-        boolean: () => ({ type: "boolean" }),
-        false: () => ({ value: "false" }),
-        never: () => ({
+        any: {},
+        bigint: { type: "bigint" },
+        boolean: { type: "boolean" },
+        false: { value: "false" },
+        never: {
             contradictions: {
                 never: true
             }
-        }),
-        null: () => ({ value: "null" }),
-        number: () => ({ type: "number" }),
-        object: () => ({
+        },
+        null: { value: "null" },
+        number: { type: "number" },
+        object: {
             type: {
                 dictionary: true,
                 array: true,
                 function: true
             }
-        }),
-        string: () => ({ type: "string" }),
-        symbol: () => ({ type: "symbol" }),
-        true: () => ({ value: "true" }),
-        undefined: () => ({ value: "undefined" }),
-        unknown: () => ({}),
-        void: () => ({ value: "undefined" }),
+        },
+        string: { type: "string" },
+        symbol: { type: "symbol" },
+        true: { value: "true" },
+        undefined: { value: "undefined" },
+        unknown: {},
+        void: { value: "undefined" },
         // JS Object types
-        Function: () => ({ type: "function" }),
+        Function: { type: "function" },
         // Supplemental types
-        array: () => ({ type: "array" }),
-        dictionary: () => ({ type: "dictionary" }),
+        array: { type: "array" },
+        dictionary: { type: "dictionary" },
         // Regex
-        email: () => ({ regex: "/^(.+)@(.+)\\.(.+)$/" }),
-        alphanumeric: () => ({ regex: "/^[dA-Za-z]+$/" }),
-        alphaonly: () => ({ regex: "/^[A-Za-z]+$/" }),
-        lowercase: () => ({ regex: "/^[a-z]*$/" }),
-        uppercase: () => ({ regex: "/^[A-Z]*$/" }),
+        email: { regex: "/^(.+)@(.+)\\.(.+)$/" },
+        alphanumeric: { regex: "/^[dA-Za-z]+$/" },
+        alphaonly: { regex: "/^[A-Za-z]+$/" },
+        lowercase: { regex: "/^[a-z]*$/" },
+        uppercase: { regex: "/^[A-Z]*$/" },
         // Numeric
-        integer: () => ({ divisor: 1 })
+        integer: { divisor: 1 }
     }
 }
