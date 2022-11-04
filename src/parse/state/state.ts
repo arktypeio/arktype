@@ -1,10 +1,10 @@
-import type { dynamicTypeOf, DynamicTypes } from "../../internal.js"
-import { hasDynamicType } from "../../internal.js"
+import type { dynamicTypeOf, DynamicTypes } from "../../utils/dynamicTypes.js"
+import { hasDynamicType } from "../../utils/dynamicTypes.js"
 import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
-import type { LeftBoundOperator } from "../operator/bounds/left.js"
-import { UnionOperator } from "../operator/union.js"
+import type { LeftBound } from "../operator/bounds/left.js"
+import { Union } from "../operator/union.js"
 import type { AttributeKey, Attributes } from "./attributes.js"
 import { Scanner } from "./scanner.js"
 import type { SerializablePrimitive, SerializedPrimitives } from "./value.js"
@@ -127,15 +127,15 @@ export namespace State {
     }
 
     export const finalizeBranches = (s: DynamicWithRoot) => {
-        UnionOperator.mergeDescendantsToRootIfPresent(s)
+        Union.mergeDescendantsToRootIfPresent(s)
         return s
     }
 
     export type finalizeBranches<s extends StaticWithRoot> =
         s extends StaticWithOpenLeftBound
-            ? LeftBoundOperator.unpairedError<s>
+            ? LeftBound.unpairedError<s>
             : from<{
-                  root: UnionOperator.collectBranches<s>
+                  root: Union.collectBranches<s>
                   groups: s["groups"]
                   branches: initialBranches
                   unscanned: s["unscanned"]
@@ -176,7 +176,7 @@ export namespace State {
     > = from<{
         groups: nextGroups
         branches: nextBranches
-        root: UnionOperator.collectBranches<s>
+        root: Union.collectBranches<s>
         unscanned: s["unscanned"]
     }>
 

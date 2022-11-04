@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { ArrayOperator } from "../array.js"
+import { Arr } from "../array.js"
 
 describe("parse array", () => {
     test("parse", () => {
@@ -11,7 +11,7 @@ describe("parse array", () => {
         test("incomplete token", () => {
             // @ts-expect-error
             attest(() => type("string[")).throwsAndHasTypeError(
-                ArrayOperator.incompleteTokenMessage
+                Arr.incompleteTokenMessage
             )
         })
     })

@@ -1,4 +1,4 @@
-import type { array, dictionary } from "../../internal.js"
+import type { array, dictionary } from "../../utils/dynamicTypes.js"
 import type { Attributes } from "../state/attributes.js"
 
 export type Keyword = keyof Keyword.Inferences

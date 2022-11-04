@@ -5,7 +5,7 @@ import type {
 } from "./common.js"
 import { Operand } from "./operand/operand.js"
 import { Unenclosed } from "./operand/unenclosed.js"
-import { ArrayOperator } from "./operator/array.js"
+import { Arr } from "./operator/array.js"
 import { Operator } from "./operator/operator.js"
 import { State } from "./state/state.js"
 
@@ -90,7 +90,7 @@ const tryNaiveStringParse = (def: string, context: DynamicParserContext) => {
             context
         )
         if (maybeParsedAttributes) {
-            return ArrayOperator.arrayOf(maybeParsedAttributes)
+            return Arr.arrayOf(maybeParsedAttributes)
         }
     }
     return Unenclosed.maybeParseIdentifier(def, context)

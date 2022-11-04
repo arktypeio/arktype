@@ -5,7 +5,7 @@ import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
 import { buildInvalidDoubleMessage, toBoundsAttribute } from "./shared.js"
 
-export namespace RightBoundOperator {
+export namespace RightBound {
     export const parse = (
         s: State.DynamicWithRoot,
         comparator: Scanner.Comparator

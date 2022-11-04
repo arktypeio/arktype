@@ -1,5 +1,5 @@
-import type { DynamicTypes } from "../../internal.js"
-import { isKeyOf } from "../../internal.js"
+import type { DynamicTypes } from "../../utils/dynamicTypes.js"
+import { isKeyOf } from "../../utils/generics.js"
 import type { Enclosed } from "../operand/enclosed.js"
 import type { BigintLiteral, NumberLiteral } from "../operand/numeric.js"
 import { UnenclosedBigint, UnenclosedNumber } from "../operand/numeric.js"

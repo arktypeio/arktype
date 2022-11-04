@@ -2,12 +2,12 @@ import { isKeyOf } from "../../utils/generics.js"
 import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
-import { ArrayOperator } from "./array.js"
+import { Arr } from "./array.js"
 import { Bounds } from "./bounds/bound.js"
-import { DivisibilityOperator } from "./divisor.js"
+import { Divisor } from "./divisor.js"
 import { GroupClose } from "./groupClose.js"
-import { IntersectionOperator } from "./intersection.js"
-import { UnionOperator } from "./union.js"
+import { Intersection } from "./intersection.js"
+import { Union } from "./union.js"
 
 export namespace Operator {
     export const parse = (s: State.DynamicWithRoot): State.Dynamic => {
@@ -15,17 +15,17 @@ export namespace Operator {
         return lookahead === ""
             ? State.finalize(s)
             : lookahead === "["
-            ? ArrayOperator.parse(s)
+            ? Arr.parse(s)
             : lookahead === "|"
-            ? UnionOperator.parse(s)
+            ? Union.parse(s)
             : lookahead === "&"
-            ? IntersectionOperator.parse(s)
+            ? Intersection.parse(s)
             : lookahead === ")"
             ? GroupClose.parse(s)
             : isKeyOf(lookahead, Scanner.comparatorStartChars)
             ? Bounds.parse(s, lookahead)
             : lookahead === "%"
-            ? DivisibilityOperator.parse(s)
+            ? Divisor.parse(s)
             : lookahead === " "
             ? parse(s)
             : throwInternalError(buildUnexpectedCharacterMessage(lookahead))
@@ -34,17 +34,17 @@ export namespace Operator {
     export type parse<s extends State.StaticWithRoot> =
         s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
             ? lookahead extends "["
-                ? ArrayOperator.parse<s, unscanned>
+                ? Arr.parse<s, unscanned>
                 : lookahead extends "|"
-                ? UnionOperator.parse<State.scanTo<s, unscanned>>
+                ? Union.parse<State.scanTo<s, unscanned>>
                 : lookahead extends "&"
-                ? IntersectionOperator.parse<State.scanTo<s, unscanned>>
+                ? Intersection.parse<State.scanTo<s, unscanned>>
                 : lookahead extends ")"
                 ? GroupClose.parse<State.scanTo<s, unscanned>>
                 : lookahead extends Scanner.ComparatorStartChar
                 ? Bounds.parse<s, lookahead, unscanned>
                 : lookahead extends "%"
-                ? DivisibilityOperator.parse<s, unscanned>
+                ? Divisor.parse<s, unscanned>
                 : lookahead extends " "
                 ? parse<State.scanTo<s, unscanned>>
                 : State.error<buildUnexpectedCharacterMessage<lookahead>>

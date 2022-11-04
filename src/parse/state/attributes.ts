@@ -1,4 +1,4 @@
-import type { dictionary, DynamicTypeName } from "../../internal.js"
+import type { dictionary, DynamicTypeName } from "../../utils/dynamicTypes.js"
 import type { Enclosed } from "../operand/enclosed.js"
 import type { BoundsAttribute } from "../operator/bounds/shared.js"
 import type { EmptyIntersectionResult } from "./intersection.js"

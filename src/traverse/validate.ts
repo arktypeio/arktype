@@ -1,6 +1,6 @@
-import type { isAny } from "../internal.js"
 import type { ParseError } from "../parse/common.js"
 import type { Scanner } from "../parse/state/scanner.js"
+import type { isAny } from "../utils/generics.js"
 import type { inferAst } from "./infer.js"
 import type { astToString } from "./toString.js"
 

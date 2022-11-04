@@ -1,4 +1,4 @@
-import type { mutable } from "../../../internal.js"
+import type { mutable } from "../../../utils/generics.js"
 import type {
     EmptyIntersectionResult,
     Intersector,

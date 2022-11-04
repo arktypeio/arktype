@@ -2,7 +2,7 @@ import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 import { Bounds } from "../bounds/bound.js"
-import { LeftBoundOperator } from "../bounds/left.js"
+import { LeftBound } from "../bounds/left.js"
 import { buildInvalidDoubleMessage } from "../bounds/shared.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
@@ -55,13 +55,13 @@ describe("bound", () => {
             test("unpaired left", () => {
                 // @ts-expect-error
                 attest(() => type("3<number")).throwsAndHasTypeError(
-                    LeftBoundOperator.buildUnpairedMessage(3, "<")
+                    LeftBound.buildUnpairedMessage(3, "<")
                 )
             })
             test("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    LeftBoundOperator.buildBoundLiteralMessage("5", 3, "<")
+                    LeftBound.buildBoundLiteralMessage("5", 3, "<")
                 )
             })
         })

@@ -1,18 +1,9 @@
-import type {
-    dictionary,
-    DynamicTypeName,
-    evaluate,
-    isAny,
-    isTopType,
-    mutable
-} from "../internal.js"
-import {
-    dynamicTypeOf,
-    pushKey,
-    throwInternalError,
-    withoutLastKey
-} from "../internal.js"
 import type { SpaceRoot } from "../space.js"
+import { dynamicTypeOf } from "../utils/dynamicTypes.js"
+import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
+import { pushKey, withoutLastKey } from "../utils/generics.js"
+import type { evaluate, isAny, isTopType, mutable } from "../utils/generics.js"
+import { throwInternalError } from "../utils/internalArktypeError.js"
 import type {
     DynamicParserContext,
     ParseError,

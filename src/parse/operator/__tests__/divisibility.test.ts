@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { DivisibilityOperator } from "../divisor.js"
+import { Divisor } from "../divisor.js"
 
 describe("divisibility", () => {
     describe("parse", () => {
@@ -19,19 +19,19 @@ describe("divisibility", () => {
             test("non-integer divisor", () => {
                 // @ts-expect-error
                 attest(() => type("number%2.3")).throwsAndHasTypeError(
-                    DivisibilityOperator.buildInvalidDivisorMessage("2.3")
+                    Divisor.buildInvalidDivisorMessage("2.3")
                 )
             })
             test("non-numeric divisor", () => {
                 // @ts-expect-error
                 attest(() => type("number%foobar")).throwsAndHasTypeError(
-                    DivisibilityOperator.buildInvalidDivisorMessage("foobar")
+                    Divisor.buildInvalidDivisorMessage("foobar")
                 )
             })
             test("zero divisor", () => {
                 // @ts-expect-error
                 attest(() => type("number%0")).throwsAndHasTypeError(
-                    DivisibilityOperator.buildInvalidDivisorMessage(0)
+                    Divisor.buildInvalidDivisorMessage(0)
                 )
             })
         })

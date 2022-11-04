@@ -3,7 +3,7 @@ import { add } from "../state/intersection.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
 
-export namespace DivisibilityOperator {
+export namespace Divisor {
     export const parse = (s: State.DynamicWithRoot) => {
         const divisorToken = s.scanner.shiftUntilNextTerminator()
         return setRootOrCatch(

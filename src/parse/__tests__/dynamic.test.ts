@@ -1,8 +1,8 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import type { dictionary } from "../../internal.js"
 import { space } from "../../space.js"
 import { type } from "../../type.js"
+import type { dictionary } from "../../utils/dynamicTypes.js"
 import { Unenclosed } from "../operand/unenclosed.js"
 
 describe("dynamic", () => {

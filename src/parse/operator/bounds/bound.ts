@@ -1,8 +1,8 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
-import { LeftBoundOperator } from "./left.js"
-import { RightBoundOperator } from "./right.js"
+import { LeftBound } from "./left.js"
+import { RightBound } from "./right.js"
 
 export namespace Bounds {
     const shift = (
@@ -38,8 +38,8 @@ export namespace Bounds {
         comparator: Scanner.Comparator
     ) =>
         State.rootValueHasSerializedType(s, "number")
-            ? LeftBoundOperator.parse(s, comparator)
-            : RightBoundOperator.parse(s, comparator)
+            ? LeftBound.parse(s, comparator)
+            : RightBound.parse(s, comparator)
 
     type delegateReduction<
         s extends State.StaticWithRoot,
@@ -47,6 +47,6 @@ export namespace Bounds {
     > = s extends {
         root: number
     }
-        ? LeftBoundOperator.parse<s, comparator>
-        : RightBoundOperator.parse<s, comparator>
+        ? LeftBound.parse<s, comparator>
+        : RightBound.parse<s, comparator>
 }

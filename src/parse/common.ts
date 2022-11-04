@@ -1,5 +1,5 @@
-import type { dictionary } from "../internal.js"
 import type { SpaceRoot } from "../space.js"
+import type { dictionary } from "../utils/dynamicTypes.js"
 
 export type DynamicParserContext = {
     path: string

@@ -6,7 +6,7 @@ import { State } from "../../state/state.js"
 import type { InvertedComparators } from "./shared.js"
 import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
-export namespace LeftBoundOperator {
+export namespace LeftBound {
     export const parse = (
         s: State.DynamicWithRoot<{ value: NumberLiteral }>,
         comparator: Scanner.Comparator
