@@ -79,13 +79,14 @@ const serialize = <T>(
         if (seen.includes(value)) {
             return "<cyclic>"
         } else {
-            seen.push(value)
             const serializedObject = Array.isArray(value)
-                ? value.map((_) => serialize(_, alwaysStringify, seen))
+                ? value.map((_) =>
+                      serialize(_, alwaysStringify, [...seen, value])
+                  )
                 : Object.fromEntries(
                       Object.entries(value).map(([k, v]) => [
                           k,
-                          serialize(v, alwaysStringify, seen)
+                          serialize(v, alwaysStringify, [...seen, value])
                       ])
                   )
             return alwaysStringify
