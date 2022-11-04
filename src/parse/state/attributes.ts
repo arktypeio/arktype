@@ -4,22 +4,22 @@ import type { BoundsAttribute } from "../operator/bounds/shared.js"
 import type { EmptyIntersectionResult } from "./intersection.js"
 import type { ValueAttribute } from "./value.js"
 
-type AtomicAttributeTypes = Readonly<{
-    value: ValueAttribute
-    type: TypeAttribute
-    divisor: number
-    regex: RegexAttribute
-    bounds: BoundsAttribute
-    requiredKeys: keySet<string>
-    aliases: keyOrKeySet<string>
-}>
+type AtomicAttributeTypes = {
+    readonly value?: ValueAttribute
+    readonly type?: TypeAttribute
+    readonly divisor?: number
+    readonly regex?: RegexAttribute
+    readonly bounds?: BoundsAttribute
+    readonly requiredKeys?: keySet<string>
+    readonly aliases?: keyOrKeySet<string>
+}
 
-type ComposedAttributeTypes = Readonly<{
-    contradictions: Contradictions
-    baseProp: Attributes
-    props: Readonly<dictionary<Attributes>>
-    branches: AttributeBranches
-}>
+type ComposedAttributeTypes = {
+    readonly contradictions?: Contradictions
+    readonly baseProp?: Attributes
+    readonly props?: Readonly<dictionary<Attributes>>
+    readonly branches?: AttributeBranches
+}
 
 export type Contradictions = {
     readonly [k in ContradictionKind]?: k extends ContradictableKey
@@ -30,11 +30,9 @@ export type Contradictions = {
 // TODO: Narrow which attributes can discriminate
 export type AttributeBranches = [Attributes, Attributes][]
 
-export type Attributes = Partial<AttributeTypes>
+export type Attributes = AtomicAttributeTypes & ComposedAttributeTypes
 
-export type AttributeTypes = AtomicAttributeTypes & ComposedAttributeTypes
-
-export type AttributeKey = keyof AttributeTypes
+export type AttributeKey = keyof Attributes
 
 export type TypeAttribute = keyOrKeySet<TypeAttributeName>
 

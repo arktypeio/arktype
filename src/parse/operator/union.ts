@@ -1,5 +1,3 @@
-/* eslint-disable max-lines */
-/* eslint-disable max-lines-per-function */
 import type { maybePush } from "../common.js"
 import { State } from "../state/state.js"
 import type { LeftBound } from "./bounds/left.js"
