@@ -1,8 +1,8 @@
 import type { evaluate } from "../internal.js"
-import type { Enclosed } from "../parser/operand/enclosed.js"
-import type { Keyword } from "../parser/operand/keyword.js"
-import type { NumberLiteral } from "../parser/operand/numeric.js"
-import type { Scanner } from "../parser/state/scanner.js"
+import type { Enclosed } from "../parse/operand/enclosed.js"
+import type { Keyword } from "../parse/operand/keyword.js"
+import type { NumberLiteral } from "../parse/operand/numeric.js"
+import type { Scanner } from "../parse/state/scanner.js"
 import type { ArktypeSpace } from "../space.js"
 
 export type inferAst<node, space> = node extends TerminalAst

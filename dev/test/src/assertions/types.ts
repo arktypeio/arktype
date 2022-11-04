@@ -1,4 +1,4 @@
-import type { isTopType, narrow } from "arktype/internal"
+import type { isTopType, narrow } from "arktype/internal/utils/generics.js"
 import type { Serialized } from "../common.js"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =

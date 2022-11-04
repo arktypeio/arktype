@@ -1,10 +1,70 @@
+import type { mutable } from "../../../internal.js"
 import type {
     EmptyIntersectionResult,
     Intersector,
     MaybeEmptyIntersection
-} from "./intersection.js"
-import { isEmptyIntersection } from "./intersection.js"
-import type { BoundData, BoundsAttribute } from "./shared.js"
+} from "../../state/intersection.js"
+import { isEmptyIntersection } from "../../state/intersection.js"
+import type { Scanner } from "../../state/scanner.js"
+
+export const comparatorDescriptions = {
+    "<": "less than",
+    ">": "greater than",
+    "<=": "at most",
+    ">=": "at least",
+    "==": "exactly"
+} as const
+
+export const invertedComparators = {
+    "<": ">",
+    ">": "<",
+    "<=": ">=",
+    ">=": "<=",
+    "==": "=="
+} as const
+
+export type InvertedComparators = typeof invertedComparators
+
+export type buildInvalidDoubleMessage<comparator extends Scanner.Comparator> =
+    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
+
+export const buildInvalidDoubleMessage = <
+    comparator extends Scanner.Comparator
+>(
+    comparator: comparator
+): buildInvalidDoubleMessage<comparator> =>
+    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
+
+export type BoundsAttribute = {
+    readonly min?: BoundData
+    readonly max?: BoundData
+}
+
+export type BoundData = {
+    readonly limit: number
+    readonly inclusive: boolean
+}
+
+export const toBoundsAttribute = (
+    comparator: Scanner.Comparator,
+    limit: number
+): mutable<BoundsAttribute> => {
+    const bound: BoundData = {
+        limit,
+        inclusive: comparator[1] === "="
+    }
+    if (comparator === "==") {
+        return { min: bound, max: bound }
+    } else if (comparator === ">" || comparator === ">=") {
+        return {
+            min: bound
+        }
+    } else {
+        return {
+            max: bound
+        }
+    }
+}
 
 export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
     let intersectedBounds: MaybeEmptyIntersection<BoundsAttribute> = base

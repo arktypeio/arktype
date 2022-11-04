@@ -1,6 +1,6 @@
 import type { conform } from "../internal.js"
-import type { NumberLiteral } from "../parser/operand/numeric.js"
-import type { Scanner } from "../parser/state/scanner.js"
+import type { NumberLiteral } from "../parse/operand/numeric.js"
+import type { Scanner } from "../parse/state/scanner.js"
 
 type SingleChildToken = Scanner.UnaryToken | Scanner.Comparator | "%"
 

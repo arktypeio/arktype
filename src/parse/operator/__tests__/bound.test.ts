@@ -1,9 +1,9 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { BoundOperator } from "../bound/bound.js"
-import { LeftBoundOperator } from "../bound/left.js"
-import { buildInvalidDoubleMessage } from "../bound/shared.js"
+import { Bounds } from "../bounds/bound.js"
+import { LeftBoundOperator } from "../bounds/left.js"
+import { buildInvalidDoubleMessage } from "../bounds/shared.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
@@ -37,7 +37,7 @@ describe("bound", () => {
             test("single equals", () => {
                 // @ts-expect-error
                 attest(() => type("string=5")).throwsAndHasTypeError(
-                    BoundOperator.singleEqualsMessage
+                    Bounds.singleEqualsMessage
                 )
             })
             test("invalid left comparator", () => {

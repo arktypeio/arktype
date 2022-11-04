@@ -4,7 +4,7 @@ import { State } from "../../state/state.js"
 import { LeftBoundOperator } from "./left.js"
 import { RightBoundOperator } from "./right.js"
 
-export namespace BoundOperator {
+export namespace Bounds {
     const shift = (
         s: State.DynamicWithRoot,
         start: Scanner.ComparatorStartChar

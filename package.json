@@ -18,12 +18,14 @@
         ".": {
             "types": "./dist/types/api.d.ts",
             "import": "./dist/mjs/api.js",
-            "require": "./dist/cjs/api.js"
+            "require": "./dist/cjs/api.js",
+            "deno": "./dist/deno/api.ts"
         },
-        "./internal": {
-            "types": "./dist/types/internal.d.ts",
-            "import": "./dist/mjs/internal.js",
-            "require": "./dist/cjs/internal.js"
+        "./internal/*": {
+            "types": "./dist/types/*",
+            "import": "./dist/mjs/*",
+            "require": "./dist/cjs/*",
+            "deno": "./dist/deno/*"
         }
     },
     "packageManager": "pnpm@7.14.0",

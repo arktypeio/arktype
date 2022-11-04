@@ -1,4 +1,4 @@
-import type { Attributes } from "../../attributes/shared.js"
+import type { Attributes } from "../state/attributes.js"
 import type { Scanner } from "../state/scanner.js"
 import type { State } from "../state/state.js"
 

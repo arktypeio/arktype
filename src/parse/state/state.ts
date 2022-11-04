@@ -1,18 +1,14 @@
-import { reduce } from "../../attributes/reduce.js"
-import type { AttributeKey, Attributes } from "../../attributes/shared.js"
-import type {
-    SerializablePrimitive,
-    SerializedPrimitives
-} from "../../attributes/value.js"
-import { deserializePrimitive } from "../../attributes/value.js"
 import type { dynamicTypeOf, DynamicTypes } from "../../internal.js"
 import { hasDynamicType } from "../../internal.js"
 import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
-import type { LeftBoundOperator } from "../operator/bound/left.js"
+import type { LeftBoundOperator } from "../operator/bounds/left.js"
 import { UnionOperator } from "../operator/union.js"
+import type { AttributeKey, Attributes } from "./attributes.js"
 import { Scanner } from "./scanner.js"
+import type { SerializablePrimitive, SerializedPrimitives } from "./value.js"
+import { deserializePrimitive } from "./value.js"
 
 export namespace State {
     type BaseDynamic = {
@@ -150,7 +146,6 @@ export namespace State {
             return error(GroupOpen.unclosedMessage)
         }
         finalizeGroup(s, {})
-        s.root = reduce(s.root, s.context)
         s.scanner.hasBeenFinalized = true
         return s
     }

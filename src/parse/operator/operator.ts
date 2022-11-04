@@ -3,8 +3,8 @@ import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
 import { ArrayOperator } from "./array.js"
-import { BoundOperator } from "./bound/bound.js"
-import { DivisibilityOperator } from "./divisibility.js"
+import { Bounds } from "./bounds/bound.js"
+import { DivisibilityOperator } from "./divisor.js"
 import { GroupClose } from "./groupClose.js"
 import { IntersectionOperator } from "./intersection.js"
 import { UnionOperator } from "./union.js"
@@ -23,7 +23,7 @@ export namespace Operator {
             : lookahead === ")"
             ? GroupClose.parse(s)
             : isKeyOf(lookahead, Scanner.comparatorStartChars)
-            ? BoundOperator.parse(s, lookahead)
+            ? Bounds.parse(s, lookahead)
             : lookahead === "%"
             ? DivisibilityOperator.parse(s)
             : lookahead === " "
@@ -42,7 +42,7 @@ export namespace Operator {
                 : lookahead extends ")"
                 ? GroupClose.parse<State.scanTo<s, unscanned>>
                 : lookahead extends Scanner.ComparatorStartChar
-                ? BoundOperator.parse<s, lookahead, unscanned>
+                ? Bounds.parse<s, lookahead, unscanned>
                 : lookahead extends "%"
                 ? DivisibilityOperator.parse<s, unscanned>
                 : lookahead extends " "

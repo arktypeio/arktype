@@ -1,6 +1,6 @@
-import { add } from "../../../attributes/intersection.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { UnenclosedNumber } from "../../operand/numeric.js"
+import { add } from "../../state/intersection.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
 import { buildInvalidDoubleMessage, toBoundsAttribute } from "./shared.js"

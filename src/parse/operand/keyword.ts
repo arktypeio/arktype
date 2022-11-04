@@ -1,5 +1,5 @@
-import type { Attributes } from "../../attributes/shared.js"
 import type { array, dictionary } from "../../internal.js"
+import type { Attributes } from "../state/attributes.js"
 
 export type Keyword = keyof Keyword.Inferences
 

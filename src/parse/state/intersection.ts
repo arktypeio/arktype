@@ -1,7 +1,7 @@
-import type { mutable } from "../internal.js"
-import { isKeyOf, keysOf } from "../internal.js"
-import { intersectBounds } from "./bounds.js"
-import { intersectDivisors } from "./divisor.js"
+import type { mutable } from "../../internal.js"
+import { isKeyOf, keysOf } from "../../internal.js"
+import { intersectBounds } from "../operator/bounds/shared.js"
+import { DivisibilityOperator } from "../operator/divisor.js"
 import type {
     AttributeKey,
     Attributes,
@@ -13,7 +13,7 @@ import type {
     keyOrKeySet,
     keySet,
     TypeAttribute
-} from "./shared.js"
+} from "./attributes.js"
 
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
@@ -118,7 +118,7 @@ type IntersectorsByKey = {
 const intersectors: IntersectorsByKey = {
     value: intersectDisjointAttribute,
     type: intersectDisjointAttribute,
-    divisor: (left, right) => intersectDivisors(left, right),
+    divisor: (left, right) => DivisibilityOperator.intersect(left, right),
     regex: (left, right) => intersectAdditiveAttribute(left, right),
     bounds: intersectBounds,
     requiredKeys: (left, right) => intersectKeySets(left, right),

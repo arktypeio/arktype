@@ -1,7 +1,7 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@arktype/runtime"
-import { chainableNoOpProxy } from "arktype/internal"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
 import { assertEquals, throwAssertionError } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
 import { literalSerialize } from "../common.js"

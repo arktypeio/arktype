@@ -1,14 +1,15 @@
-import { union } from "../../attributes/union.js"
 import type { maybePush } from "../common.js"
+import { intersection } from "../state/intersection.js"
 import { State } from "../state/state.js"
-import type { LeftBoundOperator } from "./bound/left.js"
-import { IntersectionOperator } from "./intersection.js"
+import { LeftBoundOperator } from "./bounds/left.js"
 
-export namespace UnionOperator {
+export namespace IntersectionOperator {
     export const parse = (s: State.DynamicWithRoot) => {
-        IntersectionOperator.mergeDescendantsToRootIfPresent(s)
-        s.branches.union ??= []
-        s.branches.union.push(s.root)
+        if (State.hasOpenLeftBound(s)) {
+            return LeftBoundOperator.unpairedError(s)
+        }
+        s.branches.intersection ??= []
+        s.branches.intersection.push(s.root)
         s.root = State.unset
         return s
     }
@@ -20,28 +21,29 @@ export namespace UnionOperator {
                   root: undefined
                   branches: {
                       leftBound: undefined
-                      intersection: undefined
-                      union: [collectBranches<s>, "|"]
+                      union: s["branches"]["union"]
+                      intersection: [collectBranches<s>, "&"]
                   }
                   groups: s["groups"]
                   unscanned: s["unscanned"]
               }>
 
     export type collectBranches<s extends State.StaticWithRoot> = maybePush<
-        s["branches"]["union"],
-        IntersectionOperator.collectBranches<s>
+        s["branches"]["intersection"],
+        s["root"]
     >
 
     export const mergeDescendantsToRootIfPresent = (
         s: State.DynamicWithRoot
     ) => {
-        IntersectionOperator.mergeDescendantsToRootIfPresent(s)
-        if (!s.branches.union) {
+        if (State.hasOpenLeftBound(s)) {
+            return LeftBoundOperator.unpairedError(s)
+        }
+        if (!s.branches.intersection) {
             return s
         }
-        s.branches.union.push(s.root)
-        s.root = union(s.branches.union)
-        delete s.branches.union
+        s.root = intersection(s.branches.intersection)
+        delete s.branches.intersection
         return s
     }
 }

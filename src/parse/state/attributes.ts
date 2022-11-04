@@ -1,5 +1,6 @@
-import type { dictionary, DynamicTypeName } from "../internal.js"
-import type { Enclosed } from "../parser/operand/enclosed.js"
+import type { dictionary, DynamicTypeName } from "../../internal.js"
+import type { Enclosed } from "../operand/enclosed.js"
+import type { BoundsAttribute } from "../operator/bounds/shared.js"
 import type { EmptyIntersectionResult } from "./intersection.js"
 import type { ValueAttribute } from "./value.js"
 
@@ -34,16 +35,6 @@ export type AttributeBranches = BranchUnion | BranchIntersection
 export type BranchUnion = readonly ["|", ...(Attributes | BranchIntersection)[]]
 
 export type BranchIntersection = readonly ["&", ...BranchUnion[]]
-
-export type BoundsAttribute = {
-    readonly min?: BoundData
-    readonly max?: BoundData
-}
-
-export type BoundData = {
-    readonly limit: number
-    readonly inclusive: boolean
-}
 
 export type Attributes = Partial<AttributeTypes>
 

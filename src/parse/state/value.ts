@@ -1,12 +1,9 @@
-import type { DynamicTypes } from "../internal.js"
-import { isKeyOf } from "../internal.js"
-import type { Enclosed } from "../parser/operand/enclosed.js"
-import type { BigintLiteral, NumberLiteral } from "../parser/operand/numeric.js"
-import {
-    UnenclosedBigint,
-    UnenclosedNumber
-} from "../parser/operand/numeric.js"
-import type { keyOrKeySet } from "./shared.js"
+import type { DynamicTypes } from "../../internal.js"
+import { isKeyOf } from "../../internal.js"
+import type { Enclosed } from "../operand/enclosed.js"
+import type { BigintLiteral, NumberLiteral } from "../operand/numeric.js"
+import { UnenclosedBigint, UnenclosedNumber } from "../operand/numeric.js"
+import type { keyOrKeySet } from "./attributes.js"
 
 export type SerializedPrimitives = {
     string: Enclosed.SingleQuotedStringLiteral
