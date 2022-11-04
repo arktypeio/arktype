@@ -1,4 +1,5 @@
 import type { maybePush } from "../common.js"
+import type { Attributes } from "../state/attributes.js"
 import { State } from "../state/state.js"
 import type { LeftBound } from "./bounds/left.js"
 import { Intersection } from "./intersection.js"
@@ -38,8 +39,32 @@ export namespace Union {
         if (!s.branches.union) {
             return s
         }
-        s.root = { branches: ["|", ...s.branches.union, s.root] }
+        s.branches.union.push(s.root)
+        s.root = compress(s.branches.union)
         delete s.branches.union
         return s
+    }
+
+    const testBranches: Attributes[] = [
+        { type: "dictionary", props: { a: { type: "string" } } },
+        {
+            type: "dictionary",
+            props: { a: { type: "string" } },
+            requiredKeys: { a: true }
+        },
+        { type: "dictionary", props: { a: { type: "number" } } }
+    ]
+
+    const desiredCompression: Attributes = {
+        type: "dictionary",
+        branches: [
+            "|",
+            { props: { a: { type: "string" } } },
+            { props: { a: { type: "number" } } }
+        ]
+    }
+
+    const compress = (branches: Attributes[]): Attributes => {
+        return { branches: ["|", ...branches] }
     }
 }

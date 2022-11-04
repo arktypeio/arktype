@@ -70,12 +70,12 @@ export namespace Keyword {
         array: { type: "array" },
         dictionary: { type: "dictionary" },
         // Regex
-        email: { regex: "/^(.+)@(.+)\\.(.+)$/" },
-        alphanumeric: { regex: "/^[dA-Za-z]+$/" },
-        alphaonly: { regex: "/^[A-Za-z]+$/" },
-        lowercase: { regex: "/^[a-z]*$/" },
-        uppercase: { regex: "/^[A-Z]*$/" },
+        email: { type: "string", regex: "/^(.+)@(.+)\\.(.+)$/" },
+        alphanumeric: { type: "string", regex: "/^[dA-Za-z]+$/" },
+        alphaonly: { type: "string", regex: "/^[A-Za-z]+$/" },
+        lowercase: { type: "string", regex: "/^[a-z]*$/" },
+        uppercase: { type: "string", regex: "/^[A-Z]*$/" },
         // Numeric
-        integer: { divisor: 1 }
+        integer: { type: "number", divisor: 1 }
     }
 }
