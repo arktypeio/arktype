@@ -50,6 +50,7 @@ export namespace Union {
     type DiscriminatingPaths = Record<string, DiscriminatedBranchMap>
     type DiscriminatedBranchMap = Record<number, BranchSet>
     type BranchSet = Record<number, true>
+    type DiscriminatingPathsByDistinctValueCount = Record<number, string[]>
 
     const discriminate = (branches: Attributes[]): Attributes => {
         const appearances: AppearancesByPath = {}
@@ -57,7 +58,7 @@ export namespace Union {
             addBranchPaths(appearances, branch)
         }
         const discriminatingPaths: DiscriminatingPaths = {}
-        let discriminatingPathsByDistinctValueCount: Record<number, string[]> =
+        let discriminatingPathsByDistinctValueCount: DiscriminatingPathsByDistinctValueCount =
             {}
         for (const path in appearances) {
             const pathAppearances = appearances[path]
@@ -100,34 +101,47 @@ export namespace Union {
             }
         }
         // TODO: Case where no discriminating paths
-        const bestInitialDiscriminatingValueCount = Object.keys(
+        const discriminatingValueCounts = Object.keys(
             discriminatingPathsByDistinctValueCount
         )
             .map((lengthKey) => Number(lengthKey))
-            .sort()
-            .slice(-1)[0]
+            .sort((a, b) => b - a)
         const bestInitialPath =
             discriminatingPathsByDistinctValueCount[
-                bestInitialDiscriminatingValueCount
+                discriminatingValueCounts[discriminatingValueCounts.length - 1]
             ][0]
-        const undiscriminated = initializeUndiscriminated(branches.length)
+        let undiscriminated = substractDiscriminatedBranchMap(
+            initializeUndiscriminated(branches.length),
+            discriminatingPaths[bestInitialPath]
+        )
         const bestTraversal = [bestInitialPath]
-        let currentPath: string | undefined = bestInitialPath
+        delete discriminatingPaths[bestInitialPath]
         while (Object.keys(undiscriminated).length) {
-            if (!currentPath) {
-                currentPath = ""
-            }
-            const discriminated = discriminatingPaths[currentPath]
-            for (const branchIndex in discriminated) {
-                undiscriminated[branchIndex] = undiscriminated[
-                    branchIndex
-                ].filter((i) => !discriminated[i])
-                if (!undiscriminated[branchIndex].length) {
-                    delete undiscriminated[branchIndex]
+            let bestPath
+            let bestResult: DiscriminatedBranchDifference | undefined
+            for (const path in discriminatingPaths) {
+                const candidate = substractDiscriminatedBranchMap(
+                    undiscriminated,
+                    discriminatingPaths[path]
+                )
+                if (
+                    candidate.count <
+                    (bestResult ? bestResult.count : undiscriminated.count)
+                ) {
+                    bestPath = path
+                    bestResult = candidate
+                    if (candidate.count === 0) {
+                        break
+                    }
+                } else if (candidate.count === undiscriminated.count) {
+                    delete discriminatingPaths[path]
                 }
+                // TODO: Should update discriminatingPaths to reflect current discriminating? Could be cleaner with loop.
             }
-            delete discriminatingPaths[currentPath]
-            currentPath = undefined
+            if (bestPath) {
+                undiscriminated = bestResult!
+                bestTraversal.push(bestPath)
+            }
         }
         // const root: Attributes = {}
         // const value = values[0]
@@ -151,8 +165,10 @@ export namespace Union {
         branch: Attributes
     ) => {}
 
+    type UndiscriminatedBranches = Record<number, number[]>
+
     const initializeUndiscriminated = (branchCount: number) => {
-        const undiscriminatedBranches: Record<number, number[]> = {}
+        const undiscriminatedBranches: UndiscriminatedBranches = {}
         for (let i = 0; i < branchCount; i++) {
             undiscriminatedBranches[i] = []
             for (let j = 0; j < branchCount; j++) {
@@ -162,6 +178,30 @@ export namespace Union {
             }
         }
         return undiscriminatedBranches
+    }
+
+    type DiscriminatedBranchDifference = {
+        branches: UndiscriminatedBranches
+        count: number
+    }
+
+    const substractDiscriminatedBranchMap = (
+        undiscriminated: UndiscriminatedBranches,
+        discriminatedBranchMap: DiscriminatedBranchMap
+    ): DiscriminatedBranchDifference => {
+        const branches: UndiscriminatedBranches = {}
+        let count = 0
+        for (const branchIndex in discriminatedBranchMap) {
+            const discriminatedAtBranch = discriminatedBranchMap[branchIndex]
+            const remainingUndiscriminatedForBranch = undiscriminated[
+                branchIndex
+            ].filter((i) => !discriminatedAtBranch[i])
+            if (remainingUndiscriminatedForBranch.length) {
+                branches[branchIndex] = remainingUndiscriminatedForBranch
+                count += remainingUndiscriminatedForBranch.length
+            }
+        }
+        return { branches, count }
     }
 }
 
