@@ -14,7 +14,7 @@ const testBranches: Attributes[] = [
     {
         type: "dictionary",
         props: { a: { type: "string" }, c: { type: "number" } },
-        requiredKeys: { a: true }
+        requiredKey: { a: true }
     },
     {
         type: "dictionary",

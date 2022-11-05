@@ -76,6 +76,6 @@ export namespace Keyword {
         lowercase: { type: "string", regex: "/^[a-z]*$/" },
         uppercase: { type: "string", regex: "/^[A-Z]*$/" },
         // Numeric
-        integer: { type: "number", divisor: 1 }
+        integer: { type: "number", divisor: "1" }
     }
 }

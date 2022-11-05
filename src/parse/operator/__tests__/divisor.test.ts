@@ -10,7 +10,7 @@ describe("divisibility", () => {
                 const divisibleByTwo = type("number%2")
                 attest(divisibleByTwo.attributes).equals({
                     type: "number",
-                    divisor: 2
+                    divisor: "2"
                 })
                 attest(divisibleByTwo.infer).typed as number
             })

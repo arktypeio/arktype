@@ -82,13 +82,13 @@ const parseStructure = (
         return parseTupleExpression(definition, context)
     }
     const props: dictionary<Attributes> = {}
-    const requiredKeys: mutable<keySet<string>> = {}
+    const requiredKey: mutable<keySet<string>> = {}
     for (const definitionKey in definition) {
         let keyName = definitionKey
         if (definitionKey.endsWith("?")) {
             keyName = definitionKey.slice(0, -1)
         } else {
-            requiredKeys[definitionKey] = true
+            requiredKey[definitionKey] = true
         }
         context.path = pushKey(context.path, keyName)
         props[keyName] = parseDefinition(
@@ -100,7 +100,7 @@ const parseStructure = (
     return {
         type: Array.isArray(definition) ? "array" : "dictionary",
         props,
-        requiredKeys
+        requiredKey
     }
 }
 
