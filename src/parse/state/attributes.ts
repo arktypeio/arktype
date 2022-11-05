@@ -1,4 +1,4 @@
-import type { DynamicTypeName } from "../../utils/dynamicTypes.js"
+import type { dictionary, DynamicTypeName } from "../../utils/dynamicTypes.js"
 import type { Enclosed } from "../operand/enclosed.js"
 import type { BoundsAttribute } from "../operator/bounds/shared.js"
 import type { EmptyIntersectionResult } from "./intersection.js"
@@ -17,6 +17,7 @@ type AtomicAttributeTypes = {
 type ComposedAttributeTypes = {
     readonly contradictions?: Contradictions
     readonly baseProp?: Attributes
+    readonly props?: Readonly<dictionary<Attributes>>
     readonly branches?: AttributeBranches
 }
 
@@ -32,8 +33,6 @@ export type AttributeBranches = readonly [
         readonly [k in string]: Attributes | AttributeBranches
     }
 ]
-
-export type AttributesByPath = { [path in string]: Attributes }
 
 export type Attributes = AtomicAttributeTypes & ComposedAttributeTypes
 

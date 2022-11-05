@@ -172,6 +172,15 @@ const addBranchPaths = (
                 pushKey(path, "baseProp"),
                 branchIndex
             )
+        } else if (k === "props") {
+            for (const propKey in attributes[k]) {
+                addBranchPaths(
+                    result,
+                    attributes[k]![propKey],
+                    pushKey(path, "props." + propKey),
+                    branchIndex
+                )
+            }
         } else {
             const value = String(attributes[k])
             result[path] ??= {}
