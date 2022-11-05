@@ -30,15 +30,15 @@ export const union = (branches: Attributes[]): Attributes => {
         distribution,
         branches.length
     )
-    // return discriminantEntries
-    return {
-        branches: createDiscriminatedBranches(
-            initializeUndiscriminated(branches.length),
-            discriminantEntries,
-            distribution,
-            branches
-        )
-    }
+    return discriminantEntries
+    // return {
+    //     branches: createDiscriminatedBranches(
+    //         initializeUndiscriminated(branches.length),
+    //         discriminantEntries,
+    //         distribution,
+    //         branches
+    //     )
+    // }
 }
 
 const graphDiscriminants = (
@@ -71,13 +71,15 @@ const graphDiscriminants = (
                         neighboringValueIndex < values.length;
                         neighboringValueIndex++
                     ) {
-                        if (valueIndex !== neighboringValueIndex) {
-                            for (const branchIndex of branchIndicesByValue[
-                                values[neighboringValueIndex]
-                            ]) {
-                                discriminantNeighbors[branchIndex] = true
-                                graph.size += branchesWithValue.length
-                            }
+                        if (valueIndex === neighboringValueIndex) {
+                            continue
+                        }
+
+                        for (const branchIndex of branchIndicesByValue[
+                            values[neighboringValueIndex]
+                        ]) {
+                            discriminantNeighbors[branchIndex] = true
+                            graph.size += branchesWithValue.length
                         }
                     }
                     for (const branchIndex of branchesWithValue) {
