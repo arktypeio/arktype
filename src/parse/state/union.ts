@@ -38,7 +38,7 @@ const graphDiscriminants = (
 ): Discriminant[] => {
     const discriminantEntries: Discriminant[] = []
     for (const path in distribution) {
-        if (!path.endsWith("type") && !path.endsWith("value")) {
+        if (!path.endsWith("type")) {
             continue
         }
         const result: DiscriminationGraph = [] as any

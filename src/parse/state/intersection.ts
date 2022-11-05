@@ -9,7 +9,12 @@ import { isKeyOf } from "../../utils/generics.js"
 import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { intersectBounds } from "../operator/bounds/shared.js"
 import { Divisor } from "../operator/divisor.js"
-import type { AttributeKey, Attributes, TypeAttribute } from "./attributes.js"
+import type {
+    AttributeBranches,
+    AttributeKey,
+    Attributes,
+    TypeAttribute
+} from "./attributes.js"
 
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
@@ -22,7 +27,7 @@ export const add = <k extends AttributeKey>(
         if (typeof impliedType === "string") {
             attributesToAdd.type = impliedType
         } else {
-            attributesToAdd.branches = { type: impliedType }
+            attributesToAdd.branches = ["type", impliedType]
         }
     }
     return intersect(attributes, attributesToAdd)
@@ -42,7 +47,7 @@ const intersect = (a: Attributes, b: Attributes): Attributes => {
         if (k in a) {
             const intersectedValue = dynamicReducers[k](a[k], b[k])
             if (intersectedValue === null) {
-                result.contradiction = `Whoops`
+                result.contradiction = `${a[k]} and ${b[k]} have an empty intersection`
             } else {
                 result[k] = intersectedValue
             }
@@ -110,13 +115,13 @@ const dynamicReducers = intersectors as {
 type TypeImplyingKey = "divisor" | "regex" | "bounds"
 
 const impliedTypes: {
-    [k in TypeImplyingKey]: keyOrPartialKeySet<TypeAttribute>
+    [k in TypeImplyingKey]: TypeAttribute | AttributeBranches[1]
 } = {
     divisor: "number",
     bounds: {
-        number: true,
-        string: true,
-        array: true
+        number: {},
+        string: {},
+        array: {}
     },
     regex: "string"
 }

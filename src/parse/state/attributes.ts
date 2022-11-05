@@ -47,4 +47,4 @@ export type AttributeKey = keyof AttributeTypes
 
 export type Attributes = { readonly [k in AttributeKey]?: AttributeTypes[k] }
 
-export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
+export type TypeAttribute = DynamicTypeName

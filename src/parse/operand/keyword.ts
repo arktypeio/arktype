@@ -43,29 +43,28 @@ export namespace Keyword {
         any: {},
         bigint: { type: "bigint" },
         boolean: { type: "boolean" },
-        false: { value: "false" },
+        false: { type: "boolean", value: "false" },
         never: {
-            contradictions: {
-                never: true
-            }
+            contradiction: "explicitly typed as never"
         },
-        null: { value: "null" },
+        null: { type: "null", value: "null" },
         number: { type: "number" },
         object: {
-            branches: {
-                type: {
-                    dictionary: true,
-                    array: true,
-                    function: true
+            branches: [
+                "type",
+                {
+                    dictionary: {},
+                    array: {},
+                    function: {}
                 }
-            }
+            ]
         },
         string: { type: "string" },
         symbol: { type: "symbol" },
-        true: { value: "true" },
-        undefined: { value: "undefined" },
+        true: { value: "true", type: "boolean" },
+        undefined: { type: "undefined", value: "undefined" },
         unknown: {},
-        void: { value: "undefined" },
+        void: { type: "undefined", value: "undefined" },
         // JS Object types
         Function: { type: "function" },
         // Supplemental types
