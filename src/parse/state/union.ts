@@ -1,6 +1,6 @@
 /* eslint-disable max-lines */
 /* eslint-disable max-lines-per-function */
-import type { mutable, subtype } from "../../utils/generics.js"
+import type { mutable } from "../../utils/generics.js"
 import { pushKey } from "../../utils/generics.js"
 import type {
     AttributeBranches,
@@ -50,6 +50,9 @@ const graphDiscriminants = (
         const pathAttributes = distribution[path]
         let k: AttributeKey
         for (k in pathAttributes) {
+            if (k !== "type" && k !== "value") {
+                continue
+            }
             const pathAttribute = pathAttributes[k]!
             const values = Object.keys(pathAttribute)
             if (values.length > 1) {
@@ -107,7 +110,8 @@ const createDiscriminatedBranches = (
     if (!nextEntry) {
         return {}
     }
-    const valuesAtPath = distribution[nextEntry[0]][nextEntry[1]]
+    const [path, key, discriminants] = nextEntry
+    const valuesAtPath = distribution[path][key]
     const branches: mutable<AttributeBranches[1]> = {}
     for (const value in valuesAtPath) {
         const branchIndices = valuesAtPath[value]
@@ -115,7 +119,7 @@ const createDiscriminatedBranches = (
             branches[value] = originalBranches[branchIndices[0]] as any
         } else {
             branches[value] = discriminate(
-                substractDiscriminants(undiscriminated, nextEntry[2]),
+                substractDiscriminants(undiscriminated, discriminants),
                 discriminantEntries,
                 distribution,
                 originalBranches
@@ -153,11 +157,6 @@ const discriminate = (
     )
 }
 
-type DiscriminatableKey = subtype<
-    AttributeKey,
-    "type" | "value" | "props" | "baseProp"
->
-
 const addBranchPaths = (
     result: PathDistribution,
     attributes: Attributes,
@@ -166,13 +165,7 @@ const addBranchPaths = (
 ) => {
     let k: AttributeKey
     for (k in attributes) {
-        if (k === "type" || k === "value") {
-            const value = String(attributes[k])
-            result[path] ??= {}
-            result[path][k] ??= {}
-            result[path][k]![value] ??= []
-            result[path][k]![value].push(branchIndex)
-        } else if (k === "baseProp") {
+        if (k === "baseProp") {
             addBranchPaths(
                 result,
                 attributes[k]!,
@@ -188,6 +181,12 @@ const addBranchPaths = (
                     branchIndex
                 )
             }
+        } else {
+            const value = String(attributes[k])
+            result[path] ??= {}
+            result[path][k] ??= {}
+            result[path][k]![value] ??= []
+            result[path][k]![value].push(branchIndex)
         }
     }
 }
@@ -226,40 +225,3 @@ const substractDiscriminants = (
     }
     return graph
 }
-
-// export const goal: AppearancesByPath = {
-//     type: {
-//         dictionary: [0, 1, 2]
-//     },
-//     "props/a/type": {
-//         string: [0, 1],
-//         number: [2]
-//     },
-//     "props/b/type": {
-//         boolean: [2]
-//     },
-//     "props/c/type": {
-//         number: [1]
-//     },
-//     "props/requiredKeys/a": {
-//         true: [1]
-//     }
-// }
-
-// const discriminatingPaths: Record<
-//     string,
-//     Record<number, Record<number, true>>
-// > = {
-//     "props/a/type": {
-//         0: { 2: true, 3: true }, // 0: {1: true}
-//         1: { 2: true, 3: true }, // 1: {0: true}
-//         2: { 0: true, 1: true }, // 2: {3: true}
-//         3: { 0: true, 1: true } // 3: {2: true}
-//     },
-//     "props/b/type": {
-//         0: { 1: true, 3: true },
-//         1: { 0: true, 2: true },
-//         2: { 1: true, 3: true },
-//         3: { 0: true, 2: true }
-//     }
-// }

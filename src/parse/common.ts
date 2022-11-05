@@ -1,17 +1,16 @@
 import type { SpaceRoot } from "../space.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
 
 export type DynamicParserContext = {
     path: string
     spaceRoot: SpaceRoot
-    seen: dictionary<string>
 }
 
 // TODO: How much of this do we need?
-export const initializeParserContext = (spaceRoot: SpaceRoot) => ({
+export const initializeParserContext = (
+    spaceRoot: SpaceRoot
+): DynamicParserContext => ({
     spaceRoot,
-    path: "",
-    seen: {}
+    path: ""
 })
 
 export type StaticParserContext = {
