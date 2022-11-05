@@ -109,6 +109,38 @@ const discriminate = (
     return [head.path, branchMap]
 }
 
+const b = [
+    {
+        type: "dictionary",
+        props: { a: { type: "string" }, c: { type: "bigint" } }
+    },
+    {
+        type: "dictionary",
+        props: { a: { type: "string" }, c: { type: "number" } },
+        requiredKeys: { a: true }
+    },
+    {
+        type: "dictionary",
+        props: { a: { type: "number" }, b: { type: "boolean" } }
+    }
+]
+
+const pathify = (
+    result: Record<string, unknown>,
+    branches: Attributes[],
+    path: string
+) => {
+    for (let i = 0; i < branches.length; i++) {
+        let k: AttributeKey
+        for (k in branches[i]) {
+            const keyPath = pushKey(path, k)
+            if (result[keyPath]) {
+            }
+        }
+    }
+    return result
+}
+
 const addBranchPaths = (
     result: DistributionByPath,
     attributes: Attributes,
