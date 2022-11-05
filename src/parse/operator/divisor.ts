@@ -60,10 +60,10 @@ export namespace Divisor {
         `% operator must be followed by a non-zero integer literal (was ${divisor})`
 
     export const intersect = (a: NumberLiteral, b: NumberLiteral) =>
-        leastCommonMultiple(
+        `${leastCommonMultiple(
             parseWellFormedInteger(a, true),
             parseWellFormedInteger(b, true)
-        )
+        )}` as const
 
     // Calculate the GCD, then divide the product by that to determine the LCM:
     // https://en.wikipedia.org/wiki/Euclidean_algorithm

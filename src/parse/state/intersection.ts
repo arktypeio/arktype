@@ -72,19 +72,6 @@ const intersectIrreducibleAttribute = <t extends string>(
 const intersectDisjointAttribute = <value extends string>(a: value, b: value) =>
     a === b ? a : null
 
-const intersectKeySets = <k extends string>(
-    a: keySet<k>,
-    b: keySet<k>
-): keySet<k> => {
-    const intersectionSet = {} as mutable<keySet<k>>
-    for (const k in a) {
-        if (b[k]) {
-            intersectionSet[k] = true
-        }
-    }
-    return intersectionSet
-}
-
 type IntersectorsByKey = {
     [k in AttributeKey]: Intersector<k>
 }
@@ -92,11 +79,12 @@ type IntersectorsByKey = {
 const intersectors: IntersectorsByKey = {
     value: intersectDisjointAttribute,
     type: intersectDisjointAttribute,
+    requiredKeys: (a, b) => ({ ...a, ...b }),
+    alias: intersectIrreducibleAttribute,
+    contradiction: intersectIrreducibleAttribute,
     divisor: (a, b) => Divisor.intersect(a, b),
     regex: (a, b) => intersectIrreducibleAttribute(a, b),
     bounds: intersectBounds,
-    requiredKeys: intersectIrreducibleAttribute,
-    alias: intersectIrreducibleAttribute,
     baseProp: (a, b) => intersect(a, b),
     props: (a, b) => {
         const intersectedProps = { ...a, ...b }
@@ -111,7 +99,6 @@ const intersectors: IntersectorsByKey = {
         // TODO: Fix
         return a
     },
-    contradiction: intersectIrreducibleAttribute,
     parent: () =>
         throwInternalError(`Unexpected attempt to intersect attribute parents.`)
 }

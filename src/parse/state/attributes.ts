@@ -1,42 +1,35 @@
 import type { dictionary, DynamicTypeName } from "../../utils/dynamicTypes.js"
-import type {
-    evaluate,
-    keyOrKeySet,
-    keySet,
-    subtype
-} from "../../utils/generics.js"
+import type { keyOrKeySet, keySet, subtype } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type { Enclosed } from "../operand/enclosed.js"
 import type { BoundsString } from "../operator/bounds/shared.js"
 import type { SerializedPrimitive } from "./value.js"
 
-type ReducibleAttributes = subtype<
+type ReducibleAttributeTypes = subtype<
     dictionary<string>,
     {
-        readonly value?: SerializedPrimitive
-        readonly type?: TypeAttribute
-        readonly divisor?: NumberLiteral
-        readonly bounds?: BoundsString
+        value: SerializedPrimitive
+        type: TypeAttribute
+        divisor: NumberLiteral
+        bounds: BoundsString
     }
 >
 
-type IrreducibleAttributes = subtype<
+type IrreducibleAttributeTypes = subtype<
     dictionary<keyOrKeySet<string>>,
     {
-        readonly regex?: keyOrKeySet<Enclosed.RegexLiteral>
-        readonly requiredKeys?: keySet<string>
-        readonly alias?: keyOrKeySet<string>
-        readonly contradiction?: keyOrKeySet<string>
+        regex: keyOrKeySet<Enclosed.RegexLiteral>
+        requiredKeys: keySet<string>
+        alias: keyOrKeySet<string>
+        contradiction: keyOrKeySet<string>
     }
 >
 
-type AtomicAttributes = evaluate<ReducibleAttributes & IrreducibleAttributes>
-
-type ComposedAttributes = {
-    readonly parent?: Attributes
-    readonly baseProp?: Attributes
-    readonly props?: Readonly<dictionary<Attributes>>
-    readonly branches?: AttributeBranches
+type ComposedAttributeTypes = {
+    parent: Attributes
+    baseProp: Attributes
+    props: Readonly<dictionary<Attributes>>
+    branches: AttributeBranches
 }
 
 export type AttributeBranches = readonly [
@@ -46,8 +39,12 @@ export type AttributeBranches = readonly [
     }
 ]
 
-export type Attributes = AtomicAttributes & ComposedAttributes
+export type AttributeTypes = ReducibleAttributeTypes &
+    IrreducibleAttributeTypes &
+    ComposedAttributeTypes
 
-export type AttributeKey = keyof Attributes
+export type AttributeKey = keyof AttributeTypes
+
+export type Attributes = { readonly [k in AttributeKey]?: AttributeTypes[k] }
 
 export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
