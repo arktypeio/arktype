@@ -1,16 +1,19 @@
 import type { SpaceRoot } from "../space.js"
+import type { dictionary } from "../utils/dynamicTypes.js"
+import type { AttributesByPath } from "./state/attributes.js"
 
 export type DynamicParserContext = {
+    attributes: AttributesByPath
     path: string
     spaceRoot: SpaceRoot
 }
 
-// TODO: How much of this do we need?
 export const initializeParserContext = (
     spaceRoot: SpaceRoot
 ): DynamicParserContext => ({
     spaceRoot,
-    path: ""
+    path: "",
+    attributes: {}
 })
 
 export type StaticParserContext = {

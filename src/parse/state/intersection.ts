@@ -122,15 +122,6 @@ const intersectors: IntersectorsByKey = {
     requiredKeys: (left, right) => intersectKeySets(left, right),
     aliases: intersectAdditiveAttribute,
     baseProp: (left, right) => intersect(left, right),
-    props: (left, right) => {
-        const intersectedProps = { ...left, ...right }
-        for (const k in intersectedProps) {
-            if (k in left && k in right) {
-                intersectedProps[k] = intersect(left[k], right[k])
-            }
-        }
-        return intersectedProps
-    },
     branches: (left, right) => {
         // TODO: Fix
         return left
