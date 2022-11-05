@@ -184,7 +184,7 @@ export namespace State {
 
     export type previousOperator<s extends Static> =
         s extends StaticWithOpenRange
-            ? s["branches"]["range"][1]
+            ? s["branches"]["range"]
             : s["branches"]["intersection"] extends {}
             ? "&"
             : s["branches"]["union"] extends {}

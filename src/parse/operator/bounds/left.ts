@@ -85,20 +85,11 @@ export namespace LeftBound {
         openRange extends MinString
     > = `Literal value '${literal}' cannot be bound by ${openRange}`
 
-    const invertLeftBound = <LeftBound extends MinString>(
-        leftBound: LeftBound
-    ) => `<${leftBound.slice(1)}` as invertLeftBound<LeftBound>
+    export const buildUnpairedMessage = <OpenRange extends MinString>(
+        openRange: OpenRange
+    ): buildUnpairedMessage<OpenRange> =>
+        `Left bounds are only valid when paired with right bounds (try ...${openRange})`
 
-    type invertLeftBound<leftBound extends MinString> =
-        leftBound extends `>${infer rest} ` ? `<${rest}` : never
-
-    export const buildUnpairedMessage = <LeftBound extends MinString>(
-        leftBound: LeftBound
-    ): buildUnpairedMessage<LeftBound> =>
-        `Left bounds are only valid when paired with right bounds (try ${invertLeftBound(
-            leftBound
-        )})`
-
-    export type buildUnpairedMessage<leftBound extends MinString> =
-        `Left bounds are only valid when paired with right bounds (try ${invertLeftBound<leftBound>})`
+    export type buildUnpairedMessage<openRange extends MinString> =
+        `Left bounds are only valid when paired with right bounds (try ...${openRange})`
 }
