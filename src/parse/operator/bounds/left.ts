@@ -1,9 +1,9 @@
 import { isKeyOf } from "../../../utils/generics.js"
-import type { NumberLiteral } from "../../operand/numeric.js"
-import { UnenclosedNumber } from "../../operand/numeric.js"
+import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
-import type { InvertedComparators } from "./shared.js"
+import type { InvertedComparators, MinString } from "./shared.js"
 import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
 export namespace LeftBound {
@@ -12,13 +12,9 @@ export namespace LeftBound {
         comparator: Scanner.Comparator
     ) =>
         isKeyOf(comparator, Scanner.pairableComparators)
-            ? State.hasOpenLeftBound(s)
+            ? State.hasOpenRange(s)
                 ? State.error(
-                      buildBoundLiteralMessage(
-                          s.root.value,
-                          s.branches.leftBound[0],
-                          s.branches.leftBound[1]
-                      )
+                      buildBoundLiteralMessage(s.root.value, s.branches.range)
                   )
                 : parseValidated(s, comparator)
             : State.error(buildInvalidDoubleMessage(comparator))
@@ -27,12 +23,11 @@ export namespace LeftBound {
         s extends State.StaticWithRoot<number>,
         comparator extends Scanner.Comparator
     > = comparator extends Scanner.PairableComparator
-        ? s extends State.StaticWithOpenLeftBound
+        ? s extends State.StaticWithOpenRange
             ? State.error<
                   buildBoundLiteralMessage<
                       `${s["root"]}`,
-                      s["branches"]["leftBound"][0],
-                      s["branches"]["leftBound"][1]
+                      s["branches"]["range"]
                   >
               >
             : parseValidated<s, comparator>
@@ -42,10 +37,9 @@ export namespace LeftBound {
         s: State.DynamicWithRoot<{ value: NumberLiteral }>,
         token: Scanner.PairableComparator
     ) => {
-        s.branches.leftBound = [
-            UnenclosedNumber.parseWellFormed(s.root.value, "number", true),
-            token
-        ]
+        s.branches.range = `${
+            invertedComparators[token]
+        }${parseWellFormedNumber(s.root.value, true)}`
         s.root = State.unset
         return s
     }
@@ -58,7 +52,7 @@ export namespace LeftBound {
         branches: {
             union: s["branches"]["union"]
             intersection: s["branches"]["intersection"]
-            leftBound: [s["root"], comparator]
+            range: `${InvertedComparators[comparator]}${s["root"]}`
         }
         groups: s["groups"]
         unscanned: s["unscanned"]
@@ -67,55 +61,44 @@ export namespace LeftBound {
     export type unpairedError<
         s extends State.Static<{
             root: {}
-            branches: { leftBound: State.OpenLeftBound }
+            branches: { range: MinString }
         }>
-    > = State.error<
-        buildUnpairedMessage<
-            s["branches"]["leftBound"][0],
-            s["branches"]["leftBound"][1]
-        >
-    >
+    > = State.error<buildUnpairedMessage<s["branches"]["range"]>>
 
     export const unpairedError = (
         s: State.Dynamic<{
-            branches: { leftBound: State.OpenLeftBound }
+            branches: { range: MinString }
         }>
-    ) =>
-        State.error(
-            buildUnpairedMessage(
-                s.branches.leftBound[0],
-                s.branches.leftBound[1]
-            )
-        )
+    ) => State.error(buildUnpairedMessage(s.branches.range))
 
     export const buildBoundLiteralMessage = <
         literal extends NumberLiteral,
-        limit extends number,
-        token extends Scanner.Comparator
+        openRange extends MinString
     >(
         literal: literal,
-        limit: limit,
-        comparator: token
-    ): buildBoundLiteralMessage<literal, limit, token> =>
-        `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
+        openRange: openRange
+    ): buildBoundLiteralMessage<literal, openRange> =>
+        `Literal value '${literal}' cannot be bound by ${openRange}`
 
     export type buildBoundLiteralMessage<
         literal extends NumberLiteral,
-        limit extends number,
-        comparator extends Scanner.Comparator
-    > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
+        openRange extends MinString
+    > = `Literal value '${literal}' cannot be bound by ${openRange}`
 
-    export const buildUnpairedMessage = <
-        limit extends number,
-        comparator extends Scanner.Comparator
-    >(
-        limit: limit,
-        comparator: comparator
-    ): buildUnpairedMessage<limit, comparator> =>
-        `Left bounds are only valid when paired with right bounds. Consider using ${invertedComparators[comparator]}${limit} instead`
+    const invertLeftBound = <LeftBound extends MinString>(
+        leftBound: LeftBound
+    ) => `<${leftBound.slice(1)}` as invertLeftBound<LeftBound>
 
-    export type buildUnpairedMessage<
-        limit extends number,
-        comparator extends Scanner.Comparator
-    > = `Left bounds are only valid when paired with right bounds. Consider using ${InvertedComparators[comparator]}${limit} instead`
+    type invertLeftBound<leftBound extends MinString> =
+        leftBound extends `>${infer rest} ` ? `<${rest}` : never
+
+    export const buildUnpairedMessage = <LeftBound extends MinString>(
+        leftBound: LeftBound
+    ): buildUnpairedMessage<LeftBound> =>
+        `Left bounds are only valid when paired with right bounds (try ${invertLeftBound(
+            leftBound
+        )})`
+
+    export type buildUnpairedMessage<leftBound extends MinString> =
+        `Left bounds are only valid when paired with right bounds (try ${invertLeftBound<leftBound>})`
 }

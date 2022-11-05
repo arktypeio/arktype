@@ -5,7 +5,7 @@ import { LeftBound } from "./bounds/left.js"
 
 export namespace Intersection {
     export const parse = (s: State.DynamicWithRoot) => {
-        if (State.hasOpenLeftBound(s)) {
+        if (State.hasOpenRange(s)) {
             return LeftBound.unpairedError(s)
         }
         s.branches.intersection ??= []
@@ -15,12 +15,12 @@ export namespace Intersection {
     }
 
     export type parse<s extends State.StaticWithRoot> =
-        s extends State.StaticWithOpenLeftBound
+        s extends State.StaticWithOpenRange
             ? LeftBound.unpairedError<s>
             : State.from<{
                   root: undefined
                   branches: {
-                      leftBound: undefined
+                      range: undefined
                       union: s["branches"]["union"]
                       intersection: [collectBranches<s>, "&"]
                   }
@@ -36,7 +36,7 @@ export namespace Intersection {
     export const mergeDescendantsToRootIfPresent = (
         s: State.DynamicWithRoot
     ) => {
-        if (State.hasOpenLeftBound(s)) {
+        if (State.hasOpenRange(s)) {
             return LeftBound.unpairedError(s)
         }
         if (!s.branches.intersection) {

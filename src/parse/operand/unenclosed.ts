@@ -1,4 +1,14 @@
 import type {
+    assertWellFormed,
+    assertWellFormedBigint,
+    BigintLiteral,
+    NumberLiteral
+} from "../../utils/numericLiterals.js"
+import {
+    parseWellFormedBigint,
+    parseWellFormedNumber
+} from "../../utils/numericLiterals.js"
+import type {
     DynamicParserContext,
     ParseError,
     StaticParserContext
@@ -7,8 +17,6 @@ import { parseRoot } from "../parse.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
 import { Keyword } from "./keyword.js"
-import type { BigintLiteral, NumberLiteral } from "./numeric.js"
-import { UnenclosedBigint, UnenclosedNumber } from "./numeric.js"
 import { Operand } from "./operand.js"
 
 export namespace Unenclosed {
@@ -51,7 +59,7 @@ export namespace Unenclosed {
         if (!cache[name]) {
             // Set the resolution to a shallow reference until the alias has
             // been fully parsed in case it cyclicly references itself
-            cache[name] = { aliases: name }
+            cache[name] = { alias: name }
             cache[name] = parseRoot(
                 context.spaceRoot.aliases[name],
                 context.spaceRoot
@@ -61,11 +69,11 @@ export namespace Unenclosed {
     }
 
     const maybeParseUnenclosedLiteral = (token: string) => {
-        const maybeNumber = UnenclosedNumber.parseWellFormed(token, "number")
+        const maybeNumber = parseWellFormedNumber(token)
         if (maybeNumber !== undefined) {
             return { value: token as NumberLiteral }
         }
-        const maybeBigint = UnenclosedBigint.parseWellFormed(token)
+        const maybeBigint = parseWellFormedBigint(token)
         if (maybeBigint !== undefined) {
             return { value: token as BigintLiteral }
         }
@@ -103,9 +111,9 @@ export namespace Unenclosed {
     > = isResolvableIdentifier<token, context> extends true
         ? token
         : token extends NumberLiteral<infer Value>
-        ? UnenclosedNumber.assertWellFormed<token, Value, "number">
+        ? assertWellFormed<token, Value, "number">
         : token extends BigintLiteral<infer Value>
-        ? UnenclosedBigint.assertWellFormed<token, Value>
+        ? assertWellFormedBigint<token, Value>
         : ParseError<
               token extends ""
                   ? Operand.buildMissingOperandMessage<s>

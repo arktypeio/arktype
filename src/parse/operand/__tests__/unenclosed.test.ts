@@ -2,7 +2,7 @@ import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { space } from "../../../space.js"
 import { type } from "../../../type.js"
-import { buildMalformedNumericLiteralMessage } from "../numeric.js"
+import { buildMalformedNumericLiteralMessage } from "../../../utils/numericLiterals.js"
 import { Unenclosed } from "../unenclosed.js"
 
 describe("parse unenclosed", () => {

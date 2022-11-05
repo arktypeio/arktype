@@ -1,9 +1,9 @@
 import { isKeyOf } from "../../../utils/generics.js"
-import { UnenclosedNumber } from "../../operand/numeric.js"
+import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import { add } from "../../state/intersection.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
-import { buildInvalidDoubleMessage, toBoundsAttribute } from "./shared.js"
+import { buildInvalidDoubleMessage } from "./shared.js"
 
 export namespace RightBound {
     export const parse = (
@@ -11,9 +11,8 @@ export namespace RightBound {
         comparator: Scanner.Comparator
     ) => {
         const limitToken = s.scanner.shiftUntilNextTerminator()
-        const limit = UnenclosedNumber.parseWellFormed(
+        const limit = parseWellFormedNumber(
             limitToken,
-            "number",
             buildInvalidLimitMessage(
                 comparator,
                 limitToken + s.scanner.unscanned
@@ -31,7 +30,7 @@ export namespace RightBound {
         ? setValidatedRootOrCatch<
               State.scanTo<s, nextUnscanned>,
               comparator,
-              UnenclosedNumber.parseWellFormedNumber<
+              parseWellFormedNumber<
                   scanned,
                   buildInvalidLimitMessage<comparator, scanned>
               >
@@ -43,20 +42,19 @@ export namespace RightBound {
         comparator: Scanner.Comparator,
         limit: number
     ) => {
-        const boundsData = toBoundsAttribute(comparator, limit)
-        if (!isLeftBounded(s)) {
-            s.root = add(s.root, "bounds", boundsData)
+        if (!State.hasOpenRange(s)) {
+            s.root = add(s.root, "bounds", `${comparator}${limit}`)
             return s
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return State.error(buildInvalidDoubleMessage(comparator))
         }
-        boundsData.min = {
-            limit: s.branches.leftBound[0],
-            inclusive: s.branches.leftBound[1] === "<="
-        }
-        s.root = add(s.root, "bounds", boundsData)
-        s.branches.leftBound = State.unset
+        s.root = add(
+            s.root,
+            "bounds",
+            `${s.branches.range}${comparator}${limit}`
+        )
+        s.branches.range = State.unset
         return s
     }
 
@@ -65,16 +63,16 @@ export namespace RightBound {
         comparator extends Scanner.Comparator,
         limitOrError extends string | number
     > = limitOrError extends number
-        ? s["branches"]["leftBound"] extends {}
+        ? s["branches"]["range"] extends {}
             ? comparator extends Scanner.PairableComparator
                 ? State.from<{
                       root: [
-                          s["branches"]["leftBound"][0],
-                          s["branches"]["leftBound"][1],
+                          s["branches"]["range"][0],
+                          s["branches"]["range"][1],
                           [s["root"], comparator, limitOrError]
                       ]
                       branches: {
-                          leftBound: undefined
+                          range: undefined
                           intersection: s["branches"]["intersection"]
                           union: s["branches"]["union"]
                       }
@@ -98,9 +96,4 @@ export namespace RightBound {
         comparator extends Scanner.Comparator,
         limit extends string
     > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
-
-    const isLeftBounded = <s extends State.DynamicWithRoot>(
-        s: s
-    ): s is s & { branches: { leftBound: State.OpenLeftBound } } =>
-        !!s.branches.leftBound
 }

@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 /* eslint-disable max-lines-per-function */
 import { pushKey } from "../../utils/generics.js"
-import type { NumberLiteral } from "../operand/numeric.js"
+import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type {
     AttributeBranches,
     AttributeKey,

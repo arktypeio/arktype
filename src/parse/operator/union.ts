@@ -13,12 +13,12 @@ export namespace Union {
     }
 
     export type parse<s extends State.StaticWithRoot> =
-        s extends State.StaticWithOpenLeftBound
+        s extends State.StaticWithOpenRange
             ? LeftBound.unpairedError<s>
             : State.from<{
                   root: undefined
                   branches: {
-                      leftBound: undefined
+                      range: undefined
                       intersection: undefined
                       union: [collectBranches<s>, "|"]
                   }

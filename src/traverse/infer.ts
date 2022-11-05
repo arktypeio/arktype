@@ -1,9 +1,9 @@
 import type { Enclosed } from "../parse/operand/enclosed.js"
 import type { Keyword } from "../parse/operand/keyword.js"
-import type { NumberLiteral } from "../parse/operand/numeric.js"
 import type { Scanner } from "../parse/state/scanner.js"
 import type { ArktypeSpace } from "../space.js"
 import type { evaluate } from "../utils/generics.js"
+import type { NumberLiteral } from "../utils/numericLiterals.js"
 
 export type inferAst<node, space> = node extends TerminalAst
     ? inferTerminal<node, space>

@@ -84,3 +84,5 @@ export const withoutLastKey = (path: string, delimiter = ".") => {
 }
 
 export type subtype<t, u extends t> = u
+
+export type defined<t> = Exclude<t, undefined>

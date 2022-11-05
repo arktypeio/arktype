@@ -1,5 +1,5 @@
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
-import { UnenclosedNumber } from "../../operand/numeric.js"
+import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type {
     EmptyIntersectionResult,
     Intersector
@@ -34,11 +34,15 @@ export const buildInvalidDoubleMessage = <
 ): buildInvalidDoubleMessage<comparator> =>
     `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
-export type BoundsString = SingleBoundString | DoubleBoundString
+export type BoundsString = BoundString | RangeString
 
-type SingleBoundString = `${Scanner.Comparator}${number}`
+export type BoundString = `${Scanner.Comparator}${number}`
 
-type DoubleBoundString = `${">" | ">="}${number}${"<" | "<="}${number}`
+export type RangeString = `${MinString}${MaxString}`
+
+export type MinString = `${">" | ">="}${number}`
+
+export type MaxString = `${"<" | "<="}${number}`
 
 const boundStringRegex = /^([<>=]=?)([^<>=]+)$|^(>=?)([^<>=]+)(<=?)([^<>=]+)$/
 
@@ -52,9 +56,6 @@ type ParsedBound = {
     inclusive: boolean
 }
 
-const parseLimit = (limitString: string) =>
-    UnenclosedNumber.parseWellFormed(limitString, "number", true)
-
 const parseBounds = (boundsString: BoundsString): ParsedBounds => {
     const matches = boundStringRegex.exec(boundsString)
     if (!matches) {
@@ -63,13 +64,13 @@ const parseBounds = (boundsString: BoundsString): ParsedBounds => {
         )
     }
     if (matches[1]) {
-        return parseSingleBound(matches[1], parseLimit(matches[2]))
+        return parseBound(matches[1], parseWellFormedNumber(matches[2], true))
     }
-    return parseDoubleBound(
+    return parseRange(
         matches[3],
-        parseLimit(matches[4]),
+        parseWellFormedNumber(matches[4], true),
         matches[5],
-        parseLimit(matches[6])
+        parseWellFormedNumber(matches[6], true)
     )
 }
 
@@ -89,7 +90,7 @@ const stringifyBounds = (bounds: ParsedBounds): BoundsString => {
     return result as BoundsString
 }
 
-const parseSingleBound = (comparator: string, limit: number): ParsedBounds => {
+const parseBound = (comparator: string, limit: number): ParsedBounds => {
     const bound: ParsedBound = {
         limit,
         inclusive: comparator[1] === "="
@@ -107,7 +108,7 @@ const parseSingleBound = (comparator: string, limit: number): ParsedBounds => {
     }
 }
 
-const parseDoubleBound = (
+const parseRange = (
     minComparator: string,
     minLimit: number,
     maxComparator: string,
@@ -125,15 +126,15 @@ const parseDoubleBound = (
 
 export const intersectBounds: Intersector<"bounds"> = (stringA, stringB) => {
     const a = parseBounds(stringA)
-    const { min, max } = parseBounds(stringB)
-    if (min) {
-        const maybeContradiction = intersectBound("min", a, min)
+    const b = parseBounds(stringB)
+    if (b.min) {
+        const maybeContradiction = intersectBound("min", a, b.min)
         if (maybeContradiction) {
             return maybeContradiction
         }
     }
-    if (max) {
-        const maybeContradiction = intersectBound("max", a, max)
+    if (b.max) {
+        const maybeContradiction = intersectBound("max", a, b.max)
         if (maybeContradiction) {
             return maybeContradiction
         }

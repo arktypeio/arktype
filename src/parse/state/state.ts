@@ -4,6 +4,7 @@ import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import type { LeftBound } from "../operator/bounds/left.js"
+import type { MinString } from "../operator/bounds/shared.js"
 import { Union } from "../operator/union.js"
 import type { AttributeKey, Attributes } from "./attributes.js"
 import { Scanner } from "./scanner.js"
@@ -84,30 +85,24 @@ export namespace State {
         unscanned: def
     }>
 
-    export type OpenLeftBound = [
-        limit: number,
-        comparator: Scanner.PairableComparator
-    ]
-
     export type DynamicOpenBranches = {
-        leftBound?: OpenLeftBound
+        range?: MinString
         union?: Attributes[]
         intersection?: Attributes[]
     }
 
-    export const hasOpenLeftBound = <s extends Dynamic>(
-        s: s
-    ): s is s & { branches: { leftBound: OpenLeftBound } } =>
-        !!s.branches.leftBound
-
-    // TODO: Try as list
     export type StaticOpenBranches = {
-        leftBound: OpenLeftBound | undefined
+        range: MinString | undefined
+        // TODO: Try as list
         union: [unknown, "|"] | undefined
         intersection: [unknown, "&"] | undefined
     }
 
-    export type StaticWithOpenLeftBound = { branches: { leftBound: {} } }
+    export const hasOpenRange = <s extends Dynamic>(
+        s: s
+    ): s is s & { branches: { range: MinString } } => !!s.branches.range
+
+    export type StaticWithOpenRange = { branches: { range: {} } }
 
     export const error = (message: string) => throwParseError(message)
 
@@ -121,7 +116,7 @@ export namespace State {
     export const initializeBranches = (): DynamicOpenBranches => ({})
 
     export type initialBranches = {
-        leftBound: undefined
+        range: undefined
         union: undefined
         intersection: undefined
     }
@@ -132,7 +127,7 @@ export namespace State {
     }
 
     export type finalizeBranches<s extends StaticWithRoot> =
-        s extends StaticWithOpenLeftBound
+        s extends StaticWithOpenRange
             ? LeftBound.unpairedError<s>
             : from<{
                   root: Union.collectBranches<s>
@@ -181,15 +176,15 @@ export namespace State {
     }>
 
     export const previousOperator = (s: Dynamic) =>
-        s.branches.leftBound?.[1] ?? s.branches.intersection
+        s.branches.range?.[1] ?? s.branches.intersection
             ? "&"
             : s.branches.union
             ? "|"
             : undefined
 
     export type previousOperator<s extends Static> =
-        s extends StaticWithOpenLeftBound
-            ? s["branches"]["leftBound"][1]
+        s extends StaticWithOpenRange
+            ? s["branches"]["range"][1]
             : s["branches"]["intersection"] extends {}
             ? "&"
             : s["branches"]["union"] extends {}
