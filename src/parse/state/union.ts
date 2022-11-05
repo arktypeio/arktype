@@ -30,6 +30,7 @@ export const union = (branches: Attributes[]): Attributes => {
         distribution,
         branches.length
     )
+    // return discriminantEntries
     return {
         branches: createDiscriminatedBranches(
             initializeUndiscriminated(branches.length),
@@ -53,8 +54,8 @@ const graphDiscriminants = (
             if (k !== "type" && k !== "value") {
                 continue
             }
-            const pathAttribute = pathAttributes[k]!
-            const values = Object.keys(pathAttribute)
+            const branchIndicesByValue = pathAttributes[k]!
+            const values = Object.keys(branchIndicesByValue)
             if (values.length > 1) {
                 const graph: DiscriminantGraph = { size: 0 }
                 for (
@@ -62,7 +63,8 @@ const graphDiscriminants = (
                     valueIndex < values.length;
                     valueIndex++
                 ) {
-                    const branchesWithValue = pathAttribute[values[valueIndex]]
+                    const branchesWithValue =
+                        branchIndicesByValue[values[valueIndex]]
                     const discriminantNeighbors: DiscriminantNeighbors = {}
                     for (
                         let neighboringValueIndex = 0;
@@ -70,7 +72,7 @@ const graphDiscriminants = (
                         neighboringValueIndex++
                     ) {
                         if (valueIndex !== neighboringValueIndex) {
-                            for (const branchIndex of pathAttribute[
+                            for (const branchIndex of branchIndicesByValue[
                                 values[neighboringValueIndex]
                             ]) {
                                 discriminantNeighbors[branchIndex] = true
