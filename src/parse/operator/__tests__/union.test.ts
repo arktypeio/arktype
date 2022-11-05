@@ -24,23 +24,7 @@ const testBranches: Attributes[] = [
 
 describe("union", () => {
     test("discriminate", () => {
-        attest(union(testBranches)).snap([
-            [
-                "props.a",
-                "type",
-                {
-                    "0": { "2": true },
-                    "1": { "2": true },
-                    "2": { "0": true, "1": true },
-                    size: 4
-                }
-            ],
-            [
-                "props.c",
-                "type",
-                { "0": { "1": true }, "1": { "0": true }, size: 2 }
-            ]
-        ])
+        attest(union(testBranches)).snap()
     })
     describe("infer", () => {
         test("two types", () => {
