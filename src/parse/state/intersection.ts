@@ -1,5 +1,6 @@
 import type { mutable } from "../../utils/generics.js"
 import { isKeyOf, keysOf } from "../../utils/generics.js"
+import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { intersectBounds } from "../operator/bounds/shared.js"
 import { Divisor } from "../operator/divisor.js"
 import type {
@@ -146,7 +147,9 @@ const intersectors: IntersectorsByKey = {
             }
         }
         return result
-    }
+    },
+    parent: () =>
+        throwInternalError(`Unexpected attempt to intersect attribute parents.`)
 }
 
 const dynamicReducers = intersectors as {

@@ -16,6 +16,7 @@ type AtomicAttributeTypes = {
 
 type ComposedAttributeTypes = {
     readonly contradictions?: Contradictions
+    readonly parent?: Attributes
     readonly baseProp?: Attributes
     readonly props?: Readonly<dictionary<Attributes>>
     readonly branches?: AttributeBranches

@@ -1,10 +1,9 @@
-import type { mutable } from "../../../utils/generics.js"
+import { throwInternalError } from "../../../utils/internalArktypeError.js"
+import { UnenclosedNumber } from "../../operand/numeric.js"
 import type {
     EmptyIntersectionResult,
-    Intersector,
-    MaybeEmptyIntersection
+    Intersector
 } from "../../state/intersection.js"
-import { isEmptyIntersection } from "../../state/intersection.js"
 import type { Scanner } from "../../state/scanner.js"
 
 export const comparatorDescriptions = {
@@ -35,21 +34,63 @@ export const buildInvalidDoubleMessage = <
 ): buildInvalidDoubleMessage<comparator> =>
     `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
-export type BoundsAttribute = {
-    readonly min?: BoundData
-    readonly max?: BoundData
+export type BoundsString = SingleBoundString | DoubleBoundString
+
+type SingleBoundString = `${Scanner.Comparator}${number}`
+
+type DoubleBoundString = `${">" | ">="}${number}${"<" | "<="}${number}`
+
+const boundStringRegex = /^([<>=]=?)([^<>=]+)$|^(>=?)([^<>=]+)(<=?)([^<>=]+)$/
+
+type ParsedBounds = {
+    min?: ParsedBound
+    max?: ParsedBound
 }
 
-export type BoundData = {
-    readonly limit: number
-    readonly inclusive: boolean
-}
-
-export const toBoundsAttribute = (
-    comparator: Scanner.Comparator,
+type ParsedBound = {
     limit: number
-): mutable<BoundsAttribute> => {
-    const bound: BoundData = {
+    inclusive: boolean
+}
+
+const parseLimit = (limitString: string) =>
+    UnenclosedNumber.parseWellFormed(limitString, "number", true)
+
+const parseBounds = (boundsString: BoundsString): ParsedBounds => {
+    const matches = boundStringRegex.exec(boundsString)
+    if (!matches) {
+        return throwInternalError(
+            `Unexpectedly failed to parse bounds from '${boundsString}'`
+        )
+    }
+    if (matches[1]) {
+        return parseSingleBound(matches[1], parseLimit(matches[2]))
+    }
+    return parseDoubleBound(
+        matches[3],
+        parseLimit(matches[4]),
+        matches[5],
+        parseLimit(matches[6])
+    )
+}
+
+const stringifyBounds = (bounds: ParsedBounds): BoundsString => {
+    if (bounds.min?.limit === bounds.max?.limit) {
+        return `==${bounds.min!.limit}`
+    }
+    let result = ""
+    if (bounds.min) {
+        result += bounds.min.inclusive ? ">=" : ">"
+        result += bounds.min.limit
+    }
+    if (bounds.max) {
+        result += bounds.max.inclusive ? "<=" : "<"
+        result += bounds.max.limit
+    }
+    return result as BoundsString
+}
+
+const parseSingleBound = (comparator: string, limit: number): ParsedBounds => {
+    const bound: ParsedBound = {
         limit,
         inclusive: comparator[1] === "="
     }
@@ -66,46 +107,65 @@ export const toBoundsAttribute = (
     }
 }
 
-export const intersectBounds: Intersector<"bounds"> = (base, { min, max }) => {
-    let intersectedBounds: MaybeEmptyIntersection<BoundsAttribute> = base
+const parseDoubleBound = (
+    minComparator: string,
+    minLimit: number,
+    maxComparator: string,
+    maxLimit: number
+): ParsedBounds => ({
+    min: {
+        limit: minLimit,
+        inclusive: minComparator[1] === "="
+    },
+    max: {
+        limit: maxLimit,
+        inclusive: maxComparator[1] === "="
+    }
+})
+
+export const intersectBounds: Intersector<"bounds"> = (stringA, stringB) => {
+    const a = parseBounds(stringA)
+    const { min, max } = parseBounds(stringB)
     if (min) {
-        intersectedBounds = intersectBound("min", base, min)
-        if (isEmptyIntersection(intersectedBounds)) {
-            return intersectedBounds
+        const maybeContradiction = intersectBound("min", a, min)
+        if (maybeContradiction) {
+            return maybeContradiction
         }
     }
     if (max) {
-        intersectedBounds = intersectBound("max", base, max)
+        const maybeContradiction = intersectBound("max", a, max)
+        if (maybeContradiction) {
+            return maybeContradiction
+        }
     }
-    return intersectedBounds
+    return stringifyBounds(a)
 }
 
 const intersectBound = (
     kind: BoundKind,
-    base: BoundsAttribute,
-    bound: BoundData
-): BoundsAttribute | EmptyIntersectionResult<BoundsAttribute> => {
+    a: ParsedBounds,
+    boundOfB: ParsedBound
+): EmptyIntersectionResult<BoundsString> | undefined => {
     const invertedKind = invertedKinds[kind]
-    const baseCompeting = base[kind]
-    const baseOpposing = base[invertedKind]
-    if (baseOpposing && isStricter(kind, bound, baseOpposing)) {
-        return createBoundsContradiction(kind, baseOpposing, bound)
+    const baseCompeting = a[kind]
+    const baseOpposing = a[invertedKind]
+    if (baseOpposing && isStricter(kind, boundOfB, baseOpposing)) {
+        return createBoundsContradiction(kind, baseOpposing, boundOfB)
     }
-    if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
-        return { ...base, [kind]: bound }
+    if (!baseCompeting || isStricter(kind, boundOfB, baseCompeting)) {
+        a[kind] = boundOfB
     }
-    return base
 }
 
 const createBoundsContradiction = (
     kind: BoundKind,
-    baseOpposing: BoundData,
-    bound: BoundData
-): EmptyIntersectionResult<BoundsAttribute> => [
-    { [invertedKinds[kind]]: baseOpposing },
-    {
+    baseOpposing: ParsedBound,
+    bound: ParsedBound
+): EmptyIntersectionResult<BoundsString> => [
+    stringifyBounds({ [invertedKinds[kind]]: baseOpposing }),
+    stringifyBounds({
         [kind]: bound
-    }
+    })
 ]
 
 const invertedKinds = {
@@ -115,7 +175,11 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const isStricter = (kind: BoundKind, candidate: BoundData, base: BoundData) => {
+const isStricter = (
+    kind: BoundKind,
+    candidate: ParsedBound,
+    base: ParsedBound
+) => {
     if (
         candidate.limit === base.limit &&
         candidate.inclusive === false &&
