@@ -48,7 +48,7 @@ export namespace Divisor {
     > = divisorOrError extends number
         ? divisorOrError extends 0
             ? State.error<buildInvalidDivisorMessage<0>>
-            : State.scanTo<s, unscanned>
+            : State.setRoot<s, [s["root"], "%", divisorOrError], unscanned>
         : State.error<`${divisorOrError}`>
 
     export const buildInvalidDivisorMessage = <divisor extends string | number>(

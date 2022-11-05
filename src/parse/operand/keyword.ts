@@ -52,10 +52,12 @@ export namespace Keyword {
         null: { value: "null" },
         number: { type: "number" },
         object: {
-            type: {
-                dictionary: true,
-                array: true,
-                function: true
+            branches: {
+                type: {
+                    dictionary: true,
+                    array: true,
+                    function: true
+                }
             }
         },
         string: { type: "string" },

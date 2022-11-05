@@ -2,7 +2,13 @@ import type { SpaceRoot } from "../space.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import { pushKey, withoutLastKey } from "../utils/generics.js"
-import type { evaluate, isAny, isTopType, mutable } from "../utils/generics.js"
+import type {
+    evaluate,
+    isAny,
+    isTopType,
+    keySet,
+    mutable
+} from "../utils/generics.js"
 import { throwInternalError } from "../utils/internalArktypeError.js"
 import type {
     DynamicParserContext,
@@ -11,7 +17,7 @@ import type {
 } from "./common.js"
 import { initializeParserContext, throwParseError } from "./common.js"
 import type { Operand } from "./operand/operand.js"
-import type { Attributes, keySet } from "./state/attributes.js"
+import type { Attributes } from "./state/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
 
@@ -82,7 +88,7 @@ const parseStructure = (
         return parseTupleExpression(definition, context)
     }
     const props: dictionary<Attributes> = {}
-    const requiredKey: mutable<keySet<string>> = {}
+    const requiredKey: keySet<string> = {}
     for (const definitionKey in definition) {
         let keyName = definitionKey
         if (definitionKey.endsWith("?")) {

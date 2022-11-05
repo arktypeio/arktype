@@ -1,15 +1,15 @@
-import type { defined, mutable } from "../../utils/generics.js"
-import { isKeyOf, keysOf } from "../../utils/generics.js"
+import type {
+    defined,
+    keyOrKeySet,
+    keyOrPartialKeySet,
+    keySet,
+    mutable
+} from "../../utils/generics.js"
+import { isKeyOf } from "../../utils/generics.js"
 import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { intersectBounds } from "../operator/bounds/shared.js"
 import { Divisor } from "../operator/divisor.js"
-import type {
-    AttributeKey,
-    Attributes,
-    keyOrKeySet,
-    keySet,
-    TypeAttributeName
-} from "./attributes.js"
+import type { AttributeKey, Attributes, TypeAttribute } from "./attributes.js"
 
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
@@ -18,7 +18,12 @@ export const add = <k extends AttributeKey>(
 ): Attributes => {
     const attributesToAdd: mutable<Attributes> = { [k]: value }
     if (!attributes[k] && isKeyOf(k, impliedTypes)) {
-        attributesToAdd.type = impliedTypes[k]
+        const impliedType = impliedTypes[k]
+        if (typeof impliedType === "string") {
+            attributesToAdd.type = impliedType
+        } else {
+            attributesToAdd.branches = { type: impliedType }
+        }
     }
     return intersect(attributes, attributesToAdd)
 }
@@ -36,10 +41,11 @@ const intersect = (a: Attributes, b: Attributes): Attributes => {
     for (k in b) {
         if (k in a) {
             const intersectedValue = dynamicReducers[k](a[k], b[k])
-            if (isEmptyIntersection(intersectedValue)) {
-                result.contradiction += `Whoops`
+            if (intersectedValue === null) {
+                result.contradiction = `Whoops`
+            } else {
+                result[k] = intersectedValue
             }
-            result[k] = intersectedValue
         } else {
             result[k] = b[k] as any
         }
@@ -47,7 +53,7 @@ const intersect = (a: Attributes, b: Attributes): Attributes => {
     return result
 }
 
-const intersectAdditiveAttribute = <t extends string>(
+const intersectIrreducibleAttribute = <t extends string>(
     a: keyOrKeySet<t>,
     b: keyOrKeySet<t>
 ): keyOrKeySet<t> => {
@@ -63,27 +69,8 @@ const intersectAdditiveAttribute = <t extends string>(
     return { ...a, ...b }
 }
 
-const intersectDisjointAttribute = <k extends string>(
-    a: keyOrKeySet<k>,
-    b: keyOrKeySet<k>
-): keyOrKeySet<k> | null => {
-    if (typeof a === "string") {
-        if (typeof b === "string") {
-            return a === b ? a : null
-        }
-        return a in b ? a : null
-    }
-    if (typeof b === "string") {
-        return b in a ? b : null
-    }
-    const intersectionSet = intersectKeySets(a, b)
-    const intersectingKeys = keysOf(intersectionSet)
-    return intersectingKeys.length === 0
-        ? null
-        : intersectingKeys.length === 1
-        ? intersectingKeys[0]
-        : intersectionSet
-}
+const intersectDisjointAttribute = <value extends string>(a: value, b: value) =>
+    a === b ? a : null
 
 const intersectKeySets = <k extends string>(
     a: keySet<k>,
@@ -106,10 +93,10 @@ const intersectors: IntersectorsByKey = {
     value: intersectDisjointAttribute,
     type: intersectDisjointAttribute,
     divisor: (a, b) => Divisor.intersect(a, b),
-    regex: (a, b) => intersectAdditiveAttribute(a, b),
+    regex: (a, b) => intersectIrreducibleAttribute(a, b),
     bounds: intersectBounds,
-    requiredKey: (a, b) => intersectKeySets(a, b),
-    alias: intersectAdditiveAttribute,
+    requiredKeys: intersectIrreducibleAttribute,
+    alias: intersectIrreducibleAttribute,
     baseProp: (a, b) => intersect(a, b),
     props: (a, b) => {
         const intersectedProps = { ...a, ...b }
@@ -124,9 +111,7 @@ const intersectors: IntersectorsByKey = {
         // TODO: Fix
         return a
     },
-    contradictions: (a, b) => {
-        return a
-    },
+    contradiction: intersectIrreducibleAttribute,
     parent: () =>
         throwInternalError(`Unexpected attempt to intersect attribute parents.`)
 }
@@ -138,7 +123,7 @@ const dynamicReducers = intersectors as {
 type TypeImplyingKey = "divisor" | "regex" | "bounds"
 
 const impliedTypes: {
-    [k in TypeImplyingKey]: TypeAttributeName
+    [k in TypeImplyingKey]: keyOrPartialKeySet<TypeAttribute>
 } = {
     divisor: "number",
     bounds: {
@@ -149,20 +134,29 @@ const impliedTypes: {
     regex: "string"
 }
 
-export const isEmptyIntersection = (
-    intersection: unknown
-): intersection is EmptyIntersectionResult<unknown> =>
-    Array.isArray(intersection)
-
-export type MaybeEmptyIntersection<t> = t | EmptyIntersectionResult<t>
-
-export type EmptyIntersectionResult<t> = [aConflicting: t, bConflicting: t]
-
 export type Intersector<k extends AttributeKey> = (
     a: defined<Attributes[k]>,
     value: defined<Attributes[k]>
-) =>
-    | defined<Attributes[k]>
-    | (k extends ContradictableKey
-          ? EmptyIntersectionResult<Attributes[k]>
-          : never)
+) => defined<Attributes[k]> | null
+
+// const intersectDisjointAttribute = <k extends string>(
+//     a: keyOrKeySet<k>,
+//     b: keyOrKeySet<k>
+// ): keyOrKeySet<k> | null => {
+//     if (typeof a === "string") {
+//         if (typeof b === "string") {
+//             return a === b ? a : null
+//         }
+//         return a in b ? a : null
+//     }
+//     if (typeof b === "string") {
+//         return b in a ? b : null
+//     }
+//     const intersectionSet = intersectKeySets(a, b)
+//     const intersectingKeys = keysOf(intersectionSet)
+//     return intersectingKeys.length === 0
+//         ? null
+//         : intersectingKeys.length === 1
+//         ? intersectingKeys[0]
+//         : intersectionSet
+// }

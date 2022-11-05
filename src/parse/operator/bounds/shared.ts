@@ -1,9 +1,6 @@
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
-import type {
-    EmptyIntersectionResult,
-    Intersector
-} from "../../state/intersection.js"
+import type { Intersector } from "../../state/intersection.js"
 import type { Scanner } from "../../state/scanner.js"
 
 export const comparatorDescriptions = {
@@ -124,20 +121,25 @@ const parseRange = (
     }
 })
 
-export const intersectBounds: Intersector<"bounds"> = (stringA, stringB) => {
-    const a = parseBounds(stringA)
-    const b = parseBounds(stringB)
+export const intersectBounds: Intersector<"bounds"> = (
+    stringifiedA,
+    stringifiedB
+) => {
+    const a = parseBounds(stringifiedA)
+    const b = parseBounds(stringifiedB)
     if (b.min) {
-        const maybeContradiction = intersectBound("min", a, b.min)
-        if (maybeContradiction) {
-            return maybeContradiction
+        const result = intersectBound("min", a, b.min)
+        if (result === null) {
+            return result
         }
+        a.min = result
     }
     if (b.max) {
-        const maybeContradiction = intersectBound("max", a, b.max)
-        if (maybeContradiction) {
-            return maybeContradiction
+        const result = intersectBound("max", a, b.max)
+        if (result === null) {
+            return result
         }
+        a.max = result
     }
     return stringifyBounds(a)
 }
@@ -146,28 +148,18 @@ const intersectBound = (
     kind: BoundKind,
     a: ParsedBounds,
     boundOfB: ParsedBound
-): EmptyIntersectionResult<BoundsString> | undefined => {
+): ParsedBound | null => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = a[kind]
     const baseOpposing = a[invertedKind]
     if (baseOpposing && isStricter(kind, boundOfB, baseOpposing)) {
-        return createBoundsContradiction(kind, baseOpposing, boundOfB)
+        return null
     }
     if (!baseCompeting || isStricter(kind, boundOfB, baseCompeting)) {
-        a[kind] = boundOfB
+        return boundOfB
     }
+    return baseCompeting
 }
-
-const createBoundsContradiction = (
-    kind: BoundKind,
-    baseOpposing: ParsedBound,
-    bound: ParsedBound
-): EmptyIntersectionResult<BoundsString> => [
-    stringifyBounds({ [invertedKinds[kind]]: baseOpposing }),
-    stringifyBounds({
-        [kind]: bound
-    })
-]
 
 const invertedKinds = {
     min: "max",

@@ -16,10 +16,7 @@ describe("space", () => {
         attest(types.c.attributes).equals({
             type: "string",
             regex: "/^(.+)@(.+)\\.(.+)$/",
-            bounds: {
-                min: { limit: 5, inclusive: false },
-                max: { limit: 10, inclusive: true }
-            }
+            bounds: ">5<=10"
         })
         attest(types.$.infer.c).typed as string
     })
@@ -28,7 +25,7 @@ describe("space", () => {
         attest(cyclicSpace.a.attributes).snap({
             type: "dictionary",
             props: {
-                b: { type: "dictionary", props: { a: { aliases: "a" } } }
+                b: { type: "dictionary", props: { a: { alias: "a" } } }
             }
         })
         // Type hint displays as any on hitting cycle

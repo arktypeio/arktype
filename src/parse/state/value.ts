@@ -9,7 +9,6 @@ import {
     parseWellFormedNumber
 } from "../../utils/numericLiterals.js"
 import type { Enclosed } from "../operand/enclosed.js"
-import type { keyOrKeySet } from "./attributes.js"
 
 export type SerializedPrimitives = {
     string: Enclosed.SingleQuotedStringLiteral
@@ -55,5 +54,3 @@ const serializedKeywords = {
 } as const
 
 type SerializedKeywords = typeof serializedKeywords
-
-export type ValueAttribute = keyOrKeySet<SerializedPrimitive>

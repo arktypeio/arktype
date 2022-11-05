@@ -27,7 +27,7 @@ export namespace RightBound {
     > = Scanner.shiftUntilNextTerminator<
         s["unscanned"]
     > extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-        ? catchAndValidate<
+        ? setValidatedRootOrCatch<
               State.scanTo<s, nextUnscanned>,
               comparator,
               parseWellFormedNumber<
@@ -60,26 +60,30 @@ export namespace RightBound {
         return s
     }
 
-    type catchAndValidate<
+    type setValidatedRootOrCatch<
         s extends State.StaticWithRoot,
         comparator extends Scanner.Comparator,
         limitOrError extends string | number
-    > = limitOrError extends string
-        ? State.error<`${limitOrError}`>
-        : s["branches"]["range"] extends undefined
-        ? s
-        : comparator extends Scanner.PairableComparator
-        ? State.from<{
-              root: s["root"]
-              branches: {
-                  range: undefined
-                  intersection: s["branches"]["intersection"]
-                  union: s["branches"]["union"]
-              }
-              groups: s["groups"]
-              unscanned: s["unscanned"]
-          }>
-        : State.error<buildInvalidDoubleMessage<comparator>>
+    > = limitOrError extends number
+        ? s["branches"]["range"] extends {}
+            ? comparator extends Scanner.PairableComparator
+                ? State.from<{
+                      root: [
+                          s["branches"]["range"][0],
+                          s["branches"]["range"][1],
+                          [s["root"], comparator, limitOrError]
+                      ]
+                      branches: {
+                          range: undefined
+                          intersection: s["branches"]["intersection"]
+                          union: s["branches"]["union"]
+                      }
+                      groups: s["groups"]
+                      unscanned: s["unscanned"]
+                  }>
+                : State.error<buildInvalidDoubleMessage<comparator>>
+            : State.setRoot<s, [s["root"], comparator, limitOrError]>
+        : State.error<`${limitOrError}`>
 
     export const buildInvalidLimitMessage = <
         comparator extends Scanner.Comparator,

@@ -1,5 +1,10 @@
 import type { dictionary, DynamicTypeName } from "../../utils/dynamicTypes.js"
-import type { evaluate, subtype } from "../../utils/generics.js"
+import type {
+    evaluate,
+    keyOrKeySet,
+    keySet,
+    subtype
+} from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type { Enclosed } from "../operand/enclosed.js"
 import type { BoundsString } from "../operator/bounds/shared.js"
@@ -9,19 +14,19 @@ type ReducibleAttributes = subtype<
     dictionary<string>,
     {
         readonly value?: SerializedPrimitive
-        readonly type?: TypeAttributeName
+        readonly type?: TypeAttribute
         readonly divisor?: NumberLiteral
         readonly bounds?: BoundsString
     }
 >
 
 type IrreducibleAttributes = subtype<
-    dictionary<string>,
+    dictionary<keyOrKeySet<string>>,
     {
-        readonly regex?: Enclosed.RegexLiteral
-        readonly requiredKey?: string
-        readonly alias?: string
-        readonly contradiction?: string
+        readonly regex?: keyOrKeySet<Enclosed.RegexLiteral>
+        readonly requiredKeys?: keySet<string>
+        readonly alias?: keyOrKeySet<string>
+        readonly contradiction?: keyOrKeySet<string>
     }
 >
 
@@ -45,21 +50,4 @@ export type Attributes = AtomicAttributes & ComposedAttributes
 
 export type AttributeKey = keyof Attributes
 
-export type TypeAttributeName = Exclude<DynamicTypeName, "undefined" | "null">
-
-export type keySet<key extends string> = { [_ in key]?: true }
-
-export type keyOrKeySet<key extends string> = key | keySet<key>
-
-export const atomicAttributes: Required<keySet<AtomicKey>> = {
-    value: true,
-    type: true,
-    divisor: true,
-    regex: true,
-    bounds: true,
-    requiredKey: true,
-    alias: true,
-    contradiction: true
-}
-
-export type AtomicKey = keyof AtomicAttributes
+export type TypeAttribute = Exclude<DynamicTypeName, "undefined" | "null">
