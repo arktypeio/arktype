@@ -3,7 +3,7 @@ import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import { add } from "../../state/intersection.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
-import { buildInvalidDoubleMessage } from "./shared.js"
+import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
 export namespace RightBound {
     export const parse = (
@@ -52,7 +52,9 @@ export namespace RightBound {
         s.root = add(
             s.root,
             "bounds",
-            `${s.branches.range}${comparator}${limit}`
+            `${invertedComparators[s.branches.range[1]]}${
+                s.branches.range[0]
+            }${comparator}${limit}`
         )
         s.branches.range = State.unset
         return s

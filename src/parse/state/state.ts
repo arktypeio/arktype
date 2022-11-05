@@ -4,7 +4,6 @@ import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import type { LeftBound } from "../operator/bounds/left.js"
-import type { MinString } from "../operator/bounds/shared.js"
 import { Union } from "../operator/union.js"
 import type { AttributeKey, Attributes } from "./attributes.js"
 import { Scanner } from "./scanner.js"
@@ -85,14 +84,19 @@ export namespace State {
         unscanned: def
     }>
 
+    export type OpenRange = [
+        limit: number,
+        comparator: Scanner.PairableComparator
+    ]
+
     export type DynamicOpenBranches = {
-        range?: MinString
+        range?: OpenRange
         union?: Attributes[]
         intersection?: Attributes[]
     }
 
     export type StaticOpenBranches = {
-        range: MinString | undefined
+        range: OpenRange | undefined
         // TODO: Try as list
         union: [unknown, "|"] | undefined
         intersection: [unknown, "&"] | undefined
@@ -100,7 +104,7 @@ export namespace State {
 
     export const hasOpenRange = <s extends Dynamic>(
         s: s
-    ): s is s & { branches: { range: MinString } } => !!s.branches.range
+    ): s is s & { branches: { range: OpenRange } } => !!s.branches.range
 
     export type StaticWithOpenRange = { branches: { range: {} } }
 
