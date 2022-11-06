@@ -5,14 +5,26 @@ import type { Enclosed } from "../operand/enclosed.js"
 import type { BoundsString } from "../operator/bounds/shared.js"
 import type { SerializedPrimitive } from "./value.js"
 
+type DisjointAttributeTypes = {
+    value: SerializedPrimitive
+    type: TypeAttribute
+}
+
+export type DisjointKey = keyof DisjointAttributeTypes
+
+export const disjointKeys: Record<DisjointKey, true> = {
+    type: true,
+    value: true
+}
+
+type AdditiveAttributeTypes = {
+    divisor: NumberLiteral
+    bounds: BoundsString
+}
+
 type ReducibleAttributeTypes = subtype<
     dictionary<string>,
-    {
-        value: SerializedPrimitive
-        type: TypeAttribute
-        divisor: NumberLiteral
-        bounds: BoundsString
-    }
+    DisjointAttributeTypes & AdditiveAttributeTypes
 >
 
 type IrreducibleAttributeTypes = subtype<
@@ -34,14 +46,16 @@ type ComposedAttributeTypes = {
 
 export type AttributeBranches =
     | Attributes[]
-    | {
-          readonly path: string
-          readonly key: string
-          readonly cases: AttributeCases
-      }
+    | DiscriminatedAttributeBranches<DisjointKey>
 
-export type AttributeCases = {
-    readonly [k in string]: AttributeBranches
+export type DiscriminatedAttributeBranches<key extends DisjointKey> = {
+    readonly path: string
+    readonly key: key
+    readonly cases: AttributeCases<key>
+}
+
+export type AttributeCases<key extends DisjointKey> = {
+    readonly [k in DisjointAttributeTypes[key] | "default"]?: Attributes
 }
 
 export type AttributeTypes = ReducibleAttributeTypes &

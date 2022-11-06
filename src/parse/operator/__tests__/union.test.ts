@@ -4,7 +4,7 @@ import { type } from "../../../api.js"
 import { Operand } from "../../operand/operand.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
 import type { Attributes } from "../../state/attributes.js"
-import { union } from "../../state/union.js"
+import { discriminate } from "../../state/union.js"
 
 const testBranches: Attributes[] = [
     {
@@ -22,7 +22,24 @@ const testBranches: Attributes[] = [
 
 describe("union", () => {
     test("discriminate", () => {
-        attest(union(testBranches)).snap()
+        attest(discriminate(testBranches)).snap({
+            path: "",
+            key: "type",
+            cases: {
+                string: { regex: "/a/" },
+                number: {
+                    branches: {
+                        path: "",
+                        key: "value",
+                        cases: {
+                            undefined: { regex: "/b/" },
+                            null: { regex: "/c/" }
+                        }
+                    }
+                },
+                default: { regex: "/d/" }
+            }
+        })
     })
     describe("infer", () => {
         test("two types", () => {
