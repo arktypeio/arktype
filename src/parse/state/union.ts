@@ -38,7 +38,7 @@ export const discriminate = (branches: Attributes[]): AttributeBranches => {
                 ? branches[0]
                 : { branches: discriminate(branches) }
     }
-    return { path: head.path, key: head.key, cases }
+    return { path: "", key: head.key, cases }
 }
 
 const graphDiscriminants = (branches: Attributes[]) => {
