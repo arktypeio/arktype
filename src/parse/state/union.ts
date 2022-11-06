@@ -8,10 +8,12 @@ import type {
 import { disjointKeys } from "./attributes.js"
 
 type Discriminant = {
-    path: string
     key: DisjointKey
     result: DiscriminationGraph
 }
+
+type DiscriminantEntry = [path: string, discriminant: Discriminant]
+
 type DiscriminationGraph = number[][] & {
     size: number
 }
@@ -24,14 +26,14 @@ export const discriminate = (branches: Attributes[]): AttributeBranches => {
     }
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
-        const { [head.key]: valueKey = "default", ...rest } = branches[i]
-        branchesByValue[valueKey] ??= []
-        branchesByValue[valueKey].push(rest)
+        const { [head.key]: value = "default", paths, ...rest } = branches[i]
+        branchesByValue[value] ??= []
+        branchesByValue[value].push(rest)
     }
     const cases: dictionary<Attributes> = {}
-    for (const valueKey in branchesByValue) {
-        const branches = branchesByValue[valueKey]
-        cases[valueKey] =
+    for (const value in branchesByValue) {
+        const branches = branchesByValue[value]
+        cases[value] =
             branches.length === 1
                 ? branches[0]
                 : { branches: discriminate(branches) }
@@ -48,7 +50,6 @@ const graphDiscriminants = (branches: Attributes[]) => {
     let key: DisjointKey
     for (key in disjointKeys) {
         const current: Discriminant = {
-            path: "",
             key,
             result: [] as any
         }
