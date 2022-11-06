@@ -9,24 +9,34 @@ import { union } from "../../state/union.js"
 const testBranches: Attributes[] = [
     {
         type: "dictionary",
-        props: { a: { type: "string" }, c: { type: "bigint" } }
+        paths: { a: { type: "string" }, c: { type: "bigint" } }
     },
     {
         type: "dictionary",
-        props: { a: { type: "string" }, c: { type: "number" } },
+        paths: { a: { type: "string" }, c: { type: "number" } },
         requiredKeys: { a: true }
     },
     {
         type: "dictionary",
-        props: { a: { type: "number" }, b: { type: "boolean" } }
+        paths: { a: { type: "number" }, b: { type: "boolean" } }
     }
+]
+
+const testBranches2: Attributes[] = [
+    {
+        type: "string",
+        regex: "/a/"
+    },
+    {
+        type: "number",
+        regex: "/b/"
+    },
+    { type: "number", regex: "/c/" }
 ]
 
 describe("union", () => {
     test("discriminate", () => {
-        attest(union(testBranches) as any).snap({
-            branches: ["props.a.type", { string: ["0", "1"], number: ["2"] }]
-        })
+        attest(union(testBranches2) as any).snap({ type: [[], [2], []] })
     })
     describe("infer", () => {
         test("two types", () => {

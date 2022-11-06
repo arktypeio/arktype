@@ -8,7 +8,7 @@ describe("struct", () => {
         attest(o.infer).typed as { a: string; b: boolean[] }
         attest(o.attributes).snap({
             type: "dictionary",
-            props: {
+            paths: {
                 a: { type: "string" },
                 b: { type: "array", baseProp: { type: "boolean" } }
             },
@@ -20,7 +20,7 @@ describe("struct", () => {
         attest(o.infer).typed as { a?: string | undefined; b: boolean[] }
         attest(o.attributes).snap({
             type: "dictionary",
-            props: {
+            paths: {
                 a: { type: "string" },
                 b: { type: "array", baseProp: { type: "boolean" } }
             },

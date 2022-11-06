@@ -91,14 +91,14 @@ const intersectors: IntersectorsByKey = {
     regex: (a, b) => intersectIrreducibleAttribute(a, b),
     bounds: intersectBounds,
     baseProp: (a, b) => intersect(a, b),
-    props: (a, b) => {
-        const intersectedProps = { ...a, ...b }
-        for (const k in intersectedProps) {
+    paths: (a, b) => {
+        const intersected = { ...a, ...b }
+        for (const k in intersected) {
             if (k in a && k in b) {
-                intersectedProps[k] = intersect(a[k], b[k])
+                intersected[k] = intersect(a[k], b[k])
             }
         }
-        return intersectedProps
+        return intersected
     },
     branches: (a, b) => {
         // TODO: Fix

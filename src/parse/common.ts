@@ -1,16 +1,13 @@
 import type { SpaceRoot } from "../space.js"
 
 export type DynamicParserContext = {
-    path: string
     spaceRoot: SpaceRoot
 }
 
-// TODO: How much of this do we need?
 export const initializeParserContext = (
     spaceRoot: SpaceRoot
 ): DynamicParserContext => ({
-    spaceRoot,
-    path: ""
+    spaceRoot
 })
 
 export type StaticParserContext = {

@@ -24,8 +24,9 @@ describe("space", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         attest(cyclicSpace.a.attributes).snap({
             type: "dictionary",
-            props: {
-                b: { type: "dictionary", props: { a: { alias: "a" } } }
+            paths: {
+                b: { type: "dictionary" },
+                "b.a": { alias: "a" }
             }
         })
         // Type hint displays as any on hitting cycle
