@@ -8,35 +8,21 @@ import { union } from "../../state/union.js"
 
 const testBranches: Attributes[] = [
     {
-        type: "dictionary",
-        paths: { a: { type: "string" }, c: { type: "bigint" } }
-    },
-    {
-        type: "dictionary",
-        paths: { a: { type: "string" }, c: { type: "number" } },
-        requiredKeys: { a: true }
-    },
-    {
-        type: "dictionary",
-        paths: { a: { type: "number" }, b: { type: "boolean" } }
-    }
-]
-
-const testBranches2: Attributes[] = [
-    {
         type: "string",
         regex: "/a/"
     },
     {
         type: "number",
+        value: "undefined",
         regex: "/b/"
     },
-    { type: "number", regex: "/c/" }
+    { type: "number", value: "null", regex: "/c/" },
+    { regex: "/d/" }
 ]
 
 describe("union", () => {
     test("discriminate", () => {
-        attest(union(testBranches2) as any).snap({ type: [[], [2], []] })
+        attest(union(testBranches)).snap()
     })
     describe("infer", () => {
         test("two types", () => {

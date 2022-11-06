@@ -32,12 +32,17 @@ type ComposedAttributeTypes = {
     branches: AttributeBranches
 }
 
-export type AttributeBranches = readonly [
-    path: string,
-    attributesOrBranches: {
-        readonly [k in string]: Attributes | AttributeBranches
-    }
-]
+export type AttributeBranches =
+    | Attributes[]
+    | {
+          readonly path: string
+          readonly key: string
+          readonly cases: AttributeCases
+      }
+
+export type AttributeCases = {
+    readonly [k in string]: AttributeBranches
+}
 
 export type AttributeTypes = ReducibleAttributeTypes &
     IrreducibleAttributeTypes &

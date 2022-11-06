@@ -11,6 +11,7 @@ import { intersectBounds } from "../operator/bounds/shared.js"
 import { Divisor } from "../operator/divisor.js"
 import type {
     AttributeBranches,
+    AttributeCases,
     AttributeKey,
     Attributes,
     TypeAttribute
@@ -27,7 +28,11 @@ export const add = <k extends AttributeKey>(
         if (typeof impliedType === "string") {
             attributesToAdd.type = impliedType
         } else {
-            attributesToAdd.branches = ["type", impliedType]
+            attributesToAdd.branches = {
+                path: "",
+                key: "type",
+                cases: impliedType
+            }
         }
     }
     return intersect(attributes, attributesToAdd)
@@ -115,13 +120,14 @@ const dynamicReducers = intersectors as {
 type TypeImplyingKey = "divisor" | "regex" | "bounds"
 
 const impliedTypes: {
-    [k in TypeImplyingKey]: TypeAttribute | AttributeBranches[1]
+    [k in TypeImplyingKey]: TypeAttribute | AttributeCases
 } = {
     divisor: "number",
     bounds: {
-        number: {},
-        string: {},
-        array: {}
+        // TODO: Update to be true or something
+        number: [{}],
+        string: [{}],
+        array: [{}]
     },
     regex: "string"
 }

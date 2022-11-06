@@ -1,5 +1,6 @@
 /* eslint-disable max-lines-per-function */
 import type { dictionary } from "../../utils/dynamicTypes.js"
+import type { mutable } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type {
     AttributeBranches,
@@ -11,6 +12,7 @@ type DistributionByPath = Record<string, ValueByBranch>
 type ValueByBranch = Record<number | NumberLiteral, string>
 type Discriminant = {
     path: string
+    key: DisjointKey
     result: DiscriminationGraph
 }
 type DiscriminationGraph = number[][] & {
@@ -18,7 +20,7 @@ type DiscriminationGraph = number[][] & {
 }
 
 export const union = (branches: Attributes[]) => {
-    return graphDiscriminants(branches)
+    return discriminate(branches)
 }
 
 const disjointKeys = {
@@ -28,78 +30,62 @@ const disjointKeys = {
 
 type DisjointKey = keyof typeof disjointKeys
 
-const graphDiscriminants = (branches: Attributes[]) => {
-    const discriminants: dictionary<DiscriminationGraph> = {}
-    for (let i = 0; i < branches.length; i++) {
-        for (let j = i + 1; j < branches.length; j++) {
-            let k: DisjointKey
-            for (k in disjointKeys) {
-                if (!branches[i][k]) {
-                    continue
-                }
-                const result: DiscriminationGraph = branches.map(
-                    () => []
-                ) as any
-                result.size = 0
-
-                if (
-                    branches[j][k] === undefined ||
-                    branches[j][k] === branches[i][k]
-                ) {
-                    result[i].push(j)
-                    result.size++
-                }
-                discriminants[k] = result
-            }
-        }
-        // // if (result.size === 0) {
-        // //     return [pathEntry]
-        // // }
-        // if (
-        //     discriminants[0] &&
-        //     result.size < discriminants[0].result.size
-        // ) {
-        //     discriminants.unshift(pathEntry)
-        // } else {
-        //     discriminants.push(pathEntry)
-        // }
-    }
-    return discriminants
-}
-
-const discriminate = (
-    discriminants: Discriminant[],
-    distribution: DistributionByPath
-): AttributeBranches | undefined => {
+const discriminate = (branches: Attributes[]): AttributeBranches => {
+    const discriminants = graphDiscriminants(branches)
     const head = discriminants.shift()
     if (!head) {
-        return
+        return branches
     }
-    let currentMinCount = head.result.size
-    const next: Discriminant[] = []
-    for (const discriminant of discriminants) {
-        discriminant.result = intersectDiscriminant(
-            head.result,
-            discriminant.result
-        )
-        if (discriminant.result.size < currentMinCount) {
-            next.unshift(discriminant)
-            currentMinCount = discriminant.result.size
-            if (currentMinCount === 0) {
-                break
+    const branchesByValue: dictionary<Attributes[]> = {}
+    for (let i = 0; i < branches.length; i++) {
+        const { [head.key]: valueKey = "", ...rest } = branches[i]
+        branchesByValue[valueKey] ??= []
+        branchesByValue[valueKey].push(rest)
+    }
+    const cases: dictionary<AttributeBranches> = {}
+    for (const valueKey in branchesByValue) {
+        cases[valueKey] = discriminate(branchesByValue[valueKey])
+    }
+    return { path: head.path, key: head.key, cases }
+}
+
+const graphDiscriminants = (branches: Attributes[]) => {
+    const discriminants: Discriminant[] = []
+    const undiscriminatedSize = (branches.length * (branches.length - 1)) / 2
+    let key: DisjointKey
+    for (key in disjointKeys) {
+        const current: Discriminant = {
+            path: "",
+            key,
+            result: [] as any
+        }
+        current.result.size = 0
+        for (let i = 0; i < branches.length - 1; i++) {
+            current.result.push([])
+            for (let j = i + 1; j < branches.length; j++) {
+                if (
+                    branches[i][key] === undefined ||
+                    branches[j][key] === undefined ||
+                    branches[i][key] === branches[j][key]
+                ) {
+                    current.result[i].push(j)
+                    current.result.size++
+                }
             }
-        } else if (discriminant.result.size < head.result.size) {
-            next.push(discriminant)
+        }
+        if (current.result.size === 0) {
+            return [current]
+        }
+        if (
+            discriminants[0] &&
+            current.result.size < discriminants[0].result.size
+        ) {
+            discriminants.unshift(current)
+        } else if (current.result.size < undiscriminatedSize) {
+            discriminants.push(current)
         }
     }
-    const branchMap: Record<string, any> = {}
-    let i: NumberLiteral
-    for (i in distribution[head.path]) {
-        const discriminantValue = distribution[head.path][i] ?? ""
-        branchMap[discriminantValue] ??= []
-        branchMap[discriminantValue].push(i)
-    }
-    return [head.path, branchMap]
+    return discriminants
 }
 
 const intersectDiscriminant = (
