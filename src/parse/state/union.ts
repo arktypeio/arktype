@@ -1,34 +1,39 @@
 /* eslint-disable max-lines-per-function */
 import type { dictionary } from "../../utils/dynamicTypes.js"
+import { pushKey } from "../../utils/paths.js"
 import type {
     AttributeBranches,
     Attributes,
+    AttributeTypes,
     DisjointKey
 } from "./attributes.js"
-import { disjointKeys } from "./attributes.js"
 
 type Discriminant = {
+    path: string
     key: DisjointKey
-    result: DiscriminationGraph
+    result: DiscriminationResult
 }
 
-type DiscriminantEntry = [path: string, discriminant: Discriminant]
-
-type DiscriminationGraph = number[][] & {
-    size: number
+type DiscriminationResult = {
+    values: DiscriminatingValue[]
+    score: number
 }
+
+type DiscriminatingValue = AttributeTypes[DisjointKey] | "default"
 
 export const discriminate = (branches: Attributes[]): AttributeBranches => {
-    const discriminants = graphDiscriminants(branches)
-    const head = discriminants.shift()
-    if (!head) {
+    if (branches.length === 1) {
+        return branches
+    }
+    const nextDiscriminant = greedyDiscriminant("", branches)
+    if (!nextDiscriminant) {
         return branches
     }
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
-        const { [head.key]: value = "default", paths, ...rest } = branches[i]
+        const value = nextDiscriminant.result.values[i]
         branchesByValue[value] ??= []
-        branchesByValue[value].push(rest)
+        branchesByValue[value].push(branches[i])
     }
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
@@ -38,46 +43,94 @@ export const discriminate = (branches: Attributes[]): AttributeBranches => {
                 ? branches[0]
                 : { branches: discriminate(branches) }
     }
-    return { path: "", key: head.key, cases }
+    return { path: "", key: nextDiscriminant.key, cases }
 }
 
-const graphDiscriminants = (branches: Attributes[]) => {
-    const discriminants: Discriminant[] = []
-    if (branches.length === 1) {
-        return discriminants
+const greedyDiscriminant = (
+    path: string,
+    branches: Attributes[]
+): Discriminant | undefined => {
+    return (
+        greedyShallowDiscriminant(path, branches) ??
+        greedyPropsDiscriminant(path, branches)
+    )
+}
+
+const greedyShallowDiscriminant = (path: string, branches: Attributes[]) => {
+    const typeDiscriminatedResult = discriminateKey(branches, "type")
+    const valueDiscriminatedResult = discriminateKey(branches, "value")
+    const shallowDiscriminant: Discriminant =
+        typeDiscriminatedResult.score > valueDiscriminatedResult.score
+            ? { path, key: "type", result: typeDiscriminatedResult }
+            : { path, key: "value", result: valueDiscriminatedResult }
+    if (shallowDiscriminant.result.score > 0) {
+        return shallowDiscriminant
     }
-    const undiscriminatedSize = (branches.length * (branches.length - 1)) / 2
-    let key: DisjointKey
-    for (key in disjointKeys) {
-        const current: Discriminant = {
-            key,
-            result: [] as any
+}
+
+const greedyPropsDiscriminant = (path: string, branches: Attributes[]) => {
+    let bestDiscriminant: Discriminant | undefined
+    const sortedPropFrequencies = sortPropsByFrequency(branches)
+    for (const [propKey, branchAppearances] of sortedPropFrequencies) {
+        const maxScore = maxEdges(branchAppearances)
+        if (bestDiscriminant && bestDiscriminant.result.score >= maxScore) {
+            return bestDiscriminant
         }
-        current.result.size = 0
-        for (let i = 0; i < branches.length - 1; i++) {
-            current.result.push([])
-            for (let j = i + 1; j < branches.length; j++) {
-                if (
-                    branches[i][key] === undefined ||
-                    branches[j][key] === undefined ||
-                    branches[i][key] === branches[j][key]
-                ) {
-                    current.result[i].push(j)
-                    current.result.size++
-                }
+        const propDiscriminant = greedyDiscriminant(
+            pushKey(path, propKey),
+            branches.map((branch) => branch.props?.[propKey] ?? {})
+        )
+        if (
+            propDiscriminant &&
+            (!bestDiscriminant ||
+                propDiscriminant.result.score > bestDiscriminant.result.score)
+        ) {
+            bestDiscriminant = propDiscriminant
+        }
+    }
+    return bestDiscriminant
+}
+
+const maxEdges = (vertexCount: number) => (vertexCount * (vertexCount - 1)) / 2
+
+type PropFrequencyEntry = [propKey: string, appearances: number]
+
+const sortPropsByFrequency = (branches: Attributes[]): PropFrequencyEntry[] => {
+    const appearancesByProp: dictionary<number> = {}
+    for (let i = 0; i < branches.length; i++) {
+        if (!branches[i].props) {
+            continue
+        }
+        for (const propKey in branches[i].props) {
+            appearancesByProp[propKey] = appearancesByProp[propKey]
+                ? 1
+                : appearancesByProp[propKey] + 1
+        }
+    }
+    // TODO: Check sorting
+    return Object.entries(appearancesByProp).sort((a, b) => b[1] - a[1])
+}
+
+const discriminateKey = (branches: Attributes[], key: DisjointKey) => {
+    let score = 0
+    const values = branches.map((branch, i) => {
+        for (
+            let pairedIndex = i + 1;
+            pairedIndex < branches.length;
+            pairedIndex++
+        ) {
+            if (
+                branch[key] &&
+                branches[pairedIndex][key] &&
+                branch[key] !== branches[pairedIndex][key]
+            ) {
+                score++
             }
         }
-        if (current.result.size === 0) {
-            return [current]
-        }
-        if (
-            discriminants[0] &&
-            current.result.size < discriminants[0].result.size
-        ) {
-            discriminants.unshift(current)
-        } else if (current.result.size < undiscriminatedSize) {
-            discriminants.push(current)
-        }
+        return branch[key] ?? "default"
+    })
+    return {
+        values,
+        score
     }
-    return discriminants
 }

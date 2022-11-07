@@ -83,14 +83,6 @@ export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
 
-export const pushKey = (path: string, key: string, delimiter = ".") =>
-    path === "" ? key : `${path}${delimiter}${key}`
-
-export const withoutLastKey = (path: string, delimiter = ".") => {
-    const lastDelimiterIndex = path.lastIndexOf(delimiter)
-    return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
-}
-
 export type subtype<t, u extends t> = u
 
 export type defined<t> = Exclude<t, undefined>

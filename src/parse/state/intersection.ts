@@ -1,7 +1,6 @@
 import type {
     defined,
     keyOrKeySet,
-    keyOrPartialKeySet,
     keySet,
     mutable
 } from "../../utils/generics.js"
@@ -10,7 +9,6 @@ import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { intersectBounds } from "../operator/bounds/shared.js"
 import { Divisor } from "../operator/divisor.js"
 import type {
-    AttributeBranches,
     AttributeCases,
     AttributeKey,
     Attributes,
@@ -96,7 +94,7 @@ const intersectors: IntersectorsByKey = {
     regex: (a, b) => intersectIrreducibleAttribute(a, b),
     bounds: intersectBounds,
     baseProp: (a, b) => intersect(a, b),
-    paths: (a, b) => {
+    props: (a, b) => {
         const intersected = { ...a, ...b }
         for (const k in intersected) {
             if (k in a && k in b) {
@@ -120,14 +118,13 @@ const dynamicReducers = intersectors as {
 type TypeImplyingKey = "divisor" | "regex" | "bounds"
 
 const impliedTypes: {
-    [k in TypeImplyingKey]: TypeAttribute | AttributeCases
+    [k in TypeImplyingKey]: TypeAttribute | AttributeCases<"type">
 } = {
     divisor: "number",
     bounds: {
-        // TODO: Update to be true or something
-        number: [{}],
-        string: [{}],
-        array: [{}]
+        number: {},
+        string: {},
+        array: {}
     },
     regex: "string"
 }

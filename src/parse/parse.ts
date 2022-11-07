@@ -1,7 +1,13 @@
 import type { SpaceRoot } from "../space.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
-import type { evaluate, isAny, isTopType, keySet } from "../utils/generics.js"
+import type {
+    evaluate,
+    isAny,
+    isTopType,
+    keySet,
+    mutable
+} from "../utils/generics.js"
 import { throwInternalError } from "../utils/internalArktypeError.js"
 import type {
     DynamicParserContext,
@@ -81,7 +87,7 @@ const parseStructure = (
         return parseTupleExpression(definition, context)
     }
     const type = Array.isArray(definition) ? "array" : "dictionary"
-    const paths: dictionary<Attributes> = {}
+    const props: mutable<dictionary<Attributes>> = {}
     const requiredKeys: keySet<string> = {}
     for (const definitionKey in definition) {
         let keyName = definitionKey
@@ -90,18 +96,9 @@ const parseStructure = (
         } else {
             requiredKeys[definitionKey] = true
         }
-        const { paths: nestedPaths, ...shallowAttributes } = parseDefinition(
-            definition[definitionKey],
-            context
-        )
-        paths[keyName] = shallowAttributes
-        if (nestedPaths) {
-            for (const path in nestedPaths) {
-                paths[`${keyName}.${path}`] = nestedPaths[path]
-            }
-        }
+        props[keyName] = parseDefinition(definition[definitionKey], context)
     }
-    return { type, paths, requiredKeys }
+    return { type, props, requiredKeys }
 }
 
 type parseStructure<
