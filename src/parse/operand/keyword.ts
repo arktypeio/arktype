@@ -38,45 +38,46 @@ export namespace Keyword {
     export const matches = (token: string): token is Keyword =>
         token in attributes
 
-    export const attributes: { readonly [k in Keyword]: Attributes } = {
+    export const attributes: { [k in Keyword]: () => Attributes } = {
         // TS keywords
-        any: {},
-        bigint: { type: "bigint" },
-        boolean: { type: "boolean" },
-        false: { type: "boolean", value: "false" },
-        never: {
+        any: () => ({}),
+        bigint: () => ({ type: "bigint" }),
+        boolean: () => ({ type: "boolean" }),
+        false: () => ({ type: "boolean", value: "false" }),
+        never: () => ({
             contradiction: "explicitly typed as never"
-        },
-        null: { type: "null", value: "null" },
-        number: { type: "number" },
-        object: {
-            branches: [
-                "type",
-                {
+        }),
+        null: () => ({ type: "null", value: "null" }),
+        number: () => ({ type: "number" }),
+        object: () => ({
+            branches: {
+                path: "",
+                key: "type",
+                cases: {
                     dictionary: {},
                     array: {},
                     function: {}
                 }
-            ]
-        },
-        string: { type: "string" },
-        symbol: { type: "symbol" },
-        true: { value: "true", type: "boolean" },
-        undefined: { type: "undefined", value: "undefined" },
-        unknown: {},
-        void: { type: "undefined", value: "undefined" },
+            }
+        }),
+        string: () => ({ type: "string" }),
+        symbol: () => ({ type: "symbol" }),
+        true: () => ({ value: "true", type: "boolean" }),
+        undefined: () => ({ type: "undefined", value: "undefined" }),
+        unknown: () => ({}),
+        void: () => ({ type: "undefined", value: "undefined" }),
         // JS Object types
-        Function: { type: "function" },
+        Function: () => ({ type: "function" }),
         // Supplemental types
-        array: { type: "array" },
-        dictionary: { type: "dictionary" },
+        array: () => ({ type: "array" }),
+        dictionary: () => ({ type: "dictionary" }),
         // Regex
-        email: { type: "string", regex: "/^(.+)@(.+)\\.(.+)$/" },
-        alphanumeric: { type: "string", regex: "/^[dA-Za-z]+$/" },
-        alphaonly: { type: "string", regex: "/^[A-Za-z]+$/" },
-        lowercase: { type: "string", regex: "/^[a-z]*$/" },
-        uppercase: { type: "string", regex: "/^[A-Z]*$/" },
+        email: () => ({ type: "string", regex: "/^(.+)@(.+)\\.(.+)$/" }),
+        alphanumeric: () => ({ type: "string", regex: "/^[dA-Za-z]+$/" }),
+        alphaonly: () => ({ type: "string", regex: "/^[A-Za-z]+$/" }),
+        lowercase: () => ({ type: "string", regex: "/^[a-z]*$/" }),
+        uppercase: () => ({ type: "string", regex: "/^[A-Z]*$/" }),
         // Numeric
-        integer: { type: "number", divisor: "1" }
+        integer: () => ({ type: "number", divisor: "1" })
     }
 }

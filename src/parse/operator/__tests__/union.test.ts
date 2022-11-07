@@ -8,17 +8,40 @@ import { discriminate } from "../../state/union.js"
 
 const testBranches: Attributes[] = [
     {
-        type: "string",
-        regex: "/a/"
+        type: "dictionary",
+        props: {
+            kind: {
+                value: "1"
+            }
+        }
     },
     {
-        type: "number",
-        value: "undefined",
-        regex: "/b/"
+        type: "array",
+        props: {
+            kind: {
+                value: "1"
+            }
+        }
     },
-    { type: "number", value: "null", regex: "/c/" },
-    { regex: "/d/" }
+    {
+        type: "dictionary",
+        props: {
+            kind: {
+                value: "2"
+            }
+        }
+    },
+    {
+        type: "array",
+        props: {
+            kind: {
+                value: "2"
+            }
+        }
+    }
 ]
+
+// TODO: Prune empty branches
 
 describe("union", () => {
     test("discriminate", () => {
@@ -26,18 +49,26 @@ describe("union", () => {
             path: "",
             key: "type",
             cases: {
-                string: { regex: "/a/" },
-                number: {
+                dictionary: {
                     branches: {
-                        path: "",
+                        path: "kind",
                         key: "value",
                         cases: {
-                            undefined: { regex: "/b/" },
-                            null: { regex: "/c/" }
+                            "1": { props: { kind: {} } },
+                            "2": { props: { kind: {} } }
                         }
                     }
                 },
-                default: { regex: "/d/" }
+                array: {
+                    branches: {
+                        path: "kind",
+                        key: "value",
+                        cases: {
+                            "1": { props: { kind: {} } },
+                            "2": { props: { kind: {} } }
+                        }
+                    }
+                }
             }
         })
     })

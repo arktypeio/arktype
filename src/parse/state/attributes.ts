@@ -49,13 +49,13 @@ export type AttributeBranches =
     | DiscriminatedAttributeBranches<DisjointKey>
 
 export type DiscriminatedAttributeBranches<key extends DisjointKey> = {
-    readonly path: string
-    readonly key: key
-    readonly cases: AttributeCases<key>
+    path: string
+    key: key
+    cases: AttributeCases<key>
 }
 
 export type AttributeCases<key extends DisjointKey> = {
-    readonly [k in DisjointAttributeTypes[key] | "default"]?: Attributes
+    [k in DisjointAttributeTypes[key] | "default"]?: Attributes
 }
 
 export type AttributeTypes = ReducibleAttributeTypes &
@@ -64,6 +64,6 @@ export type AttributeTypes = ReducibleAttributeTypes &
 
 export type AttributeKey = keyof AttributeTypes
 
-export type Attributes = { readonly [k in AttributeKey]?: AttributeTypes[k] }
+export type Attributes = { [k in AttributeKey]?: AttributeTypes[k] }
 
 export type TypeAttribute = DynamicTypeName

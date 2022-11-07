@@ -6,15 +6,13 @@ export const withoutLastKey = (path: string, delimiter = ".") => {
     return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }
 
-export const getPath = (
-    value: unknown,
-    path: string,
-    delimiter = "."
-): unknown => {
-    const segments = path.split(delimiter)
+export const getPath = (value: unknown, path: string[]): unknown => {
     let result: any = value
-    while (typeof result === "object" && result !== null && segments.length) {
-        result = result[segments.shift()!]
+    for (const segment of path) {
+        if (typeof result !== "object" || result === null) {
+            return undefined
+        }
+        result = result[segment]
     }
     return result
 }

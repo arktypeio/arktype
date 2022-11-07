@@ -49,23 +49,24 @@ export namespace Unenclosed {
         context: DynamicParserContext
     ) =>
         Keyword.matches(token)
-            ? Keyword.attributes[token]
+            ? Keyword.attributes[token]()
             : context.spaceRoot.aliases[token]
             ? parseAlias(token, context)
             : undefined
 
     const parseAlias = (name: string, context: DynamicParserContext) => {
         const cache = context.spaceRoot.parseCache
-        if (!cache[name]) {
+        const cachedAttributes = cache.get(name)
+        if (!cachedAttributes) {
             // Set the resolution to a shallow reference until the alias has
             // been fully parsed in case it cyclicly references itself
-            cache[name] = { alias: name }
-            cache[name] = parseRoot(
-                context.spaceRoot.aliases[name],
-                context.spaceRoot
+            cache.set(name, { alias: name })
+            cache.set(
+                name,
+                parseRoot(context.spaceRoot.aliases[name], context.spaceRoot)
             )
         }
-        return cache[name]
+        return cache.get(name)
     }
 
     const maybeParseUnenclosedLiteral = (token: string) => {

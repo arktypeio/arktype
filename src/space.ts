@@ -6,6 +6,7 @@ import type { Attributes } from "./parse/state/attributes.js"
 import type { inferAst } from "./traverse/infer.js"
 import type { validate } from "./traverse/validate.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import { deepClone } from "./utils/deepClone.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 import type { evaluate } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -48,7 +49,7 @@ type inferredSpaceToArktypes<inferred> = {
 }
 
 export class SpaceRoot<inferred extends dictionary = dictionary> {
-    parseCache: dictionary<Attributes | undefined> = {}
+    parseCache: ParseCache = new ParseCache()
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -57,6 +58,20 @@ export class SpaceRoot<inferred extends dictionary = dictionary> {
 
     get infer(): inferred {
         return chainableNoOpProxy
+    }
+}
+
+export class ParseCache {
+    private cache: dictionary<Attributes | undefined> = {}
+
+    get(definition: string) {
+        if (definition in this.cache) {
+            return deepClone(this.cache[definition])
+        }
+    }
+
+    set(definition: string, attributes: Attributes) {
+        this.cache[definition] = attributes
     }
 }
 

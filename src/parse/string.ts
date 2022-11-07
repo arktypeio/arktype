@@ -14,12 +14,14 @@ export const parseString = (
     context: DynamicParserContext
 ) => {
     const cache = context.spaceRoot.parseCache
-    if (!cache[definition]) {
-        cache[definition] =
+    const cachedAttributes = cache.get(definition)
+    if (!cachedAttributes) {
+        const attributes =
             tryNaiveStringParse(definition, context) ??
             fullStringParse(definition, context)
+        cache.set(definition, attributes)
     }
-    return cache[definition]!
+    return cache.get(definition)
 }
 
 export type parseString<
