@@ -4,7 +4,7 @@ import { type } from "../../../api.js"
 import { Operand } from "../../operand/operand.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
 import type { Attributes } from "../../state/attributes.js"
-import { discriminate } from "../../state/union.js"
+import { discriminate } from "../../state/discriminate.js"
 
 const testBranches: Attributes[] = [
     {

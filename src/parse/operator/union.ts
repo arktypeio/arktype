@@ -1,6 +1,6 @@
 import type { maybePush } from "../common.js"
+import { discriminate } from "../state/discriminate.js"
 import { State } from "../state/state.js"
-import { discriminate } from "../state/union.js"
 import type { LeftBound } from "./bounds/left.js"
 import { Intersection } from "./intersection.js"
 

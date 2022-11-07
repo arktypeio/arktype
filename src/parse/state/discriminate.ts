@@ -1,3 +1,4 @@
+import { pruneDeepEqual } from "../../utils/deepEquals.js"
 import type { dictionary } from "../../utils/dynamicTypes.js"
 import { pushKey } from "../../utils/paths.js"
 import type {
@@ -32,10 +33,14 @@ export const discriminate = (branches: Attributes[]): AttributeBranches => {
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
         const branches = branchesByValue[value]
-        cases[value] =
-            branches.length === 1
-                ? branches[0]
-                : { branches: discriminate(branches) }
+
+        if (branches.length === 1) {
+            cases[value] = branches[0]
+        } else {
+            const baseAttributes = pruneDeepEqual(branches)
+            baseAttributes.branches = discriminate(branches)
+            cases[value] = baseAttributes
+        }
     }
     return { path: nextDiscriminant.path, key: nextDiscriminant.key, cases }
 }
