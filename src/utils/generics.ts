@@ -86,3 +86,7 @@ export type mutable<o> = {
 export type subtype<t, u extends t> = u
 
 export type defined<t> = Exclude<t, undefined>
+
+export type requireKeys<o, key extends keyof o> = o & {
+    [requiredKey in key]-?: o[requiredKey]
+}

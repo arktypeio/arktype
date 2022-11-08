@@ -4,7 +4,7 @@ import { type } from "../../../api.js"
 import { Operand } from "../../operand/operand.js"
 import { Unenclosed } from "../../operand/unenclosed.js"
 import type { Attributes } from "../../state/attributes.js"
-import { discriminate } from "../../state/discriminate.js"
+import { union } from "../../state/union/union.js"
 
 const testBranches: Attributes[] = [
     {
@@ -55,7 +55,7 @@ const testBranches: Attributes[] = [
 
 describe("union", () => {
     test("discriminate", () => {
-        attest(discriminate(testBranches)).snap({
+        attest(union(testBranches)).snap({
             props: { size: { type: "number" } },
             branches: {
                 path: "",

@@ -1,5 +1,5 @@
 import type { maybePush } from "../common.js"
-import { discriminate } from "../state/discriminate.js"
+import { union } from "../state/union/union.js"
 import { State } from "../state/state.js"
 import type { LeftBound } from "./bounds/left.js"
 import { Intersection } from "./intersection.js"
@@ -40,7 +40,7 @@ export namespace Union {
             return s
         }
         s.branches.union.push(s.root)
-        s.root = discriminate(s.branches.union)
+        s.root = union(s.branches.union)
         delete s.branches.union
         return s
     }

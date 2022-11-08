@@ -37,16 +37,29 @@ type IrreducibleAttributeTypes = subtype<
     }
 >
 
-type ComposedAttributeTypes = {
-    props: dictionary<Attributes>
-    branches: AttributeBranches
+type BranchAttributeTypes = {
+    switch: DiscriminatedAttributeBranches
+    some: Attributes[]
+    every: Attributes[][]
 }
 
-export type AttributeBranches =
-    | Attributes[]
-    | DiscriminatedAttributeBranches<DisjointKey>
+type ComposedAttributeTypes = {
+    props: dictionary<Attributes>
+} & BranchAttributeTypes
 
-export type DiscriminatedAttributeBranches<key extends DisjointKey> = {
+export const branchKeys: Record<BranchAttributeKey, true> = {
+    switch: true,
+    some: true,
+    every: true
+} as const
+
+export type BranchAttributeKey = keyof BranchAttributeTypes
+
+export type AttributeBranches = Attributes[] | DiscriminatedAttributeBranches
+
+export type DiscriminatedAttributeBranches<
+    key extends DisjointKey = DisjointKey
+> = {
     path: string
     key: key
     cases: AttributeCases<key>

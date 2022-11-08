@@ -7,8 +7,10 @@ import type {
     AttributeKey,
     Attributes,
     AttributeTypes,
+    BranchAttributeKey,
     TypeAttribute
 } from "./attributes.js"
+import { branchKeys } from "./attributes.js"
 
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
@@ -21,7 +23,7 @@ export const add = <k extends AttributeKey>(
         if (typeof impliedType === "string") {
             attributesToAdd.type = impliedType
         } else {
-            attributesToAdd.branches = {
+            attributesToAdd.switch = {
                 path: "",
                 key: "type",
                 cases: impliedType
@@ -39,20 +41,20 @@ export const intersection = (branches: Attributes[]) => {
 }
 
 const intersect = (a: Attributes, b: Attributes): Attributes => {
+    const intersected = { ...a, ...b }
     let k: AttributeKey
-    for (k in b) {
-        if (k in a) {
+    for (k in intersected) {
+        if (isKeyOf(k, branchKeys)) {
+        } else if (k in a && k in b) {
             const intersectedValue = dynamicIntersectors[k](a[k], b[k])
             if (intersectedValue === null) {
                 a.contradiction = `${a[k]} and ${b[k]} have an empty intersection`
             } else {
-                a[k] = intersectedValue
+                intersected[k] = intersectedValue
             }
-        } else {
-            a[k] = b[k] as any
         }
     }
-    return a
+    return intersected
 }
 
 const intersectIrreducibleAttribute = <t extends string>(
@@ -76,8 +78,10 @@ const intersectIrreducibleAttribute = <t extends string>(
 const intersectDisjointAttribute = <value extends string>(a: value, b: value) =>
     a === b ? a : null
 
+type IntersectableKey = Exclude<AttributeKey, BranchAttributeKey>
+
 type IntersectorsByKey = {
-    [k in AttributeKey]: Intersector<k>
+    [k in IntersectableKey]: Intersector<k>
 }
 
 const intersectors: IntersectorsByKey = {
@@ -96,15 +100,11 @@ const intersectors: IntersectorsByKey = {
             }
         }
         return Object.assign(a, b)
-    },
-    branches: (a, b) => {
-        // TODO: Fix
-        return a
     }
 }
 
 const dynamicIntersectors = intersectors as {
-    [k in AttributeKey]: (a: unknown, b: unknown) => any
+    [k in IntersectableKey]: (a: unknown, b: unknown) => any
 }
 
 type TypeImplyingKey = "divisor" | "regex" | "bounds"
