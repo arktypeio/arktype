@@ -6,6 +6,9 @@ import { dynamicTypeOf, hasDynamicType } from "./dynamicTypes.js"
  * shallowly tests === for any other value. Does not handle cyclic data.
  */
 export const deepEquals = (a: unknown, b: unknown) => {
+    if (a === b) {
+        return true
+    }
     const typeOfA = dynamicTypeOf(a)
     const typeOfB = dynamicTypeOf(b)
     return typeOfA !== typeOfB
@@ -14,7 +17,7 @@ export const deepEquals = (a: unknown, b: unknown) => {
         ? deepEqualsObject(a as dictionary, b as dictionary)
         : typeOfA === "array"
         ? deepEqualsArray(a as array, b as array)
-        : a === b
+        : false
 }
 
 const deepEqualsObject = (a: dictionary, b: dictionary) => {
@@ -44,48 +47,4 @@ const deepEqualsArray = (a: array, b: array) => {
     return true
 }
 
-// TODO: Shallow when
-// eslint-disable-next-line max-lines-per-function
-export const pruneDeepEqual = <t extends dictionary>(
-    objects: t[]
-): Partial<t> => {
-    const [base, ...compares] = objects
-    const deepEqual: Partial<t> = {}
-    for (const k in base) {
-        const baseValue = base[k]
-        const baseType = dynamicTypeOf(baseValue)
-        if (
-            !compares.every(
-                (compare) =>
-                    k in compare && hasDynamicType(compare[k], baseType)
-            )
-        ) {
-            break
-        }
-        if (baseType === "dictionary") {
-            const deepEqualAtKey = pruneDeepEqual(
-                objects.map((o) => o[k] as dictionary)
-            )
-            if (Object.keys(deepEqualAtKey).length) {
-                deepEqual[k] = deepEqualAtKey as any
-                for (const o of objects) {
-                    if (!Object.keys(o[k] as dictionary).length) {
-                        delete o[k]
-                    }
-                }
-            }
-        } else if (
-            baseType === "array"
-                ? compares.every((compare) =>
-                      deepEqualsArray(baseValue as array, compare[k] as array)
-                  )
-                : compares.every((compare) => baseValue === compare)
-        ) {
-            deepEqual[k] = baseValue
-            for (const o of objects) {
-                delete o[k]
-            }
-        }
-    }
-    return deepEqual
-}
+export const isEmpty = (o: array | dictionary) => Object.keys(o).length === 0

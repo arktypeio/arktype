@@ -1,11 +1,7 @@
-import { pruneDeepEqual } from "../../utils/deepEquals.js"
+import { deepEquals, isEmpty } from "../../utils/deepEquals.js"
 import type { dictionary } from "../../utils/dynamicTypes.js"
 import { pushKey } from "../../utils/paths.js"
-import type {
-    AttributeBranches,
-    Attributes,
-    DisjointKey
-} from "./attributes.js"
+import type { AttributeKey, Attributes, DisjointKey } from "./attributes.js"
 
 type Discriminant = {
     path: string
@@ -14,13 +10,19 @@ type Discriminant = {
     branchesAtPath: Attributes[]
 }
 
-export const discriminate = (branches: Attributes[]): AttributeBranches => {
-    if (branches.length === 1) {
-        return branches
+// eslint-disable-next-line max-lines-per-function
+export const discriminate = (rawBranches: Attributes[]): Attributes => {
+    const { base, branches } = mergeAndPrune(rawBranches)
+    if (branches.length < 2) {
+        if (branches.length === 1) {
+            // TODO: Can intersect with base here
+            base.branches = branches
+        }
+        return base
     }
     const nextDiscriminant = greedyDiscriminant("", branches)
     if (!nextDiscriminant) {
-        return branches
+        return base
     }
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
@@ -32,17 +34,19 @@ export const discriminate = (branches: Attributes[]): AttributeBranches => {
     }
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
-        const branches = branchesByValue[value]
-
-        if (branches.length === 1) {
-            cases[value] = branches[0]
+        const branchesWithValue = branchesByValue[value]
+        if (branchesWithValue.length === 1) {
+            cases[value] = branchesWithValue[0]
         } else {
-            const baseAttributes = pruneDeepEqual(branches)
-            baseAttributes.branches = discriminate(branches)
-            cases[value] = baseAttributes
+            cases[value] = discriminate(branchesWithValue)
         }
     }
-    return { path: nextDiscriminant.path, key: nextDiscriminant.key, cases }
+    base.branches = {
+        path: nextDiscriminant.path,
+        key: nextDiscriminant.key,
+        cases
+    }
+    return base
 }
 
 const greedyDiscriminant = (
@@ -126,4 +130,53 @@ const disjointScore = (branches: Attributes[], key: DisjointKey) => {
         }
     }
     return score
+}
+
+// eslint-disable-next-line max-lines-per-function
+export const mergeAndPrune = (branches: Attributes[]) => {
+    const base: Attributes = {}
+    let k: AttributeKey
+    for (k in branches[0]) {
+        let allBranchesHaveAttribute = true
+        const values = branches.map((branch) => {
+            allBranchesHaveAttribute &&= branch[k] === undefined
+            return branch[k]
+        })
+        if (!allBranchesHaveAttribute) {
+            continue
+        }
+        if (k === "baseProp") {
+            const mergedBaseProp = mergeAndPrune(values as Attributes[])
+            if (!isEmpty(mergedBaseProp)) {
+                base.baseProp = mergedBaseProp
+            }
+        } else if (k === "props") {
+            for (const propKey in branches[0].props) {
+                let allBranchesHaveProp = true
+                const propValues = (values as dictionary<Attributes>[]).map(
+                    (branchProps) => {
+                        allBranchesHaveProp &&=
+                            branchProps[propKey] === undefined
+                        return branchProps[propKey]
+                    }
+                )
+                if (!allBranchesHaveProp) {
+                    continue
+                }
+                const mergedProp = mergeAndPrune(propValues)
+                if (!isEmpty(mergedProp)) {
+                    base.props ??= {}
+                    base.props[propKey] = mergedProp
+                }
+            }
+        } else {
+            if (values.every((value) => deepEquals(values[0], value))) {
+                base[k] = values[0] as any
+                for (const branch of branches) {
+                    delete branch[k]
+                }
+            }
+        }
+    }
+    return { base, branches: branches.filter((branch) => !isEmpty(branch)) }
 }

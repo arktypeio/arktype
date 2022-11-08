@@ -12,6 +12,9 @@ const testBranches: Attributes[] = [
         props: {
             kind: {
                 value: "1"
+            },
+            size: {
+                type: "number"
             }
         }
     },
@@ -20,6 +23,9 @@ const testBranches: Attributes[] = [
         props: {
             kind: {
                 value: "1"
+            },
+            size: {
+                type: "number"
             }
         }
     },
@@ -28,6 +34,9 @@ const testBranches: Attributes[] = [
         props: {
             kind: {
                 value: "2"
+            },
+            size: {
+                type: "number"
             }
         }
     },
@@ -36,6 +45,9 @@ const testBranches: Attributes[] = [
         props: {
             kind: {
                 value: "2"
+            },
+            size: {
+                type: "number"
             }
         }
     }
@@ -46,26 +58,29 @@ const testBranches: Attributes[] = [
 describe("union", () => {
     test("discriminate", () => {
         attest(discriminate(testBranches)).snap({
-            path: "",
-            key: "type",
-            cases: {
-                dictionary: {
-                    branches: {
-                        path: "kind",
-                        key: "value",
-                        cases: {
-                            "1": { props: { kind: {} } },
-                            "2": { props: { kind: {} } }
+            props: { size: { type: "number" } },
+            branches: {
+                path: "",
+                key: "type",
+                cases: {
+                    dictionary: {
+                        branches: {
+                            path: "kind",
+                            key: "value",
+                            cases: {
+                                "1": { props: { kind: {} } },
+                                "2": { props: { kind: {} } }
+                            }
                         }
-                    }
-                },
-                array: {
-                    branches: {
-                        path: "kind",
-                        key: "value",
-                        cases: {
-                            "1": { props: { kind: {} } },
-                            "2": { props: { kind: {} } }
+                    },
+                    array: {
+                        branches: {
+                            path: "kind",
+                            key: "value",
+                            cases: {
+                                "1": { props: { kind: {} } },
+                                "2": { props: { kind: {} } }
+                            }
                         }
                     }
                 }

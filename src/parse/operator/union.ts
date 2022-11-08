@@ -40,7 +40,7 @@ export namespace Union {
             return s
         }
         s.branches.union.push(s.root)
-        s.root = { branches: discriminate(s.branches.union) }
+        s.root = discriminate(s.branches.union)
         delete s.branches.union
         return s
     }
