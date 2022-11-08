@@ -1,7 +1,6 @@
 import type { ArktypeConfig } from "./arktype.js"
 import { Arktype } from "./arktype.js"
 import { parseRoot } from "./parse/parse.js"
-import type { parseAliases } from "./parse/scope.js"
 import type { Attributes } from "./parse/state/attributes.js"
 import type { inferAst } from "./traverse/infer.js"
 import type { validate } from "./traverse/validate.js"
@@ -16,11 +15,10 @@ const rawScope = (aliases: dictionary, config: ArktypeConfig = {}) => {
     const root = new ScopeRoot(aliases, config)
     const compiled: ArktypeScope = { $: root as any }
     for (const name in aliases) {
-        compiled[name] = new Arktype(
-            parseRoot(aliases[name], root),
-            config,
-            compiled
-        )
+        const attributes = parseRoot(aliases[name], root)
+        root.attributes[name] = attributes
+        root.parseCache.set(name, attributes)
+        compiled[name] = new Arktype(attributes, config, compiled)
     }
     return compiled
 }
@@ -53,11 +51,13 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dictionary = dictionary> {
-    parseCache: ParseCache = new ParseCache()
+    parseCache = new ParseCache()
+
+    attributes = {} as Record<keyof inferred, Attributes>
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
-        public config: ArktypeConfig
+        public config: ArktypeConfig<dictionary>
     ) {}
 
     get infer(): inferred {
@@ -67,6 +67,8 @@ export class ScopeRoot<inferred extends dictionary = dictionary> {
 
 export class ParseCache {
     private cache: dictionary<Attributes | undefined> = {}
+
+    constructor() {}
 
     get(definition: string) {
         if (definition in this.cache) {
@@ -79,35 +81,16 @@ export class ParseCache {
     }
 }
 
-export type inferScopeAst<
+type parseAliases<aliases, scope extends dictionary> = evaluate<{
+    [name in keyof aliases]: parseRoot<
+        aliases[name],
+        { aliases: aliases & scope }
+    >
+}>
+
+type inferScopeAst<
     rootAst extends dictionary,
     scope extends dictionary
 > = evaluate<{
     [name in keyof rootAst]: inferAst<rootAst[name], scope, rootAst>
 }>
-
-// export type ReferencesOptions<Filter extends string = string> = {
-//     filter?: FilterFn<Filter>
-// }
-
-// export type FilterFn<Filter extends string> =
-//     | ((reference: string) => reference is Filter)
-//     | ((reference: string) => boolean)
-
-// export type ReferencesFn<Ast> = <Options extends ReferencesOptions = {}>(
-//     options?: Options
-// ) => ElementOf<
-//     ReferencesOf<
-//         Ast,
-//         Options["filter"] extends FilterFn<infer Filter> ? Filter : string
-//     >
-// >[]
-
-// collectReferences(
-//     args: References.ReferencesOptions,
-//     collected: KeySet
-// ) {
-//     if (!args.filter || args.filter(this.def)) {
-//         collected[this.def] = 1
-//     }
-// }

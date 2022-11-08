@@ -42,7 +42,7 @@ const intersect = (a: Attributes, b: Attributes): Attributes => {
     let k: AttributeKey
     for (k in b) {
         if (k in a) {
-            const intersectedValue = dynamicReducers[k](a[k], b[k])
+            const intersectedValue = dynamicIntersectors[k](a[k], b[k])
             if (intersectedValue === null) {
                 a.contradiction = `${a[k]} and ${b[k]} have an empty intersection`
             } else {
@@ -103,7 +103,7 @@ const intersectors: IntersectorsByKey = {
     }
 }
 
-const dynamicReducers = intersectors as {
+const dynamicIntersectors = intersectors as {
     [k in AttributeKey]: (a: unknown, b: unknown) => any
 }
 

@@ -60,4 +60,25 @@ describe("scope", () => {
         attest(type(["number", "a"], { scope: scope({ a: {} as any }) }).infer)
             .typed as [number, unknown]
     })
+    test("parent scope", () => {
+        const s = scope(
+            { a: "string[]", b: "a[]", d: "definedInScope" },
+            { scope: scope({ definedInScope: "boolean" }) }
+        )
+        attest(s.$.infer).typed as {
+            a: string[]
+            b: string[][]
+            d: boolean
+        }
+        attest(s.$.attributes).snap({
+            a: { type: "array", props: { "*": { type: "string" } } },
+            b: {
+                type: "array",
+                props: {
+                    "*": { type: "array", props: { "*": { type: "string" } } }
+                }
+            },
+            d: { type: "boolean" }
+        })
+    })
 })

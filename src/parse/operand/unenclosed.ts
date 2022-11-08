@@ -52,7 +52,7 @@ export namespace Unenclosed {
             ? Keyword.attributes[token]()
             : context.scopeRoot.aliases[token]
             ? parseAlias(token, context)
-            : undefined
+            : context.scopeRoot.config.scope?.$.attributes[token]
 
     const parseAlias = (name: string, context: DynamicParserContext) => {
         const cache = context.scopeRoot.parseCache
