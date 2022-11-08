@@ -1,5 +1,5 @@
 import { caller } from "@arktype/runtime"
-import { chainableNoOpProxy } from "arktype/internal"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
 import type { AtTestConfig, SourcePosition } from "../common.js"
 import { getAtTestConfig } from "../common.js"
 import type { BenchFormat } from "../writeSnapshot.js"

@@ -73,7 +73,7 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
     let match: SourcePosition | undefined
     while (!match) {
         const location = getCurrentLine({
-            method: options.methodName,
+            method: options.methodName!,
             frames: upStackBy
         })
         if (!location || isDeepStrictEqual(location, nonexistentCurrentLine)) {

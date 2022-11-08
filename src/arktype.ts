@@ -1,7 +1,7 @@
-import type { Attributes } from "./attributes/shared.js"
-import type { dictionary } from "./internal.js"
+import type { Attributes } from "./parse/state/attributes.js"
 import type { ArktypeSpace } from "./space.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { dictionary } from "./utils/dynamicTypes.js"
 
 export class Arktype<Inferred = unknown> {
     constructor(

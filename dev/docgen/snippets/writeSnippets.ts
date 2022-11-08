@@ -4,7 +4,7 @@ import {
     readJson,
     shell,
     writeFile
-} from "@arktype/runtime"
+} from "../../runtime/src/api.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 

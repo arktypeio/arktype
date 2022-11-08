@@ -4,23 +4,10 @@ import { fromHere } from "@arktype/runtime"
 const randomInRange = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min
 
-const simpleSpaceSeed = Object.freeze({
-    user: {
-        name: "string",
-        age: "number",
-        emails: "email[]"
-    },
-    group: {
-        title: "string",
-        admins: "string[]?",
-        isActive: "boolean|undefined"
-    }
-})
-
 const cyclicSpaceSeed = Object.freeze({
     user: {
         name: "string",
-        friends: "user[]?",
+        "friends?": "user[]",
         groups: "group[]"
     },
     group: {
@@ -35,19 +22,22 @@ const generateSpaceJson = (interval: number, seedDefs: object) => {
         const variants: Record<string, any> = { [name]: seedDef }
         const defCopyCount = Math.floor(interval / 2)
         for (let i = 2; i <= defCopyCount; i++) {
-            variants[`${name}${i}`] = Object.fromEntries(
+            variants[`${i}${name}`] = Object.fromEntries(
                 Object.entries(seedDef).map(([k, def]) => {
                     let randomizedDef = def as string
                     if (typeof def === "string") {
                         // Only randomize the cyclic space values
-                        for (const name in cyclicSpaceSeed) {
+                        for (let name in cyclicSpaceSeed) {
+                            if (name.endsWith("?")) {
+                                name = name.slice(0, -1)
+                            }
                             randomizedDef = randomizedDef.replaceAll(
                                 name,
-                                `${name}${randomInRange(2, defCopyCount)}`
+                                `${randomInRange(2, defCopyCount)}${name}`
                             )
                         }
                     }
-                    return [`${k}${i}`, randomizedDef]
+                    return [`${i}${k}`, randomizedDef]
                 })
             )
         }
@@ -57,7 +47,6 @@ const generateSpaceJson = (interval: number, seedDefs: object) => {
 }
 
 const seedMap = {
-    simple: simpleSpaceSeed,
     cyclic: cyclicSpaceSeed
 }
 
@@ -70,28 +59,22 @@ const generateSpaceBenches = ({
     intervals,
     seed
 }: GenerateSpaceBenchesOptions) => {
-    const toFile = fromHere(
-        "..",
-        "src",
-        "__tests__",
-        "space",
-        "generated",
-        `${seed}.ts`
-    )
+    const toFile = fromHere("generated", `${seed}.ts`)
+    let benchDeclarations = ""
     for (const interval of intervals) {
         const spaceName = `${seed}${interval}`
         console.log(`Generating dictionary '${spaceName}'...`)
-        const benchForInterval = `export const ${spaceName} = ${generateSpaceJson(
+        benchDeclarations += `export const ${spaceName} = ${generateSpaceJson(
             interval,
             seedMap[seed]
         )} as const
 
 `
-        writeFileSync(toFile, benchForInterval, { flag: "a" })
     }
+    writeFileSync(toFile, benchDeclarations)
 }
 
 generateSpaceBenches({
-    intervals: [10, 50, 100, 250, 500],
+    intervals: [10, 100, 500],
     seed: "cyclic"
 })

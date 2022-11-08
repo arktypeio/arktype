@@ -1,6 +1,6 @@
 import { join } from "node:path"
-import { shell } from "@arktype/runtime"
 import { getPackageDataFromCwd } from "../common.js"
+import { shell } from "../runtime/src/api.js"
 
 export const testBuild = (outDir: string) =>
     shell(

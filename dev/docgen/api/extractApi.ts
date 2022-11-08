@@ -1,5 +1,4 @@
 import { join } from "node:path"
-import { readPackageJson } from "@arktype/runtime"
 import type {
     ExportedDeclarations,
     JSDoc,
@@ -8,6 +7,7 @@ import type {
     SourceFile
 } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
+import { readPackageJson } from "../../runtime/src/api.js"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 export type ApiEntryPoint = {

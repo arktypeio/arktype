@@ -1,6 +1,6 @@
-import { readFile } from "@arktype/runtime"
 import type { Project } from "ts-morph"
 import { tsFileMatcher } from "../../common.js"
+import { readFile } from "../../runtime/src/api.js"
 import type { ExtractionToken } from "./snipTokens.js"
 import {
     extractionTokens,

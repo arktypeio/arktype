@@ -79,13 +79,14 @@ const serialize = <T>(
         if (seen.includes(value)) {
             return "<cyclic>"
         } else {
-            seen.push(value)
             const serializedObject = Array.isArray(value)
-                ? value.map((_) => serialize(_, alwaysStringify, seen))
+                ? value.map((_) =>
+                      serialize(_, alwaysStringify, [...seen, value])
+                  )
                 : Object.fromEntries(
                       Object.entries(value).map(([k, v]) => [
                           k,
-                          serialize(v, alwaysStringify, seen)
+                          serialize(v, alwaysStringify, [...seen, value])
                       ])
                   )
             return alwaysStringify
@@ -142,12 +143,8 @@ const getFilter = (argsToCheck: string[]) => {
         checkArgsForParam(argsToCheck, "-f")
     if (filter) {
         if (filter.startsWith("/")) {
-            console.log(`Running benches at path '${filter}'...`)
             return filter.split("/").slice(1)
         } else {
-            console.log(
-                `Running benches including a segment named '${filter}'...`
-            )
             return filter
         }
     }

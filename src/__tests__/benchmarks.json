@@ -180,5 +180,74 @@
                 }
             }
         ]
+    },
+    "parse": {
+        "obj": {
+            "dictionary": [
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "type": [960, "instantiations"]
+                    }
+                },
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "median": [628, "ns"],
+                        "type": [960, "instantiations"]
+                    }
+                },
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "median": [531, "ns"],
+                        "type": [985, "instantiations"]
+                    }
+                }
+            ],
+            "tuple": [
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "type": [1320, "instantiations"]
+                    }
+                },
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "median": [1.41, "us"],
+                        "type": [1320, "instantiations"]
+                    }
+                },
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "median": [1.32, "us"],
+                        "type": [1474, "instantiations"]
+                    }
+                }
+            ],
+            "dictionary with optional keys": [
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "type": [990, "instantiations"]
+                    }
+                },
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "type": [990, "instantiations"]
+                    }
+                },
+                {
+                    "date": "11/3/2022",
+                    "mark": {
+                        "type": [1007, "instantiations"],
+                        "median": [624, "ns"]
+                    }
+                }
+            ]
+        }
     }
 }

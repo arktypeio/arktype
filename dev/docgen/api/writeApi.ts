@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, shell, writeFile } from "@arktype/runtime"
+import { ensureDir, shell, writeFile } from "../../runtime/src/api.js"
 import type { DocGenApiConfig } from "../main.js"
 import type {
     ApiEntryPoint,
