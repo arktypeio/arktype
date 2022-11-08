@@ -11,7 +11,9 @@ describe("dynamic", () => {
         attest(dynamicStringArray.infer).typed as unknown
         attest(dynamicStringArray.attributes).equals({
             type: "array",
-            baseProp: { type: "string" }
+            props: {
+                "*": { type: "string" }
+            }
         })
     })
     test("uninferred aliases", () => {

@@ -10,7 +10,7 @@ describe("struct", () => {
             type: "dictionary",
             props: {
                 a: { type: "string" },
-                b: { type: "array", baseProp: { type: "boolean" } }
+                b: { type: "array", props: { "*": { type: "boolean" } } }
             },
             requiredKeys: { a: true, b: true }
         })
@@ -22,7 +22,7 @@ describe("struct", () => {
             type: "dictionary",
             props: {
                 a: { type: "string" },
-                b: { type: "array", baseProp: { type: "boolean" } }
+                b: { type: "array", props: { "*": { type: "boolean" } } }
             },
             requiredKeys: { b: true }
         })

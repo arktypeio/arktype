@@ -21,7 +21,9 @@ export namespace Arr {
 
     export const arrayOf = (elementAttributes: Attributes): Attributes => ({
         type: "array",
-        baseProp: elementAttributes
+        props: {
+            "*": elementAttributes
+        }
     })
 
     export const incompleteTokenMessage = `Missing expected ']'`

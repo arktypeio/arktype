@@ -50,26 +50,31 @@ const testBranches: Attributes[] = [
                 type: "number"
             }
         }
-    },
-    { type: "array" }
+    }
 ]
 
 describe("union", () => {
     test("discriminate", () => {
         attest(discriminate(testBranches)).snap({
+            props: { size: { type: "number" } },
             branches: {
                 path: "",
                 key: "type",
                 cases: {
                     dictionary: {
-                        props: { size: { type: "number" } },
                         branches: {
                             path: "kind",
                             key: "value",
                             cases: { "1": {}, "2": {} }
                         }
                     },
-                    array: {}
+                    array: {
+                        branches: {
+                            path: "kind",
+                            key: "value",
+                            cases: { "1": {}, "2": {} }
+                        }
+                    }
                 }
             }
         })
