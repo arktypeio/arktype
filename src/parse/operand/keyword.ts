@@ -50,7 +50,7 @@ export namespace Keyword {
         null: () => ({ type: "null", value: "null" }),
         number: () => ({ type: "number" }),
         object: () => ({
-            branches: {
+            switch: {
                 path: "",
                 key: "type",
                 cases: {
