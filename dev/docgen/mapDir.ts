@@ -1,6 +1,6 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
-import { ensureDir, shell, walkPaths } from "@arktype/runtime"
+import { ensureDir, fromHere, shell, walkPaths } from "@arktype/runtime"
 import { repoDirs } from "../common.js"
 import { fromPackageRoot, writeJson } from "../runtime/src/fs.js"
 import type { DocGenMappedDirsConfig } from "./main.js"
@@ -53,7 +53,7 @@ export const mapDir = (
         ] of fileContentsByRelativeDestination) {
             const resolvedPath = join(target, path)
             mappedContents.push({ source, generated: resolvedPath })
-            writeJson("./.docgenSourceMap.json", mappedContents)
+            writeJson(fromHere(".docgenSourceMap.json"), mappedContents)
             ensureDir(dirname(resolvedPath))
             writeFileSync(resolvedPath, contents)
         }
