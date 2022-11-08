@@ -50,12 +50,12 @@ export namespace Unenclosed {
     ) =>
         Keyword.matches(token)
             ? Keyword.attributes[token]()
-            : context.spaceRoot.aliases[token]
+            : context.scopeRoot.aliases[token]
             ? parseAlias(token, context)
             : undefined
 
     const parseAlias = (name: string, context: DynamicParserContext) => {
-        const cache = context.spaceRoot.parseCache
+        const cache = context.scopeRoot.parseCache
         const cachedAttributes = cache.get(name)
         if (!cachedAttributes) {
             // Set the resolution to a shallow reference until the alias has
@@ -63,7 +63,7 @@ export namespace Unenclosed {
             cache.set(name, { alias: name })
             cache.set(
                 name,
-                parseRoot(context.spaceRoot.aliases[name], context.spaceRoot)
+                parseRoot(context.scopeRoot.aliases[name], context.scopeRoot)
             )
         }
         return cache.get(name)

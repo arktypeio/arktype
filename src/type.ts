@@ -2,42 +2,39 @@ import type { ArktypeConfig } from "./arktype.js"
 import { Arktype } from "./arktype.js"
 import type { ParseError } from "./parse/common.js"
 import { parseRoot } from "./parse/parse.js"
-import type { ArktypeSpace } from "./space.js"
-import { space } from "./space.js"
+import type { ArktypeScope } from "./scope.js"
+import { scope } from "./scope.js"
 import type { inferAst } from "./traverse/infer.js"
 import type { validate } from "./traverse/validate.js"
+import type { dictionary } from "./utils/dynamicTypes.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const emptySpace: EmptySpace = space({})
+const rootScope: EmptySpace = scope({})
 
-type EmptySpace = ArktypeSpace<{}>
+type EmptySpace = ArktypeScope<{}>
 
 const rawTypeFn: DynamicTypeFn = (
     definition,
-    { space = emptySpace, ...config } = {}
-) => new Arktype(parseRoot(definition, space.$), config, space as ArktypeSpace)
+    { scope = rootScope, ...config } = {}
+) => new Arktype(parseRoot(definition, scope.$), config, scope as any)
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type TypeFnOptions<space> = ArktypeConfig & {
-    space?: space
-}
-
 export type InferredTypeFn = <
     definition,
-    space = EmptySpace,
-    ast = parseRoot<definition, { aliases: space }>
+    scope extends dictionary = {},
+    ast = parseRoot<definition, { aliases: scope }>
 >(
-    definition: validate<definition, ast, space>,
-    options?: TypeFnOptions<space>
-) => ast extends ParseError<string> ? never : Arktype<inferAst<ast, space>>
+    definition: validate<definition, ast, scope>,
+    options?: ArktypeConfig<scope>
+) => ast extends ParseError<string> ? never : Arktype<inferAst<ast, scope, {}>>
 
 type DynamicTypeFn = (
     definition: unknown,
-    options?: TypeFnOptions<ArktypeSpace>
+    options?: ArktypeConfig<dictionary>
 ) => Arktype
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>

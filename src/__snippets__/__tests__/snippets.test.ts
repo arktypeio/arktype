@@ -15,12 +15,12 @@ describe("snippets", () => {
             `browser/kind must be one of 'chrome'|'firefox'|'safari' (was "Internet Explorer")`
         )
     })
-    test("space", async () => {
-        const spaceSnippet = await import("../space.js")
-        attest(spaceSnippet.types.package.infer).type.toString.snap(
+    test("scope", async () => {
+        const scopeSnippet = await import("../scope.js")
+        attest(scopeSnippet.types.package.infer).type.toString.snap(
             "{ name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }"
         )
-        attest(spaceSnippet.problems?.summary)
+        attest(scopeSnippet.problems?.summary)
             .snap(`dependencies/0/contributors: contributors is required
 contributors/0/email: Must be a valid email (was "david@araktypeio")`)
     })

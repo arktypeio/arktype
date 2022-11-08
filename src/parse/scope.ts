@@ -1,8 +1,12 @@
+import type { dictionary } from "../utils/dynamicTypes.js"
 import type { evaluate } from "../utils/generics.js"
 import type { parseRoot } from "./parse.js"
 
-export type parseAliases<aliases> = evaluate<{
-    [name in keyof aliases]: parseRoot<aliases[name], { aliases: aliases }>
+export type parseAliases<aliases, scope extends dictionary> = evaluate<{
+    [name in keyof aliases]: parseRoot<
+        aliases[name],
+        { aliases: aliases & scope }
+    >
 }>
 
 // export type ValidateStringResolution<

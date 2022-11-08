@@ -13,7 +13,7 @@ export const parseString = (
     definition: string,
     context: DynamicParserContext
 ) => {
-    const cache = context.spaceRoot.parseCache
+    const cache = context.scopeRoot.parseCache
     const cachedAttributes = cache.get(definition)
     if (!cachedAttributes) {
         const attributes =
@@ -21,7 +21,7 @@ export const parseString = (
             fullStringParse(definition, context)
         cache.set(definition, attributes)
     }
-    return cache.get(definition)
+    return cache.get(definition)!
 }
 
 export type parseString<

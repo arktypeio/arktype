@@ -4,7 +4,7 @@ import { fromHere } from "@arktype/runtime"
 const randomInRange = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min
 
-const cyclicSpaceSeed = Object.freeze({
+const cyclicScopeSeed = Object.freeze({
     user: {
         name: "string",
         "friends?": "user[]",
@@ -17,7 +17,7 @@ const cyclicSpaceSeed = Object.freeze({
     }
 })
 
-const generateSpaceJson = (interval: number, seedDefs: object) => {
+const generateScopeJson = (interval: number, seedDefs: object) => {
     const defs = Object.entries(seedDefs).reduce((result, [name, seedDef]) => {
         const variants: Record<string, any> = { [name]: seedDef }
         const defCopyCount = Math.floor(interval / 2)
@@ -26,8 +26,8 @@ const generateSpaceJson = (interval: number, seedDefs: object) => {
                 Object.entries(seedDef).map(([k, def]) => {
                     let randomizedDef = def as string
                     if (typeof def === "string") {
-                        // Only randomize the cyclic space values
-                        for (let name in cyclicSpaceSeed) {
+                        // Only randomize the cyclic scope values
+                        for (let name in cyclicScopeSeed) {
                             if (name.endsWith("?")) {
                                 name = name.slice(0, -1)
                             }
@@ -47,7 +47,7 @@ const generateSpaceJson = (interval: number, seedDefs: object) => {
 }
 
 const seedMap = {
-    cyclic: cyclicSpaceSeed
+    cyclic: cyclicScopeSeed
 }
 
 type GenerateSpaceBenchesOptions = {
@@ -55,16 +55,16 @@ type GenerateSpaceBenchesOptions = {
     seed: keyof typeof seedMap
 }
 
-const generateSpaceBenches = ({
+const generateScopeBenches = ({
     intervals,
     seed
 }: GenerateSpaceBenchesOptions) => {
     const toFile = fromHere("generated", `${seed}.ts`)
     let benchDeclarations = ""
     for (const interval of intervals) {
-        const spaceName = `${seed}${interval}`
-        console.log(`Generating dictionary '${spaceName}'...`)
-        benchDeclarations += `export const ${spaceName} = ${generateSpaceJson(
+        const scopeName = `${seed}${interval}`
+        console.log(`Generating dictionary '${scopeName}'...`)
+        benchDeclarations += `export const ${scopeName} = ${generateScopeJson(
             interval,
             seedMap[seed]
         )} as const
@@ -74,7 +74,7 @@ const generateSpaceBenches = ({
     writeFileSync(toFile, benchDeclarations)
 }
 
-generateSpaceBenches({
+generateScopeBenches({
     intervals: [10, 100, 500],
     seed: "cyclic"
 })

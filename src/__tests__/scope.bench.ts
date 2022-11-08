@@ -1,8 +1,8 @@
 import { bench } from "@arktype/test"
-import { space } from "../api.js"
+import { scope } from "../api.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
-const recursive = space({ dejaVu: { "dejaVu?": "dejaVu" } })
+const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } })
 const dejaVu: typeof recursive.$.infer.dejaVu = {}
 let i = 0
 let current = dejaVu
@@ -16,19 +16,19 @@ bench("validate recursive", () => {
 }).median()
 
 bench("cyclic(10)", () => {
-    const cyclic10Space = space(cyclic10)
+    const cyclic10Space = scope(cyclic10)
 })
     .median()
     .type()
 
 bench("cyclic(100)", () => {
-    const cyclic100Space = space(cyclic100)
+    const cyclic100Space = scope(cyclic100)
 })
     .median()
     .type()
 
 bench("cyclic(500)", () => {
-    const cyclic500Space = space(cyclic500)
+    const cyclic500Space = scope(cyclic500)
 })
     .median()
     .type()

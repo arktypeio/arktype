@@ -1,6 +1,6 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { space } from "../../../space.js"
+import { scope } from "../../../scope.js"
 import { type } from "../../../type.js"
 import { buildMalformedNumericLiteralMessage } from "../../../utils/numericLiterals.js"
 import { Unenclosed } from "../unenclosed.js"
@@ -11,8 +11,7 @@ describe("parse unenclosed", () => {
             attest(type("string").infer).typed as "string"
         })
         test("alias", () => {
-            const types = space({ a: "string" })
-            const a = type("a", { space: types })
+            const a = type("a", { scope: scope({ a: "string" }) })
             attest(a.infer).typed as string
         })
         describe("errors", () => {

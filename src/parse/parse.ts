@@ -1,4 +1,4 @@
-import type { SpaceRoot } from "../space.js"
+import type { ScopeRoot } from "../scope.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type {
@@ -20,8 +20,8 @@ import type { Attributes } from "./state/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
 
-export const parseRoot = (definition: unknown, space: SpaceRoot) => {
-    const context = initializeParserContext(space)
+export const parseRoot = (definition: unknown, scopeRoot: ScopeRoot) => {
+    const context = initializeParserContext(scopeRoot)
     const rawAttributes = parseDefinition(definition, context)
     return rawAttributes
 }

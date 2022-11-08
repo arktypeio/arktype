@@ -1,5 +1,5 @@
 import { bench, suite } from "@arktype/test"
-import { space, type } from "../../../api.js"
+import { scope, type } from "../../../api.js"
 
 suite("parse/str/operand", () => {
     suite("enclosed", () => {
@@ -25,9 +25,9 @@ suite("parse/str/operand", () => {
         })
             .median()
             .type()
-        const spaceRoot = space({ strung: "string" })
+        const strungScope = scope({ strung: "string" })
         bench("alias", () => {
-            const _ = type("strung", { space: spaceRoot })
+            const _ = type("strung", { scope: strungScope })
         })
             .median()
             .type()

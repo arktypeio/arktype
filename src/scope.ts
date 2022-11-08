@@ -1,7 +1,7 @@
 import type { ArktypeConfig } from "./arktype.js"
 import { Arktype } from "./arktype.js"
 import { parseRoot } from "./parse/parse.js"
-import type { parseAliases } from "./parse/space.js"
+import type { parseAliases } from "./parse/scope.js"
 import type { Attributes } from "./parse/state/attributes.js"
 import type { inferAst } from "./traverse/infer.js"
 import type { validate } from "./traverse/validate.js"
@@ -12,9 +12,9 @@ import type { evaluate } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rawSpace = (aliases: dictionary, config: ArktypeConfig = {}) => {
-    const root = new SpaceRoot(aliases, config)
-    const compiled: ArktypeSpace = { $: root as any }
+const rawScope = (aliases: dictionary, config: ArktypeConfig = {}) => {
+    const root = new ScopeRoot(aliases, config)
+    const compiled: ArktypeScope = { $: root as any }
     for (const name in aliases) {
         compiled[name] = new Arktype(
             parseRoot(aliases[name], root),
@@ -25,30 +25,34 @@ const rawSpace = (aliases: dictionary, config: ArktypeConfig = {}) => {
     return compiled
 }
 
-export const space = lazyDynamicWrap(rawSpace) as any as LazyDynamicWrap<
-    InferredSpaceFn,
-    DynamicSpaceFn
+export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
+    InferredScopeFn,
+    DynamicScopeFn
 >
 
-type InferredSpaceFn = <aliases, ast = parseAliases<aliases>>(
+type InferredScopeFn = <
+    aliases,
+    scope extends dictionary = {},
+    ast extends dictionary = parseAliases<aliases, scope>
+>(
     aliases: validate<aliases, ast, ast>,
-    config?: ArktypeConfig
-) => ArktypeSpace<inferSpaceAst<ast>>
+    config?: ArktypeConfig<scope>
+) => ArktypeScope<inferScopeAst<ast, scope>>
 
-type DynamicSpaceFn = <aliases extends dictionary>(
+type DynamicScopeFn = <aliases extends dictionary>(
     aliases: aliases,
     config?: ArktypeConfig
-) => ArktypeSpace<aliases>
+) => ArktypeScope<aliases>
 
-export type ArktypeSpace<inferred extends dictionary = dictionary> = {
-    $: SpaceRoot<inferred>
-} & inferredSpaceToArktypes<inferred>
+export type ArktypeScope<inferred extends dictionary = dictionary> = {
+    $: ScopeRoot<inferred>
+} & inferredScopeToArktypes<inferred>
 
-type inferredSpaceToArktypes<inferred> = {
+type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Arktype<inferred[name]>
 }
 
-export class SpaceRoot<inferred extends dictionary = dictionary> {
+export class ScopeRoot<inferred extends dictionary = dictionary> {
     parseCache: ParseCache = new ParseCache()
 
     constructor(
@@ -75,8 +79,11 @@ export class ParseCache {
     }
 }
 
-export type inferSpaceAst<root> = evaluate<{
-    [name in keyof root]: inferAst<root[name], root>
+export type inferScopeAst<
+    rootAst extends dictionary,
+    scope extends dictionary
+> = evaluate<{
+    [name in keyof rootAst]: inferAst<rootAst[name], scope, rootAst>
 }>
 
 // export type ReferencesOptions<Filter extends string = string> = {

@@ -1,13 +1,13 @@
-import type { SpaceRoot } from "../space.js"
+import type { ScopeRoot } from "../scope.js"
 
 export type DynamicParserContext = {
-    spaceRoot: SpaceRoot
+    scopeRoot: ScopeRoot
 }
 
 export const initializeParserContext = (
-    spaceRoot: SpaceRoot
+    scopeRoot: ScopeRoot
 ): DynamicParserContext => ({
-    spaceRoot
+    scopeRoot
 })
 
 export type StaticParserContext = {
