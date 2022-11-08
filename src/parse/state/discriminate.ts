@@ -75,7 +75,6 @@ const greedyShallowDiscriminant = (
     }
 }
 
-// TODO: Add base prop. Or maybe just merge with other props?
 const greedyPropsDiscriminant = (path: string, branches: Attributes[]) => {
     let bestDiscriminant: Discriminant | undefined
     const sortedPropFrequencies = sortPropsByFrequency(branches)
@@ -111,8 +110,8 @@ const sortPropsByFrequency = (branches: Attributes[]): PropFrequencyEntry[] => {
         }
         for (const propKey in branches[i].props) {
             appearancesByProp[propKey] = appearancesByProp[propKey]
-                ? 1
-                : appearancesByProp[propKey] + 1
+                ? appearancesByProp[propKey] + 1
+                : 1
         }
     }
     return Object.entries(appearancesByProp).sort((a, b) => b[1] - a[1])
@@ -134,7 +133,6 @@ const disjointScore = (branches: Attributes[], key: DisjointKey) => {
     return score
 }
 
-// TODO: Add baseprop
 const prunePath = (attributes: Attributes, path: string, key: DisjointKey) => {
     const segments = path === "" ? [] : path.split(".")
     const traversed: Attributes[] = []
@@ -180,17 +178,7 @@ export const mergeAndPrune = (branches: Attributes[]): Attributes => {
         if (!allBranchesHaveAttribute) {
             continue
         }
-        if (k === "baseProp") {
-            const mergedBaseProp = mergeAndPrune(values as Attributes[])
-            if (!isEmpty(mergedBaseProp)) {
-                base.baseProp = mergedBaseProp
-                for (const branch of branches) {
-                    if (isEmpty(branch.baseProp!)) {
-                        delete branch.baseProp
-                    }
-                }
-            }
-        } else if (k === "props") {
+        if (k === "props") {
             for (const propKey in branches[0].props) {
                 let allBranchesHaveProp = true
                 const propValues = (values as dictionary<Attributes>[]).map(

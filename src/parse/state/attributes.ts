@@ -38,8 +38,6 @@ type IrreducibleAttributeTypes = subtype<
 >
 
 type ComposedAttributeTypes = {
-    parent: Attributes
-    baseProp: Attributes
     props: dictionary<Attributes>
     branches: AttributeBranches
 }
