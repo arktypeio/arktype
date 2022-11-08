@@ -1,6 +1,6 @@
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
-import type { Intersector } from "../../state/intersection.js"
+import type { Intersector } from "../../state/intersect.js"
 import type { Scanner } from "../../state/scanner.js"
 
 export const comparatorDescriptions = {

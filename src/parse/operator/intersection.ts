@@ -1,5 +1,5 @@
 import type { maybePush } from "../common.js"
-import { intersection } from "../state/intersection.js"
+import { intersection } from "../state/intersect.js"
 import { State } from "../state/state.js"
 import { LeftBound } from "./bounds/left.js"
 

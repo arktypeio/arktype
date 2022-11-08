@@ -32,12 +32,12 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
 
 type InferredScopeFn = <
     aliases,
-    scope extends dictionary = {},
-    ast extends dictionary = parseAliases<aliases, scope>
+    parentScope extends dictionary = {},
+    ast extends dictionary = parseAliases<aliases, parentScope>
 >(
     aliases: validate<aliases, ast, ast>,
-    config?: ArktypeConfig<scope>
-) => ArktypeScope<inferScopeAst<ast, scope>>
+    config?: ArktypeConfig<parentScope>
+) => ArktypeScope<inferScopeAst<ast, parentScope>>
 
 type DynamicScopeFn = <aliases extends dictionary>(
     aliases: aliases,

@@ -1,6 +1,6 @@
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { parseWellFormedInteger } from "../../utils/numericLiterals.js"
-import { add } from "../state/intersection.js"
+import { add } from "../state/intersect.js"
 import type { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
 

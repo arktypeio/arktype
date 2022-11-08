@@ -1,9 +1,4 @@
-import type {
-    defined,
-    keyOrKeySet,
-    keySet,
-    mutable
-} from "../../utils/generics.js"
+import type { defined, keyOrKeySet, keySet } from "../../utils/generics.js"
 import { isKeyOf } from "../../utils/generics.js"
 import { intersectBounds } from "../operator/bounds/shared.js"
 import { Divisor } from "../operator/divisor.js"
