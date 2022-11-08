@@ -1,5 +1,6 @@
 import { deepEquals, isEmpty } from "../../utils/deepEquals.js"
 import type { dictionary } from "../../utils/dynamicTypes.js"
+import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { pushKey } from "../../utils/paths.js"
 import type { AttributeKey, Attributes, DisjointKey } from "./attributes.js"
 
@@ -7,39 +8,40 @@ type Discriminant = {
     path: string
     key: DisjointKey
     score: number
-    branchesAtPath: Attributes[]
 }
 
 // eslint-disable-next-line max-lines-per-function
-export const discriminate = (rawBranches: Attributes[]): Attributes => {
-    const { base, branches } = mergeAndPrune(rawBranches)
-    if (branches.length < 2) {
-        if (branches.length === 1) {
-            // TODO: Can intersect with base here
-            base.branches = branches
-        }
+export const discriminate = (branches: Attributes[]): Attributes => {
+    if (branches.length === 0) {
+        return throwInternalError(
+            "Unexpectedly tried to discriminate between 0 branches."
+        )
+    }
+    if (branches.length === 1) {
+        return branches[0]
+    }
+    const base = mergeAndPrune(branches)
+    if (branches.some((branch) => isEmpty(branch))) {
         return base
     }
     const nextDiscriminant = greedyDiscriminant("", branches)
     if (!nextDiscriminant) {
+        base.branches = branches
         return base
     }
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
-        const branchAtPath = nextDiscriminant.branchesAtPath[i]
-        const value = branchAtPath[nextDiscriminant.key] ?? "default"
-        delete branchAtPath[nextDiscriminant.key]
+        const value = prunePath(
+            branches[i],
+            nextDiscriminant.path,
+            nextDiscriminant.key
+        )
         branchesByValue[value] ??= []
         branchesByValue[value].push(branches[i])
     }
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
-        const branchesWithValue = branchesByValue[value]
-        if (branchesWithValue.length === 1) {
-            cases[value] = branchesWithValue[0]
-        } else {
-            cases[value] = discriminate(branchesWithValue)
-        }
+        cases[value] = discriminate(branchesByValue[value])
     }
     base.branches = {
         path: nextDiscriminant.path,
@@ -64,16 +66,16 @@ const greedyShallowDiscriminant = (
     const valueScore = disjointScore(branches, "value")
     if (typeScore || valueScore) {
         return typeScore > valueScore
-            ? { path, key: "type", branchesAtPath: branches, score: typeScore }
+            ? { path, key: "type", score: typeScore }
             : {
                   path,
                   key: "value",
-                  branchesAtPath: branches,
                   score: valueScore
               }
     }
 }
 
+// TODO: Add base prop. Or maybe just merge with other props?
 const greedyPropsDiscriminant = (path: string, branches: Attributes[]) => {
     let bestDiscriminant: Discriminant | undefined
     const sortedPropFrequencies = sortPropsByFrequency(branches)
@@ -132,15 +134,47 @@ const disjointScore = (branches: Attributes[], key: DisjointKey) => {
     return score
 }
 
-// TODO: Add reflatten to branch merge logic.
+// TODO: Add baseprop
+const prunePath = (attributes: Attributes, path: string, key: DisjointKey) => {
+    const segments = path === "" ? [] : path.split(".")
+    const traversed: Attributes[] = []
+    let lastAttributes = attributes
+    for (const segment of segments) {
+        if (!lastAttributes.props?.[segment]) {
+            return "default"
+        }
+        traversed.push(lastAttributes)
+        lastAttributes = lastAttributes.props[segment]
+    }
+    if (lastAttributes[key] === undefined) {
+        return "default"
+    }
+    const prunedValue = lastAttributes[key]!
+    delete lastAttributes[key]
+    for (let i = traversed.length - 1; i >= 0; i--) {
+        const traversedProps = traversed[i].props!
+        if (isEmpty(traversedProps[segments[i]])) {
+            delete traversedProps[segments[i]]
+        } else {
+            break
+        }
+        if (isEmpty(traversedProps)) {
+            delete traversed[i].props
+        } else {
+            break
+        }
+    }
+    return prunedValue
+}
+
 // eslint-disable-next-line max-lines-per-function
-export const mergeAndPrune = (branches: Attributes[]) => {
+export const mergeAndPrune = (branches: Attributes[]): Attributes => {
     const base: Attributes = {}
     let k: AttributeKey
     for (k in branches[0]) {
         let allBranchesHaveAttribute = true
         const values = branches.map((branch) => {
-            allBranchesHaveAttribute &&= branch[k] === undefined
+            allBranchesHaveAttribute &&= branch[k] !== undefined
             return branch[k]
         })
         if (!allBranchesHaveAttribute) {
@@ -150,6 +184,11 @@ export const mergeAndPrune = (branches: Attributes[]) => {
             const mergedBaseProp = mergeAndPrune(values as Attributes[])
             if (!isEmpty(mergedBaseProp)) {
                 base.baseProp = mergedBaseProp
+                for (const branch of branches) {
+                    if (isEmpty(branch.baseProp!)) {
+                        delete branch.baseProp
+                    }
+                }
             }
         } else if (k === "props") {
             for (const propKey in branches[0].props) {
@@ -157,7 +196,7 @@ export const mergeAndPrune = (branches: Attributes[]) => {
                 const propValues = (values as dictionary<Attributes>[]).map(
                     (branchProps) => {
                         allBranchesHaveProp &&=
-                            branchProps[propKey] === undefined
+                            branchProps[propKey] !== undefined
                         return branchProps[propKey]
                     }
                 )
@@ -170,6 +209,18 @@ export const mergeAndPrune = (branches: Attributes[]) => {
                     base.props[propKey] = mergedProp
                 }
             }
+            if (base.props) {
+                for (const branch of branches) {
+                    for (const propKey in base.props) {
+                        if (isEmpty(branch.props![propKey])) {
+                            delete branch.props![propKey]
+                        }
+                    }
+                    if (isEmpty(branch.props!)) {
+                        delete branch.props
+                    }
+                }
+            }
         } else {
             if (values.every((value) => deepEquals(values[0], value))) {
                 base[k] = values[0] as any
@@ -179,5 +230,5 @@ export const mergeAndPrune = (branches: Attributes[]) => {
             }
         }
     }
-    return { base, branches: branches.filter((branch) => !isEmpty(branch)) }
+    return base
 }
