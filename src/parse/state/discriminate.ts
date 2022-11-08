@@ -132,6 +132,7 @@ const disjointScore = (branches: Attributes[], key: DisjointKey) => {
     return score
 }
 
+// TODO: Add reflatten to branch merge logic.
 // eslint-disable-next-line max-lines-per-function
 export const mergeAndPrune = (branches: Attributes[]) => {
     const base: Attributes = {}
