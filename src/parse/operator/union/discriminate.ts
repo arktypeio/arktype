@@ -6,7 +6,7 @@ import type {
     DisjointKey
 } from "../../state/attributes.js"
 import { compileUnion } from "./compile.js"
-import { getPrunedAttribute } from "./getPrunedAttribute.js"
+import { prunePath } from "./prune.js"
 
 export type Discriminant = {
     path: string
@@ -23,7 +23,7 @@ export const discriminate = (
     }
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
-        const value = getPrunedAttribute(
+        const value = prunePath(
             branches[i],
             discriminant.path,
             discriminant.key

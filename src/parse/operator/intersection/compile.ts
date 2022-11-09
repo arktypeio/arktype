@@ -37,20 +37,6 @@ export const add = <k extends AttributeKey>(
     return attributes
 }
 
-const addKeyToBranches = <k extends AttributeKey>(
-    branches: AttributeBranches,
-    k: k,
-    v: AttributeTypes[k]
-) => {
-    if (branches[0] === "?") {
-        if (k === branches[2]) {
-            const disjointValue = v as AttributeTypes[DisjointKey]
-            if (disjointValue in branches[3]) {
-            }
-        }
-    }
-}
-
 export const compileIntersection = (branches: Attributes[]) => {
     while (branches.length > 1) {
         branches.unshift(intersect(branches.pop()!, branches.pop()!))
@@ -58,7 +44,7 @@ export const compileIntersection = (branches: Attributes[]) => {
     return branches[0]
 }
 
-const intersect = (a: Attributes, b: Attributes): Attributes => {
+export const intersect = (a: Attributes, b: Attributes): Attributes => {
     let k: AttributeKey
     for (k in b) {
         add(a, k, b[k] as any)

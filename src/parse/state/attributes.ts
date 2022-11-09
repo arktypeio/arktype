@@ -59,7 +59,7 @@ export type UndiscriminatedBranches = ["|", ...Attributes[]]
 export type IntersectedBranches = ["&", ...Attributes[]]
 
 export type AttributeCases<key extends DisjointKey> = {
-    [k in DisjointAttributeTypes[key] | "default"]?: Attributes
+    [k in DisjointAttributeTypes[key] | "unset"]?: Attributes
 }
 
 export type AttributeTypes = ReducibleAttributeTypes &
