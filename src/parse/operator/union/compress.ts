@@ -3,55 +3,39 @@ import type { dictionary } from "../../../utils/dynamicTypes.js"
 import type { requireKeys } from "../../../utils/generics.js"
 import type { AttributeKey, Attributes } from "../../state/attributes.js"
 
-export const compressAndPrune = (branches: Attributes[]): Attributes => {
-    const compressed: Attributes = {}
+export const deepEqualIntersection = (branches: Attributes[]): Attributes => {
+    const intersection: Attributes = {}
     let k: AttributeKey
     for (k in branches[0]) {
         if (branches.some((branch) => branch[k] === undefined)) {
             continue
         }
         if (k === "props") {
-            compressAndPruneProps(compressed, branches as BranchesWithProps)
+            const propsIntersection = deepEqualPropsIntersection(
+                branches as BranchesWithProps
+            )
+            if (!isEmpty(propsIntersection)) {
+                intersection.props = propsIntersection
+            }
         } else {
             if (
                 branches.every((branch) =>
                     deepEquals(branches[0][k], branch[k])
                 )
             ) {
-                compressed[k] = branches[0][k] as any
-                for (const branch of branches) {
-                    delete branch[k]
-                }
+                intersection[k] = branches[0][k] as any
             }
         }
     }
-    return compressed
+    return intersection
 }
 
 type BranchesWithProps = requireKeys<Attributes, "props">[]
 
-const compressAndPruneProps = (
-    compressed: Attributes,
+const deepEqualPropsIntersection = (
     branches: BranchesWithProps
-) => {
-    const compressedProps = compressProps(branches)
-    if (!isEmpty(compressedProps)) {
-        for (let i = 0; i < branches.length; i++) {
-            for (const propKey in compressedProps) {
-                if (isEmpty(branches[i].props[propKey])) {
-                    delete branches[i].props[propKey]
-                }
-            }
-            if (isEmpty(branches[i].props)) {
-                delete (branches[i] as Attributes).props
-            }
-        }
-        compressed.props = compressedProps
-    }
-}
-
-const compressProps = (branches: BranchesWithProps): dictionary<Attributes> => {
-    const compressedProps: dictionary<Attributes> = {}
+): dictionary<Attributes> => {
+    const propsIntersection: dictionary<Attributes> = {}
     for (const propKey in branches[0].props) {
         let allBranchesHaveProp = true
         const propValues = branches.map((branch) => {
@@ -61,10 +45,10 @@ const compressProps = (branches: BranchesWithProps): dictionary<Attributes> => {
         if (!allBranchesHaveProp) {
             continue
         }
-        const mergedProp = compressAndPrune(propValues)
+        const mergedProp = deepEqualIntersection(propValues)
         if (!isEmpty(mergedProp)) {
-            compressedProps[propKey] = mergedProp
+            propsIntersection[propKey] = mergedProp
         }
     }
-    return compressedProps
+    return propsIntersection
 }

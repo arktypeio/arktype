@@ -2,15 +2,15 @@ import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
 import type { defined, keyOrKeySet, keySet } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type {
-    AttributeBranches,
-    AttributeCases,
     AttributeKey,
     Attributes,
-    AttributeTypes,
-    DisjointKey
+    AttributeTypes
 } from "../../state/attributes.js"
 import { intersectBounds } from "../bounds/shared.js"
 import { intersectDivisors } from "../divisor.js"
+import type { DiscriminatedBranchTuple } from "../union/discriminate.js"
+
+export type IntersectedBranches = ["&", ...Attributes[]]
 
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
@@ -108,7 +108,9 @@ const addImpliedType = (attributes: Attributes, key: TypeImplyingKey) => {
 }
 
 const impliedTypes: {
-    [k in TypeImplyingKey]: DynamicTypeName | (() => AttributeCases<"type">)
+    [k in TypeImplyingKey]:
+        | DynamicTypeName
+        | (() => DiscriminatedBranchTuple<"type">[2])
 } = {
     divisor: "number",
     bounds: () => ({

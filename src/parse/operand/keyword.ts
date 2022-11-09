@@ -50,15 +50,16 @@ export namespace Keyword {
         null: () => ({ type: "null", value: "null" }),
         number: () => ({ type: "number" }),
         object: () => ({
-            switch: {
-                path: "",
-                key: "type",
-                cases: {
+            branches: [
+                "?",
+                "",
+                "type",
+                {
                     dictionary: {},
                     array: {},
                     function: {}
                 }
-            }
+            ]
         }),
         string: () => ({ type: "string" }),
         symbol: () => ({ type: "symbol" }),

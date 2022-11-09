@@ -3,44 +3,84 @@ import type {
     AttributeBranches,
     AttributeKey,
     Attributes,
-    AttributeTypes,
-    DisjointKey
+    AttributeTypes
 } from "../../state/attributes.js"
+import type {
+    DiscriminatedBranchTuple,
+    DiscriminatedKey
+} from "./discriminate.js"
 
-export const pruneBranches = <k extends AttributeKey>(
-    branches: AttributeBranches,
-    k: k,
-    v: AttributeTypes[k]
-) => {
-    if (branches[0] === "?") {
-        if (k === branches[2]) {
-            const [, path, key, cases] = branches
-            const disjointValue = v as AttributeTypes[DisjointKey]
-            if (disjointValue in cases) {
-                delete branches[3][disjointValue]
-            }
-        }
-    } else {
-        for (let i = 1; i++; i < branches.length) {}
-    }
-}
+// /* eslint-disable max-lines-per-function */
+// const pruneBranches = (
+//     [token, ...branches]: AttributeBranches,
+//     intersection: Attributes
+// ) => {
+//     if (token === "?") {
+//         const [path, key, cases] = branches as DiscriminatedBranchTuple
+//         if (key in intersection) {
+//             const disjointValue = intersection[
+//                 key
+//             ] as AttributeTypes[DiscriminatedKey]
+//             if (disjointValue in cases) {
+//                 delete cases[disjointValue]
+//             }
+//         }
+//     } else {
+//         for (const branch of branches as Attributes[]) {
+//         }
+//     }
+// }
 
-const pruneTraversedBranches = (traversed: Attributes[]) => {
-    for (let i = traversed.length - 1; i >= 0; i--) {
-        const branches = traversed[i].branches!
-        if (branches.length > 2) {
-            return
-        }
-        if (branches.length === 2) {
-        }
-        delete traversed[i].branches
-    }
-}
+// const pruneAttributes = (branch: Attributes, pruned: Attributes) => {
+//     let k: AttributeKey
+//     for (k in pruned) {
+//         if (k === "props") {
+//             if (!branch.props) {
+//                 continue
+//             }
+//             for (const propKey in pruned.props) {
+//                 if (propKey in branch.props) {
+//                     pruneAttributes(
+//                         branch.props[propKey],
+//                         pruned.props[propKey]
+//                     )
+//                     if (isEmpty(branch.props[propKey])) {
+//                         delete branch.props[propKey]
+//                     }
+//                 }
+//             }
+//             if (isEmpty(branch.props)) {
+//                 delete branch.props
+//             }
+//         } else if (k === "branches") {
+//             if (!branch.branches) {
+//                 continue
+//             }
+//             // TODO: ?
+//         } else {
+//             if (!branch[k]) {
+//                 continue
+//             }
+//         }
+//     }
+// }
+
+// const pruneTraversedBranches = (traversed: Attributes[]) => {
+//     for (let i = traversed.length - 1; i >= 0; i--) {
+//         const branches = traversed[i].branches!
+//         if (branches.length > 2) {
+//             return
+//         }
+//         if (branches.length === 2) {
+//         }
+//         delete traversed[i].branches
+//     }
+// }
 
 export const prunePath = (
     attributes: Attributes,
     path: string,
-    key: DisjointKey
+    key: DiscriminatedKey
 ) => {
     const segments = path === "" ? [] : path.split(".")
     const traversed = traversePropAttributes(attributes, segments)

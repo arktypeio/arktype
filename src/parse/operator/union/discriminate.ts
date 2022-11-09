@@ -1,16 +1,28 @@
 import type { dictionary } from "../../../utils/dynamicTypes.js"
 import { pushKey } from "../../../utils/paths.js"
-import type {
-    Attributes,
-    DiscriminatedBranches,
-    DisjointKey
-} from "../../state/attributes.js"
+import type { Attributes, AttributeTypes } from "../../state/attributes.js"
 import { compileUnion } from "./compile.js"
 import { prunePath } from "./prune.js"
 
+export type DiscriminatedBranches = ["?", ...DiscriminatedBranchTuple]
+
+export type DiscriminatedBranchTuple<
+    key extends DiscriminatedKey = DiscriminatedKey
+> = [path: string, key: key, cases: AttributeCases<key>]
+
+type AttributeCases<key extends DiscriminatedKey = DiscriminatedKey> = {
+    [k in DiscriminatedValue<key>]?: Attributes
+}
+
+export type DiscriminatedKey = "type" | "value"
+
+type DiscriminatedValue<key extends DiscriminatedKey = DiscriminatedKey> =
+    | AttributeTypes[key]
+    | "unset"
+
 export type Discriminant = {
     path: string
-    key: DisjointKey
+    key: DiscriminatedKey
     score: number
 }
 
@@ -104,7 +116,7 @@ const sortPropsByFrequency = (branches: Attributes[]): PropFrequencyEntry[] => {
     return Object.entries(appearancesByProp).sort((a, b) => b[1] - a[1])
 }
 
-const disjointScore = (branches: Attributes[], key: DisjointKey) => {
+const disjointScore = (branches: Attributes[], key: DiscriminatedKey) => {
     let score = 0
     for (let i = 0; i < branches.length; i++) {
         for (let j = i + 1; j < branches.length; j++) {

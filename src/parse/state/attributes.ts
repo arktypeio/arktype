@@ -3,18 +3,14 @@ import type { keyOrKeySet, keySet, subtype } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type { RegexLiteral } from "../operand/enclosed.js"
 import type { SerializedBounds } from "../operator/bounds/shared.js"
+import type { IntersectedBranches } from "../operator/intersection/compile.js"
+import type { UndiscriminatedBranches } from "../operator/union/compile.js"
+import type { DiscriminatedBranches } from "../operator/union/discriminate.js"
 import type { SerializedPrimitive } from "./value.js"
 
 type DisjointAttributeTypes = {
     value: SerializedPrimitive
     type: DynamicTypeName
-}
-
-export type DisjointKey = keyof DisjointAttributeTypes
-
-export const disjointKeys: Record<DisjointKey, true> = {
-    type: true,
-    value: true
 }
 
 type AdditiveAttributeTypes = {
@@ -46,21 +42,6 @@ export type AttributeBranches =
     | DiscriminatedBranches
     | UndiscriminatedBranches
     | IntersectedBranches
-
-export type DiscriminatedBranches<key extends DisjointKey = DisjointKey> = [
-    kind: "?",
-    path: string,
-    key: key,
-    cases: AttributeCases<key>
-]
-
-export type UndiscriminatedBranches = ["|", ...Attributes[]]
-
-export type IntersectedBranches = ["&", ...Attributes[]]
-
-export type AttributeCases<key extends DisjointKey> = {
-    [k in DisjointAttributeTypes[key] | "unset"]?: Attributes
-}
 
 export type AttributeTypes = ReducibleAttributeTypes &
     IrreducibleAttributeTypes &
