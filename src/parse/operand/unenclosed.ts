@@ -22,7 +22,7 @@ import { buildMissingOperandMessage } from "./operand.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
-    s.root = unenclosedToAttributes(s, token)
+    s.root.reinitialize(unenclosedToAttributes(s, token))
     return s
 }
 

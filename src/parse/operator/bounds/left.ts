@@ -26,7 +26,7 @@ export const parseLeftBound = (
         ? stateHasOpenRange(s)
             ? errorState(
                   buildBoundLiteralMessage(
-                      s.root.value,
+                      s.root.get.value,
                       s.branches.range[0],
                       s.branches.range[1]
                   )
@@ -53,8 +53,10 @@ const parseValidated = (
     s: DynamicWithRoot<{ value: NumberLiteral }>,
     token: Scanner.PairableComparator
 ) => {
-    s.branches.range = [parseWellFormedNumber(s.root.value, true), token]
-    s.root = unset
+    s.branches.range = [
+        parseWellFormedNumber(s.root.eject().value, true),
+        token
+    ]
     return s
 }
 

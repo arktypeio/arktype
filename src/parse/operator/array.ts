@@ -12,7 +12,7 @@ export const parseArray = (s: DynamicWithRoot) => {
     if (next !== "]") {
         return errorState(incompleteArrayTokenMessage)
     }
-    s.root = arrayOf(s.root)
+    s.root.reinitialize(arrayOf(s.root.eject()))
     return s
 }
 

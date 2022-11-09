@@ -25,7 +25,7 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
         inclusive: true,
         onInputEnd: throwUnterminatedEnclosed
     })
-    s.root =
+    s.root.reinitialize(
         enclosing === "/"
             ? { regex: token as RegexLiteral }
             : {
@@ -34,6 +34,7 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
                           ? (token as SingleQuotedStringLiteral)
                           : `'${token.slice(1, -1)}'`
               }
+    )
     return s
 }
 

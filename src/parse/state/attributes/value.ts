@@ -1,7 +1,4 @@
-import type {
-    dynamicTypeOf,
-    DynamicTypes
-} from "../../../utils/dynamicTypes.js"
+import type { DynamicTypes } from "../../../utils/dynamicTypes.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type {
     BigintLiteral,

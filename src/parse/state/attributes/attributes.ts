@@ -57,3 +57,7 @@ export type AttributeKey = keyof AttributeTypes
 export type Attribute<k extends AttributeKey> = AttributeTypes[k]
 
 export type Attributes = { [k in AttributeKey]?: Attribute<k> }
+
+export type ReadonlyAttributes = {
+    readonly [k in AttributeKey]?: Readonly<Attribute<k>>
+}

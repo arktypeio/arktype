@@ -53,7 +53,7 @@ const loop = (s: DynamicState) => {
     while (!s.scanner.hasBeenFinalized) {
         next(s)
     }
-    return s.root!
+    return s.root.eject()
 }
 
 type loop<

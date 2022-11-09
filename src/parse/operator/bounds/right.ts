@@ -1,6 +1,5 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
-import { intersectKey } from "../../state/attributes/intersect.js"
 import { Scanner } from "../../state/scanner.js"
 import type {
     DynamicWithRoot,
@@ -49,14 +48,13 @@ const setValidatedRoot = (
     limit: number
 ) => {
     if (!stateHasOpenRange(s)) {
-        s.root = intersectKey(s.root, "bounds", `${comparator}${limit}`)
+        s.root.intersect("bounds", `${comparator}${limit}`)
         return s
     }
     if (!isKeyOf(comparator, Scanner.pairableComparators)) {
         return errorState(buildInvalidDoubleBoundMessage(comparator))
     }
-    s.root = intersectKey(
-        s.root,
+    s.root.intersect(
         "bounds",
         `${invertedComparators[s.branches.range[1]]}${
             s.branches.range[0]

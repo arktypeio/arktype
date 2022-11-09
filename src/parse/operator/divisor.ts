@@ -1,6 +1,5 @@
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { parseWellFormedInteger } from "../../utils/numericLiterals.js"
-import { intersectKey } from "../state/attributes/intersect.js"
 import type { OperateAttribute } from "../state/attributes/operations.js"
 import type { Scanner } from "../state/scanner.js"
 import type {
@@ -39,7 +38,7 @@ const setRootOrCatch = (s: DynamicWithRoot, parseResult: number) => {
     if (parseResult === 0) {
         return errorState(buildInvalidDivisorMessage(0))
     }
-    s.root = intersectKey(s.root, "divisor", `${parseResult}`)
+    s.root.intersect("divisor", `${parseResult}`)
     return s
 }
 

@@ -1,4 +1,4 @@
-import type { dynamicTypeOf, DynamicTypes } from "../../utils/dynamicTypes.js"
+import type { dynamicTypeOf } from "../../utils/dynamicTypes.js"
 import { hasDynamicType } from "../../utils/dynamicTypes.js"
 import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
@@ -6,16 +6,17 @@ import { unclosedGroupMessage } from "../operand/groupOpen.js"
 import type { unpairedLeftBoundError } from "../operator/bounds/left.js"
 import type { mergeUnionDescendants } from "../operator/union/parse.js"
 import { mergeUnionDescendantsToRoot } from "../operator/union/parse.js"
-import type { AttributeKey, Attributes } from "./attributes/attributes.js"
-import { Scanner } from "./scanner.js"
+import type { Attributes } from "./attributes/attributes.js"
+import { AttributeState } from "./attributes/state.js"
 import type {
     SerializablePrimitive,
     SerializedPrimitives
 } from "./attributes/value.js"
 import { deserializePrimitive } from "./attributes/value.js"
+import { Scanner } from "./scanner.js"
 
 type BaseDynamic = {
-    root: Attributes | undefined
+    root: AttributeState
     branches: DynamicOpenBranches
     groups: DynamicOpenBranches[]
     scanner: Scanner
@@ -40,7 +41,7 @@ export type StaticState<preconditions extends StaticPreconditions = {}> = Omit<
 } & preconditions
 
 export type DynamicPreconditions = {
-    root?: Attributes
+    readonly root?: AttributeState
     branches?: Partial<DynamicOpenBranches>
     groups?: DynamicOpenBranches[]
 }
@@ -59,7 +60,7 @@ type StringOrReturnCode = string | ReturnCode
 export type DynamicWithRoot<
     attributePreconditions extends Attributes = Attributes
 > = DynamicState<{
-    root: attributePreconditions
+    readonly root: AttributeState<attributePreconditions>
 }>
 
 export type StaticWithRoot<ast = {}> = StaticState<{
@@ -70,7 +71,7 @@ export const initializeState = (
     def: string,
     context: DynamicParserContext
 ): DynamicState => ({
-    root: undefined,
+    root: new AttributeState(),
     branches: initializeBranches(),
     groups: [],
     scanner: new Scanner(def),
@@ -214,10 +215,10 @@ export const rootValueHasSerializedType = <
     s: s,
     typeName: typeName
 ): s is s & {
-    root: { value: SerializedPrimitives[typeName] }
+    root: AttributeState<{ value: SerializedPrimitives[typeName] }>
 } =>
-    typeof s.root.value === "string" &&
-    hasDynamicType(deserializePrimitive(s.root.value), typeName)
+    typeof s.root.get.value === "string" &&
+    hasDynamicType(deserializePrimitive(s.root.get.value), typeName)
 
 /** More transparent mutation in a function with a constrained input state */
 export const unset = undefined as any

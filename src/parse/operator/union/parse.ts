@@ -5,7 +5,6 @@ import type {
     StaticWithOpenRange,
     StaticWithRoot
 } from "../../state/state.js"
-import { unset } from "../../state/state.js"
 import type { unpairedLeftBoundError } from "../bounds/left.js"
 import type { mergeIntersectionDescendants } from "../intersection.js"
 import { mergeIntersectionDescendantsToRoot } from "../intersection.js"
@@ -14,8 +13,7 @@ import { compileUnion } from "./compile.js"
 export const parseUnion = (s: DynamicWithRoot) => {
     mergeIntersectionDescendantsToRoot(s)
     s.branches.union ??= []
-    s.branches.union.push(s.root)
-    s.root = unset
+    s.branches.union.push(s.root.eject())
     return s
 }
 
@@ -42,8 +40,8 @@ export const mergeUnionDescendantsToRoot = (s: DynamicWithRoot) => {
     if (!s.branches.union) {
         return s
     }
-    s.branches.union.push(s.root)
-    s.root = compileUnion(s.branches.union)
+    s.branches.union.push(s.root.eject())
+    s.root.reinitialize(compileUnion(s.branches.union))
     delete s.branches.union
     return s
 }

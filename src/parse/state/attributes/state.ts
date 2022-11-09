@@ -5,21 +5,24 @@ import type {
 } from "../../../utils/generics.js"
 import { isKeyOf, satisfies } from "../../../utils/generics.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
-import type { AttributeKey, Attributes } from "./attributes.js"
+import type {
+    Attribute,
+    AttributeKey,
+    Attributes,
+    ReadonlyAttributes
+} from "./attributes.js"
 import { operateAttribute } from "./operations.js"
-import type { DeserializedAttribute } from "./serialization.js"
-import { serializers } from "./serialization.js"
 
-export class AttributeState {
-    private a: Attributes = {}
+export class AttributeState<attributes extends Attributes = Attributes> {
+    private a: Attributes = unsetProxy
 
-    intersect<k extends AttributeKey>(k: k, v: DeserializedAttribute<k>) {
+    get: attributes & ReadonlyAttributes = this.a as any
+
+    intersect<k extends AttributeKey>(k: k, v: Attribute<k>) {
         if (k === "branches") {
             return {}
         } else if (this.a[k] === undefined) {
-            this.a[k] = isKeyOf(k, serializers)
-                ? serializers[k](v as any)
-                : (v as any)
+            this.a[k] = v
             if (isKeyOf(k, impliedTypes)) {
                 this.intersectTypeImplications(k)
             }
@@ -36,10 +39,24 @@ export class AttributeState {
         }
     }
 
+    reinitialize(attributes: Attributes) {
+        if (this.a !== unsetProxy) {
+            return throwInternalError(
+                `Unexpected attempt to reinitialize existing attributes.`
+            )
+        }
+        this.a = attributes
+    }
+
     eject() {
+        if (this.a !== unsetProxy) {
+            return throwInternalError(
+                `Unexpected attempt to eject unset attributes.`
+            )
+        }
         const attributes = this.a
-        this.a = ejectedProxy
-        return attributes
+        this.a = unsetProxy as any
+        return attributes as any as attributes
     }
 
     private intersectTypeImplications(key: TypeImplyingKey) {
@@ -70,12 +87,10 @@ const impliedTypes = satisfies<
 
 type TypeImplyingKey = keyof typeof impliedTypes
 
-const ejectedProxy = new Proxy(
+const unsetProxy = new Proxy(
     {},
     {
         get: () =>
-            throwInternalError(
-                `Unexpected attempt to access ejected attributes.`
-            )
+            throwInternalError(`Unexpected attempt to access unset attributes.`)
     }
 )
