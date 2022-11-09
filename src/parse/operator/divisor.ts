@@ -68,7 +68,7 @@ export const operateDivisor: OperateAttribute<NumberLiteral> = (
 ) => {
     const a = parseWellFormedInteger(serializedA, true)
     const b = parseWellFormedInteger(serializedB, true)
-    return operation === "extract"
+    return operation === "&"
         ? `${Math.abs((a * b) / greatestCommonDivisor(a, b))}`
         : `${a / greatestCommonDivisor(a, b)}`
 }

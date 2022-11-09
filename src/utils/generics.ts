@@ -94,3 +94,10 @@ export type requireKeys<o, key extends keyof o> = o & {
 export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
     ? [...MaybeArray, T]
     : T
+
+export type partialRecord<k extends string, v> = { [_ in k]?: v }
+
+export const satisfies =
+    <base>() =>
+    <t extends base>(t: t) =>
+        t

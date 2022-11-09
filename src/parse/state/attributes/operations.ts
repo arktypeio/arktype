@@ -6,49 +6,49 @@ import { operateDivisor } from "../../operator/divisor.js"
 import type { Attribute, AttributeKey } from "./attributes.js"
 import type { SerializedPrimitive } from "./value.js"
 
-type SetOperation = "extract" | "exclude"
+type AtomicOperator = "&" | "-"
 
 export type DisjoinableAttributeKey = "type" | "value" | "bounds"
 
 type OperatableKey = Exclude<AttributeKey, "branches">
 
-export type OperateAttribute<t> = <operation extends SetOperation>(
+export type OperateAttribute<t> = <operator extends AtomicOperator>(
     a: t,
     b: t,
-    operation: operation
+    operator: operator
 ) => t | null
 
 const operateKeyOrKeyset: OperateAttribute<keyOrKeySet<string>> = (
     a,
     b,
-    operation
+    operator
 ) => {
     if (typeof a === "string") {
         if (typeof b === "string") {
-            if (operation === "extract") {
+            if (operator === "&") {
                 return a === b ? a : { [a]: true, [b]: true }
             }
             return a === b ? null : a
         }
-        if (operation === "extract") {
+        if (operator === "&") {
             b[a] = true
             return b
         }
         return a in b ? null : a
     }
     if (typeof b === "string") {
-        if (operation === "extract") {
+        if (operator === "&") {
             a[b] = true
             return a
         }
         delete a[b]
         return isEmpty(a) ? null : a
     }
-    return operateKeyset(a, b, operation)
+    return operateKeyset(a, b, operator)
 }
 
 const operateKeyset: OperateAttribute<keySet<string>> = (a, b, operation) => {
-    if (operation === "extract") {
+    if (operation === "&") {
         return Object.assign(a, b)
     }
     for (const k in b) {
@@ -58,7 +58,7 @@ const operateKeyset: OperateAttribute<keySet<string>> = (a, b, operation) => {
 }
 
 const operateDisjoint: OperateAttribute<string> = (a, b, operation) =>
-    operation === "extract" ? (a === b ? a : null) : a === b ? null : a
+    operation === "&" ? (a === b ? a : null) : a === b ? null : a
 
 type AttributeOperations = {
     [k in OperatableKey]?: OperateAttribute<Attribute<k>>
