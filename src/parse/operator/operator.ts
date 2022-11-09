@@ -13,7 +13,7 @@ import { parseArray } from "./array.js"
 import { parseBound } from "./bounds/parse.js"
 import { parseDivisor } from "./divisor.js"
 import { parseGroupClose } from "./groupClose.js"
-import { parseIntersection } from "./intersection/parse.js"
+import { parseIntersection } from "./intersection.js"
 import { parseUnion } from "./union/parse.js"
 
 export const parseOperator = (s: DynamicWithRoot): DynamicState => {

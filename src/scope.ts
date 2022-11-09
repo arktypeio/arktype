@@ -1,7 +1,7 @@
 import type { ArktypeConfig } from "./arktype.js"
 import { Arktype } from "./arktype.js"
 import { parseRoot } from "./parse/parse.js"
-import type { Attributes } from "./parse/state/attributes.js"
+import type { Attributes } from "./parse/state/attributes/attributes.js"
 import type { inferAst } from "./traverse/infer.js"
 import type { validate } from "./traverse/validate.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"

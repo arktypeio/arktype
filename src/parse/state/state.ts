@@ -6,10 +6,13 @@ import { unclosedGroupMessage } from "../operand/groupOpen.js"
 import type { unpairedLeftBoundError } from "../operator/bounds/left.js"
 import type { mergeUnionDescendants } from "../operator/union/parse.js"
 import { mergeUnionDescendantsToRoot } from "../operator/union/parse.js"
-import type { AttributeKey, Attributes } from "./attributes.js"
+import type { AttributeKey, Attributes } from "./attributes/attributes.js"
 import { Scanner } from "./scanner.js"
-import type { SerializablePrimitive, SerializedPrimitives } from "./value.js"
-import { deserializePrimitive } from "./value.js"
+import type {
+    SerializablePrimitive,
+    SerializedPrimitives
+} from "./attributes/value.js"
+import { deserializePrimitive } from "./attributes/value.js"
 
 type BaseDynamic = {
     root: Attributes | undefined

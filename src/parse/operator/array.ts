@@ -1,4 +1,4 @@
-import type { Attributes } from "../state/attributes.js"
+import type { Attributes } from "../state/attributes/attributes.js"
 import type { Scanner } from "../state/scanner.js"
 import type {
     DynamicWithRoot,

@@ -7,8 +7,8 @@ import type {
 } from "../../state/state.js"
 import { unset } from "../../state/state.js"
 import type { unpairedLeftBoundError } from "../bounds/left.js"
-import type { mergeIntersectionDescendants } from "../intersection/parse.js"
-import { mergeIntersectionDescendantsToRoot } from "../intersection/parse.js"
+import type { mergeIntersectionDescendants } from "../intersection.js"
+import { mergeIntersectionDescendantsToRoot } from "../intersection.js"
 import { compileUnion } from "./compile.js"
 
 export const parseUnion = (s: DynamicWithRoot) => {

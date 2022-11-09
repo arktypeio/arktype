@@ -1,4 +1,4 @@
-import type { Attributes } from "./parse/state/attributes.js"
+import type { Attributes } from "./parse/state/attributes/attributes.js"
 import type { ArktypeScope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { dictionary } from "./utils/dynamicTypes.js"

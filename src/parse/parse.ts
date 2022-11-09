@@ -16,7 +16,7 @@ import type {
 } from "./common.js"
 import { initializeParserContext, throwParseError } from "./common.js"
 import type { buildMissingRightOperandMessage } from "./operand/operand.js"
-import type { Attributes } from "./state/attributes.js"
+import type { Attributes } from "./state/attributes/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
 
