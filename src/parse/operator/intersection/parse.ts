@@ -1,11 +1,11 @@
 import type { maybePush } from "../../../utils/generics.js"
 import { State } from "../../state/state.js"
-import { LeftBound } from "../bounds/left.js"
+import { unpairedLeftBoundError } from "../bounds/left.js"
 import { compileIntersection } from "./compile.js"
 
 export const parseIntersection = (s: State.DynamicWithRoot) => {
     if (State.hasOpenRange(s)) {
-        return LeftBound.unpairedError(s)
+        return unpairedLeftBoundError(s)
     }
     s.branches.intersection ??= []
     s.branches.intersection.push(s.root)
@@ -15,7 +15,7 @@ export const parseIntersection = (s: State.DynamicWithRoot) => {
 
 export type parseIntersection<s extends State.StaticWithRoot> =
     s extends State.StaticWithOpenRange
-        ? LeftBound.unpairedError<s>
+        ? unpairedLeftBoundError<s>
         : State.from<{
               root: undefined
               branches: {
@@ -27,6 +27,7 @@ export type parseIntersection<s extends State.StaticWithRoot> =
               unscanned: s["unscanned"]
           }>
 
+// TODO: Should be checking for open left bound here?
 export type mergeIntersectionDescendants<s extends State.StaticWithRoot> =
     maybePush<s["branches"]["intersection"], s["root"]>
 
@@ -34,7 +35,7 @@ export const mergeIntersectionDescendantsToRoot = (
     s: State.DynamicWithRoot
 ) => {
     if (State.hasOpenRange(s)) {
-        return LeftBound.unpairedError(s)
+        return unpairedLeftBoundError(s)
     }
     if (!s.branches.intersection) {
         return s

@@ -21,39 +21,42 @@ export const invertedComparators = {
 
 export type InvertedComparators = typeof invertedComparators
 
-export type buildInvalidDoubleMessage<comparator extends Scanner.Comparator> =
-    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
+export type buildInvalidDoubleBoundMessage<
+    comparator extends Scanner.Comparator
+> = `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
-export const buildInvalidDoubleMessage = <
+export const buildInvalidDoubleBoundMessage = <
     comparator extends Scanner.Comparator
 >(
     comparator: comparator
-): buildInvalidDoubleMessage<comparator> =>
+): buildInvalidDoubleBoundMessage<comparator> =>
     `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
-export type BoundsString = BoundString | RangeString
+export type SerializedBounds = SerializedBound | SerializedRange
 
-export type BoundString = `${Scanner.Comparator}${number}`
+export type SerializedBound = `${Scanner.Comparator}${number}`
 
-export type RangeString = `${MinString}${MaxString}`
+export type SerializedRange = `${SerializedMin}${SerializedMax}`
 
-export type MinString = `${">" | ">="}${number}`
+export type SerializedMin = `${">" | ">="}${number}`
 
-export type MaxString = `${"<" | "<="}${number}`
+export type SerializedMax = `${"<" | "<="}${number}`
 
 const boundStringRegex = /^([<>=]=?)([^<>=]+)$|^(>=?)([^<>=]+)(<=?)([^<>=]+)$/
 
-type ParsedBounds = {
-    min?: ParsedBound
-    max?: ParsedBound
+type DeserializedBounds = {
+    min?: DeserializedBound
+    max?: DeserializedBound
 }
 
-type ParsedBound = {
+type DeserializedBound = {
     limit: number
     inclusive: boolean
 }
 
-const parseBounds = (boundsString: BoundsString): ParsedBounds => {
+const deserializeBounds = (
+    boundsString: SerializedBounds
+): DeserializedBounds => {
     const matches = boundStringRegex.exec(boundsString)
     if (!matches) {
         return throwInternalError(
@@ -61,9 +64,12 @@ const parseBounds = (boundsString: BoundsString): ParsedBounds => {
         )
     }
     if (matches[1]) {
-        return parseBound(matches[1], parseWellFormedNumber(matches[2], true))
+        return deserializeBound(
+            matches[1],
+            parseWellFormedNumber(matches[2], true)
+        )
     }
-    return parseRange(
+    return deserializeRange(
         matches[3],
         parseWellFormedNumber(matches[4], true),
         matches[5],
@@ -71,7 +77,7 @@ const parseBounds = (boundsString: BoundsString): ParsedBounds => {
     )
 }
 
-const stringifyBounds = (bounds: ParsedBounds): BoundsString => {
+const serializeBounds = (bounds: DeserializedBounds): SerializedBounds => {
     if (bounds.min?.limit === bounds.max?.limit) {
         return `==${bounds.min!.limit}`
     }
@@ -84,11 +90,14 @@ const stringifyBounds = (bounds: ParsedBounds): BoundsString => {
         result += bounds.max.inclusive ? "<=" : "<"
         result += bounds.max.limit
     }
-    return result as BoundsString
+    return result as SerializedBounds
 }
 
-const parseBound = (comparator: string, limit: number): ParsedBounds => {
-    const bound: ParsedBound = {
+const deserializeBound = (
+    comparator: string,
+    limit: number
+): DeserializedBounds => {
+    const bound: DeserializedBound = {
         limit,
         inclusive: comparator[1] === "="
     }
@@ -105,12 +114,12 @@ const parseBound = (comparator: string, limit: number): ParsedBounds => {
     }
 }
 
-const parseRange = (
+const deserializeRange = (
     minComparator: string,
     minLimit: number,
     maxComparator: string,
     maxLimit: number
-): ParsedBounds => ({
+): DeserializedBounds => ({
     min: {
         limit: minLimit,
         inclusive: minComparator[1] === "="
@@ -125,8 +134,8 @@ export const intersectBounds: Intersector<"bounds"> = (
     stringifiedA,
     stringifiedB
 ) => {
-    const a = parseBounds(stringifiedA)
-    const b = parseBounds(stringifiedB)
+    const a = deserializeBounds(stringifiedA)
+    const b = deserializeBounds(stringifiedB)
     if (b.min) {
         const result = intersectBound("min", a, b.min)
         if (result === null) {
@@ -141,14 +150,14 @@ export const intersectBounds: Intersector<"bounds"> = (
         }
         a.max = result
     }
-    return stringifyBounds(a)
+    return serializeBounds(a)
 }
 
 const intersectBound = (
     kind: BoundKind,
-    a: ParsedBounds,
-    boundOfB: ParsedBound
-): ParsedBound | null => {
+    a: DeserializedBounds,
+    boundOfB: DeserializedBound
+): DeserializedBound | null => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = a[kind]
     const baseOpposing = a[invertedKind]
@@ -170,8 +179,8 @@ type BoundKind = keyof typeof invertedKinds
 
 const isStricter = (
     kind: BoundKind,
-    candidate: ParsedBound,
-    base: ParsedBound
+    candidate: DeserializedBound,
+    base: DeserializedBound
 ) => {
     if (
         candidate.limit === base.limit &&

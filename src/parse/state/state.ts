@@ -3,7 +3,7 @@ import { hasDynamicType } from "../../utils/dynamicTypes.js"
 import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
-import type { LeftBound } from "../operator/bounds/left.js"
+import type { unpairedLeftBoundError } from "../operator/bounds/left.js"
 import type { mergeUnionDescendants } from "../operator/union/parse.js"
 import { mergeUnionDescendantsToRoot } from "../operator/union/parse.js"
 import type { AttributeKey, Attributes } from "./attributes.js"
@@ -133,7 +133,7 @@ export namespace State {
 
     export type finalizeBranches<s extends StaticWithRoot> =
         s extends StaticWithOpenRange
-            ? LeftBound.unpairedError<s>
+            ? unpairedLeftBoundError<s>
             : from<{
                   root: mergeUnionDescendants<s>
                   groups: s["groups"]

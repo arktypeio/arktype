@@ -1,6 +1,6 @@
 import type { maybePush } from "../../../utils/generics.js"
 import { State } from "../../state/state.js"
-import type { LeftBound } from "../bounds/left.js"
+import type { unpairedLeftBoundError } from "../bounds/left.js"
 import type { mergeIntersectionDescendants } from "../intersection/parse.js"
 import { mergeIntersectionDescendantsToRoot } from "../intersection/parse.js"
 import { compileUnion } from "./compile.js"
@@ -15,7 +15,7 @@ export const parseUnion = (s: State.DynamicWithRoot) => {
 
 export type parseUnion<s extends State.StaticWithRoot> =
     s extends State.StaticWithOpenRange
-        ? LeftBound.unpairedError<s>
+        ? unpairedLeftBoundError<s>
         : State.from<{
               root: undefined
               branches: {

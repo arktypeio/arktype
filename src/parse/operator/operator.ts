@@ -3,7 +3,7 @@ import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { Scanner } from "../state/scanner.js"
 import { State } from "../state/state.js"
 import { parseArray } from "./array.js"
-import { Bounds } from "./bounds/bound.js"
+import { parseBound } from "./bounds/parse.js"
 import { parseDivisor } from "./divisor.js"
 import { parseGroupClose } from "./groupClose.js"
 import { parseIntersection } from "./intersection/parse.js"
@@ -22,7 +22,7 @@ export const parseOperator = (s: State.DynamicWithRoot): State.Dynamic => {
         : lookahead === ")"
         ? parseGroupClose(s)
         : isKeyOf(lookahead, Scanner.comparatorStartChars)
-        ? Bounds.parse(s, lookahead)
+        ? parseBound(s, lookahead)
         : lookahead === "%"
         ? parseDivisor(s)
         : lookahead === " "
@@ -41,7 +41,7 @@ export type parseOperator<s extends State.StaticWithRoot> =
             : lookahead extends ")"
             ? parseGroupClose<State.scanTo<s, unscanned>>
             : lookahead extends Scanner.ComparatorStartChar
-            ? Bounds.parse<s, lookahead, unscanned>
+            ? parseBound<s, lookahead, unscanned>
             : lookahead extends "%"
             ? parseDivisor<s, unscanned>
             : lookahead extends " "

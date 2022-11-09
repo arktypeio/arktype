@@ -2,7 +2,7 @@ import type { dictionary, DynamicTypeName } from "../../utils/dynamicTypes.js"
 import type { keyOrKeySet, keySet, subtype } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type { Enclosed } from "../operand/enclosed.js"
-import type { BoundsString } from "../operator/bounds/shared.js"
+import type { SerializedBounds } from "../operator/bounds/shared.js"
 import type { SerializedPrimitive } from "./value.js"
 
 type DisjointAttributeTypes = {
@@ -19,7 +19,7 @@ export const disjointKeys: Record<DisjointKey, true> = {
 
 type AdditiveAttributeTypes = {
     divisor: NumberLiteral
-    bounds: BoundsString
+    bounds: SerializedBounds
 }
 
 type ReducibleAttributeTypes = subtype<
