@@ -1,6 +1,12 @@
 import type { dictionary } from "../../../utils/dynamicTypes.js"
 import { pushKey } from "../../../utils/paths.js"
-import type { Attributes, DisjointKey } from "../attributes.js"
+import type {
+    Attributes,
+    DiscriminatedAttributeBranches,
+    DisjointKey
+} from "../../state/attributes.js"
+import { compileUnion } from "./compile.js"
+import { getPrunedAttribute } from "./getPrunedAttribute.js"
 
 export type Discriminant = {
     path: string
@@ -8,9 +14,33 @@ export type Discriminant = {
     score: number
 }
 
-export const calculateDiscriminant = (
+export const discriminate = (
     branches: Attributes[]
-): Discriminant | undefined => greedyDiscriminant("", branches)
+): DiscriminatedAttributeBranches | undefined => {
+    const discriminant = greedyDiscriminant("", branches)
+    if (!discriminant) {
+        return
+    }
+    const branchesByValue: dictionary<Attributes[]> = {}
+    for (let i = 0; i < branches.length; i++) {
+        const value = getPrunedAttribute(
+            branches[i],
+            discriminant.path,
+            discriminant.key
+        )
+        branchesByValue[value] ??= []
+        branchesByValue[value].push(branches[i])
+    }
+    const cases: dictionary<Attributes> = {}
+    for (const value in branchesByValue) {
+        cases[value] = compileUnion(branchesByValue[value])
+    }
+    return {
+        path: discriminant.path,
+        key: discriminant.key,
+        cases
+    }
+}
 
 const greedyDiscriminant = (
     path: string,

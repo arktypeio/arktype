@@ -1,7 +1,5 @@
-import type { defined, keyOrKeySet, keySet } from "../../utils/generics.js"
-import { isKeyOf } from "../../utils/generics.js"
-import { intersectBounds } from "../operator/bounds/shared.js"
-import { Divisor } from "../operator/divisor.js"
+import type { defined, keyOrKeySet, keySet } from "../../../utils/generics.js"
+import { isKeyOf } from "../../../utils/generics.js"
 import type {
     AttributeCases,
     AttributeKey,
@@ -9,8 +7,10 @@ import type {
     AttributeTypes,
     BranchAttributeKey,
     TypeAttribute
-} from "./attributes.js"
-import { branchKeys } from "./attributes.js"
+} from "../../state/attributes.js"
+import { branchKeys } from "../../state/attributes.js"
+import { intersectBounds } from "../bounds/shared.js"
+import { intersectDivisors } from "../divisor.js"
 
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
@@ -33,7 +33,7 @@ export const add = <k extends AttributeKey>(
     return intersect(attributes, attributesToAdd)
 }
 
-export const intersection = (branches: Attributes[]) => {
+export const compileIntersection = (branches: Attributes[]) => {
     while (branches.length > 1) {
         branches.unshift(intersect(branches.pop()!, branches.pop()!))
     }
@@ -90,7 +90,7 @@ const intersectors: IntersectorsByKey = {
     requiredKeys: (a, b) => Object.assign(a, b),
     alias: intersectIrreducibleAttribute,
     contradiction: intersectIrreducibleAttribute,
-    divisor: (a, b) => Divisor.intersect(a, b),
+    divisor: (a, b) => intersectDivisors(a, b),
     regex: (a, b) => intersectIrreducibleAttribute(a, b),
     bounds: intersectBounds,
     props: (a, b) => {

@@ -90,3 +90,7 @@ export type defined<t> = Exclude<t, undefined>
 export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
+
+export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
+    ? [...MaybeArray, T]
+    : T

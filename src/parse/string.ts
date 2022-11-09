@@ -5,8 +5,8 @@ import type {
 } from "./common.js"
 import { Operand } from "./operand/operand.js"
 import { Unenclosed } from "./operand/unenclosed.js"
-import { Arr } from "./operator/array.js"
-import { Operator } from "./operator/operator.js"
+import { arrayOf } from "./operator/array.js"
+import { parseOperator } from "./operator/operator.js"
 import { State } from "./state/state.js"
 
 export const parseString = (
@@ -58,12 +58,12 @@ type loop<
     : s["root"]
 
 const next = (s: State.Dynamic): State.Dynamic =>
-    State.hasRoot(s) ? Operator.parse(s) : Operand.parse(s)
+    State.hasRoot(s) ? parseOperator(s) : Operand.parse(s)
 
 type next<
     s extends State.Static,
     context extends StaticParserContext
-> = s extends { root: {} } ? Operator.parse<s> : Operand.parse<s, context>
+> = s extends { root: {} } ? parseOperator<s> : Operand.parse<s, context>
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -92,7 +92,7 @@ const tryNaiveStringParse = (def: string, context: DynamicParserContext) => {
             context
         )
         if (maybeParsedAttributes) {
-            return Arr.arrayOf(maybeParsedAttributes)
+            return arrayOf(maybeParsedAttributes)
         }
     }
     return Unenclosed.maybeParseIdentifier(def, context)

@@ -1,7 +1,7 @@
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
-import type { Intersector } from "../../state/intersect.js"
 import type { Scanner } from "../../state/scanner.js"
+import type { Intersector } from "../intersection/compile.js"
 
 export const comparatorDescriptions = {
     "<": "less than",

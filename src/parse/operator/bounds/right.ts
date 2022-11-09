@@ -1,8 +1,8 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
-import { add } from "../../state/intersect.js"
 import { Scanner } from "../../state/scanner.js"
 import { State } from "../../state/state.js"
+import { add } from "../intersection/compile.js"
 import { buildInvalidDoubleMessage, invertedComparators } from "./shared.js"
 
 export namespace RightBound {

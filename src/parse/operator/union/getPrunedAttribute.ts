@@ -1,5 +1,5 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
-import type { Attributes, DisjointKey } from "../attributes.js"
+import type { Attributes, DisjointKey } from "../../state/attributes.js"
 
 export const getPrunedAttribute = (
     attributes: Attributes,

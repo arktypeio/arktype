@@ -4,7 +4,8 @@ import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
 import { GroupOpen } from "../operand/groupOpen.js"
 import type { LeftBound } from "../operator/bounds/left.js"
-import { Union } from "../operator/union.js"
+import type { mergeUnionDescendants } from "../operator/union/parse.js"
+import { mergeUnionDescendantsToRoot } from "../operator/union/parse.js"
 import type { AttributeKey, Attributes } from "./attributes.js"
 import { Scanner } from "./scanner.js"
 import type { SerializablePrimitive, SerializedPrimitives } from "./value.js"
@@ -126,7 +127,7 @@ export namespace State {
     }
 
     export const finalizeBranches = (s: DynamicWithRoot) => {
-        Union.mergeDescendantsToRootIfPresent(s)
+        mergeUnionDescendantsToRoot(s)
         return s
     }
 
@@ -134,7 +135,7 @@ export namespace State {
         s extends StaticWithOpenRange
             ? LeftBound.unpairedError<s>
             : from<{
-                  root: Union.collectBranches<s>
+                  root: mergeUnionDescendants<s>
                   groups: s["groups"]
                   branches: initialBranches
                   unscanned: s["unscanned"]
@@ -175,7 +176,7 @@ export namespace State {
     > = from<{
         groups: nextGroups
         branches: nextBranches
-        root: Union.collectBranches<s>
+        root: mergeUnionDescendants<s>
         unscanned: s["unscanned"]
     }>
 

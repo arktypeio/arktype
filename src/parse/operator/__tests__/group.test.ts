@@ -3,7 +3,7 @@ import { describe, test } from "mocha"
 import { type } from "../../../api.js"
 import { GroupOpen } from "../../operand/groupOpen.js"
 import { Operand } from "../../operand/operand.js"
-import { GroupClose } from "../groupClose.js"
+import { buildUnmatchedGroupCloseMessage } from "../groupClose.js"
 
 describe("group", () => {
     test("entire expression", () => {
@@ -36,7 +36,7 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)")
-            }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage(""))
+            }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage(""))
         })
         test("lone )", () => {
             attest(() => {
@@ -62,7 +62,7 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))[]")
-            }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage("[]"))
+            }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage("[]"))
         })
         test("starting )", () => {
             attest(() => {
