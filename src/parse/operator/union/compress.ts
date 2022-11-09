@@ -4,6 +4,14 @@ import type { requireKeys } from "../../../utils/generics.js"
 import type { AttributeKey, Attributes } from "../../state/attributes.js"
 
 export const compress = (branches: Attributes[]): Attributes => {
+    const compressed = compressAttributes(branches)
+    if (branches.every((branch) => !isEmpty(branch))) {
+        compressed.branches = branches
+    }
+    return compressed
+}
+
+const compressAttributes = (branches: Attributes[]) => {
     const compressed: Attributes = {}
     let k: AttributeKey
     for (k in branches[0]) {
@@ -15,21 +23,14 @@ export const compress = (branches: Attributes[]): Attributes => {
         } else if (k === "branches") {
             // TODO: Anything we can do here?
             continue
-        } else {
-            if (
-                branches.every((branch) =>
-                    deepEquals(branches[0][k], branch[k])
-                )
-            ) {
-                compressed[k] = branches[0][k] as any
-                for (const branch of branches) {
-                    delete branch[k]
-                }
+        } else if (
+            branches.every((branch) => deepEquals(branches[0][k], branch[k]))
+        ) {
+            compressed[k] = branches[0][k] as any
+            for (const branch of branches) {
+                delete branch[k]
             }
         }
-    }
-    if (branches.every((branch) => !isEmpty(branch))) {
-        compressed.branches = branches
     }
     return compressed
 }
@@ -64,7 +65,7 @@ const compressProp = (
     if (!allBranchesHaveProp) {
         return
     }
-    const compressedProp = compress(propValues)
+    const compressedProp = compressAttributes(propValues)
     if (!isEmpty(compressedProp)) {
         for (const branch of branches) {
             if (isEmpty(branch.props[propKey])) {
