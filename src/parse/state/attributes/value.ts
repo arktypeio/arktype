@@ -1,17 +1,18 @@
-import type { DynamicTypes } from "../../utils/dynamicTypes.js"
-import { isKeyOf } from "../../utils/generics.js"
+import type { DynamicTypes } from "../../../utils/dynamicTypes.js"
+import { isKeyOf } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../../utils/numericLiterals.js"
+} from "../../../utils/numericLiterals.js"
 import {
     parseWellFormedBigint,
     parseWellFormedNumber
-} from "../../utils/numericLiterals.js"
-import type { Enclosed } from "../operand/enclosed.js"
+} from "../../../utils/numericLiterals.js"
+
+type StringLiteral = `'${string}'`
 
 export type SerializedPrimitives = {
-    string: Enclosed.SingleQuotedStringLiteral
+    string: StringLiteral
     number: NumberLiteral
     bigint: BigintLiteral
     boolean: "true" | "false"
@@ -40,7 +41,7 @@ export const deserializePrimitive = <serialized extends SerializedPrimitive>(
 export type deserializePrimitive<serialized extends SerializedPrimitive> =
     serialized extends keyof SerializedKeywords
         ? SerializedKeywords[serialized]
-        : serialized extends Enclosed.SingleQuotedStringLiteral
+        : serialized extends StringLiteral
         ? string
         : serialized extends BigintLiteral
         ? bigint

@@ -1,8 +1,8 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { Operand } from "../../operand/operand.js"
-import { Unenclosed } from "../../operand/unenclosed.js"
+import { buildMissingRightOperandMessage } from "../../operand/operand.js"
+import { buildUnresolvableMessage } from "../../operand/unenclosed.js"
 
 describe("intersection", () => {
     describe("parse", () => {
@@ -16,13 +16,13 @@ describe("intersection", () => {
             test("bad reference", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&tru")).throwsAndHasTypeError(
-                    Unenclosed.buildUnresolvableMessage("tru")
+                    buildUnresolvableMessage("tru")
                 )
             })
             test("double and", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&&true")).throwsAndHasTypeError(
-                    Operand.buildMissingRightOperandMessage("&", "&true")
+                    buildMissingRightOperandMessage("&", "&true")
                 )
             })
         })

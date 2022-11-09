@@ -1,22 +1,26 @@
-import { State } from "../state/state.js"
+import type {
+    DynamicState,
+    initialBranches,
+    stateFrom,
+    StaticState
+} from "../state/state.js"
+import { initializeBranches } from "../state/state.js"
 
-export namespace GroupOpen {
-    export const parse = (s: State.Dynamic) => {
-        s.groups.push(s.branches)
-        s.branches = State.initializeBranches()
-        return s
-    }
-
-    export type parse<
-        s extends State.Static,
-        unscanned extends string
-    > = State.from<{
-        groups: [...s["groups"], s["branches"]]
-        branches: State.initialBranches
-        root: undefined
-        unscanned: unscanned
-    }>
-
-    export const unclosedMessage = "Missing )"
-    export type unclosedMessage = typeof unclosedMessage
+export const parseGroupOpen = (s: DynamicState) => {
+    s.groups.push(s.branches)
+    s.branches = initializeBranches()
+    return s
 }
+
+export type parseGroupOpen<
+    s extends StaticState,
+    unscanned extends string
+> = stateFrom<{
+    groups: [...s["groups"], s["branches"]]
+    branches: initialBranches
+    root: undefined
+    unscanned: unscanned
+}>
+
+export const unclosedGroupMessage = "Missing )"
+export type unclosedGroupMessage = typeof unclosedGroupMessage

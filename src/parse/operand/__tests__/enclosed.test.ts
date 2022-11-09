@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../type.js"
-import { Enclosed } from "../enclosed.js"
+import { buildUnterminatedEnclosedMessage } from "../enclosed.js"
 
 describe("parse enclosed", () => {
     test("with spaces", () => {
@@ -18,19 +18,19 @@ describe("parse enclosed", () => {
             test("regex", () => {
                 // @ts-expect-error
                 attest(() => type("/.*")).throwsAndHasTypeError(
-                    Enclosed.buildUnterminatedMessage("/.*", "/")
+                    buildUnterminatedEnclosedMessage("/.*", "/")
                 )
             })
             test("single-quote", () => {
                 // @ts-expect-error
                 attest(() => type("'.*")).throwsAndHasTypeError(
-                    Enclosed.buildUnterminatedMessage("'.*", "'")
+                    buildUnterminatedEnclosedMessage("'.*", "'")
                 )
             })
             test("double-quote", () => {
                 // @ts-expect-error
                 attest(() => type('".*')).throwsAndHasTypeError(
-                    Enclosed.buildUnterminatedMessage('".*', '"')
+                    buildUnterminatedEnclosedMessage('".*', '"')
                 )
             })
         })

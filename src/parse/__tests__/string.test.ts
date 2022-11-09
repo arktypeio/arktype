@@ -1,14 +1,14 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../api.js"
-import { Operand } from "../operand/operand.js"
-import { Unenclosed } from "../operand/unenclosed.js"
+import { buildExpressionExpectedMessage } from "../operand/operand.js"
+import { buildUnresolvableMessage } from "../operand/unenclosed.js"
 
 describe("string", () => {
     test("errors on empty string", () => {
         // @ts-expect-error
         attest(() => type("")).throwsAndHasTypeError(
-            Operand.buildExpressionExpectedMessage("")
+            buildExpressionExpectedMessage("")
         )
     })
     test("ignores whitespace between identifiers/operators", () => {
@@ -19,6 +19,6 @@ describe("string", () => {
         attest(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("boo"))
+        ).throwsAndHasTypeError(buildUnresolvableMessage("boo"))
     })
 })

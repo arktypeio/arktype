@@ -1,5 +1,5 @@
 import type { array, dictionary } from "../../utils/dynamicTypes.js"
-import type { Attributes } from "../state/attributes.js"
+import type { Attributes } from "../state/attributes/attributes.js"
 
 export type Keyword = keyof Keyword.Inferences
 
@@ -50,15 +50,16 @@ export namespace Keyword {
         null: () => ({ type: "null", value: "null" }),
         number: () => ({ type: "number" }),
         object: () => ({
-            branches: {
-                path: "",
-                key: "type",
-                cases: {
+            branches: [
+                "?",
+                "",
+                "type",
+                {
                     dictionary: {},
                     array: {},
                     function: {}
                 }
-            }
+            ]
         }),
         string: () => ({ type: "string" }),
         symbol: () => ({ type: "symbol" }),

@@ -1,9 +1,12 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { Bounds } from "../bounds/bound.js"
-import { LeftBound } from "../bounds/left.js"
-import { buildInvalidDoubleMessage } from "../bounds/shared.js"
+import {
+    buildBoundLiteralMessage,
+    buildUnpairedLeftBoundMessage
+} from "../bounds/left.js"
+import { singleEqualsMessage } from "../bounds/parse.js"
+import { buildInvalidDoubleBoundMessage } from "../bounds/shared.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
@@ -37,31 +40,31 @@ describe("bound", () => {
             test("single equals", () => {
                 // @ts-expect-error
                 attest(() => type("string=5")).throwsAndHasTypeError(
-                    Bounds.singleEqualsMessage
+                    singleEqualsMessage
                 )
             })
             test("invalid left comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3>number<5")).throwsAndHasTypeError(
-                    buildInvalidDoubleMessage(">")
+                    buildInvalidDoubleBoundMessage(">")
                 )
             })
             test("invalid right double-bound comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3<number==5")).throwsAndHasTypeError(
-                    buildInvalidDoubleMessage("==")
+                    buildInvalidDoubleBoundMessage("==")
                 )
             })
             test("unpaired left", () => {
                 // @ts-expect-error
                 attest(() => type("3<number")).throwsAndHasTypeError(
-                    LeftBound.buildUnpairedMessage(3, "<")
+                    buildUnpairedLeftBoundMessage(3, "<")
                 )
             })
             test("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    LeftBound.buildBoundLiteralMessage("5", 3, "<")
+                    buildBoundLiteralMessage("5", 3, "<")
                 )
             })
         })

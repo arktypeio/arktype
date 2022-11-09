@@ -1,13 +1,13 @@
-import type { SpaceRoot } from "../space.js"
+import type { ScopeRoot } from "../scope.js"
 
 export type DynamicParserContext = {
-    spaceRoot: SpaceRoot
+    scopeRoot: ScopeRoot
 }
 
 export const initializeParserContext = (
-    spaceRoot: SpaceRoot
+    scopeRoot: ScopeRoot
 ): DynamicParserContext => ({
-    spaceRoot
+    scopeRoot
 })
 
 export type StaticParserContext = {
@@ -21,7 +21,3 @@ export const throwParseError = (message: string) => {
 }
 
 export type ParseError<Message extends string> = `!${Message}`
-
-export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
-    ? [...MaybeArray, T]
-    : T

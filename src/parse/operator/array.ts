@@ -1,32 +1,35 @@
-import type { Attributes } from "../state/attributes.js"
+import type { Attributes } from "../state/attributes/attributes.js"
 import type { Scanner } from "../state/scanner.js"
-import type { State } from "../state/state.js"
+import type {
+    DynamicWithRoot,
+    setStateRoot,
+    StaticWithRoot
+} from "../state/state.js"
+import { errorState } from "../state/state.js"
 
-export namespace Arr {
-    export const parse = (s: State.DynamicWithRoot) => {
-        const next = s.scanner.shift()
-        if (next !== "]") {
-            throw new Error(incompleteTokenMessage)
-        }
-        s.root = arrayOf(s.root)
-        return s
+export const parseArray = (s: DynamicWithRoot) => {
+    const next = s.scanner.shift()
+    if (next !== "]") {
+        return errorState(incompleteArrayTokenMessage)
     }
-
-    export type parse<
-        s extends State.StaticWithRoot,
-        unscanned extends string
-    > = unscanned extends Scanner.shift<"]", infer remaining>
-        ? State.setRoot<s, [s["root"], "[]"], remaining>
-        : State.error<incompleteTokenMessage>
-
-    export const arrayOf = (elementAttributes: Attributes): Attributes => ({
-        type: "array",
-        props: {
-            "*": elementAttributes
-        }
-    })
-
-    export const incompleteTokenMessage = `Missing expected ']'`
-
-    type incompleteTokenMessage = typeof incompleteTokenMessage
+    s.root = arrayOf(s.root)
+    return s
 }
+
+export type parseArray<
+    s extends StaticWithRoot,
+    unscanned extends string
+> = unscanned extends Scanner.shift<"]", infer remaining>
+    ? setStateRoot<s, [s["root"], "[]"], remaining>
+    : errorState<incompleteArrayTokenMessage>
+
+export const arrayOf = (elementAttributes: Attributes): Attributes => ({
+    type: "array",
+    props: {
+        "*": elementAttributes
+    }
+})
+
+export const incompleteArrayTokenMessage = `Missing expected ']'`
+
+type incompleteArrayTokenMessage = typeof incompleteArrayTokenMessage

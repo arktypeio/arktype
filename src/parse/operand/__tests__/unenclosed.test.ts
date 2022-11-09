@@ -1,9 +1,9 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { space } from "../../../space.js"
+import { scope } from "../../../scope.js"
 import { type } from "../../../type.js"
 import { buildMalformedNumericLiteralMessage } from "../../../utils/numericLiterals.js"
-import { Unenclosed } from "../unenclosed.js"
+import { buildUnresolvableMessage } from "../unenclosed.js"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {
@@ -11,15 +11,14 @@ describe("parse unenclosed", () => {
             attest(type("string").infer).typed as "string"
         })
         test("alias", () => {
-            const types = space({ a: "string" })
-            const a = type("a", { space: types })
+            const a = type("a", { scope: scope({ a: "string" }) })
             attest(a.infer).typed as string
         })
         describe("errors", () => {
             test("unresolvable", () => {
                 // @ts-expect-error
                 attest(() => type("HUH")).throwsAndHasTypeError(
-                    Unenclosed.buildUnresolvableMessage("HUH")
+                    buildUnresolvableMessage("HUH")
                 )
             })
         })
@@ -54,13 +53,13 @@ describe("parse unenclosed", () => {
             test("multiple decimals", () => {
                 // @ts-expect-error
                 attest(() => type("127.0.0.1")).throwsAndHasTypeError(
-                    Unenclosed.buildUnresolvableMessage("127.0.0.1")
+                    buildUnresolvableMessage("127.0.0.1")
                 )
             })
             test("with alpha", () => {
                 // @ts-expect-error
                 attest(() => type("13three7")).throwsAndHasTypeError(
-                    Unenclosed.buildUnresolvableMessage("13three7")
+                    buildUnresolvableMessage("13three7")
                 )
             })
 
@@ -100,7 +99,7 @@ describe("parse unenclosed", () => {
             test("decimal", () => {
                 // @ts-expect-error
                 attest(() => type("999.1n")).throwsAndHasTypeError(
-                    Unenclosed.buildUnresolvableMessage("999.1n")
+                    buildUnresolvableMessage("999.1n")
                 )
             })
 
@@ -112,7 +111,7 @@ describe("parse unenclosed", () => {
                     .throws(
                         buildMalformedNumericLiteralMessage("007n", "bigint")
                     )
-                    .type.errors(Unenclosed.buildUnresolvableMessage("007n"))
+                    .type.errors(buildUnresolvableMessage("007n"))
             })
             test("negative zero", () => {
                 // @ts-expect-error

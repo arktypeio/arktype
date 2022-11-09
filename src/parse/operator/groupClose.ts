@@ -1,29 +1,32 @@
-import { State } from "../state/state.js"
+import type {
+    DynamicWithRoot,
+    StaticOpenBranches,
+    StaticWithRoot
+} from "../state/state.js"
+import { errorState, finalizeGroup } from "../state/state.js"
 
-export namespace GroupClose {
-    export const parse = (s: State.DynamicWithRoot) => {
-        const previousOpenBranches = s.groups.pop()
-        if (!previousOpenBranches) {
-            return State.error(buildUnmatchedMessage(s.scanner.unscanned))
-        }
-        return State.finalizeGroup(s, previousOpenBranches)
+export const parseGroupClose = (s: DynamicWithRoot) => {
+    const previousOpenBranches = s.groups.pop()
+    if (!previousOpenBranches) {
+        return errorState(buildUnmatchedGroupCloseMessage(s.scanner.unscanned))
     }
-
-    export type parse<s extends State.StaticWithRoot> =
-        s["groups"] extends popGroup<infer stack, infer top>
-            ? State.finalizeGroup<s, top, stack>
-            : State.error<buildUnmatchedMessage<s["unscanned"]>>
-
-    type popGroup<
-        stack extends State.StaticOpenBranches[],
-        top extends State.StaticOpenBranches
-    > = [...stack, top]
-
-    export const buildUnmatchedMessage = <unscanned extends string>(
-        unscanned: unscanned
-    ): buildUnmatchedMessage<unscanned> =>
-        `Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}`
-
-    type buildUnmatchedMessage<unscanned extends string> =
-        `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}`
+    return finalizeGroup(s, previousOpenBranches)
 }
+
+export type parseGroupClose<s extends StaticWithRoot> =
+    s["groups"] extends popGroup<infer stack, infer top>
+        ? finalizeGroup<s, top, stack>
+        : errorState<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
+
+type popGroup<
+    stack extends StaticOpenBranches[],
+    top extends StaticOpenBranches
+> = [...stack, top]
+
+export const buildUnmatchedGroupCloseMessage = <unscanned extends string>(
+    unscanned: unscanned
+): buildUnmatchedGroupCloseMessage<unscanned> =>
+    `Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}`
+
+type buildUnmatchedGroupCloseMessage<unscanned extends string> =
+    `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}`

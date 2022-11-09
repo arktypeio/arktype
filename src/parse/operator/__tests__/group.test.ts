@@ -1,9 +1,9 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { GroupOpen } from "../../operand/groupOpen.js"
-import { Operand } from "../../operand/operand.js"
-import { GroupClose } from "../groupClose.js"
+import { unclosedGroupMessage } from "../../operand/groupOpen.js"
+import { buildExpressionExpectedMessage } from "../../operand/operand.js"
+import { buildUnmatchedGroupCloseMessage } from "../groupClose.js"
 
 describe("group", () => {
     test("entire expression", () => {
@@ -22,55 +22,49 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("()")
-            }).throwsAndHasTypeError(
-                Operand.buildExpressionExpectedMessage(")")
-            )
+            }).throwsAndHasTypeError(buildExpressionExpectedMessage(")"))
         })
         test("unmatched (", () => {
             attest(() => {
                 // @ts-expect-error
                 type("string|(boolean|number[]")
-            }).throwsAndHasTypeError(GroupOpen.unclosedMessage)
+            }).throwsAndHasTypeError(unclosedGroupMessage)
         })
         test("unmatched )", () => {
             attest(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)")
-            }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage(""))
+            }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage(""))
         })
         test("lone )", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")")
-            }).throwsAndHasTypeError(
-                Operand.buildExpressionExpectedMessage(")")
-            )
+            }).throwsAndHasTypeError(buildExpressionExpectedMessage(")"))
         })
         test("lone (", () => {
             attest(() => {
                 // @ts-expect-error
                 type("(")
-            }).throwsAndHasTypeError(Operand.buildExpressionExpectedMessage(""))
+            }).throwsAndHasTypeError(buildExpressionExpectedMessage(""))
         })
         test("deep unmatched (", () => {
             attest(() => {
                 // @ts-expect-error
                 type("(null|(undefined|(1))|2")
-            }).throwsAndHasTypeError(GroupOpen.unclosedMessage)
+            }).throwsAndHasTypeError(unclosedGroupMessage)
         })
         test("deep unmatched )", () => {
             attest(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))[]")
-            }).throwsAndHasTypeError(GroupClose.buildUnmatchedMessage("[]"))
+            }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage("[]"))
         })
         test("starting )", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")number(")
-            }).throwsAndHasTypeError(
-                Operand.buildExpressionExpectedMessage(")number(")
-            )
+            }).throwsAndHasTypeError(buildExpressionExpectedMessage(")number("))
         })
     })
 })
