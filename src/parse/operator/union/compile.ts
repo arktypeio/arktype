@@ -1,6 +1,9 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
-import type { Attributes } from "../../state/attributes.js"
+import type {
+    Attributes,
+    UndiscriminatedBranches
+} from "../../state/attributes.js"
 import { compressAndPrune } from "./compress.js"
 import { discriminate } from "./discriminate.js"
 
@@ -19,9 +22,10 @@ export const compileUnion = (branches: Attributes[]): Attributes => {
     }
     const discriminated = discriminate(branches)
     if (discriminated) {
-        root.switch = discriminated
+        root.branches = discriminated
     } else {
-        root.some = branches
+        branches.unshift("|" as any)
+        root.branches = branches as UndiscriminatedBranches
     }
     return root
 }

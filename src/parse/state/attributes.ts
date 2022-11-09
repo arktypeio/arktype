@@ -7,7 +7,7 @@ import type { SerializedPrimitive } from "./value.js"
 
 type DisjointAttributeTypes = {
     value: SerializedPrimitive
-    type: TypeAttribute
+    type: DynamicTypeName
 }
 
 export type DisjointKey = keyof DisjointAttributeTypes
@@ -37,33 +37,26 @@ type IrreducibleAttributeTypes = subtype<
     }
 >
 
-type BranchAttributeTypes = {
-    switch: DiscriminatedAttributeBranches
-    some: Attributes[]
-    every: Attributes[][]
-}
-
 type ComposedAttributeTypes = {
     props: dictionary<Attributes>
-} & BranchAttributeTypes
-
-export const branchKeys: Record<BranchAttributeKey, true> = {
-    switch: true,
-    some: true,
-    every: true
-} as const
-
-export type BranchAttributeKey = keyof BranchAttributeTypes
-
-export type AttributeBranches = Attributes[] | DiscriminatedAttributeBranches
-
-export type DiscriminatedAttributeBranches<
-    key extends DisjointKey = DisjointKey
-> = {
-    path: string
-    key: key
-    cases: AttributeCases<key>
+    branches: AttributeBranches
 }
+
+export type AttributeBranches =
+    | DiscriminatedBranches
+    | UndiscriminatedBranches
+    | IntersectedBranches
+
+export type DiscriminatedBranches<key extends DisjointKey = DisjointKey> = [
+    kind: "?",
+    path: string,
+    key: key,
+    cases: AttributeCases<key>
+]
+
+export type UndiscriminatedBranches = ["|", ...Attributes[]]
+
+export type IntersectedBranches = ["&", ...Attributes[]]
 
 export type AttributeCases<key extends DisjointKey> = {
     [k in DisjointAttributeTypes[key] | "default"]?: Attributes
@@ -76,5 +69,3 @@ export type AttributeTypes = ReducibleAttributeTypes &
 export type AttributeKey = keyof AttributeTypes
 
 export type Attributes = { [k in AttributeKey]?: AttributeTypes[k] }
-
-export type TypeAttribute = DynamicTypeName

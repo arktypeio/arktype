@@ -57,26 +57,19 @@ describe("union", () => {
     test("discriminate", () => {
         attest(compileUnion(testBranches)).snap({
             props: { size: { type: "number" } },
-            switch: {
-                path: "",
-                key: "type",
-                cases: {
+            branches: [
+                "?",
+                "",
+                "type",
+                {
                     dictionary: {
-                        switch: {
-                            path: "kind",
-                            key: "value",
-                            cases: { "1": {}, "2": {} }
-                        }
+                        branches: ["?", "kind", "value", { "1": {}, "2": {} }]
                     },
                     array: {
-                        switch: {
-                            path: "kind",
-                            key: "value",
-                            cases: { "1": {}, "2": {} }
-                        }
+                        branches: ["?", "kind", "value", { "1": {}, "2": {} }]
                     }
                 }
-            }
+            ]
         })
     })
     describe("infer", () => {

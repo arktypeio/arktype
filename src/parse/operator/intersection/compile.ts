@@ -1,36 +1,54 @@
+import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
 import type { defined, keyOrKeySet, keySet } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type {
+    AttributeBranches,
     AttributeCases,
     AttributeKey,
     Attributes,
     AttributeTypes,
-    BranchAttributeKey,
-    TypeAttribute
+    DisjointKey
 } from "../../state/attributes.js"
-import { branchKeys } from "../../state/attributes.js"
 import { intersectBounds } from "../bounds/shared.js"
 import { intersectDivisors } from "../divisor.js"
 
 export const add = <k extends AttributeKey>(
     attributes: Attributes,
     k: k,
-    value: AttributeTypes[k]
+    v: AttributeTypes[k]
 ): Attributes => {
-    const attributesToAdd: Attributes = { [k]: value }
-    if (!attributes[k] && isKeyOf(k, impliedTypes)) {
-        const impliedType = impliedTypes[k]
-        if (typeof impliedType === "string") {
-            attributesToAdd.type = impliedType
+    if (k === "branches") {
+        return {}
+    } else if (attributes[k] === undefined) {
+        attributes[k] = v
+        if (isKeyOf(k, impliedTypes)) {
+            addImpliedType(attributes, k)
+        }
+    } else {
+        const result = (contextFreeIntersectors as any)[k](attributes[k], v)
+        if (result === null) {
+            attributes.contradiction = `${JSON.stringify(
+                attributes[k]
+            )} and ${JSON.stringify(v)} have an empty intersection`
         } else {
-            attributesToAdd.switch = {
-                path: "",
-                key: "type",
-                cases: impliedType
+            attributes[k] = result
+        }
+    }
+    return attributes
+}
+
+const addKeyToBranches = <k extends AttributeKey>(
+    branches: AttributeBranches,
+    k: k,
+    v: AttributeTypes[k]
+) => {
+    if (branches[0] === "?") {
+        if (k === branches[2]) {
+            const disjointValue = v as AttributeTypes[DisjointKey]
+            if (disjointValue in branches[3]) {
             }
         }
     }
-    return intersect(attributes, attributesToAdd)
 }
 
 export const compileIntersection = (branches: Attributes[]) => {
@@ -41,20 +59,11 @@ export const compileIntersection = (branches: Attributes[]) => {
 }
 
 const intersect = (a: Attributes, b: Attributes): Attributes => {
-    const intersected = { ...a, ...b }
     let k: AttributeKey
-    for (k in intersected) {
-        if (isKeyOf(k, branchKeys)) {
-        } else if (k in a && k in b) {
-            const intersectedValue = dynamicIntersectors[k](a[k], b[k])
-            if (intersectedValue === null) {
-                a.contradiction = `${a[k]} and ${b[k]} have an empty intersection`
-            } else {
-                intersected[k] = intersectedValue
-            }
-        }
+    for (k in b) {
+        add(a, k, b[k] as any)
     }
-    return intersected
+    return a
 }
 
 const intersectIrreducibleAttribute = <t extends string>(
@@ -78,13 +87,13 @@ const intersectIrreducibleAttribute = <t extends string>(
 const intersectDisjointAttribute = <value extends string>(a: value, b: value) =>
     a === b ? a : null
 
-type IntersectableKey = Exclude<AttributeKey, BranchAttributeKey>
+type NonBranchingKey = Exclude<AttributeKey, "branches">
 
-type IntersectorsByKey = {
-    [k in IntersectableKey]: Intersector<k>
+type ContextFreeIntersectors = {
+    [k in NonBranchingKey]: Intersector<k>
 }
 
-const intersectors: IntersectorsByKey = {
+const contextFreeIntersectors: ContextFreeIntersectors = {
     value: intersectDisjointAttribute,
     type: intersectDisjointAttribute,
     requiredKeys: (a, b) => Object.assign(a, b),
@@ -103,21 +112,24 @@ const intersectors: IntersectorsByKey = {
     }
 }
 
-const dynamicIntersectors = intersectors as {
-    [k in IntersectableKey]: (a: unknown, b: unknown) => any
-}
-
 type TypeImplyingKey = "divisor" | "regex" | "bounds"
 
+const addImpliedType = (attributes: Attributes, key: TypeImplyingKey) => {
+    const impliedType = impliedTypes[key]
+    typeof impliedType === "string"
+        ? add(attributes, "type", impliedType)
+        : add(attributes, "branches", ["?", "", "type", impliedType()])
+}
+
 const impliedTypes: {
-    [k in TypeImplyingKey]: TypeAttribute | AttributeCases<"type">
+    [k in TypeImplyingKey]: DynamicTypeName | (() => AttributeCases<"type">)
 } = {
     divisor: "number",
-    bounds: {
+    bounds: () => ({
         number: {},
         string: {},
         array: {}
-    },
+    }),
     regex: "string"
 }
 
