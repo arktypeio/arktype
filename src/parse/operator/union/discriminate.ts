@@ -4,27 +4,28 @@ import type { Attributes, AttributeTypes } from "../../state/attributes.js"
 import { compileUnion } from "./compile.js"
 import { prunePath } from "./prune.js"
 
-export type DiscriminatedBranches = ["?", ...DiscriminatedBranchTuple]
-
-export type DiscriminatedBranchTuple<
+export type DiscriminatedBranches<
     key extends DiscriminatedKey = DiscriminatedKey
-> = [path: string, key: key, cases: AttributeCases<key>]
+> = ["?", ...DiscriminatedBranchTuple<key>]
+
+export type DiscriminatedKey = "type" | "value"
+
+type Discriminant = {
+    path: string
+    key: DiscriminatedKey
+    score: number
+}
+
+type DiscriminatedBranchTuple<key extends DiscriminatedKey = DiscriminatedKey> =
+    [path: string, key: key, cases: AttributeCases<key>]
 
 type AttributeCases<key extends DiscriminatedKey = DiscriminatedKey> = {
     [k in DiscriminatedValue<key>]?: Attributes
 }
 
-export type DiscriminatedKey = "type" | "value"
-
 type DiscriminatedValue<key extends DiscriminatedKey = DiscriminatedKey> =
     | AttributeTypes[key]
     | "unset"
-
-export type Discriminant = {
-    path: string
-    key: DiscriminatedKey
-    score: number
-}
 
 export const discriminate = (
     branches: Attributes[]

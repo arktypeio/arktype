@@ -5,10 +5,7 @@ import type {
     Attributes,
     AttributeTypes
 } from "../../state/attributes.js"
-import type {
-    DiscriminatedBranchTuple,
-    DiscriminatedKey
-} from "./discriminate.js"
+import type { DiscriminatedKey } from "./discriminate.js"
 
 // /* eslint-disable max-lines-per-function */
 // const pruneBranches = (

@@ -1,12 +1,11 @@
-import { isEmpty } from "../../../utils/deepEquals.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import type { Attributes } from "../../state/attributes.js"
-import { deepEqualIntersection } from "./compress.js"
+import { compress } from "./compress.js"
 import { discriminate } from "./discriminate.js"
 
-export type UndiscriminatedBranches = ["|", ...Attributes[]]
+export type UndiscriminatedBranches = Attributes[]
 
-export const compileUnion = (branches: Attributes[]): Attributes => {
+export const compileUnion = (branches: UndiscriminatedBranches): Attributes => {
     if (branches.length === 0) {
         return throwInternalError(
             "Unexpectedly tried to take a union of 0 branches."
@@ -15,16 +14,15 @@ export const compileUnion = (branches: Attributes[]): Attributes => {
     if (branches.length === 1) {
         return branches[0]
     }
-    const root = deepEqualIntersection(branches)
-    if (branches.some((branch) => isEmpty(branch))) {
-        return root
-    }
-    const discriminated = discriminate(branches)
-    if (discriminated) {
-        root.branches = discriminated
-    } else {
-        branches.unshift("|" as any)
-        root.branches = branches as UndiscriminatedBranches
+    const root = compress(branches)
+    if (root.branches) {
+        // If compress returns branches, they will always be undiscriminated
+        const discriminated = discriminate(
+            root.branches as UndiscriminatedBranches
+        )
+        if (discriminated) {
+            root.branches = discriminated
+        }
     }
     return root
 }

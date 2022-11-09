@@ -8,7 +8,7 @@ import type {
 } from "../../state/attributes.js"
 import { intersectBounds } from "../bounds/shared.js"
 import { intersectDivisors } from "../divisor.js"
-import type { DiscriminatedBranchTuple } from "../union/discriminate.js"
+import type { DiscriminatedBranches } from "../union/discriminate.js"
 
 export type IntersectedBranches = ["&", ...Attributes[]]
 
@@ -110,7 +110,7 @@ const addImpliedType = (attributes: Attributes, key: TypeImplyingKey) => {
 const impliedTypes: {
     [k in TypeImplyingKey]:
         | DynamicTypeName
-        | (() => DiscriminatedBranchTuple<"type">[2])
+        | (() => DiscriminatedBranches<"type">[3])
 } = {
     divisor: "number",
     bounds: () => ({
