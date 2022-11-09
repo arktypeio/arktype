@@ -2,7 +2,16 @@ import { isKeyOf } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import { Scanner } from "../../state/scanner.js"
-import { State } from "../../state/state.js"
+import type {
+    DynamicState,
+    DynamicWithRoot,
+    OpenRange,
+    stateFrom,
+    StaticState,
+    StaticWithOpenRange,
+    StaticWithRoot
+} from "../../state/state.js"
+import { errorState, stateHasOpenRange, unset } from "../../state/state.js"
 import type { InvertedComparators } from "./shared.js"
 import {
     buildInvalidDoubleBoundMessage,
@@ -10,12 +19,12 @@ import {
 } from "./shared.js"
 
 export const parseLeftBound = (
-    s: State.DynamicWithRoot<{ value: NumberLiteral }>,
+    s: DynamicWithRoot<{ value: NumberLiteral }>,
     comparator: Scanner.Comparator
 ) =>
     isKeyOf(comparator, Scanner.pairableComparators)
-        ? State.hasOpenRange(s)
-            ? State.error(
+        ? stateHasOpenRange(s)
+            ? errorState(
                   buildBoundLiteralMessage(
                       s.root.value,
                       s.branches.range[0],
@@ -23,14 +32,14 @@ export const parseLeftBound = (
                   )
               )
             : parseValidated(s, comparator)
-        : State.error(buildInvalidDoubleBoundMessage(comparator))
+        : errorState(buildInvalidDoubleBoundMessage(comparator))
 
 export type parseLeftBound<
-    s extends State.StaticWithRoot<number>,
+    s extends StaticWithRoot<number>,
     comparator extends Scanner.Comparator
 > = comparator extends Scanner.PairableComparator
-    ? s extends State.StaticWithOpenRange
-        ? State.error<
+    ? s extends StaticWithOpenRange
+        ? errorState<
               buildBoundLiteralMessage<
                   `${s["root"]}`,
                   s["branches"]["range"][0],
@@ -38,21 +47,21 @@ export type parseLeftBound<
               >
           >
         : parseValidated<s, comparator>
-    : State.error<buildInvalidDoubleBoundMessage<comparator>>
+    : errorState<buildInvalidDoubleBoundMessage<comparator>>
 
 const parseValidated = (
-    s: State.DynamicWithRoot<{ value: NumberLiteral }>,
+    s: DynamicWithRoot<{ value: NumberLiteral }>,
     token: Scanner.PairableComparator
 ) => {
     s.branches.range = [parseWellFormedNumber(s.root.value, true), token]
-    s.root = State.unset
+    s.root = unset
     return s
 }
 
 type parseValidated<
-    s extends State.StaticWithRoot<number>,
+    s extends StaticWithRoot<number>,
     comparator extends Scanner.PairableComparator
-> = State.from<{
+> = stateFrom<{
     root: undefined
     branches: {
         range: [s["root"], comparator]
@@ -64,11 +73,11 @@ type parseValidated<
 }>
 
 export type unpairedLeftBoundError<
-    s extends State.Static<{
+    s extends StaticState<{
         root: {}
-        branches: { range: State.OpenRange }
+        branches: { range: OpenRange }
     }>
-> = State.error<
+> = errorState<
     buildUnpairedLeftBoundMessage<
         s["branches"]["range"][0],
         s["branches"]["range"][1]
@@ -76,11 +85,11 @@ export type unpairedLeftBoundError<
 >
 
 export const unpairedLeftBoundError = (
-    s: State.Dynamic<{
-        branches: { range: State.OpenRange }
+    s: DynamicState<{
+        branches: { range: OpenRange }
     }>
 ) =>
-    State.error(
+    errorState(
         buildUnpairedLeftBoundMessage(s.branches.range[0], s.branches.range[1])
     )
 

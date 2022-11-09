@@ -1,6 +1,11 @@
 import { throwParseError } from "../common.js"
 import type { Scanner } from "../state/scanner.js"
-import type { State } from "../state/state.js"
+import type {
+    DynamicState,
+    errorState,
+    setStateRoot,
+    StaticState
+} from "../state/state.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -14,7 +19,7 @@ export type SingleQuotedStringLiteral<Text extends string = string> =
 
 export type RegexLiteral<Source extends string = string> = `/${Source}/`
 
-export const parseEnclosed = (s: State.Dynamic, enclosing: EnclosingChar) => {
+export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
         appendTo: enclosing,
         inclusive: true,
@@ -33,7 +38,7 @@ export const parseEnclosed = (s: State.Dynamic, enclosing: EnclosingChar) => {
 }
 
 export type parseEnclosed<
-    s extends State.Static,
+    s extends StaticState,
     enclosing extends EnclosingChar,
     unscanned extends string
 > = Scanner.shiftUntil<unscanned, enclosing> extends Scanner.ShiftResult<
@@ -41,10 +46,10 @@ export type parseEnclosed<
     infer nextUnscanned
 >
     ? nextUnscanned extends ""
-        ? State.error<
+        ? errorState<
               buildUnterminatedEnclosedMessage<s["unscanned"], enclosing>
           >
-        : State.setRoot<
+        : setStateRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,
               Scanner.tailOf<nextUnscanned>

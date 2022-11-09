@@ -1,17 +1,23 @@
-import { State } from "../state/state.js"
+import type {
+    DynamicState,
+    initialBranches,
+    stateFrom,
+    StaticState
+} from "../state/state.js"
+import { initializeBranches } from "../state/state.js"
 
-export const parseGroupOpen = (s: State.Dynamic) => {
+export const parseGroupOpen = (s: DynamicState) => {
     s.groups.push(s.branches)
-    s.branches = State.initializeBranches()
+    s.branches = initializeBranches()
     return s
 }
 
 export type parseGroupOpen<
-    s extends State.Static,
+    s extends StaticState,
     unscanned extends string
-> = State.from<{
+> = stateFrom<{
     groups: [...s["groups"], s["branches"]]
-    branches: State.initialBranches
+    branches: initialBranches
     root: undefined
     unscanned: unscanned
 }>

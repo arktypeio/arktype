@@ -15,18 +15,19 @@ import type {
 } from "../common.js"
 import { parseRoot } from "../parse.js"
 import type { Scanner } from "../state/scanner.js"
-import { State } from "../state/state.js"
+import type { DynamicState, setStateRoot, StaticState } from "../state/state.js"
+import { errorState } from "../state/state.js"
 import { Keyword } from "./keyword.js"
 import { buildMissingOperandMessage } from "./operand.js"
 
-export const parseUnenclosed = (s: State.Dynamic) => {
+export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
     s.root = unenclosedToAttributes(s, token)
     return s
 }
 
 export type parseUnenclosed<
-    s extends State.Static,
+    s extends StaticState,
     context extends StaticParserContext
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
@@ -34,10 +35,10 @@ export type parseUnenclosed<
     ? setRootOrCatch<s, resolve<s, scanned, context>, nextUnscanned>
     : never
 
-const unenclosedToAttributes = (s: State.Dynamic, token: string) =>
+const unenclosedToAttributes = (s: DynamicState, token: string) =>
     maybeParseIdentifier(token, s.context) ??
     maybeParseUnenclosedLiteral(token) ??
-    State.error(
+    errorState(
         token === ""
             ? buildMissingOperandMessage(s)
             : buildUnresolvableMessage(token)
@@ -80,12 +81,12 @@ const maybeParseUnenclosedLiteral = (token: string) => {
 }
 
 type setRootOrCatch<
-    s extends State.Static,
+    s extends StaticState,
     resolved extends string,
     unscanned extends string
 > = resolved extends ParseError<infer message>
-    ? State.error<message>
-    : State.setRoot<s, resolved, unscanned>
+    ? errorState<message>
+    : setStateRoot<s, resolved, unscanned>
 
 export const buildUnresolvableMessage = <token extends string>(
     token: token
@@ -104,7 +105,7 @@ export type isResolvableIdentifier<
     : false
 
 type resolve<
-    s extends State.Static,
+    s extends StaticState,
     token extends string,
     context extends StaticParserContext
 > = isResolvableIdentifier<token, context> extends true

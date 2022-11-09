@@ -1,10 +1,15 @@
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { parseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { Scanner } from "../state/scanner.js"
-import { State } from "../state/state.js"
+import type {
+    DynamicWithRoot,
+    setStateRoot,
+    StaticWithRoot
+} from "../state/state.js"
+import { errorState } from "../state/state.js"
 import { add } from "./intersection/compile.js"
 
-export const parseDivisor = (s: State.DynamicWithRoot) => {
+export const parseDivisor = (s: DynamicWithRoot) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()
     return setRootOrCatch(
         s,
@@ -16,7 +21,7 @@ export const parseDivisor = (s: State.DynamicWithRoot) => {
 }
 
 export type parseDivisor<
-    s extends State.StaticWithRoot,
+    s extends StaticWithRoot,
     unscanned extends string
 > = Scanner.shiftUntil<
     unscanned,
@@ -29,23 +34,23 @@ export type parseDivisor<
       >
     : never
 
-const setRootOrCatch = (s: State.DynamicWithRoot, parseResult: number) => {
+const setRootOrCatch = (s: DynamicWithRoot, parseResult: number) => {
     if (parseResult === 0) {
-        return State.error(buildInvalidDivisorMessage(0))
+        return errorState(buildInvalidDivisorMessage(0))
     }
     s.root = add(s.root, "divisor", `${parseResult}`)
     return s
 }
 
 type setRootOrCatch<
-    s extends State.StaticWithRoot,
+    s extends StaticWithRoot,
     divisorOrError extends string | number,
     unscanned extends string
 > = divisorOrError extends number
     ? divisorOrError extends 0
-        ? State.error<buildInvalidDivisorMessage<0>>
-        : State.setRoot<s, [s["root"], "%", divisorOrError], unscanned>
-    : State.error<`${divisorOrError}`>
+        ? errorState<buildInvalidDivisorMessage<0>>
+        : setStateRoot<s, [s["root"], "%", divisorOrError], unscanned>
+    : errorState<`${divisorOrError}`>
 
 export const buildInvalidDivisorMessage = <divisor extends string | number>(
     divisor: divisor

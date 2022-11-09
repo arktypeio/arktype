@@ -1,22 +1,28 @@
 import type { maybePush } from "../../../utils/generics.js"
-import { State } from "../../state/state.js"
+import type {
+    DynamicWithRoot,
+    stateFrom,
+    StaticWithOpenRange,
+    StaticWithRoot
+} from "../../state/state.js"
+import { stateHasOpenRange, unset } from "../../state/state.js"
 import { unpairedLeftBoundError } from "../bounds/left.js"
 import { compileIntersection } from "./compile.js"
 
-export const parseIntersection = (s: State.DynamicWithRoot) => {
-    if (State.hasOpenRange(s)) {
+export const parseIntersection = (s: DynamicWithRoot) => {
+    if (stateHasOpenRange(s)) {
         return unpairedLeftBoundError(s)
     }
     s.branches.intersection ??= []
     s.branches.intersection.push(s.root)
-    s.root = State.unset
+    s.root = unset
     return s
 }
 
-export type parseIntersection<s extends State.StaticWithRoot> =
-    s extends State.StaticWithOpenRange
+export type parseIntersection<s extends StaticWithRoot> =
+    s extends StaticWithOpenRange
         ? unpairedLeftBoundError<s>
-        : State.from<{
+        : stateFrom<{
               root: undefined
               branches: {
                   range: undefined
@@ -27,13 +33,13 @@ export type parseIntersection<s extends State.StaticWithRoot> =
               unscanned: s["unscanned"]
           }>
 
-export type mergeIntersectionDescendants<s extends State.StaticWithRoot> =
-    maybePush<s["branches"]["intersection"], s["root"]>
+export type mergeIntersectionDescendants<s extends StaticWithRoot> = maybePush<
+    s["branches"]["intersection"],
+    s["root"]
+>
 
-export const mergeIntersectionDescendantsToRoot = (
-    s: State.DynamicWithRoot
-) => {
-    if (State.hasOpenRange(s)) {
+export const mergeIntersectionDescendantsToRoot = (s: DynamicWithRoot) => {
+    if (stateHasOpenRange(s)) {
         return unpairedLeftBoundError(s)
     }
     if (!s.branches.intersection) {

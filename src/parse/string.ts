@@ -8,7 +8,12 @@ import type { isResolvableIdentifier } from "./operand/unenclosed.js"
 import { maybeParseIdentifier } from "./operand/unenclosed.js"
 import { arrayOf } from "./operator/array.js"
 import { parseOperator } from "./operator/operator.js"
-import { State } from "./state/state.js"
+import type {
+    DynamicState,
+    StaticState,
+    UnvalidatedState
+} from "./state/state.js"
+import { initializeState, stateHasRoot } from "./state/state.js"
 
 export const parseString = (
     definition: string,
@@ -36,15 +41,15 @@ export type validateString<
 > = parseString<def, context> extends ParseError<infer Message> ? Message : def
 
 const fullStringParse = (def: string, context: DynamicParserContext) =>
-    loop(parseOperand(State.initialize(def, context)))
+    loop(parseOperand(initializeState(def, context)))
 
 type fullStringParse<
     def extends string,
     context extends StaticParserContext
-> = loop<parseOperand<State.initialize<def>, context>, context>
+> = loop<parseOperand<initializeState<def>, context>, context>
 
 // TODO: Recursion perf?
-const loop = (s: State.Dynamic) => {
+const loop = (s: DynamicState) => {
     while (!s.scanner.hasBeenFinalized) {
         next(s)
     }
@@ -52,17 +57,17 @@ const loop = (s: State.Dynamic) => {
 }
 
 type loop<
-    s extends State.Unvalidated,
+    s extends UnvalidatedState,
     context extends StaticParserContext
 > = s extends { unscanned: string }
     ? loop<next<s, context>, context>
     : s["root"]
 
-const next = (s: State.Dynamic): State.Dynamic =>
-    State.hasRoot(s) ? parseOperator(s) : parseOperand(s)
+const next = (s: DynamicState): DynamicState =>
+    stateHasRoot(s) ? parseOperator(s) : parseOperand(s)
 
 type next<
-    s extends State.Static,
+    s extends StaticState,
     context extends StaticParserContext
 > = s extends { root: {} } ? parseOperator<s> : parseOperand<s, context>
 
