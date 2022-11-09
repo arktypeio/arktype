@@ -16,3 +16,6 @@ export const getPath = (value: unknown, path: string[]): unknown => {
     }
     return result
 }
+
+export const pathToSegments = (path: string, delimiter = ".") =>
+    path === "" ? [] : path.split(delimiter)
