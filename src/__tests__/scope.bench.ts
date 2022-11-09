@@ -16,19 +16,19 @@ bench("validate recursive", () => {
 }).median()
 
 bench("cyclic(10)", () => {
-    const cyclic10Space = scope(cyclic10)
+    const cyclic10Scope = scope(cyclic10)
 })
     .median()
     .type()
 
 bench("cyclic(100)", () => {
-    const cyclic100Space = scope(cyclic100)
+    const cyclic100Scope = scope(cyclic100)
 })
     .median()
     .type()
 
 bench("cyclic(500)", () => {
-    const cyclic500Space = scope(cyclic500)
+    const cyclic500Scope = scope(cyclic500)
 })
     .median()
     .type()

@@ -21,15 +21,15 @@ describe("scope", () => {
         attest(types.$.infer.c).typed as string
     })
     test("cyclic", () => {
-        const cyclicSpace = scope({ a: { b: "b" }, b: { a: "a" } })
-        attest(cyclicSpace.a.attributes).snap({
+        const cyclicScope = scope({ a: { b: "b" }, b: { a: "a" } })
+        attest(cyclicScope.a.attributes).snap({
             type: "dictionary",
             props: {
                 b: { type: "dictionary", props: { a: { alias: "a" } } }
             }
         })
         // Type hint displays as any on hitting cycle
-        attest(cyclicSpace.$.infer.a).typed as {
+        attest(cyclicScope.$.infer.a).typed as {
             b: {
                 a: {
                     b: {
@@ -39,13 +39,13 @@ describe("scope", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        attest(cyclicSpace.$.infer.b.a.b.a.b.a.b.a).typed as {
+        attest(cyclicScope.$.infer.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        attest(cyclicSpace.$.infer.a.b.a.b.c).type.errors.snap(
+        attest(cyclicScope.$.infer.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })

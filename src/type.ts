@@ -10,9 +10,9 @@ import type { dictionary } from "./utils/dynamicTypes.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rootScope: EmptySpace = scope({})
+const rootScope: EmptyScope = scope({})
 
-type EmptySpace = ArktypeScope<{}>
+type EmptyScope = ArktypeScope<{}>
 
 const rawTypeFn: DynamicTypeFn = (
     definition,

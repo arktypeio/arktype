@@ -50,7 +50,7 @@ const seedMap = {
     cyclic: cyclicScopeSeed
 }
 
-type GenerateSpaceBenchesOptions = {
+type GenerateScopeBenchesOptions = {
     intervals: number[]
     seed: keyof typeof seedMap
 }
@@ -58,7 +58,7 @@ type GenerateSpaceBenchesOptions = {
 const generateScopeBenches = ({
     intervals,
     seed
-}: GenerateSpaceBenchesOptions) => {
+}: GenerateScopeBenchesOptions) => {
     const toFile = fromHere("generated", `${seed}.ts`)
     let benchDeclarations = ""
     for (const interval of intervals) {

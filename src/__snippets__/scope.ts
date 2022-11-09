@@ -1,6 +1,6 @@
 import { scope } from "../api.js"
 
-// Spaces are collections of types that can reference each other.
+// Scopes are collections of types that can reference each other.
 export const types = scope({
     package: {
         name: "string",
