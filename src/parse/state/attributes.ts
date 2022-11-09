@@ -1,7 +1,7 @@
 import type { dictionary, DynamicTypeName } from "../../utils/dynamicTypes.js"
 import type { keyOrKeySet, keySet, subtype } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
-import type { Enclosed } from "../operand/enclosed.js"
+import type { RegexLiteral } from "../operand/enclosed.js"
 import type { SerializedBounds } from "../operator/bounds/shared.js"
 import type { SerializedPrimitive } from "./value.js"
 
@@ -30,7 +30,7 @@ type ReducibleAttributeTypes = subtype<
 type IrreducibleAttributeTypes = subtype<
     dictionary<keyOrKeySet<string>>,
     {
-        regex: keyOrKeySet<Enclosed.RegexLiteral>
+        regex: keyOrKeySet<RegexLiteral>
         requiredKeys: keySet<string>
         alias: keyOrKeySet<string>
         contradiction: keyOrKeySet<string>

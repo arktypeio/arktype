@@ -27,7 +27,6 @@ export type parseIntersection<s extends State.StaticWithRoot> =
               unscanned: s["unscanned"]
           }>
 
-// TODO: Should be checking for open left bound here?
 export type mergeIntersectionDescendants<s extends State.StaticWithRoot> =
     maybePush<s["branches"]["intersection"], s["root"]>
 

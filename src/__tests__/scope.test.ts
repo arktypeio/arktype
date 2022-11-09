@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { scope, type } from "../api.js"
-import { Unenclosed } from "../parse/operand/unenclosed.js"
+import { buildUnresolvableMessage } from "../parse/operand/unenclosed.js"
 
 describe("scope", () => {
     test("single", () => {
@@ -9,7 +9,7 @@ describe("scope", () => {
         attest(() =>
             // @ts-expect-error
             scope({ a: "strig" })
-        ).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("strig"))
+        ).throwsAndHasTypeError(buildUnresolvableMessage("strig"))
     })
     test("interdependent", () => {
         const types = scope({ a: "string>5", b: "email<=10", c: "a&b" })

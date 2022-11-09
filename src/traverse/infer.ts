@@ -1,4 +1,4 @@
-import type { Enclosed } from "../parse/operand/enclosed.js"
+import type { RegexLiteral, StringLiteral } from "../parse/operand/enclosed.js"
 import type { Keyword } from "../parse/operand/keyword.js"
 import type { Scanner } from "../parse/state/scanner.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
@@ -45,9 +45,9 @@ type inferTerminal<
     ? scope[token]
     : token extends keyof scopeAst
     ? inferAst<scopeAst[token], scope, scopeAst>
-    : token extends Enclosed.StringLiteral<infer Text>
+    : token extends StringLiteral<infer Text>
     ? Text
-    : token extends Enclosed.RegexLiteral
+    : token extends RegexLiteral
     ? string
     : token extends number | bigint
     ? token

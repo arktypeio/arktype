@@ -2,7 +2,7 @@ import type { dynamicTypeOf, DynamicTypes } from "../../utils/dynamicTypes.js"
 import { hasDynamicType } from "../../utils/dynamicTypes.js"
 import type { DynamicParserContext, ParseError } from "../common.js"
 import { throwParseError } from "../common.js"
-import { GroupOpen } from "../operand/groupOpen.js"
+import { unclosedGroupMessage } from "../operand/groupOpen.js"
 import type { unpairedLeftBoundError } from "../operator/bounds/left.js"
 import type { mergeUnionDescendants } from "../operator/union/parse.js"
 import { mergeUnionDescendantsToRoot } from "../operator/union/parse.js"
@@ -143,7 +143,7 @@ export namespace State {
 
     export const finalize = (s: DynamicWithRoot) => {
         if (s.groups.length) {
-            return error(GroupOpen.unclosedMessage)
+            return error(unclosedGroupMessage)
         }
         finalizeGroup(s, {})
         s.scanner.hasBeenFinalized = true
@@ -158,7 +158,7 @@ export namespace State {
               finalizeGroup<finalizeBranches<s>, initialBranches, []>,
               returnCode
           >
-        : error<GroupOpen.unclosedMessage>
+        : error<unclosedGroupMessage>
 
     export const finalizeGroup = (
         s: DynamicWithRoot,

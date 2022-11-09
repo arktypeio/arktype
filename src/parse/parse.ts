@@ -15,7 +15,7 @@ import type {
     StaticParserContext
 } from "./common.js"
 import { initializeParserContext, throwParseError } from "./common.js"
-import type { Operand } from "./operand/operand.js"
+import type { buildMissingRightOperandMessage } from "./operand/operand.js"
 import type { Attributes } from "./state/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
@@ -124,7 +124,7 @@ type parseTupleExpression<
     ? def[2] extends undefined
         ? [
               parseRoot<def[0], context>,
-              ParseError<Operand.buildMissingRightOperandMessage<def[1], "">>
+              ParseError<buildMissingRightOperandMessage<def[1], "">>
           ]
         : [parseRoot<def[0], context>, def[1], parseRoot<def[2], context>]
     : [parseRoot<def[0], context>, def[1]]

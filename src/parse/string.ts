@@ -3,8 +3,9 @@ import type {
     ParseError,
     StaticParserContext
 } from "./common.js"
-import { Operand } from "./operand/operand.js"
-import { Unenclosed } from "./operand/unenclosed.js"
+import { parseOperand } from "./operand/operand.js"
+import type { isResolvableIdentifier } from "./operand/unenclosed.js"
+import { maybeParseIdentifier } from "./operand/unenclosed.js"
 import { arrayOf } from "./operator/array.js"
 import { parseOperator } from "./operator/operator.js"
 import { State } from "./state/state.js"
@@ -35,12 +36,12 @@ export type validateString<
 > = parseString<def, context> extends ParseError<infer Message> ? Message : def
 
 const fullStringParse = (def: string, context: DynamicParserContext) =>
-    loop(Operand.parse(State.initialize(def, context)))
+    loop(parseOperand(State.initialize(def, context)))
 
 type fullStringParse<
     def extends string,
     context extends StaticParserContext
-> = loop<Operand.parse<State.initialize<def>, context>, context>
+> = loop<parseOperand<State.initialize<def>, context>, context>
 
 // TODO: Recursion perf?
 const loop = (s: State.Dynamic) => {
@@ -58,12 +59,12 @@ type loop<
     : s["root"]
 
 const next = (s: State.Dynamic): State.Dynamic =>
-    State.hasRoot(s) ? parseOperator(s) : Operand.parse(s)
+    State.hasRoot(s) ? parseOperator(s) : parseOperand(s)
 
 type next<
     s extends State.Static,
     context extends StaticParserContext
-> = s extends { root: {} } ? parseOperator<s> : Operand.parse<s, context>
+> = s extends { root: {} } ? parseOperator<s> : parseOperand<s, context>
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -78,16 +79,16 @@ type tryNaiveStringParse<
     def extends string,
     context extends StaticParserContext
 > = def extends `${infer child}[]`
-    ? Unenclosed.isResolvableIdentifier<child, context> extends true
+    ? isResolvableIdentifier<child, context> extends true
         ? [child, "[]"]
         : fullStringParse<def, context>
-    : Unenclosed.isResolvableIdentifier<def, context> extends true
+    : isResolvableIdentifier<def, context> extends true
     ? def
     : fullStringParse<def, context>
 
 const tryNaiveStringParse = (def: string, context: DynamicParserContext) => {
     if (def.endsWith("[]")) {
-        const maybeParsedAttributes = Unenclosed.maybeParseIdentifier(
+        const maybeParsedAttributes = maybeParseIdentifier(
             def.slice(0, -2),
             context
         )
@@ -95,5 +96,5 @@ const tryNaiveStringParse = (def: string, context: DynamicParserContext) => {
             return arrayOf(maybeParsedAttributes)
         }
     }
-    return Unenclosed.maybeParseIdentifier(def, context)
+    return maybeParseIdentifier(def, context)
 }

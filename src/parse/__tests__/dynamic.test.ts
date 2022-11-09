@@ -3,7 +3,7 @@ import { describe, test } from "mocha"
 import { scope } from "../../scope.js"
 import { type } from "../../type.js"
 import type { dictionary } from "../../utils/dynamicTypes.js"
-import { Unenclosed } from "../operand/unenclosed.js"
+import { buildUnresolvableMessage } from "../operand/unenclosed.js"
 
 describe("dynamic", () => {
     test("uninferred types", () => {
@@ -27,7 +27,7 @@ describe("dynamic", () => {
         attest(() => {
             // @ts-expect-error
             type({ a: "st" }, { scope: s })
-        }).throwsAndHasTypeError(Unenclosed.buildUnresolvableMessage("st"))
+        }).throwsAndHasTypeError(buildUnresolvableMessage("st"))
     })
     test("uninferred scope", () => {
         const unknownScope = scope.dynamic({ a: "string" } as dictionary)
@@ -37,7 +37,7 @@ describe("dynamic", () => {
             `TypeError: Cannot read properties of undefined (reading 'infer')`
         )
         attest(() => type("b", { scope: unknownScope })).throws(
-            Unenclosed.buildUnresolvableMessage("b")
+            buildUnresolvableMessage("b")
         )
     })
 })

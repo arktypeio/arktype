@@ -1,8 +1,8 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../../../api.js"
-import { Operand } from "../../operand/operand.js"
-import { Unenclosed } from "../../operand/unenclosed.js"
+import { buildMissingRightOperandMessage } from "../../operand/operand.js"
+import { buildUnresolvableMessage } from "../../operand/unenclosed.js"
 import type { Attributes } from "../../state/attributes.js"
 import { compileUnion } from "../union/compile.js"
 
@@ -95,19 +95,19 @@ describe("union", () => {
             test("bad reference", () => {
                 // @ts-expect-error
                 attest(() => type("number|strng")).throwsAndHasTypeError(
-                    Unenclosed.buildUnresolvableMessage("strng")
+                    buildUnresolvableMessage("strng")
                 )
             })
             test("consecutive tokens", () => {
                 // @ts-expect-error
                 attest(() => type("boolean||null")).throwsAndHasTypeError(
-                    Operand.buildMissingRightOperandMessage("|", "|null")
+                    buildMissingRightOperandMessage("|", "|null")
                 )
             })
             test("ends with |", () => {
                 // @ts-expect-error
                 attest(() => type("boolean|")).throwsAndHasTypeError(
-                    Operand.buildMissingRightOperandMessage("|", "")
+                    buildMissingRightOperandMessage("|", "")
                 )
             })
             test("long missing union member", () => {
@@ -115,7 +115,7 @@ describe("union", () => {
                     // @ts-expect-error
                     type("boolean[]|(string|number|)|object")
                 ).throwsAndHasTypeError(
-                    Operand.buildMissingRightOperandMessage("|", ")|object")
+                    buildMissingRightOperandMessage("|", ")|object")
                 )
             })
         })
