@@ -103,3 +103,7 @@ export const satisfies =
     <base>() =>
     <t extends base>(t: t) =>
         t
+
+export type error<message extends string> = { error: message }
+
+export type tryCatch<success, error extends string> = success | { error: error }

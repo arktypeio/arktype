@@ -3,6 +3,7 @@ import type { keyOrSet, keySet } from "../../../utils/generics.js"
 import type { SerializablePrimitive } from "../../../utils/primitiveSerialization.js"
 import type { RegexLiteral } from "../../operand/enclosed.js"
 import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
+import { divisorIntersection } from "./divisor.js"
 import type { DeserializedAttribute, SerializedKey } from "./serialization.js"
 import { deserializers, serializers } from "./serialization.js"
 
@@ -96,5 +97,6 @@ const intersections: AttributeIntersections = {
     value: disjointIntersection<SerializablePrimitive>,
     alias: keyOrSetIntersection,
     contradiction: keyOrSetIntersection,
-    regex: keyOrSetIntersection<RegexLiteral>
+    regex: keyOrSetIntersection<RegexLiteral>,
+    divisor: divisorIntersection
 }

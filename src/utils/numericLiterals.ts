@@ -1,5 +1,6 @@
-import type { ParseError } from "../parse/common.js"
-import { throwParseError } from "../parse/common.js"
+import type { parseError } from "../parse/errors.js"
+import { throwParseError } from "../parse/errors.js"
+import type { error } from "./generics.js"
 
 export type BigintLiteral<Value extends bigint = bigint> = `${Value}n`
 
@@ -80,7 +81,7 @@ export type assertWellFormed<
     inferredValue extends number,
     kind extends ValidationKind
 > = number extends inferredValue
-    ? ParseError<buildMalformedNumericLiteralMessage<def, kind>>
+    ? parseError<buildMalformedNumericLiteralMessage<def, kind>>
     : inferredValue
 
 export const parseWellFormedNumber = <ErrorOnFail extends boolean | string>(
@@ -90,12 +91,12 @@ export const parseWellFormedNumber = <ErrorOnFail extends boolean | string>(
 
 export type parseWellFormedNumber<
     token extends string,
-    errorOnFail extends string
+    messageOnFail extends string
 > = token extends NumberLiteral<infer value>
     ? number extends value
-        ? buildMalformedNumericLiteralMessage<token, "number">
+        ? error<buildMalformedNumericLiteralMessage<token, "number">>
         : value
-    : errorOnFail
+    : error<messageOnFail>
 
 export const parseWellFormedInteger = <ErrorOnFail extends boolean | string>(
     token: string,
@@ -107,14 +108,14 @@ export const parseWellFormedInteger = <ErrorOnFail extends boolean | string>(
 // numbers and bigints the same way.
 export type parseWellFormedInteger<
     token extends string,
-    errorOnFail extends string
+    messageOnFail extends string
 > = token extends IntegerLiteral<infer value>
     ? bigint extends value
-        ? buildMalformedNumericLiteralMessage<token, "integer">
+        ? error<buildMalformedNumericLiteralMessage<token, "integer">>
         : `${value}` extends NumberLiteral<infer valueAsNumber>
         ? valueAsNumber
         : never
-    : errorOnFail
+    : error<messageOnFail>
 
 const parseWellFormed = <ErrorOnFail extends boolean | string>(
     token: string,
@@ -172,5 +173,5 @@ export type assertWellFormedBigint<
     def extends string,
     inferredValue extends bigint
 > = bigint extends inferredValue
-    ? ParseError<buildMalformedNumericLiteralMessage<def, "bigint">>
+    ? parseError<buildMalformedNumericLiteralMessage<def, "bigint">>
     : inferredValue

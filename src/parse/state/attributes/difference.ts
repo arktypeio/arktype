@@ -4,6 +4,7 @@ import type { keyOrSet, keySet } from "../../../utils/generics.js"
 import type { SerializablePrimitive } from "../../../utils/primitiveSerialization.js"
 import type { RegexLiteral } from "../../operand/enclosed.js"
 import type { AttributeKey } from "./attributes.js"
+import { divisorDifference } from "./divisor.js"
 import type { DeserializedAttribute } from "./serialization.js"
 
 export type AttributeDifference<k extends AttributeKey> = DifferenceOf<
@@ -49,5 +50,6 @@ const differences: AttributeDifferences = {
     type: disjointDifference<DynamicTypeName>,
     value: disjointDifference<SerializablePrimitive>,
     alias: keyOrSetDifference,
-    regex: keyOrSetDifference<RegexLiteral>
+    regex: keyOrSetDifference<RegexLiteral>,
+    divisor: divisorDifference
 }
