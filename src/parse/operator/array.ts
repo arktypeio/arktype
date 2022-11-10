@@ -15,7 +15,7 @@ export type parseArray<
     s extends StaticWithRoot,
     unscanned extends string
 > = unscanned extends Scanner.shift<"]", infer nextUnscanned>
-    ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
+    ? state.morphRoot<s, "array", nextUnscanned>
     : state.error<incompleteArrayTokenMessage>
 
 export const incompleteArrayTokenMessage = `Missing expected ']'`

@@ -3,6 +3,7 @@ import type { buildUnmatchedGroupCloseMessage, parseError } from "../errors.js"
 import type { unclosedGroupMessage } from "../operand/groupOpen.js"
 import type { unpairedLeftBoundError } from "../operator/bounds/left.js"
 import type { mergeUnionDescendants } from "../operator/union/parse.js"
+import type { morphisms, MorphName } from "./attributes/morph.js"
 import type { Scanner } from "./scanner.js"
 
 export type mergeIntersectionDescendants<s extends StaticWithRoot> = maybePush<
@@ -30,6 +31,17 @@ export namespace state {
         unscanned extends string = s["unscanned"]
     > = from<{
         root: node
+        branches: s["branches"]
+        groups: s["groups"]
+        unscanned: unscanned
+    }>
+
+    export type morphRoot<
+        s extends StaticState,
+        to extends MorphName,
+        unscanned extends string = s["unscanned"]
+    > = from<{
+        root: [s["root"], morphisms[to]]
         branches: s["branches"]
         groups: s["groups"]
         unscanned: unscanned
