@@ -25,7 +25,6 @@ type IrreducibleAttributeTypes = subtype<
         regex: keyOrSet<RegexLiteral>
         requiredKeys: keySet<string>
         alias: keyOrSet<string>
-        contradiction: keyOrSet<string>
     }
 >
 

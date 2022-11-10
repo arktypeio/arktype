@@ -2,13 +2,7 @@ import { isKeyOf } from "../../../utils/generics.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../state/dynamic.js"
 import { Scanner } from "../../state/scanner.js"
-import type {
-    errorState,
-    scanStateTo,
-    setStateRoot,
-    stateFrom,
-    StaticWithRoot
-} from "../../state/static.js"
+import type { StaticWithRoot } from "../../state/static.js"
 import {
     buildInvalidDoubleBoundMessage,
     invertedComparators

@@ -4,6 +4,8 @@ import { buildUnmatchedGroupCloseMessage, throwParseError } from "../errors.js"
 import { unclosedGroupMessage } from "../operand/groupOpen.js"
 import { buildUnpairedLeftBoundMessage } from "../operator/bounds/left.js"
 import type { Attributes } from "./attributes/attributes.js"
+import type { MorphName } from "./attributes/morph.js"
+import { morphisms, toArray } from "./attributes/morph.js"
 import { Scanner } from "./scanner.js"
 
 export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
@@ -35,20 +37,33 @@ export class DynamicState {
         return this.root !== undefined
     }
 
-    setRoot(attributes: Attributes) {
+    private assertHasRoot() {
+        if (this.root === undefined) {
+            return throwInternalError("Unexpected interaction with unset root")
+        }
+    }
+
+    private assertUnsetRoot() {
         if (this.root !== undefined) {
             return throwInternalError("Unexpected attempt to overwrite root")
         }
+    }
+
+    setRoot(attributes: Attributes) {
+        this.assertUnsetRoot()
         this.root = attributes
     }
 
+    morphRoot(to: MorphName) {
+        this.assertHasRoot()
+        this.root = morphisms[to](this.root!)
+    }
+
     private ejectRoot() {
+        this.assertHasRoot()
         const root = this.root
-        if (root === undefined) {
-            return throwInternalError("Unexpected attempt to eject unset root")
-        }
         this.root = undefined
-        return root
+        return root!
     }
 
     finalize() {
@@ -56,7 +71,7 @@ export class DynamicState {
             return this.error(unclosedGroupMessage)
         }
         this.finalizeBranches()
-        return this.root!
+        return this.ejectRoot()
     }
 
     finalizeBranches() {

@@ -8,16 +8,16 @@ export type Bound = {
     inclusive: boolean
 }
 
-export const intersectBounds = (a: Bounds, b: Bounds) => {
+export const boundsIntersection = (a: Bounds, b: Bounds) => {
     if (b.min) {
-        const result = intersectBound("min", a, b.min)
+        const result = boundIntersection("min", a, b.min)
         if (result === null) {
             return result
         }
         a.min = result
     }
     if (b.max) {
-        const result = intersectBound("max", a, b.max)
+        const result = boundIntersection("max", a, b.max)
         if (result === null) {
             return result
         }
@@ -26,7 +26,7 @@ export const intersectBounds = (a: Bounds, b: Bounds) => {
     return a
 }
 
-const intersectBound = (
+const boundIntersection = (
     kind: BoundKind,
     a: Bounds,
     boundOfB: Bound
