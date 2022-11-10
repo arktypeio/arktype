@@ -1,13 +1,7 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import { repoDirs } from "../common.js"
-import {
-    ensureDir,
-    fromHere,
-    shell,
-    walkPaths,
-    writeJson
-} from "../runtime/src/api.js"
+import { ensureDir, shell, walkPaths } from "../runtime/src/api.js"
 import type { DocGenMappedDirsConfig } from "./main.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"
 
@@ -48,22 +42,24 @@ export const mapDir = (
                 ]
             })
     )
-    const mappedContents = []
     for (const target of options.targets) {
+        const sourceMapData: Record<string, string> = {}
+        const sourceMapPath = join(target, ".sourceMap.json")
         rmSync(target, { recursive: true, force: true })
+        rmSync(sourceMapPath, { recursive: true, force: true })
         for (const [
             path,
             contents,
             source
         ] of fileContentsByRelativeDestination) {
+            sourceMapData[path] = source
             const resolvedPath = join(target, path)
-            mappedContents.push({ source, generated: resolvedPath })
-            writeJson(fromHere(".docgenSourceMap.json"), mappedContents)
             ensureDir(dirname(resolvedPath))
             writeFileSync(resolvedPath, contents)
         }
         if (!options.skipFormatting) {
             shell(`prettier --write ${target}`)
         }
+        writeFileSync(sourceMapPath, JSON.stringify(sourceMapData, null, 4))
     }
 }

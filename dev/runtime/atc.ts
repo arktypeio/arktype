@@ -1,36 +1,40 @@
-import { writeFileSync } from "node:fs"
-import { join } from "node:path"
-import type { CallExpression, SourceFile } from "ts-morph"
+import { type } from "arktype"
+import type { CallExpression } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
 import ts from "typescript"
-import { type } from "../../src/type.js"
-import { fromHere } from "./src/fs.js"
 
-export const findArktypeReferenceCalls = (paths: string[]) => {
-    const precompiledDir = fromHere(".temp.prearktype")
+const arktypeFunctions = {
+    type
+}
+
+export const precompileArktypeCalls = (paths: string[]) => {
     const project = new Project({})
     for (const path of paths) {
         project.addSourceFileAtPathIfExists(path)
     }
     for (const file of project.getSourceFiles()) {
-        const filteredStatements = getStatements(file)
-        for (const statement of filteredStatements) {
-            const callExpression = statement.getFirstDescendantByKindOrThrow(
-                SyntaxKind.CallExpression
-            )
-            const functionName = callExpression.getFirstDescendantByKindOrThrow(
-                SyntaxKind.Identifier
-            )
+        const callExpressions = file.getDescendantsOfKind(
+            SyntaxKind.CallExpression
+        )
+        for (const callExpression of callExpressions) {
+            const firstChild = callExpression.getFirstChildOrThrow()
+            const functionName = firstChild.isKind(SyntaxKind.Identifier)
+                ? firstChild.getText()
+                : firstChild
+                      .getDescendantsOfKind(SyntaxKind.Identifier)
+                      .slice(-1)[0]
+                      ?.getText()
+
+            if (!functionName || !(functionName in arktypeFunctions)) {
+                continue
+            }
             const stringifiedAttributes = getStringifiedAttributes({
-                functionName: functionName.getText(),
+                functionName,
                 callExpression
             })
-            callExpression
-                .replaceWithText(stringifiedAttributes)
-                .formatText({ placeOpenBraceOnNewLineForControlBlocks: true })
+            callExpression.replaceWithText(stringifiedAttributes)
         }
-        const outputFile = join(precompiledDir, file.getBaseName())
-        writeFileSync(outputFile, file.getFullText())
+        file.saveSync()
     }
 }
 
@@ -59,10 +63,4 @@ const getStringifiedAttributes = ({
     )
 }
 
-const getStatements = (file: SourceFile) =>
-    file
-        .getDescendantsOfKind(SyntaxKind.VariableStatement)
-        .filter(
-            (dec) =>
-                dec.getDescendantsOfKind(SyntaxKind.ArrowFunction).length === 0
-        )
+precompileArktypeCalls(["./test/test.ts"])

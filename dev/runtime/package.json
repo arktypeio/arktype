@@ -28,6 +28,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "get-current-line": "6.6.0"
+        "get-current-line": "6.6.0",
+        "arktype": "workspace:*"
     }
 }

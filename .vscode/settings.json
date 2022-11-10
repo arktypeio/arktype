@@ -10,12 +10,6 @@
         "@typescript-eslint/consistent-type-imports",
         "object-shorthand"
     ],
-    "[typescript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.codeActionsOnSave": {
-            "source.fixAll.eslint": false
-        }
-    },
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
@@ -25,5 +19,7 @@
         "ARKTYPE_CHECK_CMD": "--skipTypes"
     },
     "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.enablePromptUseWorkspaceTsdk": true
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "deno.config": "./dev/configs/deno.jsonc",
+    "deno.enablePaths": ["./dist/deno"]
 }
