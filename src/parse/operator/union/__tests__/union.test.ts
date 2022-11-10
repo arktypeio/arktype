@@ -5,16 +5,30 @@ import { buildMissingRightOperandMessage } from "../../../operand/operand.js"
 import { buildUnresolvableMessage } from "../../../operand/unenclosed.js"
 
 describe("union/parse", () => {
-    test("two types", () => {
-        attest(type("number|string").infer).typed as number | string
+    test("binary", () => {
+        const binary = type("number|string")
+        attest(binary.infer).typed as number | string
+        attest(binary.attributes).snap({
+            branches: ["?", "", "type", { number: {}, string: {} }]
+        })
     })
-    test("several types", () => {
-        attest(type("false|null|undefined|0|''").infer).typed as
-            | false
-            | ""
-            | 0
-            | null
-            | undefined
+    test("nary", () => {
+        const nary = type("false|null|undefined|0|''")
+        attest(nary.infer).typed as false | "" | 0 | null | undefined
+        attest(nary.attributes).snap({
+            branches: [
+                "?",
+                "",
+                "value",
+                {
+                    "0": {},
+                    false: { type: "boolean" },
+                    null: { type: "null" },
+                    undefined: { type: "undefined" },
+                    "''": {}
+                }
+            ]
+        })
     })
     describe("errors", () => {
         test("bad reference", () => {

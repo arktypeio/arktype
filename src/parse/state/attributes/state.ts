@@ -39,8 +39,12 @@ export class AttributeState<attributes extends Attributes = Attributes> {
         }
     }
 
+    isUnset() {
+        return this.a === unsetProxy
+    }
+
     reinitialize(attributes: Attributes) {
-        if (this.a !== unsetProxy) {
+        if (!this.isUnset()) {
             return throwInternalError(
                 `Unexpected attempt to reinitialize existing attributes.`
             )
@@ -49,7 +53,7 @@ export class AttributeState<attributes extends Attributes = Attributes> {
     }
 
     eject() {
-        if (this.a !== unsetProxy) {
+        if (this.isUnset()) {
             return throwInternalError(
                 `Unexpected attempt to eject unset attributes.`
             )

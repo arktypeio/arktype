@@ -206,7 +206,7 @@ export type setStateRoot<
 
 export const stateHasRoot = <s extends DynamicState>(
     s: s
-): s is s & { root: {} } => s.root !== undefined
+): s is s & { root: {} } => !s.root.isUnset()
 
 export const rootValueHasSerializedType = <
     s extends DynamicWithRoot,
