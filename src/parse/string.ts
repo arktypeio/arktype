@@ -1,75 +1,69 @@
-import type {
-    DynamicParserContext,
-    ParseError,
-    StaticParserContext
-} from "./common.js"
+import type { Scope } from "../scope.js"
+import type { dictionary } from "../utils/dynamicTypes.js"
+import type { ParseError } from "./common.js"
 import { parseOperand } from "./operand/operand.js"
 import type { isResolvableIdentifier } from "./operand/unenclosed.js"
 import { maybeParseIdentifier } from "./operand/unenclosed.js"
 import { arrayOf } from "./operator/array.js"
 import { parseOperator } from "./operator/operator.js"
+import { DynamicState } from "./state/dynamic.js"
 import type {
-    DynamicState,
+    initializeState,
     StaticState,
     UnvalidatedState
 } from "./state/static.js"
-import { initializeState, stateHasRoot } from "./state/static.js"
 
-export const parseString = (
-    definition: string,
-    context: DynamicParserContext
-) => {
-    const cache = context.scopeRoot.parseCache
-    const cachedAttributes = cache.get(definition)
+export const parseString = (def: string, scope: Scope) => {
+    const cache = scope.$.parseCache
+    const cachedAttributes = cache.get(def)
     if (!cachedAttributes) {
         const attributes =
-            tryNaiveStringParse(definition, context) ??
-            fullStringParse(definition, context)
-        cache.set(definition, attributes)
+            tryNaiveStringParse(def, scope) ?? fullStringParse(def, scope)
+        cache.set(def, attributes)
     }
-    return cache.get(definition)!
+    return cache.get(def)!
 }
 
 export type parseString<
     def extends string,
-    context extends StaticParserContext
-> = tryNaiveStringParse<def, context>
+    scope extends dictionary
+> = tryNaiveStringParse<def, scope>
 
 export type validateString<
     def extends string,
-    context extends StaticParserContext
-> = parseString<def, context> extends ParseError<infer Message> ? Message : def
+    scope extends dictionary
+> = parseString<def, scope> extends ParseError<infer Message> ? Message : def
 
-const fullStringParse = (def: string, context: DynamicParserContext) =>
-    loop(parseOperand(initializeState(def, context)))
+const fullStringParse = (def: string, scope: Scope) =>
+    loop(parseOperand(new DynamicState(def, scope)))
 
-type fullStringParse<
-    def extends string,
-    context extends StaticParserContext
-> = loop<parseOperand<initializeState<def>, context>, context>
+type fullStringParse<def extends string, scope extends dictionary> = loop<
+    parseOperand<initializeState<def>, scope>,
+    scope
+>
 
 // TODO: Recursion perf?
 const loop = (s: DynamicState) => {
     while (!s.scanner.hasBeenFinalized) {
         next(s)
     }
-    return s.root.eject()
+    return s.finalize()
 }
 
-type loop<
-    s extends UnvalidatedState,
-    context extends StaticParserContext
-> = s extends { unscanned: string }
-    ? loop<next<s, context>, context>
+type loop<s extends UnvalidatedState, scope extends dictionary> = s extends {
+    unscanned: string
+}
+    ? loop<next<s, scope>, scope>
     : s["root"]
 
 const next = (s: DynamicState): DynamicState =>
-    stateHasRoot(s) ? parseOperator(s) : parseOperand(s)
+    s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
-type next<
-    s extends StaticState,
-    context extends StaticParserContext
-> = s extends { root: {} } ? parseOperator<s> : parseOperand<s, context>
+type next<s extends StaticState, scope extends dictionary> = s extends {
+    root: {}
+}
+    ? parseOperator<s>
+    : parseOperand<s, scope>
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -82,24 +76,24 @@ type next<
  */
 type tryNaiveStringParse<
     def extends string,
-    context extends StaticParserContext
+    scope extends dictionary
 > = def extends `${infer child}[]`
-    ? isResolvableIdentifier<child, context> extends true
+    ? isResolvableIdentifier<child, scope> extends true
         ? [child, "[]"]
-        : fullStringParse<def, context>
-    : isResolvableIdentifier<def, context> extends true
+        : fullStringParse<def, scope>
+    : isResolvableIdentifier<def, scope> extends true
     ? def
-    : fullStringParse<def, context>
+    : fullStringParse<def, scope>
 
-const tryNaiveStringParse = (def: string, context: DynamicParserContext) => {
+const tryNaiveStringParse = (def: string, scope: Scope) => {
     if (def.endsWith("[]")) {
         const maybeParsedAttributes = maybeParseIdentifier(
             def.slice(0, -2),
-            context
+            scope
         )
         if (maybeParsedAttributes) {
             return arrayOf(maybeParsedAttributes)
         }
     }
-    return maybeParseIdentifier(def, context)
+    return maybeParseIdentifier(def, scope)
 }

@@ -1,5 +1,5 @@
 import type { Attributes } from "./parse/state/attributes/attributes.js"
-import type { ArktypeScope } from "./scope.js"
+import type { Scope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 
@@ -7,7 +7,7 @@ export class Arktype<Inferred = unknown> {
     constructor(
         public attributes: Attributes,
         public config: ArktypeConfig,
-        public scope: ArktypeScope
+        public scope: Scope
     ) {
         // TODO: Integrate config
     }
@@ -33,5 +33,5 @@ export class Arktype<Inferred = unknown> {
 }
 
 export type ArktypeConfig<scope extends dictionary = {}> = {
-    scope?: ArktypeScope<scope>
+    scope?: Scope<scope>
 }

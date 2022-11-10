@@ -1,10 +1,9 @@
+import type { DynamicState } from "../state/dynamic.js"
 import type {
-    DynamicState,
     initialBranches,
     stateFrom,
     StaticState
 } from "../state/static.js"
-import { initializeBranches } from "../state/static.js"
 
 export const parseGroupOpen = (s: DynamicState) => {
     s.groups.push(s.branches)

@@ -1,14 +1,13 @@
 import { isKeyOf } from "../../utils/generics.js"
 import { throwInternalError } from "../../utils/internalArktypeError.js"
+import type { DynamicState } from "../state/dynamic.js"
 import { Scanner } from "../state/scanner.js"
 import type {
-    DynamicState,
-    DynamicWithRoot,
     errorState,
+    finalizeState,
     scanStateTo,
     StaticWithRoot
 } from "../state/static.js"
-import { finalizeState } from "../state/static.js"
 import { parseArray } from "./array.js"
 import { parseBound } from "./bounds/parse.js"
 import { parseDivisor } from "./divisor.js"
@@ -19,7 +18,7 @@ import { parseUnion } from "./union/parse.js"
 export const parseOperator = (s: DynamicWithRoot): DynamicState => {
     const lookahead = s.scanner.shift()
     return lookahead === ""
-        ? finalizeState(s)
+        ? s.finalize()
         : lookahead === "["
         ? parseArray(s)
         : lookahead === "|"

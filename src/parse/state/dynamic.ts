@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../../scope.js"
+import type { Scope, ScopeRoot } from "../../scope.js"
 import type { DynamicTypeName } from "../../utils/dynamicTypes.js"
 import type { keyOrPartialKeySet, partialRecord } from "../../utils/generics.js"
 import { isKeyOf, satisfies } from "../../utils/generics.js"
@@ -36,12 +36,25 @@ export class DynamicState {
     private root: Attributes | undefined
     private openBranches: DynamicOpenBranches = {}
 
-    constructor(def: string, public readonly scope: ScopeRoot) {
+    constructor(def: string, public readonly scope: Scope) {
         this.scanner = new Scanner(def)
     }
 
     error(message: string) {
         return throwParseError(message)
+    }
+
+    setRoot(attributes: Attributes) {
+        if (this.root !== undefined) {
+            return throwInternalError(
+                "Unexpected attempt to overwrite state root"
+            )
+        }
+        this.root = attributes
+    }
+
+    finalize() {
+        return this.root!
     }
 
     finalizeBranches() {
@@ -59,6 +72,10 @@ export class DynamicState {
         if (this.openBranches.union) {
             this.mergeUnion()
         }
+    }
+
+    hasRoot() {
+        return true
     }
 
     private mergeIntersection() {}

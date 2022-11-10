@@ -1,13 +1,9 @@
-import type { StaticParserContext } from "../common.js"
+import type { dictionary } from "../../utils/dynamicTypes.js"
 import { throwParseError } from "../common.js"
+import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
-import type {
-    DynamicState,
-    errorState,
-    scanStateTo,
-    StaticState
-} from "../state/static.js"
-import { previousOperator, shifted } from "../state/static.js"
+import type { errorState, scanStateTo, StaticState } from "../state/static.js"
+import { previousOperator } from "../state/static.js"
 import type { EnclosingChar } from "./enclosed.js"
 import { enclosingChar, parseEnclosed } from "./enclosed.js"
 import { parseGroupOpen } from "./groupOpen.js"
@@ -26,15 +22,15 @@ export const parseOperand = (s: DynamicState): DynamicState =>
 
 export type parseOperand<
     s extends StaticState,
-    context extends StaticParserContext
+    scope extends dictionary
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
     ? lookahead extends "("
         ? parseGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
         : lookahead extends " "
-        ? parseOperand<scanStateTo<s, unscanned>, context>
-        : parseUnenclosed<s, context>
+        ? parseOperand<scanStateTo<s, unscanned>, scope>
+        : parseUnenclosed<s, scope>
     : errorState<buildMissingOperandMessage<s>>
 
 export const buildMissingOperandMessage = <s extends DynamicState>(s: s) => {

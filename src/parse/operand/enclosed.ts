@@ -1,11 +1,7 @@
 import { throwParseError } from "../common.js"
+import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
-import type {
-    DynamicState,
-    errorState,
-    setStateRoot,
-    StaticState
-} from "../state/static.js"
+import type { errorState, setStateRoot, StaticState } from "../state/static.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -25,7 +21,7 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
         inclusive: true,
         onInputEnd: throwUnterminatedEnclosed
     })
-    s.root.reinitialize(
+    s.setRoot(
         enclosing === "/"
             ? { regex: token as RegexLiteral }
             : {

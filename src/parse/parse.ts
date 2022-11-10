@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.js"
+import type { Scope } from "../scope.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type {
@@ -9,43 +9,35 @@ import type {
     mutable
 } from "../utils/generics.js"
 import { throwInternalError } from "../utils/internalArktypeError.js"
-import type {
-    DynamicParserContext,
-    ParseError,
-    StaticParserContext
-} from "./common.js"
-import { initializeParserContext, throwParseError } from "./common.js"
+import type { ParseError } from "./common.js"
+import { throwParseError } from "./common.js"
 import type { buildMissingRightOperandMessage } from "./operand/operand.js"
 import type { Attributes } from "./state/attributes/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
 
-export const parseRoot = (definition: unknown, scopeRoot: ScopeRoot) => {
-    const context = initializeParserContext(scopeRoot)
-    const rawAttributes = parseDefinition(definition, context)
+export const parseRoot = (def: unknown, scope: Scope) => {
+    const rawAttributes = parseDefinition(def, scope)
     return rawAttributes
 }
 
-export type parseRoot<
+export type parseRoot<def, scope extends dictionary> = parseDefinition<
     def,
-    context extends StaticParserContext
-> = parseDefinition<def, context>
+    scope
+>
 
-const parseDefinition = (
-    def: unknown,
-    context: DynamicParserContext
-): Attributes => {
+const parseDefinition = (def: unknown, scope: Scope): Attributes => {
     const defType = dynamicTypeOf(def)
     return defType === "string"
-        ? parseString(def as string, context)
+        ? parseString(def as string, scope)
         : defType === "dictionary" || defType === "array"
-        ? parseStructure(def as any, context)
+        ? parseStructure(def as any, scope)
         : throwParseError(buildBadDefinitionTypeMessage(defType))
 }
 
 type parseDefinition<
     def,
-    context extends StaticParserContext
+    scope extends dictionary
 > = isTopType<def> extends true
     ? ParseError<
           buildUninferableDefinitionMessage<
@@ -53,10 +45,10 @@ type parseDefinition<
           >
       >
     : def extends string
-    ? parseString<def, context>
+    ? parseString<def, scope>
     : def extends BadDefinitionType
     ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
-    : parseStructure<def, context>
+    : parseStructure<def, scope>
 
 export type BadDefinitionType =
     | undefined
@@ -80,54 +72,48 @@ type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
     `Type definitions must be strings or objects (was ${actual})`
 
 const parseStructure = (
-    definition: Record<string | number, unknown>,
-    context: DynamicParserContext
+    def: Record<string | number, unknown>,
+    scope: Scope
 ): Attributes => {
-    if (isTupleExpression(definition)) {
-        return parseTupleExpression(definition, context)
+    if (isTupleExpression(def)) {
+        return parseTupleExpression(def, scope)
     }
-    const type = Array.isArray(definition) ? "array" : "dictionary"
+    const type = Array.isArray(def) ? "array" : "dictionary"
     const props: mutable<dictionary<Attributes>> = {}
     const requiredKeys: keySet<string> = {}
-    for (const definitionKey in definition) {
+    for (const definitionKey in def) {
         let keyName = definitionKey
         if (definitionKey.endsWith("?")) {
             keyName = definitionKey.slice(0, -1)
         } else {
             requiredKeys[definitionKey] = true
         }
-        props[keyName] = parseDefinition(definition[definitionKey], context)
+        props[keyName] = parseDefinition(def[definitionKey], scope)
     }
     return { type, props, requiredKeys }
 }
 
-type parseStructure<
-    def,
-    context extends StaticParserContext
-> = def extends TupleExpression
-    ? parseTupleExpression<def, context>
+type parseStructure<def, scope extends dictionary> = def extends TupleExpression
+    ? parseTupleExpression<def, scope>
     : evaluate<{
-          [k in keyof def]: parseRoot<def[k], context>
+          [k in keyof def]: parseRoot<def[k], scope>
       }>
 
-const parseTupleExpression = (
-    expression: TupleExpression,
-    context: DynamicParserContext
-) => {
+const parseTupleExpression = (expression: TupleExpression, scope: Scope) => {
     return throwInternalError("Not yet implemented.")
 }
 
 type parseTupleExpression<
     def extends TupleExpression,
-    context extends StaticParserContext
+    scope extends dictionary
 > = def[1] extends Scanner.InfixToken
     ? def[2] extends undefined
         ? [
-              parseRoot<def[0], context>,
+              parseRoot<def[0], scope>,
               ParseError<buildMissingRightOperandMessage<def[1], "">>
           ]
-        : [parseRoot<def[0], context>, def[1], parseRoot<def[2], context>]
-    : [parseRoot<def[0], context>, def[1]]
+        : [parseRoot<def[0], scope>, def[1], parseRoot<def[2], scope>]
+    : [parseRoot<def[0], scope>, def[1]]
 
 type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 

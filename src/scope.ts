@@ -13,9 +13,9 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawScope = (aliases: dictionary, config: ArktypeConfig = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const compiled: ArktypeScope = { $: root as any }
+    const compiled: Scope = { $: root as any }
     for (const name in aliases) {
-        const attributes = parseRoot(aliases[name], root)
+        const attributes = parseRoot(aliases[name], compiled)
         root.attributes[name] = attributes
         root.parseCache.set(name, attributes)
         compiled[name] = new Arktype(attributes, config, compiled)
@@ -35,14 +35,14 @@ type InferredScopeFn = <
 >(
     aliases: validate<aliases, ast, ast>,
     config?: ArktypeConfig<parentScope>
-) => ArktypeScope<inferScopeAst<ast, parentScope>>
+) => Scope<inferScopeAst<ast, parentScope>>
 
 type DynamicScopeFn = <aliases extends dictionary>(
     aliases: aliases,
     config?: ArktypeConfig
-) => ArktypeScope<aliases>
+) => Scope<aliases>
 
-export type ArktypeScope<inferred extends dictionary = dictionary> = {
+export type Scope<inferred extends dictionary = dictionary> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
 

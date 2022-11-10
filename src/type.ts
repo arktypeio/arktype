@@ -2,7 +2,7 @@ import type { ArktypeConfig } from "./arktype.js"
 import { Arktype } from "./arktype.js"
 import type { ParseError } from "./parse/common.js"
 import { parseRoot } from "./parse/parse.js"
-import type { ArktypeScope } from "./scope.js"
+import type { Scope } from "./scope.js"
 import { scope } from "./scope.js"
 import type { inferAst } from "./traverse/infer.js"
 import type { validate } from "./traverse/validate.js"
@@ -10,14 +10,14 @@ import type { dictionary } from "./utils/dynamicTypes.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rootScope: EmptyScope = scope({})
+const rootScope: RootScope = scope({})
 
-type EmptyScope = ArktypeScope<{}>
+type RootScope = Scope<{}>
 
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = rootScope, ...config } = {}
-) => new Arktype(parseRoot(definition, scope.$), config, scope as any)
+) => new Arktype(parseRoot(definition, scope as any), config, scope as any)
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
