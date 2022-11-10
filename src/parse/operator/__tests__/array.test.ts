@@ -5,7 +5,12 @@ import { incompleteArrayTokenMessage } from "../array.js"
 
 describe("parse array", () => {
     test("parse", () => {
-        attest(type("string[]").infer).typed as string[]
+        const stringArray = type("string[]")
+        attest(stringArray.infer).typed as string[]
+        attest(stringArray.attributes).snap({
+            type: "array",
+            props: { "*": { type: "string" } }
+        })
     })
     describe("errors", () => {
         test("incomplete token", () => {
