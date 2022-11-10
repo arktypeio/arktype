@@ -3,7 +3,6 @@ import type { buildUnmatchedGroupCloseMessage, parseError } from "../errors.js"
 import type { unclosedGroupMessage } from "../operand/groupOpen.js"
 import type { unpairedLeftBoundError } from "../operator/bounds/left.js"
 import type { mergeUnionDescendants } from "../operator/union/parse.js"
-import type { Attributes } from "./attributes/attributes.js"
 import type { Scanner } from "./scanner.js"
 
 export type mergeIntersectionDescendants<s extends StaticWithRoot> = maybePush<

@@ -1,17 +1,17 @@
 import { satisfies } from "../../../utils/generics.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
-import type {
-    IntegerLiteral,
-    NumberLiteral
-} from "../../../utils/numericLiterals.js"
+import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import {
     parseWellFormedInteger,
     parseWellFormedNumber
 } from "../../../utils/numericLiterals.js"
+import {
+    deserializePrimitive,
+    serializePrimitive
+} from "../../../utils/primitiveSerialization.js"
 import type { Scanner } from "../scanner.js"
 import type { Attribute, AttributeKey } from "./attributes.js"
 import type { Bound, Bounds } from "./bounds.js"
-import { deserializePrimitive, serializePrimitive } from "./value.js"
 
 export type SerializedBounds = SerializedBound | SerializedRange
 
@@ -113,7 +113,7 @@ export const serializers = satisfies<{
 
 type Serializers = typeof serializers
 
-type SerializedKey = keyof typeof serializers
+export type SerializedKey = keyof typeof serializers
 
 type DeserializedFormats = {
     [k in SerializedKey]: Parameters<Serializers[k]>[0]

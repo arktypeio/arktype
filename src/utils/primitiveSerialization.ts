@@ -1,14 +1,11 @@
-import type { DynamicTypes } from "../../../utils/dynamicTypes.js"
-import { isKeyOf } from "../../../utils/generics.js"
-import type {
-    BigintLiteral,
-    NumberLiteral
-} from "../../../utils/numericLiterals.js"
+import type { SingleQuotedStringLiteral } from "../parse/operand/enclosed.js"
+import type { DynamicTypes } from "./dynamicTypes.js"
+import { isKeyOf } from "./generics.js"
+import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
     parseWellFormedBigint,
     parseWellFormedNumber
-} from "../../../utils/numericLiterals.js"
-import type { SingleQuotedStringLiteral } from "../../operand/enclosed.js"
+} from "./numericLiterals.js"
 
 export type SerializedPrimitives = {
     string: SingleQuotedStringLiteral
