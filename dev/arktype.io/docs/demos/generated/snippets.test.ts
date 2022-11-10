@@ -15,12 +15,12 @@ describe("snippets", () => {
             \`browser/kind must be one of 'chrome'|'firefox'|'safari' (was "Internet Explorer")\`
         )
     })
-    test("space", async () => {
-        const spaceSnippet = await import("../space")
-        attest(spaceSnippet.types.package.infer).type.toString.snap(
+    test("scope", async () => {
+        const scopeSnippet = await import("../scope")
+        attest(scopeSnippet.types.package.infer).type.toString.snap(
             "{ name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }"
         )
-        attest(spaceSnippet.problems?.summary)
+        attest(scopeSnippet.problems?.summary)
             .snap(\`dependencies/0/contributors: contributors is required
 contributors/0/email: Must be a valid email (was "david@araktypeio")\`)
     })
@@ -38,21 +38,5 @@ about/bio: Must be at most 80 characters (was 110)\`)
             }
         }
     })
-    // TODO: Reenable
-    // test("declaration", async () => {
-    //     const declarationSnippet = await import("../declaration/declaration")
-    //     attest(
-    //         declarationSnippet.types.group.infer.members[0].groups[0].members[0]
-    //             .name
-    //     ).typed as string
-    //     attest(declarationSnippet.types.$.toAst()).snap({
-    //         user: {
-    //             name: \`string\`,
-    //             bestFriend: [\`user\`, \`?\`],
-    //             groups: [\`group\`, \`[]\`]
-    //         },
-    //         group: { title: \`string\`, members: [\`user\`, \`[]\`] }
-    //     })
-    // })
 })
 `

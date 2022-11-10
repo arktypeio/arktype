@@ -1,17 +1,17 @@
-export default `import { space } from "arktype"
+export default `import { scope } from "arktype"
 
-// Spaces are collections of types that can reference each other.
-export const types = space({
+// Scopes are collections of types that can reference each other.
+export const types = scope({
     package: {
         name: "string",
-        dependencies: "package[]?",
-        devDependencies: "package[]?",
-        contributors: "contributor[]?"
+        "dependencies?": "package[]",
+        "devDependencies?": "package[]",
+        "contributors?": "contributor[]"
     },
     contributor: {
         // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
         email: "email",
-        packages: "package[]?"
+        "packages?": "package[]"
     }
 })
 

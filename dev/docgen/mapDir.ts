@@ -35,12 +35,24 @@ export const mapDir = (
                         transformedOutputPath
                     )
                 }
-                return [transformedOutputPath, transformedContents]
+                return [
+                    transformedOutputPath,
+                    transformedContents,
+                    repoRelativePath
+                ]
             })
     )
     for (const target of options.targets) {
+        const sourceMapData: Record<string, string> = {}
+        const sourceMapPath = join(target, ".sourceMap.json")
         rmSync(target, { recursive: true, force: true })
-        for (const [path, contents] of fileContentsByRelativeDestination) {
+        rmSync(sourceMapPath, { recursive: true, force: true })
+        for (const [
+            path,
+            contents,
+            source
+        ] of fileContentsByRelativeDestination) {
+            sourceMapData[path] = source
             const resolvedPath = join(target, path)
             ensureDir(dirname(resolvedPath))
             writeFileSync(resolvedPath, contents)
@@ -48,5 +60,6 @@ export const mapDir = (
         if (!options.skipFormatting) {
             shell(`prettier --write ${target}`)
         }
+        writeFileSync(sourceMapPath, JSON.stringify(sourceMapData, null, 4))
     }
 }
