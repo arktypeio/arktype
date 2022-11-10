@@ -32,7 +32,7 @@ type checkAst<
     : node extends [infer child, unknown]
     ? checkAst<child, scope, scopeAst>
     : node extends [infer left, infer token, infer right]
-    ? token extends Scanner.NaryToken
+    ? token extends Scanner.BranchToken
         ? [
               ...checkAst<left, scope, scopeAst>,
               ...checkAst<right, scope, scopeAst>

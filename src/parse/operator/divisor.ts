@@ -1,15 +1,11 @@
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { parseWellFormedInteger } from "../../utils/numericLiterals.js"
-import type { OperateAttribute } from "../state/attributes/operations.js"
+import type { AttributeIntersection } from "../state/attributes/keySets.js"
+import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
-import type {
-    DynamicWithRoot,
-    setStateRoot,
-    StaticWithRoot
-} from "../state/static.js"
-import { errorState } from "../state/static.js"
+import type { state, StaticWithRoot } from "../state/static.js"
 
-export const parseDivisor = (s: DynamicWithRoot) => {
+export const parseDivisor = (s: DynamicState) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()
     return setRootOrCatch(
         s,
@@ -34,9 +30,9 @@ export type parseDivisor<
       >
     : never
 
-const setRootOrCatch = (s: DynamicWithRoot, parseResult: number) => {
+const setRootOrCatch = (s: DynamicState, parseResult: number) => {
     if (parseResult === 0) {
-        return errorState(buildInvalidDivisorMessage(0))
+        return s.error(buildInvalidDivisorMessage(0))
     }
     s.root.intersect("divisor", `${parseResult}`)
     return s
@@ -48,9 +44,9 @@ type setRootOrCatch<
     unscanned extends string
 > = divisorOrError extends number
     ? divisorOrError extends 0
-        ? errorState<buildInvalidDivisorMessage<0>>
-        : setStateRoot<s, [s["root"], "%", divisorOrError], unscanned>
-    : errorState<`${divisorOrError}`>
+        ? state.error<buildInvalidDivisorMessage<0>>
+        : state.setRoot<s, [s["root"], "%", divisorOrError], unscanned>
+    : state.error<`${divisorOrError}`>
 
 export const buildInvalidDivisorMessage = <divisor extends string | number>(
     divisor: divisor
@@ -60,7 +56,7 @@ export const buildInvalidDivisorMessage = <divisor extends string | number>(
 type buildInvalidDivisorMessage<divisor extends string | number> =
     `% operator must be followed by a non-zero integer literal (was ${divisor})`
 
-export const operateDivisor: OperateAttribute<NumberLiteral> = (
+export const operateDivisor: AttributeIntersection<NumberLiteral> = (
     serializedA,
     serializedB,
     operation

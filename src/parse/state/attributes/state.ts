@@ -1,8 +1,5 @@
 import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
-import type {
-    keyOrPartialKeySet,
-    partialRecord
-} from "../../../utils/generics.js"
+import type { keyOrPartialSet, partialRecord } from "../../../utils/generics.js"
 import { isKeyOf, satisfies } from "../../../utils/generics.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import type {
@@ -11,10 +8,9 @@ import type {
     Attributes,
     ReadonlyAttributes
 } from "./attributes.js"
-import { operateAttribute } from "./operations.js"
 
 export class AttributeState<attributes extends Attributes = Attributes> {
-    private a: Attributes = unsetProxy
+    private a: Attributes = {}
 
     get: attributes & ReadonlyAttributes = this.a as any
 
@@ -39,30 +35,6 @@ export class AttributeState<attributes extends Attributes = Attributes> {
         }
     }
 
-    isUnset() {
-        return this.a === unsetProxy
-    }
-
-    reinitialize(attributes: Attributes) {
-        if (!this.isUnset()) {
-            return throwInternalError(
-                `Unexpected attempt to reinitialize existing attributes.`
-            )
-        }
-        this.a = attributes
-    }
-
-    eject() {
-        if (this.isUnset()) {
-            return throwInternalError(
-                `Unexpected attempt to eject unset attributes.`
-            )
-        }
-        const attributes = this.a
-        this.a = unsetProxy as any
-        return attributes as any as attributes
-    }
-
     private intersectTypeImplications(key: TypeImplyingKey) {
         const impliedType = impliedTypes[key]
         if (typeof impliedType === "string") {
@@ -78,7 +50,7 @@ export class AttributeState<attributes extends Attributes = Attributes> {
 }
 
 const impliedTypes = satisfies<
-    partialRecord<AttributeKey, keyOrPartialKeySet<DynamicTypeName>>
+    partialRecord<AttributeKey, keyOrPartialSet<DynamicTypeName>>
 >()({
     divisor: "number",
     bounds: {
@@ -90,11 +62,3 @@ const impliedTypes = satisfies<
 })
 
 type TypeImplyingKey = keyof typeof impliedTypes
-
-const unsetProxy = new Proxy(
-    {},
-    {
-        get: () =>
-            throwInternalError(`Unexpected attempt to access unset attributes.`)
-    }
-)

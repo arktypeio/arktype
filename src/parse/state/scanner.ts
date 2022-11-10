@@ -114,12 +114,12 @@ export namespace Scanner {
 
     export type OneCharComparator = keyof typeof oneCharComparators
 
-    export const naryTokens = {
+    export const branchTokens = {
         "|": true,
         "&": true
     } as const
 
-    export type NaryToken = keyof typeof naryTokens
+    export type BranchToken = keyof typeof branchTokens
 
     export const binaryTokens = {
         ...comparators,
@@ -129,7 +129,7 @@ export namespace Scanner {
     export type BinaryToken = keyof typeof binaryTokens
 
     export const infixTokens = {
-        ...naryTokens,
+        ...branchTokens,
         ...binaryTokens
     } as const
 

@@ -1,21 +1,21 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
+import type { DynamicState } from "../../state/dynamic.js"
 import { Scanner } from "../../state/scanner.js"
 import type {
-    DynamicWithRoot,
+    errorState,
     scanStateTo,
     setStateRoot,
     stateFrom,
     StaticWithRoot
 } from "../../state/static.js"
-import { errorState, stateHasOpenRange, unset } from "../../state/static.js"
 import {
     buildInvalidDoubleBoundMessage,
     invertedComparators
 } from "./shared.js"
 
 export const parseRightBound = (
-    s: DynamicWithRoot,
+    s: DynamicState,
     comparator: Scanner.Comparator
 ) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
@@ -52,7 +52,7 @@ const setValidatedRoot = (
         return s
     }
     if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-        return errorState(buildInvalidDoubleBoundMessage(comparator))
+        return s.error(buildInvalidDoubleBoundMessage(comparator))
     }
     s.root.intersect(
         "bounds",

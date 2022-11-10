@@ -1,17 +1,13 @@
 import type { Scope } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { ParseError } from "./common.js"
+import type { parseError } from "./errors.js"
 import { parseOperand } from "./operand/operand.js"
 import type { isResolvableIdentifier } from "./operand/unenclosed.js"
 import { maybeParseIdentifier } from "./operand/unenclosed.js"
 import { arrayOf } from "./operator/array.js"
 import { parseOperator } from "./operator/operator.js"
 import { DynamicState } from "./state/dynamic.js"
-import type {
-    initializeState,
-    StaticState,
-    UnvalidatedState
-} from "./state/static.js"
+import type { state, StaticState, UnvalidatedState } from "./state/static.js"
 
 export const parseString = (def: string, scope: Scope) => {
     const cache = scope.$.parseCache
@@ -32,13 +28,13 @@ export type parseString<
 export type validateString<
     def extends string,
     scope extends dictionary
-> = parseString<def, scope> extends ParseError<infer Message> ? Message : def
+> = parseString<def, scope> extends parseError<infer Message> ? Message : def
 
 const fullStringParse = (def: string, scope: Scope) =>
     loop(parseOperand(new DynamicState(def, scope)))
 
 type fullStringParse<def extends string, scope extends dictionary> = loop<
-    parseOperand<initializeState<def>, scope>,
+    parseOperand<state.initialize<def>, scope>,
     scope
 >
 

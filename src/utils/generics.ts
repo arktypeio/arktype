@@ -71,13 +71,15 @@ export type keysOf<o extends object> = (keyof o)[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 
-export type keySet<key extends string> = Record<key, true>
+export type keySet<key extends string = string> = Record<key, true>
 
-export type keyOrKeySet<key extends string> = key | keySet<key>
+export type keyOrSet<key extends string = string> = key | keySet<key>
 
-export type partialKeySet<key extends string> = { [_ in key]?: true }
+export type partialKeySet<key extends string = string> = { [_ in key]?: true }
 
-export type keyOrPartialKeySet<key extends string> = key | partialKeySet<key>
+export type keyOrPartialSet<key extends string = string> =
+    | key
+    | partialKeySet<key>
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]

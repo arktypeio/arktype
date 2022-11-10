@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { type } from "../../../api.js"
-import { incompleteArrayTokenMessage } from "../array.js"
+import { type } from "../../api.js"
+import { incompleteArrayTokenMessage } from "../operator/array.js"
 
 describe("parse array", () => {
     test("parse", () => {

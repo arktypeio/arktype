@@ -1,40 +1,27 @@
-import type { Scope, ScopeRoot } from "../../scope.js"
-import type { DynamicTypeName } from "../../utils/dynamicTypes.js"
-import type { keyOrPartialKeySet, partialRecord } from "../../utils/generics.js"
-import { isKeyOf, satisfies } from "../../utils/generics.js"
+import type { Scope } from "../../scope.js"
 import { throwInternalError } from "../../utils/internalArktypeError.js"
-import { throwParseError } from "../common.js"
+import { buildUnmatchedGroupCloseMessage, throwParseError } from "../errors.js"
+import { unclosedGroupMessage } from "../operand/groupOpen.js"
 import { buildUnpairedLeftBoundMessage } from "../operator/bounds/left.js"
-import type {
-    Attribute,
-    AttributeKey,
-    Attributes,
-    ReadonlyAttributes
-} from "./attributes/attributes.js"
-import { operateAttribute } from "./attributes/operations.js"
-import { AttributeState } from "./attributes/state.js"
+import type { Attributes } from "./attributes/attributes.js"
 import { Scanner } from "./scanner.js"
-
-// type BaseDynamic = {
-//     root: AttributeState
-//     branches: DynamicOpenBranches
-//     groups: DynamicOpenBranches[]
-//     scanner: Scanner
-//     context: DynamicParserContext
-// }
 
 export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
-type DynamicOpenBranches = {
+type BranchState = {
     range?: OpenRange
-    union?: Attributes[]
-    intersection?: Attributes[]
+    "&": Attributes[]
+    "|": Attributes[]
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
     private root: Attributes | undefined
-    private openBranches: DynamicOpenBranches = {}
+    private branches: BranchState = {
+        "&": [],
+        "|": []
+    }
+    private groups: BranchState[] = []
 
     constructor(def: string, public readonly scope: Scope) {
         this.scanner = new Scanner(def)
@@ -44,41 +31,95 @@ export class DynamicState {
         return throwParseError(message)
     }
 
+    hasRoot() {
+        return this.root !== undefined
+    }
+
     setRoot(attributes: Attributes) {
         if (this.root !== undefined) {
-            return throwInternalError(
-                "Unexpected attempt to overwrite state root"
-            )
+            return throwInternalError("Unexpected attempt to overwrite root")
         }
         this.root = attributes
     }
 
+    private ejectRoot() {
+        const root = this.root
+        if (root === undefined) {
+            return throwInternalError("Unexpected attempt to eject unset root")
+        }
+        this.root = undefined
+        return root
+    }
+
     finalize() {
+        if (this.groups.length) {
+            return this.error(unclosedGroupMessage)
+        }
+        this.finalizeBranches()
         return this.root!
     }
 
     finalizeBranches() {
-        if (this.openBranches.range) {
-            return this.error(
-                buildUnpairedLeftBoundMessage(
-                    this.openBranches.range[0],
-                    this.openBranches.range[1]
-                )
-            )
-        }
-        if (this.openBranches.intersection) {
+        this.assertRangeUnset()
+        if (this.branches["&"]) {
             this.mergeIntersection()
         }
-        if (this.openBranches.union) {
+        if (this.branches["|"]) {
             this.mergeUnion()
         }
     }
 
-    hasRoot() {
-        return true
+    finalizeGroup() {
+        this.finalizeBranches()
+        const topBranchState = this.groups.pop()
+        if (!topBranchState) {
+            return this.error(
+                buildUnmatchedGroupCloseMessage(this.scanner.unscanned)
+            )
+        }
+        this.branches = topBranchState
+    }
+
+    pushBranch(token: Scanner.BranchToken) {
+        this.assertRangeUnset()
+        this.branches[token].push(this.ejectRoot())
+    }
+
+    private assertRangeUnset() {
+        if (this.branches.range) {
+            return this.error(
+                buildUnpairedLeftBoundMessage(
+                    this.branches.range[0],
+                    this.branches.range[1]
+                )
+            )
+        }
     }
 
     private mergeIntersection() {}
 
     private mergeUnion() {}
+
+    private previousOperator() {
+        return this.branches.range?.[1] ?? this.branches["&"].length
+            ? "&"
+            : this.branches["|"].length
+            ? "|"
+            : undefined
+    }
 }
+
+const compileIntersection = (branches: Attributes[]) => {
+    // while (branches.length > 1) {
+    //     branches.unshift(intersect(branches.pop()!, branches.pop()!))
+    // }
+    return branches[0]
+}
+
+const unsetProxy = new Proxy(
+    {},
+    {
+        get: () =>
+            throwInternalError(`Unexpected attempt to access unset attributes.`)
+    }
+)
