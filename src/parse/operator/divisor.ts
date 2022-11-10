@@ -6,8 +6,8 @@ import type {
     DynamicWithRoot,
     setStateRoot,
     StaticWithRoot
-} from "../state/state.js"
-import { errorState } from "../state/state.js"
+} from "../state/static.js"
+import { errorState } from "../state/static.js"
 
 export const parseDivisor = (s: DynamicWithRoot) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()

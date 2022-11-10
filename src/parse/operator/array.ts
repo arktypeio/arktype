@@ -4,8 +4,8 @@ import type {
     DynamicWithRoot,
     setStateRoot,
     StaticWithRoot
-} from "../state/state.js"
-import { errorState } from "../state/state.js"
+} from "../state/static.js"
+import { errorState } from "../state/static.js"
 
 export const parseArray = (s: DynamicWithRoot) => {
     const next = s.scanner.shift()

@@ -12,8 +12,8 @@ import type {
     DynamicState,
     StaticState,
     UnvalidatedState
-} from "./state/state.js"
-import { initializeState, stateHasRoot } from "./state/state.js"
+} from "./state/static.js"
+import { initializeState, stateHasRoot } from "./state/static.js"
 
 export const parseString = (
     definition: string,

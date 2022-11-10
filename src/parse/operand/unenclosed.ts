@@ -15,8 +15,12 @@ import type {
 } from "../common.js"
 import { parseRoot } from "../parse.js"
 import type { Scanner } from "../state/scanner.js"
-import type { DynamicState, setStateRoot, StaticState } from "../state/state.js"
-import { errorState } from "../state/state.js"
+import type {
+    DynamicState,
+    setStateRoot,
+    StaticState
+} from "../state/static.js"
+import { errorState } from "../state/static.js"
 import { Keyword } from "./keyword.js"
 import { buildMissingOperandMessage } from "./operand.js"
 

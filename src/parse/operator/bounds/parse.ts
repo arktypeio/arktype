@@ -4,8 +4,8 @@ import type {
     DynamicWithRoot,
     scanStateTo,
     StaticWithRoot
-} from "../../state/state.js"
-import { errorState, rootValueHasSerializedType } from "../../state/state.js"
+} from "../../state/static.js"
+import { errorState, rootValueHasSerializedType } from "../../state/static.js"
 import { parseLeftBound } from "./left.js"
 import { parseRightBound } from "./right.js"
 

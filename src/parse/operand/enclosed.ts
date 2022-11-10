@@ -5,7 +5,7 @@ import type {
     errorState,
     setStateRoot,
     StaticState
-} from "../state/state.js"
+} from "../state/static.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>

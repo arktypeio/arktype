@@ -7,8 +7,8 @@ import type {
     errorState,
     scanStateTo,
     StaticWithRoot
-} from "../state/state.js"
-import { finalizeState } from "../state/state.js"
+} from "../state/static.js"
+import { finalizeState } from "../state/static.js"
 import { parseArray } from "./array.js"
 import { parseBound } from "./bounds/parse.js"
 import { parseDivisor } from "./divisor.js"

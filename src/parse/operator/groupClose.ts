@@ -2,8 +2,8 @@ import type {
     DynamicWithRoot,
     StaticOpenBranches,
     StaticWithRoot
-} from "../state/state.js"
-import { errorState, finalizeGroup } from "../state/state.js"
+} from "../state/static.js"
+import { errorState, finalizeGroup } from "../state/static.js"
 
 export const parseGroupClose = (s: DynamicWithRoot) => {
     const previousOpenBranches = s.groups.pop()

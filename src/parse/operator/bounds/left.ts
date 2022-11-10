@@ -10,8 +10,8 @@ import type {
     StaticState,
     StaticWithOpenRange,
     StaticWithRoot
-} from "../../state/state.js"
-import { errorState, stateHasOpenRange, unset } from "../../state/state.js"
+} from "../../state/static.js"
+import { errorState, stateHasOpenRange } from "../../state/static.js"
 import type { InvertedComparators } from "./shared.js"
 import {
     buildInvalidDoubleBoundMessage,

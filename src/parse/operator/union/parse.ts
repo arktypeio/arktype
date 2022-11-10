@@ -4,7 +4,7 @@ import type {
     stateFrom,
     StaticWithOpenRange,
     StaticWithRoot
-} from "../../state/state.js"
+} from "../../state/static.js"
 import type { unpairedLeftBoundError } from "../bounds/left.js"
 import type { mergeIntersectionDescendants } from "../intersection.js"
 import { mergeIntersectionDescendantsToRoot } from "../intersection.js"

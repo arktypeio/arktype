@@ -5,8 +5,8 @@ import type {
     stateFrom,
     StaticWithOpenRange,
     StaticWithRoot
-} from "../state/state.js"
-import { stateHasOpenRange } from "../state/state.js"
+} from "../state/static.js"
+import { stateHasOpenRange } from "../state/static.js"
 import { unpairedLeftBoundError } from "./bounds/left.js"
 
 export const parseIntersection = (s: DynamicWithRoot) => {

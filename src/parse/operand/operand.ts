@@ -6,8 +6,8 @@ import type {
     errorState,
     scanStateTo,
     StaticState
-} from "../state/state.js"
-import { previousOperator, shifted } from "../state/state.js"
+} from "../state/static.js"
+import { previousOperator, shifted } from "../state/static.js"
 import type { EnclosingChar } from "./enclosed.js"
 import { enclosingChar, parseEnclosed } from "./enclosed.js"
 import { parseGroupOpen } from "./groupOpen.js"

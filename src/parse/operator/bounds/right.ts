@@ -7,8 +7,8 @@ import type {
     setStateRoot,
     stateFrom,
     StaticWithRoot
-} from "../../state/state.js"
-import { errorState, stateHasOpenRange, unset } from "../../state/state.js"
+} from "../../state/static.js"
+import { errorState, stateHasOpenRange, unset } from "../../state/static.js"
 import {
     buildInvalidDoubleBoundMessage,
     invertedComparators
