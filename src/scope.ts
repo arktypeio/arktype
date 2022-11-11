@@ -31,7 +31,7 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
 type InferredScopeFn = <aliases, inferredParent extends dictionary = {}>(
     aliases: validateAliases<
         aliases,
-        inferAliases<aliases, inferredParent> & inferredParent
+        inferScopeContext<aliases, inferredParent>
     >,
     config?: Config<inferredParent>
 ) => Scope<inferAliases<aliases, inferredParent>>
@@ -89,3 +89,9 @@ type validateAliases<aliases, scope extends dictionary> = evaluate<{
 type inferAliases<aliases, scope extends dictionary> = evaluate<{
     [name in keyof aliases]: inferRoot<aliases[name], scope, aliases>
 }>
+
+type inferScopeContext<aliases, scope extends dictionary> = inferAliases<
+    aliases,
+    scope
+> &
+    scope

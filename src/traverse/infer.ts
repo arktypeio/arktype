@@ -12,9 +12,8 @@ export type inferRoot<
     def,
     scope extends dictionary,
     aliases
-    // TODO: Remove maybe?
 > = isTopType<def> extends true
-    ? unknown
+    ? never
     : def extends string
     ? inferAst<
           parseString<def, stringKeyOf<aliases> | stringKeyOf<scope>>,
@@ -22,7 +21,7 @@ export type inferRoot<
           aliases
       >
     : def extends BadDefinitionType
-    ? unknown
+    ? never
     : inferObjectLiteral<def, scope, aliases>
 
 export type inferAst<
@@ -67,7 +66,7 @@ type inferTerminal<
     ? string
     : token extends number | bigint
     ? token
-    : unknown
+    : never
 
 type inferObjectLiteral<
     def,

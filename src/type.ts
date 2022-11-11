@@ -19,12 +19,12 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
+const s = type("a", { scope: scope({ a: "string[]" }) })
+
 export type InferredTypeFn = <definition, scope extends dictionary = {}>(
     definition: validateRoot<definition, scope>,
     options?: Config<scope>
 ) => Type<inferRoot<definition, scope, {}>>
-
-//ast extends error<string> ? never : Type<inferAst<ast, scope, {}>>
 
 type DynamicTypeFn = (definition: unknown, options?: Config<dictionary>) => Type
 

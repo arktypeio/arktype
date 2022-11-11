@@ -248,6 +248,50 @@
                     }
                 }
             ]
+        },
+        "str": {
+            "operator": {
+                "array": [
+                    {
+                        "date": "11/11/2022",
+                        "mark": {
+                            "type": [257, "instantiations"]
+                        }
+                    },
+                    {
+                        "date": "11/11/2022",
+                        "mark": {
+                            "type": [328, "instantiations"]
+                        }
+                    }
+                ]
+            }
         }
+    },
+    "scope": {
+        "cyclic(10)": [
+            {
+                "date": "11/11/2022",
+                "mark": {
+                    "type": [2212, "instantiations"]
+                }
+            }
+        ],
+        "cyclic(100)": [
+            {
+                "date": "11/11/2022",
+                "mark": {
+                    "type": [11919, "instantiations"]
+                }
+            }
+        ],
+        "cyclic(500)": [
+            {
+                "date": "11/11/2022",
+                "mark": {
+                    "type": [53550, "instantiations"]
+                }
+            }
+        ]
     }
 }
