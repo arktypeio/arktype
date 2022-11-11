@@ -4,7 +4,10 @@ import type {
     parseError,
     unclosedGroupMessage
 } from "../errors.js"
-import type { buildOpenRangeMessage } from "../operator/bounds/left.js"
+import type {
+    buildOpenRangeMessage,
+    OpenRange
+} from "../operator/bounds/left.js"
 import type { Scanner } from "./scanner.js"
 
 export type StaticState = {
@@ -15,9 +18,9 @@ export type StaticState = {
 }
 
 type BranchState = {
-    range: [limit: number, comparator: Scanner.PairableComparator] | undefined
-    union: unknown
-    intersection: unknown
+    range: OpenRange | undefined
+    "&": unknown
+    "|": unknown
 }
 
 export namespace state {
@@ -30,8 +33,8 @@ export namespace state {
 
     type initialBranches = branchesFrom<{
         range: undefined
-        intersection: undefined
-        union: undefined
+        "&": undefined
+        "|": undefined
     }>
 
     export type setRoot<
@@ -62,14 +65,14 @@ export namespace state {
 
     type branchIntersection<branches extends BranchState, root> = branchesFrom<{
         range: undefined
-        intersection: pushIntersection<branches["intersection"], root>
-        union: branches["union"]
+        "&": pushIntersection<branches["&"], root>
+        "|": branches["|"]
     }>
 
     type branchUnion<branches extends BranchState, root> = branchesFrom<{
         range: undefined
-        intersection: undefined
-        union: pushUnion<branches["union"], branches["intersection"], root>
+        "&": undefined
+        "|": pushUnion<branches["|"], branches["&"], root>
     }>
 
     export type reduceOpenRange<
@@ -80,8 +83,8 @@ export namespace state {
         root: undefined
         branches: {
             range: [limit, comparator]
-            intersection: s["branches"]["intersection"]
-            union: s["branches"]["union"]
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
         }
         groups: s["groups"]
         unscanned: s["unscanned"]
@@ -102,8 +105,8 @@ export namespace state {
         ]
         branches: {
             range: undefined
-            intersection: s["branches"]["intersection"]
-            union: s["branches"]["union"]
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
         }
         groups: s["groups"]
         unscanned: unscanned
@@ -118,8 +121,8 @@ export namespace state {
         root: [s["root"], comparator, limit]
         branches: {
             range: undefined
-            intersection: s["branches"]["intersection"]
-            union: s["branches"]["union"]
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
         }
         groups: s["groups"]
         unscanned: unscanned
@@ -147,11 +150,7 @@ export namespace state {
         ? from<{
               groups: stack
               branches: top
-              root: pushUnion<
-                  s["branches"]["union"],
-                  s["branches"]["intersection"],
-                  s["root"]
-              >
+              root: pushUnion<s["branches"]["|"], s["branches"]["&"], s["root"]>
               unscanned: unscanned
           }>
         : error<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
@@ -174,8 +173,8 @@ export namespace state {
                 ? openRangeError<s["branches"]["range"]>
                 : from<{
                       root: pushUnion<
-                          s["branches"]["union"],
-                          s["branches"]["intersection"],
+                          s["branches"]["|"],
+                          s["branches"]["&"],
                           s["root"]
                       >
                       groups: s["groups"]
@@ -198,9 +197,9 @@ export namespace state {
     export type previousOperator<s extends StaticState> =
         s["branches"]["range"] extends {}
             ? s["branches"]["range"][1]
-            : s["branches"]["intersection"] extends {}
+            : s["branches"]["&"] extends {}
             ? "&"
-            : s["branches"]["union"] extends {}
+            : s["branches"]["|"] extends {}
             ? "|"
             : undefined
 

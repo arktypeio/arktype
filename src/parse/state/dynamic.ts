@@ -5,13 +5,12 @@ import {
     throwParseError,
     unclosedGroupMessage
 } from "../errors.js"
+import type { OpenRange } from "../operator/bounds/left.js"
 import { buildOpenRangeMessage } from "../operator/bounds/left.js"
 import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morphisms } from "./attributes/morph.js"
 import { Scanner } from "./scanner.js"
-
-export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
 type BranchState = {
     range?: OpenRange
@@ -68,19 +67,19 @@ export class DynamicState {
         return root
     }
 
-    finalize() {
-        if (this.groups.length) {
-            return this.error(unclosedGroupMessage)
-        }
-        this.finalizeBranches()
-        this.scanner.hasBeenFinalized = true
-    }
-
     ejectRoot() {
         this.assertHasRoot()
         const root = this.root!
         this.root = ejectedProxy
         return root
+    }
+
+    finalize() {
+        if (this.groups.length) {
+            return this.error(unclosedGroupMessage)
+        }
+        this.finalizeBranches()
+        this.scanner.finalized = true
     }
 
     finalizeBranches() {

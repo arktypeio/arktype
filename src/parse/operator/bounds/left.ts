@@ -41,6 +41,8 @@ export type buildBoundLiteralMessage<
     comparator extends Scanner.Comparator
 > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
 
+export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
+
 export const buildOpenRangeMessage = <
     limit extends number,
     comparator extends Scanner.Comparator

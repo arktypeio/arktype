@@ -44,7 +44,7 @@ type fullStringParse<def extends string, scope extends dictionary> = loop<
 
 // TODO: Recursion perf?
 const loop = (s: DynamicState) => {
-    while (!s.scanner.hasBeenFinalized) {
+    while (!s.scanner.finalized) {
         next(s)
     }
     return s.ejectRoot()

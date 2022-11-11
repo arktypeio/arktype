@@ -3,7 +3,7 @@ import type { dictionary } from "../../utils/dynamicTypes.js"
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
-    hasBeenFinalized = false
+    finalized = false
 
     constructor(def: string) {
         this.chars = [...def]
@@ -121,32 +121,11 @@ export namespace Scanner {
 
     export type BranchToken = keyof typeof branchTokens
 
-    export const binaryTokens = {
-        ...comparators,
-        "%": true
-    } as const
+    export type InfixToken = BranchToken | Comparator | "%"
 
-    export type BinaryToken = keyof typeof binaryTokens
+    export type PostfixToken = "[]"
 
-    export const infixTokens = {
-        ...branchTokens,
-        ...binaryTokens
-    } as const
-
-    export type InfixToken = keyof typeof infixTokens
-
-    export const unaryTokens = {
-        "[]": true
-    } as const
-
-    export type UnaryToken = keyof typeof unaryTokens
-
-    export const operatorTokens = {
-        ...infixTokens,
-        ...unaryTokens
-    } as const
-
-    export type OperatorToken = keyof typeof operatorTokens
+    export type OperatorToken = InfixToken | PostfixToken
 
     export type finalized = "{done}"
 

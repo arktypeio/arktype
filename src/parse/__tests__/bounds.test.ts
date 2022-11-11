@@ -58,7 +58,7 @@ describe("bound", () => {
             test("unpaired left", () => {
                 // @ts-expect-error
                 attest(() => type("3<number")).throwsAndHasTypeError(
-                    buildUnpairedLeftBoundMessage(3, "<")
+                    buildOpenRangeMessage(3, "<")
                 )
             })
             test("double left", () => {
