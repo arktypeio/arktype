@@ -1,12 +1,12 @@
-import type { DynamicScope } from "../scope.js"
-import { dynamicTypeOf } from "../utils/dynamicTypes.js"
-import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
-import type { keySet, mutable } from "../utils/generics.js"
-import { throwInternalError } from "../utils/internalArktypeError.js"
-import { throwParseError } from "./errors.js"
+import { throwParseError } from "./reduce/errors.js"
+import type { DynamicScope } from "./scope.js"
 import type { Attributes } from "./state/attributes/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
+import { dynamicTypeOf } from "./utils/dynamicTypes.js"
+import type { dictionary, DynamicTypeName } from "./utils/dynamicTypes.js"
+import type { keySet, mutable } from "./utils/generics.js"
+import { throwInternalError } from "./utils/internalArktypeError.js"
 
 export const parseRoot = (def: unknown, scope: DynamicScope) => {
     const rawAttributes = parseDefinition(def, scope)

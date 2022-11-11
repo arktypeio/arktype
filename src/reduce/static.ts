@@ -1,4 +1,5 @@
 import type { defined, error } from "../../utils/generics.js"
+import type { astToString } from "../ast/utils.js"
 import type {
     buildUnmatchedGroupCloseMessage,
     unclosedGroupMessage
@@ -55,24 +56,14 @@ export namespace state {
         ? openRangeError<s["branches"]["range"]>
         : from<{
               root: undefined
-              branches: token extends "&"
-                  ? branchIntersection<s["branches"], s["root"]>
-                  : branchUnion<s["branches"], s["root"]>
+              branches: {
+                  range: undefined
+                  "&": token extends "&" ? mergeToIntersection<s> : undefined
+                  "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
+              }
               groups: s["groups"]
               unscanned: unscanned
           }>
-
-    type branchIntersection<branches extends BranchState, root> = branchesFrom<{
-        range: undefined
-        "&": pushIntersection<branches["&"], root>
-        "|": branches["|"]
-    }>
-
-    type branchUnion<branches extends BranchState, root> = branchesFrom<{
-        range: undefined
-        "&": undefined
-        "|": pushUnion<branches["|"], branches["&"], root>
-    }>
 
     export type reduceOpenRange<
         s extends StaticState,
@@ -127,15 +118,15 @@ export namespace state {
         unscanned: unscanned
     }>
 
-    type pushUnion<unionState, intersectionState, root> =
-        unionState extends undefined
-            ? pushIntersection<intersectionState, root>
-            : [unionState, "|", pushIntersection<intersectionState, root>]
+    type mergeToUnion<s extends StaticState> =
+        s["branches"]["|"] extends undefined
+            ? mergeToIntersection<s>
+            : [s["branches"]["|"], "|", mergeToIntersection<s>]
 
-    type pushIntersection<intersectionState, root> =
-        intersectionState extends undefined
-            ? root
-            : [intersectionState, "&", root]
+    type mergeToIntersection<s extends StaticState> =
+        s["branches"]["&"] extends undefined
+            ? s["root"]
+            : [s["branches"]["&"], "&", s["root"]]
 
     type popGroup<stack extends BranchState[], top extends BranchState> = [
         ...stack,
@@ -149,7 +140,7 @@ export namespace state {
         ? from<{
               groups: stack
               branches: top
-              root: pushUnion<s["branches"]["|"], s["branches"]["&"], s["root"]>
+              root: mergeToUnion<s>
               unscanned: unscanned
           }>
         : throws<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
@@ -168,11 +159,7 @@ export namespace state {
         ? s["branches"]["range"] extends {}
             ? openRangeError<s["branches"]["range"]>
             : from<{
-                  root: pushUnion<
-                      s["branches"]["|"],
-                      s["branches"]["&"],
-                      s["root"]
-                  >
+                  root: mergeToUnion<s>
                   groups: s["groups"]
                   branches: initialBranches
                   unscanned: Scanner.finalized
@@ -199,15 +186,14 @@ export namespace state {
             ? "|"
             : undefined
 
-    export type scanTo<
-        state extends StaticState,
-        unscanned extends string
-    > = from<{
-        root: state["root"]
-        branches: state["branches"]
-        groups: state["groups"]
+    export type scanTo<s extends StaticState, unscanned extends string> = from<{
+        root: s["root"]
+        branches: s["branches"]
+        groups: s["groups"]
         unscanned: unscanned
     }>
+
+    export type toString<s extends StaticState> = astToString<mergeToUnion<s>>
 
     export type from<s extends StaticState> = s
 

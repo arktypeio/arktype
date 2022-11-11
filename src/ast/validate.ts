@@ -2,9 +2,9 @@ import type {
     BadDefinitionType,
     buildBadDefinitionTypeMessage,
     buildUninferableDefinitionMessage
-} from "../parse/parse.js"
-import type { Scanner } from "../parse/state/scanner.js"
-import type { parseString } from "../parse/string.js"
+} from "../parse.js"
+import type { Scanner } from "../state/scanner.js"
+import type { parseString } from "../string.js"
 import type { dictionary, dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type {
     error,
@@ -15,7 +15,7 @@ import type {
     stringKeyOf
 } from "../utils/generics.js"
 import type { inferAst } from "./infer.js"
-import type { astToString } from "./toString.js"
+import type { astToString } from "./utils.js"
 
 export type validateRoot<
     def,

@@ -1,9 +1,9 @@
 import type { Config } from "./arktype.js"
 import { Type } from "./arktype.js"
-import { parseRoot } from "./parse/parse.js"
+import type { inferRoot } from "./ast/infer.js"
+import type { validateRoot } from "./ast/validate.js"
+import { parseRoot } from "./parse.js"
 import { scope } from "./scope.js"
-import type { inferRoot } from "./traverse/infer.js"
-import type { validateRoot } from "./traverse/validate.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -18,8 +18,6 @@ const rawTypeFn: DynamicTypeFn = (
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
-
-const s = type("a", { scope: scope({ a: "string[]" }) })
 
 export type InferredTypeFn = <definition, scope extends dictionary = {}>(
     definition: validateRoot<definition, scope>,

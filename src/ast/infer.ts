@@ -1,12 +1,10 @@
-import type { RegexLiteral, StringLiteral } from "../parse/operand/enclosed.js"
-import type { Keyword } from "../parse/operand/keyword.js"
-import type { BadDefinitionType } from "../parse/parse.js"
-import type { Scanner } from "../parse/state/scanner.js"
-import type { parseString } from "../parse/string.js"
-
+import type { RegexLiteral, StringLiteral } from "../operand/enclosed.js"
+import type { Keyword } from "../operand/keyword.js"
+import type { BadDefinitionType } from "../parse.js"
+import type { Scanner } from "../state/scanner.js"
+import type { parseString } from "../string.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { evaluate, isTopType, stringKeyOf } from "../utils/generics.js"
-import type { NumberLiteral } from "../utils/numericLiterals.js"
 
 export type inferRoot<
     def,
@@ -39,7 +37,7 @@ export type inferAst<
                   inferAst<ast[2], scope, aliases>
           >
         : ast[1] extends Scanner.Comparator
-        ? ast[0] extends NumberLiteral
+        ? ast[0] extends number
             ? inferAst<ast[2], scope, aliases>
             : inferAst<ast[0], scope, aliases>
         : ast[1] extends "%"
