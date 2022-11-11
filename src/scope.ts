@@ -1,4 +1,4 @@
-import type { ArktypeConfig } from "./arktype.js"
+import type { Config } from "./arktype.js"
 import { Type } from "./arktype.js"
 import { parseRoot } from "./parse/parse.js"
 import type { Attributes } from "./parse/state/attributes/attributes.js"
@@ -11,7 +11,7 @@ import type { evaluate } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rawScope = (aliases: dictionary, config: ArktypeConfig = {}) => {
+const rawScope = (aliases: dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
     const compiled: Scope = { $: root as any }
     for (const name in aliases) {
@@ -34,12 +34,12 @@ type InferredScopeFn = <
     ast extends dictionary = parseAliases<aliases, parentScope>
 >(
     aliases: validate<aliases, ast, ast>,
-    config?: ArktypeConfig<parentScope>
+    config?: Config<parentScope>
 ) => Scope<inferScopeAst<ast, parentScope>>
 
 type DynamicScopeFn = <aliases extends dictionary>(
     aliases: aliases,
-    config?: ArktypeConfig
+    config?: Config
 ) => Scope<aliases>
 
 export type Scope<inferred extends dictionary = dictionary> = {
@@ -57,7 +57,7 @@ export class ScopeRoot<inferred extends dictionary = dictionary> {
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
-        public config: ArktypeConfig<dictionary>
+        public config: Config<dictionary>
     ) {}
 
     get infer(): inferred {

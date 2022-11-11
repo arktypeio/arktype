@@ -28,7 +28,7 @@ export type parseOperand<
         : lookahead extends " "
         ? parseOperand<state.scanTo<s, unscanned>, scope>
         : parseUnenclosed<s, scope>
-    : state.error<buildMissingOperandMessage<s>>
+    : state.throws<buildMissingOperandMessage<s>>
 
 export const buildMissingOperandMessage = <s extends DynamicState>(s: s) => {
     const operator = s.previousOperator()

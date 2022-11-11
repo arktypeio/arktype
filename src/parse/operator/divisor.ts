@@ -28,9 +28,9 @@ export type parseDivisor<
       > extends is<infer result>
         ? result extends number
             ? result extends 0
-                ? state.error<buildInvalidDivisorMessage<0>>
+                ? state.throws<buildInvalidDivisorMessage<0>>
                 : state.setRoot<s, [s["root"], "%", result], nextUnscanned>
-            : state.error<result & string>
+            : state.throws<result & string>
         : never
     : never
 

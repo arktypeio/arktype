@@ -30,7 +30,7 @@ export type parseUnenclosed<
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? tryResolve<s, scanned, scope> extends is<infer result>
         ? result extends error<infer message>
-            ? state.error<message>
+            ? state.throws<message>
             : state.setRoot<s, result, nextUnscanned>
         : never
     : never

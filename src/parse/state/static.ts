@@ -1,7 +1,6 @@
-import type { defined } from "../../utils/generics.js"
+import type { defined, error } from "../../utils/generics.js"
 import type {
     buildUnmatchedGroupCloseMessage,
-    parseError,
     unclosedGroupMessage
 } from "../errors.js"
 import type {
@@ -153,7 +152,7 @@ export namespace state {
               root: pushUnion<s["branches"]["|"], s["branches"]["&"], s["root"]>
               unscanned: unscanned
           }>
-        : error<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
+        : throws<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
 
     export type reduceGroupOpen<
         s extends StaticState,
@@ -165,32 +164,29 @@ export namespace state {
         unscanned: unscanned
     }>
 
-    export type finalize<s extends StaticState> =
-        s["root"] extends parseError<string>
-            ? s
-            : s["groups"] extends []
-            ? s["branches"]["range"] extends {}
-                ? openRangeError<s["branches"]["range"]>
-                : from<{
-                      root: pushUnion<
-                          s["branches"]["|"],
-                          s["branches"]["&"],
-                          s["root"]
-                      >
-                      groups: s["groups"]
-                      branches: initialBranches
-                      unscanned: Scanner.finalized
-                  }>
-            : error<unclosedGroupMessage>
+    export type finalize<s extends StaticState> = s["groups"] extends []
+        ? s["branches"]["range"] extends {}
+            ? openRangeError<s["branches"]["range"]>
+            : from<{
+                  root: pushUnion<
+                      s["branches"]["|"],
+                      s["branches"]["&"],
+                      s["root"]
+                  >
+                  groups: s["groups"]
+                  branches: initialBranches
+                  unscanned: Scanner.finalized
+              }>
+        : throws<unclosedGroupMessage>
 
-    export type error<message extends string> = from<{
-        root: parseError<message>
-        branches: initialBranches
+    export type throws<message extends string> = from<{
+        root: error<message>
         groups: []
+        branches: initialBranches
         unscanned: Scanner.finalized
     }>
 
-    type openRangeError<range extends defined<BranchState["range"]>> = error<
+    type openRangeError<range extends defined<BranchState["range"]>> = throws<
         buildOpenRangeMessage<range[0], range[1]>
     >
 

@@ -7,7 +7,7 @@ import type { dictionary } from "./utils/dynamicTypes.js"
 export class Type<Inferred = unknown> {
     constructor(
         public attributes: Attributes,
-        public config: ArktypeConfig,
+        public config: Config,
         public scope: Scope
     ) {
         // TODO: Integrate config
@@ -33,6 +33,6 @@ export class Type<Inferred = unknown> {
     }
 }
 
-export type ArktypeConfig<scope extends dictionary = {}> = {
+export type Config<scope extends dictionary = {}> = {
     scope?: Scope<scope>
 }

@@ -14,5 +14,3 @@ export class ParseError extends Error {}
 export const throwParseError = (message: string) => {
     throw new ParseError(message)
 }
-
-export type parseError<Message extends string> = `!${Message}`

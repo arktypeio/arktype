@@ -106,10 +106,4 @@ export const satisfies =
 
 export type is<t> = t
 
-declare const id: unique symbol
-
-export type nominal<t, id extends string> = t & {
-    readonly [id]: id
-}
-
-export type error<message extends string> = nominal<message, "error">
+export type error<message extends string = string> = `!${message}`

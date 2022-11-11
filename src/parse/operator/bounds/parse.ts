@@ -29,7 +29,7 @@ export type parseBound<
     ? delegateReduction<state.scanTo<s, nextUnscanned>, `${start}=`>
     : start extends Scanner.OneCharComparator
     ? delegateReduction<state.scanTo<s, unscanned>, start>
-    : state.error<singleEqualsMessage>
+    : state.throws<singleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
@@ -43,5 +43,5 @@ type delegateReduction<
 > = s["root"] extends number
     ? comparator extends Scanner.PairableComparator
         ? state.reduceOpenRange<s, s["root"], comparator>
-        : state.error<buildInvalidDoubleBoundMessage<comparator>>
+        : state.throws<buildInvalidDoubleBoundMessage<comparator>>
     : parseRightBound<s, comparator>

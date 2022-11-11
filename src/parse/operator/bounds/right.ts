@@ -40,9 +40,9 @@ export type parseRightBound<
                           limit,
                           nextUnscanned
                       >
-                    : state.error<buildInvalidDoubleBoundMessage<comparator>>
+                    : state.throws<buildInvalidDoubleBoundMessage<comparator>>
                 : state.reduceSingleBound<s, limit, comparator, nextUnscanned>
-            : state.error<limit & string>
+            : state.throws<limit & string>
         : never
     : never
 

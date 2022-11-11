@@ -1,7 +1,6 @@
 import type { Scope } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { is } from "../utils/generics.js"
-import type { parseError } from "./errors.js"
+import type { error, is } from "../utils/generics.js"
 import { parseOperand } from "./operand/operand.js"
 import type { isResolvableIdentifier } from "./operand/unenclosed.js"
 import { maybeParseIdentifier } from "./operand/unenclosed.js"
@@ -25,16 +24,12 @@ export const parseString = (def: string, scope: Scope) => {
 export type parseString<
     def extends string,
     scope extends dictionary
-> = maybeNaiveParse<def, scope> extends is<infer result>
-    ? result extends undefined
-        ? fullStringParse<def, scope>
-        : result
-    : never
+> = maybeNaiveParse<def, scope>
 
 export type validateString<
     def extends string,
     scope extends dictionary
-> = parseString<def, scope> extends parseError<infer message> ? message : def
+> = parseString<def, scope> extends error<infer message> ? message : def
 
 const fullStringParse = (def: string, scope: Scope) => {
     const s = new DynamicState(def, scope)
@@ -80,10 +75,10 @@ type maybeNaiveParse<
 > = def extends `${infer child}[]`
     ? isResolvableIdentifier<child, scope> extends true
         ? [child, "[]"]
-        : undefined
+        : fullStringParse<def, scope>
     : isResolvableIdentifier<def, scope> extends true
     ? def
-    : undefined
+    : fullStringParse<def, scope>
 
 const maybeNaiveParse = (def: string, scope: Scope) => {
     if (def.endsWith("[]")) {
