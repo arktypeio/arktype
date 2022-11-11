@@ -2,8 +2,8 @@ import { satisfies } from "../../../utils/generics.js"
 import { throwInternalError } from "../../../utils/internalArktypeError.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import {
-    parseWellFormedInteger,
-    parseWellFormedNumber
+    tryParseWellFormedInteger,
+    tryParseWellFormedNumber
 } from "../../../utils/numericLiterals.js"
 import {
     deserializePrimitive,
@@ -51,14 +51,14 @@ const deserializeBounds = (boundsString: SerializedBounds): Bounds => {
     if (matches[1]) {
         return deserializeBound(
             matches[1],
-            parseWellFormedNumber(matches[2], true)
+            tryParseWellFormedNumber(matches[2], true)
         )
     }
     return deserializeRange(
         matches[3],
-        parseWellFormedNumber(matches[4], true),
+        tryParseWellFormedNumber(matches[4], true),
         matches[5],
-        parseWellFormedNumber(matches[6], true)
+        tryParseWellFormedNumber(matches[6], true)
     )
 }
 
@@ -101,7 +101,7 @@ export type SerializedDivisor = NumberLiteral
 export const serializeDivisor = (input: number): SerializedDivisor => `${input}`
 
 export const deserializeDivisor = (serialized: SerializedDivisor) =>
-    parseWellFormedInteger(serialized, true)
+    tryParseWellFormedInteger(serialized, true)
 
 export const serializers = satisfies<{
     [k in AttributeKey]?: (input: any) => Attribute<k>

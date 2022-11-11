@@ -35,9 +35,7 @@ export const singleEqualsMessage = `= is not a valid comparator. Use == to check
 type singleEqualsMessage = typeof singleEqualsMessage
 
 const delegateReduction = (s: DynamicState, comparator: Scanner.Comparator) =>
-    rootValueHasSerializedType(s, "number")
-        ? parseLeftBound(s, comparator)
-        : parseRightBound(s, comparator)
+    true ? parseLeftBound(s, comparator) : parseRightBound(s, comparator)
 
 type delegateReduction<
     s extends StaticWithRoot,

@@ -30,8 +30,11 @@ export type validateString<
     scope extends dictionary
 > = parseString<def, scope> extends parseError<infer message> ? message : def
 
-const fullStringParse = (def: string, scope: Scope) =>
-    loop(parseOperand(new DynamicState(def, scope)))
+const fullStringParse = (def: string, scope: Scope) => {
+    const s = new DynamicState(def, scope)
+    parseOperand(s)
+    return loop(s)
+}
 
 type fullStringParse<def extends string, scope extends dictionary> = loop<
     parseOperand<state.initialize<def>, scope>,
@@ -43,7 +46,7 @@ const loop = (s: DynamicState) => {
     while (!s.scanner.hasBeenFinalized) {
         next(s)
     }
-    return s.finalize()
+    return s.ejectRoot()
 }
 
 type loop<s extends UnvalidatedState, scope extends dictionary> = s extends {
@@ -52,7 +55,7 @@ type loop<s extends UnvalidatedState, scope extends dictionary> = s extends {
     ? loop<next<s, scope>, scope>
     : s["root"]
 
-const next = (s: DynamicState): DynamicState =>
+const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
 type next<s extends StaticState, scope extends dictionary> = s extends {

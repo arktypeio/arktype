@@ -1,6 +1,6 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
-import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
+import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../state/dynamic.js"
 import { Scanner } from "../../state/scanner.js"
 import type { InvertedComparators } from "./shared.js"
@@ -18,11 +18,10 @@ export const parseLeftBound = (
         : s.error(buildInvalidDoubleBoundMessage(comparator))
 
 const parseValidated = (s: DynamicState, token: Scanner.PairableComparator) => {
-    s.branches.range = [
-        parseWellFormedNumber(s.root.eject().value, true),
-        token
-    ]
-    return s
+    // s.branches.range = [
+    //     tryParseWellFormedNumber(s.root.eject().value, true),
+    //     token
+    // ]
 }
 
 export const buildBoundLiteralMessage = <

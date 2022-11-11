@@ -1,19 +1,18 @@
-import type { tryCatch } from "../../utils/generics.js"
-import { parseWellFormedInteger } from "../../utils/numericLiterals.js"
+import type { catches } from "../../utils/generics.js"
+import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
 import type { state, StaticWithRoot } from "../state/static.js"
 
 export const parseDivisor = (s: DynamicState) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()
-    const value = parseWellFormedInteger(
+    const value = tryParseWellFormedInteger(
         divisorToken,
         buildInvalidDivisorMessage(divisorToken)
     )
     if (value === 0) {
-        return s.error(buildInvalidDivisorMessage(0))
+        s.error(buildInvalidDivisorMessage(0))
     }
-    return s.intersect("divisor", divisorToken)
 }
 
 export type parseDivisor<
@@ -23,15 +22,15 @@ export type parseDivisor<
     unscanned,
     Scanner.TerminatingChar
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? parseWellFormedInteger<
+    ? tryParseWellFormedInteger<
           scanned,
           buildInvalidDivisorMessage<scanned>
-      > extends tryCatch<infer divisor, infer error>
+      > extends catches<infer divisor, infer message>
         ? divisor extends number
             ? divisor extends 0
                 ? state.error<buildInvalidDivisorMessage<0>>
                 : state.setRoot<s, [s["root"], "%", divisor], nextUnscanned>
-            : state.error<error>
+            : state.error<message>
         : never
     : never
 

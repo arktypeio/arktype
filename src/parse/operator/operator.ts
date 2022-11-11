@@ -7,7 +7,7 @@ import { parseArray } from "./array.js"
 import { parseBound } from "./bounds/parse.js"
 import { parseDivisor } from "./divisor.js"
 
-export const parseOperator = (s: DynamicState): DynamicState => {
+export const parseOperator = (s: DynamicState): void => {
     const lookahead = s.scanner.shift()
     return lookahead === ""
         ? s.finalize()

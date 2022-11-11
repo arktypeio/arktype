@@ -31,7 +31,6 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
                           : `'${token.slice(1, -1)}'`
               }
     )
-    return s
 }
 
 export type parseEnclosed<

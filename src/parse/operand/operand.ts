@@ -6,15 +6,15 @@ import type { EnclosingChar } from "./enclosed.js"
 import { enclosingChar, parseEnclosed } from "./enclosed.js"
 import { parseUnenclosed } from "./unenclosed.js"
 
-export const parseOperand = (s: DynamicState): DynamicState =>
+export const parseOperand = (s: DynamicState): void =>
     s.scanner.lookahead === ""
-        ? throwParseError(buildMissingOperandMessage(s))
+        ? s.error(buildMissingOperandMessage(s))
         : s.scanner.lookahead === "("
-        ? s.reduceGroupOpen(shifted(s))
+        ? s.reduceGroupOpen()
         : s.scanner.lookaheadIsIn(enclosingChar)
         ? parseEnclosed(s, s.scanner.shift())
         : s.scanner.lookahead === " "
-        ? parseOperand(shifted(s))
+        ? parseOperand(s.shiftedByOne())
         : parseUnenclosed(s)
 
 export type parseOperand<
@@ -31,7 +31,7 @@ export type parseOperand<
     : state.error<buildMissingOperandMessage<s>>
 
 export const buildMissingOperandMessage = <s extends DynamicState>(s: s) => {
-    const operator = previousOperator(s)
+    const operator = s.previousOperator()
     return operator
         ? buildMissingRightOperandMessage(operator, s.scanner.unscanned)
         : buildExpressionExpectedMessage(s.scanner.unscanned)

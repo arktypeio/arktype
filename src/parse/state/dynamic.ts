@@ -61,11 +61,11 @@ export class DynamicState {
         this.root = morphisms[to](this.root!)
     }
 
-    private ejectRoot() {
+    private unsetRoot() {
         this.assertHasRoot()
-        const root = this.root
+        const root = this.root!
         this.root = undefined
-        return root!
+        return root
     }
 
     finalize() {
@@ -73,7 +73,14 @@ export class DynamicState {
             return this.error(unclosedGroupMessage)
         }
         this.finalizeBranches()
-        return this.ejectRoot()
+        this.scanner.hasBeenFinalized = true
+    }
+
+    ejectRoot() {
+        this.assertHasRoot()
+        const root = this.root!
+        this.root = ejectedProxy
+        return root
     }
 
     finalizeBranches() {
@@ -89,17 +96,15 @@ export class DynamicState {
     finalizeGroup() {
         this.finalizeBranches()
         const topBranchState = this.groups.pop()
-        if (!topBranchState) {
-            return this.error(
-                buildUnmatchedGroupCloseMessage(this.scanner.unscanned)
-            )
+        if (topBranchState) {
+            this.branches = topBranchState
         }
-        this.branches = topBranchState
+        this.error(buildUnmatchedGroupCloseMessage(this.scanner.unscanned))
     }
 
     pushBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
-        this.branches[token].push(this.ejectRoot())
+        this.branches[token].push(this.unsetRoot())
     }
 
     private assertRangeUnset() {
@@ -122,12 +127,17 @@ export class DynamicState {
         this.branches = initializeBranches()
     }
 
-    private previousOperator() {
+    previousOperator() {
         return this.branches.range?.[1] ?? this.branches["&"].length
             ? "&"
             : this.branches["|"].length
             ? "|"
             : undefined
+    }
+
+    shiftedByOne() {
+        this.scanner.shift()
+        return this
     }
 }
 
@@ -138,10 +148,12 @@ const compileIntersection = (branches: Attributes[]) => {
     return branches[0]
 }
 
-const unsetProxy = new Proxy(
+const ejectedProxy = new Proxy(
     {},
     {
         get: () =>
-            throwInternalError(`Unexpected attempt to access unset attributes.`)
+            throwInternalError(
+                `Unexpected attempt to access ejected attributes`
+            )
     }
 )

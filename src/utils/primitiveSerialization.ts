@@ -3,8 +3,8 @@ import type { DynamicTypes } from "./dynamicTypes.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
-    parseWellFormedBigint,
-    parseWellFormedNumber
+    tryParseWellFormedBigint,
+    tryParseWellFormedNumber
 } from "./numericLiterals.js"
 
 export type SerializedPrimitives = {
@@ -44,8 +44,8 @@ export const deserializePrimitive = <serialized extends SerializedPrimitive>(
         ? serializedKeywords[serialized]
         : serialized[0] === "'"
         ? serialized.slice(1, -1)
-        : parseWellFormedBigint(serialized) ??
-          parseWellFormedNumber(
+        : tryParseWellFormedBigint(serialized) ??
+          tryParseWellFormedNumber(
               serialized,
               true
           )) as deserializePrimitive<serialized>

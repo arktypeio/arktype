@@ -1,6 +1,5 @@
-import type { parseError } from "../parse/errors.js"
 import { throwParseError } from "../parse/errors.js"
-import type { error } from "./generics.js"
+import type { returns, throws } from "./generics.js"
 
 export type BigintLiteral<Value extends bigint = bigint> = `${Value}n`
 
@@ -51,7 +50,7 @@ const numericLiteralDescriptions = {
 
 type numericLiteralDescriptions = typeof numericLiteralDescriptions
 
-type buildMalformedNumericLiteralMessage<
+export type buildMalformedNumericLiteralMessage<
     def extends string,
     kind extends NumericLiteralKind
 > = `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation`
@@ -76,46 +75,38 @@ const parseKind = (def: string, kind: ValidationKind) =>
 const isKindLike = (def: string, kind: ValidationKind) =>
     kind === "number" ? isNumberLike(def) : isIntegerLike(def)
 
-export type assertWellFormed<
-    def extends string,
-    inferredValue extends number,
-    kind extends ValidationKind
-> = number extends inferredValue
-    ? parseError<buildMalformedNumericLiteralMessage<def, kind>>
-    : inferredValue
-
-export const parseWellFormedNumber = <ErrorOnFail extends boolean | string>(
+export const tryParseWellFormedNumber = <ErrorOnFail extends boolean | string>(
     token: string,
     errorOnFail?: ErrorOnFail
 ) => parseWellFormed(token, "number", errorOnFail)
 
-export type parseWellFormedNumber<
+export type tryParseWellFormedNumber<
     token extends string,
     messageOnFail extends string
 > = token extends NumberLiteral<infer value>
     ? number extends value
-        ? error<buildMalformedNumericLiteralMessage<token, "number">>
-        : value
-    : error<messageOnFail>
+        ? throws<buildMalformedNumericLiteralMessage<token, "number">>
+        : returns<value>
+    : throws<messageOnFail>
 
-export const parseWellFormedInteger = <ErrorOnFail extends boolean | string>(
+export const tryParseWellFormedInteger = <errorOnFail extends boolean | string>(
     token: string,
-    errorOnFail?: ErrorOnFail
+    errorOnFail?: errorOnFail
 ) => parseWellFormed(token, "integer", errorOnFail)
 
 // We use bigint to check if the string matches an integer, but here we
 // convert it to a plain number by exploiting the fact that TS stringifies
 // numbers and bigints the same way.
-export type parseWellFormedInteger<
+export type tryParseWellFormedInteger<
     token extends string,
     messageOnFail extends string
 > = token extends IntegerLiteral<infer value>
     ? bigint extends value
-        ? error<buildMalformedNumericLiteralMessage<token, "integer">>
+        ? throws<buildMalformedNumericLiteralMessage<token, "integer">>
         : `${value}` extends NumberLiteral<infer valueAsNumber>
-        ? valueAsNumber
+        ? returns<valueAsNumber>
         : never
-    : error<messageOnFail>
+    : throws<messageOnFail>
 
 const parseWellFormed = <ErrorOnFail extends boolean | string>(
     token: string,
@@ -146,7 +137,7 @@ const parseWellFormed = <ErrorOnFail extends boolean | string>(
     ) as any
 }
 
-export const parseWellFormedBigint = (def: string) => {
+export const tryParseWellFormedBigint = (def: string) => {
     if (def[def.length - 1] !== "n") {
         return
     }
@@ -168,10 +159,3 @@ export const parseWellFormedBigint = (def: string) => {
         )
     }
 }
-
-export type assertWellFormedBigint<
-    def extends string,
-    inferredValue extends bigint
-> = bigint extends inferredValue
-    ? parseError<buildMalformedNumericLiteralMessage<def, "bigint">>
-    : inferredValue

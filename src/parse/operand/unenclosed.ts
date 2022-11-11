@@ -1,15 +1,14 @@
 import type { Scope } from "../../scope.js"
 import type { dictionary } from "../../utils/dynamicTypes.js"
-import type { error, tryCatch } from "../../utils/generics.js"
+import type { catches, returns, throws } from "../../utils/generics.js"
 import type {
-    assertWellFormed,
-    assertWellFormedBigint,
     BigintLiteral,
+    buildMalformedNumericLiteralMessage,
     NumberLiteral
 } from "../../utils/numericLiterals.js"
 import {
-    parseWellFormedBigint,
-    parseWellFormedNumber
+    tryParseWellFormedBigint,
+    tryParseWellFormedNumber
 } from "../../utils/numericLiterals.js"
 import { parseRoot } from "../parse.js"
 import type { DynamicState } from "../state/dynamic.js"
@@ -21,8 +20,9 @@ import { buildMissingOperandMessage } from "./operand.js"
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
     s.setRoot(unenclosedToAttributes(s, token))
-    return s
 }
+
+type Z = parseUnenclosed<state.initialize<"543">, {}>
 
 export type parseUnenclosed<
     s extends StaticState,
@@ -30,13 +30,13 @@ export type parseUnenclosed<
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? resolve<s, scanned, scope> extends tryCatch<
+    ? tryResolve<s, scanned, scope> extends catches<
           infer resolution,
           infer message
       >
-        ? message extends string
-            ? state.error<message>
-            : state.setRoot<s, resolution, nextUnscanned>
+        ? message extends ""
+            ? state.setRoot<s, resolution, nextUnscanned>
+            : state.error<message>
         : never
     : never
 
@@ -69,11 +69,11 @@ const parseAlias = (name: string, scope: Scope) => {
 }
 
 const maybeParseUnenclosedLiteral = (token: string) => {
-    const maybeNumber = parseWellFormedNumber(token)
+    const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { value: token as NumberLiteral }
     }
-    const maybeBigint = parseWellFormedBigint(token)
+    const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
         return { value: token as BigintLiteral }
     }
@@ -91,17 +91,21 @@ export type isResolvableIdentifier<
     scope extends dictionary
 > = token extends Keyword ? true : token extends keyof scope ? true : false
 
-type resolve<
+type tryResolve<
     s extends StaticState,
     token extends string,
     scope extends dictionary
 > = isResolvableIdentifier<token, scope> extends true
-    ? token
+    ? returns<token>
     : token extends NumberLiteral<infer value>
-    ? assertWellFormed<token, value, "number">
+    ? number extends value
+        ? throws<buildMalformedNumericLiteralMessage<token, "number">>
+        : returns<value>
     : token extends BigintLiteral<infer value>
-    ? assertWellFormedBigint<token, value>
-    : error<
+    ? bigint extends value
+        ? throws<buildMalformedNumericLiteralMessage<token, "bigint">>
+        : returns<value>
+    : throws<
           token extends ""
               ? buildMissingOperandMessage<s>
               : buildUnresolvableMessage<token>

@@ -104,6 +104,13 @@ export const satisfies =
     <t extends base>(t: t) =>
         t
 
-export type error<message extends string> = { error: message }
+export type returns<result> = { result: result; message: "" }
 
-export type tryCatch<success, error> = success | { error: error }
+export type throws<message extends string> = {
+    result: undefined
+    message: message
+}
+
+export type catches<result, message extends string> =
+    | returns<result>
+    | throws<message>

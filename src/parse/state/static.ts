@@ -32,17 +32,6 @@ export namespace state {
         unscanned: unscanned
     }>
 
-    export type morphRoot<
-        s extends StaticState,
-        to extends MorphName,
-        unscanned extends string = s["unscanned"]
-    > = from<{
-        root: [s["root"], morphisms[to]]
-        branches: s["branches"]
-        groups: s["groups"]
-        unscanned: unscanned
-    }>
-
     export type reduceBranch<
         s extends StaticWithRoot,
         token extends Scanner.BranchToken,

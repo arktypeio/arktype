@@ -44,8 +44,9 @@ export namespace Keyword {
         bigint: () => ({ type: "bigint" }),
         boolean: () => ({ type: "boolean" }),
         false: () => ({ type: "boolean", value: "false" }),
+        // TODO: How?
         never: () => ({
-            contradiction: "explicitly typed as never"
+            // contradiction: "explicitly typed as never"
         }),
         null: () => ({ type: "null", value: "null" }),
         number: () => ({ type: "number" }),
