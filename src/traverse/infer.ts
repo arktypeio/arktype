@@ -3,7 +3,7 @@ import type { Keyword } from "../parse/operand/keyword.js"
 import type { BadDefinitionType } from "../parse/parse.js"
 import type { Scanner } from "../parse/state/scanner.js"
 import type { parseString } from "../parse/string.js"
-import { scope } from "../scope.js"
+
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { evaluate, isTopType, stringKeyOf } from "../utils/generics.js"
 import type { NumberLiteral } from "../utils/numericLiterals.js"
@@ -16,7 +16,11 @@ export type inferRoot<
 > = isTopType<def> extends true
     ? unknown
     : def extends string
-    ? inferAst<parseString<def, stringKeyOf<aliases>>, scope, aliases>
+    ? inferAst<
+          parseString<def, stringKeyOf<aliases> | stringKeyOf<scope>>,
+          scope,
+          aliases
+      >
     : def extends BadDefinitionType
     ? unknown
     : inferObjectLiteral<def, scope, aliases>
