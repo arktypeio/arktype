@@ -1,5 +1,5 @@
 import { bench, suite } from "@arktype/test"
-import { scope } from "../api.js"
+import { scope, type } from "../api.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } })
@@ -13,9 +13,9 @@ while (i < 50) {
 }
 
 suite("scope", () => {
-    // bench("validate recursive", () => {
-    //     recursive.dejaVu.check(dejaVu)
-    // }).median()
+    bench("validate recursive", () => {
+        recursive.dejaVu.check(dejaVu)
+    }).median()
 
     bench("cyclic(10)", () => {
         const cyclic10Scope = scope(cyclic10)

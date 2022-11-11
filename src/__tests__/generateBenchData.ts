@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { writeFileSync } from "node:fs"
 import { fromHere } from "@arktype/runtime"
 
@@ -22,8 +23,9 @@ const generateScopeJson = (interval: number, seedDefs: object) => {
         const variants: Record<string, any> = { [name]: seedDef }
         const defCopyCount = Math.floor(interval / 2)
         for (let i = 2; i <= defCopyCount; i++) {
-            variants[`${i}${name}`] = Object.fromEntries(
+            variants[`${name}${i}`] = Object.fromEntries(
                 Object.entries(seedDef).map(([k, def]) => {
+                    const isOptionalKey = k.endsWith("?")
                     let randomizedDef = def as string
                     if (typeof def === "string") {
                         // Only randomize the cyclic scope values
@@ -33,11 +35,16 @@ const generateScopeJson = (interval: number, seedDefs: object) => {
                             }
                             randomizedDef = randomizedDef.replaceAll(
                                 name,
-                                `${randomInRange(2, defCopyCount)}${name}`
+                                `${name}${randomInRange(2, defCopyCount)}`
                             )
                         }
                     }
-                    return [`${i}${k}`, randomizedDef]
+                    return [
+                        `${isOptionalKey ? k.slice(0, -1) : k}${i}${
+                            isOptionalKey ? "?" : ""
+                        }`,
+                        randomizedDef
+                    ]
                 })
             )
         }
