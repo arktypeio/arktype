@@ -41,6 +41,20 @@ export type parseRoot<
           [k in keyof def]: parseRoot<def[k], scope>
       }>
 
+export type validateRoot<def, scope extends dictionary> = def extends []
+    ? def
+    : def extends string
+    ? parseString<def, scope> extends error<infer message>
+        ? message
+        : def
+    : def extends BadDefinitionType
+    ? buildBadDefinitionTypeMessage<dynamicTypeOf<def>>
+    : def extends TupleExpression
+    ? def
+    : evaluate<{
+          [k in keyof def]: validateRoot<def[k], scope>
+      }>
+
 const parseDefinition = (def: unknown, scope: Scope): Attributes => {
     const defType = dynamicTypeOf(def)
     return defType === "string"

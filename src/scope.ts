@@ -1,5 +1,6 @@
 import type { Config } from "./arktype.js"
 import { Type } from "./arktype.js"
+import type { validateRoot } from "./parse/parse.js"
 import { parseRoot } from "./parse/parse.js"
 import type { Attributes } from "./parse/state/attributes/attributes.js"
 import type { inferAst } from "./traverse/infer.js"
@@ -33,9 +34,8 @@ type InferredScopeFn = <
     inferredParent extends dictionary = {},
     ast extends dictionary = parseAliases<aliases, inferredParent>
 >(
-    aliases: validate<
+    aliases: validateRoot<
         aliases,
-        ast,
         inferScopeAst<ast, inferredParent> & inferredParent
     >,
     config?: Config<inferredParent>
