@@ -9,8 +9,8 @@ import type {
     mutable
 } from "../utils/generics.js"
 import { throwInternalError } from "../utils/internalArktypeError.js"
-import type { ParseError } from "./common.js"
-import { throwParseError } from "./common.js"
+import type { parseError } from "./errors.js"
+import { throwParseError } from "./errors.js"
 import type { buildMissingRightOperandMessage } from "./operand/operand.js"
 import type { Attributes } from "./state/attributes/attributes.js"
 import type { Scanner } from "./state/scanner.js"
@@ -39,7 +39,7 @@ type parseDefinition<
     def,
     scope extends dictionary
 > = isTopType<def> extends true
-    ? ParseError<
+    ? parseError<
           buildUninferableDefinitionMessage<
               isAny<def> extends true ? "any" : "unknown"
           >
@@ -47,7 +47,7 @@ type parseDefinition<
     : def extends string
     ? parseString<def, scope>
     : def extends BadDefinitionType
-    ? ParseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
+    ? parseError<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
     : parseStructure<def, scope>
 
 export type BadDefinitionType =
@@ -110,7 +110,7 @@ type parseTupleExpression<
     ? def[2] extends undefined
         ? [
               parseRoot<def[0], scope>,
-              ParseError<buildMissingRightOperandMessage<def[1], "">>
+              parseError<buildMissingRightOperandMessage<def[1], "">>
           ]
         : [parseRoot<def[0], scope>, def[1], parseRoot<def[2], scope>]
     : [parseRoot<def[0], scope>, def[1]]

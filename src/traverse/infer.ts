@@ -14,15 +14,11 @@ export type inferAst<
     : node extends readonly unknown[]
     ? node[1] extends "[]"
         ? inferAst<node[0], scope, scopeAst>[]
-        : node[1] extends "|"
-        ?
-              | inferAst<node[0], scope, scopeAst>
-              | inferAst<node[2], scope, scopeAst>
+        : node[0] extends "|"
+        ? // @ts-expect-error
+          inferAst<node[1][number], scope, scopeAst>
         : node[1] extends "&"
-        ? evaluate<
-              inferAst<node[0], scope, scopeAst> &
-                  inferAst<node[2], scope, scopeAst>
-          >
+        ? evaluate<inferAst<node[1][number], scope, scopeAst>>
         : node[1] extends Scanner.Comparator
         ? node[0] extends NumberLiteral
             ? inferAst<node[2], scope, scopeAst>

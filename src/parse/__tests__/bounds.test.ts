@@ -1,12 +1,12 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { type } from "../../../api.js"
+import { type } from "../../api.js"
 import {
     buildBoundLiteralMessage,
     buildUnpairedLeftBoundMessage
-} from "../bounds/left.js"
-import { singleEqualsMessage } from "../bounds/parse.js"
-import { buildInvalidDoubleBoundMessage } from "../bounds/shared.js"
+} from "../operator/bounds/left.js"
+import { singleEqualsMessage } from "../operator/bounds/parse.js"
+import { buildInvalidDoubleBoundMessage } from "../operator/bounds/shared.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {

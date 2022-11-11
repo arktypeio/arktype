@@ -4,8 +4,8 @@ import type { parseError } from "./errors.js"
 import { parseOperand } from "./operand/operand.js"
 import type { isResolvableIdentifier } from "./operand/unenclosed.js"
 import { maybeParseIdentifier } from "./operand/unenclosed.js"
-import { arrayOf } from "./operator/array.js"
 import { parseOperator } from "./operator/operator.js"
+import { morphisms } from "./state/attributes/morph.js"
 import { DynamicState } from "./state/dynamic.js"
 import type { state, StaticState, UnvalidatedState } from "./state/static.js"
 
@@ -28,7 +28,7 @@ export type parseString<
 export type validateString<
     def extends string,
     scope extends dictionary
-> = parseString<def, scope> extends parseError<infer Message> ? Message : def
+> = parseString<def, scope> extends parseError<infer message> ? message : def
 
 const fullStringParse = (def: string, scope: Scope) =>
     loop(parseOperand(new DynamicState(def, scope)))
@@ -63,12 +63,7 @@ type next<s extends StaticState, scope extends dictionary> = s extends {
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
- * This can be much more efficient for simple definitions. Unfortunately,
- * parsing from right to left makes maintaining a tree that can either be returned
- * or discarded in favor of a full parse tree much more costly.
- *
- * Hence, this repetitive (but efficient) shallow parse that decides whether to
- * delegate parsing in a single pass.
+ * This can be much more efficient for simple definitions.
  */
 type tryNaiveStringParse<
     def extends string,
@@ -88,7 +83,7 @@ const tryNaiveStringParse = (def: string, scope: Scope) => {
             scope
         )
         if (maybeParsedAttributes) {
-            return arrayOf(maybeParsedAttributes)
+            return morphisms.array(maybeParsedAttributes)
         }
     }
     return maybeParseIdentifier(def, scope)

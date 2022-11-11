@@ -3,6 +3,7 @@ import type { Scope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 
+// TODO: Maybe rename?
 export class Arktype<Inferred = unknown> {
     constructor(
         public attributes: Attributes,

@@ -1,15 +1,11 @@
-import type { maybePush } from "../../utils/generics.js"
-import type { buildUnmatchedGroupCloseMessage, parseError } from "../errors.js"
-import type { unclosedGroupMessage } from "../operand/groupOpen.js"
-import type { unpairedLeftBoundError } from "../operator/bounds/left.js"
-import type { mergeUnionDescendants } from "../operator/union/parse.js"
+import type {
+    buildUnmatchedGroupCloseMessage,
+    parseError,
+    unclosedGroupMessage
+} from "../errors.js"
+import type { buildUnpairedLeftBoundMessage } from "../operator/bounds/left.js"
 import type { morphisms, MorphName } from "./attributes/morph.js"
 import type { Scanner } from "./scanner.js"
-
-export type mergeIntersectionDescendants<s extends StaticWithRoot> = maybePush<
-    s["branches"]["&"],
-    s["root"]
->
 
 export namespace state {
     export type initialize<def extends string> = from<{
@@ -51,8 +47,13 @@ export namespace state {
         s extends StaticWithRoot,
         token extends Scanner.BranchToken,
         unscanned extends string
-    > = s extends StaticWithOpenRange
-        ? unpairedLeftBoundError<s>
+    > = s["branches"]["range"] extends {}
+        ? state.error<
+              buildUnpairedLeftBoundMessage<
+                  s["branches"]["range"][0],
+                  s["branches"]["range"][1]
+              >
+          >
         : from<{
               root: undefined
               branches: token extends "|" ? pushUnion<s> : pushIntersection<s>
@@ -60,14 +61,71 @@ export namespace state {
               unscanned: unscanned
           }>
 
+    export type reduceOpenRange<
+        s extends StaticWithRoot,
+        limit extends number,
+        comparator extends Scanner.PairableComparator
+    > = from<{
+        root: undefined
+        branches: {
+            range: [limit, comparator]
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
+        }
+        groups: s["groups"]
+        unscanned: s["unscanned"]
+    }>
+
+    export type finalizeRange<
+        s extends StaticWithRoot,
+        leftLimit extends number,
+        leftComparator extends Scanner.PairableComparator,
+        rightComparator extends Scanner.PairableComparator,
+        rightLimit extends number,
+        unscanned extends string
+    > = state.from<{
+        root: [
+            leftLimit,
+            leftComparator,
+            [s["root"], rightComparator, rightLimit]
+        ]
+        branches: {
+            range: undefined
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
+        }
+        groups: s["groups"]
+        unscanned: unscanned
+    }>
+
+    export type reduceSingleBound<
+        s extends StaticWithRoot,
+        limit extends number,
+        comparator extends Scanner.Comparator,
+        unscanned extends string
+    > = state.from<{
+        root: [s["root"], comparator, limit]
+        branches: {
+            range: undefined
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
+        }
+        groups: s["groups"]
+        unscanned: unscanned
+    }>
+
     type finalizeIntersection<
         branches extends unknown[],
         root
-    > = branches extends [] ? root : ["&", ...branches, root]
+    > = branches extends [] ? root : ["&", [...branches, root]]
 
-    type finalizeUnion<branches extends unknown[], root> = branches extends []
-        ? root
-        : ["|", ...branches, root]
+    type finalizeUnion<
+        branches extends unknown[],
+        intersectionBranches extends unknown[],
+        root
+    > = branches extends []
+        ? finalizeIntersection<intersectionBranches, root>
+        : ["|", [...branches, finalizeIntersection<intersectionBranches, root>]]
 
     type pushIntersection<s extends StaticWithRoot> = branchesFrom<{
         range: undefined
@@ -84,16 +142,6 @@ export namespace state {
         "&": []
     }>
 
-    export type finalizeBranches<s extends StaticWithRoot> =
-        s extends StaticWithOpenRange
-            ? unpairedLeftBoundError<s>
-            : from<{
-                  root: mergeUnionDescendants<s>
-                  groups: s["groups"]
-                  branches: initialBranches
-                  unscanned: s["unscanned"]
-              }>
-
     type popGroup<
         stack extends StaticBranchState[],
         top extends StaticBranchState
@@ -106,16 +154,46 @@ export namespace state {
         ? from<{
               groups: stack
               branches: top
-              root: mergeUnionDescendants<s>
+              root: finalizeUnion<
+                  s["branches"]["|"],
+                  s["branches"]["&"],
+                  s["root"]
+              >
               unscanned: unscanned
           }>
         : error<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
+
+    export type reduceGroupOpen<
+        s extends StaticState,
+        unscanned extends string
+    > = from<{
+        groups: [...s["groups"], s["branches"]]
+        branches: initialBranches
+        root: undefined
+        unscanned: unscanned
+    }>
 
     export type finalize<
         s extends StaticWithRoot,
         returnCode extends ReturnCode
     > = s["groups"] extends []
-        ? scanTo<finalizeBranches<s>, returnCode>
+        ? s["branches"]["range"] extends {}
+            ? state.error<
+                  buildUnpairedLeftBoundMessage<
+                      s["branches"]["range"][0],
+                      s["branches"]["range"][1]
+                  >
+              >
+            : unvalidatedFrom<{
+                  root: finalizeUnion<
+                      s["branches"]["|"],
+                      s["branches"]["&"],
+                      s["root"]
+                  >
+                  groups: s["groups"]
+                  branches: initialBranches
+                  unscanned: returnCode
+              }>
         : error<unclosedGroupMessage>
 
     export type error<message extends string> = unvalidatedFrom<{
@@ -172,6 +250,7 @@ export type StaticPreconditions = {
     unscanned?: StringOrReturnCode
 }
 
+// TODO: Can use just try/catch?
 type ReturnCode = 0 | 1
 
 type StringOrReturnCode = string | ReturnCode

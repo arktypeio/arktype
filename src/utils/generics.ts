@@ -106,4 +106,4 @@ export const satisfies =
 
 export type error<message extends string> = { error: message }
 
-export type tryCatch<success, error extends string> = success | { error: error }
+export type tryCatch<success, error> = success | { error: error }

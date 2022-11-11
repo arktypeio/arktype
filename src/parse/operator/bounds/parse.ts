@@ -4,6 +4,7 @@ import { Scanner } from "../../state/scanner.js"
 import type { state, StaticWithRoot } from "../../state/static.js"
 import { parseLeftBound } from "./left.js"
 import { parseRightBound } from "./right.js"
+import type { buildInvalidDoubleBoundMessage } from "./shared.js"
 
 const shift = (
     s: DynamicState,
@@ -41,8 +42,8 @@ const delegateReduction = (s: DynamicState, comparator: Scanner.Comparator) =>
 type delegateReduction<
     s extends StaticWithRoot,
     comparator extends Scanner.Comparator
-> = s extends {
-    root: number
-}
-    ? parseLeftBound<s, comparator>
+> = s["root"] extends number
+    ? comparator extends Scanner.PairableComparator
+        ? state.reduceOpenRange<s, s["root"], comparator>
+        : state.error<buildInvalidDoubleBoundMessage<comparator>>
     : parseRightBound<s, comparator>

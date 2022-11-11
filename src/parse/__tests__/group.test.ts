@@ -1,9 +1,11 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { type } from "../../../api.js"
-import { unclosedGroupMessage } from "../../operand/groupOpen.js"
-import { buildExpressionExpectedMessage } from "../../operand/operand.js"
-import { buildUnmatchedGroupCloseMessage } from "../groupClose.js"
+import { type } from "../../api.js"
+import {
+    buildUnmatchedGroupCloseMessage,
+    unclosedGroupMessage
+} from "../errors.js"
+import { buildExpressionExpectedMessage } from "../operand/operand.js"
 
 describe("group", () => {
     test("entire expression", () => {

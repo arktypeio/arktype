@@ -1,4 +1,4 @@
-import type { ParseError } from "../parse/common.js"
+import type { parseError } from "../parse/errors.js"
 import type { Scanner } from "../parse/state/scanner.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { isAny } from "../utils/generics.js"
@@ -12,7 +12,7 @@ export type validate<
     scopeAst extends dictionary = {}
 > = def extends []
     ? def
-    : ast extends ParseError<infer message>
+    : ast extends parseError<infer message>
     ? message
     : def extends string
     ? catchErrorOrFallback<checkAst<ast, scope, scopeAst>, def>

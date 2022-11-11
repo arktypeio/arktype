@@ -1,5 +1,6 @@
 import type { Scope } from "../../scope.js"
 import type { dictionary } from "../../utils/dynamicTypes.js"
+import type { error, tryCatch } from "../../utils/generics.js"
 import type {
     assertWellFormed,
     assertWellFormedBigint,
@@ -10,11 +11,10 @@ import {
     parseWellFormedBigint,
     parseWellFormedNumber
 } from "../../utils/numericLiterals.js"
-import type { ParseError } from "../common.js"
 import { parseRoot } from "../parse.js"
 import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
-import type { errorState, setStateRoot, StaticState } from "../state/static.js"
+import type { state, StaticState } from "../state/static.js"
 import { Keyword } from "./keyword.js"
 import { buildMissingOperandMessage } from "./operand.js"
 
@@ -29,8 +29,15 @@ export type parseUnenclosed<
     scope extends dictionary
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
-> extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-    ? setRootOrCatch<s, resolve<s, scanned, scope>, nextUnscanned>
+> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
+    ? resolve<s, scanned, scope> extends tryCatch<
+          infer resolution,
+          infer message
+      >
+        ? message extends string
+            ? state.error<message>
+            : state.setRoot<s, resolution, nextUnscanned>
+        : never
     : never
 
 const unenclosedToAttributes = (s: DynamicState, token: string) =>
@@ -72,14 +79,6 @@ const maybeParseUnenclosedLiteral = (token: string) => {
     }
 }
 
-type setRootOrCatch<
-    s extends StaticState,
-    resolved extends string,
-    unscanned extends string
-> = resolved extends ParseError<infer message>
-    ? errorState<message>
-    : setStateRoot<s, resolved, unscanned>
-
 export const buildUnresolvableMessage = <token extends string>(
     token: token
 ): buildUnresolvableMessage<token> => `'${token}' is unresolvable`
@@ -102,7 +101,7 @@ type resolve<
     ? assertWellFormed<token, value, "number">
     : token extends BigintLiteral<infer value>
     ? assertWellFormedBigint<token, value>
-    : ParseError<
+    : error<
           token extends ""
               ? buildMissingOperandMessage<s>
               : buildUnresolvableMessage<token>

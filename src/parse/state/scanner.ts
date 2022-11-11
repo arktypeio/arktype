@@ -170,8 +170,8 @@ export namespace Scanner {
         TerminatingChar
     >
 
-    export type ShiftResult<
-        Scanned extends string,
-        Unscanned extends string
-    > = [Scanned, Unscanned]
+    export type shiftResult<
+        scanned extends string,
+        unscanned extends string
+    > = [scanned, unscanned]
 }

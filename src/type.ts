@@ -1,6 +1,6 @@
 import type { ArktypeConfig } from "./arktype.js"
 import { Arktype } from "./arktype.js"
-import type { ParseError } from "./parse/common.js"
+import type { parseError } from "./parse/errors.js"
 import { parseRoot } from "./parse/parse.js"
 import type { Scope } from "./scope.js"
 import { scope } from "./scope.js"
@@ -30,7 +30,7 @@ export type InferredTypeFn = <
 >(
     definition: validate<definition, ast, scope>,
     options?: ArktypeConfig<scope>
-) => ast extends ParseError<string> ? never : Arktype<inferAst<ast, scope, {}>>
+) => ast extends parseError<string> ? never : Arktype<inferAst<ast, scope, {}>>
 
 type DynamicTypeFn = (
     definition: unknown,

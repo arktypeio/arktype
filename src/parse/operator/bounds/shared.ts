@@ -1,11 +1,4 @@
-import type { AttributeIntersection } from "../../state/attributes/keySets.js"
 import type { Scanner } from "../../state/scanner.js"
-import type {
-    DeserializedBound,
-    DeserializedBounds,
-    SerializedBounds
-} from "./serialization.js"
-import { deserializeBounds, serializeBounds } from "./serialization.js"
 
 export const comparatorDescriptions = {
     "<": "less than",

@@ -1,11 +1,14 @@
 import type { Scope } from "../../scope.js"
 import { throwInternalError } from "../../utils/internalArktypeError.js"
-import { buildUnmatchedGroupCloseMessage, throwParseError } from "../errors.js"
-import { unclosedGroupMessage } from "../operand/groupOpen.js"
+import {
+    buildUnmatchedGroupCloseMessage,
+    throwParseError,
+    unclosedGroupMessage
+} from "../errors.js"
 import { buildUnpairedLeftBoundMessage } from "../operator/bounds/left.js"
 import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
-import { morphisms, toArray } from "./attributes/morph.js"
+import { morphisms } from "./attributes/morph.js"
 import { Scanner } from "./scanner.js"
 
 export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
@@ -16,13 +19,12 @@ type BranchState = {
     "|": Attributes[]
 }
 
+const initializeBranches = (): BranchState => ({ "&": [], "|": [] })
+
 export class DynamicState {
     public readonly scanner: Scanner
     private root: Attributes | undefined
-    private branches: BranchState = {
-        "&": [],
-        "|": []
-    }
+    private branches: BranchState = initializeBranches()
     private groups: BranchState[] = []
 
     constructor(def: string, public readonly scope: Scope) {
@@ -114,6 +116,11 @@ export class DynamicState {
     private mergeIntersection() {}
 
     private mergeUnion() {}
+
+    reduceGroupOpen() {
+        this.groups.push(this.branches)
+        this.branches = initializeBranches()
+    }
 
     private previousOperator() {
         return this.branches.range?.[1] ?? this.branches["&"].length

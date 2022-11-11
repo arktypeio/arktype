@@ -1,7 +1,7 @@
-import { throwParseError } from "../common.js"
+import { throwParseError } from "../errors.js"
 import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
-import type { errorState, setStateRoot, StaticState } from "../state/static.js"
+import type { state, StaticState } from "../state/static.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -38,15 +38,15 @@ export type parseEnclosed<
     s extends StaticState,
     enclosing extends EnclosingChar,
     unscanned extends string
-> = Scanner.shiftUntil<unscanned, enclosing> extends Scanner.ShiftResult<
+> = Scanner.shiftUntil<unscanned, enclosing> extends Scanner.shiftResult<
     infer scanned,
     infer nextUnscanned
 >
     ? nextUnscanned extends ""
-        ? errorState<
+        ? state.error<
               buildUnterminatedEnclosedMessage<s["unscanned"], enclosing>
           >
-        : setStateRoot<
+        : state.setRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,
               Scanner.tailOf<nextUnscanned>

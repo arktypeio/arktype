@@ -22,7 +22,7 @@ export type parseDivisor<
 > = Scanner.shiftUntil<
     unscanned,
     Scanner.TerminatingChar
-> extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
+> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? parseWellFormedInteger<
           scanned,
           buildInvalidDivisorMessage<scanned>

@@ -1,8 +1,9 @@
+import type { tryCatch } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { parseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../state/dynamic.js"
 import { Scanner } from "../../state/scanner.js"
-import type { StaticWithRoot } from "../../state/static.js"
+import type { state, StaticWithRoot } from "../../state/static.js"
 import {
     buildInvalidDoubleBoundMessage,
     invertedComparators
@@ -25,19 +26,30 @@ export type parseRightBound<
     comparator extends Scanner.Comparator
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
-> extends Scanner.ShiftResult<infer scanned, infer nextUnscanned>
-    ? setValidatedRootOrCatch<
-          scanStateTo<s, nextUnscanned>,
-          comparator,
-          parseWellFormedNumber<
-              scanned,
-              buildInvalidLimitMessage<comparator, scanned>
-          >
-      >
+> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
+    ? parseWellFormedNumber<
+          scanned,
+          buildInvalidLimitMessage<comparator, scanned>
+      > extends tryCatch<infer limit, infer message>
+        ? limit extends number
+            ? s["branches"]["range"] extends {}
+                ? comparator extends Scanner.PairableComparator
+                    ? state.finalizeRange<
+                          s,
+                          s["branches"]["range"][0],
+                          s["branches"]["range"][1],
+                          comparator,
+                          limit,
+                          nextUnscanned
+                      >
+                    : state.error<buildInvalidDoubleBoundMessage<comparator>>
+                : state.reduceSingleBound<s, limit, comparator, nextUnscanned>
+            : state.error<message>
+        : never
     : never
 
 const setValidatedRoot = (
-    s: DynamicWithRoot,
+    s: DynamicState,
     comparator: Scanner.Comparator,
     limit: number
 ) => {
@@ -57,31 +69,6 @@ const setValidatedRoot = (
     s.branches.range = unset
     return s
 }
-
-type setValidatedRootOrCatch<
-    s extends StaticWithRoot,
-    comparator extends Scanner.Comparator,
-    limitOrError extends string | number
-> = limitOrError extends number
-    ? s["branches"]["range"] extends {}
-        ? comparator extends Scanner.PairableComparator
-            ? stateFrom<{
-                  root: [
-                      s["branches"]["range"][0],
-                      s["branches"]["range"][1],
-                      [s["root"], comparator, limitOrError]
-                  ]
-                  branches: {
-                      range: undefined
-                      intersection: s["branches"]["intersection"]
-                      union: s["branches"]["union"]
-                  }
-                  groups: s["groups"]
-                  unscanned: s["unscanned"]
-              }>
-            : errorState<buildInvalidDoubleBoundMessage<comparator>>
-        : setStateRoot<s, [s["root"], comparator, limitOrError]>
-    : errorState<`${limitOrError}`>
 
 export const buildInvalidLimitMessage = <
     comparator extends Scanner.Comparator,
