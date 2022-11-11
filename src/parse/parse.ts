@@ -1,4 +1,4 @@
-import type { DynamicScope, Scope } from "../scope.js"
+import type { DynamicScope } from "../scope.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type { keySet, mutable } from "../utils/generics.js"

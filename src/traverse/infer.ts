@@ -3,6 +3,7 @@ import type { Keyword } from "../parse/operand/keyword.js"
 import type { BadDefinitionType } from "../parse/parse.js"
 import type { Scanner } from "../parse/state/scanner.js"
 import type { parseString } from "../parse/string.js"
+import { scope } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { evaluate, isTopType, stringKeyOf } from "../utils/generics.js"
 import type { NumberLiteral } from "../utils/numericLiterals.js"
@@ -24,9 +25,7 @@ export type inferAst<
     ast,
     scope extends dictionary,
     aliases
-> = ast extends TerminalAst
-    ? inferTerminal<ast, scope, aliases>
-    : ast extends readonly unknown[]
+> = ast extends readonly unknown[]
     ? ast[1] extends "[]"
         ? inferAst<ast[0], scope, aliases>[]
         : ast[1] extends "|"
@@ -46,10 +45,10 @@ export type inferAst<
           evaluate<{
               [i in keyof ast]: inferAst<ast[i], scope, aliases>
           }>
-    : inferObjectLiteral<ast, scope, aliases>
+    : inferTerminal<ast, scope, aliases>
 
 type inferTerminal<
-    token extends TerminalAst,
+    token,
     scope extends dictionary,
     aliases
 > = token extends Keyword
@@ -66,8 +65,6 @@ type inferTerminal<
     ? token
     : unknown
 
-type TerminalAst = string | number | bigint
-
 type inferObjectLiteral<
     def,
     scope extends dictionary,
@@ -76,13 +73,13 @@ type inferObjectLiteral<
     requiredKey extends keyof def = Exclude<keyof def, optionalKey>
 > = evaluate<
     {
-        [requiredKeyName in requiredKey]: inferAst<
+        [requiredKeyName in requiredKey]: inferRoot<
             def[requiredKeyName],
             scope,
             aliases
         >
     } & {
-        [optionalKeyName in extractNameOfOptionalKey<optionalKey>]?: inferAst<
+        [optionalKeyName in extractNameOfOptionalKey<optionalKey>]?: inferRoot<
             def[`${optionalKeyName}?` & keyof def],
             scope,
             aliases
@@ -92,9 +89,9 @@ type inferObjectLiteral<
 
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
-type optionalKeyOf<node> = {
-    [k in keyof node]: k extends optionalKeyWithName ? k : never
-}[keyof node]
+type optionalKeyOf<def> = {
+    [k in keyof def]: k extends optionalKeyWithName ? k : never
+}[keyof def]
 
 type extractNameOfOptionalKey<k extends optionalKeyWithName> =
     k extends optionalKeyWithName<infer name> ? name : never
