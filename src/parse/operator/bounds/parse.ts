@@ -1,7 +1,7 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import type { DynamicState } from "../../state/dynamic.js"
 import { Scanner } from "../../state/scanner.js"
-import type { state, StaticWithRoot } from "../../state/static.js"
+import type { state, StaticState } from "../../state/static.js"
 import { parseLeftBound } from "./left.js"
 import { parseRightBound } from "./right.js"
 import type { buildInvalidDoubleBoundMessage } from "./shared.js"
@@ -22,7 +22,7 @@ export const parseBound = (
 ) => delegateReduction(s, shift(s, start))
 
 export type parseBound<
-    s extends StaticWithRoot,
+    s extends StaticState,
     start extends Scanner.ComparatorStartChar,
     unscanned extends string
 > = unscanned extends Scanner.shift<"=", infer nextUnscanned>
@@ -38,7 +38,7 @@ const delegateReduction = (s: DynamicState, comparator: Scanner.Comparator) =>
     true ? parseLeftBound(s, comparator) : parseRightBound(s, comparator)
 
 type delegateReduction<
-    s extends StaticWithRoot,
+    s extends StaticState,
     comparator extends Scanner.Comparator
 > = s["root"] extends number
     ? comparator extends Scanner.PairableComparator

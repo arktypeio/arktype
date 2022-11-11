@@ -3,7 +3,7 @@ import { describe, test } from "mocha"
 import { type } from "../../api.js"
 import {
     buildBoundLiteralMessage,
-    buildUnpairedLeftBoundMessage
+    buildOpenRangeMessage
 } from "../operator/bounds/left.js"
 import { singleEqualsMessage } from "../operator/bounds/parse.js"
 import { buildInvalidDoubleBoundMessage } from "../operator/bounds/shared.js"

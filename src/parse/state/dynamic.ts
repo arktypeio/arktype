@@ -5,7 +5,7 @@ import {
     throwParseError,
     unclosedGroupMessage
 } from "../errors.js"
-import { buildUnpairedLeftBoundMessage } from "../operator/bounds/left.js"
+import { buildOpenRangeMessage } from "../operator/bounds/left.js"
 import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morphisms } from "./attributes/morph.js"
@@ -110,7 +110,7 @@ export class DynamicState {
     private assertRangeUnset() {
         if (this.branches.range) {
             return this.error(
-                buildUnpairedLeftBoundMessage(
+                buildOpenRangeMessage(
                     this.branches.range[0],
                     this.branches.range[1]
                 )

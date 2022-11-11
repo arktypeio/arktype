@@ -3,7 +3,7 @@ import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../state/dynamic.js"
 import type { Scanner } from "../../state/scanner.js"
-import type { state, StaticWithRoot } from "../../state/static.js"
+import type { state, StaticState } from "../../state/static.js"
 import type { buildInvalidDoubleBoundMessage } from "./shared.js"
 import { invertedComparators } from "./shared.js"
 
@@ -20,7 +20,7 @@ export const parseRightBound = (
 }
 
 export type parseRightBound<
-    s extends StaticWithRoot,
+    s extends StaticState,
     comparator extends Scanner.Comparator
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]

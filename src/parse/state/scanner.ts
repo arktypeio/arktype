@@ -148,6 +148,8 @@ export namespace Scanner {
 
     export type OperatorToken = keyof typeof operatorTokens
 
+    export type finalized = "{done}"
+
     export type shift<
         Lookahead extends string,
         Unscanned extends string

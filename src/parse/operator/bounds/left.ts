@@ -41,16 +41,16 @@ export type buildBoundLiteralMessage<
     comparator extends Scanner.Comparator
 > = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
 
-export const buildUnpairedLeftBoundMessage = <
+export const buildOpenRangeMessage = <
     limit extends number,
     comparator extends Scanner.Comparator
 >(
     limit: limit,
     comparator: comparator
-): buildUnpairedLeftBoundMessage<limit, comparator> =>
+): buildOpenRangeMessage<limit, comparator> =>
     `Left bounds are only valid when paired with right bounds (try ...${invertedComparators[comparator]}${limit})`
 
-export type buildUnpairedLeftBoundMessage<
+export type buildOpenRangeMessage<
     limit extends number,
     comparator extends Scanner.Comparator
 > = `Left bounds are only valid when paired with right bounds (try ...${InvertedComparators[comparator]}${limit})`

@@ -7,7 +7,8 @@ import { maybeParseIdentifier } from "./operand/unenclosed.js"
 import { parseOperator } from "./operator/operator.js"
 import { morphisms } from "./state/attributes/morph.js"
 import { DynamicState } from "./state/dynamic.js"
-import type { state, StaticState, UnvalidatedState } from "./state/static.js"
+import type { Scanner } from "./state/scanner.js"
+import type { state, StaticState } from "./state/static.js"
 
 export const parseString = (def: string, scope: Scope) => {
     const cache = scope.$.parseCache
@@ -49,20 +50,20 @@ const loop = (s: DynamicState) => {
     return s.ejectRoot()
 }
 
-type loop<s extends UnvalidatedState, scope extends dictionary> = s extends {
-    unscanned: string
-}
-    ? loop<next<s, scope>, scope>
-    : s["root"]
+type loop<
+    s extends StaticState,
+    scope extends dictionary
+> = s["unscanned"] extends Scanner.finalized
+    ? s["root"]
+    : loop<next<s, scope>, scope>
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
-type next<s extends StaticState, scope extends dictionary> = s extends {
-    root: {}
-}
-    ? parseOperator<s>
-    : parseOperand<s, scope>
+type next<
+    s extends StaticState,
+    scope extends dictionary
+> = s["root"] extends undefined ? parseOperand<s, scope> : parseOperator<s>
 
 /**
  * Try to parse the definition from right to left using the most common syntax.

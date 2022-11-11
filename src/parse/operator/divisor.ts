@@ -2,7 +2,7 @@ import type { catches } from "../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
-import type { state, StaticWithRoot } from "../state/static.js"
+import type { state, StaticState } from "../state/static.js"
 
 export const parseDivisor = (s: DynamicState) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()
@@ -16,7 +16,7 @@ export const parseDivisor = (s: DynamicState) => {
 }
 
 export type parseDivisor<
-    s extends StaticWithRoot,
+    s extends StaticState,
     unscanned extends string
 > = Scanner.shiftUntil<
     unscanned,
