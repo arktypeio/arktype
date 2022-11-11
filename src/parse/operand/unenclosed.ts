@@ -1,6 +1,6 @@
 import type { Scope } from "../../scope.js"
 import type { dictionary } from "../../utils/dynamicTypes.js"
-import type { catches, returns, throws } from "../../utils/generics.js"
+import type { error, is } from "../../utils/generics.js"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
@@ -22,21 +22,16 @@ export const parseUnenclosed = (s: DynamicState) => {
     s.setRoot(unenclosedToAttributes(s, token))
 }
 
-type Z = parseUnenclosed<state.initialize<"543">, {}>
-
 export type parseUnenclosed<
     s extends StaticState,
     scope extends dictionary
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? tryResolve<s, scanned, scope> extends catches<
-          infer resolution,
-          infer message
-      >
-        ? message extends ""
-            ? state.setRoot<s, resolution, nextUnscanned>
-            : state.error<message>
+    ? tryResolve<s, scanned, scope> extends is<infer result>
+        ? result extends error<infer message>
+            ? state.error<message>
+            : state.setRoot<s, result, nextUnscanned>
         : never
     : never
 
@@ -96,16 +91,16 @@ type tryResolve<
     token extends string,
     scope extends dictionary
 > = isResolvableIdentifier<token, scope> extends true
-    ? returns<token>
+    ? token
     : token extends NumberLiteral<infer value>
     ? number extends value
-        ? throws<buildMalformedNumericLiteralMessage<token, "number">>
-        : returns<value>
+        ? error<buildMalformedNumericLiteralMessage<token, "number">>
+        : value
     : token extends BigintLiteral<infer value>
     ? bigint extends value
-        ? throws<buildMalformedNumericLiteralMessage<token, "bigint">>
-        : returns<value>
-    : throws<
+        ? error<buildMalformedNumericLiteralMessage<token, "bigint">>
+        : value
+    : error<
           token extends ""
               ? buildMissingOperandMessage<s>
               : buildUnresolvableMessage<token>

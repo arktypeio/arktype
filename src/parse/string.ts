@@ -1,5 +1,6 @@
 import type { Scope } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
+import type { is } from "../utils/generics.js"
 import type { parseError } from "./errors.js"
 import { parseOperand } from "./operand/operand.js"
 import type { isResolvableIdentifier } from "./operand/unenclosed.js"
@@ -15,7 +16,7 @@ export const parseString = (def: string, scope: Scope) => {
     const cachedAttributes = cache.get(def)
     if (!cachedAttributes) {
         const attributes =
-            tryNaiveStringParse(def, scope) ?? fullStringParse(def, scope)
+            maybeNaiveParse(def, scope) ?? fullStringParse(def, scope)
         cache.set(def, attributes)
     }
     return cache.get(def)!
@@ -24,7 +25,11 @@ export const parseString = (def: string, scope: Scope) => {
 export type parseString<
     def extends string,
     scope extends dictionary
-> = tryNaiveStringParse<def, scope>
+> = maybeNaiveParse<def, scope> extends is<infer result>
+    ? result extends undefined
+        ? fullStringParse<def, scope>
+        : result
+    : never
 
 export type validateString<
     def extends string,
@@ -69,18 +74,18 @@ type next<
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-type tryNaiveStringParse<
+type maybeNaiveParse<
     def extends string,
     scope extends dictionary
 > = def extends `${infer child}[]`
     ? isResolvableIdentifier<child, scope> extends true
         ? [child, "[]"]
-        : fullStringParse<def, scope>
+        : undefined
     : isResolvableIdentifier<def, scope> extends true
     ? def
-    : fullStringParse<def, scope>
+    : undefined
 
-const tryNaiveStringParse = (def: string, scope: Scope) => {
+const maybeNaiveParse = (def: string, scope: Scope) => {
     if (def.endsWith("[]")) {
         const maybeParsedAttributes = maybeParseIdentifier(
             def.slice(0, -2),

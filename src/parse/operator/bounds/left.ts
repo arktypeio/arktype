@@ -1,6 +1,5 @@
 import { isKeyOf } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
-import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../state/dynamic.js"
 import { Scanner } from "../../state/scanner.js"
 import type { InvertedComparators } from "./shared.js"

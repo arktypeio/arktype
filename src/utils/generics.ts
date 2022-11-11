@@ -104,13 +104,12 @@ export const satisfies =
     <t extends base>(t: t) =>
         t
 
-export type returns<result> = { result: result; message: "" }
+export type is<t> = t
 
-export type throws<message extends string> = {
-    result: undefined
-    message: message
+declare const id: unique symbol
+
+export type nominal<t, id extends string> = t & {
+    readonly [id]: id
 }
 
-export type catches<result, message extends string> =
-    | returns<result>
-    | throws<message>
+export type error<message extends string> = nominal<message, "error">

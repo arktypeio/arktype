@@ -1,4 +1,4 @@
-import type { catches } from "../../utils/generics.js"
+import type { is } from "../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
@@ -25,12 +25,12 @@ export type parseDivisor<
     ? tryParseWellFormedInteger<
           scanned,
           buildInvalidDivisorMessage<scanned>
-      > extends catches<infer divisor, infer message>
-        ? divisor extends number
-            ? divisor extends 0
+      > extends is<infer result>
+        ? result extends number
+            ? result extends 0
                 ? state.error<buildInvalidDivisorMessage<0>>
-                : state.setRoot<s, [s["root"], "%", divisor], nextUnscanned>
-            : state.error<message>
+                : state.setRoot<s, [s["root"], "%", result], nextUnscanned>
+            : state.error<result & string>
         : never
     : never
 

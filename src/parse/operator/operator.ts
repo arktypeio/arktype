@@ -3,7 +3,6 @@ import { throwInternalError } from "../../utils/internalArktypeError.js"
 import type { DynamicState } from "../state/dynamic.js"
 import { Scanner } from "../state/scanner.js"
 import type { state, StaticState } from "../state/static.js"
-
 import { parseBound } from "./bounds/parse.js"
 import { parseDivisor } from "./divisor.js"
 

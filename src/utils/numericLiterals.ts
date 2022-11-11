@@ -1,5 +1,4 @@
 import { throwParseError } from "../parse/errors.js"
-import type { returns, throws } from "./generics.js"
 
 export type BigintLiteral<Value extends bigint = bigint> = `${Value}n`
 
@@ -85,9 +84,9 @@ export type tryParseWellFormedNumber<
     messageOnFail extends string
 > = token extends NumberLiteral<infer value>
     ? number extends value
-        ? throws<buildMalformedNumericLiteralMessage<token, "number">>
-        : returns<value>
-    : throws<messageOnFail>
+        ? buildMalformedNumericLiteralMessage<token, "number">
+        : value
+    : messageOnFail
 
 export const tryParseWellFormedInteger = <errorOnFail extends boolean | string>(
     token: string,
@@ -102,11 +101,11 @@ export type tryParseWellFormedInteger<
     messageOnFail extends string
 > = token extends IntegerLiteral<infer value>
     ? bigint extends value
-        ? throws<buildMalformedNumericLiteralMessage<token, "integer">>
+        ? buildMalformedNumericLiteralMessage<token, "integer">
         : `${value}` extends NumberLiteral<infer valueAsNumber>
-        ? returns<valueAsNumber>
+        ? valueAsNumber
         : never
-    : throws<messageOnFail>
+    : messageOnFail
 
 const parseWellFormed = <ErrorOnFail extends boolean | string>(
     token: string,

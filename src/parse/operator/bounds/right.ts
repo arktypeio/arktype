@@ -1,4 +1,4 @@
-import type { catches } from "../../../utils/generics.js"
+import type { is } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../state/dynamic.js"
@@ -28,7 +28,7 @@ export type parseRightBound<
     ? tryParseWellFormedNumber<
           scanned,
           buildInvalidLimitMessage<comparator, scanned>
-      > extends catches<infer limit, infer message>
+      > extends is<infer limit>
         ? limit extends number
             ? s["branches"]["range"] extends {}
                 ? comparator extends Scanner.PairableComparator
@@ -42,7 +42,7 @@ export type parseRightBound<
                       >
                     : state.error<buildInvalidDoubleBoundMessage<comparator>>
                 : state.reduceSingleBound<s, limit, comparator, nextUnscanned>
-            : state.error<message>
+            : state.error<limit & string>
         : never
     : never
 
