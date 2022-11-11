@@ -1,10 +1,10 @@
-import { deepEquals, isEmpty } from "../../../utils/deepEquals.js"
-import type { dictionary } from "../../../utils/dynamicTypes.js"
-import type { requireKeys } from "../../../utils/generics.js"
 import type {
     AttributeKey,
     Attributes
-} from "../../state/attributes/attributes.js"
+} from "../../reduce/attributes/attributes.js"
+import { deepEquals, isEmpty } from "../../utils/deepEquals.js"
+import type { dictionary } from "../../utils/dynamicTypes.js"
+import type { requireKeys } from "../../utils/generics.js"
 
 export const compress = (branches: Attributes[]): Attributes => {
     const compressed = compressAttributes(branches)

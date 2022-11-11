@@ -1,5 +1,5 @@
+import type { Attributes } from "../../reduce/attributes/attributes.js"
 import type { array, dictionary } from "../../utils/dynamicTypes.js"
-import type { Attributes } from "../state/attributes/attributes.js"
 
 export type Keyword = keyof Keyword.Inferences
 

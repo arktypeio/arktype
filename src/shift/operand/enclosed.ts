@@ -1,7 +1,7 @@
-import { throwParseError } from "../errors.js"
-import type { DynamicState } from "../state/dynamic.js"
-import type { Scanner } from "../state/scanner.js"
-import type { state, StaticState } from "../state/static.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import { throwParseError } from "../../reduce/errors.js"
+import type { Scanner } from "../../reduce/scanner.js"
+import type { state, StaticState } from "../../reduce/static.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>

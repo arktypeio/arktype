@@ -1,14 +1,14 @@
-import { satisfies } from "../../../utils/generics.js"
-import { throwInternalError } from "../../../utils/internalArktypeError.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import { satisfies } from "../../utils/generics.js"
+import { throwInternalError } from "../../utils/internalArktypeError.js"
+import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import {
     tryParseWellFormedInteger,
     tryParseWellFormedNumber
-} from "../../../utils/numericLiterals.js"
+} from "../../utils/numericLiterals.js"
 import {
     deserializePrimitive,
     serializePrimitive
-} from "../../../utils/primitiveSerialization.js"
+} from "../../utils/primitiveSerialization.js"
 import type { Scanner } from "../scanner.js"
 import type { Attribute, AttributeKey } from "./attributes.js"
 import type { Bound, Bounds } from "./bounds.js"

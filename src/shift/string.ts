@@ -1,12 +1,12 @@
+import { morphisms } from "../reduce/attributes/morph.js"
+import { DynamicState } from "../reduce/dynamic.js"
+import type { Scanner } from "../reduce/scanner.js"
+import type { state, StaticState } from "../reduce/static.js"
+import type { DynamicScope } from "../scope.js"
 import { parseOperand } from "./operand/operand.js"
 import type { isResolvableIdentifier } from "./operand/unenclosed.js"
 import { maybeParseIdentifier } from "./operand/unenclosed.js"
 import { parseOperator } from "./operator/operator.js"
-import type { DynamicScope } from "./scope.js"
-import { morphisms } from "./state/attributes/morph.js"
-import { DynamicState } from "./state/dynamic.js"
-import type { Scanner } from "./state/scanner.js"
-import type { state, StaticState } from "./state/static.js"
 
 export const parseString = (def: string, scope: DynamicScope) => {
     const cache = scope.$.parseCache

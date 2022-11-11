@@ -1,9 +1,9 @@
-import { isEmpty } from "../../../utils/deepEquals.js"
 import type {
     AttributeBranches,
     AttributeKey,
     Attributes
-} from "../../state/attributes/attributes.js"
+} from "../../reduce/attributes/attributes.js"
+import { isEmpty } from "../../utils/deepEquals.js"
 import { traverseToDiscriminant } from "./prune.js"
 
 // const distribute = (a: Attributes, branches: AttributeBranches) => {

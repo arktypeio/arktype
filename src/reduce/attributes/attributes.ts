@@ -1,12 +1,9 @@
-import type {
-    dictionary,
-    DynamicTypeName
-} from "../../../utils/dynamicTypes.js"
-import type { keyOrSet, keySet, subtype } from "../../../utils/generics.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
-import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.js"
 import type { RegexLiteral } from "../../operand/enclosed.js"
 import type { DiscriminatedBranches } from "../../operator/union/discriminate.js"
+import type { dictionary, DynamicTypeName } from "../../utils/dynamicTypes.js"
+import type { keyOrSet, keySet, subtype } from "../../utils/generics.js"
+import type { NumberLiteral } from "../../utils/numericLiterals.js"
+import type { SerializedPrimitive } from "../../utils/primitiveSerialization.js"
 import type { SerializedBounds } from "./serialization.js"
 
 type DisjointAttributeTypes = {

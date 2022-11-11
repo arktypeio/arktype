@@ -1,9 +1,9 @@
-import { isEmpty } from "../../../utils/deepEquals.js"
-import { pathToSegments } from "../../../utils/paths.js"
 import type {
     Attribute,
     Attributes
-} from "../../state/attributes/attributes.js"
+} from "../../reduce/attributes/attributes.js"
+import { isEmpty } from "../../utils/deepEquals.js"
+import { pathToSegments } from "../../utils/paths.js"
 import type { DiscriminatedKey } from "./discriminate.js"
 
 export const pruneDiscriminant = (

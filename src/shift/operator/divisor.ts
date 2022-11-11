@@ -1,8 +1,8 @@
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { Scanner } from "../../reduce/scanner.js"
+import type { state, StaticState } from "../../reduce/static.js"
 import type { is } from "../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
-import type { DynamicState } from "../state/dynamic.js"
-import type { Scanner } from "../state/scanner.js"
-import type { state, StaticState } from "../state/static.js"
 
 export const parseDivisor = (s: DynamicState) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()

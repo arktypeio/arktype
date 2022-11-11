@@ -1,8 +1,8 @@
 import type { RegexLiteral, StringLiteral } from "../operand/enclosed.js"
 import type { Keyword } from "../operand/keyword.js"
 import type { BadDefinitionType } from "../parse.js"
-import type { Scanner } from "../state/scanner.js"
-import type { parseString } from "../string.js"
+import type { Scanner } from "../reduce/scanner.js"
+import type { parseString } from "../shift/string.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { evaluate, isTopType, stringKeyOf } from "../utils/generics.js"
 

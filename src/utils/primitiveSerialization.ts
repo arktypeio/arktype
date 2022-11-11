@@ -1,4 +1,3 @@
-import type { SingleQuotedStringLiteral } from "../parse/operand/enclosed.js"
 import type { DynamicTypes } from "./dynamicTypes.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
@@ -7,8 +6,10 @@ import {
     tryParseWellFormedNumber
 } from "./numericLiterals.js"
 
+type SerializedString = `'${string}'`
+
 export type SerializedPrimitives = {
-    string: SingleQuotedStringLiteral
+    string: SerializedString
     number: NumberLiteral
     bigint: BigintLiteral
     boolean: "true" | "false"
@@ -53,7 +54,7 @@ export const deserializePrimitive = <serialized extends SerializedPrimitive>(
 export type deserializePrimitive<serialized extends SerializedPrimitive> =
     serialized extends keyof SerializedKeywords
         ? SerializedKeywords[serialized]
-        : serialized extends SingleQuotedStringLiteral
+        : serialized extends SerializedString
         ? string
         : serialized extends BigintLiteral
         ? bigint

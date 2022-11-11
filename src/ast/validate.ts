@@ -3,8 +3,8 @@ import type {
     buildBadDefinitionTypeMessage,
     buildUninferableDefinitionMessage
 } from "../parse.js"
-import type { Scanner } from "../state/scanner.js"
-import type { parseString } from "../string.js"
+import type { Scanner } from "../reduce/scanner.js"
+import type { parseString } from "../shift/string.js"
 import type { dictionary, dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type {
     error,

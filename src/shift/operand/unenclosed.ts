@@ -1,3 +1,7 @@
+import { parseRoot } from "../../parse.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { Scanner } from "../../reduce/scanner.js"
+import type { state, StaticState } from "../../reduce/static.js"
 import type { DynamicScope } from "../../scope.js"
 import type { error, is } from "../../utils/generics.js"
 import type {
@@ -9,10 +13,6 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../utils/numericLiterals.js"
-import { parseRoot } from "../parse.js"
-import type { DynamicState } from "../state/dynamic.js"
-import type { Scanner } from "../state/scanner.js"
-import type { state, StaticState } from "../state/static.js"
 import { Keyword } from "./keyword.js"
 import { buildMissingOperandMessage } from "./operand.js"
 

@@ -1,9 +1,9 @@
-import type { dictionary } from "../../../utils/dynamicTypes.js"
-import { pushKey } from "../../../utils/paths.js"
 import type {
     Attribute,
     Attributes
-} from "../../state/attributes/attributes.js"
+} from "../../reduce/attributes/attributes.js"
+import type { dictionary } from "../../utils/dynamicTypes.js"
+import { pushKey } from "../../utils/paths.js"
 import { compileUnion } from "./compile.js"
 import { pruneDiscriminant } from "./prune.js"
 

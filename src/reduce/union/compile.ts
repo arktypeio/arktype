@@ -1,5 +1,5 @@
-import { throwInternalError } from "../../../utils/internalArktypeError.js"
-import type { Attributes } from "../../state/attributes/attributes.js"
+import type { Attributes } from "../../reduce/attributes/attributes.js"
+import { throwInternalError } from "../../utils/internalArktypeError.js"
 import { compress } from "./compress.js"
 import { discriminate } from "./discriminate.js"
 
