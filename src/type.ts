@@ -1,7 +1,6 @@
 import type { Config } from "./arktype.js"
 import { Type } from "./arktype.js"
 import { parseRoot } from "./parse/parse.js"
-import type { Scope } from "./scope.js"
 import { scope } from "./scope.js"
 import type { inferRoot } from "./traverse/infer.js"
 import type { validateRoot } from "./traverse/validate.js"
@@ -9,9 +8,7 @@ import type { dictionary } from "./utils/dynamicTypes.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rootScope: RootScope = scope({})
-
-type RootScope = Scope<{}>
+const rootScope = scope({})
 
 const rawTypeFn: DynamicTypeFn = (
     definition,
