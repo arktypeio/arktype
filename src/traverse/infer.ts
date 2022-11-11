@@ -1,50 +1,65 @@
 import type { RegexLiteral, StringLiteral } from "../parse/operand/enclosed.js"
 import type { Keyword } from "../parse/operand/keyword.js"
+import type { BadDefinitionType } from "../parse/parse.js"
 import type { Scanner } from "../parse/state/scanner.js"
+import type { parseString } from "../parse/string.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { evaluate } from "../utils/generics.js"
+import type { evaluate, isTopType } from "../utils/generics.js"
 import type { NumberLiteral } from "../utils/numericLiterals.js"
 
-export type inferAst<
-    node,
+export type inferRoot<
+    def,
     scope extends dictionary,
-    scopeAst extends dictionary
-> = node extends TerminalAst
-    ? inferTerminal<node, scope, scopeAst>
-    : node extends readonly unknown[]
-    ? node[1] extends "[]"
-        ? inferAst<node[0], scope, scopeAst>[]
-        : node[1] extends "|"
-        ?
-              | inferAst<node[0], scope, scopeAst>
-              | inferAst<node[2], scope, scopeAst>
-        : node[1] extends "&"
+    aliases extends dictionary
+    // TODO: Remove maybe?
+> = isTopType<def> extends true
+    ? unknown
+    : def extends string
+    ? inferAst<parseString<def, aliases>, scope, aliases>
+    : def extends BadDefinitionType
+    ? unknown
+    : evaluate<{
+          [k in keyof def]: inferRoot<def[k], scope, aliases>
+      }>
+
+export type inferAst<
+    ast,
+    scope extends dictionary,
+    aliases extends dictionary
+> = ast extends TerminalAst
+    ? inferTerminal<ast, scope, aliases>
+    : ast extends readonly unknown[]
+    ? ast[1] extends "[]"
+        ? inferAst<ast[0], scope, aliases>[]
+        : ast[1] extends "|"
+        ? inferAst<ast[0], scope, aliases> | inferAst<ast[2], scope, aliases>
+        : ast[1] extends "&"
         ? evaluate<
-              inferAst<node[0], scope, scopeAst> &
-                  inferAst<node[2], scope, scopeAst>
+              inferAst<ast[0], scope, aliases> &
+                  inferAst<ast[2], scope, aliases>
           >
-        : node[1] extends Scanner.Comparator
-        ? node[0] extends NumberLiteral
-            ? inferAst<node[2], scope, scopeAst>
-            : inferAst<node[0], scope, scopeAst>
-        : node[1] extends "%"
-        ? inferAst<node[0], scope, scopeAst>
+        : ast[1] extends Scanner.Comparator
+        ? ast[0] extends NumberLiteral
+            ? inferAst<ast[2], scope, aliases>
+            : inferAst<ast[0], scope, aliases>
+        : ast[1] extends "%"
+        ? inferAst<ast[0], scope, aliases>
         : // If the value at index 1 was none of the above, it's a normal tuple definition
           evaluate<{
-              [i in keyof node]: inferAst<node[i], scope, scopeAst>
+              [i in keyof ast]: inferAst<ast[i], scope, aliases>
           }>
-    : inferObjectLiteral<node, scope, scopeAst>
+    : inferObjectLiteral<ast, scope, aliases>
 
 type inferTerminal<
     token extends TerminalAst,
     scope extends dictionary,
-    scopeAst extends dictionary
+    aliases extends dictionary
 > = token extends Keyword
     ? Keyword.Inferences[token]
     : token extends keyof scope
     ? scope[token]
-    : token extends keyof scopeAst
-    ? inferAst<scopeAst[token], scope, scopeAst>
+    : token extends keyof aliases
+    ? inferRoot<aliases[token], scope, aliases>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

@@ -1,17 +1,9 @@
 import type { Scope } from "../scope.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
-import type {
-    error,
-    evaluate,
-    isAny,
-    isTopType,
-    keySet,
-    mutable
-} from "../utils/generics.js"
+import type { keySet, mutable } from "../utils/generics.js"
 import { throwInternalError } from "../utils/internalArktypeError.js"
 import { throwParseError } from "./errors.js"
-import type { buildMissingRightOperandMessage } from "./operand/operand.js"
 import type { Attributes } from "./state/attributes/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
@@ -20,40 +12,6 @@ export const parseRoot = (def: unknown, scope: Scope) => {
     const rawAttributes = parseDefinition(def, scope)
     return rawAttributes
 }
-
-export type parseRoot<
-    def,
-    scope extends dictionary
-    // TODO: Remove maybe?
-> = isTopType<def> extends true
-    ? error<
-          buildUninferableDefinitionMessage<
-              isAny<def> extends true ? "any" : "unknown"
-          >
-      >
-    : def extends string
-    ? parseString<def, scope>
-    : def extends BadDefinitionType
-    ? error<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
-    : def extends TupleExpression
-    ? parseTupleExpression<def, scope>
-    : evaluate<{
-          [k in keyof def]: parseRoot<def[k], scope>
-      }>
-
-export type validateRoot<def, scope extends dictionary> = def extends []
-    ? def
-    : def extends string
-    ? parseString<def, scope> extends error<infer message>
-        ? message
-        : def
-    : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<dynamicTypeOf<def>>
-    : def extends TupleExpression
-    ? def
-    : evaluate<{
-          [k in keyof def]: validateRoot<def[k], scope>
-      }>
 
 const parseDefinition = (def: unknown, scope: Scope): Attributes => {
     const defType = dynamicTypeOf(def)
@@ -82,7 +40,7 @@ export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
+export type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
     `Type definitions must be strings or objects (was ${actual})`
 
 const parseStructure = (
@@ -111,17 +69,17 @@ const parseTupleExpression = (expression: TupleExpression, scope: Scope) => {
     return throwInternalError("Not yet implemented.")
 }
 
-type parseTupleExpression<
-    def extends TupleExpression,
-    scope extends dictionary
-> = def[1] extends Scanner.InfixToken
-    ? def[2] extends undefined
-        ? [
-              parseRoot<def[0], scope>,
-              error<buildMissingRightOperandMessage<def[1], "">>
-          ]
-        : [parseRoot<def[0], scope>, def[1], parseRoot<def[2], scope>]
-    : [parseRoot<def[0], scope>, def[1]]
+// type parseTupleExpression<
+//     def extends TupleExpression,
+//     scope extends dictionary
+// > = def[1] extends Scanner.InfixToken
+//     ? def[2] extends undefined
+//         ? [
+//               parseRoot<def[0], scope>,
+//               error<buildMissingRightOperandMessage<def[1], "">>
+//           ]
+//         : [parseRoot<def[0], scope>, def[1], parseRoot<def[2], scope>]
+//     : [parseRoot<def[0], scope>, def[1]]
 
 type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 

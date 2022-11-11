@@ -1,19 +1,47 @@
+import type {
+    BadDefinitionType,
+    buildBadDefinitionTypeMessage,
+    buildUninferableDefinitionMessage
+} from "../parse/parse.js"
 import type { Scanner } from "../parse/state/scanner.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
-import type { error, isAny } from "../utils/generics.js"
+import type { parseString } from "../parse/string.js"
+import type { dictionary, dynamicTypeOf } from "../utils/dynamicTypes.js"
+import type {
+    error,
+    evaluate,
+    is,
+    isAny,
+    isTopType
+} from "../utils/generics.js"
 import type { inferAst } from "./infer.js"
 import type { astToString } from "./toString.js"
 
-export type validate<def, ast, scope extends dictionary> = def extends []
+export type validateRoot<
+    def,
+    scope extends dictionary
+> = isTopType<def> extends true
+    ? error<
+          buildUninferableDefinitionMessage<
+              isAny<def> extends true ? "any" : "unknown"
+          >
+      >
+    : def extends []
     ? def
-    : ast extends error<infer message>
-    ? message
     : def extends string
-    ? checkAst<ast, scope> extends error<infer message>
-        ? message
-        : def
-    : // @ts-expect-error We know K will also be in AST here because it must be structural
-      { [k in keyof def]: validate<def[k], ast[k], scope> }
+    ? parseString<def, scope> extends is<infer result>
+        ? result extends error<infer message>
+            ? message
+            : checkAst<result, scope> extends is<infer semanticResult>
+            ? semanticResult extends undefined
+                ? def
+                : semanticResult
+            : never
+        : never
+    : def extends BadDefinitionType
+    ? buildBadDefinitionTypeMessage<dynamicTypeOf<def>>
+    : evaluate<{
+          [k in keyof def]: validateRoot<def[k], scope>
+      }>
 
 type checkAst<ast, scope extends dictionary> = ast extends string
     ? undefined

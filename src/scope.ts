@@ -1,10 +1,9 @@
 import type { Config } from "./arktype.js"
 import { Type } from "./arktype.js"
-import type { validateRoot } from "./parse/parse.js"
 import { parseRoot } from "./parse/parse.js"
 import type { Attributes } from "./parse/state/attributes/attributes.js"
-import type { inferAst } from "./traverse/infer.js"
-import type { validate } from "./traverse/validate.js"
+import type { inferRoot } from "./traverse/infer.js"
+import type { validateRoot } from "./traverse/validate.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
@@ -30,16 +29,15 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
 >
 
 type InferredScopeFn = <
-    aliases,
-    inferredParent extends dictionary = {},
-    ast extends dictionary = parseAliases<aliases, inferredParent>
+    aliases extends dictionary,
+    inferredParent extends dictionary = {}
 >(
     aliases: validateRoot<
         aliases,
-        inferScopeAst<ast, inferredParent> & inferredParent
+        inferScope<aliases, inferredParent> & inferredParent
     >,
     config?: Config<inferredParent>
-) => Scope<inferScopeAst<ast, inferredParent>>
+) => Scope<inferScope<aliases, inferredParent>>
 
 type DynamicScopeFn = <aliases extends dictionary>(
     aliases: aliases,
@@ -85,13 +83,9 @@ export class ParseCache {
     }
 }
 
-type parseAliases<aliases, scope extends dictionary> = evaluate<{
-    [name in keyof aliases]: parseRoot<aliases[name], aliases & scope>
-}>
-
-type inferScopeAst<
-    rootAst extends dictionary,
+type inferScope<
+    aliases extends dictionary,
     scope extends dictionary
 > = evaluate<{
-    [name in keyof rootAst]: inferAst<rootAst[name], scope, rootAst>
+    [name in keyof aliases]: inferRoot<aliases[name], scope, aliases>
 }>
