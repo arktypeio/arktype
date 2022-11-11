@@ -1,4 +1,3 @@
-import type { dictionary } from "../../utils/dynamicTypes.js"
 import type { DynamicState } from "../state/dynamic.js"
 import type { Scanner } from "../state/scanner.js"
 import type { state, StaticState } from "../state/static.js"
@@ -19,15 +18,15 @@ export const parseOperand = (s: DynamicState): void =>
 
 export type parseOperand<
     s extends StaticState,
-    scope extends dictionary
+    alias extends string
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
     ? lookahead extends "("
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
         : lookahead extends " "
-        ? parseOperand<state.scanTo<s, unscanned>, scope>
-        : parseUnenclosed<s, scope>
+        ? parseOperand<state.scanTo<s, unscanned>, alias>
+        : parseUnenclosed<s, alias>
     : state.throws<buildMissingOperandMessage<s>>
 
 export const buildMissingOperandMessage = <s extends DynamicState>(s: s) => {

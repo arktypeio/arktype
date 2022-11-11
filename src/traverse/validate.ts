@@ -11,7 +11,8 @@ import type {
     evaluate,
     is,
     isAny,
-    isTopType
+    isTopType,
+    stringKeyOf
 } from "../utils/generics.js"
 import type { inferAst } from "./infer.js"
 import type { astToString } from "./toString.js"
@@ -28,7 +29,7 @@ export type validateRoot<
     : def extends []
     ? def
     : def extends string
-    ? parseString<def, scope> extends is<infer result>
+    ? parseString<def, stringKeyOf<scope>> extends is<infer result>
         ? result extends error<infer message>
             ? message
             : checkAst<result, scope> extends is<infer semanticResult>

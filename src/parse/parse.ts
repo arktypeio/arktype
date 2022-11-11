@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.js"
+import type { DynamicScope, Scope } from "../scope.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type { keySet, mutable } from "../utils/generics.js"
@@ -8,12 +8,12 @@ import type { Attributes } from "./state/attributes/attributes.js"
 import type { Scanner } from "./state/scanner.js"
 import { parseString } from "./string.js"
 
-export const parseRoot = (def: unknown, scope: Scope) => {
+export const parseRoot = (def: unknown, scope: DynamicScope) => {
     const rawAttributes = parseDefinition(def, scope)
     return rawAttributes
 }
 
-const parseDefinition = (def: unknown, scope: Scope): Attributes => {
+const parseDefinition = (def: unknown, scope: DynamicScope): Attributes => {
     const defType = dynamicTypeOf(def)
     return defType === "string"
         ? parseString(def as string, scope)
@@ -45,7 +45,7 @@ export type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
 
 const parseStructure = (
     def: Record<string | number, unknown>,
-    scope: Scope
+    scope: DynamicScope
 ): Attributes => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
@@ -65,7 +65,10 @@ const parseStructure = (
     return { type, props, requiredKeys }
 }
 
-const parseTupleExpression = (expression: TupleExpression, scope: Scope) => {
+const parseTupleExpression = (
+    expression: TupleExpression,
+    scope: DynamicScope
+) => {
     return throwInternalError("Not yet implemented.")
 }
 

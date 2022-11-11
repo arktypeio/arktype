@@ -1,5 +1,5 @@
 import type { Attributes } from "./parse/state/attributes/attributes.js"
-import type { Scope } from "./scope.js"
+import type { DynamicScope, Scope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 
@@ -8,7 +8,7 @@ export class Type<Inferred = unknown> {
     constructor(
         public attributes: Attributes,
         public config: Config,
-        public scope: Scope
+        public scope: DynamicScope
     ) {
         // TODO: Integrate config
     }

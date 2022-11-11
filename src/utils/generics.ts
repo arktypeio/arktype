@@ -107,3 +107,5 @@ export const satisfies =
 export type is<t> = t
 
 export type error<message extends string = string> = `!${message}`
+
+export type stringKeyOf<t> = keyof t & string

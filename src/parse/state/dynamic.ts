@@ -1,4 +1,4 @@
-import type { Scope } from "../../scope.js"
+import type { DynamicScope, Scope } from "../../scope.js"
 import { throwInternalError } from "../../utils/internalArktypeError.js"
 import {
     buildUnmatchedGroupCloseMessage,
@@ -26,7 +26,7 @@ export class DynamicState {
     private branches: BranchState = initializeBranches()
     private groups: BranchState[] = []
 
-    constructor(def: string, public readonly scope: Scope) {
+    constructor(def: string, public readonly scope: DynamicScope) {
         this.scanner = new Scanner(def)
     }
 

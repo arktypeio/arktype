@@ -13,7 +13,7 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawScope = (aliases: dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const compiled: Scope = { $: root as any }
+    const compiled: Scope<dictionary> = { $: root as any }
     for (const name in aliases) {
         const attributes = parseRoot(aliases[name], compiled)
         root.attributes[name] = attributes
@@ -28,31 +28,30 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
     DynamicScopeFn
 >
 
-type InferredScopeFn = <
-    aliases extends dictionary,
-    inferredParent extends dictionary = {}
->(
-    aliases: validateRoot<
+type InferredScopeFn = <aliases, inferredParent extends dictionary = {}>(
+    aliases: validateAliases<
         aliases,
-        inferScope<aliases, inferredParent> & inferredParent
+        inferAliases<aliases, inferredParent> & inferredParent
     >,
     config?: Config<inferredParent>
-) => Scope<inferScope<aliases, inferredParent>>
+) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <aliases extends dictionary>(
+type DynamicScopeFn = <aliases>(
     aliases: aliases,
     config?: Config
 ) => Scope<aliases>
 
-export type Scope<inferred extends dictionary = dictionary> = {
+export type Scope<inferred> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
+
+export type DynamicScope = Scope<dictionary>
 
 type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Type<inferred[name]>
 }
 
-export class ScopeRoot<inferred extends dictionary = dictionary> {
+export class ScopeRoot<inferred> {
     parseCache = new ParseCache()
 
     attributes = {} as Record<keyof inferred, Attributes>
@@ -83,9 +82,10 @@ export class ParseCache {
     }
 }
 
-type inferScope<
-    aliases extends dictionary,
-    scope extends dictionary
-> = evaluate<{
+type validateAliases<aliases, scope extends dictionary> = evaluate<{
+    [name in keyof aliases]: validateRoot<aliases[name], scope>
+}>
+
+type inferAliases<aliases, scope extends dictionary> = evaluate<{
     [name in keyof aliases]: inferRoot<aliases[name], scope, aliases>
 }>

@@ -4,28 +4,26 @@ import type { BadDefinitionType } from "../parse/parse.js"
 import type { Scanner } from "../parse/state/scanner.js"
 import type { parseString } from "../parse/string.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { evaluate, isTopType } from "../utils/generics.js"
+import type { evaluate, isTopType, stringKeyOf } from "../utils/generics.js"
 import type { NumberLiteral } from "../utils/numericLiterals.js"
 
 export type inferRoot<
     def,
     scope extends dictionary,
-    aliases extends dictionary
+    aliases
     // TODO: Remove maybe?
 > = isTopType<def> extends true
     ? unknown
     : def extends string
-    ? inferAst<parseString<def, aliases>, scope, aliases>
+    ? inferAst<parseString<def, stringKeyOf<aliases>>, scope, aliases>
     : def extends BadDefinitionType
     ? unknown
-    : evaluate<{
-          [k in keyof def]: inferRoot<def[k], scope, aliases>
-      }>
+    : inferObjectLiteral<def, scope, aliases>
 
 export type inferAst<
     ast,
     scope extends dictionary,
-    aliases extends dictionary
+    aliases
 > = ast extends TerminalAst
     ? inferTerminal<ast, scope, aliases>
     : ast extends readonly unknown[]
@@ -53,7 +51,7 @@ export type inferAst<
 type inferTerminal<
     token extends TerminalAst,
     scope extends dictionary,
-    aliases extends dictionary
+    aliases
 > = token extends Keyword
     ? Keyword.Inferences[token]
     : token extends keyof scope
@@ -71,23 +69,23 @@ type inferTerminal<
 type TerminalAst = string | number | bigint
 
 type inferObjectLiteral<
-    node,
+    def,
     scope extends dictionary,
-    scopeAst extends dictionary,
-    optionalKey extends optionalKeyOf<node> = optionalKeyOf<node>,
-    requiredKey extends keyof node = Exclude<keyof node, optionalKey>
+    aliases,
+    optionalKey extends optionalKeyOf<def> = optionalKeyOf<def>,
+    requiredKey extends keyof def = Exclude<keyof def, optionalKey>
 > = evaluate<
     {
         [requiredKeyName in requiredKey]: inferAst<
-            node[requiredKeyName],
+            def[requiredKeyName],
             scope,
-            scopeAst
+            aliases
         >
     } & {
         [optionalKeyName in extractNameOfOptionalKey<optionalKey>]?: inferAst<
-            node[`${optionalKeyName}?` & keyof node],
+            def[`${optionalKeyName}?` & keyof def],
             scope,
-            scopeAst
+            aliases
         >
     }
 >

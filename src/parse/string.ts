@@ -1,6 +1,4 @@
-import type { Scope } from "../scope.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
-import type { error, is } from "../utils/generics.js"
+import type { DynamicScope } from "../scope.js"
 import { parseOperand } from "./operand/operand.js"
 import type { isResolvableIdentifier } from "./operand/unenclosed.js"
 import { maybeParseIdentifier } from "./operand/unenclosed.js"
@@ -10,7 +8,7 @@ import { DynamicState } from "./state/dynamic.js"
 import type { Scanner } from "./state/scanner.js"
 import type { state, StaticState } from "./state/static.js"
 
-export const parseString = (def: string, scope: Scope) => {
+export const parseString = (def: string, scope: DynamicScope) => {
     const cache = scope.$.parseCache
     const cachedAttributes = cache.get(def)
     if (!cachedAttributes) {
@@ -23,23 +21,18 @@ export const parseString = (def: string, scope: Scope) => {
 
 export type parseString<
     def extends string,
-    scope extends dictionary
-> = maybeNaiveParse<def, scope>
+    alias extends string
+> = maybeNaiveParse<def, alias>
 
-export type validateString<
-    def extends string,
-    scope extends dictionary
-> = parseString<def, scope> extends error<infer message> ? message : def
-
-const fullStringParse = (def: string, scope: Scope) => {
+const fullStringParse = (def: string, scope: DynamicScope) => {
     const s = new DynamicState(def, scope)
     parseOperand(s)
     return loop(s)
 }
 
-type fullStringParse<def extends string, scope extends dictionary> = loop<
-    parseOperand<state.initialize<def>, scope>,
-    scope
+type fullStringParse<def extends string, alias extends string> = loop<
+    parseOperand<state.initialize<def>, alias>,
+    alias
 >
 
 // TODO: Recursion perf?
@@ -52,18 +45,18 @@ const loop = (s: DynamicState) => {
 
 type loop<
     s extends StaticState,
-    scope extends dictionary
+    alias extends string
 > = s["unscanned"] extends Scanner.finalized
     ? s["root"]
-    : loop<next<s, scope>, scope>
+    : loop<next<s, alias>, alias>
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
 type next<
     s extends StaticState,
-    scope extends dictionary
-> = s["root"] extends undefined ? parseOperand<s, scope> : parseOperator<s>
+    alias extends string
+> = s["root"] extends undefined ? parseOperand<s, alias> : parseOperator<s>
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -71,16 +64,16 @@ type next<
  */
 type maybeNaiveParse<
     def extends string,
-    scope extends dictionary
+    alias extends string
 > = def extends `${infer child}[]`
-    ? isResolvableIdentifier<child, scope> extends true
+    ? isResolvableIdentifier<child, alias> extends true
         ? [child, "[]"]
-        : fullStringParse<def, scope>
-    : isResolvableIdentifier<def, scope> extends true
+        : fullStringParse<def, alias>
+    : isResolvableIdentifier<def, alias> extends true
     ? def
-    : fullStringParse<def, scope>
+    : fullStringParse<def, alias>
 
-const maybeNaiveParse = (def: string, scope: Scope) => {
+const maybeNaiveParse = (def: string, scope: DynamicScope) => {
     if (def.endsWith("[]")) {
         const maybeParsedAttributes = maybeParseIdentifier(
             def.slice(0, -2),

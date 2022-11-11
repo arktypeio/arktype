@@ -1,5 +1,4 @@
-import type { Scope } from "../../scope.js"
-import type { dictionary } from "../../utils/dynamicTypes.js"
+import type { DynamicScope } from "../../scope.js"
 import type { error, is } from "../../utils/generics.js"
 import type {
     BigintLiteral,
@@ -24,11 +23,11 @@ export const parseUnenclosed = (s: DynamicState) => {
 
 export type parseUnenclosed<
     s extends StaticState,
-    scope extends dictionary
+    alias extends string
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? tryResolve<s, scanned, scope> extends is<infer result>
+    ? tryResolve<s, scanned, alias> extends is<infer result>
         ? result extends error<infer message>
             ? state.throws<message>
             : state.setRoot<s, result, nextUnscanned>
@@ -44,14 +43,14 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
             : buildUnresolvableMessage(token)
     )
 
-export const maybeParseIdentifier = (token: string, scope: Scope) =>
+export const maybeParseIdentifier = (token: string, scope: DynamicScope) =>
     Keyword.matches(token)
         ? Keyword.attributes[token]()
         : scope.$.aliases[token]
         ? parseAlias(token, scope)
         : scope.$.config.scope?.$.attributes[token]
 
-const parseAlias = (name: string, scope: Scope) => {
+const parseAlias = (name: string, scope: DynamicScope) => {
     const cache = scope.$.parseCache
     const cachedAttributes = cache.get(name)
     if (!cachedAttributes) {
@@ -83,14 +82,14 @@ type buildUnresolvableMessage<token extends string> =
 
 export type isResolvableIdentifier<
     token,
-    scope extends dictionary
-> = token extends Keyword ? true : token extends keyof scope ? true : false
+    alias extends string
+> = token extends Keyword ? true : token extends alias ? true : false
 
 type tryResolve<
     s extends StaticState,
     token extends string,
-    scope extends dictionary
-> = isResolvableIdentifier<token, scope> extends true
+    alias extends string
+> = isResolvableIdentifier<token, alias> extends true
     ? token
     : token extends NumberLiteral<infer value>
     ? number extends value
