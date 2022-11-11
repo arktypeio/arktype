@@ -21,23 +21,10 @@ export const parseRoot = (def: unknown, scope: Scope) => {
     return rawAttributes
 }
 
-export type parseRoot<def, scope extends dictionary> = parseDefinition<
-    def,
-    scope
->
-
-const parseDefinition = (def: unknown, scope: Scope): Attributes => {
-    const defType = dynamicTypeOf(def)
-    return defType === "string"
-        ? parseString(def as string, scope)
-        : defType === "dictionary" || defType === "array"
-        ? parseStructure(def as any, scope)
-        : throwParseError(buildBadDefinitionTypeMessage(defType))
-}
-
-type parseDefinition<
+export type parseRoot<
     def,
     scope extends dictionary
+    // TODO: Remove maybe?
 > = isTopType<def> extends true
     ? error<
           buildUninferableDefinitionMessage<
@@ -48,7 +35,20 @@ type parseDefinition<
     ? parseString<def, scope>
     : def extends BadDefinitionType
     ? error<buildBadDefinitionTypeMessage<dynamicTypeOf<def>>>
-    : parseStructure<def, scope>
+    : def extends TupleExpression
+    ? parseTupleExpression<def, scope>
+    : evaluate<{
+          [k in keyof def]: parseRoot<def[k], scope>
+      }>
+
+const parseDefinition = (def: unknown, scope: Scope): Attributes => {
+    const defType = dynamicTypeOf(def)
+    return defType === "string"
+        ? parseString(def as string, scope)
+        : defType === "dictionary" || defType === "array"
+        ? parseStructure(def as any, scope)
+        : throwParseError(buildBadDefinitionTypeMessage(defType))
+}
 
 export type BadDefinitionType =
     | undefined
@@ -92,12 +92,6 @@ const parseStructure = (
     }
     return { type, props, requiredKeys }
 }
-
-type parseStructure<def, scope extends dictionary> = def extends TupleExpression
-    ? parseTupleExpression<def, scope>
-    : evaluate<{
-          [k in keyof def]: parseRoot<def[k], scope>
-      }>
 
 const parseTupleExpression = (expression: TupleExpression, scope: Scope) => {
     return throwInternalError("Not yet implemented.")
