@@ -13,21 +13,21 @@ while (i < 50) {
 }
 
 suite("scope", () => {
-    bench("validate recursive", () => {
-        recursive.dejaVu.check(dejaVu)
-    }).median()
+    // bench("validate recursive", () => {
+    //     recursive.dejaVu.check(dejaVu)
+    // }).median()
 
-    bench("cyclic(10)", () => {
-        const cyclic10Scope = scope(cyclic10)
-    })
-        // .median()
-        .type()
+    // bench("cyclic(10)", () => {
+    //     const cyclic10Scope = scope(cyclic10)
+    // })
+    //     // .median()
+    //     .type()
 
-    bench("cyclic(100)", () => {
-        const cyclic100Scope = scope(cyclic100)
-    })
-        // .median()
-        .type()
+    // bench("cyclic(100)", () => {
+    //     const cyclic100Scope = scope(cyclic100)
+    // })
+    //     // .median()
+    //     .type()
 
     bench("cyclic(500)", () => {
         const cyclic500Scope = scope(cyclic500)

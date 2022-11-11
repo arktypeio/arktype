@@ -4,48 +4,39 @@ import type { error, isAny } from "../utils/generics.js"
 import type { inferAst } from "./infer.js"
 import type { astToString } from "./toString.js"
 
-export type validate<
-    def,
-    ast,
-    scope extends dictionary,
-    scopeAst extends dictionary = {}
-> = def extends []
+export type validate<def, ast, scope extends dictionary> = def extends []
     ? def
     : ast extends error<infer message>
     ? message
     : def extends string
-    ? checkAst<ast, scope, scopeAst> extends error<infer message>
+    ? checkAst<ast, scope> extends error<infer message>
         ? message
         : def
     : // @ts-expect-error We know K will also be in AST here because it must be structural
       { [k in keyof def]: validate<def[k], ast[k], scope> }
 
-type checkAst<
-    node,
-    scope extends dictionary,
-    scopeAst extends dictionary
-> = node extends string
+type checkAst<ast, scope extends dictionary> = ast extends string
     ? undefined
-    : node extends [infer child, unknown]
-    ? checkAst<child, scope, scopeAst>
-    : node extends [infer left, infer token, infer right]
+    : ast extends [infer child, unknown]
+    ? checkAst<child, scope>
+    : ast extends [infer left, infer token, infer right]
     ? token extends Scanner.BranchToken
-        ? checkAst<left, scope, scopeAst> extends error<infer leftMessage>
+        ? checkAst<left, scope> extends error<infer leftMessage>
             ? leftMessage
-            : checkAst<right, scope, scopeAst> extends error<infer rightMessage>
+            : checkAst<right, scope> extends error<infer rightMessage>
             ? rightMessage
             : undefined
         : token extends Scanner.Comparator
         ? left extends number
-            ? checkAst<right, scope, scopeAst>
-            : isBoundable<inferAst<left, scope, scopeAst>> extends true
-            ? checkAst<left, scope, scopeAst>
-            : error<buildUnboundableMessage<astToString<node[0]>>>
+            ? checkAst<right, scope>
+            : isBoundable<inferAst<left, scope, {}>> extends true
+            ? checkAst<left, scope>
+            : error<buildUnboundableMessage<astToString<ast[0]>>>
         : token extends "%"
-        ? isDivisible<inferAst<left, scope, scopeAst>> extends true
-            ? checkAst<left, scope, scopeAst>
-            : error<buildIndivisibleMessage<astToString<node[0]>>>
-        : checkAst<left, scope, scopeAst>
+        ? isDivisible<inferAst<left, scope, {}>> extends true
+            ? checkAst<left, scope>
+            : error<buildIndivisibleMessage<astToString<ast[0]>>>
+        : checkAst<left, scope>
     : undefined
 
 type isNonLiteralNumber<t> = t extends number
