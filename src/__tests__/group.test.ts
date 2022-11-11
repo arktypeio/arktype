@@ -1,11 +1,11 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../api.js"
+import { buildExpressionExpectedMessage } from "../operand/operand.js"
 import {
     buildUnmatchedGroupCloseMessage,
     unclosedGroupMessage
-} from "../errors.js"
-import { buildExpressionExpectedMessage } from "../operand/operand.js"
+} from "../reduce/errors.js"
 
 describe("group", () => {
     test("entire expression", () => {

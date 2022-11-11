@@ -1,16 +1,17 @@
-import type { DynamicScope, Scope } from "../../scope.js"
-import { throwInternalError } from "../../utils/internalArktypeError.js"
-import {
-    buildUnmatchedGroupCloseMessage,
-    throwParseError,
-    unclosedGroupMessage
-} from "../errors.js"
-import type { OpenRange } from "../operator/bounds/left.js"
-import { buildOpenRangeMessage } from "../operator/bounds/left.js"
+import type { DynamicScope } from "../scope.js"
+import { throwInternalError } from "../utils/internalArktypeError.js"
 import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morphisms } from "./attributes/morph.js"
+import {
+    buildOpenRangeMessage,
+    buildUnmatchedGroupCloseMessage,
+    throwParseError,
+    unclosedGroupMessage
+} from "./errors.js"
 import { Scanner } from "./scanner.js"
+
+type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
 type BranchState = {
     range?: OpenRange

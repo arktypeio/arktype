@@ -1,3 +1,13 @@
+import type { InvertedComparators } from "../shift/operator/bounds.js"
+import { invertedComparators } from "../shift/operator/bounds.js"
+import type { Scanner } from "./scanner.js"
+
+export class ParseError extends Error {}
+
+export const throwParseError = (message: string) => {
+    throw new ParseError(message)
+}
+
 export const buildUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned
 ): buildUnmatchedGroupCloseMessage<unscanned> =>
@@ -9,8 +19,16 @@ export type buildUnmatchedGroupCloseMessage<unscanned extends string> =
 export const unclosedGroupMessage = "Missing )"
 export type unclosedGroupMessage = typeof unclosedGroupMessage
 
-export class ParseError extends Error {}
+export const buildOpenRangeMessage = <
+    limit extends number,
+    comparator extends Scanner.Comparator
+>(
+    limit: limit,
+    comparator: comparator
+): buildOpenRangeMessage<limit, comparator> =>
+    `Left bounds are only valid when paired with right bounds (try ...${invertedComparators[comparator]}${limit})`
 
-export const throwParseError = (message: string) => {
-    throw new ParseError(message)
-}
+export type buildOpenRangeMessage<
+    limit extends number,
+    comparator extends Scanner.Comparator
+> = `Left bounds are only valid when paired with right bounds (try ...${InvertedComparators[comparator]}${limit})`

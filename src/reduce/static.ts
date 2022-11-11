@@ -1,13 +1,10 @@
-import type { defined, error } from "../../utils/generics.js"
 import type { astToString } from "../ast/utils.js"
-import type {
-    buildUnmatchedGroupCloseMessage,
-    unclosedGroupMessage
-} from "../errors.js"
+import type { defined, error } from "../utils/generics.js"
 import type {
     buildOpenRangeMessage,
-    OpenRange
-} from "../operator/bounds/left.js"
+    buildUnmatchedGroupCloseMessage,
+    unclosedGroupMessage
+} from "./errors.js"
 import type { Scanner } from "./scanner.js"
 
 export type StaticState = {
@@ -16,6 +13,8 @@ export type StaticState = {
     groups: BranchState[]
     unscanned: string
 }
+
+type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
 type BranchState = {
     range: OpenRange | undefined

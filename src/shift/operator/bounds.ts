@@ -80,20 +80,6 @@ export type buildBoundLiteralMessage<
 
 export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
-export const buildOpenRangeMessage = <
-    limit extends number,
-    comparator extends Scanner.Comparator
->(
-    limit: limit,
-    comparator: comparator
-): buildOpenRangeMessage<limit, comparator> =>
-    `Left bounds are only valid when paired with right bounds (try ...${invertedComparators[comparator]}${limit})`
-
-export type buildOpenRangeMessage<
-    limit extends number,
-    comparator extends Scanner.Comparator
-> = `Left bounds are only valid when paired with right bounds (try ...${InvertedComparators[comparator]}${limit})`
-
 export const parseRightBound = (
     s: DynamicState,
     comparator: Scanner.Comparator

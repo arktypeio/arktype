@@ -1,7 +1,6 @@
-import type { RegexLiteral } from "../../operand/enclosed.js"
 import { isEmpty } from "../../utils/deepEquals.js"
 import type { DynamicTypeName } from "../../utils/dynamicTypes.js"
-import type { keyOrSet, keySet } from "../../utils/generics.js"
+import type { keyOrSet, keySet, RegexLiteral } from "../../utils/generics.js"
 import type { SerializablePrimitive } from "../../utils/primitiveSerialization.js"
 import type { AttributeKey } from "./attributes.js"
 import { divisorDifference } from "./divisor.js"

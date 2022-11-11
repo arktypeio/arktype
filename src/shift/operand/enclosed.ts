@@ -2,6 +2,7 @@ import type { DynamicState } from "../../reduce/dynamic.js"
 import { throwParseError } from "../../reduce/errors.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
+import type { RegexLiteral } from "../../utils/generics.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -12,8 +13,6 @@ export type DoubleQuotedStringLiteral<Text extends string = string> =
 
 export type SingleQuotedStringLiteral<Text extends string = string> =
     `'${Text}'`
-
-export type RegexLiteral<Source extends string = string> = `/${Source}/`
 
 export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
@@ -68,6 +67,12 @@ const enclosingCharDescriptions = {
 
 type enclosingCharDescriptions = typeof enclosingCharDescriptions
 
+const untilLookaheadIsClosing: Record<EnclosingChar, Scanner.UntilCondition> = {
+    "'": (scanner) => scanner.lookahead === `'`,
+    '"': (scanner) => scanner.lookahead === `"`,
+    "/": (scanner) => scanner.lookahead === `/`
+}
+
 export const buildUnterminatedEnclosedMessage = <
     fragment extends string,
     enclosing extends EnclosingChar
@@ -81,12 +86,6 @@ type buildUnterminatedEnclosedMessage<
     fragment extends string,
     enclosing extends EnclosingChar
 > = `${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
-
-const untilLookaheadIsClosing: Record<EnclosingChar, Scanner.UntilCondition> = {
-    "'": (scanner) => scanner.lookahead === `'`,
-    '"': (scanner) => scanner.lookahead === `"`,
-    "/": (scanner) => scanner.lookahead === `/`
-}
 
 const throwUnterminatedEnclosed: Scanner.OnInputEndFn = (scanner, shifted) =>
     throwParseError(
