@@ -24,7 +24,8 @@ export const intersection = <k extends AttributeKey>(
     const baseValue = isSerialized
         ? deserializers[k as SerializedKey](base[k] as any)
         : base[k]
-    const result: any = intersections[k](baseValue, v as any)
+    // TODO: Remove!
+    const result: any = intersections[k]!(baseValue, v as any)
     if (result === null) {
         return null
     } else {
@@ -90,7 +91,7 @@ const intersectImplications = (base: Attributes, k: AttributeKey) =>
         : base
 
 type AttributeIntersections = {
-    [k in AttributeKey]: AttributeIntersection<k>
+    [k in AttributeKey]?: AttributeIntersection<k>
 }
 
 const intersections: AttributeIntersections = {

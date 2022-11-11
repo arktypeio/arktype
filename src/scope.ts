@@ -1,5 +1,5 @@
 import type { ArktypeConfig } from "./arktype.js"
-import { Arktype } from "./arktype.js"
+import { Type } from "./arktype.js"
 import { parseRoot } from "./parse/parse.js"
 import type { Attributes } from "./parse/state/attributes/attributes.js"
 import type { inferAst } from "./traverse/infer.js"
@@ -18,7 +18,7 @@ const rawScope = (aliases: dictionary, config: ArktypeConfig = {}) => {
         const attributes = parseRoot(aliases[name], compiled)
         root.attributes[name] = attributes
         root.parseCache.set(name, attributes)
-        compiled[name] = new Arktype(attributes, config, compiled)
+        compiled[name] = new Type(attributes, config, compiled)
     }
     return compiled
 }
@@ -47,7 +47,7 @@ export type Scope<inferred extends dictionary = dictionary> = {
 } & inferredScopeToArktypes<inferred>
 
 type inferredScopeToArktypes<inferred> = {
-    [name in keyof inferred]: Arktype<inferred[name]>
+    [name in keyof inferred]: Type<inferred[name]>
 }
 
 export class ScopeRoot<inferred extends dictionary = dictionary> {
@@ -82,10 +82,7 @@ export class ParseCache {
 }
 
 type parseAliases<aliases, scope extends dictionary> = evaluate<{
-    [name in keyof aliases]: parseRoot<
-        aliases[name],
-        { aliases: aliases & scope }
-    >
+    [name in keyof aliases]: parseRoot<aliases[name], aliases & scope>
 }>
 
 type inferScopeAst<

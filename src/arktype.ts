@@ -4,7 +4,7 @@ import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 
 // TODO: Maybe rename?
-export class Arktype<Inferred = unknown> {
+export class Type<Inferred = unknown> {
     constructor(
         public attributes: Attributes,
         public config: ArktypeConfig,

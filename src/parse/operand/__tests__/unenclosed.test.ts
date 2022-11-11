@@ -1,23 +1,23 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { scope } from "../../../scope.js"
-import { type } from "../../../type.js"
+import { ArkType } from "../../../type.js"
 import { buildMalformedNumericLiteralMessage } from "../../../utils/numericLiterals.js"
 import { buildUnresolvableMessage } from "../unenclosed.js"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {
         test("keyword", () => {
-            attest(type("string").infer).typed as "string"
+            attest(ArkType("string").infer).typed as "string"
         })
         test("alias", () => {
-            const a = type("a", { scope: scope({ a: "string" }) })
+            const a = ArkType("a", { scope: scope({ a: "string" }) })
             attest(a.infer).typed as string
         })
         describe("errors", () => {
             test("unresolvable", () => {
                 // @ts-expect-error
-                attest(() => type("HUH")).throwsAndHasTypeError(
+                attest(() => ArkType("HUH")).throwsAndHasTypeError(
                     buildUnresolvableMessage("HUH")
                 )
             })
@@ -26,58 +26,58 @@ describe("parse unenclosed", () => {
     describe("number", () => {
         describe("positive", () => {
             test("whole", () => {
-                attest(type("4").infer).typed as 4
+                attest(ArkType("4").infer).typed as 4
             })
             test("decimal", () => {
-                attest(type("3.14159").infer).typed as 3.14159
+                attest(ArkType("3.14159").infer).typed as 3.14159
             })
             test("decimal with zero whole portion", () => {
-                attest(type("0.5").infer).typed as 0.5
+                attest(ArkType("0.5").infer).typed as 0.5
             })
         })
         describe("negative", () => {
             test("whole", () => {
-                attest(type("-12").infer).typed as -12
+                attest(ArkType("-12").infer).typed as -12
             })
             test("decimal", () => {
-                attest(type("-1.618").infer).typed as -1.618
+                attest(ArkType("-1.618").infer).typed as -1.618
             })
             test("decimal with zero whole portion", () => {
-                attest(type("-0.001").infer).typed as -0.001
+                attest(ArkType("-0.001").infer).typed as -0.001
             })
         })
         test("zero", () => {
-            attest(type("0").infer).typed as 0
+            attest(ArkType("0").infer).typed as 0
         })
         describe("errors", () => {
             test("multiple decimals", () => {
                 // @ts-expect-error
-                attest(() => type("127.0.0.1")).throwsAndHasTypeError(
+                attest(() => ArkType("127.0.0.1")).throwsAndHasTypeError(
                     buildUnresolvableMessage("127.0.0.1")
                 )
             })
             test("with alpha", () => {
                 // @ts-expect-error
-                attest(() => type("13three7")).throwsAndHasTypeError(
+                attest(() => ArkType("13three7")).throwsAndHasTypeError(
                     buildUnresolvableMessage("13three7")
                 )
             })
 
             test("leading zeroes", () => {
                 // @ts-expect-error
-                attest(() => type("010")).throwsAndHasTypeError(
+                attest(() => ArkType("010")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("010", "number")
                 )
             })
             test("trailing zeroes", () => {
                 // @ts-expect-error
-                attest(() => type("4.0")).throwsAndHasTypeError(
+                attest(() => ArkType("4.0")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("4.0", "number")
                 )
             })
             test("negative zero", () => {
                 // @ts-expect-error
-                attest(() => type("-0")).throwsAndHasTypeError(
+                attest(() => ArkType("-0")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("-0", "number")
                 )
             })
@@ -86,19 +86,19 @@ describe("parse unenclosed", () => {
     describe("bigint", () => {
         test("positive", () => {
             // Is prime :D
-            attest(type("12345678910987654321n").infer)
+            attest(ArkType("12345678910987654321n").infer)
                 .typed as 12345678910987654321n
         })
         test("negative", () => {
-            attest(type("-9801n").infer).typed as -9801n
+            attest(ArkType("-9801n").infer).typed as -9801n
         })
         test("zero", () => {
-            attest(type("0n").infer).typed as 0n
+            attest(ArkType("0n").infer).typed as 0n
         })
         describe("errors", () => {
             test("decimal", () => {
                 // @ts-expect-error
-                attest(() => type("999.1n")).throwsAndHasTypeError(
+                attest(() => ArkType("999.1n")).throwsAndHasTypeError(
                     buildUnresolvableMessage("999.1n")
                 )
             })
@@ -107,7 +107,7 @@ describe("parse unenclosed", () => {
                 // TS currently doesn't try to infer this as bigint even
                 // though it matches our rules for a "malformed" integer.
                 // @ts-expect-error
-                attest(() => type("007n"))
+                attest(() => ArkType("007n"))
                     .throws(
                         buildMalformedNumericLiteralMessage("007n", "bigint")
                     )
@@ -115,7 +115,7 @@ describe("parse unenclosed", () => {
             })
             test("negative zero", () => {
                 // @ts-expect-error
-                attest(() => type("-0n")).throwsAndHasTypeError(
+                attest(() => ArkType("-0n")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("-0n", "bigint")
                 )
             })

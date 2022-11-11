@@ -17,8 +17,8 @@ export namespace state {
 
     type initialBranches = branchesFrom<{
         range: undefined
-        "|": []
-        "&": []
+        intersection: undefined
+        union: undefined
     }>
 
     export type setRoot<
@@ -56,7 +56,24 @@ export namespace state {
           >
         : from<{
               root: undefined
-              branches: token extends "|" ? pushUnion<s> : pushIntersection<s>
+              branches: token extends "|"
+                  ? {
+                        range: undefined
+                        intersection: undefined
+                        union: pushUnion<
+                            s["branches"]["union"],
+                            s["branches"]["intersection"],
+                            s["root"]
+                        >
+                    }
+                  : {
+                        range: undefined
+                        intersection: pushIntersection<
+                            s["branches"]["intersection"],
+                            s["root"]
+                        >
+                        union: s["branches"]["union"]
+                    }
               groups: s["groups"]
               unscanned: unscanned
           }>
@@ -69,8 +86,8 @@ export namespace state {
         root: undefined
         branches: {
             range: [limit, comparator]
-            "&": s["branches"]["&"]
-            "|": s["branches"]["|"]
+            intersection: s["branches"]["intersection"]
+            union: s["branches"]["union"]
         }
         groups: s["groups"]
         unscanned: s["unscanned"]
@@ -91,8 +108,8 @@ export namespace state {
         ]
         branches: {
             range: undefined
-            "&": s["branches"]["&"]
-            "|": s["branches"]["|"]
+            intersection: s["branches"]["intersection"]
+            union: s["branches"]["union"]
         }
         groups: s["groups"]
         unscanned: unscanned
@@ -107,45 +124,27 @@ export namespace state {
         root: [s["root"], comparator, limit]
         branches: {
             range: undefined
-            "&": s["branches"]["&"]
-            "|": s["branches"]["|"]
+            intersection: s["branches"]["intersection"]
+            union: s["branches"]["union"]
         }
         groups: s["groups"]
         unscanned: unscanned
     }>
 
-    type finalizeIntersection<
-        branches extends unknown[],
-        root
-    > = branches extends [] ? root : ["&", [...branches, root]]
+    type pushUnion<unionState, intersectionState, root> =
+        unionState extends undefined
+            ? pushIntersection<intersectionState, root>
+            : [unionState, "|", pushIntersection<intersectionState, root>]
 
-    type finalizeUnion<
-        branches extends unknown[],
-        intersectionBranches extends unknown[],
-        root
-    > = branches extends []
-        ? finalizeIntersection<intersectionBranches, root>
-        : ["|", [...branches, finalizeIntersection<intersectionBranches, root>]]
+    type pushIntersection<intersectionState, root> =
+        intersectionState extends undefined
+            ? root
+            : [intersectionState, "&", root]
 
-    type pushIntersection<s extends StaticWithRoot> = branchesFrom<{
-        range: undefined
-        "|": s["branches"]["|"]
-        "&": [...s["branches"]["&"], s["root"]]
-    }>
-
-    type pushUnion<s extends StaticWithRoot> = branchesFrom<{
-        range: undefined
-        "|": [
-            ...s["branches"]["|"],
-            finalizeIntersection<s["branches"]["&"], s["root"]>
-        ]
-        "&": []
-    }>
-
-    type popGroup<
-        stack extends StaticBranchState[],
-        top extends StaticBranchState
-    > = [...stack, top]
+    type popGroup<stack extends BranchState[], top extends BranchState> = [
+        ...stack,
+        top
+    ]
 
     export type finalizeGroup<
         s extends StaticWithRoot,
@@ -154,9 +153,9 @@ export namespace state {
         ? from<{
               groups: stack
               branches: top
-              root: finalizeUnion<
-                  s["branches"]["|"],
-                  s["branches"]["&"],
+              root: pushUnion<
+                  s["branches"]["union"],
+                  s["branches"]["intersection"],
                   s["root"]
               >
               unscanned: unscanned
@@ -185,9 +184,9 @@ export namespace state {
                   >
               >
             : unvalidatedFrom<{
-                  root: finalizeUnion<
-                      s["branches"]["|"],
-                      s["branches"]["&"],
+                  root: pushUnion<
+                      s["branches"]["union"],
+                      s["branches"]["intersection"],
                       s["root"]
                   >
                   groups: s["groups"]
@@ -204,12 +203,12 @@ export namespace state {
     }>
 
     export type previousOperator<s extends StaticState> =
-        s["branches"]["range"] extends OpenRange
+        s["branches"]["range"] extends {}
             ? s["branches"]["range"][1]
-            : s["branches"]["&"] extends []
-            ? s["branches"]["|"] extends []
-                ? "|"
-                : "&"
+            : s["branches"]["intersection"] extends {}
+            ? "&"
+            : s["branches"]["union"] extends {}
+            ? "|"
             : undefined
 
     export type scanTo<
@@ -226,13 +225,13 @@ export namespace state {
 
     export type unvalidatedFrom<s extends BaseStatic> = s
 
-    export type branchesFrom<b extends StaticBranchState> = b
+    export type branchesFrom<b extends BranchState> = b
 }
 
 type BaseStatic = {
     root: unknown
-    branches: StaticBranchState
-    groups: StaticBranchState[]
+    branches: BranchState
+    groups: BranchState[]
     unscanned: StringOrReturnCode
 }
 
@@ -245,8 +244,8 @@ export type StaticState<preconditions extends StaticPreconditions = {}> = Omit<
 
 export type StaticPreconditions = {
     root?: unknown
-    branches?: Partial<StaticBranchState>
-    groups?: StaticBranchState[]
+    branches?: Partial<BranchState>
+    groups?: BranchState[]
     unscanned?: StringOrReturnCode
 }
 
@@ -259,14 +258,10 @@ export type StaticWithRoot<ast = {}> = StaticState<{
     root: ast
 }>
 
-export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
-
-export type StaticBranchState = {
-    range: OpenRange | undefined
-    "|": unknown[]
-    "&": unknown[]
+type BranchState = {
+    range: [limit: number, comparator: Scanner.PairableComparator] | undefined
+    union: unknown
+    intersection: unknown
 }
-
-export type StaticWithOpenRange = { branches: { range: {} } }
 
 export type UnvalidatedState = BaseStatic
