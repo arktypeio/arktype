@@ -1,6 +1,12 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../api.js"
+import { buildOpenRangeMessage } from "../src/parse/reduce/shared.js"
+import {
+    buildBoundLiteralMessage,
+    buildInvalidDoubleBoundMessage,
+    singleEqualsMessage
+} from "../src/parse/shift/operator/bounds.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {

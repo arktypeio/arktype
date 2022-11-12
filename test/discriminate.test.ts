@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import type { Attributes } from "../api.js"
-import { compileUnion } from "../src/reduce/union/compile.js"
+import { compileUnion } from "../src/parse/reduce/union/compile.js"
 
 const testBranches: Attributes[] = [
     {

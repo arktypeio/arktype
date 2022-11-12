@@ -4,7 +4,7 @@ import { type } from "../api.js"
 import {
     buildMissingRightOperandMessage,
     buildUnresolvableMessage
-} from "../src/errors.js"
+} from "../src/parse/shift/operand/unenclosed.js"
 
 describe("union/parse", () => {
     test("binary", () => {

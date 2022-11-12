@@ -1,9 +1,9 @@
-import type { Config } from "./arktype.js"
-import { Type } from "./arktype.js"
-import type { inferRoot } from "./ast/infer.js"
-import type { validateRoot } from "./ast/validate.js"
-import { parseRoot } from "./parse.js"
-import type { Attributes } from "./reduce/attributes/attributes.js"
+import type { inferRoot } from "./parse/infer.js"
+import { parseRoot } from "./parse/parse.js"
+import type { Attributes } from "./parse/reduce/attributes/attributes.js"
+import type { validateRoot } from "./parse/validate.js"
+import type { Config } from "./type.js"
+import { Type } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
@@ -27,6 +27,13 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
     InferredScopeFn,
     DynamicScopeFn
 >
+
+let rootScope: Scope<{}> | undefined
+
+export const getRootScope = () => {
+    rootScope ??= scope({}) as any
+    return rootScope!
+}
 
 type InferredScopeFn = <aliases, inferredParent extends dictionary = {}>(
     aliases: validateAliases<

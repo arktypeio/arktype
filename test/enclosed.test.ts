@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../api.js"
-import { buildUnterminatedEnclosedMessage } from "../src/errors.js"
+import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
 
 describe("parse enclosed", () => {
     test("with spaces", () => {

@@ -1,6 +1,6 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { buildUnresolvableMessage } from "../src/errors.js"
+import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
 import { scope } from "../src/scope.js"
 import { type } from "../src/type.js"
 import type { dictionary } from "../src/utils/dynamicTypes.js"
@@ -26,8 +26,8 @@ describe("dynamic", () => {
         // Doesn't allow bad references
         attest(() => {
             // @ts-expect-error
-            type({ a: "st" }, { scope: s })
-        }).throwsAndHasTypeError(buildUnresolvableMessage("st"))
+            type({ a: "nonexistent" }, { scope: s })
+        }).throwsAndHasTypeError(buildUnresolvableMessage("nonexistent"))
     })
     test("uninferred scope", () => {
         const unknownScope = scope.dynamic({ a: "string" } as dictionary)

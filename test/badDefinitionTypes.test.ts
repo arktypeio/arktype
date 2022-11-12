@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../api.js"
-import { buildBadDefinitionTypeMessage } from "../src/errors.js"
+import { buildBadDefinitionTypeMessage } from "../src/parse/parse.js"
 
 describe("bad definition types", () => {
     test("any", () => {

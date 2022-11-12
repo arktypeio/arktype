@@ -12,6 +12,7 @@
         "exactOptionalPropertyTypes": true,
         "lib": ["ESNext"]
     },
+    "include": ["api.ts", "src", "test", "examples"],
     "exclude": ["**/node_modules", "**/dist"],
     "ts-node": {
         "esm": true,

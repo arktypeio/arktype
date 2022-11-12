@@ -1,4 +1,4 @@
-import { type } from "../src/api"
+import { type } from "../api.js"
 
 // Define a type...
 export const user = type({

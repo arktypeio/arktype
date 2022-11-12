@@ -1,8 +1,10 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { type } from "../api.js"
-import { buildExpressionExpectedMessage } from "../src/errors.js"
-import { buildUnresolvableMessage } from "../src/shift/operand/unenclosed.js"
+import {
+    buildExpressionExpectedMessage,
+    buildUnresolvableMessage
+} from "../src/parse/shift/operand/unenclosed.js"
 
 describe("string", () => {
     test("errors on empty string", () => {
