@@ -4,14 +4,14 @@ export default `import { space } from "arktype"
 export const types = space({
     package: {
         name: "string",
-        dependencies: "package[]?",
-        devDependencies: "package[]?",
-        contributors: "contributor[]?"
+        "dependencies?": "package[]",
+        "devDependencies?": "package[]",
+        "contributors?": "contributor[]"
     },
     contributor: {
         // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
         email: "email",
-        packages: "package[]?"
+        "packages?": "package[]"
     }
 })
 

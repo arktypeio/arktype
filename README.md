@@ -28,7 +28,7 @@ export const user = type({
     name: "string",
     browser: {
         kind: "'chrome'|'firefox'|'safari'",
-        version: "number?"
+        "version?": "number"
     }
 })
 
@@ -62,14 +62,14 @@ import { space } from "arktype"
 export const types = space({
     package: {
         name: "string",
-        dependencies: "package[]?",
-        devDependencies: "package[]?",
-        contributors: "contributor[]?"
+        "dependencies?": "package[]",
+        "devDependencies?": "package[]",
+        "contributors?": "contributor[]"
     },
     contributor: {
         // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
         email: "email",
-        packages: "package[]?"
+        "packages?": "package[]"
     }
 })
 
@@ -100,65 +100,6 @@ export const { problems } = types.package.check(readPackageData())
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
 [Try it out.](https://arktype.io/type/declarations)
-
-`names.ts`
-
-```ts @blockFrom:src/__snippets__/declaration/names.ts
-import { declare } from "arktype"
-
-// Declare the models you will define
-export const { define, compile } = declare("user", "group")
-```
-
-`declaration.ts`
-
-```ts @blockFrom:src/__snippets__/declaration/declaration.ts
-import { groupDef } from "./group.js"
-import { compile } from "./names.js"
-import { userDef } from "./user.js"
-
-// Creates your space (or tells you which definition you forgot to include)
-export const types = compile({ ...userDef, ...groupDef })
-
-// Mouse over "Group" to see the inferred type...
-export type Group = typeof types.group.infer
-
-export const getGroupsForCurrentUser = () => ({
-    title: "Type Enjoyers",
-    members: [
-        {
-            name: "Devin Aldai",
-            grapes: []
-        }
-    ]
-})
-
-// Try changing the definitions in "group.js"/"user.js" or the data in "getGroupsForCurrentUser"
-export const { errors } = types.group.check(getGroupsForCurrentUser())
-```
-
-`user.ts`
-
-```ts @blockFrom:src/__snippets__/declaration/user.ts
-import { define } from "./names.js"
-
-export const userDef = define.user({
-    name: "string",
-    bestFriend: "user?",
-    groups: "group[]"
-})
-```
-
-`group.ts`
-
-```ts @blockFrom:src/__snippets__/declaration/group.ts
-import { define } from "./names.js"
-
-export const groupDef = define.group({
-    title: "string",
-    members: "user[]"
-})
-```
 
 ### Runtime syntax
 

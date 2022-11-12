@@ -38,21 +38,5 @@ about/bio: Must be at most 80 characters (was 110)\`)
             }
         }
     })
-    // TODO: Reenable
-    // test("declaration", async () => {
-    //     const declarationSnippet = await import("../declaration/declaration")
-    //     attest(
-    //         declarationSnippet.types.group.infer.members[0].groups[0].members[0]
-    //             .name
-    //     ).typed as string
-    //     attest(declarationSnippet.types.$.toAst()).snap({
-    //         user: {
-    //             name: \`string\`,
-    //             bestFriend: [\`user\`, \`?\`],
-    //             groups: [\`group\`, \`[]\`]
-    //         },
-    //         group: { title: \`string\`, members: [\`user\`, \`[]\`] }
-    //     })
-    // })
 })
 `

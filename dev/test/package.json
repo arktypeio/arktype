@@ -35,9 +35,5 @@
         "@arktype/runtime": "workspace:*",
         "arktype": "workspace:*",
         "ts-morph": "16.0.0"
-    },
-    "devDependencies": {
-        "ts-morph-ts-4.7": "npm:ts-morph@15.0.0",
-        "tsconfig-paths": "4.1.0"
     }
 }
