@@ -1,5 +1,5 @@
+import { throwParseError } from "./errors.js"
 import type { Attributes } from "./reduce/attributes/attributes.js"
-import { throwParseError } from "./reduce/errors.js"
 import type { Scanner } from "./reduce/scanner.js"
 import type { DynamicScope } from "./scope.js"
 import { parseString } from "./shift/string.js"
@@ -30,18 +30,6 @@ export type BadDefinitionType =
     | bigint
     | Function
     | symbol
-
-export type buildUninferableDefinitionMessage<
-    typeName extends "any" | "unknown"
-> = `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
-
-export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
-    actual: actual
-): buildBadDefinitionTypeMessage<actual> =>
-    `Type definitions must be strings or objects (was ${actual})`
-
-export type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
-    `Type definitions must be strings or objects (was ${actual})`
 
 const parseStructure = (
     def: Record<string | number, unknown>,
@@ -88,3 +76,11 @@ type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 
 const isTupleExpression = (def: unknown): def is TupleExpression =>
     Array.isArray(def) && (def[1] as any) in {}
+
+export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
+    actual: actual
+): buildBadDefinitionTypeMessage<actual> =>
+    `Type definitions must be strings or objects (was ${actual})`
+
+type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
+    `Type definitions must be strings or objects (was ${actual})`

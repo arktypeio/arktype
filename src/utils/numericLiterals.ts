@@ -1,4 +1,4 @@
-import { throwParseError } from "../reduce/errors.js"
+import { throwParseError } from "../errors.js"
 
 export type BigintLiteral<Value extends bigint = bigint> = `${Value}n`
 

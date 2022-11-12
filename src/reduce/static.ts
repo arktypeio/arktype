@@ -1,11 +1,11 @@
 import type { astToString } from "../ast/utils.js"
 import type { defined, error } from "../utils/generics.js"
+import type { Scanner } from "./scanner.js"
 import type {
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
     unclosedGroupMessage
-} from "./errors.js"
-import type { Scanner } from "./scanner.js"
+} from "./shared.js"
 
 export type StaticState = {
     root: unknown

@@ -14,7 +14,6 @@ import {
     tryParseWellFormedNumber
 } from "../../utils/numericLiterals.js"
 import { Keyword } from "./keyword.js"
-import { buildMissingOperandMessage } from "./operand.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
@@ -73,13 +72,6 @@ const maybeParseUnenclosedLiteral = (token: string) => {
     }
 }
 
-export const buildUnresolvableMessage = <token extends string>(
-    token: token
-): buildUnresolvableMessage<token> => `'${token}' is unresolvable`
-
-type buildUnresolvableMessage<token extends string> =
-    `'${token}' is unresolvable`
-
 export type isResolvableIdentifier<
     token,
     alias extends string
@@ -104,3 +96,54 @@ type tryResolve<
               ? buildMissingOperandMessage<s>
               : buildUnresolvableMessage<token>
       >
+
+export const buildUnresolvableMessage = <token extends string>(
+    token: token
+): buildUnresolvableMessage<token> => `'${token}' is unresolvable`
+
+type buildUnresolvableMessage<token extends string> =
+    `'${token}' is unresolvable`
+
+export const buildMissingOperandMessage = <s extends DynamicState>(s: s) => {
+    const operator = s.previousOperator()
+    return operator
+        ? buildMissingRightOperandMessage(operator, s.scanner.unscanned)
+        : buildExpressionExpectedMessage(s.scanner.unscanned)
+}
+
+export type buildMissingOperandMessage<
+    s extends StaticState,
+    operator extends Scanner.InfixToken | undefined = state.previousOperator<s>
+> = operator extends {}
+    ? buildMissingRightOperandMessage<operator, s["unscanned"]>
+    : buildExpressionExpectedMessage<s["unscanned"]>
+
+export type buildMissingRightOperandMessage<
+    token extends Scanner.InfixToken,
+    unscanned extends string
+> = `Token '${token}' requires a right operand${unscanned extends ""
+    ? ""
+    : ` before '${unscanned}'`}`
+
+export const buildMissingRightOperandMessage = <
+    token extends Scanner.InfixToken,
+    unscanned extends string
+>(
+    token: token,
+    unscanned: unscanned
+): buildMissingRightOperandMessage<token, unscanned> =>
+    `Token '${token}' requires a right operand${
+        unscanned ? "" : (` before '${unscanned}'` as any)
+    }`
+
+export const buildExpressionExpectedMessage = <unscanned extends string>(
+    unscanned: unscanned
+) =>
+    `Expected an expression${
+        unscanned ? ` before '${unscanned}'` : ""
+    }` as buildExpressionExpectedMessage<unscanned>
+
+export type buildExpressionExpectedMessage<unscanned extends string> =
+    `Expected an expression${unscanned extends ""
+        ? ""
+        : ` before '${unscanned}'`}`

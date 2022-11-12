@@ -1,15 +1,15 @@
+import { throwParseError } from "../errors.js"
 import type { DynamicScope } from "../scope.js"
 import { throwInternalError } from "../utils/internalArktypeError.js"
 import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
-import { morphisms } from "./attributes/morph.js"
+import { morphs } from "./attributes/morph.js"
+import { Scanner } from "./scanner.js"
 import {
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
-    throwParseError,
     unclosedGroupMessage
-} from "./errors.js"
-import { Scanner } from "./scanner.js"
+} from "./shared.js"
 
 type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
@@ -58,7 +58,7 @@ export class DynamicState {
 
     morphRoot(to: MorphName) {
         this.assertHasRoot()
-        this.root = morphisms[to](this.root!)
+        this.root = morphs[to](this.root!)
     }
 
     private unsetRoot() {

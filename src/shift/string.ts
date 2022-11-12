@@ -1,4 +1,4 @@
-import { morphisms } from "../reduce/attributes/morph.js"
+import { morphs } from "../reduce/attributes/morph.js"
 import { DynamicState } from "../reduce/dynamic.js"
 import type { Scanner } from "../reduce/scanner.js"
 import type { state, StaticState } from "../reduce/static.js"
@@ -80,7 +80,7 @@ const maybeNaiveParse = (def: string, scope: DynamicScope) => {
             scope
         )
         if (maybeParsedAttributes) {
-            return morphisms.array(maybeParsedAttributes)
+            return morphs.array(maybeParsedAttributes)
         }
     }
     return maybeParseIdentifier(def, scope)

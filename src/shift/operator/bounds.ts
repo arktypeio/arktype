@@ -61,25 +61,6 @@ const parseValidated = (s: DynamicState, token: Scanner.PairableComparator) => {
     // ]
 }
 
-export const buildBoundLiteralMessage = <
-    literal extends NumberLiteral,
-    limit extends number,
-    token extends Scanner.Comparator
->(
-    literal: literal,
-    limit: limit,
-    comparator: token
-): buildBoundLiteralMessage<literal, limit, token> =>
-    `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
-
-export type buildBoundLiteralMessage<
-    literal extends NumberLiteral,
-    limit extends number,
-    comparator extends Scanner.Comparator
-> = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
-
-export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
-
 export const parseRightBound = (
     s: DynamicState,
     comparator: Scanner.Comparator
@@ -149,28 +130,10 @@ export const buildInvalidLimitMessage = <
 ): buildInvalidLimitMessage<comparator, limit> =>
     `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
-type buildInvalidLimitMessage<
+export type buildInvalidLimitMessage<
     comparator extends Scanner.Comparator,
     limit extends string
 > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
-
-export const comparatorDescriptions = {
-    "<": "less than",
-    ">": "greater than",
-    "<=": "at most",
-    ">=": "at least",
-    "==": "exactly"
-} as const
-
-export const invertedComparators = {
-    "<": ">",
-    ">": "<",
-    "<=": ">=",
-    ">=": "<=",
-    "==": "=="
-} as const
-
-export type InvertedComparators = typeof invertedComparators
 
 export type buildInvalidDoubleBoundMessage<
     comparator extends Scanner.Comparator
@@ -182,3 +145,20 @@ export const buildInvalidDoubleBoundMessage = <
     comparator: comparator
 ): buildInvalidDoubleBoundMessage<comparator> =>
     `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
+
+export const buildBoundLiteralMessage = <
+    literal extends NumberLiteral,
+    limit extends number,
+    token extends Scanner.Comparator
+>(
+    literal: literal,
+    limit: limit,
+    comparator: token
+): buildBoundLiteralMessage<literal, limit, token> =>
+    `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
+
+export type buildBoundLiteralMessage<
+    literal extends NumberLiteral,
+    limit extends number,
+    comparator extends Scanner.Comparator
+> = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`

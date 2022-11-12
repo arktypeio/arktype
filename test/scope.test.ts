@@ -1,7 +1,7 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { scope, type } from "../api.js"
-import { buildUnresolvableMessage } from "../parse/operand/unenclosed.js"
+import { buildUnresolvableMessage } from "../src/errors.js"
 
 describe("scope", () => {
     test("single", () => {

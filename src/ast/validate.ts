@@ -1,8 +1,4 @@
-import type {
-    BadDefinitionType,
-    buildBadDefinitionTypeMessage,
-    buildUninferableDefinitionMessage
-} from "../parse.js"
+import type { BadDefinitionType } from "../parse.js"
 import type { Scanner } from "../reduce/scanner.js"
 import type { parseString } from "../shift/string.js"
 import type { dictionary, dynamicTypeOf } from "../utils/dynamicTypes.js"
@@ -109,3 +105,7 @@ export const buildUnboundableMessage = <root extends string>(
 
 type buildUnboundableMessage<root extends string> =
     `Bounded expression ${root} must be a non-literal number, string or array`
+
+export type buildUninferableDefinitionMessage<
+    typeName extends "any" | "unknown"
+> = `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`

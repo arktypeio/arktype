@@ -1,10 +1,15 @@
-import type { RegexLiteral, StringLiteral } from "../operand/enclosed.js"
-import type { Keyword } from "../operand/keyword.js"
 import type { BadDefinitionType } from "../parse.js"
 import type { Scanner } from "../reduce/scanner.js"
+import type { StringLiteral } from "../shift/operand/enclosed.js"
+import type { Keyword } from "../shift/operand/keyword.js"
 import type { parseString } from "../shift/string.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { evaluate, isTopType, stringKeyOf } from "../utils/generics.js"
+import type {
+    evaluate,
+    isTopType,
+    RegexLiteral,
+    stringKeyOf
+} from "../utils/generics.js"
 
 export type inferRoot<
     def,

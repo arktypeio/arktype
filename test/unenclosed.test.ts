@@ -1,9 +1,8 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { type } from "../../../api.js"
-import { scope } from "../../../scope.js"
-import { buildMalformedNumericLiteralMessage } from "../../../utils/numericLiterals.js"
-import { buildUnresolvableMessage } from "../unenclosed.js"
+import { scope, type } from "../api.js"
+import { buildUnresolvableMessage } from "../src/errors.js"
+import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.js"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {

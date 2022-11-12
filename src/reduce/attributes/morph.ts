@@ -7,8 +7,8 @@ const array = (elementAttributes: Attributes): Attributes => ({
     }
 })
 
-export type MorphName = keyof typeof morphisms
+export type MorphName = keyof typeof morphs
 
-export const morphisms = {
+export const morphs = {
     array
 }

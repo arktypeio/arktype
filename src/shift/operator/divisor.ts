@@ -39,5 +39,5 @@ export const buildInvalidDivisorMessage = <divisor extends string | number>(
 ): buildInvalidDivisorMessage<divisor> =>
     `% operator must be followed by a non-zero integer literal (was ${divisor})`
 
-type buildInvalidDivisorMessage<divisor extends string | number> =
+export type buildInvalidDivisorMessage<divisor extends string | number> =
     `% operator must be followed by a non-zero integer literal (was ${divisor})`

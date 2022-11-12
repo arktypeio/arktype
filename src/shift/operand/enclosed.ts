@@ -1,5 +1,5 @@
+import { throwParseError } from "../../errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import { throwParseError } from "../../reduce/errors.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { RegexLiteral } from "../../utils/generics.js"
@@ -59,6 +59,12 @@ export const enclosingChar = {
 
 export type EnclosingChar = keyof typeof enclosingChar
 
+const untilLookaheadIsClosing: Record<EnclosingChar, Scanner.UntilCondition> = {
+    "'": (scanner) => scanner.lookahead === `'`,
+    '"': (scanner) => scanner.lookahead === `"`,
+    "/": (scanner) => scanner.lookahead === `/`
+}
+
 const enclosingCharDescriptions = {
     '"': "double-quote",
     "'": "single-quote",
@@ -66,12 +72,6 @@ const enclosingCharDescriptions = {
 } as const
 
 type enclosingCharDescriptions = typeof enclosingCharDescriptions
-
-const untilLookaheadIsClosing: Record<EnclosingChar, Scanner.UntilCondition> = {
-    "'": (scanner) => scanner.lookahead === `'`,
-    '"': (scanner) => scanner.lookahead === `"`,
-    "/": (scanner) => scanner.lookahead === `/`
-}
 
 export const buildUnterminatedEnclosedMessage = <
     fragment extends string,

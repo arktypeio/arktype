@@ -4,7 +4,7 @@ import { type } from "../api.js"
 import {
     buildIndivisibleMessage,
     buildUnboundableMessage
-} from "../ast/validate.js"
+} from "../src/ast/validate.js"
 
 describe("validate", () => {
     describe("bound", () => {

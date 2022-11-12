@@ -3,7 +3,6 @@ import type { DynamicScope, Scope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 
-// TODO: Maybe rename?
 export class Type<Inferred = unknown> {
     constructor(
         public attributes: Attributes,

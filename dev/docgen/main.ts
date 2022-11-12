@@ -56,7 +56,7 @@ export const config = createConfig({
     mappedDirs: [
         {
             sources: [
-                join(repoDirs.root, "src", "__snippets__"),
+                join(repoDirs.root, "examples"),
                 join(repoDirs.docsDir, "demos", "layout")
             ],
             targets: [join(repoDirs.docsDir, "demos", "generated")],

@@ -3,7 +3,7 @@ import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { EnclosingChar } from "./enclosed.js"
 import { enclosingChar, parseEnclosed } from "./enclosed.js"
-import { parseUnenclosed } from "./unenclosed.js"
+import { buildMissingOperandMessage, parseUnenclosed } from "./unenclosed.js"
 
 export const parseOperand = (s: DynamicState): void =>
     s.scanner.lookahead === ""
@@ -28,47 +28,3 @@ export type parseOperand<
         ? parseOperand<state.scanTo<s, unscanned>, alias>
         : parseUnenclosed<s, alias>
     : state.throws<buildMissingOperandMessage<s>>
-
-export const buildMissingOperandMessage = <s extends DynamicState>(s: s) => {
-    const operator = s.previousOperator()
-    return operator
-        ? buildMissingRightOperandMessage(operator, s.scanner.unscanned)
-        : buildExpressionExpectedMessage(s.scanner.unscanned)
-}
-
-export type buildMissingOperandMessage<
-    s extends StaticState,
-    operator extends Scanner.InfixToken | undefined = state.previousOperator<s>
-> = operator extends {}
-    ? buildMissingRightOperandMessage<operator, s["unscanned"]>
-    : buildExpressionExpectedMessage<s["unscanned"]>
-
-export type buildMissingRightOperandMessage<
-    token extends Scanner.InfixToken,
-    unscanned extends string
-> = `Token '${token}' requires a right operand${unscanned extends ""
-    ? ""
-    : ` before '${unscanned}'`}`
-
-export const buildMissingRightOperandMessage = <
-    token extends Scanner.InfixToken,
-    unscanned extends string
->(
-    token: token,
-    unscanned: unscanned
-): buildMissingRightOperandMessage<token, unscanned> =>
-    `Token '${token}' requires a right operand${
-        unscanned ? "" : (` before '${unscanned}'` as any)
-    }`
-
-export const buildExpressionExpectedMessage = <unscanned extends string>(
-    unscanned: unscanned
-) =>
-    `Expected an expression${
-        unscanned ? ` before '${unscanned}'` : ""
-    }` as buildExpressionExpectedMessage<unscanned>
-
-export type buildExpressionExpectedMessage<unscanned extends string> =
-    `Expected an expression${unscanned extends ""
-        ? ""
-        : ` before '${unscanned}'`}`

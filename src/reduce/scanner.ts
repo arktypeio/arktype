@@ -114,6 +114,24 @@ export namespace Scanner {
 
     export type OneCharComparator = keyof typeof oneCharComparators
 
+    export const comparatorDescriptions = {
+        "<": "less than",
+        ">": "greater than",
+        "<=": "at most",
+        ">=": "at least",
+        "==": "exactly"
+    } as const
+
+    export const invertedComparators = {
+        "<": ">",
+        ">": "<",
+        "<=": ">=",
+        ">=": "<=",
+        "==": "=="
+    } as const
+
+    export type invertedComparators = typeof invertedComparators
+
     export const branchTokens = {
         "|": true,
         "&": true

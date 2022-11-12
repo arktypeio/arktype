@@ -1,6 +1,6 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
-import { buildUnresolvableMessage } from "../operand/unenclosed.js"
+import { buildUnresolvableMessage } from "../src/errors.js"
 import { scope } from "../src/scope.js"
 import { type } from "../src/type.js"
 import type { dictionary } from "../src/utils/dynamicTypes.js"
