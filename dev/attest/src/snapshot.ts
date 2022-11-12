@@ -1,7 +1,7 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { readJson } from "../../runtime/api.js"
+import { readJson } from "../../runtime/exports.js"
 import type { SourcePosition } from "./common.js"
 import { getAtTestConfig, positionToString } from "./common.js"
 import { getDefaultTsMorphProject, getTsNodeAtPosition } from "./type/index.js"

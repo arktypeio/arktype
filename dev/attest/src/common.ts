@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
-import { ensureDir, readJson } from "../../runtime/api.js"
+import { ensureDir, readJson } from "../../runtime/exports.js"
 import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 

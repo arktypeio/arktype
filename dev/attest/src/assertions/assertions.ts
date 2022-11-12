@@ -1,7 +1,7 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/api.js"
+import { caller } from "../../../runtime/exports.js"
 import { assertEquals, throwAssertionError } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
 import { literalSerialize } from "../common.js"

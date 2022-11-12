@@ -6,7 +6,7 @@ import {
     shell,
     walkPaths,
     writeJson
-} from "../../runtime/api.js"
+} from "../../runtime/exports.js"
 import { repoDirs } from "../common.js"
 import type { DocGenMappedDirsConfig } from "./main.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"

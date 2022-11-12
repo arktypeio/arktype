@@ -4,7 +4,7 @@ import {
     readJson,
     shell,
     writeFile
-} from "../../../runtime/api.js"
+} from "../../../runtime/exports.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 

@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 import { basename, join } from "node:path"
 import { version, versions } from "node:process"
-import { fileName, findPackageRoot, shell, walkPaths } from "../runtime/api.js"
+import {
+    fileName,
+    findPackageRoot,
+    shell,
+    walkPaths
+} from "../runtime/exports.js"
 import { cacheAssertions, cleanupAssertions } from "./src/type/index.js"
 
 let runTestsCmd = ""

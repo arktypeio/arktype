@@ -1,5 +1,5 @@
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/api.js"
+import { caller } from "../../../runtime/exports.js"
 import type { AtTestConfig, SourcePosition } from "../common.js"
 import { getAtTestConfig } from "../common.js"
 import type { BenchFormat } from "../writeSnapshot.js"

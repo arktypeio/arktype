@@ -1,14 +1,13 @@
-import { cpSync, renameSync, rmSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { renameSync, rmSync } from "node:fs"
+import { join } from "node:path"
 import { stdout } from "node:process"
 import {
     readFile,
     readJson,
-    requireResolve,
     shell,
     writeFile,
     writeJson
-} from "../runtime/api.js"
+} from "../runtime/exports.js"
 import {
     isProd,
     outRoot,
@@ -52,8 +51,8 @@ const buildTypes = () => {
 const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
-            ? join(outRoot, kind, "api.js")
-            : "api.ts"
+            ? join(outRoot, kind, "arktype.js")
+            : "arktype.ts"
     const originalContents = readFile(originalPath)
     if (kind === "mjs" || kind === "cjs") {
         rmSync(originalPath)
@@ -67,7 +66,7 @@ const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     }
     const destinationFile = join(
         outRoot,
-        `api.${kind === "types" ? "d.ts" : kind === "deno" ? "ts" : kind}`
+        `arktype.${kind === "types" ? "d.ts" : kind === "deno" ? "ts" : kind}`
     )
     writeFile(destinationFile, transformedContents)
 }
@@ -89,7 +88,7 @@ const swc = (kind: "mjs" | "cjs") => {
     if (!isProd()) {
         cmd += `--source-maps inline `
     }
-    cmd += srcFiles.join(" ") + " api.ts"
+    cmd += srcFiles.join(" ") + " arktype.ts"
     shell(cmd)
     writeJson(join(srcOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"

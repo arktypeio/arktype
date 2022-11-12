@@ -1,6 +1,6 @@
 import { performance } from "node:perf_hooks"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/api.js"
+import { caller } from "../../../runtime/exports.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import { unhandledExceptionMessages } from "./bench.js"

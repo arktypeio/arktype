@@ -7,7 +7,7 @@ import {
     requireResolve,
     shell,
     writeJson
-} from "../../runtime/api.js"
+} from "../../runtime/exports.js"
 import type { BenchData } from "./bench/history.js"
 import { updateIsBench, upsertBenchResult } from "./bench/history.js"
 import { getAtTestConfig, getFileKey } from "./common.js"

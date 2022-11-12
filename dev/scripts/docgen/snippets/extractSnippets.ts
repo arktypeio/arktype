@@ -1,5 +1,5 @@
 import type { Project } from "ts-morph"
-import { readFile } from "../../../runtime/api.js"
+import { readFile } from "../../../runtime/exports.js"
 import { tsFileMatcher } from "../../common.js"
 import type { ExtractionToken } from "./snipTokens.js"
 import {

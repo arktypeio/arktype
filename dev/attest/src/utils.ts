@@ -1,5 +1,5 @@
 import { platform } from "node:os"
-import { shell } from "../../runtime/api.js"
+import { shell } from "../../runtime/exports.js"
 
 export const getCmdFromPid = (pid: number) =>
     platform() === "win32" ? getCmdFromWindowsPid(pid) : getCmdFromPosixPid(pid)

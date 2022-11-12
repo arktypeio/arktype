@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import { caller, getCallStack } from "../../runtime/api.js"
+import { caller, getCallStack } from "../../runtime/exports.js"
 import type { ValueAssertion } from "./assertions/index.js"
 import { Assertions } from "./assertions/index.js"
 import type { AtTestConfig, SourcePosition } from "./common.js"

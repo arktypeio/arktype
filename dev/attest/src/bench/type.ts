@@ -1,6 +1,6 @@
 import type { Node, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { caller } from "../../../runtime/api.js"
+import { caller } from "../../../runtime/exports.js"
 import { findCallExpressionAncestor } from "../snapshot.js"
 import { forceCreateTsMorphProject } from "../type/index.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"

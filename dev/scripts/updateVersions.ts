@@ -7,7 +7,7 @@ import {
     shell,
     writeFile,
     writeJson
-} from "../runtime/api.js"
+} from "../runtime/exports.js"
 import { repoDirs } from "./common.js"
 import { docgen } from "./docgen/main.js"
 

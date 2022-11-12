@@ -1,9 +1,0 @@
-{
-    "snippets.test.ts": "src/__snippets__/__tests__/snippets.test.ts",
-    "constraints.ts": "src/__snippets__/constraints.ts",
-    "scope.ts": "src/__snippets__/scope.ts",
-    "type.ts": "src/__snippets__/type.ts",
-    "demo.css.ts": "dev/arktype.io/docs/demos/layout/demo.css",
-    "index.html.ts": "dev/arktype.io/docs/demos/layout/index.html",
-    "populateDemo.ts": "dev/arktype.io/docs/demos/layout/populateDemo.ts"
-}

@@ -1,4 +1,4 @@
-import { type } from "../api.js"
+import { type } from "../arktype.js"
 
 // Define a type...
 export const user = type({

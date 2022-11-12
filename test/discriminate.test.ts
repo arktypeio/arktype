@@ -1,6 +1,6 @@
-import { attest } from "../dev/attest/api.js"
+import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
-import type { Attributes } from "../api.js"
+import type { Attributes } from "../arktype.js"
 import { compileUnion } from "../src/parse/reduce/union/compile.js"
 
 const testBranches: Attributes[] = [

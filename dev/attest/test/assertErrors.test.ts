@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { describe, test } from "mocha"
-import { attest } from "../api.js"
+import { attest } from "../exports.js"
 
 const n = 5
 const o = { re: "do" }

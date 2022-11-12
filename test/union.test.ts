@@ -1,6 +1,6 @@
-import { attest } from "../dev/attest/api.js"
+import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
-import { type } from "../api.js"
+import { type } from "../arktype.js"
 import {
     buildMissingRightOperandMessage,
     buildUnresolvableMessage

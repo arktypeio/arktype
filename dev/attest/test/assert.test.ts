@@ -1,6 +1,6 @@
 import { AssertionError, strict } from "node:assert"
 import { describe, test } from "mocha"
-import { attest } from "../api.js"
+import { attest } from "../exports.js"
 const o = { re: "do" }
 
 describe("Assertions", () => {

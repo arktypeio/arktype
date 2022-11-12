@@ -12,28 +12,27 @@
         "url": "https://github.com/arktypeio/arktype.git"
     },
     "type": "module",
-    "main": "./dist/cjs/api.js",
-    "types": "./dist/types/api.d.ts",
+    "main": "./dist/exports.cjs",
+    "types": "./dist/exports.d.ts",
     "exports": {
         ".": {
-            "types": "./dist/api.d.ts",
-            "import": "./dist/api.mjs",
-            "require": "./dist/api.cjs",
-            "deno": "./dist/api.ts"
+            "types": "./dist/exports.d.ts",
+            "import": "./dist/exports.mjs",
+            "require": "./dist/exports.cjs",
+            "deno": "./dist/exports.ts"
         }
     },
     "packageManager": "pnpm@7.14.0",
     "scripts": {
-        "prChecks": "pnpm install && pnpm buildRepo && pnpm lint && pnpm testRepo",
+        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm testBuild && pnpm buildDocs",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
         "buildDocs": "pnpm docgen && cd dev/arktype.io && pnpm build",
-        "buildRepo": "pnpm build && pnpm buildDocs",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
-        "test": "c8 attest --cmd mocha",
-        "tnt": "c8 attest --skipTypes --cmd mocha",
-        "testRepo": "ts-node ./dev/scripts/testRepo.ts",
-        "bench": "attest bench --benchmarksPath ./test/benchmarks.json",
+        "test": "c8 ts-node ./dev/attest/cli.ts --cmd mocha",
+        "tnt": "c8 ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
+        "testBuild": "ts-node ./dev/scripts/testRepo.ts",
+        "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "findUnused": "ts-node ./dev/scripts/runUnusedExports.ts",
         "changeset": "changeset",
@@ -83,7 +82,7 @@
         "trailingComma": "none"
     },
     "mocha": {
-        "spec": "src/**/*.test.ts",
+        "spec": "test/*.test.ts",
         "ignore": "**/node_modules/*",
         "node-option": [
             "loader=ts-node/esm",
