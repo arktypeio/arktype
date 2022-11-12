@@ -16,10 +16,10 @@
     "types": "./dist/types/api.d.ts",
     "exports": {
         ".": {
-            "types": "./dist/types/api.d.ts",
-            "import": "./dist/mjs/api.js",
-            "require": "./dist/cjs/api.js",
-            "deno": "./dist/deno/api.ts"
+            "types": "./dist/api.d.ts",
+            "import": "./dist/api.mjs",
+            "require": "./dist/api.cjs",
+            "deno": "./dist/api.ts"
         }
     },
     "packageManager": "pnpm@7.14.0",
