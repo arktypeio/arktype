@@ -15,7 +15,7 @@ const attestArgIndex = process.argv.findIndex((arg) =>
 )
 if (attestArgIndex === -1) {
     throw new Error(
-        `Unable to parse @arktype/test CLI args '${process.argv.join(
+        `Unable to parse attest CLI args '${process.argv.join(
             " "
         )}' (expected to find a reference to ${fileName()}).`
     )

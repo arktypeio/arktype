@@ -157,9 +157,11 @@ export const getAtTestConfig = (): AtTestConfig => {
     if (cachedConfig) {
         return cachedConfig
     }
-    const reJson: ReJson = existsSync("re.json") ? readJson("re.json") : {}
+    const attestJson: ReJson = existsSync("attest.json")
+        ? readJson("attest.json")
+        : {}
     const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
-    const atTestJson: AtTestJson = reJson.assert ?? {}
+    const atTestJson: AtTestJson = attestJson.assert ?? {}
     const argsToCheck = getArgsToCheck()
     const cacheDir =
         checkArgsForParam(argsToCheck, "--cacheDir") ?? resolve(".attest")
@@ -191,7 +193,7 @@ export const getAtTestConfig = (): AtTestConfig => {
         tsconfig,
         precached: argsToCheck.includes("--precache"),
         preserveCache: false,
-        assertAliases: ["assert"],
+        assertAliases: ["attest"],
         cacheDir,
         snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),
