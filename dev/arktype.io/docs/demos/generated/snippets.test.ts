@@ -1,4 +1,4 @@
-export default `import { attest } from "@arktype/test"
+export default `import { attest } from "../dev/attest/api.js"
 import { describe, test } from "mocha"
 
 describe("snippets", () => {

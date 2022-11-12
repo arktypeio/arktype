@@ -1,4 +1,4 @@
-import { bench, suite } from "@arktype/test"
+import { bench, suite } from "../dev/attest/api.js"
 import { type } from "../api.js"
 
 suite("legacy", () => {

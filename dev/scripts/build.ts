@@ -1,32 +1,14 @@
-import { existsSync, renameSync, rmSync } from "node:fs"
+import { rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
-import {
-    getPackageDataFromCwd,
-    inFileFilter,
-    isProd,
-    repoDirs
-} from "../common.js"
-import { getProject } from "../docgen/main.js"
-import { mapDir } from "../docgen/mapDir.js"
-import { extractSnippets } from "../docgen/snippets/extractSnippets.js"
-import {
-    readJson,
-    requireResolve,
-    shell,
-    writeJson
-} from "../runtime/src/api.js"
+import { requireResolve, shell, writeJson } from "../runtime/api.js"
+import { getPackageDataFromCwd, isProd } from "./common.js"
+import { getProject } from "./docgen/main.js"
+import { mapDir } from "./docgen/mapDir.js"
+import { extractSnippets } from "./docgen/snippets/extractSnippets.js"
 
-const {
-    cjsOut,
-    inFiles,
-    mjsOut,
-    outRoot,
-    packageName,
-    packageRoot,
-    tsConfig,
-    typesOut
-} = getPackageDataFromCwd()
+const { outRoot, packageName, packageRoot, tsConfig, typesOut, srcFiles } =
+    getPackageDataFromCwd()
 
 const successMessage = `🎁 Successfully built ${packageName}!`
 
@@ -40,69 +22,47 @@ export const arktypeTsc = () => {
 
 export const buildTypes = () => {
     stdout.write("⏳ Building types...".padEnd(successMessage.length))
-    const config = existsSync(tsConfig)
-        ? readJson(tsConfig)
-        : readJson(join(repoDirs.root, "tsconfig.json"))
-    const tempTsConfigPath = join(packageRoot, "tsconfig.temp.json")
-    writeJson(tempTsConfigPath, { ...config, include: inFiles })
-    try {
-        const cmd = `pnpm tsc --project ${tempTsConfigPath} --outDir ${outRoot} --emitDeclarationOnly`
-        shell(cmd, {
-            cwd: packageRoot
-        })
-        renameSync(join(outRoot, "src"), typesOut)
-    } finally {
-        rmSync(tempTsConfigPath)
-    }
+    const cmd = `pnpm tsc --project ${tsConfig} --outDir ${typesOut} --emitDeclarationOnly`
+    shell(cmd, {
+        cwd: packageRoot
+    })
     stdout.write(`✅\n`)
 }
 
 export const transpile = () => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
-    buildEsm()
-    buildCjs()
+    swc("mjs")
+    swc("cjs")
     if (packageName === "arktype") {
         buildDeno()
     }
     stdout.write("✅\n")
 }
 
-type SwcOptions = {
-    outDir: string
-    moduleType?: string
-}
-
-const swc = ({ outDir, moduleType }: SwcOptions) => {
+const swc = (kind: "mjs" | "cjs") => {
+    const srcOutDir = join(outRoot, kind)
     let cmd = `node ${requireResolve(
         "@swc/cli"
-    )} --out-dir ${outDir} -C jsc.target=es2020 --quiet `
-    if (moduleType) {
-        cmd += `-C module.type=${moduleType} `
+    )} --out-dir ${srcOutDir} -C jsc.target=es2020 --quiet `
+    if (kind === "cjs") {
+        cmd += `-C module.type=commonjs `
     }
     if (!isProd()) {
         cmd += `--source-maps inline `
     }
-    cmd += inFiles.join(" ")
     shell(cmd)
-}
-
-export const buildEsm = () => {
-    swc({ outDir: mjsOut })
-    writeJson(join(mjsOut, "package.json"), { type: "module" })
-}
-
-export const buildCjs = () => {
-    swc({ outDir: cjsOut, moduleType: "commonjs" })
-    writeJson(join(cjsOut, "package.json"), { type: "commonjs" })
+    writeJson(join(srcOutDir, "package.json"), {
+        type: kind === "cjs" ? "commonjs" : "module"
+    })
 }
 
 export const buildDeno = () => {
-    const sources = extractSnippets(inFiles, getProject())
+    const sources = extractSnippets(srcFiles, getProject())
     mapDir(sources, {
         sources: ["src"],
         targets: ["dist/deno"],
-        sourceOptions: inFileFilter,
         skipFormatting: true,
+        skipSourceMap: true,
         transformContents: (content) => content.replaceAll(/\.js"/g, '.ts"')
     })
 }

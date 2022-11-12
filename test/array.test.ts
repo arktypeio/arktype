@@ -1,4 +1,4 @@
-import { attest } from "@arktype/test"
+import { attest } from "../dev/attest/api.js"
 import { describe, test } from "mocha"
 import { type } from "../api.js"
 import { incompleteArrayTokenMessage } from "../src/parse/shift/operator/operator.js"

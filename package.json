@@ -20,28 +20,20 @@
             "import": "./dist/mjs/api.js",
             "require": "./dist/cjs/api.js",
             "deno": "./dist/deno/api.ts"
-        },
-        "./internal/*": {
-            "types": "./dist/types/*",
-            "import": "./dist/mjs/*",
-            "require": "./dist/cjs/*",
-            "deno": "./dist/deno/*"
         }
     },
     "packageManager": "pnpm@7.14.0",
     "scripts": {
         "prChecks": "pnpm install && pnpm buildRepo && pnpm lint && pnpm testRepo",
         "typecheck": "tsc --noEmit",
-        "typecheckRepo": "pnpm typecheck; pnpm -r typecheck",
         "build": "ts-node ./dev/scripts/build.ts",
-        "buildDev": "pnpm build && pnpm -r --filter=!arktype.io build",
-        "buildDocs": "pnpm docgen && pnpm -r --filter=arktype.io build",
-        "buildRepo": "pnpm build && pnpm buildDev && pnpm buildDocs",
+        "buildDocs": "pnpm docgen && cd dev/arktype.io && pnpm build",
+        "buildRepo": "pnpm build && pnpm buildDocs",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "c8 attest --cmd mocha",
         "tnt": "c8 attest --skipTypes --cmd mocha",
         "testRepo": "ts-node ./dev/scripts/testRepo.ts",
-        "bench": "attest bench --benchmarksPath ./src/__tests__/benchmarks.json",
+        "bench": "attest bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "findUnused": "ts-node ./dev/scripts/runUnusedExports.ts",
         "changeset": "changeset",
@@ -51,8 +43,6 @@
         "ci:publish": "changeset publish"
     },
     "devDependencies": {
-        "@arktype/runtime": "workspace:*",
-        "@arktype/test": "link:./dev/test",
         "@changesets/cli": "2.25.0",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.3.9",
@@ -77,17 +67,8 @@
         "ts-node": "10.9.1",
         "typescript": "4.9.2-rc",
         "mocha": "10.1.0",
-        "@types/mocha": "10.0.0"
-    },
-    "pnpm": {
-        "peerDependencyRules": {
-            "//": "Docusaurus/webpack nonsense",
-            "ignoreMissing": [
-                "@algolia/client-search",
-                "@babel/core",
-                "typescript"
-            ]
-        }
+        "@types/mocha": "10.0.0",
+        "get-current-line": "6.6.0"
     },
     "c8": {
         "checkCoverage": true,

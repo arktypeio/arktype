@@ -1,4 +1,4 @@
-import { attest } from "@arktype/test"
+import { attest } from "../dev/attest/api.js"
 import { describe, test } from "mocha"
 import { type } from "../api.js"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"

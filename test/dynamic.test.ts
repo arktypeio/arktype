@@ -1,4 +1,4 @@
-import { attest } from "@arktype/test"
+import { attest } from "../dev/attest/api.js"
 import { describe, test } from "mocha"
 import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
 import { scope } from "../src/scope.js"
