@@ -1,9 +1,9 @@
 import { attest } from "@arktype/test"
 import { describe, test } from "mocha"
 import { buildUnresolvableMessage } from "../operand/unenclosed.js"
-import { scope } from "../scope.js"
-import { type } from "../type.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
+import { scope } from "../src/scope.js"
+import { type } from "../src/type.js"
+import type { dictionary } from "../src/utils/dynamicTypes.js"
 
 describe("dynamic", () => {
     test("uninferred types", () => {

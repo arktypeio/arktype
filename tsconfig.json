@@ -12,7 +12,6 @@
         "exactOptionalPropertyTypes": true,
         "lib": ["ESNext"]
     },
-    "include": ["src"],
     "exclude": ["**/node_modules", "**/dist"],
     "ts-node": {
         "esm": true,
