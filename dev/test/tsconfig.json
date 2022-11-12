@@ -1,12 +1,4 @@
 {
     "extends": "../../tsconfig",
-    "include": ["src"],
-    "compilerOptions": {
-        "paths": {
-            "ts-morph": ["node_modules/ts-morph-ts-4.7"]
-        }
-    },
-    "ts-node": {
-        "require": ["tsconfig-paths/register"]
-    }
+    "include": ["src"]
 }

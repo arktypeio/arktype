@@ -41,6 +41,7 @@
         "test": "c8 attest --cmd mocha",
         "tnt": "c8 attest --skipTypes --cmd mocha",
         "testRepo": "ts-node ./dev/scripts/testRepo.ts",
+        "testTsVersions": "ts-node ./dev/test/src/testTsVersions.ts",
         "bench": "attest bench --benchmarksPath ./src/__tests__/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "findUnused": "ts-node ./dev/scripts/runUnusedExports.ts",

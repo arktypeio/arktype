@@ -32,8 +32,8 @@
         "attest": "./cli.js"
     },
     "dependencies": {
-        "arktype": "workspace:*",
         "@arktype/runtime": "workspace:*",
+        "arktype": "workspace:*",
         "ts-morph": "16.0.0"
     },
     "devDependencies": {
