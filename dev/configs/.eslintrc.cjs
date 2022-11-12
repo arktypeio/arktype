@@ -18,7 +18,7 @@ module.exports = defineConfig({
     ],
     ignorePatterns: [
         "**/dist/**",
-        "**/__snippets__/**",
+        "**/node_modules**",
         "**/*js",
         "**/generated/**"
     ],

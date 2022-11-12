@@ -9,7 +9,7 @@ export const parseOperand = (s: DynamicState): void =>
     s.scanner.lookahead === ""
         ? s.error(buildMissingOperandMessage(s))
         : s.scanner.lookahead === "("
-        ? s.reduceGroupOpen()
+        ? s.shiftedByOne().reduceGroupOpen()
         : s.scanner.lookaheadIsIn(enclosingChar)
         ? parseEnclosed(s, s.scanner.shift())
         : s.scanner.lookahead === " "

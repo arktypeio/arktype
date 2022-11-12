@@ -1,5 +1,5 @@
-import { throwInternalError } from "../../errors.js"
 import { isKeyOf } from "../../../utils/generics.js"
+import { throwInternalError } from "../../errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"

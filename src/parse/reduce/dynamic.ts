@@ -95,10 +95,12 @@ export class DynamicState {
     finalizeGroup() {
         this.finalizeBranches()
         const topBranchState = this.groups.pop()
-        if (topBranchState) {
-            this.branches = topBranchState
+        if (!topBranchState) {
+            return this.error(
+                buildUnmatchedGroupCloseMessage(this.scanner.unscanned)
+            )
         }
-        this.error(buildUnmatchedGroupCloseMessage(this.scanner.unscanned))
+        this.branches = topBranchState
     }
 
     pushBranch(token: Scanner.BranchToken) {

@@ -4,12 +4,13 @@ import { cjsOut, mjsOut } from "./common.js"
 
 export const testBuild = (outDir: string) =>
     shell(
-        `pnpm c8 ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha ${join(
+        `pnpm ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha ${join(
             outDir,
             "**",
             "*.test.*"
         )}`
     )
 
+shell("pnpm test")
 testBuild(mjsOut)
 testBuild(cjsOut)

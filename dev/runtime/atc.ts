@@ -1,7 +1,6 @@
-import { type } from "arktype"
 import type { CallExpression } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
-import ts from "typescript"
+import { type } from "../../arktype.js"
 
 const arktypeFunctions = {
     type
@@ -41,7 +40,7 @@ export const precompileArktypeCalls = (paths: string[]) => {
 const evalArgs = (functionToCall: Function, callExpression: CallExpression) =>
     functionToCall(
         ...callExpression.getArguments().map((arg) => {
-            return eval(ts.transpile(`(${arg.getText()})`))
+            return eval(`(${arg.getText()})`)
         })
     )
 
