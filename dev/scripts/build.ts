@@ -1,18 +1,23 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
-import { requireResolve, shell, writeJson } from "../runtime/api.js"
-import { getPackageDataFromCwd, isProd } from "./common.js"
+import { readJson, requireResolve, shell, writeJson } from "../runtime/api.js"
+import {
+    isProd,
+    outRoot,
+    packageName,
+    repoDirs,
+    srcFiles,
+    tsConfig,
+    typesOut
+} from "./common.js"
 import { getProject } from "./docgen/main.js"
 import { mapDir } from "./docgen/mapDir.js"
 import { extractSnippets } from "./docgen/snippets/extractSnippets.js"
 
-const { outRoot, packageName, packageRoot, tsConfig, typesOut, srcFiles } =
-    getPackageDataFromCwd()
+const successMessage = `📦 Successfully built ${packageName}!`
 
-const successMessage = `🎁 Successfully built ${packageName}!`
-
-export const arktypeTsc = () => {
+const arktypeTsc = () => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
     buildTypes()
@@ -20,22 +25,26 @@ export const arktypeTsc = () => {
     console.log(successMessage)
 }
 
-export const buildTypes = () => {
+const buildTypes = () => {
     stdout.write("⏳ Building types...".padEnd(successMessage.length))
-    const cmd = `pnpm tsc --project ${tsConfig} --outDir ${typesOut} --emitDeclarationOnly`
-    shell(cmd, {
-        cwd: packageRoot
-    })
+    const tsConfigData = readJson(tsConfig)
+    const tempTsConfig = join(repoDirs.root, "tsconfig.temp.json")
+    try {
+        writeJson(tempTsConfig, { ...tsConfigData, include: ["api.ts", "src"] })
+        shell(
+            `pnpm tsc --project ${tempTsConfig} --outDir ${typesOut} --emitDeclarationOnly`
+        )
+    } finally {
+        rmSync(tempTsConfig, { force: true })
+    }
     stdout.write(`✅\n`)
 }
 
-export const transpile = () => {
+const transpile = () => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     swc("mjs")
     swc("cjs")
-    if (packageName === "arktype") {
-        buildDeno()
-    }
+    buildDeno()
     stdout.write("✅\n")
 }
 
@@ -56,7 +65,7 @@ const swc = (kind: "mjs" | "cjs") => {
     })
 }
 
-export const buildDeno = () => {
+const buildDeno = () => {
     const sources = extractSnippets(srcFiles, getProject())
     mapDir(sources, {
         sources: ["src"],
