@@ -4,6 +4,7 @@ import type { Scanner } from "./scanner.js"
 import type {
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
+    OpenRange,
     unclosedGroupMessage
 } from "./shared.js"
 
@@ -13,8 +14,6 @@ export type StaticState = {
     groups: BranchState[]
     unscanned: string
 }
-
-type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
 type BranchState = {
     range: OpenRange | undefined

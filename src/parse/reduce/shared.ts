@@ -12,6 +12,8 @@ export const unclosedGroupMessage = "Missing )"
 
 export type unclosedGroupMessage = typeof unclosedGroupMessage
 
+export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
+
 export const buildOpenRangeMessage = <
     limit extends number,
     comparator extends Scanner.Comparator

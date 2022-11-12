@@ -4,13 +4,12 @@ import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morphs } from "./attributes/morph.js"
 import { Scanner } from "./scanner.js"
+import type { OpenRange } from "./shared.js"
 import {
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
     unclosedGroupMessage
 } from "./shared.js"
-
-type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
 
 type BranchState = {
     range?: OpenRange
