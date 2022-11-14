@@ -13,7 +13,7 @@ import { shell } from "../../runtime/shell.js"
     for (const [tsVersion, tsMorphVersion] of Object.entries(versions)) {
         shell(`pnpm i ${tsMorphVersion}`, { cwd: fromHere() })
         console.log(`testing ${tsVersion}`)
-        // TODO uncomment once tests are passing :)
+        // TODO uncomment once tests are passing & make script for CI
         // shell(`pnpm test`)
     }
     const rootJson = readPackageJson(fromPackageRoot())

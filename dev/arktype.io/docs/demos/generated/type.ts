@@ -1,4 +1,4 @@
-export default `import { type } from "../arktype"
+export default `import { type } from "arktype"
 
 // Define a type...
 export const user = type({

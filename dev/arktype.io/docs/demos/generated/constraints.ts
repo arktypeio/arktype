@@ -1,4 +1,4 @@
-export default `import { type } from "../arktype"
+export default `import { type } from "arktype"
 
 export const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type.
