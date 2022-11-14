@@ -130,8 +130,8 @@ const getLinesFromJsonFile = (
     let result = contents
     for (const segments of deepDataGrab) {
         try {
-            result = segments.reduce((acc, next) => {
-                return acc[next]
+            result = segments.reduce((obj, property) => {
+                return obj[property]
             }, result)
         } catch {
             throw new Error(

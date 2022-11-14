@@ -12,7 +12,7 @@ import {} from "ts-morph"
     rmSync(filePath, { force: true })
     writeFileSync(filePath, "save=true")
     for (const [tsVersion, tsMorphVersion] of Object.entries(versions)) {
-        shell(`pnpm i ${tsMorphVersion} -w`)
+        shell(`pnpm i ${tsMorphVersion}`)
         console.log(`testing ${tsVersion}`)
         //RUN TESTS HERE
         //shell(`pnpm test`)
