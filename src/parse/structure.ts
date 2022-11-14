@@ -1,36 +1,13 @@
+import type { Attributes } from "../../exports.js"
 import type { DynamicScope } from "../scope.js"
-import { dynamicTypeOf } from "../utils/dynamicTypes.js"
-import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
-import type { keySet, mutable } from "../utils/generics.js"
-import { throwInternalError, throwParseError } from "./errors.js"
-import type { Attributes } from "./reduce/attributes/attributes.js"
+import type { dictionary } from "../utils/dynamicTypes.js"
+import type { evaluate, keySet } from "../utils/generics.js"
+import type { inferDefinition } from "./definition.js"
+import { parseDefinition } from "./definition.js"
+import { throwInternalError } from "./errors.js"
 import type { Scanner } from "./reduce/scanner.js"
-import { parseString } from "./shift/string.js"
 
-export const parseRoot = (def: unknown, scope: DynamicScope) => {
-    const rawAttributes = parseDefinition(def, scope)
-    return rawAttributes
-}
-
-const parseDefinition = (def: unknown, scope: DynamicScope): Attributes => {
-    const defType = dynamicTypeOf(def)
-    return defType === "string"
-        ? parseString(def as string, scope)
-        : defType === "dictionary" || defType === "array"
-        ? parseStructure(def as any, scope)
-        : throwParseError(buildBadDefinitionTypeMessage(defType))
-}
-
-export type BadDefinitionType =
-    | undefined
-    | null
-    | boolean
-    | number
-    | bigint
-    | Function
-    | symbol
-
-const parseStructure = (
+export const parseStructure = (
     def: Record<string | number, unknown>,
     scope: DynamicScope
 ): Attributes => {
@@ -38,7 +15,7 @@ const parseStructure = (
         return parseTupleExpression(def, scope)
     }
     const type = Array.isArray(def) ? "array" : "dictionary"
-    const props: mutable<dictionary<Attributes>> = {}
+    const props: dictionary<Attributes> = {}
     const requiredKeys: keySet<string> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
@@ -51,6 +28,42 @@ const parseStructure = (
     }
     return { type, props, requiredKeys }
 }
+
+export type inferStructure<
+    def,
+    scope extends dictionary,
+    aliases
+> = def extends readonly unknown[]
+    ? { [i in keyof def]: inferDefinition<def[i], scope, aliases> }
+    : inferObjectLiteral<def, scope, aliases>
+
+type inferObjectLiteral<def, scope extends dictionary, aliases> = evaluate<
+    {
+        [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
+            def[requiredKeyName],
+            scope,
+            aliases
+        >
+    } & {
+        [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
+            // @ts-expect-error We're just undoing the optional key extraction
+            // we just did to acces the prop
+            def[`${optionalKeyName}?`],
+            scope,
+            aliases
+        >
+    }
+>
+
+type optionalKeyWithName<name extends string = string> = `${name}?`
+
+type optionalKeyOf<def> = {
+    [k in keyof def]: k extends optionalKeyWithName<infer name> ? name : never
+}[keyof def]
+
+type requiredKeyOf<def> = {
+    [k in keyof def]: k extends optionalKeyWithName ? never : k
+}[keyof def]
 
 const parseTupleExpression = (
     expression: TupleExpression,
@@ -75,11 +88,3 @@ type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
 
 const isTupleExpression = (def: unknown): def is TupleExpression =>
     Array.isArray(def) && (def[1] as any) in {}
-
-export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
-    actual: actual
-): buildBadDefinitionTypeMessage<actual> =>
-    `Type definitions must be strings or objects (was ${actual})`
-
-export type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
-    `Type definitions must be strings or objects (was ${actual})`

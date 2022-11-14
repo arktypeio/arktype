@@ -1,12 +1,12 @@
-import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
+import { attest } from "../dev/attest/exports.js"
 import { type } from "../exports.js"
 import {
     buildIndivisibleMessage,
     buildUnboundableMessage
-} from "../src/parse/validate.js"
+} from "../src/parse/ast.js"
 
-describe("validate", () => {
+describe("semantics", () => {
     describe("bound", () => {
         test("number", () => {
             attest(type("number==-3.14159").infer).typed as number

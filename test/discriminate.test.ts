@@ -1,5 +1,5 @@
-import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
+import { attest } from "../dev/attest/exports.js"
 import type { Attributes } from "../exports.js"
 import { compileUnion } from "../src/parse/reduce/union/compile.js"
 
