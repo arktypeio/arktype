@@ -2,19 +2,9 @@ import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
 import type { RegexLiteral } from "../../../utils/generics.js"
 import type { SerializablePrimitive } from "../../../utils/primitiveSerialization.js"
 import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
-import { boundsIntersection } from "./bounds.js"
-import {
-    applyDivisorOperation,
-    divisorDifference,
-    divisorIntersection
-} from "./divisor.js"
-import {
-    applyKeyOrSetOperation,
-    applyKeySetOperation,
-    keyOrSetDifference,
-    keyOrSetIntersection,
-    keySetIntersection
-} from "./keySets.js"
+import { applyBoundsOperation, boundsIntersection } from "./bounds.js"
+import { applyDivisorOperation } from "./divisor.js"
+import { applyKeyOrSetOperation, applyKeySetOperation } from "./keySets.js"
 import type { DeserializedAttribute, SerializedKey } from "./serialization.js"
 import { deserializers, serializers } from "./serialization.js"
 
@@ -54,10 +44,8 @@ const applyOperationToKey = <k extends AttributeKey>(
     const baseValue = isSerialized
         ? deserializers[k as SerializedKey](base[k] as any)
         : base[k]
-
-    const operations = operator === "&" ? operations : differences
     // TODO: Remove non-null assertion
-    const result: any = operations[k]!(baseValue, v as any)
+    const result: any = operations[k]!(operator, baseValue, v as any)
     if (result === null) {
         return null
     } else {
@@ -92,15 +80,15 @@ type AttributeOperations = {
     [k in AttributeKey]?: AttributeOperation<k>
 }
 
-const disjointOperation = <t>(operator: AttributeOperator, a: t, b: t) =>
+const applyDisjointOperation = <t>(operator: AttributeOperator, a: t, b: t) =>
     operator === "&" ? (a === b ? a : null) : a === b ? null : a
 
 export const operations: AttributeOperations = {
-    type: disjointOperation<DynamicTypeName>,
-    value: disjointOperation<SerializablePrimitive>,
+    type: applyDisjointOperation<DynamicTypeName>,
+    value: applyDisjointOperation<SerializablePrimitive>,
     alias: applyKeyOrSetOperation,
     requiredKeys: applyKeySetOperation,
     regex: applyKeyOrSetOperation<RegexLiteral>,
     divisor: applyDivisorOperation,
-    bounds: boundsIntersection
+    bounds: applyBoundsOperation
 }

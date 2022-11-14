@@ -1,3 +1,5 @@
+import type { AttributeOperation } from "./operations.js"
+
 export type Bounds = {
     min?: Bound
     max?: Bound
@@ -6,6 +8,17 @@ export type Bounds = {
 export type Bound = {
     limit: number
     inclusive: boolean
+}
+
+export const applyBoundsOperation: AttributeOperation<"bounds"> = (
+    operator,
+    a,
+    b
+) => (operator === "&" ? boundsIntersection(a, b) : boundsDifference(a, b))
+
+// TODO: Multiple bounds as diff result?
+export const boundsDifference = (a: Bounds, b: Bounds) => {
+    return a
 }
 
 export const boundsIntersection = (a: Bounds, b: Bounds) => {
@@ -31,6 +44,19 @@ const boundIntersection = (
     a: Bounds,
     boundOfB: Bound
 ): Bound | null => {
+    const invertedKind = invertedKinds[kind]
+    const baseCompeting = a[kind]
+    const baseOpposing = a[invertedKind]
+    if (baseOpposing && isStricter(kind, boundOfB, baseOpposing)) {
+        return null
+    }
+    if (!baseCompeting || isStricter(kind, boundOfB, baseCompeting)) {
+        return boundOfB
+    }
+    return baseCompeting
+}
+
+const boundDifference = (kind: BoundKind, a: Bound, b: Bound): Bound | null => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = a[kind]
     const baseOpposing = a[invertedKind]
