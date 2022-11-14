@@ -12,14 +12,14 @@
         "url": "https://github.com/arktypeio/arktype.git"
     },
     "type": "module",
-    "main": "./dist/arktype.cjs",
-    "types": "./dist/arktype.d.ts",
+    "main": "./dist/exports.cjs",
+    "types": "./dist/exports.d.ts",
     "exports": {
         ".": {
-            "types": "./dist/arktype.d.ts",
-            "import": "./dist/arktype.mjs",
-            "require": "./dist/arktype.cjs",
-            "deno": "./dist/arktype.ts"
+            "types": "./dist/exports.d.ts",
+            "import": "./dist/exports.mjs",
+            "require": "./dist/exports.cjs",
+            "deno": "./dist/exports.ts"
         }
     },
     "packageManager": "pnpm@7.14.0",

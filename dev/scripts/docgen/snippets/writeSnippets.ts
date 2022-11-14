@@ -124,15 +124,10 @@ const getLinesFromJsonFile = (
     token: string
 ) => {
     const dataSegments = pathToData?.split("/") ?? []
-    const deepDataGrab =
-        dataSegments?.map((segment) => segment.split("~")) ?? []
-    const contents = readJson(fromPackageRoot(pathToFile))
-    let result = contents
-    for (const segments of deepDataGrab) {
+    let result = readJson(fromPackageRoot(pathToFile))
+    for (const segment of dataSegments) {
         try {
-            result = segments.reduce((obj, property) => {
-                return obj[property]
-            }, result)
+            result = result[segment]
         } catch {
             throw new Error(
                 `Path ${pathToData} does not exist in ${pathToFile}.`
