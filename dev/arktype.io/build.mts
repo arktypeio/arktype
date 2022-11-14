@@ -1,6 +1,6 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { fromHere, shell } from "@arktype/runtime"
+import { fromHere, shell } from "../runtime/api.js"
 
 const OUT_DIR = fromHere("dist")
 

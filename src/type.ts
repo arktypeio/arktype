@@ -1,43 +1,61 @@
-import type { ArktypeConfig } from "./arktype.js"
-import { Arktype } from "./arktype.js"
-import type { ParseError } from "./parse/common.js"
+import type { inferRoot } from "./parse/infer.js"
 import { parseRoot } from "./parse/parse.js"
-import type { ArktypeSpace } from "./space.js"
-import { space } from "./space.js"
-import type { inferAst } from "./traverse/infer.js"
-import type { validate } from "./traverse/validate.js"
+import type { Attributes } from "./parse/reduce/attributes/attributes.js"
+import type { validateRoot } from "./parse/validate.js"
+import type { DynamicScope, Scope } from "./scope.js"
+import { getRootScope } from "./scope.js"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { dictionary } from "./utils/dynamicTypes.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const emptySpace: EmptySpace = space({})
-
-type EmptySpace = ArktypeSpace<{}>
-
 const rawTypeFn: DynamicTypeFn = (
     definition,
-    { space = emptySpace, ...config } = {}
-) => new Arktype(parseRoot(definition, space.$), config, space as ArktypeSpace)
+    { scope = getRootScope(), ...config } = {}
+) => new Type(parseRoot(definition, scope as any), config, scope as any)
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type TypeFnOptions<space> = ArktypeConfig & {
-    space?: space
-}
+export type InferredTypeFn = <definition, scope extends dictionary = {}>(
+    definition: validateRoot<definition, scope>,
+    options?: Config<scope>
+) => Type<inferRoot<definition, scope, {}>>
 
-export type InferredTypeFn = <
-    definition,
-    space = EmptySpace,
-    ast = parseRoot<definition, { aliases: space }>
->(
-    definition: validate<definition, ast, space>,
-    options?: TypeFnOptions<space>
-) => ast extends ParseError<string> ? never : Arktype<inferAst<ast, space>>
-
-type DynamicTypeFn = (
-    definition: unknown,
-    options?: TypeFnOptions<ArktypeSpace>
-) => Arktype
+type DynamicTypeFn = (definition: unknown, options?: Config<dictionary>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
+
+export class Type<inferred = unknown> {
+    constructor(
+        public attributes: Attributes,
+        public config: Config,
+        public scope: DynamicScope
+    ) {
+        // TODO: Integrate config
+    }
+
+    get infer(): inferred {
+        return chainableNoOpProxy
+    }
+
+    check(data: unknown) {
+        const state = {} as any
+        return state.problems.length
+            ? {
+                  problems: state.problems
+              }
+            : { data: data as inferred }
+    }
+
+    assert(data: unknown) {
+        const result = this.check(data)
+        result.problems?.throw()
+        return result.data as inferred
+    }
+}
+
+export type Config<scope extends dictionary = {}> = {
+    scope?: Scope<scope>
+}

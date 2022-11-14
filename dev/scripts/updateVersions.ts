@@ -7,9 +7,9 @@ import {
     shell,
     writeFile,
     writeJson
-} from "@arktype/runtime"
-import { repoDirs } from "../common.js"
-import { docgen } from "../docgen/main.js"
+} from "../runtime/exports.js"
+import { repoDirs } from "./common.js"
+import { docgen } from "./docgen/main.js"
 
 const suffixedPackageEntries: [rootDir: string, suffix: string][] = []
 

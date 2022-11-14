@@ -71,14 +71,43 @@ export type keysOf<o extends object> = (keyof o)[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 
+export type keySet<key extends string = string> = Record<key, true>
+
+export type keyOrSet<key extends string = string> = key | keySet<key>
+
+export type partialKeySet<key extends string = string> = { [_ in key]?: true }
+
+export type keyOrPartialSet<key extends string = string> =
+    | key
+    | partialKeySet<key>
+
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
 
-export const pushKey = (path: string, key: string, delimiter = ".") =>
-    path === "" ? key : `${path}${delimiter}${key}`
+export type subtype<t, u extends t> = u
 
-export const withoutLastKey = (path: string, delimiter = ".") => {
-    const lastDelimiterIndex = path.lastIndexOf(delimiter)
-    return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
+export type defined<t> = Exclude<t, undefined>
+
+export type requireKeys<o, key extends keyof o> = o & {
+    [requiredKey in key]-?: o[requiredKey]
 }
+
+export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
+    ? [...MaybeArray, T]
+    : T
+
+export type partialRecord<k extends string, v> = { [_ in k]?: v }
+
+export const satisfies =
+    <base>() =>
+    <t extends base>(t: t) =>
+        t
+
+export type is<t> = t
+
+export type error<message extends string = string> = `!${message}`
+
+export type stringKeyOf<t> = keyof t & string
+
+export type RegexLiteral<expression extends string = string> = `/${expression}/`

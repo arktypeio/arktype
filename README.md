@@ -20,7 +20,7 @@ If you're using TypeScript, you'll need at least `4.6`.
 
 [Try it out.](https://arktype.io/type/intro#start-quick-%EF%B8%8F)
 
-```ts @blockFrom:src/__snippets__/type.ts
+```ts
 import { type } from "arktype"
 
 // Define a type...
@@ -55,11 +55,11 @@ if (problems) {
 
 [Try it out.](https://arktype.io/type/spaces)
 
-```ts @blockFrom:src/__snippets__/space.ts
-import { space } from "arktype"
+```ts
+import { scope } from "arktype"
 
-// Spaces are collections of types that can reference each other.
-export const types = space({
+// Scopes are collections of types that can reference each other.
+export const types = scope({
     package: {
         name: "string",
         "dependencies?": "package[]",
@@ -107,7 +107,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://arktype.io/type/constraints)
 
-```ts @blockFrom:src/__snippets__/constraints.ts
+```ts
 import { type } from "arktype"
 
 export const employee = type({

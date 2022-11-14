@@ -10,10 +10,14 @@
         "resolveJsonModule": true,
         "composite": true,
         "exactOptionalPropertyTypes": true,
-        "lib": ["ESNext"]
+        "lib": ["ESNext"],
+        "paths": {
+            "get-current-line": [
+                "./node_modules/get-current-line/compiled-types/index.d.ts"
+            ]
+        }
     },
-    "include": ["src"],
-    "exclude": ["**/node_modules", "**/dist"],
+    "exclude": ["dev/arktype.io", "**/node_modules", "**/dist"],
     "ts-node": {
         "esm": true,
         "swc": true,

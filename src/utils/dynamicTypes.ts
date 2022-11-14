@@ -16,7 +16,9 @@ type builtinDyanmicTypeOfNonObject<data> = data extends Function
     ? "boolean"
     : data extends bigint
     ? "bigint"
-    : "symbol"
+    : data extends symbol
+    ? "symbol"
+    : never
 
 export type DynamicTypes = {
     bigint: bigint
@@ -37,6 +39,8 @@ export type dynamicTypeOf<data> = isTopType<data> extends true
     ? "array"
     : data extends null
     ? "null"
+    : data extends dictionary
+    ? "dictionary"
     : builtinDyanmicTypeOfNonObject<data>
 
 export type DynamicTypeName = keyof DynamicTypes
