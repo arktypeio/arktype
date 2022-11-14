@@ -1,6 +1,6 @@
-import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
-import { type } from "../arktype.js"
+import { attest } from "../dev/attest/exports.js"
+import { type } from "../exports.js"
 import { incompleteArrayTokenMessage } from "../src/parse/shift/operator/operator.js"
 
 describe("parse array", () => {

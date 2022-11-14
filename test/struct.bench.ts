@@ -1,5 +1,5 @@
-import { type } from "../arktype.js"
 import { bench, suite } from "../dev/attest/exports.js"
+import { type } from "../exports.js"
 
 suite("parse/struct", () => {
     bench("dictionary", () => {

@@ -2,7 +2,7 @@ import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
 import { caller } from "../../../runtime/exports.js"
-import { assertEquals, throwAssertionError } from "../assertions.js"
+import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
 import { literalSerialize } from "../common.js"
 import type { SnapshotArgs } from "../snapshot.js"
@@ -10,7 +10,7 @@ import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit
 } from "../snapshot.js"
-import { getTypeDataAtPos } from "../type/index.js"
+import { getTypeDataAtPos } from "../type/exports.js"
 import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
@@ -131,11 +131,6 @@ export class Assertions implements AssertionRecord {
         return this
     }
 
-    args(...args: any[]) {
-        this.ctx.assertedFnArgs = args
-        return this
-    }
-
     private immediateOrChained() {
         const immediateAssertion = (...args: [expected: unknown]) => {
             let expected
@@ -162,18 +157,8 @@ export class Assertions implements AssertionRecord {
         })
     }
 
-    get returns() {
-        const result = callAssertedFunction(this.actual as Function, this.ctx)
-        if (!("returned" in result)) {
-            throwAssertionError({ message: result.threw!, ctx: this.ctx })
-        }
-        this.ctx.actual = result.returned
-        this.ctx.isReturn = true
-        return this.immediateOrChained()
-    }
-
     get throws() {
-        const result = callAssertedFunction(this.actual as Function, this.ctx)
+        const result = callAssertedFunction(this.actual as Function)
         this.ctx.actual = getThrownMessage(result, this.ctx)
         this.ctx.allowRegex = true
         this.ctx.defaultExpected = ""
@@ -184,7 +169,7 @@ export class Assertions implements AssertionRecord {
         assertEqualOrMatching(
             matchValue,
             getThrownMessage(
-                callAssertedFunction(this.actual as Function, this.ctx),
+                callAssertedFunction(this.actual as Function),
                 this.ctx
             ),
             this.ctx

@@ -1,5 +1,5 @@
-import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
+import { attest } from "../dev/attest/exports.js"
 import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
 import { scope } from "../src/scope.js"
 import { type } from "../src/type.js"

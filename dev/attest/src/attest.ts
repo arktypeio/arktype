@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url"
 import { caller, getCallStack } from "../../runtime/exports.js"
-import type { ValueAssertion } from "./assertions/index.js"
-import { Assertions } from "./assertions/index.js"
+import type { ValueAssertion } from "./assertions/exports.js"
+import { Assertions } from "./assertions/exports.js"
 import type { AtTestConfig, SourcePosition } from "./common.js"
 import { getAtTestConfig } from "./common.js"
 
@@ -14,7 +14,6 @@ export type AssertFn = <T>(value: T) => AssertionResult<T>
 export type AssertionContext = {
     actual: unknown
     originalAssertedValue: unknown
-    assertedFnArgs: unknown[]
     cfg: AtTestConfig
     isReturn: boolean
     allowRegex: boolean
@@ -37,7 +36,6 @@ export const attest: AssertFn = (
         isReturn: false,
         allowRegex: false,
         originalAssertedValue: value,
-        assertedFnArgs: [],
         position,
         cfg: { ...getAtTestConfig(), ...internalConfigHooks },
         assertionStack: getCallStack({ offset: 1 }).join("\n")

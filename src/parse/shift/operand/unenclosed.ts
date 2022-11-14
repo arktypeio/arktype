@@ -9,7 +9,7 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../utils/numericLiterals.js"
-import { parseRoot } from "../../parse.js"
+import { parseDefinition } from "../../definition.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -56,7 +56,7 @@ const parseAlias = (name: string, scope: DynamicScope) => {
         // Set the resolution to a shallow reference until the alias has
         // been fully parsed in case it cyclicly references itself
         cache.set(name, { alias: name })
-        cache.set(name, parseRoot(scope.$.aliases[name], scope))
+        cache.set(name, parseDefinition(scope.$.aliases[name], scope))
     }
     return cache.get(name)
 }

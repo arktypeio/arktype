@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { basename, join } from "node:path"
+import { basename } from "node:path"
 import { version, versions } from "node:process"
 import {
     fileName,
@@ -7,7 +7,7 @@ import {
     shell,
     walkPaths
 } from "../runtime/exports.js"
-import { cacheAssertions, cleanupAssertions } from "./src/type/index.js"
+import { cacheAssertions, cleanupAssertions } from "./src/type/exports.js"
 
 let runTestsCmd = ""
 const attestArgIndex = process.argv.findIndex((arg) =>
@@ -23,7 +23,8 @@ if (attestArgIndex === -1) {
 
 if (process.argv[attestArgIndex + 1] === "bench") {
     const packageRoot = findPackageRoot(process.cwd())
-    const benchFilePaths = walkPaths(join(packageRoot, "src"), {
+    const benchFilePaths = walkPaths(packageRoot, {
+        ignoreDirsMatching: /node_modules|dist/,
         include: (path) => basename(path).includes(".bench.")
     })
     let exitCode = 0

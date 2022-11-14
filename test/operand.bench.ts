@@ -1,5 +1,5 @@
 import { bench, suite } from "../dev/attest/exports.js"
-import { scope, type } from "../arktype.js"
+import { scope, type } from "../exports.js"
 
 suite("parse/str/operand", () => {
     suite("enclosed", () => {

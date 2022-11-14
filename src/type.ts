@@ -1,7 +1,6 @@
-import type { inferRoot } from "./parse/infer.js"
-import { parseRoot } from "./parse/parse.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import { parseDefinition } from "./parse/definition.js"
 import type { Attributes } from "./parse/reduce/attributes/attributes.js"
-import type { validateRoot } from "./parse/validate.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -12,16 +11,16 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = getRootScope(), ...config } = {}
-) => new Type(parseRoot(definition, scope as any), config, scope as any)
+) => new Type(parseDefinition(definition, scope as any), config, scope as any)
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
 export type InferredTypeFn = <definition, scope extends dictionary = {}>(
-    definition: validateRoot<definition, scope>,
+    definition: validateDefinition<definition, scope>,
     options?: Config<scope>
-) => Type<inferRoot<definition, scope, {}>>
+) => Type<inferDefinition<definition, scope, {}>>
 
 type DynamicTypeFn = (definition: unknown, options?: Config<dictionary>) => Type
 

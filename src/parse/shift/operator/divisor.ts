@@ -25,7 +25,7 @@ export type parseDivisor<
     ? tryParseWellFormedInteger<
           scanned,
           buildInvalidDivisorMessage<scanned>
-      > extends is<infer result>
+      > extends infer result
         ? result extends number
             ? result extends 0
                 ? state.throws<buildInvalidDivisorMessage<0>>

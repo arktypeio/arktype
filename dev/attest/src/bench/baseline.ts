@@ -5,8 +5,8 @@ import type {
     MarkMeasure,
     Measure,
     MeasureComparison
-} from "./measure/index.js"
-import { stringifyMeasure } from "./measure/index.js"
+} from "./measure/exports.js"
+import { stringifyMeasure } from "./measure/exports.js"
 
 export const queueBaselineUpdateIfNeeded = (
     updated: Measure | MarkMeasure,

@@ -1,7 +1,6 @@
-import type { inferRoot } from "./parse/infer.js"
-import { parseRoot } from "./parse/parse.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import { parseDefinition } from "./parse/definition.js"
 import type { Attributes } from "./parse/reduce/attributes/attributes.js"
-import type { validateRoot } from "./parse/validate.js"
 import type { Config } from "./type.js"
 import { Type } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -15,7 +14,7 @@ const rawScope = (aliases: dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
     const compiled: Scope<dictionary> = { $: root as any }
     for (const name in aliases) {
-        const attributes = parseRoot(aliases[name], compiled)
+        const attributes = parseDefinition(aliases[name], compiled)
         root.attributes[name] = attributes
         root.parseCache.set(name, attributes)
         compiled[name] = new Type(attributes, config, compiled)
@@ -90,11 +89,11 @@ export class ParseCache {
 }
 
 type validateAliases<aliases, scope extends dictionary> = evaluate<{
-    [name in keyof aliases]: validateRoot<aliases[name], scope>
+    [name in keyof aliases]: validateDefinition<aliases[name], scope>
 }>
 
 type inferAliases<aliases, scope extends dictionary> = evaluate<{
-    [name in keyof aliases]: inferRoot<aliases[name], scope, aliases>
+    [name in keyof aliases]: inferDefinition<aliases[name], scope, aliases>
 }>
 
 type inferScopeContext<aliases, scope extends dictionary> = inferAliases<
