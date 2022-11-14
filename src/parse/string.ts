@@ -2,7 +2,7 @@ import type { DynamicScope } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { error, is, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
-import { morphs } from "./reduce/attributes/morph.js"
+import { morph } from "./reduce/attributes/morph.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { Scanner } from "./reduce/scanner.js"
 import type { state, StaticState } from "./reduce/static.js"
@@ -74,7 +74,7 @@ const maybeNaiveParse = (def: string, scope: DynamicScope) => {
             scope
         )
         if (maybeParsedAttributes) {
-            return morphs.array(maybeParsedAttributes)
+            return morph("array", maybeParsedAttributes)
         }
     }
     return maybeParseIdentifier(def, scope)

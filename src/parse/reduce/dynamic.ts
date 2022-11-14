@@ -2,7 +2,7 @@ import type { DynamicScope } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../errors.js"
 import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
-import { morphs } from "./attributes/morph.js"
+import { morph } from "./attributes/morph.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -54,9 +54,9 @@ export class DynamicState {
         this.root = attributes
     }
 
-    morphRoot(to: MorphName) {
+    morphRoot(name: MorphName) {
         this.assertHasRoot()
-        this.root = morphs[to](this.root!)
+        this.root = morph(name, this.root!)
     }
 
     private unsetRoot() {
