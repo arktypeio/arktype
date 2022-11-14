@@ -1,4 +1,4 @@
-import { type } from "../arktype.js"
+import { type } from "../exports.js"
 
 export const employee = type({
     // Not a fan of regex? Don't worry, 'email' is a builtin type.

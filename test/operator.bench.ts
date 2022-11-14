@@ -1,5 +1,5 @@
 import { bench, suite } from "../dev/attest/exports.js"
-import { type } from "../arktype.js"
+import { type } from "../exports.js"
 
 const buildBranchDef = (token: string, size: number) =>
     [...Array(size - 1)].reduce((def, _, i) => `${def}${token}${i + 1}`, "0")

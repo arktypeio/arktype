@@ -1,6 +1,6 @@
 import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
-import { type } from "../arktype.js"
+import { type } from "../exports.js"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
 
 describe("parse enclosed", () => {

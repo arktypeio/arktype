@@ -1,4 +1,4 @@
-import { type } from "../arktype.js"
+import { type } from "../exports.js"
 import { bench, suite } from "../dev/attest/exports.js"
 
 suite("parse/struct", () => {

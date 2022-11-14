@@ -51,8 +51,8 @@ const buildTypes = () => {
 const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
-            ? join(outRoot, kind, "arktype.js")
-            : "arktype.ts"
+            ? join(outRoot, kind, "exports.js")
+            : "exports.ts"
     const originalContents = readFile(originalPath)
     if (kind === "mjs" || kind === "cjs") {
         rmSync(originalPath)
@@ -66,7 +66,7 @@ const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     }
     const destinationFile = join(
         outRoot,
-        `arktype.${kind === "types" ? "d.ts" : kind === "deno" ? "ts" : kind}`
+        `exports.${kind === "types" ? "d.ts" : kind === "deno" ? "ts" : kind}`
     )
     writeFile(destinationFile, transformedContents)
 }
@@ -88,7 +88,7 @@ const swc = (kind: "mjs" | "cjs") => {
     if (!isProd()) {
         cmd += `--source-maps inline `
     }
-    cmd += srcFiles.join(" ") + " arktype.ts"
+    cmd += srcFiles.join(" ") + " exports.ts"
     shell(cmd)
     writeJson(join(srcOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"

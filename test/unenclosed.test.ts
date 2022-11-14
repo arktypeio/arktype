@@ -1,6 +1,6 @@
 import { attest } from "../dev/attest/exports.js"
 import { describe, test } from "mocha"
-import { scope, type } from "../arktype.js"
+import { scope, type } from "../exports.js"
 import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
 import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.js"
 

@@ -1,5 +1,5 @@
 import { bench, suite } from "../dev/attest/exports.js"
-import { type } from "../arktype.js"
+import { type } from "../exports.js"
 
 suite("legacy", () => {
     bench("validate string", () => {
