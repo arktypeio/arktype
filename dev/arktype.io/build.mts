@@ -1,6 +1,6 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { fromHere, shell } from "../runtime/api.js"
+import { fromHere, shell } from "../runtime/exports.js"
 
 const OUT_DIR = fromHere("dist")
 

@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { shell } from "../runtime/exports.js"
-import { cjsOut, mjsOut, repoDirs } from "./common.js"
+import { repoDirs } from "./common.js"
 
 export const testBuild = (outDir: string) =>
     shell(
@@ -11,6 +11,5 @@ export const testBuild = (outDir: string) =>
         )}`
     )
 
-shell("pnpx ts-node cli.ts --cmd mocha", { cwd: join(repoDirs.dev, "attest") })
-testBuild(mjsOut)
-testBuild(cjsOut)
+testBuild(repoDirs.mjsOut)
+testBuild(repoDirs.cjsOut)

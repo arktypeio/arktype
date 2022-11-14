@@ -8,24 +8,16 @@ import {
     writeFile,
     writeJson
 } from "../runtime/exports.js"
-import {
-    isProd,
-    outRoot,
-    packageName,
-    repoDirs,
-    srcFiles,
-    tsConfig,
-    typesOut
-} from "./common.js"
+import { isProd, repoDirs, srcFiles } from "./common.js"
 import { getProject } from "./docgen/main.js"
 import { mapDir } from "./docgen/mapDir.js"
 import { extractSnippets } from "./docgen/snippets/extractSnippets.js"
 
-const successMessage = `📦 Successfully built ${packageName}!`
+const successMessage = `📦 Successfully built arktype!`
 
 const arktypeTsc = () => {
-    console.log(`🔨 Building ${packageName}...`)
-    rmSync(outRoot, { recursive: true, force: true })
+    console.log(`🔨 Building arktype...`)
+    rmSync(repoDirs.outRoot, { recursive: true, force: true })
     buildTypes()
     transpile()
     console.log(successMessage)
@@ -33,14 +25,14 @@ const arktypeTsc = () => {
 
 const buildTypes = () => {
     stdout.write("⏳ Building types...".padEnd(successMessage.length))
-    const tsConfigData = readJson(tsConfig)
+    const tsConfigData = readJson(join(repoDirs.root, "tsconfig.json"))
     const tempTsConfig = join(repoDirs.root, "tsconfig.temp.json")
     try {
         writeJson(tempTsConfig, { ...tsConfigData, include: ["src"] })
         shell(
-            `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot} --emitDeclarationOnly`
+            `pnpm tsc --project ${tempTsConfig} --outDir ${repoDirs.outRoot} --emitDeclarationOnly`
         )
-        renameSync(join(outRoot, "src"), typesOut)
+        renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
         buildApiTs("types")
     } finally {
         rmSync(tempTsConfig, { force: true })
@@ -51,7 +43,7 @@ const buildTypes = () => {
 const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
-            ? join(outRoot, kind, "exports.js")
+            ? join(repoDirs.outRoot, kind, "exports.js")
             : "exports.ts"
     const originalContents = readFile(originalPath)
     if (kind === "mjs" || kind === "cjs") {
@@ -65,7 +57,7 @@ const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
         transformedContents = transformedContents.replaceAll(".js", ".ts")
     }
     const destinationFile = join(
-        outRoot,
+        repoDirs.outRoot,
         `exports.${kind === "types" ? "d.ts" : kind === "deno" ? "ts" : kind}`
     )
     writeFile(destinationFile, transformedContents)
@@ -80,7 +72,7 @@ const transpile = () => {
 }
 
 const swc = (kind: "mjs" | "cjs") => {
-    const srcOutDir = join(outRoot, kind)
+    const srcOutDir = join(repoDirs.outRoot, kind)
     let cmd = `pnpm swc --out-dir ${srcOutDir} -C jsc.target=es2020 --quiet `
     if (kind === "cjs") {
         cmd += `-C module.type=commonjs `
