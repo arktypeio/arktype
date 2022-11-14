@@ -1,11 +1,11 @@
 import { getAtTestConfig, getFileKey } from "../common.js"
 import { getDefaultTsMorphProject } from "./getTsMorphProject.js"
-import type { AssertionData } from "./internal/index.js"
+import type { AssertionData } from "./internal/exports.js"
 import {
     getAssertionsInFile,
     getCachedAssertionData,
     getDiagnosticsByFile
-} from "./internal/index.js"
+} from "./internal/exports.js"
 
 type AnalyzeTypeAssertionsOptions = {
     isInitialCache?: boolean

@@ -2,12 +2,11 @@ import { throwAssertionError } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
 
 export const callAssertedFunction = (
-    asserted: Function,
-    ctx: AssertionContext
+    asserted: Function
 ): AssertedFnCallResult => {
     const result: AssertedFnCallResult = {}
     try {
-        result.returned = asserted(...ctx.assertedFnArgs)
+        result.returned = asserted()
     } catch (error) {
         result.threw = String(error)
     }

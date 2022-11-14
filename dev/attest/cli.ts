@@ -7,7 +7,7 @@ import {
     shell,
     walkPaths
 } from "../runtime/exports.js"
-import { cacheAssertions, cleanupAssertions } from "./src/type/index.js"
+import { cacheAssertions, cleanupAssertions } from "./src/type/exports.js"
 
 let runTestsCmd = ""
 const attestArgIndex = process.argv.findIndex((arg) =>

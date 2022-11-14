@@ -33,25 +33,17 @@ export type ChainContext = {
 export type AnyValueAssertion<
     T,
     AllowTypeAssertions extends boolean
-> = FunctionAssertions<T[], T, AllowTypeAssertions> &
+> = FunctionAssertions<AllowTypeAssertions> &
     ComparableValueAssertion<T, AllowTypeAssertions>
 
-export type TypedValueAssertions<T, AllowTypeAssertions extends boolean> = [
-    T
-] extends [(...args: infer Args) => infer Return]
-    ? FunctionAssertions<Args, Return, AllowTypeAssertions>
+export type TypedValueAssertions<
+    T,
+    AllowTypeAssertions extends boolean
+> = T extends () => unknown
+    ? FunctionAssertions<AllowTypeAssertions>
     : ComparableValueAssertion<T, AllowTypeAssertions>
 
-export type CallableFunctionAssertions<
-    Return,
-    AllowTypeAssertions extends boolean
-> = {
-    returns: InferredAssertions<
-        [value: Return],
-        AllowTypeAssertions,
-        Return,
-        true
-    >
+export type FunctionAssertions<AllowTypeAssertions extends boolean> = {
     throws: InferredAssertions<
         [message: string | RegExp],
         AllowTypeAssertions,
@@ -63,21 +55,6 @@ export type CallableFunctionAssertions<
           throwsAndHasTypeError: (message: string | RegExp) => undefined
       }
     : {})
-
-export type FunctionAssertions<
-    Args extends any[],
-    Return,
-    AllowTypeAssertions extends boolean
-> = ([] extends Args
-    ? CallableFunctionAssertions<Return, AllowTypeAssertions>
-    : {}) &
-    (Args extends []
-        ? {}
-        : {
-              args: (
-                  ...args: Args
-              ) => CallableFunctionAssertions<Return, AllowTypeAssertions>
-          })
 
 export type ValueFromTypeAssertion<
     Expected,

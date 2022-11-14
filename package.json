@@ -31,7 +31,7 @@
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "c8 ts-node ./dev/attest/cli.ts --cmd mocha",
         "tnt": "c8 ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
-        "testRepo": "ts-node ./dev/scripts/testRepo.ts",
+        "testRepo": "pnpm test; ts-node ./dev/scripts/testRepo.ts",
         "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",

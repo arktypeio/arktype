@@ -11,7 +11,6 @@ export const testBuild = (outDir: string) =>
         )}`
     )
 
-shell("pnpm test")
 shell("pnpx ts-node cli.ts --cmd mocha", { cwd: join(repoDirs.dev, "attest") })
 testBuild(mjsOut)
 testBuild(cjsOut)

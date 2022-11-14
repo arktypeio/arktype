@@ -15,28 +15,6 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 describe("assertion errors", () => {
-    test("incorrect return type", () => {
-        attest(() => null).returns(null).typed as null
-
-        const ok = attest(() => ({})).returns
-        ok.equals({})
-        strict.throws(
-            () =>
-                attest((input: string) => `${input}!`)
-                    .args("hi")
-                    .returns("hi!").typed as number,
-            strict.AssertionError,
-            "input is not of type number"
-        )
-        strict.throws(
-            () =>
-                attest((input: string) => `${input}!`)
-                    .args("hi")
-                    .returns.type.toString("number"),
-            strict.AssertionError,
-            "string"
-        )
-    })
     test("valid type errors", () => {
         // @ts-expect-error
         attest(o.re.length.nonexistent).type.errors(
@@ -85,11 +63,6 @@ describe("assertion errors", () => {
             strict.AssertionError,
             "7"
         )
-        strict.throws(
-            () => attest(() => {}).returns.is(undefined).typed as () => null,
-            strict.AssertionError,
-            "null"
-        )
     })
     test("throwsAndHasTypeError", () => {
         // @ts-expect-error
@@ -122,21 +95,6 @@ describe("assertion errors", () => {
             () => attest(() => shouldThrow(false)).throws(),
             strict.AssertionError,
             "didn't throw"
-        )
-    })
-    test("args", () => {
-        attest((input: string) => `${input}!`)
-            .args("omg")
-            .returns.is("omg!")
-        strict.throws(
-            () =>
-                attest((input: string) => {
-                    throw new Error(`${input}!`)
-                })
-                    .args("fail")
-                    .throws("omg!"),
-            strict.AssertionError,
-            "fail"
         )
     })
 

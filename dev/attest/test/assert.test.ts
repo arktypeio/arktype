@@ -22,12 +22,6 @@ describe("Assertions", () => {
             "unknown"
         )
     })
-    test("union of function chainable", () => {
-        const t: number | ((n: number) => number) = (n: number) => n
-        // Temporarily disabled, can't get types to split non-functional values into comparable checks
-        // attest(t).is(t)
-        attest(t).args(5).returns(5)
-    })
     test("typed allows equivalent types", () => {
         const actual = { a: true, b: false }
         attest(actual).typed as {
