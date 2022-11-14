@@ -1,25 +1,17 @@
 import type {
     dictionary,
-    DynamicTypeName,
     DynamicTypeName
 } from "../../../utils/dynamicTypes.js"
 import type {
     keyOrSet,
-    keyOrSet,
     keySet,
-    keySet,
-    RegexLiteral,
     RegexLiteral,
     subtype
 } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
-import type {
-    SerializablePrimitive,
-    SerializedPrimitive
-} from "../../../utils/primitiveSerialization.js"
+import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.js"
 import type { DiscriminatedBranches } from "../union/discriminate.js"
-import type { SerializedKey } from "./serialization.js"
-import { deserializers, serializers } from "./serialization.js"
+import type { SerializedBounds } from "./serialization.js"
 
 type DisjointAttributeTypes = {
     value: SerializedPrimitive
@@ -68,7 +60,3 @@ export type AttributeKey = keyof AttributeTypes
 export type Attribute<k extends AttributeKey> = AttributeTypes[k]
 
 export type Attributes = { [k in AttributeKey]?: Attribute<k> }
-
-export type ReadonlyAttributes = {
-    readonly [k in AttributeKey]?: Readonly<Attribute<k>>
-}

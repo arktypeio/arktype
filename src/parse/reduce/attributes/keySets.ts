@@ -1,7 +1,26 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
 import type { keyOrSet, keySet } from "../../../utils/generics.js"
+import type { AttributeOperator } from "./operations.js"
 
-export const keyOrSetIntersection = <k extends string = string>(
+export const applyKeyOrSetOperation = <k extends string = string>(
+    operator: AttributeOperator,
+    a: keyOrSet<k>,
+    b: keyOrSet<k>
+): keyOrSet<k> | null =>
+    operator === "&"
+        ? applyKeyOrSetIntersection(a, b)
+        : applyKeyOrSetDifference(a, b)
+
+export const applyKeySetOperation = <k extends string = string>(
+    operator: AttributeOperator,
+    a: keySet<k>,
+    b: keySet<k>
+): keySet<k> | null =>
+    operator === "&"
+        ? applyKeySetIntersection(a, b)
+        : applyKeySetDifference(a, b)
+
+const applyKeyOrSetIntersection = <k extends string = string>(
     a: keyOrSet<k>,
     b: keyOrSet<k>
 ): keyOrSet<k> => {
@@ -16,15 +35,15 @@ export const keyOrSetIntersection = <k extends string = string>(
         a[b] = true
         return a
     }
-    return keySetIntersection(a, b)
+    return applyKeySetIntersection(a, b)
 }
 
-export const keySetIntersection = <k extends string = string>(
+const applyKeySetIntersection = <k extends string = string>(
     a: keySet<k>,
     b: keySet<k>
 ) => Object.assign(a, b)
 
-export const keyOrSetDifference = <k extends string = string>(
+const applyKeyOrSetDifference = <k extends string = string>(
     a: keyOrSet<k>,
     b: keyOrSet<k>
 ) => {
@@ -38,10 +57,10 @@ export const keyOrSetDifference = <k extends string = string>(
         delete a[b]
         return isEmpty(a) ? null : a
     }
-    return keySetDifference(a, b)
+    return applyKeySetDifference(a, b)
 }
 
-export const keySetDifference = <k extends string = string>(
+const applyKeySetDifference = <k extends string = string>(
     a: keySet<k>,
     b: keySet<k>
 ) => {

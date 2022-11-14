@@ -1,25 +1,14 @@
-import { intersection } from "./intersection.js"
+import type { AttributeOperation } from "./operations.js"
+import { applyOperation } from "./operations.js"
 
-export const propsIntersection: AttributeIntersection<"props"> = (a, b) => {
+export const propsOperation: AttributeOperation<"props"> = (operator, a, b) => {
     for (const k in a) {
         if (k in b) {
-            b[k] = intersection(a[k], b[k]) as any
+            b[k] = applyOperation(operator, a[k], b[k]) as any
             if (b[k] === null) {
                 return null
             }
         }
     }
     return Object.assign(a, b)
-}
-
-export const propsDifference: AttributeDifference<"props"> = (a, b) => {
-    for (const k in a) {
-        if (k in b) {
-            b[k] = intersection(a[k], b[k]) as any
-            if (b[k] === null) {
-                return null
-            }
-        }
-    }
-    return a
 }
