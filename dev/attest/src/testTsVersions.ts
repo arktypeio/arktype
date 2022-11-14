@@ -13,8 +13,8 @@ import { shell } from "../../runtime/shell.js"
     for (const [tsVersion, tsMorphVersion] of Object.entries(versions)) {
         shell(`pnpm i ${tsMorphVersion}`, { cwd: fromHere() })
         console.log(`testing ${tsVersion}`)
-        //RUN TESTS HERE
-        //shell(`pnpm test`)
+        // TODO uncomment once tests are passing :)
+        // shell(`pnpm test`)
     }
     const rootJson = readPackageJson(fromPackageRoot())
     const tsMorphVersion = rootJson["devDependencies"]["ts-morph"]
