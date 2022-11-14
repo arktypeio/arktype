@@ -7,7 +7,22 @@ import { divisorIntersection } from "./divisor.js"
 import type { DeserializedAttribute, SerializedKey } from "./serialization.js"
 import { deserializers, serializers } from "./serialization.js"
 
-export const intersection = <k extends AttributeKey>(
+export const intersection = (
+    base: Attributes,
+    assign: Attributes
+): Attributes | null => {
+    let k: AttributeKey
+    for (k in assign) {
+        const result = keyIntersection(base, k, assign[k] as any)
+        if (result === null) {
+            return null
+        }
+        base[k] = result as any
+    }
+    return base
+}
+
+export const keyIntersection = <k extends AttributeKey>(
     base: Attributes,
     k: k,
     v: Attribute<k>
@@ -79,14 +94,14 @@ export type IntersectionOf<t, additionalResultTypes = never> = (
 
 const intersectImplications = (base: Attributes, k: AttributeKey) =>
     k === "bounds"
-        ? intersection(base, "branches", [
+        ? keyIntersection(base, "branches", [
               "?",
               "",
               "type",
               { number: {}, string: {}, array: {} }
           ])
         : k === "divisor"
-        ? intersection(base, "type", "number")
+        ? keyIntersection(base, "type", "number")
         : base
 
 type AttributeIntersections = {

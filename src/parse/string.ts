@@ -40,7 +40,7 @@ export type inferString<
 export type validateString<
     def extends string,
     scope extends dictionary
-> = parseString<def, stringKeyOf<scope>> extends is<infer astOrError>
+> = parseString<def, stringKeyOf<scope>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
         : validateAstSemantics<astOrError, scope> extends is<
