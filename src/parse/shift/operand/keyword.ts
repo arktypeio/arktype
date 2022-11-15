@@ -51,16 +51,16 @@ export namespace Keyword {
         null: () => ({ type: "null", value: "null" }),
         number: () => ({ type: "number" }),
         object: () => ({
-            branches: [
-                "?",
-                "",
-                "type",
-                {
+            branches: {
+                kind: "switch",
+                path: "",
+                key: "type",
+                cases: {
                     dictionary: {},
                     array: {},
                     function: {}
                 }
-            ]
+            }
         }),
         string: () => ({ type: "string" }),
         symbol: () => ({ type: "symbol" }),

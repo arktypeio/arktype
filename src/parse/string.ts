@@ -1,6 +1,6 @@
 import type { DynamicScope } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { error, is, stringKeyOf } from "../utils/generics.js"
+import type { error, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
 import { morph } from "./reduce/attributes/morph.js"
 import { DynamicState } from "./reduce/dynamic.js"
@@ -43,9 +43,7 @@ export type validateString<
 > = parseString<def, stringKeyOf<scope>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
-        : validateAstSemantics<astOrError, scope> extends is<
-              infer semanticResult
-          >
+        : validateAstSemantics<astOrError, scope> extends infer semanticResult
         ? semanticResult extends undefined
             ? def
             : semanticResult

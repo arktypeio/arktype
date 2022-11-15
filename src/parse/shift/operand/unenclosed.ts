@@ -1,5 +1,5 @@
 import type { DynamicScope } from "../../../scope.js"
-import type { error, is } from "../../../utils/generics.js"
+import type { error } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
@@ -26,7 +26,7 @@ export type parseUnenclosed<
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? tryResolve<s, scanned, alias> extends is<infer result>
+    ? tryResolve<s, scanned, alias> extends infer result
         ? result extends error<infer message>
             ? state.throws<message>
             : state.setRoot<s, result, nextUnscanned>

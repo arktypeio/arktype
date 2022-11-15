@@ -1,4 +1,3 @@
-import type { is } from "../../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"

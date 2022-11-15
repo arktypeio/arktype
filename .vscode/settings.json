@@ -22,5 +22,5 @@
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
     "deno.config": "./dev/configs/deno.jsonc",
-    "deno.enablePaths": ["./dist/deno"]
+    "deno.enablePaths": ["./dist/exports.deno.ts", "./dist/deno"]
 }

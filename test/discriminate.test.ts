@@ -54,35 +54,50 @@ describe("union/discriminate", () => {
     test("discriminate", () => {
         attest(compileUnion(testBranches)).snap({
             props: { size: { type: "number" } },
-            branches: [
-                "?",
-                "",
-                "type",
-                {
+            branches: {
+                kind: "switch",
+                path: "",
+                key: "type",
+                cases: {
                     dictionary: {
-                        branches: ["?", "kind", "value", { "1": {}, "2": {} }]
+                        branches: {
+                            kind: "switch",
+                            path: "kind",
+                            key: "value",
+                            cases: { "1": {}, "2": {} }
+                        }
                     },
                     array: {
-                        branches: ["?", "kind", "value", { "1": {}, "2": {} }]
+                        branches: {
+                            kind: "switch",
+                            path: "kind",
+                            key: "value",
+                            cases: { "1": {}, "2": {} }
+                        }
                     }
                 }
-            ]
+            }
         })
     })
     test("prune", () => {
         attest(compileUnion([...testBranches, { type: "array" }])).snap({
-            branches: [
-                "?",
-                "",
-                "type",
-                {
+            branches: {
+                kind: "switch",
+                path: "",
+                key: "type",
+                cases: {
                     dictionary: {
                         props: { size: { type: "number" } },
-                        branches: ["?", "kind", "value", { "1": {}, "2": {} }]
+                        branches: {
+                            kind: "switch",
+                            path: "",
+                            key: "value",
+                            cases: { "1": {}, "2": {} }
+                        }
                     },
                     array: {}
                 }
-            ]
+            }
         })
     })
 })

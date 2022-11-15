@@ -1,4 +1,3 @@
-import type { is } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
@@ -100,7 +99,7 @@ export type parseRightBound<
     ? tryParseWellFormedNumber<
           scanned,
           buildInvalidLimitMessage<comparator, scanned>
-      > extends is<infer limit>
+      > extends infer limit
         ? limit extends number
             ? s["branches"]["range"] extends {}
                 ? comparator extends Scanner.PairableComparator

@@ -33,14 +33,14 @@ const buildTypes = () => {
             `pnpm tsc --project ${tempTsConfig} --outDir ${repoDirs.outRoot} --emitDeclarationOnly`
         )
         renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
-        buildApiTs("types")
+        buildExportsTs("types")
     } finally {
         rmSync(tempTsConfig, { force: true })
     }
     stdout.write(`✅\n`)
 }
 
-const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
+const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
             ? join(repoDirs.outRoot, kind, "exports.js")
@@ -58,7 +58,9 @@ const buildApiTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     }
     const destinationFile = join(
         repoDirs.outRoot,
-        `exports.${kind === "types" ? "d.ts" : kind === "deno" ? "ts" : kind}`
+        `exports.${
+            kind === "types" ? "d.ts" : kind === "deno" ? "deno.ts" : kind
+        }`
     )
     writeFile(destinationFile, transformedContents)
 }
@@ -85,7 +87,7 @@ const swc = (kind: "mjs" | "cjs") => {
     writeJson(join(srcOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"
     })
-    buildApiTs(kind)
+    buildExportsTs(kind)
 }
 
 const buildDeno = () => {
@@ -97,7 +99,7 @@ const buildDeno = () => {
         skipSourceMap: true,
         transformContents: (content) => content.replaceAll(/\.js"/g, '.ts"')
     })
-    buildApiTs("deno")
+    buildExportsTs("deno")
 }
 
 arktypeTsc()
