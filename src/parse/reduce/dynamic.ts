@@ -14,6 +14,7 @@ import { applyOperation, applyOperationAtKey } from "./attributes/operations.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
+    buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
     buildUnpairableComparatorMessage,
@@ -47,10 +48,10 @@ export class DynamicState {
         return this.root !== undefined
     }
 
-    unsetRootIfLimit() {
+    ejectRootIfLimit() {
         this.assertHasRoot()
-        const serializedValue = this.root!.value
-        if (serializedValue !== undefined) {
+        if (this.root!.value) {
+            const serializedValue = this.ejectRoot().value!
             const value = deserializePrimitive(serializedValue)
             if (typeof value === "number") {
                 return value
@@ -77,25 +78,25 @@ export class DynamicState {
     }
 
     morphRoot(name: MorphName) {
-        this.root = morph(name, this.unsetRoot())
+        this.root = morph(name, this.ejectRoot())
     }
 
     intersectionAtKey<k extends AttributeKey>(k: k, v: Attribute<k>) {
-        const result = applyOperationAtKey("&", this.unsetRoot(), k, v)
+        const result = applyOperationAtKey("&", this.ejectRoot(), k, v)
         if (result === null) {
             throw new Error("Empty intersection.")
         }
         this.root = result
     }
 
-    private unsetRoot() {
+    private ejectRoot() {
         this.assertHasRoot()
         const root = this.root!
         this.root = undefined
         return root
     }
 
-    ejectRoot() {
+    ejectFinalizedRoot() {
         this.assertHasRoot()
         const root = this.root!
         this.root = ejectedProxy
@@ -110,10 +111,19 @@ export class DynamicState {
         this.scanner.finalized = true
     }
 
-    reduceLeftBound(comparator: Scanner.Comparator, limit: number) {
-        this.assertRangeUnset()
+    reduceLeftBound(limit: number, comparator: Scanner.Comparator) {
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return this.error(buildUnpairableComparatorMessage(comparator))
+        }
+        if (this.branches.range) {
+            return this.error(
+                buildMultipleLeftBoundsMessage(
+                    this.branches.range[0],
+                    this.branches.range[1],
+                    limit,
+                    comparator
+                )
+            )
         }
         this.branches.range = [limit, comparator]
     }
@@ -158,7 +168,7 @@ export class DynamicState {
 
     pushBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
-        this.branches[token].push(this.unsetRoot())
+        this.branches[token].push(this.ejectRoot())
     }
 
     pushRange(min: number, comparator: Scanner.PairableComparator) {

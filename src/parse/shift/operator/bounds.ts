@@ -1,6 +1,5 @@
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { Scanner } from "../../reduce/scanner.js"
@@ -11,10 +10,10 @@ export const parseBound = (
     start: Scanner.ComparatorStartChar
 ) => {
     const comparator = shiftComparator(s, start)
-    const maybeMin = s.unsetRootIfLimit()
+    const maybeMin = s.ejectRootIfLimit()
     return maybeMin === undefined
         ? parseRightBound(s, comparator)
-        : s.reduceLeftBound(comparator, maybeMin)
+        : s.reduceLeftBound(maybeMin, comparator)
 }
 
 export type parseBound<
@@ -91,26 +90,9 @@ export const buildInvalidLimitMessage = <
     comparator: comparator,
     limit: limit
 ): buildInvalidLimitMessage<comparator, limit> =>
-    `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
+    `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
 export type buildInvalidLimitMessage<
     comparator extends Scanner.Comparator,
     limit extends string
-> = `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
-
-export const buildBoundLiteralMessage = <
-    literal extends NumberLiteral,
-    limit extends number,
-    token extends Scanner.Comparator
->(
-    literal: literal,
-    limit: limit,
-    comparator: token
-): buildBoundLiteralMessage<literal, limit, token> =>
-    `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
-
-export type buildBoundLiteralMessage<
-    literal extends NumberLiteral,
-    limit extends number,
-    comparator extends Scanner.Comparator
-> = `Literal value '${literal}' cannot be bound by ${limit}${comparator}`
+> = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`

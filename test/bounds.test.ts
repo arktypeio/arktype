@@ -2,13 +2,11 @@ import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import { type } from "../exports.js"
 import {
+    buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
     buildUnpairableComparatorMessage
 } from "../src/parse/reduce/shared.js"
-import {
-    buildBoundLiteralMessage,
-    singleEqualsMessage
-} from "../src/parse/shift/operator/bounds.js"
+import { singleEqualsMessage } from "../src/parse/shift/operator/bounds.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
@@ -66,7 +64,7 @@ describe("bound", () => {
             test("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    buildBoundLiteralMessage("5", 3, "<")
+                    buildMultipleLeftBoundsMessage(3, "<", 5, "<")
                 )
             })
         })

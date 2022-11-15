@@ -2,6 +2,7 @@ import type { defined, error } from "../../utils/generics.js"
 import type { astToString } from "../ast.js"
 import type { Scanner } from "./scanner.js"
 import type {
+    buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
     buildUnpairableComparatorMessage,
@@ -70,16 +71,25 @@ export namespace state {
         comparator extends Scanner.Comparator,
         unscanned extends string
     > = comparator extends Scanner.PairableComparator
-        ? from<{
-              root: undefined
-              branches: {
-                  range: [limit, comparator]
-                  "&": s["branches"]["&"]
-                  "|": s["branches"]["|"]
-              }
-              groups: s["groups"]
-              unscanned: unscanned
-          }>
+        ? s["branches"]["range"] extends {}
+            ? error<
+                  buildMultipleLeftBoundsMessage<
+                      s["branches"]["range"][0],
+                      s["branches"]["range"][1],
+                      limit,
+                      comparator
+                  >
+              >
+            : from<{
+                  root: undefined
+                  branches: {
+                      range: [limit, comparator]
+                      "&": s["branches"]["&"]
+                      "|": s["branches"]["|"]
+                  }
+                  groups: s["groups"]
+                  unscanned: unscanned
+              }>
         : error<buildUnpairableComparatorMessage<comparator>>
 
     export type reduceRightBound<

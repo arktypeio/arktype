@@ -94,7 +94,7 @@ const loop = (s: DynamicState) => {
     while (!s.scanner.finalized) {
         next(s)
     }
-    return s.ejectRoot()
+    return s.ejectFinalizedRoot()
 }
 
 type loop<s extends StaticState | error, alias extends string> = s extends error

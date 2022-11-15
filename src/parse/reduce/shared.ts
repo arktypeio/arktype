@@ -1,3 +1,4 @@
+import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { Scanner } from "./scanner.js"
 
 export const buildUnmatchedGroupCloseMessage = <unscanned extends string>(
@@ -30,11 +31,36 @@ export type buildOpenRangeMessage<
 
 export type buildUnpairableComparatorMessage<
     comparator extends Scanner.Comparator
-> = `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
+> = `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
 export const buildUnpairableComparatorMessage = <
     comparator extends Scanner.Comparator
 >(
     comparator: comparator
 ): buildUnpairableComparatorMessage<comparator> =>
-    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
+    `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
+
+export const buildMultipleLeftBoundsMessage = <
+    openLimit extends number,
+    openComparator extends Scanner.PairableComparator,
+    limit extends number,
+    comparator extends Scanner.PairableComparator
+>(
+    openLimit: openLimit,
+    openComparator: openComparator,
+    limit: limit,
+    comparator: comparator
+): buildMultipleLeftBoundsMessage<
+    openLimit,
+    openComparator,
+    limit,
+    comparator
+> =>
+    `An expression may have at most one left bound (got ${openLimit}${openComparator}, ${limit}${comparator})`
+
+export type buildMultipleLeftBoundsMessage<
+    openLimit extends number,
+    openComparator extends Scanner.PairableComparator,
+    limit extends number,
+    comparator extends Scanner.PairableComparator
+> = `An expression may have at most one left bound (got ${openLimit}${openComparator}, ${limit}${comparator})`
