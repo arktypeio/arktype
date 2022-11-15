@@ -67,7 +67,8 @@ export namespace state {
     export type reduceLeftBound<
         s extends StaticState,
         limit extends number,
-        comparator extends Scanner.Comparator
+        comparator extends Scanner.Comparator,
+        unscanned extends string
     > = comparator extends Scanner.PairableComparator
         ? from<{
               root: undefined
@@ -77,7 +78,7 @@ export namespace state {
                   "|": s["branches"]["|"]
               }
               groups: s["groups"]
-              unscanned: s["unscanned"]
+              unscanned: unscanned
           }>
         : error<buildUnpairableComparatorMessage<comparator>>
 

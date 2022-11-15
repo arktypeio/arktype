@@ -1,6 +1,5 @@
 import type { DynamicScope } from "../../scope.js"
 import { isKeyOf } from "../../utils/generics.js"
-import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { deserializePrimitive } from "../../utils/primitiveSerialization.js"
 import { buildUnboundableMessage } from "../ast.js"
 import { throwInternalError, throwParseError } from "../errors.js"
@@ -116,6 +115,7 @@ export class DynamicState {
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return this.error(buildUnpairableComparatorMessage(comparator))
         }
+        this.branches.range = [limit, comparator]
     }
 
     reduceRightBound(comparator: Scanner.Comparator, limit: number) {
