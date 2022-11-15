@@ -16,8 +16,21 @@ export const applyBoundsOperation: AttributeOperation<"bounds"> = (
     b
 ) => (operator === "&" ? boundsIntersection(a, b) : boundsDifference(a, b))
 
-// TODO: Multiple bounds as diff result?
 export const boundsDifference = (a: Bounds, b: Bounds) => {
+    if (
+        a.min &&
+        b.min &&
+        (b.min === a.min || isStricter("min", b.min, a.min))
+    ) {
+        delete a.min
+    }
+    if (
+        a.max &&
+        b.max &&
+        (b.max === a.max || isStricter("max", b.max, a.max))
+    ) {
+        delete a.max
+    }
     return a
 }
 
