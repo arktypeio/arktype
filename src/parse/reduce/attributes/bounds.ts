@@ -69,19 +69,6 @@ const boundIntersection = (
     return baseCompeting
 }
 
-const boundDifference = (kind: BoundKind, a: Bound, b: Bound): Bound | null => {
-    const invertedKind = invertedKinds[kind]
-    const baseCompeting = a[kind]
-    const baseOpposing = a[invertedKind]
-    if (baseOpposing && isStricter(kind, boundOfB, baseOpposing)) {
-        return null
-    }
-    if (!baseCompeting || isStricter(kind, boundOfB, baseCompeting)) {
-        return boundOfB
-    }
-    return baseCompeting
-}
-
 const invertedKinds = {
     min: "max",
     max: "min"
