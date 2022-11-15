@@ -196,12 +196,9 @@ export class DynamicState {
     private mergeIntersection() {
         const branches = this.branches["&"]
         while (branches.length > 1) {
-            const result = applyOperation("&", branches.pop()!, branches.pop()!)
-            if (result === null) {
-                this.setRoot(null)
-                return
-            }
-            branches.unshift(result)
+            branches.unshift(
+                applyOperation("&", branches.pop()!, branches.pop()!)
+            )
         }
         this.setRoot(branches.pop()!)
     }

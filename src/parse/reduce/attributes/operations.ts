@@ -14,15 +14,10 @@ export const applyOperation = (
     operator: AttributeOperator,
     base: Attributes,
     assign: Attributes
-): Attributes | null => {
+) => {
     let k: AttributeKey
     for (k in assign) {
-        base[k] = applyOperationAtKey(
-            operator,
-            base,
-            k,
-            assign[k] as any
-        ) as any
+        applyOperationAtKey(operator, base, k, assign[k] as any) as any
     }
     return base
 }
@@ -34,11 +29,11 @@ export const applyOperationAtKey = <k extends AttributeKey>(
     base: Attributes,
     k: k,
     v: Attribute<k>
-): Attributes | null => {
+) => {
     if (base[k] === undefined) {
         if (operator === "&") {
             base[k] = v
-            return intersectImplications(base, k)
+            intersectImplications(base, k)
         }
         return base
     }
@@ -60,7 +55,6 @@ export const applyOperationAtKey = <k extends AttributeKey>(
             return base
         }
         delete base[k]
-        return base
     } else {
         base[k] = isSerialized
             ? serializers[k as SerializedKey](result)
