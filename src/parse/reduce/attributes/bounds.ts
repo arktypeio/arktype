@@ -1,3 +1,4 @@
+import { isEmpty } from "../../../utils/deepEquals.js"
 import type { AttributeOperation } from "./operations.js"
 
 export type Bounds = {
@@ -31,21 +32,21 @@ export const boundsDifference = (a: Bounds, b: Bounds) => {
     ) {
         delete a.max
     }
-    return a
+    return isEmpty(a) ? null : a
 }
 
 export const boundsIntersection = (a: Bounds, b: Bounds) => {
     if (b.min) {
         const result = boundIntersection("min", a, b.min)
         if (result === null) {
-            return result
+            return null
         }
         a.min = result
     }
     if (b.max) {
         const result = boundIntersection("max", a, b.max)
         if (result === null) {
-            return result
+            return null
         }
         a.max = result
     }

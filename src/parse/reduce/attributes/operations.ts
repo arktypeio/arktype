@@ -5,6 +5,7 @@ import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
 import { applyBoundsOperation } from "./bounds.js"
 import { applyDivisorOperation } from "./divisor.js"
 import { applyKeyOrSetOperation, applyKeySetOperation } from "./keySets.js"
+import { applyPropsOperation } from "./props.js"
 import type { DeserializedAttribute, SerializedKey } from "./serialization.js"
 import { deserializers, serializers } from "./serialization.js"
 
@@ -15,7 +16,7 @@ export const applyOperation = (
 ): Attributes | null => {
     let k: AttributeKey
     for (k in assign) {
-        const result = applyOperationToKey(operator, base, k, assign[k] as any)
+        const result = applyOperationAtKey(operator, base, k, assign[k] as any)
         if (result === null) {
             return null
         }
@@ -24,7 +25,7 @@ export const applyOperation = (
     return base
 }
 
-const applyOperationToKey = <k extends AttributeKey>(
+const applyOperationAtKey = <k extends AttributeKey>(
     operator: AttributeOperator,
     base: Attributes,
     k: k,
@@ -66,22 +67,22 @@ type OperationOf<t> = (operator: AttributeOperator, a: t, b: t) => t | null
 
 const intersectImplications = (base: Attributes, k: AttributeKey) =>
     k === "bounds"
-        ? applyOperationToKey("&", base, "branches", [
+        ? applyOperationAtKey("&", base, "branches", [
               "?",
               "",
               "type",
               { number: {}, string: {}, array: {} }
           ])
         : k === "divisor"
-        ? applyOperationToKey("&", base, "type", "number")
+        ? applyOperationAtKey("&", base, "type", "number")
         : base
+
+const applyDisjointOperation = <t>(operator: AttributeOperator, a: t, b: t) =>
+    operator === "&" ? (a === b ? a : null) : a === b ? null : a
 
 type AttributeOperations = {
     [k in AttributeKey]?: AttributeOperation<k>
 }
-
-const applyDisjointOperation = <t>(operator: AttributeOperator, a: t, b: t) =>
-    operator === "&" ? (a === b ? a : null) : a === b ? null : a
 
 export const operations: AttributeOperations = {
     type: applyDisjointOperation<DynamicTypeName>,
@@ -90,5 +91,6 @@ export const operations: AttributeOperations = {
     requiredKeys: applyKeySetOperation,
     regex: applyKeyOrSetOperation<RegexLiteral>,
     divisor: applyDivisorOperation,
-    bounds: applyBoundsOperation
+    bounds: applyBoundsOperation,
+    props: applyPropsOperation
 }

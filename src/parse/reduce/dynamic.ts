@@ -3,6 +3,7 @@ import { throwInternalError, throwParseError } from "../errors.js"
 import type { Attributes } from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
+import { applyOperation } from "./attributes/operations.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -10,6 +11,7 @@ import {
     buildUnmatchedGroupCloseMessage,
     unclosedGroupMessage
 } from "./shared.js"
+import { compileUnion } from "./union/compile.js"
 
 type BranchState = {
     range?: OpenRange
@@ -83,10 +85,10 @@ export class DynamicState {
 
     finalizeBranches() {
         this.assertRangeUnset()
-        if (this.branches["&"]) {
+        if (this.branches["&"].length) {
             this.mergeIntersection()
         }
-        if (this.branches["|"]) {
+        if (this.branches["|"].length) {
             this.mergeUnion()
         }
     }
@@ -118,9 +120,23 @@ export class DynamicState {
         }
     }
 
-    private mergeIntersection() {}
+    private mergeIntersection() {
+        this.pushBranch("&")
+        const branches = this.branches["&"]
+        while (branches.length > 1) {
+            const result = applyOperation("&", branches.pop()!, branches.pop()!)
+            if (result === null) {
+                return this.error("Empty intersection.")
+            }
+            branches.unshift(result)
+        }
+        this.setRoot(branches.pop()!)
+    }
 
-    private mergeUnion() {}
+    private mergeUnion() {
+        this.pushBranch("|")
+        this.setRoot(compileUnion(this.branches["|"]))
+    }
 
     reduceGroupOpen() {
         this.groups.push(this.branches)
@@ -139,13 +155,6 @@ export class DynamicState {
         this.scanner.shift()
         return this
     }
-}
-
-const compileIntersection = (branches: Attributes[]) => {
-    // while (branches.length > 1) {
-    //     branches.unshift(intersect(branches.pop()!, branches.pop()!))
-    // }
-    return branches[0]
 }
 
 const ejectedProxy = new Proxy(
