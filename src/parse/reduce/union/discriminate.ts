@@ -4,7 +4,7 @@ import type {
     Attributes,
     DiscriminatedBranches
 } from "../../reduce/attributes/attributes.js"
-import { compileUnion } from "./compile.js"
+import { compileViableUnion } from "./compile.js"
 import { pruneDiscriminant } from "./prune.js"
 
 export type DiscriminatedKey = "type" | "value"
@@ -35,7 +35,7 @@ export const discriminate = (
     }
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
-        cases[value] = compileUnion(branchesByValue[value])
+        cases[value] = compileViableUnion(branchesByValue[value])
     }
     return {
         kind: "switch",

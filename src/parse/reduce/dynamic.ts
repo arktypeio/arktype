@@ -32,7 +32,7 @@ const initializeBranches = (): BranchState => ({ "&": [], "|": [] })
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: Attributes | undefined
+    private root: Attributes | null | undefined
     private branches: BranchState = initializeBranches()
     private groups: BranchState[] = []
 
@@ -72,7 +72,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(attributes: Attributes) {
+    setRoot(attributes: Attributes | null) {
         this.assertUnsetRoot()
         this.root = attributes
     }
@@ -148,9 +148,11 @@ export class DynamicState {
     finalizeBranches() {
         this.assertRangeUnset()
         if (this.branches["&"].length) {
+            this.pushBranch("&")
             this.mergeIntersection()
         }
         if (this.branches["|"].length) {
+            this.pushBranch("|")
             this.mergeUnion()
         }
     }
@@ -168,7 +170,11 @@ export class DynamicState {
 
     pushBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
-        this.branches[token].push(this.ejectRoot())
+        this.branches["&"].push(this.ejectRoot())
+        if (token === "|") {
+            this.mergeIntersection()
+            this.branches["|"].push(this.ejectRoot())
+        }
     }
 
     pushRange(min: number, comparator: Scanner.PairableComparator) {
@@ -188,12 +194,12 @@ export class DynamicState {
     }
 
     private mergeIntersection() {
-        this.pushBranch("&")
         const branches = this.branches["&"]
         while (branches.length > 1) {
             const result = applyOperation("&", branches.pop()!, branches.pop()!)
             if (result === null) {
-                return this.error("Empty intersection.")
+                this.setRoot(null)
+                return
             }
             branches.unshift(result)
         }
@@ -201,7 +207,6 @@ export class DynamicState {
     }
 
     private mergeUnion() {
-        this.pushBranch("|")
         this.setRoot(compileUnion(this.branches["|"]))
     }
 

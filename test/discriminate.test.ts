@@ -3,7 +3,7 @@ import { attest } from "../dev/attest/exports.js"
 import type { Attributes } from "../exports.js"
 import { compileUnion } from "../src/parse/reduce/union/compile.js"
 
-const testBranches: Attributes[] = [
+const getTestBranches = (): Attributes[] => [
     {
         type: "dictionary",
         props: {
@@ -52,7 +52,7 @@ const testBranches: Attributes[] = [
 
 describe("union/discriminate", () => {
     test("discriminate", () => {
-        attest(compileUnion(testBranches)).snap({
+        attest(compileUnion(getTestBranches())).snap({
             props: { size: { type: "number" } },
             branches: {
                 kind: "switch",
@@ -80,7 +80,7 @@ describe("union/discriminate", () => {
         })
     })
     test("prune", () => {
-        attest(compileUnion([...testBranches, { type: "array" }])).snap({
+        attest(compileUnion([...getTestBranches(), { type: "array" }])).snap({
             branches: {
                 kind: "switch",
                 path: "",
@@ -90,7 +90,7 @@ describe("union/discriminate", () => {
                         props: { size: { type: "number" } },
                         branches: {
                             kind: "switch",
-                            path: "",
+                            path: "kind",
                             key: "value",
                             cases: { "1": {}, "2": {} }
                         }

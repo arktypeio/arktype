@@ -17,15 +17,18 @@ export const applyOperation = (
 ): Attributes | null => {
     let k: AttributeKey
     for (k in assign) {
-        const result = applyOperationAtKey(operator, base, k, assign[k] as any)
-        if (result === null) {
-            return null
-        }
-        base[k] = result as any
+        base[k] = applyOperationAtKey(
+            operator,
+            base,
+            k,
+            assign[k] as any
+        ) as any
     }
     return base
 }
 
+// TODO: Refactor, split into serialization wrapper
+// eslint-disable-next-line max-lines-per-function
 export const applyOperationAtKey = <k extends AttributeKey>(
     operator: AttributeOperator,
     base: Attributes,
@@ -43,10 +46,21 @@ export const applyOperationAtKey = <k extends AttributeKey>(
     const baseValue = isSerialized
         ? deserializers[k as SerializedKey](base[k] as any)
         : base[k]
-    // TODO: Remove non-null assertion
     const result: any = operations[k](operator, baseValue, v as any)
     if (result === null) {
-        return null
+        if (operator === "&") {
+            applyOperationAtKey(
+                "&",
+                base,
+                "contradiction",
+                `${JSON.stringify(baseValue)} and ${JSON.stringify(
+                    v
+                )} have no overlap`
+            )
+            return base
+        }
+        delete base[k]
+        return base
     } else {
         base[k] = isSerialized
             ? serializers[k as SerializedKey](result)
@@ -84,6 +98,7 @@ export const operations: {
     type: applyDisjointOperation<DynamicTypeName>,
     value: applyDisjointOperation<SerializablePrimitive>,
     alias: applyKeyOrSetOperation,
+    contradiction: applyKeyOrSetOperation,
     requiredKeys: applyKeySetOperation,
     regex: applyKeyOrSetOperation<RegexLiteral>,
     divisor: applyDivisorOperation,
