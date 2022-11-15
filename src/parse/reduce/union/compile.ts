@@ -13,9 +13,8 @@ export const compileUnion = (branches: Attributes[]): Attributes => {
         return branches[0]
     }
     const root = compress(branches)
-    if (root.branches) {
-        // If compress returns branches, they will always be undiscriminated
-        const discriminated = discriminate(root.branches as Attributes[])
+    if (root.branches?.kind === "some") {
+        const discriminated = discriminate(root.branches.of)
         if (discriminated) {
             root.branches = discriminated
         }

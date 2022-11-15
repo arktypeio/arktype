@@ -12,18 +12,18 @@ export const unclosedGroupMessage = "Missing )"
 
 export type unclosedGroupMessage = typeof unclosedGroupMessage
 
-export type OpenRange = [limit: number, comparator: Scanner.PairableComparator]
+export type OpenRange = [min: number, comparator: Scanner.PairableComparator]
 
 export const buildOpenRangeMessage = <
-    limit extends number,
+    min extends number,
     comparator extends Scanner.Comparator
 >(
-    limit: limit,
+    min: min,
     comparator: comparator
-): buildOpenRangeMessage<limit, comparator> =>
-    `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${limit})`
+): buildOpenRangeMessage<min, comparator> =>
+    `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${min})`
 
 export type buildOpenRangeMessage<
-    limit extends number,
+    min extends number,
     comparator extends Scanner.Comparator
-> = `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${limit})`
+> = `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${min})`

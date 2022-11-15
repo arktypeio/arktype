@@ -19,7 +19,13 @@ const shift = (
 export const parseBound = (
     s: DynamicState,
     start: Scanner.ComparatorStartChar
-) => delegateReduction(s, shift(s, start))
+) => {
+    const comparator = shift(s, start)
+    const maybeMin = s.unsetRootIfLimit()
+    return maybeMin === undefined
+        ? parseRightBound(s, comparator)
+        : parseLeftBound(s, maybeMin, comparator)
+}
 
 export type parseBound<
     s extends StaticState,
@@ -34,9 +40,6 @@ export type parseBound<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const delegateReduction = (s: DynamicState, comparator: Scanner.Comparator) =>
-    true ? parseLeftBound(s, comparator) : parseRightBound(s, comparator)
-
 type delegateReduction<
     s extends StaticState,
     comparator extends Scanner.Comparator
@@ -48,18 +51,12 @@ type delegateReduction<
 
 export const parseLeftBound = (
     s: DynamicState,
+    min: number,
     comparator: Scanner.Comparator
 ) =>
     isKeyOf(comparator, Scanner.pairableComparators)
-        ? parseValidated(s, comparator)
+        ? s.pushRange(min, comparator)
         : s.error(buildInvalidDoubleBoundMessage(comparator))
-
-const parseValidated = (s: DynamicState, token: Scanner.PairableComparator) => {
-    // s.branches.range = [
-    //     tryParseWellFormedNumber(s.root.eject().value, true),
-    //     token
-    // ]
-}
 
 export const parseRightBound = (
     s: DynamicState,
@@ -72,6 +69,27 @@ export const parseRightBound = (
     )
     //setValidatedRoot(s, comparator, limit)
 }
+
+// const setValidatedRoot = (
+//     s: DynamicState,
+//     comparator: Scanner.Comparator,
+//     limit: number
+// ) => {
+//     if (!stateHasOpenRange(s)) {
+//         s.root.intersect("bounds", `${comparator}${limit}`)
+//         return s
+//     }
+//     if (!isKeyOf(comparator, Scanner.pairableComparators)) {
+//         return s.error(buildInvalidDoubleBoundMessage(comparator))
+//     }
+//     s.root.intersect(
+//         "bounds",
+//         `${invertedComparators[s.branches.range[1]]}${
+//             s.branches.range[0]
+//         }${comparator}${limit}`
+//     )
+//     s.branches.range = unset
+// }
 
 export type parseRightBound<
     s extends StaticState,
@@ -99,27 +117,6 @@ export type parseRightBound<
             : state.throws<limit & string>
         : never
     : never
-
-// const setValidatedRoot = (
-//     s: DynamicState,
-//     comparator: Scanner.Comparator,
-//     limit: number
-// ) => {
-//     if (!stateHasOpenRange(s)) {
-//         s.root.intersect("bounds", `${comparator}${limit}`)
-//         return s
-//     }
-//     if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-//         return s.error(buildInvalidDoubleBoundMessage(comparator))
-//     }
-//     s.root.intersect(
-//         "bounds",
-//         `${invertedComparators[s.branches.range[1]]}${
-//             s.branches.range[0]
-//         }${comparator}${limit}`
-//     )
-//     s.branches.range = unset
-// }
 
 export const buildInvalidLimitMessage = <
     comparator extends Scanner.Comparator,

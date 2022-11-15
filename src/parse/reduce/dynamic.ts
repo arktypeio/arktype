@@ -1,9 +1,16 @@
 import type { DynamicScope } from "../../scope.js"
+import type { NumberLiteral } from "../../utils/numericLiterals.js"
+import { deserializePrimitive } from "../../utils/primitiveSerialization.js"
+import { buildUnboundableMessage } from "../ast.js"
 import { throwInternalError, throwParseError } from "../errors.js"
-import type { Attributes } from "./attributes/attributes.js"
+import type {
+    Attribute,
+    AttributeKey,
+    Attributes
+} from "./attributes/attributes.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
-import { applyOperation } from "./attributes/operations.js"
+import { applyOperation, applyOperationAtKey } from "./attributes/operations.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -39,6 +46,18 @@ export class DynamicState {
         return this.root !== undefined
     }
 
+    unsetRootIfLimit() {
+        this.assertHasRoot()
+        const serializedValue = this.root!.value
+        if (serializedValue !== undefined) {
+            const value = deserializePrimitive(serializedValue)
+            if (typeof value === "number") {
+                return value
+            }
+            this.error(buildUnboundableMessage(serializedValue))
+        }
+    }
+
     private assertHasRoot() {
         if (this.root === undefined) {
             return throwInternalError("Unexpected interaction with unset root")
@@ -57,8 +76,15 @@ export class DynamicState {
     }
 
     morphRoot(name: MorphName) {
-        this.assertHasRoot()
-        this.root = morph(name, this.root!)
+        this.root = morph(name, this.unsetRoot())
+    }
+
+    intersectionAtKey<k extends AttributeKey>(k: k, v: Attribute<k>) {
+        const result = applyOperationAtKey("&", this.unsetRoot(), k, v)
+        if (result === null) {
+            throw new Error("Empty intersection.")
+        }
+        this.root = result
     }
 
     private unsetRoot() {
@@ -107,6 +133,11 @@ export class DynamicState {
     pushBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
         this.branches[token].push(this.unsetRoot())
+    }
+
+    pushRange(min: number, comparator: Scanner.PairableComparator) {
+        this.assertRangeUnset()
+        this.branches.range = [min, comparator]
     }
 
     private assertRangeUnset() {

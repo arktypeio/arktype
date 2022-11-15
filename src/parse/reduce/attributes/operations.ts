@@ -3,6 +3,7 @@ import type { RegexLiteral } from "../../../utils/generics.js"
 import type { SerializablePrimitive } from "../../../utils/primitiveSerialization.js"
 import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
 import { applyBoundsOperation } from "./bounds.js"
+import { applyBranchesOperation } from "./branches.js"
 import { applyDivisorOperation } from "./divisor.js"
 import { applyKeyOrSetOperation, applyKeySetOperation } from "./keySets.js"
 import { applyPropsOperation } from "./props.js"
@@ -25,15 +26,12 @@ export const applyOperation = (
     return base
 }
 
-const applyOperationAtKey = <k extends AttributeKey>(
+export const applyOperationAtKey = <k extends AttributeKey>(
     operator: AttributeOperator,
     base: Attributes,
     k: k,
     v: Attribute<k>
 ): Attributes | null => {
-    if (k === "branches") {
-        return base
-    }
     if (base[k] === undefined) {
         if (operator === "&") {
             base[k] = v
@@ -46,7 +44,7 @@ const applyOperationAtKey = <k extends AttributeKey>(
         ? deserializers[k as SerializedKey](base[k] as any)
         : base[k]
     // TODO: Remove non-null assertion
-    const result: any = operations[k]!(operator, baseValue, v as any)
+    const result: any = operations[k](operator, baseValue, v as any)
     if (result === null) {
         return null
     } else {
@@ -67,12 +65,12 @@ type OperationOf<t> = (operator: AttributeOperator, a: t, b: t) => t | null
 
 const intersectImplications = (base: Attributes, k: AttributeKey) =>
     k === "bounds"
-        ? applyOperationAtKey("&", base, "branches", [
-              "?",
-              "",
-              "type",
-              { number: {}, string: {}, array: {} }
-          ])
+        ? applyOperationAtKey("&", base, "branches", {
+              kind: "switch",
+              path: "",
+              key: "type",
+              cases: { number: {}, string: {}, array: {} }
+          })
         : k === "divisor"
         ? applyOperationAtKey("&", base, "type", "number")
         : base
@@ -80,11 +78,9 @@ const intersectImplications = (base: Attributes, k: AttributeKey) =>
 const applyDisjointOperation = <t>(operator: AttributeOperator, a: t, b: t) =>
     operator === "&" ? (a === b ? a : null) : a === b ? null : a
 
-type AttributeOperations = {
-    [k in AttributeKey]?: AttributeOperation<k>
-}
-
-export const operations: AttributeOperations = {
+export const operations: {
+    [k in AttributeKey]: AttributeOperation<k>
+} = {
     type: applyDisjointOperation<DynamicTypeName>,
     value: applyDisjointOperation<SerializablePrimitive>,
     alias: applyKeyOrSetOperation,
@@ -92,5 +88,6 @@ export const operations: AttributeOperations = {
     regex: applyKeyOrSetOperation<RegexLiteral>,
     divisor: applyDivisorOperation,
     bounds: applyBoundsOperation,
-    props: applyPropsOperation
+    props: applyPropsOperation,
+    branches: applyBranchesOperation
 }

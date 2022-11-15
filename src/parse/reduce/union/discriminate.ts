@@ -1,15 +1,11 @@
 import type { dictionary } from "../../../utils/dynamicTypes.js"
 import { pushKey } from "../../../utils/paths.js"
 import type {
-    Attribute,
-    Attributes
+    Attributes,
+    DiscriminatedBranches
 } from "../../reduce/attributes/attributes.js"
 import { compileUnion } from "./compile.js"
 import { pruneDiscriminant } from "./prune.js"
-
-export type DiscriminatedBranches<
-    key extends DiscriminatedKey = DiscriminatedKey
-> = ["?", ...DiscriminatedBranchTuple<key>]
 
 export type DiscriminatedKey = "type" | "value"
 
@@ -17,13 +13,6 @@ type Discriminant = {
     path: string
     key: DiscriminatedKey
     score: number
-}
-
-type DiscriminatedBranchTuple<key extends DiscriminatedKey = DiscriminatedKey> =
-    [path: string, key: key, cases: AttributeCases<key>]
-
-type AttributeCases<key extends DiscriminatedKey = DiscriminatedKey> = {
-    [k in Attribute<key> | "default"]?: Attributes
 }
 
 export const discriminate = (
@@ -48,7 +37,12 @@ export const discriminate = (
     for (const value in branchesByValue) {
         cases[value] = compileUnion(branchesByValue[value])
     }
-    return ["?", discriminant.path, discriminant.key, cases]
+    return {
+        kind: "switch",
+        path: discriminant.path,
+        key: discriminant.key,
+        cases
+    }
 }
 
 const greedyDiscriminant = (

@@ -13,6 +13,7 @@ export const parseDivisor = (s: DynamicState) => {
     if (value === 0) {
         s.error(buildInvalidDivisorMessage(0))
     }
+    s.intersectionAtKey("divisor", `${value}`)
 }
 
 export type parseDivisor<

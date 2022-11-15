@@ -10,7 +10,6 @@ import type {
 } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.js"
-import type { DiscriminatedBranches } from "../union/discriminate.js"
 import type { SerializedBounds } from "./serialization.js"
 
 type DisjointAttributeTypes = {
@@ -42,14 +41,22 @@ type ReducibleAttributeTypes = subtype<
     DisjointAttributeTypes & AdditiveAttributeTypes
 >
 
-type UndiscriminatedBranches = Attributes[]
-
-type IntersectedBranches = ["&", ...Attributes[]]
-
 export type AttributeBranches =
+    | { kind: "some" | "all"; of: Attributes[] }
     | DiscriminatedBranches
-    | UndiscriminatedBranches
-    | IntersectedBranches
+
+type DisjointKey = keyof DisjointAttributeTypes
+
+export type DiscriminatedBranches<key extends DisjointKey = DisjointKey> = {
+    kind: "switch"
+    path: string
+    key: key
+    cases: AttributeCases<key>
+}
+
+type AttributeCases<key extends DisjointKey = DisjointKey> = {
+    [k in Attribute<key> | "default"]?: Attributes
+}
 
 type AttributeTypes = ReducibleAttributeTypes &
     IrreducibleAttributeTypes &
