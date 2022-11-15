@@ -1,10 +1,12 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import { type } from "../exports.js"
-import { buildOpenRangeMessage } from "../src/parse/reduce/shared.js"
+import {
+    buildOpenRangeMessage,
+    buildUnpairableComparatorMessage
+} from "../src/parse/reduce/shared.js"
 import {
     buildBoundLiteralMessage,
-    buildInvalidDoubleBoundMessage,
     singleEqualsMessage
 } from "../src/parse/shift/operator/bounds.js"
 
@@ -46,13 +48,13 @@ describe("bound", () => {
             test("invalid left comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3>number<5")).throwsAndHasTypeError(
-                    buildInvalidDoubleBoundMessage(">")
+                    buildUnpairableComparatorMessage(">")
                 )
             })
             test("invalid right double-bound comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3<number==5")).throwsAndHasTypeError(
-                    buildInvalidDoubleBoundMessage("==")
+                    buildUnpairableComparatorMessage("==")
                 )
             })
             test("unpaired left", () => {

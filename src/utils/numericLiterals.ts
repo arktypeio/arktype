@@ -26,7 +26,7 @@ const wellFormedNumberMatcher = /^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
 const isWellFormedNumber = (s: string) => wellFormedNumberMatcher.test(s)
 
 const numberLikeMatcher = /^-?\d*\.?\d*$/
-const isNumberLike = (s: string) => numberLikeMatcher.test(s)
+const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
 
 /**
  *  Matches a well-formatted integer according to the following rules:
@@ -36,7 +36,7 @@ const isNumberLike = (s: string) => numberLikeMatcher.test(s)
 const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/
 const isWellFormedInteger = (s: string) => wellFormedIntegerMatcher.test(s)
 
-const integerLikeMatcher = /^-?\d*$/
+const integerLikeMatcher = /^-?\d+$/
 const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
 
 type NumericLiteralKind = "number" | "bigint" | "integer"

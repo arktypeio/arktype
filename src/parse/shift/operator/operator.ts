@@ -1,3 +1,4 @@
+import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { throwInternalError } from "../../errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -32,7 +33,7 @@ export type parseOperator<s extends StaticState> =
         ? lookahead extends "["
             ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
                 ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-                : state.throws<incompleteArrayTokenMessage>
+                : error<incompleteArrayTokenMessage>
             : lookahead extends Scanner.BranchToken
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
@@ -43,7 +44,7 @@ export type parseOperator<s extends StaticState> =
             ? parseDivisor<s, unscanned>
             : lookahead extends " "
             ? parseOperator<state.scanTo<s, unscanned>>
-            : state.throws<buildUnexpectedCharacterMessage<lookahead>>
+            : error<buildUnexpectedCharacterMessage<lookahead>>
         : state.finalize<s>
 
 export const buildUnexpectedCharacterMessage = <char extends string>(

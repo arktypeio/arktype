@@ -28,7 +28,7 @@ export type parseUnenclosed<
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? tryResolve<s, scanned, alias> extends infer result
         ? result extends error<infer message>
-            ? state.throws<message>
+            ? error<message>
             : state.setRoot<s, result, nextUnscanned>
         : never
     : never

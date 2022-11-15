@@ -27,3 +27,14 @@ export type buildOpenRangeMessage<
     min extends number,
     comparator extends Scanner.Comparator
 > = `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${min})`
+
+export type buildUnpairableComparatorMessage<
+    comparator extends Scanner.Comparator
+> = `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
+
+export const buildUnpairableComparatorMessage = <
+    comparator extends Scanner.Comparator
+>(
+    comparator: comparator
+): buildUnpairableComparatorMessage<comparator> =>
+    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`

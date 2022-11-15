@@ -1,4 +1,4 @@
-import type { RegexLiteral } from "../../../utils/generics.js"
+import type { error, RegexLiteral } from "../../../utils/generics.js"
 import { throwParseError } from "../../errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
@@ -41,9 +41,7 @@ export type parseEnclosed<
     infer nextUnscanned
 >
     ? nextUnscanned extends ""
-        ? state.throws<
-              buildUnterminatedEnclosedMessage<s["unscanned"], enclosing>
-          >
+        ? error<buildUnterminatedEnclosedMessage<s["unscanned"], enclosing>>
         : state.setRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,

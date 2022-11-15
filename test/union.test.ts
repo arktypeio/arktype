@@ -14,7 +14,7 @@ describe("union/parse", () => {
             branches: {
                 kind: "switch",
                 path: "",
-                key: "value",
+                key: "type",
                 cases: { number: {}, string: {} }
             }
         })

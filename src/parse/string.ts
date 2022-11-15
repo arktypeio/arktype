@@ -85,7 +85,7 @@ const fullStringParse = (def: string, scope: DynamicScope) => {
 }
 
 type fullStringParse<def extends string, alias extends string> = loop<
-    parseOperand<state.initialize<def>, alias>,
+    state.initialize<def>,
     alias
 >
 
@@ -97,7 +97,12 @@ const loop = (s: DynamicState) => {
     return s.ejectRoot()
 }
 
-type loop<
+type loop<s extends StaticState | error, alias extends string> = s extends error
+    ? s
+    : // @ts-expect-error If s is not an error, it must be a StaticState
+      loopValid<s, alias>
+
+type loopValid<
     s extends StaticState,
     alias extends string
 > = s["unscanned"] extends Scanner.finalized

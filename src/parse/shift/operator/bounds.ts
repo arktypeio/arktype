@@ -1,3 +1,4 @@
+import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
@@ -23,7 +24,7 @@ export const parseBound = (
     const maybeMin = s.unsetRootIfLimit()
     return maybeMin === undefined
         ? parseRightBound(s, comparator)
-        : parseLeftBound(s, maybeMin, comparator)
+        : s.reduceLeftBound(comparator, maybeMin)
 }
 
 export type parseBound<
@@ -34,7 +35,7 @@ export type parseBound<
     ? delegateReduction<state.scanTo<s, nextUnscanned>, `${start}=`>
     : start extends Scanner.OneCharComparator
     ? delegateReduction<state.scanTo<s, unscanned>, start>
-    : state.throws<singleEqualsMessage>
+    : error<singleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
@@ -43,19 +44,8 @@ type delegateReduction<
     s extends StaticState,
     comparator extends Scanner.Comparator
 > = s["root"] extends number
-    ? comparator extends Scanner.PairableComparator
-        ? state.reduceOpenRange<s, s["root"], comparator>
-        : state.throws<buildInvalidDoubleBoundMessage<comparator>>
+    ? state.reduceLeftBound<s, s["root"], comparator>
     : parseRightBound<s, comparator>
-
-export const parseLeftBound = (
-    s: DynamicState,
-    min: number,
-    comparator: Scanner.Comparator
-) =>
-    isKeyOf(comparator, Scanner.pairableComparators)
-        ? s.pushRange(min, comparator)
-        : s.error(buildInvalidDoubleBoundMessage(comparator))
 
 export const parseRightBound = (
     s: DynamicState,
@@ -66,29 +56,8 @@ export const parseRightBound = (
         limitToken,
         buildInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
-    //setValidatedRoot(s, comparator, limit)
+    s.reduceRightBound(comparator, limit)
 }
-
-// const setValidatedRoot = (
-//     s: DynamicState,
-//     comparator: Scanner.Comparator,
-//     limit: number
-// ) => {
-//     if (!stateHasOpenRange(s)) {
-//         s.root.intersect("bounds", `${comparator}${limit}`)
-//         return s
-//     }
-//     if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-//         return s.error(buildInvalidDoubleBoundMessage(comparator))
-//     }
-//     s.root.intersect(
-//         "bounds",
-//         `${invertedComparators[s.branches.range[1]]}${
-//             s.branches.range[0]
-//         }${comparator}${limit}`
-//     )
-//     s.branches.range = unset
-// }
 
 export type parseRightBound<
     s extends StaticState,
@@ -101,19 +70,8 @@ export type parseRightBound<
           buildInvalidLimitMessage<comparator, scanned>
       > extends infer limit
         ? limit extends number
-            ? s["branches"]["range"] extends {}
-                ? comparator extends Scanner.PairableComparator
-                    ? state.finalizeRange<
-                          s,
-                          s["branches"]["range"][0],
-                          s["branches"]["range"][1],
-                          comparator,
-                          limit,
-                          nextUnscanned
-                      >
-                    : state.throws<buildInvalidDoubleBoundMessage<comparator>>
-                : state.reduceSingleBound<s, limit, comparator, nextUnscanned>
-            : state.throws<limit & string>
+            ? state.reduceRightBound<s, comparator, limit, nextUnscanned>
+            : error<limit & string>
         : never
     : never
 
@@ -130,17 +88,6 @@ export type buildInvalidLimitMessage<
     comparator extends Scanner.Comparator,
     limit extends string
 > = `Right comparator ${comparator} must be followed by a number literal (was '${limit}')`
-
-export type buildInvalidDoubleBoundMessage<
-    comparator extends Scanner.Comparator
-> = `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
-
-export const buildInvalidDoubleBoundMessage = <
-    comparator extends Scanner.Comparator
->(
-    comparator: comparator
-): buildInvalidDoubleBoundMessage<comparator> =>
-    `Double-bound expressions must specify their bounds using < or <= (was ${comparator})`
 
 export const buildBoundLiteralMessage = <
     literal extends NumberLiteral,

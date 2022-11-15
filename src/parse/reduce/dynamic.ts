@@ -1,4 +1,5 @@
 import type { DynamicScope } from "../../scope.js"
+import { isKeyOf } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { deserializePrimitive } from "../../utils/primitiveSerialization.js"
 import { buildUnboundableMessage } from "../ast.js"
@@ -16,6 +17,7 @@ import type { OpenRange } from "./shared.js"
 import {
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
+    buildUnpairableComparatorMessage,
     unclosedGroupMessage
 } from "./shared.js"
 import { compileUnion } from "./union/compile.js"
@@ -107,6 +109,30 @@ export class DynamicState {
         }
         this.finalizeBranches()
         this.scanner.finalized = true
+    }
+
+    reduceLeftBound(comparator: Scanner.Comparator, limit: number) {
+        this.assertRangeUnset()
+        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
+            return this.error(buildUnpairableComparatorMessage(comparator))
+        }
+    }
+
+    reduceRightBound(comparator: Scanner.Comparator, limit: number) {
+        if (!this.branches.range) {
+            this.intersectionAtKey("bounds", `${comparator}${limit}`)
+            return
+        }
+        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
+            return this.error(buildUnpairableComparatorMessage(comparator))
+        }
+        this.intersectionAtKey(
+            "bounds",
+            `${comparator === "<" ? ">" : ">="}${
+                this.branches.range[0]
+            }${comparator}${limit}`
+        )
+        delete this.branches.range
     }
 
     finalizeBranches() {
