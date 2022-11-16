@@ -25,7 +25,9 @@ describe("parse unenclosed", () => {
     describe("number", () => {
         describe("positive", () => {
             test("whole", () => {
-                attest(type("4").infer).typed as 4
+                const four = type("4")
+                attest(four.infer).typed as 4
+                attest(four.attributes).snap({ value: "4" })
             })
             test("decimal", () => {
                 attest(type("3.14159").infer).typed as 3.14159
