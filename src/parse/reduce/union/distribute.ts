@@ -1,71 +1,43 @@
-import { isEmpty } from "../../../utils/deepEquals.js"
 import type {
     AttributeBranches,
-    AttributeKey,
     Attributes
 } from "../../reduce/attributes/attributes.js"
+import {
+    applyOperation,
+    applyOperationAtKey
+} from "../attributes/operations.js"
 import { traverseToDiscriminant } from "./prune.js"
 
-// const distribute = (a: Attributes, branches: AttributeBranches) => {
-//     if (branches[0] === "?") {
-//         const [, path, key, cases] = branches
-//         const discriminantValue = traverseToDiscriminant(a, path, key).value
-//         const caseKey =
-//             discriminantValue && discriminantValue in cases
-//                 ? discriminantValue
-//                 : "default"
-//         const caseAttributes = cases[caseKey]
-//         if (caseAttributes) {
-//             return intersect(a, caseAttributes)
-//         } else {
-//             intersectKey(
-//                 a,
-//                 "contradiction",
-//                 `${
-//                     path ? `At ${path}, ` : ""
-//                 }${key} ${discriminantValue} has no intersection with cases ${Object.keys(
-//                     cases
-//                 ).join(", ")}`
-//             )
-//         }
-//     } else {
-//         for (let i = 1; i < branches.length; i++) {}
-//     }
-// }
-
-// // eslint-disable-next-line max-lines-per-function
-// const pruneAttributes = (branch: Attributes, pruned: Attributes) => {
-//     let k: AttributeKey
-//     for (k in pruned) {
-//         if (k === "props") {
-//             if (!branch.props) {
-//                 continue
-//             }
-//             for (const propKey in pruned.props) {
-//                 if (propKey in branch.props) {
-//                     pruneAttributes(
-//                         branch.props[propKey],
-//                         pruned.props[propKey]
-//                     )
-//                     if (isEmpty(branch.props[propKey])) {
-//                         delete branch.props[propKey]
-//                     }
-//                 }
-//             }
-//             if (isEmpty(branch.props)) {
-//                 delete branch.props
-//             }
-//         } else if (k === "branches") {
-//             if (!branch.branches) {
-//                 continue
-//             }
-//             // TODO: ?
-//         } else {
-//             if (!branch[k]) {
-//                 continue
-//             }
-//             if (k === "divisor") {
-//             }
-//         }
-//     }
-// }
+export const distribute = (a: Attributes, branches: AttributeBranches) => {
+    if (branches.kind === "switch") {
+        const discriminantValue = traverseToDiscriminant(
+            a,
+            branches.path,
+            branches.key
+        ).value
+        const caseKey =
+            discriminantValue && discriminantValue in branches.cases
+                ? discriminantValue
+                : "default"
+        const caseAttributes = branches.cases[caseKey]
+        if (caseAttributes) {
+            applyOperation("&", a, caseAttributes)
+            delete a["branches"]
+        } else {
+            applyOperationAtKey(
+                "&",
+                a,
+                "contradiction",
+                `${branches.path ? `At ${branches.path}, ` : ""}${
+                    branches.key
+                } ${discriminantValue} has no intersection with cases ${Object.keys(
+                    branches.cases
+                ).join(", ")}`
+            )
+        }
+    } else if (branches.kind === "some") {
+        // for (const branch of branches.of) {
+        //     applyOperation("-", branch, a)
+        // }
+    }
+}

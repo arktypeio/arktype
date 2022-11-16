@@ -138,9 +138,7 @@ export class DynamicState {
         }
         this.intersectionAtKey(
             "bounds",
-            `${comparator === "<" ? ">" : ">="}${
-                this.branches.range[0]
-            }${comparator}${limit}`
+            `${Scanner.invertedComparators[comparator]}${this.branches.range[0]}${comparator}${limit}`
         )
         delete this.branches.range
     }
@@ -175,11 +173,6 @@ export class DynamicState {
             this.mergeIntersection()
             this.branches["|"].push(this.ejectRoot())
         }
-    }
-
-    pushRange(min: number, comparator: Scanner.PairableComparator) {
-        this.assertRangeUnset()
-        this.branches.range = [min, comparator]
     }
 
     private assertRangeUnset() {
