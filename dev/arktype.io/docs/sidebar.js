@@ -4,16 +4,11 @@ module.exports = {
             type: "category",
             label: "Tutorial",
             items: [
-                { type: "doc", label: "Start Quick ⏱️", id: "intro" },
-                { type: "doc", label: "Types that Clique 🔗", id: "spaces" },
+                { type: "doc", label: "Intro", id: "intro" },
+                { type: "doc", label: "Scopes", id: "scopes" },
                 {
                     type: "doc",
-                    label: "Definitions that Split ✂️",
-                    id: "declarations"
-                },
-                {
-                    type: "doc",
-                    label: "Validation that Fits 🧩",
+                    label: "Constraints",
                     id: "constraints"
                 }
             ]
