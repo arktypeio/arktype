@@ -1,4 +1,3 @@
-import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { Scanner } from "./scanner.js"
 
 export const buildUnmatchedGroupCloseMessage = <unscanned extends string>(

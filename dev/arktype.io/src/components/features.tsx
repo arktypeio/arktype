@@ -9,25 +9,25 @@ import React from "react"
 const details = [
     {
         image: "Two",
-        title: "Error customization",
+        title: "Isomorphic",
         description:
-            "We provide top-tier error messages but give you the freedom to customize them for your users!"
+            "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime."
     },
     {
         image: "Three",
-        title: "Infers TypeScript types from its own syntax",
-        description: ""
+        title: "Concise",
+        description: "Say more with less"
     },
     {
         image: "Four",
-        title: "Recursive and cyclic types",
-        description: "Spaces, with recursive types!?!"
+        title: "Fast",
+        description: "..."
     },
     {
         image: "One",
-        title: "One definition from editor to runtime",
+        title: "Portable",
         description:
-            "Use those amazing types you built in typescript at runtime!"
+            "Most ArkType definitions are just strings and objects. Serialize them and take them anywhere your data can go!"
     }
 ]
 
