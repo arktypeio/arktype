@@ -1,5 +1,4 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
-import type { AttributeOperation } from "./operations.js"
 
 export type Bounds = {
     min?: Bound
@@ -11,13 +10,7 @@ export type Bound = {
     inclusive: boolean
 }
 
-export const applyBoundsOperation: AttributeOperation<"bounds"> = (
-    operator,
-    a,
-    b
-) => (operator === "&" ? boundsIntersection(a, b) : boundsDifference(a, b))
-
-export const boundsDifference = (a: Bounds, b: Bounds) => {
+export const assignBoundsDifference = (a: Bounds, b: Bounds) => {
     if (
         a.min &&
         b.min &&
@@ -35,7 +28,7 @@ export const boundsDifference = (a: Bounds, b: Bounds) => {
     return isEmpty(a) ? null : a
 }
 
-export const boundsIntersection = (a: Bounds, b: Bounds) => {
+export const assignBoundsIntersection = (a: Bounds, b: Bounds) => {
     if (b.min) {
         const result = boundIntersection("min", a, b.min)
         if (result === null) {

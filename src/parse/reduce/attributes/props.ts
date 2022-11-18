@@ -1,18 +1,15 @@
-import type { AttributeOperation } from "./operations.js"
-import { applyOperation } from "./operations.js"
+import type { AttributeIntersection } from "./intersection.js"
+import { assignIntersection } from "./intersection.js"
 
-export const applyPropsOperation: AttributeOperation<"props"> = (
-    operator,
+export const assignPropsIntersection: AttributeIntersection<"props"> = (
     a,
     b
 ) => {
     for (const k in b) {
         if (k in a) {
-            a[k] = applyOperation(operator, a[k], b[k]) as any
-            if (a[k] === null) {
-                return null
-            }
-        } else if (operator === "&") {
+            a[k] = assignIntersection(a[k], b[k])
+            // TODO: Contradictions
+        } else {
             a[k] = b[k]
         }
     }

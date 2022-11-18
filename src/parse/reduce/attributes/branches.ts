@@ -1,17 +1,6 @@
 import type { AttributeBranches } from "./attributes.js"
-import type { AttributeOperation } from "./operations.js"
 
-export const applyBranchesOperation: AttributeOperation<"branches"> = (
-    operator,
-    a,
-    b
-) =>
-    operator === "&"
-        ? applyBranchesIntersection(a, b)
-        : // Currently we don't compress branch intersections, so we just return the original branch as the difference.
-          a
-
-const applyBranchesIntersection = (
+export const applyBranchesIntersection = (
     a: AttributeBranches,
     b: AttributeBranches
 ): AttributeBranches => {

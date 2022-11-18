@@ -1,4 +1,4 @@
-import type { AttributeOperation } from "./operations.js"
+import type { AttributeIntersection } from "./intersection.js"
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (a: number, b: number) => {
@@ -13,11 +13,10 @@ const greatestCommonDivisor = (a: number, b: number) => {
     return greatestCommonDivisor
 }
 
-export const applyDivisorOperation: AttributeOperation<"divisor"> = (
-    operator,
+export const applyDivisorIntersection: AttributeIntersection<"divisor"> = (
     a,
     b
-) =>
-    operator === "&"
-        ? Math.abs((a * b) / greatestCommonDivisor(a, b))
-        : a / greatestCommonDivisor(a, b)
+) => Math.abs((a * b) / greatestCommonDivisor(a, b))
+
+export const applyDivisorDifference = (a: number, b: number) =>
+    a / greatestCommonDivisor(a, b)
