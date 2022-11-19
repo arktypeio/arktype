@@ -24,11 +24,7 @@ export const assignIntersection = (base: Attributes, assign: Attributes) => {
             assign[k]
         )
         if (result === null) {
-            assignIntersection(base, {
-                contradiction: `${JSON.stringify(base[k])} and ${JSON.stringify(
-                    assign[k]
-                )} have no overlap`
-            })
+            assignNonOverlappingContradiction(base, base[k], assign[k])
         } else {
             base[k] = result
         }
@@ -36,6 +32,17 @@ export const assignIntersection = (base: Attributes, assign: Attributes) => {
     }
     return base
 }
+
+export const assignNonOverlappingContradiction = (
+    base: Attributes,
+    a: unknown,
+    b: unknown
+) =>
+    assignIntersection(base, {
+        contradiction: `${JSON.stringify(a)} and ${JSON.stringify(
+            b
+        )} have no overlap`
+    })
 
 export type AttributeIntersection<k extends AttributeKey> = (
     a: Attribute<k>,

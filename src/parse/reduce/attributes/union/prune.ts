@@ -4,54 +4,93 @@ import type {
     Attribute,
     AttributePath,
     Attributes,
-    DiscriminatedBranches
+    BranchedAttributes,
+    DiscriminatedBranches,
+    IntersectedBranches,
+    UndiscriminatedBranches,
+    UnionBranches
 } from "../attributes.js"
 import { assignIntersection } from "../intersection.js"
 import { queryAttribute } from "../query.js"
 import type { DiscriminatedKey } from "./discriminate.js"
+import { union } from "./union.js"
 
-export const pruneBranches = (base: Attributes, assign: Attributes) => {
-    if (!base.branches) {
-        return
-    }
+export const pruneBranches = (base: BranchedAttributes, assign: Attributes) => {
+    let prunableRoot
     if (base.branches[0] === "?") {
-        pruneDiscriminatedBranches(
-            base as AttributesWithDiscriminatedBranches,
-            assign
-        )
+        prunableRoot = pruneDiscriminatedBranches(base, base.branches, assign)
+    } else if (base.branches[0] === "|") {
+        prunableRoot = pruneUndiscriminatedBranches(base, base.branches, assign)
     } else {
-        for (const branch of base.branches[1]) {
-            assignIntersection(branch, assign)
-        }
+        prunableRoot = pruneIntersectedBranches(base, base.branches, assign)
     }
-}
-
-type AttributesWithDiscriminatedBranches = Attributes & {
-    branches: DiscriminatedBranches
+    if (prunableRoot) {
+        delete (base as Attributes).branches
+    }
 }
 
 const pruneDiscriminatedBranches = (
-    base: AttributesWithDiscriminatedBranches,
+    base: Attributes,
+    branches: DiscriminatedBranches,
     assign: Attributes
-) => {
-    const discriminantPath = base.branches[1]
-    const cases = base.branches[2]
+): boolean => {
+    const discriminantPath = branches[1]
+    const cases = branches[2]
     const discriminantValue = queryAttribute(assign, discriminantPath)
-    const caseKey =
-        discriminantValue && discriminantValue in cases
-            ? discriminantValue
-            : "default"
-    const caseAttributes = cases[caseKey]
+    if (discriminantValue === undefined) {
+        return false
+    }
+    const caseAttributes = cases[discriminantValue]
     if (caseAttributes) {
         assignIntersection(base, caseAttributes)
-        delete (base as Attributes)["branches"]
-    } else {
-        assignIntersection(base, {
-            contradiction: `At ${discriminantPath}, ${discriminantValue} has no intersection with cases ${Object.keys(
-                cases
-            ).join(", ")}`
-        })
+        return true
     }
+    assignIntersection(base, {
+        contradiction: `At ${discriminantPath}, ${discriminantValue} has no intersection with cases ${Object.keys(
+            cases
+        ).join(", ")}`
+    })
+    return false
+}
+
+const pruneUndiscriminatedBranches = (
+    base: Attributes,
+    branches: UndiscriminatedBranches,
+    assign: Attributes
+): boolean => {
+    const viableBranches: Attributes[] = []
+    for (const branch of branches[1]) {
+        assignIntersection(branch, assign)
+        if (isEmpty(branch)) {
+            // If any of our branches is empty, assign is a subtype of
+            // the branch and the branch will always be fulfilled. In
+            // that scenario, we can safely remove all branches.
+            return true
+        }
+        if (!branch.contradiction) {
+            viableBranches.push(branch)
+        }
+    }
+    assignIntersection(base, union(viableBranches))
+    return false
+}
+
+const pruneIntersectedBranches = (
+    base: Attributes,
+    branches: IntersectedBranches,
+    assign: Attributes
+): boolean => {
+    const remainingBranches: UnionBranches[] = []
+    for (const branch of branches[1]) {
+        const intersectedBranchIsPrunable =
+            branch[0] === "?"
+                ? pruneDiscriminatedBranches(base, branch, assign)
+                : pruneUndiscriminatedBranches(base, branch, assign)
+        if (!intersectedBranchIsPrunable) {
+            remainingBranches.push(branch)
+        }
+    }
+    return remainingBranches.length === 0
 }
 
 export const pruneDiscriminant = <k extends DiscriminatedKey>(

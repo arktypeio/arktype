@@ -9,21 +9,20 @@ export const union = (branches: Attributes[]): Attributes => {
         (branch) => branch.contradiction === undefined
     )
     if (viableBranches.length === 0) {
-        let contradiction = "All branches are empty:\n"
-        for (const branch of branches) {
-            contradiction += branch.contradiction
-        }
-        return { contradiction }
+        return { contradiction: buildNoViableBranchesMessage(branches) }
     }
     return viableUnion(viableBranches)
 }
 
-export const viableUnion = (branches: Attributes[]): Attributes => {
-    if (branches.length === 0) {
-        return throwInternalError(
-            "Unexpectedly tried to take a union of 0 branches."
-        )
+export const buildNoViableBranchesMessage = (branches: Attributes[]) => {
+    let message = "All branches are empty:\n"
+    for (const branch of branches) {
+        message += branch.contradiction
     }
+    return message
+}
+
+export const viableUnion = (branches: Attributes[]): Attributes => {
     if (branches.length === 1) {
         return branches[0]
     }

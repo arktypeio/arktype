@@ -44,12 +44,11 @@ export type CaseKey<k extends DisjointKey = DisjointKey> =
     | "default"
     | (k extends "value" ? SerializedPrimitive : DynamicTypeName)
 
-export type AttributeBranches =
-    | UndiscriminatedBranches
-    | DiscriminatedBranches
-    | IntersectedBranches
+export type AttributeBranches = UnionBranches | IntersectedBranches
 
-export type IntersectedBranches = [token: "&", members: Attributes[]]
+export type UnionBranches = UndiscriminatedBranches | DiscriminatedBranches
+
+export type IntersectedBranches = [token: "&", members: UnionBranches[]]
 
 export type UndiscriminatedBranches = [token: "|", members: Attributes[]]
 
@@ -76,3 +75,9 @@ export type AttributeKey = keyof AttributeTypes
 export type Attribute<k extends AttributeKey> = AttributeTypes[k]
 
 export type Attributes = { [k in AttributeKey]?: Attribute<k> }
+
+export type BranchedAttributes<
+    branches extends AttributeBranches = AttributeBranches
+> = Attributes & {
+    branches: branches
+}
