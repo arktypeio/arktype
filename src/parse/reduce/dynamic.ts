@@ -7,7 +7,6 @@ import type {
     AttributeKey,
     Attributes
 } from "./attributes/attributes.js"
-import { deserializeBound, deserializeRange } from "./attributes/bounds.js"
 import {
     assignAttributeIntersection,
     assignIntersection
@@ -59,6 +58,14 @@ export class DynamicState {
                 return value
             }
             this.error(buildUnboundableMessage(`${value}`))
+        }
+    }
+
+    ejectRangeIfOpen() {
+        if (this.branches.range) {
+            const range = this.branches.range
+            delete this.branches.range
+            return range
         }
     }
 
@@ -125,26 +132,6 @@ export class DynamicState {
             )
         }
         this.branches.range = [limit, comparator]
-    }
-
-    reduceRightBound(comparator: Scanner.Comparator, limit: number) {
-        if (!this.branches.range) {
-            this.addAttribute("bounds", deserializeBound(comparator, limit))
-            return
-        }
-        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-            return this.error(buildUnpairableComparatorMessage(comparator))
-        }
-        this.addAttribute(
-            "bounds",
-            deserializeRange(
-                this.branches.range[1],
-                this.branches.range[0],
-                comparator,
-                limit
-            )
-        )
-        delete this.branches.range
     }
 
     finalizeBranches() {
