@@ -1,6 +1,7 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
 import { Contradiction } from "./contradiction.js"
-import type { AttributeIntersection } from "./intersection.js"
+import type { AttributeIntersector } from "./intersect.js"
+import type { AttributeSubtractor } from "./subtract.js"
 
 export type Bounds = {
     min?: Bound
@@ -12,7 +13,7 @@ export type Bound = {
     inclusive?: true
 }
 
-export const assignBoundsDifference = (a: Bounds, b: Bounds) => {
+export const subtractBounds: AttributeSubtractor<"bounds"> = (a, b) => {
     if (
         a.min &&
         b.min &&
@@ -30,19 +31,16 @@ export const assignBoundsDifference = (a: Bounds, b: Bounds) => {
     return isEmpty(a) ? null : a
 }
 
-export const assignBoundsIntersection: AttributeIntersection<"bounds"> = (
-    a,
-    b
-) => {
+export const intersectBounds: AttributeIntersector<"bounds"> = (a, b) => {
     if (b.min) {
-        const result = boundIntersection("min", a, b.min)
+        const result = intersectBound("min", a, b.min)
         if (result instanceof Contradiction) {
             return result
         }
         a.min = result
     }
     if (b.max) {
-        const result = boundIntersection("max", a, b.max)
+        const result = intersectBound("max", a, b.max)
         if (result instanceof Contradiction) {
             return result
         }
@@ -51,21 +49,21 @@ export const assignBoundsIntersection: AttributeIntersection<"bounds"> = (
     return a
 }
 
-const boundIntersection = (
+const intersectBound = (
     kind: BoundKind,
-    a: Bounds,
-    boundOfB: Bound
+    base: Bounds,
+    bound: Bound
 ): Bound | Contradiction => {
     const invertedKind = invertedKinds[kind]
-    const baseCompeting = a[kind]
-    const baseOpposing = a[invertedKind]
-    if (baseOpposing && isStricter(kind, boundOfB, baseOpposing)) {
+    const baseCompeting = base[kind]
+    const baseOpposing = base[invertedKind]
+    if (baseOpposing && isStricter(kind, bound, baseOpposing)) {
         return new Contradiction(
-            buildEmptyRangeMessage(kind, boundOfB, baseOpposing)
+            buildEmptyRangeMessage(kind, bound, baseOpposing)
         )
     }
-    if (!baseCompeting || isStricter(kind, boundOfB, baseCompeting)) {
-        return boundOfB
+    if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
+        return bound
     }
     return baseCompeting
 }

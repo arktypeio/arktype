@@ -1,5 +1,5 @@
 import type { Attributes, CaseKey } from "../attributes.js"
-import { assignIntersection } from "../intersection.js"
+import { intersect } from "../intersect.js"
 import { unpruneDiscriminant } from "./prune.js"
 
 export const undiscriminate = (attributes: Attributes): Attributes[] => {
@@ -10,7 +10,7 @@ export const undiscriminate = (attributes: Attributes): Attributes[] => {
     delete attributes.branches
     if (branches[0] === "|") {
         for (const branch of branches[1]) {
-            assignIntersection(branch, attributes)
+            intersect(branch, attributes)
         }
         return branches[1]
     }
@@ -21,7 +21,7 @@ export const undiscriminate = (attributes: Attributes): Attributes[] => {
     for (caseKey in cases) {
         const caseBranches = undiscriminate(cases[caseKey]!)
         for (const branch of caseBranches) {
-            assignIntersection(branch, attributes)
+            intersect(branch, attributes)
             if (caseKey !== "default") {
                 unpruneDiscriminant(branch, path, caseKey)
             }

@@ -7,7 +7,7 @@ import type {
     AttributeKey,
     Attributes
 } from "./attributes/attributes.js"
-import { assignIntersection } from "./attributes/intersection.js"
+import { intersect } from "./attributes/intersect.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
 import { union } from "./attributes/union/union.js"
@@ -89,7 +89,7 @@ export class DynamicState {
 
     addAttribute<k extends AttributeKey>(k: k, v: Attribute<k>) {
         this.assertHasRoot()
-        this.root = assignIntersection(this.root!, { [k]: v })
+        this.root = intersect(this.root!, { [k]: v })
     }
 
     private ejectRoot() {
@@ -177,9 +177,7 @@ export class DynamicState {
     private mergeIntersection() {
         const branches = this.branches["&"]
         while (branches.length > 1) {
-            branches.unshift(
-                assignIntersection(branches.pop()!, branches.pop()!)
-            )
+            branches.unshift(intersect(branches.pop()!, branches.pop()!))
         }
         this.setRoot(branches.pop()!)
     }

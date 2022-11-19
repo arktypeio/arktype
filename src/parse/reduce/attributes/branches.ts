@@ -1,6 +1,6 @@
 import type { AttributeBranches } from "./attributes.js"
 
-export const applyBranchesIntersection = (
+export const intersectBranches = (
     a: AttributeBranches,
     b: AttributeBranches
 ): AttributeBranches => {

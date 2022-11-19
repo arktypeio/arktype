@@ -1,4 +1,5 @@
-import type { AttributeIntersection } from "./intersection.js"
+import type { AttributeIntersector } from "./intersect.js"
+import type { AttributeSubtractor } from "./subtract.js"
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (a: number, b: number) => {
@@ -13,10 +14,10 @@ const greatestCommonDivisor = (a: number, b: number) => {
     return greatestCommonDivisor
 }
 
-export const applyDivisorIntersection: AttributeIntersection<"divisor"> = (
-    a,
-    b
-) => Math.abs((a * b) / greatestCommonDivisor(a, b))
+export const intersectDivisors: AttributeIntersector<"divisor"> = (a, b) =>
+    Math.abs((a * b) / greatestCommonDivisor(a, b))
 
-export const applyDivisorDifference = (a: number, b: number) =>
-    a / greatestCommonDivisor(a, b)
+export const subtractDivisors: AttributeSubtractor<"divisor"> = (a, b) => {
+    const relativePrimeOfA = Math.abs(a / greatestCommonDivisor(a, b))
+    return relativePrimeOfA === 1 ? null : relativePrimeOfA
+}

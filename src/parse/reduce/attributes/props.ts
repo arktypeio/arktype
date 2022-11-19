@@ -1,13 +1,13 @@
-import type { AttributeIntersection } from "./intersection.js"
-import { assignIntersection } from "./intersection.js"
+import type { AttributeIntersector } from "./intersect.js"
+import { intersect } from "./intersect.js"
 
-export const assignPropsIntersection: AttributeIntersection<"props"> = (
+export const assignPropsIntersection: AttributeIntersector<"props"> = (
     a,
     b
 ) => {
     for (const k in b) {
         if (k in a) {
-            a[k] = assignIntersection(a[k], b[k])
+            a[k] = intersect(a[k], b[k])
         } else {
             a[k] = b[k]
         }

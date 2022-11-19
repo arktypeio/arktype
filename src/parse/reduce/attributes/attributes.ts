@@ -38,7 +38,7 @@ type ComposedAttributeTypes = {
 
 type ReducibleAttributeTypes = DisjointAttributeTypes & AdditiveAttributeTypes
 
-type DisjointKey = keyof DisjointAttributeTypes
+export type DisjointKey = keyof DisjointAttributeTypes
 
 export type CaseKey<k extends DisjointKey = DisjointKey> =
     | "default"

@@ -10,8 +10,9 @@ import type {
     UndiscriminatedBranches,
     UnionBranches
 } from "../attributes.js"
-import { assignIntersection } from "../intersection.js"
+import { intersect } from "../intersect.js"
 import { queryAttribute } from "../query.js"
+import { subtract } from "../subtract.js"
 import type { DiscriminatedKey } from "./discriminate.js"
 import { union } from "./union.js"
 
@@ -42,10 +43,10 @@ const pruneDiscriminatedBranches = (
     }
     const caseAttributes = cases[discriminantValue]
     if (caseAttributes) {
-        assignIntersection(base, caseAttributes)
+        intersect(base, caseAttributes)
         return true
     }
-    assignIntersection(base, {
+    intersect(base, {
         contradiction: `At ${discriminantPath}, ${discriminantValue} has no intersection with cases ${Object.keys(
             cases
         ).join(", ")}`
@@ -60,7 +61,7 @@ const pruneUndiscriminatedBranches = (
 ): boolean => {
     const viableBranches: Attributes[] = []
     for (const branch of branches[1]) {
-        assignIntersection(branch, assign)
+        subtract(branch, assign)
         if (isEmpty(branch)) {
             // If any of our branches is empty, assign is a subtype of
             // the branch and the branch will always be fulfilled. In
@@ -71,7 +72,7 @@ const pruneUndiscriminatedBranches = (
             viableBranches.push(branch)
         }
     }
-    assignIntersection(base, union(viableBranches))
+    intersect(base, union(viableBranches))
     return false
 }
 

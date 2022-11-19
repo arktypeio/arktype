@@ -1,7 +1,7 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
 import type { keyOrSet, keySet } from "../../../utils/generics.js"
 
-export const assignKeyOrSetIntersection = <k extends string = string>(
+export const intersectKeysOrSets = <k extends string = string>(
     a: keyOrSet<k>,
     b: keyOrSet<k>
 ): keyOrSet<k> => {
@@ -16,15 +16,15 @@ export const assignKeyOrSetIntersection = <k extends string = string>(
         a[b] = true
         return a
     }
-    return assignKeySetIntersection(a, b)
+    return intersectKeySets(a, b)
 }
 
-export const assignKeySetIntersection = <k extends string = string>(
+export const intersectKeySets = <k extends string = string>(
     a: keySet<k>,
     b: keySet<k>
 ) => Object.assign(a, b)
 
-export const assignKeyOrSetDifference = <k extends string = string>(
+export const subtractKeysOrSets = <k extends string = string>(
     a: keyOrSet<k>,
     b: keyOrSet<k>
 ) => {
@@ -38,10 +38,10 @@ export const assignKeyOrSetDifference = <k extends string = string>(
         delete a[b]
         return isEmpty(a) ? null : a
     }
-    return assignKeySetDifference(a, b)
+    return subtractKeySets(a, b)
 }
 
-export const assignKeySetDifference = <k extends string = string>(
+export const subtractKeySets = <k extends string = string>(
     a: keySet<k>,
     b: keySet<k>
 ) => {
