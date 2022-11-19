@@ -1,9 +1,10 @@
-import type { dictionary } from "../../../utils/dynamicTypes.js"
-import { pushKey } from "../../../utils/paths.js"
+import type { dictionary } from "../../../../utils/dynamicTypes.js"
+import { pushKey } from "../../../../utils/paths.js"
 import type {
     Attributes,
-    DiscriminatedBranches
-} from "../../reduce/attributes/attributes.js"
+    DiscriminatedBranches,
+    UndiscriminatedBranches
+} from "../attributes.js"
 import { compileViableUnion } from "./compile.js"
 import { pruneDiscriminant } from "./prune.js"
 
@@ -17,10 +18,10 @@ type Discriminant = {
 
 export const discriminate = (
     branches: Attributes[]
-): DiscriminatedBranches | undefined => {
+): DiscriminatedBranches | UndiscriminatedBranches => {
     const discriminant = greedyDiscriminant("", branches)
     if (!discriminant) {
-        return
+        return ["|", branches]
     }
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
@@ -37,12 +38,13 @@ export const discriminate = (
     for (const value in branchesByValue) {
         cases[value] = compileViableUnion(branchesByValue[value])
     }
-    return {
-        kind: "switch",
-        path: discriminant.path,
-        key: discriminant.key,
+    return [
+        "?",
+        discriminant.path
+            ? `${discriminant.path}.${discriminant.key}`
+            : discriminant.key,
         cases
-    }
+    ]
 }
 
 const greedyDiscriminant = (

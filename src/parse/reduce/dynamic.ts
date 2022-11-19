@@ -1,6 +1,5 @@
 import type { DynamicScope } from "../../scope.js"
 import { isKeyOf } from "../../utils/generics.js"
-import { deserializePrimitive } from "../../utils/primitiveSerialization.js"
 import { buildUnboundableMessage } from "../ast.js"
 import { throwInternalError, throwParseError } from "../errors.js"
 import type {
@@ -8,9 +7,14 @@ import type {
     AttributeKey,
     Attributes
 } from "./attributes/attributes.js"
+import { deserializeBound, deserializeRange } from "./attributes/bounds.js"
+import {
+    assignAttributeIntersection,
+    assignIntersection
+} from "./attributes/intersection.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
-import { applyOperation, applyOperationAtKey } from "./attributes/operations.js"
+import { compileUnion } from "./attributes/union/compile.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -20,7 +24,6 @@ import {
     buildUnpairableComparatorMessage,
     unclosedGroupMessage
 } from "./shared.js"
-import { compileUnion } from "./union/compile.js"
 
 type BranchState = {
     range?: OpenRange
@@ -50,13 +53,12 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         this.assertHasRoot()
-        if (this.root!.value) {
-            const serializedValue = this.ejectRoot().value!
-            const value = deserializePrimitive(serializedValue)
+        if (this.root?.value) {
+            const value = this.ejectRoot().value!
             if (typeof value === "number") {
                 return value
             }
-            this.error(buildUnboundableMessage(serializedValue))
+            this.error(buildUnboundableMessage(`${value}`))
         }
     }
 
@@ -81,12 +83,9 @@ export class DynamicState {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersectionAtKey<k extends AttributeKey>(k: k, v: Attribute<k>) {
-        const result = applyOperationAtKey("&", this.ejectRoot(), k, v)
-        if (result === null) {
-            throw new Error("Empty intersection.")
-        }
-        this.root = result
+    addAttribute<k extends AttributeKey>(k: k, v: Attribute<k>) {
+        this.assertHasRoot()
+        this.root = assignAttributeIntersection(this.root!, k, v)
     }
 
     private ejectRoot() {
@@ -130,15 +129,20 @@ export class DynamicState {
 
     reduceRightBound(comparator: Scanner.Comparator, limit: number) {
         if (!this.branches.range) {
-            this.intersectionAtKey("bounds", `${comparator}${limit}`)
+            this.addAttribute("bounds", deserializeBound(comparator, limit))
             return
         }
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return this.error(buildUnpairableComparatorMessage(comparator))
         }
-        this.intersectionAtKey(
+        this.addAttribute(
             "bounds",
-            `${Scanner.invertedComparators[comparator]}${this.branches.range[0]}${comparator}${limit}`
+            deserializeRange(
+                this.branches.range[1],
+                this.branches.range[0],
+                comparator,
+                limit
+            )
         )
         delete this.branches.range
     }
@@ -190,7 +194,7 @@ export class DynamicState {
         const branches = this.branches["&"]
         while (branches.length > 1) {
             branches.unshift(
-                applyOperation("&", branches.pop()!, branches.pop()!)
+                assignIntersection(branches.pop()!, branches.pop()!)
             )
         }
         this.setRoot(branches.pop()!)

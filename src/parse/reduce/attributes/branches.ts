@@ -4,20 +4,17 @@ export const applyBranchesIntersection = (
     a: AttributeBranches,
     b: AttributeBranches
 ): AttributeBranches => {
-    if (a.kind === "all") {
-        if (b.kind === "all") {
-            a.of.push(...b.of)
+    if (a[0] === "&") {
+        if (b[0] === "&") {
+            a[1].push(...b[1])
         } else {
-            a.of.push({ branches: b })
+            a[1].push({ branches: b })
         }
         return a
     }
-    if (b.kind === "all") {
-        b.of.push({ branches: a })
+    if (b[0] === "&") {
+        b[1].push({ branches: a })
         return b
     }
-    return {
-        kind: "all",
-        of: [{ branches: a }, { branches: b }]
-    }
+    return ["&", [{ branches: a }, { branches: b }]]
 }

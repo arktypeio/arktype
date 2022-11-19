@@ -8,14 +8,11 @@ import type {
     RegexLiteral,
     subtype
 } from "../../../utils/generics.js"
-import type {
-    SerializablePrimitive,
-    SerializedPrimitive
-} from "../../../utils/primitiveSerialization.js"
+import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
 
 type DisjointAttributeTypes = {
-    value: SerializablePrimitive
+    value: SerializedPrimitive
     type: DynamicTypeName
 }
 
@@ -41,22 +38,26 @@ type ComposedAttributeTypes = {
 
 type ReducibleAttributeTypes = DisjointAttributeTypes & AdditiveAttributeTypes
 
-export type AttributeBranches =
-    | { kind: "some" | "all"; of: Attributes[] }
-    | DiscriminatedBranches
-
 type DisjointKey = keyof DisjointAttributeTypes
 
 type CaseKey<k extends DisjointKey = DisjointKey> = k extends "value"
     ? SerializedPrimitive
     : DynamicTypeName
 
-export type DiscriminatedBranches<k extends DisjointKey = DisjointKey> = {
-    kind: "switch"
-    path: string
-    key: k
+export type AttributeBranches =
+    | UndiscriminatedBranches
+    | DiscriminatedBranches
+    | IntersectedBranches
+
+export type IntersectedBranches = [token: "&", cases: Attributes[]]
+
+export type UndiscriminatedBranches = [token: "|", cases: Attributes[]]
+
+export type DiscriminatedBranches<k extends DisjointKey = DisjointKey> = [
+    token: "?",
+    path: k | `${string}.${k}`,
     cases: AttributeCases<k>
-}
+]
 
 type AttributeCases<k extends DisjointKey = DisjointKey> = {
     [_ in CaseKey<k> | "default"]?: Attributes

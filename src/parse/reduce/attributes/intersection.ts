@@ -1,6 +1,6 @@
 import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
 import type { RegexLiteral } from "../../../utils/generics.js"
-import type { SerializablePrimitive } from "../../../utils/primitiveSerialization.js"
+import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.js"
 import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
 import { assignBoundsIntersection } from "./bounds.js"
 import { applyBranchesIntersection } from "./branches.js"
@@ -51,12 +51,11 @@ export type AttributeIntersection<k extends AttributeKey> = (
 
 const intersectImplications = (base: Attributes, k: AttributeKey) =>
     k === "bounds"
-        ? assignAttributeIntersection(base, "branches", {
-              kind: "switch",
-              path: "",
-              key: "type",
-              cases: { number: {}, string: {}, array: {} }
-          })
+        ? assignAttributeIntersection(base, "branches", [
+              "?",
+              "type",
+              { number: {}, string: {}, array: {} }
+          ])
         : k === "divisor"
         ? assignAttributeIntersection(base, "type", "number")
         : base
@@ -67,7 +66,7 @@ export const intersections: {
     [k in AttributeKey]: AttributeIntersection<k>
 } = {
     type: applyDisjointIntersection<DynamicTypeName>,
-    value: applyDisjointIntersection<SerializablePrimitive>,
+    value: applyDisjointIntersection<SerializedPrimitive>,
     alias: assignKeyOrSetIntersection,
     contradiction: assignKeyOrSetIntersection,
     requiredKeys: assignKeySetIntersection,

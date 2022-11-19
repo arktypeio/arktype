@@ -1,5 +1,6 @@
-import { throwInternalError } from "../../errors.js"
-import type { Attributes } from "../../reduce/attributes/attributes.js"
+import { isEmpty } from "../../../../utils/deepEquals.js"
+import { throwInternalError } from "../../../errors.js"
+import type { Attributes } from "../attributes.js"
 import { compress } from "./compress.js"
 import { discriminate } from "./discriminate.js"
 
@@ -27,11 +28,8 @@ export const compileViableUnion = (branches: Attributes[]): Attributes => {
         return branches[0]
     }
     const root = compress(branches)
-    if (root.branches?.kind === "some") {
-        const discriminated = discriminate(root.branches.of)
-        if (discriminated) {
-            root.branches = discriminated
-        }
+    if (branches.every((branch) => !isEmpty(branch))) {
+        root.branches = discriminate(branches)
     }
     return root
 }

@@ -1,9 +1,6 @@
-import { isEmpty } from "../../../utils/deepEquals.js"
-import { pathToSegments } from "../../../utils/paths.js"
-import type {
-    Attribute,
-    Attributes
-} from "../../reduce/attributes/attributes.js"
+import { isEmpty } from "../../../../utils/deepEquals.js"
+import { pathToSegments } from "../../../../utils/paths.js"
+import type { Attribute, Attributes } from "../attributes.js"
 import type { DiscriminatedKey } from "./discriminate.js"
 
 export const pruneDiscriminant = (
@@ -18,6 +15,22 @@ export const pruneDiscriminant = (
     delete traversal.traversed.pop()![key]
     pruneTraversedSegments(traversal.traversed, pathToSegments(path))
     return traversal.value
+}
+
+export const unpruneDiscriminant = <k extends DiscriminatedKey>(
+    attributes: Attributes,
+    path: string,
+    key: k,
+    value: Attribute<k>
+) => {
+    const segments = pathToSegments(path)
+    let currentAttributes = attributes
+    for (const segment of segments) {
+        currentAttributes.props ??= {}
+        currentAttributes.props[segment] ??= {}
+        currentAttributes = currentAttributes.props[segment]
+    }
+    currentAttributes[key] = value
 }
 
 export const traverseToDiscriminant = <key extends DiscriminatedKey>(

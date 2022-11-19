@@ -1,4 +1,5 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
+import type { Scanner } from "../scanner.js"
 
 export type Bounds = {
     min?: Bound
@@ -83,3 +84,40 @@ const isStricter = (kind: BoundKind, candidate: Bound, base: Bound) => {
         return candidate.limit < base.limit
     }
 }
+
+export const deserializeBound = (
+    comparator: Scanner.Comparator,
+    limit: number
+): Bounds => {
+    const bound: Bound = {
+        limit,
+        inclusive: comparator[1] === "="
+    }
+    if (comparator === "==") {
+        return { min: bound, max: bound }
+    } else if (comparator === ">" || comparator === ">=") {
+        return {
+            min: bound
+        }
+    } else {
+        return {
+            max: bound
+        }
+    }
+}
+
+export const deserializeRange = (
+    minComparator: Scanner.PairableComparator,
+    minLimit: number,
+    maxComparator: Scanner.PairableComparator,
+    maxLimit: number
+): Bounds => ({
+    min: {
+        limit: minLimit,
+        inclusive: minComparator[1] === "="
+    },
+    max: {
+        limit: maxLimit,
+        inclusive: maxComparator[1] === "="
+    }
+})

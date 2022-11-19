@@ -1,20 +1,9 @@
-import { deepEquals, isEmpty } from "../../../utils/deepEquals.js"
-import type { dictionary } from "../../../utils/dynamicTypes.js"
-import type { requireKeys } from "../../../utils/generics.js"
-import type {
-    AttributeKey,
-    Attributes
-} from "../../reduce/attributes/attributes.js"
+import { deepEquals, isEmpty } from "../../../../utils/deepEquals.js"
+import type { dictionary } from "../../../../utils/dynamicTypes.js"
+import type { requireKeys } from "../../../../utils/generics.js"
+import type { AttributeKey, Attributes } from "../attributes.js"
 
-export const compress = (branches: Attributes[]): Attributes => {
-    const compressed = compressBranchAttributes(branches)
-    if (branches.every((branch) => !isEmpty(branch))) {
-        compressed.branches = { kind: "some", of: branches }
-    }
-    return compressed
-}
-
-const compressBranchAttributes = (branches: Attributes[]) => {
+export const compress = (branches: Attributes[]) => {
     const compressed: Attributes = {}
     let k: AttributeKey
     for (k in branches[0]) {
@@ -71,7 +60,7 @@ const compressBranchProp = (
     if (!allBranchesHaveProp) {
         return
     }
-    const compressedProp = compressBranchAttributes(propValues)
+    const compressedProp = compress(propValues)
     if (!isEmpty(compressedProp)) {
         for (const branch of branches) {
             if (isEmpty(branch.props[propKey])) {
