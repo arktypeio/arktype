@@ -2,14 +2,13 @@ import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
 import type {
     Attribute,
+    AttributeBranches,
     AttributeKey,
     AttributePath,
     Attributes,
-    BranchedAttributes,
     DiscriminatedBranches,
     IntersectedBranches,
-    UndiscriminatedBranches,
-    UnionBranches
+    UndiscriminatedBranches
 } from "../attributes.js"
 import { intersect } from "../intersect.js"
 import { queryAttribute } from "../query.js"
@@ -23,49 +22,36 @@ export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
     return value
 }
 
-export const pruneBranches = (base: BranchedAttributes, given: Attributes) => {
-    let prunableRoot
-    if (base.branches[0] === "?") {
-        prunableRoot = pruneDiscriminatedBranches(base, base.branches, given)
-    } else if (base.branches[0] === "|") {
-        prunableRoot = pruneUndiscriminatedBranches(base, base.branches, given)
-    } else {
-        prunableRoot = pruneIntersectedBranches(base, base.branches, given)
-    }
-    if (prunableRoot) {
-        delete (base as Attributes).branches
-    }
-}
+export const pruneBranches = (branches: AttributeBranches, given: Attributes) =>
+    branches[0] === "?"
+        ? pruneDiscriminatedBranches(branches, given)
+        : branches[0] === "|"
+        ? pruneUndiscriminatedBranches(branches, given)
+        : pruneIntersectedBranches(branches, given)
 
 const pruneDiscriminatedBranches = (
-    base: Attributes,
     branches: DiscriminatedBranches,
     given: Attributes
-): boolean => {
+): Attributes => {
     const discriminantPath = branches[1]
     const cases = branches[2]
     const discriminantValue = queryAttribute(given, discriminantPath)
     if (discriminantValue === undefined) {
-        return false
+        return { branches }
     }
-    const caseAttributes = cases[discriminantValue]
-    if (caseAttributes) {
-        intersect(base, caseAttributes)
-        return true
-    }
-    intersect(base, {
-        contradiction: `At ${discriminantPath}, ${discriminantValue} has no intersection with cases ${Object.keys(
-            cases
-        ).join(", ")}`
-    })
-    return false
+    return (
+        cases[discriminantValue] ?? {
+            contradiction: `At ${discriminantPath}, ${discriminantValue} has no intersection with cases ${Object.keys(
+                cases
+            ).join(", ")}`
+        }
+    )
 }
 
 const pruneUndiscriminatedBranches = (
-    base: Attributes,
     branches: UndiscriminatedBranches,
     given: Attributes
-): boolean => {
+): Attributes => {
     const viableBranches: Attributes[] = []
     for (const branch of branches[1]) {
         subtract(branch, given)
@@ -73,32 +59,28 @@ const pruneUndiscriminatedBranches = (
             // If any of our branches is empty, assign is a subtype of
             // the branch and the branch will always be fulfilled. In
             // that scenario, we can safely remove all branches.
-            return true
+            return {}
         }
         if (!branch.contradiction) {
             viableBranches.push(branch)
         }
     }
-    intersect(base, union(viableBranches))
-    return false
+    return union(viableBranches)
 }
 
 const pruneIntersectedBranches = (
-    base: Attributes,
     branches: IntersectedBranches,
     given: Attributes
-): boolean => {
-    const remainingBranches: UnionBranches[] = []
+) => {
+    const base: Attributes = {}
     for (const branch of branches[1]) {
-        const intersectedBranchIsPrunable =
+        const branchAttributes =
             branch[0] === "?"
-                ? pruneDiscriminatedBranches(base, branch, given)
-                : pruneUndiscriminatedBranches(base, branch, given)
-        if (!intersectedBranchIsPrunable) {
-            remainingBranches.push(branch)
-        }
+                ? pruneDiscriminatedBranches(branch, given)
+                : pruneUndiscriminatedBranches(branch, given)
+        intersect(base, branchAttributes)
     }
-    return remainingBranches.length === 0
+    return base
 }
 
 export const pruneDiscriminant = <k extends DiscriminatedKey>(

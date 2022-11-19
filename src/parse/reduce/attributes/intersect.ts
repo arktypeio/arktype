@@ -1,10 +1,5 @@
 import type { RegexLiteral } from "../../../utils/generics.js"
-import type {
-    Attribute,
-    AttributeKey,
-    Attributes,
-    BranchedAttributes
-} from "./attributes.js"
+import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
 import { composedAttributeKeys } from "./attributes.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectBranches } from "./branches.js"
@@ -17,15 +12,11 @@ import { pruneBranches } from "./union/prune.js"
 export const intersect = (a: Attributes, b: Attributes) => {
     let k: AttributeKey
     for (k in b) {
-        if (k in composedAttributeKeys) {
-            continue
-        }
         if (a[k] === undefined) {
             a[k] = b[k] as any
             intersectImplications(a, k)
         }
         const result = (intersectors[k] as DynamicIntersector)(a[k], b[k])
-        // TODO: Figure out branch/props contradictions here
         if (result instanceof Contradiction) {
             intersect(a, {
                 contradiction: result.message
@@ -34,17 +25,13 @@ export const intersect = (a: Attributes, b: Attributes) => {
             a[k] = result
         }
     }
+    // TODO: Figure out prop never propagation
     if (a.branches) {
-        pruneBranches(a as BranchedAttributes, b)
-    }
-    if (b.branches) {
-        pruneBranches(b as BranchedAttributes, a)
+        const branchDerivedAttributes = pruneBranches(a.branches, b)
+        intersect(a, branchDerivedAttributes)
     }
     return a
 }
-
-export const buildNonOverlappingMessage = (a: unknown, b: unknown) =>
-    `${JSON.stringify(a)} and ${JSON.stringify(b)} have no overlap`
 
 export type AttributeIntersector<k extends AttributeKey> = (
     a: Attribute<k>,

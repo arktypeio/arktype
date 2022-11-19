@@ -8,6 +8,7 @@ import type {
 import { subtractBounds } from "./bounds.js"
 import { subtractDivisors } from "./divisor.js"
 import { subtractKeySets, subtractKeysOrSets } from "./keySets.js"
+import { subtractProps } from "./props.js"
 
 export const subtract = (a: Attributes, b: Attributes) => {
     let k: AttributeKey
@@ -45,6 +46,7 @@ export const subtractors: {
     regex: subtractKeysOrSets<RegexLiteral>,
     divisor: subtractDivisors,
     bounds: subtractBounds,
-    props: assignPropsDifference,
-    branches: applyBranchesDifference
+    props: subtractProps,
+    // TODO: Fix
+    branches: (a) => a
 }

@@ -81,9 +81,3 @@ export type AttributeKey = keyof AttributeTypes
 export type Attribute<k extends AttributeKey> = AttributeTypes[k]
 
 export type Attributes = { [k in AttributeKey]?: Attribute<k> }
-
-export type BranchedAttributes<
-    branches extends AttributeBranches = AttributeBranches
-> = Attributes & {
-    branches: branches
-}
