@@ -6,8 +6,8 @@ import type {
     DiscriminatedBranches,
     UndiscriminatedBranches
 } from "../attributes.js"
-import { viableUnion } from "./union.js"
 import { pruneDiscriminant } from "./prune.js"
+import { viableUnion } from "./union.js"
 
 export type DiscriminatedKey = "type" | "value"
 
