@@ -1,6 +1,7 @@
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import { pushKey } from "../../../../utils/paths.js"
 import type {
+    AttributePath,
     Attributes,
     DiscriminatedBranches,
     UndiscriminatedBranches
@@ -10,9 +11,10 @@ import { pruneDiscriminant } from "./prune.js"
 
 export type DiscriminatedKey = "type" | "value"
 
+export type DiscriminatedPath = AttributePath<DiscriminatedKey>
+
 type Discriminant = {
-    path: string
-    key: DiscriminatedKey
+    path: DiscriminatedPath
     score: number
 }
 
@@ -26,11 +28,7 @@ export const discriminate = (
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
         const value =
-            pruneDiscriminant(
-                branches[i],
-                discriminant.path,
-                discriminant.key
-            ) ?? "default"
+            pruneDiscriminant(branches[i], discriminant.path) ?? "default"
         branchesByValue[value] ??= []
         branchesByValue[value].push(branches[i])
     }
@@ -38,13 +36,7 @@ export const discriminate = (
     for (const value in branchesByValue) {
         cases[value] = compileViableUnion(branchesByValue[value])
     }
-    return [
-        "?",
-        discriminant.path
-            ? `${discriminant.path}.${discriminant.key}`
-            : discriminant.key,
-        cases
-    ]
+    return ["?", discriminant.path, cases]
 }
 
 const greedyDiscriminant = (
@@ -62,10 +54,9 @@ const greedyShallowDiscriminant = (
     const valueScore = disjointScore(branches, "value")
     if (typeScore || valueScore) {
         return typeScore > valueScore
-            ? { path, key: "type", score: typeScore }
+            ? { path: finalizeDiscriminantPath(path, "type"), score: typeScore }
             : {
-                  path,
-                  key: "value",
+                  path: finalizeDiscriminantPath(path, "value"),
                   score: valueScore
               }
     }
@@ -128,3 +119,6 @@ const disjointScore = (branches: Attributes[], key: DiscriminatedKey) => {
     }
     return score
 }
+
+const finalizeDiscriminantPath = (path: string, key: DiscriminatedKey) =>
+    `${path}.${key}` as const

@@ -1,29 +1,35 @@
 import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
-import type { Attribute, Attributes } from "../attributes.js"
+import type { Attribute, AttributePath, Attributes } from "../attributes.js"
 import type { DiscriminatedKey } from "./discriminate.js"
 
-export const pruneDiscriminant = (
+export const pruneDiscriminant = <k extends DiscriminatedKey>(
     attributes: Attributes,
-    path: string,
-    key: DiscriminatedKey
+    path: AttributePath<k>
 ) => {
-    const traversal = traverseToDiscriminant(attributes, path, key)
-    if (!traversal.value) {
+    const segments = pathToSegments(path)
+    const key = segments.pop() as k
+    const traversal = traverseToDiscriminant(attributes, segments)
+    if (!traversal.complete) {
         return
     }
-    delete traversal.traversed.pop()![key]
-    pruneTraversedSegments(traversal.traversed, pathToSegments(path))
-    return traversal.value
+    const top = traversal.traversed.pop()!
+    const value = top[key]
+    if (value === undefined) {
+        return
+    }
+    delete top[key]
+    pruneTraversedSegments(traversal.traversed, segments)
+    return value
 }
 
 export const unpruneDiscriminant = <k extends DiscriminatedKey>(
     attributes: Attributes,
-    path: string,
-    key: k,
+    path: AttributePath<k>,
     value: Attribute<k>
 ) => {
     const segments = pathToSegments(path)
+    const key = segments.pop() as k
     let currentAttributes = attributes
     for (const segment of segments) {
         currentAttributes.props ??= {}
@@ -33,34 +39,12 @@ export const unpruneDiscriminant = <k extends DiscriminatedKey>(
     currentAttributes[key] = value
 }
 
-export const traverseToDiscriminant = <key extends DiscriminatedKey>(
-    attributes: Attributes,
-    path: string,
-    key: key
-): DiscriminantTraversal<key> => {
-    const segments = pathToSegments(path)
-    const traversal = traverseAttributeProps(attributes, segments)
-    const top = traversal.traversed[traversal.traversed.length - 1]
-    return {
-        traversed: traversal.traversed,
-        value:
-            traversal.complete && top[key]
-                ? (top[key] as Attribute<key>)
-                : undefined
-    }
-}
-
-type DiscriminantTraversal<key extends DiscriminatedKey> = {
-    traversed: Attributes[]
-    value: Attribute<key> | undefined
-}
-
 type AttributeTraversal = {
     traversed: Attributes[]
     complete: boolean
 }
 
-const traverseAttributeProps = (
+const traverseToDiscriminant = (
     root: Attributes,
     segments: string[]
 ): AttributeTraversal => {

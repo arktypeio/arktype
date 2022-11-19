@@ -40,9 +40,9 @@ type ReducibleAttributeTypes = DisjointAttributeTypes & AdditiveAttributeTypes
 
 type DisjointKey = keyof DisjointAttributeTypes
 
-type CaseKey<k extends DisjointKey = DisjointKey> = k extends "value"
-    ? SerializedPrimitive
-    : DynamicTypeName
+export type CaseKey<k extends DisjointKey = DisjointKey> =
+    | "default"
+    | (k extends "value" ? SerializedPrimitive : DynamicTypeName)
 
 export type AttributeBranches =
     | UndiscriminatedBranches
@@ -55,9 +55,13 @@ export type UndiscriminatedBranches = [token: "|", cases: Attributes[]]
 
 export type DiscriminatedBranches<k extends DisjointKey = DisjointKey> = [
     token: "?",
-    path: k | `${string}.${k}`,
+    path: AttributePath<k>,
     cases: AttributeCases<k>
 ]
+
+export type AttributePath<k extends AttributeKey = AttributeKey> =
+    | k
+    | `${string}.${k}`
 
 type AttributeCases<k extends DisjointKey = DisjointKey> = {
     [_ in CaseKey<k> | "default"]?: Attributes
