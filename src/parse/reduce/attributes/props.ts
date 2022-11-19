@@ -8,7 +8,6 @@ export const assignPropsIntersection: AttributeIntersection<"props"> = (
     for (const k in b) {
         if (k in a) {
             a[k] = assignIntersection(a[k], b[k])
-            // TODO: Contradictions
         } else {
             a[k] = b[k]
         }

@@ -1,4 +1,6 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
+import { Contradiction } from "./contradiction.js"
+import type { AttributeIntersection } from "./intersection.js"
 
 export type Bounds = {
     min?: Bound
@@ -28,18 +30,21 @@ export const assignBoundsDifference = (a: Bounds, b: Bounds) => {
     return isEmpty(a) ? null : a
 }
 
-export const assignBoundsIntersection = (a: Bounds, b: Bounds) => {
+export const assignBoundsIntersection: AttributeIntersection<"bounds"> = (
+    a,
+    b
+) => {
     if (b.min) {
         const result = boundIntersection("min", a, b.min)
-        if (result === null) {
-            return null
+        if (result instanceof Contradiction) {
+            return result
         }
         a.min = result
     }
     if (b.max) {
         const result = boundIntersection("max", a, b.max)
-        if (result === null) {
-            return null
+        if (result instanceof Contradiction) {
+            return result
         }
         a.max = result
     }
@@ -50,18 +55,33 @@ const boundIntersection = (
     kind: BoundKind,
     a: Bounds,
     boundOfB: Bound
-): Bound | null => {
+): Bound | Contradiction => {
     const invertedKind = invertedKinds[kind]
     const baseCompeting = a[kind]
     const baseOpposing = a[invertedKind]
     if (baseOpposing && isStricter(kind, boundOfB, baseOpposing)) {
-        return null
+        return new Contradiction(
+            buildEmptyRangeMessage(kind, boundOfB, baseOpposing)
+        )
     }
     if (!baseCompeting || isStricter(kind, boundOfB, baseCompeting)) {
         return boundOfB
     }
     return baseCompeting
 }
+
+export const buildEmptyRangeMessage = (
+    kind: BoundKind,
+    bound: Bound,
+    opposing: Bound
+) =>
+    `the range bounded by ${stringifyBound(
+        "min",
+        kind === "min" ? bound : opposing
+    )} and ${stringifyBound("max", kind === "max" ? bound : opposing)} is empty`
+
+const stringifyBound = (kind: BoundKind, bound: Bound) =>
+    `${kind === "min" ? "<" : ">"}${bound.inclusive ? "=" : ""}${bound.limit}`
 
 const invertedKinds = {
     min: "max",
