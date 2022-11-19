@@ -1,12 +1,10 @@
 import type { RegexLiteral } from "../../../utils/generics.js"
 import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
-import { composedAttributeKeys } from "./attributes.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectBranches } from "./branches.js"
 import { Contradiction } from "./contradiction.js"
 import { intersectDivisors } from "./divisor.js"
 import { intersectKeySets, intersectKeysOrSets } from "./keySets.js"
-import { intersectProps } from "./props.js"
 import { pruneBranches } from "./union/prune.js"
 
 export const intersect = (a: Attributes, b: Attributes) => {
@@ -46,6 +44,17 @@ const intersectImplications = (a: Attributes, k: AttributeKey) =>
         : k === "divisor"
         ? intersect(a, { type: "number" })
         : a
+
+const intersectProps: AttributeIntersector<"props"> = (a, b) => {
+    for (const k in b) {
+        if (k in a) {
+            a[k] = intersect(a[k], b[k])
+        } else {
+            a[k] = b[k]
+        }
+    }
+    return a
+}
 
 const intersectTypes: AttributeIntersector<"type"> = (a, b) =>
     a === b

@@ -1,3 +1,4 @@
+import { isEmpty } from "../../../utils/deepEquals.js"
 import type { RegexLiteral } from "../../../utils/generics.js"
 import type {
     Attribute,
@@ -8,7 +9,6 @@ import type {
 import { subtractBounds } from "./bounds.js"
 import { subtractDivisors } from "./divisor.js"
 import { subtractKeySets, subtractKeysOrSets } from "./keySets.js"
-import { subtractProps } from "./props.js"
 
 export const subtract = (a: Attributes, b: Attributes) => {
     let k: AttributeKey
@@ -28,10 +28,22 @@ export type AttributeSubtractor<k extends AttributeKey> = (
     b: Attribute<k>
 ) => Attribute<k> | null
 
-export const subtractDisjoint = <k extends DisjointKey>(
+const subtractDisjoint = <k extends DisjointKey>(
     a: Attribute<k>,
     b: Attribute<k>
 ) => (a === b ? null : a)
+
+const subtractProps: AttributeSubtractor<"props"> = (a, b) => {
+    for (const k in b) {
+        if (k in a) {
+            a[k] = subtract(a[k], b[k]) as any
+            if (isEmpty(a[k])) {
+                delete a[k]
+            }
+        }
+    }
+    return a
+}
 
 type DynamicSubtractor = AttributeSubtractor<any>
 
