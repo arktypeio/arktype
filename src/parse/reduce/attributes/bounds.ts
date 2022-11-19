@@ -8,7 +8,7 @@ export type Bounds = {
 
 export type Bound = {
     limit: number
-    inclusive: boolean
+    inclusive?: true
 }
 
 export const assignBoundsDifference = (a: Bounds, b: Bounds) => {
@@ -74,7 +74,7 @@ type BoundKind = keyof typeof invertedKinds
 const isStricter = (kind: BoundKind, candidate: Bound, base: Bound) => {
     if (
         candidate.limit === base.limit &&
-        candidate.inclusive === false &&
+        !candidate.inclusive &&
         base.inclusive === true
     ) {
         return true
@@ -90,8 +90,10 @@ export const deserializeBound = (
     limit: number
 ): Bounds => {
     const bound: Bound = {
-        limit,
-        inclusive: comparator[1] === "="
+        limit
+    }
+    if (comparator[1] === "=") {
+        bound.inclusive = true
     }
     if (comparator === "==") {
         return { min: bound, max: bound }
@@ -111,13 +113,21 @@ export const deserializeRange = (
     minLimit: number,
     maxComparator: Scanner.PairableComparator,
     maxLimit: number
-): Bounds => ({
-    min: {
-        limit: minLimit,
-        inclusive: minComparator[1] === "="
-    },
-    max: {
-        limit: maxLimit,
-        inclusive: maxComparator[1] === "="
+): Bounds => {
+    const min: Bound = {
+        limit: minLimit
     }
-})
+    if (minComparator[1] === "=") {
+        min.inclusive = true
+    }
+    const max: Bound = {
+        limit: maxLimit
+    }
+    if (maxComparator[1] === "=") {
+        max.inclusive = true
+    }
+    return {
+        min,
+        max
+    }
+}

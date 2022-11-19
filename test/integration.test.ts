@@ -11,12 +11,7 @@ describe("branch", () => {
         const t = type("'0'|'1'&'2'|'3'")
         attest(t.infer).typed as "0" | "3"
         attest(t.attributes).snap({
-            branches: {
-                kind: "switch",
-                path: "",
-                key: "value",
-                cases: { "'0'": {}, "'3'": {} }
-            }
+            branches: ["?", "value", { "'0'": {}, "'3'": {} }]
         })
     })
 })

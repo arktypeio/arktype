@@ -19,7 +19,12 @@ describe("scope", () => {
         attest(s.c.attributes).equals({
             type: "string",
             regex: "/^(.+)@(.+)\\.(.+)$/",
-            bounds: ">5<=10"
+            bounds: {
+                min: {
+                    limit: 5
+                },
+                max: { limit: 10, inclusive: true }
+            }
         })
     })
     test("cyclic", () => {

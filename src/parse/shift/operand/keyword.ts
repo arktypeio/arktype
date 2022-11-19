@@ -44,23 +44,21 @@ export namespace Keyword {
         bigint: () => ({ type: "bigint" }),
         boolean: () => ({ type: "boolean" }),
         false: () => ({ type: "boolean", value: "false" }),
-        // TODO: How?
         never: () => ({
-            // contradiction: "explicitly typed as never"
+            contradiction: "explicitly typed as never"
         }),
         null: () => ({ type: "null", value: "null" }),
         number: () => ({ type: "number" }),
         object: () => ({
-            branches: {
-                kind: "switch",
-                path: "",
-                key: "type",
-                cases: {
+            branches: [
+                "?",
+                "type",
+                {
                     dictionary: {},
                     array: {},
                     function: {}
                 }
-            }
+            ]
         }),
         string: () => ({ type: "string" }),
         symbol: () => ({ type: "symbol" }),
@@ -80,6 +78,6 @@ export namespace Keyword {
         lowercase: () => ({ type: "string", regex: "/^[a-z]*$/" }),
         uppercase: () => ({ type: "string", regex: "/^[A-Z]*$/" }),
         // Numeric
-        integer: () => ({ type: "number", divisor: "1" })
+        integer: () => ({ type: "number", divisor: 1 })
     }
 }
