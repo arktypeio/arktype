@@ -5,23 +5,21 @@ import type {
     Attributes,
     BranchedAttributes
 } from "./attributes.js"
+import { composedAttributeKeys } from "./attributes.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectBranches } from "./branches.js"
 import { Contradiction } from "./contradiction.js"
 import { intersectDivisors } from "./divisor.js"
 import { intersectKeySets, intersectKeysOrSets } from "./keySets.js"
-import { assignPropsIntersection } from "./props.js"
+import { intersectProps } from "./props.js"
 import { pruneBranches } from "./union/prune.js"
 
 export const intersect = (a: Attributes, b: Attributes) => {
-    if (a.branches) {
-        pruneBranches(a as BranchedAttributes, b)
-    }
-    if (b.branches) {
-        pruneBranches(b as BranchedAttributes, a)
-    }
     let k: AttributeKey
     for (k in b) {
+        if (k in composedAttributeKeys) {
+            continue
+        }
         if (a[k] === undefined) {
             a[k] = b[k] as any
             intersectImplications(a, k)
@@ -35,6 +33,12 @@ export const intersect = (a: Attributes, b: Attributes) => {
         } else {
             a[k] = result
         }
+    }
+    if (a.branches) {
+        pruneBranches(a as BranchedAttributes, b)
+    }
+    if (b.branches) {
+        pruneBranches(b as BranchedAttributes, a)
     }
     return a
 }
@@ -79,6 +83,6 @@ export const intersectors: {
     regex: intersectKeysOrSets<RegexLiteral>,
     divisor: intersectDivisors,
     bounds: intersectBounds,
-    props: assignPropsIntersection,
+    props: intersectProps,
     branches: intersectBranches
 }

@@ -71,6 +71,11 @@ export type keysOf<o extends object> = (keyof o)[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 
+export const hasKey = <o extends object, k extends string>(
+    o: o,
+    k: k
+): o & { [_ in k]: {} | null } => ((o as any)[k] !== undefined) as any
+
 export type keySet<key extends string = string> = Record<key, true>
 
 export type keyOrSet<key extends string = string> = key | keySet<key>
@@ -87,7 +92,9 @@ export type mutable<o> = {
 
 export type subtype<t, u extends t> = u
 
-export type defined<t> = Exclude<t, undefined>
+export type defined<t = unknown> = unknown extends t
+    ? {} | null
+    : Exclude<t, undefined>
 
 export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]

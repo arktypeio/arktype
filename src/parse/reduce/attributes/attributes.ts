@@ -36,6 +36,12 @@ type ComposedAttributeTypes = {
     branches: AttributeBranches
 }
 
+export const composedAttributeKeys: Record<keyof ComposedAttributeTypes, true> =
+    {
+        props: true,
+        branches: true
+    }
+
 type ReducibleAttributeTypes = DisjointAttributeTypes & AdditiveAttributeTypes
 
 export type DisjointKey = keyof DisjointAttributeTypes

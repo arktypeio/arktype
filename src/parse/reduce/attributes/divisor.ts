@@ -18,6 +18,6 @@ export const intersectDivisors: AttributeIntersector<"divisor"> = (a, b) =>
     Math.abs((a * b) / greatestCommonDivisor(a, b))
 
 export const subtractDivisors: AttributeSubtractor<"divisor"> = (a, b) => {
-    const relativePrimeOfA = Math.abs(a / greatestCommonDivisor(a, b))
-    return relativePrimeOfA === 1 ? null : relativePrimeOfA
+    const relativelyPrimeA = Math.abs(a / greatestCommonDivisor(a, b))
+    return relativelyPrimeA === 1 ? null : relativelyPrimeA
 }

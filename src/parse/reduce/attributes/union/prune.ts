@@ -2,6 +2,7 @@ import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
 import type {
     Attribute,
+    AttributeKey,
     AttributePath,
     Attributes,
     BranchedAttributes,
@@ -16,14 +17,20 @@ import { subtract } from "../subtract.js"
 import type { DiscriminatedKey } from "./discriminate.js"
 import { union } from "./union.js"
 
-export const pruneBranches = (base: BranchedAttributes, assign: Attributes) => {
+export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
+    const value = a[k]
+    delete a[k]
+    return value
+}
+
+export const pruneBranches = (base: BranchedAttributes, given: Attributes) => {
     let prunableRoot
     if (base.branches[0] === "?") {
-        prunableRoot = pruneDiscriminatedBranches(base, base.branches, assign)
+        prunableRoot = pruneDiscriminatedBranches(base, base.branches, given)
     } else if (base.branches[0] === "|") {
-        prunableRoot = pruneUndiscriminatedBranches(base, base.branches, assign)
+        prunableRoot = pruneUndiscriminatedBranches(base, base.branches, given)
     } else {
-        prunableRoot = pruneIntersectedBranches(base, base.branches, assign)
+        prunableRoot = pruneIntersectedBranches(base, base.branches, given)
     }
     if (prunableRoot) {
         delete (base as Attributes).branches
@@ -33,11 +40,11 @@ export const pruneBranches = (base: BranchedAttributes, assign: Attributes) => {
 const pruneDiscriminatedBranches = (
     base: Attributes,
     branches: DiscriminatedBranches,
-    assign: Attributes
+    given: Attributes
 ): boolean => {
     const discriminantPath = branches[1]
     const cases = branches[2]
-    const discriminantValue = queryAttribute(assign, discriminantPath)
+    const discriminantValue = queryAttribute(given, discriminantPath)
     if (discriminantValue === undefined) {
         return false
     }
@@ -57,11 +64,11 @@ const pruneDiscriminatedBranches = (
 const pruneUndiscriminatedBranches = (
     base: Attributes,
     branches: UndiscriminatedBranches,
-    assign: Attributes
+    given: Attributes
 ): boolean => {
     const viableBranches: Attributes[] = []
     for (const branch of branches[1]) {
-        subtract(branch, assign)
+        subtract(branch, given)
         if (isEmpty(branch)) {
             // If any of our branches is empty, assign is a subtype of
             // the branch and the branch will always be fulfilled. In
@@ -79,14 +86,14 @@ const pruneUndiscriminatedBranches = (
 const pruneIntersectedBranches = (
     base: Attributes,
     branches: IntersectedBranches,
-    assign: Attributes
+    given: Attributes
 ): boolean => {
     const remainingBranches: UnionBranches[] = []
     for (const branch of branches[1]) {
         const intersectedBranchIsPrunable =
             branch[0] === "?"
-                ? pruneDiscriminatedBranches(base, branch, assign)
-                : pruneUndiscriminatedBranches(base, branch, assign)
+                ? pruneDiscriminatedBranches(base, branch, given)
+                : pruneUndiscriminatedBranches(base, branch, given)
         if (!intersectedBranchIsPrunable) {
             remainingBranches.push(branch)
         }
