@@ -6,7 +6,7 @@ import type {
     DiscriminatedBranches,
     UndiscriminatedBranches
 } from "../attributes.js"
-import { compileViableUnion } from "./compile.js"
+import { viableUnion } from "./union.js"
 import { pruneDiscriminant } from "./prune.js"
 
 export type DiscriminatedKey = "type" | "value"
@@ -34,7 +34,7 @@ export const discriminate = (
     }
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
-        cases[value] = compileViableUnion(branchesByValue[value])
+        cases[value] = viableUnion(branchesByValue[value])
     }
     return ["?", discriminant.path, cases]
 }

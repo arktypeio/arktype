@@ -49,9 +49,9 @@ export type AttributeBranches =
     | DiscriminatedBranches
     | IntersectedBranches
 
-export type IntersectedBranches = [token: "&", cases: Attributes[]]
+export type IntersectedBranches = [token: "&", members: Attributes[]]
 
-export type UndiscriminatedBranches = [token: "|", cases: Attributes[]]
+export type UndiscriminatedBranches = [token: "|", members: Attributes[]]
 
 export type DiscriminatedBranches<k extends DisjointKey = DisjointKey> = [
     token: "?",

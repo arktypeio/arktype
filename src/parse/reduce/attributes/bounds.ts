@@ -1,5 +1,4 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
-import type { Scanner } from "../scanner.js"
 
 export type Bounds = {
     min?: Bound

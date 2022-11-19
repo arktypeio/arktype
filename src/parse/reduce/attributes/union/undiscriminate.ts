@@ -15,6 +15,7 @@ export const undiscriminate = (attributes: Attributes): Attributes[] => {
         return branches[1]
     }
     const undiscriminated: Attributes[] = []
+    const path = branches[1]
     const cases = branches[2]
     let caseKey: CaseKey
     for (caseKey in cases) {
@@ -22,7 +23,7 @@ export const undiscriminate = (attributes: Attributes): Attributes[] => {
         for (const branch of caseBranches) {
             assignIntersection(branch, attributes)
             if (caseKey !== "default") {
-                unpruneDiscriminant(branch, branches[1], caseKey)
+                unpruneDiscriminant(branch, path, caseKey)
             }
             undiscriminated.push(branch)
         }

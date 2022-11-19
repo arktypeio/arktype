@@ -14,32 +14,25 @@ import { assignPropsIntersection } from "./props.js"
 export const assignIntersection = (base: Attributes, assign: Attributes) => {
     let k: AttributeKey
     for (k in assign) {
-        assignAttributeIntersection(base, k, assign[k] as any) as any
-    }
-    return base
-}
-
-export const assignAttributeIntersection = <k extends AttributeKey>(
-    base: Attributes,
-    k: k,
-    v: Attribute<k>
-) => {
-    if (base[k] === undefined) {
-        base[k] = v
-        intersectImplications(base, k)
-        return base
-    }
-    const result: any = intersections[k](base[k] as any, v as any)
-    if (result === null) {
-        assignAttributeIntersection(
-            base,
-            "contradiction",
-            `${JSON.stringify(base[k])} and ${JSON.stringify(
-                v
-            )} have no overlap`
+        if (base[k] === undefined) {
+            base[k] = assign[k] as any
+            intersectImplications(base, k)
+            return base
+        }
+        const result = (intersections[k] as DynamicIntersection)(
+            base[k],
+            assign[k]
         )
-    } else {
-        base[k] = result
+        if (result === null) {
+            assignIntersection(base, {
+                contradiction: `${JSON.stringify(base[k])} and ${JSON.stringify(
+                    assign[k]
+                )} have no overlap`
+            })
+        } else {
+            base[k] = result
+        }
+        return base
     }
     return base
 }
@@ -51,16 +44,16 @@ export type AttributeIntersection<k extends AttributeKey> = (
 
 const intersectImplications = (base: Attributes, k: AttributeKey) =>
     k === "bounds"
-        ? assignAttributeIntersection(base, "branches", [
-              "?",
-              "type",
-              { number: {}, string: {}, array: {} }
-          ])
+        ? assignIntersection(base, {
+              branches: ["?", "type", { number: {}, string: {}, array: {} }]
+          })
         : k === "divisor"
-        ? assignAttributeIntersection(base, "type", "number")
+        ? assignIntersection(base, { type: "number" })
         : base
 
 const applyDisjointIntersection = <t>(a: t, b: t) => (a === b ? a : null)
+
+type DynamicIntersection = AttributeIntersection<any>
 
 export const intersections: {
     [k in AttributeKey]: AttributeIntersection<k>

@@ -12,9 +12,6 @@ export const compress = (branches: Attributes[]) => {
         }
         if (k === "props") {
             compressBranchProps(branches as BranchesWithProps, compressed)
-        } else if (k === "branches") {
-            // TODO: Anything we can do here?
-            continue
         } else if (
             branches.every((branch) => deepEquals(branches[0][k], branch[k]))
         ) {

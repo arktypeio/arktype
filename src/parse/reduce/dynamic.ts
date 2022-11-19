@@ -7,13 +7,10 @@ import type {
     AttributeKey,
     Attributes
 } from "./attributes/attributes.js"
-import {
-    assignAttributeIntersection,
-    assignIntersection
-} from "./attributes/intersection.js"
+import { assignIntersection } from "./attributes/intersection.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
-import { compileUnion } from "./attributes/union/compile.js"
+import { union } from "./attributes/union/union.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -92,7 +89,7 @@ export class DynamicState {
 
     addAttribute<k extends AttributeKey>(k: k, v: Attribute<k>) {
         this.assertHasRoot()
-        this.root = assignAttributeIntersection(this.root!, k, v)
+        this.root = assignIntersection(this.root!, { [k]: v })
     }
 
     private ejectRoot() {
@@ -188,7 +185,7 @@ export class DynamicState {
     }
 
     private mergeUnion() {
-        this.setRoot(compileUnion(this.branches["|"]))
+        this.setRoot(union(this.branches["|"]))
     }
 
     reduceGroupOpen() {

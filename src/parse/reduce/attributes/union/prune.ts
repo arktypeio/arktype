@@ -1,7 +1,58 @@
 import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
-import type { Attribute, AttributePath, Attributes } from "../attributes.js"
+import type {
+    Attribute,
+    AttributePath,
+    Attributes,
+    DiscriminatedBranches
+} from "../attributes.js"
+import { assignIntersection } from "../intersection.js"
+import { queryAttribute } from "../query.js"
 import type { DiscriminatedKey } from "./discriminate.js"
+
+export const pruneBranches = (base: Attributes, assign: Attributes) => {
+    if (!base.branches) {
+        return
+    }
+    if (base.branches[0] === "?") {
+        pruneDiscriminatedBranches(
+            base as AttributesWithDiscriminatedBranches,
+            assign
+        )
+    } else {
+        for (const branch of base.branches[1]) {
+            assignIntersection(branch, assign)
+        }
+    }
+}
+
+type AttributesWithDiscriminatedBranches = Attributes & {
+    branches: DiscriminatedBranches
+}
+
+const pruneDiscriminatedBranches = (
+    base: AttributesWithDiscriminatedBranches,
+    assign: Attributes
+) => {
+    const discriminantPath = base.branches[1]
+    const cases = base.branches[2]
+    const discriminantValue = queryAttribute(assign, discriminantPath)
+    const caseKey =
+        discriminantValue && discriminantValue in cases
+            ? discriminantValue
+            : "default"
+    const caseAttributes = cases[caseKey]
+    if (caseAttributes) {
+        assignIntersection(base, caseAttributes)
+        delete (base as Attributes)["branches"]
+    } else {
+        assignIntersection(base, {
+            contradiction: `At ${discriminantPath}, ${discriminantValue} has no intersection with cases ${Object.keys(
+                cases
+            ).join(", ")}`
+        })
+    }
+}
 
 export const pruneDiscriminant = <k extends DiscriminatedKey>(
     attributes: Attributes,

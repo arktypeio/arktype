@@ -4,7 +4,7 @@ import type { Attributes } from "../attributes.js"
 import { compress } from "./compress.js"
 import { discriminate } from "./discriminate.js"
 
-export const compileUnion = (branches: Attributes[]): Attributes => {
+export const union = (branches: Attributes[]): Attributes => {
     const viableBranches = branches.filter(
         (branch) => branch.contradiction === undefined
     )
@@ -15,10 +15,10 @@ export const compileUnion = (branches: Attributes[]): Attributes => {
         }
         return { contradiction }
     }
-    return compileViableUnion(viableBranches)
+    return viableUnion(viableBranches)
 }
 
-export const compileViableUnion = (branches: Attributes[]): Attributes => {
+export const viableUnion = (branches: Attributes[]): Attributes => {
     if (branches.length === 0) {
         return throwInternalError(
             "Unexpectedly tried to take a union of 0 branches."

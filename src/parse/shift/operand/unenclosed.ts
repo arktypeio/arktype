@@ -49,6 +49,7 @@ export const maybeParseIdentifier = (token: string, scope: DynamicScope) =>
         ? parseAlias(token, scope)
         : scope.$.config.scope?.$.attributes[token]
 
+// TODO: Way to not resolve alias if not intersected/unioned?
 const parseAlias = (name: string, scope: DynamicScope) => {
     const cache = scope.$.parseCache
     const cachedAttributes = cache.get(name)
