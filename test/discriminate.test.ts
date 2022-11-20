@@ -1,69 +1,28 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
-import type { Attributes } from "../exports.js"
-import { scope } from "../exports.js"
-import { union } from "../src/parse/reduce/attributes/union/union.js"
-
-const getTestBranches = (): Attributes[] => [
-    {
-        type: "dictionary",
-        props: {
-            kind: {
-                value: "1"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    },
-    {
-        type: "array",
-        props: {
-            kind: {
-                value: "1"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    },
-    {
-        type: "dictionary",
-        props: {
-            kind: {
-                value: "2"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    },
-    {
-        type: "array",
-        props: {
-            kind: {
-                value: "2"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    }
-]
+import { scope, type } from "../exports.js"
 
 describe("union/discriminate", () => {
+    const places = scope.lazy({
+        ocean: { wet: "true", blue: "true" },
+        sky: { wet: "false", blue: "true" },
+        rainforest: { wet: "true", blue: "false" },
+        desert: { wet: "false", blue: "false" },
+        anywhereWet: { wet: "true" }
+    })
     test("discriminate", () => {
-        attest(union(getTestBranches(), scope({}))).snap({
-            props: { size: { type: "number" } },
+        attest(
+            type("ocean|sky|rainforest|desert", { scope: places }).attributes
+        ).snap({
             branches: [
                 "?",
-                "type",
+                "wet.value",
                 {
-                    dictionary: {
-                        branches: ["?", "kind.value", { "1": {}, "2": {} }]
+                    true: {
+                        branches: ["?", "blue.value", { true: {}, false: {} }]
                     },
-                    array: {
-                        branches: ["?", "kind.value", { "1": {}, "2": {} }]
+                    false: {
+                        branches: ["?", "blue.value", { true: {}, false: {} }]
                     }
                 }
             ]
@@ -71,17 +30,17 @@ describe("union/discriminate", () => {
     })
     test("prune", () => {
         attest(
-            union([...getTestBranches(), { type: "array" }], scope({}))
+            type("ocean|sky|rainforest|desert|anywhereWet", { scope: places })
+                .attributes
         ).snap({
             branches: [
                 "?",
-                "type",
+                "wet.value",
                 {
-                    dictionary: {
-                        props: { size: { type: "number" } },
-                        branches: ["?", "kind.value", { "1": {}, "2": {} }]
-                    },
-                    array: {}
+                    true: {},
+                    false: {
+                        branches: ["?", "blue.value", { true: {}, false: {} }]
+                    }
                 }
             ]
         })
