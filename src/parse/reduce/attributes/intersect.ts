@@ -3,9 +3,13 @@ import type { RegexLiteral } from "../../../utils/generics.js"
 import { hasKey } from "../../../utils/generics.js"
 import { throwInternalError } from "../../errors.js"
 import { expandAlias } from "./alias.js"
-import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
+import type {
+    Attribute,
+    AttributeBranches,
+    AttributeKey,
+    Attributes
+} from "./attributes.js"
 import { intersectBounds } from "./bounds.js"
-import { intersectBranches } from "./branches.js"
 import { Contradiction } from "./contradiction.js"
 import { intersectDivisors } from "./divisor.js"
 import { intersectKeySets, intersectKeysOrSets } from "./keySets.js"
@@ -67,7 +71,13 @@ const intersectImplications = (
         ? intersect(
               a,
               {
-                  branches: ["?", "type", { number: {}, string: {}, array: {} }]
+                  branches: [
+                      [
+                          { type: "number" },
+                          { type: "string" },
+                          { type: "array" }
+                      ]
+                  ]
               },
               scope
           )
@@ -82,6 +92,13 @@ const intersectProps: AttributeIntersector<"props"> = (a, b, scope) => {
         } else {
             a[k] = b[k]
         }
+    }
+    return a
+}
+
+const intersectBranches = (a: AttributeBranches, b: AttributeBranches) => {
+    for (const branchSet of b) {
+        a.push(branchSet)
     }
     return a
 }

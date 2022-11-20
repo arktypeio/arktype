@@ -16,7 +16,7 @@ const rawScope = (aliases: dictionary, config: Config = {}) => {
     for (const name in aliases) {
         const attributes = parseDefinition(aliases[name], compiled)
         root.attributes[name] = attributes
-        root.parseCache.set(name, attributes)
+        root.set(name, attributes)
         compiled[name] = new Type(attributes, config, compiled)
     }
     return compiled
@@ -58,7 +58,7 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred> {
-    parseCache = new ParseCache()
+    private cache: dictionary<Attributes | undefined> = {}
 
     attributes = {} as Record<keyof inferred, Attributes>
 
@@ -70,12 +70,8 @@ export class ScopeRoot<inferred> {
     get infer(): inferred {
         return chainableNoOpProxy
     }
-}
 
-export class ParseCache {
-    private cache: dictionary<Attributes | undefined> = {}
-
-    constructor() {}
+    resolve(name: string) {}
 
     get(definition: string) {
         if (definition in this.cache) {

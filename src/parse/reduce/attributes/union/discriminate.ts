@@ -7,8 +7,8 @@ import type {
     DiscriminatedBranches,
     UndiscriminatedBranches
 } from "../attributes.js"
+import { extractBase } from "./extractBase.js"
 import { pruneDiscriminant } from "./prune.js"
-import { viableUnion } from "./union.js"
 
 export type DiscriminatedKey = "type" | "value"
 
@@ -36,7 +36,13 @@ export const discriminate = (
     }
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
-        cases[value] = viableUnion(branchesByValue[value], scope)
+        const caseRoot = extractBase(branchesByValue[value], scope)
+        if (caseRoot.branches) {
+            caseRoot.branches = discriminate(caseRoot.branches)
+        }
+        cases[value] = caseRoot.branches
+            ? discriminate(caseRoot.branches[0], scope)
+            : caseRoot
     }
     return ["?", discriminant.path, cases]
 }

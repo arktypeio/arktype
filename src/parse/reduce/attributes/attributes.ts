@@ -33,14 +33,8 @@ type IrreducibleAttributeTypes = subtype<
 
 type ComposedAttributeTypes = {
     props: dictionary<Attributes>
-    branches: AttributeBranches
+    branches: RawBranches
 }
-
-export const composedAttributeKeys: Record<keyof ComposedAttributeTypes, true> =
-    {
-        props: true,
-        branches: true
-    }
 
 type ReducibleAttributeTypes = DisjointAttributeTypes & AdditiveAttributeTypes
 
@@ -50,7 +44,9 @@ export type CaseKey<k extends DisjointKey = DisjointKey> =
     | "default"
     | (k extends "value" ? SerializedPrimitive : DynamicTypeName)
 
-export type AttributeBranches = UnionBranches | IntersectedBranches
+export type RawBranches = Attributes[][]
+
+export type CompiledBranches = UnionBranches | IntersectedBranches
 
 export type UnionBranches = UndiscriminatedBranches | DiscriminatedBranches
 
@@ -69,7 +65,7 @@ export type AttributePath<k extends AttributeKey = AttributeKey> =
     | `${string}.${k}`
 
 type AttributeCases<k extends DisjointKey = DisjointKey> = {
-    [_ in CaseKey<k> | "default"]?: Attributes
+    [_ in CaseKey<k> | "default"]?: CompiledAttributes
 }
 
 type AttributeTypes = ReducibleAttributeTypes &
@@ -81,3 +77,7 @@ export type AttributeKey = keyof AttributeTypes
 export type Attribute<k extends AttributeKey> = AttributeTypes[k]
 
 export type Attributes = { [k in AttributeKey]?: Attribute<k> }
+
+export type CompiledAttributes = Omit<Attributes, "branches"> & {
+    branches: CompiledBranches
+}

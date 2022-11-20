@@ -12,14 +12,13 @@ import { maybeParseIdentifier } from "./shift/operand/unenclosed.js"
 import { parseOperator } from "./shift/operator/operator.js"
 
 export const parseString = (def: string, scope: DynamicScope) => {
-    const cache = scope.$.parseCache
-    const cachedAttributes = cache.get(def)
+    const cachedAttributes = scope.$.get(def)
     if (!cachedAttributes) {
         const attributes =
             maybeNaiveParse(def, scope) ?? fullStringParse(def, scope)
-        cache.set(def, attributes)
+        scope.$.set(def, attributes)
     }
-    return cache.get(def)!
+    return scope.$.get(def)!
 }
 
 export type parseString<

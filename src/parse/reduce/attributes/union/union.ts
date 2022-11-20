@@ -1,8 +1,7 @@
 import type { DynamicScope } from "../../../../scope.js"
 import { isEmpty } from "../../../../utils/deepEquals.js"
 import type { Attributes } from "../attributes.js"
-import { compress } from "./compress.js"
-import { discriminate } from "./discriminate.js"
+import { extractBase } from "./extractBase.js"
 
 export const union = (
     branches: Attributes[],
@@ -14,7 +13,11 @@ export const union = (
     if (viableBranches.length === 0) {
         return { contradiction: buildNoViableBranchesMessage(branches) }
     }
-    return viableUnion(viableBranches, scope)
+    const base = extractBase(branches, scope)
+    if (branches.every((branch) => !isEmpty(branch))) {
+        base.branches = [branches]
+    }
+    return base
 }
 
 export const buildNoViableBranchesMessage = (branches: Attributes[]) => {
@@ -23,18 +26,4 @@ export const buildNoViableBranchesMessage = (branches: Attributes[]) => {
         message += branch.contradiction
     }
     return message
-}
-
-export const viableUnion = (
-    branches: Attributes[],
-    scope: DynamicScope
-): Attributes => {
-    if (branches.length === 1) {
-        return branches[0]
-    }
-    const root = compress(branches, scope)
-    if (branches.every((branch) => !isEmpty(branch))) {
-        root.branches = discriminate(branches, scope)
-    }
-    return root
 }

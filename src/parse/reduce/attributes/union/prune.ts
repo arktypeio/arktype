@@ -5,16 +5,12 @@ import type {
     Attribute,
     AttributeKey,
     AttributePath,
-    Attributes,
-    DiscriminatedBranches,
-    IntersectedBranches,
-    UndiscriminatedBranches
+    Attributes
 } from "../attributes.js"
 import { intersect } from "../intersect.js"
-import { queryAttribute } from "../query.js"
 import { subtract } from "../subtract.js"
 import type { DiscriminatedKey } from "./discriminate.js"
-import { union } from "./union.js"
+import { extractBase } from "./extractBase.js"
 
 export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
     const value = a[k]
@@ -27,71 +23,35 @@ export const pruneBranches = (
     given: Attributes,
     scope: DynamicScope
 ) => {
-    const branches = pruneAttribute(base, "branches")
-    if (!branches) {
+    if (!base.branches) {
         return
     }
-    const branchDerivedAttributes =
-        branches[0] === "?"
-            ? pruneDiscriminatedBranches(branches, given)
-            : branches[0] === "|"
-            ? pruneUndiscriminatedBranches(branches, given, scope)
-            : pruneIntersectedBranches(branches, given, scope)
-    intersect(base, branchDerivedAttributes, scope)
-}
-
-const pruneDiscriminatedBranches = (
-    branches: DiscriminatedBranches,
-    given: Attributes
-): Attributes => {
-    const discriminantPath = branches[1]
-    const cases = branches[2]
-    const discriminantValue = queryAttribute(given, discriminantPath)
-    if (discriminantValue === undefined) {
-        return { branches }
-    }
-    return (
-        cases[discriminantValue] ?? {
-            contradiction: `At ${discriminantPath}, ${discriminantValue} has no intersection with cases ${Object.keys(
-                cases
-            ).join(", ")}`
-        }
-    )
-}
-
-const pruneUndiscriminatedBranches = (
-    branches: UndiscriminatedBranches,
-    given: Attributes,
-    scope: DynamicScope
-): Attributes => {
-    const viableBranches: Attributes[] = []
-    for (const branch of branches[1]) {
-        subtract(branch, given)
-        if (isEmpty(branch)) {
-            // If any of our branches is empty, assign is a subtype of
-            // the branch and the branch will always be fulfilled. In
-            // that scenario, we can safely remove all branches.
-            return {}
-        }
-        if (!branch.contradiction) {
-            viableBranches.push(branch)
+    const branches = pruneAttribute(base, "branches")!
+    for (const branchSet of branches) {
+        const branchSetBase = pruneBranchSetToBase(branchSet, given, scope)
+        if (branchSetBase) {
+            intersect(base, branchSetBase, scope)
         }
     }
-    return union(viableBranches, scope)
 }
 
-const pruneIntersectedBranches = (
-    branches: IntersectedBranches,
+export const pruneBranchSetToBase = (
+    branchSet: Attributes[],
     given: Attributes,
     scope: DynamicScope
 ) => {
-    const base: Attributes = {}
-    for (const branch of branches[1]) {
-        const branchAttributes =
-            branch[0] === "?"
-                ? pruneDiscriminatedBranches(branch, given)
-                : pruneUndiscriminatedBranches(branch, given, scope)
-        intersect(base, branchAttributes, scope)
+    for (const branch of branchSet) {
+        subtract(branch, given)
+        if (isEmpty(branch)) {
+            // If any of the branches is empty, assign is a subtype of
+            // the branch and the branch will always be fulfilled. In
+            // that scenario, we can safely remove all branches in that set.
+            return
+        }
+    }
+    const base = extractBase(branchSet, scope)
+    if (branchSet.every((branch) => !isEmpty(branch))) {
+        base.branches = [branchSet]
     }
     return base
 }

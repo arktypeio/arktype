@@ -16,13 +16,12 @@ export const expandAlias = (
     )
 
 const resolveAlias = (name: string, scope: DynamicScope) => {
-    const cache = scope.$.parseCache
-    const cachedAttributes = cache.get(name)
+    const cachedAttributes = scope.$.get(name)
     if (!cachedAttributes) {
         // Set the resolution to a shallow reference until the alias has
         // been fully parsed in case it cyclicly references itself
-        cache.set(name, { alias: name })
-        cache.set(name, parseDefinition(scope.$.aliases[name], scope))
+        scope.$.set(name, { alias: name })
+        scope.$.set(name, parseDefinition(scope.$.aliases[name], scope))
     }
-    return cache.get(name)!
+    return scope.$.get(name)!
 }
