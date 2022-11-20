@@ -1,6 +1,6 @@
 import type { Attribute } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
-import { exclude, intersect } from "./operations.js"
+import { exclude, extract, intersect } from "./operations.js"
 
 export const props = defineOperations<Attribute<"props">>()({
     intersect: (a, b, scope) => {
@@ -13,18 +13,30 @@ export const props = defineOperations<Attribute<"props">>()({
         }
         return a
     },
-    exclude: (a, b) => {
-        const difference: Attribute<"props"> = {}
+    extract: (a, b) => {
+        const result: Attribute<"props"> = {}
         for (const k in a) {
             if (k in b) {
-                difference[k] = exclude(a[k], b[k]) as any
-                if (difference[k] === null) {
-                    delete difference[k]
+                result[k] = extract(a[k], b[k]) as any
+                if (result[k] === null) {
+                    delete result[k]
                 }
-            } else {
-                difference[k] = a[k]
             }
         }
-        return difference
+        return result
+    },
+    exclude: (a, b) => {
+        const result: Attribute<"props"> = {}
+        for (const k in a) {
+            if (k in b) {
+                result[k] = exclude(a[k], b[k]) as any
+                if (result[k] === null) {
+                    delete result[k]
+                }
+            } else {
+                result[k] = a[k]
+            }
+        }
+        return result
     }
 })

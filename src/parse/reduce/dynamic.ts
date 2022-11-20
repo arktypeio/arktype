@@ -11,7 +11,6 @@ import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
 import { intersect } from "./attributes/operations.js"
 import { compress } from "./attributes/union/compress.js"
-import { buildNoViableBranchesMessage } from "./attributes/union/utils.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -214,6 +213,14 @@ export class DynamicState {
         this.scanner.shift()
         return this
     }
+}
+
+export const buildNoViableBranchesMessage = (branches: Attributes[]) => {
+    let message = "All branches are empty:\n"
+    for (const branch of branches) {
+        message += branch.contradiction
+    }
+    return message
 }
 
 const ejectedProxy = new Proxy(

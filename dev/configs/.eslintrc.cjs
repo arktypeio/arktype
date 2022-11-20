@@ -72,14 +72,6 @@ module.exports = defineConfig({
             }
         ],
         /**
-         * Keep functions and files concise and readable
-         */
-        "max-lines-per-function": [
-            "warn",
-            { max: 32, skipComments: true, skipBlankLines: true }
-        ],
-        "max-lines": ["warn", 256],
-        /**
          * Allow more flexible typing
          */
         "@typescript-eslint/ban-ts-comment": "off",

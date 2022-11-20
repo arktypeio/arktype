@@ -1,4 +1,4 @@
-import { isEmpty } from "../../../utils/deepEquals.js"
+import { deepEquals, isEmpty } from "../../../utils/deepEquals.js"
 import { defineOperations } from "./attributes.js"
 import { Contradiction } from "./contradiction.js"
 
@@ -29,6 +29,16 @@ export const bounds = defineOperations<Bounds>()({
             a.max = result
         }
         return a
+    },
+    extract: (a, b) => {
+        const result: Bounds = {}
+        if (a.min && deepEquals(a.min, b.min)) {
+            result.min = a.min
+        }
+        if (a.max && deepEquals(a.max, b.max)) {
+            result.max = a.max
+        }
+        return result
     },
     exclude: ({ ...a }, b) => {
         if (

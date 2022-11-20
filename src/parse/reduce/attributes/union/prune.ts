@@ -7,10 +7,9 @@ import type {
     AttributePath,
     Attributes
 } from "../attributes.js"
-import { intersect } from "../intersect.js"
-import { exclude } from "../exclude.js"
-import type { DiscriminatedKey } from "./discriminate.js"
+import { exclude, intersect } from "../operations.js"
 import { compress } from "./compress.js"
+import type { DiscriminatedKey } from "./discriminate.js"
 
 export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
     const value = a[k]
@@ -40,11 +39,11 @@ export const pruneBranches = (
 }
 
 export const pruneUnionToBase = (
-    branchSet: Attributes[],
+    union: Attributes[],
     given: Attributes,
     scope: ScopeRoot
 ) => {
-    for (const branch of branchSet) {
+    for (const branch of union) {
         exclude(branch, given)
         if (isEmpty(branch)) {
             // If any of the branches is empty, assign is a subtype of
@@ -53,7 +52,7 @@ export const pruneUnionToBase = (
             return
         }
     }
-    return compress(branchSet, scope)
+    return compress(union, scope)
 }
 
 export const pruneDiscriminant = <k extends DiscriminatedKey>(

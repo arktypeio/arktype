@@ -96,14 +96,20 @@ export type Attributes = {
     [k in AttributeKey]?: Attribute<k>
 }
 
+export type ReadonlyAttributes<compiled extends boolean = false> = {
+    readonly [k in AttributeKey]?: compiled extends true
+        ? CompiledAttribute<k>
+        : Attribute<k>
+}
+
 export type CompiledAttributes = {
     [k in AttributeKey]?: CompiledAttribute<k>
 }
 
 export type AttributeOperations<t> = {
     intersect: AttributeIntersection<t>
-    // extract: {}
-    exclude: AttributeExclusion<t>
+    extract: ReadonlyAttributeOperation<t>
+    exclude: ReadonlyAttributeOperation<t>
 }
 
 export const defineOperations =
@@ -117,7 +123,7 @@ export type AttributeIntersection<t> = (
     scope: ScopeRoot
 ) => t | Contradiction
 
-export type AttributeExclusion<t> = (
+export type ReadonlyAttributeOperation<t> = (
     a: readonlyIfObject<t>,
     b: readonlyIfObject<t>
 ) => t | null

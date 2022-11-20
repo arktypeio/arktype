@@ -1,15 +1,15 @@
 import type { ScopeRoot } from "../../../scope.js"
 import { isEmpty } from "../../../utils/deepEquals.js"
 import type { RegexLiteral, requireKeys } from "../../../utils/generics.js"
-
 import { hasKey, satisfies } from "../../../utils/generics.js"
 import type {
     Attribute,
-    AttributeExclusion,
     AttributeIntersection,
     AttributeKey,
     AttributeOperations,
-    Attributes
+    Attributes,
+    ReadonlyAttributeOperation,
+    ReadonlyAttributes
 } from "./attributes.js"
 import { bounds } from "./bounds.js"
 import { branches } from "./branches.js"
@@ -41,7 +41,7 @@ export const operations = satisfies<{
 
 type DynamicIntersection = AttributeIntersection<any>
 
-type DynamicExclusion = AttributeExclusion<any>
+type DynamicExclusion = ReadonlyAttributeOperation<any>
 
 export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     expandIntersectionAliases(a, b, scope)
@@ -66,7 +66,24 @@ export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     return a
 }
 
-export const exclude = (a: Readonly<Attributes>, b: Readonly<Attributes>) => {
+export const extract = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
+    const difference: Attributes = {}
+    let k: AttributeKey
+    for (k in a) {
+        if (k in b) {
+            const fn = operations[k].exclude as DynamicExclusion
+            difference[k] = fn(a[k], b[k])
+            if (difference[k] === null) {
+                delete difference[k]
+            }
+        } else {
+            difference[k] = a[k] as any
+        }
+    }
+    return isEmpty(difference) ? null : difference
+}
+
+export const exclude = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
     const difference: Attributes = {}
     let k: AttributeKey
     for (k in a) {
@@ -84,8 +101,8 @@ export const exclude = (a: Readonly<Attributes>, b: Readonly<Attributes>) => {
 }
 
 export const isSubtype = (
-    a: Readonly<Attributes>,
-    possibleSuperType: Readonly<Attributes>
+    a: ReadonlyAttributes,
+    possibleSuperType: ReadonlyAttributes
 ) => exclude(a, possibleSuperType) === null
 
 export const expandAlias = (

@@ -18,6 +18,18 @@ export const defineKeyOrSetOperations = <k extends string = string>() =>
             }
             return keySetOperations.intersect(a, b)
         },
+        extract: (a, b) => {
+            if (typeof a === "string") {
+                if (typeof b === "string") {
+                    return a === b ? a : null
+                }
+                return a in b ? a : null
+            }
+            if (typeof b === "string") {
+                return b in a ? b : null
+            }
+            return keySetOperations.extract(a, b)
+        },
         exclude: (a, b) => {
             if (typeof a === "string") {
                 if (typeof b === "string") {
@@ -38,10 +50,22 @@ export const stringKeyOrSetOperations = defineKeyOrSetOperations<string>()
 
 export const keySetOperations = defineOperations<keySet>()({
     intersect: (a, b) => Object.assign(a, b),
-    exclude: ({ ...a }, b): keySet | null => {
-        for (const k in b) {
-            delete (a as any)[k]
+    extract: (a, b) => {
+        const result: keySet = {}
+        for (const k in a) {
+            if (b[k]) {
+                result[k] = true
+            }
         }
-        return isEmpty(a) ? null : a
+        return result
+    },
+    exclude: (a, b) => {
+        const result: keySet = {}
+        for (const k in a) {
+            if (!b[k]) {
+                result[k] = true
+            }
+        }
+        return isEmpty(result) ? null : result
     }
 })

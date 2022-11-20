@@ -17,6 +17,7 @@ export const branches = defineOperations<Attribute<"branches">>()({
         }
         return ["&", [a, b]]
     },
+    extract: (a, b) => a as any,
     // TODO: fix
     exclude: (a, b) => a as any
 })

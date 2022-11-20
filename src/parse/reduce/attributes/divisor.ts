@@ -1,7 +1,11 @@
 import { defineOperations } from "./attributes.js"
 
+const leastCommonMultiple = (a: number, b: number) =>
+    Math.abs((a * b) / greatestCommonDivisor(a, b))
+
 export const divisor = defineOperations<number>()({
-    intersect: (a, b) => Math.abs((a * b) / greatestCommonDivisor(a, b)),
+    intersect: leastCommonMultiple,
+    extract: (a, b) => (a === b ? a : null),
     exclude: (a, b) => {
         const relativelyPrimeA = Math.abs(a / greatestCommonDivisor(a, b))
         return relativelyPrimeA === 1 ? null : relativelyPrimeA
