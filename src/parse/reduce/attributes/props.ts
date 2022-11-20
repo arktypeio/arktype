@@ -1,3 +1,4 @@
+import { isEmpty } from "../../../utils/deepEquals.js"
 import type { Attribute } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 import { exclude, extract, intersect } from "./operations.js"
@@ -23,7 +24,7 @@ export const props = defineOperations<Attribute<"props">>()({
                 }
             }
         }
-        return result
+        return isEmpty(result) ? null : result
     },
     exclude: (a, b) => {
         const result: Attribute<"props"> = {}
@@ -37,6 +38,12 @@ export const props = defineOperations<Attribute<"props">>()({
                 result[k] = a[k]
             }
         }
-        return result
+        return isEmpty(result) ? null : result
     }
+})
+
+export const required = defineOperations<true>()({
+    intersect: (a) => a,
+    extract: (a) => a,
+    exclude: () => null
 })

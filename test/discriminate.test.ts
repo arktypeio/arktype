@@ -15,44 +15,67 @@ describe("union/discriminate", () => {
             type("ocean|sky|rainforest|desert", { scope: places }).attributes
         ).snap({
             type: "dictionary",
-            props: { wet: { type: "boolean" }, blue: { type: "boolean" } },
-            requiredKeys: { wet: true, blue: true },
+            props: {
+                wet: { type: "boolean", required: true },
+                blue: { type: "boolean", required: true }
+            },
             branches: [
-                "|",
-                [
-                    {
-                        props: {
-                            wet: { value: "true" },
-                            blue: { value: "true" },
-                            isOcean: { value: "true", type: "boolean" }
-                        },
-                        requiredKeys: { isOcean: true }
+                "?",
+                "wet.value",
+                {
+                    true: {
+                        branches: [
+                            "?",
+                            "blue.value",
+                            {
+                                true: {
+                                    props: {
+                                        isOcean: {
+                                            value: "true",
+                                            type: "boolean",
+                                            required: true
+                                        }
+                                    }
+                                },
+                                false: {
+                                    props: {
+                                        isRainforest: {
+                                            value: "true",
+                                            type: "boolean",
+                                            required: true
+                                        }
+                                    }
+                                }
+                            }
+                        ]
                     },
-                    {
-                        props: {
-                            wet: { value: "false" },
-                            blue: { value: "true" },
-                            isSky: { value: "true", type: "boolean" }
-                        },
-                        requiredKeys: { isSky: true }
-                    },
-                    {
-                        props: {
-                            wet: { value: "true" },
-                            blue: { value: "false" },
-                            isRainforest: { value: "true", type: "boolean" }
-                        },
-                        requiredKeys: { isRainforest: true }
-                    },
-                    {
-                        props: {
-                            wet: { value: "false" },
-                            blue: { value: "false" },
-                            isDesert: { value: "true", type: "boolean" }
-                        },
-                        requiredKeys: { isDesert: true }
+                    false: {
+                        branches: [
+                            "?",
+                            "blue.value",
+                            {
+                                true: {
+                                    props: {
+                                        isSky: {
+                                            value: "true",
+                                            type: "boolean",
+                                            required: true
+                                        }
+                                    }
+                                },
+                                false: {
+                                    props: {
+                                        isDesert: {
+                                            value: "true",
+                                            type: "boolean",
+                                            required: true
+                                        }
+                                    }
+                                }
+                            }
+                        ]
                     }
-                ]
+                }
             ]
         })
     })

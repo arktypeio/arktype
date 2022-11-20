@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { evaluate, keySet } from "../utils/generics.js"
+import type { evaluate } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { throwInternalError } from "./errors.js"
@@ -16,17 +16,15 @@ export const parseStructure = (
     }
     const type = Array.isArray(def) ? "array" : "dictionary"
     const props: dictionary<Attributes> = {}
-    const requiredKeys: keySet<string> = {}
     for (const definitionKey in def) {
-        let keyName = definitionKey
-        if (definitionKey.endsWith("?")) {
-            keyName = definitionKey.slice(0, -1)
-        } else {
-            requiredKeys[definitionKey] = true
-        }
+        const isOptional = definitionKey.endsWith("?")
+        const keyName = isOptional ? definitionKey.slice(0, -1) : definitionKey
         props[keyName] = parseDefinition(def[definitionKey], scope)
+        if (!isOptional) {
+            props[keyName].required = true
+        }
     }
-    return { type, props, requiredKeys }
+    return { type, props }
 }
 
 export type inferStructure<

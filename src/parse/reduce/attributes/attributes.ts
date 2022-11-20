@@ -5,7 +5,6 @@ import type {
 } from "../../../utils/dynamicTypes.js"
 import type {
     keyOrSet,
-    keySet,
     RegexLiteral,
     subtype
 } from "../../../utils/generics.js"
@@ -21,13 +20,13 @@ type DisjointAttributeTypes = {
 type AdditiveAttributeTypes = {
     divisor: number
     bounds: Bounds
+    required: true
 }
 
 type IrreducibleAttributeTypes = subtype<
     dictionary<keyOrSet<string>>,
     {
         regex: keyOrSet<RegexLiteral>
-        requiredKeys: keySet<string>
         alias: string
         contradiction: keyOrSet<string>
     }

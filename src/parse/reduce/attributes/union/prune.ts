@@ -43,14 +43,15 @@ export const pruneUnionToBase = (
     given: Attributes,
     scope: ScopeRoot
 ) => {
-    for (const branch of union) {
-        exclude(branch, given)
-        if (isEmpty(branch)) {
+    for (let i = 0; i < union.length; i++) {
+        const remainingBranchAttributes = exclude(union[i], given)
+        if (remainingBranchAttributes === null) {
             // If any of the branches is empty, assign is a subtype of
             // the branch and the branch will always be fulfilled. In
             // that scenario, we can safely remove all branches in that set.
             return
         }
+        union[i] = remainingBranchAttributes
     }
     return compress(union, scope)
 }

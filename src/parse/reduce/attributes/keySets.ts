@@ -57,7 +57,7 @@ export const keySetOperations = defineOperations<keySet>()({
                 result[k] = true
             }
         }
-        return result
+        return isEmpty(result) ? null : result
     },
     exclude: (a, b) => {
         const result: keySet = {}

@@ -17,10 +17,9 @@ import { Contradiction } from "./contradiction.js"
 import { divisor } from "./divisor.js"
 import {
     defineKeyOrSetOperations,
-    keySetOperations,
     stringKeyOrSetOperations
 } from "./keySets.js"
-import { props } from "./props.js"
+import { props, required } from "./props.js"
 import { alias, type, value } from "./string.js"
 import { pruneAttribute, pruneBranches } from "./union/prune.js"
 
@@ -32,7 +31,7 @@ export const operations = satisfies<{
     bounds,
     divisor,
     alias,
-    requiredKeys: keySetOperations,
+    required,
     regex: defineKeyOrSetOperations<RegexLiteral>(),
     contradiction: stringKeyOrSetOperations,
     props,
@@ -45,8 +44,7 @@ type DynamicReadonlyOperation = ReadonlyAttributeOperation<any>
 
 export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     expandIntersectionAliases(a, b, scope)
-    // TODO: Figure out prop never propagation
-    pruneBranches(a, b, scope)
+    pruneBranches(b, a, scope)
     let k: AttributeKey
     for (k in b) {
         if (a[k] === undefined) {
@@ -62,6 +60,8 @@ export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
             }
         }
     }
+    // TODO: Figure out prop never propagation
+    pruneBranches(a, b, scope)
     return a
 }
 
