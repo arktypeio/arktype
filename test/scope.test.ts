@@ -31,9 +31,8 @@ describe("scope", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
         attest(s.a.attributes).snap({
             type: "dictionary",
-            props: {
-                b: { type: "dictionary", props: { a: { alias: "a" } } }
-            }
+            props: { b: { alias: "b" } },
+            requiredKeys: { b: true }
         })
         // Type hint displays as any on hitting cycle
         attest(s.$.infer.a).typed as {

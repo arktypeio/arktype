@@ -1,6 +1,8 @@
 import type { DynamicScope } from "../../../scope.js"
 import type { RegexLiteral } from "../../../utils/generics.js"
+import { hasKey } from "../../../utils/generics.js"
 import { throwInternalError } from "../../errors.js"
+import { expandAlias } from "./alias.js"
 import type { Attribute, AttributeKey, Attributes } from "./attributes.js"
 import { intersectBounds } from "./bounds.js"
 import { intersectBranches } from "./branches.js"
@@ -14,6 +16,8 @@ export const intersect = (
     b: Attributes,
     scope: DynamicScope
 ) => {
+    expandIntersectionAliases(a, b, scope)
+    pruneBranches(b, a, scope)
     let k: AttributeKey
     for (k in b) {
         if (a[k] === undefined) {
@@ -29,11 +33,23 @@ export const intersect = (
         }
     }
     // TODO: Figure out prop never propagation
-    if (a.branches) {
-        const branchDerivedAttributes = pruneBranches(a.branches, b, scope)
-        intersect(a, branchDerivedAttributes, scope)
-    }
+    pruneBranches(a, b, scope)
     return a
+}
+
+export const expandIntersectionAliases = (
+    a: Attributes,
+    b: Attributes,
+    scope: DynamicScope
+) => {
+    let prunedAlias: string | undefined
+    if (hasKey(a, "alias")) {
+        prunedAlias = a.alias
+        expandAlias(a, scope)
+    }
+    if (hasKey(b, "alias") && b.alias !== prunedAlias) {
+        expandAlias(b, scope)
+    }
 }
 
 export type AttributeIntersector<k extends AttributeKey> = (

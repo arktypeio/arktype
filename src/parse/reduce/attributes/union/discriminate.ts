@@ -123,4 +123,4 @@ const disjointScore = (branches: Attributes[], key: DiscriminatedKey) => {
 }
 
 const finalizeDiscriminantPath = (path: string, key: DiscriminatedKey) =>
-    `${path}.${key}` as const
+    path ? (`${path}.${key}` as const) : key

@@ -2,13 +2,16 @@ import type { DynamicScope } from "../../../../scope.js"
 import { deepEquals, isEmpty } from "../../../../utils/deepEquals.js"
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import type { requireKeys } from "../../../../utils/generics.js"
-import { expandAliases } from "../alias.js"
+import { hasKey } from "../../../../utils/generics.js"
+import { expandAlias } from "../alias.js"
 import type { AttributeKey, Attributes } from "../attributes.js"
 
 export const compress = (branches: Attributes[], scope: DynamicScope) => {
     const compressed: Attributes = {}
     for (const branch of branches) {
-        expandAliases(branch, scope)
+        if (hasKey(branch, "alias")) {
+            expandAlias(branch, scope)
+        }
     }
     let k: AttributeKey
     for (k in branches[0]) {

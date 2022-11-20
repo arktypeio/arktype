@@ -3,7 +3,6 @@ import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
 import type {
     Attribute,
-    AttributeBranches,
     AttributeKey,
     AttributePath,
     Attributes,
@@ -24,15 +23,22 @@ export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
 }
 
 export const pruneBranches = (
-    branches: AttributeBranches,
+    base: Attributes,
     given: Attributes,
     scope: DynamicScope
-) =>
-    branches[0] === "?"
-        ? pruneDiscriminatedBranches(branches, given)
-        : branches[0] === "|"
-        ? pruneUndiscriminatedBranches(branches, given, scope)
-        : pruneIntersectedBranches(branches, given, scope)
+) => {
+    const branches = pruneAttribute(base, "branches")
+    if (!branches) {
+        return
+    }
+    const branchDerivedAttributes =
+        branches[0] === "?"
+            ? pruneDiscriminatedBranches(branches, given)
+            : branches[0] === "|"
+            ? pruneUndiscriminatedBranches(branches, given, scope)
+            : pruneIntersectedBranches(branches, given, scope)
+    intersect(base, branchDerivedAttributes, scope)
+}
 
 const pruneDiscriminatedBranches = (
     branches: DiscriminatedBranches,

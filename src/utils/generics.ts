@@ -74,7 +74,7 @@ export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 export const hasKey = <o extends object, k extends string>(
     o: o,
     k: k
-): o & { [_ in k]: {} | null } => ((o as any)[k] !== undefined) as any
+): o is o & { [_ in k]: {} | null } => ((o as any)[k] !== undefined) as any
 
 export type keySet<key extends string = string> = Record<key, true>
 
