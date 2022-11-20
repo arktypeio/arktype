@@ -1,4 +1,4 @@
-import type { DynamicScope } from "../scope.js"
+import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { error, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
@@ -11,15 +11,8 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.js"
 import { maybeParseIdentifier } from "./shift/operand/unenclosed.js"
 import { parseOperator } from "./shift/operator/operator.js"
 
-export const parseString = (def: string, scope: DynamicScope) => {
-    const cachedAttributes = scope.$.get(def)
-    if (!cachedAttributes) {
-        const attributes =
-            maybeNaiveParse(def, scope) ?? fullStringParse(def, scope)
-        scope.$.set(def, attributes)
-    }
-    return scope.$.get(def)!
-}
+export const parseString = (def: string, scope: ScopeRoot) =>
+    scope.memoizedParse(def)
 
 export type parseString<
     def extends string,
@@ -64,7 +57,7 @@ type maybeNaiveParse<
     ? def
     : fullStringParse<def, alias>
 
-const maybeNaiveParse = (def: string, scope: DynamicScope) => {
+export const maybeNaiveParse = (def: string, scope: ScopeRoot) => {
     if (def.endsWith("[]")) {
         const maybeParsedAttributes = maybeParseIdentifier(
             def.slice(0, -2),
@@ -77,7 +70,7 @@ const maybeNaiveParse = (def: string, scope: DynamicScope) => {
     return maybeParseIdentifier(def, scope)
 }
 
-const fullStringParse = (def: string, scope: DynamicScope) => {
+export const fullStringParse = (def: string, scope: ScopeRoot) => {
     const s = new DynamicState(def, scope)
     parseOperand(s)
     return loop(s)

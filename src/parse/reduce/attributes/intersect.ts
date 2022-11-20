@@ -1,8 +1,7 @@
-import type { DynamicScope } from "../../../scope.js"
-import type { RegexLiteral } from "../../../utils/generics.js"
+import type { ScopeRoot } from "../../../scope.js"
+import type { RegexLiteral, requireKeys } from "../../../utils/generics.js"
 import { hasKey } from "../../../utils/generics.js"
 import { throwInternalError } from "../../errors.js"
-import { expandAlias } from "./alias.js"
 import type {
     Attribute,
     AttributeBranches,
@@ -13,13 +12,9 @@ import { intersectBounds } from "./bounds.js"
 import { Contradiction } from "./contradiction.js"
 import { intersectDivisors } from "./divisor.js"
 import { intersectKeySets, intersectKeysOrSets } from "./keySets.js"
-import { pruneBranches } from "./union/prune.js"
+import { pruneAttribute, pruneBranches } from "./union/prune.js"
 
-export const intersect = (
-    a: Attributes,
-    b: Attributes,
-    scope: DynamicScope
-) => {
+export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     expandIntersectionAliases(a, b, scope)
     pruneBranches(b, a, scope)
     let k: AttributeKey
@@ -41,10 +36,10 @@ export const intersect = (
     return a
 }
 
-export const expandIntersectionAliases = (
+const expandIntersectionAliases = (
     a: Attributes,
     b: Attributes,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => {
     let prunedAlias: string | undefined
     if (hasKey(a, "alias")) {
@@ -56,16 +51,26 @@ export const expandIntersectionAliases = (
     }
 }
 
+export const expandAlias = (
+    attributes: requireKeys<Attributes, "alias">,
+    scope: ScopeRoot
+) =>
+    intersect(
+        attributes,
+        scope.resolve(pruneAttribute(attributes, "alias")!),
+        scope
+    )
+
 export type AttributeIntersector<k extends AttributeKey> = (
     a: Attribute<k>,
     b: Attribute<k>,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => Attribute<k> | Contradiction
 
 const intersectImplications = (
     a: Attributes,
     k: AttributeKey,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) =>
     k === "bounds"
         ? intersect(
@@ -150,5 +155,5 @@ const dynamicallyIntersect = (
     k: AttributeKey,
     a: unknown,
     b: unknown,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => (intersectors[k] as DynamicIntersector)(a, b, scope)

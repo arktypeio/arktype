@@ -1,4 +1,4 @@
-import type { DynamicScope } from "../../../../scope.js"
+import type { ScopeRoot } from "../../../../scope.js"
 import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
 import type {
@@ -21,7 +21,7 @@ export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
 export const pruneBranches = (
     base: Attributes,
     given: Attributes,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => {
     if (!base.branches) {
         return
@@ -42,7 +42,7 @@ export const pruneBranches = (
 export const pruneUnionToBase = (
     branchSet: Attributes[],
     given: Attributes,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => {
     for (const branch of branchSet) {
         subtract(branch, given)

@@ -1,4 +1,4 @@
-import type { DynamicScope } from "../../../../scope.js"
+import type { ScopeRoot } from "../../../../scope.js"
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import { pushKey } from "../../../../utils/paths.js"
 import type {
@@ -22,7 +22,7 @@ type Discriminant = {
 
 export const discriminate = (
     branches: Attributes[],
-    scope: DynamicScope
+    scope: ScopeRoot
 ): UnionBranches<true> => {
     const discriminant = greedyDiscriminant("", branches)
     if (!discriminant) {

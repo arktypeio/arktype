@@ -1,4 +1,4 @@
-import type { DynamicScope } from "../scope.js"
+import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { evaluate, keySet } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
@@ -9,7 +9,7 @@ import type { Scanner } from "./reduce/scanner.js"
 
 export const parseStructure = (
     def: Record<string | number, unknown>,
-    scope: DynamicScope
+    scope: ScopeRoot
 ): Attributes => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
@@ -67,7 +67,7 @@ type requiredKeyOf<def> = {
 
 const parseTupleExpression = (
     expression: TupleExpression,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => {
     return throwInternalError("Not yet implemented.")
 }

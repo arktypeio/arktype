@@ -11,7 +11,7 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = getRootScope(), ...config } = {}
-) => new Type(parseDefinition(definition, scope as any), config, scope as any)
+) => new Type(parseDefinition(definition, scope.$), config, scope as any)
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn

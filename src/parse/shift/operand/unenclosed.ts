@@ -1,4 +1,4 @@
-import type { DynamicScope } from "../../../scope.js"
+import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
@@ -42,10 +42,10 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
             : buildUnresolvableMessage(token)
     )
 
-export const maybeParseIdentifier = (token: string, scope: DynamicScope) =>
+export const maybeParseIdentifier = (token: string, scope: ScopeRoot) =>
     Keyword.matches(token)
         ? Keyword.attributes[token]()
-        : scope.$.aliases[token] || scope.$.config.scope?.$.aliases[token]
+        : scope.aliases[token] || scope.config.scope?.$.aliases[token]
         ? { alias: token }
         : undefined
 

@@ -1,12 +1,12 @@
-import type { DynamicScope } from "../../../../scope.js"
+import type { ScopeRoot } from "../../../../scope.js"
 import { deepEquals, isEmpty } from "../../../../utils/deepEquals.js"
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import type { requireKeys } from "../../../../utils/generics.js"
 import { hasKey } from "../../../../utils/generics.js"
-import { expandAlias } from "../alias.js"
 import type { AttributeKey, Attributes } from "../attributes.js"
+import { expandAlias } from "../intersect.js"
 
-export const extractBase = (branches: Attributes[], scope: DynamicScope) => {
+export const extractBase = (branches: Attributes[], scope: ScopeRoot) => {
     if (branches.length === 1) {
         return branches[0]
     }
@@ -43,7 +43,7 @@ type BranchesWithProps = requireKeys<Attributes, "props">[]
 const extractBaseProps = (
     branches: BranchesWithProps,
     compressed: Attributes,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => {
     const compressedProps: dictionary<Attributes> = {}
     for (const propKey in branches[0].props) {
@@ -63,7 +63,7 @@ const extractBaseProp = (
     branches: BranchesWithProps,
     compressedProps: dictionary<Attributes>,
     propKey: string,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => {
     let allBranchesHaveProp = true
     const propValues = branches.map((branch) => {

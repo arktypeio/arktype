@@ -1,4 +1,4 @@
-import type { DynamicScope } from "../../scope.js"
+import type { ScopeRoot } from "../../scope.js"
 import { isKeyOf } from "../../utils/generics.js"
 import { buildUnboundableMessage } from "../ast.js"
 import { throwInternalError, throwParseError } from "../errors.js"
@@ -36,7 +36,7 @@ export class DynamicState {
     private branches: BranchState = initializeBranches()
     private groups: BranchState[] = []
 
-    constructor(def: string, public readonly scope: DynamicScope) {
+    constructor(def: string, public readonly scope: ScopeRoot) {
         this.scanner = new Scanner(def)
     }
 

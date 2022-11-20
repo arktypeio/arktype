@@ -1,25 +1,25 @@
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
+import { throwInternalError } from "./parse/errors.js"
 import type { Attributes } from "./parse/reduce/attributes/attributes.js"
+import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import type { Config } from "./type.js"
 import { Type } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
-import type { evaluate } from "./utils/generics.js"
+import type { evaluate, stringKeyOf } from "./utils/generics.js"
+import { hasKey } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawScope = (aliases: dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const compiled: Scope<dictionary> = { $: root as any }
+    const types: Scope<dictionary> = { $: root as any }
     for (const name in aliases) {
-        const attributes = parseDefinition(aliases[name], compiled)
-        root.attributes[name] = attributes
-        root.set(name, attributes)
-        compiled[name] = new Type(attributes, config, compiled)
+        types[name] = new Type(root.resolve(name), config, types)
     }
-    return compiled
+    return types
 }
 
 export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
@@ -42,12 +42,12 @@ type InferredScopeFn = <aliases, inferredParent extends dictionary = {}>(
     config?: Config<inferredParent>
 ) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <aliases>(
+type DynamicScopeFn = <aliases extends dictionary>(
     aliases: aliases,
     config?: Config
 ) => Scope<aliases>
 
-export type Scope<inferred> = {
+export type Scope<inferred extends dictionary> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
 
@@ -57,10 +57,9 @@ type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Type<inferred[name]>
 }
 
-export class ScopeRoot<inferred> {
-    private cache: dictionary<Attributes | undefined> = {}
-
+export class ScopeRoot<inferred extends dictionary = dictionary> {
     attributes = {} as Record<keyof inferred, Attributes>
+    private cache: dictionary<Attributes | undefined> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -71,16 +70,26 @@ export class ScopeRoot<inferred> {
         return chainableNoOpProxy
     }
 
-    resolve(name: string) {}
-
-    get(definition: string) {
-        if (definition in this.cache) {
-            return deepClone(this.cache[definition])
+    resolve(name: stringKeyOf<inferred>): Attributes {
+        if (this.attributes[name]) {
+            return this.attributes[name]
         }
+        if (!this.aliases[name]) {
+            return throwInternalError(
+                `Unexpectedly failed to resolve alias '${name}'`
+            )
+        }
+        this.attributes[name] = parseDefinition(this.aliases[name], this)
+        return deepClone(this.attributes[name])
     }
 
-    set(definition: string, attributes: Attributes) {
-        this.cache[definition] = attributes
+    memoizedParse(def: string): Attributes {
+        if (hasKey(this.cache, def)) {
+            return deepClone(this.cache[def])
+        }
+        this.cache[def] =
+            maybeNaiveParse(def, this) ?? fullStringParse(def, this)
+        return deepClone(this.cache[def]!)
     }
 }
 
