@@ -9,10 +9,13 @@ describe("struct", () => {
         attest(o.attributes).snap({
             type: "dictionary",
             props: {
-                a: { type: "string" },
-                b: { type: "array", props: { "*": { type: "boolean" } } }
-            },
-            requiredKeys: { a: true, b: true }
+                a: { type: "string", required: true },
+                b: {
+                    type: "array",
+                    props: { "*": { type: "boolean" } },
+                    required: true
+                }
+            }
         })
     })
     test("optional keys", () => {
@@ -22,9 +25,12 @@ describe("struct", () => {
             type: "dictionary",
             props: {
                 a: { type: "string" },
-                b: { type: "array", props: { "*": { type: "boolean" } } }
-            },
-            requiredKeys: { b: true }
+                b: {
+                    type: "array",
+                    props: { "*": { type: "boolean" } },
+                    required: true
+                }
+            }
         })
     })
 })
