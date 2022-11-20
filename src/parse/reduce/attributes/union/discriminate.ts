@@ -5,7 +5,6 @@ import type {
     AttributePath,
     Attributes,
     CompiledAttributes,
-    UndiscriminatedBranches,
     UnionBranches
 } from "../attributes.js"
 import { extractBase } from "./extractBase.js"
@@ -21,6 +20,27 @@ type Discriminant = {
 }
 
 export const discriminate = (
+    base: Attributes,
+    scope: ScopeRoot
+): CompiledAttributes => {
+    if (!base.branches) {
+        return base
+    }
+    const compiled: CompiledAttributes = base
+    if (base.branches[0] === "|") {
+        compiled.branches = discriminateBranches(base.branches[1], scope)
+    } else {
+        compiled.branches = [
+            "&",
+            base.branches[1].map((intersectedUnion) =>
+                discriminateBranches(intersectedUnion[1], scope)
+            )
+        ]
+    }
+    return compiled
+}
+
+const discriminateBranches = (
     branches: Attributes[],
     scope: ScopeRoot
 ): UnionBranches<true> => {
@@ -37,17 +57,8 @@ export const discriminate = (
     }
     const cases: dictionary<CompiledAttributes> = {}
     for (const value in branchesByValue) {
-        const caseRoot: CompiledAttributes = extractBase(
-            branchesByValue[value],
-            scope
-        )
-        if (caseRoot.branches?.[0] === "|") {
-            caseRoot.branches = discriminate(
-                (caseRoot.branches as UndiscriminatedBranches<false>)[1],
-                scope
-            )
-        }
-        cases[value] = caseRoot
+        const base: Attributes = extractBase(branchesByValue[value], scope)
+        cases[value] = discriminate(base, scope)
     }
     return ["?", discriminant.path, cases]
 }

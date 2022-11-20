@@ -1,6 +1,7 @@
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import type { CompiledAttributes } from "./parse/reduce/attributes/attributes.js"
+import { compile } from "./parse/reduce/attributes/compile.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -11,7 +12,12 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = getRootScope(), ...config } = {}
-) => new Type(parseDefinition(definition, scope.$), config, scope as any)
+) =>
+    new Type(
+        compile(parseDefinition(definition, scope.$), scope.$),
+        config,
+        scope as any
+    )
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn

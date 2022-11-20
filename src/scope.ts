@@ -1,7 +1,11 @@
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { throwInternalError } from "./parse/errors.js"
-import type { Attributes } from "./parse/reduce/attributes/attributes.js"
+import type {
+    Attributes,
+    CompiledAttributes
+} from "./parse/reduce/attributes/attributes.js"
+import { compile } from "./parse/reduce/attributes/compile.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import type { Config } from "./type.js"
 import { Type } from "./type.js"
@@ -9,7 +13,6 @@ import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
 import type { evaluate, stringKeyOf } from "./utils/generics.js"
-import { hasKey } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -58,8 +61,8 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dictionary = dictionary> {
-    attributes = {} as Record<keyof inferred, Attributes>
-    private cache: dictionary<Attributes | undefined> = {}
+    attributes = {} as Record<keyof inferred, CompiledAttributes>
+    private cache: dictionary<Attributes> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -71,25 +74,26 @@ export class ScopeRoot<inferred extends dictionary = dictionary> {
     }
 
     resolve(name: stringKeyOf<inferred>): Attributes {
-        if (this.attributes[name]) {
-            return this.attributes[name]
+        if (name in this.cache) {
+            return deepClone(this.cache[name])
         }
-        if (!this.aliases[name]) {
+        if (!(name in this.aliases)) {
             return throwInternalError(
                 `Unexpectedly failed to resolve alias '${name}'`
             )
         }
-        this.attributes[name] = parseDefinition(this.aliases[name], this)
-        return deepClone(this.attributes[name])
+        this.cache[name] = parseDefinition(this.aliases[name], this)
+        this.attributes[name] = compile(this.cache[name], this)
+        return deepClone(this.cache[name])
     }
 
     memoizedParse(def: string): Attributes {
-        if (hasKey(this.cache, def)) {
+        if (def in this.cache) {
             return deepClone(this.cache[def])
         }
         this.cache[def] =
             maybeNaiveParse(def, this) ?? fullStringParse(def, this)
-        return deepClone(this.cache[def]!)
+        return deepClone(this.cache[def])
     }
 }
 

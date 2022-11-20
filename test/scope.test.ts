@@ -78,13 +78,8 @@ describe("scope", () => {
         }
         attest(s.$.attributes).snap({
             a: { type: "array", props: { "*": { type: "string" } } },
-            b: {
-                type: "array",
-                props: {
-                    "*": { type: "array", props: { "*": { type: "string" } } }
-                }
-            },
-            d: { type: "boolean" }
+            b: { type: "array", props: { "*": { alias: "a" } } },
+            d: { alias: "definedInScope" }
         })
     })
 })
