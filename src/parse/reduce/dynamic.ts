@@ -7,10 +7,10 @@ import type {
     AttributeKey,
     Attributes
 } from "./attributes/attributes.js"
-import { intersect } from "./attributes/intersect.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
-import { extractBase } from "./attributes/union/extractBase.js"
+import { intersect } from "./attributes/operations.js"
+import { compress } from "./attributes/union/compress.js"
 import { buildNoViableBranchesMessage } from "./attributes/union/utils.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
@@ -194,7 +194,7 @@ export class DynamicState {
                 contradiction: buildNoViableBranchesMessage(this.branches["|"])
             }
         }
-        this.setRoot(extractBase(viableBranches, this.scope))
+        this.setRoot(compress(viableBranches, this.scope))
     }
 
     reduceGroupOpen() {

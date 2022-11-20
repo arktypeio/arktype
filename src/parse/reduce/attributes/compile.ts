@@ -6,11 +6,12 @@ export const compile = (
     attributes: Attributes,
     scope: ScopeRoot
 ): CompiledAttributes => {
-    const compiled = discriminate(attributes, scope)
-    if (attributes.props) {
-        for (const k in attributes.props) {
-            compile(attributes.props[k], scope)
-        }
-    }
-    return compiled
+    return attributes
+    // const compiled = discriminate(attributes, scope)
+    // if (attributes.props) {
+    //     for (const k in attributes.props) {
+    //         compile(attributes.props[k], scope)
+    //     }
+    // }
+    // return compiled
 }

@@ -7,7 +7,7 @@ import type {
     CompiledAttributes,
     UnionBranches
 } from "../attributes.js"
-import { extractBase } from "./extractBase.js"
+import { compress } from "./compress.js"
 import { pruneDiscriminant } from "./prune.js"
 
 export type DiscriminatedKey = "type" | "value"
@@ -57,7 +57,7 @@ const discriminateBranches = (
     }
     const cases: dictionary<CompiledAttributes> = {}
     for (const value in branchesByValue) {
-        const base: Attributes = extractBase(branchesByValue[value], scope)
+        const base: Attributes = compress(branchesByValue[value], scope)
         cases[value] = discriminate(base, scope)
     }
     return ["?", discriminant.path, cases]

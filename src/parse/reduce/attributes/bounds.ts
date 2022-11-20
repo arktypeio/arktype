@@ -1,7 +1,6 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
+import { defineOperations } from "./attributes.js"
 import { Contradiction } from "./contradiction.js"
-import type { AttributeIntersector } from "./intersect.js"
-import type { AttributeSubtractor } from "./subtract.js"
 
 export type Bounds = {
     min?: Bound
@@ -13,41 +12,42 @@ export type Bound = {
     inclusive?: true
 }
 
-export const subtractBounds: AttributeSubtractor<"bounds"> = (a, b) => {
-    if (
-        a.min &&
-        b.min &&
-        (b.min === a.min || isStricter("min", b.min, a.min))
-    ) {
-        delete a.min
-    }
-    if (
-        a.max &&
-        b.max &&
-        (b.max === a.max || isStricter("max", b.max, a.max))
-    ) {
-        delete a.max
-    }
-    return isEmpty(a) ? null : a
-}
-
-export const intersectBounds: AttributeIntersector<"bounds"> = (a, b) => {
-    if (b.min) {
-        const result = intersectBound("min", a, b.min)
-        if (result instanceof Contradiction) {
-            return result
+export const bounds = defineOperations<Bounds>()({
+    intersect: (a, b) => {
+        if (b.min) {
+            const result = intersectBound("min", a, b.min)
+            if (result instanceof Contradiction) {
+                return result
+            }
+            a.min = result
         }
-        a.min = result
-    }
-    if (b.max) {
-        const result = intersectBound("max", a, b.max)
-        if (result instanceof Contradiction) {
-            return result
+        if (b.max) {
+            const result = intersectBound("max", a, b.max)
+            if (result instanceof Contradiction) {
+                return result
+            }
+            a.max = result
         }
-        a.max = result
+        return a
+    },
+    exclude: ({ ...a }, b) => {
+        if (
+            a.min &&
+            b.min &&
+            (b.min === a.min || isStricter("min", b.min, a.min))
+        ) {
+            delete a.min
+        }
+        if (
+            a.max &&
+            b.max &&
+            (b.max === a.max || isStricter("max", b.max, a.max))
+        ) {
+            delete a.max
+        }
+        return isEmpty(a) ? null : a
     }
-    return a
-}
+})
 
 const intersectBound = (
     kind: BoundKind,

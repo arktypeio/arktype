@@ -8,9 +8,9 @@ import type {
     Attributes
 } from "../attributes.js"
 import { intersect } from "../intersect.js"
-import { subtract } from "../subtract.js"
+import { exclude } from "../exclude.js"
 import type { DiscriminatedKey } from "./discriminate.js"
-import { extractBase } from "./extractBase.js"
+import { compress } from "./compress.js"
 
 export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
     const value = a[k]
@@ -45,7 +45,7 @@ export const pruneUnionToBase = (
     scope: ScopeRoot
 ) => {
     for (const branch of branchSet) {
-        subtract(branch, given)
+        exclude(branch, given)
         if (isEmpty(branch)) {
             // If any of the branches is empty, assign is a subtype of
             // the branch and the branch will always be fulfilled. In
@@ -53,7 +53,7 @@ export const pruneUnionToBase = (
             return
         }
     }
-    return extractBase(branchSet, scope)
+    return compress(branchSet, scope)
 }
 
 export const pruneDiscriminant = <k extends DiscriminatedKey>(

@@ -1,3 +1,4 @@
+import type { ScopeRoot } from "../../../scope.js"
 import type {
     dictionary,
     DynamicTypeName
@@ -10,6 +11,7 @@ import type {
 } from "../../../utils/generics.js"
 import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
+import type { Contradiction } from "./contradiction.js"
 
 type DisjointAttributeTypes = {
     value: SerializedPrimitive
@@ -97,3 +99,27 @@ export type Attributes = {
 export type CompiledAttributes = {
     [k in AttributeKey]?: CompiledAttribute<k>
 }
+
+export type AttributeOperations<t> = {
+    intersect: AttributeIntersection<t>
+    // extract: {}
+    exclude: AttributeExclusion<t>
+}
+
+export const defineOperations =
+    <t>() =>
+    <operations extends AttributeOperations<t>>(operations: operations) =>
+        operations
+
+export type AttributeIntersection<t> = (
+    a: t,
+    b: t,
+    scope: ScopeRoot
+) => t | Contradiction
+
+export type AttributeExclusion<t> = (
+    a: readonlyIfObject<t>,
+    b: readonlyIfObject<t>
+) => t | null
+
+type readonlyIfObject<t> = t extends object ? Readonly<t> : t

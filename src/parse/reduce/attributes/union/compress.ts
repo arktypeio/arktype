@@ -4,9 +4,9 @@ import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import type { requireKeys } from "../../../../utils/generics.js"
 import { hasKey } from "../../../../utils/generics.js"
 import type { AttributeKey, Attributes } from "../attributes.js"
-import { expandAlias } from "../intersect.js"
+import { expandAlias, isSubtype } from "../operations.js"
 
-export const extractBase = (branches: Attributes[], scope: ScopeRoot) => {
+export const compress = (branches: Attributes[], scope: ScopeRoot) => {
     if (branches.length === 1) {
         return branches[0]
     }
@@ -22,7 +22,7 @@ export const extractBase = (branches: Attributes[], scope: ScopeRoot) => {
             continue
         }
         if (k === "props") {
-            extractBaseProps(branches as BranchesWithProps, base, scope)
+            compressProps(branches as BranchesWithProps, base, scope)
         } else if (
             branches.every((branch) => deepEquals(branches[0][k], branch[k]))
         ) {
@@ -32,22 +32,38 @@ export const extractBase = (branches: Attributes[], scope: ScopeRoot) => {
             }
         }
     }
-    if (branches.every((branch) => !isEmpty(branch))) {
-        base.branches = ["|", branches]
-    }
+    base.branches = ["|", filterSubtypes(branches)]
     return base
+}
+
+const filterSubtypes = (branches: Attributes[]) => {
+    const redundantIndices: Record<number, true> = {}
+    for (let i = 0; i < branches.length; i++) {
+        if (redundantIndices[i]) {
+            continue
+        }
+        for (let j = i + 1; j < branches.length; j++) {
+            if (isSubtype(branches[i], branches[j])) {
+                redundantIndices[i] = true
+                break
+            } else if (isSubtype(branches[j], branches[i])) {
+                redundantIndices[j] = true
+            }
+        }
+    }
+    return branches.filter((_, i) => !redundantIndices[i])
 }
 
 type BranchesWithProps = requireKeys<Attributes, "props">[]
 
-const extractBaseProps = (
+const compressProps = (
     branches: BranchesWithProps,
     compressed: Attributes,
     scope: ScopeRoot
 ) => {
     const compressedProps: dictionary<Attributes> = {}
     for (const propKey in branches[0].props) {
-        extractBaseProp(branches, compressedProps, propKey, scope)
+        compressProp(branches, compressedProps, propKey, scope)
     }
     if (!isEmpty(compressedProps)) {
         for (const branch of branches) {
@@ -59,7 +75,7 @@ const extractBaseProps = (
     }
 }
 
-const extractBaseProp = (
+const compressProp = (
     branches: BranchesWithProps,
     compressedProps: dictionary<Attributes>,
     propKey: string,
@@ -73,7 +89,7 @@ const extractBaseProp = (
     if (!allBranchesHaveProp) {
         return
     }
-    const compressedProp = extractBase(propValues, scope)
+    const compressedProp = compress(propValues, scope)
     if (!isEmpty(compressedProp)) {
         for (const branch of branches) {
             if (isEmpty(branch.props[propKey])) {
