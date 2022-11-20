@@ -47,7 +47,7 @@ type inferObjectLiteral<def, scope extends dictionary, aliases> = evaluate<
     } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
             // @ts-expect-error We're just undoing the optional key extraction
-            // we just did to acces the prop
+            // we just did to access the prop
             def[`${optionalKeyName}?`],
             scope,
             aliases

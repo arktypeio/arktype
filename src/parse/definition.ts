@@ -29,8 +29,7 @@ export type inferDefinition<
     ? never
     : def extends string
     ? inferString<def, scope, aliases>
-    : // TODO: Try object?
-    def extends BadDefinitionType
+    : def extends BadDefinitionType
     ? never
     : inferStructure<def, scope, aliases>
 
@@ -47,8 +46,7 @@ export type validateDefinition<
     ? def
     : def extends string
     ? validateString<def, scope>
-    : // TODO: Try object?
-    def extends BadDefinitionType
+    : def extends BadDefinitionType
     ? buildBadDefinitionTypeMessage<dynamicTypeOf<def>>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], scope>
