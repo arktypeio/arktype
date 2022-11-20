@@ -100,7 +100,7 @@ export const exclude = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
 export const isSubtype = (
     a: ReadonlyAttributes,
     possibleSuperType: ReadonlyAttributes
-) => exclude(a, possibleSuperType) === null
+) => exclude(possibleSuperType, a) === null
 
 export const expandAlias = (
     attributes: requireKeys<Attributes, "alias">,

@@ -83,6 +83,43 @@ describe("union/discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert|anywhereWet", { scope: places })
                 .attributes
-        ).snap()
+        ).snap({
+            type: "dictionary",
+            props: { wet: { type: "boolean", required: true } },
+            branches: [
+                "?",
+                "wet.value",
+                {
+                    false: {
+                        props: { blue: { type: "boolean", required: true } },
+                        branches: [
+                            "?",
+                            "blue.value",
+                            {
+                                true: {
+                                    props: {
+                                        isSky: {
+                                            value: "true",
+                                            type: "boolean",
+                                            required: true
+                                        }
+                                    }
+                                },
+                                false: {
+                                    props: {
+                                        isDesert: {
+                                            value: "true",
+                                            type: "boolean",
+                                            required: true
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    true: {}
+                }
+            ]
+        })
     })
 })
