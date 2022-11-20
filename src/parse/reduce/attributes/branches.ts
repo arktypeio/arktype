@@ -1,4 +1,4 @@
-import type { Attribute } from "./attributes.js"
+import type { Attribute, Attributes } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 
 export const branches = defineOperations<Attribute<"branches">>()({
@@ -17,7 +17,7 @@ export const branches = defineOperations<Attribute<"branches">>()({
         }
         return ["&", [a, b]]
     },
-    extract: (a, b) => a as any,
     // TODO: fix
+    extract: (a, b) => a as any,
     exclude: (a, b) => a as any
 })

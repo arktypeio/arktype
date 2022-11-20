@@ -41,11 +41,12 @@ export const operations = satisfies<{
 
 type DynamicIntersection = AttributeIntersection<any>
 
-type DynamicExclusion = ReadonlyAttributeOperation<any>
+type DynamicReadonlyOperation = ReadonlyAttributeOperation<any>
 
 export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     expandIntersectionAliases(a, b, scope)
-    pruneBranches(b, a, scope)
+    // TODO: Figure out prop never propagation
+    pruneBranches(a, b, scope)
     let k: AttributeKey
     for (k in b) {
         if (a[k] === undefined) {
@@ -61,43 +62,39 @@ export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
             }
         }
     }
-    // TODO: Figure out prop never propagation
-    pruneBranches(a, b, scope)
     return a
 }
 
 export const extract = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
-    const difference: Attributes = {}
+    const result: Attributes = {}
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
-            const fn = operations[k].exclude as DynamicExclusion
-            difference[k] = fn(a[k], b[k])
-            if (difference[k] === null) {
-                delete difference[k]
+            const fn = operations[k].extract as DynamicReadonlyOperation
+            result[k] = fn(a[k], b[k])
+            if (result[k] === null) {
+                delete result[k]
             }
-        } else {
-            difference[k] = a[k] as any
         }
     }
-    return isEmpty(difference) ? null : difference
+    return isEmpty(result) ? null : result
 }
 
 export const exclude = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
-    const difference: Attributes = {}
+    const result: Attributes = {}
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
-            const fn = operations[k].exclude as DynamicExclusion
-            difference[k] = fn(a[k], b[k])
-            if (difference[k] === null) {
-                delete difference[k]
+            const fn = operations[k].exclude as DynamicReadonlyOperation
+            result[k] = fn(a[k], b[k])
+            if (result[k] === null) {
+                delete result[k]
             }
         } else {
-            difference[k] = a[k] as any
+            result[k] = a[k] as any
         }
     }
-    return isEmpty(difference) ? null : difference
+    return isEmpty(result) ? null : result
 }
 
 export const isSubtype = (
@@ -108,12 +105,10 @@ export const isSubtype = (
 export const expandAlias = (
     attributes: requireKeys<Attributes, "alias">,
     scope: ScopeRoot
-) =>
-    intersect(
-        attributes,
-        scope.resolve(pruneAttribute(attributes, "alias")!),
-        scope
-    )
+) => {
+    const resolution = scope.resolve(pruneAttribute(attributes, "alias")!)
+    intersect(attributes, resolution, scope)
+}
 
 const expandIntersectionAliases = (
     a: Attributes,

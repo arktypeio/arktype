@@ -13,7 +13,48 @@ describe("union/discriminate", () => {
     test("discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert", { scope: places }).attributes
-        ).snap()
+        ).snap({
+            type: "dictionary",
+            props: { wet: { type: "boolean" }, blue: { type: "boolean" } },
+            requiredKeys: { wet: true, blue: true },
+            branches: [
+                "|",
+                [
+                    {
+                        props: {
+                            wet: { value: "true" },
+                            blue: { value: "true" },
+                            isOcean: { value: "true", type: "boolean" }
+                        },
+                        requiredKeys: { isOcean: true }
+                    },
+                    {
+                        props: {
+                            wet: { value: "false" },
+                            blue: { value: "true" },
+                            isSky: { value: "true", type: "boolean" }
+                        },
+                        requiredKeys: { isSky: true }
+                    },
+                    {
+                        props: {
+                            wet: { value: "true" },
+                            blue: { value: "false" },
+                            isRainforest: { value: "true", type: "boolean" }
+                        },
+                        requiredKeys: { isRainforest: true }
+                    },
+                    {
+                        props: {
+                            wet: { value: "false" },
+                            blue: { value: "false" },
+                            isDesert: { value: "true", type: "boolean" }
+                        },
+                        requiredKeys: { isDesert: true }
+                    }
+                ]
+            ]
+        })
     })
     test("prune", () => {
         attest(

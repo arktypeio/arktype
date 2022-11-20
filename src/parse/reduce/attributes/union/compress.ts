@@ -1,46 +1,31 @@
 import type { ScopeRoot } from "../../../../scope.js"
-import { deepEquals, isEmpty } from "../../../../utils/deepEquals.js"
-import type { dictionary } from "../../../../utils/dynamicTypes.js"
-import type { requireKeys } from "../../../../utils/generics.js"
 import { hasKey } from "../../../../utils/generics.js"
-import type { AttributeKey, Attributes } from "../attributes.js"
-import { expandAlias, isSubtype } from "../operations.js"
+import type { Attributes, UndiscriminatedBranches } from "../attributes.js"
+import {
+    exclude,
+    expandAlias,
+    extract,
+    isSubtype,
+    operations
+} from "../operations.js"
 
 export const compress = (branches: Attributes[], scope: ScopeRoot) => {
     if (branches.length === 1) {
         return branches[0]
     }
-    const base: Attributes = {}
     for (const branch of branches) {
         if (hasKey(branch, "alias")) {
             expandAlias(branch, scope)
         }
     }
-    let k: AttributeKey
-    for (k in branches[0]) {
-        if (branches.some((branch) => branch[k] === undefined)) {
-            continue
-        }
-        if (k === "props") {
-            compressProps(branches as BranchesWithProps, base, scope)
-        } else if (
-            branches.every((branch) => deepEquals(branches[0][k], branch[k]))
-        ) {
-            base[k] = branches[0][k] as any
-            for (const branch of branches) {
-                delete branch[k]
-            }
-        }
-    }
-    base.branches = ["|", filterSubtypes(branches)]
-    return base
-}
-
-const filterSubtypes = (branches: Attributes[]) => {
+    let universalAttributes: Attributes | null = branches[0]
     const redundantIndices: Record<number, true> = {}
     for (let i = 0; i < branches.length; i++) {
         if (redundantIndices[i]) {
             continue
+        }
+        if (i > 0 && universalAttributes) {
+            universalAttributes = extract(universalAttributes, branches[i])
         }
         for (let j = i + 1; j < branches.length; j++) {
             if (isSubtype(branches[i], branches[j])) {
@@ -51,51 +36,25 @@ const filterSubtypes = (branches: Attributes[]) => {
             }
         }
     }
-    return branches.filter((_, i) => !redundantIndices[i])
-}
-
-type BranchesWithProps = requireKeys<Attributes, "props">[]
-
-const compressProps = (
-    branches: BranchesWithProps,
-    compressed: Attributes,
-    scope: ScopeRoot
-) => {
-    const compressedProps: dictionary<Attributes> = {}
-    for (const propKey in branches[0].props) {
-        compressProp(branches, compressedProps, propKey, scope)
-    }
-    if (!isEmpty(compressedProps)) {
-        for (const branch of branches) {
-            if (isEmpty(branch.props)) {
-                delete (branch as Attributes).props
-            }
+    const base = universalAttributes ?? {}
+    const compressedBranches: Attributes[] = []
+    for (let i = 0; i < branches.length; i++) {
+        if (redundantIndices[i]) {
+            continue
         }
-        compressed.props = compressedProps
-    }
-}
-
-const compressProp = (
-    branches: BranchesWithProps,
-    compressedProps: dictionary<Attributes>,
-    propKey: string,
-    scope: ScopeRoot
-) => {
-    let allBranchesHaveProp = true
-    const propValues = branches.map((branch) => {
-        allBranchesHaveProp &&= branch.props[propKey] !== undefined
-        return branch.props[propKey]
-    })
-    if (!allBranchesHaveProp) {
-        return
-    }
-    const compressedProp = compress(propValues, scope)
-    if (!isEmpty(compressedProp)) {
-        for (const branch of branches) {
-            if (isEmpty(branch.props[propKey])) {
-                delete branch.props[propKey]
-            }
+        const uniqueBranchAttributes = universalAttributes
+            ? exclude(branches[i], universalAttributes)
+            : branches[i]
+        if (uniqueBranchAttributes) {
+            compressedBranches.push(uniqueBranchAttributes)
         }
-        compressedProps[propKey] = compressedProp
     }
+    const compressedUnion: UndiscriminatedBranches<false> = [
+        "|",
+        compressedBranches
+    ]
+    base.branches = base.branches
+        ? operations.branches.intersect(base.branches, compressedUnion)
+        : compressedUnion
+    return base
 }
