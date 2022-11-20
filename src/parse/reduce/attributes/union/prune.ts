@@ -1,3 +1,4 @@
+import type { DynamicScope } from "../../../../scope.js"
 import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
 import type {
@@ -22,12 +23,16 @@ export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
     return value
 }
 
-export const pruneBranches = (branches: AttributeBranches, given: Attributes) =>
+export const pruneBranches = (
+    branches: AttributeBranches,
+    given: Attributes,
+    scope: DynamicScope
+) =>
     branches[0] === "?"
         ? pruneDiscriminatedBranches(branches, given)
         : branches[0] === "|"
-        ? pruneUndiscriminatedBranches(branches, given)
-        : pruneIntersectedBranches(branches, given)
+        ? pruneUndiscriminatedBranches(branches, given, scope)
+        : pruneIntersectedBranches(branches, given, scope)
 
 const pruneDiscriminatedBranches = (
     branches: DiscriminatedBranches,
@@ -50,7 +55,8 @@ const pruneDiscriminatedBranches = (
 
 const pruneUndiscriminatedBranches = (
     branches: UndiscriminatedBranches,
-    given: Attributes
+    given: Attributes,
+    scope: DynamicScope
 ): Attributes => {
     const viableBranches: Attributes[] = []
     for (const branch of branches[1]) {
@@ -65,20 +71,21 @@ const pruneUndiscriminatedBranches = (
             viableBranches.push(branch)
         }
     }
-    return union(viableBranches)
+    return union(viableBranches, scope)
 }
 
 const pruneIntersectedBranches = (
     branches: IntersectedBranches,
-    given: Attributes
+    given: Attributes,
+    scope: DynamicScope
 ) => {
     const base: Attributes = {}
     for (const branch of branches[1]) {
         const branchAttributes =
             branch[0] === "?"
                 ? pruneDiscriminatedBranches(branch, given)
-                : pruneUndiscriminatedBranches(branch, given)
-        intersect(base, branchAttributes)
+                : pruneUndiscriminatedBranches(branch, given, scope)
+        intersect(base, branchAttributes, scope)
     }
     return base
 }

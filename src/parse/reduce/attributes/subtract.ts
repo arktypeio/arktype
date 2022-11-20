@@ -45,6 +45,9 @@ const subtractProps: AttributeSubtractor<"props"> = (a, b) => {
     return a
 }
 
+const subtractAlias: AttributeSubtractor<"alias"> = (a, b) =>
+    a === b ? null : a
+
 type DynamicSubtractor = AttributeSubtractor<any>
 
 export const subtractors: {
@@ -52,7 +55,7 @@ export const subtractors: {
 } = {
     type: subtractDisjoint<"type">,
     value: subtractDisjoint<"value">,
-    alias: subtractKeysOrSets,
+    alias: subtractAlias,
     contradiction: subtractKeysOrSets,
     requiredKeys: subtractKeySets,
     regex: subtractKeysOrSets<RegexLiteral>,

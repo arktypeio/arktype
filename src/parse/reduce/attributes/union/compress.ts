@@ -1,17 +1,26 @@
+import type { DynamicScope } from "../../../../scope.js"
 import { deepEquals, isEmpty } from "../../../../utils/deepEquals.js"
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import type { requireKeys } from "../../../../utils/generics.js"
+import { expandAliases } from "../alias.js"
 import type { AttributeKey, Attributes } from "../attributes.js"
 
-export const compress = (branches: Attributes[]) => {
+export const compress = (branches: Attributes[], scope: DynamicScope) => {
     const compressed: Attributes = {}
+    for (const branch of branches) {
+        expandAliases(branch, scope)
+    }
     let k: AttributeKey
     for (k in branches[0]) {
         if (branches.some((branch) => branch[k] === undefined)) {
             continue
         }
         if (k === "props") {
-            compressBranchProps(branches as BranchesWithProps, compressed)
+            compressBranchProps(
+                branches as BranchesWithProps,
+                compressed,
+                scope
+            )
         } else if (
             branches.every((branch) => deepEquals(branches[0][k], branch[k]))
         ) {
@@ -28,11 +37,12 @@ type BranchesWithProps = requireKeys<Attributes, "props">[]
 
 const compressBranchProps = (
     branches: BranchesWithProps,
-    compressed: Attributes
+    compressed: Attributes,
+    scope: DynamicScope
 ) => {
     const compressedProps: dictionary<Attributes> = {}
     for (const propKey in branches[0].props) {
-        compressBranchProp(branches, compressedProps, propKey)
+        compressBranchProp(branches, compressedProps, propKey, scope)
     }
     if (!isEmpty(compressedProps)) {
         for (const branch of branches) {
@@ -47,7 +57,8 @@ const compressBranchProps = (
 const compressBranchProp = (
     branches: BranchesWithProps,
     compressedProps: dictionary<Attributes>,
-    propKey: string
+    propKey: string,
+    scope: DynamicScope
 ) => {
     let allBranchesHaveProp = true
     const propValues = branches.map((branch) => {
@@ -57,7 +68,7 @@ const compressBranchProp = (
     if (!allBranchesHaveProp) {
         return
     }
-    const compressedProp = compress(propValues)
+    const compressedProp = compress(propValues, scope)
     if (!isEmpty(compressedProp)) {
         for (const branch of branches) {
             if (isEmpty(branch.props[propKey])) {

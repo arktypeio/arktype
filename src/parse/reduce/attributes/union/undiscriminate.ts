@@ -1,8 +1,12 @@
+import type { DynamicScope } from "../../../../scope.js"
 import type { Attributes, CaseKey } from "../attributes.js"
 import { intersect } from "../intersect.js"
 import { unpruneDiscriminant } from "./prune.js"
 
-export const undiscriminate = (attributes: Attributes): Attributes[] => {
+export const undiscriminate = (
+    attributes: Attributes,
+    scope: DynamicScope
+): Attributes[] => {
     const branches = attributes.branches
     if (!branches || branches[0] === "&") {
         return [attributes]
@@ -10,7 +14,7 @@ export const undiscriminate = (attributes: Attributes): Attributes[] => {
     delete attributes.branches
     if (branches[0] === "|") {
         for (const branch of branches[1]) {
-            intersect(branch, attributes)
+            intersect(branch, attributes, scope)
         }
         return branches[1]
     }
@@ -19,9 +23,9 @@ export const undiscriminate = (attributes: Attributes): Attributes[] => {
     const cases = branches[2]
     let caseKey: CaseKey
     for (caseKey in cases) {
-        const caseBranches = undiscriminate(cases[caseKey]!)
+        const caseBranches = undiscriminate(cases[caseKey]!, scope)
         for (const branch of caseBranches) {
-            intersect(branch, attributes)
+            intersect(branch, attributes, scope)
             if (caseKey !== "default") {
                 unpruneDiscriminant(branch, path, caseKey)
             }

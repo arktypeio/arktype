@@ -1,6 +1,7 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import type { Attributes } from "../exports.js"
+import { scope } from "../exports.js"
 import { union } from "../src/parse/reduce/attributes/union/union.js"
 
 const getTestBranches = (): Attributes[] => [
@@ -52,7 +53,7 @@ const getTestBranches = (): Attributes[] => [
 
 describe("union/discriminate", () => {
     test("discriminate", () => {
-        attest(union(getTestBranches())).snap({
+        attest(union(getTestBranches(), scope({}))).snap({
             props: { size: { type: "number" } },
             branches: [
                 "?",
@@ -69,7 +70,9 @@ describe("union/discriminate", () => {
         })
     })
     test("prune", () => {
-        attest(union([...getTestBranches(), { type: "array" }])).snap({
+        attest(
+            union([...getTestBranches(), { type: "array" }], scope({}))
+        ).snap({
             branches: [
                 "?",
                 "type",

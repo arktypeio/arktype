@@ -45,22 +45,9 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
 export const maybeParseIdentifier = (token: string, scope: DynamicScope) =>
     Keyword.matches(token)
         ? Keyword.attributes[token]()
-        : scope.$.aliases[token]
-        ? parseAlias(token, scope)
-        : scope.$.config.scope?.$.attributes[token]
-
-// TODO: Way to not resolve alias if not intersected/unioned?
-const parseAlias = (name: string, scope: DynamicScope) => {
-    const cache = scope.$.parseCache
-    const cachedAttributes = cache.get(name)
-    if (!cachedAttributes) {
-        // Set the resolution to a shallow reference until the alias has
-        // been fully parsed in case it cyclicly references itself
-        cache.set(name, { alias: name })
-        cache.set(name, parseDefinition(scope.$.aliases[name], scope))
-    }
-    return cache.get(name)
-}
+        : scope.$.aliases[token] || scope.$.config.scope?.$.aliases[token]
+        ? { alias: token }
+        : undefined
 
 const maybeParseUnenclosedLiteral = (token: string) => {
     const maybeNumber = tryParseWellFormedNumber(token)

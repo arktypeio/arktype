@@ -1,3 +1,4 @@
+import type { DynamicScope } from "../../../../scope.js"
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import { pushKey } from "../../../../utils/paths.js"
 import type {
@@ -19,7 +20,8 @@ type Discriminant = {
 }
 
 export const discriminate = (
-    branches: Attributes[]
+    branches: Attributes[],
+    scope: DynamicScope
 ): DiscriminatedBranches | UndiscriminatedBranches => {
     const discriminant = greedyDiscriminant("", branches)
     if (!discriminant) {
@@ -34,7 +36,7 @@ export const discriminate = (
     }
     const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
-        cases[value] = viableUnion(branchesByValue[value])
+        cases[value] = viableUnion(branchesByValue[value], scope)
     }
     return ["?", discriminant.path, cases]
 }

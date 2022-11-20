@@ -89,7 +89,7 @@ export class DynamicState {
 
     addAttribute<k extends AttributeKey>(k: k, v: Attribute<k>) {
         this.assertHasRoot()
-        this.root = intersect(this.root!, { [k]: v })
+        this.root = intersect(this.root!, { [k]: v }, this.scope)
     }
 
     private ejectRoot() {
@@ -177,13 +177,15 @@ export class DynamicState {
     private mergeIntersection() {
         const branches = this.branches["&"]
         while (branches.length > 1) {
-            branches.unshift(intersect(branches.pop()!, branches.pop()!))
+            branches.unshift(
+                intersect(branches.pop()!, branches.pop()!, this.scope)
+            )
         }
         this.setRoot(branches.pop()!)
     }
 
     private mergeUnion() {
-        this.setRoot(union(this.branches["|"]))
+        this.setRoot(union(this.branches["|"], this.scope))
     }
 
     reduceGroupOpen() {
