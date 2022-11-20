@@ -27,15 +27,19 @@ export const pruneBranches = (
         return
     }
     const branches = pruneAttribute(base, "branches")!
-    for (const branchSet of branches) {
-        const branchSetBase = pruneBranchSetToBase(branchSet, given, scope)
-        if (branchSetBase) {
-            intersect(base, branchSetBase, scope)
+    const unions =
+        branches[0] === "|"
+            ? [branches[1]]
+            : branches[1].map((tokenWithUnion) => tokenWithUnion[1])
+    for (const union of unions) {
+        const unionBase = pruneUnionToBase(union, given, scope)
+        if (unionBase) {
+            intersect(base, unionBase, scope)
         }
     }
 }
 
-export const pruneBranchSetToBase = (
+export const pruneUnionToBase = (
     branchSet: Attributes[],
     given: Attributes,
     scope: DynamicScope
@@ -49,11 +53,7 @@ export const pruneBranchSetToBase = (
             return
         }
     }
-    const base = extractBase(branchSet, scope)
-    if (branchSet.every((branch) => !isEmpty(branch))) {
-        base.branches = [branchSet]
-    }
-    return base
+    return extractBase(branchSet, scope)
 }
 
 export const pruneDiscriminant = <k extends DiscriminatedKey>(

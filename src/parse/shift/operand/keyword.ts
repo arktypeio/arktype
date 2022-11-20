@@ -51,13 +51,12 @@ export namespace Keyword {
         number: () => ({ type: "number" }),
         object: () => ({
             branches: [
-                "?",
-                "type",
-                {
-                    dictionary: {},
-                    array: {},
-                    function: {}
-                }
+                "|",
+                [
+                    { type: "dictionary" },
+                    { type: "array" },
+                    { type: "function" }
+                ]
             ]
         }),
         string: () => ({ type: "string" }),

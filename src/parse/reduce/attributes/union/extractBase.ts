@@ -32,6 +32,9 @@ export const extractBase = (branches: Attributes[], scope: DynamicScope) => {
             }
         }
     }
+    if (branches.every((branch) => !isEmpty(branch))) {
+        base.branches = ["|", branches]
+    }
     return base
 }
 

@@ -10,7 +10,8 @@ import type {
 import { intersect } from "./attributes/intersect.js"
 import type { MorphName } from "./attributes/morph.js"
 import { morph } from "./attributes/morph.js"
-import { union } from "./attributes/union/union.js"
+import { extractBase } from "./attributes/union/extractBase.js"
+import { buildNoViableBranchesMessage } from "./attributes/union/utils.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -185,7 +186,15 @@ export class DynamicState {
     }
 
     private mergeUnion() {
-        this.setRoot(union(this.branches["|"], this.scope))
+        const viableBranches = this.branches["|"].filter(
+            (branch) => branch.contradiction === undefined
+        )
+        if (viableBranches.length === 0) {
+            return {
+                contradiction: buildNoViableBranchesMessage(this.branches["|"])
+            }
+        }
+        this.setRoot(extractBase(viableBranches, this.scope))
     }
 
     reduceGroupOpen() {

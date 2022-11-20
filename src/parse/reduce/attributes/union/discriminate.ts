@@ -4,8 +4,9 @@ import { pushKey } from "../../../../utils/paths.js"
 import type {
     AttributePath,
     Attributes,
-    DiscriminatedBranches,
-    UndiscriminatedBranches
+    CompiledAttributes,
+    UndiscriminatedBranches,
+    UnionBranches
 } from "../attributes.js"
 import { extractBase } from "./extractBase.js"
 import { pruneDiscriminant } from "./prune.js"
@@ -22,7 +23,7 @@ type Discriminant = {
 export const discriminate = (
     branches: Attributes[],
     scope: DynamicScope
-): DiscriminatedBranches | UndiscriminatedBranches => {
+): UnionBranches<true> => {
     const discriminant = greedyDiscriminant("", branches)
     if (!discriminant) {
         return ["|", branches]
@@ -34,15 +35,19 @@ export const discriminate = (
         branchesByValue[value] ??= []
         branchesByValue[value].push(branches[i])
     }
-    const cases: dictionary<Attributes> = {}
+    const cases: dictionary<CompiledAttributes> = {}
     for (const value in branchesByValue) {
-        const caseRoot = extractBase(branchesByValue[value], scope)
-        if (caseRoot.branches) {
-            caseRoot.branches = discriminate(caseRoot.branches)
+        const caseRoot: CompiledAttributes = extractBase(
+            branchesByValue[value],
+            scope
+        )
+        if (caseRoot.branches?.[0] === "|") {
+            caseRoot.branches = discriminate(
+                (caseRoot.branches as UndiscriminatedBranches<false>)[1],
+                scope
+            )
         }
-        cases[value] = caseRoot.branches
-            ? discriminate(caseRoot.branches[0], scope)
-            : caseRoot
+        cases[value] = caseRoot
     }
     return ["?", discriminant.path, cases]
 }

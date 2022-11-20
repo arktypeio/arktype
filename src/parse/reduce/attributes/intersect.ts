@@ -72,6 +72,7 @@ const intersectImplications = (
               a,
               {
                   branches: [
+                      "|",
                       [
                           { type: "number" },
                           { type: "string" },
@@ -96,11 +97,23 @@ const intersectProps: AttributeIntersector<"props"> = (a, b, scope) => {
     return a
 }
 
-const intersectBranches = (a: AttributeBranches, b: AttributeBranches) => {
-    for (const branchSet of b) {
-        a.push(branchSet)
+const intersectBranches = (
+    a: AttributeBranches<false>,
+    b: AttributeBranches<false>
+): AttributeBranches<false> => {
+    if (a[0] === "&") {
+        if (b[0] === "&") {
+            a[1].push(...b[1])
+        } else {
+            a[1].push(b)
+        }
+        return a
     }
-    return a
+    if (b[0] === "&") {
+        b[1].push(a)
+        return b
+    }
+    return ["&", [a, b]]
 }
 
 const intersectTypes: AttributeIntersector<"type"> = (a, b) =>
