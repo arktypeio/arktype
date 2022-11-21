@@ -1,7 +1,4 @@
-import type {
-    AttributeBranches,
-    Attributes
-} from "../../../attributes/attributes.js"
+import type { AttributeBranches } from "../../../attributes/attributes.js"
 import type { Bound, Bounds } from "../../../attributes/bounds.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
@@ -140,8 +137,8 @@ const deserializeBound = (
     const bound: Bound = {
         limit
     }
-    if (comparator[1] === "=") {
-        bound.inclusive = true
+    if (comparator.length === 1) {
+        bound.exclusive = true
     }
     if (comparator === "==") {
         return { min: bound, max: bound }
@@ -165,14 +162,14 @@ const deserializeRange = (
     const min: Bound = {
         limit: minLimit
     }
-    if (minComparator[1] === "=") {
-        min.inclusive = true
+    if (minComparator === "<") {
+        min.exclusive = true
     }
     const max: Bound = {
         limit: maxLimit
     }
-    if (maxComparator[1] === "=") {
-        max.inclusive = true
+    if (maxComparator === "<") {
+        max.exclusive = true
     }
     return {
         min,

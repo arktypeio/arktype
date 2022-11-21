@@ -33,7 +33,7 @@ export const branches = defineOperations<Attribute<"branches">>()({
         return ["&", [a, b]]
     },
     extract: (a, b) => a as any,
-    exclude: (a, b) => a as any
+    exclude: (a, b) => {}
 })
 
 export const compress = (uncompressed: Attributes[], scope: ScopeRoot) => {
@@ -54,13 +54,17 @@ export const compress = (uncompressed: Attributes[], scope: ScopeRoot) => {
             continue
         }
         if (i > 0 && universalAttributes) {
-            universalAttributes = extract(universalAttributes, branches[i])
+            universalAttributes = extract(
+                universalAttributes,
+                branches[i],
+                scope
+            )
         }
         for (let j = i + 1; j < branches.length; j++) {
-            if (isSubtype(branches[i], branches[j])) {
+            if (isSubtype(branches[i], branches[j], scope)) {
                 redundantIndices[i] = true
                 break
-            } else if (isSubtype(branches[j], branches[i])) {
+            } else if (isSubtype(branches[j], branches[i], scope)) {
                 redundantIndices[j] = true
             }
         }
@@ -72,7 +76,7 @@ export const compress = (uncompressed: Attributes[], scope: ScopeRoot) => {
             continue
         }
         const uniqueBranchAttributes = universalAttributes
-            ? exclude(branches[i], universalAttributes)
+            ? exclude(branches[i], universalAttributes, scope)
             : branches[i]
         if (uniqueBranchAttributes) {
             compressedBranches.push(uniqueBranchAttributes)
@@ -82,14 +86,19 @@ export const compress = (uncompressed: Attributes[], scope: ScopeRoot) => {
     return {
         ...base,
         branches: base.branches
-            ? operations.branches.intersect(base.branches, compressedUnion)
+            ? operations.branches.intersect(
+                  base.branches,
+                  compressedUnion,
+                  scope
+              )
             : compressedUnion
     }
 }
 
 export const excludeFromBranches = (
     branches: AttributeBranches,
-    b: Attributes
+    a: Attributes,
+    scope: ScopeRoot
 ): AttributeBranches | null => {
     if (branches[0] === "?") {
         return throwInternalError(unexpectedDiscriminatedBranchesMessage)
@@ -106,7 +115,7 @@ export const excludeFromBranches = (
               )
     const unionsWithExclusion: Attributes[][] = []
     for (const union of unions) {
-        const unionWithExclusion = excludeFromUnion(union, b)
+        const unionWithExclusion = excludeFromUnion(union, a, scope)
         if (unionWithExclusion) {
             unionsWithExclusion.push(unionWithExclusion)
         }
@@ -123,9 +132,13 @@ export const excludeFromBranches = (
 const unexpectedDiscriminatedBranchesMessage =
     "Unexpected attempt to prune discriminated branches"
 
-export const excludeFromUnion = (union: Attributes[], a: Attributes) => {
+export const excludeFromUnion = (
+    union: Attributes[],
+    a: Attributes,
+    scope: ScopeRoot
+) => {
     for (let i = 0; i < union.length; i++) {
-        const remainingBranchAttributes = exclude(union[i], a)
+        const remainingBranchAttributes = exclude(union[i], a, scope)
         if (remainingBranchAttributes === null) {
             // If any of the branches is empty, assign is a subtype of
             // the branch and the branch will always be fulfilled. In

@@ -28,20 +28,19 @@ export const defineKeyOrSetOperations = <k extends string = string>() =>
                     ? b
                     : null
                 : keySetOperations.extract(a, b),
-        exclude: (a, b) => {
-            if (typeof a === "string") {
-                if (typeof b === "string") {
-                    return a === b ? null : a
-                }
-                return a in b ? null : a
-            }
-            if (typeof b === "string") {
-                const difference = { ...a }
-                delete difference[b]
-                return isEmpty(difference) ? null : difference
-            }
-            return keySetOperations.exclude(a, b)
-        }
+        exclude: (a, b) =>
+            typeof a === "string"
+                ? typeof b === "string"
+                    ? a === b
+                        ? null
+                        : a
+                    : a in b
+                    ? null
+                    : a
+                : keySetOperations.exclude(
+                      a,
+                      typeof b === "string" ? { [b]: true } : b
+                  )
     })
 
 export const stringKeyOrSetOperations = defineKeyOrSetOperations<string>()

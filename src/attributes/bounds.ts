@@ -1,6 +1,5 @@
-import { deepEquals, isEmpty } from "../utils/deepEquals.js"
+import { isEmpty } from "../utils/deepEquals.js"
 import { defineOperations } from "./attributes.js"
-import { Contradiction } from "./contradiction.js"
 
 export type Bounds = {
     min?: Bound
@@ -9,74 +8,47 @@ export type Bounds = {
 
 export type Bound = {
     limit: number
-    inclusive?: true
+    exclusive?: true
 }
 
 export const bounds = defineOperations<Bounds>()({
     intersect: (a, b) => {
-        if (b.min) {
-            const result = intersectBound("min", a, b.min)
-            if (result instanceof Contradiction) {
-                return result
+        const result: Bounds = { ...a, ...b }
+        if (a.min && compareStrictness(a.min, b.min, "min") === "a") {
+            if (compareStrictness(a.min, b.max, "max") === "a") {
+                return null
             }
-            a.min = result
-        }
-        if (b.max) {
-            const result = intersectBound("max", a, b.max)
-            if (result instanceof Contradiction) {
-                return result
-            }
-            a.max = result
-        }
-        return a
-    },
-    extract: (a, b) => {
-        const result: Bounds = {}
-        if (a.min && deepEquals(a.min, b.min)) {
             result.min = a.min
         }
-        if (a.max && deepEquals(a.max, b.max)) {
+        if (a.max && compareStrictness(a.max, b.max, "max") === "a") {
+            if (compareStrictness(a.max, b.min, "min") === "a") {
+                return null
+            }
             result.max = a.max
         }
         return result
     },
-    exclude: ({ ...a }, b) => {
-        if (
-            a.min &&
-            b.min &&
-            (b.min === a.min || isStricter("min", b.min, a.min))
-        ) {
-            delete a.min
+    extract: (a, b) => {
+        const result: Bounds = {}
+        if (a.min && compareStrictness(a.min, b.min, "min") !== "b") {
+            result.min = a.min
         }
-        if (
-            a.max &&
-            b.max &&
-            (b.max === a.max || isStricter("max", b.max, a.max))
-        ) {
-            delete a.max
+        if (a.max && compareStrictness(a.max, b.max, "max") !== "b") {
+            result.max = a.max
         }
-        return isEmpty(a) ? null : a
+        return isEmpty(result) ? null : result
+    },
+    exclude: (a, b) => {
+        const result: Bounds = {}
+        if (a.min && compareStrictness(a.min, b.min, "min") === "b") {
+            result.min = a.min
+        }
+        if (a.max && compareStrictness(a.max, b.max, "max") === "b") {
+            result.max = a.max
+        }
+        return isEmpty(result) ? null : result
     }
 })
-
-const intersectBound = (
-    kind: BoundKind,
-    base: Bounds,
-    bound: Bound
-): Bound | Contradiction => {
-    const invertedKind = invertedKinds[kind]
-    const baseCompeting = base[kind]
-    const baseOpposing = base[invertedKind]
-    if (baseOpposing && isStricter(kind, bound, baseOpposing)) {
-        return new Contradiction(
-            buildEmptyRangeMessage(kind, bound, baseOpposing)
-        )
-    }
-    if (!baseCompeting || isStricter(kind, bound, baseCompeting)) {
-        return bound
-    }
-    return baseCompeting
-}
 
 export const buildEmptyRangeMessage = (
     kind: BoundKind,
@@ -89,7 +61,7 @@ export const buildEmptyRangeMessage = (
     )} and ${stringifyBound("max", kind === "max" ? bound : opposing)} is empty`
 
 const stringifyBound = (kind: BoundKind, bound: Bound) =>
-    `${kind === "min" ? "<" : ">"}${bound.inclusive ? "=" : ""}${bound.limit}`
+    `${kind === "min" ? "<" : ">"}${bound.exclusive ? "" : "="}${bound.limit}`
 
 const invertedKinds = {
     min: "max",
@@ -98,16 +70,29 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const isStricter = (kind: BoundKind, candidate: Bound, base: Bound) => {
-    if (
-        candidate.limit === base.limit &&
-        !candidate.inclusive &&
-        base.inclusive === true
-    ) {
-        return true
-    } else if (kind === "min") {
-        return candidate.limit > base.limit
-    } else {
-        return candidate.limit < base.limit
-    }
-}
+const compareStrictness = (
+    a: Bound | undefined,
+    b: Bound | undefined,
+    kind: BoundKind
+) =>
+    !a
+        ? b
+            ? "b"
+            : "="
+        : !b
+        ? "a"
+        : a.limit === b.limit
+        ? a.exclusive
+            ? b.exclusive
+                ? "="
+                : "a"
+            : b.exclusive
+            ? "b"
+            : "="
+        : kind === "min"
+        ? a.limit > b.limit
+            ? "a"
+            : "b"
+        : a.limit < b.limit
+        ? "a"
+        : "b"

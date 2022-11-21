@@ -16,11 +16,11 @@ export const props = defineOperations<Attribute<"props">>()({
         }
         return result
     },
-    extract: (a, b) => {
+    extract: (a, b, scope) => {
         const result: MutableProps = {}
         for (const k in a) {
             if (k in b) {
-                result[k] = extract(a[k], b[k]) as any
+                result[k] = extract(a[k], b[k], scope) as any
                 if (result[k] === null) {
                     delete result[k]
                 }
@@ -28,11 +28,11 @@ export const props = defineOperations<Attribute<"props">>()({
         }
         return isEmpty(result) ? null : result
     },
-    exclude: (a, b) => {
+    exclude: (a, b, scope) => {
         const result: MutableProps = {}
         for (const k in a) {
             if (k in b) {
-                result[k] = exclude(a[k], b[k]) as any
+                result[k] = exclude(a[k], b[k], scope) as any
                 if (result[k] === null) {
                     delete result[k]
                 }

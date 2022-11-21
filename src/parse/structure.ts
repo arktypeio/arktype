@@ -21,7 +21,7 @@ export const parseStructure = (
         const keyName = isOptional ? definitionKey.slice(0, -1) : definitionKey
         props[keyName] = parseDefinition(def[definitionKey], scope)
         if (!isOptional) {
-            props[keyName].required = true
+            props[keyName] = { ...props[keyName], required: true }
         }
     }
     return { type, props }

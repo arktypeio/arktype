@@ -4,7 +4,6 @@ import type { RegexLiteral } from "../utils/generics.js"
 import { satisfies } from "../utils/generics.js"
 import type {
     Attribute,
-    AttributeIntersection,
     AttributeKey,
     AttributeOperations,
     Attributes,
@@ -13,7 +12,6 @@ import type {
 } from "./attributes.js"
 import { bounds } from "./bounds.js"
 import { branches } from "./branches.js"
-import { Contradiction } from "./contradiction.js"
 import { divisor } from "./divisor.js"
 import {
     defineKeyOrSetOperations,
@@ -37,30 +35,23 @@ export const operations = satisfies<{
     branches
 })
 
-type DynamicIntersection = AttributeIntersection<any>
-
-type DynamicReadonlyOperation = SetOperation<any>
+type DynamicOperation = SetOperation<any>
 
 export const intersect = (
     a: Attributes,
     b: Attributes,
     scope: ScopeRoot
 ): Attributes => {
-    let result = { ...a, ...b }
+    a = expandIfAlias(a, scope)
+    b = expandIfAlias(b, scope)
+    const result = { ...a, ...b }
+    delete result.branches
     let k: AttributeKey
     for (k in result) {
-        if (k === "alias") {
-            if (a.alias) {
-                result = intersect(result, scope.resolve(a.alias), scope)
-            }
-            if (b.alias && b.alias !== a.alias) {
-                result = intersect(result, scope.resolve(b.alias), scope)
-            }
-            delete result.alias
-        } else if (k in a && k in b) {
-            const fn = operations[k].intersect as DynamicIntersection
+        if (k in a && k in b) {
+            const fn = operations[k].intersect as DynamicOperation
             const intersection = fn(a[k], b[k], scope)
-            if (intersection instanceof Contradiction) {
+            if (intersection === null) {
                 result.contradiction = result.contradiction
                     ? operations.contradiction.intersect(
                           result.contradiction,
@@ -76,13 +67,18 @@ export const intersect = (
     return result
 }
 
-export const extract = (a: Attributes, b: Attributes) => {
+const expandIfAlias = (a: Attributes, scope: ScopeRoot) =>
+    a.alias ? scope.resolve(a.alias) : a
+
+export const extract = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
+    a = expandIfAlias(a, scope)
+    b = expandIfAlias(b, scope)
     const result: MutableAttributes = {}
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
-            const fn = operations[k].extract as DynamicReadonlyOperation
-            result[k] = fn(a[k], b[k])
+            const fn = operations[k].extract as DynamicOperation
+            result[k] = fn(a[k], b[k], scope)
             if (result[k] === null) {
                 delete result[k]
             }
@@ -91,13 +87,15 @@ export const extract = (a: Attributes, b: Attributes) => {
     return isEmpty(result) ? null : result
 }
 
-export const exclude = (a: Attributes, b: Attributes) => {
+export const exclude = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
+    a = expandIfAlias(a, scope)
+    b = expandIfAlias(b, scope)
     const result: MutableAttributes = {}
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
-            const fn = operations[k].exclude as DynamicReadonlyOperation
-            result[k] = fn(a[k], b[k])
+            const fn = operations[k].exclude as DynamicOperation
+            result[k] = fn(a[k], b[k], scope)
             if (result[k] === null) {
                 delete result[k]
             }
@@ -108,5 +106,5 @@ export const exclude = (a: Attributes, b: Attributes) => {
     return isEmpty(result) ? null : result
 }
 
-export const isSubtype = (a: Attributes, b: Attributes) =>
-    exclude(b, a) === null
+export const isSubtype = (a: Attributes, b: Attributes, scope: ScopeRoot) =>
+    exclude(b, a, scope) === null

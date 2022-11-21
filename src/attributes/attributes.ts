@@ -8,7 +8,6 @@ import type {
 } from "../utils/generics.js"
 import type { SerializedPrimitive } from "../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
-import type { Contradiction } from "./contradiction.js"
 
 export type AttributeKey = keyof Attributes
 
@@ -61,7 +60,7 @@ type AttributeCases<k extends DisjointKey = DisjointKey> = {
 }
 
 export type AttributeOperations<t> = {
-    intersect: AttributeIntersection<t>
+    intersect: SetOperation<t>
     extract: SetOperation<t>
     exclude: SetOperation<t>
 }
@@ -71,10 +70,4 @@ export const defineOperations =
     <operations extends AttributeOperations<t>>(operations: operations) =>
         operations
 
-export type AttributeIntersection<t> = (
-    a: t,
-    b: t,
-    scope: ScopeRoot
-) => t | Contradiction
-
-export type SetOperation<t> = (a: t, b: t) => t | null
+export type SetOperation<t> = (a: t, b: t, scope: ScopeRoot) => t | null
