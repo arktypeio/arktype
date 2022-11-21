@@ -1,10 +1,11 @@
 import type { ScopeRoot } from "../../../../scope.js"
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
 import { pushKey } from "../../../../utils/paths.js"
+import { throwInternalError } from "../../../errors.js"
 import type {
+    AttributeBranches,
     AttributePath,
     Attributes,
-    CompiledAttributes,
     UnionBranches
 } from "../attributes.js"
 import { compress } from "./compress.js"
@@ -19,31 +20,37 @@ type Discriminant = {
     score: number
 }
 
-export const discriminate = (
-    base: Attributes,
-    scope: ScopeRoot
-): CompiledAttributes => {
-    if (!base.branches) {
-        return base
-    }
-    const compiled: CompiledAttributes = base
-    if (base.branches[0] === "|") {
-        compiled.branches = discriminateBranches(base.branches[1], scope)
-    } else {
-        compiled.branches = [
-            "&",
-            base.branches[1].map((intersectedUnion) =>
-                discriminateBranches(intersectedUnion[1], scope)
-            )
-        ]
-    }
-    return compiled
-}
+export const discriminate = (base: Attributes, scope: ScopeRoot): Attributes =>
+    base.branches
+        ? {
+              ...base,
+              branches: [
+                  base.branches[0],
+                  base.branches[0] === "|"
+                      ? discriminateBranches(base.branches[1], scope)
+                      : base.branches[0] === "&"
+                      ? base.branches[1].map((intersectedUnion) =>
+                            intersectedUnion[0] === "|"
+                                ? discriminateBranches(
+                                      intersectedUnion[1],
+                                      scope
+                                  )
+                                : throwInternalError(
+                                      unexpectedRediscriminationMessage
+                                  )
+                        )
+                      : throwInternalError(unexpectedRediscriminationMessage)
+              ] as AttributeBranches
+          }
+        : base
+
+const unexpectedRediscriminationMessage =
+    "Unexpected attempt to rediscriminated branches"
 
 const discriminateBranches = (
     branches: Attributes[],
     scope: ScopeRoot
-): UnionBranches<true> => {
+): UnionBranches => {
     const discriminant = greedyDiscriminant("", branches)
     if (!discriminant) {
         return ["|", branches]
@@ -55,7 +62,7 @@ const discriminateBranches = (
         branchesByValue[value] ??= []
         branchesByValue[value].push(branches[i])
     }
-    const cases: dictionary<CompiledAttributes> = {}
+    const cases: dictionary<Attributes> = {}
     for (const value in branchesByValue) {
         const base: Attributes = compress(branchesByValue[value], scope)
         cases[value] = discriminate(base, scope)

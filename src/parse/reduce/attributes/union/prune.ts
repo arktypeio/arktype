@@ -1,21 +1,11 @@
 import type { ScopeRoot } from "../../../../scope.js"
 import { isEmpty } from "../../../../utils/deepEquals.js"
 import { pathToSegments } from "../../../../utils/paths.js"
-import type {
-    Attribute,
-    AttributeKey,
-    AttributePath,
-    Attributes
-} from "../attributes.js"
+import { throwInternalError } from "../../../errors.js"
+import type { Attribute, AttributePath, Attributes } from "../attributes.js"
 import { exclude, intersect } from "../operations.js"
 import { compress } from "./compress.js"
 import type { DiscriminatedKey } from "./discriminate.js"
-
-export const pruneAttribute = <k extends AttributeKey>(a: Attributes, k: k) => {
-    const value = a[k]
-    delete a[k]
-    return value
-}
 
 export const pruneBranches = (
     base: Attributes,
@@ -23,20 +13,33 @@ export const pruneBranches = (
     scope: ScopeRoot
 ) => {
     if (!base.branches) {
-        return
+        return base
     }
-    const branches = pruneAttribute(base, "branches")!
+    if (base.branches[0] === "?") {
+        return throwInternalError(unexpectedDiscriminatedBranchesMessage)
+    }
+    let result = base
     const unions =
-        branches[0] === "|"
-            ? [branches[1]]
-            : branches[1].map((tokenWithUnion) => tokenWithUnion[1])
+        base.branches[0] === "|"
+            ? [base.branches[1]]
+            : base.branches[1].map((intersectedBranches) =>
+                  intersectedBranches[0] === "?"
+                      ? throwInternalError(
+                            unexpectedDiscriminatedBranchesMessage
+                        )
+                      : intersectedBranches[1]
+              )
     for (const union of unions) {
         const unionBase = pruneUnionToBase(union, given, scope)
         if (unionBase) {
-            intersect(base, unionBase, scope)
+            result = intersect(base, unionBase, scope)
         }
     }
+    return result
 }
+
+const unexpectedDiscriminatedBranchesMessage =
+    "Unexpected attempt to prune discriminated branches"
 
 export const pruneUnionToBase = (
     union: Attributes[],

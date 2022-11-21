@@ -3,21 +3,23 @@ import { hasKey } from "../../../../utils/generics.js"
 import type { Attributes, UndiscriminatedBranches } from "../attributes.js"
 import {
     exclude,
-    expandAlias,
     extract,
+    intersect,
     isSubtype,
     operations
 } from "../operations.js"
 
-export const compress = (branches: Attributes[], scope: ScopeRoot) => {
-    if (branches.length === 1) {
-        return branches[0]
+export const compress = (uncompressed: Attributes[], scope: ScopeRoot) => {
+    if (uncompressed.length === 1) {
+        return uncompressed[0]
     }
-    for (const branch of branches) {
+    const branches = uncompressed.map((branch) => {
         if (hasKey(branch, "alias")) {
-            expandAlias(branch, scope)
+            const { alias, ...rest } = branch
+            return intersect(rest, scope.resolve(alias), scope)
         }
-    }
+        return branch
+    })
     let universalAttributes: Attributes | null = branches[0]
     const redundantIndices: Record<number, true> = {}
     for (let i = 0; i < branches.length; i++) {
@@ -49,12 +51,11 @@ export const compress = (branches: Attributes[], scope: ScopeRoot) => {
             compressedBranches.push(uniqueBranchAttributes)
         }
     }
-    const compressedUnion: UndiscriminatedBranches<false> = [
-        "|",
-        compressedBranches
-    ]
-    base.branches = base.branches
-        ? operations.branches.intersect(base.branches, compressedUnion)
-        : compressedUnion
-    return base
+    const compressedUnion: UndiscriminatedBranches = ["|", compressedBranches]
+    return {
+        ...base,
+        branches: base.branches
+            ? operations.branches.intersect(base.branches, compressedUnion)
+            : compressedUnion
+    }
 }

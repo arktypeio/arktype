@@ -1,6 +1,7 @@
 import type { ScopeRoot } from "../../../scope.js"
 import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
 import type {
+    defined,
     keyOrSet,
     RegexLiteral,
     subtype
@@ -9,26 +10,24 @@ import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.
 import type { Bounds } from "./bounds.js"
 import type { Contradiction } from "./contradiction.js"
 
-type AttributeTypes = {
-    readonly type: DynamicTypeName
-    readonly value: SerializedPrimitive
-    readonly divisor: number
-    readonly bounds: Bounds
-    readonly required: true
-    readonly regex: keyOrSet<RegexLiteral>
-    readonly alias: string
-    readonly contradiction: keyOrSet<string>
-    readonly props: { readonly [k in string]: Attributes }
-    readonly branches: AttributeBranches
+export type AttributeKey = keyof Attributes
+
+export type Attribute<k extends AttributeKey> = defined<Attributes[k]>
+
+export type MutableAttributes = {
+    type?: DynamicTypeName
+    value?: SerializedPrimitive
+    divisor?: number
+    bounds?: Bounds
+    required?: true
+    regex?: keyOrSet<RegexLiteral>
+    alias?: string
+    contradiction?: keyOrSet<string>
+    props?: { readonly [k in string]: Attributes }
+    branches?: AttributeBranches
 }
 
-export type AttributeKey = keyof AttributeTypes
-
-export type Attribute<k extends AttributeKey> = AttributeTypes[k]
-
-export type Attributes = {
-    [k in AttributeKey]?: Attribute<k>
-}
+export type Attributes = Readonly<MutableAttributes>
 
 export type DisjointKey = subtype<AttributeKey, "type" | "value">
 
