@@ -1,4 +1,4 @@
-import { throwInternalError } from "../../errors.js"
+import { throwInternalError } from "../utils/errors.js"
 import type { Attribute } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 import { Contradiction } from "./contradiction.js"

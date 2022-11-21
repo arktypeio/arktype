@@ -1,4 +1,4 @@
-import { pathToSegments } from "../../../utils/paths.js"
+import { pathToSegments } from "../utils/paths.js"
 import type { AttributeKey, AttributePath, Attributes } from "./attributes.js"
 
 export const queryAttribute = <k extends AttributeKey>(

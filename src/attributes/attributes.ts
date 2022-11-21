@@ -1,12 +1,12 @@
-import type { ScopeRoot } from "../../../scope.js"
-import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
+import type { ScopeRoot } from "../scope.js"
+import type { DynamicTypeName } from "../utils/dynamicTypes.js"
 import type {
     defined,
     keyOrSet,
     RegexLiteral,
     subtype
-} from "../../../utils/generics.js"
-import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.js"
+} from "../utils/generics.js"
+import type { SerializedPrimitive } from "../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
 import type { Contradiction } from "./contradiction.js"
 

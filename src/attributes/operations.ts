@@ -1,11 +1,7 @@
-import type { ScopeRoot } from "../../../scope.js"
-import { isEmpty } from "../../../utils/deepEquals.js"
-import type {
-    mutable,
-    RegexLiteral,
-    requireKeys
-} from "../../../utils/generics.js"
-import { hasKey, satisfies } from "../../../utils/generics.js"
+import type { ScopeRoot } from "../scope.js"
+import { isEmpty } from "../utils/deepEquals.js"
+import type { RegexLiteral } from "../utils/generics.js"
+import { satisfies } from "../utils/generics.js"
 import type {
     Attribute,
     AttributeIntersection,
@@ -24,8 +20,7 @@ import {
     stringKeyOrSetOperations
 } from "./keySets.js"
 import { props, required } from "./props.js"
-import { alias, type, value } from "./string.js"
-import { pruneBranches } from "./union/prune.js"
+import { alias, type, value } from "./strings.js"
 
 export const operations = satisfies<{
     [k in AttributeKey]: AttributeOperations<Attribute<k>>
@@ -52,7 +47,6 @@ export const intersect = (
     scope: ScopeRoot
 ): Attributes => {
     let result = { ...a, ...b }
-    pruneBranches(b, a, scope)
     let k: AttributeKey
     for (k in result) {
         if (k === "alias") {
@@ -79,7 +73,6 @@ export const intersect = (
         }
     }
     // TODO: Figure out prop never propagation
-    pruneBranches(a, b, scope)
     return result
 }
 
@@ -115,29 +108,5 @@ export const exclude = (a: Attributes, b: Attributes) => {
     return isEmpty(result) ? null : result
 }
 
-export const isSubtype = (a: Attributes, possibleSuperType: Attributes) =>
-    exclude(possibleSuperType, a) === null
-
-const intersectImplications = (
-    a: Attributes,
-    k: AttributeKey,
-    scope: ScopeRoot
-) =>
-    k === "bounds"
-        ? intersect(
-              a,
-              {
-                  branches: [
-                      "|",
-                      [
-                          { type: "number" },
-                          { type: "string" },
-                          { type: "array" }
-                      ]
-                  ]
-              },
-              scope
-          )
-        : k === "divisor"
-        ? intersect(a, { type: "number" }, scope)
-        : a
+export const isSubtype = (a: Attributes, b: Attributes) =>
+    exclude(b, a) === null

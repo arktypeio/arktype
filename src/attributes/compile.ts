@@ -1,11 +1,11 @@
-import type { ScopeRoot } from "../../../scope.js"
-import type { Attributes, CompiledAttributes } from "./attributes.js"
-import { discriminate } from "./union/discriminate.js"
+import type { ScopeRoot } from "../scope.js"
+import type { Attributes } from "./attributes.js"
+import { discriminate } from "./discriminate.js"
 
 export const compile = (
     attributes: Attributes,
     scope: ScopeRoot
-): CompiledAttributes => {
+): Attributes => {
     const compiled = discriminate(attributes, scope)
     if (attributes.props) {
         for (const k in attributes.props) {

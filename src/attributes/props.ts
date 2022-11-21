@@ -1,5 +1,5 @@
-import { isEmpty } from "../../../utils/deepEquals.js"
-import type { dictionary } from "../../../utils/dynamicTypes.js"
+import { isEmpty } from "../utils/deepEquals.js"
+import type { dictionary } from "../utils/dynamicTypes.js"
 import type { Attribute, Attributes } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 import { exclude, extract, intersect } from "./operations.js"

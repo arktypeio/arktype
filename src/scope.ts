@@ -1,17 +1,14 @@
+import type { Attributes } from "./attributes/attributes.js"
+import { compile } from "./attributes/compile.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import { throwInternalError } from "./parse/errors.js"
-import type {
-    Attributes,
-    CompiledAttributes
-} from "./parse/reduce/attributes/attributes.js"
-import { compile } from "./parse/reduce/attributes/compile.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import type { Config } from "./type.js"
 import { Type } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
+import { throwInternalError } from "./utils/errors.js"
 import type { evaluate, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -61,7 +58,7 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dictionary = dictionary> {
-    attributes = {} as Record<keyof inferred, CompiledAttributes>
+    attributes = {} as Record<keyof inferred, Attributes>
     private cache: dictionary<Attributes> = {}
 
     constructor(

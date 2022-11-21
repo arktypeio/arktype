@@ -1,5 +1,5 @@
 import type { error, RegexLiteral } from "../../../utils/generics.js"
-import { throwParseError } from "../../errors.js"
+import { throwParseError } from "../../../utils/errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"

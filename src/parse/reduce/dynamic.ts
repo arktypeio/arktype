@@ -1,16 +1,12 @@
+import type { Attributes } from "../../attributes/attributes.js"
+import { compress } from "../../attributes/branches.js"
+import type { MorphName } from "../../attributes/morph.js"
+import { morph } from "../../attributes/morph.js"
+import { intersect } from "../../attributes/operations.js"
 import type { ScopeRoot } from "../../scope.js"
+import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
 import { buildUnboundableMessage } from "../ast.js"
-import { throwInternalError, throwParseError } from "../errors.js"
-import type {
-    Attribute,
-    AttributeKey,
-    Attributes
-} from "./attributes/attributes.js"
-import type { MorphName } from "./attributes/morph.js"
-import { morph } from "./attributes/morph.js"
-import { intersect } from "./attributes/operations.js"
-import { compress } from "./attributes/union/compress.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -87,9 +83,9 @@ export class DynamicState {
         this.root = morph(name, this.ejectRoot())
     }
 
-    addAttribute<k extends AttributeKey>(k: k, v: Attribute<k>) {
+    intersect(a: Attributes) {
         this.assertHasRoot()
-        this.root = intersect(this.root!, { [k]: v }, this.scope)
+        this.root = intersect(this.root!, a, this.scope)
     }
 
     private ejectRoot() {

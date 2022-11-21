@@ -1,4 +1,4 @@
-import { deepEquals, isEmpty } from "../../../utils/deepEquals.js"
+import { deepEquals, isEmpty } from "../utils/deepEquals.js"
 import { defineOperations } from "./attributes.js"
 import { Contradiction } from "./contradiction.js"
 

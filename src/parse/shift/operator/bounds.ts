@@ -1,7 +1,11 @@
+import type {
+    AttributeBranches,
+    Attributes
+} from "../../../attributes/attributes.js"
+import type { Bound, Bounds } from "../../../attributes/bounds.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
-import type { Bound, Bounds } from "../../reduce/attributes/bounds.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { Scanner } from "../../reduce/scanner.js"
 import { buildUnpairableComparatorMessage } from "../../reduce/shared.js"
@@ -55,6 +59,11 @@ type shiftComparator<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
+const boundableTypes: AttributeBranches = [
+    "|",
+    [{ type: "array" }, { type: "string" }, { type: "array" }]
+]
+
 export const parseRightBound = (
     s: DynamicState,
     comparator: Scanner.Comparator
@@ -66,16 +75,19 @@ export const parseRightBound = (
     )
     const openRange = s.ejectRangeIfOpen()
     if (!openRange) {
-        s.addAttribute("bounds", deserializeBound(comparator, limit))
+        s.intersect({
+            bounds: deserializeBound(comparator, limit),
+            branches: boundableTypes
+        })
         return
     }
     if (!isKeyOf(comparator, Scanner.pairableComparators)) {
         return s.error(buildUnpairableComparatorMessage(comparator))
     }
-    s.addAttribute(
-        "bounds",
-        deserializeRange(openRange[0], openRange[1], comparator, limit)
-    )
+    s.intersect({
+        bounds: deserializeRange(openRange[0], openRange[1], comparator, limit),
+        branches: boundableTypes
+    })
 }
 
 export type parseRightBound<
