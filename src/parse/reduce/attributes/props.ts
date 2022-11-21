@@ -1,21 +1,23 @@
 import { isEmpty } from "../../../utils/deepEquals.js"
-import type { Attribute } from "./attributes.js"
+import type { dictionary } from "../../../utils/dynamicTypes.js"
+import type { Attribute, Attributes } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 import { exclude, extract, intersect } from "./operations.js"
 
+type MutableProps = dictionary<Attributes>
+
 export const props = defineOperations<Attribute<"props">>()({
     intersect: (a, b, scope) => {
-        for (const k in b) {
-            if (k in a) {
-                a[k] = intersect(a[k], b[k], scope)
-            } else {
-                a[k] = b[k]
+        const result = { ...a, ...b }
+        for (const k in result) {
+            if (k in a && k in b) {
+                result[k] = intersect(a[k], b[k], scope)
             }
         }
-        return a
+        return result
     },
     extract: (a, b) => {
-        const result: Attribute<"props"> = {}
+        const result: MutableProps = {}
         for (const k in a) {
             if (k in b) {
                 result[k] = extract(a[k], b[k]) as any
@@ -27,7 +29,7 @@ export const props = defineOperations<Attribute<"props">>()({
         return isEmpty(result) ? null : result
     },
     exclude: (a, b) => {
-        const result: Attribute<"props"> = {}
+        const result: MutableProps = {}
         for (const k in a) {
             if (k in b) {
                 result[k] = exclude(a[k], b[k]) as any

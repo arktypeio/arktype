@@ -12,6 +12,7 @@ import type {
     AttributeKey,
     AttributeOperations,
     Attributes,
+    MutableAttributes,
     SetOperation
 } from "./attributes.js"
 import { bounds } from "./bounds.js"
@@ -24,7 +25,7 @@ import {
 } from "./keySets.js"
 import { props, required } from "./props.js"
 import { alias, type, value } from "./string.js"
-import { pruneAttribute, pruneBranches } from "./union/prune.js"
+import { pruneBranches } from "./union/prune.js"
 
 export const operations = satisfies<{
     [k in AttributeKey]: AttributeOperations<Attribute<k>>
@@ -83,7 +84,7 @@ export const intersect = (
 }
 
 export const extract = (a: Attributes, b: Attributes) => {
-    const result: Attributes = {}
+    const result: MutableAttributes = {}
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
@@ -98,7 +99,7 @@ export const extract = (a: Attributes, b: Attributes) => {
 }
 
 export const exclude = (a: Attributes, b: Attributes) => {
-    const result: Attributes = {}
+    const result: MutableAttributes = {}
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
@@ -116,18 +117,6 @@ export const exclude = (a: Attributes, b: Attributes) => {
 
 export const isSubtype = (a: Attributes, possibleSuperType: Attributes) =>
     exclude(possibleSuperType, a) === null
-
-const expandAliases = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
-    let result: Attributes | undefined
-    if (hasKey(a, "alias")) {
-        result = scope.resolve(a.alias)
-    }
-    if (hasKey(b, "alias") && b.alias !== a.alias) {
-        const resolution = scope.resolve(b.alias)
-        result = result ? intersect(result, resolution, scope) : resolution
-    }
-    return result
-}
 
 const intersectImplications = (
     a: Attributes,

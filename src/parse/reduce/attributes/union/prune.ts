@@ -1,5 +1,6 @@
 import type { ScopeRoot } from "../../../../scope.js"
 import { isEmpty } from "../../../../utils/deepEquals.js"
+import type { requireKeys } from "../../../../utils/generics.js"
 import { pathToSegments } from "../../../../utils/paths.js"
 import { throwInternalError } from "../../../errors.js"
 import type { Attribute, AttributePath, Attributes } from "../attributes.js"
@@ -59,42 +60,6 @@ export const pruneUnionToBase = (
     return compress(union, scope)
 }
 
-export const pruneDiscriminant = <k extends DiscriminatedKey>(
-    attributes: Attributes,
-    path: AttributePath<k>
-) => {
-    const segments = pathToSegments(path)
-    const key = segments.pop() as k
-    const traversal = traverseToDiscriminant(attributes, segments)
-    if (!traversal.complete) {
-        return
-    }
-    const top = traversal.traversed.pop()!
-    const value = top[key]
-    if (value === undefined) {
-        return
-    }
-    delete top[key]
-    pruneTraversedSegments(traversal.traversed, segments)
-    return value
-}
-
-export const unpruneDiscriminant = <k extends DiscriminatedKey>(
-    attributes: Attributes,
-    path: AttributePath<k>,
-    value: Attribute<k>
-) => {
-    const segments = pathToSegments(path)
-    const key = segments.pop() as k
-    let currentAttributes = attributes
-    for (const segment of segments) {
-        currentAttributes.props ??= {}
-        currentAttributes.props[segment] ??= {}
-        currentAttributes = currentAttributes.props[segment]
-    }
-    currentAttributes[key] = value
-}
-
 type AttributeTraversal = {
     traversed: Attributes[]
     complete: boolean
@@ -119,19 +84,26 @@ const traverseToDiscriminant = (
     }
 }
 
+type AttributesWithProps = requireKeys<Attributes, "props">
+
 const pruneTraversedSegments = (
-    traversed: Attributes[],
+    root: AttributesWithProps,
+    traversed: AttributesWithProps[],
     segments: string[]
-) => {
-    for (let i = traversed.length - 1; i >= 0; i--) {
-        const traversedProps = traversed[i].props!
-        if (!isEmpty(traversedProps[segments[i]])) {
-            return
-        }
-        delete traversedProps[segments[i]]
-        if (!isEmpty(traversedProps)) {
-            return
-        }
-        delete traversed[i].props
+): Attributes => {
+    const next = traversed.shift()
+    if (!next) {
+        return root
     }
+    const propKey = segments.shift()!
+    const nextPruned = pruneTraversedSegments(next, traversed, segments)
+    if (!isEmpty(nextPruned.props[propKey])) {
+        return root
+    }
+    const { [propKey]: _, ...neighboringProps } = nextPruned.props
+    if (!isEmpty(neighboringProps)) {
+        return { ...root, props: neighboringProps }
+    }
+    const { props, ...neighboringAttributes } = root
+    return neighboringAttributes
 }

@@ -1,15 +1,19 @@
 import type { ScopeRoot } from "../../../../scope.js"
 import type { dictionary } from "../../../../utils/dynamicTypes.js"
-import { pushKey } from "../../../../utils/paths.js"
+import { pathToSegments, pushKey } from "../../../../utils/paths.js"
 import { throwInternalError } from "../../../errors.js"
 import type {
+    Attribute,
     AttributeBranches,
     AttributePath,
     Attributes,
+    MutableAttributes,
     UnionBranches
 } from "../attributes.js"
+import { exclude } from "../operations.js"
+import { queryAttribute } from "../query.js"
 import { compress } from "./compress.js"
-import { pruneDiscriminant } from "./prune.js"
+import { extractDiscriminant } from "./prune.js"
 
 export type DiscriminatedKey = "type" | "value"
 
@@ -58,7 +62,7 @@ const discriminateBranches = (
     const branchesByValue: dictionary<Attributes[]> = {}
     for (let i = 0; i < branches.length; i++) {
         const value =
-            pruneDiscriminant(branches[i], discriminant.path) ?? "default"
+            extractDiscriminant(branches[i], discriminant.path) ?? "default"
         branchesByValue[value] ??= []
         branchesByValue[value].push(branches[i])
     }
@@ -68,6 +72,19 @@ const discriminateBranches = (
         cases[value] = discriminate(base, scope)
     }
     return ["?", discriminant.path, cases]
+}
+
+const extractDiscriminant = <k extends DiscriminatedKey>(
+    a: Attributes,
+    path: AttributePath<k>
+): Attributes => {
+    const segments = pathToSegments(path)
+    const key = segments.pop() as k
+    let discriminant: MutableAttributes = { [key]: queryAttribute(a, path) }
+    for (let i = segments.length - 1; i >= 0; i--) {
+        discriminant = { props: { [segments[i]]: discriminant } }
+    }
+    return exclude(a, discriminant)
 }
 
 const greedyDiscriminant = (
