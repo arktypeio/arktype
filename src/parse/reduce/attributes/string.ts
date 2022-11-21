@@ -28,6 +28,6 @@ export const alias = defineOperations<Attribute<"alias">>()({
     ...baseStringOperations,
     intersect: (a, b) =>
         throwInternalError(
-            `Unexpected attempt to intersect aliases '${a}' and '${b}'`
+            `Unexpected attempt to intersect unexpanded aliases '${a}' and '${b}'`
         )
 })

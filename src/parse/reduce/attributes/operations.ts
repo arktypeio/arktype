@@ -1,6 +1,10 @@
 import type { ScopeRoot } from "../../../scope.js"
 import { isEmpty } from "../../../utils/deepEquals.js"
-import type { RegexLiteral, requireKeys } from "../../../utils/generics.js"
+import type {
+    mutable,
+    RegexLiteral,
+    requireKeys
+} from "../../../utils/generics.js"
 import { hasKey, satisfies } from "../../../utils/generics.js"
 import type {
     Attribute,
@@ -8,8 +12,7 @@ import type {
     AttributeKey,
     AttributeOperations,
     Attributes,
-    ReadonlyAttributeOperation,
-    ReadonlyAttributes
+    SetOperation
 } from "./attributes.js"
 import { bounds } from "./bounds.js"
 import { branches } from "./branches.js"
@@ -40,32 +43,46 @@ export const operations = satisfies<{
 
 type DynamicIntersection = AttributeIntersection<any>
 
-type DynamicReadonlyOperation = ReadonlyAttributeOperation<any>
+type DynamicReadonlyOperation = SetOperation<any>
 
-export const intersect = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
-    expandIntersectionAliases(a, b, scope)
+export const intersect = (
+    a: Attributes,
+    b: Attributes,
+    scope: ScopeRoot
+): Attributes => {
+    let result = { ...a, ...b }
     pruneBranches(b, a, scope)
     let k: AttributeKey
-    for (k in b) {
-        if (a[k] === undefined) {
-            a[k] = b[k] as any
-            intersectImplications(a, k, scope)
-        } else {
+    for (k in result) {
+        if (k === "alias") {
+            if (a.alias) {
+                result = intersect(result, scope.resolve(a.alias), scope)
+            }
+            if (b.alias && b.alias !== a.alias) {
+                result = intersect(result, scope.resolve(b.alias), scope)
+            }
+            delete result.alias
+        } else if (k in a && k in b) {
             const fn = operations[k].intersect as DynamicIntersection
-            const result = fn(a[k], b[k], scope)
-            if (result instanceof Contradiction) {
-                intersect(a, { contradiction: result.message }, scope)
+            const intersection = fn(a[k], b[k], scope)
+            if (intersection instanceof Contradiction) {
+                result.contradiction = result.contradiction
+                    ? operations.contradiction.intersect(
+                          result.contradiction,
+                          intersection.message
+                      )
+                    : intersection.message
             } else {
-                a[k] = result
+                result[k] = intersection
             }
         }
     }
     // TODO: Figure out prop never propagation
     pruneBranches(a, b, scope)
-    return a
+    return result
 }
 
-export const extract = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
+export const extract = (a: Attributes, b: Attributes) => {
     const result: Attributes = {}
     let k: AttributeKey
     for (k in a) {
@@ -80,7 +97,7 @@ export const extract = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
     return isEmpty(result) ? null : result
 }
 
-export const exclude = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
+export const exclude = (a: Attributes, b: Attributes) => {
     const result: Attributes = {}
     let k: AttributeKey
     for (k in a) {
@@ -97,32 +114,19 @@ export const exclude = (a: ReadonlyAttributes, b: ReadonlyAttributes) => {
     return isEmpty(result) ? null : result
 }
 
-export const isSubtype = (
-    a: ReadonlyAttributes,
-    possibleSuperType: ReadonlyAttributes
-) => exclude(possibleSuperType, a) === null
+export const isSubtype = (a: Attributes, possibleSuperType: Attributes) =>
+    exclude(possibleSuperType, a) === null
 
-export const expandAlias = (
-    attributes: requireKeys<Attributes, "alias">,
-    scope: ScopeRoot
-) => {
-    const resolution = scope.resolve(pruneAttribute(attributes, "alias")!)
-    intersect(attributes, resolution, scope)
-}
-
-const expandIntersectionAliases = (
-    a: Attributes,
-    b: Attributes,
-    scope: ScopeRoot
-) => {
-    let prunedAlias: string | undefined
+const expandAliases = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
+    let result: Attributes | undefined
     if (hasKey(a, "alias")) {
-        prunedAlias = a.alias
-        expandAlias(a, scope)
+        result = scope.resolve(a.alias)
     }
-    if (hasKey(b, "alias") && b.alias !== prunedAlias) {
-        expandAlias(b, scope)
+    if (hasKey(b, "alias") && b.alias !== a.alias) {
+        const resolution = scope.resolve(b.alias)
+        result = result ? intersect(result, resolution, scope) : resolution
     }
+    return result
 }
 
 const intersectImplications = (

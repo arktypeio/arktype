@@ -1,4 +1,4 @@
-import type { Attribute, Attributes } from "./attributes.js"
+import type { Attribute } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 
 export const branches = defineOperations<Attribute<"branches">>()({

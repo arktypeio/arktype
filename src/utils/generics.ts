@@ -76,15 +76,9 @@ export const hasKey = <o extends object, k extends string>(
     k: k
 ): o is o & { [_ in k]: {} | null } => ((o as any)[k] !== undefined) as any
 
-export type keySet<key extends string = string> = Record<key, true>
+export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export type keyOrSet<key extends string = string> = key | keySet<key>
-
-export type partialKeySet<key extends string = string> = { [_ in key]?: true }
-
-export type keyOrPartialSet<key extends string = string> =
-    | key
-    | partialKeySet<key>
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]

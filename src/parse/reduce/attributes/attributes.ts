@@ -1,8 +1,5 @@
 import type { ScopeRoot } from "../../../scope.js"
-import type {
-    dictionary,
-    DynamicTypeName
-} from "../../../utils/dynamicTypes.js"
+import type { DynamicTypeName } from "../../../utils/dynamicTypes.js"
 import type {
     keyOrSet,
     RegexLiteral,
@@ -12,103 +9,62 @@ import type { SerializedPrimitive } from "../../../utils/primitiveSerialization.
 import type { Bounds } from "./bounds.js"
 import type { Contradiction } from "./contradiction.js"
 
-type DisjointAttributeTypes = {
-    value: SerializedPrimitive
-    type: DynamicTypeName
+type AttributeTypes = {
+    readonly type: DynamicTypeName
+    readonly value: SerializedPrimitive
+    readonly divisor: number
+    readonly bounds: Bounds
+    readonly required: true
+    readonly regex: keyOrSet<RegexLiteral>
+    readonly alias: string
+    readonly contradiction: keyOrSet<string>
+    readonly props: { readonly [k in string]: Attributes }
+    readonly branches: AttributeBranches
 }
 
-type AdditiveAttributeTypes = {
-    divisor: number
-    bounds: Bounds
-    required: true
+export type AttributeKey = keyof AttributeTypes
+
+export type Attribute<k extends AttributeKey> = AttributeTypes[k]
+
+export type Attributes = {
+    [k in AttributeKey]?: Attribute<k>
 }
 
-type IrreducibleAttributeTypes = subtype<
-    dictionary<keyOrSet<string>>,
-    {
-        regex: keyOrSet<RegexLiteral>
-        alias: string
-        contradiction: keyOrSet<string>
-    }
->
-
-type ComposedAttributeTypes<compiled extends boolean> = {
-    props: dictionary<AttributeState<compiled>>
-    branches: AttributeBranches<compiled>
-}
-
-type ReducibleAttributeTypes = DisjointAttributeTypes & AdditiveAttributeTypes
-
-export type DisjointKey = keyof DisjointAttributeTypes
+export type DisjointKey = subtype<AttributeKey, "type" | "value">
 
 export type CaseKey<k extends DisjointKey = DisjointKey> =
     | "default"
     | (k extends "value" ? SerializedPrimitive : DynamicTypeName)
 
-export type AttributeBranches<compiled extends boolean> =
-    | UnionBranches<compiled>
-    | IntersectedBranches<compiled>
+export type AttributeBranches = UnionBranches | IntersectedBranches
 
-export type UnionBranches<compiled extends boolean> = compiled extends true
-    ? UndiscriminatedBranches<true> | DiscriminatedBranches
-    : UndiscriminatedBranches<false>
+export type UnionBranches = UndiscriminatedBranches | DiscriminatedBranches
 
-export type UndiscriminatedBranches<compiled extends boolean> = [
+export type UndiscriminatedBranches = readonly [
     token: "|",
-    members: AttributeState<compiled>[]
+    members: Attributes[]
 ]
 
-export type IntersectedBranches<compiled extends boolean> = [
+export type IntersectedBranches = readonly [
     token: "&",
-    members: UnionBranches<compiled>[]
+    members: UnionBranches[]
 ]
 
-export type DiscriminatedBranches<k extends DisjointKey = DisjointKey> = [
-    token: "?",
-    path: AttributePath<k>,
-    cases: AttributeCases<k>
-]
+export type DiscriminatedBranches<k extends DisjointKey = DisjointKey> =
+    readonly [token: "?", path: AttributePath<k>, cases: AttributeCases<k>]
 
 export type AttributePath<k extends AttributeKey = AttributeKey> =
     | k
     | `${string}.${k}`
 
 type AttributeCases<k extends DisjointKey = DisjointKey> = {
-    [_ in CaseKey<k> | "default"]?: CompiledAttributes
-}
-
-type AttributeTypes<compiled extends boolean> = ReducibleAttributeTypes &
-    IrreducibleAttributeTypes &
-    ComposedAttributeTypes<compiled>
-
-export type AttributeKey = keyof AttributeTypes<boolean>
-
-export type Attribute<k extends AttributeKey> = AttributeTypes<false>[k]
-
-export type CompiledAttribute<k extends AttributeKey> = AttributeTypes<true>[k]
-
-type AttributeState<compiled extends boolean> = compiled extends true
-    ? CompiledAttributes
-    : Attributes
-
-export type Attributes = {
-    [k in AttributeKey]?: Attribute<k>
-}
-
-export type ReadonlyAttributes<compiled extends boolean = false> = {
-    readonly [k in AttributeKey]?: compiled extends true
-        ? CompiledAttribute<k>
-        : Attribute<k>
-}
-
-export type CompiledAttributes = {
-    [k in AttributeKey]?: CompiledAttribute<k>
+    readonly [_ in CaseKey<k>]?: Attributes
 }
 
 export type AttributeOperations<t> = {
     intersect: AttributeIntersection<t>
-    extract: ReadonlyAttributeOperation<t>
-    exclude: ReadonlyAttributeOperation<t>
+    extract: SetOperation<t>
+    exclude: SetOperation<t>
 }
 
 export const defineOperations =
@@ -122,9 +78,4 @@ export type AttributeIntersection<t> = (
     scope: ScopeRoot
 ) => t | Contradiction
 
-export type ReadonlyAttributeOperation<t> = (
-    a: readonlyIfObject<t>,
-    b: readonlyIfObject<t>
-) => t | null
-
-type readonlyIfObject<t> = t extends object ? Readonly<t> : t
+export type SetOperation<t> = (a: t, b: t) => t | null
