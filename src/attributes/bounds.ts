@@ -13,7 +13,7 @@ export type Bound = {
 }
 
 export const bounds = defineOperations<Bounds>()({
-    intersect: (a, b) => {
+    add: (a, b) => {
         const min =
             b.min && (!a.min || compareStrictness("min", a.min, b.min) === "b")
                 ? b.min
@@ -33,37 +33,14 @@ export const bounds = defineOperations<Bounds>()({
             ? { max }
             : {}
     },
-    extract: (a, b) => {
-        const result: mutable<Bounds> = {}
-        if (
-            a.min &&
-            (!b.min || compareStrictness(a.min, b.min, "min") !== "b")
-        ) {
-            result.min = a.min
+    union: ({ ...a }, b) => {
+        if (a.min && b.min && compareStrictness("min", a.min, b.min) !== "a") {
+            delete a.min
         }
-        if (
-            a.max &&
-            (!b.max || compareStrictness(a.max, b.max, "max") !== "b")
-        ) {
-            result.max = a.max
+        if (a.max && b.max && compareStrictness("max", a.max, b.max) !== "a") {
+            delete a.max
         }
-        return isEmpty(result) ? null : result
-    },
-    exclude: (a, b) => {
-        const result: mutable<Bounds> = {}
-        if (
-            a.min &&
-            (!b.min || compareStrictness(a.min, b.min, "min") === "a")
-        ) {
-            result.min = a.min
-        }
-        if (
-            a.max &&
-            (!b.max || compareStrictness(a.max, b.max, "max") === "a")
-        ) {
-            result.max = a.max
-        }
-        return isEmpty(result) ? null : result
+        return isEmpty(a) ? undefined : a
     }
 })
 

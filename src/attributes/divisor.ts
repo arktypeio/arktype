@@ -4,11 +4,10 @@ const leastCommonMultiple = (a: number, b: number) =>
     Math.abs((a * b) / greatestCommonDivisor(a, b))
 
 export const divisor = defineOperations<number>()({
-    intersect: leastCommonMultiple,
-    extract: (a, b) => (a === b ? a : null),
-    exclude: (a, b) => {
+    intersection: leastCommonMultiple,
+    subtract: (a, b) => {
         const relativelyPrimeA = Math.abs(a / greatestCommonDivisor(a, b))
-        return relativelyPrimeA === 1 ? null : relativelyPrimeA
+        return relativelyPrimeA === 1 ? undefined : relativelyPrimeA
     }
 })
 

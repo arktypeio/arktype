@@ -2,7 +2,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { DynamicTypeName } from "../utils/dynamicTypes.js"
 import type {
     defined,
-    keyOrSet,
+    keySet,
     RegexLiteral,
     subtype
 } from "../utils/generics.js"
@@ -19,9 +19,9 @@ export type MutableAttributes = {
     divisor?: number
     bounds?: Bounds
     required?: true
-    regex?: keyOrSet<RegexLiteral>
+    regex?: keySet<RegexLiteral>
+    contradiction?: keySet
     alias?: string
-    contradiction?: keyOrSet<string>
     props?: { readonly [k in string]: Attributes }
     branches?: Branches
 }
@@ -57,14 +57,13 @@ type AttributeCases<k extends DisjointKey = DisjointKey> = {
 }
 
 export type AttributeOperations<t> = {
-    intersect: SetOperation<t>
-    extract: SetOperation<t>
-    exclude: SetOperation<t>
+    // What should we check to ensure a and b are both fulfilled?
+    intersection: (a: t, b: t, scope: ScopeRoot) => t | null
+    // Given b, what portion of a should we still check?
+    union: (a: t, b: t, scope: ScopeRoot) => t | undefined
 }
 
 export const defineOperations =
     <t>() =>
     <operations extends AttributeOperations<t>>(operations: operations) =>
         operations
-
-export type SetOperation<t> = (a: t, b: t, scope: ScopeRoot) => t | null

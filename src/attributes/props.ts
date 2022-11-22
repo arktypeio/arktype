@@ -16,7 +16,7 @@ export const propsOperations = defineOperations<Attribute<"props">>()({
         }
         return result
     },
-    extract: (a, b, scope) => {
+    union: (a, b, scope) => {
         const result: MutableProps = {}
         for (const k in a) {
             if (k in b) {
@@ -46,6 +46,6 @@ export const propsOperations = defineOperations<Attribute<"props">>()({
 
 export const requiredOperations = defineOperations<true>()({
     intersect: (a) => a,
-    extract: (a) => a,
+    union: (a) => a,
     exclude: () => null
 })

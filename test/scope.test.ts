@@ -18,7 +18,7 @@ describe("scope", () => {
         attest(s.c.infer).typed as string
         attest(s.c.attributes).equals({
             type: "string",
-            regex: "/^(.+)@(.+)\\.(.+)$/",
+            regex: { "/^(.+)@(.+)\\.(.+)$/": true },
             bounds: {
                 min: {
                     limit: 5,

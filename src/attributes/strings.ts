@@ -18,6 +18,6 @@ const throwUnexpandedAliasError = () =>
 
 export const alias = defineOperations<Attribute<"alias">>()({
     intersect: throwUnexpandedAliasError,
-    extract: throwUnexpandedAliasError,
+    union: throwUnexpandedAliasError,
     exclude: throwUnexpandedAliasError
 })

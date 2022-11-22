@@ -24,8 +24,8 @@ import { propsOperations, requiredOperations } from "./props.js"
 import { alias, type, value } from "./strings.js"
 
 export const branchOperations = defineOperations<Attribute<"branches">>()({
-    intersect: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],
-    extract: (a, b, scope) => {
+    intersection: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],
+    union: (a, b, scope) => {
         const unionsOfB = listUnions(b)
         const result = listUnions(a).filter((unionA) =>
             unionA[1].every((branchA) =>
@@ -227,7 +227,7 @@ export const extract = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
-            const fn = operations[k].extract as DynamicOperation
+            const fn = operations[k].subtract as DynamicOperation
             result[k] = fn(a[k], b[k], scope)
             if (result[k] === null) {
                 delete result[k]
