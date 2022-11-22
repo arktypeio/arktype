@@ -1,12 +1,25 @@
-import type { dictionary } from "../utils/dynamicTypes.js"
-import type { Attribute, Type } from "./attributes.js"
-import { defineOperations } from "./attributes.js"
+import type { TypeNode } from "ts-morph"
+import type { Bounds } from "./bounds.js"
 import { intersection } from "./operations.js"
 
-type MutableProps = dictionary<Type>
+export type ObjectAttributes = {
+    props?: { readonly [k in string]?: TypeNode }
+} & ObjectSubtypeAttributes
+
+type ObjectSubtypeAttributes = ArrayAttributes | FunctionAttributes | {}
+
+type ArrayAttributes = {
+    subtype: "array"
+    elements?: TypeNode | TypeNode[]
+    bounds?: Bounds
+}
+
+type FunctionAttributes = {
+    subtype: "function"
+}
 
 // TODO: Figure out prop never propagation
-export const propsOperations = defineOperations<Attribute<"props">>()({
+export const propsOperations = {
     intersection: (a, b, scope) => {
         const result = { ...a, ...b }
         for (const k in result) {
@@ -31,4 +44,4 @@ export const propsOperations = defineOperations<Attribute<"props">>()({
         // }
         // return isEmpty(result) ? undefined : result
     }
-})
+}

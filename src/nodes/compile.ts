@@ -2,10 +2,10 @@ import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import { throwInternalError } from "../utils/errors.js"
 import { pathToSegments, pushKey } from "../utils/paths.js"
-import type { Type, UnionBranches } from "./attributes.js"
+import type { TypeNode, UnionBranches } from "./node.js"
 import { queryPath } from "./query.js"
 
-export const compile = (attributes: Type, scope: ScopeRoot): Type => {
+export const compile = (attributes: TypeNode, scope: ScopeRoot): TypeNode => {
     return attributes
     // const compiled = discriminate(attributes, scope)
     // if (attributes.props) {

@@ -1,5 +1,5 @@
-import type { Type } from "./attributes/attributes.js"
-import { compile } from "./attributes/compile.js"
+import type { TypeNode } from "./nodes/node.js"
+import { compile } from "./nodes/compile.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -58,8 +58,8 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dictionary = dictionary> {
-    attributes = {} as Record<keyof inferred, Type>
-    private cache: dictionary<Type> = {}
+    attributes = {} as Record<keyof inferred, TypeNode>
+    private cache: dictionary<TypeNode> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -70,7 +70,7 @@ export class ScopeRoot<inferred extends dictionary = dictionary> {
         return chainableNoOpProxy
     }
 
-    resolve(name: stringKeyOf<inferred>): Type {
+    resolve(name: stringKeyOf<inferred>): TypeNode {
         if (name in this.cache) {
             return deepClone(this.cache[name])
         }
@@ -84,7 +84,7 @@ export class ScopeRoot<inferred extends dictionary = dictionary> {
         return deepClone(this.cache[name])
     }
 
-    memoizedParse(def: string): Type {
+    memoizedParse(def: string): TypeNode {
         if (def in this.cache) {
             return deepClone(this.cache[def])
         }

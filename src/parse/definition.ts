@@ -1,4 +1,4 @@
-import type { Type } from "../attributes/attributes.js"
+import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
@@ -9,7 +9,7 @@ import { parseString } from "./string.js"
 import type { inferStructure } from "./structure.js"
 import { parseStructure } from "./structure.js"
 
-export const parseDefinition = (def: unknown, scope: ScopeRoot): Type => {
+export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     const defType = dynamicTypeOf(def)
     return defType === "string"
         ? parseString(def as string, scope)
@@ -60,7 +60,8 @@ type BadDefinitionType =
 
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"
-> = `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
+> =
+    `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
     actual: actual

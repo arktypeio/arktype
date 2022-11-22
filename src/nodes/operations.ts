@@ -2,34 +2,8 @@ import type { ScopeRoot } from "../scope.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type { mutable } from "../utils/generics.js"
-import { hasKey, satisfies } from "../utils/generics.js"
-import type {
-    Attribute,
-    AttributeKey,
-    AttributeOperations,
-    DegenerateType,
-    Type,
-    TypeCases,
-    TypeName,
-    UnknownAttributes
-} from "./attributes.js"
-import { bounds } from "./bounds.js"
-import { branchOperations } from "./branches.js"
-import { divisor } from "./divisor.js"
-import { keySetOperations } from "./keySets.js"
-import { propsOperations, requiredOperations } from "./props.js"
-
-export const operations = satisfies<{
-    [k in AttributeKey]: AttributeOperations<Attribute<k>>
-}>()({
-    bounds,
-    divisor,
-    required: requiredOperations,
-    regex: keySetOperations,
-    requiredKeys: keySetOperations,
-    props: propsOperations,
-    branches: branchOperations
-})
+import { hasKey } from "../utils/generics.js"
+import type { DegenerateType, TypeCases, TypeName, TypeNode } from "./node.js"
 
 type DynamicOperations = dictionary<{
     intersection: DynamicOperation
@@ -38,14 +12,22 @@ type DynamicOperations = dictionary<{
 
 type DynamicOperation = (a: any, b: any, scope: ScopeRoot) => any
 
-export const intersection = (a: Type, b: Type, scope: ScopeRoot): Type =>
+export const intersection = (
+    a: TypeNode,
+    b: TypeNode,
+    scope: ScopeRoot
+): TypeNode =>
     a.degenerate
         ? degenerateIntersection(a, b, scope)
         : b.degenerate
         ? degenerateIntersection(b, a, scope)
-        : associativeIntersection(a, b, scope)
+        : casesIntersection(a, b, scope)
 
-const degenerateIntersection = (a: DegenerateType, b: Type, scope: ScopeRoot) =>
+const degenerateIntersection = (
+    a: DegenerateType,
+    b: TypeNode,
+    scope: ScopeRoot
+) =>
     a.degenerate === "alias"
         ? intersection(scope.resolve(a.name), b, scope)
         : a.degenerate === "unknown"
@@ -56,11 +38,11 @@ const degenerateIntersection = (a: DegenerateType, b: Type, scope: ScopeRoot) =>
         ? b
         : a
 
-const associativeIntersection = (
+const casesIntersection = (
     a: TypeCases,
     b: TypeCases,
     scope: ScopeRoot
-): Type => {
+): TypeNode => {
     const result: TypeCases = {}
     let caseKey: TypeName
     for (caseKey in a) {

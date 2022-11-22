@@ -98,11 +98,6 @@ export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
 
 export type partialRecord<k extends string, v> = { [_ in k]?: v }
 
-export const satisfies =
-    <base>() =>
-    <t extends base>(t: t) =>
-        t
-
 export type error<message extends string = string> = `!${message}`
 
 export type stringKeyOf<t> = keyof t & string

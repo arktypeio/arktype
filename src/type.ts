@@ -1,5 +1,5 @@
-import type { Type } from "./attributes/attributes.js"
-import { compile } from "./attributes/compile.js"
+import type { TypeNode } from "./nodes/node.js"
+import { compile } from "./nodes/compile.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
@@ -37,7 +37,7 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class ArkType<inferred = unknown> {
     constructor(
-        public attributes: Type,
+        public attributes: TypeNode,
         public config: Config,
         public scope: DynamicScope
     ) {

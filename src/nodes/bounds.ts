@@ -1,5 +1,5 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import { defineOperations } from "./attributes.js"
+import { SetOperations } from "./node.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,7 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const bounds = defineOperations<Bounds>()({
+export const bounds = {
     intersection: (a, b) => {
         const min =
             b.min && (!a.min || compareStrictness("min", a.min, b.min) === "b")
@@ -41,7 +41,7 @@ export const bounds = defineOperations<Bounds>()({
         }
         return isEmpty(a) ? undefined : a
     }
-})
+} satisfies SetOperations<Bounds>
 
 export const buildEmptyRangeMessage = (
     kind: BoundKind,

@@ -1,7 +1,7 @@
-import type { Type } from "../../attributes/attributes.js"
-import type { MorphName } from "../../attributes/morph.js"
-import { morph } from "../../attributes/morph.js"
-import { intersection } from "../../attributes/operations.js"
+import type { TypeNode } from "../../nodes/node.js"
+import type { MorphName } from "../../nodes/morph.js"
+import { morph } from "../../nodes/morph.js"
+import { intersection } from "../../nodes/operations.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
@@ -18,15 +18,15 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    "&": Type[]
-    "|": Type[]
+    "&": TypeNode[]
+    "|": TypeNode[]
 }
 
 const initializeBranches = (): BranchState => ({ "&": [], "|": [] })
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: Type | undefined
+    private root: TypeNode | undefined
     private branches: BranchState = initializeBranches()
     private groups: BranchState[] = []
 
@@ -73,7 +73,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(attributes: Type) {
+    setRoot(attributes: TypeNode) {
         this.assertUnsetRoot()
         this.root = attributes
     }
@@ -82,7 +82,7 @@ export class DynamicState {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersect(a: Type) {
+    intersect(a: TypeNode) {
         this.assertHasRoot()
         this.root = intersection(this.root!, a, this.scope)
     }
@@ -210,7 +210,7 @@ export class DynamicState {
     }
 }
 
-export const buildNoViableBranchesMessage = (branches: Type[]) => {
+export const buildNoViableBranchesMessage = (branches: TypeNode[]) => {
     // let message = "All branches are empty:\n"
     // for (const branch of branches) {
     //     message += branch.contradiction

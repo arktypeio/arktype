@@ -1,0 +1,63 @@
+import type { ScopeRoot } from "../scope.js"
+import type { DynamicTypeName, DynamicTypes } from "../utils/dynamicTypes.js"
+import type {
+    defined,
+    evaluate,
+    keySet,
+    RegexLiteral,
+    subtype,
+    xor
+} from "../utils/generics.js"
+import type { IntegerLiteral } from "../utils/numericLiterals.js"
+import type { Bounds } from "./bounds.js"
+import type { NumberAttributes } from "./number.js"
+import type { ObjectAttributes } from "./object.js"
+import type { StringAttributes } from "./string.js"
+
+export type TypeNode = xor<TypeCases, DegenerateType>
+
+export type TypeCases = {
+    bigint?: true | IntegerLiteral[]
+    boolean?: true | [boolean]
+    number?: true | number[] | NumberAttributes
+    object?: true | ObjectAttributes
+    string?: true | string[] | StringAttributes
+    symbol?: true
+    undefined?: true
+    null?: true
+}
+
+export type TypeName = evaluate<keyof TypeCases>
+
+export type DegenerateType = Never | Any | Unknown | Alias
+
+export type Never = { degenerate: "never"; reason: string }
+
+export type Any = { degenerate: "any" }
+
+export type Unknown = { degenerate: "unknown" }
+
+export type Alias = { degenerate: "alias"; name: string }
+
+export type Branches = UnionBranches | IntersectedUnions
+
+export type UnionBranches = UndiscriminatedUnion | DiscriminatedUnion
+
+export type UndiscriminatedUnion = readonly [token: "|", members: TypeNode[]]
+
+export type IntersectedUnions = readonly [token: "&", members: UnionBranches[]]
+
+export type DiscriminatedUnion = readonly [
+    token: "?",
+    path: string,
+    cases: DiscriminatedCases
+]
+
+type DiscriminatedCases = {
+    readonly [k in DynamicTypeName]?: TypeNode
+}
+
+export type SetOperations<t> = {
+    intersection: (a: t, b: t, scope: ScopeRoot) => t | null
+    difference: (a: t, b: t, scope: ScopeRoot) => t | undefined
+}

@@ -1,15 +1,19 @@
-import { defineOperations } from "./attributes.js"
+import type { Bounds } from "./bounds.js"
+import { SetOperations } from "./node.js"
 
-const leastCommonMultiple = (a: number, b: number) =>
-    Math.abs((a * b) / greatestCommonDivisor(a, b))
+export type NumberAttributes = {
+    divisor?: number
+    bounds?: Bounds
+}
 
-export const divisor = defineOperations<number>()({
-    intersection: leastCommonMultiple,
+const divisor = {
+    intersection: (a: number, b: number) =>
+        Math.abs((a * b) / greatestCommonDivisor(a, b)),
     difference: (a, b) => {
         const relativelyPrimeA = Math.abs(a / greatestCommonDivisor(a, b))
         return relativelyPrimeA === 1 ? undefined : relativelyPrimeA
     }
-})
+} satisfies SetOperations<number>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (a: number, b: number) => {

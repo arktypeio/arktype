@@ -1,4 +1,4 @@
-import { morph } from "../attributes/morph.js"
+import { morph } from "../nodes/morph.js"
 import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { error, stringKeyOf } from "../utils/generics.js"

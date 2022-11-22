@@ -1,4 +1,4 @@
-import type { Type } from "../attributes/attributes.js"
+import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import { throwInternalError } from "../utils/errors.js"
@@ -10,11 +10,11 @@ import type { Scanner } from "./reduce/scanner.js"
 export const parseStructure = (
     def: readonly unknown[] | { readonly [k in string | number]?: unknown },
     scope: ScopeRoot
-): Type => {
+): TypeNode => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: dictionary<Type> = {}
+    const props: dictionary<TypeNode> = {}
     if (Array.isArray(def)) {
         for (let i = 0; i < def.length; i++) {
             props[i] = parseDefinition(def[i], scope)

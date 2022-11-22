@@ -4,10 +4,10 @@ import { hasKey } from "../utils/generics.js"
 import type {
     Attribute,
     Branches,
-    Type,
+    TypeNode,
     UndiscriminatedUnion
-} from "./attributes.js"
-import { defineOperations } from "./attributes.js"
+} from "./node.js"
+import { defineOperations } from "./node.js"
 
 export const branchOperations = defineOperations<Attribute<"branches">>()({
     intersection: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],
