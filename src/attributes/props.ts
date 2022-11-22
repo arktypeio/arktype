@@ -1,4 +1,3 @@
-import { isEmpty } from "../utils/deepEquals.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { Attribute, Type } from "./attributes.js"
 import { defineOperations } from "./attributes.js"

@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
+import type { DynamicTypeName } from "../utils/dynamicTypes.js"
 import type {
     defined,
     evaluate,

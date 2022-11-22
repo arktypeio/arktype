@@ -9,7 +9,9 @@ describe("divisibility", () => {
             test("integerLiteralDefinition", () => {
                 const divisibleByTwo = type("number%2")
                 attest(divisibleByTwo.attributes).equals({
-                    number: { divisor: 2 }
+                    number: { divisor: 2 },
+                    string: { regex: { "/.*/": true } },
+                    dictionary: { props: { a: { number: {} } } }
                 })
                 attest(divisibleByTwo.infer).typed as number
             })

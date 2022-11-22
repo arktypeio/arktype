@@ -50,7 +50,9 @@ const caselessIntersection = (a: CaselessType, b: Type, scope: ScopeRoot) =>
         ? intersection(scope.resolve(a.name), b, scope)
         : a.caseless === "always"
         ? a.keyword === "any"
-            ? a
+            ? b.caseless === "never"
+                ? b
+                : a
             : b
         : a
 
