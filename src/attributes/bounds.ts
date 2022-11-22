@@ -13,7 +13,7 @@ export type Bound = {
 }
 
 export const bounds = defineOperations<Bounds>()({
-    add: (a, b) => {
+    intersection: (a, b) => {
         const min =
             b.min && (!a.min || compareStrictness("min", a.min, b.min) === "b")
                 ? b.min

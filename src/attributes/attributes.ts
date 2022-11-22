@@ -57,9 +57,7 @@ type AttributeCases<k extends DisjointKey = DisjointKey> = {
 }
 
 export type AttributeOperations<t> = {
-    // What should we check to ensure a and b are both fulfilled?
     intersection: (a: t, b: t, scope: ScopeRoot) => t | null
-    // Given b, what portion of a should we still check?
     union: (a: t, b: t, scope: ScopeRoot) => t | undefined
 }
 

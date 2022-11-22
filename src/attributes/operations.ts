@@ -1,7 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import { throwInternalError } from "../utils/errors.js"
-import type { RegexLiteral } from "../utils/generics.js"
 import { hasKey, satisfies } from "../utils/generics.js"
 import type {
     Attribute,
@@ -10,16 +9,12 @@ import type {
     Attributes,
     Branches,
     MutableAttributes,
-    SetOperation,
     UndiscriminatedUnion
 } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 import { bounds } from "./bounds.js"
 import { divisor } from "./divisor.js"
-import {
-    defineKeyOrSetOperations,
-    stringKeyOrSetOperations
-} from "./keySets.js"
+import { keySetOperations } from "./keySets.js"
 import { propsOperations, requiredOperations } from "./props.js"
 import { alias, type, value } from "./strings.js"
 
@@ -27,24 +22,6 @@ export const branchOperations = defineOperations<Attribute<"branches">>()({
     intersection: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],
     union: (a, b, scope) => {
         const unionsOfB = listUnions(b)
-        const result = listUnions(a).filter((unionA) =>
-            unionA[1].every((branchA) =>
-                unionsOfB.some((unionB) =>
-                    unionB[1].some((branchB) =>
-                        isSubtype(branchB, branchA, scope)
-                    )
-                )
-            )
-        )
-        return result.length === 0
-            ? null
-            : result.length === 1
-            ? result[0]
-            : ["&", result]
-    },
-    exclude: (a, b, scope) => {
-        const unionsOfB = listUnions(b)
-        // TODO: Refactor
         const result = listUnions(a).filter(
             (unionA) =>
                 !unionA[1].every((branchA) =>
@@ -56,7 +33,7 @@ export const branchOperations = defineOperations<Attribute<"branches">>()({
                 )
         )
         return result.length === 0
-            ? null
+            ? undefined
             : result.length === 1
             ? result[0]
             : ["&", result]
@@ -87,6 +64,7 @@ export const compress = (uncompressed: Attributes[], scope: ScopeRoot) => {
                 scope
             )
         }
+        // TODO: Checking if subtype anyways, just do full comparison for better idea of universal attributes etc...
         for (let j = i + 1; j < branches.length; j++) {
             if (isSubtype(branches[i], branches[j], scope)) {
                 redundantIndices[i] = true
@@ -113,7 +91,7 @@ export const compress = (uncompressed: Attributes[], scope: ScopeRoot) => {
     return {
         ...base,
         branches: base.branches
-            ? branchOperations.intersect(base.branches, compressedUnion)
+            ? branchOperations.intersection(base.branches, compressedUnion)
             : compressedUnion
     }
 }
@@ -181,13 +159,13 @@ export const operations = satisfies<{
     divisor,
     alias,
     required: requiredOperations,
-    regex: defineKeyOrSetOperations<RegexLiteral>(),
-    contradiction: stringKeyOrSetOperations,
+    regex: keySetOperations,
+    contradiction: keySetOperations,
     props: propsOperations,
     branches: branchOperations
 })
 
-type DynamicOperation = SetOperation<any>
+type DynamicOperation = (a: any, b: any, scope: ScopeRoot) => any
 
 export const intersect = (
     a: Attributes,
@@ -201,13 +179,15 @@ export const intersect = (
     let k: AttributeKey
     for (k in result) {
         if (k in a && k in b) {
-            const fn = operations[k].intersect as DynamicOperation
+            const fn = operations[k].intersection as DynamicOperation
             const intersection = fn(a[k], b[k], scope)
             if (intersection === null) {
                 // TODO: Delegate based on k
-                result.contradiction = `${JSON.stringify(
-                    a[k]
-                )} and ${JSON.stringify(b[k])} have no overlap`
+                result.contradiction = {
+                    [`${JSON.stringify(a[k])} and ${JSON.stringify(
+                        b[k]
+                    )} have no overlap`]: true
+                }
             } else {
                 result[k] = intersection
             }
@@ -220,23 +200,6 @@ export const intersect = (
 const expandIfAlias = (a: Attributes, scope: ScopeRoot) =>
     a.alias ? scope.resolve(a.alias) : a
 
-export const extract = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
-    a = expandIfAlias(a, scope)
-    b = expandIfAlias(b, scope)
-    const result: MutableAttributes = {}
-    let k: AttributeKey
-    for (k in a) {
-        if (k in b) {
-            const fn = operations[k].subtract as DynamicOperation
-            result[k] = fn(a[k], b[k], scope)
-            if (result[k] === null) {
-                delete result[k]
-            }
-        }
-    }
-    return isEmpty(result) ? null : result
-}
-
 export const exclude = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     a = expandIfAlias(a, scope)
     b = expandIfAlias(b, scope)
@@ -244,7 +207,7 @@ export const exclude = (a: Attributes, b: Attributes, scope: ScopeRoot) => {
     let k: AttributeKey
     for (k in a) {
         if (k in b) {
-            const fn = operations[k].exclude as DynamicOperation
+            const fn = operations[k].union as DynamicOperation
             result[k] = fn(a[k], b[k], scope)
             if (result[k] === null) {
                 delete result[k]

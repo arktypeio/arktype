@@ -13,7 +13,7 @@ export const keySetOperations = defineOperations<keySet>()({
             : typeof b === "string"
             ? { ...a, [b]: true }
             : { ...a, ...b },
-    subtract: (a, b) => {
+    union: (a, b) => {
         const difference = { ...a }
         for (const k in b) {
             delete difference[k]

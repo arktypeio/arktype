@@ -3,9 +3,8 @@ import type { Attribute } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 
 const baseStringOperations = {
-    intersect: <t extends string>(a: t, b: t) => (a === b ? a : null),
-    extract: <t extends string>(a: t, b: t) => (a === b ? a : null),
-    exclude: <t extends string>(a: t, b: t) => (a === b ? null : a)
+    intersection: <t extends string>(a: t, b: t) => (a === b ? a : null),
+    union: <t extends string>(a: t, b: t) => (a === b ? undefined : a)
 }
 
 export const type = defineOperations<Attribute<"type">>()(baseStringOperations)
@@ -17,7 +16,6 @@ const throwUnexpandedAliasError = () =>
     throwInternalError("Unexpected attempt to operate on unexpanded alias")
 
 export const alias = defineOperations<Attribute<"alias">>()({
-    intersect: throwUnexpandedAliasError,
-    union: throwUnexpandedAliasError,
-    exclude: throwUnexpandedAliasError
+    intersection: throwUnexpandedAliasError,
+    union: throwUnexpandedAliasError
 })

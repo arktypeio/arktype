@@ -5,7 +5,7 @@ const leastCommonMultiple = (a: number, b: number) =>
 
 export const divisor = defineOperations<number>()({
     intersection: leastCommonMultiple,
-    subtract: (a, b) => {
+    union: (a, b) => {
         const relativelyPrimeA = Math.abs(a / greatestCommonDivisor(a, b))
         return relativelyPrimeA === 1 ? undefined : relativelyPrimeA
     }
