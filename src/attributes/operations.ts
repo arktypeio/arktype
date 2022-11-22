@@ -1,15 +1,14 @@
 import type { ScopeRoot } from "../scope.js"
 import { isEmpty } from "../utils/deepEquals.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
+import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type { mutable } from "../utils/generics.js"
 import { hasKey, satisfies } from "../utils/generics.js"
 import type {
+    AssociativeType,
     Attribute,
     AttributeKey,
     AttributeOperations,
-    CaseKey,
-    CaselessType,
-    Cases,
+    DegenerateType,
     Type,
     UnknownAttributes
 } from "./attributes.js"
@@ -26,7 +25,7 @@ export const operations = satisfies<{
     divisor,
     required: requiredOperations,
     regex: keySetOperations,
-    contradiction: keySetOperations,
+    requiredKeys: keySetOperations,
     props: propsOperations,
     branches: branchOperations
 })
@@ -39,26 +38,30 @@ type DynamicOperations = dictionary<{
 type DynamicOperation = (a: any, b: any, scope: ScopeRoot) => any
 
 export const intersection = (a: Type, b: Type, scope: ScopeRoot): Type =>
-    a.caseless
-        ? caselessIntersection(a, b, scope)
-        : b.caseless
-        ? caselessIntersection(b, a, scope)
-        : casesIntersection(a, b, scope)
+    a.degenerate
+        ? degenerateIntersection(a, b, scope)
+        : b.degenerate
+        ? degenerateIntersection(b, a, scope)
+        : associativeIntersection(a, b, scope)
 
-const caselessIntersection = (a: CaselessType, b: Type, scope: ScopeRoot) =>
-    a.caseless === "alias"
+const degenerateIntersection = (a: DegenerateType, b: Type, scope: ScopeRoot) =>
+    a.degenerate === "alias"
         ? intersection(scope.resolve(a.name), b, scope)
-        : a.caseless === "always"
-        ? a.keyword === "any"
-            ? b.caseless === "never"
-                ? b
-                : a
-            : b
+        : a.degenerate === "unknown"
+        ? b
+        : a.degenerate === "never"
+        ? a
+        : b.degenerate === "never"
+        ? b
         : a
 
-const casesIntersection = (a: Cases, b: Cases, scope: ScopeRoot): Type => {
-    const result: Cases = {}
-    let caseKey: CaseKey
+const associativeIntersection = (
+    a: AssociativeType,
+    b: AssociativeType,
+    scope: ScopeRoot
+): Type => {
+    const result: AssociativeType = {}
+    let caseKey: DynamicTypeName
     for (caseKey in a) {
         if (hasKey(b, caseKey)) {
             const caseA: UnknownAttributes = a[caseKey]!
@@ -91,7 +94,7 @@ const casesIntersection = (a: Cases, b: Cases, scope: ScopeRoot): Type => {
     }
     return isEmpty(result)
         ? {
-              caseless: "never",
+              degenerate: "never",
               // TODO: Delegate based on k
               reason: `${JSON.stringify(a)} and ${JSON.stringify(
                   b

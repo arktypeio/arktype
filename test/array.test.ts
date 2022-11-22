@@ -8,8 +8,9 @@ describe("parse array", () => {
         const stringArray = type("string[]")
         attest(stringArray.infer).typed as string[]
         attest(stringArray.attributes).snap({
-            type: "array",
-            props: { "*": { type: "string" } }
+            array: {
+                props: { "*": { type: "string" } }
+            }
         })
     })
     describe("errors", () => {

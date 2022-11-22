@@ -1,30 +1,39 @@
 import type { ScopeRoot } from "../scope.js"
-import type { DynamicTypeName } from "../utils/dynamicTypes.js"
+import type {
+    DynamicTypeName,
+    dynamicTypeOf,
+    DynamicTypes
+} from "../utils/dynamicTypes.js"
 import type {
     defined,
     evaluate,
     keySet,
     RegexLiteral,
+    subtype,
     xor
 } from "../utils/generics.js"
-import type { SerializedPrimitive } from "../utils/primitiveSerialization.js"
+import type { IntegerLiteral } from "../utils/numericLiterals.js"
+import { SerializablePrimitive } from "../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
 
-export type Type = xor<Cases, CaselessType>
+export type Type = xor<AssociativeType, DegenerateType>
 
-export type Cases = {
-    [typeCase in CaseKey]?: AttributesOf<typeCase>
-}
+export type AssociativeType = subtype<
+    Record<DynamicTypeName, unknown>,
+    {
+        array: {}
+    }
+>
 
-export type CaselessType = Never | Always | Alias
+export type DegenerateType = Never | Any | Unknown | Alias
 
-export type Never = { caseless: "never"; reason: string }
+export type Never = { degenerate: "never"; reason: string }
 
-export type Always = { caseless: "always"; keyword: "any" | "unknown" }
+export type Any = { degenerate: "any" }
 
-export type Alias = { caseless: "alias"; name: string }
+export type Unknown = { degenerate: "unknown" }
 
-export type CaseKey = DynamicTypeName | SerializedPrimitive
+export type Alias = { degenerate: "alias"; name: string }
 
 export type UnknownAttributes = BaseAttributes & ConditionalAttributes
 
@@ -33,7 +42,6 @@ export type AttributeKey = keyof UnknownAttributes
 export type Attribute<k extends AttributeKey> = defined<UnknownAttributes[k]>
 
 type BaseAttributes = {
-    readonly required?: true
     readonly branches?: Branches
 }
 
@@ -42,18 +50,31 @@ type ConditionalAttributes = {
     readonly bounds?: Bounds
     readonly regex?: keySet<RegexLiteral>
     readonly props?: { readonly [k in string]: Type }
+    readonly requiredKeys?: keySet
 }
 
 type ConditionalAttributesByTypeCase = {
     number: evaluate<Pick<ConditionalAttributes, "divisor" | "bounds">>
     string: Pick<ConditionalAttributes, "regex" | "bounds">
     array: Pick<ConditionalAttributes, "props" | "bounds">
-    dictionary: Pick<ConditionalAttributes, "props">
+    dictionary: Pick<ConditionalAttributes, "props" | "requiredKeys">
 }
 
-export type AttributesOf<typeCase extends CaseKey> = BaseAttributes &
-    (typeCase extends keyof ConditionalAttributesByTypeCase
-        ? ConditionalAttributesByTypeCase[typeCase]
+type NarrowableTypeName = subtype<
+    DynamicTypeName,
+    "number" | "string" | "boolean" | "bigint"
+>
+
+export type AttributesOf<name extends DynamicTypeName> = BaseAttributes &
+    (name extends keyof ConditionalAttributesByTypeCase
+        ? ConditionalAttributesByTypeCase[name]
+        : {}) &
+    (name extends NarrowableTypeName
+        ? {
+              value?: name extends "bigint"
+                  ? IntegerLiteral
+                  : DynamicTypes[name]
+          }
         : {})
 
 export type Branches = UnionBranches | IntersectedUnions
@@ -71,7 +92,7 @@ export type DiscriminatedUnion = readonly [
 ]
 
 type DiscriminatedCases = {
-    readonly [typeCase in CaseKey]?: Type
+    readonly [k in DynamicTypeName]?: Type
 }
 
 export type AttributeOperations<t> = {

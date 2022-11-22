@@ -2,29 +2,38 @@ import type { Type } from "../attributes/attributes.js"
 import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import { throwInternalError } from "../utils/errors.js"
-import type { evaluate } from "../utils/generics.js"
+import type { evaluate, keySet, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 
 export const parseStructure = (
-    def: Record<string | number, unknown>,
+    def: readonly unknown[] | { readonly [k in string | number]?: unknown },
     scope: ScopeRoot
 ): Type => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const type = Array.isArray(def) ? "array" : "dictionary"
     const props: dictionary<Type> = {}
-    for (const definitionKey in def) {
-        const isOptional = definitionKey.endsWith("?")
-        const keyName = isOptional ? definitionKey.slice(0, -1) : definitionKey
-        props[keyName] = parseDefinition(def[definitionKey], scope)
-        if (!isOptional) {
-            props[keyName] = { ...props[keyName], required: true }
+    if (Array.isArray(def)) {
+        for (let i = 0; i < def.length; i++) {
+            props[i] = parseDefinition(def[i], scope)
         }
+        return { array: { props } }
     }
-    return { type, props }
+    const requiredKeys: mutable<keySet> = {}
+    for (const definitionKey in def) {
+        let keyName = definitionKey
+        if (definitionKey.endsWith("?")) {
+            keyName = definitionKey.slice(0, -1)
+        } else {
+            requiredKeys[definitionKey] = true
+        }
+        props[keyName] = parseDefinition(def[definitionKey], scope)
+    }
+    return {
+        dictionary: { props, requiredKeys }
+    }
 }
 
 export type inferStructure<

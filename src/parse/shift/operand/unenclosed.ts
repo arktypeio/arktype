@@ -1,3 +1,4 @@
+import type { Type } from "../../../attributes/attributes.js"
 import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
 import type {
@@ -41,14 +42,17 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
             : buildUnresolvableMessage(token)
     )
 
-export const maybeParseIdentifier = (token: string, scope: ScopeRoot) =>
+export const maybeParseIdentifier = (
+    token: string,
+    scope: ScopeRoot
+): Type | undefined =>
     Keyword.matches(token)
         ? Keyword.attributes[token]
         : scope.aliases[token] || scope.config.scope?.$.aliases[token]
-        ? { alias: token }
+        ? { degenerate: "alias", name: token }
         : undefined
 
-const maybeParseUnenclosedLiteral = (token: string) => {
+const maybeParseUnenclosedLiteral = (token: string): Type | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { value: token as NumberLiteral }

@@ -8,9 +8,10 @@ export type MorphName = keyof typeof morphs
 
 const morphs = satisfies<dictionary<(input: Type) => Type>>()({
     array: (input) => ({
-        type: "array",
-        props: {
-            "*": input
+        array: {
+            props: {
+                "*": input
+            }
         }
     })
 })

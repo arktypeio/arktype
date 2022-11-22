@@ -1,5 +1,4 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import type { mutable } from "../utils/generics.js"
 import { defineOperations } from "./attributes.js"
 
 export type Bounds = {
