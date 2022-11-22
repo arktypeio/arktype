@@ -32,8 +32,3 @@ export const propsOperations = defineOperations<Attribute<"props">>()({
         // return isEmpty(result) ? undefined : result
     }
 })
-
-export const requiredOperations = defineOperations<true>()({
-    intersection: (a) => a,
-    difference: () => undefined
-})

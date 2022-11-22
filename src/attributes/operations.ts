@@ -4,12 +4,13 @@ import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type { mutable } from "../utils/generics.js"
 import { hasKey, satisfies } from "../utils/generics.js"
 import type {
-    AssociativeType,
     Attribute,
     AttributeKey,
     AttributeOperations,
     DegenerateType,
     Type,
+    TypeCases,
+    TypeName,
     UnknownAttributes
 } from "./attributes.js"
 import { bounds } from "./bounds.js"
@@ -56,12 +57,12 @@ const degenerateIntersection = (a: DegenerateType, b: Type, scope: ScopeRoot) =>
         : a
 
 const associativeIntersection = (
-    a: AssociativeType,
-    b: AssociativeType,
+    a: TypeCases,
+    b: TypeCases,
     scope: ScopeRoot
 ): Type => {
-    const result: AssociativeType = {}
-    let caseKey: DynamicTypeName
+    const result: TypeCases = {}
+    let caseKey: TypeName
     for (caseKey in a) {
         if (hasKey(b, caseKey)) {
             const caseA: UnknownAttributes = a[caseKey]!

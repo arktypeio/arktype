@@ -1,9 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type {
-    DynamicTypeName,
-    dynamicTypeOf,
-    DynamicTypes
-} from "../utils/dynamicTypes.js"
+import type { DynamicTypeName, DynamicTypes } from "../utils/dynamicTypes.js"
 import type {
     defined,
     evaluate,
@@ -13,17 +9,48 @@ import type {
     xor
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import { SerializablePrimitive } from "../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
 
-export type Type = xor<AssociativeType, DegenerateType>
+export type Type = xor<TypeCases, DegenerateType>
 
-export type AssociativeType = subtype<
-    Record<DynamicTypeName, unknown>,
-    {
-        array: {}
-    }
->
+export type TypeCases = {
+    bigint?: true | IntegerLiteral[]
+    boolean?: true | [boolean]
+    number?: true | number[] | NumberAttributes
+    object?: true | ObjectAttributes
+    string?: true | string[] | StringAttributes
+    symbol?: true
+    undefined?: true
+    null?: true
+}
+
+export type TypeName = evaluate<keyof TypeCases>
+
+type ObjectAttributes = {
+    props?: { readonly [k in string]?: Type }
+} & ObjectSubtypeAttributes
+
+type ObjectSubtypeAttributes = ArrayAttributes | FunctionAttributes | {}
+
+type ArrayAttributes = {
+    subtype: "array"
+    elements?: Type | Type[]
+    bounds?: Bounds
+}
+
+type FunctionAttributes = {
+    subtype: "function"
+}
+
+type StringAttributes = {
+    regex?: RegexLiteral[]
+    bounds?: Bounds
+}
+
+type NumberAttributes = {
+    divisor?: number
+    bounds?: Bounds
+}
 
 export type DegenerateType = Never | Any | Unknown | Alias
 
