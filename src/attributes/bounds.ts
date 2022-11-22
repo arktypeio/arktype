@@ -1,49 +1,66 @@
 import { isEmpty } from "../utils/deepEquals.js"
+import type { mutable } from "../utils/generics.js"
 import { defineOperations } from "./attributes.js"
 
 export type Bounds = {
-    min?: Bound
-    max?: Bound
+    readonly min?: Bound
+    readonly max?: Bound
 }
 
 export type Bound = {
-    limit: number
-    exclusive?: true
+    readonly limit: number
+    readonly exclusive?: true
 }
 
 export const bounds = defineOperations<Bounds>()({
     intersect: (a, b) => {
-        const result: Bounds = { ...a, ...b }
-        if (a.min && compareStrictness(a.min, b.min, "min") === "a") {
-            if (compareStrictness(a.min, b.max, "max") === "a") {
-                return null
-            }
-            result.min = a.min
-        }
-        if (a.max && compareStrictness(a.max, b.max, "max") === "a") {
-            if (compareStrictness(a.max, b.min, "min") === "a") {
-                return null
-            }
-            result.max = a.max
-        }
-        return result
+        const min =
+            b.min && (!a.min || compareStrictness("min", a.min, b.min) === "b")
+                ? b.min
+                : a.min
+        const max =
+            b.max && (!a.max || compareStrictness("max", a.max, b.max) === "b")
+                ? b.max
+                : a.max
+        return min
+            ? max
+                ? compareStrictness("min", min, max) === "a" ||
+                  compareStrictness("max", min, max) === "b"
+                    ? null
+                    : { min, max }
+                : { min }
+            : max
+            ? { max }
+            : {}
     },
     extract: (a, b) => {
-        const result: Bounds = {}
-        if (a.min && compareStrictness(a.min, b.min, "min") !== "b") {
+        const result: mutable<Bounds> = {}
+        if (
+            a.min &&
+            (!b.min || compareStrictness(a.min, b.min, "min") !== "b")
+        ) {
             result.min = a.min
         }
-        if (a.max && compareStrictness(a.max, b.max, "max") !== "b") {
+        if (
+            a.max &&
+            (!b.max || compareStrictness(a.max, b.max, "max") !== "b")
+        ) {
             result.max = a.max
         }
         return isEmpty(result) ? null : result
     },
     exclude: (a, b) => {
-        const result: Bounds = {}
-        if (a.min && compareStrictness(a.min, b.min, "min") === "b") {
+        const result: mutable<Bounds> = {}
+        if (
+            a.min &&
+            (!b.min || compareStrictness(a.min, b.min, "min") === "a")
+        ) {
             result.min = a.min
         }
-        if (a.max && compareStrictness(a.max, b.max, "max") === "b") {
+        if (
+            a.max &&
+            (!b.max || compareStrictness(a.max, b.max, "max") === "a")
+        ) {
             result.max = a.max
         }
         return isEmpty(result) ? null : result
@@ -70,18 +87,8 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const compareStrictness = (
-    a: Bound | undefined,
-    b: Bound | undefined,
-    kind: BoundKind
-) =>
-    !a
-        ? b
-            ? "b"
-            : "="
-        : !b
-        ? "a"
-        : a.limit === b.limit
+const compareStrictness = (kind: BoundKind, a: Bound, b: Bound) =>
+    a.limit === b.limit
         ? a.exclusive
             ? b.exclusive
                 ? "="
