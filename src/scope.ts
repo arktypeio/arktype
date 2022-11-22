@@ -3,8 +3,8 @@ import { compile } from "./attributes/compile.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
-import type { Config } from "./type.js"
 import { ArkType } from "./type.js"
+import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
 import type { dictionary } from "./utils/dynamicTypes.js"
@@ -17,7 +17,7 @@ const rawScope = (aliases: dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
     const types: Scope<dictionary> = { $: root as any }
     for (const name in aliases) {
-        types[name] = new Type(root.resolve(name), config, types)
+        types[name] = new ArkType(root.resolve(name), config, types)
     }
     return types
 }
@@ -54,7 +54,7 @@ export type Scope<inferred extends dictionary> = {
 export type DynamicScope = Scope<dictionary>
 
 type inferredScopeToArktypes<inferred> = {
-    [name in keyof inferred]: Type<inferred[name]>
+    [name in keyof inferred]: ArkType<inferred[name]>
 }
 
 export class ScopeRoot<inferred extends dictionary = dictionary> {

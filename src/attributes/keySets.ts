@@ -3,21 +3,12 @@ import type { keySet } from "../utils/generics.js"
 import { defineOperations } from "./attributes.js"
 
 export const keySetOperations = defineOperations<keySet>()({
-    intersection: (a, b) =>
-        typeof a === "string"
-            ? typeof b === "string"
-                ? a === b
-                    ? a
-                    : { [a]: true, [b]: true }
-                : { ...b, [a]: true }
-            : typeof b === "string"
-            ? { ...a, [b]: true }
-            : { ...a, ...b },
+    intersection: (a, b) => ({ ...a, ...b }),
     difference: (a, b) => {
-        const difference = { ...a }
+        const result = { ...a }
         for (const k in b) {
-            delete difference[k]
+            delete result[k]
         }
-        return isEmpty(difference) ? undefined : difference
+        return isEmpty(result) ? undefined : result
     }
 })

@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { DynamicTypeName } from "../utils/dynamicTypes.js"
+import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import type {
     defined,
     evaluate,
@@ -9,21 +9,36 @@ import type {
 import type { SerializedPrimitive } from "../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
 
-export type Type = {
-    [typeCase in TypeCase]?: AttributesOf<typeCase>
+export type Type = CaselessType | Cases
+
+export type CaselessType = Never | Always | Alias
+
+export const hasCases = (t: UnknownType): t is UnknownCases => !Array.isArray(t)
+
+export type Never = [type: "never", reason: string]
+
+export type Always = [type: "always", keyword: "any" | "unknown"]
+
+export type Alias = [type: "alias", name: string]
+
+export type Cases = {
+    [typeCase in CaseKey]?: AttributesOf<typeCase>
 }
 
-type TypeCase = DynamicTypeName | SerializedPrimitive
+export type UnknownType = CaselessType | UnknownCases
 
-type AllAttributes = BaseAttributes & ConditionalAttributes
+export type UnknownCases = dictionary<UnknownAttributes>
 
-export type AttributeKey = keyof AllAttributes
+export type CaseKey = DynamicTypeName | SerializedPrimitive
 
-export type Attribute<k extends AttributeKey> = defined<AllAttributes[k]>
+export type UnknownAttributes = BaseAttributes & ConditionalAttributes
+
+export type AttributeKey = keyof UnknownAttributes
+
+export type Attribute<k extends AttributeKey> = defined<UnknownAttributes[k]>
 
 type BaseAttributes = {
     readonly required?: true
-    readonly alias?: string
     readonly branches?: Branches
 }
 
@@ -41,7 +56,7 @@ type ConditionalAttributesByTypeCase = {
     dictionary: Pick<ConditionalAttributes, "props">
 }
 
-type AttributesOf<typeCase extends TypeCase> = BaseAttributes &
+export type AttributesOf<typeCase extends CaseKey> = BaseAttributes &
     (typeCase extends keyof ConditionalAttributesByTypeCase
         ? ConditionalAttributesByTypeCase[typeCase]
         : {})
@@ -61,7 +76,7 @@ export type DiscriminatedUnion = readonly [
 ]
 
 type DiscriminatedCases = {
-    readonly [typeCase in TypeCase]?: Type
+    readonly [typeCase in CaseKey]?: Type
 }
 
 export type AttributeOperations<t> = {

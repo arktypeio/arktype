@@ -28,7 +28,10 @@ export type InferredTypeFn = <definition, scope extends dictionary = {}>(
     options?: Config<scope>
 ) => ArkType<inferDefinition<definition, scope, {}>>
 
-type DynamicTypeFn = (definition: unknown, options?: Config<dictionary>) => Type
+type DynamicTypeFn = (
+    definition: unknown,
+    options?: Config<dictionary>
+) => ArkType
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 

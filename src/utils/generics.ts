@@ -78,8 +78,6 @@ export const hasKey = <o extends object, k extends string>(
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
-export type keyOrSet<key extends string = string> = key | keySet<key>
-
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }

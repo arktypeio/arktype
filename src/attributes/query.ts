@@ -1,18 +1,17 @@
 import { pathToSegments } from "../utils/paths.js"
-import type { AttributeKey, AttributePath, Type } from "./attributes.js"
+import type { AttributeKey, Type } from "./attributes.js"
 
-export const queryAttribute = <k extends AttributeKey>(
+export const queryPath = <k extends AttributeKey>(
     attributes: Type,
-    path: AttributePath<k>
+    path: string
 ) => {
-    const segments = pathToSegments(path)
-    const key = segments.pop() as k
-    let currentAttributes = attributes
-    for (const segment of segments) {
-        if (currentAttributes.props?.[segment] === undefined) {
-            return undefined
-        }
-        currentAttributes = currentAttributes.props[segment]
-    }
-    return currentAttributes[key]
+    // const segments = pathToSegments(path)
+    // let currentAttributes = attributes
+    // for (const segment of segments) {
+    //     if (currentAttributes.props?.[segment] === undefined) {
+    //         return undefined
+    //     }
+    //     currentAttributes = currentAttributes.props[segment]
+    // }
+    // return currentAttributes[key]
 }
