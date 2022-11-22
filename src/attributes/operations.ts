@@ -1,6 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
+import type { mutable } from "../utils/generics.js"
 import { hasKey, satisfies } from "../utils/generics.js"
 import type {
     Attribute,
@@ -37,25 +38,21 @@ type DynamicOperations = dictionary<{
 
 type DynamicOperation = (a: any, b: any, scope: ScopeRoot) => any
 
-export const intersection = (a: Type, b: Type, scope: ScopeRoot): Type => {
-    if (a.caseless) {
-        return caselessIntersection(a, b, scope)
-    }
-    if (b.caseless) {
-        return caselessIntersection(b, a, scope)
-    }
-    return casesIntersection(a, b, scope)
-}
+export const intersection = (a: Type, b: Type, scope: ScopeRoot): Type =>
+    a.caseless
+        ? caselessIntersection(a, b, scope)
+        : b.caseless
+        ? caselessIntersection(b, a, scope)
+        : casesIntersection(a, b, scope)
 
-const caselessIntersection = (a: CaselessType, b: Type, scope: ScopeRoot) => {
-    if (a.caseless === "alias") {
-        return intersection(scope.resolve(a.name), b, scope)
-    } else if (a.caseless === "always") {
-        return a.keyword === "any" ? a : b
-    } else {
-        return a
-    }
-}
+const caselessIntersection = (a: CaselessType, b: Type, scope: ScopeRoot) =>
+    a.caseless === "alias"
+        ? intersection(scope.resolve(a.name), b, scope)
+        : a.caseless === "always"
+        ? a.keyword === "any"
+            ? a
+            : b
+        : a
 
 const casesIntersection = (a: Cases, b: Cases, scope: ScopeRoot): Type => {
     const result: Cases = {}
@@ -64,23 +61,28 @@ const casesIntersection = (a: Cases, b: Cases, scope: ScopeRoot): Type => {
         if (hasKey(b, caseKey)) {
             const caseA: UnknownAttributes = a[caseKey]!
             const caseB: UnknownAttributes = b[caseKey]
-            const caseResult: UnknownAttributes = {}
+            let caseResult: mutable<UnknownAttributes> | null = {
+                ...caseA,
+                ...caseB
+            }
             let attributeKey: AttributeKey
-            for (attributeKey in a[caseKey]) {
-                if (hasKey(b[caseKey], attributeKey)) {
+            for (attributeKey in caseResult) {
+                if (attributeKey in caseA && attributeKey in caseB) {
                     const fn = (operations as DynamicOperations)[attributeKey]
                         .intersection
-                    const caseResult = fn(
+                    const attributeResult = fn(
                         caseA[attributeKey],
                         caseB[attributeKey],
                         scope
                     )
-                    if (caseResult !== null) {
-                        caseResult[attributeKey] = caseResult
+                    if (attributeResult === null) {
+                        caseResult = null
+                        break
                     }
+                    caseResult[attributeKey] = attributeResult
                 }
             }
-            if (!isEmpty(caseResult)) {
+            if (caseResult !== null) {
                 result[caseKey] = caseResult
             }
         }

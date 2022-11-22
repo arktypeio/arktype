@@ -1,4 +1,3 @@
-import type { Branches } from "../../../attributes/attributes.js"
 import type { Bound, Bounds } from "../../../attributes/bounds.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
@@ -56,11 +55,6 @@ type shiftComparator<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const boundableTypes: Branches = [
-    "|",
-    [{ type: "array" }, { type: "string" }, { type: "array" }]
-]
-
 export const parseRightBound = (
     s: DynamicState,
     comparator: Scanner.Comparator
@@ -71,19 +65,19 @@ export const parseRightBound = (
         buildInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     const openRange = s.ejectRangeIfOpen()
-    if (!openRange) {
-        s.intersect({
-            bounds: deserializeBound(comparator, limit),
-            branches: boundableTypes
-        })
-        return
-    }
-    if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-        return s.error(buildUnpairableComparatorMessage(comparator))
+    let bounds
+    if (openRange) {
+        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
+            return s.error(buildUnpairableComparatorMessage(comparator))
+        }
+        bounds = deserializeRange(openRange[0], openRange[1], comparator, limit)
+    } else {
+        bounds = deserializeBound(comparator, limit)
     }
     s.intersect({
-        bounds: deserializeRange(openRange[0], openRange[1], comparator, limit),
-        branches: boundableTypes
+        number: { bounds },
+        string: { bounds },
+        array: { bounds }
     })
 }
 
@@ -134,12 +128,14 @@ const deserializeBound = (
     comparator: Scanner.Comparator,
     limit: number
 ): Bounds => {
-    const bound: Bound = {
-        limit
-    }
-    if (comparator.length === 1) {
-        bound.exclusive = true
-    }
+    const bound: Bound =
+        comparator.length === 1
+            ? {
+                  limit,
+                  exclusive: true
+              }
+            : { limit }
+    // TODO: Throw if initial range incompatible
     if (comparator === "==") {
         return { min: bound, max: bound }
     } else if (comparator === ">" || comparator === ">=") {
@@ -159,18 +155,20 @@ const deserializeRange = (
     maxComparator: Scanner.PairableComparator,
     maxLimit: number
 ): Bounds => {
-    const min: Bound = {
-        limit: minLimit
-    }
-    if (minComparator === "<") {
-        min.exclusive = true
-    }
-    const max: Bound = {
-        limit: maxLimit
-    }
-    if (maxComparator === "<") {
-        max.exclusive = true
-    }
+    const min: Bound =
+        minComparator === "<"
+            ? {
+                  limit: minLimit,
+                  exclusive: true
+              }
+            : { limit: minLimit }
+    const max: Bound =
+        maxComparator === "<"
+            ? {
+                  limit: maxLimit,
+                  exclusive: true
+              }
+            : { limit: maxLimit }
     return {
         min,
         max

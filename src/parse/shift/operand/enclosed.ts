@@ -1,5 +1,5 @@
-import type { error, RegexLiteral } from "../../../utils/generics.js"
 import { throwParseError } from "../../../utils/errors.js"
+import type { error, RegexLiteral } from "../../../utils/generics.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -22,12 +22,14 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     })
     s.setRoot(
         enclosing === "/"
-            ? { regex: token as RegexLiteral }
+            ? { string: { regex: token as RegexLiteral } }
             : {
-                  value:
-                      enclosing === "'"
-                          ? (token as SingleQuotedStringLiteral)
-                          : `'${token.slice(1, -1)}'`
+                  string: {
+                      value:
+                          enclosing === "'"
+                              ? (token as SingleQuotedStringLiteral)
+                              : `'${token.slice(1, -1)}'`
+                  }
               }
     )
 }

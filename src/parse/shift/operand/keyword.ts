@@ -38,45 +38,41 @@ export namespace Keyword {
     export const matches = (token: string): token is Keyword =>
         token in attributes
 
-    export const attributes: { [k in Keyword]: () => Type } = {
+    export const attributes: { [k in Keyword]: Type } = {
         // TS keywords
-        any: () => ({}),
-        bigint: () => ({ type: "bigint" }),
-        boolean: () => ({ type: "boolean" }),
-        false: () => ({ type: "boolean", value: "false" }),
-        never: () => ({
-            contradiction: "explicitly typed as never"
-        }),
-        null: () => ({ type: "null", value: "null" }),
-        number: () => ({ type: "number" }),
-        object: () => ({
-            branches: [
-                "|",
-                [
-                    { type: "dictionary" },
-                    { type: "array" },
-                    { type: "function" }
-                ]
-            ]
-        }),
-        string: () => ({ type: "string" }),
-        symbol: () => ({ type: "symbol" }),
-        true: () => ({ value: "true", type: "boolean" }),
-        undefined: () => ({ type: "undefined", value: "undefined" }),
-        unknown: () => ({}),
-        void: () => ({ type: "undefined", value: "undefined" }),
+        any: { caseless: "always", keyword: "any" },
+        bigint: { bigint: {} },
+        boolean: { boolean: {} },
+        false: { boolean: { value: "false" } },
+        never: {
+            caseless: "never",
+            reason: "explicitly typed as never"
+        },
+        null: { null: {} },
+        number: { number: {} },
+        object: {
+            dictionary: {},
+            array: {},
+            function: {}
+        },
+        string: { string: {} },
+        symbol: { symbol: {} },
+        true: { boolean: { value: "true" } },
+        undefined: { undefined: {} },
+        unknown: { caseless: "always", keyword: "unknown" },
+        void: { undefined: {} },
         // JS Object types
-        Function: () => ({ type: "function" }),
+        Function: { function: {} },
         // Supplemental types
-        array: () => ({ type: "array" }),
-        dictionary: () => ({ type: "dictionary" }),
+        array: { array: {} },
+        dictionary: { dictionary: {} },
         // Regex
-        email: () => ({ type: "string", regex: "/^(.+)@(.+)\\.(.+)$/" }),
-        alphanumeric: () => ({ type: "string", regex: "/^[dA-Za-z]+$/" }),
-        alphaonly: () => ({ type: "string", regex: "/^[A-Za-z]+$/" }),
-        lowercase: () => ({ type: "string", regex: "/^[a-z]*$/" }),
-        uppercase: () => ({ type: "string", regex: "/^[A-Z]*$/" }),
+        email: { string: { regex: { "/^(.+)@(.+)\\.(.+)$/": true } } },
+        alphanumeric: { string: { regex: { "/^[dA-Za-z]+$/": true } } },
+        alphaonly: { string: { regex: { "/^[A-Za-z]+$/": true } } },
+        lowercase: { string: { regex: { "/^[a-z]*$/": true } } },
+        uppercase: { string: { regex: { "/^[A-Z]*$/": true } } },
         // Numeric
-        integer: () => ({ type: "number", divisor: 1 })
+        integer: { number: { divisor: 1 } }
     }
 }

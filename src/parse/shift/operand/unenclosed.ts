@@ -43,7 +43,7 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
 
 export const maybeParseIdentifier = (token: string, scope: ScopeRoot) =>
     Keyword.matches(token)
-        ? Keyword.attributes[token]()
+        ? Keyword.attributes[token]
         : scope.aliases[token] || scope.config.scope?.$.aliases[token]
         ? { alias: token }
         : undefined
