@@ -4,30 +4,25 @@ import type {
     defined,
     evaluate,
     keySet,
-    RegexLiteral
+    RegexLiteral,
+    xor
 } from "../utils/generics.js"
 import type { SerializedPrimitive } from "../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
 
-export type Type = CaselessType | Cases
-
-export type CaselessType = Never | Always | Alias
-
-export const hasCases = (t: UnknownType): t is UnknownCases => !Array.isArray(t)
-
-export type Never = [type: "never", reason: string]
-
-export type Always = [type: "always", keyword: "any" | "unknown"]
-
-export type Alias = [type: "alias", name: string]
+export type Type = xor<Cases, CaselessType>
 
 export type Cases = {
     [typeCase in CaseKey]?: AttributesOf<typeCase>
 }
 
-export type UnknownType = CaselessType | UnknownCases
+export type CaselessType = Never | Always | Alias
 
-export type UnknownCases = dictionary<UnknownAttributes>
+export type Never = { caseless: "never"; reason: string }
+
+export type Always = { caseless: "always"; keyword: "any" | "unknown" }
+
+export type Alias = { caseless: "alias"; name: string }
 
 export type CaseKey = DynamicTypeName | SerializedPrimitive
 

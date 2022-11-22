@@ -6,13 +6,12 @@ import type {
     Attribute,
     AttributeKey,
     AttributeOperations,
+    CaseKey,
     CaselessType,
+    Cases,
     Type,
-    UnknownAttributes,
-    UnknownCases,
-    UnknownType
+    UnknownAttributes
 } from "./attributes.js"
-import { hasCases } from "./attributes.js"
 import { bounds } from "./bounds.js"
 import { branchOperations } from "./branches.js"
 import { divisor } from "./divisor.js"
@@ -38,42 +37,33 @@ type DynamicOperations = dictionary<{
 
 type DynamicOperation = (a: any, b: any, scope: ScopeRoot) => any
 
-export const intersection = (
-    a: UnknownType,
-    b: UnknownType,
-    scope: ScopeRoot
-): Type => {
-    if (!hasCases(a)) {
+export const intersection = (a: Type, b: Type, scope: ScopeRoot): Type => {
+    if (a.caseless) {
         return caselessIntersection(a, b, scope)
     }
-    if (!hasCases(b)) {
+    if (b.caseless) {
         return caselessIntersection(b, a, scope)
     }
     return casesIntersection(a, b, scope)
 }
 
-const caselessIntersection = (
-    a: CaselessType,
-    b: UnknownType,
-    scope: ScopeRoot
-) => {
-    if (a[0] === "alias") {
-        return intersection(scope.resolve(a[1]) as UnknownType, b, scope)
-    } else if (a[0] === "always") {
-        return a[1] === "any" ? a : b
+const caselessIntersection = (a: CaselessType, b: Type, scope: ScopeRoot) => {
+    if (a.caseless === "alias") {
+        return intersection(scope.resolve(a.name), b, scope)
+    } else if (a.caseless === "always") {
+        return a.keyword === "any" ? a : b
     } else {
         return a
     }
 }
 
-const casesIntersection = (
-    a: UnknownCases,
-    b: UnknownCases,
-    scope: ScopeRoot
-): Type => {
-    const result: UnknownCases = {}
-    for (const caseKey in a) {
+const casesIntersection = (a: Cases, b: Cases, scope: ScopeRoot): Type => {
+    const result: Cases = {}
+    let caseKey: CaseKey
+    for (caseKey in a) {
         if (hasKey(b, caseKey)) {
+            const caseA: UnknownAttributes = a[caseKey]!
+            const caseB: UnknownAttributes = b[caseKey]
             const caseResult: UnknownAttributes = {}
             let attributeKey: AttributeKey
             for (attributeKey in a[caseKey]) {
@@ -81,8 +71,8 @@ const casesIntersection = (
                     const fn = (operations as DynamicOperations)[attributeKey]
                         .intersection
                     const caseResult = fn(
-                        a[caseKey][attributeKey],
-                        b[caseKey][attributeKey],
+                        caseA[attributeKey],
+                        caseB[attributeKey],
                         scope
                     )
                     if (caseResult !== null) {
@@ -96,11 +86,13 @@ const casesIntersection = (
         }
     }
     return isEmpty(result)
-        ? [
-              "never",
+        ? {
+              caseless: "never",
               // TODO: Delegate based on k
-              `${JSON.stringify(a)} and ${JSON.stringify(b)} have no overlap`
-          ]
+              reason: `${JSON.stringify(a)} and ${JSON.stringify(
+                  b
+              )} have no overlap`
+          }
         : result
 }
 

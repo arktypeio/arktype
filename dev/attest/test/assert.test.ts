@@ -1,7 +1,10 @@
 import { AssertionError, strict } from "node:assert"
 import { describe, test } from "mocha"
+import type { xor } from "../../../src/utils/generics.js"
 import { attest } from "../exports.js"
+
 const o = { re: "do" }
+type aXorB = xor<{ a: true }, { b: true }>
 
 describe("Assertions", () => {
     test("type toString", () => {
@@ -45,10 +48,6 @@ describe("Assertions", () => {
         // @ts-expect-error
         attest(5).throws
     })
-    test("value asserts don't exist on pure functional types", () => {
-        // @ts-expect-error
-        attest(() => {}).is
-    })
     test("narrowedValue", () => {
         attest({ a: "narrow" } as { a: "narrow" }).narrowedValue({
             a: "narrow"
@@ -60,5 +59,18 @@ describe("Assertions", () => {
             AssertionError,
             "string"
         )
+    })
+    test("xor value", () => {
+        const value = { a: true } as aXorB
+        attest(value).equals({ a: true })
+        attest(value).equals({ b: true })
+        attest(() => {
+            // @ts-expect-error
+            attest(value).equals({})
+        }).throwsAndHasTypeError(/.*/)
+        attest(() => {
+            // @ts-expect-error
+            attest(value).equals({ a: true, b: true })
+        }).throwsAndHasTypeError(/.*/)
     })
 })

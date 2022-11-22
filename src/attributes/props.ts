@@ -1,6 +1,6 @@
 import { isEmpty } from "../utils/deepEquals.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
-import type { Attribute, Type, UnknownType } from "./attributes.js"
+import type { Attribute, Type } from "./attributes.js"
 import { defineOperations } from "./attributes.js"
 import { intersection } from "./operations.js"
 
@@ -12,11 +12,7 @@ export const propsOperations = defineOperations<Attribute<"props">>()({
         const result = { ...a, ...b }
         for (const k in result) {
             if (k in a && k in b) {
-                result[k] = intersection(
-                    a[k] as UnknownType,
-                    b[k] as UnknownType,
-                    scope
-                )
+                result[k] = intersection(a[k], b[k], scope)
             }
         }
         return result

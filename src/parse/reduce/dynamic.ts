@@ -1,7 +1,7 @@
 import type { Type } from "../../attributes/attributes.js"
 import type { MorphName } from "../../attributes/morph.js"
 import { morph } from "../../attributes/morph.js"
-import { compress, intersection } from "../../attributes/operations.js"
+import { intersection } from "../../attributes/operations.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
@@ -26,7 +26,7 @@ const initializeBranches = (): BranchState => ({ "&": [], "|": [] })
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: Type | null | undefined
+    private root: Type | undefined
     private branches: BranchState = initializeBranches()
     private groups: BranchState[] = []
 
@@ -44,13 +44,13 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         this.assertHasRoot()
-        if (this.root?.value) {
-            const value = this.ejectRoot().value!
-            if (typeof value === "number") {
-                return value
-            }
-            this.error(buildUnboundableMessage(`${value}`))
-        }
+        // if (this.root?.value) {
+        //     const value = this.ejectRoot().value!
+        //     if (typeof value === "number") {
+        //         return value
+        //     }
+        //     this.error(buildUnboundableMessage(`${value}`))
+        // }
     }
 
     ejectRangeIfOpen() {
@@ -73,7 +73,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(attributes: Type | null) {
+    setRoot(attributes: Type) {
         this.assertUnsetRoot()
         this.root = attributes
     }
@@ -180,15 +180,15 @@ export class DynamicState {
     }
 
     private mergeUnion() {
-        const viableBranches = this.branches["|"].filter(
-            (branch) => branch.contradiction === undefined
-        )
-        if (viableBranches.length === 0) {
-            return {
-                contradiction: buildNoViableBranchesMessage(this.branches["|"])
-            }
-        }
-        this.setRoot(compress(viableBranches, this.scope))
+        // const viableBranches = this.branches["|"].filter(
+        //     (branch) => branch.contradiction === undefined
+        // )
+        // if (viableBranches.length === 0) {
+        //     return {
+        //         contradiction: buildNoViableBranchesMessage(this.branches["|"])
+        //     }
+        // }
+        // this.setRoot(compress(viableBranches, this.scope))
     }
 
     reduceGroupOpen() {
@@ -211,11 +211,11 @@ export class DynamicState {
 }
 
 export const buildNoViableBranchesMessage = (branches: Type[]) => {
-    let message = "All branches are empty:\n"
-    for (const branch of branches) {
-        message += branch.contradiction
-    }
-    return message
+    // let message = "All branches are empty:\n"
+    // for (const branch of branches) {
+    //     message += branch.contradiction
+    // }
+    // return message
 }
 
 const ejectedProxy = new Proxy(

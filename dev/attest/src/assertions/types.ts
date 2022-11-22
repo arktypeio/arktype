@@ -1,4 +1,4 @@
-import type { isTopType, narrow } from "../../../../src/utils/generics.js"
+import type { narrow } from "../../../../src/utils/generics.js"
 import type { Serialized } from "../common.js"
 
 export type NextAssertions<AllowTypeAssertions extends boolean> =
@@ -7,48 +7,33 @@ export type NextAssertions<AllowTypeAssertions extends boolean> =
 export type RootAssertions<
     T,
     AllowTypeAssertions extends boolean
-> = (isTopType<T> extends true
-    ? AnyValueAssertion<T, AllowTypeAssertions>
-    : TypedValueAssertions<T, AllowTypeAssertions>) &
-    TypeAssertionsRoot
+> = ValueAssertions<T, AllowTypeAssertions> & TypeAssertionsRoot
 
 export type InferredAssertions<
     ArgsType extends [value: any, ...rest: any[]],
     AllowTypeAssertions extends boolean,
-    Chained = ArgsType[0],
-    IsReturn extends boolean = false,
-    ImmediateAssertions = RootAssertions<Chained, AllowTypeAssertions> &
-        (IsReturn extends true ? NextAssertions<AllowTypeAssertions> : {})
-> = (<Args extends ArgsType | [] = []>(
-    ...args: Args
-) => NextAssertions<AllowTypeAssertions>) &
-    ImmediateAssertions
+    Chained = ArgsType[0]
+> = RootAssertions<Chained, AllowTypeAssertions> &
+    (<Args extends ArgsType | [] = []>(
+        ...args: Args
+    ) => NextAssertions<AllowTypeAssertions>)
 
 export type ChainContext = {
-    isReturn?: boolean
     allowRegex?: boolean
     defaultExpected?: unknown
 }
 
-export type AnyValueAssertion<
+export type ValueAssertions<
     T,
     AllowTypeAssertions extends boolean
-> = FunctionAssertions<AllowTypeAssertions> &
-    ComparableValueAssertion<T, AllowTypeAssertions>
-
-export type TypedValueAssertions<
-    T,
-    AllowTypeAssertions extends boolean
-> = T extends () => unknown
-    ? FunctionAssertions<AllowTypeAssertions>
-    : ComparableValueAssertion<T, AllowTypeAssertions>
+> = ComparableValueAssertion<T, AllowTypeAssertions> &
+    (T extends () => unknown ? FunctionAssertions<AllowTypeAssertions> : {})
 
 export type FunctionAssertions<AllowTypeAssertions extends boolean> = {
     throws: InferredAssertions<
         [message: string | RegExp],
         AllowTypeAssertions,
-        string,
-        false
+        string
     >
 } & (AllowTypeAssertions extends true
     ? {
@@ -59,7 +44,7 @@ export type FunctionAssertions<AllowTypeAssertions extends boolean> = {
 export type ValueFromTypeAssertion<
     Expected,
     Chained = Expected
-> = InferredAssertions<[expected: Expected], false, Chained, false>
+> = InferredAssertions<[expected: Expected], false, Chained>
 
 export type TypeAssertionsRoot = {
     type: TypeAssertionProps
