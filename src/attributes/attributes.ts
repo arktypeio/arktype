@@ -23,7 +23,7 @@ export type MutableAttributes = {
     alias?: string
     contradiction?: keyOrSet<string>
     props?: { readonly [k in string]: Attributes }
-    branches?: AttributeBranches
+    branches?: Branches
 }
 
 export type Attributes = Readonly<MutableAttributes>
@@ -34,22 +34,19 @@ export type CaseKey<k extends DisjointKey = DisjointKey> =
     | "default"
     | (k extends "value" ? SerializedPrimitive : DynamicTypeName)
 
-export type AttributeBranches = UnionBranches | IntersectedBranches
+export type Branches = UnionBranches | IntersectedUnions
 
-export type UnionBranches = UndiscriminatedBranches | DiscriminatedBranches
+export type UnionBranches = UndiscriminatedUnion | DiscriminatedUnion
 
-export type UndiscriminatedBranches = readonly [
-    token: "|",
-    members: Attributes[]
+export type UndiscriminatedUnion = readonly [token: "|", members: Attributes[]]
+
+export type IntersectedUnions = readonly [token: "&", members: UnionBranches[]]
+
+export type DiscriminatedUnion<k extends DisjointKey = DisjointKey> = readonly [
+    token: "?",
+    path: AttributePath<k>,
+    cases: AttributeCases<k>
 ]
-
-export type IntersectedBranches = readonly [
-    token: "&",
-    members: UnionBranches[]
-]
-
-export type DiscriminatedBranches<k extends DisjointKey = DisjointKey> =
-    readonly [token: "?", path: AttributePath<k>, cases: AttributeCases<k>]
 
 export type AttributePath<k extends AttributeKey = AttributeKey> =
     | k

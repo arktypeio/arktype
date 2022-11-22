@@ -6,7 +6,7 @@ import { exclude, extract, intersect } from "./operations.js"
 
 type MutableProps = dictionary<Attributes>
 
-export const props = defineOperations<Attribute<"props">>()({
+export const propsOperations = defineOperations<Attribute<"props">>()({
     intersect: (a, b, scope) => {
         const result = { ...a, ...b }
         for (const k in result) {
@@ -44,7 +44,7 @@ export const props = defineOperations<Attribute<"props">>()({
     }
 })
 
-export const required = defineOperations<true>()({
+export const requiredOperations = defineOperations<true>()({
     intersect: (a) => a,
     extract: (a) => a,
     exclude: () => null

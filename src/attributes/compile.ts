@@ -4,14 +4,13 @@ import { throwInternalError } from "../utils/errors.js"
 import { pathToSegments, pushKey } from "../utils/paths.js"
 import type {
     Attribute,
-    AttributeBranches,
     AttributePath,
     Attributes,
+    Branches,
     MutableAttributes,
     UnionBranches
 } from "./attributes.js"
-import { compress } from "./branches.js"
-import { exclude } from "./operations.js"
+import { compress, exclude } from "./operations.js"
 import { queryAttribute } from "./query.js"
 
 export const compile = (
@@ -56,7 +55,7 @@ export const discriminate = (base: Attributes, scope: ScopeRoot): Attributes =>
                                   )
                         )
                       : throwInternalError(unexpectedRediscriminationMessage)
-              ] as AttributeBranches
+              ] as Branches
           }
         : base
 

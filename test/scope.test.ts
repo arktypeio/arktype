@@ -21,9 +21,10 @@ describe("scope", () => {
             regex: "/^(.+)@(.+)\\.(.+)$/",
             bounds: {
                 min: {
-                    limit: 5
+                    limit: 5,
+                    exclusive: true
                 },
-                max: { limit: 10, inclusive: true }
+                max: { limit: 10 }
             }
         })
     })

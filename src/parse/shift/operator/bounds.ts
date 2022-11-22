@@ -1,4 +1,4 @@
-import type { AttributeBranches } from "../../../attributes/attributes.js"
+import type { Branches } from "../../../attributes/attributes.js"
 import type { Bound, Bounds } from "../../../attributes/bounds.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
@@ -56,7 +56,7 @@ type shiftComparator<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const boundableTypes: AttributeBranches = [
+const boundableTypes: Branches = [
     "|",
     [{ type: "array" }, { type: "string" }, { type: "array" }]
 ]
