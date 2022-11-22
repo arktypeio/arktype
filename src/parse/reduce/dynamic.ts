@@ -1,7 +1,7 @@
-import type { Attributes } from "../../attributes/attributes.js"
+import type { Type } from "../../attributes/attributes.js"
 import type { MorphName } from "../../attributes/morph.js"
 import { morph } from "../../attributes/morph.js"
-import { compress, intersect } from "../../attributes/operations.js"
+import { compress, intersection } from "../../attributes/operations.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
@@ -18,15 +18,15 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    "&": Attributes[]
-    "|": Attributes[]
+    "&": Type[]
+    "|": Type[]
 }
 
 const initializeBranches = (): BranchState => ({ "&": [], "|": [] })
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: Attributes | null | undefined
+    private root: Type | null | undefined
     private branches: BranchState = initializeBranches()
     private groups: BranchState[] = []
 
@@ -73,7 +73,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(attributes: Attributes | null) {
+    setRoot(attributes: Type | null) {
         this.assertUnsetRoot()
         this.root = attributes
     }
@@ -82,9 +82,9 @@ export class DynamicState {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersect(a: Attributes) {
+    intersect(a: Type) {
         this.assertHasRoot()
-        this.root = intersect(this.root!, a, this.scope)
+        this.root = intersection(this.root!, a, this.scope)
     }
 
     private ejectRoot() {
@@ -173,7 +173,7 @@ export class DynamicState {
         const branches = this.branches["&"]
         while (branches.length > 1) {
             branches.unshift(
-                intersect(branches.pop()!, branches.pop()!, this.scope)
+                intersection(branches.pop()!, branches.pop()!, this.scope)
             )
         }
         this.setRoot(branches.pop()!)
@@ -210,7 +210,7 @@ export class DynamicState {
     }
 }
 
-export const buildNoViableBranchesMessage = (branches: Attributes[]) => {
+export const buildNoViableBranchesMessage = (branches: Type[]) => {
     let message = "All branches are empty:\n"
     for (const branch of branches) {
         message += branch.contradiction

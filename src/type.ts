@@ -1,4 +1,4 @@
-import type { Attributes } from "./attributes/attributes.js"
+import type { Type } from "./attributes/attributes.js"
 import { compile } from "./attributes/compile.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
@@ -13,7 +13,7 @@ const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = getRootScope(), ...config } = {}
 ) =>
-    new Type(
+    new ArkType(
         compile(parseDefinition(definition, scope.$), scope.$),
         config,
         scope as any
@@ -26,15 +26,15 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
 export type InferredTypeFn = <definition, scope extends dictionary = {}>(
     definition: validateDefinition<definition, scope>,
     options?: Config<scope>
-) => Type<inferDefinition<definition, scope, {}>>
+) => ArkType<inferDefinition<definition, scope, {}>>
 
 type DynamicTypeFn = (definition: unknown, options?: Config<dictionary>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export class Type<inferred = unknown> {
+export class ArkType<inferred = unknown> {
     constructor(
-        public attributes: Attributes,
+        public attributes: Type,
         public config: Config,
         public scope: DynamicScope
     ) {

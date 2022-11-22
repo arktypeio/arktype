@@ -1,4 +1,4 @@
-import type { Attributes } from "../attributes/attributes.js"
+import type { Type } from "../attributes/attributes.js"
 import type { ScopeRoot } from "../scope.js"
 import { dynamicTypeOf } from "../utils/dynamicTypes.js"
 import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
@@ -9,7 +9,7 @@ import { parseString } from "./string.js"
 import type { inferStructure } from "./structure.js"
 import { parseStructure } from "./structure.js"
 
-export const parseDefinition = (def: unknown, scope: ScopeRoot): Attributes => {
+export const parseDefinition = (def: unknown, scope: ScopeRoot): Type => {
     const defType = dynamicTypeOf(def)
     return defType === "string"
         ? parseString(def as string, scope)

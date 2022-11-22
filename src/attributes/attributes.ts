@@ -2,63 +2,71 @@ import type { ScopeRoot } from "../scope.js"
 import type { DynamicTypeName } from "../utils/dynamicTypes.js"
 import type {
     defined,
+    evaluate,
     keySet,
-    RegexLiteral,
-    subtype
+    RegexLiteral
 } from "../utils/generics.js"
 import type { SerializedPrimitive } from "../utils/primitiveSerialization.js"
 import type { Bounds } from "./bounds.js"
 
-export type AttributeKey = keyof Attributes
-
-export type Attribute<k extends AttributeKey> = defined<Attributes[k]>
-
-export type MutableAttributes = {
-    type?: DynamicTypeName
-    value?: SerializedPrimitive
-    divisor?: number
-    bounds?: Bounds
-    required?: true
-    regex?: keySet<RegexLiteral>
-    contradiction?: keySet
-    alias?: string
-    props?: { readonly [k in string]: Attributes }
-    branches?: Branches
+export type Type = {
+    [typeCase in TypeCase]?: AttributesOf<typeCase>
 }
 
-export type Attributes = Readonly<MutableAttributes>
+type TypeCase = DynamicTypeName | SerializedPrimitive
 
-export type DisjointKey = subtype<AttributeKey, "type" | "value">
+type AllAttributes = BaseAttributes & ConditionalAttributes
 
-export type CaseKey<k extends DisjointKey = DisjointKey> =
-    | "default"
-    | (k extends "value" ? SerializedPrimitive : DynamicTypeName)
+export type AttributeKey = keyof AllAttributes
+
+export type Attribute<k extends AttributeKey> = defined<AllAttributes[k]>
+
+type BaseAttributes = {
+    readonly required?: true
+    readonly alias?: string
+    readonly branches?: Branches
+}
+
+type ConditionalAttributes = {
+    readonly divisor?: number
+    readonly bounds?: Bounds
+    readonly regex?: keySet<RegexLiteral>
+    readonly props?: { readonly [k in string]: Type }
+}
+
+type ConditionalAttributesByTypeCase = {
+    number: evaluate<Pick<ConditionalAttributes, "divisor" | "bounds">>
+    string: Pick<ConditionalAttributes, "regex" | "bounds">
+    array: Pick<ConditionalAttributes, "props" | "bounds">
+    dictionary: Pick<ConditionalAttributes, "props">
+}
+
+type AttributesOf<typeCase extends TypeCase> = BaseAttributes &
+    (typeCase extends keyof ConditionalAttributesByTypeCase
+        ? ConditionalAttributesByTypeCase[typeCase]
+        : {})
 
 export type Branches = UnionBranches | IntersectedUnions
 
 export type UnionBranches = UndiscriminatedUnion | DiscriminatedUnion
 
-export type UndiscriminatedUnion = readonly [token: "|", members: Attributes[]]
+export type UndiscriminatedUnion = readonly [token: "|", members: Type[]]
 
 export type IntersectedUnions = readonly [token: "&", members: UnionBranches[]]
 
-export type DiscriminatedUnion<k extends DisjointKey = DisjointKey> = readonly [
+export type DiscriminatedUnion = readonly [
     token: "?",
-    path: AttributePath<k>,
-    cases: AttributeCases<k>
+    path: string,
+    cases: DiscriminatedCases
 ]
 
-export type AttributePath<k extends AttributeKey = AttributeKey> =
-    | k
-    | `${string}.${k}`
-
-type AttributeCases<k extends DisjointKey = DisjointKey> = {
-    readonly [_ in CaseKey<k>]?: Attributes
+type DiscriminatedCases = {
+    readonly [typeCase in TypeCase]?: Type
 }
 
 export type AttributeOperations<t> = {
     intersection: (a: t, b: t, scope: ScopeRoot) => t | null
-    union: (a: t, b: t, scope: ScopeRoot) => t | undefined
+    difference: (a: t, b: t, scope: ScopeRoot) => t | undefined
 }
 
 export const defineOperations =

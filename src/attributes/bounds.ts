@@ -33,7 +33,7 @@ export const bounds = defineOperations<Bounds>()({
             ? { max }
             : {}
     },
-    union: ({ ...a }, b) => {
+    difference: ({ ...a }, b) => {
         if (a.min && b.min && compareStrictness("min", a.min, b.min) !== "a") {
             delete a.min
         }

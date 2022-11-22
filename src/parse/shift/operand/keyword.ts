@@ -1,4 +1,4 @@
-import type { Attributes } from "../../../attributes/attributes.js"
+import type { Type } from "../../../attributes/attributes.js"
 import type { array, dictionary } from "../../../utils/dynamicTypes.js"
 
 export type Keyword = keyof Keyword.Inferences
@@ -38,7 +38,7 @@ export namespace Keyword {
     export const matches = (token: string): token is Keyword =>
         token in attributes
 
-    export const attributes: { [k in Keyword]: () => Attributes } = {
+    export const attributes: { [k in Keyword]: () => Type } = {
         // TS keywords
         any: () => ({}),
         bigint: () => ({ type: "bigint" }),

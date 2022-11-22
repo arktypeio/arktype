@@ -1,4 +1,4 @@
-import type { Attributes } from "../attributes/attributes.js"
+import type { Type } from "../attributes/attributes.js"
 import type { ScopeRoot } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import { throwInternalError } from "../utils/errors.js"
@@ -10,12 +10,12 @@ import type { Scanner } from "./reduce/scanner.js"
 export const parseStructure = (
     def: Record<string | number, unknown>,
     scope: ScopeRoot
-): Attributes => {
+): Type => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
     const type = Array.isArray(def) ? "array" : "dictionary"
-    const props: dictionary<Attributes> = {}
+    const props: dictionary<Type> = {}
     for (const definitionKey in def) {
         const isOptional = definitionKey.endsWith("?")
         const keyName = isOptional ? definitionKey.slice(0, -1) : definitionKey
