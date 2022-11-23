@@ -1,10 +1,14 @@
-import type { TypeNode } from "ts-morph"
+import { ScopeRoot } from "../scope.js"
 import type { Bounds } from "./bounds.js"
-import { intersection } from "./operations.js"
+import type { TypeNode } from "./node.js"
+import { operation } from "./operation.js"
+import { SetOperations } from "./shared.js"
 
 export type ObjectAttributes = {
-    props?: { readonly [k in string]?: TypeNode }
+    props?: PropsAttribute
 } & ObjectSubtypeAttributes
+
+type PropsAttribute = { readonly [k in string]?: TypeNode }
 
 type ObjectSubtypeAttributes = ArrayAttributes | FunctionAttributes | {}
 
@@ -18,13 +22,18 @@ type FunctionAttributes = {
     subtype: "function"
 }
 
+export const objectOperation = {
+    intersection: (a) => a,
+    difference: (a) => a
+} satisfies SetOperations<ObjectAttributes, ScopeRoot>
+
 // TODO: Figure out prop never propagation
-export const propsOperations = {
+export const propsOperation = {
     intersection: (a, b, scope) => {
         const result = { ...a, ...b }
         for (const k in result) {
             if (k in a && k in b) {
-                result[k] = intersection(a[k], b[k], scope)
+                result[k] = operation(a[k], b[k], scope)
             }
         }
         return result
@@ -44,4 +53,4 @@ export const propsOperations = {
         // }
         // return isEmpty(result) ? undefined : result
     }
-}
+} satisfies SetOperations<PropsAttribute, ScopeRoot>

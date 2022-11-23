@@ -1,7 +1,7 @@
 import type { TypeNode } from "../../nodes/node.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import { intersection } from "../../nodes/operations.js"
+import { operation } from "../../nodes/operation.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
@@ -84,7 +84,7 @@ export class DynamicState {
 
     intersect(a: TypeNode) {
         this.assertHasRoot()
-        this.root = intersection(this.root!, a, this.scope)
+        this.root = operation(this.root!, a, this.scope)
     }
 
     private ejectRoot() {
@@ -173,7 +173,7 @@ export class DynamicState {
         const branches = this.branches["&"]
         while (branches.length > 1) {
             branches.unshift(
-                intersection(branches.pop()!, branches.pop()!, this.scope)
+                operation(branches.pop()!, branches.pop()!, this.scope)
             )
         }
         this.setRoot(branches.pop()!)

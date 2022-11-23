@@ -1,5 +1,5 @@
 import type { Bounds } from "./bounds.js"
-import { SetOperations } from "./node.js"
+import { SetOperations } from "./shared.js"
 
 export type NumberAttributes = {
     divisor?: number

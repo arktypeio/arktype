@@ -1,15 +1,6 @@
-import type { ScopeRoot } from "../scope.js"
-import type { DynamicTypeName, DynamicTypes } from "../utils/dynamicTypes.js"
-import type {
-    defined,
-    evaluate,
-    keySet,
-    RegexLiteral,
-    subtype,
-    xor
-} from "../utils/generics.js"
+import type { DynamicTypeName } from "../utils/dynamicTypes.js"
+import type { evaluate, xor } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import type { Bounds } from "./bounds.js"
 import type { NumberAttributes } from "./number.js"
 import type { ObjectAttributes } from "./object.js"
 import type { StringAttributes } from "./string.js"
@@ -29,7 +20,9 @@ export type TypeCases = {
 
 export type TypeName = evaluate<keyof TypeCases>
 
-export type DegenerateType = Never | Any | Unknown | Alias
+export type DegenerateType = UnresolvableDegenerateType | Alias
+
+export type UnresolvableDegenerateType = Never | Any | Unknown
 
 export type Never = { degenerate: "never"; reason: string }
 
@@ -55,9 +48,4 @@ export type DiscriminatedUnion = readonly [
 
 type DiscriminatedCases = {
     readonly [k in DynamicTypeName]?: TypeNode
-}
-
-export type SetOperations<t> = {
-    intersection: (a: t, b: t, scope: ScopeRoot) => t | null
-    difference: (a: t, b: t, scope: ScopeRoot) => t | undefined
 }
