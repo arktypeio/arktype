@@ -1,8 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
 import { keywords } from "./keywords.js"
 import type { TypeNode } from "./node.js"
-import type { NodeOperator } from "./operation.js"
-import { operation } from "./operation.js"
+import type { NodeOperator } from "./operations.js"
+import { operation } from "./operations.js"
 
 export const degenerateOperation = (
     operator: NodeOperator,

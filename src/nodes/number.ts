@@ -1,5 +1,9 @@
+import { isEmpty } from "../utils/deepEquals.js"
+import type { mutable } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
-import { keywords } from "./keywords.js"
+import { boundsOperations } from "./bounds.js"
+import type { Never } from "./node.js"
+import type { NodeOperator } from "./operations.js"
 import { SetOperations } from "./shared.js"
 
 export type NumberAttributes = {
@@ -7,12 +11,42 @@ export type NumberAttributes = {
     readonly bounds?: Bounds
 }
 
-const divisor = {
-    intersection: (l: number, r: number) =>
-        Math.abs((l * r) / greatestCommonDivisor(l, r)),
-    difference: (l, r) => {
+export const numberOperations = (
+    operator: NodeOperator,
+    l: NumberAttributes,
+    r: NumberAttributes
+): NumberAttributes | Never | true => {
+    const result: mutable<NumberAttributes> = {}
+    const divisor =
+        l.divisor !== undefined
+            ? r.divisor !== undefined
+                ? divisorOperations[operator](l.divisor, r.divisor)
+                : l.divisor
+            : r.divisor ?? null
+    if (divisor !== null) {
+        result.divisor = divisor
+    }
+    const bounds = l.bounds
+        ? r.bounds
+            ? boundsOperations[operator](l.bounds, r.bounds)
+            : l.bounds
+        : r.bounds ?? null
+    if (bounds !== null) {
+        // TODO: Fix
+        if ((bounds as any).degenerate) {
+            return bounds as Never
+        }
+        result.bounds = bounds
+    }
+    return isEmpty(result) ? true : result
+}
+
+// TODO: Refactor to common setAttributes method to handle undefined
+const divisorOperations = {
+    "&": (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
+    "-": (l, r) => {
         const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
-        return relativelyPrimeA === 1 ? keywords.unknown : relativelyPrimeA
+        return relativelyPrimeA === 1 ? null : relativelyPrimeA
     }
 } satisfies SetOperations<number>
 

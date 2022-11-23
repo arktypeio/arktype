@@ -3,7 +3,7 @@ import type { keySet } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import type { TypeNode } from "./node.js"
-import { intersection } from "./operation.js"
+import { intersection } from "./operations.js"
 import { SetOperations } from "./shared.js"
 
 export type ObjectAttributes = {
@@ -34,13 +34,13 @@ type StandardAttributes = {
 }
 
 export const objectOperation = {
-    intersection: (l, r) => l,
-    difference: (a) => a
+    "&": (l, r) => l,
+    "-": (l) => l
 } satisfies SetOperations<ObjectAttributes, ScopeRoot>
 
 // TODO: Figure out prop never propagation
 export const propsOperation = {
-    intersection: (l, r, scope) => {
+    "&": (l, r, scope) => {
         const result = { ...l, ...r }
         for (const k in result) {
             if (hasKey(l, k) && hasKey(r, k)) {
@@ -49,7 +49,7 @@ export const propsOperation = {
         }
         return result
     },
-    difference: (l, r, scope) => {
+    "-": (l, r, scope) => {
         return l
         // const result: MutableProps = {}
         // for (const k in a) {

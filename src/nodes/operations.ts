@@ -1,5 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { isEmpty } from "../utils/deepEquals.js"
+import type { mutable } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import { degenerateOperation } from "./degenerate.js"
 import type { TypeCases, TypeName, TypeNode } from "./node.js"
@@ -21,17 +22,21 @@ export const operation = (
 ): TypeNode =>
     l.degenerate || r.degenerate
         ? degenerateOperation(operator, l, r, scope)
-        : casesOperation(l, r, scope)
+        : casesOperation(operator, l, r, scope)
 
 const casesOperation = (
+    operator: NodeOperator,
     l: TypeCases,
     r: TypeCases,
     scope: ScopeRoot
 ): TypeNode => {
-    const result: TypeCases = {}
+    const result: mutable<TypeCases> = {}
     let caseKey: TypeName
     for (caseKey in l) {
         if (hasKey(r, caseKey)) {
+            result[caseKey] = l[caseKey] as any
+        } else if (operator === "-") {
+            result[caseKey] = l[caseKey] as any
         }
     }
     return isEmpty(result)
@@ -44,25 +49,3 @@ const casesOperation = (
           }
         : result
 }
-
-// export const difference = (a: Type, b: Type, scope: ScopeRoot) => {
-//     a = expandIfAlias(a, scope)
-//     b = expandIfAlias(b, scope)
-//     const result: mutable<Attributes> = {}
-//     let k: AttributeKey
-//     for (k in a) {
-//         if (k in b) {
-//             const fn = operations[k].difference as DynamicOperation
-//             result[k] = fn(a[k], b[k], scope)
-//             if (result[k] === null) {
-//                 delete result[k]
-//             }
-//         } else {
-//             result[k] = a[k] as any
-//         }
-//     }
-//     return isEmpty(result) ? null : result
-// }
-
-// export const isSubtype = (a: Type, b: Type, scope: ScopeRoot) =>
-//     difference(b, a, scope) === null

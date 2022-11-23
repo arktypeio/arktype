@@ -1,5 +1,4 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import { keywords } from "./keywords.js"
 import { SetOperations } from "./shared.js"
 
 export type Bounds = {
@@ -12,8 +11,8 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const bounds = {
-    intersection: (l, r) => {
+export const boundsOperations = {
+    "&": (l, r) => {
         const min =
             r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
                 ? r.min
@@ -24,16 +23,23 @@ export const bounds = {
                 : l.max
         return min
             ? max
-                ? compareStrictness(min, max, "min") === "l" ||
-                  compareStrictness(min, max, "max") === "r"
-                    ? keywords.never
+                ? compareStrictness(min, max, "min") === "l"
+                    ? {
+                          degenerate: "never",
+                          reason: buildEmptyRangeMessage("min", min, max)
+                      }
+                    : compareStrictness(min, max, "max") === "r"
+                    ? {
+                          degenerate: "never",
+                          reason: buildEmptyRangeMessage("max", min, max)
+                      }
                     : { min, max }
                 : { min }
             : max
             ? { max }
             : {}
     },
-    difference: (l, r) => {
+    "-": (l, r) => {
         const result = { ...l }
         if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
             delete result.min
@@ -41,7 +47,7 @@ export const bounds = {
         if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
             delete result.max
         }
-        return isEmpty(result) ? keywords.unknown : result
+        return isEmpty(result) ? null : result
     }
 } satisfies SetOperations<Bounds>
 

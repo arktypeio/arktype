@@ -1,7 +1,7 @@
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { TypeNode } from "../../nodes/node.js"
-import { intersection, operation } from "../../nodes/operation.js"
+import { intersection, operation } from "../../nodes/operations.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"

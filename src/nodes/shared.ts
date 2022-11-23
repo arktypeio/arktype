@@ -1,12 +1,13 @@
 import type { ScopeRoot } from "../scope.js"
 import { isEmpty } from "../utils/deepEquals.js"
+import type { defined } from "../utils/generics.js"
 import { keySet } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
 import type { Never, TypeNode, Unknown } from "./node.js"
 
 export type SetOperations<t, context = undefined> = {
-    intersection: SetOperation<t, context, Never>
-    difference: SetOperation<t, context, Unknown>
+    "&": SetOperation<t, context, Never>
+    "-": SetOperation<t, context, null>
 }
 
 export type SetOperation<
@@ -14,19 +15,19 @@ export type SetOperation<
     context = undefined,
     degenerateResult = never
 > = context extends undefined
-    ? (a: t, b: t) => t | degenerateResult
-    : (a: t, b: t, context: context) => t | degenerateResult
+    ? (l: t, r: t) => t | degenerateResult
+    : (l: t, r: t, context: context) => t | degenerateResult
 
 export type TypeOperation = SetOperation<TypeNode, ScopeRoot>
 
 export const keySetOperations = {
-    intersection: (l, r) => ({ ...l, ...r }),
-    difference: (l, r) => {
+    "&": (l, r) => ({ ...l, ...r }),
+    "-": (l, r) => {
         const result = { ...l }
         for (const k in r) {
             delete result[k]
         }
-        return isEmpty(result) ? keywords.unknown : result
+        return isEmpty(result) ? null : result
     }
 } satisfies SetOperations<keySet>
 
