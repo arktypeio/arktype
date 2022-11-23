@@ -1,15 +1,15 @@
 import { dictionary } from "../utils/dynamicTypes.js"
 import { TypeNode } from "./node.js"
 
-export const morph = (name: MorphName, input: TypeNode) => morphs[name](input)
+export const morph = (name: MorphName, node: TypeNode) => morphs[name](node)
 
 export type MorphName = keyof typeof morphs
 
 const morphs = {
-    array: (input) => ({
+    array: (node) => ({
         object: {
             subtype: "array",
-            elements: input
+            elements: node
         }
     })
 } satisfies dictionary<(input: TypeNode) => TypeNode>

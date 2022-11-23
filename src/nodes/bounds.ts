@@ -1,5 +1,6 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import { SetOperations } from "./node.js"
+import { keywords } from "./keywords.js"
+import { SetOperations } from "./shared.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -12,34 +13,35 @@ export type Bound = {
 }
 
 export const bounds = {
-    intersection: (a, b) => {
+    intersection: (l, r) => {
         const min =
-            b.min && (!a.min || compareStrictness("min", a.min, b.min) === "b")
-                ? b.min
-                : a.min
+            r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
+                ? r.min
+                : l.min
         const max =
-            b.max && (!a.max || compareStrictness("max", a.max, b.max) === "b")
-                ? b.max
-                : a.max
+            r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
+                ? r.max
+                : l.max
         return min
             ? max
-                ? compareStrictness("min", min, max) === "a" ||
-                  compareStrictness("max", min, max) === "b"
-                    ? null
+                ? compareStrictness(min, max, "min") === "l" ||
+                  compareStrictness(min, max, "max") === "r"
+                    ? keywords.never
                     : { min, max }
                 : { min }
             : max
             ? { max }
             : {}
     },
-    difference: ({ ...a }, b) => {
-        if (a.min && b.min && compareStrictness("min", a.min, b.min) !== "a") {
-            delete a.min
+    difference: (l, r) => {
+        const result = { ...l }
+        if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
+            delete result.min
         }
-        if (a.max && b.max && compareStrictness("max", a.max, b.max) !== "a") {
-            delete a.max
+        if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
+            delete result.max
         }
-        return isEmpty(a) ? undefined : a
+        return isEmpty(result) ? keywords.unknown : result
     }
 } satisfies SetOperations<Bounds>
 
@@ -63,19 +65,19 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const compareStrictness = (kind: BoundKind, a: Bound, b: Bound) =>
-    a.limit === b.limit
-        ? a.exclusive
-            ? b.exclusive
+const compareStrictness = (l: Bound, r: Bound, kind: BoundKind) =>
+    l.limit === r.limit
+        ? l.exclusive
+            ? r.exclusive
                 ? "="
-                : "a"
-            : b.exclusive
-            ? "b"
+                : "l"
+            : r.exclusive
+            ? "r"
             : "="
         : kind === "min"
-        ? a.limit > b.limit
-            ? "a"
-            : "b"
-        : a.limit < b.limit
-        ? "a"
-        : "b"
+        ? l.limit > r.limit
+            ? "l"
+            : "r"
+        : l.limit < r.limit
+        ? "l"
+        : "r"

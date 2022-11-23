@@ -8,14 +8,14 @@ import type { StringAttributes } from "./string.js"
 export type TypeNode = xor<TypeCases, DegenerateType>
 
 export type TypeCases = {
-    bigint?: true | IntegerLiteral[]
-    boolean?: true | [boolean]
-    number?: true | number[] | NumberAttributes
-    object?: true | ObjectAttributes
-    string?: true | string[] | StringAttributes
-    symbol?: true
-    undefined?: true
-    null?: true
+    readonly bigint?: true | readonly IntegerLiteral[]
+    readonly boolean?: true | readonly [boolean]
+    readonly number?: true | readonly number[] | NumberAttributes
+    readonly object?: true | ObjectAttributes
+    readonly string?: true | readonly string[] | StringAttributes
+    readonly symbol?: true
+    readonly undefined?: true
+    readonly null?: true
 }
 
 export type TypeName = evaluate<keyof TypeCases>

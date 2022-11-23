@@ -1,3 +1,4 @@
+import type { Keyword } from "../nodes/keywords.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { error, evaluate, isAny, RegexLiteral } from "../utils/generics.js"
 import type {
@@ -7,7 +8,6 @@ import type {
 import type { inferDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 import type { StringLiteral } from "./shift/operand/enclosed.js"
-import type { Keyword } from "./shift/operand/keyword.js"
 
 export type inferAst<
     ast,

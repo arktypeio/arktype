@@ -1,25 +1,26 @@
 import type { Bounds } from "./bounds.js"
+import { keywords } from "./keywords.js"
 import { SetOperations } from "./shared.js"
 
 export type NumberAttributes = {
-    divisor?: number
-    bounds?: Bounds
+    readonly divisor?: number
+    readonly bounds?: Bounds
 }
 
 const divisor = {
-    intersection: (a: number, b: number) =>
-        Math.abs((a * b) / greatestCommonDivisor(a, b)),
-    difference: (a, b) => {
-        const relativelyPrimeA = Math.abs(a / greatestCommonDivisor(a, b))
-        return relativelyPrimeA === 1 ? undefined : relativelyPrimeA
+    intersection: (l: number, r: number) =>
+        Math.abs((l * r) / greatestCommonDivisor(l, r)),
+    difference: (l, r) => {
+        const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
+        return relativelyPrimeA === 1 ? keywords.unknown : relativelyPrimeA
     }
 } satisfies SetOperations<number>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
-const greatestCommonDivisor = (a: number, b: number) => {
+const greatestCommonDivisor = (l: number, r: number) => {
     let previous
-    let greatestCommonDivisor = a
-    let current = b
+    let greatestCommonDivisor = l
+    let current = r
     while (current !== 0) {
         previous = current
         current = greatestCommonDivisor % current

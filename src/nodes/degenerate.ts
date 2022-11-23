@@ -1,34 +1,34 @@
-import { Keyword } from "../parse/shift/operand/keyword.js"
 import type { ScopeRoot } from "../scope.js"
+import { keywords } from "./keywords.js"
 import type { TypeNode } from "./node.js"
 import type { NodeOperator } from "./operation.js"
 import { operation } from "./operation.js"
 
-export const degenerateOperation = <operator extends NodeOperator>(
-    operator: operator,
-    a: TypeNode,
-    b: TypeNode,
+export const degenerateOperation = (
+    operator: NodeOperator,
+    l: TypeNode,
+    r: TypeNode,
     scope: ScopeRoot
 ): TypeNode => {
-    if (a.degenerate === "alias" || b.degenerate === "alias") {
+    if (l.degenerate === "alias" || r.degenerate === "alias") {
         return operation(
             operator,
-            resolveIfAlias(a, scope),
-            resolveIfAlias(b, scope),
+            resolveIfAlias(l, scope),
+            resolveIfAlias(r, scope),
             scope
         )
     }
-    const lookupKeyA = a.degenerate ?? "t"
-    const lookupKeyB = b.degenerate ?? "t"
+    const lookupKeyA = l.degenerate ?? "t"
+    const lookupKeyB = r.degenerate ?? "t"
     const resultKey =
         operator === "&"
             ? degenerateIntersections[lookupKeyA][lookupKeyB]
             : degenerateDifferences[lookupKeyA][lookupKeyB]
     return resultKey === "t"
         ? lookupKeyA === "t"
-            ? a
-            : b
-        : Keyword.attributes[resultKey]
+            ? l
+            : r
+        : keywords[resultKey]
 }
 
 const resolveIfAlias = (node: TypeNode, scope: ScopeRoot) =>

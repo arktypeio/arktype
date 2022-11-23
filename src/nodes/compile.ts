@@ -3,7 +3,6 @@ import type { dictionary } from "../utils/dynamicTypes.js"
 import { throwInternalError } from "../utils/errors.js"
 import { pathToSegments, pushKey } from "../utils/paths.js"
 import type { TypeNode, UnionBranches } from "./node.js"
-import { queryPath } from "./query.js"
 
 export const compile = (attributes: TypeNode, scope: ScopeRoot): TypeNode => {
     return attributes

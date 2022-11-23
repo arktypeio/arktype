@@ -1,45 +1,53 @@
 import { ScopeRoot } from "../scope.js"
 import type { Bounds } from "./bounds.js"
 import type { TypeNode } from "./node.js"
-import { operation } from "./operation.js"
+import { intersection } from "./operation.js"
 import { SetOperations } from "./shared.js"
 
 export type ObjectAttributes = {
-    props?: PropsAttribute
+    readonly props?: PropsAttribute
 } & ObjectSubtypeAttributes
 
 type PropsAttribute = { readonly [k in string]?: TypeNode }
 
-type ObjectSubtypeAttributes = ArrayAttributes | FunctionAttributes | {}
+type ObjectSubtypeAttributes =
+    | ArrayAttributes
+    | FunctionAttributes
+    | StandardAttributes
+    | {}
 
 type ArrayAttributes = {
-    subtype: "array"
-    elements?: TypeNode | TypeNode[]
-    bounds?: Bounds
+    readonly subtype: "array"
+    readonly elements?: TypeNode | TypeNode[]
+    readonly bounds?: Bounds
 }
 
 type FunctionAttributes = {
-    subtype: "function"
+    readonly subtype: "function"
+}
+
+type StandardAttributes = {
+    readonly subtype: "none"
 }
 
 export const objectOperation = {
-    intersection: (a) => a,
+    intersection: (l, r) => l,
     difference: (a) => a
 } satisfies SetOperations<ObjectAttributes, ScopeRoot>
 
 // TODO: Figure out prop never propagation
 export const propsOperation = {
-    intersection: (a, b, scope) => {
-        const result = { ...a, ...b }
+    intersection: (l, r, scope) => {
+        const result = { ...l, ...r }
         for (const k in result) {
-            if (k in a && k in b) {
-                result[k] = operation(a[k], b[k], scope)
+            if (k in l && k in r) {
+                result[k] = intersection(l[k], r[k], scope)
             }
         }
         return result
     },
-    difference: (a, b, scope) => {
-        return a
+    difference: (l, r, scope) => {
+        return l
         // const result: MutableProps = {}
         // for (const k in a) {
         //     if (k in b) {

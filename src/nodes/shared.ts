@@ -1,28 +1,32 @@
+import type { ScopeRoot } from "../scope.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import { keySet } from "../utils/generics.js"
+import { keywords } from "./keywords.js"
+import type { Never, TypeNode, Unknown } from "./node.js"
 
-export type SetOperations<
-    t,
-    context = undefined,
-    emptySet = null,
-    universalSet = undefined
-> = {
-    intersection: context extends undefined
-        ? (a: t, b: t) => t | emptySet
-        : (a: t, b: t, context: context) => t | emptySet
-    difference: context extends undefined
-        ? (a: t, b: t) => t | universalSet
-        : (a: t, b: t, context: context) => t | universalSet
+export type SetOperations<t, context = undefined> = {
+    intersection: SetOperation<t, context, Never>
+    difference: SetOperation<t, context, Unknown>
 }
 
+export type SetOperation<
+    t,
+    context = undefined,
+    degenerateResult = never
+> = context extends undefined
+    ? (a: t, b: t) => t | degenerateResult
+    : (a: t, b: t, context: context) => t | degenerateResult
+
+export type TypeOperation = SetOperation<TypeNode, ScopeRoot>
+
 export const keySetOperations = {
-    intersection: (a, b) => ({ ...a, ...b }),
-    difference: (a, b) => {
-        const result = { ...a }
-        for (const k in b) {
+    intersection: (l, r) => ({ ...l, ...r }),
+    difference: (l, r) => {
+        const result = { ...l }
+        for (const k in r) {
             delete result[k]
         }
-        return isEmpty(result) ? undefined : result
+        return isEmpty(result) ? keywords.unknown : result
     }
 } satisfies SetOperations<keySet>
 

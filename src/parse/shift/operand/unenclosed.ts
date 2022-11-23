@@ -1,3 +1,4 @@
+import { Keyword } from "../../../nodes/keywords.js"
 import type { TypeNode } from "../../../nodes/node.js"
 import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
@@ -13,7 +14,6 @@ import {
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import { Keyword } from "./keyword.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
@@ -47,7 +47,7 @@ export const maybeParseIdentifier = (
     scope: ScopeRoot
 ): TypeNode | undefined =>
     Keyword.matches(token)
-        ? Keyword.attributes[token]
+        ? Keyword.nodes[token]
         : scope.aliases[token] || scope.config.scope?.$.aliases[token]
         ? { degenerate: "alias", name: token }
         : undefined

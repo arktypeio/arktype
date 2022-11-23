@@ -3,36 +3,43 @@ import { isEmpty } from "../utils/deepEquals.js"
 import { hasKey } from "../utils/generics.js"
 import { degenerateOperation } from "./degenerate.js"
 import type { TypeCases, TypeName, TypeNode } from "./node.js"
+import type { SetOperation } from "./shared.js"
 
 export type NodeOperator = "&" | "-"
 
-export const operation = <operator extends NodeOperator>(
-    operator: operator,
-    a: TypeNode,
-    b: TypeNode,
+export const intersection: SetOperation<TypeNode, ScopeRoot> = (l, r, scope) =>
+    operation("&", l, r, scope)
+
+export const difference: SetOperation<TypeNode, ScopeRoot> = (l, r, scope) =>
+    operation("-", l, r, scope)
+
+export const operation = (
+    operator: NodeOperator,
+    l: TypeNode,
+    r: TypeNode,
     scope: ScopeRoot
 ): TypeNode =>
-    a.degenerate || b.degenerate
-        ? degenerateOperation(operator, a, b, scope)
-        : casesOperation(a, b, scope)
+    l.degenerate || r.degenerate
+        ? degenerateOperation(operator, l, r, scope)
+        : casesOperation(l, r, scope)
 
 const casesOperation = (
-    a: TypeCases,
-    b: TypeCases,
+    l: TypeCases,
+    r: TypeCases,
     scope: ScopeRoot
 ): TypeNode => {
     const result: TypeCases = {}
     let caseKey: TypeName
-    for (caseKey in a) {
-        if (hasKey(b, caseKey)) {
+    for (caseKey in l) {
+        if (hasKey(r, caseKey)) {
         }
     }
     return isEmpty(result)
         ? {
               degenerate: "never",
               // TODO: Delegate based on k
-              reason: `${JSON.stringify(a)} and ${JSON.stringify(
-                  b
+              reason: `${JSON.stringify(l)} and ${JSON.stringify(
+                  r
               )} have no overlap`
           }
         : result

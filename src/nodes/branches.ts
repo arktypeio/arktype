@@ -1,36 +1,30 @@
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError } from "../utils/errors.js"
 import { hasKey } from "../utils/generics.js"
-import type {
-    Attribute,
-    Branches,
-    TypeNode,
-    UndiscriminatedUnion
-} from "./node.js"
-import { defineOperations } from "./node.js"
+import type { Branches, TypeNode, UndiscriminatedUnion } from "./node.js"
 
-export const branchOperations = defineOperations<Attribute<"branches">>()({
-    intersection: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],
-    difference: (a, b, scope) => {
-        return a
-        // const unionsOfB = listUnions(b)
-        // const result = listUnions(a).filter(
-        //     (unionA) =>
-        //         !unionA[1].every((branchA) =>
-        //             unionsOfB.some((unionB) =>
-        //                 unionB[1].some((branchB) =>
-        //                     isSubtype(branchB, branchA, scope)
-        //                 )
-        //             )
-        //         )
-        // )
-        // return result.length === 0
-        //     ? undefined
-        //     : result.length === 1
-        //     ? result[0]
-        //     : ["&", result]
-    }
-})
+// export const branchOperations = defineOperations<Attribute<"branches">>()({
+//     intersection: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],
+//     difference: (a, b, scope) => {
+//         return a
+//         // const unionsOfB = listUnions(b)
+//         // const result = listUnions(a).filter(
+//         //     (unionA) =>
+//         //         !unionA[1].every((branchA) =>
+//         //             unionsOfB.some((unionB) =>
+//         //                 unionB[1].some((branchB) =>
+//         //                     isSubtype(branchB, branchA, scope)
+//         //                 )
+//         //             )
+//         //         )
+//         // )
+//         // return result.length === 0
+//         //     ? undefined
+//         //     : result.length === 1
+//         //     ? result[0]
+//         //     : ["&", result]
+//     }
+// })
 
 // export const compress = (uncompressed: Type[], scope: ScopeRoot) => {
 //     if (uncompressed.length === 1) {
