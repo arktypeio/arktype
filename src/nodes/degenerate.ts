@@ -1,15 +1,15 @@
 import type { ScopeRoot } from "../scope.js"
 import { keywords } from "./keywords.js"
-import type { TypeNode } from "./node.js"
+import type { Node } from "./node.js"
 import type { NodeOperator } from "./operations.js"
 import { operation } from "./operations.js"
 
 export const degenerateOperation = (
     operator: NodeOperator,
-    l: TypeNode,
-    r: TypeNode,
+    l: Node,
+    r: Node,
     scope: ScopeRoot
-): TypeNode => {
+): Node => {
     if (l.degenerate === "alias" || r.degenerate === "alias") {
         return operation(
             operator,
@@ -31,7 +31,7 @@ export const degenerateOperation = (
         : keywords[resultKey]
 }
 
-const resolveIfAlias = (node: TypeNode, scope: ScopeRoot) =>
+const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
     node.degenerate === "alias" ? scope.resolve(node.name) : node
 
 const degenerateIntersections = {

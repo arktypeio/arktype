@@ -1,5 +1,5 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import { SetOperations } from "./shared.js"
+import type { AttributeDifference, AttributeIntersection } from "./shared.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,45 +11,43 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsOperations = {
-    "&": (l, r) => {
-        const min =
-            r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
-                ? r.min
-                : l.min
-        const max =
-            r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
-                ? r.max
-                : l.max
-        return min
-            ? max
-                ? compareStrictness(min, max, "min") === "l"
-                    ? {
-                          degenerate: "never",
-                          reason: buildEmptyRangeMessage("min", min, max)
-                      }
-                    : compareStrictness(min, max, "max") === "r"
-                    ? {
-                          degenerate: "never",
-                          reason: buildEmptyRangeMessage("max", min, max)
-                      }
-                    : { min, max }
-                : { min }
-            : max
-            ? { max }
-            : {}
-    },
-    "-": (l, r) => {
-        const result = { ...l }
-        if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
-            delete result.min
-        }
-        if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
-            delete result.max
-        }
-        return isEmpty(result) ? null : result
+export const intersectBounds: AttributeIntersection<Bounds> = (l, r) => {
+    const min =
+        r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
+            ? r.min
+            : l.min
+    const max =
+        r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
+            ? r.max
+            : l.max
+    return min
+        ? max
+            ? compareStrictness(min, max, "min") === "l"
+                ? {
+                      degenerate: "never",
+                      reason: buildEmptyRangeMessage("min", min, max)
+                  }
+                : compareStrictness(min, max, "max") === "r"
+                ? {
+                      degenerate: "never",
+                      reason: buildEmptyRangeMessage("max", min, max)
+                  }
+                : { min, max }
+            : { min }
+        : max
+        ? { max }
+        : {}
+}
+
+export const subtractBounds: AttributeDifference<Bounds> = ({ ...l }, r) => {
+    if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
+        delete l.min
     }
-} satisfies SetOperations<Bounds>
+    if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
+        delete l.max
+    }
+    return isEmpty(l) ? null : l
+}
 
 export const buildEmptyRangeMessage = (
     kind: BoundKind,

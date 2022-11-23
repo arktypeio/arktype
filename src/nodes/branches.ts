@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError } from "../utils/errors.js"
 import { hasKey } from "../utils/generics.js"
-import type { Branches, TypeNode, UndiscriminatedUnion } from "./node.js"
+import type { Branches, Node, UndiscriminatedUnion } from "./node.js"
 
 // export const branchOperations = defineOperations<Attribute<"branches">>()({
 //     intersection: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],

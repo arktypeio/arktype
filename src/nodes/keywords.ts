@@ -1,7 +1,9 @@
 import type { array, dictionary } from "../utils/dynamicTypes.js"
-import { TypeNode } from "./node.js"
+import { Node } from "./node.js"
 
 export type Keyword = keyof Keywords
+
+function f() {}
 
 export type Keywords = {
     // TS keywords
@@ -68,4 +70,4 @@ export const keywords = {
     uppercase: { string: { regex: ["/^[A-Z]*$/"] } },
     // Numeric
     integer: { number: { divisor: 1 } }
-} as const satisfies { [k in Keyword]: TypeNode }
+} as const satisfies { [k in Keyword]: Node }

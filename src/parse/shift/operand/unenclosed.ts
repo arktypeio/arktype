@@ -1,6 +1,6 @@
 import type { Keyword } from "../../../nodes/keywords.js"
 import { keywords } from "../../../nodes/keywords.js"
-import type { TypeNode } from "../../../nodes/node.js"
+import type { Node } from "../../../nodes/node.js"
 import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
@@ -48,14 +48,14 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
 export const maybeParseIdentifier = (
     token: string,
     scope: ScopeRoot
-): TypeNode | undefined =>
+): Node | undefined =>
     isKeyOf(token, keywords)
         ? keywords[token]
         : scope.aliases[token] || scope.config.scope?.$.aliases[token]
         ? { degenerate: "alias", name: token }
         : undefined
 
-const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
+const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { number: [maybeNumber] }

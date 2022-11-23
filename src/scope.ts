@@ -1,9 +1,9 @@
-import type { TypeNode } from "./nodes/node.js"
+import type { Node } from "./nodes/node.js"
 import { compile } from "./nodes/compile.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
-import { ArkType } from "./type.js"
+import { Type } from "./type.js"
 import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { deepClone } from "./utils/deepClone.js"
@@ -17,7 +17,7 @@ const rawScope = (aliases: dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
     const types: Scope<dictionary> = { $: root as any }
     for (const name in aliases) {
-        types[name] = new ArkType(root.resolve(name), config, types)
+        types[name] = new Type(root.resolve(name), config, types)
     }
     return types
 }
@@ -54,12 +54,12 @@ export type Scope<inferred extends dictionary> = {
 export type DynamicScope = Scope<dictionary>
 
 type inferredScopeToArktypes<inferred> = {
-    [name in keyof inferred]: ArkType<inferred[name]>
+    [name in keyof inferred]: Type<inferred[name]>
 }
 
 export class ScopeRoot<inferred extends dictionary = dictionary> {
-    attributes = {} as Record<keyof inferred, TypeNode>
-    private cache: dictionary<TypeNode> = {}
+    attributes = {} as Record<keyof inferred, Node>
+    private cache: dictionary<Node> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -70,7 +70,7 @@ export class ScopeRoot<inferred extends dictionary = dictionary> {
         return chainableNoOpProxy
     }
 
-    resolve(name: stringKeyOf<inferred>): TypeNode {
+    resolve(name: stringKeyOf<inferred>): Node {
         if (name in this.cache) {
             return deepClone(this.cache[name])
         }
@@ -84,7 +84,7 @@ export class ScopeRoot<inferred extends dictionary = dictionary> {
         return deepClone(this.cache[name])
     }
 
-    memoizedParse(def: string): TypeNode {
+    memoizedParse(def: string): Node {
         if (def in this.cache) {
             return deepClone(this.cache[def])
         }

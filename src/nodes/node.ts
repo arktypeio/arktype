@@ -5,9 +5,9 @@ import type { NumberAttributes } from "./number.js"
 import type { ObjectAttributes } from "./object.js"
 import type { StringAttributes } from "./string.js"
 
-export type TypeNode = xor<TypeCases, DegenerateType>
+export type Node = xor<NodeTypes, DegenerateNode>
 
-export type TypeCases = {
+export type NodeTypes = {
     readonly bigint?: true | readonly IntegerLiteral[]
     readonly boolean?: true | readonly [boolean]
     readonly number?: true | readonly number[] | NumberAttributes
@@ -18,11 +18,9 @@ export type TypeCases = {
     readonly null?: true
 }
 
-export type TypeName = evaluate<keyof TypeCases>
+export type TypeName = evaluate<keyof NodeTypes>
 
-export type DegenerateType = UnresolvableDegenerateType | Alias
-
-export type UnresolvableDegenerateType = Never | Any | Unknown
+export type DegenerateNode = Never | Any | Unknown | Alias
 
 export type Never = { degenerate: "never"; reason: string }
 
@@ -36,7 +34,7 @@ export type Branches = UnionBranches | IntersectedUnions
 
 export type UnionBranches = UndiscriminatedUnion | DiscriminatedUnion
 
-export type UndiscriminatedUnion = readonly [token: "|", members: TypeNode[]]
+export type UndiscriminatedUnion = readonly [token: "|", members: Node[]]
 
 export type IntersectedUnions = readonly [token: "&", members: UnionBranches[]]
 
@@ -47,5 +45,5 @@ export type DiscriminatedUnion = readonly [
 ]
 
 type DiscriminatedCases = {
-    readonly [k in DynamicTypeName]?: TypeNode
+    readonly [k in DynamicTypeName]?: Node
 }

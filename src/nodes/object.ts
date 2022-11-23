@@ -2,7 +2,7 @@ import { ScopeRoot } from "../scope.js"
 import type { keySet } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
-import type { TypeNode } from "./node.js"
+import type { Node } from "./node.js"
 import { intersection } from "./operations.js"
 import { SetOperations } from "./shared.js"
 
@@ -11,7 +11,7 @@ export type ObjectAttributes = {
     readonly requiredKeys?: keySet
 } & ObjectSubtypeAttributes
 
-type PropsAttribute = { readonly [k in string]?: TypeNode }
+type PropsAttribute = { readonly [k in string]?: Node }
 
 type ObjectSubtypeAttributes =
     | ArrayAttributes
@@ -21,7 +21,7 @@ type ObjectSubtypeAttributes =
 
 type ArrayAttributes = {
     readonly subtype: "array"
-    readonly elements?: TypeNode | TypeNode[]
+    readonly elements?: Node | Node[]
     readonly bounds?: Bounds
 }
 
