@@ -7,14 +7,9 @@ import type { dictionary } from "../src/utils/dynamicTypes.js"
 
 describe("dynamic", () => {
     test("uninferred types", () => {
-        const dynamicStringArray = type.dynamic("str" + "ing[" + "]")
+        const dynamicStringArray = type.dynamic("str" + "ing")
         attest(dynamicStringArray.infer).typed as unknown
-        attest(dynamicStringArray.attributes).equals({
-            type: "array",
-            props: {
-                "*": { type: "string" }
-            }
-        })
+        attest(dynamicStringArray.root).equals({ string: true })
     })
     test("uninferred aliases", () => {
         const s = scope.dynamic({

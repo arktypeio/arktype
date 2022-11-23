@@ -16,23 +16,25 @@ describe("scope", () => {
     test("interdependent", () => {
         const s = scope({ a: "string>5", b: "email<=10", c: "a&b" })
         attest(s.c.infer).typed as string
-        attest(s.c.attributes).equals({
-            type: "string",
-            regex: { "/^(.+)@(.+)\\.(.+)$/": true },
-            bounds: {
-                min: {
-                    limit: 5,
-                    exclusive: true
-                },
-                max: { limit: 10 }
+        attest(s.c.root).equals({
+            string: {
+                regex: ["/^(.+)@(.+)\\.(.+)$/"],
+                bounds: {
+                    min: {
+                        limit: 5,
+                        exclusive: true
+                    },
+                    max: { limit: 10 }
+                }
             }
         })
     })
     test("cyclic", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
-        attest(s.a.attributes).snap({
-            type: "dictionary",
-            props: { b: { required: true, alias: "b" } }
+        attest(s.a.root).snap({
+            object: {
+                props: { b: { degenerate: "alias", name: "b" } }
+            }
         })
         // Type hint displays as any on hitting cycle
         attest(s.$.infer.a).typed as {
@@ -77,9 +79,16 @@ describe("scope", () => {
             d: boolean
         }
         attest(s.$.attributes).snap({
-            a: { type: "array", props: { "*": { type: "string" } } },
-            b: { type: "array", props: { "*": { alias: "a" } } },
-            d: { alias: "definedInScope" }
+            a: {
+                object: { subtype: "array", elements: { string: true } }
+            },
+            b: {
+                object: {
+                    subtype: "array",
+                    elements: { degenerate: "alias", name: "a" }
+                }
+            },
+            d: { degenerate: "alias", name: "definedInScope" }
         })
     })
 })

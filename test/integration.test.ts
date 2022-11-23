@@ -10,8 +10,6 @@ describe("branch", () => {
         // 3. "0" | "3"
         const t = type("'0'|'1'&'2'|'3'")
         attest(t.infer).typed as "0" | "3"
-        attest(t.attributes).snap({
-            branches: ["?", "value", { "'0'": {}, "'3'": {} }]
-        })
+        attest(t.root).snap()
     })
 })

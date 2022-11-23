@@ -6,14 +6,20 @@ describe("struct", () => {
     test("record", () => {
         const o = type({ a: "string", b: "boolean[]" })
         attest(o.infer).typed as { a: string; b: boolean[] }
-        attest(o.attributes).snap({
-            type: "dictionary",
-            props: {
-                a: { type: "string", required: true },
-                b: {
-                    type: "array",
-                    props: { "*": { type: "boolean" } },
-                    required: true
+        attest(o.root).snap({
+            object: {
+                props: {
+                    a: { string: true },
+                    b: {
+                        object: {
+                            subtype: "array",
+                            elements: { boolean: true }
+                        }
+                    }
+                },
+                requiredKeys: {
+                    a: true,
+                    b: true
                 }
             }
         })
@@ -21,14 +27,19 @@ describe("struct", () => {
     test("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean[]" })
         attest(o.infer).typed as { a?: string | undefined; b: boolean[] }
-        attest(o.attributes).snap({
-            type: "dictionary",
-            props: {
-                a: { type: "string" },
-                b: {
-                    type: "array",
-                    props: { "*": { type: "boolean" } },
-                    required: true
+        attest(o.root).snap({
+            object: {
+                props: {
+                    a: { string: true },
+                    b: {
+                        object: {
+                            subtype: "array",
+                            elements: { boolean: true }
+                        }
+                    }
+                },
+                requiredKeys: {
+                    b: true
                 }
             }
         })

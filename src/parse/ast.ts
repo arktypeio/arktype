@@ -1,4 +1,4 @@
-import type { Keyword } from "../nodes/keywords.js"
+import type { Keyword, Keywords } from "../nodes/keywords.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { error, evaluate, isAny, RegexLiteral } from "../utils/generics.js"
 import type {
@@ -95,7 +95,7 @@ type inferTerminal<
     scope extends dictionary,
     aliases
 > = token extends Keyword
-    ? Keyword.Inferences[token]
+    ? Keywords[token]
     : token extends keyof scope
     ? scope[token]
     : token extends keyof aliases

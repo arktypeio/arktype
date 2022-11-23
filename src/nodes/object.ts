@@ -1,4 +1,6 @@
 import { ScopeRoot } from "../scope.js"
+import type { keySet } from "../utils/generics.js"
+import { hasKey } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import type { TypeNode } from "./node.js"
 import { intersection } from "./operation.js"
@@ -6,6 +8,7 @@ import { SetOperations } from "./shared.js"
 
 export type ObjectAttributes = {
     readonly props?: PropsAttribute
+    readonly requiredKeys?: keySet
 } & ObjectSubtypeAttributes
 
 type PropsAttribute = { readonly [k in string]?: TypeNode }
@@ -40,7 +43,7 @@ export const propsOperation = {
     intersection: (l, r, scope) => {
         const result = { ...l, ...r }
         for (const k in result) {
-            if (k in l && k in r) {
+            if (hasKey(l, k) && hasKey(r, k)) {
                 result[k] = intersection(l[k], r[k], scope)
             }
         }

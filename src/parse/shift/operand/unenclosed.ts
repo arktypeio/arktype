@@ -1,10 +1,13 @@
-import { Keyword } from "../../../nodes/keywords.js"
+import type { Keyword } from "../../../nodes/keywords.js"
+import { keywords } from "../../../nodes/keywords.js"
 import type { TypeNode } from "../../../nodes/node.js"
 import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
+import { isKeyOf } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
+    IntegerLiteral,
     NumberLiteral
 } from "../../../utils/numericLiterals.js"
 import {
@@ -46,8 +49,8 @@ export const maybeParseIdentifier = (
     token: string,
     scope: ScopeRoot
 ): TypeNode | undefined =>
-    Keyword.matches(token)
-        ? Keyword.nodes[token]
+    isKeyOf(token, keywords)
+        ? keywords[token]
         : scope.aliases[token] || scope.config.scope?.$.aliases[token]
         ? { degenerate: "alias", name: token }
         : undefined
@@ -55,11 +58,11 @@ export const maybeParseIdentifier = (
 const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { value: token as NumberLiteral }
+        return { number: [maybeNumber] }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return { value: token as BigintLiteral }
+        return { bigint: [token.slice(0, -1) as IntegerLiteral] }
     }
 }
 

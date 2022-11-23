@@ -1,11 +1,10 @@
-import type { TypeNode } from "../../nodes/node.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import { operation } from "../../nodes/operation.js"
+import type { TypeNode } from "../../nodes/node.js"
+import { intersection, operation } from "../../nodes/operation.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
-import { buildUnboundableMessage } from "../ast.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -73,18 +72,18 @@ export class DynamicState {
         }
     }
 
-    setRoot(attributes: TypeNode) {
+    setRoot(node: TypeNode) {
         this.assertUnsetRoot()
-        this.root = attributes
+        this.root = node
     }
 
     morphRoot(name: MorphName) {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersect(a: TypeNode) {
+    intersect(node: TypeNode) {
         this.assertHasRoot()
-        this.root = operation(this.root!, a, this.scope)
+        this.root = intersection(this.root!, node, this.scope)
     }
 
     private ejectRoot() {
@@ -173,7 +172,7 @@ export class DynamicState {
         const branches = this.branches["&"]
         while (branches.length > 1) {
             branches.unshift(
-                operation(branches.pop()!, branches.pop()!, this.scope)
+                intersection(branches.pop()!, branches.pop()!, this.scope)
             )
         }
         this.setRoot(branches.pop()!)

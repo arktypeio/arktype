@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
-import { TypeNode, type } from "../exports.js"
+import { type, TypeNode } from "../exports.js"
 import { buildInvalidDivisorMessage } from "../src/parse/shift/operator/divisor.js"
 
 describe("divisibility", () => {
@@ -8,7 +8,7 @@ describe("divisibility", () => {
         describe("valid", () => {
             test("integerLiteralDefinition", () => {
                 const divisibleByTwo = type("number%2")
-                attest(divisibleByTwo.attributes).equals({
+                attest(divisibleByTwo.root).equals({
                     number: { divisor: 2 }
                 })
                 attest(divisibleByTwo.infer).typed as number

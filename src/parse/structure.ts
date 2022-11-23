@@ -14,13 +14,18 @@ export const parseStructure = (
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: dictionary<TypeNode> = {}
+    // TODO: Propagate never props.
     if (Array.isArray(def)) {
-        for (let i = 0; i < def.length; i++) {
-            props[i] = parseDefinition(def[i], scope)
+        return {
+            object: {
+                subtype: "array",
+                elements: def.map((elementDef) =>
+                    parseDefinition(def[elementDef], scope)
+                )
+            }
         }
-        return { array: { props } }
     }
+    const props: dictionary<TypeNode> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
@@ -32,7 +37,7 @@ export const parseStructure = (
         props[keyName] = parseDefinition(def[definitionKey], scope)
     }
     return {
-        dictionary: { props, requiredKeys }
+        object: { props, requiredKeys }
     }
 }
 
