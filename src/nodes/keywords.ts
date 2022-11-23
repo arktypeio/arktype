@@ -3,8 +3,6 @@ import { Node } from "./node.js"
 
 export type Keyword = keyof Keywords
 
-function f() {}
-
 export type Keywords = {
     // TS keywords
     any: any

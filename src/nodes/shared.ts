@@ -11,7 +11,10 @@ export const intersectCompositeSets = <set extends dictionary>(
     r: set
 ) => {}
 
-export type AttributeIntersection<t> = (l: t, r: t) => t | Never
+export type AttributeIntersection<t, neverable extends boolean = false> = (
+    l: t,
+    r: t
+) => t | (neverable extends true ? Never : never)
 
 export type AttributeDifference<t> = (l: t, r: t) => t | null
 

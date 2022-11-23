@@ -17,7 +17,7 @@ type ObjectSubtypeAttributes =
     | ArrayAttributes
     | FunctionAttributes
     | StandardAttributes
-    | {}
+    | { subtype: "any" }
 
 type ArrayAttributes = {
     readonly subtype: "array"

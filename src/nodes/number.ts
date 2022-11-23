@@ -1,10 +1,9 @@
 import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
-import { boundsOperations } from "./bounds.js"
 import type { Never } from "./node.js"
 import type { NodeOperator } from "./operations.js"
-import { SetOperations } from "./shared.js"
+import type { AttributeDifference, AttributeIntersection } from "./shared.js"
 
 export type NumberAttributes = {
     readonly divisor?: number
@@ -41,14 +40,13 @@ export const numberOperations = (
     return isEmpty(result) ? true : result
 }
 
-// TODO: Refactor to common setAttributes method to handle undefined
-const divisorOperations = {
-    "&": (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
-    "-": (l, r) => {
-        const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
-        return relativelyPrimeA === 1 ? null : relativelyPrimeA
-    }
-} satisfies SetOperations<number>
+const intersectDivisors: AttributeIntersection<number> = (l, r) =>
+    Math.abs((l * r) / greatestCommonDivisor(l, r))
+
+const subtractDivisors: AttributeDifference<number> = (l, r) => {
+    const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
+    return relativelyPrimeA === 1 ? null : relativelyPrimeA
+}
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
