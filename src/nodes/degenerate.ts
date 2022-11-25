@@ -1,8 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import { keywords } from "./keywords.js"
-import type { Node } from "./node.js"
-import type { NodeOperator } from "./operations.js"
-import { operation } from "./operations.js"
+import type { Node, NodeOperator } from "./node.js"
+import { intersect, subtract } from "./node.js"
 
 export const degenerateOperation = (
     operator: NodeOperator,
@@ -11,12 +10,9 @@ export const degenerateOperation = (
     scope: ScopeRoot
 ): Node => {
     if (l.degenerate === "alias" || r.degenerate === "alias") {
-        return operation(
-            operator,
-            resolveIfAlias(l, scope),
-            resolveIfAlias(r, scope),
-            scope
-        )
+        l = resolveIfAlias(l, scope)
+        r = resolveIfAlias(r, scope)
+        return operator === "&" ? intersect(l, r, scope) : subtract(l, r, scope)
     }
     const lookupKeyA = l.degenerate ?? "t"
     const lookupKeyB = r.degenerate ?? "t"

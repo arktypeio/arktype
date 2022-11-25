@@ -1,5 +1,5 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import type { AttributeDifference, AttributeIntersection } from "./shared.js"
+import type { AttributeDifference, AttributeIntersection } from "./node.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,7 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const intersectBounds: AttributeIntersection<Bounds> = (l, r) => {
+export const intersectBounds: AttributeIntersection<Bounds, true> = (l, r) => {
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min

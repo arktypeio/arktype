@@ -1,4 +1,4 @@
-import type { evaluate, isTopType } from "./generics.js"
+import type { evaluate, isTopType, mutable } from "./generics.js"
 
 export type DataTypes = {
     bigint: bigint
