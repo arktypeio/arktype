@@ -11,7 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const intersectBounds: AttributeIntersection<Bounds, true> = (l, r) => {
+export const intersectBounds: AttributeIntersection<Bounds> = (l, r) => {
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min

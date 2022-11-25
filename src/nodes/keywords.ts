@@ -1,4 +1,3 @@
-import type { array, record } from "../utils/dataTypes.js"
 import { Node } from "./node.js"
 
 export type Keyword = keyof Keywords
@@ -21,9 +20,6 @@ export type Keywords = {
     void: void
     // JS Object types
     Function: Function
-    // Supplemental types
-    array: array
-    record: record
     // Regex
     email: string
     alphanumeric: string
@@ -56,10 +52,7 @@ export const keywords = {
     unknown: { degenerate: "unknown" },
     void: { undefined: true },
     // JS Object types
-    Function: { object: { function: true } },
-    // Supplemental types
-    array: { object: { array: true } },
-    record: { object: { record: true } },
+    Function: { object: { subtype: { kind: "function" } } },
     // Regex
     email: { string: { regex: ["/^(.+)@(.+)\\.(.+)$/"] } },
     alphanumeric: { string: { regex: ["/^[dA-Za-z]+$/"] } },

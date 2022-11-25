@@ -1,7 +1,10 @@
 import type { RegexLiteral } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import { intersectBounds, subtractBounds } from "./bounds.js"
-import { AttributeDifferenceMap, AttributeIntersectionMap } from "./node.js"
+import {
+    AttributeDifferenceMapper,
+    AttributeIntersectionMapper
+} from "./node.js"
 
 export type StringAttributes = {
     readonly regex?: readonly RegexLiteral[]
@@ -19,9 +22,9 @@ export const stringAttributesIntersection = {
         return result
     },
     bounds: intersectBounds
-} satisfies AttributeIntersectionMap<StringAttributes>
+} satisfies AttributeIntersectionMapper<StringAttributes>
 
 export const stringAttributesDifference = {
     regex: (l, r) => l.filter((expression) => !r.includes(expression)),
     bounds: subtractBounds
-} satisfies AttributeDifferenceMap<StringAttributes>
+} satisfies AttributeDifferenceMapper<StringAttributes>

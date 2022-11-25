@@ -1,6 +1,9 @@
 import type { Bounds } from "./bounds.js"
 import { intersectBounds, subtractBounds } from "./bounds.js"
-import { AttributeDifferenceMap, AttributeIntersectionMap } from "./node.js"
+import {
+    AttributeDifferenceMapper,
+    AttributeIntersectionMapper
+} from "./node.js"
 
 export type NumberAttributes = {
     readonly divisor?: number
@@ -10,7 +13,7 @@ export type NumberAttributes = {
 export const intersectNumberAttributes = {
     divisor: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
     bounds: intersectBounds
-} satisfies AttributeIntersectionMap<NumberAttributes>
+} satisfies AttributeIntersectionMapper<NumberAttributes>
 
 export const subtractNumberAttributes = {
     divisor: (l, r) => {
@@ -18,7 +21,7 @@ export const subtractNumberAttributes = {
         return relativelyPrimeA === 1 ? null : relativelyPrimeA
     },
     bounds: subtractBounds
-} satisfies AttributeDifferenceMap<NumberAttributes>
+} satisfies AttributeDifferenceMapper<NumberAttributes>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

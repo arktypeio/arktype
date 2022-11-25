@@ -63,6 +63,14 @@ export const intersect = (l: Node, r: Node, scope: ScopeRoot) => {
     if (l.degenerate || r.degenerate) {
         return degenerateOperation("&", l, r, scope)
     }
+    return intersectCases(l, r, scope)
+}
+
+export const intersectCases = (
+    l: NodeTypes,
+    r: NodeTypes,
+    scope: ScopeRoot
+) => {
     const result: mutable<NodeTypes> = {}
     let caseKey: DataTypeName
     for (caseKey in l) {
@@ -80,22 +88,19 @@ export const subtract = (l: Node, r: Node, scope: ScopeRoot) => {
     return l
 }
 
-export type AttributeIntersectionMap<attributes extends record> = {
-    [k in keyof attributes]-?: AttributeIntersection<
-        defined<attributes[k]>,
-        true
-    >
-}
-
-export type AttributeIntersection<t, neverable extends boolean = false> = (
+export type AttributeIntersection<t> = (
     l: t,
     r: t,
     scope: ScopeRoot
-) => t | (neverable extends true ? Never : never)
+) => t | Never
+
+export type AttributeIntersectionMapper<attributes extends record> = {
+    [k in keyof attributes]-?: AttributeIntersection<defined<attributes[k]>>
+}
 
 export const intersectAttributes = <
     attributes extends record,
-    mapper extends AttributeIntersectionMap<attributes>
+    mapper extends AttributeIntersectionMapper<attributes>
 >(
     l: attributes,
     r: attributes,
@@ -119,15 +124,15 @@ export const intersectAttributes = <
     return result
 }
 
-export type AttributeDifferenceMap<attributes extends record> = {
+export type AttributeDifferenceMapper<attributes extends record> = {
     [k in keyof attributes]-?: AttributeDifference<defined<attributes[k]>>
 }
 
-export type AttributeDifference<t> = (l: t, r: t) => t | null
+export type AttributeDifference<t> = (l: t, r: t, scope: ScopeRoot) => t | null
 
-const differenceAttributes = <
+const subtractAttributes = <
     attributes extends record,
-    mapper extends AttributeDifferenceMap<attributes>
+    mapper extends AttributeDifferenceMapper<attributes>
 >(
     l: attributes,
     r: attributes,

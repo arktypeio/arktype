@@ -8,7 +8,8 @@ export type MorphName = keyof typeof morphs
 const morphs = {
     array: (node) => ({
         object: {
-            array: {
+            subtype: {
+                kind: "array",
                 elements: node
             }
         }

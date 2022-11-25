@@ -50,7 +50,8 @@ export const parseTuple = (def: array, scope: ScopeRoot): Node => {
     }
     return {
         object: {
-            array: {
+            subtype: {
+                kind: "array",
                 elements: def.map((elementDef) =>
                     parseDefinition(elementDef, scope)
                 )
