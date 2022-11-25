@@ -59,12 +59,10 @@ type DiscriminatedCases = {
 
 export type NodeOperator = "&" | "-"
 
-export const intersect = (l: Node, r: Node, scope: ScopeRoot) => {
-    if (l.degenerate || r.degenerate) {
-        return degenerateOperation("&", l, r, scope)
-    }
-    return intersectCases(l, r, scope)
-}
+export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
+    l.degenerate || r.degenerate
+        ? degenerateOperation("&", l, r, scope)
+        : intersectCases(l, r, scope)
 
 export const intersectCases = (
     l: NodeTypes,
