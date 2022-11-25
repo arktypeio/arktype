@@ -1,5 +1,5 @@
-import type { array, dictionary } from "./dynamicTypes.js"
-import { dynamicTypeOf } from "./dynamicTypes.js"
+import type { array, dictionary } from "./dataTypes.js"
+import { dataTypeOf } from "./dataTypes.js"
 
 export const deepClone = <value>(value: value): value => {
     const valueType = dynamicTypeOf(value)

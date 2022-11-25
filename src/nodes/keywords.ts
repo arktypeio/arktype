@@ -1,4 +1,4 @@
-import type { array, dictionary } from "../utils/dynamicTypes.js"
+import type { array, dictionary } from "../utils/dataTypes.js"
 import { Node } from "./node.js"
 
 export type Keyword = keyof Keywords
@@ -45,7 +45,7 @@ export const keywords = {
         reason: "explicitly typed as never"
     },
     null: { null: true },
-    number: { number: {} },
+    number: { number: true },
     object: {
         object: true
     },

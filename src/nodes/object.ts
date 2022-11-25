@@ -1,9 +1,7 @@
 import { ScopeRoot } from "../scope.js"
 import type { keySet } from "../utils/generics.js"
-import { hasKey } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import type { Node } from "./node.js"
-import { intersection } from "./operations.js"
 import { SetOperations } from "./shared.js"
 
 export type ObjectAttributes = {

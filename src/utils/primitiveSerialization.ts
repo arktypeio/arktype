@@ -1,10 +1,10 @@
-import type { DynamicTypes } from "./dynamicTypes.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "./numericLiterals.js"
+import type { DataTypes } from "./dataTypes.js"
 
 type SerializedString = `'${string}'`
 
@@ -20,7 +20,7 @@ export type SerializedPrimitives = {
 export type SerializedPrimitive =
     SerializedPrimitives[keyof SerializedPrimitives]
 
-export type SerializablePrimitive = DynamicTypes[keyof SerializedPrimitives]
+export type SerializablePrimitive = DataTypes[keyof SerializedPrimitives]
 
 export const serializePrimitive = <value extends SerializablePrimitive>(
     value: value

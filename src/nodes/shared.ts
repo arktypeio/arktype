@@ -1,15 +1,28 @@
 import type { ScopeRoot } from "../scope.js"
+import type { dictionary } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
 import type { defined, keySet } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
 import type { Never, Node, Unknown } from "./node.js"
 import type { NodeOperator } from "./operations.js"
 
-export const intersectCompositeSets = <set extends dictionary>(
+export const intersectAttributes = <
+    set extends dictionary,
+    intersections extends {
+        [k in keyof set]: AttributeIntersection<set[k], true>
+    }
+>(
     l: set,
-    r: set
-) => {}
+    r: set,
+    intersections: intersections
+) => {
+    const result = { ...l, ...r }
+    for (const k in result) {
+        if (k in l && k in r) {
+            const attributeResult = intersections[k](l[k], r[k])
+        }
+    }
+}
 
 export type AttributeIntersection<t, neverable extends boolean = false> = (
     l: t,

@@ -1,5 +1,4 @@
-import type { array, dictionary } from "./dynamicTypes.js"
-import { dynamicTypeOf, hasDynamicType } from "./dynamicTypes.js"
+import { dataTypeOf } from "./dataTypes.js"
 
 /**
  * Simple check for deep strict equality. Recurses into dictionaries and arrays,
@@ -9,11 +8,11 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (a === b) {
         return true
     }
-    const typeOfA = dynamicTypeOf(a)
-    const typeOfB = dynamicTypeOf(b)
+    const typeOfA = typeName(a)
+    const typeOfB = typeName(b)
     return typeOfA !== typeOfB
         ? false
-        : typeOfA === "dictionary"
+        : typeOfA === "object"
         ? deepEqualsObject(a as dictionary, b as dictionary)
         : typeOfA === "array"
         ? deepEqualsArray(a as array, b as array)

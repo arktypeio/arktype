@@ -1,4 +1,4 @@
-import type { dictionary } from "../../utils/dynamicTypes.js"
+import type { dictionary } from "../../utils/dataTypes.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]

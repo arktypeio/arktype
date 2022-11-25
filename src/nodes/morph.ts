@@ -1,4 +1,4 @@
-import { dictionary } from "../utils/dynamicTypes.js"
+import { dictionary } from "../utils/dataTypes.js"
 import { Node } from "./node.js"
 
 export const morph = (name: MorphName, node: Node) => morphs[name](node)

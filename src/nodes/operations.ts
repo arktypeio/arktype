@@ -3,7 +3,7 @@ import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import { degenerateOperation } from "./degenerate.js"
-import type { Node, NodeTypes, TypeName } from "./node.js"
+import type { DataType, Node, NodeTypes } from "./node.js"
 import type { AttributeIntersection } from "./shared.js"
 
 export type NodeOperator = "&" | "-"
@@ -37,7 +37,7 @@ const casesOperation = (
     scope: ScopeRoot
 ): Node => {
     const result: mutable<NodeTypes> = {}
-    let caseKey: TypeName
+    let caseKey: DataType
     for (caseKey in l) {
         if (hasKey(r, caseKey)) {
             result[caseKey] = l[caseKey] as any

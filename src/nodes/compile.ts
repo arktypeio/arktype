@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
+import type { dictionary } from "../utils/dataTypes.js"
 import { throwInternalError } from "../utils/errors.js"
 import { pathToSegments, pushKey } from "../utils/paths.js"
 import type { Node, UnionBranches } from "./node.js"

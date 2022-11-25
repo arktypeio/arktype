@@ -1,4 +1,4 @@
-import { dynamicTypeOf } from "../utils/dynamicTypes.js"
+import { dataTypeOf } from "../utils/dataTypes.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean

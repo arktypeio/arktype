@@ -1,9 +1,12 @@
 import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import { dynamicTypeOf } from "../utils/dynamicTypes.js"
-import type { dictionary, DynamicTypeName } from "../utils/dynamicTypes.js"
 import { throwParseError } from "../utils/errors.js"
 import type { error, evaluate, isAny, isTopType } from "../utils/generics.js"
+import type {
+    dictionary,
+    DataTypeName,
+    dataTypeOf
+} from "../utils/dataTypes.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
 import type { inferStructure } from "./structure.js"
@@ -44,7 +47,7 @@ export type validateDefinition<
     : def extends string
     ? validateString<def, scope>
     : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<dynamicTypeOf<def>>
+    ? buildBadDefinitionTypeMessage<typeOf<def>>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], scope>
       }>
@@ -63,10 +66,10 @@ export type buildUninferableDefinitionMessage<
 > =
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
-export const buildBadDefinitionTypeMessage = <actual extends DynamicTypeName>(
+export const buildBadDefinitionTypeMessage = <actual extends DataTypeName>(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-export type buildBadDefinitionTypeMessage<actual extends DynamicTypeName> =
+export type buildBadDefinitionTypeMessage<actual extends DataTypeName> =
     `Type definitions must be strings or objects (was ${actual})`
