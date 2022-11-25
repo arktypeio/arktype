@@ -1,27 +1,25 @@
 import type { Bounds } from "./bounds.js"
-import { intersectBounds, subtractBounds } from "./bounds.js"
-import {
-    AttributeDifferenceMapper,
-    AttributeIntersectionMapper
-} from "./node.js"
+import { boundsOperations } from "./bounds.js"
+import { AttributeOperations, DataTypeOperations } from "./shared.js"
 
 export type NumberAttributes = {
     readonly divisor?: number
     readonly bounds?: Bounds
 }
 
-export const intersectNumberAttributes = {
-    divisor: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
-    bounds: intersectBounds
-} satisfies AttributeIntersectionMapper<NumberAttributes>
-
-export const subtractNumberAttributes = {
-    divisor: (l, r) => {
+export const divisorOperations = {
+    intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
+    subtract: (l, r) => {
         const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
         return relativelyPrimeA === 1 ? null : relativelyPrimeA
     },
-    bounds: subtractBounds
-} satisfies AttributeDifferenceMapper<NumberAttributes>
+    check: (divisor, data) => data % divisor === 0
+} satisfies AttributeOperations<number, number>
+
+export const numberAttributes = {
+    bounds: boundsOperations,
+    divisor: divisorOperations
+} satisfies DataTypeOperations<NumberAttributes, number>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

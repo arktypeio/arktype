@@ -1,5 +1,6 @@
+import type { array } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
-import type { AttributeDifference, AttributeIntersection } from "./node.js"
+import { AttributeOperations } from "./shared.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,43 +12,66 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const intersectBounds: AttributeIntersection<Bounds> = (l, r) => {
-    const min =
-        r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
-            ? r.min
-            : l.min
-    const max =
-        r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
-            ? r.max
-            : l.max
-    return min
-        ? max
-            ? compareStrictness(min, max, "min") === "l"
-                ? {
-                      degenerate: "never",
-                      reason: buildEmptyRangeMessage("min", min, max)
-                  }
-                : compareStrictness(min, max, "max") === "r"
-                ? {
-                      degenerate: "never",
-                      reason: buildEmptyRangeMessage("max", min, max)
-                  }
-                : { min, max }
-            : { min }
-        : max
-        ? { max }
-        : {}
-}
+export type BoundableData = number | string | array
 
-export const subtractBounds: AttributeDifference<Bounds> = ({ ...l }, r) => {
-    if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
-        delete l.min
+export const boundsOperations = {
+    intersect: (l, r) => {
+        const min =
+            r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
+                ? r.min
+                : l.min
+        const max =
+            r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
+                ? r.max
+                : l.max
+        return min
+            ? max
+                ? compareStrictness(min, max, "min") === "l"
+                    ? {
+                          degenerate: "never",
+                          reason: buildEmptyRangeMessage("min", min, max)
+                      }
+                    : compareStrictness(min, max, "max") === "r"
+                    ? {
+                          degenerate: "never",
+                          reason: buildEmptyRangeMessage("max", min, max)
+                      }
+                    : { min, max }
+                : { min }
+            : max
+            ? { max }
+            : {}
+    },
+    subtract: ({ ...l }, r) => {
+        if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
+            delete l.min
+        }
+        if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
+            delete l.max
+        }
+        return isEmpty(l) ? null : l
+    },
+    check: (bounds, data) => {
+        const size = typeof data === "number" ? data : data.length
+        if (bounds.min) {
+            if (
+                size < bounds.min.limit ||
+                (size === bounds.min.limit && bounds.min.exclusive)
+            ) {
+                return false
+            }
+        }
+        if (bounds.max) {
+            if (
+                size > bounds.max.limit ||
+                (size === bounds.max.limit && bounds.max.exclusive)
+            ) {
+                return false
+            }
+        }
+        return true
     }
-    if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
-        delete l.max
-    }
-    return isEmpty(l) ? null : l
-}
+} satisfies AttributeOperations<Bounds, BoundableData>
 
 export const buildEmptyRangeMessage = (
     kind: BoundKind,

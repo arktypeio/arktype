@@ -1,12 +1,14 @@
 import type { ScopeRoot } from "../scope.js"
 import type { DataTypeName, record } from "../utils/dataTypes.js"
 import { hasDataType, hasObjectSubtype } from "../utils/dataTypes.js"
-import type { defined, evaluate, mutable, xor } from "../utils/generics.js"
+import { isEmpty } from "../utils/deepEquals.js"
+import type { defined, evaluate, xor } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import { degenerateOperation } from "./degenerate.js"
 import type { NumberAttributes } from "./number.js"
 import type { ObjectAttributes } from "./object.js"
+import type { DataTypeOperations } from "./shared.js"
 import type { StringAttributes } from "./string.js"
 
 export type Node = xor<NodeTypes, DegenerateNode>
@@ -64,19 +66,42 @@ export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
         ? degenerateOperation("&", l, r, scope)
         : intersectCases(l, r, scope)
 
+type UnknownTypeAttributes = true | (string | number | boolean)[] | record
+
+type UnknownType = { [k in DataTypeName]?: UnknownTypeAttributes }
+
 export const intersectCases = (
     l: NodeTypes,
     r: NodeTypes,
     scope: ScopeRoot
-) => {
-    const result: mutable<NodeTypes> = {}
-    let caseKey: DataTypeName
-    for (caseKey in l) {
-        if (hasKey(r, caseKey)) {
-            result[caseKey] = l[caseKey] as any
+): Node => {
+    const result: UnknownType = {}
+    let typeName: DataTypeName
+    for (typeName in l) {
+        if (hasKey(r, typeName)) {
+            const leftCase = l[typeName] as UnknownTypeAttributes
+            const rightCase = l[typeName] as UnknownTypeAttributes
+            if (leftCase === true) {
+                result[typeName] = rightCase
+            } else if (rightCase === true) {
+                result[typeName] = leftCase
+            } else if (Array.isArray(leftCase)) {
+                if (Array.isArray(rightCase)) {
+                    const overlappingValues = leftCase.filter(
+                        (primitiveValue) => rightCase.includes(primitiveValue)
+                    )
+                    if (overlappingValues.length) {
+                        result[typeName] = overlappingValues
+                    }
+                } else {
+                }
+            }
+            result[typeName] = l[typeName] as any
         }
     }
-    return result
+    return isEmpty(result)
+        ? { degenerate: "never", reason: "" }
+        : (result as Node)
 }
 
 export const subtract = (l: Node, r: Node, scope: ScopeRoot) => {
@@ -86,19 +111,9 @@ export const subtract = (l: Node, r: Node, scope: ScopeRoot) => {
     return l
 }
 
-export type AttributeIntersection<t> = (
-    l: t,
-    r: t,
-    scope: ScopeRoot
-) => t | Never
-
-export type AttributeIntersectionMapper<attributes extends record> = {
-    [k in keyof attributes]-?: AttributeIntersection<defined<attributes[k]>>
-}
-
 export const intersectAttributes = <
     attributes extends record,
-    mapper extends AttributeIntersectionMapper<attributes>
+    mapper extends DataTypeOperations<attributes>
 >(
     l: attributes,
     r: attributes,
@@ -122,15 +137,9 @@ export const intersectAttributes = <
     return result
 }
 
-export type AttributeDifferenceMapper<attributes extends record> = {
-    [k in keyof attributes]-?: AttributeDifference<defined<attributes[k]>>
-}
-
-export type AttributeDifference<t> = (l: t, r: t, scope: ScopeRoot) => t | null
-
 const subtractAttributes = <
     attributes extends record,
-    mapper extends AttributeDifferenceMapper<attributes>
+    mapper extends DataTypeDifference<attributes>
 >(
     l: attributes,
     r: attributes,

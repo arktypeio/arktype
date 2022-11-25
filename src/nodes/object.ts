@@ -4,8 +4,8 @@ import type { keySet, mutable } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import {
-    AttributeDifferenceMapper,
-    AttributeIntersectionMapper,
+    DataTypeDifference,
+    DataTypeIntersection,
     intersect,
     subtract
 } from "./node.js"
@@ -41,7 +41,7 @@ const intersectObjectAttributes = {
     },
     requiredKeys: intersectKeySets,
     subtype: (l, r) => l
-} satisfies AttributeIntersectionMapper<ObjectAttributes>
+} satisfies DataTypeIntersection<ObjectAttributes>
 
 const subtractObjectAttributes = {
     props: (l, r, scope) => {
@@ -60,4 +60,4 @@ const subtractObjectAttributes = {
     },
     requiredKeys: subtractKeySets,
     subtype: (l, r) => l
-} satisfies AttributeDifferenceMapper<ObjectAttributes>
+} satisfies DataTypeDifference<ObjectAttributes>
