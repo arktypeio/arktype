@@ -16,27 +16,27 @@ export const numberOperations = (
     r: NumberAttributes
 ): NumberAttributes | Never | true => {
     const result: mutable<NumberAttributes> = {}
-    const divisor =
-        l.divisor !== undefined
-            ? r.divisor !== undefined
-                ? divisorOperations[operator](l.divisor, r.divisor)
-                : l.divisor
-            : r.divisor ?? null
-    if (divisor !== null) {
-        result.divisor = divisor
-    }
-    const bounds = l.bounds
-        ? r.bounds
-            ? boundsOperations[operator](l.bounds, r.bounds)
-            : l.bounds
-        : r.bounds ?? null
-    if (bounds !== null) {
-        // TODO: Fix
-        if ((bounds as any).degenerate) {
-            return bounds as Never
-        }
-        result.bounds = bounds
-    }
+    // const divisor =
+    //     l.divisor !== undefined
+    //         ? r.divisor !== undefined
+    //             ? divisorOperations[operator](l.divisor, r.divisor)
+    //             : l.divisor
+    //         : r.divisor ?? null
+    // if (divisor !== null) {
+    //     result.divisor = divisor
+    // }
+    // const bounds = l.bounds
+    //     ? r.bounds
+    //         ? boundsOperations[operator](l.bounds, r.bounds)
+    //         : l.bounds
+    //     : r.bounds ?? null
+    // if (bounds !== null) {
+    //     // TODO: Fix
+    //     if ((bounds as any).degenerate) {
+    //         return bounds as Never
+    //     }
+    //     result.bounds = bounds
+    // }
     return isEmpty(result) ? true : result
 }
 

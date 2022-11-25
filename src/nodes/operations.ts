@@ -1,24 +1,19 @@
 import type { ScopeRoot } from "../scope.js"
+import type { DataTypeName } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import { degenerateOperation } from "./degenerate.js"
-import type { DataType, Node, NodeTypes } from "./node.js"
+import type { Node, NodeTypes } from "./node.js"
 import type { AttributeIntersection } from "./shared.js"
 
 export type NodeOperator = "&" | "-"
 
-export const intersection: AttributeIntersection<Node, ScopeRoot> = (
-    l,
-    r,
-    scope
-) => operation("&", l, r, scope)
+export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
+    operation("&", l, r, scope)
 
-export const difference: AttributeIntersection<Node, ScopeRoot> = (
-    l,
-    r,
-    scope
-) => operation("-", l, r, scope)
+export const difference = (l: Node, r: Node, scope: ScopeRoot) =>
+    operation("-", l, r, scope)
 
 export const operation = (
     operator: NodeOperator,
@@ -37,7 +32,7 @@ const casesOperation = (
     scope: ScopeRoot
 ): Node => {
     const result: mutable<NodeTypes> = {}
-    let caseKey: DataType
+    let caseKey: DataTypeName
     for (caseKey in l) {
         if (hasKey(r, caseKey)) {
             result[caseKey] = l[caseKey] as any
