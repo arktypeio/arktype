@@ -44,7 +44,7 @@ export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
     get typeOf() {
-        return dynamicTypeOf(this.raw)
+        return dataTypeOf(this.raw)
     }
 
     // TODO: Fix

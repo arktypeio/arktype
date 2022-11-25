@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { dictionary } from "../utils/dataTypes.js"
+import type { record } from "../utils/dataTypes.js"
 import { throwInternalError } from "../utils/errors.js"
 import { pathToSegments, pushKey } from "../utils/paths.js"
 import type { Node, UnionBranches } from "./node.js"
@@ -59,7 +59,7 @@ export const compile = (attributes: Node, scope: ScopeRoot): Node => {
 //     if (!discriminant) {
 //         return ["|", branches]
 //     }
-//     const branchesByValue: dictionary<Type[]> = {}
+//     const branchesByValue: record<Type[]> = {}
 //     for (let i = 0; i < branches.length; i++) {
 //         const value = queryAttribute(branches[i], discriminant.path)
 //         const caseKey = value ?? "default"
@@ -75,7 +75,7 @@ export const compile = (attributes: Node, scope: ScopeRoot): Node => {
 //                 : branches[i]
 //         )
 //     }
-//     const cases: dictionary<Type> = {}
+//     const cases: record<Type> = {}
 //     for (const value in branchesByValue) {
 //         const base: Type = compress(branchesByValue[value], scope)
 //         cases[value] = discriminate(base, scope)
@@ -149,7 +149,7 @@ export const compile = (attributes: Node, scope: ScopeRoot): Node => {
 // type PropFrequencyEntry = [propKey: string, appearances: number]
 
 // const sortPropsByFrequency = (branches: Type[]): PropFrequencyEntry[] => {
-//     const appearancesByProp: dictionary<number> = {}
+//     const appearancesByProp: record<number> = {}
 //     for (let i = 0; i < branches.length; i++) {
 //         if (!branches[i].props) {
 //             continue

@@ -1,4 +1,5 @@
 import type { DataTypeName } from "../utils/dataTypes.js"
+import { hasDataType, hasObjectSubtype } from "../utils/dataTypes.js"
 import type { evaluate, xor } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { NumberAttributes } from "./number.js"
@@ -24,7 +25,10 @@ export type DegenerateNode = Never | Any | Unknown | Alias
 
 export type Never = { degenerate: "never"; reason: string }
 
-export const isNever = (t: unknown): t is Never => {}
+export const isNever = (t: unknown): t is Never =>
+    hasDataType(t, "object") &&
+    hasObjectSubtype(t, "record") &&
+    t.degenerate === "never"
 
 export type Any = { degenerate: "any" }
 

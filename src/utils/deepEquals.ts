@@ -1,4 +1,5 @@
-import { dataTypeOf } from "./dataTypes.js"
+import type { array, record } from "./dataTypes.js"
+import { hasDataType, objectSubtypeOf } from "./dataTypes.js"
 
 /**
  * Simple check for deep strict equality. Recurses into dictionaries and arrays,
@@ -8,18 +9,20 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (a === b) {
         return true
     }
-    const typeOfA = typeName(a)
-    const typeOfB = typeName(b)
-    return typeOfA !== typeOfB
-        ? false
-        : typeOfA === "object"
-        ? deepEqualsObject(a as dictionary, b as dictionary)
-        : typeOfA === "array"
+    if (!hasDataType(a, "object") || !hasDataType(b, "object")) {
+        return false
+    }
+    const aSubtype = objectSubtypeOf(a)
+    const bSubtype = objectSubtypeOf(b)
+    if (aSubtype !== bSubtype) {
+        return false
+    }
+    return aSubtype === "array"
         ? deepEqualsArray(a as array, b as array)
-        : false
+        : deepEqualsRecord(a as record, b as record)
 }
 
-const deepEqualsObject = (a: dictionary, b: dictionary) => {
+const deepEqualsRecord = (a: record, b: record) => {
     const unseenBKeys = { ...b }
     for (const k in a) {
         if (k in b && deepEquals(a[k], b[k])) {
@@ -46,4 +49,4 @@ const deepEqualsArray = (a: array, b: array) => {
     return true
 }
 
-export const isEmpty = (o: array | dictionary) => Object.keys(o).length === 0
+export const isEmpty = (o: array | record) => Object.keys(o).length === 0

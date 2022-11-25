@@ -12,8 +12,9 @@ describe("struct", () => {
                     a: { string: true },
                     b: {
                         object: {
-                            subtype: "array",
-                            elements: { boolean: true }
+                            array: {
+                                elements: { boolean: true }
+                            }
                         }
                     }
                 },
@@ -33,8 +34,9 @@ describe("struct", () => {
                     a: { string: true },
                     b: {
                         object: {
-                            subtype: "array",
-                            elements: { boolean: true }
+                            array: {
+                                elements: { boolean: true }
+                            }
                         }
                     }
                 },

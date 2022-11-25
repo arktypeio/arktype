@@ -104,10 +104,6 @@ export type stringKeyOf<t> = keyof t & string
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
-export type dictionary<of = unknown> = Record<string, of>
-
-export type array<of = unknown> = of[]
-
 /** Either:
  * A, with all properties of B as undefined
  * OR

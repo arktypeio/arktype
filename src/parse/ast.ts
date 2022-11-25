@@ -4,14 +4,14 @@ import type {
     SerializablePrimitive,
     serializePrimitive
 } from "../utils/primitiveSerialization.js"
-import type { dictionary } from "../utils/dataTypes.js"
+import type { record } from "../utils/dataTypes.js"
 import type { inferDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 import type { StringLiteral } from "./shift/operand/enclosed.js"
 
 export type inferAst<
     ast,
-    scope extends dictionary,
+    scope extends record,
     aliases
 > = ast extends readonly unknown[]
     ? ast[1] extends "[]"
@@ -35,10 +35,7 @@ export type inferAst<
           }>
     : inferTerminal<ast, scope, aliases>
 
-export type validateAstSemantics<
-    ast,
-    scope extends dictionary
-> = ast extends string
+export type validateAstSemantics<ast, scope extends record> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
     ? validateAstSemantics<child, scope>
@@ -90,11 +87,7 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<
-    token,
-    scope extends dictionary,
-    aliases
-> = token extends Keyword
+type inferTerminal<token, scope extends record, aliases> = token extends Keyword
     ? Keywords[token]
     : token extends keyof scope
     ? scope[token]

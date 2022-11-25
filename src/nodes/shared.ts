@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { dictionary } from "../utils/dataTypes.js"
+import type { record } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { defined, keySet } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
@@ -7,7 +7,7 @@ import type { Never, Node, Unknown } from "./node.js"
 import type { NodeOperator } from "./operations.js"
 
 export const intersectAttributes = <
-    set extends dictionary,
+    set extends record,
     intersections extends {
         [k in keyof set]: AttributeIntersection<set[k], true>
     }

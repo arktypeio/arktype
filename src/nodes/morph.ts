@@ -1,4 +1,4 @@
-import { dictionary } from "../utils/dataTypes.js"
+import { record } from "../utils/dataTypes.js"
 import { Node } from "./node.js"
 
 export const morph = (name: MorphName, node: Node) => morphs[name](node)
@@ -8,8 +8,9 @@ export type MorphName = keyof typeof morphs
 const morphs = {
     array: (node) => ({
         object: {
-            subtype: "array",
-            elements: node
+            array: {
+                elements: node
+            }
         }
     })
-} satisfies dictionary<(input: Node) => Node>
+} satisfies record<(input: Node) => Node>

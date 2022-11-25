@@ -1,18 +1,16 @@
-import type { array, dictionary } from "./dataTypes.js"
-import { dataTypeOf } from "./dataTypes.js"
+import type { record } from "./dataTypes.js"
+import { hasDataType, hasObjectSubtype } from "./dataTypes.js"
+import type { mutable } from "./generics.js"
 
-export const deepClone = <value>(value: value): value => {
-    const valueType = dynamicTypeOf(value)
-    return (
-        valueType === "dictionary"
-            ? deepCloneDictionary(value as dictionary)
-            : valueType === "array"
-            ? (value as array).map(deepClone)
-            : value
-    ) as value
-}
-const deepCloneDictionary = (value: dictionary) => {
-    const result: dictionary = {}
+export const deepClone = <value>(value: value): value =>
+    (hasDataType(value, "object")
+        ? hasObjectSubtype(value, "array")
+            ? value.map(deepClone)
+            : deepCloneRecord(value as record)
+        : value) as value
+
+const deepCloneRecord = (value: record) => {
+    const result: mutable<record> = {}
     for (const k in value) {
         result[k] = deepClone(value[k])
     }

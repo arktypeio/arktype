@@ -1,4 +1,4 @@
-import type { isTopType } from "./generics.js"
+import type { evaluate, isTopType } from "./generics.js"
 
 export type DataTypes = {
     bigint: bigint
@@ -11,7 +11,7 @@ export type DataTypes = {
     null: null
 }
 
-export type DataTypeName = keyof DataTypes
+export type DataTypeName = evaluate<keyof DataTypes>
 
 export type dataTypeOf<data> = isTopType<data> extends true
     ? DataTypeName
@@ -57,20 +57,24 @@ export const hasDataTypeIn = <name extends DataTypeName>(
 ): data is DataTypes[name] => dataTypeOf(data) in names
 
 export type ObjectSubtypes = {
-    array: readonly unknown[]
+    array: array
     function: Function
-    record: { readonly [k in string]: unknown }
+    record: record
 }
 
-export type ObjectSubtypeName = keyof ObjectSubtypes
+export type array<of = unknown> = readonly of[]
 
-export type objectSubtypeOf<data extends object> = isTopType<data> extends true
+export type record<of = unknown> = { readonly [k in string]: of }
+
+export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
+
+export type objectSubtypeOf<data extends object> = data extends object
     ? ObjectSubtypeName
-    : data extends ObjectSubtypes["array"]
+    : data extends array
     ? "array"
-    : data extends ObjectSubtypes["function"]
+    : data extends Function
     ? "function"
-    : data extends ObjectSubtypes["record"]
+    : data extends record
     ? "record"
     : never
 

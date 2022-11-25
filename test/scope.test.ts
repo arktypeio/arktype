@@ -80,12 +80,13 @@ describe("scope", () => {
         }
         attest(s.$.attributes).snap({
             a: {
-                object: { subtype: "array", elements: { string: true } }
+                object: { array: { elements: { string: true } } }
             },
             b: {
                 object: {
-                    subtype: "array",
-                    elements: { degenerate: "alias", name: "a" }
+                    array: {
+                        elements: { degenerate: "alias", name: "a" }
+                    }
                 }
             },
             d: { degenerate: "alias", name: "definedInScope" }
