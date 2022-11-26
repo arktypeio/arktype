@@ -1,7 +1,5 @@
 import { isEmpty } from "../utils/deepEquals.js"
 import type { Never } from "./degenerate.js"
-import { isNever } from "./degenerate.js"
-import { AttributeOperations } from "./shared.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -36,18 +34,13 @@ export const checkBounds = (bounds: Bounds, data: number) => {
 export const intersectBounds = (
     l: Bounds | undefined,
     r: Bounds | undefined
-) => {
-    if (l && r) {
-        const boundsResult = intersectDefinedBounds(l, r)
-        if (isNever(boundsResult)) {
-            return boundsResult
-        }
-        return boundsResult
+): Bounds | Never | undefined => {
+    if (!l) {
+        return r
     }
-    return l ?? r
-}
-
-const intersectDefinedBounds = (l: Bounds, r: Bounds): Bounds | Never => {
+    if (!r) {
+        return l
+    }
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min
@@ -65,28 +58,30 @@ const intersectDefinedBounds = (l: Bounds, r: Bounds): Bounds | Never => {
                           reason: buildEmptyRangeMessage("min", min, max)
                       }
                   ]
-                : compareStrictness(min, max, "max") === "r"
-                ? [
-                      {
-                          type: "never",
-                          reason: buildEmptyRangeMessage("max", min, max)
-                      }
-                  ]
                 : { min, max }
             : { min }
-        : max
-        ? { max }
-        : {}
+        : { max: max! }
 }
 
-export const subtractBounds = ({ ...l }: Bounds, r: Bounds): Bounds | null => {
+export const subtractBounds = (
+    l: Bounds | undefined,
+    r: Bounds | undefined
+): Bounds | undefined => {
+    if (!l) {
+        return
+    }
+    if (!r) {
+        return l
+    }
+    const result = { ...l }
     if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
-        delete l.min
+        delete result.min
     }
     if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
-        delete l.max
+        delete result.max
     }
-    return isEmpty(l) ? null : l
+    // TODO: Check ternary line coverage
+    return isEmpty(result) ? undefined : result
 }
 
 export const buildEmptyRangeMessage = (

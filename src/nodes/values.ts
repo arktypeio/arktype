@@ -40,7 +40,7 @@ export const intersectDisjointValues = <t extends ValueLiteral>(
 export const subtractValues = <t extends ValueLiteral>(
     l: array<t>,
     r: array<t>
-): array<t> | null => {
+) => {
     const result = l.filter((value) => !r.includes(value))
-    return result.length ? result : null
+    return result.length ? result : undefined
 }
