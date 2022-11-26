@@ -8,8 +8,8 @@ import type {
 import { hasDataType, hasObjectSubtype } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import { throwInternalError } from "../utils/errors.js"
-import type { evaluate, mutable, xor } from "../utils/generics.js"
-import { hasKey } from "../utils/generics.js"
+import type { mutable, xor } from "../utils/generics.js"
+import { evaluate, hasKey, isKeyOf } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import { degenerateOperation } from "./degenerate.js"
 import type { NumberAttributes } from "./number.js"
@@ -19,35 +19,38 @@ import { disjointPrimitiveOperations } from "./primitives.js"
 import type { StringAttributes } from "./string.js"
 import { checkString, stringAttributes } from "./string.js"
 
-export type Node = xor<TypeCases, DegenerateNode>
+export type Node = TypeCases | DegenerateNode
 
-export type TypeCases = {
-    readonly bigint?: true | readonly IntegerLiteral[]
-    readonly boolean?: true | readonly [boolean]
-    readonly number?: true | readonly number[] | NumberAttributes
-    readonly object?: true | ObjectAttributes
-    readonly string?: true | readonly string[] | StringAttributes
-    readonly symbol?: true
-    readonly undefined?: true
-    readonly null?: true
-}
+const isDegenerate = (node: Node): node is DegenerateNode =>
+    !Array.isArray(node)
 
-export type TypeName = evaluate<keyof TypeCases>
+export type TypeCases = readonly TypeCase[]
 
 export type DegenerateNode = Never | Any | Unknown | Alias
 
-export type Never = { degenerate: "never"; reason: string }
+export type TypeCase =
+    | { readonly type: "bigint"; readonly values?: readonly IntegerLiteral[] }
+    | { readonly type: "boolean"; readonly values?: readonly [boolean] }
+    | { readonly type: "null" }
+    | ({ readonly type: "number" } & xor<
+          { readonly values?: readonly number[] },
+          { readonly attributes?: NumberAttributes }
+      >)
+    | { readonly type: "object"; readonly attributes?: ObjectAttributes }
+    | ({ readonly type: "string" } & xor<
+          { readonly values?: readonly string[] },
+          { readonly attributes?: StringAttributes }
+      >)
+    | { readonly type: "symbol" }
+    | { readonly type: "undefined" }
 
-export const isNever = (t: unknown): t is Never =>
-    hasDataType(t, "object") &&
-    hasObjectSubtype(t, "record") &&
-    t.degenerate === "never"
+export type Never = { readonly type: "never"; readonly reason: string }
 
-export type Any = { degenerate: "any" }
+export type Any = { readonly type: "any" }
 
-export type Unknown = { degenerate: "unknown" }
+export type Unknown = { readonly type: "unknown" }
 
-export type Alias = { degenerate: "alias"; name: string }
+export type Alias = { readonly type: "alias"; readonly name: string }
 
 export type Branches = UnionBranches | IntersectedUnions
 
@@ -70,7 +73,7 @@ type DiscriminatedCases = {
 export type NodeOperator = "&" | "-"
 
 export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
-    l.degenerate || r.degenerate
+    isDegenerate(l) || isDegenerate(r)
         ? degenerateOperation("&", l, r, scope)
         : intersectCases(l, r, scope)
 
@@ -106,7 +109,7 @@ export const intersectCases = (
         }
     }
     return isEmpty(result)
-        ? { degenerate: "never", reason: JSON.stringify(pruned, null, 4) }
+        ? { type: "never", reason: JSON.stringify(pruned, null, 4) }
         : (result as Node)
 }
 
