@@ -150,8 +150,8 @@ const attributeOperationsByType = {
 
 const intersectAttributes = (
     typeName: DataTypeName,
-    leftAttributes: record,
-    rightAttributes: record,
+    leftAttributes: record<any>,
+    rightAttributes: record<any>,
     scope: ScopeRoot
 ): record | Never => {
     const result = { ...leftAttributes, ...rightAttributes }
@@ -159,7 +159,7 @@ const intersectAttributes = (
         if (k in leftAttributes && k in rightAttributes) {
             const intersection = attributeOperationsByType[typeName][
                 k
-            ].intersect(leftAttributes, rightAttributes, scope)
+            ].intersect(leftAttributes[k], rightAttributes[k], scope)
             if (isNever(intersection)) {
                 return intersection
             }
