@@ -1,7 +1,7 @@
-import type { array } from "../utils/dataTypes.js"
-import { isEmpty } from "../utils/deepEquals.js"
-import type { keySet } from "../utils/generics.js"
-import type { Never } from "./types/degenerate.js"
+import type { array } from "../../utils/dataTypes.js"
+import { isEmpty } from "../../utils/deepEquals.js"
+import type { keySet } from "../../utils/generics.js"
+import type { Never } from "./degenerate.js"
 
 export type ValueLiteral = string | number | boolean
 
@@ -59,3 +59,15 @@ export const subtractKeySets = (l: keySet, r: keySet) => {
     }
     return isEmpty(result) ? undefined : result
 }
+
+// export const queryPath = (attributes: TypeNode, path: string) => {
+//     // const segments = pathToSegments(path)
+//     // let currentAttributes = attributes
+//     // for (const segment of segments) {
+//     //     if (currentAttributes.props?.[segment] === undefined) {
+//     //         return undefined
+//     //     }
+//     //     currentAttributes = currentAttributes.props[segment]
+//     // }
+//     // return currentAttributes[key]
+// }

@@ -1,10 +1,10 @@
 import { isEmpty } from "../../utils/deepEquals.js"
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
-import { checkBounds, intersectBounds, subtractBounds } from "../bounds.js"
-import { subtractValues } from "../utils.js"
+import { checkBounds, intersectBounds, pruneBounds } from "../bounds.js"
 import { isNever } from "./degenerate.js"
-import type { TypeOperations } from "./operations.js"
+import { TypeOperations } from "./operations.js"
+import { subtractValues } from "./utils.js"
 
 export type NumberAttributes = xor<
     {
@@ -14,12 +14,12 @@ export type NumberAttributes = xor<
     { readonly values?: readonly number[] }
 >
 
-export const numbers: TypeOperations<number, NumberAttributes> = {
+export const numbers = {
     intersect: (l, r) => {
         if (l.values || r.values) {
             const values = l.values ?? r.values!
             const attributes = l.values ? r : l
-            const result = values.filter((value) =>
+            const result: number[] = values.filter((value) =>
                 numbers.check(value, attributes)
             )
             return result.length
@@ -47,7 +47,7 @@ export const numbers: TypeOperations<number, NumberAttributes> = {
         }
         return result
     },
-    subtract: (l, r) => {
+    prune: (l, r) => {
         if (l.values) {
             const values = r.values
                 ? subtractValues(l.values, r.values)
@@ -59,7 +59,7 @@ export const numbers: TypeOperations<number, NumberAttributes> = {
         if (divisor) {
             result.divisor = divisor
         }
-        const boundsResult = subtractBounds(l.bounds, r.bounds)
+        const boundsResult = pruneBounds(l.bounds, r.bounds)
         if (boundsResult) {
             result.bounds = boundsResult
         }
@@ -70,7 +70,7 @@ export const numbers: TypeOperations<number, NumberAttributes> = {
             ? attributes.values.includes(data)
             : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
               (!attributes.divisor || data % attributes.divisor === 0)
-}
+} satisfies TypeOperations<number, NumberAttributes>
 
 const intersectDivisors = (l: number | undefined, r: number | undefined) =>
     l && r ? Math.abs((l * r) / greatestCommonDivisor(l, r)) : l ?? r

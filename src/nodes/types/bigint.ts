@@ -20,7 +20,7 @@ export const bigints: TypeOperations<bigint, BigintAttributes> = {
         }
         return l.values ? l : r
     },
-    subtract: (l, r) => {
+    prune: (l, r) => {
         if (l.values) {
             const result = l.values.filter(
                 (value) => !r.values!.includes(value)

@@ -12,7 +12,7 @@ export const booleans: TypeOperations<boolean, BooleanAttributes> = {
         }
         return hasKey(l, "value") ? l : r
     },
-    subtract: (l, r) => {
+    prune: (l, r) => {
         if (hasKey(l, "value")) {
             return l.value === r.value ? undefined : l
         }

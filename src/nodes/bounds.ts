@@ -11,26 +11,6 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const checkBounds = (bounds: Bounds, data: number) => {
-    if (bounds.min) {
-        if (
-            data < bounds.min.limit ||
-            (data === bounds.min.limit && bounds.min.exclusive)
-        ) {
-            return false
-        }
-    }
-    if (bounds.max) {
-        if (
-            data > bounds.max.limit ||
-            (data === bounds.max.limit && bounds.max.exclusive)
-        ) {
-            return false
-        }
-    }
-    return true
-}
-
 export const intersectBounds = (
     l: Bounds | undefined,
     r: Bounds | undefined
@@ -63,7 +43,7 @@ export const intersectBounds = (
         : { max: max! }
 }
 
-export const subtractBounds = (
+export const pruneBounds = (
     l: Bounds | undefined,
     r: Bounds | undefined
 ): Bounds | undefined => {
@@ -82,6 +62,26 @@ export const subtractBounds = (
     }
     // TODO: Check ternary line coverage
     return isEmpty(result) ? undefined : result
+}
+
+export const checkBounds = (bounds: Bounds, data: number) => {
+    if (bounds.min) {
+        if (
+            data < bounds.min.limit ||
+            (data === bounds.min.limit && bounds.min.exclusive)
+        ) {
+            return false
+        }
+    }
+    if (bounds.max) {
+        if (
+            data > bounds.max.limit ||
+            (data === bounds.max.limit && bounds.max.exclusive)
+        ) {
+            return false
+        }
+    }
+    return true
 }
 
 export const buildEmptyRangeMessage = (

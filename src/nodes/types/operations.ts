@@ -1,18 +1,26 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { record } from "../../utils/dataTypes.js"
+import type { DataTypes, record } from "../../utils/dataTypes.js"
+import type { AttributesByType, TypeWithAttributes } from "../node.js"
 import type { Never } from "./degenerate.js"
 
-export type TypeOperations<data, attributes extends record> = {
-    intersect: Intersection<attributes>
-    subtract: Difference<attributes>
-    check: Check<data, attributes>
+export type OperationsByType = {
+    [typeName in TypeWithAttributes]: TypeOperations<
+        DataTypes[typeName],
+        AttributesByType[typeName]
+    >
 }
 
-type Intersection<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
+export type TypeOperations<data, attributes extends record> = {
+    intersect: IntersectFn<attributes>
+    prune: PruneFn<attributes>
+    check: CheckFn<data, attributes>
+}
 
-type Difference<t> = (l: t, r: t, scope: ScopeRoot) => t | undefined
+type IntersectFn<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
 
-type Check<data, attributes> = (
+type PruneFn<t> = (branch: t, given: t, scope: ScopeRoot) => t | undefined
+
+type CheckFn<data, attributes> = (
     data: data,
     attributes: attributes,
     scope: ScopeRoot

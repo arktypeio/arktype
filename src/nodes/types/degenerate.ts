@@ -4,7 +4,7 @@ import { isKeyOf } from "../../utils/generics.js"
 import { intersect } from "../intersect.js"
 import { keywords } from "../keywords.js"
 import type { Node } from "../node.js"
-import { subtract } from "../subtract.js"
+import { prune } from "../prune.js"
 
 export type DegenerateNode = Never | Any | Unknown | Alias
 
@@ -53,7 +53,7 @@ const degenerateOperation = (
     if (isAlias(l) || isAlias(r)) {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)
-        return operator === "&" ? intersect(l, r, scope) : subtract(l, r, scope)
+        return operator === "&" ? intersect(l, r, scope) : prune(l, r, scope)
     }
     const firstKey = isDegenerate(l) ? l[0].type : "t"
     const secondKey = isDegenerate(r) ? r[0].type : "t"
