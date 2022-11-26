@@ -1,12 +1,16 @@
+import type { xor } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import { boundsOperations, checkBounds } from "./bounds.js"
 import type { AttributeOperations, DataTypeOperations } from "./shared.js"
 
-export type NumberAttributes = {
-    readonly divisor?: number
-    readonly bounds?: Bounds
-}
+export type NumberAttributes = xor<
+    {
+        readonly divisor?: number
+        readonly bounds?: Bounds
+    },
+    { readonly values?: readonly number[] }
+>
 
 export const divisorOperations: AttributeOperations<number> = {
     intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),

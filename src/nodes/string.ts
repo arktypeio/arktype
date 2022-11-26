@@ -1,4 +1,4 @@
-import type { RegexLiteral } from "../utils/generics.js"
+import type { RegexLiteral, xor } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import { boundsOperations, checkBounds } from "./bounds.js"
 import {
@@ -7,10 +7,13 @@ import {
 } from "./primitives.js"
 import type { DataTypeOperations } from "./shared.js"
 
-export type StringAttributes = {
-    readonly regex?: readonly RegexLiteral[]
-    readonly bounds?: Bounds
-}
+export type StringAttributes = xor<
+    {
+        readonly regex?: readonly RegexLiteral[]
+        readonly bounds?: Bounds
+    },
+    { readonly values?: readonly string[] }
+>
 
 const regexCache: Record<RegexLiteral, RegExp> = {}
 

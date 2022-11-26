@@ -6,12 +6,13 @@ export const morph = (name: MorphName, node: Node) => morphs[name](node)
 export type MorphName = keyof typeof morphs
 
 const morphs = {
-    array: (node) => ({
-        object: {
+    array: (node) => [
+        {
+            type: "object",
             subtype: {
                 kind: "array",
                 elements: node
             }
         }
-    })
+    ]
 } satisfies record<(input: Node) => Node>

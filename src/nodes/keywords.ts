@@ -32,33 +32,31 @@ export type Keywords = {
 
 export const keywords = {
     // TS keywords
-    any: { degenerate: "any" },
-    bigint: { bigint: true },
-    boolean: { boolean: true },
-    false: { boolean: [false] },
+    any: { type: "any" },
+    bigint: [{ type: "bigint" }],
+    boolean: [{ type: "boolean" }],
+    false: [{ type: "boolean", value: false }],
     never: {
-        degenerate: "never",
+        type: "never",
         reason: "explicitly typed as never"
     },
-    null: { null: true },
-    number: { number: true },
-    object: {
-        object: true
-    },
-    string: { string: true },
-    symbol: { symbol: true },
-    true: { boolean: [true] },
-    undefined: { undefined: true },
-    unknown: { degenerate: "unknown" },
-    void: { undefined: true },
+    null: [{ type: "null" }],
+    number: [{ type: "number" }],
+    object: [{ type: "object" }],
+    string: [{ type: "string" }],
+    symbol: [{ type: "symbol" }],
+    true: [{ type: "boolean", value: true }],
+    undefined: [{ type: "undefined" }],
+    unknown: { type: "unknown" },
+    void: [{ type: "undefined" }],
     // JS Object types
-    Function: { object: { subtype: { kind: "function" } } },
+    Function: [{ type: "object", subtype: { kind: "function" } }],
     // Regex
-    email: { string: { regex: ["/^(.+)@(.+)\\.(.+)$/"] } },
-    alphanumeric: { string: { regex: ["/^[dA-Za-z]+$/"] } },
-    alphaonly: { string: { regex: ["/^[A-Za-z]+$/"] } },
-    lowercase: { string: { regex: ["/^[a-z]*$/"] } },
-    uppercase: { string: { regex: ["/^[A-Z]*$/"] } },
+    email: [{ type: "string", regex: ["/^(.+)@(.+)\\.(.+)$/"] }],
+    alphanumeric: [{ type: "string", regex: ["/^[dA-Za-z]+$/"] }],
+    alphaonly: [{ type: "string", regex: ["/^[A-Za-z]+$/"] }],
+    lowercase: [{ type: "string", regex: ["/^[a-z]*$/"] }],
+    uppercase: [{ type: "string", regex: ["/^[A-Z]*$/"] }],
     // Numeric
-    integer: { number: { divisor: 1 } }
+    integer: [{ type: "number", divisor: 1 }]
 } as const satisfies { [k in Keyword]: Node }

@@ -27,7 +27,7 @@ export const intersectDisjointPrimitiveSets = <t extends PrimitiveLiteral>(
     return result.length
         ? result
         : {
-              degenerate: "never",
+              type: "never",
               reason: "empty primitive set intersection"
           }
 }

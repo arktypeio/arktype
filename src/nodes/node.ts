@@ -5,11 +5,10 @@ import type {
     DataTypes,
     record
 } from "../utils/dataTypes.js"
-import { hasDataType, hasObjectSubtype } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { mutable, xor } from "../utils/generics.js"
-import { evaluate, hasKey, isKeyOf } from "../utils/generics.js"
+import { hasKey } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import { degenerateOperation } from "./degenerate.js"
 import type { NumberAttributes } from "./number.js"
@@ -19,29 +18,23 @@ import { disjointPrimitiveOperations } from "./primitives.js"
 import type { StringAttributes } from "./string.js"
 import { checkString, stringAttributes } from "./string.js"
 
-export type Node = TypeCases | DegenerateNode
+export type Node = TypeBranches | DegenerateNode
 
 const isDegenerate = (node: Node): node is DegenerateNode =>
     !Array.isArray(node)
 
-export type TypeCases = readonly TypeCase[]
+export type TypeBranches = readonly TypeBranch[]
 
 export type DegenerateNode = Never | Any | Unknown | Alias
 
-export type TypeCase =
+export type TypeBranch =
+    | ({ readonly type: "object" } & ObjectAttributes)
+    | ({ readonly type: "string" } & StringAttributes)
+    | ({ readonly type: "number" } & NumberAttributes)
     | { readonly type: "bigint"; readonly values?: readonly IntegerLiteral[] }
-    | { readonly type: "boolean"; readonly values?: readonly [boolean] }
-    | { readonly type: "null" }
-    | ({ readonly type: "number" } & xor<
-          { readonly values?: readonly number[] },
-          { readonly attributes?: NumberAttributes }
-      >)
-    | { readonly type: "object"; readonly attributes?: ObjectAttributes }
-    | ({ readonly type: "string" } & xor<
-          { readonly values?: readonly string[] },
-          { readonly attributes?: StringAttributes }
-      >)
+    | { readonly type: "boolean"; readonly value?: boolean }
     | { readonly type: "symbol" }
+    | { readonly type: "null" }
     | { readonly type: "undefined" }
 
 export type Never = { readonly type: "never"; readonly reason: string }
@@ -51,24 +44,6 @@ export type Any = { readonly type: "any" }
 export type Unknown = { readonly type: "unknown" }
 
 export type Alias = { readonly type: "alias"; readonly name: string }
-
-export type Branches = UnionBranches | IntersectedUnions
-
-export type UnionBranches = UndiscriminatedUnion | DiscriminatedUnion
-
-export type UndiscriminatedUnion = readonly [token: "|", members: Node[]]
-
-export type IntersectedUnions = readonly [token: "&", members: UnionBranches[]]
-
-export type DiscriminatedUnion = readonly [
-    token: "?",
-    path: string,
-    cases: DiscriminatedCases
-]
-
-type DiscriminatedCases = {
-    readonly [k in DataTypeName]?: Node
-}
 
 export type NodeOperator = "&" | "-"
 
@@ -86,8 +61,8 @@ type UnknownAttributes = AttributesByDataType[DataTypeWithAttributes]
 type UnknownType = { [k in DataTypeName]?: UnknownTypeCase }
 
 export const intersectCases = (
-    l: TypeCases,
-    r: TypeCases,
+    l: TypeBranches,
+    r: TypeBranches,
     scope: ScopeRoot
 ): Node => {
     const result: UnknownType = {}
@@ -125,10 +100,10 @@ const isPrimitiveSet = (typeCase: unknown): typeCase is any[] =>
 
 export const intersectTypeCase = <typeName extends DataTypeName>(
     typeName: typeName,
-    l: TypeCases[typeName],
-    r: TypeCases[typeName],
+    l: TypeBranches[typeName],
+    r: TypeBranches[typeName],
     scope: ScopeRoot
-): TypeCases[typeName] | Never => {
+): TypeBranches[typeName] | Never => {
     if (l === true) {
         return r
     } else if (r === true) {
@@ -138,7 +113,7 @@ export const intersectTypeCase = <typeName extends DataTypeName>(
             return disjointPrimitiveOperations.intersect(
                 l,
                 r
-            ) as TypeCases[typeName]
+            ) as TypeBranches[typeName]
         }
         return filterPrimitivesByAttributes(
             typeName as PrimitiveDataTypeWithAttributes,
