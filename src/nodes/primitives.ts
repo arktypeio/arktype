@@ -6,7 +6,7 @@ export type PrimitiveLiteral = string | number | boolean
 
 export type PrimitiveLiteralSet = array<PrimitiveLiteral>
 
-export const intersectAdditivePrimitives = <t extends PrimitiveLiteral>(
+export const intersectAdditivePrimitiveSets = <t extends PrimitiveLiteral>(
     l: array<t>,
     r: array<t>
 ): array<t> => {
@@ -40,8 +40,12 @@ export const subtractPrimitiveSets = <t extends PrimitiveLiteral>(
     return result.length ? result : null
 }
 
-export const primitiveLiteralOperations = {
+export const disjointPrimitiveOperations = {
     intersect: intersectDisjointPrimitiveSets,
-    subtract: subtractPrimitiveSets,
-    check: (values, data) => values.includes(data)
-} satisfies AttributeOperations<PrimitiveLiteralSet, PrimitiveLiteral>
+    subtract: subtractPrimitiveSets
+} satisfies AttributeOperations<PrimitiveLiteralSet>
+
+export const additivePrimitiveOperations = {
+    intersect: intersectAdditivePrimitiveSets,
+    subtract: subtractPrimitiveSets
+} satisfies AttributeOperations<PrimitiveLiteralSet>

@@ -1,15 +1,19 @@
 import type { ScopeRoot } from "../scope.js"
-import type { DataTypeName, record } from "../utils/dataTypes.js"
+import type { array, DataTypeName, record } from "../utils/dataTypes.js"
 import { hasDataType, hasObjectSubtype } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
-import type { defined, evaluate, xor } from "../utils/generics.js"
+import { throwInternalError } from "../utils/errors.js"
+import type { evaluate, mutable, xor } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import { degenerateOperation } from "./degenerate.js"
 import type { NumberAttributes } from "./number.js"
+import { checkNumber, numberAttributes } from "./number.js"
 import type { ObjectAttributes } from "./object.js"
+import { disjointPrimitiveOperations } from "./primitives.js"
 import type { DataTypeOperations } from "./shared.js"
 import type { StringAttributes } from "./string.js"
+import { checkString, stringAttributes } from "./string.js"
 
 export type Node = xor<NodeTypes, DegenerateNode>
 
@@ -66,7 +70,7 @@ export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
         ? degenerateOperation("&", l, r, scope)
         : intersectCases(l, r, scope)
 
-type UnknownTypeAttributes = true | (string | number | boolean)[] | record
+type UnknownTypeAttributes = true | array<string | number | boolean> | record
 
 type UnknownType = { [k in DataTypeName]?: UnknownTypeAttributes }
 
@@ -76,31 +80,25 @@ export const intersectCases = (
     scope: ScopeRoot
 ): Node => {
     const result: UnknownType = {}
+    const pruned: mutable<record<Never>> = {}
     let typeName: DataTypeName
     for (typeName in l) {
         if (hasKey(r, typeName)) {
-            const leftCase = l[typeName] as UnknownTypeAttributes
-            const rightCase = l[typeName] as UnknownTypeAttributes
-            if (leftCase === true) {
-                result[typeName] = rightCase
-            } else if (rightCase === true) {
-                result[typeName] = leftCase
-            } else if (Array.isArray(leftCase)) {
-                if (Array.isArray(rightCase)) {
-                    const overlappingValues = leftCase.filter(
-                        (primitiveValue) => rightCase.includes(primitiveValue)
-                    )
-                    if (overlappingValues.length) {
-                        result[typeName] = overlappingValues
-                    }
-                } else {
-                }
+            const keyResult = intersectTypeCase(
+                typeName,
+                l[typeName]!,
+                r[typeName],
+                scope
+            )
+            if (isNever(keyResult)) {
+                pruned[typeName] = keyResult
+            } else {
+                result[typeName] = keyResult
             }
-            result[typeName] = l[typeName] as any
         }
     }
     return isEmpty(result)
-        ? { degenerate: "never", reason: "" }
+        ? { degenerate: "never", reason: JSON.stringify(pruned, null, 4) }
         : (result as Node)
 }
 
@@ -111,57 +109,62 @@ export const subtract = (l: Node, r: Node, scope: ScopeRoot) => {
     return l
 }
 
-export const intersectAttributes = <
-    attributes extends record,
-    mapper extends DataTypeOperations<attributes>
->(
-    l: attributes,
-    r: attributes,
-    mapper: mapper,
+export const intersectTypeCase = (
+    typeName: DataTypeName,
+    l: UnknownTypeAttributes,
+    r: UnknownTypeAttributes,
     scope: ScopeRoot
-) => {
-    const result = { ...l, ...r }
-    for (const k in result) {
-        if (hasKey(l, k) && hasKey(r, k)) {
-            const attributeResult = (mapper[k] as DynamicOperation)(
-                l[k],
-                r[k],
-                scope
-            )
-            if (isNever(attributeResult)) {
-                return attributeResult
-            }
-            result[k] = attributeResult as any
-        }
-    }
-    return result
-}
-
-const subtractAttributes = <
-    attributes extends record,
-    mapper extends DataTypeDifference<attributes>
->(
-    l: attributes,
-    r: attributes,
-    mapper: mapper,
-    scope: ScopeRoot
-) => {
-    const result = {} as attributes
-    for (const k in l) {
-        if (hasKey(r, k)) {
-            const attributeResult = (mapper[k] as DynamicOperation)(
-                l[k],
-                r[k],
-                scope
-            )
-            if (attributeResult !== null) {
-                result[k] = attributeResult as any
-            }
+): UnknownTypeAttributes | Never => {
+    if (l === true) {
+        return r
+    } else if (r === true) {
+        return l
+    } else if (Array.isArray(l)) {
+        if (Array.isArray(r)) {
+            return disjointPrimitiveOperations.intersect(l, r)
         } else {
-            result[k] = l[k]
+            return filterPrimitivesByAttributes(typeName, l, r)
+        }
+    } else if (Array.isArray(r)) {
+        return filterPrimitivesByAttributes(typeName, r, l)
+    }
+    return intersectAttributes(typeName, l as record, r as record, scope)
+}
+
+const filterPrimitivesByAttributes = (
+    typeName: DataTypeName,
+    values: array<any>,
+    attributes: any
+) =>
+    typeName === "string"
+        ? values.filter((value) => checkString(attributes, value))
+        : typeName === "number"
+        ? values.filter((value) => checkNumber(attributes, value))
+        : throwInternalError(`Unexpected primitive literal type ${typeName}`)
+
+const attributeOperationsByType = {
+    string: stringAttributes,
+    number: numberAttributes,
+    object: {} as any
+} as any as record<DataTypeOperations<any>>
+
+const intersectAttributes = (
+    typeName: DataTypeName,
+    leftAttributes: record,
+    rightAttributes: record,
+    scope: ScopeRoot
+): record | Never => {
+    const result = { ...leftAttributes, ...rightAttributes }
+    for (const k in result) {
+        if (k in leftAttributes && k in rightAttributes) {
+            const intersection = attributeOperationsByType[typeName][
+                k
+            ].intersect(leftAttributes, rightAttributes, scope)
+            if (isNever(intersection)) {
+                return intersection
+            }
+            result[k] = intersection
         }
     }
     return result
 }
-
-type DynamicOperation = (l: unknown, r: unknown, scope: ScopeRoot) => any

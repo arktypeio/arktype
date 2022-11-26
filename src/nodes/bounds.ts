@@ -14,6 +14,27 @@ export type Bound = {
 
 export type BoundableData = number | string | array
 
+export const checkBounds = (bounds: Bounds, data: BoundableData) => {
+    const size = typeof data === "number" ? data : data.length
+    if (bounds.min) {
+        if (
+            size < bounds.min.limit ||
+            (size === bounds.min.limit && bounds.min.exclusive)
+        ) {
+            return false
+        }
+    }
+    if (bounds.max) {
+        if (
+            size > bounds.max.limit ||
+            (size === bounds.max.limit && bounds.max.exclusive)
+        ) {
+            return false
+        }
+    }
+    return true
+}
+
 export const boundsOperations = {
     intersect: (l, r) => {
         const min =
@@ -50,28 +71,8 @@ export const boundsOperations = {
             delete l.max
         }
         return isEmpty(l) ? null : l
-    },
-    check: (bounds, data) => {
-        const size = typeof data === "number" ? data : data.length
-        if (bounds.min) {
-            if (
-                size < bounds.min.limit ||
-                (size === bounds.min.limit && bounds.min.exclusive)
-            ) {
-                return false
-            }
-        }
-        if (bounds.max) {
-            if (
-                size > bounds.max.limit ||
-                (size === bounds.max.limit && bounds.max.exclusive)
-            ) {
-                return false
-            }
-        }
-        return true
     }
-} satisfies AttributeOperations<Bounds, BoundableData>
+} satisfies AttributeOperations<Bounds>
 
 export const buildEmptyRangeMessage = (
     kind: BoundKind,

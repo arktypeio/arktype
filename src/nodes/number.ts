@@ -1,25 +1,35 @@
+import { hasKey } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
-import { boundsOperations } from "./bounds.js"
-import { AttributeOperations, DataTypeOperations } from "./shared.js"
+import { boundsOperations, checkBounds } from "./bounds.js"
+import type { AttributeOperations, DataTypeOperations } from "./shared.js"
 
 export type NumberAttributes = {
     readonly divisor?: number
     readonly bounds?: Bounds
 }
 
-export const divisorOperations = {
+export const divisorOperations: AttributeOperations<number> = {
     intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
     subtract: (l, r) => {
         const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
         return relativelyPrimeA === 1 ? null : relativelyPrimeA
-    },
-    check: (divisor, data) => data % divisor === 0
-} satisfies AttributeOperations<number, number>
+    }
+}
 
-export const numberAttributes = {
+export const checkNumber = (attributes: NumberAttributes, data: number) => {
+    if (hasKey(attributes, "bounds") && !checkBounds(attributes.bounds, data)) {
+        return false
+    }
+    if (hasKey(attributes, "divisor") && data % attributes.divisor !== 0) {
+        return false
+    }
+    return true
+}
+
+export const numberAttributes: DataTypeOperations<NumberAttributes> = {
     bounds: boundsOperations,
     divisor: divisorOperations
-} satisfies DataTypeOperations<NumberAttributes, number>
+}
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

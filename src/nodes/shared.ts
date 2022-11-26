@@ -4,12 +4,6 @@ import { isEmpty } from "../utils/deepEquals.js"
 import type { defined, keySet } from "../utils/generics.js"
 import type { Never } from "./node.js"
 
-export type AttributeCheck<attribute, data> = (
-    attribute: attribute,
-    data: data,
-    scope: ScopeRoot
-) => boolean
-
 export type AttributeIntersection<t> = (
     l: t,
     r: t,
@@ -18,14 +12,13 @@ export type AttributeIntersection<t> = (
 
 export type AttributeDifference<t> = (l: t, r: t, scope: ScopeRoot) => t | null
 
-export type AttributeOperations<attribute, data> = {
+export type AttributeOperations<attribute> = {
     intersect: AttributeIntersection<attribute>
     subtract: AttributeDifference<attribute>
-    check: AttributeCheck<attribute, data>
 }
 
-export type DataTypeOperations<attributes extends record, data> = {
-    [k in keyof attributes]-?: AttributeOperations<defined<attributes[k]>, data>
+export type DataTypeOperations<attributes extends record> = {
+    [k in keyof attributes]-?: AttributeOperations<defined<attributes[k]>>
 }
 
 export const intersectKeySets: AttributeIntersection<keySet> = (l, r) => ({
