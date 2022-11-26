@@ -1,7 +1,7 @@
-import type { ScopeRoot } from "../scope.js"
-import { throwInternalError } from "../utils/errors.js"
-import { hasKey } from "../utils/generics.js"
-import type { Branches, Node, UndiscriminatedUnion } from "./node.js"
+// import type { ScopeRoot } from "../scope.js"
+// import { throwInternalError } from "../utils/errors.js"
+// import { hasKey } from "../utils/generics.js"
+// import type { Node } from "./node.js"
 
 // export const branchOperations = defineOperations<Attribute<"branches">>()({
 //     intersection: (a, b) => ["&", [...listUnions(a), ...listUnions(b)]],
@@ -82,19 +82,19 @@ import type { Branches, Node, UndiscriminatedUnion } from "./node.js"
 //     }
 // }
 
-const unexpectedDiscriminatedBranchesMessage =
-    "Unexpected operation on discriminated branches"
+// const unexpectedDiscriminatedBranchesMessage =
+//     "Unexpected operation on discriminated branches"
 
-const listUnions = (branches: Branches) =>
-    branches[0] === "|"
-        ? [branches]
-        : branches[0] === "&"
-        ? branches[1].map((intersectedBranches) =>
-              intersectedBranches[0] === "?"
-                  ? throwInternalError(unexpectedDiscriminatedBranchesMessage)
-                  : intersectedBranches
-          )
-        : throwInternalError(unexpectedDiscriminatedBranchesMessage)
+// const listUnions = (branches: Branches) =>
+//     branches[0] === "|"
+//         ? [branches]
+//         : branches[0] === "&"
+//         ? branches[1].map((intersectedBranches) =>
+//               intersectedBranches[0] === "?"
+//                   ? throwInternalError(unexpectedDiscriminatedBranchesMessage)
+//                   : intersectedBranches
+//           )
+//         : throwInternalError(unexpectedDiscriminatedBranchesMessage)
 
 // export const excludeFromBranches = (
 //     branches: Branches,

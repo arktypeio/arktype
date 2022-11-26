@@ -32,14 +32,16 @@ export type Keywords = {
 
 export const keywords = {
     // TS keywords
-    any: { type: "any" },
+    any: [{ type: "any" }],
     bigint: [{ type: "bigint" }],
     boolean: [{ type: "boolean" }],
     false: [{ type: "boolean", value: false }],
-    never: {
-        type: "never",
-        reason: "explicitly typed as never"
-    },
+    never: [
+        {
+            type: "never",
+            reason: "explicitly typed as never"
+        }
+    ],
     null: [{ type: "null" }],
     number: [{ type: "number" }],
     object: [{ type: "object" }],
@@ -47,7 +49,7 @@ export const keywords = {
     symbol: [{ type: "symbol" }],
     true: [{ type: "boolean", value: true }],
     undefined: [{ type: "undefined" }],
-    unknown: { type: "unknown" },
+    unknown: [{ type: "unknown" }],
     void: [{ type: "undefined" }],
     // JS Object types
     Function: [{ type: "object", subtype: { kind: "function" } }],

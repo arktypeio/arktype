@@ -1,5 +1,6 @@
-import type { array } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
+import type { Never } from "./degenerate.js"
+import { isNever } from "./degenerate.js"
 import { AttributeOperations } from "./shared.js"
 
 export type Bounds = {
@@ -12,22 +13,19 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export type BoundableData = number | string | array
-
-export const checkBounds = (bounds: Bounds, data: BoundableData) => {
-    const size = typeof data === "number" ? data : data.length
+export const checkBounds = (bounds: Bounds, data: number) => {
     if (bounds.min) {
         if (
-            size < bounds.min.limit ||
-            (size === bounds.min.limit && bounds.min.exclusive)
+            data < bounds.min.limit ||
+            (data === bounds.min.limit && bounds.min.exclusive)
         ) {
             return false
         }
     }
     if (bounds.max) {
         if (
-            size > bounds.max.limit ||
-            (size === bounds.max.limit && bounds.max.exclusive)
+            data > bounds.max.limit ||
+            (data === bounds.max.limit && bounds.max.exclusive)
         ) {
             return false
         }
@@ -35,44 +33,61 @@ export const checkBounds = (bounds: Bounds, data: BoundableData) => {
     return true
 }
 
-export const boundsOperations = {
-    intersect: (l, r) => {
-        const min =
-            r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
-                ? r.min
-                : l.min
-        const max =
-            r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
-                ? r.max
-                : l.max
-        return min
-            ? max
-                ? compareStrictness(min, max, "min") === "l"
-                    ? {
-                          degenerate: "never",
+export const intersectBounds = (
+    l: Bounds | undefined,
+    r: Bounds | undefined
+) => {
+    if (l && r) {
+        const boundsResult = intersectDefinedBounds(l, r)
+        if (isNever(boundsResult)) {
+            return boundsResult
+        }
+        return boundsResult
+    }
+    return l ?? r
+}
+
+const intersectDefinedBounds = (l: Bounds, r: Bounds): Bounds | Never => {
+    const min =
+        r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
+            ? r.min
+            : l.min
+    const max =
+        r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
+            ? r.max
+            : l.max
+    return min
+        ? max
+            ? compareStrictness(min, max, "min") === "l"
+                ? [
+                      {
+                          type: "never",
                           reason: buildEmptyRangeMessage("min", min, max)
                       }
-                    : compareStrictness(min, max, "max") === "r"
-                    ? {
-                          degenerate: "never",
+                  ]
+                : compareStrictness(min, max, "max") === "r"
+                ? [
+                      {
+                          type: "never",
                           reason: buildEmptyRangeMessage("max", min, max)
                       }
-                    : { min, max }
-                : { min }
-            : max
-            ? { max }
-            : {}
-    },
-    subtract: ({ ...l }, r) => {
-        if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
-            delete l.min
-        }
-        if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
-            delete l.max
-        }
-        return isEmpty(l) ? null : l
+                  ]
+                : { min, max }
+            : { min }
+        : max
+        ? { max }
+        : {}
+}
+
+export const subtractBounds = ({ ...l }: Bounds, r: Bounds): Bounds | null => {
+    if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
+        delete l.min
     }
-} satisfies AttributeOperations<Bounds>
+    if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
+        delete l.max
+    }
+    return isEmpty(l) ? null : l
+}
 
 export const buildEmptyRangeMessage = (
     kind: BoundKind,

@@ -2,7 +2,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { record } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { defined, keySet } from "../utils/generics.js"
-import type { Never } from "./node.js"
+import type { Never } from "./degenerate.js"
 
 export type AttributeIntersection<t> = (
     l: t,
@@ -16,6 +16,12 @@ export type AttributeOperations<attribute> = {
     intersect: AttributeIntersection<attribute>
     subtract: AttributeDifference<attribute>
 }
+
+export type Intersection<attributes extends record> = (
+    l: attributes,
+    r: attributes,
+    scope: ScopeRoot
+) => attributes | Never
 
 export type DataTypeOperations<attributes extends record> = {
     [k in keyof attributes]-?: AttributeOperations<defined<attributes[k]>>

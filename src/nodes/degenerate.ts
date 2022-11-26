@@ -1,7 +1,40 @@
 import type { ScopeRoot } from "../scope.js"
+import type { record } from "../utils/dataTypes.js"
+import { isKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
 import type { Node, NodeOperator } from "./node.js"
-import { intersect, subtract } from "./node.js"
+
+export type DegenerateNode = Never | Any | Unknown | Alias
+
+export type Never = readonly [
+    { readonly type: "never"; readonly reason: string }
+]
+
+export type Any = readonly [{ readonly type: "any" }]
+
+export type Unknown = readonly [{ readonly type: "unknown" }]
+
+export type Alias = readonly [{ readonly type: "alias"; readonly name: string }]
+
+const degenerateKeys = {
+    alias: true,
+    any: true,
+    never: true,
+    unknown: true
+}
+
+export const isDegenerate = (node: Node): node is DegenerateNode =>
+    isKeyOf(node[0].type, degenerateKeys)
+
+export const isAlias = (node: Node): node is Alias => node[0].type === "alias"
+
+export const isAny = (node: Node): node is Any => node[0].type === "any"
+
+export const isUnknown = (node: Node): node is Unknown =>
+    node[0].type === "unknown"
+
+export const isNever = (result: record<any>): result is Never =>
+    result[0].type === "never"
 
 export const degenerateOperation = (
     operator: NodeOperator,
@@ -9,26 +42,22 @@ export const degenerateOperation = (
     r: Node,
     scope: ScopeRoot
 ): Node => {
-    if (l.degenerate === "alias" || r.degenerate === "alias") {
+    if (isAlias(l) || isAlias(r)) {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)
         return operator === "&" ? intersect(l, r, scope) : subtract(l, r, scope)
     }
-    const lookupKeyA = l.degenerate ?? "t"
-    const lookupKeyB = r.degenerate ?? "t"
+    const firstKey = isDegenerate(l) ? l[0].type : "t"
+    const secondKey = isDegenerate(r) ? r[0].type : "t"
     const resultKey =
         operator === "&"
-            ? degenerateIntersections[lookupKeyA][lookupKeyB]
-            : degenerateDifferences[lookupKeyA][lookupKeyB]
-    return resultKey === "t"
-        ? lookupKeyA === "t"
-            ? l
-            : r
-        : keywords[resultKey]
+            ? degenerateIntersections[firstKey][secondKey]
+            : degenerateDifferences[firstKey][secondKey]
+    return resultKey === "t" ? (firstKey === "t" ? l : r) : keywords[resultKey]
 }
 
 const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
-    node.degenerate === "alias" ? scope.resolve(node.name) : node
+    isAlias(node) ? scope.resolve(node[0].name) : node
 
 const degenerateIntersections = {
     any: {

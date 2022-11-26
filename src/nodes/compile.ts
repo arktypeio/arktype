@@ -1,10 +1,10 @@
-import type { ScopeRoot } from "../scope.js"
-import type { record } from "../utils/dataTypes.js"
-import { throwInternalError } from "../utils/errors.js"
-import { pathToSegments, pushKey } from "../utils/paths.js"
-import type { Node, UnionBranches } from "./node.js"
+// import type { ScopeRoot } from "../scope.js"
+// import type { record } from "../utils/dataTypes.js"
+// import { throwInternalError } from "../utils/errors.js"
+// import { pathToSegments, pushKey } from "../utils/paths.js"
+import type { Node } from "./node.js"
 
-export const compile = (attributes: Node, scope: ScopeRoot): Node => {
+export const compile = (attributes: Node): Node => {
     return attributes
     // const compiled = discriminate(attributes, scope)
     // if (attributes.props) {

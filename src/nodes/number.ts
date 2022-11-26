@@ -1,8 +1,8 @@
-import type { xor } from "../utils/generics.js"
-import { hasKey } from "../utils/generics.js"
+import type { mutable, xor } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
-import { boundsOperations, checkBounds } from "./bounds.js"
-import type { AttributeOperations, DataTypeOperations } from "./shared.js"
+import { checkBounds, intersectBounds } from "./bounds.js"
+import type { Never } from "./degenerate.js"
+import { isNever } from "./degenerate.js"
 
 export type NumberAttributes = xor<
     {
@@ -12,27 +12,52 @@ export type NumberAttributes = xor<
     { readonly values?: readonly number[] }
 >
 
-export const divisorOperations: AttributeOperations<number> = {
-    intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
-    subtract: (l, r) => {
-        const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
-        return relativelyPrimeA === 1 ? null : relativelyPrimeA
-    }
+const intersectDivisors = (l: number | undefined, r: number | undefined) =>
+    l && r ? Math.abs((l * r) / greatestCommonDivisor(l, r)) : l ?? r
+
+const subtractDivisors = (l: number, r: number) => {
+    const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
+    return relativelyPrimeA === 1 ? null : relativelyPrimeA
 }
 
-export const checkNumber = (attributes: NumberAttributes, data: number) => {
-    if (hasKey(attributes, "bounds") && !checkBounds(attributes.bounds, data)) {
-        return false
-    }
-    if (hasKey(attributes, "divisor") && data % attributes.divisor !== 0) {
-        return false
-    }
-    return true
-}
+export const checkNumber = (data: number, attributes: NumberAttributes) =>
+    attributes.values
+        ? attributes.values.includes(data)
+        : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
+          (!attributes.divisor || data % attributes.divisor === 0)
 
-export const numberAttributes: DataTypeOperations<NumberAttributes> = {
-    bounds: boundsOperations,
-    divisor: divisorOperations
+export const intersectNumbers = (
+    l: NumberAttributes,
+    r: NumberAttributes
+): NumberAttributes | Never => {
+    if (l.values || r.values) {
+        const values = l.values ?? r.values!
+        const attributes = l.values ? r : l
+        const result = values.filter((value) => checkNumber(value, attributes))
+        return result.length
+            ? { values: result }
+            : [
+                  {
+                      type: "never",
+                      reason: `none of ${JSON.stringify(
+                          values
+                      )} satisfy ${JSON.stringify(attributes)}`
+                  }
+              ]
+    }
+    const result: mutable<NumberAttributes> = {}
+    const divisor = intersectDivisors(l.divisor, r.divisor)
+    if (divisor) {
+        result.divisor = divisor
+    }
+    const boundsResult = intersectBounds(l.bounds, r.bounds)
+    if (boundsResult) {
+        if (isNever(boundsResult)) {
+            return boundsResult
+        }
+        result.bounds = boundsResult
+    }
+    return result
 }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
