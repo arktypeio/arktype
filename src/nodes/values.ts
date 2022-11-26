@@ -1,5 +1,5 @@
 import type { array } from "../utils/dataTypes.js"
-import type { Never } from "./degenerate.js"
+import type { Never } from "./types/degenerate.js"
 
 export type ValueLiteral = string | number | boolean
 

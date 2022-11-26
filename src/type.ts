@@ -1,4 +1,4 @@
-import { compile } from "./nodes/compile.js"
+import { compile } from "./traverse/oldCompile.js"
 import type { Node } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"

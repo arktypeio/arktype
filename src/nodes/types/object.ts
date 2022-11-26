@@ -1,11 +1,10 @@
-import type { record } from "../utils/dataTypes.js"
-import { isEmpty } from "../utils/deepEquals.js"
-import type { keySet, mutable } from "../utils/generics.js"
-import { hasKey } from "../utils/generics.js"
-import type { Bounds } from "./bounds.js"
-import { intersect, subtract } from "./node.js"
-import type { Node } from "./node.js"
-import { intersectKeySets, subtractKeySets } from "./shared.js"
+import type { record } from "../../utils/dataTypes.js"
+import { isEmpty } from "../../utils/deepEquals.js"
+import type { keySet, mutable } from "../../utils/generics.js"
+import { hasKey } from "../../utils/generics.js"
+import type { Bounds } from "../bounds.js"
+import type { Node } from "../node.js"
+import { intersectKeySets, subtractKeySets } from "../shared.js"
 
 export type ObjectAttributes = {
     readonly props?: record<Node>

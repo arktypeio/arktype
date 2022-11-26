@@ -1,5 +1,5 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import type { Never } from "./degenerate.js"
+import type { Never } from "./types/degenerate.js"
 
 export type Bounds = {
     readonly min?: Bound

@@ -1,8 +1,10 @@
-import type { ScopeRoot } from "../scope.js"
-import type { record } from "../utils/dataTypes.js"
-import { isKeyOf } from "../utils/generics.js"
-import { keywords } from "./keywords.js"
-import type { Node, NodeOperator } from "./node.js"
+import type { ScopeRoot } from "../../scope.js"
+import type { record } from "../../utils/dataTypes.js"
+import { isKeyOf } from "../../utils/generics.js"
+import { intersect } from "../intersect.js"
+import { keywords } from "../keywords.js"
+import type { Node } from "../node.js"
+import { subtract } from "../subtract.js"
 
 export type DegenerateNode = Never | Any | Unknown | Alias
 
@@ -36,8 +38,14 @@ export const isUnknown = (node: Node): node is Unknown =>
 export const isNever = (result: record<any>): result is Never =>
     result[0].type === "never"
 
-export const degenerateOperation = (
-    operator: NodeOperator,
+export const intersectDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
+    degenerateOperation("&", l, r, scope)
+
+export const subtractDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
+    degenerateOperation("-", l, r, scope)
+
+const degenerateOperation = (
+    operator: "&" | "-",
     l: Node,
     r: Node,
     scope: ScopeRoot

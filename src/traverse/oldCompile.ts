@@ -2,7 +2,7 @@
 // import type { record } from "../utils/dataTypes.js"
 // import { throwInternalError } from "../utils/errors.js"
 // import { pathToSegments, pushKey } from "../utils/paths.js"
-import type { Node } from "./node.js"
+import type { Node } from "../nodes/node.js"
 
 export const compile = (attributes: Node): Node => {
     return attributes

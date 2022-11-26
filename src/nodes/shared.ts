@@ -2,7 +2,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { record } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { defined, keySet } from "../utils/generics.js"
-import type { Never } from "./degenerate.js"
+import type { Never } from "./types/degenerate.js"
 
 export type AttributeIntersection<t> = (
     l: t,
