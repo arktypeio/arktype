@@ -1,3 +1,4 @@
+import type { ScopeRoot } from "../../scope.js"
 import type { record } from "../../utils/dataTypes.js"
 import type { Never } from "./degenerate.js"
 
@@ -7,8 +8,12 @@ export type TypeOperations<data, attributes extends record> = {
     check: Check<data, attributes>
 }
 
-type Intersection<t> = (l: t, r: t) => t | Never
+type Intersection<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
 
-type Difference<t> = (l: t, r: t) => t | undefined
+type Difference<t> = (l: t, r: t, scope: ScopeRoot) => t | undefined
 
-type Check<data, attributes> = (data: data, attributes: attributes) => boolean
+type Check<data, attributes> = (
+    data: data,
+    attributes: attributes,
+    scope: ScopeRoot
+) => boolean

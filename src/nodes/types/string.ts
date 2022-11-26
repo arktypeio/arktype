@@ -1,7 +1,7 @@
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
 import { checkBounds, intersectBounds } from "../bounds.js"
-import { intersectAdditiveValues } from "../values.js"
+import { intersectAdditiveValues } from "../utils.js"
 import type { Never } from "./degenerate.js"
 import { isNever } from "./degenerate.js"
 

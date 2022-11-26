@@ -2,7 +2,7 @@ import { isEmpty } from "../../utils/deepEquals.js"
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
 import { checkBounds, intersectBounds, subtractBounds } from "../bounds.js"
-import { subtractValues } from "../values.js"
+import { subtractValues } from "../utils.js"
 import { isNever } from "./degenerate.js"
 import type { TypeOperations } from "./operations.js"
 

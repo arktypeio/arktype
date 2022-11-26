@@ -3,8 +3,11 @@ import { isEmpty } from "../../utils/deepEquals.js"
 import type { keySet, mutable } from "../../utils/generics.js"
 import { hasKey } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
+import { intersect } from "../intersect.js"
 import type { Node } from "../node.js"
 import { intersectKeySets, subtractKeySets } from "../shared.js"
+import { subtract } from "../subtract.js"
+import type { TypeOperations } from "./operations.js"
 
 export type ObjectAttributes = {
     readonly props?: record<Node>
@@ -22,9 +25,8 @@ type SubtypeAttribute =
     | { kind: "record" }
     | { kind: "function" }
 
-const intersectObjectAttributes = {
-    // TODO: Figure out prop never propagation
-    props: (l, r, scope) => {
+export const objects: TypeOperations<object, ObjectAttributes> = {
+    intersect: (l, r, scope) => {
         const result = { ...l, ...r }
         for (const k in result) {
             if (hasKey(l, k) && hasKey(r, k)) {
@@ -33,12 +35,7 @@ const intersectObjectAttributes = {
         }
         return result
     },
-    requiredKeys: intersectKeySets,
-    subtype: (l, r) => l
-} satisfies DataTypeIntersection<ObjectAttributes>
-
-const subtractObjectAttributes = {
-    props: (l, r, scope) => {
+    subtract: (l, r, scope) => {
         const result: mutable<record<Node>> = {}
         for (const k in l) {
             if (k in r) {
@@ -51,7 +48,5 @@ const subtractObjectAttributes = {
             }
         }
         return isEmpty(result) ? null : result
-    },
-    requiredKeys: subtractKeySets,
-    subtype: (l, r) => l
-} satisfies DataTypeDifference<ObjectAttributes>
+    }
+}

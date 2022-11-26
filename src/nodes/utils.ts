@@ -1,4 +1,6 @@
 import type { array } from "../utils/dataTypes.js"
+import { isEmpty } from "../utils/deepEquals.js"
+import type { keySet } from "../utils/generics.js"
 import type { Never } from "./types/degenerate.js"
 
 export type ValueLiteral = string | number | boolean
@@ -43,4 +45,17 @@ export const subtractValues = <t extends ValueLiteral>(
 ) => {
     const result = l.filter((value) => !r.includes(value))
     return result.length ? result : undefined
+}
+
+export const intersectKeySets = (l: keySet, r: keySet) => ({
+    ...l,
+    ...r
+})
+
+export const subtractKeySets = (l: keySet, r: keySet) => {
+    const result = { ...l }
+    for (const k in r) {
+        delete result[k]
+    }
+    return isEmpty(result) ? undefined : result
 }
