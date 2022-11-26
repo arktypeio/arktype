@@ -2,13 +2,7 @@ import type { ScopeRoot } from "../../scope.js"
 import type { DataTypes, record } from "../../utils/dataTypes.js"
 import type { AttributesByType, TypeWithAttributes } from "../node.js"
 import type { Never } from "./degenerate.js"
-
-export type OperationsByType = {
-    [typeName in TypeWithAttributes]: TypeOperations<
-        DataTypes[typeName],
-        AttributesByType[typeName]
-    >
-}
+import { numberOperations } from "./number.js"
 
 export type TypeOperations<data, attributes extends record> = {
     intersect: IntersectFn<attributes>
@@ -25,3 +19,14 @@ type CheckFn<data, attributes> = (
     attributes: attributes,
     scope: ScopeRoot
 ) => boolean
+
+type OperationsByType = {
+    [typeName in TypeWithAttributes]: TypeOperations<
+        DataTypes[typeName],
+        AttributesByType[typeName]
+    >
+}
+
+export const operations = {
+    number: numberOperations
+} satisfies OperationsByType

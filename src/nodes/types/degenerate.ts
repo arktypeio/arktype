@@ -41,7 +41,7 @@ export const isNever = (result: record<any>): result is Never =>
 export const intersectDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
     degenerateOperation("&", l, r, scope)
 
-export const subtractDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
+export const pruneDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
     degenerateOperation("-", l, r, scope)
 
 const degenerateOperation = (

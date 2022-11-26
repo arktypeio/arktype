@@ -4,7 +4,7 @@ import type { Bounds } from "../bounds.js"
 import { checkBounds, intersectBounds, pruneBounds } from "../bounds.js"
 import { isNever } from "./degenerate.js"
 import { TypeOperations } from "./operations.js"
-import { subtractValues } from "./utils.js"
+import { pruneValues } from "./utils.js"
 
 export type NumberAttributes = xor<
     {
@@ -14,13 +14,13 @@ export type NumberAttributes = xor<
     { readonly values?: readonly number[] }
 >
 
-export const numbers = {
+export const numberOperations = {
     intersect: (l, r) => {
         if (l.values || r.values) {
             const values = l.values ?? r.values!
             const attributes = l.values ? r : l
             const result: number[] = values.filter((value) =>
-                numbers.check(value, attributes)
+                numberOperations.check(value, attributes)
             )
             return result.length
                 ? { values: result }
@@ -49,13 +49,11 @@ export const numbers = {
     },
     prune: (l, r) => {
         if (l.values) {
-            const values = r.values
-                ? subtractValues(l.values, r.values)
-                : l.values
+            const values = r.values ? pruneValues(l.values, r.values) : l.values
             return values?.length ? { values } : undefined
         }
         const result: mutable<NumberAttributes> = {}
-        const divisor = subtractDivisors(l.divisor, r.divisor)
+        const divisor = pruneDivisors(l.divisor, r.divisor)
         if (divisor) {
             result.divisor = divisor
         }
@@ -75,7 +73,7 @@ export const numbers = {
 const intersectDivisors = (l: number | undefined, r: number | undefined) =>
     l && r ? Math.abs((l * r) / greatestCommonDivisor(l, r)) : l ?? r
 
-const subtractDivisors = (l: number | undefined, r: number | undefined) => {
+const pruneDivisors = (l: number | undefined, r: number | undefined) => {
     if (!l) {
         return undefined
     }

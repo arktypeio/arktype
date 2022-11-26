@@ -6,7 +6,7 @@ import type { Bounds } from "../bounds.js"
 import { intersect } from "../intersect.js"
 import type { Node } from "../node.js"
 import { prune } from "../prune.js"
-import type { TypeOperations } from "./operations.js"
+import { TypeOperations } from "./operations.js"
 
 export type ObjectAttributes = {
     readonly props?: record<Node>
@@ -24,7 +24,7 @@ type SubtypeAttribute =
     | { kind: "record" }
     | { kind: "function" }
 
-export const objects: TypeOperations<object, ObjectAttributes> = {
+export const objectOperations = {
     intersect: (l, r, scope) => {
         const result = { ...l, ...r }
         for (const k in result) {
@@ -48,4 +48,4 @@ export const objects: TypeOperations<object, ObjectAttributes> = {
         }
         return isEmpty(result) ? null : result
     }
-}
+} satisfies TypeOperations<object, ObjectAttributes>

@@ -3,7 +3,7 @@ import type { TypeOperations } from "./operations.js"
 
 export type BooleanAttributes = { readonly value?: boolean }
 
-export const booleans: TypeOperations<boolean, BooleanAttributes> = {
+export const booleanOperations: TypeOperations<boolean, BooleanAttributes> = {
     intersect: (l, r) => {
         if (hasKey(l, "value") && hasKey(r, "value")) {
             return l.value === r.value

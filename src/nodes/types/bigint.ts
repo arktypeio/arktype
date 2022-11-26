@@ -3,7 +3,7 @@ import type { TypeOperations } from "./operations.js"
 
 export type BigintAttributes = { readonly values?: readonly IntegerLiteral[] }
 
-export const bigints: TypeOperations<bigint, BigintAttributes> = {
+export const bigintOperations: TypeOperations<bigint, BigintAttributes> = {
     intersect: (l, r) => {
         if (l.values && r.values) {
             const values = l.values.filter((value) => r.values!.includes(value))

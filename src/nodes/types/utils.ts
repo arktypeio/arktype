@@ -39,7 +39,7 @@ export const intersectDisjointValues = <t extends ValueLiteral>(
           ]
 }
 
-export const subtractValues = <t extends ValueLiteral>(
+export const pruneValues = <t extends ValueLiteral>(
     l: array<t>,
     r: array<t>
 ) => {
@@ -52,7 +52,7 @@ export const intersectKeySets = (l: keySet, r: keySet) => ({
     ...r
 })
 
-export const subtractKeySets = (l: keySet, r: keySet) => {
+export const pruneKeySet = (l: keySet, r: keySet) => {
     const result = { ...l }
     for (const k in r) {
         delete result[k]

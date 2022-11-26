@@ -13,13 +13,13 @@ export type StringAttributes = xor<
     { readonly values?: readonly string[] }
 >
 
-export const strings = {
+export const stringOperations = {
     intersect: (l, r) => {
         if (l.values || r.values) {
             const values = l.values ?? r.values!
             const attributes = l.values ? r : l
             const result: string[] = values.filter((value) =>
-                strings.check(value, attributes)
+                stringOperations.check(value, attributes)
             )
             return result.length
                 ? { values: result }

@@ -1,10 +1,10 @@
 import type { ScopeRoot } from "../scope.js"
 import type { Node } from "./node.js"
-import { isDegenerate, subtractDegenerate } from "./types/degenerate.js"
+import { isDegenerate, pruneDegenerate } from "./types/degenerate.js"
 
 export const prune = (l: Node, r: Node, scope: ScopeRoot) => {
     if (isDegenerate(l) || isDegenerate(r)) {
-        return subtractDegenerate(l, r, scope)
+        return pruneDegenerate(l, r, scope)
     }
     return l
 }
