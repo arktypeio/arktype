@@ -1,5 +1,10 @@
 import type { ScopeRoot } from "../scope.js"
-import type { array, DataTypeName, record } from "../utils/dataTypes.js"
+import type {
+    array,
+    DataTypeName,
+    DataTypes,
+    record
+} from "../utils/dataTypes.js"
 import { hasDataType, hasObjectSubtype } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import { throwInternalError } from "../utils/errors.js"
@@ -11,13 +16,12 @@ import type { NumberAttributes } from "./number.js"
 import { checkNumber, numberAttributes } from "./number.js"
 import type { ObjectAttributes } from "./object.js"
 import { disjointPrimitiveOperations } from "./primitives.js"
-import type { DataTypeOperations } from "./shared.js"
 import type { StringAttributes } from "./string.js"
 import { checkString, stringAttributes } from "./string.js"
 
-export type Node = xor<NodeTypes, DegenerateNode>
+export type Node = xor<TypeCases, DegenerateNode>
 
-export type NodeTypes = {
+export type TypeCases = {
     readonly bigint?: true | readonly IntegerLiteral[]
     readonly boolean?: true | readonly [boolean]
     readonly number?: true | readonly number[] | NumberAttributes
@@ -28,7 +32,7 @@ export type NodeTypes = {
     readonly null?: true
 }
 
-export type TypeName = evaluate<keyof NodeTypes>
+export type TypeName = evaluate<keyof TypeCases>
 
 export type DegenerateNode = Never | Any | Unknown | Alias
 
@@ -70,13 +74,17 @@ export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
         ? degenerateOperation("&", l, r, scope)
         : intersectCases(l, r, scope)
 
-type UnknownTypeAttributes = true | array<string | number | boolean> | record
+type UnknownTypeCase = true | UnknownPrimitives | UnknownAttributes
 
-type UnknownType = { [k in DataTypeName]?: UnknownTypeAttributes }
+type UnknownPrimitives = readonly (string | number | boolean)[]
+
+type UnknownAttributes = AttributesByDataType[DataTypeWithAttributes]
+
+type UnknownType = { [k in DataTypeName]?: UnknownTypeCase }
 
 export const intersectCases = (
-    l: NodeTypes,
-    r: NodeTypes,
+    l: TypeCases,
+    r: TypeCases,
     scope: ScopeRoot
 ): Node => {
     const result: UnknownType = {}
@@ -109,51 +117,86 @@ export const subtract = (l: Node, r: Node, scope: ScopeRoot) => {
     return l
 }
 
-export const intersectTypeCase = (
-    typeName: DataTypeName,
-    l: UnknownTypeAttributes,
-    r: UnknownTypeAttributes,
+const isPrimitiveSet = (typeCase: unknown): typeCase is any[] =>
+    Array.isArray(typeCase)
+
+export const intersectTypeCase = <typeName extends DataTypeName>(
+    typeName: typeName,
+    l: TypeCases[typeName],
+    r: TypeCases[typeName],
     scope: ScopeRoot
-): UnknownTypeAttributes | Never => {
+): TypeCases[typeName] | Never => {
     if (l === true) {
         return r
     } else if (r === true) {
         return l
-    } else if (Array.isArray(l)) {
-        if (Array.isArray(r)) {
-            return disjointPrimitiveOperations.intersect(l, r)
-        } else {
-            return filterPrimitivesByAttributes(typeName, l, r)
+    } else if (isPrimitiveSet(l)) {
+        if (isPrimitiveSet(r)) {
+            return disjointPrimitiveOperations.intersect(
+                l,
+                r
+            ) as TypeCases[typeName]
         }
-    } else if (Array.isArray(r)) {
-        return filterPrimitivesByAttributes(typeName, r, l)
+        return filterPrimitivesByAttributes(
+            typeName as PrimitiveDataTypeWithAttributes,
+            l,
+            r as record
+        ) as any
     }
-    return intersectAttributes(typeName, l as record, r as record, scope)
+    if (isPrimitiveSet(r)) {
+        return filterPrimitivesByAttributes(
+            typeName as PrimitiveDataTypeWithAttributes,
+            r,
+            l as record
+        ) as any
+    }
+    return intersectAttributes(
+        typeName as DataTypeWithAttributes,
+        l as record,
+        r as record,
+        scope
+    ) as any
 }
 
-const filterPrimitivesByAttributes = (
-    typeName: DataTypeName,
-    values: array<any>,
-    attributes: any
+type AttributesByDataType = {
+    number: NumberAttributes
+    object: ObjectAttributes
+    string: StringAttributes
+}
+
+type DataTypeWithAttributes = keyof AttributesByDataType
+
+type PrimitiveDataTypeWithAttributes = keyof AttributesByDataType
+
+const filterPrimitivesByAttributes = <
+    typeName extends PrimitiveDataTypeWithAttributes
+>(
+    typeName: typeName,
+    values: array<DataTypes[typeName]>,
+    attributes: AttributesByDataType[typeName]
 ) =>
     typeName === "string"
-        ? values.filter((value) => checkString(attributes, value))
+        ? values.filter((value) =>
+              checkString(attributes as StringAttributes, value as string)
+          )
         : typeName === "number"
-        ? values.filter((value) => checkNumber(attributes, value))
+        ? values.filter((value) =>
+              checkNumber(attributes as NumberAttributes, value as number)
+          )
         : throwInternalError(`Unexpected primitive literal type ${typeName}`)
 
 const attributeOperationsByType = {
     string: stringAttributes,
     number: numberAttributes,
     object: {} as any
-} as any as record<DataTypeOperations<any>>
+}
 
-const intersectAttributes = (
-    typeName: DataTypeName,
-    leftAttributes: record<any>,
-    rightAttributes: record<any>,
+const intersectAttributes = <typeName extends DataTypeWithAttributes>(
+    typeName: typeName,
+    leftAttributes: AttributesByDataType[typeName],
+    rightAttributes: AttributesByDataType[typeName],
     scope: ScopeRoot
-): record | Never => {
+): AttributesByDataType[typeName] | Never => {
     const result = { ...leftAttributes, ...rightAttributes }
     for (const k in result) {
         if (k in leftAttributes && k in rightAttributes) {
