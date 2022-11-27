@@ -11,16 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const intersectBounds = (
-    l: Bounds | undefined,
-    r: Bounds | undefined
-): Bounds | Never | undefined => {
-    if (!l) {
-        return r
-    }
-    if (!r) {
-        return l
-    }
+export const intersectBounds = (l: Bounds, r: Bounds): Bounds | Never => {
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min
@@ -41,16 +32,7 @@ export const intersectBounds = (
         : { max: max! }
 }
 
-export const pruneBounds = (
-    l: Bounds | undefined,
-    r: Bounds | undefined
-): Bounds | undefined => {
-    if (!l) {
-        return
-    }
-    if (!r) {
-        return l
-    }
+export const pruneBounds = (l: Bounds, r: Bounds): Bounds | undefined => {
     const result = { ...l }
     if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
         delete result.min
@@ -58,8 +40,9 @@ export const pruneBounds = (
     if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
         delete result.max
     }
-    // TODO: Check ternary line coverage
-    return isEmpty(result) ? undefined : result
+    if (!isEmpty(result)) {
+        return result
+    }
 }
 
 export const checkBounds = (bounds: Bounds, data: number) => {
