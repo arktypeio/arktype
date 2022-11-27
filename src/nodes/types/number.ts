@@ -11,22 +11,22 @@ export type NumberAttributes = xor<
         readonly divisor?: number
         readonly bounds?: Bounds
     },
-    { readonly values?: readonly number[] }
+    { readonly literals?: readonly number[] }
 >
 
 export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
-    if (l.values || r.values) {
-        const values = l.values ?? r.values!
-        const attributes = l.values ? r : l
-        const result: number[] = values.filter((value) =>
+    if (l.literals || r.literals) {
+        const literals = l.literals ?? r.literals!
+        const attributes = l.literals ? r : l
+        const result: number[] = literals.filter((value) =>
             checkNumber(value, attributes)
         )
         return result.length
-            ? { values: result }
+            ? { literals: result }
             : {
                   type: "never",
                   reason: `none of ${JSON.stringify(
-                      values
+                      literals
                   )} satisfy ${JSON.stringify(attributes)}`
               }
     }
@@ -45,9 +45,11 @@ export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
 }
 
 export const pruneNumber: PruneFn<NumberAttributes> = (l, r) => {
-    if (l.values) {
-        const values = r.values ? pruneValues(l.values, r.values) : l.values
-        return values?.length ? { values } : undefined
+    if (l.literals) {
+        const literals = r.literals
+            ? pruneValues(l.literals, r.literals)
+            : l.literals
+        return literals?.length ? { literals } : undefined
     }
     const result: mutable<NumberAttributes> = {}
     if (l.divisor && r.divisor) {
@@ -68,8 +70,8 @@ export const pruneNumber: PruneFn<NumberAttributes> = (l, r) => {
 }
 
 export const checkNumber = (data: number, attributes: NumberAttributes) =>
-    attributes.values
-        ? attributes.values.includes(data)
+    attributes.literals
+        ? attributes.literals.includes(data)
         : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
           (!attributes.divisor || data % attributes.divisor === 0)
 

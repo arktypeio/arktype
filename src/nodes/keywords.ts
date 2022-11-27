@@ -35,7 +35,7 @@ export const keywords = {
     any: { type: "any" },
     bigint: { type: "bigint" },
     boolean: { type: "boolean" },
-    false: { type: "boolean", value: false },
+    false: { type: "boolean", literal: false },
     never: {
         type: "never",
         reason: "explicitly typed as never"
@@ -45,7 +45,7 @@ export const keywords = {
     object: { type: "object" },
     string: { type: "string" },
     symbol: { type: "symbol" },
-    true: { type: "boolean", value: true },
+    true: { type: "boolean", literal: true },
     undefined: { type: "undefined" },
     unknown: { type: "unknown" },
     void: { type: "undefined" },

@@ -10,23 +10,23 @@ export type StringAttributes = xor<
         readonly regex?: readonly string[]
         readonly bounds?: Bounds
     },
-    { readonly values?: readonly string[] }
+    { readonly literals?: readonly string[] }
 >
 
 export const intersectStrings: IntersectFn<StringAttributes> = (l, r) => {
-    if (l.values || r.values) {
-        const values = l.values ?? r.values!
-        const attributes = l.values ? r : l
-        const result: string[] = values.filter((value) =>
+    if (l.literals || r.literals) {
+        const literals = l.literals ?? r.literals!
+        const attributes = l.literals ? r : l
+        const result: string[] = literals.filter((value) =>
             checkString(value, attributes)
         )
         return result.length
-            ? { values: result }
+            ? { literals: result }
             : // TODO: Abstract never types
               {
                   type: "never",
                   reason: `none of ${JSON.stringify(
-                      values
+                      literals
                   )} satisfy ${JSON.stringify(attributes)}`
               }
     }
@@ -51,8 +51,8 @@ export const pruneString: PruneFn<StringAttributes> = (branch, given) => {
 const regexCache: Record<string, RegExp> = {}
 
 export const checkString = (data: string, attributes: StringAttributes) => {
-    if (attributes.values) {
-        return attributes.values.includes(data)
+    if (attributes.literals) {
+        return attributes.literals.includes(data)
     }
     if (attributes.bounds && !checkBounds(attributes.bounds, data.length)) {
         return false

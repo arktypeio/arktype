@@ -16,9 +16,9 @@ describe("union/parse", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.root).snap([
-            { type: "boolean", value: false },
-            { type: "string", values: [""] },
-            { type: "number", values: [0] },
+            { type: "boolean", literal: false },
+            { type: "string", literals: [""] },
+            { type: "number", literals: [0] },
             { type: "null" },
             { type: "undefined" }
         ])

@@ -26,7 +26,7 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
                   type: "string",
                   regex: [token as RegexLiteral]
               }
-            : { type: "string", values: [`'${token.slice(1, -1)}'`] }
+            : { type: "string", literals: [`'${token.slice(1, -1)}'`] }
     )
 }
 
