@@ -31,13 +31,12 @@ export const numberOperations = {
                       )} satisfy ${JSON.stringify(attributes)}`
                   }
         }
-        const result: mutable<NumberAttributes> = {}
-        const divisor = intersectDivisors(l.divisor, r.divisor)
-        if (divisor) {
-            result.divisor = divisor
+        const result = { ...l, ...r } as mutable<NumberAttributes>
+        if (l.divisor && r.divisor) {
+            result.divisor = intersectDivisors(l.divisor, r.divisor)
         }
-        const boundsResult = intersectBounds(l.bounds, r.bounds)
-        if (boundsResult) {
+        if (l.bounds && r.bounds) {
+            const boundsResult = intersectBounds(l.bounds, r.bounds)
             if (isNever(boundsResult)) {
                 return boundsResult
             }
@@ -51,15 +50,21 @@ export const numberOperations = {
             return values?.length ? { values } : undefined
         }
         const result: mutable<NumberAttributes> = {}
-        const divisor = pruneDivisors(l.divisor, r.divisor)
-        if (divisor) {
-            result.divisor = divisor
+        if (l.divisor && r.divisor) {
+            const divisor = pruneDivisors(l.divisor, r.divisor)
+            if (divisor) {
+                result.divisor = divisor
+            }
         }
-        const boundsResult = pruneBounds(l.bounds, r.bounds)
-        if (boundsResult) {
-            result.bounds = boundsResult
+        if (l.bounds && r.bounds) {
+            const bounds = pruneBounds(l.bounds, r.bounds)
+            if (bounds) {
+                result.bounds = bounds
+            }
         }
-        return isEmpty(result) ? undefined : result
+        if (!isEmpty(result)) {
+            return result
+        }
     },
     check: (data, attributes) =>
         attributes.values

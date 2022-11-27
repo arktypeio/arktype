@@ -31,13 +31,12 @@ export const stringOperations = {
                       )} satisfy ${JSON.stringify(attributes)}`
                   }
         }
-        const result: mutable<StringAttributes> = {}
-        const regex = intersectAdditiveValues(l.regex, r.regex)
-        if (regex) {
-            result.regex = regex
+        const result = { ...l, ...r } as mutable<StringAttributes>
+        if (l.regex && r.regex) {
+            result.regex = intersectAdditiveValues(l.regex, r.regex)
         }
-        const bounds = intersectBounds(l.bounds, r.bounds)
-        if (bounds) {
+        if (l.bounds && r.bounds) {
+            const bounds = intersectBounds(l.bounds, r.bounds)
             if (isNever(bounds)) {
                 return bounds
             }

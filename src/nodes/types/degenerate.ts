@@ -39,7 +39,7 @@ export const isNever = (result: object): result is Never =>
     hasObjectSubtype(result, "record") && result.type === "never"
 
 export const intersectDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
-    degenerateOperation("&", l, r, scope)
+    degenerateOperation("&", l, r, scope)!
 
 export const pruneDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
     degenerateOperation("-", l, r, scope)
@@ -49,7 +49,7 @@ const degenerateOperation = (
     l: Node,
     r: Node,
     scope: ScopeRoot
-): Node => {
+): Node | undefined => {
     if (isAlias(l) || isAlias(r)) {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)

@@ -6,15 +6,9 @@ import type { Never } from "./degenerate.js"
 export type ValueLiteral = string | number | boolean
 
 export const intersectAdditiveValues = <t extends ValueLiteral>(
-    l: array<t> | undefined,
-    r: array<t> | undefined
-): array<t> | undefined => {
-    if (!l) {
-        return r
-    }
-    if (!r) {
-        return l
-    }
+    l: array<t>,
+    r: array<t>
+): array<t> => {
     const result = [...l]
     for (const expression of r) {
         if (!l.includes(expression)) {

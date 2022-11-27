@@ -22,13 +22,15 @@ const intersectBranches = (
     const result: mutable<BranchingTypeNode> = []
     const pruned: Never[] = []
     for (const leftBranch of l) {
-        const rightBranch = r.find((branch) => branch.type === leftBranch.type)
-        if (rightBranch) {
+        const rightBranches = r.filter(
+            (branch) => branch.type === leftBranch.type
+        )
+        if (rightBranches.length) {
             const type = leftBranch.type
             if (isKeyOf(type, intersectors)) {
                 const branchResult = intersectors[type](
                     leftBranch as any,
-                    rightBranch as any
+                    rightBranches as any
                 )
                 if (isNever(branchResult)) {
                     pruned.push(branchResult)
