@@ -7,24 +7,30 @@ import type { StringAttributes } from "./types/string.js"
 
 export type Node = TypeBranches | DegenerateNode
 
+const o: Node = [
+  {
+    type: "object"
+  }
+]
+
 export type TypeBranches = readonly TypeBranch[]
 
 export type TypeBranch =
-    | ({ readonly type: "object" } & ObjectAttributes)
-    | ({ readonly type: "string" } & StringAttributes)
-    | ({ readonly type: "number" } & NumberAttributes)
-    | ({ readonly type: "bigint" } & BigintAttributes)
-    | ({ readonly type: "boolean" } & BooleanAttributes)
-    | { readonly type: "symbol" }
-    | { readonly type: "null" }
-    | { readonly type: "undefined" }
+  | ({ readonly type: "object" } & ObjectAttributes)
+  | ({ readonly type: "string" } & StringAttributes)
+  | ({ readonly type: "number" } & NumberAttributes)
+  | ({ readonly type: "bigint" } & BigintAttributes)
+  | ({ readonly type: "boolean" } & BooleanAttributes)
+  | { readonly type: "symbol" }
+  | { readonly type: "null" }
+  | { readonly type: "undefined" }
 
 export type AttributesByType = {
-    object: ObjectAttributes
-    string: StringAttributes
-    number: NumberAttributes
-    bigint: BigintAttributes
-    boolean: BooleanAttributes
+  object: ObjectAttributes
+  string: StringAttributes
+  number: NumberAttributes
+  bigint: BigintAttributes
+  boolean: BooleanAttributes
 }
 
 export type TypeWithAttributes = keyof AttributesByType
