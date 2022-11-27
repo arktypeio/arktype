@@ -39,9 +39,3 @@ export type PruneFn<t> = (
     given: t,
     scope: ScopeRoot
 ) => t | undefined
-
-export type CheckFn<data, attributes> = (
-    data: data,
-    attributes: attributes,
-    scope: ScopeRoot
-) => boolean

@@ -1,7 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import type { mutable } from "../utils/generics.js"
 import { isKeyOf, listFrom } from "../utils/generics.js"
-import { AttributesByType, IntersectFn, TypeWithAttributes } from "./node.js"
 import type { BranchingTypeNode, Node } from "./node.js"
 import { intersectBigints } from "./types/bigint.js"
 import { intersectBooleans } from "./types/boolean.js"
@@ -26,8 +25,6 @@ const attributeIntersections = {
     number: intersectNumbers,
     object: intersectObjects,
     string: intersectStrings
-} satisfies {
-    [k in TypeWithAttributes]: IntersectFn<AttributesByType[k]>
 }
 
 const intersectBranches = (
@@ -35,8 +32,8 @@ const intersectBranches = (
     r: BranchingTypeNode,
     scope: ScopeRoot
 ): Node => {
-    const result: mutable<BranchingTypeNode> = []
-    const pruned: Never[] = []
+    const viable: mutable<BranchingTypeNode> = []
+    const inviable: Never[] = []
     for (const leftBranch of l) {
         const rightBranches = r.filter(
             (branch) => branch.type === leftBranch.type
@@ -50,19 +47,19 @@ const intersectBranches = (
                     scope
                 )
                 if (isNever(branchResult)) {
-                    pruned.push(branchResult)
+                    inviable.push(branchResult)
                 } else {
-                    result.push({ type, ...branchResult } as any)
+                    viable.push({ type, ...branchResult } as any)
                 }
             }
         }
     }
-    return result.length
-        ? result
+    return viable.length
+        ? viable
         : {
               type: "never",
               reason: `No branches were viable:\n${JSON.stringify(
-                  pruned,
+                  inviable,
                   null,
                   4
               )}`
