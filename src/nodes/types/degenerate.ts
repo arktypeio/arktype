@@ -1,5 +1,6 @@
 import type { ScopeRoot } from "../../scope.js"
 import type { record } from "../../utils/dataTypes.js"
+import { hasDataType, hasObjectSubtype } from "../../utils/dataTypes.js"
 import { isKeyOf } from "../../utils/generics.js"
 import { intersect } from "../intersect.js"
 import { keywords } from "../keywords.js"
@@ -8,15 +9,13 @@ import { prune } from "../prune.js"
 
 export type DegenerateNode = Never | Any | Unknown | Alias
 
-export type Never = readonly [
-    { readonly type: "never"; readonly reason: string }
-]
+export type Never = { readonly type: "never"; readonly reason: string }
 
-export type Any = readonly [{ readonly type: "any" }]
+export type Any = { readonly type: "any" }
 
-export type Unknown = readonly [{ readonly type: "unknown" }]
+export type Unknown = { readonly type: "unknown" }
 
-export type Alias = readonly [{ readonly type: "alias"; readonly name: string }]
+export type Alias = { readonly type: "alias"; readonly name: string }
 
 const degenerateKeys = {
     alias: true,
@@ -26,17 +25,19 @@ const degenerateKeys = {
 }
 
 export const isDegenerate = (node: Node): node is DegenerateNode =>
-    isKeyOf(node[0].type, degenerateKeys)
+    hasObjectSubtype(node, "record") && isKeyOf(node.type, degenerateKeys)
 
-export const isAlias = (node: Node): node is Alias => node[0].type === "alias"
+export const isAlias = (node: Node): node is Alias =>
+    hasObjectSubtype(node, "record") && node.type === "alias"
 
-export const isAny = (node: Node): node is Any => node[0].type === "any"
+export const isAny = (node: Node): node is Any =>
+    hasObjectSubtype(node, "record") && node.type === "any"
 
 export const isUnknown = (node: Node): node is Unknown =>
-    node[0].type === "unknown"
+    hasObjectSubtype(node, "record") && node.type === "unknown"
 
-export const isNever = (result: record<any>): result is Never =>
-    result[0].type === "never"
+export const isNever = (result: object): result is Never =>
+    hasObjectSubtype(result, "record") && result.type === "never"
 
 export const intersectDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
     degenerateOperation("&", l, r, scope)

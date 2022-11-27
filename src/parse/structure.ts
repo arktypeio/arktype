@@ -20,7 +20,9 @@ export const parseRecord = (def: record, scope: ScopeRoot): Node => {
         props[keyName] = parseDefinition(def[definitionKey], scope)
     }
     return {
-        object: { props, requiredKeys }
+        type: "object",
+        props,
+        requiredKeys
     }
 }
 
@@ -49,14 +51,9 @@ export const parseTuple = (def: array, scope: ScopeRoot): Node => {
         return parseTupleExpression(def, scope)
     }
     return {
-        object: {
-            subtype: {
-                kind: "array",
-                elements: def.map((elementDef) =>
-                    parseDefinition(elementDef, scope)
-                )
-            }
-        }
+        type: "object",
+        subtype: "array",
+        elements: def.map((elementDef) => parseDefinition(elementDef, scope))
     }
 }
 

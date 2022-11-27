@@ -52,17 +52,20 @@ export const maybeParseIdentifier = (
     isKeyOf(token, keywords)
         ? keywords[token]
         : scope.aliases[token] || scope.config.scope?.$.aliases[token]
-        ? { degenerate: "alias", name: token }
+        ? { type: "alias", name: token }
         : undefined
 
 const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { number: [maybeNumber] }
+        return { type: "number", values: [maybeNumber] }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return { bigint: [token.slice(0, -1) as IntegerLiteral] }
+        return {
+            type: "bigint",
+            values: [token.slice(0, -1) as IntegerLiteral]
+        }
     }
 }
 

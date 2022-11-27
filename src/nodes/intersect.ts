@@ -3,8 +3,8 @@ import type { mutable } from "../utils/generics.js"
 import { isKeyOf } from "../utils/generics.js"
 import type {
     AttributesByType,
+    BranchNode,
     Node,
-    TypeBranches,
     TypeWithAttributes
 } from "./node.js"
 import {
@@ -20,11 +20,11 @@ export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
         : intersectBranches(l, r, scope)
 
 const intersectBranches = (
-    l: TypeBranches,
-    r: TypeBranches,
+    l: BranchNode,
+    r: BranchNode,
     scope: ScopeRoot
 ): Node => {
-    const result: mutable<TypeBranches> = []
+    const result: mutable<BranchNode> = []
     const pruned: Never[] = []
     for (const leftBranch of l) {
         const rightBranch = r.find((branch) => branch.type === leftBranch.type)

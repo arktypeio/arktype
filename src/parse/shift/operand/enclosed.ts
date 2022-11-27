@@ -20,16 +20,14 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
         inclusive: true,
         onInputEnd: throwUnterminatedEnclosed
     })
-    s.setRoot({
-        string:
-            enclosing === "/"
-                ? { regex: [token as RegexLiteral] }
-                : [
-                      enclosing === "'"
-                          ? (token as SingleQuotedStringLiteral)
-                          : `'${token.slice(1, -1)}'`
-                  ]
-    })
+    s.setRoot(
+        enclosing === "/"
+            ? {
+                  type: "string",
+                  regex: [token as RegexLiteral]
+              }
+            : { type: "string", values: [`'${token.slice(1, -1)}'`] }
+    )
 }
 
 export type parseEnclosed<

@@ -32,33 +32,31 @@ export type Keywords = {
 
 export const keywords = {
     // TS keywords
-    any: [{ type: "any" }],
-    bigint: [{ type: "bigint" }],
-    boolean: [{ type: "boolean" }],
-    false: [{ type: "boolean", value: false }],
-    never: [
-        {
-            type: "never",
-            reason: "explicitly typed as never"
-        }
-    ],
-    null: [{ type: "null" }],
-    number: [{ type: "number" }],
-    object: [{ type: "object" }],
-    string: [{ type: "string" }],
-    symbol: [{ type: "symbol" }],
-    true: [{ type: "boolean", value: true }],
-    undefined: [{ type: "undefined" }],
-    unknown: [{ type: "unknown" }],
-    void: [{ type: "undefined" }],
+    any: { type: "any" },
+    bigint: { type: "bigint" },
+    boolean: { type: "boolean" },
+    false: { type: "boolean", value: false },
+    never: {
+        type: "never",
+        reason: "explicitly typed as never"
+    },
+    null: { type: "null" },
+    number: { type: "number" },
+    object: { type: "object" },
+    string: { type: "string" },
+    symbol: { type: "symbol" },
+    true: { type: "boolean", value: true },
+    undefined: { type: "undefined" },
+    unknown: { type: "unknown" },
+    void: { type: "undefined" },
     // JS Object types
-    Function: [{ type: "object", subtype: "function" }],
+    Function: { type: "object", subtype: "function" },
     // Regex
-    email: [{ type: "string", regex: ["/^(.+)@(.+)\\.(.+)$/"] }],
-    alphanumeric: [{ type: "string", regex: ["/^[dA-Za-z]+$/"] }],
-    alphaonly: [{ type: "string", regex: ["/^[A-Za-z]+$/"] }],
-    lowercase: [{ type: "string", regex: ["/^[a-z]*$/"] }],
-    uppercase: [{ type: "string", regex: ["/^[A-Z]*$/"] }],
+    email: { type: "string", regex: ["/^(.+)@(.+)\\.(.+)$/"] },
+    alphanumeric: { type: "string", regex: ["/^[dA-Za-z]+$/"] },
+    alphaonly: { type: "string", regex: ["/^[A-Za-z]+$/"] },
+    lowercase: { type: "string", regex: ["/^[a-z]*$/"] },
+    uppercase: { type: "string", regex: ["/^[A-Z]*$/"] },
     // Numeric
-    integer: [{ type: "number", divisor: 1 }]
+    integer: { type: "number", divisor: 1 }
 } as const satisfies { [k in Keyword]: Node }

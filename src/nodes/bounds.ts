@@ -32,12 +32,10 @@ export const intersectBounds = (
     return min
         ? max
             ? compareStrictness(min, max, "min") === "l"
-                ? [
-                      {
-                          type: "never",
-                          reason: buildEmptyRangeMessage("min", min, max)
-                      }
-                  ]
+                ? {
+                      type: "never",
+                      reason: buildEmptyRangeMessage("min", min, max)
+                  }
                 : { min, max }
             : { min }
         : { max: max! }

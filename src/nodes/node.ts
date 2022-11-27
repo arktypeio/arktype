@@ -5,17 +5,11 @@ import type { NumberAttributes } from "./types/number.js"
 import type { ObjectAttributes } from "./types/object.js"
 import type { StringAttributes } from "./types/string.js"
 
-export type Node = TypeBranches | DegenerateNode
+export type Node = TypeNode | BranchNode | DegenerateNode
 
-const o: Node = [
-    {
-        type: "object"
-    }
-]
+export type BranchNode = readonly TypeNode[]
 
-export type TypeBranches = readonly TypeBranch[]
-
-export type TypeBranch =
+export type TypeNode =
     | ({ readonly type: "object" } & ObjectAttributes)
     | ({ readonly type: "string" } & StringAttributes)
     | ({ readonly type: "number" } & NumberAttributes)
