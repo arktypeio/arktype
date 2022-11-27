@@ -1,25 +1,25 @@
 import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { array, DataTypeName, record } from "../utils/dataTypes.js"
-import { dataTypeOf, objectSubtypeOf } from "../utils/dataTypes.js"
+import type { array, dict, TypeName } from "../utils/dataTypes.js"
+import { objectSubtypeOf, typeOf } from "../utils/dataTypes.js"
 import { throwParseError } from "../utils/errors.js"
 import type { error, evaluate, isAny, isTopType } from "../utils/generics.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
 import type { inferRecord, inferTuple } from "./structure.js"
-import { parseRecord, parseTuple } from "./structure.js"
+import { parseDict, parseTuple } from "./structure.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): Node => {
-    const defType = dataTypeOf(def)
+    const defType = typeOf(def)
     if (defType === "string") {
         return parseString(def as string, scope)
     }
     if (defType === "object") {
         const subtype = objectSubtypeOf(def as object)
-        if (subtype === "record") {
-            return parseRecord(def as record, scope)
-        } else if (subtype === "array") {
+        if (subtype === "array") {
             return parseTuple(def as array, scope)
+        } else if (subtype === "base") {
+            return parseDict(def as dict, scope)
         }
         return throwParseError(buildBadDefinitionTypeMessage("function"))
     }
@@ -28,7 +28,7 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): Node => {
 
 export type inferDefinition<
     def,
-    scope extends record,
+    scope extends dict,
     aliases
 > = isTopType<def> extends true
     ? never
@@ -36,13 +36,13 @@ export type inferDefinition<
     ? inferString<def, scope, aliases>
     : def extends array
     ? inferTuple<def, scope, aliases>
-    : def extends record
+    : def extends dict
     ? inferRecord<def, scope, aliases>
     : never
 
 export type validateDefinition<
     def,
-    scope extends record
+    scope extends dict
 > = isTopType<def> extends true
     ? error<
           buildUninferableDefinitionMessage<
@@ -54,7 +54,7 @@ export type validateDefinition<
     : def extends string
     ? validateString<def, scope>
     : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<dataTypeOf<def>>
+    ? buildBadDefinitionTypeMessage<typeOf<def>>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], scope>
       }>
@@ -74,12 +74,12 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends DataTypeName | "function"
+    actual extends TypeName | "function"
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
 export type buildBadDefinitionTypeMessage<
-    actual extends DataTypeName | "function"
+    actual extends TypeName | "function"
 > = `Type definitions must be strings or objects (was ${actual})`

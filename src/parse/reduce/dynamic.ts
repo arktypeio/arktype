@@ -1,7 +1,8 @@
 import { intersect } from "../../nodes/intersect.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import type { Node, NonBranchingNode } from "../../nodes/node.js"
+import type { Node } from "../../nodes/node.js"
+import { isNever } from "../../nodes/types/degenerate.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf, listFrom } from "../../utils/generics.js"
@@ -18,7 +19,7 @@ import {
 type BranchState = {
     range?: OpenRange
     "&"?: Node
-    "|"?: NonBranchingNode[]
+    "|"?: Node[]
 }
 
 export class DynamicState {
@@ -175,12 +176,11 @@ export class DynamicState {
             return
         }
         const viableBranches = this.branches["|"].filter(
-            (branch) => branch.type !== "never"
+            (branch) => !isNever(branch)
         )
         if (viableBranches.length === 0) {
             this.setRoot({
-                type: "never",
-                reason: `No viable union branches\n${JSON.stringify(
+                never: `No viable union branches\n${JSON.stringify(
                     this.branches["|"]
                 )}`
             })

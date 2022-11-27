@@ -5,7 +5,7 @@ import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { compile } from "./traverse/oldCompile.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { record } from "./utils/dataTypes.js"
+import type { dict } from "./utils/dataTypes.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -23,12 +23,12 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type InferredTypeFn = <definition, scope extends record = {}>(
+export type InferredTypeFn = <definition, scope extends dict = {}>(
     definition: validateDefinition<definition, scope>,
     options?: Config<scope>
 ) => Type<inferDefinition<definition, scope, {}>>
 
-type DynamicTypeFn = (definition: unknown, options?: Config<record>) => Type
+type DynamicTypeFn = (definition: unknown, options?: Config<dict>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
@@ -61,6 +61,6 @@ export class Type<inferred = unknown> {
     }
 }
 
-export type Config<scope extends record = {}> = {
+export type Config<scope extends dict = {}> = {
     scope?: Scope<scope>
 }

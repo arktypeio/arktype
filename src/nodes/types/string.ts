@@ -24,8 +24,7 @@ export const intersectStrings: IntersectFn<StringAttributes> = (l, r) => {
             ? { literals: result }
             : // TODO: Abstract never types
               {
-                  type: "never",
-                  reason: `none of ${JSON.stringify(
+                  never: `none of ${JSON.stringify(
                       literals
                   )} satisfy ${JSON.stringify(attributes)}`
               }

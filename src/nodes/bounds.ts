@@ -24,8 +24,7 @@ export const intersectBounds = (l: Bounds, r: Bounds): Bounds | Never => {
         ? max
             ? compareStrictness(min, max, "min") === "l"
                 ? {
-                      type: "never",
-                      reason: buildEmptyRangeMessage("min", min, max)
+                      never: buildEmptyRangeMessage("min", min, max)
                   }
                 : { min, max }
             : { min }

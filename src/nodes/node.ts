@@ -1,4 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
+import type { xor } from "../utils/generics.js"
 import type { BigintAttributes } from "./types/bigint.js"
 import type { BooleanAttributes } from "./types/boolean.js"
 import type { DegenerateNode, Never } from "./types/degenerate.js"
@@ -6,31 +7,32 @@ import type { NumberAttributes } from "./types/number.js"
 import type { ObjectAttributes } from "./types/object.js"
 import type { StringAttributes } from "./types/string.js"
 
-export type Node = TypeNode | BranchingTypeNode | DegenerateNode
+export type Node = xor<TypeNode, DegenerateNode>
 
-export type NonBranchingNode = TypeNode | DegenerateNode
+export type TypeNode = BranchableTypes &
+    LiteralOnlyBranchableTypes &
+    BinaryTypes
 
-export type BranchingTypeNode = readonly TypeNode[]
-
-export type TypeNode =
-    | ({ readonly type: "object" } & ObjectAttributes)
-    | ({ readonly type: "string" } & StringAttributes)
-    | ({ readonly type: "number" } & NumberAttributes)
-    | ({ readonly type: "bigint" } & BigintAttributes)
-    | ({ readonly type: "boolean" } & BooleanAttributes)
-    | { readonly type: "symbol" }
-    | { readonly type: "null" }
-    | { readonly type: "undefined" }
-
-export type AttributesByType = {
-    object: ObjectAttributes
-    string: StringAttributes
-    number: NumberAttributes
-    bigint: BigintAttributes
-    boolean: BooleanAttributes
+export type BranchableTypes = {
+    readonly object?: true | ObjectAttributes | readonly ObjectAttributes[]
+    readonly string?: true | StringAttributes | readonly StringAttributes[]
+    readonly number?: true | NumberAttributes | readonly NumberAttributes[]
 }
 
-export type TypeWithAttributes = keyof AttributesByType
+export type LiteralOnlyBranchableTypes = {
+    readonly bigint?: true | BigintAttributes
+    readonly boolean?: true | BooleanAttributes
+}
+
+export type BinaryTypes = {
+    readonly symbol?: true
+    readonly null?: true
+    readonly undefined?: true
+}
+
+export type NarrowableTypeName =
+    | keyof BranchableTypes
+    | keyof LiteralOnlyBranchableTypes
 
 export type IntersectFn<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
 

@@ -10,18 +10,18 @@ describe("union/parse", () => {
     test("binary", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
-        attest(binary.root).snap([{ type: "number" }, { type: "string" }])
+        attest(binary.root).snap({ number: true, string: true })
     })
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        attest(nary.root).snap([
-            { type: "boolean", literal: false },
-            { type: "string", literals: [""] },
-            { type: "number", literals: [0] },
-            { type: "null" },
-            { type: "undefined" }
-        ])
+        attest(nary.root).snap({
+            boolean: { literal: false },
+            string: { literals: [""] },
+            number: { literals: [0] },
+            null: true,
+            undefined: true
+        })
     })
     describe("errors", () => {
         test("bad reference", () => {

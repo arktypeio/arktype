@@ -1,14 +1,14 @@
 import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { array, record } from "../utils/dataTypes.js"
+import type { array, dict } from "../utils/dataTypes.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, keySet, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 
-export const parseRecord = (def: record, scope: ScopeRoot): Node => {
-    const props: mutable<record<Node>> = {}
+export const parseDict = (def: dict, scope: ScopeRoot): Node => {
+    const props: mutable<dict<Node>> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
@@ -20,15 +20,16 @@ export const parseRecord = (def: record, scope: ScopeRoot): Node => {
         props[keyName] = parseDefinition(def[definitionKey], scope)
     }
     return {
-        type: "object",
-        props,
-        requiredKeys
+        object: {
+            props,
+            requiredKeys
+        }
     }
 }
 
 export type inferRecord<
-    def extends record,
-    scope extends record,
+    def extends dict,
+    scope extends dict,
     aliases
 > = evaluate<
     {
@@ -50,21 +51,22 @@ export const parseTuple = (def: array, scope: ScopeRoot): Node => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: mutable<record<Node>> = {}
+    const props: mutable<dict<Node>> = {}
     const requiredKeys: Record<number, true> = {}
     for (let i = 0; i < def.length; i++) {
         props[i] = parseDefinition(def[i], scope)
         requiredKeys[i] = true
     }
     return {
-        type: "object",
-        subtype: "array",
-        props,
-        requiredKeys
+        object: {
+            subtype: "array",
+            props,
+            requiredKeys
+        }
     }
 }
 
-export type inferTuple<def, scope extends record, aliases> = {
+export type inferTuple<def, scope extends dict, aliases> = {
     [i in keyof def]: inferDefinition<def[i], scope, aliases>
 }
 

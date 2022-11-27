@@ -7,7 +7,7 @@ export const intersectBooleans: IntersectFn<BooleanAttributes> = (l, r) => {
     if (l.literal !== undefined && r.literal !== undefined) {
         return l.literal === r.literal
             ? l
-            : { type: "never", reason: "true and false have no overlap" }
+            : { never: "true and false have no overlap" }
     }
     return l.literal !== undefined ? l : r
 }

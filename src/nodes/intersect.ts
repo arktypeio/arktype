@@ -1,11 +1,13 @@
 import type { ScopeRoot } from "../scope.js"
+import type { TypeName } from "../utils/dataTypes.js"
+import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
 import { isKeyOf, listFrom } from "../utils/generics.js"
-import type { BranchingTypeNode, Node } from "./node.js"
+import type { Node, TypeNode } from "./node.js"
 import { intersectBigints } from "./types/bigint.js"
 import { intersectBooleans } from "./types/boolean.js"
 import {
-    intersectDegenerate,
+    degenerateIntersection,
     isDegenerate,
     isNever
 } from "./types/degenerate.js"
@@ -16,8 +18,8 @@ import { intersectStrings } from "./types/string.js"
 
 export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
     isDegenerate(l) || isDegenerate(r)
-        ? intersectDegenerate(l, r, scope)
-        : intersectBranches(listFrom(l), listFrom(r), scope)
+        ? degenerateIntersection(l, r, scope)
+        : typeIntersection(l, r, scope)
 
 const attributeIntersections = {
     bigint: intersectBigints,
@@ -27,43 +29,31 @@ const attributeIntersections = {
     string: intersectStrings
 }
 
-const intersectBranches = (
-    l: BranchingTypeNode,
-    r: BranchingTypeNode,
-    scope: ScopeRoot
-): Node => {
-    const viable: mutable<BranchingTypeNode> = []
+const typeIntersection = (l: TypeNode, r: TypeNode, scope: ScopeRoot): Node => {
+    const viable: mutable<TypeNode> = {}
     const inviable: Never[] = []
-    for (const leftBranch of l) {
-        const rightBranches = r.filter(
-            (branch) => branch.type === leftBranch.type
-        )
-        for (const rightBranch of rightBranches) {
-            const type = leftBranch.type
-            if (isKeyOf(type, attributeIntersections)) {
-                const branchResult = attributeIntersections[type](
-                    leftBranch as any,
-                    rightBranch as any,
-                    scope
-                )
-                if (isNever(branchResult)) {
-                    inviable.push(branchResult)
-                } else {
-                    viable.push({ type, ...branchResult } as any)
-                }
+    let typeName: TypeName
+    for (typeName in l) {
+        if (isKeyOf(typeName, attributeIntersections)) {
+            const result = attributeIntersections[typeName](
+                l[typeName] as any,
+                r[typeName] as any,
+                scope
+            )
+            if (isNever(result)) {
+                inviable.push(result)
+            } else {
+                viable[typeName] = result as any
             }
         }
     }
-    return viable.length === 0
+    return isEmpty(viable)
         ? {
-              type: "never",
-              reason: `No branches were viable:\n${JSON.stringify(
+              never: `No branches were viable:\n${JSON.stringify(
                   inviable,
                   null,
                   4
               )}`
           }
-        : viable.length === 1
-        ? viable[0]
         : viable
 }

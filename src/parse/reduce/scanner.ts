@@ -1,4 +1,4 @@
-import type { record } from "../../utils/dataTypes.js"
+import type { dict } from "../../utils/dataTypes.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -49,7 +49,7 @@ export class Scanner<Lookahead extends string = string> {
         return this.lookahead === char
     }
 
-    lookaheadIsIn<Tokens extends record>(
+    lookaheadIsIn<Tokens extends dict>(
         tokens: Tokens
     ): this is Scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens

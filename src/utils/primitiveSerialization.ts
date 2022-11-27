@@ -1,4 +1,4 @@
-import type { DataTypes } from "./dataTypes.js"
+import type { Types } from "./dataTypes.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
@@ -20,7 +20,7 @@ export type SerializedPrimitives = {
 export type SerializedPrimitive =
     SerializedPrimitives[keyof SerializedPrimitives]
 
-export type SerializablePrimitive = DataTypes[keyof SerializedPrimitives]
+export type SerializablePrimitive = Types[keyof SerializedPrimitives]
 
 export const serializePrimitive = <value extends SerializablePrimitive>(
     value: value

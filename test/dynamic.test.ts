@@ -3,13 +3,13 @@ import { attest } from "../dev/attest/exports.js"
 import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
 import { scope } from "../src/scope.js"
 import { type } from "../src/type.js"
-import type { record } from "../src/utils/dataTypes.js"
+import type { dict } from "../src/utils/dataTypes.js"
 
 describe("dynamic", () => {
     test("uninferred types", () => {
         const dynamicStringArray = type.dynamic("str" + "ing")
         attest(dynamicStringArray.infer).typed as unknown
-        attest(dynamicStringArray.root).equals({ type: "string" })
+        attest(dynamicStringArray.root).equals({ string: true })
     })
     test("uninferred aliases", () => {
         const s = scope.dynamic({
@@ -25,7 +25,7 @@ describe("dynamic", () => {
         }).throwsAndHasTypeError(buildUnresolvableMessage("nonexistent"))
     })
     test("uninferred scope", () => {
-        const unknownScope = scope.dynamic({ a: "string" } as record)
+        const unknownScope = scope.dynamic({ a: "string" } as dict)
         attest(unknownScope.a.infer).typed as unknown
         // Allows any references but will throw at runtime
         attest(() => unknownScope.b.infer).throws.snap(

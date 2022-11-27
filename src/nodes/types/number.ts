@@ -4,7 +4,6 @@ import type { Bounds } from "../bounds.js"
 import { checkBounds, intersectBounds, pruneBounds } from "../bounds.js"
 import type { IntersectFn, PruneFn } from "../node.js"
 import { isNever } from "./degenerate.js"
-import { pruneValues } from "./utils.js"
 
 export type NumberAttributes = xor<
     {
@@ -24,8 +23,7 @@ export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
         return result.length
             ? { literals: result }
             : {
-                  type: "never",
-                  reason: `none of ${JSON.stringify(
+                  never: `none of ${JSON.stringify(
                       literals
                   )} satisfy ${JSON.stringify(attributes)}`
               }
@@ -47,7 +45,7 @@ export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
 export const pruneNumber: PruneFn<NumberAttributes> = (l, r) => {
     if (l.literals) {
         const literals = r.literals
-            ? pruneValues(l.literals, r.literals)
+            ? l.literals.filter((value) => !r.literals!.includes(value))
             : l.literals
         return literals?.length ? { literals } : undefined
     }

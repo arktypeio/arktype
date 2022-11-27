@@ -11,8 +11,7 @@ export const intersectBigints: IntersectFn<BigintAttributes> = (l, r) => {
         return literals.length
             ? { literals }
             : {
-                  type: "never",
-                  reason: `${JSON.stringify(l)} and ${JSON.stringify(
+                  never: `${JSON.stringify(l)} and ${JSON.stringify(
                       r
                   )} have no overlap`
               }

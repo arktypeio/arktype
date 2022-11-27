@@ -1,20 +1,20 @@
 import type { evaluate, isTopType } from "./generics.js"
 
-export type DataTypes = {
+export type Types = {
     bigint: bigint
     boolean: boolean
     number: number
-    object: object
+    object: dict
     string: string
     symbol: symbol
     undefined: undefined
     null: null
 }
 
-export type DataTypeName = evaluate<keyof DataTypes>
+export type TypeName = evaluate<keyof Types>
 
-export type dataTypeOf<data> = isTopType<data> extends true
-    ? DataTypeName
+export type typeOf<data> = isTopType<data> extends true
+    ? TypeName
     : data extends object
     ? "object"
     : data extends string
@@ -33,7 +33,7 @@ export type dataTypeOf<data> = isTopType<data> extends true
     ? "symbol"
     : never
 
-export const dataTypeOf = <data>(data: data) => {
+export const typeOf = <data>(data: data) => {
     const builtinType = typeof data
     return (
         builtinType === "object"
@@ -43,47 +43,45 @@ export const dataTypeOf = <data>(data: data) => {
             : builtinType === "function"
             ? "object"
             : builtinType
-    ) as dataTypeOf<data>
+    ) as typeOf<data>
 }
 
-export const hasDataType = <name extends DataTypeName>(
+export const hasType = <name extends TypeName>(
     data: unknown,
     name: name
-): data is DataTypes[name] => dataTypeOf(data) === name
+): data is Types[name] => typeOf(data) === name
 
-export const hasDataTypeIn = <name extends DataTypeName>(
+export const typeIn = <name extends TypeName>(
     data: unknown,
     names: Record<name, unknown>
-): data is DataTypes[name] => dataTypeOf(data) in names
+): data is Types[name] => typeOf(data) in names
 
 export type ObjectSubtypes = {
+    base: dict
     array: array
     function: Function
-    record: record
 }
 
 export type array<of = unknown> = readonly of[]
 
-export type record<of = unknown> = { readonly [k in string]: of }
+export type dict<of = unknown> = { readonly [k in string]: of }
 
 export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
 
-export type objectSubtypeOf<data extends object> = data extends object
+export type objectSubtypeOf<data extends object> = dict extends data
     ? ObjectSubtypeName
     : data extends array
     ? "array"
     : data extends Function
     ? "function"
-    : data extends record
-    ? "record"
-    : never
+    : "base"
 
 export const objectSubtypeOf = <data extends object>(data: data) =>
     (Array.isArray(data)
         ? "array"
         : typeof data === "function"
         ? "function"
-        : "record") as objectSubtypeOf<data>
+        : "base") as objectSubtypeOf<data>
 
 export const hasObjectSubtype = <name extends ObjectSubtypeName>(
     data: object,

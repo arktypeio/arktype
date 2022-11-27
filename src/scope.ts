@@ -6,15 +6,15 @@ import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import { Type } from "./type.js"
 import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { record } from "./utils/dataTypes.js"
+import type { dict } from "./utils/dataTypes.js"
 import { throwInternalError } from "./utils/errors.js"
 import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rawScope = (aliases: record, config: Config = {}) => {
+const rawScope = (aliases: dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const types: Scope<record> = { $: root as any }
+    const types: Scope<dict> = { $: root as any }
     for (const name in aliases) {
         types[name] = new Type(root.resolve(name), config, types)
     }
@@ -33,7 +33,7 @@ export const getRootScope = () => {
     return rootScope!
 }
 
-type InferredScopeFn = <aliases, inferredParent extends record = {}>(
+type InferredScopeFn = <aliases, inferredParent extends dict = {}>(
     aliases: validateAliases<
         aliases,
         inferScopeContext<aliases, inferredParent>
@@ -41,28 +41,28 @@ type InferredScopeFn = <aliases, inferredParent extends record = {}>(
     config?: Config<inferredParent>
 ) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <aliases extends record>(
+type DynamicScopeFn = <aliases extends dict>(
     aliases: aliases,
     config?: Config
 ) => Scope<aliases>
 
-export type Scope<inferred extends record> = {
+export type Scope<inferred extends dict> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
 
-export type DynamicScope = Scope<record>
+export type DynamicScope = Scope<dict>
 
 type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Type<inferred[name]>
 }
 
-export class ScopeRoot<inferred extends record = record> {
+export class ScopeRoot<inferred extends dict = dict> {
     attributes = {} as Record<keyof inferred, Node>
-    private cache: mutable<record<Node>> = {}
+    private cache: mutable<dict<Node>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
-        public config: Config<record>
+        public config: Config<dict>
     ) {}
 
     get infer(): inferred {
@@ -94,15 +94,15 @@ export class ScopeRoot<inferred extends record = record> {
     }
 }
 
-type validateAliases<aliases, scope extends record> = evaluate<{
+type validateAliases<aliases, scope extends dict> = evaluate<{
     [name in keyof aliases]: validateDefinition<aliases[name], scope>
 }>
 
-type inferAliases<aliases, scope extends record> = evaluate<{
+type inferAliases<aliases, scope extends dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<aliases[name], scope, aliases>
 }>
 
-type inferScopeContext<aliases, scope extends record> = inferAliases<
+type inferScopeContext<aliases, scope extends dict> = inferAliases<
     aliases,
     scope
 > &

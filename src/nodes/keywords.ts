@@ -32,31 +32,30 @@ export type Keywords = {
 
 export const keywords = {
     // TS keywords
-    any: { type: "any" },
-    bigint: { type: "bigint" },
-    boolean: { type: "boolean" },
-    false: { type: "boolean", literal: false },
+    any: { always: "any" },
+    bigint: { bigint: true },
+    boolean: { boolean: true },
+    false: { boolean: { literal: false } },
     never: {
-        type: "never",
-        reason: "explicitly typed as never"
+        never: "explicitly typed as never"
     },
-    null: { type: "null" },
-    number: { type: "number" },
-    object: { type: "object" },
-    string: { type: "string" },
-    symbol: { type: "symbol" },
-    true: { type: "boolean", literal: true },
-    undefined: { type: "undefined" },
-    unknown: { type: "unknown" },
-    void: { type: "undefined" },
+    null: { null: true },
+    number: { number: true },
+    object: { object: true },
+    string: { string: true },
+    symbol: { symbol: true },
+    true: { boolean: { literal: true } },
+    undefined: { undefined: true },
+    unknown: { always: "unknown" },
+    void: { undefined: true },
     // JS Object types
-    Function: { type: "object", subtype: "function" },
+    Function: { object: { subtype: "function" } },
     // Regex
-    email: { type: "string", regex: ["/^(.+)@(.+)\\.(.+)$/"] },
-    alphanumeric: { type: "string", regex: ["/^[dA-Za-z]+$/"] },
-    alphaonly: { type: "string", regex: ["/^[A-Za-z]+$/"] },
-    lowercase: { type: "string", regex: ["/^[a-z]*$/"] },
-    uppercase: { type: "string", regex: ["/^[A-Z]*$/"] },
+    email: { string: { regex: ["/^(.+)@(.+)\\.(.+)$/"] } },
+    alphanumeric: { string: { regex: ["/^[dA-Za-z]+$/"] } },
+    alphaonly: { string: { regex: ["/^[A-Za-z]+$/"] } },
+    lowercase: { string: { regex: ["/^[a-z]*$/"] } },
+    uppercase: { string: { regex: ["/^[A-Z]*$/"] } },
     // Numeric
-    integer: { type: "number", divisor: 1 }
+    integer: { number: { divisor: 1 } }
 } as const satisfies { [k in Keyword]: Node }

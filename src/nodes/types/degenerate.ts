@@ -1,44 +1,31 @@
 import type { ScopeRoot } from "../../scope.js"
-import { hasObjectSubtype } from "../../utils/dataTypes.js"
-import { isKeyOf } from "../../utils/generics.js"
+import { hasObjectSubtype, hasType, typeOf } from "../../utils/dataTypes.js"
+import { throwInternalError } from "../../utils/errors.js"
+import type { xor } from "../../utils/generics.js"
+import { hasKey, isKeyOf } from "../../utils/generics.js"
 import { intersect } from "../intersect.js"
 import { keywords } from "../keywords.js"
 import type { Node } from "../node.js"
 import { prune } from "../prune.js"
 
-export type DegenerateNode = Never | Any | Unknown | Alias
+export type DegenerateNode = xor<Alias, xor<Always, Never>>
 
-export type Never = { readonly type: "never"; readonly reason: string }
+export type Never = { readonly never: string }
 
-export type Any = { readonly type: "any" }
+export type Always = { readonly always: "unknown" | "any" }
 
-export type Unknown = { readonly type: "unknown" }
-
-export type Alias = { readonly type: "alias"; readonly name: string }
-
-const degenerateKeys = {
-    alias: true,
-    any: true,
-    never: true,
-    unknown: true
-}
+export type Alias = { readonly alias: string }
 
 export const isDegenerate = (node: Node): node is DegenerateNode =>
-    hasObjectSubtype(node, "record") && isKeyOf(node.type, degenerateKeys)
+    !!(node.alias || node.never || node.always)
 
-export const isAlias = (node: Node): node is Alias =>
-    hasObjectSubtype(node, "record") && node.type === "alias"
+export const isNever = (result: unknown): result is Never =>
+    hasType(result, "object") && !!result.never
 
-export const isAny = (node: Node): node is Any =>
-    hasObjectSubtype(node, "record") && node.type === "any"
+const getDegenerateKind = (node: Node) =>
+    node.alias ? "alias" : node.always ?? (node.never ? "never" : undefined)
 
-export const isUnknown = (node: Node): node is Unknown =>
-    hasObjectSubtype(node, "record") && node.type === "unknown"
-
-export const isNever = (result: object): result is Never =>
-    hasObjectSubtype(result, "record") && result.type === "never"
-
-export const intersectDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
+export const degenerateIntersection = (l: Node, r: Node, scope: ScopeRoot) =>
     degenerateOperation("&", l, r, scope)!
 
 export const pruneDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
@@ -50,24 +37,24 @@ const degenerateOperation = (
     r: Node,
     scope: ScopeRoot
 ): Node | undefined => {
-    if (isAlias(l) || isAlias(r)) {
+    const lKind = getDegenerateKind(l) ?? "t"
+    const rKind = getDegenerateKind(r) ?? "t"
+    if (lKind === "alias" || rKind === "alias") {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)
         return operator === "&" ? intersect(l, r, scope) : prune(l, r, scope)
     }
-    const firstKey = isDegenerate(l) ? l.type : "t"
-    const secondKey = isDegenerate(r) ? r.type : "t"
     const resultKey =
         operator === "&"
-            ? degenerateIntersections[firstKey][secondKey]
-            : degenerateDifferences[firstKey][secondKey]
-    return resultKey === "t" ? (firstKey === "t" ? l : r) : keywords[resultKey]
+            ? intersectedDegenerates[lKind][rKind]
+            : prunedDegenerates[lKind][rKind]
+    return resultKey === "t" ? (lKind === "t" ? l : r) : keywords[resultKey]
 }
 
 const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
-    isAlias(node) ? scope.resolve(node.name) : node
+    node.alias ? scope.resolve(node.alias) : node
 
-const degenerateIntersections = {
+const intersectedDegenerates = {
     any: {
         never: "never",
         any: "any",
@@ -96,7 +83,7 @@ const degenerateIntersections = {
     }
 } satisfies DegenerateOperationLookups
 
-const degenerateDifferences = {
+const prunedDegenerates = {
     any: {
         never: "any",
         any: "never",

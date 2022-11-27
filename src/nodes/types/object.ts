@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { record } from "../../utils/dataTypes.js"
+import type { dict } from "../../utils/dataTypes.js"
 import { isEmpty } from "../../utils/deepEquals.js"
 import type { keySet, mutable, xor } from "../../utils/generics.js"
 import { hasKey } from "../../utils/generics.js"
@@ -9,7 +9,6 @@ import { intersect } from "../intersect.js"
 import type { IntersectFn, Node, PruneFn } from "../node.js"
 import { prune } from "../prune.js"
 import { isNever } from "./degenerate.js"
-import { intersectKeySets } from "./utils.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
 
@@ -18,7 +17,7 @@ export type PropsAttributes = {
     readonly requiredKeys: keySet
 }
 
-type PropsAttribute = record<Node>
+type PropsAttribute = dict<Node>
 
 type SubtypeAttributes =
     | {
@@ -39,7 +38,7 @@ export const intersectObjects: IntersectFn<ObjectAttributes> = (
 ) => {
     const result = { ...l, ...r } as mutable<ObjectAttributes>
     if (l.props && r.props) {
-        const requiredKeys = intersectKeySets(l.requiredKeys, r.requiredKeys)
+        const requiredKeys = { ...l.requiredKeys, ...r.requiredKeys }
         const props = intersectProps(l.props, r.props, requiredKeys, scope)
         if (isNever(props)) {
             return props
@@ -50,8 +49,7 @@ export const intersectObjects: IntersectFn<ObjectAttributes> = (
     if (l.subtype && r.subtype) {
         if (l.subtype !== r.subtype) {
             return {
-                type: "never",
-                reason: `${l.subtype} and ${r.subtype} are mutually exclusive`
+                never: `${l.subtype} and ${r.subtype} are mutually exclusive`
             }
         }
         if (l.bounds && r.bounds) {

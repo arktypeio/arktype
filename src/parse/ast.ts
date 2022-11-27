@@ -1,5 +1,5 @@
 import type { Keyword, Keywords } from "../nodes/keywords.js"
-import type { record } from "../utils/dataTypes.js"
+import type { dict } from "../utils/dataTypes.js"
 import type { error, evaluate, isAny, RegexLiteral } from "../utils/generics.js"
 import type {
     SerializablePrimitive,
@@ -11,7 +11,7 @@ import type { StringLiteral } from "./shift/operand/enclosed.js"
 
 export type inferAst<
     ast,
-    scope extends record,
+    scope extends dict,
     aliases
 > = ast extends readonly unknown[]
     ? ast[1] extends "[]"
@@ -35,7 +35,7 @@ export type inferAst<
           }>
     : inferTerminal<ast, scope, aliases>
 
-export type validateAstSemantics<ast, scope extends record> = ast extends string
+export type validateAstSemantics<ast, scope extends dict> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
     ? validateAstSemantics<child, scope>
@@ -87,7 +87,7 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<token, scope extends record, aliases> = token extends Keyword
+type inferTerminal<token, scope extends dict, aliases> = token extends Keyword
     ? Keywords[token]
     : token extends keyof scope
     ? scope[token]

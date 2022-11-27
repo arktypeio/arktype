@@ -23,10 +23,11 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     s.setRoot(
         enclosing === "/"
             ? {
-                  type: "string",
-                  regex: [token as RegexLiteral]
+                  string: {
+                      regex: [token as RegexLiteral]
+                  }
               }
-            : { type: "string", literals: [`'${token.slice(1, -1)}'`] }
+            : { string: { literals: [`'${token.slice(1, -1)}'`] } }
     )
 }
 

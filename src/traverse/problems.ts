@@ -1,4 +1,4 @@
-import { dataTypeOf } from "../utils/dataTypes.js"
+import { typeOf } from "../utils/dataTypes.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean
@@ -44,7 +44,7 @@ export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
     get typeOf() {
-        return dataTypeOf(this.raw)
+        return typeOf(this.raw)
     }
 
     // TODO: Fix
