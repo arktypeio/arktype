@@ -47,7 +47,7 @@ const regexCache: Record<string, RegExp> = {}
 
 export const checkString = (data: string, attributes: StringAttributes) => {
     if (attributes.literal) {
-        return attributes.literal
+        return attributes.literal === data
     }
     if (attributes.bounds && !checkBounds(attributes.bounds, data.length)) {
         return false

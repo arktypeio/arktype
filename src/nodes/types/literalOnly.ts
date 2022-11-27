@@ -1,9 +1,10 @@
+import type { IntegerLiteral } from "../../utils/numericLiterals.js"
 import type { IntersectionFn, PruneFn } from "../node.js"
 
 type LiteralOnlyType = boolean | bigint
 
 export type LiteralOnlyAttributes<t extends LiteralOnlyType> = {
-    readonly literal?: t
+    readonly literal?: t extends bigint ? IntegerLiteral : t
 }
 
 export const literalOnlyIntersection: IntersectionFn<

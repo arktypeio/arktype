@@ -2,8 +2,8 @@ import type { ScopeRoot } from "../scope.js"
 import type { TypeName } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
-import { isKeyOf, listFrom } from "../utils/generics.js"
-import type { Node, TypeNode } from "./node.js"
+import { hasKey, isKeyOf, listFrom } from "../utils/generics.js"
+import type { Node, NonTrivialTypeName, TypeNode } from "./node.js"
 import {
     degenerateIntersection,
     isDegenerate,
@@ -20,7 +20,7 @@ export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
         ? degenerateIntersection(l, r, scope)
         : typeIntersection(l, r, scope)
 
-const attributeIntersections = {
+const nonTrivialIntersections = {
     bigint: literalOnlyIntersection,
     boolean: literalOnlyIntersection,
     number: numberIntersection,
@@ -29,30 +29,46 @@ const attributeIntersections = {
 }
 
 const typeIntersection = (l: TypeNode, r: TypeNode, scope: ScopeRoot): Node => {
-    const viable: mutable<TypeNode> = {}
-    const inviable: Never[] = []
+    const viableTypes: mutable<TypeNode> = {}
+    const inviableTypes: { [k in NonTrivialTypeName]?: Never[] } = {}
     let typeName: TypeName
     for (typeName in l) {
-        if (isKeyOf(typeName, attributeIntersections)) {
-            const result = attributeIntersections[typeName](
-                l[typeName] as any,
-                r[typeName] as any,
-                scope
-            )
-            if (isNever(result)) {
-                inviable.push(result)
+        if (!isKeyOf(typeName, nonTrivialIntersections)) {
+            viableTypes[typeName] = true
+        } else if (hasKey(r, typeName)) {
+            const viableBranches: any[] = []
+            const inviableBranches: Never[] = []
+            for (const lBranch of listFrom(l[typeName])) {
+                for (const rBranch of listFrom(r[typeName])) {
+                    const result = nonTrivialIntersections[typeName](
+                        lBranch as any,
+                        rBranch as any,
+                        scope
+                    )
+                    if (isNever(result)) {
+                        inviableBranches.push(result)
+                    } else {
+                        viableBranches.push(result)
+                    }
+                }
+            }
+            if (viableBranches.length) {
+                viableTypes[typeName] =
+                    viableBranches.length === 1
+                        ? viableBranches[0]
+                        : viableBranches
             } else {
-                viable[typeName] = result as any
+                inviableTypes[typeName] = inviableBranches
             }
         }
     }
-    return isEmpty(viable)
+    return isEmpty(viableTypes)
         ? {
-              never: `No branches were viable:\n${JSON.stringify(
-                  inviable,
+              never: `Empty intersection:\n${JSON.stringify(
+                  inviableTypes,
                   null,
                   4
               )}`
           }
-        : viable
+        : viableTypes
 }

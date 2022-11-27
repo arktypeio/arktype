@@ -11,7 +11,7 @@ describe("branch", () => {
         const t = type("'0'|'1'&'2'|'3'")
         attest(t.infer).typed as "0" | "3"
         attest(t.root).snap({
-            string: { literals: ["'0'", "'3'"] }
+            string: [{ literal: "0" }, { literal: "3" }]
         })
     })
 })

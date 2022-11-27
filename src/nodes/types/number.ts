@@ -71,16 +71,10 @@ export const checkNumber = (data: number, attributes: NumberAttributes) =>
         : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
           (!attributes.divisor || data % attributes.divisor === 0)
 
-const intersectDivisors = (l: number | undefined, r: number | undefined) =>
+const intersectDivisors = (l: number, r: number) =>
     l && r ? Math.abs((l * r) / greatestCommonDivisor(l, r)) : l ?? r
 
-const pruneDivisors = (l: number | undefined, r: number | undefined) => {
-    if (!l) {
-        return undefined
-    }
-    if (!r) {
-        return l
-    }
+const pruneDivisors = (l: number, r: number) => {
     const relativelyPrimeA = Math.abs(l / greatestCommonDivisor(l, r))
     return relativelyPrimeA === 1 ? undefined : relativelyPrimeA
 }

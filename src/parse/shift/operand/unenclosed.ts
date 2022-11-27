@@ -58,13 +58,13 @@ export const maybeParseIdentifier = (
 const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { number: { literals: [maybeNumber] } }
+        return { number: { literal: maybeNumber } }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
         return {
             bigint: {
-                literals: [token.slice(0, -1) as IntegerLiteral]
+                literal: token.slice(0, -1) as IntegerLiteral
             }
         }
     }
