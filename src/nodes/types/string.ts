@@ -1,40 +1,36 @@
+import type { array } from "../../utils/dataTypes.js"
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
-import { checkBounds, intersectBounds } from "../bounds.js"
-import type { IntersectFn, PruneFn } from "../node.js"
+import { boundsIntersection, checkBounds } from "../bounds.js"
+import type { IntersectionFn, PruneFn } from "../node.js"
 import { isNever } from "./degenerate.js"
-import { intersectAdditiveValues } from "./utils.js"
 
 export type StringAttributes = xor<
     {
-        readonly regex?: readonly string[]
+        readonly regex?: string | readonly string[]
         readonly bounds?: Bounds
     },
-    { readonly literals?: readonly string[] }
+    { readonly literal?: string }
 >
 
-export const intersectStrings: IntersectFn<StringAttributes> = (l, r) => {
-    if (l.literals || r.literals) {
-        const literals = l.literals ?? r.literals!
-        const attributes = l.literals ? r : l
-        const result: string[] = literals.filter((value) =>
-            checkString(value, attributes)
-        )
-        return result.length
-            ? { literals: result }
-            : // TODO: Abstract never types
-              {
-                  never: `none of ${JSON.stringify(
-                      literals
-                  )} satisfy ${JSON.stringify(attributes)}`
+export const stringIntersection: IntersectionFn<StringAttributes> = (l, r) => {
+    if (l.literal !== undefined || r.literal !== undefined) {
+        const literal = l.literal ?? r.literal!
+        const attributes = l.literal ? r : l
+        return checkString(literal, attributes)
+            ? l
+            : {
+                  never: `'${literal}' is not allowed by '${JSON.stringify(
+                      r
+                  )}' have no overlap`
               }
     }
     const result = { ...l, ...r } as mutable<StringAttributes>
     if (l.regex && r.regex) {
-        result.regex = intersectAdditiveValues(l.regex, r.regex)
+        result.regex = additiveIntersection(l.regex, r.regex)
     }
     if (l.bounds && r.bounds) {
-        const bounds = intersectBounds(l.bounds, r.bounds)
+        const bounds = boundsIntersection(l.bounds, r.bounds)
         if (isNever(bounds)) {
             return bounds
         }
@@ -50,8 +46,8 @@ export const pruneString: PruneFn<StringAttributes> = (branch, given) => {
 const regexCache: Record<string, RegExp> = {}
 
 export const checkString = (data: string, attributes: StringAttributes) => {
-    if (attributes.literals) {
-        return attributes.literals.includes(data)
+    if (attributes.literal) {
+        return attributes.literal
     }
     if (attributes.bounds && !checkBounds(attributes.bounds, data.length)) {
         return false
@@ -67,4 +63,26 @@ export const checkString = (data: string, attributes: StringAttributes) => {
         }
     }
     return true
+}
+
+const additiveIntersection = <t>(
+    l: t | array<t>,
+    r: t | array<t>
+): t | array<t> => {
+    if (!Array.isArray(l)) {
+        if (!Array.isArray(r)) {
+            return l === r ? l : ([l, r] as any)
+        }
+        return r.includes(l) ? r : [...r, l]
+    }
+    if (!Array.isArray(r)) {
+        return l.includes(r) ? l : [...l, r]
+    }
+    const result = [...l]
+    for (const expression of r) {
+        if (!result.includes(expression)) {
+            result.push(expression)
+        }
+    }
+    return result.length === 1 ? result[0] : result
 }

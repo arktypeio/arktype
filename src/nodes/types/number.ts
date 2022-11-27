@@ -1,8 +1,8 @@
 import { isEmpty } from "../../utils/deepEquals.js"
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
-import { checkBounds, intersectBounds, pruneBounds } from "../bounds.js"
-import type { IntersectFn, PruneFn } from "../node.js"
+import { boundsIntersection, checkBounds, pruneBounds } from "../bounds.js"
+import type { IntersectionFn, PruneFn } from "../node.js"
 import { isNever } from "./degenerate.js"
 
 export type NumberAttributes = xor<
@@ -10,22 +10,20 @@ export type NumberAttributes = xor<
         readonly divisor?: number
         readonly bounds?: Bounds
     },
-    { readonly literals?: readonly number[] }
+    { readonly literal?: number }
 >
 
-export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
-    if (l.literals || r.literals) {
-        const literals = l.literals ?? r.literals!
-        const attributes = l.literals ? r : l
-        const result: number[] = literals.filter((value) =>
-            checkNumber(value, attributes)
-        )
-        return result.length
-            ? { literals: result }
+export const numberIntersection: IntersectionFn<NumberAttributes> = (l, r) => {
+    // TODO: Abstraction
+    if (l.literal !== undefined || r.literal !== undefined) {
+        const literal = l.literal ?? r.literal!
+        const attributes = l.literal ? r : l
+        return checkNumber(literal, attributes)
+            ? l
             : {
-                  never: `none of ${JSON.stringify(
-                      literals
-                  )} satisfy ${JSON.stringify(attributes)}`
+                  never: `'${literal}' is not allowed by '${JSON.stringify(
+                      r
+                  )}' have no overlap`
               }
     }
     const result = { ...l, ...r } as mutable<NumberAttributes>
@@ -33,7 +31,7 @@ export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
         result.divisor = intersectDivisors(l.divisor, r.divisor)
     }
     if (l.bounds && r.bounds) {
-        const boundsResult = intersectBounds(l.bounds, r.bounds)
+        const boundsResult = boundsIntersection(l.bounds, r.bounds)
         if (isNever(boundsResult)) {
             return boundsResult
         }
@@ -43,11 +41,11 @@ export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
 }
 
 export const pruneNumber: PruneFn<NumberAttributes> = (l, r) => {
-    if (l.literals) {
-        const literals = r.literals
-            ? l.literals.filter((value) => !r.literals!.includes(value))
-            : l.literals
-        return literals?.length ? { literals } : undefined
+    if (l.literal !== undefined) {
+        return r.literal === l.literal ? undefined : l
+    }
+    if (r.literal !== undefined) {
+        return checkNumber(r.literal, l) ? undefined : null
     }
     const result: mutable<NumberAttributes> = {}
     if (l.divisor && r.divisor) {
@@ -68,8 +66,8 @@ export const pruneNumber: PruneFn<NumberAttributes> = (l, r) => {
 }
 
 export const checkNumber = (data: number, attributes: NumberAttributes) =>
-    attributes.literals
-        ? attributes.literals.includes(data)
+    attributes.literal
+        ? attributes.literal === data
         : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
           (!attributes.divisor || data % attributes.divisor === 0)
 

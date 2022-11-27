@@ -1,9 +1,7 @@
 import type { ScopeRoot } from "../../scope.js"
-import { hasObjectSubtype, hasType, typeOf } from "../../utils/dataTypes.js"
-import { throwInternalError } from "../../utils/errors.js"
+import { hasType } from "../../utils/dataTypes.js"
 import type { xor } from "../../utils/generics.js"
-import { hasKey, isKeyOf } from "../../utils/generics.js"
-import { intersect } from "../intersect.js"
+import { intersection } from "../intersection.js"
 import { keywords } from "../keywords.js"
 import type { Node } from "../node.js"
 import { prune } from "../prune.js"
@@ -36,25 +34,25 @@ const degenerateOperation = (
     l: Node,
     r: Node,
     scope: ScopeRoot
-): Node | undefined => {
+): Node | null | undefined => {
     const lKind = getDegenerateKind(l) ?? "t"
     const rKind = getDegenerateKind(r) ?? "t"
     if (lKind === "alias" || rKind === "alias") {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)
-        return operator === "&" ? intersect(l, r, scope) : prune(l, r, scope)
+        return operator === "&" ? intersection(l, r, scope) : prune(l, r, scope)
     }
     const resultKey =
         operator === "&"
-            ? intersectedDegenerates[lKind][rKind]
-            : prunedDegenerates[lKind][rKind]
+            ? degenerateIntersectionLookup[lKind][rKind]
+            : pruneDegenerateLookup[lKind][rKind]
     return resultKey === "t" ? (lKind === "t" ? l : r) : keywords[resultKey]
 }
 
 const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
     node.alias ? scope.resolve(node.alias) : node
 
-const intersectedDegenerates = {
+const degenerateIntersectionLookup = {
     any: {
         never: "never",
         any: "any",
@@ -83,7 +81,7 @@ const intersectedDegenerates = {
     }
 } satisfies DegenerateOperationLookups
 
-const prunedDegenerates = {
+const pruneDegenerateLookup = {
     any: {
         never: "any",
         any: "never",

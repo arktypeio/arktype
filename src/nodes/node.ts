@@ -1,8 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import type { xor } from "../utils/generics.js"
-import type { BigintAttributes } from "./types/bigint.js"
-import type { BooleanAttributes } from "./types/boolean.js"
 import type { DegenerateNode, Never } from "./types/degenerate.js"
+import type { LiteralOnlyAttributes } from "./types/literalOnly.js"
 import type { NumberAttributes } from "./types/number.js"
 import type { ObjectAttributes } from "./types/object.js"
 import type { StringAttributes } from "./types/string.js"
@@ -20,8 +19,8 @@ export type BranchableTypes = {
 }
 
 export type LiteralOnlyBranchableTypes = {
-    readonly bigint?: true | BigintAttributes
-    readonly boolean?: true | BooleanAttributes
+    readonly bigint?: true | LiteralOnlyAttributes<bigint>
+    readonly boolean?: true | LiteralOnlyAttributes<boolean>
 }
 
 export type BinaryTypes = {
@@ -30,14 +29,14 @@ export type BinaryTypes = {
     readonly undefined?: true
 }
 
-export type NarrowableTypeName =
+export type NonTrivialTypeName =
     | keyof BranchableTypes
     | keyof LiteralOnlyBranchableTypes
 
-export type IntersectFn<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
+export type IntersectionFn<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
 
 export type PruneFn<t> = (
     branch: t,
     given: t,
     scope: ScopeRoot
-) => t | undefined
+) => t | undefined | null

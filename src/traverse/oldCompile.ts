@@ -16,6 +16,18 @@ export const compile = (attributes: Node, scope: ScopeRoot): Node => {
     // return compiled
 }
 
+// export const queryPath = (attributes: TypeNode, path: string) => {
+//     // const segments = pathToSegments(path)
+//     // let currentAttributes = attributes
+//     // for (const segment of segments) {
+//     //     if (currentAttributes.props?.[segment] === undefined) {
+//     //         return undefined
+//     //     }
+//     //     currentAttributes = currentAttributes.props[segment]
+//     // }
+//     // return currentAttributes[key]
+// }
+
 // export type DiscriminatedKey = "type" | "value"
 
 // export type DiscriminatedPath = AttributePath<DiscriminatedKey>

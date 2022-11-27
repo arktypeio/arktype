@@ -1,14 +1,13 @@
 import type { Node, PruneFn } from "./node.js"
-import { pruneBigint } from "./types/bigint.js"
-import { pruneBoolean } from "./types/boolean.js"
 import { isDegenerate, pruneDegenerate } from "./types/degenerate.js"
+import { pruneLiteralOnly } from "./types/literalOnly.js"
 import { pruneNumber } from "./types/number.js"
 import { pruneObject } from "./types/object.js"
 import { pruneString } from "./types/string.js"
 
 export const attributePruners = {
-    bigint: pruneBigint,
-    boolean: pruneBoolean,
+    bigint: pruneLiteralOnly,
+    boolean: pruneLiteralOnly,
     number: pruneNumber,
     object: pruneObject,
     string: pruneString

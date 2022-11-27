@@ -4,29 +4,28 @@ import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
 import { isKeyOf, listFrom } from "../utils/generics.js"
 import type { Node, TypeNode } from "./node.js"
-import { intersectBigints } from "./types/bigint.js"
-import { intersectBooleans } from "./types/boolean.js"
 import {
     degenerateIntersection,
     isDegenerate,
     isNever
 } from "./types/degenerate.js"
 import type { Never } from "./types/degenerate.js"
-import { intersectNumbers } from "./types/number.js"
-import { intersectObjects } from "./types/object.js"
-import { intersectStrings } from "./types/string.js"
+import { literalOnlyIntersection } from "./types/literalOnly.js"
+import { numberIntersection } from "./types/number.js"
+import { objectIntersection } from "./types/object.js"
+import { stringIntersection } from "./types/string.js"
 
-export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
+export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
     isDegenerate(l) || isDegenerate(r)
         ? degenerateIntersection(l, r, scope)
         : typeIntersection(l, r, scope)
 
 const attributeIntersections = {
-    bigint: intersectBigints,
-    boolean: intersectBooleans,
-    number: intersectNumbers,
-    object: intersectObjects,
-    string: intersectStrings
+    bigint: literalOnlyIntersection,
+    boolean: literalOnlyIntersection,
+    number: numberIntersection,
+    object: objectIntersection,
+    string: stringIntersection
 }
 
 const typeIntersection = (l: TypeNode, r: TypeNode, scope: ScopeRoot): Node => {

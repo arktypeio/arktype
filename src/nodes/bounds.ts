@@ -11,7 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const intersectBounds = (l: Bounds, r: Bounds): Bounds | Never => {
+export const boundsIntersection = (l: Bounds, r: Bounds): Bounds | Never => {
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min
