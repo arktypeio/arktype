@@ -2,6 +2,7 @@ import { intersection } from "../../nodes/intersection.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { Node } from "../../nodes/node.js"
+import { union } from "../../nodes/prune.js"
 import { isNever } from "../../nodes/types/degenerate.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
@@ -175,18 +176,7 @@ export class DynamicState {
         if (!this.branches["|"]) {
             return
         }
-        const viableBranches = this.branches["|"].filter(
-            (branch) => !isNever(branch)
-        )
-        if (viableBranches.length === 0) {
-            this.setRoot({
-                never: `No viable union branches\n${JSON.stringify(
-                    this.branches["|"]
-                )}`
-            })
-        }
-        // TODO: Fix degenerate nodes
-        this.setRoot(viableBranches as any)
+        this.setRoot(union(this.branches["|"], this.scope))
     }
 
     reduceGroupOpen() {

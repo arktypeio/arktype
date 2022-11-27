@@ -3,7 +3,7 @@ import { hasType } from "../../utils/dataTypes.js"
 import type { xor } from "../../utils/generics.js"
 import { intersection } from "../intersection.js"
 import { keywords } from "../keywords.js"
-import type { Node } from "../node.js"
+import type { Node, TypeNode } from "../node.js"
 import { prune } from "../prune.js"
 
 export type DegenerateNode = xor<Alias, xor<Always, Never>>
@@ -49,8 +49,12 @@ const degenerateOperation = (
     return resultKey === "t" ? (lKind === "t" ? l : r) : keywords[resultKey]
 }
 
-const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
-    node.alias ? scope.resolve(node.alias) : node
+// TODO: Ensure can't resolve to another alias here
+export const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
+    (node.alias ? scope.resolve(node.alias) : node) as xor<
+        TypeNode,
+        xor<Always, Never>
+    >
 
 const degenerateIntersectionLookup = {
     any: {

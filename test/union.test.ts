@@ -17,8 +17,8 @@ describe("union/parse", () => {
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.root).snap({
             boolean: { literal: false },
-            string: { literals: [""] },
-            number: { literals: [0] },
+            string: { literal: "" },
+            number: { literal: 0 },
             null: true,
             undefined: true
         })

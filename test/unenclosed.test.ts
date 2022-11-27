@@ -27,7 +27,7 @@ describe("parse unenclosed", () => {
             test("whole", () => {
                 const four = type("4")
                 attest(four.infer).typed as 4
-                attest(four.root).snap({ number: { literals: [4] } })
+                attest(four.root).snap({ number: { literal: 4 } })
             })
             test("decimal", () => {
                 attest(type("3.14159").infer).typed as 3.14159
