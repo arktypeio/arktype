@@ -6,14 +6,14 @@ import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 
 export const compile = (attributes: Node, scope: ScopeRoot): Node => {
-  return attributes
-  // const compiled = discriminate(attributes, scope)
-  // if (attributes.props) {
-  //     for (const k in attributes.props) {
-  //         compile(attributes.props[k], scope)
-  //     }
-  // }
-  // return compiled
+    return attributes
+    // const compiled = discriminate(attributes, scope)
+    // if (attributes.props) {
+    //     for (const k in attributes.props) {
+    //         compile(attributes.props[k], scope)
+    //     }
+    // }
+    // return compiled
 }
 
 // export type DiscriminatedKey = "type" | "value"

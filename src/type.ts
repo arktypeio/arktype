@@ -10,22 +10,22 @@ import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawTypeFn: DynamicTypeFn = (
-  definition,
-  { scope = getRootScope(), ...config } = {}
+    definition,
+    { scope = getRootScope(), ...config } = {}
 ) =>
-  new Type(
-    compile(parseDefinition(definition, scope.$), scope.$),
-    config,
-    scope as any
-  )
+    new Type(
+        compile(parseDefinition(definition, scope.$), scope.$),
+        config,
+        scope as any
+    )
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
-  rawTypeFn
+    rawTypeFn
 )
 
 export type InferredTypeFn = <definition, scope extends record = {}>(
-  definition: validateDefinition<definition, scope>,
-  options?: Config<scope>
+    definition: validateDefinition<definition, scope>,
+    options?: Config<scope>
 ) => Type<inferDefinition<definition, scope, {}>>
 
 type DynamicTypeFn = (definition: unknown, options?: Config<record>) => Type
@@ -33,34 +33,34 @@ type DynamicTypeFn = (definition: unknown, options?: Config<record>) => Type
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class Type<inferred = unknown> {
-  constructor(
-    public root: Node,
-    public config: Config,
-    public scope: DynamicScope
-  ) {
-    // TODO: Integrate config
-  }
+    constructor(
+        public root: Node,
+        public config: Config,
+        public scope: DynamicScope
+    ) {
+        // TODO: Integrate config
+    }
 
-  get infer(): inferred {
-    return chainableNoOpProxy
-  }
+    get infer(): inferred {
+        return chainableNoOpProxy
+    }
 
-  check(data: unknown) {
-    const state = {} as any
-    return state.problems.length
-      ? {
-          problems: state.problems
-        }
-      : { data: data as inferred }
-  }
+    check(data: unknown) {
+        const state = {} as any
+        return state.problems.length
+            ? {
+                  problems: state.problems
+              }
+            : { data: data as inferred }
+    }
 
-  assert(data: unknown) {
-    const result = this.check(data)
-    result.problems?.throw()
-    return result.data as inferred
-  }
+    assert(data: unknown) {
+        const result = this.check(data)
+        result.problems?.throw()
+        return result.data as inferred
+    }
 }
 
 export type Config<scope extends record = {}> = {
-  scope?: Scope<scope>
+    scope?: Scope<scope>
 }

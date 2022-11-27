@@ -1,96 +1,97 @@
 {
-  "name": "arktype",
-  "description": "Isomorphic type syntax for TS/JS",
-  "version": "0.0.1",
-  "author": {
-    "name": "David Blass",
-    "email": "david@arktype.io",
-    "url": "https://arktype.io"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/arktypeio/arktype.git"
-  },
-  "type": "module",
-  "main": "./dist/exports.cjs",
-  "types": "./dist/exports.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/exports.d.ts",
-      "import": "./dist/exports.mjs",
-      "require": "./dist/exports.cjs",
-      "deno": "./dist/exports.deno.ts"
+    "name": "arktype",
+    "description": "Isomorphic type syntax for TS/JS",
+    "version": "0.0.1",
+    "author": {
+        "name": "David Blass",
+        "email": "david@arktype.io",
+        "url": "https://arktype.io"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/arktypeio/arktype.git"
+    },
+    "type": "module",
+    "main": "./dist/exports.cjs",
+    "types": "./dist/exports.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/exports.d.ts",
+            "import": "./dist/exports.mjs",
+            "require": "./dist/exports.cjs",
+            "deno": "./dist/exports.deno.ts"
+        }
+    },
+    "packageManager": "pnpm@7.16.0",
+    "scripts": {
+        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm buildDocs",
+        "typecheck": "tsc --noEmit",
+        "build": "ts-node ./dev/scripts/build.ts",
+        "buildDocs": "pnpm docgen && cd dev/arktype.io && pnpm build",
+        "docgen": "ts-node ./dev/scripts/docgen.ts",
+        "test": "c8 ts-node ./dev/attest/cli.ts --cmd mocha",
+        "tnt": "c8 ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
+        "testAttest": "cd ./dev/attest && pnpx ts-node cli.ts --cmd mocha",
+        "testRepo": "pnpm test; pnpm testAttest; ts-node ./dev/scripts/testBuild.ts",
+        "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
+        "lint": "eslint --max-warnings=0 .",
+        "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
+        "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",
+        "changeset": "changeset",
+        "preinstall": "npx only-allow pnpm",
+        "prepare": "husky install dev/configs/.husky",
+        "ci:version": "ts-node ./dev/scripts/updateVersions.ts",
+        "ci:publish": "changeset publish"
+    },
+    "devDependencies": {
+        "@changesets/cli": "2.25.2",
+        "@swc/cli": "0.1.57",
+        "@swc/core": "1.3.19",
+        "@types/mocha": "10.0.0",
+        "@types/node": "18.11.9",
+        "@typescript-eslint/eslint-plugin": "5.44.0",
+        "@typescript-eslint/parser": "5.44.0",
+        "c8": "7.12.0",
+        "eslint": "8.28.0",
+        "eslint-config-prettier": "8.5.0",
+        "eslint-define-config": "1.12.0",
+        "eslint-import-resolver-typescript": "3.5.2",
+        "eslint-plugin-import": "2.26.0",
+        "eslint-plugin-only-warn": "1.0.3",
+        "eslint-plugin-prefer-arrow": "1.2.3",
+        "eslint-plugin-unicorn": "45.0.0",
+        "fast-check": "3.3.0",
+        "get-current-line": "6.6.0",
+        "husky": "8.0.2",
+        "mocha": "10.1.0",
+        "prettier": "2.8.0",
+        "prettier-plugin-jsdoc": "0.4.2",
+        "pretty-quick": "3.1.3",
+        "ts-morph": "17.0.1",
+        "ts-node": "10.9.1",
+        "typescript": "4.9.3"
+    },
+    "c8": {
+        "checkCoverage": true,
+        "lines": 98,
+        "src": "src",
+        "extension": ".ts",
+        "reporter": "lcovonly"
+    },
+    "prettier": {
+        "tabWidth": 4,
+        "semi": false,
+        "trailingComma": "none"
+    },
+    "mocha": {
+        "spec": "test/*.test.ts",
+        "ignore": "**/node_modules/*",
+        "node-option": [
+            "loader=ts-node/esm",
+            "no-warnings=ExperimentalWarning"
+        ]
+    },
+    "eslintConfig": {
+        "extends": "./dev/configs/.eslintrc.cjs"
     }
-  },
-  "packageManager": "pnpm@7.16.0",
-  "scripts": {
-    "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm buildDocs",
-    "typecheck": "tsc --noEmit",
-    "build": "ts-node ./dev/scripts/build.ts",
-    "buildDocs": "pnpm docgen && cd dev/arktype.io && pnpm build",
-    "docgen": "ts-node ./dev/scripts/docgen.ts",
-    "test": "c8 ts-node ./dev/attest/cli.ts --cmd mocha",
-    "tnt": "c8 ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
-    "testAttest": "cd ./dev/attest && pnpx ts-node cli.ts --cmd mocha",
-    "testRepo": "pnpm test; pnpm testAttest; ts-node ./dev/scripts/testBuild.ts",
-    "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
-    "lint": "eslint --max-warnings=0 .",
-    "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",
-    "changeset": "changeset",
-    "preinstall": "npx only-allow pnpm",
-    "prepare": "husky install dev/configs/.husky",
-    "ci:version": "ts-node ./dev/scripts/updateVersions.ts",
-    "ci:publish": "changeset publish"
-  },
-  "devDependencies": {
-    "@changesets/cli": "2.25.2",
-    "@swc/cli": "0.1.57",
-    "@swc/core": "1.3.19",
-    "@types/mocha": "10.0.0",
-    "@types/node": "18.11.9",
-    "@typescript-eslint/eslint-plugin": "5.44.0",
-    "@typescript-eslint/parser": "5.44.0",
-    "c8": "7.12.0",
-    "eslint": "8.28.0",
-    "eslint-config-prettier": "8.5.0",
-    "eslint-define-config": "1.12.0",
-    "eslint-import-resolver-typescript": "3.5.2",
-    "eslint-plugin-import": "2.26.0",
-    "eslint-plugin-only-warn": "1.0.3",
-    "eslint-plugin-prefer-arrow": "1.2.3",
-    "eslint-plugin-unicorn": "45.0.0",
-    "fast-check": "3.3.0",
-    "get-current-line": "6.6.0",
-    "husky": "8.0.2",
-    "mocha": "10.1.0",
-    "prettier": "2.8.0",
-    "prettier-plugin-jsdoc": "0.4.2",
-    "pretty-quick": "3.1.3",
-    "ts-morph": "17.0.1",
-    "ts-node": "10.9.1",
-    "typescript": "4.9.3"
-  },
-  "c8": {
-    "checkCoverage": true,
-    "lines": 98,
-    "src": "src",
-    "extension": ".ts",
-    "reporter": "lcovonly"
-  },
-  "prettier": {
-    "tabWidth": 2,
-    "semi": false,
-    "trailingComma": "none"
-  },
-  "mocha": {
-    "spec": "test/*.test.ts",
-    "ignore": "**/node_modules/*",
-    "node-option": [
-      "loader=ts-node/esm",
-      "no-warnings=ExperimentalWarning"
-    ]
-  },
-  "eslintConfig": {
-    "extends": "./dev/configs/.eslintrc.cjs"
-  }
 }

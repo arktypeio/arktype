@@ -30,7 +30,8 @@ export type buildOpenRangeMessage<
 
 export type buildUnpairableComparatorMessage<
     comparator extends Scanner.Comparator
-> = `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
+> =
+    `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
 export const buildUnpairableComparatorMessage = <
     comparator extends Scanner.Comparator
