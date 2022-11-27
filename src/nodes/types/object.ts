@@ -9,8 +9,7 @@ import { intersect } from "../intersect.js"
 import type { Node } from "../node.js"
 import { prune } from "../prune.js"
 import { isNever } from "./degenerate.js"
-import type { PruneFn } from "./operations.js"
-import { TypeOperations } from "./operations.js"
+import type { IntersectFn, PruneFn } from "./operations.js"
 import { intersectKeySets } from "./utils.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
@@ -34,50 +33,49 @@ type SubtypeAttributes =
           bounds?: undefined
       }
 
-export const objectOperations = {
-    intersect: (l, r, scope) => {
-        const result = { ...l, ...r } as mutable<ObjectAttributes>
-        if (l.props && r.props) {
-            const requiredKeys = intersectKeySets(
-                l.requiredKeys,
-                r.requiredKeys
-            )
-            const props = intersectProps(l.props, r.props, requiredKeys, scope)
-            if (isNever(props)) {
-                return props
-            }
-            result.props = props
-            result.requiredKeys = requiredKeys
+export const intersectObjects: IntersectFn<ObjectAttributes> = (
+    l,
+    r,
+    scope
+) => {
+    const result = { ...l, ...r } as mutable<ObjectAttributes>
+    if (l.props && r.props) {
+        const requiredKeys = intersectKeySets(l.requiredKeys, r.requiredKeys)
+        const props = intersectProps(l.props, r.props, requiredKeys, scope)
+        if (isNever(props)) {
+            return props
         }
-        if (l.subtype && r.subtype) {
-            if (l.subtype !== r.subtype) {
-                return {
-                    type: "never",
-                    reason: `${l.subtype} and ${r.subtype} are mutually exclusive`
-                }
-            }
-            if (l.bounds && r.bounds) {
-                const bounds = intersectBounds(l.bounds, r.bounds)
-                if (isNever(bounds)) {
-                    return bounds
-                }
-                result.bounds = bounds
-            }
-            if (l.elements && r.elements) {
-                const elements = intersect(l.elements, r.elements, scope)
-                if (isNever(elements)) {
-                    return elements
-                }
-                result.elements = elements
+        result.props = props
+        result.requiredKeys = requiredKeys
+    }
+    if (l.subtype && r.subtype) {
+        if (l.subtype !== r.subtype) {
+            return {
+                type: "never",
+                reason: `${l.subtype} and ${r.subtype} are mutually exclusive`
             }
         }
-        return result
-    },
-    prune: (l, r, scope) => {
-        return l
-    },
-    check: (data, attributes, scope) => true
-} satisfies TypeOperations<object, ObjectAttributes>
+        if (l.bounds && r.bounds) {
+            const bounds = intersectBounds(l.bounds, r.bounds)
+            if (isNever(bounds)) {
+                return bounds
+            }
+            result.bounds = bounds
+        }
+        if (l.elements && r.elements) {
+            const elements = intersect(l.elements, r.elements, scope)
+            if (isNever(elements)) {
+                return elements
+            }
+            result.elements = elements
+        }
+    }
+    return result
+}
+
+export const pruneObject: PruneFn<ObjectAttributes> = (l, r, scope) => {
+    return l
+}
 
 const intersectProps = (
     l: PropsAttribute,

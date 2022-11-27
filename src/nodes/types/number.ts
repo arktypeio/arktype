@@ -3,7 +3,7 @@ import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
 import { checkBounds, intersectBounds, pruneBounds } from "../bounds.js"
 import { isNever } from "./degenerate.js"
-import { TypeOperations } from "./operations.js"
+import type { IntersectFn, PruneFn } from "./operations.js"
 import { pruneValues } from "./utils.js"
 
 export type NumberAttributes = xor<
@@ -14,64 +14,64 @@ export type NumberAttributes = xor<
     { readonly values?: readonly number[] }
 >
 
-export const numberOperations = {
-    intersect: (l, r) => {
-        if (l.values || r.values) {
-            const values = l.values ?? r.values!
-            const attributes = l.values ? r : l
-            const result: number[] = values.filter((value) =>
-                numberOperations.check(value, attributes)
-            )
-            return result.length
-                ? { values: result }
-                : {
-                      type: "never",
-                      reason: `none of ${JSON.stringify(
-                          values
-                      )} satisfy ${JSON.stringify(attributes)}`
-                  }
+export const intersectNumbers: IntersectFn<NumberAttributes> = (l, r) => {
+    if (l.values || r.values) {
+        const values = l.values ?? r.values!
+        const attributes = l.values ? r : l
+        const result: number[] = values.filter((value) =>
+            checkNumber(value, attributes)
+        )
+        return result.length
+            ? { values: result }
+            : {
+                  type: "never",
+                  reason: `none of ${JSON.stringify(
+                      values
+                  )} satisfy ${JSON.stringify(attributes)}`
+              }
+    }
+    const result = { ...l, ...r } as mutable<NumberAttributes>
+    if (l.divisor && r.divisor) {
+        result.divisor = intersectDivisors(l.divisor, r.divisor)
+    }
+    if (l.bounds && r.bounds) {
+        const boundsResult = intersectBounds(l.bounds, r.bounds)
+        if (isNever(boundsResult)) {
+            return boundsResult
         }
-        const result = { ...l, ...r } as mutable<NumberAttributes>
-        if (l.divisor && r.divisor) {
-            result.divisor = intersectDivisors(l.divisor, r.divisor)
+        result.bounds = boundsResult
+    }
+    return result
+}
+
+export const pruneNumber: PruneFn<NumberAttributes> = (l, r) => {
+    if (l.values) {
+        const values = r.values ? pruneValues(l.values, r.values) : l.values
+        return values?.length ? { values } : undefined
+    }
+    const result: mutable<NumberAttributes> = {}
+    if (l.divisor && r.divisor) {
+        const divisor = pruneDivisors(l.divisor, r.divisor)
+        if (divisor) {
+            result.divisor = divisor
         }
-        if (l.bounds && r.bounds) {
-            const boundsResult = intersectBounds(l.bounds, r.bounds)
-            if (isNever(boundsResult)) {
-                return boundsResult
-            }
-            result.bounds = boundsResult
+    }
+    if (l.bounds && r.bounds) {
+        const bounds = pruneBounds(l.bounds, r.bounds)
+        if (bounds) {
+            result.bounds = bounds
         }
+    }
+    if (!isEmpty(result)) {
         return result
-    },
-    prune: (l, r) => {
-        if (l.values) {
-            const values = r.values ? pruneValues(l.values, r.values) : l.values
-            return values?.length ? { values } : undefined
-        }
-        const result: mutable<NumberAttributes> = {}
-        if (l.divisor && r.divisor) {
-            const divisor = pruneDivisors(l.divisor, r.divisor)
-            if (divisor) {
-                result.divisor = divisor
-            }
-        }
-        if (l.bounds && r.bounds) {
-            const bounds = pruneBounds(l.bounds, r.bounds)
-            if (bounds) {
-                result.bounds = bounds
-            }
-        }
-        if (!isEmpty(result)) {
-            return result
-        }
-    },
-    check: (data, attributes) =>
-        attributes.values
-            ? attributes.values.includes(data)
-            : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
-              (!attributes.divisor || data % attributes.divisor === 0)
-} satisfies TypeOperations<number, NumberAttributes>
+    }
+}
+
+export const checkNumber = (data: number, attributes: NumberAttributes) =>
+    attributes.values
+        ? attributes.values.includes(data)
+        : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
+          (!attributes.divisor || data % attributes.divisor === 0)
 
 const intersectDivisors = (l: number | undefined, r: number | undefined) =>
     l && r ? Math.abs((l * r) / greatestCommonDivisor(l, r)) : l ?? r
