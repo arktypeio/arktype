@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import type { mutable } from "../utils/generics.js"
-import { isKeyOf } from "../utils/generics.js"
+import { isKeyOf, listFrom } from "../utils/generics.js"
 import type {
     AttributesByType,
     BranchNode,
@@ -17,7 +17,7 @@ import type { Never } from "./types/degenerate.js"
 export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>
     isDegenerate(l) || isDegenerate(r)
         ? intersectDegenerate(l, r, scope)
-        : intersectBranches(l, r, scope)
+        : intersectBranches(listFrom(l), listFrom(r), scope)
 
 const intersectBranches = (
     l: BranchNode,
@@ -45,14 +45,12 @@ const intersectBranches = (
     }
     return result.length
         ? result
-        : [
-              {
-                  type: "never",
-                  reason: `No branches were viable:\n${JSON.stringify(
-                      pruned,
-                      null,
-                      4
-                  )}`
-              }
-          ]
+        : {
+              type: "never",
+              reason: `No branches were viable:\n${JSON.stringify(
+                  pruned,
+                  null,
+                  4
+              )}`
+          }
 }

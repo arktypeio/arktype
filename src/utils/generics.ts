@@ -1,3 +1,5 @@
+import type { array } from "./dataTypes.js"
+
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
 
 type narrowRecurse<t> = {
@@ -112,3 +114,6 @@ export type RegexLiteral<expression extends string = string> = `/${expression}/`
 export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: undefined }>
     | evaluate<b & { [k in keyof a]?: undefined }>
+
+export const listFrom = <t>(data: t) =>
+    (Array.isArray(data) ? data : [data]) as t extends array ? t : [t]
