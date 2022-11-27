@@ -1,8 +1,8 @@
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
 import { checkBounds, intersectBounds } from "../bounds.js"
+import type { IntersectFn, PruneFn } from "../node.js"
 import { isNever } from "./degenerate.js"
-import type { IntersectFn, PruneFn } from "./operations.js"
 import { intersectAdditiveValues } from "./utils.js"
 
 export type StringAttributes = xor<

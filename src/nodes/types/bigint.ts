@@ -1,5 +1,5 @@
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
-import type { IntersectFn, PruneFn } from "./operations.js"
+import type { IntersectFn, PruneFn } from "../node.js"
 
 export type BigintAttributes = { readonly values?: readonly IntegerLiteral[] }
 

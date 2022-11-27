@@ -1,11 +1,10 @@
-import { AttributesByType, TypeWithAttributes } from "./node.js"
+import { AttributesByType, PruneFn, TypeWithAttributes } from "./node.js"
 import type { Node } from "./node.js"
 import { pruneBigint } from "./types/bigint.js"
 import { pruneBoolean } from "./types/boolean.js"
 import { isDegenerate, pruneDegenerate } from "./types/degenerate.js"
 import { pruneNumber } from "./types/number.js"
 import { pruneObject } from "./types/object.js"
-import { PruneFn } from "./types/operations.js"
 import { pruneString } from "./types/string.js"
 
 const attributePruners = {

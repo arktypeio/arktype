@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import type { mutable } from "../utils/generics.js"
 import { isKeyOf, listFrom } from "../utils/generics.js"
-import { AttributesByType, TypeWithAttributes } from "./node.js"
+import { AttributesByType, IntersectFn, TypeWithAttributes } from "./node.js"
 import type { BranchingTypeNode, Node } from "./node.js"
 import { intersectBigints } from "./types/bigint.js"
 import { intersectBooleans } from "./types/boolean.js"
@@ -13,7 +13,6 @@ import {
 import type { Never } from "./types/degenerate.js"
 import { intersectNumbers } from "./types/number.js"
 import { intersectObjects } from "./types/object.js"
-import { IntersectFn } from "./types/operations.js"
 import { intersectStrings } from "./types/string.js"
 
 export const intersect = (l: Node, r: Node, scope: ScopeRoot) =>

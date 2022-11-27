@@ -2,8 +2,8 @@ import { isEmpty } from "../../utils/deepEquals.js"
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
 import { checkBounds, intersectBounds, pruneBounds } from "../bounds.js"
+import type { IntersectFn, PruneFn } from "../node.js"
 import { isNever } from "./degenerate.js"
-import type { IntersectFn, PruneFn } from "./operations.js"
 import { pruneValues } from "./utils.js"
 
 export type NumberAttributes = xor<

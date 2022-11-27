@@ -6,10 +6,9 @@ import { hasKey } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
 import { intersectBounds } from "../bounds.js"
 import { intersect } from "../intersect.js"
-import type { Node } from "../node.js"
+import type { IntersectFn, Node, PruneFn } from "../node.js"
 import { prune } from "../prune.js"
 import { isNever } from "./degenerate.js"
-import type { IntersectFn, PruneFn } from "./operations.js"
 import { intersectKeySets } from "./utils.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes

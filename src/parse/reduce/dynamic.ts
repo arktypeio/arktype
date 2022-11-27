@@ -1,9 +1,12 @@
+import type { TypeNode } from "ts-morph"
+import { intersect } from "../../nodes/intersect.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import type { Node } from "../../nodes/node.js"
+import type { Node, NonBranchingNode } from "../../nodes/node.js"
+import type { DegenerateNode } from "../../nodes/types/degenerate.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
-import { isKeyOf } from "../../utils/generics.js"
+import { isKeyOf, listFrom } from "../../utils/generics.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -16,16 +19,14 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    "&": Node[]
-    "|": Node[]
+    "&"?: Node
+    "|"?: NonBranchingNode[]
 }
-
-const initializeBranches = (): BranchState => ({ "&": [], "|": [] })
 
 export class DynamicState {
     public readonly scanner: Scanner
     private root: Node | undefined
-    private branches: BranchState = initializeBranches()
+    private branches: BranchState = {}
     private groups: BranchState[] = []
 
     constructor(def: string, public readonly scope: ScopeRoot) {
@@ -126,13 +127,13 @@ export class DynamicState {
 
     finalizeBranches() {
         this.assertRangeUnset()
-        if (this.branches["&"].length) {
-            this.pushBranch("&")
-            this.mergeIntersection()
-        }
-        if (this.branches["|"].length) {
+        if (this.branches["|"]) {
             this.pushBranch("|")
             this.mergeUnion()
+        } else if (this.branches["&"]) {
+            this.setRoot(
+                intersect(this.ejectRoot(), this.branches["&"], this.scope)
+            )
         }
     }
 
@@ -149,10 +150,14 @@ export class DynamicState {
 
     pushBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
-        this.branches["&"].push(this.ejectRoot())
+        this.branches["&"] = this.branches["&"]
+            ? intersect(this.branches["&"], this.ejectRoot(), this.scope)
+            : this.ejectRoot()
         if (token === "|") {
-            this.mergeIntersection()
-            this.branches["|"].push(this.ejectRoot())
+            this.branches["|"] ??= []
+            const branches = listFrom(this.branches["&"])
+            delete this.branches["&"]
+            this.branches["|"].push(...branches)
         }
     }
 
@@ -167,37 +172,34 @@ export class DynamicState {
         }
     }
 
-    private mergeIntersection() {
-        const branches = this.branches["&"]
-        while (branches.length > 1) {
-            branches.unshift(
-                intersect(branches.pop()!, branches.pop()!, this.scope)
-            )
-        }
-        this.setRoot(branches.pop()!)
-    }
-
     private mergeUnion() {
-        // const viableBranches = this.branches["|"].filter(
-        //     (branch) => branch.contradiction === undefined
-        // )
-        // if (viableBranches.length === 0) {
-        //     return {
-        //         contradiction: buildNoViableBranchesMessage(this.branches["|"])
-        //     }
-        // }
-        // this.setRoot(compress(viableBranches, this.scope))
+        if (!this.branches["|"]) {
+            return
+        }
+        const viableBranches = this.branches["|"].filter(
+            (branch) => branch.type !== "never"
+        )
+        if (viableBranches.length === 0) {
+            this.setRoot({
+                type: "never",
+                reason: `No viable union branches\n${JSON.stringify(
+                    this.branches["|"]
+                )}`
+            })
+        }
+        // TODO: Fix degenerate nodes
+        this.setRoot(viableBranches as any)
     }
 
     reduceGroupOpen() {
         this.groups.push(this.branches)
-        this.branches = initializeBranches()
+        this.branches = {}
     }
 
     previousOperator() {
-        return this.branches.range?.[1] ?? this.branches["&"].length
+        return this.branches.range?.[1] ?? this.branches["&"]
             ? "&"
-            : this.branches["|"].length
+            : this.branches["|"]
             ? "|"
             : undefined
     }
@@ -208,15 +210,7 @@ export class DynamicState {
     }
 }
 
-export const buildNoViableBranchesMessage = (branches: Node[]) => {
-    // let message = "All branches are empty:\n"
-    // for (const branch of branches) {
-    //     message += branch.contradiction
-    // }
-    // return message
-}
-
-const ejectedProxy = new Proxy(
+const ejectedProxy: any = new Proxy(
     {},
     {
         get: () =>

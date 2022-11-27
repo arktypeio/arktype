@@ -1,5 +1,5 @@
 import { hasKey } from "../../utils/generics.js"
-import type { IntersectFn, PruneFn } from "./operations.js"
+import type { IntersectFn, PruneFn } from "../node.js"
 
 export type BooleanAttributes = { readonly value?: boolean }
 
