@@ -10,11 +10,15 @@ export type TypeOperations<data, attributes extends record> = {
     check: CheckFn<data, attributes>
 }
 
-type IntersectFn<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
+export type IntersectFn<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
 
-type PruneFn<t> = (branch: t, given: t, scope: ScopeRoot) => t | undefined
+export type PruneFn<t> = (
+    branch: t,
+    given: t,
+    scope: ScopeRoot
+) => t | undefined
 
-type CheckFn<data, attributes> = (
+export type CheckFn<data, attributes> = (
     data: data,
     attributes: attributes,
     scope: ScopeRoot

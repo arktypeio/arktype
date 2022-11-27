@@ -8,7 +8,7 @@ export const booleanOperations: TypeOperations<boolean, BooleanAttributes> = {
         if (hasKey(l, "value") && hasKey(r, "value")) {
             return l.value === r.value
                 ? l
-                : [{ type: "never", reason: "true and false have no overlap" }]
+                : { type: "never", reason: "true and false have no overlap" }
         }
         return hasKey(l, "value") ? l : r
     },

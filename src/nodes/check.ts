@@ -1,7 +1,7 @@
 import { dataTypeOf } from "../utils/dataTypes.js"
-import type { BranchNode } from "./node.js"
+import type { BranchingTypeNode } from "./node.js"
 
-export const check = (data: unknown, branches: BranchNode) => {
+export const check = (data: unknown, branches: BranchingTypeNode) => {
     const dataType = dataTypeOf(data)
     const attributes = branches.find((branch) => branch.type === dataType)
     if (!attributes) {

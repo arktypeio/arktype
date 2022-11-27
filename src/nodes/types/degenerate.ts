@@ -1,6 +1,5 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { record } from "../../utils/dataTypes.js"
-import { hasDataType, hasObjectSubtype } from "../../utils/dataTypes.js"
+import { hasObjectSubtype } from "../../utils/dataTypes.js"
 import { isKeyOf } from "../../utils/generics.js"
 import { intersect } from "../intersect.js"
 import { keywords } from "../keywords.js"
