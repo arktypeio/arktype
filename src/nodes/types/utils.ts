@@ -45,12 +45,21 @@ export const pruneValues = <t extends ValueLiteral>(
     return result.length ? result : undefined
 }
 
-export const intersectKeySets = (l: keySet, r: keySet) => ({
-    ...l,
-    ...r
-})
+export const intersectKeySets = (
+    l: keySet | undefined,
+    r: keySet | undefined
+) =>
+    !l
+        ? r
+        : {
+              ...l,
+              ...r
+          }
 
-export const pruneKeySet = (l: keySet, r: keySet) => {
+export const pruneKeySet = (l: keySet | undefined, r: keySet | undefined) => {
+    if (!l || !r) {
+        return l
+    }
     const result = { ...l }
     for (const k in r) {
         delete result[k]

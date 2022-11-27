@@ -1,4 +1,3 @@
-import type { ScopeRoot } from "../scope.js"
 import type { Node } from "./node.js"
 import { isDegenerate, pruneDegenerate } from "./types/degenerate.js"
 import type { PruneFn } from "./types/operations.js"

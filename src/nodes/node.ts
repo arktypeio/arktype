@@ -5,7 +5,9 @@ import type { NumberAttributes } from "./types/number.js"
 import type { ObjectAttributes } from "./types/object.js"
 import type { StringAttributes } from "./types/string.js"
 
-export type Node = TypeNode | readonly TypeNode[] | DegenerateNode
+export type Node = TypeNode | BranchingTypeNode | DegenerateNode
+
+export type BranchingTypeNode = readonly TypeNode[]
 
 export type TypeNode =
     | ({ readonly type: "object" } & ObjectAttributes)

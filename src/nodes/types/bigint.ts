@@ -9,14 +9,12 @@ export const bigintOperations: TypeOperations<bigint, BigintAttributes> = {
             const values = l.values.filter((value) => r.values!.includes(value))
             return values.length
                 ? { values }
-                : [
-                      {
-                          type: "never",
-                          reason: `${JSON.stringify(l)} and ${JSON.stringify(
-                              r
-                          )} have no overlap`
-                      }
-                  ]
+                : {
+                      type: "never",
+                      reason: `${JSON.stringify(l)} and ${JSON.stringify(
+                          r
+                      )} have no overlap`
+                  }
         }
         return l.values ? l : r
     },

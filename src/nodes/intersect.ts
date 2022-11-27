@@ -1,12 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import type { mutable } from "../utils/generics.js"
 import { isKeyOf, listFrom } from "../utils/generics.js"
-import type {
-    AttributesByType,
-    BranchingTypeNode,
-    Node,
-    TypeWithAttributes
-} from "./node.js"
+import type { BranchingTypeNode, Node } from "./node.js"
 import {
     intersectDegenerate,
     isDegenerate,

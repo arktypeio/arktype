@@ -7,19 +7,17 @@ import type { Bounds } from "../bounds.js"
 import { intersect } from "../intersect.js"
 import type { Node } from "../node.js"
 import { prune } from "../prune.js"
+import { isNever } from "./degenerate.js"
 import type { IntersectFn, PruneFn } from "./operations.js"
 import { TypeOperations } from "./operations.js"
 import { intersectKeySets, pruneKeySet } from "./utils.js"
 
-export type ObjectAttributes = PropsAttributes & SubtypeAttributes
+export type ObjectAttributes = {
+    readonly props?: PropsAttribute
+    readonly requiredKeys?: keySet
+} & SubtypeAttributes
 
-type PropsAttributes = xor<
-    {
-        readonly props: record<Node>
-        readonly requiredKeys: keySet
-    },
-    {}
->
+type PropsAttribute = record<Node>
 
 type SubtypeAttributes =
     | {
@@ -35,30 +33,44 @@ type SubtypeAttributes =
 
 export const objectOperations = {
     intersect: (l, r, scope) => {
+        const result: mutable<ObjectAttributes> = {}
+        const props = intersectProps(l.props, r.props, scope)
+        if (props) {
+            if (isNever(props)) {
+                return props
+            }
+            result.props = props
+        }
+        const requiredKeys = intersectKeySets(l.requiredKeys, r.requiredKeys)
+        if (requiredKeys) {
+            result.requiredKeys = requiredKeys
+        }
         return l
     },
     prune: (l, r, scope) => {
         return l
-    }
+    },
+    check: (data, attributes, scope) => true
 } satisfies TypeOperations<object, ObjectAttributes>
 
-const intersectProps: IntersectFn<PropsAttributes> = (l, r, scope) => {
-    if (!l.props) {
+const intersectProps: IntersectFn<PropsAttribute | undefined> = (
+    l,
+    r,
+    scope
+) => {
+    if (!l) {
         return r
     }
-    if (!r.props) {
+    if (!r) {
         return l
     }
-    const props = { ...l.props, ...r.props }
+    const props = { ...l, ...r }
     for (const k in props) {
-        if (hasKey(l.props, k) && hasKey(r.props, k)) {
-            props[k] = intersect(l.props[k], r.props[k], scope)
+        if (hasKey(l, k) && hasKey(r, k)) {
+            props[k] = intersect(l[k], r[k], scope)
         }
     }
-    return {
-        props,
-        requiredKeys: intersectKeySets(l.requiredKeys, r.requiredKeys)
-    }
+    return props
 }
 
 const pruneProps: PruneFn<PropsAttributes> = (l, r, scope) => {
