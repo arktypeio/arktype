@@ -24,14 +24,12 @@ export const stringOperations = {
             return result.length
                 ? { values: result }
                 : // TODO: Abstract never types
-                  [
-                      {
-                          type: "never",
-                          reason: `none of ${JSON.stringify(
-                              values
-                          )} satisfy ${JSON.stringify(attributes)}`
-                      }
-                  ]
+                  {
+                      type: "never",
+                      reason: `none of ${JSON.stringify(
+                          values
+                      )} satisfy ${JSON.stringify(attributes)}`
+                  }
         }
         const result: mutable<StringAttributes> = {}
         const regex = intersectAdditiveValues(l.regex, r.regex)

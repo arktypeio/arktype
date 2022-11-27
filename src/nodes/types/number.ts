@@ -24,14 +24,12 @@ export const numberOperations = {
             )
             return result.length
                 ? { values: result }
-                : [
-                      {
-                          type: "never",
-                          reason: `none of ${JSON.stringify(
-                              values
-                          )} satisfy ${JSON.stringify(attributes)}`
-                      }
-                  ]
+                : {
+                      type: "never",
+                      reason: `none of ${JSON.stringify(
+                          values
+                      )} satisfy ${JSON.stringify(attributes)}`
+                  }
         }
         const result: mutable<NumberAttributes> = {}
         const divisor = intersectDivisors(l.divisor, r.divisor)

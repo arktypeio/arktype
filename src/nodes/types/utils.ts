@@ -31,12 +31,10 @@ export const intersectDisjointValues = <t extends ValueLiteral>(
     const result = l.filter((value) => r.includes(value))
     return result.length
         ? result
-        : [
-              {
-                  type: "never",
-                  reason: "empty primitive set intersection"
-              }
-          ]
+        : {
+              type: "never",
+              reason: "empty primitive set intersection"
+          }
 }
 
 export const pruneValues = <t extends ValueLiteral>(

@@ -56,8 +56,8 @@ const degenerateOperation = (
         r = resolveIfAlias(r, scope)
         return operator === "&" ? intersect(l, r, scope) : prune(l, r, scope)
     }
-    const firstKey = isDegenerate(l) ? l[0].type : "t"
-    const secondKey = isDegenerate(r) ? r[0].type : "t"
+    const firstKey = isDegenerate(l) ? l.type : "t"
+    const secondKey = isDegenerate(r) ? r.type : "t"
     const resultKey =
         operator === "&"
             ? degenerateIntersections[firstKey][secondKey]
@@ -66,7 +66,7 @@ const degenerateOperation = (
 }
 
 const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
-    isAlias(node) ? scope.resolve(node[0].name) : node
+    isAlias(node) ? scope.resolve(node.name) : node
 
 const degenerateIntersections = {
     any: {
