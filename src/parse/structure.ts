@@ -50,10 +50,17 @@ export const parseTuple = (def: array, scope: ScopeRoot): Node => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
+    const props: mutable<record<Node>> = {}
+    const requiredKeys: Record<number, true> = {}
+    for (let i = 0; i < def.length; i++) {
+        props[i] = parseDefinition(def[i], scope)
+        requiredKeys[i] = true
+    }
     return {
         type: "object",
         subtype: "array",
-        elements: def.map((elementDef) => parseDefinition(elementDef, scope))
+        props,
+        requiredKeys
     }
 }
 

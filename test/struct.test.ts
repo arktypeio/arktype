@@ -7,22 +7,18 @@ describe("struct", () => {
         const o = type({ a: "string", b: "boolean[]" })
         attest(o.infer).typed as { a: string; b: boolean[] }
         attest(o.root).snap({
-            object: {
-                props: {
-                    a: { string: true },
-                    b: {
-                        object: {
-                            subtype: {
-                                kind: "array",
-                                elements: { boolean: true }
-                            }
-                        }
-                    }
-                },
-                requiredKeys: {
-                    a: true,
-                    b: true
+            type: "object",
+            props: {
+                a: { type: "string" },
+                b: {
+                    type: "object",
+                    subtype: "array",
+                    elements: { type: "boolean" }
                 }
+            },
+            requiredKeys: {
+                a: true,
+                b: true
             }
         })
     })
@@ -30,21 +26,17 @@ describe("struct", () => {
         const o = type({ "a?": "string", b: "boolean[]" })
         attest(o.infer).typed as { a?: string | undefined; b: boolean[] }
         attest(o.root).snap({
-            object: {
-                props: {
-                    a: { string: true },
-                    b: {
-                        object: {
-                            subtype: {
-                                kind: "array",
-                                elements: { boolean: true }
-                            }
-                        }
-                    }
-                },
-                requiredKeys: {
-                    b: true
+            type: "object",
+            props: {
+                a: { type: "string" },
+                b: {
+                    type: "object",
+                    subtype: "array",
+                    elements: { type: "boolean" }
                 }
+            },
+            requiredKeys: {
+                b: true
             }
         })
     })

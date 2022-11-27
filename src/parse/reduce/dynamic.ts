@@ -1,6 +1,5 @@
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import { intersect } from "../../nodes/node.js"
 import type { Node } from "../../nodes/node.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
