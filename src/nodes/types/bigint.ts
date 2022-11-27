@@ -1,13 +1,15 @@
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
 import type { IntersectFn, PruneFn } from "../node.js"
 
-export type BigintAttributes = { readonly equals?: readonly IntegerLiteral[] }
+export type BigintAttributes = { readonly literals?: readonly IntegerLiteral[] }
 
 export const intersectBigints: IntersectFn<BigintAttributes> = (l, r) => {
-    if (l.equals && r.equals) {
-        const equals = l.equals.filter((value) => r.equals!.includes(value))
-        return equals.length
-            ? { equals }
+    if (l.literals && r.literals) {
+        const literals = l.literals.filter((value) =>
+            r.literals!.includes(value)
+        )
+        return literals.length
+            ? { literals }
             : {
                   type: "never",
                   reason: `${JSON.stringify(l)} and ${JSON.stringify(
@@ -15,15 +17,17 @@ export const intersectBigints: IntersectFn<BigintAttributes> = (l, r) => {
                   )} have no overlap`
               }
     }
-    return l.equals ? l : r
+    return l.literals ? l : r
 }
 
 export const pruneBigint: PruneFn<BigintAttributes> = (l, r) => {
-    if (l.equals) {
-        const result = l.equals.filter((value) => !r.equals!.includes(value))
-        return result.length ? { equals: result } : undefined
+    if (l.literals) {
+        const result = l.literals.filter(
+            (value) => !r.literals!.includes(value)
+        )
+        return result.length ? { literals: result } : undefined
     }
 }
 
 export const checkBigint = (data: bigint, attributes: BigintAttributes) =>
-    attributes.equals ? attributes.equals.includes(`${data}`) : true
+    attributes.literals ? attributes.literals.includes(`${data}`) : true

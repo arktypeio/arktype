@@ -38,12 +38,12 @@ const intersectBranches = (
         const rightBranches = r.filter(
             (branch) => branch.type === leftBranch.type
         )
-        if (rightBranches.length) {
+        for (const rightBranch of rightBranches) {
             const type = leftBranch.type
             if (isKeyOf(type, attributeIntersections)) {
                 const branchResult = attributeIntersections[type](
                     leftBranch as any,
-                    rightBranches as any,
+                    rightBranch as any,
                     scope
                 )
                 if (isNever(branchResult)) {
@@ -54,9 +54,8 @@ const intersectBranches = (
             }
         }
     }
-    return viable.length
-        ? viable
-        : {
+    return viable.length === 0
+        ? {
               type: "never",
               reason: `No branches were viable:\n${JSON.stringify(
                   inviable,
@@ -64,4 +63,7 @@ const intersectBranches = (
                   4
               )}`
           }
+        : viable.length === 1
+        ? viable[0]
+        : viable
 }

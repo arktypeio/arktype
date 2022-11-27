@@ -64,7 +64,7 @@ const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     if (maybeBigint !== undefined) {
         return {
             type: "bigint",
-            equals: [token.slice(0, -1) as IntegerLiteral]
+            literals: [token.slice(0, -1) as IntegerLiteral]
         }
     }
 }
