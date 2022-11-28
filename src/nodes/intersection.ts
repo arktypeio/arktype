@@ -3,15 +3,16 @@ import type { mutable } from "../utils/generics.js"
 import { hasKey, hasKeys, isKeyOf, listFrom } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
 import type { Node, TypeNode } from "./node.js"
+import { compareBigints } from "./types/bigint.js"
+import { compareBooleans } from "./types/boolean.js"
 import type { Never } from "./types/degenerate.js"
 import {
     degenerateIntersection,
     isDegenerate,
     isNever
 } from "./types/degenerate.js"
-import { literalOnlyIntersection } from "./types/literalOnly.js"
 import { compareNumbers } from "./types/number.js"
-import { objectIntersection } from "./types/object.js"
+import { compareObjects } from "./types/object.js"
 import { compareStrings } from "./types/string.js"
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
@@ -20,10 +21,10 @@ export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
         : typeIntersection(l, r, scope)
 
 const nonTrivialIntersections = {
-    bigint: literalOnlyIntersection,
-    boolean: literalOnlyIntersection,
+    bigint: compareBigints,
+    boolean: compareBooleans,
     number: compareNumbers,
-    object: objectIntersection,
+    object: compareObjects,
     string: compareStrings
 }
 

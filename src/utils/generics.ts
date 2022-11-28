@@ -98,9 +98,7 @@ export type deepImmutable<o> = {
 
 export type subtype<t, u extends t> = u
 
-export type defined<t = unknown> = unknown extends t
-    ? {} | null
-    : Exclude<t, undefined>
+export type defined<t> = Exclude<t, undefined>
 
 export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]

@@ -30,7 +30,7 @@ type SubtypeAttributes =
           bounds?: undefined
       }
 
-export const objectIntersection: ScopedCompare<ObjectAttributes> = (
+export const compareObjects: ScopedCompare<ObjectAttributes> = (
     l,
     r,
     scope

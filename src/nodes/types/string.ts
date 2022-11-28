@@ -3,6 +3,7 @@ import { hasType } from "../../utils/typeOf.js"
 import type { Compare } from "../node.js"
 import type { Bounds } from "./bounds.js"
 import { checkBounds, subcompareBounds } from "./bounds.js"
+import { compareIfLiteral } from "./literals.js"
 import {
     createSubcomparison,
     initializeComparison,
@@ -18,17 +19,9 @@ export type StringAttributes = xor<
 >
 
 export const compareStrings: Compare<StringAttributes> = (l, r) => {
-    // TODO: Abstraction
-    if (l.literal !== undefined) {
-        if (r.literal !== undefined) {
-            return l.literal === r.literal
-                ? [null, { literal: l.literal }, null]
-                : [l, null, r]
-        }
-        return checkString(l.literal, r) ? [l, l, null] : [l, null, r]
-    }
-    if (r.literal !== undefined) {
-        return checkString(r.literal, l) ? [null, r, r] : [l, null, r]
+    const literalResult = compareIfLiteral(l, r, checkString)
+    if (literalResult) {
+        return literalResult
     }
     const comparison = initializeComparison<StringAttributes>()
     subcompareRegex(comparison, l, r)

@@ -2,6 +2,7 @@ import type { xor } from "../../utils/generics.js"
 import type { Compare } from "../node.js"
 import type { Bounds } from "./bounds.js"
 import { checkBounds, subcompareBounds } from "./bounds.js"
+import { compareIfLiteral } from "./literals.js"
 import { createSubcomparison, initializeComparison } from "./utils.js"
 
 export type NumberAttributes = xor<
@@ -13,17 +14,9 @@ export type NumberAttributes = xor<
 >
 
 export const compareNumbers: Compare<NumberAttributes> = (l, r) => {
-    // TODO: Abstraction
-    if (l.literal !== undefined) {
-        if (r.literal !== undefined) {
-            return l.literal === r.literal
-                ? [null, { literal: l.literal }, null]
-                : [l, null, r]
-        }
-        return checkNumber(l.literal, r) ? [l, l, null] : [l, null, r]
-    }
-    if (r.literal !== undefined) {
-        return checkNumber(r.literal, l) ? [null, r, r] : [l, null, r]
+    const literalResult = compareIfLiteral(l, r, checkNumber)
+    if (literalResult) {
+        return literalResult
     }
     const comparison = initializeComparison<NumberAttributes>()
     subcompareDivisors(comparison, l, r)
