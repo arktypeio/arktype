@@ -30,16 +30,6 @@ export type TrivialTypes = {
     readonly undefined?: true
 }
 
-export type Intersection<t> = (l: t, r: t) => t | null
-
-export type ScopedIntersection<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
-
-export type UnfinalizedComparison<t> = [
-    leftExclusive: mutable<t>,
-    intersection: mutable<t>,
-    rightExclusive: mutable<t>
-]
-
 export type Comparison<t> = [
     leftExclusive: t | null,
     intersection: t | null,

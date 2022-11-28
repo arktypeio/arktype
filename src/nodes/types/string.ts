@@ -1,9 +1,9 @@
-import type { mutable, xor } from "../../utils/generics.js"
+import type { xor } from "../../utils/generics.js"
 import type { array } from "../../utils/typeOf.js"
-import type { Bounds } from "../bounds.js"
-import { checkBounds, compareBounds } from "../bounds.js"
 import type { Compare } from "../node.js"
-import { isNever } from "./degenerate.js"
+import type { Bounds } from "./bounds.js"
+import { addBoundsComparison, checkBounds } from "./bounds.js"
+import { initializeComparison } from "./utils.js"
 
 export type StringAttributes = xor<
     {
@@ -23,17 +23,11 @@ export const compareStrings: Compare<StringAttributes> = (l, r) => {
                   never: `'${literal}' is not allowed by '${JSON.stringify(r)}'`
               }
     }
-    const result = { ...l, ...r } as mutable<StringAttributes>
+    const comparison = initializeComparison<StringAttributes>()
     if (l.regex && r.regex) {
         result.regex = additiveIntersection(l.regex, r.regex)
     }
-    if (l.bounds && r.bounds) {
-        const bounds = compareBounds(l.bounds, r.bounds)
-        if (isNever(bounds)) {
-            return bounds
-        }
-        result.bounds = bounds
-    }
+    addBoundsComparison(l, r, comparison)
     return result
 }
 

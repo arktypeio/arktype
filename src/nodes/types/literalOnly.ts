@@ -1,6 +1,5 @@
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
-import type { Compare, Intersection } from "../node.js"
-import { Never } from "./degenerate.js"
+import type { Compare } from "../node.js"
 
 export type LiteralValue = string | number | boolean
 

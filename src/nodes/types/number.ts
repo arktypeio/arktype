@@ -1,15 +1,7 @@
-import { isEmpty } from "../../utils/deepEquals.js"
-import type { mutable, xor } from "../../utils/generics.js"
-import type { Bounds } from "../bounds.js"
-import { checkBounds, compareBounds, pruneBounds } from "../bounds.js"
-import type {
-    Compare,
-    Comparison,
-    Intersection,
-    Subcompare,
-    UnfinalizedComparison
-} from "../node.js"
-import { isNever } from "./degenerate.js"
+import type { xor } from "../../utils/generics.js"
+import type { Compare } from "../node.js"
+import type { Bounds } from "./bounds.js"
+import { addBoundsComparison, checkBounds } from "./bounds.js"
 import { createSubcomparison, initializeComparison } from "./utils.js"
 
 export type NumberAttributes = xor<
@@ -34,14 +26,8 @@ export const compareNumbers: Compare<NumberAttributes> = (l, r) => {
         return checkNumber(r.literal, l) ? [null, r, r] : [l, null, r]
     }
     const comparison = initializeComparison<NumberAttributes>()
-    compareDivisors(l.divisor, r.divisor, comparison)
-    if (l.bounds && r.bounds) {
-        const boundsResult = compareBounds(l.bounds, r.bounds)
-        if (isNever(boundsResult)) {
-            return boundsResult
-        }
-        comparison.bounds = boundsResult
-    }
+    compareDivisors(l, r, comparison)
+    addBoundsComparison(l, r, comparison)
     return comparison
 }
 
@@ -53,20 +39,14 @@ export const checkNumber = (data: number, attributes: NumberAttributes) =>
 
 const compareDivisors = createSubcomparison<NumberAttributes, "divisor">(
     "divisor",
-    (l, r, comparison) => {
+    (l, r) => {
         if (l % r === 0) {
-            comparison[1].divisor = l
-            if (l !== r) {
-                comparison[0].divisor = l
-            }
-        } else if (r % l === 0) {
-            comparison[1].divisor = r
-            comparison[2].divisor = r
-        } else {
-            comparison[0].divisor = l
-            comparison[1].divisor = leastCommonMultiple(l, r)
-            comparison[2].divisor = r
+            return [l === r ? null : l, l, null]
         }
+        if (r % l === 0) {
+            return [null, r, r]
+        }
+        return [l, leastCommonMultiple(l, r), r]
     }
 )
 

@@ -3,16 +3,10 @@ import { isEmpty } from "../../utils/deepEquals.js"
 import type { keySet, mutable, xor } from "../../utils/generics.js"
 import { hasKey } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
-import type { Bounds } from "../bounds.js"
-import { compareBounds } from "../bounds.js"
 import { intersection } from "../intersection.js"
-import type {
-    Compare,
-    Node,
-    ScopedCompare,
-    ScopedIntersection
-} from "../node.js"
-import { prune } from "../union.js"
+import type { Node, ScopedCompare } from "../node.js"
+import { addBoundsComparison } from "./bounds.js"
+import type { Bounds } from "./bounds.js"
 import { isNever } from "./degenerate.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
@@ -36,7 +30,7 @@ type SubtypeAttributes =
           bounds?: undefined
       }
 
-export const objectIntersection: ScopedIntersection<ObjectAttributes> = (
+export const objectIntersection: ScopedCompare<ObjectAttributes> = (
     l,
     r,
     scope
@@ -58,7 +52,7 @@ export const objectIntersection: ScopedIntersection<ObjectAttributes> = (
             }
         }
         if (l.bounds && r.bounds) {
-            const bounds = compareBounds(l.bounds, r.bounds)
+            const bounds = addBoundsComparison(l.bounds, r.bounds)
             if (isNever(bounds)) {
                 return bounds
             }
@@ -73,10 +67,6 @@ export const objectIntersection: ScopedIntersection<ObjectAttributes> = (
         }
     }
     return result
-}
-
-export const pruneObject: ScopedCompare<ObjectAttributes> = (l, r, scope) => {
-    return l
 }
 
 const intersectProps = (
