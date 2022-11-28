@@ -51,11 +51,11 @@ export const keywords = {
     // JS Object types
     Function: { object: { subtype: "function" } },
     // Regex
-    email: { string: { regex: ["/^(.+)@(.+)\\.(.+)$/"] } },
-    alphanumeric: { string: { regex: ["/^[dA-Za-z]+$/"] } },
-    alphaonly: { string: { regex: ["/^[A-Za-z]+$/"] } },
-    lowercase: { string: { regex: ["/^[a-z]*$/"] } },
-    uppercase: { string: { regex: ["/^[A-Z]*$/"] } },
+    email: { string: { regex: "/^(.+)@(.+)\\.(.+)$/" } },
+    alphanumeric: { string: { regex: "/^[dA-Za-z]+$/" } },
+    alphaonly: { string: { regex: "/^[A-Za-z]+$/" } },
+    lowercase: { string: { regex: "/^[a-z]*$/" } },
+    uppercase: { string: { regex: "/^[A-Z]*$/" } },
     // Numeric
     integer: { number: { divisor: 1 } }
 } as const satisfies { [k in Keyword]: Node }

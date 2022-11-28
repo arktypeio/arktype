@@ -20,9 +20,7 @@ export const stringIntersection: IntersectionFn<StringAttributes> = (l, r) => {
         return checkString(literal, attributes)
             ? l
             : {
-                  never: `'${literal}' is not allowed by '${JSON.stringify(
-                      r
-                  )}' have no overlap`
+                  never: `'${literal}' is not allowed by '${JSON.stringify(r)}'`
               }
     }
     const result = { ...l, ...r } as mutable<StringAttributes>
