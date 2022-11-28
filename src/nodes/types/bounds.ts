@@ -1,6 +1,9 @@
-import { hasKeys } from "../../utils/generics.js"
 import type { Subcomparison } from "./utils.js"
-import { createSubcomparison, initializeSubcomparison } from "./utils.js"
+import {
+    createSubcomparison,
+    initializeSubcomparison,
+    nullifyEmpty
+} from "./utils.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -25,9 +28,9 @@ export const subcompareBounds = createSubcomparison<
         result[1].max &&
         compareStrictness(result[1].min, result[1].max, "min") === "l"
     return [
-        hasKeys(result[0]) ? result[0] : null,
+        nullifyEmpty(result[0]),
         rangeIsEmpty ? null : result[1],
-        hasKeys(result[2]) ? result[2] : null
+        nullifyEmpty(result[2])
     ]
 })
 

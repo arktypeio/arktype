@@ -1,5 +1,6 @@
 import type { ScopeRoot } from "../../scope.js"
 import type { defined, mutable, stringKeyOf } from "../../utils/generics.js"
+import { hasKeys } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
 import type { Comparison } from "../node.js"
 
@@ -86,3 +87,6 @@ export const createSubcomparison =
             }
         }
     }
+
+export const nullifyEmpty = <t>(result: t): t | null =>
+    hasKeys(result) ? result : null

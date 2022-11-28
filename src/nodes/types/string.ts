@@ -1,9 +1,13 @@
 import type { xor } from "../../utils/generics.js"
-import type { array } from "../../utils/typeOf.js"
+import { hasType } from "../../utils/typeOf.js"
 import type { Compare } from "../node.js"
 import type { Bounds } from "./bounds.js"
 import { checkBounds, subcompareBounds } from "./bounds.js"
-import { initializeComparison } from "./utils.js"
+import {
+    createSubcomparison,
+    initializeComparison,
+    nullifyEmpty
+} from "./utils.js"
 
 export type StringAttributes = xor<
     {
@@ -14,21 +18,22 @@ export type StringAttributes = xor<
 >
 
 export const compareStrings: Compare<StringAttributes> = (l, r) => {
-    if (l.literal !== undefined || r.literal !== undefined) {
-        const literal = l.literal ?? r.literal!
-        const attributes = l.literal ? r : l
-        return checkString(literal, attributes)
-            ? l
-            : {
-                  never: `'${literal}' is not allowed by '${JSON.stringify(r)}'`
-              }
+    // TODO: Abstraction
+    if (l.literal !== undefined) {
+        if (r.literal !== undefined) {
+            return l.literal === r.literal
+                ? [null, { literal: l.literal }, null]
+                : [l, null, r]
+        }
+        return checkString(l.literal, r) ? [l, l, null] : [l, null, r]
+    }
+    if (r.literal !== undefined) {
+        return checkString(r.literal, l) ? [null, r, r] : [l, null, r]
     }
     const comparison = initializeComparison<StringAttributes>()
-    if (l.regex && r.regex) {
-        result.regex = additiveIntersection(l.regex, r.regex)
-    }
+    subcompareRegex(comparison, l, r)
     subcompareBounds(comparison, l, r)
-    return result
+    return comparison
 }
 
 const regexCache: Record<string, RegExp> = {}
@@ -53,24 +58,24 @@ export const checkString = (data: string, attributes: StringAttributes) => {
     return true
 }
 
-const additiveIntersection = <t>(
-    l: t | array<t>,
-    r: t | array<t>
-): t | array<t> => {
-    if (!Array.isArray(l)) {
-        if (!Array.isArray(r)) {
-            return l === r ? l : ([l, r] as any)
+const subcompareRegex = createSubcomparison<StringAttributes, "regex">(
+    "regex",
+    (l, r) => {
+        if (hasType(l, "string")) {
+            if (hasType(r, "string")) {
+                return l === r ? [null, l, null] : [l, [l, r], r]
+            }
+            return r.includes(l)
+                ? [null, r, r.filter((_) => _ !== l)]
+                : [l, [...r, l], r]
         }
-        return r.includes(l) ? r : [...r, l]
-    }
-    if (!Array.isArray(r)) {
-        return l.includes(r) ? l : [...l, r]
-    }
-    const result = [...l]
-    for (const expression of r) {
-        if (!result.includes(expression)) {
-            result.push(expression)
+        if (hasType(r, "string")) {
+            return l.includes(r)
+                ? [null, l, l.filter((_) => _ !== r)]
+                : [l, [...l, r], r]
         }
+        const lOnly = l.filter((_) => !r.includes(_))
+        const rOnly = r.filter((_) => !l.includes(_))
+        return [nullifyEmpty(lOnly), [...l, ...rOnly], nullifyEmpty(rOnly)]
     }
-    return result.length === 1 ? result[0] : result
-}
+)

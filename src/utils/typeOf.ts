@@ -56,34 +56,32 @@ export const typeIn = <name extends TypeName>(
     names: Record<name, unknown>
 ): data is Types[name] => typeOf(data) in names
 
-export type ObjectSubtypes = {
-    none: dict
+export type Subtypes = {
     array: array
     function: Function
+    none: unknown
 }
 
 export type array<of = unknown> = readonly of[]
 
 export type dict<of = unknown> = { readonly [k in string]: of }
 
-export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
+export type SubtypeName = evaluate<keyof Subtypes>
 
-export type objectSubtypeOf<data extends object> = dict extends data
-    ? ObjectSubtypeName
-    : data extends array
+export type subtypeOf<data> = data extends array
     ? "array"
     : data extends Function
     ? "function"
     : "none"
 
-export const objectSubtypeOf = <data extends object>(data: data) =>
-    (Array.isArray(data)
+export const subtypeOf = (data: unknown) =>
+    Array.isArray(data)
         ? "array"
         : typeof data === "function"
         ? "function"
-        : "none") as objectSubtypeOf<data>
+        : "none"
 
-export const hasObjectSubtype = <name extends ObjectSubtypeName>(
-    data: object,
+export const hasSubtype = <data, name extends SubtypeName>(
+    data: data,
     name: name
-): data is ObjectSubtypes[name] => objectSubtypeOf(data) === name
+): data is Extract<data, Subtypes[name]> => subtypeOf(data) === name

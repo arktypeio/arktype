@@ -7,6 +7,7 @@ import type { Node, ScopedCompare } from "../node.js"
 import { subcompareBounds } from "./bounds.js"
 import type { Bounds } from "./bounds.js"
 import { isNever } from "./degenerate.js"
+import { initializeComparison } from "./utils.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
 
@@ -34,7 +35,7 @@ export const objectIntersection: ScopedCompare<ObjectAttributes> = (
     r,
     scope
 ) => {
-    const result = { ...l, ...r } as mutable<ObjectAttributes>
+    const result = initializeComparison<ObjectAttributes>()
     if (l.props && r.props) {
         const requiredKeys = { ...l.requiredKeys, ...r.requiredKeys }
         const props = intersectProps(l.props, r.props, requiredKeys, scope)
@@ -50,13 +51,7 @@ export const objectIntersection: ScopedCompare<ObjectAttributes> = (
                 never: `${l.subtype} and ${r.subtype} are mutually exclusive`
             }
         }
-        if (l.bounds && r.bounds) {
-            const bounds = subcompareBounds(l.bounds, r.bounds)
-            if (isNever(bounds)) {
-                return bounds
-            }
-            result.bounds = bounds
-        }
+        subcompareBounds(result, l, r)
         if (l.elements && r.elements) {
             const elements = intersection(l.elements, r.elements, scope)
             if (isNever(elements)) {

@@ -4,7 +4,6 @@ import { hasType } from "../../utils/typeOf.js"
 import { intersection } from "../intersection.js"
 import { keywords } from "../keywords.js"
 import type { Node, TypeNode } from "../node.js"
-import { prune } from "../union.js"
 
 export type DegenerateNode = xor<Alias, xor<Always, Never>>
 
@@ -29,7 +28,7 @@ export const degenerateIntersection = (l: Node, r: Node, scope: ScopeRoot) =>
 export const pruneDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
     degenerateOperation("-", l, r, scope)
 
-const degenerateOperation = (
+const degenerateComparison = (
     operator: "&" | "-",
     l: Node,
     r: Node,
@@ -83,7 +82,7 @@ const degenerateIntersectionLookup = {
         // unless one of the nodes is degenerate
         t: "t"
     }
-} satisfies DegenerateOperationLookups
+} as const satisfies DegenerateOperationLookups
 
 const pruneDegenerateLookup = {
     any: {
@@ -111,7 +110,7 @@ const pruneDegenerateLookup = {
         // Should never happen
         t: "never"
     }
-} satisfies DegenerateOperationLookups
+} as const satisfies DegenerateOperationLookups
 
 type UnresolvableDegenerateLookupKey = "never" | "any" | "unknown" | "t"
 
