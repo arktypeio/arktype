@@ -1,16 +1,17 @@
-import { compile } from "./traverse/oldCompile.js"
 import type { Node } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
+import { compile } from "./traverse/oldCompile.js"
 import { Type } from "./type.js"
 import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { dict } from "./utils/typeOf.js"
 import { throwInternalError } from "./utils/errors.js"
+import { deepFreeze } from "./utils/freeze.js"
 import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import type { dict } from "./utils/typeOf.js"
 
 const rawScope = (aliases: dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
@@ -79,8 +80,8 @@ export class ScopeRoot<inferred extends dict = dict> {
             )
         }
         const root = parseDefinition(this.aliases[name], this)
-        this.cache[name] = root
-        this.attributes[name] = compile(root, this)
+        this.cache[name] = deepFreeze(root)
+        this.attributes[name] = deepFreeze(compile(root, this))
         return root
     }
 
@@ -89,7 +90,7 @@ export class ScopeRoot<inferred extends dict = dict> {
             return this.cache[def]
         }
         const root = maybeNaiveParse(def, this) ?? fullStringParse(def, this)
-        this.cache[def] = root
+        this.cache[def] = deepFreeze(root)
         return root
     }
 }

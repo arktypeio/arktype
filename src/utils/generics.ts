@@ -84,6 +84,14 @@ export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
 
+export type immutable<o> = {
+    readonly [k in keyof o]: o[k]
+}
+
+export type deepImmutable<o> = {
+    readonly [k in keyof o]: o[k] extends object ? deepImmutable<o[k]> : o[k]
+}
+
 export type subtype<t, u extends t> = u
 
 export type defined<t = unknown> = unknown extends t
