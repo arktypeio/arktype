@@ -1,4 +1,5 @@
 import type { array } from "./typeOf.js"
+import { hasType } from "./typeOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
 
@@ -79,6 +80,9 @@ export const hasKey = <o extends object, k extends string>(
 ): o is o & { [_ in k]: {} | null } => ((o as any)[k] !== undefined) as any
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
+
+export const hasKeys = (value: unknown) =>
+    hasType(value, "object") ? Object.keys(value).length !== 0 : false
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]

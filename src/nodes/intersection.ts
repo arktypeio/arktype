@@ -1,14 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
-import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
-import { hasKey, isKeyOf, listFrom } from "../utils/generics.js"
+import { hasKey, hasKeys, isKeyOf, listFrom } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
-import type {
-    Node,
-    NonTrivialTypeName,
-    ScopedIntersection,
-    TypeNode
-} from "./node.js"
+import type { Node, NonTrivialTypeName, TypeNode } from "./node.js"
 import {
     degenerateIntersection,
     isDegenerate,
@@ -67,13 +61,13 @@ const typeIntersection: ScopedIntersection<TypeNode> = (l, r, scope) => {
             }
         }
     }
-    return isEmpty(viableTypes)
-        ? {
+    return hasKeys(viableTypes)
+        ? viableTypes
+        : {
               never: `Empty intersection:\n${JSON.stringify(
                   inviableTypes,
                   null,
                   4
               )}`
           }
-        : viableTypes
 }

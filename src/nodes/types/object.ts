@@ -1,5 +1,4 @@
 import type { ScopeRoot } from "../../scope.js"
-import { isEmpty } from "../../utils/deepEquals.js"
 import type { keySet, mutable, xor } from "../../utils/generics.js"
 import { hasKey } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
@@ -82,29 +81,4 @@ const intersectProps = (
         }
     }
     return result
-}
-
-const pruneProps: ScopedCompare<PropsAttribute> = (l, r, scope) => {
-    const result = { ...l }
-    for (const k in l) {
-        if (k in r.props) {
-            const prunedProp = prune(l[k], r[k], scope)
-            if (prunedProp) {
-                result[k] = prunedProp
-            } else {
-                delete result[k]
-            }
-        }
-    }
-    if (!isEmpty(result)) {
-        return result
-    }
-}
-
-export const pruneRequiredKeys = (l: keySet, r: keySet): keySet | undefined => {
-    const result = { ...l }
-    for (const k in r) {
-        delete result[k]
-    }
-    return isEmpty(result) ? undefined : result
 }

@@ -1,10 +1,6 @@
-import { isEmpty } from "../../utils/deepEquals.js"
+import { hasKeys } from "../../utils/generics.js"
 import type { Subcomparison } from "./utils.js"
-import {
-    createSubcomparison,
-    initializeComparison,
-    initializeSubcomparison
-} from "./utils.js"
+import { createSubcomparison, initializeSubcomparison } from "./utils.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -29,9 +25,9 @@ export const subcompareBounds = createSubcomparison<
         result[1].max &&
         compareStrictness(result[1].min, result[1].max, "min") === "l"
     return [
-        isEmpty(result[0]) ? null : result[0],
+        hasKeys(result[0]) ? result[0] : null,
         rangeIsEmpty ? null : result[1],
-        isEmpty(result[2]) ? null : result[2]
+        hasKeys(result[2]) ? result[2] : null
     ]
 })
 

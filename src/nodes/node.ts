@@ -1,7 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
-import type { mutable, xor } from "../utils/generics.js"
-import type { dict } from "../utils/typeOf.js"
-import type { DegenerateNode, Never } from "./types/degenerate.js"
+import type { xor } from "../utils/generics.js"
+import type { DegenerateNode } from "./types/degenerate.js"
 import type {
     BigintAttributes,
     BooleanAttributes
