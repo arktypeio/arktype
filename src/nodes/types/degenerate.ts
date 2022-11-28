@@ -1,9 +1,9 @@
 import type { ScopeRoot } from "../../scope.js"
 import type { xor } from "../../utils/generics.js"
 import { hasType } from "../../utils/typeOf.js"
-import { intersection } from "../intersection.js"
+import { compareTypes, intersection } from "../intersection.js"
 import { keywords } from "../keywords.js"
-import type { Node, TypeNode } from "../node.js"
+import type { Comparison, Node, TypeNode } from "../node.js"
 
 export type DegenerateNode = xor<Alias, xor<Always, Never>>
 
@@ -22,30 +22,26 @@ export const isNever = (result: unknown): result is Never =>
 const getDegenerateKind = (node: Node) =>
     node.alias ? "alias" : node.always ?? (node.never ? "never" : undefined)
 
-export const degenerateIntersection = (l: Node, r: Node, scope: ScopeRoot) =>
-    degenerateOperation("&", l, r, scope)!
-
-export const pruneDegenerate = (l: Node, r: Node, scope: ScopeRoot) =>
-    degenerateOperation("-", l, r, scope)
-
-const degenerateComparison = (
-    operator: "&" | "-",
+export const compareDegenerate = (
     l: Node,
     r: Node,
     scope: ScopeRoot
-): Node | null | undefined => {
+): Comparison<Node> => {
     const lKind = getDegenerateKind(l) ?? "t"
     const rKind = getDegenerateKind(r) ?? "t"
     if (lKind === "alias" || rKind === "alias") {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)
-        return operator === "&" ? intersection(l, r, scope) : prune(l, r, scope)
+        return compareDegenerate(l, r, scope)
     }
-    const resultKey =
-        operator === "&"
-            ? degenerateIntersectionLookup[lKind][rKind]
-            : pruneDegenerateLookup[lKind][rKind]
-    return resultKey === "t" ? (lKind === "t" ? l : r) : keywords[resultKey]
+    const resultKeys = [
+        excludeDegenerateLookup[lKind][rKind],
+        degenerateIntersectionLookup[lKind][rKind],
+        excludeDegenerateLookup[rKind][lKind]
+    ]
+    return resultKeys.map((k) =>
+        k === "t" ? (lKind === "t" ? l : r) : keywords[k]
+    ) as Comparison<Node>
 }
 
 // TODO: Ensure can't resolve to another alias here
@@ -84,7 +80,7 @@ const degenerateIntersectionLookup = {
     }
 } as const satisfies DegenerateOperationLookups
 
-const pruneDegenerateLookup = {
+const excludeDegenerateLookup = {
     any: {
         never: "any",
         any: "never",

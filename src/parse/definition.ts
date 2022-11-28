@@ -1,9 +1,9 @@
 import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { array, dict, TypeName } from "../utils/typeOf.js"
-import { subtypeOf, typeOf } from "../utils/typeOf.js"
 import { throwParseError } from "../utils/errors.js"
 import type { error, evaluate, isAny, isTopType } from "../utils/generics.js"
+import type { array, dict, TypeName } from "../utils/typeOf.js"
+import { subtypeOf, typeOf } from "../utils/typeOf.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
 import type { inferRecord, inferTuple } from "./structure.js"
@@ -18,7 +18,7 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): Node => {
         const subtype = subtypeOf(def as object)
         if (subtype === "array") {
             return parseTuple(def as array, scope)
-        } else if (subtype === "base") {
+        } else if (subtype === "none") {
             return parseDict(def as dict, scope)
         }
         return throwParseError(buildBadDefinitionTypeMessage("function"))

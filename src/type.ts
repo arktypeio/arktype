@@ -5,9 +5,9 @@ import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { compile } from "./traverse/oldCompile.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { dict } from "./utils/typeOf.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import type { dict } from "./utils/typeOf.js"
 
 const rawTypeFn: DynamicTypeFn = (
     definition,
