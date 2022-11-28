@@ -1,6 +1,6 @@
 import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { array, dict } from "../utils/dataTypes.js"
+import type { array, dict } from "../utils/typeOf.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, keySet, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"

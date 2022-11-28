@@ -3,9 +3,13 @@ import type { IntersectionFn, PruneFn } from "../node.js"
 
 type LiteralOnlyType = boolean | bigint
 
-export type LiteralOnlyAttributes<t extends LiteralOnlyType> = {
+type LiteralOnlyAttributes<t extends LiteralOnlyType> = {
     readonly literal?: t extends bigint ? IntegerLiteral : t
 }
+
+export type BigintAttributes = LiteralOnlyAttributes<bigint>
+
+export type BooleanAttributes = LiteralOnlyAttributes<boolean>
 
 export const literalOnlyIntersection: IntersectionFn<
     LiteralOnlyAttributes<LiteralOnlyType>

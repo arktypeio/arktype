@@ -1,13 +1,18 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { dict } from "../../utils/dataTypes.js"
 import { isEmpty } from "../../utils/deepEquals.js"
 import type { keySet, mutable, xor } from "../../utils/generics.js"
 import { hasKey } from "../../utils/generics.js"
+import type { dict } from "../../utils/typeOf.js"
 import type { Bounds } from "../bounds.js"
 import { boundsIntersection } from "../bounds.js"
 import { intersection } from "../intersection.js"
-import type { IntersectionFn, Node, PruneFn } from "../node.js"
-import { prune } from "../prune.js"
+import type {
+    Node,
+    PruneFn,
+    ScopedIntersectionFn,
+    ScopedPruneFn
+} from "../node.js"
+import { prune } from "../union.js"
 import { isNever } from "./degenerate.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
@@ -26,12 +31,12 @@ type SubtypeAttributes =
           readonly bounds?: Bounds
       }
     | {
-          subtype?: "function" | "record"
+          subtype?: "function" | "none"
           elements?: undefined
           bounds?: undefined
       }
 
-export const objectIntersection: IntersectionFn<ObjectAttributes> = (
+export const objectIntersection: ScopedIntersectionFn<ObjectAttributes> = (
     l,
     r,
     scope
@@ -70,7 +75,7 @@ export const objectIntersection: IntersectionFn<ObjectAttributes> = (
     return result
 }
 
-export const pruneObject: PruneFn<ObjectAttributes> = (l, r, scope) => {
+export const pruneObject: ScopedPruneFn<ObjectAttributes> = (l, r, scope) => {
     return l
 }
 
@@ -89,7 +94,7 @@ const intersectProps = (
     return result
 }
 
-const pruneProps: PruneFn<PropsAttribute> = (l, r, scope) => {
+const pruneProps: ScopedPruneFn<PropsAttribute> = (l, r, scope) => {
     const result = { ...l }
     for (const k in l) {
         if (k in r.props) {

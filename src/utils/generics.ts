@@ -1,4 +1,4 @@
-import type { array } from "./dataTypes.js"
+import type { array } from "./typeOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
 

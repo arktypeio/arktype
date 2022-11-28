@@ -3,7 +3,7 @@ import { attest } from "../dev/attest/exports.js"
 import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
 import { scope } from "../src/scope.js"
 import { type } from "../src/type.js"
-import type { dict } from "../src/utils/dataTypes.js"
+import type { dict } from "../src/utils/typeOf.js"
 
 describe("dynamic", () => {
     test("uninferred types", () => {

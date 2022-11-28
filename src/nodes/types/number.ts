@@ -68,7 +68,7 @@ export const pruneNumber: PruneFn<NumberAttributes> = (l, r) => {
 export const checkNumber = (data: number, attributes: NumberAttributes) =>
     attributes.literal
         ? attributes.literal === data
-        : (!attributes.bounds || checkBounds(attributes.bounds, data)) &&
+        : (!attributes.bounds || checkBounds(data, attributes.bounds)) &&
           (!attributes.divisor || data % attributes.divisor === 0)
 
 const intersectDivisors = (l: number, r: number) =>

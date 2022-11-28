@@ -1,9 +1,14 @@
 import type { ScopeRoot } from "../scope.js"
-import type { TypeName } from "../utils/dataTypes.js"
 import { isEmpty } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
 import { hasKey, isKeyOf, listFrom } from "../utils/generics.js"
-import type { Node, NonTrivialTypeName, TypeNode } from "./node.js"
+import type { TypeName } from "../utils/typeOf.js"
+import type {
+    Node,
+    NonTrivialTypeName,
+    ScopedIntersectionFn,
+    TypeNode
+} from "./node.js"
 import {
     degenerateIntersection,
     isDegenerate,
@@ -28,9 +33,9 @@ const nonTrivialIntersections = {
     string: stringIntersection
 }
 
-const typeIntersection = (l: TypeNode, r: TypeNode, scope: ScopeRoot): Node => {
+const typeIntersection: ScopedIntersectionFn<TypeNode> = (l, r, scope) => {
     const viableTypes: mutable<TypeNode> = {}
-    const inviableTypes: { [k in NonTrivialTypeName]?: Never[] } = {}
+    const inviableTypes: { [k in TypeName]?: Never[] } = {}
     let typeName: TypeName
     for (typeName in l) {
         if (!isKeyOf(typeName, nonTrivialIntersections)) {

@@ -1,4 +1,4 @@
-import type { Types } from "./dataTypes.js"
+import type { Types } from "./typeOf.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {

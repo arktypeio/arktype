@@ -1,10 +1,10 @@
 import type { ScopeRoot } from "../../scope.js"
-import { hasType } from "../../utils/dataTypes.js"
 import type { xor } from "../../utils/generics.js"
+import { hasType } from "../../utils/typeOf.js"
 import { intersection } from "../intersection.js"
 import { keywords } from "../keywords.js"
 import type { Node, TypeNode } from "../node.js"
-import { prune } from "../prune.js"
+import { prune } from "../union.js"
 
 export type DegenerateNode = xor<Alias, xor<Always, Never>>
 

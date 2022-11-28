@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
-import type { TypeName } from "../utils/dataTypes.js"
 import type { mutable } from "../utils/generics.js"
-import type { Node, PruneFn, TypeNode } from "./node.js"
+import type { TypeName } from "../utils/typeOf.js"
+import type { Node, ScopedPruneFn, TypeNode } from "./node.js"
 import type { Never } from "./types/degenerate.js"
 import {
     isDegenerate,
@@ -61,7 +61,7 @@ export const attributePruners = {
     string: pruneString
 }
 
-export const prune: PruneFn<Node> = (l, r, scope) => {
+export const prune: ScopedPruneFn<Node> = (l, r, scope) => {
     if (isDegenerate(l) || isDegenerate(r)) {
         return pruneDegenerate(l, r, scope)
     }

@@ -1,5 +1,5 @@
 import type { Keyword, Keywords } from "../nodes/keywords.js"
-import type { dict } from "../utils/dataTypes.js"
+import type { dict } from "../utils/typeOf.js"
 import type { error, evaluate, isAny, RegexLiteral } from "../utils/generics.js"
 import type {
     SerializablePrimitive,

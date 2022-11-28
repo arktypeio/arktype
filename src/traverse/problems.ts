@@ -1,4 +1,4 @@
-import { typeOf } from "../utils/dataTypes.js"
+import { typeOf } from "../utils/typeOf.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean

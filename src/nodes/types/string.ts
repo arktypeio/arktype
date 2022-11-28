@@ -1,5 +1,5 @@
-import type { array } from "../../utils/dataTypes.js"
 import type { mutable, xor } from "../../utils/generics.js"
+import type { array } from "../../utils/typeOf.js"
 import type { Bounds } from "../bounds.js"
 import { boundsIntersection, checkBounds } from "../bounds.js"
 import type { IntersectionFn, PruneFn } from "../node.js"
@@ -49,7 +49,7 @@ export const checkString = (data: string, attributes: StringAttributes) => {
     if (attributes.literal) {
         return attributes.literal === data
     }
-    if (attributes.bounds && !checkBounds(attributes.bounds, data.length)) {
+    if (attributes.bounds && !checkBounds(data.length, attributes.bounds)) {
         return false
     }
     if (attributes.regex) {

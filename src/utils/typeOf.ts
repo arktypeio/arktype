@@ -57,7 +57,7 @@ export const typeIn = <name extends TypeName>(
 ): data is Types[name] => typeOf(data) in names
 
 export type ObjectSubtypes = {
-    base: dict
+    none: dict
     array: array
     function: Function
 }
@@ -74,14 +74,14 @@ export type objectSubtypeOf<data extends object> = dict extends data
     ? "array"
     : data extends Function
     ? "function"
-    : "base"
+    : "none"
 
 export const objectSubtypeOf = <data extends object>(data: data) =>
     (Array.isArray(data)
         ? "array"
         : typeof data === "function"
         ? "function"
-        : "base") as objectSubtypeOf<data>
+        : "none") as objectSubtypeOf<data>
 
 export const hasObjectSubtype = <name extends ObjectSubtypeName>(
     data: object,

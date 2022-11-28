@@ -1,5 +1,5 @@
 import { isEmpty } from "../utils/deepEquals.js"
-import type { Never } from "./types/degenerate.js"
+import type { IntersectionFn, PruneFn } from "./node.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,7 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection = (l: Bounds, r: Bounds): Bounds | Never => {
+export const boundsIntersection: IntersectionFn<Bounds> = (l, r) => {
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min
@@ -31,7 +31,7 @@ export const boundsIntersection = (l: Bounds, r: Bounds): Bounds | Never => {
         : { max: max! }
 }
 
-export const pruneBounds = (l: Bounds, r: Bounds): Bounds | undefined => {
+export const pruneBounds: PruneFn<Bounds> = (l, r) => {
     const result = { ...l }
     if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
         delete result.min
@@ -44,7 +44,7 @@ export const pruneBounds = (l: Bounds, r: Bounds): Bounds | undefined => {
     }
 }
 
-export const checkBounds = (bounds: Bounds, data: number) => {
+export const checkBounds = (data: number, bounds: Bounds) => {
     if (bounds.min) {
         if (
             data < bounds.min.limit ||

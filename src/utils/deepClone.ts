@@ -1,5 +1,5 @@
-import type { dict } from "./dataTypes.js"
-import { hasType, hasObjectSubtype } from "./dataTypes.js"
+import type { dict } from "./typeOf.js"
+import { hasType, hasObjectSubtype } from "./typeOf.js"
 import type { mutable } from "./generics.js"
 
 export const deepClone = <value>(value: value): value =>
