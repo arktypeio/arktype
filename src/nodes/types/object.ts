@@ -5,7 +5,7 @@ import { hasKey } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
 import { intersection } from "../intersection.js"
 import type { Node, ScopedCompare } from "../node.js"
-import { addBoundsComparison } from "./bounds.js"
+import { subcompareBounds } from "./bounds.js"
 import type { Bounds } from "./bounds.js"
 import { isNever } from "./degenerate.js"
 
@@ -52,7 +52,7 @@ export const objectIntersection: ScopedCompare<ObjectAttributes> = (
             }
         }
         if (l.bounds && r.bounds) {
-            const bounds = addBoundsComparison(l.bounds, r.bounds)
+            const bounds = subcompareBounds(l.bounds, r.bounds)
             if (isNever(bounds)) {
                 return bounds
             }

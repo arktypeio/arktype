@@ -1,7 +1,7 @@
 import type { xor } from "../../utils/generics.js"
 import type { Compare } from "../node.js"
 import type { Bounds } from "./bounds.js"
-import { addBoundsComparison, checkBounds } from "./bounds.js"
+import { checkBounds, subcompareBounds } from "./bounds.js"
 import { createSubcomparison, initializeComparison } from "./utils.js"
 
 export type NumberAttributes = xor<
@@ -26,8 +26,8 @@ export const compareNumbers: Compare<NumberAttributes> = (l, r) => {
         return checkNumber(r.literal, l) ? [null, r, r] : [l, null, r]
     }
     const comparison = initializeComparison<NumberAttributes>()
-    compareDivisors(l, r, comparison)
-    addBoundsComparison(l, r, comparison)
+    subcompareDivisors(l, r, comparison)
+    subcompareBounds(l, r, comparison)
     return comparison
 }
 
@@ -37,7 +37,7 @@ export const checkNumber = (data: number, attributes: NumberAttributes) =>
         : (!attributes.bounds || checkBounds(data, attributes.bounds)) &&
           (!attributes.divisor || data % attributes.divisor === 0)
 
-const compareDivisors = createSubcomparison<NumberAttributes, "divisor">(
+const subcompareDivisors = createSubcomparison<NumberAttributes, "divisor">(
     "divisor",
     (l, r) => {
         if (l % r === 0) {

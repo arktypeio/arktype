@@ -20,7 +20,7 @@ export type Subcomparison<t> = [
 
 export const initializeSubcomparison = <t>() => [{}, {}, {}] as Subcomparison<t>
 
-export type Subcompare<attributes extends dict, k extends keyof attributes> = (
+export type Subcompare<attributes extends dict> = (
     l: attributes,
     r: attributes,
     root: UnfinalizedComparison<attributes>,
@@ -40,7 +40,7 @@ export const createSubcomparison =
     <attributes extends dict, k extends stringKeyOf<attributes>>(
         k: k,
         subcompareDefined: RawSubcompare<attributes, k>
-    ): Subcompare<attributes, k> =>
+    ): Subcompare<attributes> =>
     (l, r, root, scope) => {
         if (l === undefined) {
             if (r !== undefined) {

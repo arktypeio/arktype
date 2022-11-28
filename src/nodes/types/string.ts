@@ -2,7 +2,7 @@ import type { xor } from "../../utils/generics.js"
 import type { array } from "../../utils/typeOf.js"
 import type { Compare } from "../node.js"
 import type { Bounds } from "./bounds.js"
-import { addBoundsComparison, checkBounds } from "./bounds.js"
+import { checkBounds, subcompareBounds } from "./bounds.js"
 import { initializeComparison } from "./utils.js"
 
 export type StringAttributes = xor<
@@ -27,7 +27,7 @@ export const compareStrings: Compare<StringAttributes> = (l, r) => {
     if (l.regex && r.regex) {
         result.regex = additiveIntersection(l.regex, r.regex)
     }
-    addBoundsComparison(l, r, comparison)
+    subcompareBounds(l, r, comparison)
     return result
 }
 

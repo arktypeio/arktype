@@ -1,4 +1,5 @@
 import { isEmpty } from "../../utils/deepEquals.js"
+import type { Subcomparison } from "./utils.js"
 import {
     createSubcomparison,
     initializeComparison,
@@ -17,42 +18,40 @@ export type Bound = {
 
 type BoundableAttributes = { bounds?: Bounds }
 
-export const addBoundsComparison = createSubcomparison<
+export const subcompareBounds = createSubcomparison<
     BoundableAttributes,
     "bounds"
 >("bounds", (l, r) => {
-    const subcomparison = initializeSubcomparison<Bounds>()
-    const stricterMin = compareStrictness(l.min, r.min, "min")
-    if (stricterMin === "l") {
-        subcomparison[0].min = l.min!
-        subcomparison[1].min = l.min!
-    } else if (stricterMin === "r") {
-        subcomparison[1].min = r.min!
-        subcomparison[2].min = r.min!
-    } else if (l.min) {
-        subcomparison[1].min = l.min
-    }
-    const stricterMax = compareStrictness(l.max, r.max, "max")
-    if (stricterMax === "l") {
-        subcomparison[0].max = l.max!
-        subcomparison[1].max = l.max!
-    } else if (stricterMax === "r") {
-        subcomparison[1].max = r.max!
-        subcomparison[2].max = r.max!
-    } else if (l.max) {
-        subcomparison[1].max = l.max
-    }
+    const result = initializeSubcomparison<Bounds>()
+    addBoundToSubcomparison(result, "min", l.min, r.min)
+    addBoundToSubcomparison(result, "max", l.max, r.max)
     const rangeIsEmpty =
-        subcomparison[1].min &&
-        subcomparison[1].max &&
-        compareStrictness(subcomparison[1].min, subcomparison[1].max, "min") ===
-            "l"
+        result[1].max &&
+        compareStrictness(result[1].min, result[1].max, "min") === "l"
     return [
-        isEmpty(subcomparison[0]) ? null : subcomparison[0],
-        rangeIsEmpty ? null : subcomparison[1],
-        isEmpty(subcomparison[2]) ? null : subcomparison[2]
+        isEmpty(result[0]) ? null : result[0],
+        rangeIsEmpty ? null : result[1],
+        isEmpty(result[2]) ? null : result[2]
     ]
 })
+
+const addBoundToSubcomparison = (
+    result: Subcomparison<Bounds>,
+    kind: BoundKind,
+    l: Bound | undefined,
+    r: Bound | undefined
+) => {
+    const stricter = compareStrictness(l, r, kind)
+    if (stricter === "l") {
+        result[0][kind] = l!
+        result[1][kind] = l!
+    } else if (stricter === "r") {
+        result[1][kind] = r!
+        result[2][kind] = r!
+    } else if (l) {
+        result[1][kind] = l
+    }
+}
 
 export const checkBounds = (data: number, bounds: Bounds) => {
     if (bounds.min) {
