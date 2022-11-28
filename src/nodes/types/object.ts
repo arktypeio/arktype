@@ -4,7 +4,7 @@ import type { keySet, mutable, xor } from "../../utils/generics.js"
 import { hasKey } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
 import type { Bounds } from "../bounds.js"
-import { boundsIntersection } from "../bounds.js"
+import { compareBounds } from "../bounds.js"
 import { intersection } from "../intersection.js"
 import type {
     Compare,
@@ -58,7 +58,7 @@ export const objectIntersection: ScopedIntersection<ObjectAttributes> = (
             }
         }
         if (l.bounds && r.bounds) {
-            const bounds = boundsIntersection(l.bounds, r.bounds)
+            const bounds = compareBounds(l.bounds, r.bounds)
             if (isNever(bounds)) {
                 return bounds
             }

@@ -1,8 +1,8 @@
 import type { mutable, xor } from "../../utils/generics.js"
 import type { array } from "../../utils/typeOf.js"
 import type { Bounds } from "../bounds.js"
-import { boundsIntersection, checkBounds } from "../bounds.js"
-import type { Compare, Intersection } from "../node.js"
+import { checkBounds, compareBounds } from "../bounds.js"
+import type { Compare } from "../node.js"
 import { isNever } from "./degenerate.js"
 
 export type StringAttributes = xor<
@@ -13,7 +13,7 @@ export type StringAttributes = xor<
     { readonly literal?: string }
 >
 
-export const stringIntersection: Intersection<StringAttributes> = (l, r) => {
+export const compareStrings: Compare<StringAttributes> = (l, r) => {
     if (l.literal !== undefined || r.literal !== undefined) {
         const literal = l.literal ?? r.literal!
         const attributes = l.literal ? r : l
@@ -28,17 +28,13 @@ export const stringIntersection: Intersection<StringAttributes> = (l, r) => {
         result.regex = additiveIntersection(l.regex, r.regex)
     }
     if (l.bounds && r.bounds) {
-        const bounds = boundsIntersection(l.bounds, r.bounds)
+        const bounds = compareBounds(l.bounds, r.bounds)
         if (isNever(bounds)) {
             return bounds
         }
         result.bounds = bounds
     }
     return result
-}
-
-export const pruneString: Compare<StringAttributes> = (branch, given) => {
-    return branch
 }
 
 const regexCache: Record<string, RegExp> = {}

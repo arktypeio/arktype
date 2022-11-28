@@ -1,5 +1,4 @@
-import { isEmpty } from "../utils/deepEquals.js"
-import type { Compare, Intersection } from "./node.js"
+import { createSubcomparison } from "./types/utils.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,38 +10,30 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection: Intersection<Bounds> = (l, r) => {
-    const min =
-        r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
-            ? r.min
-            : l.min
-    const max =
-        r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
-            ? r.max
-            : l.max
-    return min
-        ? max
-            ? compareStrictness(min, max, "min") === "l"
-                ? {
-                      never: buildEmptyRangeMessage("min", min, max)
-                  }
-                : { min, max }
-            : { min }
-        : { max: max! }
-}
+type BoundableAttributes = { bounds?: Bounds }
 
-export const pruneBounds: Compare<Bounds> = (l, r) => {
-    const result = { ...l }
-    if (l.min && r.min && compareStrictness(l.min, r.min, "min") !== "l") {
-        delete result.min
+export const compareBounds = createSubcomparison<BoundableAttributes, "bounds">(
+    "bounds",
+    (l, r, root) => {
+        const min =
+            r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
+                ? r.min
+                : l.min
+        const max =
+            r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
+                ? r.max
+                : l.max
+        return min
+            ? max
+                ? compareStrictness(min, max, "min") === "l"
+                    ? {
+                          never: buildEmptyRangeMessage("min", min, max)
+                      }
+                    : { min, max }
+                : { min }
+            : { max: max! }
     }
-    if (l.max && r.max && compareStrictness(l.max, r.max, "max") !== "l") {
-        delete result.max
-    }
-    if (!isEmpty(result)) {
-        return result
-    }
-}
+)
 
 export const checkBounds = (data: number, bounds: Bounds) => {
     if (bounds.min) {

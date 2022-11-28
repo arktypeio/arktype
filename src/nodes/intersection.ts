@@ -18,7 +18,7 @@ import type { Never } from "./types/degenerate.js"
 import { literalOnlyIntersection } from "./types/literalOnly.js"
 import { compareNumbers } from "./types/number.js"
 import { objectIntersection } from "./types/object.js"
-import { stringIntersection } from "./types/string.js"
+import { compareStrings } from "./types/string.js"
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
     isDegenerate(l) || isDegenerate(r)
@@ -30,7 +30,7 @@ const nonTrivialIntersections = {
     boolean: literalOnlyIntersection,
     number: compareNumbers,
     object: objectIntersection,
-    string: stringIntersection
+    string: compareStrings
 }
 
 const typeIntersection: ScopedIntersection<TypeNode> = (l, r, scope) => {

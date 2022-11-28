@@ -1,14 +1,16 @@
 import { isEmpty } from "../../utils/deepEquals.js"
 import type { mutable, xor } from "../../utils/generics.js"
 import type { Bounds } from "../bounds.js"
-import { boundsIntersection, checkBounds, pruneBounds } from "../bounds.js"
+import { checkBounds, compareBounds, pruneBounds } from "../bounds.js"
 import type {
     Compare,
     Comparison,
     Intersection,
+    Subcompare,
     UnfinalizedComparison
 } from "../node.js"
 import { isNever } from "./degenerate.js"
+import { createSubcomparison, initializeComparison } from "./utils.js"
 
 export type NumberAttributes = xor<
     {
@@ -31,10 +33,10 @@ export const compareNumbers: Compare<NumberAttributes> = (l, r) => {
     if (r.literal !== undefined) {
         return checkNumber(r.literal, l) ? [null, r, r] : [l, null, r]
     }
-    const comparison: UnfinalizedComparison<NumberAttributes> = [{}, {}, {}]
+    const comparison = initializeComparison<NumberAttributes>()
     compareDivisors(l.divisor, r.divisor, comparison)
     if (l.bounds && r.bounds) {
-        const boundsResult = boundsIntersection(l.bounds, r.bounds)
+        const boundsResult = compareBounds(l.bounds, r.bounds)
         if (isNever(boundsResult)) {
             return boundsResult
         }
@@ -49,33 +51,24 @@ export const checkNumber = (data: number, attributes: NumberAttributes) =>
         : (!attributes.bounds || checkBounds(data, attributes.bounds)) &&
           (!attributes.divisor || data % attributes.divisor === 0)
 
-const compareDivisors = (
-    l: number | undefined,
-    r: number | undefined,
-    comparison: UnfinalizedComparison<NumberAttributes>
-) => {
-    if (l === undefined) {
-        if (r !== undefined) {
+const compareDivisors = createSubcomparison<NumberAttributes, "divisor">(
+    "divisor",
+    (l, r, comparison) => {
+        if (l % r === 0) {
+            comparison[1].divisor = l
+            if (l !== r) {
+                comparison[0].divisor = l
+            }
+        } else if (r % l === 0) {
             comparison[1].divisor = r
             comparison[2].divisor = r
-        }
-    } else if (r === undefined) {
-        comparison[0].divisor = l
-        comparison[1].divisor = l
-    } else if (l % r === 0) {
-        comparison[1].divisor = l
-        if (l !== r) {
+        } else {
             comparison[0].divisor = l
+            comparison[1].divisor = leastCommonMultiple(l, r)
+            comparison[2].divisor = r
         }
-    } else if (r % l === 0) {
-        comparison[1].divisor = r
-        comparison[2].divisor = r
-    } else {
-        comparison[0].divisor = l
-        comparison[1].divisor = leastCommonMultiple(l, r)
-        comparison[2].divisor = r
     }
-}
+)
 
 const leastCommonMultiple = (l: number, r: number) =>
     Math.abs((l * r) / greatestCommonDivisor(l, r))
