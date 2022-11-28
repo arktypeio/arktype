@@ -7,10 +7,10 @@ import type { Bounds } from "../bounds.js"
 import { boundsIntersection } from "../bounds.js"
 import { intersection } from "../intersection.js"
 import type {
+    Compare,
     Node,
-    PruneFn,
-    ScopedIntersectionFn,
-    ScopedPruneFn
+    ScopedCompare,
+    ScopedIntersection
 } from "../node.js"
 import { prune } from "../union.js"
 import { isNever } from "./degenerate.js"
@@ -36,7 +36,7 @@ type SubtypeAttributes =
           bounds?: undefined
       }
 
-export const objectIntersection: ScopedIntersectionFn<ObjectAttributes> = (
+export const objectIntersection: ScopedIntersection<ObjectAttributes> = (
     l,
     r,
     scope
@@ -75,7 +75,7 @@ export const objectIntersection: ScopedIntersectionFn<ObjectAttributes> = (
     return result
 }
 
-export const pruneObject: ScopedPruneFn<ObjectAttributes> = (l, r, scope) => {
+export const pruneObject: ScopedCompare<ObjectAttributes> = (l, r, scope) => {
     return l
 }
 
@@ -94,7 +94,7 @@ const intersectProps = (
     return result
 }
 
-const pruneProps: ScopedPruneFn<PropsAttribute> = (l, r, scope) => {
+const pruneProps: ScopedCompare<PropsAttribute> = (l, r, scope) => {
     const result = { ...l }
     for (const k in l) {
         if (k in r.props) {

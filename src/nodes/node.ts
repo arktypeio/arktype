@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { xor } from "../utils/generics.js"
+import type { mutable, xor } from "../utils/generics.js"
 import type { DegenerateNode, Never } from "./types/degenerate.js"
 import type {
     BigintAttributes,
@@ -29,18 +29,22 @@ export type TrivialTypes = {
     readonly undefined?: true
 }
 
-export type IntersectionFn<t> = (l: t, r: t) => t | Never
+export type Intersection<t> = (l: t, r: t) => t | null
 
-export type ScopedIntersectionFn<t> = (
-    l: t,
-    r: t,
-    scope: ScopeRoot
-) => t | Never
+export type ScopedIntersection<t> = (l: t, r: t, scope: ScopeRoot) => t | Never
 
-export type PruneFn<t> = (branch: t, given: t) => t | undefined | null
+export type UnfinalizedComparison<t> = [
+    leftExclusive: mutable<t>,
+    intersection: mutable<t>,
+    rightExclusive: mutable<t>
+]
 
-export type ScopedPruneFn<t> = (
-    branch: t,
-    given: t,
-    scope: ScopeRoot
-) => t | undefined | null
+export type Comparison<t> = [
+    leftExclusive: t | null,
+    intersection: t | null,
+    rightExclusive: t | null
+]
+
+export type Compare<t> = (l: t, r: t) => Comparison<t>
+
+export type ScopedCompare<t> = (l: t, r: t, scope: ScopeRoot) => Comparison<t>

@@ -2,7 +2,7 @@ import type { mutable, xor } from "../../utils/generics.js"
 import type { array } from "../../utils/typeOf.js"
 import type { Bounds } from "../bounds.js"
 import { boundsIntersection, checkBounds } from "../bounds.js"
-import type { IntersectionFn, PruneFn } from "../node.js"
+import type { Compare, Intersection } from "../node.js"
 import { isNever } from "./degenerate.js"
 
 export type StringAttributes = xor<
@@ -13,7 +13,7 @@ export type StringAttributes = xor<
     { readonly literal?: string }
 >
 
-export const stringIntersection: IntersectionFn<StringAttributes> = (l, r) => {
+export const stringIntersection: Intersection<StringAttributes> = (l, r) => {
     if (l.literal !== undefined || r.literal !== undefined) {
         const literal = l.literal ?? r.literal!
         const attributes = l.literal ? r : l
@@ -37,7 +37,7 @@ export const stringIntersection: IntersectionFn<StringAttributes> = (l, r) => {
     return result
 }
 
-export const pruneString: PruneFn<StringAttributes> = (branch, given) => {
+export const pruneString: Compare<StringAttributes> = (branch, given) => {
     return branch
 }
 

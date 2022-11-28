@@ -1,5 +1,8 @@
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
-import type { IntersectionFn, PruneFn } from "../node.js"
+import type { Compare, Intersection } from "../node.js"
+import { Never } from "./degenerate.js"
+
+export type LiteralValue = string | number | boolean
 
 type LiteralOnlyType = boolean | bigint
 
@@ -11,18 +14,16 @@ export type BigintAttributes = LiteralOnlyAttributes<bigint>
 
 export type BooleanAttributes = LiteralOnlyAttributes<boolean>
 
-export const literalOnlyIntersection: IntersectionFn<
+export const literalOnlyIntersection: Intersection<
     LiteralOnlyAttributes<LiteralOnlyType>
 > = (l, r) => {
     if (l.literal !== undefined && r.literal !== undefined) {
-        return l.literal === r.literal
-            ? l
-            : { never: `${l.literal} and ${r.literal} have no overlap` }
+        return l.literal === r.literal ? l : { never: null }
     }
     return l.literal !== undefined ? l : r
 }
 
-export const pruneLiteralOnly: PruneFn<
+export const pruneLiteralOnly: Compare<
     LiteralOnlyAttributes<LiteralOnlyType>
 > = (l, r) => {
     if (l.literal !== undefined) {

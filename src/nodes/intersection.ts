@@ -6,7 +6,7 @@ import type { TypeName } from "../utils/typeOf.js"
 import type {
     Node,
     NonTrivialTypeName,
-    ScopedIntersectionFn,
+    ScopedIntersection,
     TypeNode
 } from "./node.js"
 import {
@@ -16,7 +16,7 @@ import {
 } from "./types/degenerate.js"
 import type { Never } from "./types/degenerate.js"
 import { literalOnlyIntersection } from "./types/literalOnly.js"
-import { numberIntersection } from "./types/number.js"
+import { compareNumbers } from "./types/number.js"
 import { objectIntersection } from "./types/object.js"
 import { stringIntersection } from "./types/string.js"
 
@@ -28,12 +28,12 @@ export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
 const nonTrivialIntersections = {
     bigint: literalOnlyIntersection,
     boolean: literalOnlyIntersection,
-    number: numberIntersection,
+    number: compareNumbers,
     object: objectIntersection,
     string: stringIntersection
 }
 
-const typeIntersection: ScopedIntersectionFn<TypeNode> = (l, r, scope) => {
+const typeIntersection: ScopedIntersection<TypeNode> = (l, r, scope) => {
     const viableTypes: mutable<TypeNode> = {}
     const inviableTypes: { [k in TypeName]?: Never[] } = {}
     let typeName: TypeName
