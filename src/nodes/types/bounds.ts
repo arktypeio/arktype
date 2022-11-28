@@ -16,7 +16,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-type BoundableAttributes = { bounds?: Bounds }
+type BoundableAttributes = { bounds?: Bounds | undefined }
 
 export const subcompareBounds = createSubcomparison<
     BoundableAttributes,

@@ -27,7 +27,7 @@ export const compareStrings: Compare<StringAttributes> = (l, r) => {
     if (l.regex && r.regex) {
         result.regex = additiveIntersection(l.regex, r.regex)
     }
-    subcompareBounds(l, r, comparison)
+    subcompareBounds(comparison, l, r)
     return result
 }
 

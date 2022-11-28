@@ -20,53 +20,68 @@ export type Subcomparison<t> = [
 
 export const initializeSubcomparison = <t>() => [{}, {}, {}] as Subcomparison<t>
 
-export type Subcompare<attributes extends dict> = (
-    l: attributes,
-    r: attributes,
-    root: UnfinalizedComparison<attributes>,
-    scope: ScopeRoot
-) => void
-
-export type RawSubcompare<
+type SubcompareArgs<
     attributes extends dict,
-    k extends keyof attributes
-> = (
-    l: defined<attributes[k]>,
-    r: defined<attributes[k]>,
-    scope: ScopeRoot
-) => Comparison<attributes[k]>
+    requiresScope extends boolean
+> = requiresScope extends true
+    ? [
+          result: UnfinalizedComparison<attributes>,
+          l: attributes,
+          r: attributes,
+          scope: ScopeRoot
+      ]
+    : [result: UnfinalizedComparison<attributes>, l: attributes, r: attributes]
+
+type RawSubcompareArgs<
+    attributes extends dict,
+    k extends keyof attributes,
+    requiresScope extends boolean
+> = requiresScope extends true
+    ? [l: defined<attributes[k]>, r: defined<attributes[k]>, scope: ScopeRoot]
+    : [l: defined<attributes[k]>, r: defined<attributes[k]>, scope?: undefined]
 
 export const createSubcomparison =
-    <attributes extends dict, k extends stringKeyOf<attributes>>(
+    <
+        attributes extends dict,
+        k extends stringKeyOf<attributes>,
+        requiresScope extends boolean = false
+    >(
         k: k,
-        subcompareDefined: RawSubcompare<attributes, k>
-    ): Subcompare<attributes> =>
-    (l, r, root, scope) => {
+        subcompareDefined: (
+            ...arg: RawSubcompareArgs<attributes, k, requiresScope>
+        ) => Comparison<attributes[k]>
+    ) =>
+    (...args: SubcompareArgs<attributes, requiresScope>) => {
+        const [result, l, r, scope] = args
         if (l === undefined) {
             if (r !== undefined) {
-                root[2][k] = r[k]
-                if (root[1] !== null) {
-                    root[1][k] = r[k]
+                result[2][k] = r[k]
+                if (result[1] !== null) {
+                    result[1][k] = r[k]
                 }
             }
         } else if (r === undefined) {
-            root[0][k] = l[k]
-            if (root[1] !== null) {
-                root[1][k] = l[k]
+            result[0][k] = l[k]
+            if (result[1] !== null) {
+                result[1][k] = l[k]
             }
         } else {
-            const result = subcompareDefined(l[k] as any, r as any, scope)
-            if (result[0]) {
-                root[0][k] = result[0]
+            const subresult = subcompareDefined(
+                l[k] as any,
+                r[k] as any,
+                scope as any
+            )
+            if (subresult[0]) {
+                result[0][k] = subresult[0]
             }
-            if (result[2]) {
-                root[2][k] = result[2]
+            if (subresult[2]) {
+                result[2][k] = subresult[2]
             }
-            if (root[1] !== null) {
-                if (result[1] === null) {
-                    root[1] = null
+            if (result[1] !== null) {
+                if (subresult[1] === null) {
+                    result[1] = null
                 } else {
-                    root[1][k] = result[1]
+                    result[1][k] = subresult[1]
                 }
             }
         }

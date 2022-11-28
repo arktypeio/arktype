@@ -26,8 +26,8 @@ export const compareNumbers: Compare<NumberAttributes> = (l, r) => {
         return checkNumber(r.literal, l) ? [null, r, r] : [l, null, r]
     }
     const comparison = initializeComparison<NumberAttributes>()
-    subcompareDivisors(l, r, comparison)
-    subcompareBounds(l, r, comparison)
+    subcompareDivisors(comparison, l, r)
+    subcompareBounds(comparison, l, r)
     return comparison
 }
 
