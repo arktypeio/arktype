@@ -12,10 +12,10 @@ import {
     writeJson
 } from "../runtime/exports.js"
 import { repoDirs, tsFileMatcher } from "./common.js"
+import { denoTransformations } from "./denoBuildTransforms.js"
 import { getProject } from "./docgen/main.js"
 import { mapDir } from "./docgen/mapDir.js"
 import { extractSnippets } from "./docgen/snippets/extractSnippets.js"
-import { denoTransformations } from "./makeDenoCompatible.js"
 
 const isTestBuild = process.argv.includes("--test")
 

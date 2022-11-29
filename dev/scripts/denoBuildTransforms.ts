@@ -3,7 +3,6 @@ import { fromPackageRoot, readJson } from "../runtime/fs.js"
 // eslint-disable-next-line max-lines-per-function
 export const denoTransformations = (contents: string) => {
     let transformedContents = contents.replaceAll(".js", ".ts")
-    //Matching anything that isn't a path to a local file
     const nodeModuleImportsRegex = /import .+ from "[^.].*"/gm
     const nodeModuleImports = transformedContents.matchAll(
         nodeModuleImportsRegex

@@ -2,8 +2,7 @@ import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { findPackageRoot, readPackageJson } from "../../../runtime/exports.js"
 import type { PackageMetadata } from "../api/extractApi.js"
-import type { DocGenConfig, DocGenSnippetsConfig } from "../main.js"
-import { defaultConfig } from "../main.js"
+import type { DocGenSnippetsConfig } from "../main.js"
 import type { SnippetTransformToggles } from "./extractSnippets.js"
 
 export type ExtractFileSnippetContext = {
