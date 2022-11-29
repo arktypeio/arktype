@@ -1,7 +1,7 @@
 import { fromPackageRoot, readJson } from "../runtime/fs.js"
 
 /**
- * need some kind of way so that I can make a deps.ts file (writeFileSync, deps.ts, the contents
+ * make a deps.ts file (writeFileSync, deps.ts, the contents
  * within it so that everything can just be resolved at deps.ts which makes it easier to replace all the
  * dependencies)
  */
@@ -70,5 +70,3 @@ export const denoTransformations = (contents: string) => {
 const denoImportTemplate = (nodeName: string) => {
     return `https://deno.land/std@0.166.0/node/${nodeName}.ts`
 }
-
-const findExportsTs = (startPath: string) => {}
