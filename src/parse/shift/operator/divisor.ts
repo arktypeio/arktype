@@ -6,14 +6,14 @@ import type { state, StaticState } from "../../reduce/static.js"
 
 export const parseDivisor = (s: DynamicState) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()
-    const value = tryParseWellFormedInteger(
+    const divisor = tryParseWellFormedInteger(
         divisorToken,
         buildInvalidDivisorMessage(divisorToken)
     )
-    if (value === 0) {
+    if (divisor === 0) {
         s.error(buildInvalidDivisorMessage(0))
     }
-    s.intersectionAtKey("divisor", `${value}`)
+    s.intersect({ number: { divisor } })
 }
 
 export type parseDivisor<

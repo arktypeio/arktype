@@ -1,16 +1,12 @@
-import type { DynamicScope } from "../../scope.js"
-import { isKeyOf } from "../../utils/generics.js"
-import { deserializePrimitive } from "../../utils/primitiveSerialization.js"
-import { buildUnboundableMessage } from "../ast.js"
-import { throwInternalError, throwParseError } from "../errors.js"
-import type {
-    Attribute,
-    AttributeKey,
-    Attributes
-} from "./attributes/attributes.js"
-import type { MorphName } from "./attributes/morph.js"
-import { morph } from "./attributes/morph.js"
-import { applyOperation, applyOperationAtKey } from "./attributes/operations.js"
+import { intersection } from "../../nodes/intersection.js"
+import type { MorphName } from "../../nodes/morph.js"
+import { morph } from "../../nodes/morph.js"
+import type { Node } from "../../nodes/node.js"
+import { union } from "../../nodes/union.js"
+import type { ScopeRoot } from "../../scope.js"
+import { throwInternalError, throwParseError } from "../../utils/errors.js"
+import { isKeyOf, listFrom } from "../../utils/generics.js"
+import { hasType } from "../../utils/typeOf.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -20,23 +16,20 @@ import {
     buildUnpairableComparatorMessage,
     unclosedGroupMessage
 } from "./shared.js"
-import { compileUnion } from "./union/compile.js"
 
 type BranchState = {
     range?: OpenRange
-    "&": Attributes[]
-    "|": Attributes[]
+    "&"?: Node
+    "|"?: Node[]
 }
-
-const initializeBranches = (): BranchState => ({ "&": [], "|": [] })
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: Attributes | undefined
-    private branches: BranchState = initializeBranches()
+    private root: Node | undefined
+    private branches: BranchState = {}
     private groups: BranchState[] = []
 
-    constructor(def: string, public readonly scope: DynamicScope) {
+    constructor(def: string, public readonly scope: ScopeRoot) {
         this.scanner = new Scanner(def)
     }
 
@@ -49,14 +42,21 @@ export class DynamicState {
     }
 
     ejectRootIfLimit() {
-        this.assertHasRoot()
-        if (this.root!.value) {
-            const serializedValue = this.ejectRoot().value!
-            const value = deserializePrimitive(serializedValue)
-            if (typeof value === "number") {
-                return value
-            }
-            this.error(buildUnboundableMessage(serializedValue))
+        const maybeNumberRoot = this.root?.number
+        if (
+            hasType(maybeNumberRoot, "object", "dict") &&
+            maybeNumberRoot.literal !== undefined
+        ) {
+            this.root = undefined
+            return maybeNumberRoot.literal
+        }
+    }
+
+    ejectRangeIfOpen() {
+        if (this.branches.range) {
+            const range = this.branches.range
+            delete this.branches.range
+            return range
         }
     }
 
@@ -72,21 +72,17 @@ export class DynamicState {
         }
     }
 
-    setRoot(attributes: Attributes) {
+    setRoot(node: Node) {
         this.assertUnsetRoot()
-        this.root = attributes
+        this.root = node
     }
 
     morphRoot(name: MorphName) {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersectionAtKey<k extends AttributeKey>(k: k, v: Attribute<k>) {
-        const result = applyOperationAtKey("&", this.ejectRoot(), k, v)
-        if (result === null) {
-            throw new Error("Empty intersection.")
-        }
-        this.root = result
+    intersect(node: Node) {
+        this.root = intersection(this.ejectRoot(), node, this.scope)
     }
 
     private ejectRoot() {
@@ -128,30 +124,16 @@ export class DynamicState {
         this.branches.range = [limit, comparator]
     }
 
-    reduceRightBound(comparator: Scanner.Comparator, limit: number) {
-        if (!this.branches.range) {
-            this.intersectionAtKey("bounds", `${comparator}${limit}`)
-            return
-        }
-        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-            return this.error(buildUnpairableComparatorMessage(comparator))
-        }
-        this.intersectionAtKey(
-            "bounds",
-            `${comparator === "<" ? ">" : ">="}${
-                this.branches.range[0]
-            }${comparator}${limit}`
-        )
-        delete this.branches.range
-    }
-
     finalizeBranches() {
         this.assertRangeUnset()
-        if (this.branches["&"].length) {
-            this.mergeIntersection()
-        }
-        if (this.branches["|"].length) {
-            this.mergeUnion()
+        if (this.branches["|"]) {
+            this.pushRootToBranch("|")
+            this.setRoot(union(this.branches["|"], this.scope))
+            delete this.branches["|"]
+        } else if (this.branches["&"]) {
+            this.setRoot(
+                intersection(this.branches["&"], this.ejectRoot(), this.scope)
+            )
         }
     }
 
@@ -166,14 +148,16 @@ export class DynamicState {
         this.branches = topBranchState
     }
 
-    pushBranch(token: Scanner.BranchToken) {
+    pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
-        this.branches[token].push(this.ejectRoot())
-    }
-
-    pushRange(min: number, comparator: Scanner.PairableComparator) {
-        this.assertRangeUnset()
-        this.branches.range = [min, comparator]
+        this.branches["&"] = this.branches["&"]
+            ? intersection(this.branches["&"], this.ejectRoot(), this.scope)
+            : this.ejectRoot()
+        if (token === "|") {
+            this.branches["|"] ??= []
+            this.branches["|"].push(this.branches["&"])
+            delete this.branches["&"]
+        }
     }
 
     private assertRangeUnset() {
@@ -187,33 +171,15 @@ export class DynamicState {
         }
     }
 
-    private mergeIntersection() {
-        this.pushBranch("&")
-        const branches = this.branches["&"]
-        while (branches.length > 1) {
-            const result = applyOperation("&", branches.pop()!, branches.pop()!)
-            if (result === null) {
-                return this.error("Empty intersection.")
-            }
-            branches.unshift(result)
-        }
-        this.setRoot(branches.pop()!)
-    }
-
-    private mergeUnion() {
-        this.pushBranch("|")
-        this.setRoot(compileUnion(this.branches["|"]))
-    }
-
     reduceGroupOpen() {
         this.groups.push(this.branches)
-        this.branches = initializeBranches()
+        this.branches = {}
     }
 
     previousOperator() {
-        return this.branches.range?.[1] ?? this.branches["&"].length
+        return this.branches.range?.[1] ?? this.branches["&"]
             ? "&"
-            : this.branches["|"].length
+            : this.branches["|"]
             ? "|"
             : undefined
     }
@@ -224,7 +190,7 @@ export class DynamicState {
     }
 }
 
-const ejectedProxy = new Proxy(
+const ejectedProxy: any = new Proxy(
     {},
     {
         get: () =>

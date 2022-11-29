@@ -1,8 +1,8 @@
-import type { DynamicScope } from "../scope.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
+import { morph } from "../nodes/morph.js"
+import type { ScopeRoot } from "../scope.js"
 import type { error, stringKeyOf } from "../utils/generics.js"
+import type { dict } from "../utils/typeOf.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
-import { morph } from "./reduce/attributes/morph.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { Scanner } from "./reduce/scanner.js"
 import type { state, StaticState } from "./reduce/static.js"
@@ -11,16 +11,8 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.js"
 import { maybeParseIdentifier } from "./shift/operand/unenclosed.js"
 import { parseOperator } from "./shift/operator/operator.js"
 
-export const parseString = (def: string, scope: DynamicScope) => {
-    const cache = scope.$.parseCache
-    const cachedAttributes = cache.get(def)
-    if (!cachedAttributes) {
-        const attributes =
-            maybeNaiveParse(def, scope) ?? fullStringParse(def, scope)
-        cache.set(def, attributes)
-    }
-    return cache.get(def)!
-}
+export const parseString = (def: string, scope: ScopeRoot) =>
+    scope.memoizedParse(def)
 
 export type parseString<
     def extends string,
@@ -29,7 +21,7 @@ export type parseString<
 
 export type inferString<
     def extends string,
-    scope extends dictionary,
+    scope extends dict,
     aliases
 > = inferAst<
     parseString<def, stringKeyOf<aliases> | stringKeyOf<scope>>,
@@ -39,7 +31,7 @@ export type inferString<
 
 export type validateString<
     def extends string,
-    scope extends dictionary
+    scope extends dict
 > = parseString<def, stringKeyOf<scope>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
@@ -65,7 +57,7 @@ type maybeNaiveParse<
     ? def
     : fullStringParse<def, alias>
 
-const maybeNaiveParse = (def: string, scope: DynamicScope) => {
+export const maybeNaiveParse = (def: string, scope: ScopeRoot) => {
     if (def.endsWith("[]")) {
         const maybeParsedAttributes = maybeParseIdentifier(
             def.slice(0, -2),
@@ -78,7 +70,7 @@ const maybeNaiveParse = (def: string, scope: DynamicScope) => {
     return maybeParseIdentifier(def, scope)
 }
 
-const fullStringParse = (def: string, scope: DynamicScope) => {
+export const fullStringParse = (def: string, scope: ScopeRoot) => {
     const s = new DynamicState(def, scope)
     parseOperand(s)
     return loop(s)

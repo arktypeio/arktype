@@ -9,10 +9,14 @@ import {
 describe("intersection", () => {
     describe("parse", () => {
         test("two types", () => {
-            attest(type("boolean&true").infer).typed as true
+            const t = type("boolean&true")
+            attest(t.infer).typed as true
+            attest(t.root).snap({ boolean: { literal: true } })
         })
         test("several types", () => {
-            attest(type("unknown&boolean&false").infer).typed as false
+            const t = type("unknown&boolean&false")
+            attest(t.infer).typed as false
+            attest(t.root).snap({ boolean: { literal: false } })
         })
         describe("errors", () => {
             test("bad reference", () => {

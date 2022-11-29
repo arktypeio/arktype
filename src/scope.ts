@@ -1,25 +1,25 @@
+import type { Node } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import type { Attributes } from "./parse/reduce/attributes/attributes.js"
-import type { Config } from "./type.js"
+import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
+import { compile } from "./traverse/oldCompile.js"
 import { Type } from "./type.js"
+import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import { deepClone } from "./utils/deepClone.js"
-import type { dictionary } from "./utils/dynamicTypes.js"
-import type { evaluate } from "./utils/generics.js"
+import { throwInternalError } from "./utils/errors.js"
+import { deepFreeze } from "./utils/freeze.js"
+import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import type { dict } from "./utils/typeOf.js"
 
-const rawScope = (aliases: dictionary, config: Config = {}) => {
+const rawScope = (aliases: dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const compiled: Scope<dictionary> = { $: root as any }
+    const types: Scope<dict> = { $: root as any }
     for (const name in aliases) {
-        const attributes = parseDefinition(aliases[name], compiled)
-        root.attributes[name] = attributes
-        root.parseCache.set(name, attributes)
-        compiled[name] = new Type(attributes, config, compiled)
+        types[name] = new Type(root.resolve(name), config, types)
     }
-    return compiled
+    return types
 }
 
 export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
@@ -34,7 +34,7 @@ export const getRootScope = () => {
     return rootScope!
 }
 
-type InferredScopeFn = <aliases, inferredParent extends dictionary = {}>(
+type InferredScopeFn = <aliases, inferredParent extends dict = {}>(
     aliases: validateAliases<
         aliases,
         inferScopeContext<aliases, inferredParent>
@@ -42,61 +42,68 @@ type InferredScopeFn = <aliases, inferredParent extends dictionary = {}>(
     config?: Config<inferredParent>
 ) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <aliases>(
+type DynamicScopeFn = <aliases extends dict>(
     aliases: aliases,
     config?: Config
-) => Scope<aliases>
+) => Scope<{ [name in keyof aliases]: unknown }>
 
-export type Scope<inferred> = {
+export type Scope<inferred extends dict> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
 
-export type DynamicScope = Scope<dictionary>
+export type DynamicScope = Scope<dict>
 
 type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Type<inferred[name]>
 }
 
-export class ScopeRoot<inferred> {
-    parseCache = new ParseCache()
-
-    attributes = {} as Record<keyof inferred, Attributes>
+export class ScopeRoot<inferred extends dict = dict> {
+    attributes = {} as Record<keyof inferred, Node>
+    private cache: mutable<dict<Node>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
-        public config: Config<dictionary>
+        public config: Config<dict>
     ) {}
 
     get infer(): inferred {
         return chainableNoOpProxy
     }
-}
 
-export class ParseCache {
-    private cache: dictionary<Attributes | undefined> = {}
-
-    constructor() {}
-
-    get(definition: string) {
-        if (definition in this.cache) {
-            return deepClone(this.cache[definition])
+    resolve(name: stringKeyOf<inferred>): Node {
+        if (name in this.cache) {
+            return this.cache[name]
         }
+        if (!(name in this.aliases)) {
+            return throwInternalError(
+                `Unexpectedly failed to resolve alias '${name}'`
+            )
+        }
+        const root = parseDefinition(this.aliases[name], this)
+        this.cache[name] = deepFreeze(root)
+        this.attributes[name] = deepFreeze(compile(root, this))
+        return root
     }
 
-    set(definition: string, attributes: Attributes) {
-        this.cache[definition] = attributes
+    memoizedParse(def: string): Node {
+        if (def in this.cache) {
+            return this.cache[def]
+        }
+        const root = maybeNaiveParse(def, this) ?? fullStringParse(def, this)
+        this.cache[def] = deepFreeze(root)
+        return root
     }
 }
 
-type validateAliases<aliases, scope extends dictionary> = evaluate<{
+type validateAliases<aliases, scope extends dict> = evaluate<{
     [name in keyof aliases]: validateDefinition<aliases[name], scope>
 }>
 
-type inferAliases<aliases, scope extends dictionary> = evaluate<{
+type inferAliases<aliases, scope extends dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<aliases[name], scope, aliases>
 }>
 
-type inferScopeContext<aliases, scope extends dictionary> = inferAliases<
+type inferScopeContext<aliases, scope extends dict> = inferAliases<
     aliases,
     scope
 > &

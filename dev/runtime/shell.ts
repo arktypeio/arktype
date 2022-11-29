@@ -1,6 +1,7 @@
 import type { ExecSyncOptions } from "node:child_process"
 import { execSync } from "node:child_process"
 
+// @snipStart:shell
 export type ShellOptions = ExecSyncOptions & {
     returnOutput?: boolean
 }
@@ -15,3 +16,4 @@ export const shell = (
         env: { ...process.env, ...env },
         ...otherOptions
     })
+// @snipEnd

@@ -1,4 +1,4 @@
-import type { dictionary } from "../../utils/dynamicTypes.js"
+import type { dict } from "../../utils/typeOf.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -19,19 +19,9 @@ export class Scanner<Lookahead extends string = string> {
         return (this.chars[this.i] ?? "") as Lookahead
     }
 
-    shiftUntil(
-        condition: Scanner.UntilCondition,
-        opts?: Scanner.ShiftUntilOptions
-    ): string {
-        let shifted = opts?.appendTo ?? ""
-        while (!condition(this, shifted)) {
-            if (this.lookahead === "") {
-                return opts?.onInputEnd?.(this, shifted) ?? shifted
-            }
-            shifted += this.shift()
-        }
-
-        if (opts?.inclusive) {
+    shiftUntil(condition: Scanner.UntilCondition): string {
+        let shifted = ""
+        while (!condition(this, shifted) && this.lookahead) {
             shifted += this.shift()
         }
         return shifted
@@ -49,7 +39,7 @@ export class Scanner<Lookahead extends string = string> {
         return this.lookahead === char
     }
 
-    lookaheadIsIn<Tokens extends dictionary>(
+    lookaheadIsIn<Tokens extends dict>(
         tokens: Tokens
     ): this is Scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens
@@ -63,8 +53,6 @@ export namespace Scanner {
 
     export type ShiftUntilOptions = {
         onInputEnd?: OnInputEndFn
-        inclusive?: boolean
-        appendTo?: string
     }
 
     export const lookaheadIsTerminator: UntilCondition = (scanner: Scanner) =>

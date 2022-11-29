@@ -1,6 +1,6 @@
+import { throwInternalError } from "../../../utils/errors.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
-import { throwInternalError } from "../../errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -16,7 +16,7 @@ export const parseOperator = (s: DynamicState): void => {
             ? s.morphRoot("array")
             : s.error(incompleteArrayTokenMessage)
         : isKeyOf(lookahead, Scanner.branchTokens)
-        ? s.pushBranch(lookahead)
+        ? s.pushRootToBranch(lookahead)
         : lookahead === ")"
         ? s.finalizeGroup()
         : isKeyOf(lookahead, Scanner.comparatorStartChars)

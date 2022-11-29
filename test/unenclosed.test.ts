@@ -7,7 +7,7 @@ import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiteral
 describe("parse unenclosed", () => {
     describe("identifier", () => {
         test("keyword", () => {
-            attest(type("string").infer).typed as "string"
+            attest(type("string").infer).typed as string
         })
         test("alias", () => {
             const a = type("a", { scope: scope({ a: "string" }) })
@@ -25,7 +25,9 @@ describe("parse unenclosed", () => {
     describe("number", () => {
         describe("positive", () => {
             test("whole", () => {
-                attest(type("4").infer).typed as 4
+                const four = type("4")
+                attest(four.infer).typed as 4
+                attest(four.root).snap({ number: { literal: 4 } })
             })
             test("decimal", () => {
                 attest(type("3.14159").infer).typed as 3.14159

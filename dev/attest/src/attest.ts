@@ -1,15 +1,11 @@
 import { fileURLToPath } from "node:url"
 import { caller, getCallStack } from "../../runtime/exports.js"
-import type { ValueAssertion } from "./assertions/exports.js"
-import { Assertions } from "./assertions/exports.js"
+import { Assertions } from "./assertions/assertions.js"
+import type { RootAssertions } from "./assertions/types.js"
 import type { AtTestConfig, SourcePosition } from "./common.js"
 import { getAtTestConfig } from "./common.js"
 
-export type AvailableAssertions<T> = ValueAssertion<T, true>
-
-export type AssertionResult<T> = AvailableAssertions<T>
-
-export type AssertFn = <T>(value: T) => AssertionResult<T>
+export type AssertFn = <T>(value: T) => RootAssertions<T, true>
 
 export type AssertionContext = {
     actual: unknown

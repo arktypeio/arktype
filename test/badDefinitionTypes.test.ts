@@ -7,11 +7,12 @@ describe("bad definition types", () => {
     test("any", () => {
         // Can't create an assignment error if type is any, so we have to rely
         // on the return type being never
+        // @ts-expect-error The type error is from attest
         attest(type({} as any)).typed as never
     })
     test("unknown", () => {
         // @ts-expect-error
-        attest(type({} as unknown)).type.errors.snap(
+        attest(type({} as unknown)).type.errors(
             "Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead."
         )
     })

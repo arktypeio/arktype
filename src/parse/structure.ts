@@ -1,22 +1,15 @@
-import type { DynamicScope } from "../scope.js"
-import type { dictionary } from "../utils/dynamicTypes.js"
-import type { evaluate, keySet } from "../utils/generics.js"
+import type { Node } from "../nodes/node.js"
+import type { ScopeRoot } from "../scope.js"
+import { throwInternalError } from "../utils/errors.js"
+import type { evaluate, keySet, mutable } from "../utils/generics.js"
+import type { array, dict } from "../utils/typeOf.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
-import { throwInternalError } from "./errors.js"
-import type { Attributes } from "./reduce/attributes/attributes.js"
 import type { Scanner } from "./reduce/scanner.js"
 
-export const parseStructure = (
-    def: Record<string | number, unknown>,
-    scope: DynamicScope
-): Attributes => {
-    if (isTupleExpression(def)) {
-        return parseTupleExpression(def, scope)
-    }
-    const type = Array.isArray(def) ? "array" : "dictionary"
-    const props: dictionary<Attributes> = {}
-    const requiredKeys: keySet<string> = {}
+export const parseDict = (def: dict, scope: ScopeRoot): Node => {
+    const props: mutable<dict<Node>> = {}
+    const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         if (definitionKey.endsWith("?")) {
@@ -26,18 +19,19 @@ export const parseStructure = (
         }
         props[keyName] = parseDefinition(def[definitionKey], scope)
     }
-    return { type, props, requiredKeys }
+    return {
+        object: {
+            props,
+            requiredKeys
+        }
+    }
 }
 
-export type inferStructure<
-    def,
-    scope extends dictionary,
+export type inferRecord<
+    def extends dict,
+    scope extends dict,
     aliases
-> = def extends readonly unknown[]
-    ? { [i in keyof def]: inferDefinition<def[i], scope, aliases> }
-    : inferObjectLiteral<def, scope, aliases>
-
-type inferObjectLiteral<def, scope extends dictionary, aliases> = evaluate<
+> = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
             def[requiredKeyName],
@@ -46,14 +40,35 @@ type inferObjectLiteral<def, scope extends dictionary, aliases> = evaluate<
         >
     } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
-            // @ts-expect-error We're just undoing the optional key extraction
-            // we just did to acces the prop
             def[`${optionalKeyName}?`],
             scope,
             aliases
         >
     }
 >
+
+export const parseTuple = (def: array, scope: ScopeRoot): Node => {
+    if (isTupleExpression(def)) {
+        return parseTupleExpression(def, scope)
+    }
+    const props: mutable<dict<Node>> = {}
+    const requiredKeys: Record<number, true> = {}
+    for (let i = 0; i < def.length; i++) {
+        props[i] = parseDefinition(def[i], scope)
+        requiredKeys[i] = true
+    }
+    return {
+        object: {
+            subtype: "array",
+            props,
+            requiredKeys
+        }
+    }
+}
+
+export type inferTuple<def, scope extends dict, aliases> = {
+    [i in keyof def]: inferDefinition<def[i], scope, aliases>
+}
 
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
@@ -67,14 +82,14 @@ type requiredKeyOf<def> = {
 
 const parseTupleExpression = (
     expression: TupleExpression,
-    scope: DynamicScope
+    scope: ScopeRoot
 ) => {
     return throwInternalError("Not yet implemented.")
 }
 
 // type parseTupleExpression<
 //     def extends TupleExpression,
-//     scope extends dictionary
+//     scope extends record
 // > = def[1] extends Scanner.InfixToken
 //     ? def[2] extends undefined
 //         ? [

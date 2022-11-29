@@ -1,17 +1,17 @@
-import type { dictionary } from "../utils/dynamicTypes.js"
+import type { Keyword, Keywords } from "../nodes/keywords.js"
 import type { error, evaluate, isAny, RegexLiteral } from "../utils/generics.js"
 import type {
     SerializablePrimitive,
     serializePrimitive
 } from "../utils/primitiveSerialization.js"
+import type { dict } from "../utils/typeOf.js"
 import type { inferDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 import type { StringLiteral } from "./shift/operand/enclosed.js"
-import type { Keyword } from "./shift/operand/keyword.js"
 
 export type inferAst<
     ast,
-    scope extends dictionary,
+    scope extends dict,
     aliases
 > = ast extends readonly unknown[]
     ? ast[1] extends "[]"
@@ -35,10 +35,7 @@ export type inferAst<
           }>
     : inferTerminal<ast, scope, aliases>
 
-export type validateAstSemantics<
-    ast,
-    scope extends dictionary
-> = ast extends string
+export type validateAstSemantics<ast, scope extends dict> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
     ? validateAstSemantics<child, scope>
@@ -90,12 +87,8 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<
-    token,
-    scope extends dictionary,
-    aliases
-> = token extends Keyword
-    ? Keyword.Inferences[token]
+type inferTerminal<token, scope extends dict, aliases> = token extends Keyword
+    ? Keywords[token]
     : token extends keyof scope
     ? scope[token]
     : token extends keyof aliases

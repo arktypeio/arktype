@@ -4,4 +4,4 @@
 
 . "$(dirname -- "$0")/_/husky.sh"
 
-pnpm pretty-quick --staged
+pnpm pretty-quick --staged --ignore-path ./dev/configs/.prettierignore

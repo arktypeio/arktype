@@ -1,103 +1,24 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
-import type { Attributes } from "../exports.js"
-import { compileUnion } from "../src/parse/reduce/union/compile.js"
-
-const testBranches: Attributes[] = [
-    {
-        type: "dictionary",
-        props: {
-            kind: {
-                value: "1"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    },
-    {
-        type: "array",
-        props: {
-            kind: {
-                value: "1"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    },
-    {
-        type: "dictionary",
-        props: {
-            kind: {
-                value: "2"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    },
-    {
-        type: "array",
-        props: {
-            kind: {
-                value: "2"
-            },
-            size: {
-                type: "number"
-            }
-        }
-    }
-]
+import { scope, type } from "../exports.js"
 
 describe("union/discriminate", () => {
+    const places = scope.lazy({
+        ocean: { wet: "true", blue: "true", isOcean: "true" },
+        sky: { wet: "false", blue: "true", isSky: "true" },
+        rainforest: { wet: "true", blue: "false", isRainforest: "true" },
+        desert: { wet: "false", blue: "false", isDesert: "true" },
+        anywhereWet: { wet: "true" }
+    })
     test("discriminate", () => {
-        attest(compileUnion(testBranches)).snap({
-            props: { size: { type: "number" } },
-            branches: {
-                kind: "switch",
-                path: "",
-                key: "type",
-                cases: {
-                    dictionary: {
-                        branches: {
-                            kind: "switch",
-                            path: "kind",
-                            key: "value",
-                            cases: { "1": {}, "2": {} }
-                        }
-                    },
-                    array: {
-                        branches: {
-                            kind: "switch",
-                            path: "kind",
-                            key: "value",
-                            cases: { "1": {}, "2": {} }
-                        }
-                    }
-                }
-            }
-        })
+        attest(
+            type("ocean|sky|rainforest|desert", { scope: places }).root
+        ).snap({})
     })
     test("prune", () => {
-        attest(compileUnion([...testBranches, { type: "array" }])).snap({
-            branches: {
-                kind: "switch",
-                path: "",
-                key: "type",
-                cases: {
-                    dictionary: {
-                        props: { size: { type: "number" } },
-                        branches: {
-                            kind: "switch",
-                            path: "",
-                            key: "value",
-                            cases: { "1": {}, "2": {} }
-                        }
-                    },
-                    array: {}
-                }
-            }
-        })
+        attest(
+            type("ocean|sky|rainforest|desert|anywhereWet", { scope: places })
+                .root
+        ).snap({})
     })
 })

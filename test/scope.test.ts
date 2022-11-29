@@ -5,31 +5,40 @@ import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.
 
 describe("scope", () => {
     test("single", () => {
-        attest(scope({ a: "string" }).$.infer.a).typed as string
+        const s = scope({ a: "string" })
+        attest(s.$.infer).typed as { a: string }
+        attest(s.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
-            scope({ a: "strig" })
-        ).throwsAndHasTypeError(buildUnresolvableMessage("strig"))
+            scope({ a: "strng" })
+        ).throwsAndHasTypeError(buildUnresolvableMessage("strng"))
     })
     test("interdependent", () => {
-        const types = scope({ a: "string>5", b: "email<=10", c: "a&b" })
-        attest(types.c.attributes).equals({
-            type: "string",
-            regex: "/^(.+)@(.+)\\.(.+)$/",
-            bounds: ">5<=10"
+        const s = scope({ a: "string>5", b: "email<=10", c: "a&b" })
+        attest(s.c.infer).typed as string
+        attest(s.c.root).equals({
+            string: {
+                regex: "^(.+)@(.+)\\.(.+)$",
+                bounds: {
+                    min: {
+                        limit: 5,
+                        exclusive: true
+                    },
+                    max: { limit: 10 }
+                }
+            }
         })
-        attest(types.$.infer.c).typed as string
     })
     test("cyclic", () => {
-        const cyclicScope = scope({ a: { b: "b" }, b: { a: "a" } })
-        attest(cyclicScope.a.attributes).snap({
-            type: "dictionary",
-            props: {
-                b: { type: "dictionary", props: { a: { alias: "a" } } }
+        const s = scope({ a: { b: "b" }, b: { a: "a" } })
+        attest(s.a.root).snap({
+            object: {
+                props: { b: { alias: "b" } },
+                requiredKeys: { b: true }
             }
         })
         // Type hint displays as any on hitting cycle
-        attest(cyclicScope.$.infer.a).typed as {
+        attest(s.$.infer.a).typed as {
             b: {
                 a: {
                     b: {
@@ -39,13 +48,13 @@ describe("scope", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        attest(cyclicScope.$.infer.b.a.b.a.b.a.b.a).typed as {
+        attest(s.$.infer.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        attest(cyclicScope.$.infer.a.b.a.b.c).type.errors.snap(
+        attest(s.$.infer.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
@@ -58,7 +67,7 @@ describe("scope", () => {
     })
     test("doesn't try to validate any in scope", () => {
         attest(type(["number", "a"], { scope: scope({ a: {} as any }) }).infer)
-            .typed as [number, unknown]
+            .typed as [number, never]
     })
     test("parent scope", () => {
         const s = scope(
@@ -71,14 +80,19 @@ describe("scope", () => {
             d: boolean
         }
         attest(s.$.attributes).snap({
-            a: { type: "array", props: { "*": { type: "string" } } },
-            b: {
-                type: "array",
-                props: {
-                    "*": { type: "array", props: { "*": { type: "string" } } }
+            a: {
+                object: {
+                    subtype: "array",
+                    elements: { string: true }
                 }
             },
-            d: { type: "boolean" }
+            b: {
+                object: {
+                    subtype: "array",
+                    elements: { alias: "a" }
+                }
+            },
+            d: { alias: "definedInScope" }
         })
     })
 })

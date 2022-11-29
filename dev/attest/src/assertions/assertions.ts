@@ -15,7 +15,7 @@ import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
 } from "../writeSnapshot.js"
-import type { AnyValueAssertion, ExternalSnapshotArgs } from "./types.js"
+import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
 import {
     assertEqualOrMatching,
     callAssertedFunction,
@@ -28,9 +28,7 @@ export type ChainableAssertionOptions = {
     defaultExpected?: unknown
 }
 
-type AnyAssertions = AnyValueAssertion<any, true>
-
-type AssertionRecord = { [K in keyof AnyAssertions]: any }
+type AssertionRecord = Record<keyof RootAssertions<any, true>, unknown>
 
 export class Assertions implements AssertionRecord {
     constructor(private ctx: AssertionContext) {}

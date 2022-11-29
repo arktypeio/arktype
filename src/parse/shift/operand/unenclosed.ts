@@ -1,19 +1,22 @@
-import type { DynamicScope } from "../../../scope.js"
+import type { Keyword } from "../../../nodes/keywords.js"
+import { keywords } from "../../../nodes/keywords.js"
+import type { Node } from "../../../nodes/node.js"
+import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
+import { isKeyOf } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
+    IntegerLiteral,
     NumberLiteral
 } from "../../../utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../utils/numericLiterals.js"
-import { parseDefinition } from "../../definition.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import { Keyword } from "./keyword.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
@@ -42,33 +45,28 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
             : buildUnresolvableMessage(token)
     )
 
-export const maybeParseIdentifier = (token: string, scope: DynamicScope) =>
-    Keyword.matches(token)
-        ? Keyword.attributes[token]()
-        : scope.$.aliases[token]
-        ? parseAlias(token, scope)
-        : scope.$.config.scope?.$.attributes[token]
+export const maybeParseIdentifier = (
+    token: string,
+    scope: ScopeRoot
+): Node | undefined =>
+    isKeyOf(token, keywords)
+        ? keywords[token]
+        : scope.aliases[token] || scope.config.scope?.$.aliases[token]
+        ? { alias: token }
+        : undefined
 
-const parseAlias = (name: string, scope: DynamicScope) => {
-    const cache = scope.$.parseCache
-    const cachedAttributes = cache.get(name)
-    if (!cachedAttributes) {
-        // Set the resolution to a shallow reference until the alias has
-        // been fully parsed in case it cyclicly references itself
-        cache.set(name, { alias: name })
-        cache.set(name, parseDefinition(scope.$.aliases[name], scope))
-    }
-    return cache.get(name)
-}
-
-const maybeParseUnenclosedLiteral = (token: string) => {
+const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { value: token as NumberLiteral }
+        return { number: { literal: maybeNumber } }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return { value: token as BigintLiteral }
+        return {
+            bigint: {
+                literal: token.slice(0, -1) as IntegerLiteral
+            }
+        }
     }
 }
 
@@ -133,7 +131,7 @@ export const buildMissingRightOperandMessage = <
     unscanned: unscanned
 ): buildMissingRightOperandMessage<token, unscanned> =>
     `Token '${token}' requires a right operand${
-        unscanned ? "" : (` before '${unscanned}'` as any)
+        unscanned ? (` before '${unscanned}'` as any) : ""
     }`
 
 export const buildExpressionExpectedMessage = <unscanned extends string>(

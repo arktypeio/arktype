@@ -63,7 +63,7 @@ export type Serialized<T> = T extends undefined | symbol | bigint | Function
     ? string
     : T extends number | string | boolean
     ? T
-    : { [K in keyof T]: Serialized<T[K]> }
+    : { [k in keyof T]: Serialized<T[k]> }
 
 export const literalSerialize = <T>(value: T): Serialized<T> =>
     serialize(value, false, [])
@@ -115,7 +115,7 @@ const serializePrimitive = (value: unknown, stringify?: boolean) => {
 
 const getArgsToCheck = () => {
     if (process.env.ARKTYPE_CHECK_CMD) {
-        // If using @arktype/test runner, ARKTYPE_CHECK_CMD will be set to the original cmd.
+        // If using arktype runner, ARKTYPE_CHECK_CMD will be set to the original cmd.
         return process.env.ARKTYPE_CHECK_CMD.split(" ")
     } else if (process.env.JEST_WORKER_ID) {
         // If we're in a jest worker process, check the parent process cmd args

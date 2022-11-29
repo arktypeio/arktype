@@ -1,5 +1,5 @@
 import type { error, RegexLiteral } from "../../../utils/generics.js"
-import { throwParseError } from "../../errors.js"
+import { getRegex } from "../../../utils/regexCache.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -15,21 +15,18 @@ export type SingleQuotedStringLiteral<Text extends string = string> =
     `'${Text}'`
 
 export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
-    const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
-        appendTo: enclosing,
-        inclusive: true,
-        onInputEnd: throwUnterminatedEnclosed
-    })
-    s.setRoot(
-        enclosing === "/"
-            ? { regex: token as RegexLiteral }
-            : {
-                  value:
-                      enclosing === "'"
-                          ? (token as SingleQuotedStringLiteral)
-                          : `'${token.slice(1, -1)}'`
-              }
-    )
+    const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing])
+    if (s.scanner.lookahead === "") {
+        return s.error(buildUnterminatedEnclosedMessage(token, enclosing))
+    }
+    // Shift the scanner one additional time for the second enclosing token
+    if (s.scanner.shift() === "/") {
+        // Cache the regex instance to throw right way if its invalid
+        getRegex(token)
+        s.setRoot({ string: { regex: token } })
+    } else {
+        s.setRoot({ string: { literal: token } })
+    }
 }
 
 export type parseEnclosed<
@@ -41,7 +38,7 @@ export type parseEnclosed<
     infer nextUnscanned
 >
     ? nextUnscanned extends ""
-        ? error<buildUnterminatedEnclosedMessage<s["unscanned"], enclosing>>
+        ? error<buildUnterminatedEnclosedMessage<scanned, enclosing>>
         : state.setRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,
@@ -78,14 +75,9 @@ export const buildUnterminatedEnclosedMessage = <
     fragment: fragment,
     enclosing: enclosing
 ): buildUnterminatedEnclosedMessage<fragment, enclosing> =>
-    `${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
+    `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
 
 type buildUnterminatedEnclosedMessage<
     fragment extends string,
     enclosing extends EnclosingChar
-> = `${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
-
-const throwUnterminatedEnclosed: Scanner.OnInputEndFn = (scanner, shifted) =>
-    throwParseError(
-        buildUnterminatedEnclosedMessage(shifted, shifted[0] as EnclosingChar)
-    )
+> = `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`

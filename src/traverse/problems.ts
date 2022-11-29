@@ -1,4 +1,4 @@
-import { dynamicTypeOf } from "../utils/dynamicTypes.js"
+import { typeOf } from "../utils/typeOf.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean
@@ -44,7 +44,7 @@ export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
     get typeOf() {
-        return dynamicTypeOf(this.raw)
+        return typeOf(this.raw)
     }
 
     // TODO: Fix

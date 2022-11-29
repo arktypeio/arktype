@@ -1,8 +1,10 @@
+import type { Bound, Bounds } from "../../../nodes/types/bounds.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { Scanner } from "../../reduce/scanner.js"
+import { buildUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
 
 export const parseBound = (
@@ -62,7 +64,21 @@ export const parseRightBound = (
         limitToken,
         buildInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
-    s.reduceRightBound(comparator, limit)
+    const openRange = s.ejectRangeIfOpen()
+    let bounds
+    if (openRange) {
+        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
+            return s.error(buildUnpairableComparatorMessage(comparator))
+        }
+        bounds = deserializeRange(openRange[0], openRange[1], comparator, limit)
+    } else {
+        bounds = deserializeBound(comparator, limit)
+    }
+    s.intersect({
+        number: { bounds },
+        string: { bounds },
+        object: { subtype: "array", bounds }
+    })
 }
 
 export type parseRightBound<
@@ -78,7 +94,18 @@ export type parseRightBound<
           buildInvalidLimitMessage<comparator, scanned>
       > extends infer limit
         ? limit extends number
-            ? state.reduceRightBound<s, comparator, limit, nextUnscanned>
+            ? s["branches"]["range"] extends {}
+                ? comparator extends Scanner.PairableComparator
+                    ? state.reduceRange<
+                          s,
+                          s["branches"]["range"][0],
+                          s["branches"]["range"][1],
+                          comparator,
+                          limit,
+                          nextUnscanned
+                      >
+                    : error<buildUnpairableComparatorMessage<comparator>>
+                : state.reduceSingleBound<s, comparator, limit, nextUnscanned>
             : error<limit & string>
         : never
     : never
@@ -96,3 +123,54 @@ export type buildInvalidLimitMessage<
     comparator extends Scanner.Comparator,
     limit extends string
 > = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
+
+const deserializeBound = (
+    comparator: Scanner.Comparator,
+    limit: number
+): Bounds => {
+    const bound: Bound =
+        comparator.length === 1
+            ? {
+                  limit,
+                  exclusive: true
+              }
+            : { limit }
+    // TODO: Throw if initial range incompatible
+    if (comparator === "==") {
+        return { min: bound, max: bound }
+    } else if (comparator === ">" || comparator === ">=") {
+        return {
+            min: bound
+        }
+    } else {
+        return {
+            max: bound
+        }
+    }
+}
+
+const deserializeRange = (
+    minLimit: number,
+    minComparator: Scanner.PairableComparator,
+    maxComparator: Scanner.PairableComparator,
+    maxLimit: number
+): Bounds => {
+    const min: Bound =
+        minComparator === "<"
+            ? {
+                  limit: minLimit,
+                  exclusive: true
+              }
+            : { limit: minLimit }
+    const max: Bound =
+        maxComparator === "<"
+            ? {
+                  limit: maxLimit,
+                  exclusive: true
+              }
+            : { limit: maxLimit }
+    return {
+        min,
+        max
+    }
+}

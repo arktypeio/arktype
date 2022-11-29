@@ -92,38 +92,39 @@ export namespace state {
               }>
         : error<buildUnpairableComparatorMessage<comparator>>
 
-    export type reduceRightBound<
+    export type reduceRange<
+        s extends StaticState,
+        minLimit extends number,
+        minComparator extends Scanner.PairableComparator,
+        maxComparator extends Scanner.Comparator,
+        maxLimit extends number,
+        unscanned extends string
+    > = state.from<{
+        root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
+        branches: {
+            range: undefined
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
+        }
+        groups: s["groups"]
+        unscanned: unscanned
+    }>
+
+    export type reduceSingleBound<
         s extends StaticState,
         comparator extends Scanner.Comparator,
         limit extends number,
         unscanned extends string
-    > = s["branches"]["range"] extends {}
-        ? comparator extends Scanner.PairableComparator
-            ? state.from<{
-                  root: [
-                      s["branches"]["range"][0],
-                      s["branches"]["range"][1],
-                      [s["root"], comparator, limit]
-                  ]
-                  branches: {
-                      range: undefined
-                      "&": s["branches"]["&"]
-                      "|": s["branches"]["|"]
-                  }
-                  groups: s["groups"]
-                  unscanned: unscanned
-              }>
-            : error<buildUnpairableComparatorMessage<comparator>>
-        : state.from<{
-              root: [s["root"], comparator, limit]
-              branches: {
-                  range: undefined
-                  "&": s["branches"]["&"]
-                  "|": s["branches"]["|"]
-              }
-              groups: s["groups"]
-              unscanned: unscanned
-          }>
+    > = state.from<{
+        root: [s["root"], comparator, limit]
+        branches: {
+            range: undefined
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
+        }
+        groups: s["groups"]
+        unscanned: unscanned
+    }>
 
     type mergeToUnion<s extends StaticState> =
         s["branches"]["|"] extends undefined
@@ -150,7 +151,7 @@ export namespace state {
               root: mergeToUnion<s>
               unscanned: unscanned
           }>
-        : error<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
+        : error<buildUnmatchedGroupCloseMessage<unscanned>>
 
     export type reduceGroupOpen<
         s extends StaticState,

@@ -28,7 +28,6 @@ module.exports = defineConfig({
          */
         curly: "warn",
         eqeqeq: "warn",
-        "no-param-reassign": "warn",
         "@typescript-eslint/no-unused-vars": [
             "warn",
             { ignoreRestSiblings: true }
@@ -71,14 +70,6 @@ module.exports = defineConfig({
                 ignoreDeclarationSort: true
             }
         ],
-        /**
-         * Keep functions and files concise and readable
-         */
-        "max-lines-per-function": [
-            "warn",
-            { max: 32, skipComments: true, skipBlankLines: true }
-        ],
-        "max-lines": ["warn", 256],
         /**
          * Allow more flexible typing
          */

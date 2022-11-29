@@ -1,3 +1,6 @@
+import type { array } from "./typeOf.js"
+import { hasType } from "./typeOf.js"
+
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
 
 type narrowRecurse<t> = {
@@ -71,18 +74,26 @@ export type keysOf<o extends object> = (keyof o)[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 
-export type keySet<key extends string = string> = Record<key, true>
+export const hasKey = <o extends object, k extends string>(
+    o: o,
+    k: k
+): o is o & { [_ in k]: {} | null } => ((o as any)[k] !== undefined) as any
 
-export type keyOrSet<key extends string = string> = key | keySet<key>
+export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
-export type partialKeySet<key extends string = string> = { [_ in key]?: true }
-
-export type keyOrPartialSet<key extends string = string> =
-    | key
-    | partialKeySet<key>
+export const hasKeys = (value: unknown) =>
+    hasType(value, "object") ? Object.keys(value).length !== 0 : false
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
+}
+
+export type immutable<o> = {
+    readonly [k in keyof o]: o[k]
+}
+
+export type deepImmutable<o> = {
+    readonly [k in keyof o]: o[k] extends object ? deepImmutable<o[k]> : o[k]
 }
 
 export type subtype<t, u extends t> = u
@@ -99,13 +110,20 @@ export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
 
 export type partialRecord<k extends string, v> = { [_ in k]?: v }
 
-export const satisfies =
-    <base>() =>
-    <t extends base>(t: t) =>
-        t
-
 export type error<message extends string = string> = `!${message}`
 
 export type stringKeyOf<t> = keyof t & string
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
+
+/** Either:
+ * A, with all properties of B as undefined
+ * OR
+ * B, with all properties of A as undefined
+ **/
+export type xor<a, b> =
+    | evaluate<a & { [k in keyof b]?: undefined }>
+    | evaluate<b & { [k in keyof a]?: undefined }>
+
+export const listFrom = <t>(data: t) =>
+    (Array.isArray(data) ? data : [data]) as t extends array ? t : [t]
