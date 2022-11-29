@@ -25,6 +25,7 @@ const inFileFilter: WalkOptions = {
     include: (path) =>
         tsFileMatcher.test(path) &&
         /(^src|test|dev\/attest|dev\/runtime)\/?/.test(path),
+    exclude: (path) => /dev\/attest\/test/.test(path),
     ignoreDirsMatching: /node_modules|dist|docgen/
 }
 
