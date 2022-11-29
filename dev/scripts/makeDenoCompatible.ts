@@ -17,17 +17,7 @@ export const denoTransformations = (contents: string) => {
             .split(" ")
             .slice(-1)[0]
             .replaceAll(/"|'|`/g, "")
-        /**
-         *  I'm making an assumption here that the arktype import is only going to appear within tests
-         *  and at the top level otherwise I will have to make some thing that finds the path to the exports.ts
-         *  file
-         */
-        // if (moduleImport === "arktype") {
-        //     transformedContents = transformedContents.replaceAll(
-        //         moduleImport,
-        //         "../exports.ts"
-        //     )
-        // }
+
         const nodeImports = contents.matchAll(/node:\w+/g) ?? []
         for (const matchedExpressions of nodeImports) {
             const matchedExpression = matchedExpressions[0]
@@ -37,13 +27,15 @@ export const denoTransformations = (contents: string) => {
                 denoImportTemplate(extractedNodeName)
             )
         }
+
         const moduleDependencyVersion = devDependencies[moduleImport]
         if (moduleImport === "ts-morph") {
             transformedContents = transformedContents.replaceAll(
                 "ts-morph",
-                "https://deno.land/x/ts_morph@17.0.1/mod.ts"
+                `https://deno.land/x/ts_morph@${moduleDependencyVersion}/mod.ts`
             )
         }
+
         const mochaTest = `import {describe,it as test} from "https://deno.land/std@0.166.0/testing/bdd.ts"`
         if (moduleImport === "mocha") {
             transformedContents = transformedContents.replaceAll(
