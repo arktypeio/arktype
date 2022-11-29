@@ -1,9 +1,4 @@
-import type { Subcomparison } from "./utils.js"
-import {
-    createSubcomparison,
-    initializeSubcomparison,
-    nullifyEmpty
-} from "./utils.js"
+import { createIntersectionForKey } from "./utils.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -15,42 +10,33 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-type BoundableAttributes = { bounds?: Bounds | undefined }
-
-export const subcompareBounds = createSubcomparison<
-    BoundableAttributes,
-    "bounds"
->("bounds", (l, r) => {
-    const result = initializeSubcomparison<Bounds>()
-    addBoundToSubcomparison(result, "min", l.min, r.min)
-    addBoundToSubcomparison(result, "max", l.max, r.max)
-    const rangeIsEmpty =
-        result[1].max &&
-        compareStrictness(result[1].min, result[1].max, "min") === "l"
-    return [
-        nullifyEmpty(result[0]),
-        rangeIsEmpty ? null : result[1],
-        nullifyEmpty(result[2])
-    ]
-})
-
-const addBoundToSubcomparison = (
-    result: Subcomparison<Bounds>,
-    kind: BoundKind,
-    l: Bound | undefined,
-    r: Bound | undefined
-) => {
-    const stricter = compareStrictness(l, r, kind)
-    if (stricter === "l") {
-        result[0][kind] = l!
-        result[1][kind] = l!
-    } else if (stricter === "r") {
-        result[1][kind] = r!
-        result[2][kind] = r!
-    } else if (l) {
-        result[1][kind] = l
-    }
+type BoundableAttributes = {
+    bounds?: Bounds | undefined
 }
+
+export const boundsIntersection = createIntersectionForKey<
+    BoundableAttributes,
+    "bounds",
+    { neverable: true }
+>("bounds", (l, r) => {
+    const min =
+        r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
+            ? r.min
+            : l.min
+    const max =
+        r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
+            ? r.max
+            : l.max
+    return min
+        ? max
+            ? compareStrictness(min, max, "min") === "l"
+                ? {
+                      never: buildEmptyRangeMessage("min", min, max)
+                  }
+                : { min, max }
+            : { min }
+        : { max: max! }
+})
 
 export const checkBounds = (data: number, bounds: Bounds) => {
     if (bounds.min) {
@@ -72,6 +58,19 @@ export const checkBounds = (data: number, bounds: Bounds) => {
     return true
 }
 
+export const buildEmptyRangeMessage = (
+    kind: BoundKind,
+    bound: Bound,
+    opposing: Bound
+) =>
+    `the range bounded by ${stringifyBound(
+        "min",
+        kind === "min" ? bound : opposing
+    )} and ${stringifyBound("max", kind === "max" ? bound : opposing)} is empty`
+
+const stringifyBound = (kind: BoundKind, bound: Bound) =>
+    `${kind === "min" ? "<" : ">"}${bound.exclusive ? "" : "="}${bound.limit}`
+
 const invertedKinds = {
     min: "max",
     max: "min"
@@ -79,18 +78,8 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const compareStrictness = (
-    l: Bound | undefined,
-    r: Bound | undefined,
-    kind: BoundKind
-) =>
-    !l
-        ? r
-            ? "r"
-            : "="
-        : !r
-        ? "l"
-        : l.limit === r.limit
+const compareStrictness = (l: Bound, r: Bound, kind: BoundKind) =>
+    l.limit === r.limit
         ? l.exclusive
             ? r.exclusive
                 ? "="

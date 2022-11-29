@@ -1,11 +1,14 @@
 import type { keySet, xor } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
-import { compare } from "../compare.js"
-import type { Node, ScopedCompare } from "../node.js"
-import { subcompareBounds } from "./bounds.js"
+import { intersection } from "../intersection.js"
+import type { Node } from "../node.js"
 import type { Bounds } from "./bounds.js"
-import type { Subcomparison } from "./utils.js"
-import { createSubcomparison, initializeComparison } from "./utils.js"
+import type { ScopedAttributesIntersection } from "./utils.js"
+import {
+    AttributesIntersection,
+    createIntersectionForKey,
+    createNonOverlappingNever
+} from "./utils.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
 
@@ -26,32 +29,30 @@ type SubtypeAttributes =
           bounds?: undefined
       }
 
-export const compareObjects: ScopedCompare<ObjectAttributes> = (
-    l,
-    r,
-    scope
-) => {
-    const result = initializeComparison<ObjectAttributes>()
+export const objectIntersection: ScopedAttributesIntersection<
+    ObjectAttributes
+> = (l, r, scope) => {
     subcompareRequiredKeys(result, l, r)
     subcompareProps(result, l, r, scope)
-    subcompareSubtype(result, l, r)
+    subtypeIntersection(result, l, r)
     subcompareBounds(result, l, r)
-    subcompareElements(result, l, r, scope)
+    elementIntersection(result, l, r, scope)
     return result
 }
 
-const subcompareSubtype = createSubcomparison<ObjectAttributes, "subtype">(
+const subtypeIntersection = createIntersectionForKey<
+    ObjectAttributes,
     "subtype",
-    (l, r) => (l === r ? [null, l, null] : [l, null, r])
-)
+    { neverable: true }
+>("subtype", (l, r) => (l === r ? l : createNonOverlappingNever(l, r)))
 
-const subcompareElements = createSubcomparison<
+const elementIntersection = createIntersectionForKey<
     ObjectAttributes,
     "elements",
-    true
->("elements", (l, r, scope) => compare(l, r, scope))
+    { a: true; b: true }
+>("elements", (l, r, scope) => intersection(l, r, scope))
 
-const subcompareRequiredKeys = createSubcomparison<
+const subcompareRequiredKeys = createIntersectionForKey<
     ObjectAttributes,
     "requiredKeys"
 >("requiredKeys", (l, r) => {
@@ -68,35 +69,32 @@ const subcompareRequiredKeys = createSubcomparison<
     return result
 })
 
-const subcompareProps = createSubcomparison<ObjectAttributes, "props", true>(
+const subcompareProps = createIntersectionForKey<
+    ObjectAttributes,
     "props",
-    (lProps, rProps, scope) => {
-        const result: Subcomparison<dict<Node>> = [
-            {},
-            { ...lProps, ...rProps },
-            {}
-        ]
-        for (const k in result[1]) {
-            const l = lProps[k]
-            const r = rProps[k]
-            if (!l) {
-                result[2][k] = r
-            } else if (!r) {
-                result[0][k] = l
-            } else {
-                const propComparison = compare(l, r, scope)
-                if (propComparison[0]) {
-                    result[0][k] = propComparison[0]
-                }
-                if (propComparison[2]) {
-                    result[2][k] = propComparison[2]
-                }
-                if (propComparison[1]) {
-                    // TODO: Propagate never here
-                    result[1][k] = propComparison[1]
-                }
+    true
+>("props", (lProps, rProps, scope) => {
+    const result: Subcomparison<dict<Node>> = [{}, { ...lProps, ...rProps }, {}]
+    for (const k in result[1]) {
+        const l = lProps[k]
+        const r = rProps[k]
+        if (!l) {
+            result[2][k] = r
+        } else if (!r) {
+            result[0][k] = l
+        } else {
+            const propComparison = intersection(l, r, scope)
+            if (propComparison[0]) {
+                result[0][k] = propComparison[0]
+            }
+            if (propComparison[2]) {
+                result[2][k] = propComparison[2]
+            }
+            if (propComparison[1]) {
+                // TODO: Propagate never here
+                result[1][k] = propComparison[1]
             }
         }
-        return result
     }
-)
+    return result
+})

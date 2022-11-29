@@ -2,91 +2,72 @@ import type { ScopeRoot } from "../../scope.js"
 import type { defined, mutable, stringKeyOf } from "../../utils/generics.js"
 import { hasKeys } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
-import type { Comparison } from "../node.js"
+import type { Never } from "./degenerate.js"
+import { isNever } from "./degenerate.js"
 
-export type UnfinalizedComparison<attributes> = [
-    leftExclusive: mutable<attributes>,
-    intersection: mutable<attributes> | null,
-    rightExclusive: mutable<attributes>
-]
+type UnwrappedIntersectionForKey<
+    t,
+    config extends KeyIntersectionConfig,
+    result extends Never | t = config["neverable"] extends true ? Never | t : t
+> = config["scoped"] extends true
+    ? (l: t, r: t, scope: ScopeRoot) => result
+    : (l: t, r: t) => result
 
-export const initializeComparison = <attributes extends dict>() =>
-    [{}, {}, {}] as UnfinalizedComparison<attributes>
-
-export type Subcomparison<t> = [
-    leftExclusive: mutable<t>,
-    intersection: mutable<t>,
-    rightExclusive: mutable<t>
-]
-
-export const initializeSubcomparison = <t>() => [{}, {}, {}] as Subcomparison<t>
-
-type SubcompareArgs<
+type WrappedIntersectionForKey<
     attributes extends dict,
-    requiresScope extends boolean
-> = requiresScope extends true
-    ? [
-          result: UnfinalizedComparison<attributes>,
+    config extends KeyIntersectionConfig,
+    result extends Never | attributes = config["neverable"] extends true
+        ? Never | attributes
+        : attributes
+> = config["scoped"] extends true
+    ? (
+          result: attributes,
           l: attributes,
           r: attributes,
           scope: ScopeRoot
-      ]
-    : [result: UnfinalizedComparison<attributes>, l: attributes, r: attributes]
+      ) => result
+    : (result: attributes, l: attributes, r: attributes) => result
 
-type RawSubcompareArgs<
+type KeyIntersectionConfig = {
+    scoped?: boolean
+    neverable?: boolean
+}
+
+type CreateIntersectionForKey = <
     attributes extends dict,
-    k extends keyof attributes,
-    requiresScope extends boolean
-> = requiresScope extends true
-    ? [l: defined<attributes[k]>, r: defined<attributes[k]>, scope: ScopeRoot]
-    : [l: defined<attributes[k]>, r: defined<attributes[k]>, scope?: undefined]
+    k extends stringKeyOf<attributes>,
+    config extends KeyIntersectionConfig = {}
+>(
+    k: k,
+    f: UnwrappedIntersectionForKey<defined<attributes[k]>, config>
+) => WrappedIntersectionForKey<attributes, config>
 
-export const createSubcomparison =
-    <
-        attributes extends dict,
-        k extends stringKeyOf<attributes>,
-        requiresScope extends boolean = false
-    >(
-        k: k,
-        subcompareDefined: (
-            ...arg: RawSubcompareArgs<attributes, k, requiresScope>
-        ) => Comparison<attributes[k]>
-    ) =>
-    (...args: SubcompareArgs<attributes, requiresScope>) => {
-        const [result, l, r, scope] = args
-        if (l[k] === undefined) {
-            if (r[k] !== undefined) {
-                result[2][k] = r[k]
-                if (result[1] !== null) {
-                    result[1][k] = r[k]
-                }
-            }
-        } else if (r[k] === undefined) {
-            result[0][k] = l[k]
-            if (result[1] !== null) {
-                result[1][k] = l[k]
-            }
+export type AttributesIntersection<attributes extends dict> = (
+    l: attributes,
+    r: attributes
+) => attributes | Never
+
+export type ScopedAttributesIntersection<attributes extends dict> = (
+    l: attributes,
+    r: attributes,
+    scope: ScopeRoot
+) => attributes | Never
+
+export const createIntersectionForKey: CreateIntersectionForKey =
+    (k, f) => (result: mutable<dict>, l: dict, r: dict, scope?: ScopeRoot) => {
+        if (l[k] === undefined || r[k] === undefined) {
+            result[k] = l[k] ?? r[k]
         } else {
-            const subresult = subcompareDefined(
-                l[k] as any,
-                r[k] as any,
-                scope as any
-            )
-            if (subresult[0]) {
-                result[0][k] = subresult[0]
-            }
-            if (subresult[2]) {
-                result[2][k] = subresult[2]
-            }
-            if (result[1] !== null) {
-                if (subresult[1] === null) {
-                    result[1] = null
-                } else {
-                    result[1][k] = subresult[1]
-                }
+            const intersection = f(l[k] as any, r[k] as any, scope as any)
+            if (isNever(intersection)) {
+                return intersection as any
             }
         }
     }
 
 export const nullifyEmpty = <t>(result: t): t | null =>
     hasKeys(result) ? result : null
+
+export const createNonOverlappingNever = (l: unknown, r: unknown): Never => ({
+    never: `${JSON.stringify(l)} and ${JSON.stringify(r)} have no overlap`
+})

@@ -1,9 +1,9 @@
 import type { ScopeRoot } from "../../scope.js"
 import type { xor } from "../../utils/generics.js"
 import { hasType } from "../../utils/typeOf.js"
-import { compare } from "../compare.js"
+import { intersection } from "../intersection.js"
 import { keywords } from "../keywords.js"
-import type { Comparison, Node, TypeNode } from "../node.js"
+import type { Node, TypeNode } from "../node.js"
 
 export type DegenerateNode = xor<Alias, xor<Always, Never>>
 
@@ -22,26 +22,20 @@ export const isNever = (result: unknown): result is Never =>
 const getDegenerateKind = (node: Node) =>
     node.alias ? "alias" : node.always ?? (node.never ? "never" : undefined)
 
-export const compareDegenerate = (
+export const degenerateIntersection = (
     l: Node,
     r: Node,
     scope: ScopeRoot
-): Comparison<Node> => {
+): Node => {
     const lKind = getDegenerateKind(l) ?? "t"
     const rKind = getDegenerateKind(r) ?? "t"
     if (lKind === "alias" || rKind === "alias") {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)
-        return compare(l, r, scope)
+        return intersection(l, r, scope)
     }
-    const resultKeys = [
-        excludeDegenerateLookup[lKind][rKind],
-        degenerateIntersectionLookup[lKind][rKind],
-        excludeDegenerateLookup[rKind][lKind]
-    ]
-    return resultKeys.map((k) =>
-        k === "t" ? (lKind === "t" ? l : r) : keywords[k]
-    ) as Comparison<Node>
+    const resultKey = degenerateIntersectionLookup[lKind][rKind]
+    return resultKey === "t" ? (lKind === "t" ? l : r) : keywords[resultKey]
 }
 
 // TODO: Ensure can't resolve to another alias here
@@ -77,34 +71,6 @@ const degenerateIntersectionLookup = {
         // This should never happen as we should not be using these lookups
         // unless one of the nodes is degenerate
         t: "t"
-    }
-} as const satisfies DegenerateOperationLookups
-
-const excludeDegenerateLookup = {
-    any: {
-        never: "any",
-        any: "never",
-        unknown: "never",
-        t: "any"
-    },
-    never: {
-        never: "never",
-        any: "never",
-        unknown: "never",
-        t: "never"
-    },
-    unknown: {
-        never: "unknown",
-        any: "never",
-        unknown: "never",
-        t: "unknown"
-    },
-    t: {
-        never: "t",
-        any: "never",
-        unknown: "never",
-        // Should never happen
-        t: "never"
     }
 } as const satisfies DegenerateOperationLookups
 

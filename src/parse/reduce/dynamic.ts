@@ -1,4 +1,4 @@
-import { intersection } from "../../nodes/compare.js"
+import { intersection } from "../../nodes/intersection.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { Node } from "../../nodes/node.js"

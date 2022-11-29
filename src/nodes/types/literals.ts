@@ -1,5 +1,6 @@
 import type { defined } from "../../utils/generics.js"
-import type { Comparison } from "../node.js"
+import type { dict } from "../../utils/typeOf.js"
+import type { Never } from "./degenerate.js"
 
 type LiteralValue = string | number | boolean
 
@@ -12,18 +13,31 @@ type LiteralChecker<attributes extends LiteralableAttributes> = (
     attributes: attributes
 ) => boolean
 
-export const compareIfLiteral = <attributes extends LiteralableAttributes>(
+export const literalableIntersection = <
+    attributes extends LiteralableAttributes
+>(
     l: attributes,
     r: attributes,
     checker: LiteralChecker<attributes>
-): Comparison<attributes> | undefined => {
+): attributes | Never | undefined => {
     if (l.literal !== undefined) {
         if (r.literal !== undefined) {
-            return l.literal === r.literal ? [null, l, null] : [l, null, r]
+            return l.literal === r.literal ? l : { never: `${l} !== ${r}` }
         }
-        return checker(l.literal as any, r) ? [l, l, null] : [l, null, r]
+        return checker(l.literal as any, r)
+            ? l
+            : createUnsatisfyingLiteralNever(l.literal, r)
     }
     if (r.literal !== undefined) {
-        return checker(r.literal as any, l) ? [null, r, r] : [l, null, r]
+        return checker(r.literal as any, l)
+            ? r
+            : createUnsatisfyingLiteralNever(r.literal, l)
     }
 }
+
+const createUnsatisfyingLiteralNever = (
+    literal: LiteralValue,
+    attributes: dict
+): Never => ({
+    never: `${literal} does not satisfy ${JSON.stringify(attributes)}`
+})

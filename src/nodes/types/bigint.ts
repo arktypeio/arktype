@@ -1,13 +1,13 @@
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
 import type { Compare } from "../node.js"
-import { compareIfLiteral } from "./literals.js"
+import { literalableIntersection } from "./literals.js"
 
 export type BigintAttributes = {
     readonly literal: IntegerLiteral
 }
 
 export const compareBigints: Compare<BigintAttributes> = (l, r) =>
-    compareIfLiteral(l, r, checkBigint)!
+    literalableIntersection(l, r, checkBigint)!
 
 export const checkBigint = (
     data: IntegerLiteral,

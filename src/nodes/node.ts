@@ -26,13 +26,3 @@ export type TrivialTypes = {
     readonly null?: true
     readonly undefined?: true
 }
-
-export type Comparison<t> = [
-    leftExclusive: t | null,
-    intersection: t | null,
-    rightExclusive: t | null
-]
-
-export type Compare<t> = (l: t, r: t) => Comparison<t>
-
-export type ScopedCompare<t> = (l: t, r: t, scope: ScopeRoot) => Comparison<t>
