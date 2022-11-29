@@ -87,8 +87,7 @@ try {
     }
     console.log(`⏳ @arktype/test: Using ${testCmd} to run your tests...`)
     const runnerStart = Date.now()
-    // attestArgs[attestArgIndex] = join(process.cwd(), "test")
-    console.log(runTestsCmd, attestArgs.join(" "))
+
     shell(runTestsCmd, {
         stdio: "inherit",
         env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
