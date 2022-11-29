@@ -4,12 +4,12 @@ import type { Never } from "./degenerate.js"
 
 type LiteralValue = string | number | boolean
 
-type LiteralableAttributes = {
+export type LiteralableAttributes = {
     readonly literal?: LiteralValue | undefined
 }
 
-type LiteralChecker<attributes extends LiteralableAttributes> = (
-    value: defined<attributes["literal"]>,
+export type LiteralChecker<attributes extends LiteralableAttributes> = (
+    data: defined<attributes["literal"]>,
     attributes: attributes
 ) => boolean
 
@@ -22,7 +22,9 @@ export const literalableIntersection = <
 ): attributes | Never | undefined => {
     if (l.literal !== undefined) {
         if (r.literal !== undefined) {
-            return l.literal === r.literal ? l : { never: `${l} !== ${r}` }
+            return l.literal === r.literal
+                ? l
+                : createUnequalLiteralsNever(l.literal, r.literal)
         }
         return checker(l.literal as any, r)
             ? l
@@ -35,9 +37,16 @@ export const literalableIntersection = <
     }
 }
 
-const createUnsatisfyingLiteralNever = (
+export const createUnsatisfyingLiteralNever = (
     literal: LiteralValue,
     attributes: dict
 ): Never => ({
     never: `${literal} does not satisfy ${JSON.stringify(attributes)}`
+})
+
+export const createUnequalLiteralsNever = (
+    l: LiteralValue,
+    r: LiteralValue
+) => ({
+    never: `${l} !== ${r}`
 })

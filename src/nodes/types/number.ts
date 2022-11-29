@@ -1,9 +1,7 @@
 import type { xor } from "../../utils/generics.js"
 import type { Bounds } from "./bounds.js"
 import { boundsIntersection, checkBounds } from "./bounds.js"
-import { literalableIntersection } from "./literals.js"
-import type { AttributesIntersection } from "./utils.js"
-import { createIntersectionForKey } from "./utils.js"
+import { composeIntersection } from "./compose.js"
 
 export type NumberAttributes = xor<
     {
@@ -13,17 +11,6 @@ export type NumberAttributes = xor<
     { readonly literal?: number }
 >
 
-export const numberIntersection: AttributesIntersection<NumberAttributes> = (
-    l,
-    r
-) => {
-    const literalResult = literalableIntersection(l, r, checkNumber)
-    if (literalResult) {
-        return literalResult
-    }
-    return boundsIntersection(divisorIntersection({}, l, r), l, r)
-}
-
 export const checkNumber = (data: number, attributes: NumberAttributes) =>
     attributes.literal
         ? attributes.literal === data
@@ -32,11 +19,6 @@ export const checkNumber = (data: number, attributes: NumberAttributes) =>
 
 const leastCommonMultiple = (l: number, r: number) =>
     Math.abs((l * r) / greatestCommonDivisor(l, r))
-
-const divisorIntersection = createIntersectionForKey<
-    NumberAttributes,
-    "divisor"
->("divisor", leastCommonMultiple)
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
@@ -50,3 +32,9 @@ const greatestCommonDivisor = (l: number, r: number) => {
     }
     return greatestCommonDivisor
 }
+
+export const numberIntersection = composeIntersection<NumberAttributes>({
+    literal: checkNumber,
+    divisor: leastCommonMultiple,
+    bounds: boundsIntersection
+})

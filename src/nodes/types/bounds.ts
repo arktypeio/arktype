@@ -1,5 +1,3 @@
-import { createIntersectionForKey } from "./utils.js"
-
 export type Bounds = {
     readonly min?: Bound
     readonly max?: Bound
@@ -10,15 +8,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-type BoundableAttributes = {
-    bounds?: Bounds | undefined
-}
-
-export const boundsIntersection = createIntersectionForKey<
-    BoundableAttributes,
-    "bounds",
-    { neverable: true }
->("bounds", (l, r) => {
+export const boundsIntersection = (l: Bounds, r: Bounds) => {
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min
@@ -36,7 +26,7 @@ export const boundsIntersection = createIntersectionForKey<
                 : { min, max }
             : { min }
         : { max: max! }
-})
+}
 
 export const checkBounds = (data: number, bounds: Bounds) => {
     if (bounds.min) {

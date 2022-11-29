@@ -1,4 +1,4 @@
-import type { array } from "./typeOf.js"
+import type { array, dict } from "./typeOf.js"
 import { hasType } from "./typeOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
@@ -74,10 +74,13 @@ export type keysOf<o extends object> = (keyof o)[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 
-export const hasKey = <o extends object, k extends string>(
+export const hasKey = <o, k extends string>(
     o: o,
     k: k
-): o is o & { [_ in k]: {} | null } => ((o as any)[k] !== undefined) as any
+): o is Extract<o, { [_ in k]: {} }> => {
+    const valueAtKey = (o as any)?.[k]
+    return valueAtKey !== undefined && valueAtKey !== null
+}
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
@@ -124,6 +127,17 @@ export type RegexLiteral<expression extends string = string> = `/${expression}/`
 export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: undefined }>
     | evaluate<b & { [k in keyof a]?: undefined }>
+
+/**
+ * xoring objects can result in a type that can be assigned a value directly but
+ * never satisfied as an input to a function due to the way TS handles parameter
+ * contravariance. Applying this to an object union will allow all values that
+ * are valid in any of the xor'ed branches, loosening the type enough for it to
+ * be used as function input.
+ */
+export type propwiseUnion<objectUnion extends object> = evaluate<{
+    [k in stringKeyOf<objectUnion>]: objectUnion[k]
+}>
 
 export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends array ? t : [t]

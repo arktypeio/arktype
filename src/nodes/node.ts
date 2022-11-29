@@ -19,8 +19,6 @@ export type NonTrivialTypes = {
     readonly boolean?: true | BooleanAttributes
 }
 
-export type NonTrivialTypeName = keyof NonTrivialTypes
-
 export type TrivialTypes = {
     readonly symbol?: true
     readonly null?: true

@@ -1,15 +1,16 @@
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
-import type { Compare } from "../node.js"
-import { literalableIntersection } from "./literals.js"
+import { composeIntersection } from "./compose.js"
+import type { LiteralChecker } from "./literals.js"
 
 export type BigintAttributes = {
     readonly literal: IntegerLiteral
 }
 
-export const compareBigints: Compare<BigintAttributes> = (l, r) =>
-    literalableIntersection(l, r, checkBigint)!
-
-export const checkBigint = (
-    data: IntegerLiteral,
-    attributes: BigintAttributes
+export const checkBigint: LiteralChecker<BigintAttributes> = (
+    data,
+    attributes
 ) => attributes.literal === undefined || attributes.literal === data
+
+export const bigintIntersection = composeIntersection<BigintAttributes>({
+    literal: checkBigint
+})

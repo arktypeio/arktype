@@ -1,12 +1,14 @@
-import type { ScopeRoot } from "../../scope.js"
 import type { keySet, xor } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
 import { intersection } from "../intersection.js"
 import type { Node } from "../node.js"
 import type { Bounds } from "./bounds.js"
+import { boundsIntersection } from "./bounds.js"
+import type { KeyIntersection } from "./compose.js"
+import { composeIntersection } from "./compose.js"
 import type { Never } from "./degenerate.js"
-import type { ScopedAttributesIntersection } from "./utils.js"
-import { createIntersectionForKey, createNonOverlappingNever } from "./utils.js"
+import { isNever } from "./degenerate.js"
+import { createUnequalLiteralsNever } from "./literals.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
 
@@ -27,54 +29,60 @@ type SubtypeAttributes =
           bounds?: undefined
       }
 
-export const objectIntersection: ScopedAttributesIntersection<
-    ObjectAttributes
-> = (l, r, scope) => {
-    let result = subtypeIntersection({}, l, r)
-    result = requiredKeysIntersection(result, l, r)
-    result = propsIntersection(result, l, r, {
-        scope,
-        requiredKeys: result.requiredKeys ?? {}
-    })
-    result = subcompareBounds(result, l, r)
-
-    subcompareBounds(result, l, r)
-    elementIntersection(result, l, r, scope)
-    return result
-}
-
-const subtypeIntersection = createIntersectionForKey<
-    ObjectAttributes,
-    "subtype",
-    { neverable: true }
->("subtype", (l, r) => (l === r ? l : createNonOverlappingNever(l, r)))
-
-const elementIntersection = createIntersectionForKey<
-    ObjectAttributes,
-    "elements",
-    {
-        context: ScopeRoot
-        neverable: true
-    }
->("elements", (l, r, scope) => intersection(l, r, scope))
-
-const requiredKeysIntersection = createIntersectionForKey<
-    ObjectAttributes,
-    "requiredKeys"
->("requiredKeys", (l, r) => ({ ...l, ...r }))
-
-const propsIntersection = createIntersectionForKey<
-    ObjectAttributes,
-    "props",
-    {
-        context: { scope: ScopeRoot; requiredKeys: keySet }
-        neverable: true
-    }
->("props", (l, r, { scope, requiredKeys }) => {
+const propsIntersection: KeyIntersection<ObjectAttributes, "props"> = (
+    l,
+    r,
+    context
+) => {
     const result = { ...l, ...r }
     for (const k in result) {
         if (l[k] && r[k]) {
+            const propResult = intersection(l[k], r[k], context.scope)
+            if (
+                isNever(propResult) &&
+                (context.leftRoot.requiredKeys?.[k] ||
+                    context.rightRoot.requiredKeys?.[k])
+            ) {
+                return bubbleUpRequiredPropNever(k, propResult)
+            }
+            result[k] = propResult
         }
     }
     return result
+}
+
+const requiredKeysIntersection: KeyIntersection<
+    ObjectAttributes,
+    "requiredKeys"
+> = (l, r) => ({
+    ...l,
+    ...r
+})
+
+const subtypeIntersection: KeyIntersection<ObjectAttributes, "subtype"> = (
+    l,
+    r
+) => (l === r ? l : createUnequalLiteralsNever(l, r))
+
+const elementsIntersection: KeyIntersection<ObjectAttributes, "elements"> = (
+    l,
+    r,
+    context
+) => intersection(l, r, context.scope)
+
+export const objectIntersection = composeIntersection<ObjectAttributes>({
+    props: propsIntersection,
+    requiredKeys: requiredKeysIntersection,
+    subtype: subtypeIntersection,
+    elements: elementsIntersection,
+    bounds: boundsIntersection
+})
+
+export const bubbleUpRequiredPropNever = (
+    key: string,
+    propResult: Never
+): Never => ({
+    never: `required key '${key}' allows no values:\n${JSON.stringify(
+        propResult
+    )}`
 })

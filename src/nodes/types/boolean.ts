@@ -1,12 +1,15 @@
-import type { Compare } from "../node.js"
-import { literalableIntersection } from "./literals.js"
+import { composeIntersection } from "./compose.js"
+import type { LiteralChecker } from "./literals.js"
 
 export type BooleanAttributes = {
     readonly literal: boolean
 }
 
-export const compareBooleans: Compare<BooleanAttributes> = (l, r) =>
-    literalableIntersection(l, r, checkBoolean)!
+export const checkBoolean: LiteralChecker<BooleanAttributes> = (
+    data,
+    attributes
+) => attributes.literal === undefined || attributes.literal === data
 
-export const checkBoolean = (data: boolean, attributes: BooleanAttributes) =>
-    attributes.literal === undefined || attributes.literal === data
+export const booleanIntersection = composeIntersection<BooleanAttributes>({
+    literal: checkBoolean
+})
