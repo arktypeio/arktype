@@ -2,8 +2,10 @@ import type { defined, error } from "../../utils/generics.js"
 import type { astToString } from "../ast.js"
 import type { Scanner } from "./scanner.js"
 import type {
+    buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
+    buildUnpairableComparatorMessage,
     OpenRange,
     unclosedGroupMessage
 } from "./shared.js"
@@ -63,58 +65,65 @@ export namespace state {
               unscanned: unscanned
           }>
 
-    export type reduceOpenRange<
-        s extends StaticState,
-        limit extends number,
-        comparator extends Scanner.PairableComparator
-    > = from<{
-        root: undefined
-        branches: {
-            range: [limit, comparator]
-            "&": s["branches"]["&"]
-            "|": s["branches"]["|"]
-        }
-        groups: s["groups"]
-        unscanned: s["unscanned"]
-    }>
-
-    export type finalizeRange<
-        s extends StaticState,
-        leftLimit extends number,
-        leftComparator extends Scanner.PairableComparator,
-        rightComparator extends Scanner.PairableComparator,
-        rightLimit extends number,
-        unscanned extends string
-    > = state.from<{
-        root: [
-            leftLimit,
-            leftComparator,
-            [s["root"], rightComparator, rightLimit]
-        ]
-        branches: {
-            range: undefined
-            "&": s["branches"]["&"]
-            "|": s["branches"]["|"]
-        }
-        groups: s["groups"]
-        unscanned: unscanned
-    }>
-
-    export type reduceSingleBound<
+    export type reduceLeftBound<
         s extends StaticState,
         limit extends number,
         comparator extends Scanner.Comparator,
         unscanned extends string
-    > = state.from<{
-        root: [s["root"], comparator, limit]
-        branches: {
-            range: undefined
-            "&": s["branches"]["&"]
-            "|": s["branches"]["|"]
-        }
-        groups: s["groups"]
-        unscanned: unscanned
-    }>
+    > = comparator extends Scanner.PairableComparator
+        ? s["branches"]["range"] extends {}
+            ? error<
+                  buildMultipleLeftBoundsMessage<
+                      s["branches"]["range"][0],
+                      s["branches"]["range"][1],
+                      limit,
+                      comparator
+                  >
+              >
+            : from<{
+                  root: undefined
+                  branches: {
+                      range: [limit, comparator]
+                      "&": s["branches"]["&"]
+                      "|": s["branches"]["|"]
+                  }
+                  groups: s["groups"]
+                  unscanned: unscanned
+              }>
+        : error<buildUnpairableComparatorMessage<comparator>>
+
+    export type reduceRightBound<
+        s extends StaticState,
+        comparator extends Scanner.Comparator,
+        limit extends number,
+        unscanned extends string
+    > = s["branches"]["range"] extends {}
+        ? comparator extends Scanner.PairableComparator
+            ? state.from<{
+                  root: [
+                      s["branches"]["range"][0],
+                      s["branches"]["range"][1],
+                      [s["root"], comparator, limit]
+                  ]
+                  branches: {
+                      range: undefined
+                      "&": s["branches"]["&"]
+                      "|": s["branches"]["|"]
+                  }
+                  groups: s["groups"]
+                  unscanned: unscanned
+              }>
+            : error<buildUnpairableComparatorMessage<comparator>>
+        : state.from<{
+              root: [s["root"], comparator, limit]
+              branches: {
+                  range: undefined
+                  "&": s["branches"]["&"]
+                  "|": s["branches"]["|"]
+              }
+              groups: s["groups"]
+              unscanned: unscanned
+          }>
 
     type mergeToUnion<s extends StaticState> =
         s["branches"]["|"] extends undefined
@@ -141,7 +150,7 @@ export namespace state {
               root: mergeToUnion<s>
               unscanned: unscanned
           }>
-        : throws<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
+        : error<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
 
     export type reduceGroupOpen<
         s extends StaticState,
@@ -162,16 +171,9 @@ export namespace state {
                   branches: initialBranches
                   unscanned: Scanner.finalized
               }>
-        : throws<unclosedGroupMessage>
+        : error<unclosedGroupMessage>
 
-    export type throws<message extends string> = from<{
-        root: error<message>
-        groups: []
-        branches: initialBranches
-        unscanned: Scanner.finalized
-    }>
-
-    type openRangeError<range extends defined<BranchState["range"]>> = throws<
+    type openRangeError<range extends defined<BranchState["range"]>> = error<
         buildOpenRangeMessage<range[0], range[1]>
     >
 

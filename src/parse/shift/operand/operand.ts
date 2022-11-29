@@ -1,3 +1,4 @@
+import type { error } from "../../../utils/generics.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -27,4 +28,4 @@ export type parseOperand<
         : lookahead extends " "
         ? parseOperand<state.scanTo<s, unscanned>, alias>
         : parseUnenclosed<s, alias>
-    : state.throws<buildMissingOperandMessage<s>>
+    : error<buildMissingOperandMessage<s>>

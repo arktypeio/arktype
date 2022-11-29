@@ -11,25 +11,30 @@ describe("union/parse", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
         attest(binary.attributes).snap({
-            branches: ["?", "", "type", { number: {}, string: {} }]
+            branches: {
+                kind: "switch",
+                path: "",
+                key: "type",
+                cases: { number: {}, string: {} }
+            }
         })
     })
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.attributes).snap({
-            branches: [
-                "?",
-                "",
-                "value",
-                {
+            branches: {
+                kind: "switch",
+                path: "",
+                key: "value",
+                cases: {
                     "0": {},
                     false: { type: "boolean" },
                     null: { type: "null" },
                     undefined: { type: "undefined" },
                     "''": {}
                 }
-            ]
+            }
         })
     })
     describe("errors", () => {

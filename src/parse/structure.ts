@@ -1,10 +1,10 @@
-import type { Attributes } from "../../exports.js"
 import type { DynamicScope } from "../scope.js"
 import type { dictionary } from "../utils/dynamicTypes.js"
 import type { evaluate, keySet } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { throwInternalError } from "./errors.js"
+import type { Attributes } from "./reduce/attributes/attributes.js"
 import type { Scanner } from "./reduce/scanner.js"
 
 export const parseStructure = (

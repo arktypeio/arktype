@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { basename } from "node:path"
+import { basename, join } from "node:path"
 import { version, versions } from "node:process"
 import {
     fileName,
@@ -59,8 +59,10 @@ if (testCmd === "node") {
         )
     }
     runTestsCmd += `node --loader ts-node/esm --test `
-} else {
+} else if (!process.versions.deno) {
     runTestsCmd += `npx ${testCmd} `
+} else {
+    runTestsCmd += "deno test --no-check --allow-all ./test "
 }
 
 const attestArgs = [...process.argv.slice(0, cmdFlagIndex), "--precache"]
@@ -85,6 +87,8 @@ try {
     }
     console.log(`⏳ @arktype/test: Using ${testCmd} to run your tests...`)
     const runnerStart = Date.now()
+    // attestArgs[attestArgIndex] = join(process.cwd(), "test")
+    console.log(runTestsCmd, attestArgs.join(" "))
     shell(runTestsCmd, {
         stdio: "inherit",
         env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }

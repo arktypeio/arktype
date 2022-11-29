@@ -1,4 +1,4 @@
-import type { is } from "../../../utils/generics.js"
+import type { error } from "../../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
@@ -13,6 +13,7 @@ export const parseDivisor = (s: DynamicState) => {
     if (value === 0) {
         s.error(buildInvalidDivisorMessage(0))
     }
+    s.intersectionAtKey("divisor", `${value}`)
 }
 
 export type parseDivisor<
@@ -28,9 +29,9 @@ export type parseDivisor<
       > extends infer result
         ? result extends number
             ? result extends 0
-                ? state.throws<buildInvalidDivisorMessage<0>>
+                ? error<buildInvalidDivisorMessage<0>>
                 : state.setRoot<s, [s["root"], "%", result], nextUnscanned>
-            : state.throws<result & string>
+            : error<result & string>
         : never
     : never
 

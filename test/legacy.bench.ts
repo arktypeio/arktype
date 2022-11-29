@@ -7,7 +7,6 @@ suite("legacy", () => {
     }).median([119.0, "ns"])
 
     const deepStringDef = "string|".repeat(20).slice(0, -1)
-
     bench("parse deeep", () => {
         type.dynamic(deepStringDef)
     }).median([6.19, "us"])
