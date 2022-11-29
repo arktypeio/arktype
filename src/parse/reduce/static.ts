@@ -151,7 +151,7 @@ export namespace state {
               root: mergeToUnion<s>
               unscanned: unscanned
           }>
-        : error<buildUnmatchedGroupCloseMessage<s["unscanned"]>>
+        : error<buildUnmatchedGroupCloseMessage<unscanned>>
 
     export type reduceGroupOpen<
         s extends StaticState,

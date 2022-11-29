@@ -67,7 +67,7 @@ describe("scope", () => {
     })
     test("doesn't try to validate any in scope", () => {
         attest(type(["number", "a"], { scope: scope({ a: {} as any }) }).infer)
-            .typed as [number, unknown]
+            .typed as [number, never]
     })
     test("parent scope", () => {
         const s = scope(

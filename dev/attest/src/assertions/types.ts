@@ -1,13 +1,19 @@
 import type { narrow } from "../../../../src/utils/generics.js"
 import type { Serialized } from "../common.js"
 
-export type NextAssertions<AllowTypeAssertions extends boolean> =
-    AllowTypeAssertions extends true ? TypeAssertionsRoot : {}
-
 export type RootAssertions<
     T,
     AllowTypeAssertions extends boolean
 > = ValueAssertions<T, AllowTypeAssertions> & TypeAssertionsRoot
+
+export type ValueAssertions<
+    T,
+    AllowTypeAssertions extends boolean
+> = ComparableValueAssertion<T, AllowTypeAssertions> &
+    (T extends () => unknown ? FunctionAssertions<AllowTypeAssertions> : {})
+
+export type NextAssertions<AllowTypeAssertions extends boolean> =
+    AllowTypeAssertions extends true ? TypeAssertionsRoot : {}
 
 export type InferredAssertions<
     ArgsType extends [value: any, ...rest: any[]],
@@ -22,12 +28,6 @@ export type ChainContext = {
     allowRegex?: boolean
     defaultExpected?: unknown
 }
-
-export type ValueAssertions<
-    T,
-    AllowTypeAssertions extends boolean
-> = ComparableValueAssertion<T, AllowTypeAssertions> &
-    (T extends () => unknown ? FunctionAssertions<AllowTypeAssertions> : {})
 
 export type FunctionAssertions<AllowTypeAssertions extends boolean> = {
     throws: InferredAssertions<

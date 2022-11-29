@@ -26,7 +26,7 @@ describe("struct", () => {
     })
     test("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean[]" })
-        attest(o.infer).typed as { a?: string | undefined; b: boolean[] }
+        attest(o.infer).typed as { a?: string; b: boolean[] }
         attest(o.root).snap({
             object: {
                 props: {

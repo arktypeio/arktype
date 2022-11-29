@@ -45,7 +45,7 @@ type InferredScopeFn = <aliases, inferredParent extends dict = {}>(
 type DynamicScopeFn = <aliases extends dict>(
     aliases: aliases,
     config?: Config
-) => Scope<aliases>
+) => Scope<{ [name in keyof aliases]: unknown }>
 
 export type Scope<inferred extends dict> = {
     $: ScopeRoot<inferred>

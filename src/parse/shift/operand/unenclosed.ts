@@ -131,7 +131,7 @@ export const buildMissingRightOperandMessage = <
     unscanned: unscanned
 ): buildMissingRightOperandMessage<token, unscanned> =>
     `Token '${token}' requires a right operand${
-        unscanned ? "" : (` before '${unscanned}'` as any)
+        unscanned ? (` before '${unscanned}'` as any) : ""
     }`
 
 export const buildExpressionExpectedMessage = <unscanned extends string>(

@@ -5,6 +5,7 @@ import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { compile } from "./traverse/oldCompile.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import type { dict } from "./utils/typeOf.js"
@@ -26,7 +27,11 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
 export type InferredTypeFn = <definition, scope extends dict = {}>(
     definition: validateDefinition<definition, scope>,
     options?: Config<scope>
-) => Type<inferDefinition<definition, scope, {}>>
+) => isTopType<definition> extends true
+    ? never
+    : definition extends validateDefinition<definition, scope>
+    ? Type<inferDefinition<definition, scope, {}>>
+    : never
 
 type DynamicTypeFn = (definition: unknown, options?: Config<dict>) => Type
 

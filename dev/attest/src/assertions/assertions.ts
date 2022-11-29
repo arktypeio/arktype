@@ -15,11 +15,7 @@ import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
 } from "../writeSnapshot.js"
-import type {
-    ExternalSnapshotArgs,
-    RootAssertions,
-    ValueAssertions
-} from "./types.js"
+import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
 import {
     assertEqualOrMatching,
     callAssertedFunction,

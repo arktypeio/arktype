@@ -7,7 +7,7 @@ import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiteral
 describe("parse unenclosed", () => {
     describe("identifier", () => {
         test("keyword", () => {
-            attest(type("string").infer).typed as "string"
+            attest(type("string").infer).typed as string
         })
         test("alias", () => {
             const a = type("a", { scope: scope({ a: "string" }) })

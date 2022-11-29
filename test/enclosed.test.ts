@@ -7,9 +7,6 @@ describe("parse enclosed", () => {
     test("with spaces", () => {
         attest(type("'this has spaces'").infer).typed as "this has spaces"
     })
-    test("isolated", () => {
-        attest(type('"alone"').infer).typed as '"alone"'
-    })
     test("with neighbors", () => {
         attest(type("'foo'|/.*/[]").infer).typed as "foo" | string[]
     })
@@ -36,10 +33,10 @@ describe("parse enclosed", () => {
         })
     })
     test("single-quoted", () => {
-        attest(type("'hello'").infer).typed as "'hello'"
+        attest(type("'hello'").infer).typed as "hello"
     })
     test("double-quoted", () => {
-        attest(type('"goodbye"').infer).typed as '"goodbye"'
+        attest(type('"goodbye"').infer).typed as "goodbye"
     })
     test("regex literal", () => {
         attest(type("/.*/").infer).typed as string
@@ -50,12 +47,12 @@ describe("parse enclosed", () => {
         )
     })
     test("mixed quote types", () => {
-        attest(type(`"'single-quoted'"`).infer).typed as "\"'single-quoted'\""
+        attest(type(`"'single-quoted'"`).infer).typed as "'single-quoted'"
 
-        attest(type(`'"double-quoted"'`).infer).typed as "'\"double-quoted\"'"
+        attest(type(`'"double-quoted"'`).infer).typed as '"double-quoted"'
     })
     test("ignores enclosed tokens", () => {
-        attest(type("'yes|no|maybe'").infer).typed as "'yes|no|maybe'"
+        attest(type("'yes|no|maybe'").infer).typed as "yes|no|maybe"
     })
     test("mix of enclosed and unenclosed tokens", () => {
         attest(type("'yes|no'|'true|false'").infer).typed as

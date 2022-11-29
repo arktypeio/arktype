@@ -44,17 +44,17 @@ export type validateDefinition<
     def,
     scope extends dict
 > = isTopType<def> extends true
-    ? error<
-          buildUninferableDefinitionMessage<
-              isAny<def> extends true ? "any" : "unknown"
-          >
+    ? buildUninferableDefinitionMessage<
+          isAny<def> extends true ? "any" : "unknown"
       >
     : def extends []
     ? def
     : def extends string
     ? validateString<def, scope>
     : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<typeOf<def>>
+    ? buildBadDefinitionTypeMessage<
+          def extends Function ? "function" : typeOf<def>
+      >
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], scope>
       }>
