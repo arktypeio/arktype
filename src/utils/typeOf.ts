@@ -90,3 +90,8 @@ export const objectSubtypeOf = (data: object): ObjectSubtypeName =>
         : typeof data === "function"
         ? "function"
         : "dict"
+
+export const hasObjectSubtype = <name extends ObjectSubtypeName>(
+    data: object,
+    name: name
+): data is ObjectSubtypes[name] => objectSubtypeOf(data) === name
