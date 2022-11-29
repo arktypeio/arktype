@@ -9,8 +9,8 @@ type UnwrappedIntersectionForKey<
     t,
     config extends KeyIntersectionConfig,
     result extends Never | t = config["neverable"] extends true ? Never | t : t
-> = config["scoped"] extends true
-    ? (l: t, r: t, scope: ScopeRoot) => result
+> = "context" extends keyof config
+    ? (l: t, r: t, context: config["context"]) => result
     : (l: t, r: t) => result
 
 type WrappedIntersectionForKey<
@@ -19,17 +19,17 @@ type WrappedIntersectionForKey<
     result extends Never | attributes = config["neverable"] extends true
         ? Never | attributes
         : attributes
-> = config["scoped"] extends true
+> = "context" extends keyof config
     ? (
           result: attributes,
           l: attributes,
           r: attributes,
-          scope: ScopeRoot
+          context: config["context"]
       ) => result
     : (result: attributes, l: attributes, r: attributes) => result
 
 type KeyIntersectionConfig = {
-    scoped?: boolean
+    context?: unknown
     neverable?: boolean
 }
 
@@ -54,11 +54,11 @@ export type ScopedAttributesIntersection<attributes extends dict> = (
 ) => attributes | Never
 
 export const createIntersectionForKey: CreateIntersectionForKey =
-    (k, f) => (result: mutable<dict>, l: dict, r: dict, scope?: ScopeRoot) => {
+    (k, f) => (result: mutable<dict>, l: any, r: any, context?: any) => {
         if (l[k] === undefined || r[k] === undefined) {
             result[k] = l[k] ?? r[k]
         } else {
-            const intersection = f(l[k] as any, r[k] as any, scope as any)
+            const intersection = f(l[k], r[k], context)
             if (isNever(intersection)) {
                 return intersection as any
             }

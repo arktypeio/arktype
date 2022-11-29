@@ -1,14 +1,12 @@
+import type { ScopeRoot } from "../../scope.js"
 import type { keySet, xor } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
 import { intersection } from "../intersection.js"
 import type { Node } from "../node.js"
 import type { Bounds } from "./bounds.js"
+import type { Never } from "./degenerate.js"
 import type { ScopedAttributesIntersection } from "./utils.js"
-import {
-    AttributesIntersection,
-    createIntersectionForKey,
-    createNonOverlappingNever
-} from "./utils.js"
+import { createIntersectionForKey, createNonOverlappingNever } from "./utils.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
 
@@ -32,9 +30,14 @@ type SubtypeAttributes =
 export const objectIntersection: ScopedAttributesIntersection<
     ObjectAttributes
 > = (l, r, scope) => {
-    subcompareRequiredKeys(result, l, r)
-    subcompareProps(result, l, r, scope)
-    subtypeIntersection(result, l, r)
+    let result = subtypeIntersection({}, l, r)
+    result = requiredKeysIntersection(result, l, r)
+    result = propsIntersection(result, l, r, {
+        scope,
+        requiredKeys: result.requiredKeys ?? {}
+    })
+    result = subcompareBounds(result, l, r)
+
     subcompareBounds(result, l, r)
     elementIntersection(result, l, r, scope)
     return result
@@ -49,51 +52,28 @@ const subtypeIntersection = createIntersectionForKey<
 const elementIntersection = createIntersectionForKey<
     ObjectAttributes,
     "elements",
-    { a: true; b: true }
+    {
+        context: ScopeRoot
+        neverable: true
+    }
 >("elements", (l, r, scope) => intersection(l, r, scope))
 
-const subcompareRequiredKeys = createIntersectionForKey<
+const requiredKeysIntersection = createIntersectionForKey<
     ObjectAttributes,
     "requiredKeys"
->("requiredKeys", (l, r) => {
-    const result: Subcomparison<keySet> = [{}, { ...l, ...r }, {}]
-    for (const k in result[1]) {
-        if (l[k]) {
-            if (!r[k]) {
-                result[0][k] = true
-            }
-        } else if (r[k]) {
-            result[2][k] = true
-        }
-    }
-    return result
-})
+>("requiredKeys", (l, r) => ({ ...l, ...r }))
 
-const subcompareProps = createIntersectionForKey<
+const propsIntersection = createIntersectionForKey<
     ObjectAttributes,
     "props",
-    true
->("props", (lProps, rProps, scope) => {
-    const result: Subcomparison<dict<Node>> = [{}, { ...lProps, ...rProps }, {}]
-    for (const k in result[1]) {
-        const l = lProps[k]
-        const r = rProps[k]
-        if (!l) {
-            result[2][k] = r
-        } else if (!r) {
-            result[0][k] = l
-        } else {
-            const propComparison = intersection(l, r, scope)
-            if (propComparison[0]) {
-                result[0][k] = propComparison[0]
-            }
-            if (propComparison[2]) {
-                result[2][k] = propComparison[2]
-            }
-            if (propComparison[1]) {
-                // TODO: Propagate never here
-                result[1][k] = propComparison[1]
-            }
+    {
+        context: { scope: ScopeRoot; requiredKeys: keySet }
+        neverable: true
+    }
+>("props", (l, r, { scope, requiredKeys }) => {
+    const result = { ...l, ...r }
+    for (const k in result) {
+        if (l[k] && r[k]) {
         }
     }
     return result
