@@ -54,14 +54,14 @@ export const createSubcomparison =
     ) =>
     (...args: SubcompareArgs<attributes, requiresScope>) => {
         const [result, l, r, scope] = args
-        if (l === undefined) {
-            if (r !== undefined) {
+        if (l[k] === undefined) {
+            if (r[k] !== undefined) {
                 result[2][k] = r[k]
                 if (result[1] !== null) {
                     result[1][k] = r[k]
                 }
             }
-        } else if (r === undefined) {
+        } else if (r[k] === undefined) {
             result[0][k] = l[k]
             if (result[1] !== null) {
                 result[1][k] = l[k]

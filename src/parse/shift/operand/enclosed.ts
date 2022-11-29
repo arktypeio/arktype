@@ -16,19 +16,17 @@ export type SingleQuotedStringLiteral<Text extends string = string> =
 
 export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing], {
-        appendTo: enclosing,
-        inclusive: true,
         onInputEnd: throwUnterminatedEnclosed
     })
-    s.setRoot(
-        enclosing === "/"
-            ? {
-                  string: {
-                      regex: [token as RegexLiteral]
+    s.setRoot({
+        string:
+            // Shift the scanner one additional time for the second enclosing token
+            s.scanner.shift() === "/"
+                ? {
+                      regex: token as RegexLiteral
                   }
-              }
-            : { string: { literal: token.slice(1, -1) } }
-    )
+                : { literal: token }
+    })
 }
 
 export type parseEnclosed<

@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../../scope.js"
 import type { xor } from "../../utils/generics.js"
 import { hasType } from "../../utils/typeOf.js"
-import { compareTypes, intersection } from "../intersection.js"
+import { compare } from "../compare.js"
 import { keywords } from "../keywords.js"
 import type { Comparison, Node, TypeNode } from "../node.js"
 
@@ -17,7 +17,7 @@ export const isDegenerate = (node: Node): node is DegenerateNode =>
     !!(node.alias || node.never || node.always)
 
 export const isNever = (result: unknown): result is Never =>
-    hasType(result, "object") && !!result.never
+    hasType(result, "object", "dict") && !!result.never
 
 const getDegenerateKind = (node: Node) =>
     node.alias ? "alias" : node.always ?? (node.never ? "never" : undefined)
@@ -32,7 +32,7 @@ export const compareDegenerate = (
     if (lKind === "alias" || rKind === "alias") {
         l = resolveIfAlias(l, scope)
         r = resolveIfAlias(r, scope)
-        return compareDegenerate(l, r, scope)
+        return compare(l, r, scope)
     }
     const resultKeys = [
         excludeDegenerateLookup[lKind][rKind],

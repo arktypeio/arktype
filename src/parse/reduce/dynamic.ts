@@ -1,12 +1,12 @@
-import { intersection } from "../../nodes/intersection.js"
+import { intersection } from "../../nodes/compare.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { Node } from "../../nodes/node.js"
-import { isNever } from "../../nodes/types/degenerate.js"
 import { union } from "../../nodes/union.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf, listFrom } from "../../utils/generics.js"
+import { hasType } from "../../utils/typeOf.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -42,14 +42,14 @@ export class DynamicState {
     }
 
     ejectRootIfLimit() {
-        this.assertHasRoot()
-        // if (this.root?.value) {
-        //     const value = this.ejectRoot().value!
-        //     if (typeof value === "number") {
-        //         return value
-        //     }
-        //     this.error(buildUnboundableMessage(`${value}`))
-        // }
+        const maybeNumberRoot = this.root?.number
+        if (
+            hasType(maybeNumberRoot, "object", "dict") &&
+            maybeNumberRoot.literal !== undefined
+        ) {
+            this.root = undefined
+            return maybeNumberRoot.literal
+        }
     }
 
     ejectRangeIfOpen() {
@@ -82,8 +82,7 @@ export class DynamicState {
     }
 
     intersect(node: Node) {
-        this.assertHasRoot()
-        this.root = intersection(this.root!, node, this.scope)
+        this.root = intersection(this.ejectRoot(), node, this.scope)
     }
 
     private ejectRoot() {
@@ -128,11 +127,12 @@ export class DynamicState {
     finalizeBranches() {
         this.assertRangeUnset()
         if (this.branches["|"]) {
-            this.pushBranch("|")
-            this.mergeUnion()
+            this.pushRootToBranch("|")
+            this.setRoot(union(this.branches["|"], this.scope))
+            delete this.branches["|"]
         } else if (this.branches["&"]) {
             this.setRoot(
-                intersection(this.ejectRoot(), this.branches["&"], this.scope)
+                intersection(this.branches["&"], this.ejectRoot(), this.scope)
             )
         }
     }
@@ -148,16 +148,15 @@ export class DynamicState {
         this.branches = topBranchState
     }
 
-    pushBranch(token: Scanner.BranchToken) {
+    pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
         this.branches["&"] = this.branches["&"]
             ? intersection(this.branches["&"], this.ejectRoot(), this.scope)
             : this.ejectRoot()
         if (token === "|") {
             this.branches["|"] ??= []
-            const branches = listFrom(this.branches["&"])
+            this.branches["|"].push(this.branches["&"])
             delete this.branches["&"]
-            this.branches["|"].push(...branches)
         }
     }
 
@@ -170,13 +169,6 @@ export class DynamicState {
                 )
             )
         }
-    }
-
-    private mergeUnion() {
-        if (!this.branches["|"]) {
-            return
-        }
-        this.setRoot(union(this.branches["|"], this.scope))
     }
 
     reduceGroupOpen() {

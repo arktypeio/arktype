@@ -4,11 +4,17 @@ export type Types = {
     bigint: bigint
     boolean: boolean
     number: number
-    object: dict
+    object: object
     string: string
     symbol: symbol
     undefined: undefined
     null: null
+}
+
+export type ObjectSubtypes = {
+    array: array
+    function: Function
+    dict: dict
 }
 
 export type TypeName = evaluate<keyof Types>
@@ -46,42 +52,41 @@ export const typeOf = <data>(data: data) => {
     ) as typeOf<data>
 }
 
-export const hasType = <name extends TypeName>(
+export const hasType = <
+    typeName extends TypeName,
+    subtypeName extends typeName extends "object"
+        ? ObjectSubtypeName | undefined
+        : undefined = undefined
+>(
     data: unknown,
-    name: name
-): data is Types[name] => typeOf(data) === name
+    name: typeName,
+    subtype?: subtypeName
+): data is subtypeName extends ObjectSubtypeName
+    ? ObjectSubtypes[subtypeName]
+    : Types[typeName] =>
+    typeOf(data) === name &&
+    (!subtype || objectSubtypeOf(data as object) === subtype)
 
 export const typeIn = <name extends TypeName>(
     data: unknown,
     names: Record<name, unknown>
 ): data is Types[name] => typeOf(data) in names
 
-export type Subtypes = {
-    array: array
-    function: Function
-    none: unknown
-}
-
 export type array<of = unknown> = readonly of[]
 
 export type dict<of = unknown> = { readonly [k in string]: of }
 
-export type SubtypeName = evaluate<keyof Subtypes>
+export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
 
-export type subtypeOf<data> = data extends array
+export type objectSubtypeOf<data extends object> = data extends array
     ? "array"
     : data extends Function
     ? "function"
-    : "none"
+    : "dict"
 
-export const subtypeOf = (data: unknown) =>
+export const objectSubtypeOf = (data: object): ObjectSubtypeName =>
     Array.isArray(data)
         ? "array"
         : typeof data === "function"
         ? "function"
-        : "none"
-
-export const hasSubtype = <data, name extends SubtypeName>(
-    data: data,
-    name: name
-): data is Extract<data, Subtypes[name]> => subtypeOf(data) === name
+        : "dict"

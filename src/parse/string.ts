@@ -1,7 +1,7 @@
 import { morph } from "../nodes/morph.js"
 import type { ScopeRoot } from "../scope.js"
-import type { dict } from "../utils/typeOf.js"
 import type { error, stringKeyOf } from "../utils/generics.js"
+import type { dict } from "../utils/typeOf.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { Scanner } from "./reduce/scanner.js"

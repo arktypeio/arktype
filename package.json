@@ -74,7 +74,7 @@
     "c8": {
         "checkCoverage": true,
         "lines": 98,
-        "src": "src",
+        "src": "./src",
         "extension": ".ts",
         "reporter": "lcovonly"
     },

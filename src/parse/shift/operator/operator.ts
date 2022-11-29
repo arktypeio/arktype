@@ -16,7 +16,7 @@ export const parseOperator = (s: DynamicState): void => {
             ? s.morphRoot("array")
             : s.error(incompleteArrayTokenMessage)
         : isKeyOf(lookahead, Scanner.branchTokens)
-        ? s.pushBranch(lookahead)
+        ? s.pushRootToBranch(lookahead)
         : lookahead === ")"
         ? s.finalizeGroup()
         : isKeyOf(lookahead, Scanner.comparatorStartChars)

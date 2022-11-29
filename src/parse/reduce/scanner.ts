@@ -23,15 +23,11 @@ export class Scanner<Lookahead extends string = string> {
         condition: Scanner.UntilCondition,
         opts?: Scanner.ShiftUntilOptions
     ): string {
-        let shifted = opts?.appendTo ?? ""
+        let shifted = ""
         while (!condition(this, shifted)) {
             if (this.lookahead === "") {
                 return opts?.onInputEnd?.(this, shifted) ?? shifted
             }
-            shifted += this.shift()
-        }
-
-        if (opts?.inclusive) {
             shifted += this.shift()
         }
         return shifted
@@ -63,8 +59,6 @@ export namespace Scanner {
 
     export type ShiftUntilOptions = {
         onInputEnd?: OnInputEndFn
-        inclusive?: boolean
-        appendTo?: string
     }
 
     export const lookaheadIsTerminator: UntilCondition = (scanner: Scanner) =>
