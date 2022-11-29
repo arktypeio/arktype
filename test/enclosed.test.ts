@@ -18,19 +18,19 @@ describe("parse enclosed", () => {
             test("regex", () => {
                 // @ts-expect-error
                 attest(() => type("/.*")).throwsAndHasTypeError(
-                    buildUnterminatedEnclosedMessage("/.*", "/")
+                    buildUnterminatedEnclosedMessage(".*", "/")
                 )
             })
             test("single-quote", () => {
                 // @ts-expect-error
                 attest(() => type("'.*")).throwsAndHasTypeError(
-                    buildUnterminatedEnclosedMessage("'.*", "'")
+                    buildUnterminatedEnclosedMessage(".*", "'")
                 )
             })
             test("double-quote", () => {
                 // @ts-expect-error
                 attest(() => type('".*')).throwsAndHasTypeError(
-                    buildUnterminatedEnclosedMessage('".*', '"')
+                    buildUnterminatedEnclosedMessage(".*", '"')
                 )
             })
         })

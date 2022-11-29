@@ -1,4 +1,5 @@
 import type { xor } from "../../utils/generics.js"
+import { getRegex } from "../../utils/regexCache.js"
 import { hasType } from "../../utils/typeOf.js"
 import type { Compare } from "../node.js"
 import type { Bounds } from "./bounds.js"
@@ -29,8 +30,6 @@ export const compareStrings: Compare<StringAttributes> = (l, r) => {
     return comparison
 }
 
-const regexCache: Record<string, RegExp> = {}
-
 export const checkString = (data: string, attributes: StringAttributes) => {
     if (attributes.literal) {
         return attributes.literal === data
@@ -40,10 +39,7 @@ export const checkString = (data: string, attributes: StringAttributes) => {
     }
     if (attributes.regex) {
         for (const source of attributes.regex) {
-            if (!regexCache[source]) {
-                regexCache[source] = new RegExp(source)
-            }
-            if (!regexCache[source].test(data)) {
+            if (!getRegex(source).test(data)) {
                 return false
             }
         }

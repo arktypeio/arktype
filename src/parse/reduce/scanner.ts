@@ -19,15 +19,9 @@ export class Scanner<Lookahead extends string = string> {
         return (this.chars[this.i] ?? "") as Lookahead
     }
 
-    shiftUntil(
-        condition: Scanner.UntilCondition,
-        opts?: Scanner.ShiftUntilOptions
-    ): string {
+    shiftUntil(condition: Scanner.UntilCondition): string {
         let shifted = ""
-        while (!condition(this, shifted)) {
-            if (this.lookahead === "") {
-                return opts?.onInputEnd?.(this, shifted) ?? shifted
-            }
+        while (!condition(this, shifted) && this.lookahead) {
             shifted += this.shift()
         }
         return shifted
