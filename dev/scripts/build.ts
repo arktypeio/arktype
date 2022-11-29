@@ -139,7 +139,9 @@ const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
 }
 
 const buildDeno = () => {
-    const sources = extractSnippets(inFiles, getProject())
+    const sources = extractSnippets(inFiles, getProject(), {
+        universalTransforms: { imports: false }
+    })
     for (const [source, snippetsByLabel] of Object.entries(sources)) {
         sources[source].all.text = denoTransformations(snippetsByLabel.all.text)
     }

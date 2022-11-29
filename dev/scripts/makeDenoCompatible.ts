@@ -1,10 +1,5 @@
 import { fromPackageRoot, readJson } from "../runtime/fs.js"
 
-/**
- * make a deps.ts file (writeFileSync, deps.ts, the contents
- * within it so that everything can just be resolved at deps.ts which makes it easier to replace all the
- * dependencies)
- */
 // eslint-disable-next-line max-lines-per-function
 export const denoTransformations = (contents: string) => {
     let transformedContents = contents.replaceAll(".js", ".ts")
@@ -27,12 +22,12 @@ export const denoTransformations = (contents: string) => {
          *  and at the top level otherwise I will have to make some thing that finds the path to the exports.ts
          *  file
          */
-        if (moduleImport === "arktype") {
-            transformedContents = transformedContents.replaceAll(
-                moduleImport,
-                "../exports.ts"
-            )
-        }
+        // if (moduleImport === "arktype") {
+        //     transformedContents = transformedContents.replaceAll(
+        //         moduleImport,
+        //         "../exports.ts"
+        //     )
+        // }
         const nodeImports = contents.matchAll(/node:\w+/g) ?? []
         for (const matchedExpressions of nodeImports) {
             const matchedExpression = matchedExpressions[0]
