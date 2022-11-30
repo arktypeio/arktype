@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import { renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
@@ -24,8 +23,8 @@ const isProd = () => process.argv.includes("--prod") || !!process.env.CI
 const inFileFilter: WalkOptions = {
     include: (path) =>
         tsFileMatcher.test(path) &&
-        /(^src|test|dev\/attest|dev\/runtime)\/?/.test(path),
-    exclude: (path) => /dev\/attest\/test/.test(path),
+        /(^src|test|dev\/attest|dev\/runtime)\/?/.test(path) &&
+        !/dev\/attest\/test/.test(path),
     ignoreDirsMatching: /node_modules|dist|docgen/
 }
 
@@ -82,29 +81,33 @@ const swc = (kind: "mjs" | "cjs") => {
         cmd += " exports.ts"
         shell(cmd)
     } else {
-        const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
-
-        shell(
-            `pnpm swc ${cjsAddon} ./exports.ts -d dist/${kind}/ --source-maps inline`
-        )
-
-        const dirs = {
-            src: ["src"],
-            test: ["test"],
-            dev: ["dev/attest", "dev/runtime"]
-        }
-        for (const [baseDir, dirsToInclude] of Object.entries(dirs)) {
-            shell(
-                `pnpm swc ${cjsAddon} ${dirsToInclude.join(
-                    " "
-                )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
-            )
-        }
+        buildWithTests(kind, kindOutDir)
     }
     buildExportsTs(kind)
     writeJson(join(kindOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"
     })
+}
+
+const buildWithTests = (kind: string, kindOutDir: string) => {
+    const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
+
+    shell(
+        `pnpm swc ${cjsAddon} ./exports.ts -d dist/${kind}/ --source-maps inline`
+    )
+
+    const dirs = {
+        src: ["src"],
+        test: ["test"],
+        dev: ["dev/attest", "dev/runtime"]
+    }
+    for (const [baseDir, dirsToInclude] of Object.entries(dirs)) {
+        shell(
+            `pnpm swc ${cjsAddon} ${dirsToInclude.join(
+                " "
+            )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
+        )
+    }
 }
 
 const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {

@@ -59,10 +59,10 @@ if (testCmd === "node") {
         )
     }
     runTestsCmd += `node --loader ts-node/esm --test `
-} else if (!process.versions.deno) {
-    runTestsCmd += `npx ${testCmd} `
-} else {
+} else if (process.versions.deno) {
     runTestsCmd += "deno test --no-check --allow-all ./test "
+} else {
+    runTestsCmd += `npx ${testCmd} `
 }
 
 const attestArgs = [...process.argv.slice(0, cmdFlagIndex), "--precache"]
