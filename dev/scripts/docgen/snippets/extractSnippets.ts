@@ -1,6 +1,8 @@
 import type { Project } from "ts-morph"
 import { readFile } from "../../../runtime/exports.js"
 import { tsFileMatcher } from "../../common.js"
+import type { DocGenSnippetsConfig } from "../main.js"
+import { defaultConfig } from "../main.js"
 import type { ExtractionToken } from "./snipTokens.js"
 import {
     extractionTokens,
@@ -26,12 +28,13 @@ export type ExtractSnippetsArgs = {
 
 export const extractSnippets = (
     sourcePaths: string[],
-    project: Project
+    project: Project,
+    config: DocGenSnippetsConfig = defaultConfig.snippets
 ): SnippetsByPath => {
     const snippetsByPath: SnippetsByPath = {}
     for (const path of sourcePaths) {
         const fileText = tsFileMatcher.test(path)
-            ? transformTsFileContents(path, project)
+            ? transformTsFileContents(path, project, config)
             : readFile(path)
         snippetsByPath[path] = extractSnippetsFromFile(path, fileText)
     }

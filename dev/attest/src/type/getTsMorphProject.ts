@@ -1,5 +1,5 @@
 import type { ProjectOptions } from "ts-morph"
-import { Project } from "ts-morph"
+import { Project, ResolutionHosts } from "ts-morph"
 import { getAtTestConfig } from "../common.js"
 
 export type ForceGetTsProjectOptions = {
@@ -18,6 +18,9 @@ export const forceCreateTsMorphProject = ({
             incremental: false
         },
         skipAddingFilesFromTsConfig: !addFiles
+    }
+    if (process.versions.deno) {
+        options.resolutionHost = ResolutionHosts.deno
     }
     if (config.tsconfig) {
         options.tsConfigFilePath = config.tsconfig

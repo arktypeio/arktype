@@ -57,13 +57,14 @@ export const mapDir = (
         }
         const sourceMapPath = join(target, ".docgenSources.json")
         rmSync(target, { recursive: true, force: true })
+        const isBuildProcess = process.argv.some((arg) => /build.ts/.test(arg))
         for (const [
             path,
             contents,
             source
         ] of fileContentsByRelativeDestination) {
             sourceMapData[path] = source
-            const resolvedPath = join(target, path)
+            const resolvedPath = join(target, isBuildProcess ? source : path)
             ensureDir(dirname(resolvedPath))
             writeFileSync(resolvedPath, contents)
         }
