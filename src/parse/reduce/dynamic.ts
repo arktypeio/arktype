@@ -5,7 +5,7 @@ import type { Node } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
-import { isKeyOf, listFrom } from "../../utils/generics.js"
+import { isKeyOf } from "../../utils/generics.js"
 import { hasType } from "../../utils/typeOf.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
@@ -20,7 +20,7 @@ import {
 type BranchState = {
     range?: OpenRange
     "&"?: Node
-    "|"?: Node[]
+    "|"?: Node
 }
 
 export class DynamicState {
@@ -128,8 +128,7 @@ export class DynamicState {
         this.assertRangeUnset()
         if (this.branches["|"]) {
             this.pushRootToBranch("|")
-            this.setRoot(union(this.branches["|"], this.scope))
-            delete this.branches["|"]
+            this.setRoot(this.branches["|"])
         } else if (this.branches["&"]) {
             this.setRoot(
                 intersection(this.branches["&"], this.ejectRoot(), this.scope)
@@ -154,8 +153,9 @@ export class DynamicState {
             ? intersection(this.branches["&"], this.ejectRoot(), this.scope)
             : this.ejectRoot()
         if (token === "|") {
-            this.branches["|"] ??= []
-            this.branches["|"].push(this.branches["&"])
+            this.branches["|"] = this.branches["|"]
+                ? union(this.branches["|"], this.branches["&"], this.scope)
+                : this.branches["&"]
             delete this.branches["&"]
         }
     }

@@ -77,7 +77,7 @@ export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 export const hasKey = <o, k extends string>(
     o: o,
     k: k
-): o is Extract<o, { [_ in k]: {} }> => {
+): o is o & { [_ in k]: {} } => {
     const valueAtKey = (o as any)?.[k]
     return valueAtKey !== undefined && valueAtKey !== null
 }

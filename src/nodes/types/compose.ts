@@ -6,18 +6,13 @@ import type {
 } from "../../utils/generics.js"
 import { hasKeys } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
+import type { AttributesIntersection } from "../intersection.js"
 import type { Never } from "./degenerate.js"
 import { isNever } from "./degenerate.js"
 import type { LiteralChecker } from "./literals.js"
 import { literalableIntersection } from "./literals.js"
 
-type AttributesIntersection<attributes extends dict> = (
-    l: attributes,
-    r: attributes,
-    scope: ScopeRoot
-) => attributes | Never
-
-export type IntersectionContext<attributes extends dict> = {
+export type IntersectionContext<attributes> = {
     leftRoot: attributes
     rightRoot: attributes
     scope: ScopeRoot

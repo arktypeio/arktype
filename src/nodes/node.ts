@@ -8,18 +8,23 @@ import type { StringAttributes } from "./types/string.js"
 
 export type Node = xor<TypeNode, DegenerateNode>
 
-export type TypeNode = NonTrivialTypes & TrivialTypes
-
-export type NonTrivialTypes = {
+export type TypeNode = {
     readonly object?: true | ObjectAttributes | readonly ObjectAttributes[]
     readonly string?: true | StringAttributes | readonly StringAttributes[]
     readonly number?: true | NumberAttributes | readonly NumberAttributes[]
     readonly bigint?: true | BigintAttributes | readonly BigintAttributes[]
     readonly boolean?: true | BooleanAttributes
-}
-
-export type TrivialTypes = {
     readonly symbol?: true
     readonly null?: true
     readonly undefined?: true
 }
+
+export type AttributesByType = {
+    object: ObjectAttributes
+    string: StringAttributes
+    number: NumberAttributes
+    bigint: BigintAttributes
+    boolean: BooleanAttributes
+}
+
+export type ExtendableTypeName = keyof AttributesByType
