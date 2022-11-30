@@ -1,6 +1,4 @@
 import type { defined } from "../../utils/generics.js"
-import type { dict } from "../../utils/typeOf.js"
-import type { Never } from "./degenerate.js"
 
 type LiteralValue = string | number | boolean
 
@@ -19,34 +17,14 @@ export const literalableIntersection = <
     l: attributes,
     r: attributes,
     checker: LiteralChecker<attributes>
-): attributes | Never | undefined => {
+): attributes | "never" | undefined => {
     if (l.literal !== undefined) {
         if (r.literal !== undefined) {
-            return l.literal === r.literal
-                ? l
-                : createUnequalLiteralsNever(l.literal, r.literal)
+            return l.literal === r.literal ? l : "never"
         }
-        return checker(l.literal as any, r)
-            ? l
-            : createUnsatisfyingLiteralNever(l.literal, r)
+        return checker(l.literal as any, r) ? l : "never"
     }
     if (r.literal !== undefined) {
-        return checker(r.literal as any, l)
-            ? r
-            : createUnsatisfyingLiteralNever(r.literal, l)
+        return checker(r.literal as any, l) ? r : "never"
     }
 }
-
-export const createUnsatisfyingLiteralNever = (
-    literal: LiteralValue,
-    attributes: dict
-): Never => ({
-    never: `${literal} does not satisfy ${JSON.stringify(attributes)}`
-})
-
-export const createUnequalLiteralsNever = (
-    l: LiteralValue,
-    r: LiteralValue
-) => ({
-    never: `${l} !== ${r}`
-})

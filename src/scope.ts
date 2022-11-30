@@ -10,7 +10,7 @@ import { deepFreeze } from "./utils/freeze.js"
 import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import type { dict } from "./utils/typeOf.js"
+import type { dict, TypeName } from "./utils/typeOf.js"
 
 const rawScope = (aliases: dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
@@ -27,6 +27,8 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
 >
 
 let rootScope: Scope<{}> | undefined
+
+export type RootScope = ScopeRoot<{}>
 
 export const getRootScope = () => {
     rootScope ??= scope({}) as any
@@ -57,7 +59,7 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dict = dict> {
-    attributes = {} as Record<keyof inferred, Node>
+    attributes = {} as { [k in keyof inferred]: Node }
     private cache: mutable<dict<Node>> = {}
 
     constructor(
@@ -84,7 +86,7 @@ export class ScopeRoot<inferred extends dict = dict> {
         return root
     }
 
-    resolveReference(name: stringKeyOf<inferred>): Node {
+    typeOfAlias(name: stringKeyOf<inferred>): TypeName {
         if (name in this.cache) {
             return this.cache[name]
         }

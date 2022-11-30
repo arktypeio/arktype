@@ -1,6 +1,6 @@
 import type { Keyword } from "../../../nodes/keywords.js"
 import { keywords } from "../../../nodes/keywords.js"
-import type { Node } from "../../../nodes/node.js"
+import type { NameNode, Node } from "../../../nodes/node.js"
 import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
@@ -52,7 +52,7 @@ export const maybeParseIdentifier = (
     isKeyOf(token, keywords)
         ? keywords[token]
         : scope.aliases[token] || scope.config.scope?.$.aliases[token]
-        ? { alias: token }
+        ? (token as NameNode<{}>)
         : undefined
 
 const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {

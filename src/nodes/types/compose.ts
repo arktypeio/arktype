@@ -7,8 +7,6 @@ import type {
 import { hasKeys } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
 import type { AttributesIntersection } from "../intersection.js"
-import type { Never } from "./degenerate.js"
-import { isNever } from "./degenerate.js"
 import type { LiteralChecker } from "./literals.js"
 import { literalableIntersection } from "./literals.js"
 
@@ -22,7 +20,7 @@ type ContextualIntersection<t, context> = (
     l: t,
     r: t,
     context: context
-) => t | Never
+) => t | "never"
 
 export type KeyIntersection<
     attributes extends dict,
@@ -42,7 +40,7 @@ export const composeIntersection =
     <attributes extends dict>(
         reducers: KeyIntersections<attributes>
     ): AttributesIntersection<attributes> =>
-    (l, r, scope): attributes | Never => {
+    (l, r, scope): attributes | "never" => {
         if (reducers.literal) {
             const result = literalableIntersection(
                 l,
@@ -62,8 +60,8 @@ export const composeIntersection =
         for (const k in result) {
             if (l[k] && r[k]) {
                 const keyResult = reducers[k](l[k] as any, r[k] as any, context)
-                if (isNever(keyResult)) {
-                    return keyResult
+                if (keyResult === "never") {
+                    return "never"
                 }
                 result[k] = keyResult as any
             }
@@ -73,7 +71,3 @@ export const composeIntersection =
 
 export const nullifyEmpty = <t>(result: t): t | null =>
     hasKeys(result) ? result : null
-
-export const createNonOverlappingNever = (l: unknown, r: unknown): Never => ({
-    never: `${JSON.stringify(l)} and ${JSON.stringify(r)} have no overlap`
-})

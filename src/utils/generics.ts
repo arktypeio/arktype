@@ -144,4 +144,4 @@ export const listFrom = <t>(data: t) =>
 
 export type autocompleteString<suggestions extends string> =
     | suggestions
-    | (string & Record<never, never>)
+    | (string & {})

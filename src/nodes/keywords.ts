@@ -8,22 +8,20 @@ const defineKeywords = <definitions extends { [keyword in Keyword]: Node }>(
 
 export const keywords = defineKeywords({
     // TS keywords
-    any: { always: "any" },
-    bigint: { bigint: true },
-    boolean: { boolean: true },
+    any: "any",
+    bigint: "bigint",
+    boolean: "boolean",
     false: { boolean: { literal: false } },
-    never: {
-        never: "explicitly typed as never"
-    },
-    null: { null: true },
-    number: { number: true },
-    object: { object: true },
-    string: { string: true },
-    symbol: { symbol: true },
+    never: "never",
+    null: "null",
+    number: "number",
+    object: "object",
+    string: "string",
+    symbol: "symbol",
     true: { boolean: { literal: true } },
-    undefined: { undefined: true },
-    unknown: { always: "unknown" },
-    void: { undefined: true },
+    undefined: "undefined",
+    unknown: "unknown",
+    void: "undefined",
     // JS Object types
     Function: { object: { subtype: "function" } },
     // Regex

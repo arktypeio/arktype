@@ -6,9 +6,6 @@ import type { Bounds } from "./bounds.js"
 import { boundsIntersection } from "./bounds.js"
 import type { KeyIntersection } from "./compose.js"
 import { composeIntersection } from "./compose.js"
-import type { Never } from "./degenerate.js"
-import { isNever } from "./degenerate.js"
-import { createUnequalLiteralsNever } from "./literals.js"
 
 export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
 
@@ -39,11 +36,11 @@ const propsIntersection: KeyIntersection<ObjectAttributes, "props"> = (
         if (l[k] && r[k]) {
             const propResult = intersection(l[k], r[k], context.scope)
             if (
-                isNever(propResult) &&
+                propResult === "never" &&
                 (context.leftRoot.requiredKeys?.[k] ||
                     context.rightRoot.requiredKeys?.[k])
             ) {
-                return bubbleUpRequiredPropNever(k, propResult)
+                return "never"
             }
             result[k] = propResult
         }
@@ -62,7 +59,7 @@ const requiredKeysIntersection: KeyIntersection<
 const subtypeIntersection: KeyIntersection<ObjectAttributes, "subtype"> = (
     l,
     r
-) => (l === r ? l : createUnequalLiteralsNever(l, r))
+) => (l === r ? l : "never")
 
 const elementsIntersection: KeyIntersection<ObjectAttributes, "elements"> = (
     l,
@@ -76,13 +73,4 @@ export const objectIntersection = composeIntersection<ObjectAttributes>({
     subtype: subtypeIntersection,
     elements: elementsIntersection,
     bounds: boundsIntersection
-})
-
-export const bubbleUpRequiredPropNever = (
-    key: string,
-    propResult: Never
-): Never => ({
-    never: `required key '${key}' allows no values:\n${JSON.stringify(
-        propResult
-    )}`
 })
