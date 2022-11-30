@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { mutable, propwiseUnion } from "../utils/generics.js"
+import type { mutable } from "../utils/generics.js"
 import { hasKey, hasKeys, listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
 import type {
