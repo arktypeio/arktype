@@ -10,18 +10,13 @@ export type Node<alias extends string = never> =
     | autocompleteString<TypeName | "any" | "unknown" | "never" | alias>
     | TypeNode<alias>
 
-export type TypeNode<alias extends string = never> =
-    | {
-          readonly [typeName in TypeName]?: typeName extends ExtendableTypeName
-              ?
-                    | true
-                    | string
-                    | AttributesByType[typeName]
-                    | BranchesOfType<typeName>
-              : typeName extends boolean
-              ? true | BooleanAttributes
-              : true
-      }
+export type TypeNode<alias extends string = never> = {
+    readonly [typeName in TypeName]?: typeName extends ExtendableTypeName
+        ? true | string | AttributesByType[typeName] | BranchesOfType<typeName>
+        : typeName extends boolean
+        ? true | BooleanAttributes
+        : true
+}
 
 export type AttributesByType = {
     object: ObjectAttributes
@@ -32,7 +27,6 @@ export type AttributesByType = {
 }
 
 export type ExtendableTypeName = keyof AttributesByType
-
 export type BranchesOfType<typeName extends ExtendableTypeName> = readonly (
     | string
     | AttributesByType[typeName]

@@ -28,6 +28,7 @@ export class Scanner<Lookahead extends string = string> {
     }
 
     shiftUntilNextTerminator() {
+        this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
         return this.shiftUntil(Scanner.lookaheadIsTerminator)
     }
 
@@ -57,6 +58,10 @@ export namespace Scanner {
 
     export const lookaheadIsTerminator: UntilCondition = (scanner: Scanner) =>
         scanner.lookahead in terminatingChars
+
+    export const lookaheadIsNotWhitespace: UntilCondition = (
+        scanner: Scanner
+    ) => scanner.lookahead !== " "
 
     export const comparatorStartChars = {
         "<": true,
@@ -145,17 +150,47 @@ export namespace Scanner {
     export type shiftUntil<
         Unscanned extends string,
         Terminator extends string,
+        InvertTerminatorComparison extends boolean = false,
         Scanned extends string = ""
     > = Unscanned extends Scanner.shift<infer Lookahead, infer NextUnscanned>
-        ? Lookahead extends Terminator
+        ? DoneShifting<
+              Lookahead,
+              Terminator,
+              InvertTerminatorComparison
+          > extends true
             ? [Scanned, Unscanned]
-            : shiftUntil<NextUnscanned, Terminator, `${Scanned}${Lookahead}`>
+            : shiftUntil<
+                  NextUnscanned,
+                  Terminator,
+                  InvertTerminatorComparison,
+                  `${Scanned}${Lookahead}`
+              >
         : [Scanned, ""]
 
+    type DoneShifting<
+        Lookahead extends string,
+        Terminator extends string,
+        InvertTerminatorComparison extends boolean
+    > = InvertTerminatorComparison extends true
+        ? Terminator extends Lookahead
+            ? false
+            : true
+        : Lookahead extends Terminator
+        ? true
+        : false
+
     export type shiftUntilNextTerminator<Unscanned extends string> = shiftUntil<
-        Unscanned,
+        skipWhitespace<Unscanned>,
         TerminatingChar
     >
+
+    type Z = skipWhitespace<"   foo">
+
+    export type skipWhitespace<Unscanned extends string> = shiftUntil<
+        Unscanned,
+        " ",
+        true
+    >[1]
 
     export type shiftResult<
         scanned extends string,

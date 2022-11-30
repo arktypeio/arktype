@@ -36,6 +36,9 @@ describe("bound", () => {
                 attest(type("-3.23<=number<4.654").infer).typed as number
             })
         })
+        test("whitespace following comparator", () => {
+            attest(type("number > 3").infer).typed as number
+        })
         describe("errors", () => {
             test("single equals", () => {
                 // @ts-expect-error

@@ -15,8 +15,11 @@ describe("union/discriminate", () => {
             object: [
                 "wet/boolean/literal",
                 {
-                    true: { alias: "ocean" },
-                    false: { alias: "sky" }
+                    true: [
+                        { object: { props: { someProp: "boolean" } } },
+                        "ocean"
+                    ],
+                    false: "sky"
                 }
             ]
         } as any)

@@ -2,14 +2,10 @@ import type { xor } from "../../utils/generics.js"
 import { keywords } from "../keywords.js"
 import type { Node } from "../node.js"
 
-export type DegenerateNode = xor<Always, Never>
+export type DegenerateTypeName = "never" | "unknown" | "any"
 
-export type Never = { readonly never: string }
-
-export type Always = { readonly always: "unknown" | "any" }
-
-export const isDegenerate = (node: Node): node is DegenerateNode =>
-    node.never !== undefined || node.always !== undefined
+export const isDegenerate = (node: Node): node is DegenerateTypeName =>
+    node === "never" || node === "unknown" || node === "any"
 
 export const isNever = (result: any): result is Never =>
     result?.never !== undefined

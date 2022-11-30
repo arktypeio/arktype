@@ -15,6 +15,9 @@ describe("divisibility", () => {
                 })
                 attest(divisibleByTwo.infer).typed as number
             })
+            test("whitespace after modulo", () => {
+                attest(type("number % 5").infer).typed as number
+            })
         })
         describe("invalid", () => {
             test("non-integer divisor", () => {

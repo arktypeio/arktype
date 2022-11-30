@@ -19,10 +19,10 @@ export const parseDivisor = (s: DynamicState) => {
 export type parseDivisor<
     s extends StaticState,
     unscanned extends string
-> = Scanner.shiftUntil<
-    unscanned,
-    Scanner.TerminatingChar
-> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
+> = Scanner.shiftUntilNextTerminator<unscanned> extends Scanner.shiftResult<
+    infer scanned,
+    infer nextUnscanned
+>
     ? tryParseWellFormedInteger<
           scanned,
           buildInvalidDivisorMessage<scanned>
