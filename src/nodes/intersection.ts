@@ -1,15 +1,17 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
 import type { mutable } from "../utils/generics.js"
-import { hasKeys, listFrom } from "../utils/generics.js"
+import { hasKeys, isKeyOf, listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
 import type {
     AttributesByType,
+    AttributesNode,
     BranchesOfType,
     ExtendableTypeName,
     Node,
-    TypeNode
+    ReferenceNode
 } from "./node.js"
+import { BuiltinReference, builtinReferences } from "./node.js"
 import { bigintIntersection } from "./types/bigint.js"
 import { booleanIntersection } from "./types/boolean.js"
 import { numberIntersection } from "./types/number.js"
@@ -63,12 +65,44 @@ export const branchesIntersection = <TypeName extends ExtendableTypeName>(
         )
     )
 
+const nameIntersection = (
+    name: ReferenceNode<dict>,
+    node: Node,
+    scope: ScopeRoot
+) => {
+    if (typeof node === "string") {
+    }
+}
+
+const twoWayNameIntersection = (
+    l: ReferenceNode<dict>,
+    r: ReferenceNode<dict>,
+    scope: ScopeRoot
+) => {
+    if (l === "never" || r === "never") {
+        return "never"
+    }
+    if (!isKeyOf(l, builtinReferences)) {
+        return intersection(
+            scope.resolve(l),
+            isKeyOf(r, builtinReferences) ? r : scope.resolve(r),
+            scope
+        )
+    }
+    if (!isKeyOf(r, builtinReferences)) {
+        return intersection(l, scope.resolve(r), scope)
+    }
+    if (l === "any" || r === "any") {
+        return
+    }
+}
+
 const typeIntersection = (
-    leftRoot: TypeNode,
-    rightRoot: TypeNode,
+    rightRoot: AttributesNode,
+    leftRoot: AttributesNode,
     scope: ScopeRoot
 ): Node => {
-    const result: mutable<TypeNode> = {}
+    const result: mutable<AttributesNode> = {}
     let typeName: TypeName
     for (typeName in leftRoot) {
         const l = leftRoot[typeName]
