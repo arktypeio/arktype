@@ -4,90 +4,90 @@ import type { mutable } from "../utils/generics.js"
 import { hasKeys, listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
 import type { IntersectableKey } from "./intersection.js"
-import { intersectionsByType } from "./intersection.js"
+import { intersection, intersectionsByType } from "./intersection.js"
 import type { Node, TypeNode } from "./node.js"
 import type { Alias } from "./types/degenerate.js"
 
-export const union = (branches: Node[], scope: ScopeRoot): Node => {
-    const result: mutable<TypeNode> = {}
-    for (const unresolved of branches) {
-        // TODO: Ensure resolves to non-alias
-        const branch = (
-            unresolved.alias ? scope.resolve(unresolved.alias) : unresolved
-        ) as Exclude<Node, Alias>
-        if (branch.never) {
-            continue
-        }
-        if (branch.always) {
-            return branch.always === "any"
-                ? branch
-                : branches.find((branch) => branch.always === "any") ?? branch
-        }
-        let typeName: TypeName
-        for (typeName in branch as TypeNode) {
-            const existing = result[typeName]
-            if (!existing) {
-                result[typeName] = branch[typeName] as any
-            } else if (existing === true) {
-                continue
-            } else if (branch[typeName] === true) {
+export const union = (l: Node, r: Node, scope: ScopeRoot) => {
+    // TODO: Ensure resolves to non-alias
+    if (l.alias) {
+        l = scope.resolve(l.alias)
+    }
+    if (r.alias) {
+        r = scope.resolve(r.alias)
+    }
+    if (l.never) {
+        return r
+    }
+    if (r.never) {
+        return l
+    }
+    if (l.always) {
+        return l.always === "any" ? l : r.always === "any" ? r : l
+    }
+    if (r.always) {
+        return r
+    }
+    const result = { ...l, ...r } as mutable<TypeNode>
+    let typeName: TypeName
+    for (typeName in result) {
+        const lValue = l[typeName]
+        const rValue = r[typeName]
+        if (lValue && rValue) {
+            if (lValue === true || rValue === true) {
                 result[typeName] = true
             } else {
-                let updatedAttributes = listFrom(existing) as dict[]
-                const candidateAttributes = listFrom(branch[typeName]) as dict[]
-                for (const candidate of candidateAttributes) {
-                    if (
-                        updatedAttributes.some((existingAttributes) =>
-                            isAttributesSubtype(
-                                typeName as IntersectableKey,
-                                candidate,
-                                existingAttributes,
-                                scope
-                            )
+                // TODO: Cartesian product
+                const lBranches: dict[] = [...listFrom(lValue)]
+                const rBranches = listFrom(rValue) as readonly dict[]
+                for (const lBranch of lBranches) {
+                    rBranches = rBranches.filter((rBranch) => {
+                        const comparison = compareAttributes(
+                            typeName as IntersectableKey,
+                            lBranch,
+                            rBranch,
+                            scope
                         )
-                    ) {
-                        continue
+                        if (comparison === ">") {
+                        }
+                    })
+
+                    for (const rBranch of rBranches) {
+                        const comparison = compareAttributes(
+                            typeName as IntersectableKey,
+                            lBranch,
+                            rBranch,
+                            scope
+                        )
+                        if (comparison === "<=") {
+                            distinctBranches.push(rBranch)
+                        }
                     }
-                    updatedAttributes = updatedAttributes.filter(
-                        (existingAttributes) =>
-                            !isAttributesSubtype(
-                                typeName as IntersectableKey,
-                                existingAttributes,
-                                candidate,
-                                scope
-                            )
-                    )
-                    updatedAttributes.push(candidate)
                 }
-                result[typeName] =
-                    updatedAttributes.length === 1
-                        ? updatedAttributes[0]
-                        : (updatedAttributes as any)
             }
-        }
-    }
-    if (!hasKeys(result)) {
-        return {
-            never: `no union members are satisfiable:\n${JSON.stringify(
-                branches
-            )}`
+            result[typeName] =
+                updatedAttributes.length === 1
+                    ? updatedAttributes[0]
+                    : (updatedAttributes as any)
         }
     }
     return result
 }
 
-//** Returns true if l attributes are a subtype of r attributes for typeName */
-const isAttributesSubtype = (
+// Returns, in order of precedence:
+//  1.  "<=" if l extends r
+//  2.  ">" if r extends  (but is not equivalent to) l
+//  3.  null
+const compareAttributes = (
     typeName: IntersectableKey,
     l: dict,
     r: dict,
     scope: ScopeRoot
-) =>
-    deepEquals(
-        l,
-        intersectionsByType[typeName as IntersectableKey](
-            l as any,
-            r as any,
-            scope
-        )
-    )
+): "<=" | ">" | null => {
+    const intersected = intersectionsByType[typeName](l as any, r as any, scope)
+    return deepEquals(l, intersected)
+        ? "<="
+        : deepEquals(r, intersected)
+        ? ">"
+        : null
+}
