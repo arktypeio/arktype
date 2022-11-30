@@ -1,49 +1,29 @@
-import type { ScopeRoot } from "../../scope.js"
 import type { xor } from "../../utils/generics.js"
-import { hasType } from "../../utils/typeOf.js"
-import { intersection } from "../intersection.js"
 import { keywords } from "../keywords.js"
-import type { Node, TypeNode } from "../node.js"
+import type { Node } from "../node.js"
 
-export type DegenerateNode = xor<Alias, xor<Always, Never>>
+export type DegenerateNode = xor<Always, Never>
 
 export type Never = { readonly never: string }
 
 export type Always = { readonly always: "unknown" | "any" }
 
-export type Alias = { readonly alias: string }
-
 export const isDegenerate = (node: Node): node is DegenerateNode =>
-    !!(node.alias || node.never || node.always)
+    node.never !== undefined || node.always !== undefined
 
-export const isNever = (result: unknown): result is Never =>
-    hasType(result, "object", "dict") && !!result.never
+export const isNever = (result: any): result is Never =>
+    result?.never !== undefined
 
 const getDegenerateKind = (node: Node) =>
-    node.alias ? "alias" : node.always ?? (node.never ? "never" : undefined)
+    node.always ?? (node.never ? "never" : undefined)
 
-export const degenerateIntersection = (
-    l: Node,
-    r: Node,
-    scope: ScopeRoot
-): Node => {
-    const lKind = getDegenerateKind(l) ?? "t"
-    const rKind = getDegenerateKind(r) ?? "t"
-    if (lKind === "alias" || rKind === "alias") {
-        l = resolveIfAlias(l, scope)
-        r = resolveIfAlias(r, scope)
-        return intersection(l, r, scope)
-    }
-    const resultKey = degenerateIntersectionLookup[lKind][rKind]
-    return resultKey === "t" ? (lKind === "t" ? l : r) : keywords[resultKey]
+export const degenerateIntersection = (l: Node, r: Node): Node => {
+    const resultKey =
+        degenerateIntersectionLookup[getDegenerateKind(l) ?? "t"][
+            getDegenerateKind(r) ?? "t"
+        ]
+    return resultKey === "t" ? (isDegenerate(l) ? r : l) : keywords[resultKey]
 }
-
-// TODO: Ensure can't resolve to another alias here
-export const resolveIfAlias = (node: Node, scope: ScopeRoot) =>
-    (node.alias ? scope.resolve(node.alias) : node) as xor<
-        TypeNode,
-        xor<Always, Never>
-    >
 
 const degenerateIntersectionLookup = {
     any: {

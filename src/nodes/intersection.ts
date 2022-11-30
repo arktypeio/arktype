@@ -5,6 +5,7 @@ import { hasKey, hasKeys, listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
 import type {
     AttributesByType,
+    BranchesOfType,
     ExtendableTypeName,
     Node,
     TypeNode
@@ -23,7 +24,7 @@ import { stringIntersection } from "./types/string.js"
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
     isDegenerate(l) || isDegenerate(r)
-        ? degenerateIntersection(l, r, scope)
+        ? degenerateIntersection(l, r)
         : typeIntersection(l, r, scope)
 
 export type AttributesIntersection<attributes extends dict> = (
@@ -47,8 +48,8 @@ const intersectionsByType: {
 // TODO: Types uppercase when generic in function, lowercase when generic in type?
 export const branchesIntersection = <TypeName extends ExtendableTypeName>(
     typeName: TypeName,
-    lBranches: readonly AttributesByType[TypeName][],
-    rBranches: readonly AttributesByType[TypeName][],
+    lBranches: BranchesOfType<TypeName>,
+    rBranches: BranchesOfType<TypeName>,
     scope: ScopeRoot
 ) =>
     lBranches.flatMap((l) =>

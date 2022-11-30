@@ -40,11 +40,15 @@ export type KeyIntersections<attributes extends dict> = {
 
 export const composeIntersection =
     <attributes extends dict>(
-        byKey: KeyIntersections<attributes>
+        reducers: KeyIntersections<attributes>
     ): AttributesIntersection<attributes> =>
     (l, r, scope): attributes | Never => {
-        if (byKey.literal) {
-            const result = literalableIntersection(l, r, byKey.literal as any)
+        if (reducers.literal) {
+            const result = literalableIntersection(
+                l,
+                r,
+                reducers.literal as any
+            )
             if (result) {
                 return result
             }
@@ -57,7 +61,7 @@ export const composeIntersection =
         }
         for (const k in result) {
             if (l[k] && r[k]) {
-                const keyResult = byKey[k](l[k] as any, r[k] as any, context)
+                const keyResult = reducers[k](l[k] as any, r[k] as any, context)
                 if (isNever(keyResult)) {
                     return keyResult
                 }

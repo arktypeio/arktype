@@ -2,19 +2,19 @@
 // import type { record } from "../utils/dataTypes.js"
 // import { throwInternalError } from "../utils/errors.js"
 // import { pathToSegments, pushKey } from "../utils/paths.js"
-import type { Node } from "../nodes/node.js"
-import type { ScopeRoot } from "../scope.js"
+// import type { Node } from "../nodes/node.js"
+// import type { ScopeRoot } from "../scope.js"
 
-export const compile = (attributes: Node, scope: ScopeRoot): Node => {
-    return attributes
-    // const compiled = discriminate(attributes, scope)
-    // if (attributes.props) {
-    //     for (const k in attributes.props) {
-    //         compile(attributes.props[k], scope)
-    //     }
-    // }
-    // return compiled
-}
+// export const compile = (attributes: Node, scope: ScopeRoot): Node => {
+//     return attributes
+// const compiled = discriminate(attributes, scope)
+// if (attributes.props) {
+//     for (const k in attributes.props) {
+//         compile(attributes.props[k], scope)
+//     }
+// }
+// return compiled
+// /}
 
 // export const queryPath = (attributes: TypeNode, path: string) => {
 //     // const segments = pathToSegments(path)

@@ -141,3 +141,7 @@ export type propwiseUnion<objectUnion extends object> = evaluate<{
 
 export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends array ? t : [t]
+
+export type autocompleteString<suggestions extends string> =
+    | suggestions
+    | (string & Record<never, never>)

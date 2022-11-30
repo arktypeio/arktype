@@ -2,7 +2,6 @@ import type { Node } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
-import { compile } from "./traverse/oldCompile.js"
 import { Type } from "./type.js"
 import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -71,6 +70,7 @@ export class ScopeRoot<inferred extends dict = dict> {
     }
 
     resolve(name: stringKeyOf<inferred>): Node {
+        // TODO: Ensure can't resolve to another alias here
         if (name in this.cache) {
             return this.cache[name]
         }
@@ -81,7 +81,20 @@ export class ScopeRoot<inferred extends dict = dict> {
         }
         const root = parseDefinition(this.aliases[name], this)
         this.cache[name] = deepFreeze(root)
-        this.attributes[name] = deepFreeze(compile(root, this))
+        return root
+    }
+
+    resolveReference(name: stringKeyOf<inferred>): Node {
+        if (name in this.cache) {
+            return this.cache[name]
+        }
+        if (!(name in this.aliases)) {
+            return throwInternalError(
+                `Unexpectedly failed to resolve alias '${name}'`
+            )
+        }
+        const root = parseDefinition(this.aliases[name], this)
+        this.cache[name] = deepFreeze(root)
         return root
     }
 

@@ -1,23 +1,27 @@
-import type { xor } from "../utils/generics.js"
+import type { autocompleteString } from "../utils/generics.js"
+import type { TypeName } from "../utils/typeOf.js"
 import type { BigintAttributes } from "./types/bigint.js"
 import type { BooleanAttributes } from "./types/boolean.js"
-import type { DegenerateNode } from "./types/degenerate.js"
 import type { NumberAttributes } from "./types/number.js"
 import type { ObjectAttributes } from "./types/object.js"
 import type { StringAttributes } from "./types/string.js"
 
-export type Node = xor<TypeNode, DegenerateNode>
+export type Node<alias extends string = never> =
+    | autocompleteString<TypeName | "any" | "unknown" | "never" | alias>
+    | TypeNode<alias>
 
-export type TypeNode = {
-    readonly object?: true | ObjectAttributes | readonly ObjectAttributes[]
-    readonly string?: true | StringAttributes | readonly StringAttributes[]
-    readonly number?: true | NumberAttributes | readonly NumberAttributes[]
-    readonly bigint?: true | BigintAttributes | readonly BigintAttributes[]
-    readonly boolean?: true | BooleanAttributes
-    readonly symbol?: true
-    readonly null?: true
-    readonly undefined?: true
-}
+export type TypeNode<alias extends string = never> =
+    | {
+          readonly [typeName in TypeName]?: typeName extends ExtendableTypeName
+              ?
+                    | true
+                    | string
+                    | AttributesByType[typeName]
+                    | BranchesOfType<typeName>
+              : typeName extends boolean
+              ? true | BooleanAttributes
+              : true
+      }
 
 export type AttributesByType = {
     object: ObjectAttributes
@@ -28,3 +32,8 @@ export type AttributesByType = {
 }
 
 export type ExtendableTypeName = keyof AttributesByType
+
+export type BranchesOfType<typeName extends ExtendableTypeName> = readonly (
+    | string
+    | AttributesByType[typeName]
+)[]
