@@ -1,38 +1,27 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
+import { throwInternalError } from "../utils/errors.js"
 import type { mutable } from "../utils/generics.js"
-import { hasKeys, isKeyOf, listFrom } from "../utils/generics.js"
+import { hasKeys, listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
+import { hasType } from "../utils/typeOf.js"
 import type {
     AttributesByType,
-    AttributesNode,
     BranchesOfType,
     ExtendableTypeName,
     Node,
-    ReferenceNode
+    TypedNode
 } from "./node.js"
-import { BuiltinReference, builtinReferences } from "./node.js"
 import { bigintIntersection } from "./types/bigint.js"
 import { booleanIntersection } from "./types/boolean.js"
+import { degeneratableIntersection } from "./types/degenerate.js"
 import { numberIntersection } from "./types/number.js"
 import { objectIntersection } from "./types/object.js"
 import { stringIntersection } from "./types/string.js"
 
-export const intersection = (l: Node, r: Node, scope: ScopeRoot) => {
-    if (l === "never" || r === "never") {
-        return "never"
-    }
-    if (l === "any" || r === "any") {
-        return "any"
-    }
-    if (l === "unknown") {
-        return r
-    }
-    if (r === "unknown") {
-        return l
-    }
-    return l
-}
+export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
+    degeneratableIntersection(l, r, scope) ??
+    typeIntersection(l as TypedNode, r as TypedNode, scope)
 
 export type AttributesIntersection<attributes extends dict> = (
     l: attributes,
@@ -53,79 +42,106 @@ const intersectionsByType: {
 }
 
 // TODO: Types uppercase when generic in function, lowercase when generic in type?
-export const branchesIntersection = <TypeName extends ExtendableTypeName>(
-    typeName: TypeName,
-    lBranches: BranchesOfType<TypeName>,
-    rBranches: BranchesOfType<TypeName>,
-    scope: ScopeRoot
-) =>
-    lBranches.flatMap((l) =>
-        rBranches.map((r) =>
-            intersectionsByType[typeName](l as any, r as any, scope)
-        )
-    )
-
-const nameIntersection = (
-    name: ReferenceNode<dict>,
-    node: Node,
+export const branchesIntersection = <typeName extends ExtendableTypeName>(
+    typeName: typeName,
+    lBranches: BranchesOfType<typeName>,
+    rBranches: BranchesOfType<typeName>,
     scope: ScopeRoot
 ) => {
-    if (typeof node === "string") {
+    const result: ResolvedBranchesOfType<typeName> = []
+    for (const l of resolveBranches(typeName, lBranches, scope)) {
+        for (const r of resolveBranches(typeName, rBranches, scope)) {
+            const branchResult = intersectionsByType[typeName](
+                l as any,
+                r as any,
+                scope
+            )
+            if (branchResult !== "never") {
+                result.push(branchResult)
+            }
+        }
     }
+    return result
 }
 
-const twoWayNameIntersection = (
-    l: ReferenceNode<dict>,
-    r: ReferenceNode<dict>,
-    scope: ScopeRoot
-) => {
-    if (l === "never" || r === "never") {
-        return "never"
+export type ResolvedBranchesOfType<typeName extends ExtendableTypeName> =
+    AttributesByType[typeName][]
+
+const resolveBranches = <TypeName extends ExtendableTypeName>(
+    typeName: ExtendableTypeName,
+    branches: BranchesOfType<TypeName>,
+    scope: ScopeRoot<dict>
+): ResolvedBranchesOfType<ExtendableTypeName> => {
+    const resolvedBranches: ResolvedBranchesOfType<ExtendableTypeName> = []
+    for (const branch of branches) {
+        if (typeof branch === "object") {
+            // TODO: Don't push redundant branches
+            resolvedBranches.push(branch)
+        } else {
+            resolvedBranches.push(
+                ...resolveAliasBranches(typeName, branch, scope)
+            )
+        }
     }
-    if (!isKeyOf(l, builtinReferences)) {
-        return intersection(
-            scope.resolve(l),
-            isKeyOf(r, builtinReferences) ? r : scope.resolve(r),
-            scope
-        )
+    return resolvedBranches
+}
+
+const resolveAliasBranches = (
+    typeName: ExtendableTypeName,
+    alias: string,
+    scope: ScopeRoot<dict>
+): dict[] => {
+    const resolution = scope.resolve(alias)
+    if (typeof resolution === "object" && resolution[typeName]) {
+        const attributeValue = resolution[typeName]!
+        if (attributeValue === true) {
+            // Empty attributes fulfills the expected type while acting the same as true
+            return [{}]
+        }
+        if (typeof attributeValue === "string") {
+            return resolveAliasBranches(typeName, attributeValue, scope)
+        }
+        if (hasType(attributeValue, "object", "dict")) {
+            return [attributeValue]
+        }
+        return resolveBranches(typeName, attributeValue, scope)
+    } else if (resolution === "any") {
+        return [{}]
     }
-    if (!isKeyOf(r, builtinReferences)) {
-        return intersection(l, scope.resolve(r), scope)
-    }
-    if (l === "any" || r === "any") {
-        return
-    }
+    return throwInternalError(
+        `Unexpected failure to resolve '${alias}' as a ${typeName}`
+    )
 }
 
 const typeIntersection = (
-    rightRoot: AttributesNode,
-    leftRoot: AttributesNode,
+    lNode: TypedNode<dict>,
+    rNode: TypedNode<dict>,
     scope: ScopeRoot
 ): Node => {
-    const result: mutable<AttributesNode> = {}
-    let typeName: TypeName
-    for (typeName in leftRoot) {
-        const l = leftRoot[typeName]
-        const r = rightRoot[typeName]
+    const result: mutable<TypedNode> = {}
+    let k: TypeName
+    for (k in rNode) {
+        const l = rNode[k]
+        const r = lNode[k]
         if (l === undefined || r === undefined) {
             continue
         }
         if (l === true) {
-            result[typeName] = r as any
+            result[k] = r as any
             continue
         }
         if (r === true) {
-            result[typeName] = l as any
+            result[k] = l as any
             continue
         }
         const viableBranches = branchesIntersection(
-            typeName as ExtendableTypeName,
+            k as ExtendableTypeName,
             listFrom(l),
             listFrom(r),
             scope
-        ).filter((branch) => branch !== "never")
+        )
         if (viableBranches.length) {
-            result[typeName] =
+            result[k] =
                 viableBranches.length === 1
                     ? viableBranches[0]
                     : (viableBranches as any)
