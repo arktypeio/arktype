@@ -55,8 +55,8 @@ export const typeOf = <data>(data: data) => {
 export const hasType = <
     typeName extends TypeName,
     subtypeName extends typeName extends "object"
-        ? ObjectSubtypeName | undefined
-        : undefined = undefined
+        ? ObjectSubtypeName
+        : undefined
 >(
     data: unknown,
     name: typeName,
@@ -67,7 +67,7 @@ export const hasType = <
     typeOf(data) === name &&
     (!subtype || objectSubtypeOf(data as object) === subtype)
 
-export const typeIn = <name extends TypeName>(
+export const hasTypeIn = <name extends TypeName>(
     data: unknown,
     names: Record<name, unknown>
 ): data is Types[name] => typeOf(data) in names

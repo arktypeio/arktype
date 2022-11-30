@@ -10,7 +10,7 @@ import { deepFreeze } from "./utils/freeze.js"
 import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import type { dict, TypeName } from "./utils/typeOf.js"
+import type { dict } from "./utils/typeOf.js"
 
 const rawScope = (aliases: dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
@@ -73,20 +73,6 @@ export class ScopeRoot<inferred extends dict = dict> {
 
     resolve(name: stringKeyOf<inferred>): Node {
         // TODO: Ensure can't resolve to another alias here
-        if (name in this.cache) {
-            return this.cache[name]
-        }
-        if (!(name in this.aliases)) {
-            return throwInternalError(
-                `Unexpectedly failed to resolve alias '${name}'`
-            )
-        }
-        const root = parseDefinition(this.aliases[name], this)
-        this.cache[name] = deepFreeze(root)
-        return root
-    }
-
-    typeOfAlias(name: stringKeyOf<inferred>): TypeName {
         if (name in this.cache) {
             return this.cache[name]
         }

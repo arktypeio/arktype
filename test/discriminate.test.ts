@@ -27,7 +27,7 @@ describe("union/discriminate", () => {
     test("discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert", { scope: places }).root
-        ).snap()
+        ).snap("ocean")
     })
     // TODO: Don't unnecessarily expand aliases in final type just because
     // they're used for pruning/discrimination

@@ -114,8 +114,8 @@ const resolveAliasBranches = (
 }
 
 const typeIntersection = (
-    lNode: TypedNode<dict>,
-    rNode: TypedNode<dict>,
+    lNode: TypedNode,
+    rNode: TypedNode,
     scope: ScopeRoot
 ): Node => {
     const result: mutable<TypedNode> = {}
