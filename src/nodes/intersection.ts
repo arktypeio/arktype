@@ -20,7 +20,7 @@ export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
         ? degenerateIntersection(l, r, scope)
         : typeIntersection(l, r, scope)
 
-const intersectionsByType = {
+export const intersectionsByType = {
     bigint: bigintIntersection,
     boolean: booleanIntersection,
     number: numberIntersection,
@@ -28,7 +28,7 @@ const intersectionsByType = {
     string: stringIntersection
 }
 
-type IntersectableKey = keyof typeof intersectionsByType
+export type IntersectableKey = keyof typeof intersectionsByType
 
 type NeverResult = { [k in TypeName]?: Never[] }
 
