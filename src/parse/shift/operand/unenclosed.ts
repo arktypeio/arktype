@@ -1,5 +1,5 @@
-import type { Keyword } from "../../../nodes/keywords.js"
-import { keywords } from "../../../nodes/keywords.js"
+import type { Keyword } from "../../../nodes/names.js"
+import { keywords } from "../../../nodes/names.js"
 import type { Node } from "../../../nodes/node.js"
 import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"

@@ -3,7 +3,7 @@ import type { mutable } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
 import { compareAttributes } from "./intersection.js"
-import type { ExtendableTypeName, Node, TypedNode } from "./node.js"
+import type { ExtendableTypeName, Node, ResolvedNode } from "./node.js"
 
 export const union = (l: Node, r: Node, scope: ScopeRoot) => {
     // TODO: Ensure resolves to non-alias

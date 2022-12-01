@@ -1,5 +1,8 @@
+import type { ScopeRoot } from "../scope.js"
 import { deepFreeze } from "../utils/freeze.js"
 import type { narrow } from "../utils/generics.js"
+import { isKeyOf } from "../utils/generics.js"
+import { intersection } from "./intersection.js"
 import type { Node } from "./node.js"
 
 const defineKeywords = <definitions extends { [keyword in Keyword]: Node }>(
@@ -63,3 +66,40 @@ export type Keywords = {
     // Numeric
     integer: number
 }
+
+export const nameIntersection = (
+    name: string,
+    node: Node,
+    scope: ScopeRoot
+): Node => {
+    const l = resolveName(name, scope)
+    const r = typeof node === "string" ? resolveName(node, scope) : node
+    if (typeof l === "string") {
+        return degenerateIntersection(l as DegenerateKeyword, node)
+    }
+    if (typeof r === "string") {
+        return degenerateIntersection(r as DegenerateKeyword, l)
+    }
+    return intersection(l, r, scope)
+}
+
+const degenerateTypeNames = deepFreeze({
+    never: true,
+    unknown: true,
+    any: true
+})
+
+export type DegenerateKeyword = keyof typeof degenerateTypeNames
+
+export const degenerateIntersection = (
+    keyword: DegenerateKeyword,
+    withNode: Node
+): Node =>
+    keyword === "never" || withNode === "never"
+        ? "never"
+        : keyword === "any" || withNode === "any"
+        ? "any"
+        : withNode
+
+const resolveName = (name: string, scope: ScopeRoot) =>
+    isKeyOf(name, keywords) ? keywords[name] : scope.resolve(name)

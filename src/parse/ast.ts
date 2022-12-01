@@ -1,4 +1,4 @@
-import type { Keyword, Keywords } from "../nodes/keywords.js"
+import type { Keyword, Keywords } from "../nodes/names.js"
 import type { error, evaluate, isAny, RegexLiteral } from "../utils/generics.js"
 import type {
     SerializablePrimitive,

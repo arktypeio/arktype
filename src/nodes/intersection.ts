@@ -10,7 +10,7 @@ import type {
     BranchesOfType,
     ExtendableTypeName,
     Node,
-    TypedNode
+    ResolvedNode
 } from "./node.js"
 import { bigintIntersection } from "./types/bigint.js"
 import { booleanIntersection } from "./types/boolean.js"
@@ -21,7 +21,7 @@ import { stringIntersection } from "./types/string.js"
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
     degeneratableIntersection(l, r, scope) ??
-    typeIntersection(l as TypedNode, r as TypedNode, scope)
+    typeIntersection(l as ResolvedNode, r as ResolvedNode, scope)
 
 export type AttributesIntersection<attributes extends dict> = (
     l: attributes,
@@ -114,11 +114,11 @@ const resolveAliasBranches = (
 }
 
 const typeIntersection = (
-    lNode: TypedNode,
-    rNode: TypedNode,
+    lNode: ResolvedNode,
+    rNode: ResolvedNode,
     scope: ScopeRoot
 ): Node => {
-    const result: mutable<TypedNode> = {}
+    const result: mutable<ResolvedNode> = {}
     let k: TypeName
     for (k in rNode) {
         const l = rNode[k]

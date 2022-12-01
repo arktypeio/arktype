@@ -7,10 +7,14 @@ import { boundsIntersection } from "./bounds.js"
 import type { KeyIntersection } from "./compose.js"
 import { composeIntersection } from "./compose.js"
 
-export type ObjectAttributes = xor<PropsAttributes, {}> & SubtypeAttributes
+export type ObjectAttributes<scope extends dict = dict> = xor<
+    PropsAttributes<scope>,
+    {}
+> &
+    SubtypeAttributes
 
-export type PropsAttributes = {
-    readonly props: dict<Node>
+export type PropsAttributes<scope extends dict> = {
+    readonly props: dict<Node<scope>>
     readonly requiredKeys: keySet
 }
 
