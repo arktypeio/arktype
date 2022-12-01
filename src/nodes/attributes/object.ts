@@ -1,34 +1,18 @@
-import type { keySet, xor } from "../../utils/generics.js"
+import type { keySet } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
 import { intersection } from "../intersection.js"
 import type { Node } from "../node.js"
 import type { Bounds } from "./bounds.js"
 import { boundsIntersection } from "./bounds.js"
-import type { KeyIntersection } from "./compose.js"
-import { composeIntersection } from "./compose.js"
 
-export type ObjectAttributes<scope extends dict = dict> = xor<
-    PropsAttributes<scope>,
-    {}
-> &
-    SubtypeAttributes
-
-export type PropsAttributes<scope extends dict> = {
-    readonly props: dict<Node<scope>>
-    readonly requiredKeys: keySet
+export type ObjectAttributes<scope extends dict = dict> = {
+    readonly type: "object"
+    readonly props?: dict<Node<scope>>
+    readonly requiredKeys?: keySet
+    readonly subtype?: "array" | "function"
+    readonly elements?: Node
+    readonly bounds?: Bounds
 }
-
-type SubtypeAttributes =
-    | {
-          subtype: "array"
-          readonly elements?: Node
-          readonly bounds?: Bounds
-      }
-    | {
-          subtype?: "function"
-          elements?: undefined
-          bounds?: undefined
-      }
 
 const propsIntersection: KeyIntersection<ObjectAttributes, "props"> = (
     l,

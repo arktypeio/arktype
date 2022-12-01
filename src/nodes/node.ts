@@ -1,44 +1,36 @@
 import type { autocompleteString, stringKeyOf } from "../utils/generics.js"
-import type { dict, TypeName } from "../utils/typeOf.js"
+import type { array, dict, TypeName } from "../utils/typeOf.js"
+import type { BigintAttributes } from "./attributes/bigint.js"
+import type { BooleanAttributes } from "./attributes/boolean.js"
+import type { NumberAttributes } from "./attributes/number.js"
+import type { ObjectAttributes } from "./attributes/object.js"
+import type { StringAttributes } from "./attributes/regex.js"
 import type { Keyword } from "./names.js"
-import type { BigintAttributes } from "./types/bigint.js"
-import type { BooleanAttributes } from "./types/boolean.js"
-import type { NumberAttributes } from "./types/number.js"
-import type { ObjectAttributes } from "./types/object.js"
-import type { StringAttributes } from "./types/string.js"
 
-export type Node<scope extends dict = dict> =
-    | NameNode<scope>
-    | ResolutionNode<scope>
+export type Node<scope extends dict = dict> = NameNode<scope> | ResolutionNode
 
 export type NameNode<scope extends dict = dict> =
     string extends stringKeyOf<scope>
         ? autocompleteString<Keyword>
         : Keyword | stringKeyOf<scope>
 
-export type ResolutionNode<scope extends dict = dict> = {
-    readonly [typeName in TypeName]?: typeName extends "boolean"
-        ? true | BooleanAttributes
-        : typeName extends ExtendableTypeName
-        ?
-              | true
-              | stringKeyOf<scope>
-              | AttributesByType[typeName]
-              | BranchesOfType<typeName>
-        : true
-}
+export type ResolutionNode<scope extends dict = dict> =
+    | AttributesNode<scope>
+    | BranchesNode<scope>
 
-export type AttributesByType = {
-    object: ObjectAttributes
-    string: StringAttributes
-    number: NumberAttributes
-    bigint: BigintAttributes
-    boolean: BooleanAttributes
-}
+export type BranchesNode<scope extends dict = dict> = array<
+    NameNode<scope> | AttributesNode<scope>
+>
 
-export type ExtendableTypeName = keyof AttributesByType
+export type AttributesNode<scope extends dict = dict> =
+    | ObjectAttributes<scope>
+    | StringAttributes
+    | NumberAttributes
+    | BigintAttributes
+    | BooleanAttributes
+    | { readonly type: "symbol" | "null" | "undefined" }
 
-export type BranchesOfType<typeName extends ExtendableTypeName> = readonly (
-    | string
-    | AttributesByType[typeName]
-)[]
+export type ExtensibleTypeName = Exclude<
+    TypeName,
+    "symbol" | "null" | "undefined"
+>

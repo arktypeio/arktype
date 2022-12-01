@@ -1,8 +1,9 @@
-import { composeIntersection } from "./compose.js"
+import { composeIntersection } from "../compose.js"
 import type { LiteralChecker } from "./literals.js"
 
 export type BooleanAttributes = {
-    readonly literal: boolean
+    readonly type: "boolean"
+    readonly literal?: boolean
 }
 
 export const checkBoolean: LiteralChecker<BooleanAttributes> = (

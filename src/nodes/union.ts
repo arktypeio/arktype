@@ -4,15 +4,15 @@ import { listFrom } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
 import { compareAttributes } from "./intersection.js"
 import type {
+    AttributesNode,
     BranchesOfType,
-    ExtendableTypeName,
-    ResolutionNode
+    ExtensibleTypeName
 } from "./node.js"
 import type { ResolvedBranchesOfType } from "./operation.js"
 import { createOperation, resolveBranches } from "./operation.js"
 
 export const union = createOperation((lNode, rNode, scope) => {
-    const result = { ...lNode, ...rNode } as mutable<ResolutionNode>
+    const result = { ...lNode, ...rNode } as mutable<AttributesNode>
     let k: TypeName
     for (k in result) {
         const l = lNode[k]
@@ -22,7 +22,7 @@ export const union = createOperation((lNode, rNode, scope) => {
                 result[k] = true
             } else {
                 const distinctBranches = branchesUnion(
-                    k as ExtendableTypeName,
+                    k as ExtensibleTypeName,
                     listFrom(l),
                     listFrom(r),
                     scope
@@ -37,7 +37,7 @@ export const union = createOperation((lNode, rNode, scope) => {
     return result
 })
 
-const branchesUnion = <TypeName extends ExtendableTypeName>(
+const branchesUnion = <TypeName extends ExtensibleTypeName>(
     typeName: TypeName,
     lBranches: BranchesOfType<TypeName>,
     rBranches: BranchesOfType<TypeName>,

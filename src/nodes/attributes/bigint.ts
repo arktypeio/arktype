@@ -1,9 +1,10 @@
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
-import { composeIntersection } from "./compose.js"
+import { composeIntersection } from "../compose.js"
 import type { LiteralChecker } from "./literals.js"
 
 export type BigintAttributes = {
-    readonly literal: IntegerLiteral
+    readonly type: "bigint"
+    readonly literal?: IntegerLiteral
 }
 
 export const checkBigint: LiteralChecker<BigintAttributes> = (

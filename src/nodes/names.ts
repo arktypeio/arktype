@@ -2,50 +2,49 @@ import type { ScopeRoot } from "../scope.js"
 import { deepFreeze } from "../utils/freeze.js"
 import type { narrow } from "../utils/generics.js"
 import { isKeyOf } from "../utils/generics.js"
-import type { TypeName } from "../utils/typeOf.js"
 import type { Node } from "./node.js"
 
 const defineKeywords = <definitions extends { [keyword in Keyword]: Node }>(
     definitions: narrow<definitions>
 ) => deepFreeze(definitions)
 
-const always: Record<TypeName, true> = {
-    bigint: true,
-    boolean: true,
-    null: true,
-    number: true,
-    object: true,
-    string: true,
-    symbol: true,
-    undefined: true
-}
+const always = [
+    "bigint",
+    "boolean",
+    "null",
+    "number",
+    "object",
+    "string",
+    "symbol",
+    "undefined"
+]
 
 export const keywords = defineKeywords({
     // TS keywords
     any: always,
-    bigint: { bigint: true },
-    boolean: { boolean: true },
-    false: { boolean: { literal: false } },
-    never: {},
-    null: { null: true },
-    number: { number: true },
-    object: { object: true },
-    string: { string: true },
-    symbol: { symbol: true },
-    true: { boolean: { literal: true } },
-    undefined: { undefined: true },
+    bigint: { type: "bigint" },
+    boolean: { type: "boolean" },
+    false: { type: "boolean", literal: false },
+    never: [],
+    null: { type: "null" },
+    number: { type: "number" },
+    object: { type: "object" },
+    string: { type: "string" },
+    symbol: { type: "symbol" },
+    true: { type: "boolean", literal: true },
+    undefined: { type: "undefined" },
     unknown: always,
-    void: { undefined: true },
+    void: { type: "undefined" },
     // JS Object types
-    Function: { object: { subtype: "function" } },
+    Function: { type: "object", subtype: "function" },
     // Regex
-    email: { string: { regex: "^(.+)@(.+)\\.(.+)$" } },
-    alphanumeric: { string: { regex: "^[dA-Za-z]+$" } },
-    alphaonly: { string: { regex: "^[A-Za-z]+$" } },
-    lowercase: { string: { regex: "^[a-z]*$" } },
-    uppercase: { string: { regex: "^[A-Z]*$" } },
+    email: { type: "string", regex: "^(.+)@(.+)\\.(.+)$" },
+    alphanumeric: { type: "string", regex: "^[dA-Za-z]+$" },
+    alphaonly: { type: "string", regex: "^[A-Za-z]+$" },
+    lowercase: { type: "string", regex: "^[a-z]*$" },
+    uppercase: { type: "string", regex: "^[A-Z]*$" },
     // Numeric
-    integer: { number: { divisor: 1 } }
+    integer: { type: "number", divisor: 1 }
 })
 
 export type Keyword = keyof Keywords

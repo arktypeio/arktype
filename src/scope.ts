@@ -1,4 +1,4 @@
-import type { Node, ResolutionNode } from "./nodes/node.js"
+import type { AttributesNode, Node } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -59,7 +59,8 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dict = any> {
-    attributes = {} as { [k in keyof inferred]: ResolutionNode }
+    attributes = {} as { [k in keyof inferred]: AttributesNode }
+    // TODO: Add intersection cache
     private cache: mutable<dict<Node>> = {}
 
     constructor(
@@ -71,7 +72,7 @@ export class ScopeRoot<inferred extends dict = any> {
         return chainableNoOpProxy
     }
 
-    resolve(name: stringKeyOf<inferred>): ResolutionNode<inferred> {
+    resolve(name: stringKeyOf<inferred>): AttributesNode<inferred> {
         if (name in this.attributes) {
             return this.attributes[name]
         }

@@ -1,15 +1,13 @@
-import type { xor } from "../../utils/generics.js"
+import { composeIntersection } from "../compose.js"
 import type { Bounds } from "./bounds.js"
 import { boundsIntersection, checkBounds } from "./bounds.js"
-import { composeIntersection } from "./compose.js"
 
-export type NumberAttributes = xor<
-    {
-        readonly divisor?: number
-        readonly bounds?: Bounds
-    },
-    { readonly literal?: number }
->
+export type NumberAttributes = {
+    readonly type: "number"
+    readonly divisor?: number
+    readonly bounds?: Bounds
+    readonly literal?: number
+}
 
 export const checkNumber = (data: number, attributes: NumberAttributes) =>
     attributes.literal

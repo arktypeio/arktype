@@ -1,24 +1,18 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { mutable } from "../utils/generics.js"
+import type { defined, stringKeyOf } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
-import type {
-    AttributesByType,
-    BranchesOfType,
-    ExtendableTypeName,
-    ResolutionNode
-} from "./node.js"
-import type { ResolvedBranchesOfType } from "./operation.js"
-import { createOperation, resolveBranches } from "./operation.js"
-import { bigintIntersection } from "./types/bigint.js"
-import { booleanIntersection } from "./types/boolean.js"
-import { numberIntersection } from "./types/number.js"
-import { objectIntersection } from "./types/object.js"
-import { stringIntersection } from "./types/string.js"
+import { bigintIntersection } from "./attributes/bigint.js"
+import { booleanIntersection } from "./attributes/boolean.js"
+import type { LiteralChecker } from "./attributes/literals.js"
+import { literalableIntersection } from "./attributes/literals.js"
+import { numberIntersection } from "./attributes/number.js"
+import { objectIntersection } from "./attributes/object.js"
+import { stringIntersection } from "./attributes/regex.js"
+import type { Node } from "./node.js"
 
-export const intersection = createOperation((lNode, rNode, scope) => {
-    const result: mutable<ResolutionNode> = {}
+export const intersection = (lNode: Node, rNode: Node, scope: ScopeRoot) => {
     let k: TypeName
     for (k in rNode) {
         const l = rNode[k]
@@ -47,8 +41,16 @@ export const intersection = createOperation((lNode, rNode, scope) => {
                     : (viableBranches as any)
         }
     }
-    return result
-})
+    // If the operation included a name and its result is identical to the
+    // original resolution of that name, return the name instead of its expanded
+    // form as the result
+    if (typeof l === "string" && deepEquals(result, lResolution)) {
+        return l
+    }
+    if (typeof r === "string" && deepEquals(result, rResolution)) {
+        return r
+    }
+}
 
 export type AttributesIntersection<attributes extends dict> = (
     l: attributes,
@@ -56,7 +58,7 @@ export type AttributesIntersection<attributes extends dict> = (
     scope: ScopeRoot
 ) => attributes | "never"
 
-const intersectionsByType: {
+const reducers: {
     [typeName in ExtendableTypeName]: AttributesIntersection<
         AttributesByType[typeName]
     >
@@ -78,11 +80,7 @@ const branchesIntersection = <TypeName extends ExtendableTypeName>(
     const result: ResolvedBranchesOfType<TypeName> = []
     for (const l of resolveBranches(typeName, lBranches, scope)) {
         for (const r of resolveBranches(typeName, rBranches, scope)) {
-            const branchResult = intersectionsByType[typeName](
-                l as any,
-                r as any,
-                scope
-            )
+            const branchResult = reducers[typeName](l as any, r as any, scope)
             if (branchResult !== "never") {
                 result.push(branchResult)
             }
@@ -91,20 +89,61 @@ const branchesIntersection = <TypeName extends ExtendableTypeName>(
     return result
 }
 
-// Returns, in order of precedence:
-//  1.  "<=" if l extends r
-//  2.  ">" if r extends  (but is not equivalent to) l
-//  3.  null
-export const compareAttributes = (
-    typeName: ExtendableTypeName,
-    l: dict,
-    r: dict,
+export type IntersectionContext<attributes> = {
+    leftRoot: attributes
+    rightRoot: attributes
     scope: ScopeRoot
-): "<=" | ">" | null => {
-    const intersected = intersectionsByType[typeName](l as any, r as any, scope)
-    return deepEquals(l, intersected)
-        ? "<="
-        : deepEquals(r, intersected)
-        ? ">"
-        : null
 }
+
+type ContextualIntersection<t, context> = (
+    l: t,
+    r: t,
+    context: context
+) => t | "never"
+
+export type KeyReducer<
+    attributes extends dict,
+    k extends stringKeyOf<attributes>
+> = ContextualIntersection<
+    defined<attributes[k]>,
+    IntersectionContext<attributes>
+>
+
+export type AttributesReducer<attributes extends dict> = {
+    [k in Exclude<stringKeyOf<attributes>, "type">]-?: k extends "literal"
+        ? LiteralChecker<attributes>
+        : KeyReducer<attributes, k>
+}
+
+export const composeIntersection =
+    <attributes extends dict>(
+        reducers: AttributesReducer<attributes>
+    ): AttributesIntersection<attributes> =>
+    (l, r, scope): Node => {
+        if (reducers.literal) {
+            const result = literalableIntersection(
+                l,
+                r,
+                reducers.literal as any
+            )
+            if (result) {
+                return result
+            }
+        }
+        const result = { ...l, ...r }
+        const context: IntersectionContext<attributes> = {
+            leftRoot: l,
+            rightRoot: r,
+            scope
+        }
+        for (const k in result) {
+            if (l[k] && r[k]) {
+                const keyResult = reducers[k](l[k] as any, r[k] as any, context)
+                if (keyResult === "never") {
+                    return "never"
+                }
+                result[k] = keyResult as any
+            }
+        }
+        return result
+    }

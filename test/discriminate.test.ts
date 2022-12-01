@@ -15,10 +15,7 @@ describe("union/discriminate", () => {
             object: [
                 "wet/boolean/literal",
                 {
-                    true: [
-                        { object: { props: { someProp: "boolean" } } },
-                        "ocean"
-                    ],
+                    true: [{ props: { someProp: "boolean" } }, "ocean"],
                     false: "sky"
                 }
             ]
