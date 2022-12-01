@@ -3,28 +3,12 @@ import type { mutable } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
 import { compareAttributes } from "./intersection.js"
-import type { ExtendableTypeName, Node, ResolvedNode } from "./node.js"
+import type { ExtendableTypeName, Node, ResolutionNode } from "./node.js"
 
 export const union = (l: Node, r: Node, scope: ScopeRoot) => {
-    // TODO: Ensure resolves to non-alias
-    // if (l.alias) {
-    //     l = scope.resolve(l.alias)
-    // }
-    // if (r.alias) {
-    //     r = scope.resolve(r.alias)
-    // }
-    // if (l.never) {
-    //     return r
-    // }
-    // if (r.never) {
-    //     return l
-    // }
-    // if (l.always) {
-    //     return l.always === "any" ? l : r.always === "any" ? r : l
-    // }
-    // if (r.always) {
-    //     return r
-    // }
+    if (typeof l === "string") {
+    }
+    return l
     // const result = { ...l, ...r } as mutable<TypeNode>
     // let typeName: TypeName
     // for (typeName in result) {
@@ -62,5 +46,4 @@ export const union = (l: Node, r: Node, scope: ScopeRoot) => {
     //     }
     // }
     // return result
-    return l
 }

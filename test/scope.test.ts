@@ -92,7 +92,7 @@ describe("scope", () => {
                     elements: "a"
                 }
             },
-            d: "definedInScope"
+            d: { boolean: true }
         })
     })
 })

@@ -9,14 +9,14 @@ import type { StringAttributes } from "./types/string.js"
 
 export type Node<scope extends dict = dict> =
     | NameNode<scope>
-    | ResolvedNode<scope>
+    | ResolutionNode<scope>
 
 export type NameNode<scope extends dict = dict> =
     string extends stringKeyOf<scope>
         ? autocompleteString<Keyword>
         : Keyword | stringKeyOf<scope>
 
-export type ResolvedNode<scope extends dict = dict> = {
+export type ResolutionNode<scope extends dict = dict> = {
     readonly [typeName in TypeName]?: typeName extends "boolean"
         ? true | BooleanAttributes
         : typeName extends ExtendableTypeName

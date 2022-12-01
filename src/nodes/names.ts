@@ -1,7 +1,9 @@
 import type { ScopeRoot } from "../scope.js"
+import { deepEquals } from "../utils/deepEquals.js"
 import { deepFreeze } from "../utils/freeze.js"
 import type { narrow } from "../utils/generics.js"
 import { isKeyOf } from "../utils/generics.js"
+import type { TypeName } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
 import type { Node } from "./node.js"
 
@@ -9,13 +11,24 @@ const defineKeywords = <definitions extends { [keyword in Keyword]: Node }>(
     definitions: narrow<definitions>
 ) => deepFreeze(definitions)
 
+const always: Record<TypeName, true> = {
+    bigint: true,
+    boolean: true,
+    null: true,
+    number: true,
+    object: true,
+    string: true,
+    symbol: true,
+    undefined: true
+}
+
 export const keywords = defineKeywords({
     // TS keywords
-    any: "any",
+    any: always,
     bigint: { bigint: true },
     boolean: { boolean: true },
     false: { boolean: { literal: false } },
-    never: "never",
+    never: {},
     null: { null: true },
     number: { number: true },
     object: { object: true },
@@ -23,7 +36,7 @@ export const keywords = defineKeywords({
     symbol: { symbol: true },
     true: { boolean: { literal: true } },
     undefined: { undefined: true },
-    unknown: "unknown",
+    unknown: always,
     void: { undefined: true },
     // JS Object types
     Function: { object: { subtype: "function" } },
@@ -74,32 +87,19 @@ export const nameIntersection = (
 ): Node => {
     const l = resolveName(name, scope)
     const r = typeof node === "string" ? resolveName(node, scope) : node
-    if (typeof l === "string") {
-        return degenerateIntersection(l as DegenerateKeyword, node)
-    }
-    if (typeof r === "string") {
-        return degenerateIntersection(r as DegenerateKeyword, l)
-    }
-    return intersection(l, r, scope)
+    const result = intersection(l, r, scope)
+    // If the intersection included a name and its result is identical to the
+    // original resolution of that name, return the name instead of its expanded
+    // form as the result
+    return deepEquals(l, result)
+        ? l
+        : typeof node === "string" && deepEquals(r, result)
+        ? node
+        : result
 }
 
-const degenerateTypeNames = deepFreeze({
-    never: true,
-    unknown: true,
-    any: true
-})
+export const resolveIfName = (node: Node, scope: ScopeRoot) =>
+    typeof node === "string" ? resolveName(node, scope) : node
 
-export type DegenerateKeyword = keyof typeof degenerateTypeNames
-
-export const degenerateIntersection = (
-    keyword: DegenerateKeyword,
-    withNode: Node
-): Node =>
-    keyword === "never" || withNode === "never"
-        ? "never"
-        : keyword === "any" || withNode === "any"
-        ? "any"
-        : withNode
-
-const resolveName = (name: string, scope: ScopeRoot) =>
+export const resolveName = (name: string, scope: ScopeRoot) =>
     isKeyOf(name, keywords) ? keywords[name] : scope.resolve(name)
