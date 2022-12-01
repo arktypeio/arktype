@@ -1,11 +1,17 @@
+import { intersection } from "../nodes/intersection.js"
+import { morph } from "../nodes/morph.js"
 import type { Node } from "../nodes/node.js"
+import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { evaluate, keySet, mutable } from "../utils/generics.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
+import type { error, evaluate, keySet, mutable } from "../utils/generics.js"
+import { hasKey, isKeyOf } from "../utils/generics.js"
 import type { array, dict } from "../utils/typeOf.js"
-import type { inferDefinition } from "./definition.js"
+import { hasType } from "../utils/typeOf.js"
+import type { inferDefinition, validateDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
-import type { Scanner } from "./reduce/scanner.js"
+import { Scanner } from "./reduce/scanner.js"
+import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
 export const parseDict = (def: dict, scope: ScopeRoot): Node => {
     const props: mutable<dict<Node>> = {}
@@ -66,9 +72,15 @@ export const parseTuple = (def: array, scope: ScopeRoot): Node => {
     }
 }
 
-export type inferTuple<def, scope extends dict, aliases> = {
-    [i in keyof def]: inferDefinition<def[i], scope, aliases>
-}
+export type inferTuple<
+    def,
+    scope extends dict,
+    aliases
+> = def extends TupleExpression
+    ? inferTupleExpression<def, scope, aliases>
+    : {
+          [i in keyof def]: inferDefinition<def[i], scope, aliases>
+      }
 
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
@@ -80,26 +92,66 @@ type requiredKeyOf<def> = {
     [k in keyof def]: k extends optionalKeyWithName ? never : k
 }[keyof def]
 
-const parseTupleExpression = (
-    expression: TupleExpression,
-    scope: ScopeRoot
-) => {
-    return throwInternalError("Not yet implemented.")
+export type validateTupleExpression<
+    def extends TupleExpression,
+    scope extends dict
+> = def[1] extends Scanner.BranchToken
+    ? def[2] extends undefined
+        ? error<buildMissingRightOperandMessage<def[1], "">>
+        : [
+              validateDefinition<def[0], scope>,
+              def[1],
+              validateDefinition<def[2], scope>
+          ]
+    : def[1] extends "[]"
+    ? [validateDefinition<def[0], scope>, "[]"]
+    : never
+
+type inferTupleExpression<
+    def extends TupleExpression,
+    scope extends dict,
+    aliases
+> = def[1] extends Scanner.BranchToken
+    ? def[2] extends undefined
+        ? never
+        : def[1] extends "&"
+        ? evaluate<
+              inferDefinition<def[0], scope, aliases> &
+                  inferDefinition<def[2], scope, aliases>
+          >
+        :
+              | inferDefinition<def[0], scope, aliases>
+              | inferDefinition<def[2], scope, aliases>
+    : def[1] extends "[]"
+    ? inferDefinition<def[0], scope, aliases>[]
+    : never
+
+const parseTupleExpression = (def: TupleExpression, scope: ScopeRoot) => {
+    if (isKeyOf(def[1], Scanner.branchTokens)) {
+        if (def[2] === undefined) {
+            return throwParseError(buildMissingRightOperandMessage(def[1], ""))
+        }
+        const l = parseDefinition(def[0], scope)
+        const r = parseDefinition(def[2], scope)
+        return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
+    }
+    if (def[1] === "[]") {
+        return morph("array", parseDefinition(def[0], scope))
+    }
+    return throwInternalError(`Unexpected tuple expression token '${def[1]}'`)
 }
 
-// type parseTupleExpression<
-//     def extends TupleExpression,
-//     scope extends record
-// > = def[1] extends Scanner.InfixToken
-//     ? def[2] extends undefined
-//         ? [
-//               parseRoot<def[0], scope>,
-//               error<buildMissingRightOperandMessage<def[1], "">>
-//           ]
-//         : [parseRoot<def[0], scope>, def[1], parseRoot<def[2], scope>]
-//     : [parseRoot<def[0], scope>, def[1]]
+const tupleExpressionTokens = {
+    "|": true,
+    "&": true,
+    "[]": true
+} as const
 
-type TupleExpression = [unknown, Scanner.OperatorToken, ...unknown[]]
+type TupleExpressionToken = keyof typeof tupleExpressionTokens
 
-const isTupleExpression = (def: unknown): def is TupleExpression =>
-    Array.isArray(def) && (def[1] as any) in {}
+export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
+
+const isTupleExpression = (def: array): def is TupleExpression =>
+    hasType(def, "object", "array") &&
+    hasType(def[1], "string") &&
+    def[1] in tupleExpressionTokens
