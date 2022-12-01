@@ -1,49 +1,62 @@
 import type { ScopeRoot } from "../scope.js"
 import type { mutable } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
-import type { dict, TypeName } from "../utils/typeOf.js"
+import type { TypeName } from "../utils/typeOf.js"
 import { compareAttributes } from "./intersection.js"
-import type { ExtendableTypeName, Node, ResolutionNode } from "./node.js"
+import type {
+    BranchesOfType,
+    ExtendableTypeName,
+    ResolutionNode
+} from "./node.js"
+import type { ResolvedBranchesOfType } from "./operation.js"
+import { createOperation, resolveBranches } from "./operation.js"
 
-export const union = (l: Node, r: Node, scope: ScopeRoot) => {
-    if (typeof l === "string") {
+export const union = createOperation((lNode, rNode, scope) => {
+    const result = { ...lNode, ...rNode } as mutable<ResolutionNode>
+    let k: TypeName
+    for (k in result) {
+        const l = lNode[k]
+        const r = rNode[k]
+        if (l && r) {
+            if (l === true || r === true) {
+                result[k] = true
+            } else {
+                const distinctBranches = branchesUnion(
+                    k as ExtendableTypeName,
+                    listFrom(l),
+                    listFrom(r),
+                    scope
+                )
+                result[k] =
+                    distinctBranches.length === 1
+                        ? distinctBranches[0]
+                        : (distinctBranches as any)
+            }
+        }
     }
-    return l
-    // const result = { ...l, ...r } as mutable<TypeNode>
-    // let typeName: TypeName
-    // for (typeName in result) {
-    //     const lValue = l[typeName]
-    //     const rValue = r[typeName]
-    //     if (lValue && rValue) {
-    //         if (lValue === true || rValue === true) {
-    //             result[typeName] = true
-    //         } else {
-    //             const rBranches: dict[] = [...listFrom(rValue)]
-    //             const distinctBranches = listFrom(lValue as dict | dict[])
-    //                 .filter((l) =>
-    //                     rBranches.every((r, i) => {
-    //                         const comparison = compareAttributes(
-    //                             typeName as ExtendableTypeName,
-    //                             l,
-    //                             r,
-    //                             scope
-    //                         )
-    //                         if (comparison === "<=") {
-    //                             return false
-    //                         }
-    //                         if (comparison === ">") {
-    //                             rBranches.splice(i, 1)
-    //                         }
-    //                         return true
-    //                     })
-    //                 )
-    //                 .concat(rBranches)
-    //             result[typeName] =
-    //                 distinctBranches.length === 1
-    //                     ? distinctBranches[0]
-    //                     : (distinctBranches as any)
-    //         }
-    //     }
-    // }
-    // return result
+    return result
+})
+
+const branchesUnion = <TypeName extends ExtendableTypeName>(
+    typeName: TypeName,
+    lBranches: BranchesOfType<TypeName>,
+    rBranches: BranchesOfType<TypeName>,
+    scope: ScopeRoot
+): ResolvedBranchesOfType<TypeName> => {
+    const lResolutions = resolveBranches(typeName, lBranches, scope)
+    const rResolutions = resolveBranches(typeName, rBranches, scope)
+    return lResolutions
+        .filter((l) =>
+            rResolutions.every((r, i) => {
+                const comparison = compareAttributes(typeName, l, r, scope)
+                if (comparison === "<=") {
+                    return false
+                }
+                if (comparison === ">") {
+                    rResolutions.splice(i, 1)
+                }
+                return true
+            })
+        )
+        .concat(rResolutions)
 }

@@ -23,6 +23,13 @@ describe("union/parse", () => {
             undefined: true
         })
     })
+    test("union of true and false reduces to boolean", () => {
+        attest(type("true|false").root).equals("boolean")
+        attest(type("true|false|number").root).equals({
+            boolean: true,
+            number: true
+        })
+    })
     describe("errors", () => {
         test("bad reference", () => {
             // @ts-expect-error

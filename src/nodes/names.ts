@@ -1,10 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
-import { deepEquals } from "../utils/deepEquals.js"
 import { deepFreeze } from "../utils/freeze.js"
 import type { narrow } from "../utils/generics.js"
 import { isKeyOf } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
-import { intersection } from "./intersection.js"
 import type { Node } from "./node.js"
 
 const defineKeywords = <definitions extends { [keyword in Keyword]: Node }>(
@@ -78,24 +76,6 @@ export type Keywords = {
     uppercase: string
     // Numeric
     integer: number
-}
-
-export const nameIntersection = (
-    name: string,
-    node: Node,
-    scope: ScopeRoot
-): Node => {
-    const l = resolveName(name, scope)
-    const r = typeof node === "string" ? resolveName(node, scope) : node
-    const result = intersection(l, r, scope)
-    // If the intersection included a name and its result is identical to the
-    // original resolution of that name, return the name instead of its expanded
-    // form as the result
-    return deepEquals(l, result)
-        ? l
-        : typeof node === "string" && deepEquals(r, result)
-        ? node
-        : result
 }
 
 export const resolveIfName = (node: Node, scope: ScopeRoot) =>
