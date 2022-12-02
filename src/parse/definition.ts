@@ -1,12 +1,17 @@
 import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwParseError } from "../utils/errors.js"
-import type { error, evaluate, isAny, isTopType } from "../utils/generics.js"
+import type { evaluate, isAny, isTopType } from "../utils/generics.js"
 import type { array, dict, TypeName } from "../utils/typeOf.js"
 import { objectSubtypeOf, typeOf } from "../utils/typeOf.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
-import type { inferRecord, inferTuple } from "./structure.js"
+import type {
+    inferRecord,
+    inferTuple,
+    TupleExpression,
+    validateTupleExpression
+} from "./structure.js"
 import { parseDict, parseTuple } from "./structure.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): Node => {
@@ -55,6 +60,8 @@ export type validateDefinition<
     ? buildBadDefinitionTypeMessage<
           def extends Function ? "function" : typeOf<def>
       >
+    : def extends TupleExpression
+    ? validateTupleExpression<def, scope>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], scope>
       }>

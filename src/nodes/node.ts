@@ -1,39 +1,19 @@
-import type { autocompleteString } from "../utils/generics.js"
-import type { TypeName } from "../utils/typeOf.js"
-import type { BigintAttributes } from "./types/bigint.js"
-import type { BooleanAttributes } from "./types/boolean.js"
-import type { NumberAttributes } from "./types/number.js"
-import type { ObjectAttributes } from "./types/object.js"
-import type { StringAttributes } from "./types/string.js"
+import type { autocompleteString, stringKeyOf } from "../utils/generics.js"
+import type { array, dict } from "../utils/typeOf.js"
+import type { AttributesNode } from "./attributes/attributes.js"
+import type { Keyword } from "./names.js"
 
-export type Node<alias extends string = never> =
-    | autocompleteString<TypeName | "any" | "unknown" | "never" | alias>
-    | TypeNode<alias>
+export type Node<scope extends dict = dict> = NameNode<scope> | ResolutionNode
 
-export type TypeNode<alias extends string = never> =
-    | {
-          readonly [typeName in TypeName]?: typeName extends ExtendableTypeName
-              ?
-                    | true
-                    | string
-                    | AttributesByType[typeName]
-                    | BranchesOfType<typeName>
-              : typeName extends boolean
-              ? true | BooleanAttributes
-              : true
-      }
+export type NameNode<scope extends dict = dict> =
+    string extends stringKeyOf<scope>
+        ? autocompleteString<Keyword>
+        : Keyword | stringKeyOf<scope>
 
-export type AttributesByType = {
-    object: ObjectAttributes
-    string: StringAttributes
-    number: NumberAttributes
-    bigint: BigintAttributes
-    boolean: BooleanAttributes
-}
+export type ResolutionNode<scope extends dict = dict> =
+    | AttributesNode<scope>
+    | BranchesNode<scope>
 
-export type ExtendableTypeName = keyof AttributesByType
-
-export type BranchesOfType<typeName extends ExtendableTypeName> = readonly (
-    | string
-    | AttributesByType[typeName]
-)[]
+export type BranchesNode<scope extends dict = dict> = array<
+    NameNode<scope> | AttributesNode<scope>
+>

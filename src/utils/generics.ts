@@ -95,9 +95,11 @@ export type immutable<o> = {
     readonly [k in keyof o]: o[k]
 }
 
-export type deepImmutable<o> = {
-    readonly [k in keyof o]: o[k] extends object ? deepImmutable<o[k]> : o[k]
-}
+export type deepImmutable<o> = [o] extends [object]
+    ? {
+          readonly [k in keyof o]: deepImmutable<o[k]>
+      }
+    : o
 
 export type subtype<t, u extends t> = u
 
@@ -125,8 +127,8 @@ export type RegexLiteral<expression extends string = string> = `/${expression}/`
  * B, with all properties of A as undefined
  **/
 export type xor<a, b> =
-    | evaluate<a & { [k in keyof b]?: undefined }>
-    | evaluate<b & { [k in keyof a]?: undefined }>
+    | evaluate<a & { [k in keyof b]?: never }>
+    | evaluate<b & { [k in keyof a]?: never }>
 
 /**
  * xoring objects can result in a type that can be assigned a value directly but
@@ -144,4 +146,4 @@ export const listFrom = <t>(data: t) =>
 
 export type autocompleteString<suggestions extends string> =
     | suggestions
-    | (string & Record<never, never>)
+    | (string & {})

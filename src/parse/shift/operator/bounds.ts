@@ -1,4 +1,4 @@
-import type { Bound, Bounds } from "../../../nodes/types/bounds.js"
+import type { Bound, Bounds } from "../../../nodes/attributes/bounds.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
@@ -74,11 +74,11 @@ export const parseRightBound = (
     } else {
         bounds = deserializeBound(comparator, limit)
     }
-    s.intersect({
-        number: { bounds },
-        string: { bounds },
-        object: { subtype: "array", bounds }
-    })
+    s.intersect([
+        { type: "number", bounds },
+        { type: "string", bounds },
+        { type: "object", subtype: "array", bounds }
+    ])
 }
 
 export type parseRightBound<

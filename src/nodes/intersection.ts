@@ -1,140 +1,48 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { mutable } from "../utils/generics.js"
-import { hasKey, hasKeys, listFrom } from "../utils/generics.js"
+import type { defined, stringKeyOf } from "../utils/generics.js"
+import { listFrom } from "../utils/generics.js"
 import type { dict, TypeName } from "../utils/typeOf.js"
-import type {
-    AttributesByType,
-    BranchesOfType,
-    ExtendableTypeName,
-    Node,
-    TypeNode
-} from "./node.js"
-import { bigintIntersection } from "./types/bigint.js"
-import { booleanIntersection } from "./types/boolean.js"
-import type { Never } from "./types/degenerate.js"
-import {
-    degenerateIntersection,
-    isDegenerate,
-    isNever
-} from "./types/degenerate.js"
-import { numberIntersection } from "./types/number.js"
-import { objectIntersection } from "./types/object.js"
-import { stringIntersection } from "./types/string.js"
 
-export const intersection = (l: Node, r: Node, scope: ScopeRoot) =>
-    isDegenerate(l) || isDegenerate(r)
-        ? degenerateIntersection(l, r)
-        : typeIntersection(l, r, scope)
+import type { Node } from "./node.js"
 
-export type AttributesIntersection<attributes extends dict> = (
-    l: attributes,
-    r: attributes,
-    scope: ScopeRoot
-) => attributes | Never
-
-const intersectionsByType: {
-    [typeName in ExtendableTypeName]: AttributesIntersection<
-        AttributesByType[typeName]
-    >
-} = {
-    bigint: bigintIntersection,
-    boolean: booleanIntersection,
-    number: numberIntersection,
-    object: objectIntersection,
-    string: stringIntersection
-}
-
-// TODO: Types uppercase when generic in function, lowercase when generic in type?
-export const branchesIntersection = <TypeName extends ExtendableTypeName>(
-    typeName: TypeName,
-    lBranches: BranchesOfType<TypeName>,
-    rBranches: BranchesOfType<TypeName>,
-    scope: ScopeRoot
-) =>
-    lBranches.flatMap((l) =>
-        rBranches.map((r) =>
-            intersectionsByType[typeName](l as any, r as any, scope)
-        )
-    )
-
-const typeIntersection = (
-    leftRoot: TypeNode,
-    rightRoot: TypeNode,
-    scope: ScopeRoot
-): Node => {
-    const result: mutable<TypeNode> = {}
-    const neverResult: NeverResult = {}
-    let typeName: TypeName
-    for (typeName in leftRoot) {
-        const l = leftRoot[typeName]
-        const r = rightRoot[typeName]
-        if (l === undefined || r === undefined) {
-            continue
-        }
-        if (l === true) {
-            result[typeName] = r as any
-            continue
-        }
-        if (r === true) {
-            result[typeName] = l as any
-            continue
-        }
-        const viableBranches = branchesIntersection(
-            typeName as ExtendableTypeName,
-            listFrom(l),
-            listFrom(r),
-            scope
-        ).filter((branch) => {
-            if (!isNever(branch)) {
-                return true
-            }
-            if (hasKey(neverResult, typeName)) {
-                neverResult[typeName].push(branch)
-            } else {
-                neverResult[typeName] = [branch]
-            }
-            return false
-        })
-        if (viableBranches.length) {
-            result[typeName] =
-                viableBranches.length === 1
-                    ? viableBranches[0]
-                    : (viableBranches as any)
-        }
-    }
-    return !hasKeys(result) ? mergeNevers(neverResult) : result
-}
-
-type NeverResult = { [k in TypeName]?: Never[] }
-
-export const mergeNevers = (neverResult: NeverResult): Never => {
-    let summary = ""
-    let typeName: TypeName
-    for (typeName in neverResult) {
-        summary += `${typeName}:\n`
-        for (const neverBranch of neverResult[typeName]!) {
-            summary += `${neverBranch.never}\n`
-        }
-        summary += "\n"
-    }
-    return { never: summary }
-}
-
-// Returns, in order of precedence:
-//  1.  "<=" if l extends r
-//  3.  null
-//  2.  ">" if r extends  (but is not equivalent to) l
-export const compareAttributes = (
-    typeName: ExtendableTypeName,
-    l: dict,
-    r: dict,
-    scope: ScopeRoot
-): "<=" | ">" | null => {
-    const intersected = intersectionsByType[typeName](l as any, r as any, scope)
-    return deepEquals(l, intersected)
-        ? "<="
-        : deepEquals(r, intersected)
-        ? ">"
-        : null
+export const intersection = (lNode: Node, rNode: Node, scope: ScopeRoot) => {
+    return lNode
+    // let k: TypeName
+    // for (k in rNode) {
+    //     const l = rNode[k]
+    //     const r = lNode[k]
+    //     if (l === undefined || r === undefined) {
+    //         continue
+    //     }
+    //     if (l === true) {
+    //         result[k] = r as any
+    //         continue
+    //     }
+    //     if (r === true) {
+    //         result[k] = l as any
+    //         continue
+    //     }
+    //     const viableBranches = branchesIntersection(
+    //         k as ExtendableTypeName,
+    //         listFrom(l),
+    //         listFrom(r),
+    //         scope
+    //     )
+    //     if (viableBranches.length) {
+    //         result[k] =
+    //             viableBranches.length === 1
+    //                 ? viableBranches[0]
+    //                 : (viableBranches as any)
+    //     }
+    // }
+    // // If the operation included a name and its result is identical to the
+    // // original resolution of that name, return the name instead of its expanded
+    // // form as the result
+    // if (typeof l === "string" && deepEquals(result, lResolution)) {
+    //     return l
+    // }
+    // if (typeof r === "string" && deepEquals(result, rResolution)) {
+    //     return r
+    // }
 }

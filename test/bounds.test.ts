@@ -79,6 +79,9 @@ describe("bound", () => {
                 })
             })
         })
+        test("whitespace following comparator", () => {
+            attest(type("number > 3").infer).typed as number
+        })
         describe("Compare Strictness", () => {
             test("l.limit === r.limit with right non exclusive", () => {
                 attest(type("number<2&number<=2").root).snap({

@@ -1,11 +1,11 @@
-import type { Node } from "./nodes/node.js"
+import type { Node, ResolutionNode } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import { Type } from "./type.js"
 import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import { throwInternalError } from "./utils/errors.js"
+import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
 import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -27,6 +27,8 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
 >
 
 let rootScope: Scope<{}> | undefined
+
+export type RootScope = ScopeRoot<{}>
 
 export const getRootScope = () => {
     rootScope ??= scope({}) as any
@@ -57,7 +59,8 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dict = dict> {
-    attributes = {} as Record<keyof inferred, Node>
+    attributes = {} as { [k in keyof inferred]: ResolutionNode<inferred> }
+    // TODO: Add intersection cache
     private cache: mutable<dict<Node>> = {}
 
     constructor(
@@ -69,31 +72,28 @@ export class ScopeRoot<inferred extends dict = dict> {
         return chainableNoOpProxy
     }
 
-    resolve(name: stringKeyOf<inferred>): Node {
-        // TODO: Ensure can't resolve to another alias here
-        if (name in this.cache) {
-            return this.cache[name]
+    resolve(name: stringKeyOf<inferred>): ResolutionNode<inferred> {
+        if (name in this.attributes) {
+            return this.attributes[name]
         }
         if (!(name in this.aliases)) {
             return throwInternalError(
                 `Unexpectedly failed to resolve alias '${name}'`
             )
         }
-        const root = parseDefinition(this.aliases[name], this)
-        this.cache[name] = deepFreeze(root)
-        return root
-    }
-
-    resolveReference(name: stringKeyOf<inferred>): Node {
-        if (name in this.cache) {
-            return this.cache[name]
+        let root = parseDefinition(this.aliases[name], this)
+        const seen: string[] = []
+        while (typeof root === "string") {
+            if (seen.includes(root)) {
+                return throwParseError(
+                    `Alias '${name}' has a shallow resolution cycle: ${seen.join(
+                        "=>"
+                    )}`
+                )
+            }
+            seen.push(root)
+            root = parseDefinition(root, this)
         }
-        if (!(name in this.aliases)) {
-            return throwInternalError(
-                `Unexpectedly failed to resolve alias '${name}'`
-            )
-        }
-        const root = parseDefinition(this.aliases[name], this)
         this.cache[name] = deepFreeze(root)
         return root
     }

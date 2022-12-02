@@ -2,7 +2,7 @@ import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { findPackageRoot, readPackageJson } from "../../../runtime/exports.js"
 import type { PackageMetadata } from "../api/extractApi.js"
-import { config } from "../main.js"
+import type { DocGenSnippetsConfig } from "../main.js"
 import type { SnippetTransformToggles } from "./extractSnippets.js"
 
 export type ExtractFileSnippetContext = {
@@ -11,10 +11,11 @@ export type ExtractFileSnippetContext = {
 }
 export const transformTsFileContents = (
     path: string,
-    project: Project
+    project: Project,
+    config: DocGenSnippetsConfig
 ): string => {
     const sourceFile = project.addSourceFileAtPath(path)
-    if (config.snippets.universalTransforms.imports) {
+    if (config.universalTransforms.imports) {
         transformRelativeImports(
             sourceFile,
             findPackageRoot(sourceFile.getFilePath())

@@ -1,6 +1,4 @@
 import { join } from "node:path"
-import type { WalkOptions } from "../runtime/exports.js"
-import { walkPaths } from "../runtime/exports.js"
 
 const root = "."
 const dev = "dev"
@@ -11,6 +9,7 @@ const outRoot = "dist"
 const typesOut = join(outRoot, "types")
 const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
+const denoOut = join(outRoot, "deno")
 
 export const repoDirs = {
     root,
@@ -21,15 +20,8 @@ export const repoDirs = {
     outRoot,
     typesOut,
     mjsOut,
-    cjsOut
+    cjsOut,
+    denoOut
 }
-
-export const isProd = () => process.argv.includes("--prod") || !!process.env.CI
 
 export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
-
-export const inFileFilter: WalkOptions = {
-    include: (path) => tsFileMatcher.test(path)
-}
-
-export const srcFiles = walkPaths(srcRoot, inFileFilter)

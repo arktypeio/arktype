@@ -33,7 +33,7 @@ describe("scope", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
         attest(s.a.root).snap({
             object: {
-                props: { b: { alias: "b" } },
+                props: { b: "b" },
                 requiredKeys: { b: true }
             }
         })
@@ -89,10 +89,10 @@ describe("scope", () => {
             b: {
                 object: {
                     subtype: "array",
-                    elements: { alias: "a" }
+                    elements: "a"
                 }
             },
-            d: { alias: "definedInScope" }
+            d: { boolean: true }
         })
     })
 })
