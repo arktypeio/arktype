@@ -1,6 +1,6 @@
 import type { defined } from "../../utils/generics.js"
 
-type LiteralValue = string | number | boolean
+export type LiteralValue = string | number | boolean
 
 export type LiteralableAttributes = {
     readonly literal?: LiteralValue | undefined
