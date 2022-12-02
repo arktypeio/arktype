@@ -1,8 +1,0 @@
-import type { ScopeRoot } from "../scope.js"
-import type { defined, stringKeyOf } from "../utils/generics.js"
-import { hasKeys } from "../utils/generics.js"
-import type { dict } from "../utils/typeOf.js"
-import type { LiteralChecker } from "./attributes/literal.js"
-import { literalableIntersection } from "./attributes/literal.js"
-import type { AttributesIntersection } from "./intersection.js"
-import type { Node } from "./node.js"

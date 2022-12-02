@@ -127,8 +127,8 @@ export type RegexLiteral<expression extends string = string> = `/${expression}/`
  * B, with all properties of A as undefined
  **/
 export type xor<a, b> =
-    | evaluate<a & { [k in keyof b]?: undefined }>
-    | evaluate<b & { [k in keyof a]?: undefined }>
+    | evaluate<a & { [k in keyof b]?: never }>
+    | evaluate<b & { [k in keyof a]?: never }>
 
 /**
  * xoring objects can result in a type that can be assigned a value directly but

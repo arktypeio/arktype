@@ -3,8 +3,8 @@ import type { array, dict, TypeName } from "../utils/typeOf.js"
 import type { BigintAttributes } from "./attributes/bigint.js"
 import type { BooleanAttributes } from "./attributes/boolean.js"
 import type { NumberAttributes } from "./attributes/divisor.js"
-import type { ObjectAttributes } from "./attributes/props.js"
-import type { StringAttributes } from "./attributes/regex.js"
+import type { ObjectAttributes } from "./attributes/object.js"
+import type { StringAttributes } from "./attributes/primitive.js"
 import type { Keyword } from "./names.js"
 
 export type Node<scope extends dict = dict> = NameNode<scope> | ResolutionNode

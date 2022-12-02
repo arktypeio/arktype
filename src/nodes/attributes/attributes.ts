@@ -1,10 +1,16 @@
-import type { keySet, subtype } from "../../utils/generics.js"
-import type { IntegerLiteral } from "../../utils/numericLiterals.js"
-import type { dict, TypeName } from "../../utils/typeOf.js"
+import type { ScopeRoot } from "../../scope.js"
+import type { mutable } from "../../utils/generics.js"
 import type { Node } from "../node.js"
-import type { Bounds } from "./bounds.js"
-import type { LiteralValue } from "./literal.js"
-import type { RegexAttribute } from "./regex.js"
+import type { ObjectAttributes } from "./object.js"
+import type {
+    BasePrimitiveAttributes,
+    BigintAttributes,
+    BooleanAttributes,
+    NullAttributes,
+    NumberAttributes,
+    StringAttributes,
+    UndefinedAttributes
+} from "./primitive.js"
 
 export type Attributes =
     | BigintAttributes
@@ -15,65 +21,43 @@ export type Attributes =
     | StringAttributes
     | UndefinedAttributes
 
-export type BasePrimitiveAttributes = {
-    readonly type: TypeName
-    readonly literal?: LiteralValue
-    readonly bounds?: Bounds
-    readonly divisor?: number
-    readonly regex?: RegexAttribute
+export const checkAttributes = (
+    data: unknown,
+    attributes: BasePrimitiveAttributes
+) => true
+
+export const attributesIntersection = (
+    l: BasePrimitiveAttributes,
+    r: BasePrimitiveAttributes,
+    scope: ScopeRoot
+): Node => {
+    if (l.type !== r.type) {
+        return "never"
+    }
+    if (l.literal !== undefined) {
+        if (r.literal !== undefined) {
+            return l.literal === r.literal ? l : "never"
+        }
+        return checkAttributes(l.literal, r) ? l : "never"
+    }
+    if (r.literal !== undefined) {
+        return checkAttributes(r.literal, l) ? r : "never"
+    }
+    const { type, literal, ...attributes } = { ...l, ...r }
+    const result: mutable<BasePrimitiveAttributes> = { type }
+    let k: IntersectedPrimitiveKey
+    for (k in attributes) {
+        if (l[k] && r[k]) {
+            const keyResult = (intersections[k] as KeyIntersection<any>)(
+                l[k],
+                r[k],
+                scope
+            )
+            if (keyResult === null) {
+                return "never"
+            }
+            result[k] = keyResult
+        }
+    }
+    return result
 }
-
-export type ObjectAttributes = {
-    readonly type: "object"
-    readonly bounds?: Bounds
-}
-
-export type BigintAttributes = subtype<
-    BasePrimitiveAttributes,
-    {
-        readonly type: "bigint"
-        readonly literal?: IntegerLiteral
-    }
->
-
-export type BooleanAttributes = subtype<
-    BasePrimitiveAttributes,
-    {
-        readonly type: "boolean"
-        readonly literal?: boolean
-    }
->
-
-export type NullAttributes = subtype<
-    BasePrimitiveAttributes,
-    {
-        readonly type: "null"
-    }
->
-
-export type NumberAttributes = subtype<
-    BasePrimitiveAttributes,
-    {
-        readonly type: "number"
-        readonly literal?: number
-        readonly bounds?: Bounds
-        readonly divisor?: number
-    }
->
-
-export type StringAttributes = subtype<
-    BasePrimitiveAttributes,
-    {
-        readonly type: "string"
-        readonly literal?: string
-        readonly bounds?: Bounds
-        readonly regex?: RegexAttribute
-    }
->
-
-export type UndefinedAttributes = subtype<
-    BasePrimitiveAttributes,
-    {
-        readonly type: "undefined"
-    }
->
