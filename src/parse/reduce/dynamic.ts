@@ -42,13 +42,14 @@ export class DynamicState {
     }
 
     ejectRootIfLimit() {
-        const maybeNumberRoot = hasType(this.root, "object") && this.root.number
         if (
-            hasType(maybeNumberRoot, "object", "dict") &&
-            maybeNumberRoot.literal !== undefined
+            hasType(this.root, "object", "dict") &&
+            this.root.type === "number" &&
+            this.root.literal !== undefined
         ) {
+            const limit = this.root.literal
             this.root = undefined
-            return maybeNumberRoot.literal
+            return limit
         }
     }
 

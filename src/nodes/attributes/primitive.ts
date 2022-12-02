@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { defined, subtype, xor } from "../../utils/generics.js"
+import type { defined, mutable, subtype, xor } from "../../utils/generics.js"
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
 import { getRegex } from "../../utils/regexCache.js"
 import type { TypeName } from "../../utils/typeOf.js"
@@ -71,6 +71,13 @@ export type StringAttributes = subtype<
     >
 >
 
+export type SymbolAttributes = subtype<
+    BasePrimitiveAttributes,
+    {
+        readonly type: "symbol"
+    }
+>
+
 export type UndefinedAttributes = subtype<
     BasePrimitiveAttributes,
     {
@@ -140,11 +147,17 @@ const primitiveIntersections: {
     regex: regexIntersection
 }
 
+// Fix bigint to check right value
+export const checkPrimitive = (
+    data: unknown,
+    attributes: BasePrimitiveAttributes
+) => true
+
 export const attributesIntersection = (
     l: BasePrimitiveAttributes,
     r: BasePrimitiveAttributes,
     scope: ScopeRoot
-): Node => {
+): BasePrimitiveAttributes | "never" => {
     if (l.type !== r.type) {
         return "never"
     }
@@ -152,21 +165,19 @@ export const attributesIntersection = (
         if (r.literal !== undefined) {
             return l.literal === r.literal ? l : "never"
         }
-        return checkAttributes(l.literal, r) ? l : "never"
+        return checkPrimitive(l.literal, r) ? l : "never"
     }
     if (r.literal !== undefined) {
-        return checkAttributes(r.literal, l) ? r : "never"
+        return checkPrimitive(r.literal, l) ? r : "never"
     }
     const { type, literal, ...attributes } = { ...l, ...r }
     const result: mutable<BasePrimitiveAttributes> = { type }
     let k: IntersectedPrimitiveKey
     for (k in attributes) {
         if (l[k] && r[k]) {
-            const keyResult = (intersections[k] as KeyIntersection<any>)(
-                l[k],
-                r[k],
-                scope
-            )
+            const keyResult = (
+                primitiveIntersections[k] as KeyIntersection<any>
+            )(l[k], r[k], scope)
             if (keyResult === null) {
                 return "never"
             }

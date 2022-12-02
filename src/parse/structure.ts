@@ -26,10 +26,9 @@ export const parseDict = (def: dict, scope: ScopeRoot): Node => {
         props[keyName] = parseDefinition(def[definitionKey], scope)
     }
     return {
-        object: {
-            props,
-            requiredKeys
-        }
+        type: "object",
+        props,
+        requiredKeys
     }
 }
 
@@ -53,24 +52,16 @@ export type inferRecord<
     }
 >
 
-export const parseTuple = (def: array, scope: ScopeRoot): Node => {
-    if (isTupleExpression(def)) {
-        return parseTupleExpression(def, scope)
-    }
-    const props: mutable<dict<Node>> = {}
-    const requiredKeys: Record<number, true> = {}
-    for (let i = 0; i < def.length; i++) {
-        props[i] = parseDefinition(def[i], scope)
-        requiredKeys[i] = true
-    }
-    return {
-        object: {
-            subtype: "array",
-            props,
-            requiredKeys
-        }
-    }
-}
+export const parseTuple = (def: array, scope: ScopeRoot): Node =>
+    isTupleExpression(def)
+        ? parseTupleExpression(def, scope)
+        : {
+              type: "object",
+              subtype: "array",
+              elements: def.map((elementDef) =>
+                  parseDefinition(elementDef, scope)
+              )
+          }
 
 export type inferTuple<
     def,

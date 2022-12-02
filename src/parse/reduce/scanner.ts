@@ -184,8 +184,6 @@ export namespace Scanner {
         TerminatingChar
     >
 
-    type Z = skipWhitespace<"   foo">
-
     export type skipWhitespace<Unscanned extends string> = shiftUntil<
         Unscanned,
         " ",

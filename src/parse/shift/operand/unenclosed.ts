@@ -1,6 +1,6 @@
 import type { Keyword } from "../../../nodes/names.js"
 import { keywords } from "../../../nodes/names.js"
-import type { Node } from "../../../nodes/node.js"
+import type { NameNode, Node } from "../../../nodes/node.js"
 import type { ScopeRoot } from "../../../scope.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
@@ -48,24 +48,23 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
 export const maybeParseIdentifier = (
     token: string,
     scope: ScopeRoot
-): Node | undefined =>
-    isKeyOf(token, keywords)
-        ? keywords[token]
-        : scope.aliases[token] || scope.config.scope?.$.aliases[token]
+): NameNode | undefined =>
+    isKeyOf(token, keywords) ||
+    scope.aliases[token] ||
+    scope.config.scope?.$.aliases[token]
         ? token
         : undefined
 
 const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { number: { literal: maybeNumber } }
+        return { type: "number", literal: maybeNumber }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
         return {
-            bigint: {
-                literal: token.slice(0, -1) as IntegerLiteral
-            }
+            type: "bigint",
+            literal: token.slice(0, -1) as IntegerLiteral
         }
     }
 }
