@@ -1,6 +1,6 @@
 import type { keySet, subtype } from "../../utils/generics.js"
 import type { dict, ObjectSubtypeName } from "../../utils/typeOf.js"
-import type { Bounds } from "../bounds.js"
+import type { Bounds } from "../shared/bounds.js"
 import type { Node } from "../node.js"
 
 export type ObjectAttributes<scope extends dict = dict> =
