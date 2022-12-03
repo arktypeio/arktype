@@ -1,4 +1,5 @@
-import type { Node, ResolutionNode } from "./nodes/node.js"
+import { keywords } from "./nodes/names.js"
+import type { NameNode, Node, ResolutionNode } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -7,7 +8,8 @@ import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
-import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
+import type { evaluate, mutable } from "./utils/generics.js"
+import { hasKey, isKeyOf, stringKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import type { dict } from "./utils/typeOf.js"
@@ -59,7 +61,8 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends dict = dict> {
-    attributes = {} as { [k in keyof inferred]: ResolutionNode<inferred> }
+    // TODO: Add inferred as resolution generic in type only
+    attributes = {} as { [k in keyof inferred]: ResolutionNode }
     // TODO: Add intersection cache
     private cache: mutable<dict<Node>> = {}
 
@@ -72,29 +75,42 @@ export class ScopeRoot<inferred extends dict = dict> {
         return chainableNoOpProxy
     }
 
-    resolve(name: stringKeyOf<inferred>): ResolutionNode<inferred> {
-        if (name in this.attributes) {
+    isResolvable(name: string) {
+        return isKeyOf(name, keywords) ||
+            this.aliases[name] ||
+            this.config.scope?.$.attributes[name]
+            ? true
+            : false
+    }
+
+    resolve(name: NameNode<inferred>, seen: string[] = []): ResolutionNode {
+        if (isKeyOf(name, keywords)) {
+            return keywords[name] as any
+        }
+        if (isKeyOf(name, this.attributes)) {
             return this.attributes[name]
         }
-        if (!(name in this.aliases)) {
-            return throwInternalError(
-                `Unexpectedly failed to resolve alias '${name}'`
+        if (!this.aliases[name]) {
+            return (
+                this.config.scope?.$.attributes[name] ??
+                throwInternalError(
+                    `Unexpectedly failed to resolve alias '${name}'`
+                )
             )
         }
-        let root = parseDefinition(this.aliases[name], this)
-        const seen: string[] = []
-        while (typeof root === "string") {
-            if (seen.includes(root)) {
-                return throwParseError(
-                    `Alias '${name}' has a shallow resolution cycle: ${seen.join(
-                        "=>"
-                    )}`
-                )
-            }
-            seen.push(root)
-            root = parseDefinition(root, this)
+        if (seen.includes(name)) {
+            return throwParseError(
+                `Alias '${name}' has a shallow resolution cycle: ${seen.join(
+                    "=>"
+                )}`
+            )
         }
-        this.cache[name] = deepFreeze(root)
+        const root = parseDefinition(this.aliases[name], this)
+        if (typeof root === "string") {
+            seen.push(name)
+            return this.resolve(root, seen)
+        }
+        this.attributes[name] = deepFreeze(root)
         return root
     }
 

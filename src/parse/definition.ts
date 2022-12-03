@@ -4,15 +4,15 @@ import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isAny, isTopType } from "../utils/generics.js"
 import type { array, dict, TypeName } from "../utils/typeOf.js"
 import { objectSubtypeOf, typeOf } from "../utils/typeOf.js"
-import type { inferString, validateString } from "./string.js"
-import { parseString } from "./string.js"
 import type {
     inferRecord,
     inferTuple,
     TupleExpression,
     validateTupleExpression
-} from "./structure.js"
-import { parseDict, parseTuple } from "./structure.js"
+} from "./object.js"
+import { parseDict, parseTuple } from "./object.js"
+import type { inferString, validateString } from "./string.js"
+import { parseString } from "./string.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): Node => {
     const defType = typeOf(def)

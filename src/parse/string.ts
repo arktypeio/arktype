@@ -8,7 +8,6 @@ import type { Scanner } from "./reduce/scanner.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
 import type { isResolvableIdentifier } from "./shift/operand/unenclosed.js"
-import { maybeParseIdentifier } from "./shift/operand/unenclosed.js"
 import { parseOperator } from "./shift/operator/operator.js"
 
 export const parseString = (def: string, scope: ScopeRoot) =>
@@ -59,15 +58,14 @@ type maybeNaiveParse<
 
 export const maybeNaiveParse = (def: string, scope: ScopeRoot) => {
     if (def.endsWith("[]")) {
-        const maybeParsedAttributes = maybeParseIdentifier(
-            def.slice(0, -2),
-            scope
-        )
-        if (maybeParsedAttributes) {
-            return morph("array", maybeParsedAttributes)
+        const elementDef = def.slice(0, -2)
+        if (scope.isResolvable(elementDef)) {
+            return morph("array", elementDef)
         }
     }
-    return maybeParseIdentifier(def, scope)
+    if (scope.isResolvable(def)) {
+        return def
+    }
 }
 
 export const fullStringParse = (def: string, scope: ScopeRoot) => {
