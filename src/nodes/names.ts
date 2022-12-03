@@ -1,7 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepFreeze } from "../utils/freeze.js"
 import type { narrow } from "../utils/generics.js"
-import { isKeyOf } from "../utils/generics.js"
 import type { Node } from "./node.js"
 
 const defineKeywords = <definitions extends { [keyword in Keyword]: Node }>(
@@ -78,7 +77,4 @@ export type Keywords = {
 }
 
 export const resolveIfName = (node: Node, scope: ScopeRoot) =>
-    typeof node === "string" ? resolveName(node, scope) : node
-
-export const resolveName = (name: string, scope: ScopeRoot) =>
-    isKeyOf(name, keywords) ? keywords[name] : scope.resolve(name)
+    typeof node === "string" ? scope.resolve(node) : node

@@ -38,11 +38,11 @@ export const primitiveIntersection = (
     if (literalResult) {
         return literalResult
     }
-    const { type, literal, ...attributes } = { ...l, ...r }
-    const result: mutable<BasePrimitiveAttributes> = { type }
-    let k: IntersectedPrimitiveKey
-    for (k in attributes) {
-        if (l[k] && r[k]) {
+    const result = { ...l, ...r }
+    let k: PrimitiveAttributeName
+    for (k in result) {
+        // type and literal have already been handled, so skip those
+        if (k !== "type" && k !== "literal" && l[k] && r[k]) {
             const keyResult = (
                 primitiveIntersections[k] as PrimitiveKeyIntersection<any>
             )(l[k], r[k])

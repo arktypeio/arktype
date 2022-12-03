@@ -32,7 +32,7 @@ export const checkPrimitive = (
     data: unknown,
     attributes: BasePrimitiveAttributes
 ) => {
-    if (hasType(data, attributes.type)) {
+    if (!hasType(data, attributes.type)) {
         return false
     }
     return true
