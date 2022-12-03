@@ -24,7 +24,7 @@ describe("union/discriminate", () => {
     test("discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert", { scope: places }).root
-        ).snap("ocean")
+        ).snap()
     })
     // TODO: Don't unnecessarily expand aliases in final type just because
     // they're used for pruning/discrimination
@@ -32,29 +32,6 @@ describe("union/discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert|anywhereWet", { scope: places })
                 .root
-        ).snap({
-            object: [
-                {
-                    props: {
-                        wet: { boolean: { literal: false } },
-                        blue: { boolean: { literal: true } },
-                        isSky: { boolean: { literal: true } }
-                    },
-                    requiredKeys: { wet: true, blue: true, isSky: true }
-                },
-                {
-                    props: {
-                        wet: { boolean: { literal: false } },
-                        blue: { boolean: { literal: false } },
-                        isDesert: { boolean: { literal: true } }
-                    },
-                    requiredKeys: { wet: true, blue: true, isDesert: true }
-                },
-                {
-                    props: { wet: { boolean: { literal: true } } },
-                    requiredKeys: { wet: true }
-                }
-            ]
-        })
+        ).snap()
     })
 })

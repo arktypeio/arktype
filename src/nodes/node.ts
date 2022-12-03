@@ -1,6 +1,6 @@
 import type { autocompleteString, stringKeyOf } from "../utils/generics.js"
 import type { array, dict } from "../utils/typeOf.js"
-import type { AttributesNode } from "./attributes/attributes.js"
+import type { AttributesNode } from "./attributes.js"
 import type { Keyword } from "./names.js"
 
 export type Node<scope extends dict = dict> = NameNode<scope> | ResolutionNode

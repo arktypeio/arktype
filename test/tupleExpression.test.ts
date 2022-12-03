@@ -10,7 +10,7 @@ describe("tuple expression", () => {
     test("union", () => {
         const t = type(["string", "|", "number"])
         attest(t.infer).typed as string | number
-        attest(t.root).snap({ string: true, number: true })
+        attest(t.root).snap(["string", "number"])
     })
     test("intersection", () => {
         const t = type([{ a: "string" }, "&", { b: "number" }])
@@ -19,28 +19,24 @@ describe("tuple expression", () => {
             b: number
         }
         attest(t.root).snap({
-            object: {
-                props: { b: { number: true }, a: { string: true } },
-                requiredKeys: { b: true, a: true }
-            }
+            type: "object",
+            props: { b: "number", a: "string" },
+            requiredKeys: { b: true, a: true }
         })
     })
     test("list", () => {
         const t = type(["string", "[]"])
         attest(t.infer).typed as string[]
         attest(t.root).snap({
-            object: { subtype: "array", elements: { string: true } }
+            type: "object",
+            subtype: "array",
+            elements: "string"
         })
     })
     test("nested union", () => {
         const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
         attest(t.infer).typed as string | number | bigint | boolean
-        attest(t.root).snap({
-            string: true,
-            bigint: true,
-            number: true,
-            boolean: true
-        })
+        attest(t.root).snap(["string", "bigint", "number", "boolean"])
     })
     describe("errors", () => {
         test("missing right operand", () => {
