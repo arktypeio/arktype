@@ -2,7 +2,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { mutable } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
-import type { AttributesNode } from "./attributes/attributes.js"
+import type { AttributesNode } from "./attributes.js"
 import type { Node } from "./node.js"
 
 export const union = (lNode: Node, rNode: Node, scope: ScopeRoot) => {

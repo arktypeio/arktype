@@ -6,8 +6,8 @@ import type { dict, TypeName } from "../utils/typeOf.js"
 
 import type { Node } from "./node.js"
 
-export const intersection = (lNode: Node, rNode: Node, scope: ScopeRoot) => {
-    return lNode
+export const intersection = (l: Node, r: Node, scope: ScopeRoot) => {
+    return l
     // let k: TypeName
     // for (k in rNode) {
     //     const l = rNode[k]

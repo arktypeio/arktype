@@ -1,8 +1,7 @@
-import type { ScopeRoot } from "../../scope.js"
 import type { keySet, subtype } from "../../utils/generics.js"
 import type { dict, ObjectSubtypeName } from "../../utils/typeOf.js"
+import type { Bounds } from "../bounds.js"
 import type { Node } from "../node.js"
-import type { Bounds } from "./bounds.js"
 
 export type ObjectAttributes<scope extends dict = dict> =
     UniversalObjectAttributes<scope> &
@@ -42,19 +41,3 @@ export type FunctionAttributes<scope extends dict> = subtype<
         readonly subtype: "function"
     }
 >
-
-export const checkObject = (
-    data: object,
-    attributes: BaseObjectAttributes,
-    scope: ScopeRoot
-) => {
-    return true
-}
-
-export const objectIntersection = (
-    l: BaseObjectAttributes,
-    r: BaseObjectAttributes,
-    scope: ScopeRoot
-) => {
-    return l as Node
-}
