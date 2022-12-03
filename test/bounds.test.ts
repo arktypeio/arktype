@@ -13,156 +13,141 @@ describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
             test(">", () => {
-                const number = type("number>0")
-                attest(number.infer).typed as number
-                attest(number.root).snap({
-                    number: { bounds: { min: { limit: 0, exclusive: true } } }
+                const t = type("number>0")
+                attest(t.infer).typed as number
+                attest(t.root).snap({
+                    type: "number",
+                    bounds: { min: { limit: 0, exclusive: true } }
                 })
             })
             test("<", () => {
-                const number = type("number<10")
-                attest(number.infer).typed as number
-                attest(number.root).snap({
-                    number: { bounds: { max: { limit: 10, exclusive: true } } }
+                const t = type("number<10")
+                attest(t.infer).typed as number
+                attest(t.root).snap({
+                    type: "number",
+                    bounds: { max: { limit: 10, exclusive: true } }
                 })
             })
             test(">=", () => {
-                const number = type("number>=3.14159")
-                attest(number.infer).typed as number
-                attest(number.root).snap({
-                    number: { bounds: { min: { limit: 3.14159 } } }
+                const t = type("number>=3.14159")
+                attest(t.infer).typed as number
+                attest(t.root).snap({
+                    type: "number",
+                    bounds: { min: { limit: 3.14159 } }
                 })
             })
             test("<=", () => {
-                const number = type("number<=-49")
-                attest(number.infer).typed as number
-                attest(number.root).snap({
-                    number: { bounds: { max: { limit: -49 } } }
+                const t = type("number<=-49")
+                attest(t.infer).typed as number
+                attest(t.root).snap({
+                    type: "number",
+                    bounds: { max: { limit: -49 } }
                 })
             })
             test("==", () => {
-                const number = type("number==3211993")
-                attest(number.infer).typed as number
-                attest(number.root).snap({
-                    number: {
-                        bounds: {
-                            min: { limit: 3211993 },
-                            max: { limit: 3211993 }
-                        }
+                const t = type("number==3211993")
+                attest(t.infer).typed as number
+                attest(t.root).snap({
+                    type: "number",
+                    bounds: {
+                        min: { limit: 3211993 },
+                        max: { limit: 3211993 }
                     }
                 })
             })
         })
         describe("double", () => {
             test("<,<=", () => {
-                const number = type("-5<number<=5")
-                attest(number.infer).typed as number
-                attest(number.root).snap({
-                    number: {
-                        bounds: {
-                            min: { limit: -5, exclusive: true },
-                            max: { limit: 5 }
-                        }
+                const t = type("-5<number<=5")
+                attest(t.infer).typed as number
+                attest(t.root).snap({
+                    type: "number",
+                    bounds: {
+                        min: { limit: -5, exclusive: true },
+                        max: { limit: 5 }
                     }
                 })
             })
             test("<=,<", () => {
-                const number = type("-3.23<=number<4.654")
-                attest(number.infer).typed as number
-                attest(number.root).snap({
-                    number: {
-                        bounds: {
-                            min: { limit: -3.23 },
-                            max: { limit: 4.654, exclusive: true }
-                        }
+                const t = type("-3.23<=number<4.654")
+                attest(t.infer).typed as number
+                attest(t.root).snap({
+                    type: "number",
+                    bounds: {
+                        min: { limit: -3.23 },
+                        max: { limit: 4.654, exclusive: true }
                     }
                 })
             })
         })
         test("whitespace following comparator", () => {
-            attest(type("number > 3").infer).typed as number
+            const t = type("number > 3")
+            attest(t.infer).typed as number
+            attest(t.root).snap()
         })
-        describe("Compare Strictness", () => {
+        describe("intersection", () => {
             test("l.limit === r.limit with right non exclusive", () => {
-                attest(type("number<2&number<=2").root).snap({
-                    number: { bounds: { max: { limit: 2, exclusive: true } } }
-                })
+                attest(type("number<2&number<=2").root).snap()
             })
             test("l.limit === r.limit with right non exclusive", () => {
-                attest(type("number<2&number<=2").root).snap({
-                    number: { bounds: { max: { limit: 2, exclusive: true } } }
-                })
+                attest(type("number<2&number<=2").root).snap()
             })
             test("l.limit === r.limit with right exclusive", () => {
-                attest(type("number<2&number<2").root).snap({
-                    number: { bounds: { max: { limit: 2, exclusive: true } } }
-                })
+                attest(type("number<2&number<2").root).snap()
             })
             test("l.limit === r.limit with left non exclusive right exclusive", () => {
-                attest(type("number<=2&number<2").root).snap({
-                    number: { bounds: { max: { limit: 2, exclusive: true } } }
-                })
+                attest(type("number<=2&number<2").root).snap()
             })
             test("l.limit === r.limit with left non exclusive right non exclusive", () => {
-                attest(type("number<=2&number<=2").root).snap({
-                    number: { bounds: { max: { limit: 2 } } }
-                })
+                attest(type("number<=2&number<=2").root).snap()
             })
             test("l.limit !== kind==min r.limit with l < r", () => {
-                attest(type("number>5&number>7").root).snap({
-                    number: { bounds: { min: { limit: 7, exclusive: true } } }
-                })
+                attest(type("number>5&number>7").root).snap()
             })
             test("l.limit !== kind==min r.limit with l > r", () => {
-                attest(type("number>9&number>7").root).snap({
-                    number: { bounds: { min: { limit: 9, exclusive: true } } }
-                })
+                attest(type("number>9&number>7").root).snap()
             })
             test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<9&number<7").root).snap({
-                    number: { bounds: { max: { limit: 7, exclusive: true } } }
-                })
+                attest(type("number<9&number<7").root).snap()
             })
             test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<7&number<9").root).snap({
-                    number: { bounds: { max: { limit: 7, exclusive: true } } }
-                })
+                attest(type("number<7&number<9").root).snap()
             })
+        })
 
-            describe("errors", () => {
-                test("single equals", () => {
-                    // @ts-expect-error
-                    attest(() => type("string=5")).throwsAndHasTypeError(
-                        singleEqualsMessage
-                    )
-                })
-                test("invalid left comparator", () => {
-                    // @ts-expect-error
-                    attest(() => type("3>number<5")).throwsAndHasTypeError(
-                        buildUnpairableComparatorMessage(">")
-                    )
-                })
-                test("invalid right double-bound comparator", () => {
-                    // @ts-expect-error
-                    attest(() => type("3<number==5")).throwsAndHasTypeError(
-                        buildUnpairableComparatorMessage("==")
-                    )
-                })
-                test("unpaired left", () => {
-                    // @ts-expect-error
-                    attest(() => type("3<number")).throwsAndHasTypeError(
-                        buildOpenRangeMessage(3, "<")
-                    )
-                })
-                test("double left", () => {
-                    // @ts-expect-error
-                    attest(() => type("3<5<8")).throwsAndHasTypeError(
-                        buildMultipleLeftBoundsMessage(3, "<", 5, "<")
-                    )
-                })
-                test("empty range error DAVID HELP", () => {
-                    attest(type("number>3&number<2").root).snap()
-                })
+        describe("errors", () => {
+            test("single equals", () => {
+                // @ts-expect-error
+                attest(() => type("string=5")).throwsAndHasTypeError(
+                    singleEqualsMessage
+                )
+            })
+            test("invalid left comparator", () => {
+                // @ts-expect-error
+                attest(() => type("3>number<5")).throwsAndHasTypeError(
+                    buildUnpairableComparatorMessage(">")
+                )
+            })
+            test("invalid right double-bound comparator", () => {
+                // @ts-expect-error
+                attest(() => type("3<number==5")).throwsAndHasTypeError(
+                    buildUnpairableComparatorMessage("==")
+                )
+            })
+            test("unpaired left", () => {
+                // @ts-expect-error
+                attest(() => type("3<number")).throwsAndHasTypeError(
+                    buildOpenRangeMessage(3, "<")
+                )
+            })
+            test("double left", () => {
+                // @ts-expect-error
+                attest(() => type("3<5<8")).throwsAndHasTypeError(
+                    buildMultipleLeftBoundsMessage(3, "<", 5, "<")
+                )
+            })
+            test("empty range error DAVID HELP", () => {
+                attest(type("number>3&number<2").root).snap()
             })
         })
     })

@@ -7,20 +7,18 @@ describe("struct", () => {
         const o = type({ a: "string", b: "boolean[]" })
         attest(o.infer).typed as { a: string; b: boolean[] }
         attest(o.root).snap({
-            object: {
-                props: {
-                    a: { string: true },
-                    b: {
-                        object: {
-                            subtype: "array",
-                            elements: { boolean: true }
-                        }
-                    }
-                },
-                requiredKeys: {
-                    a: true,
-                    b: true
+            type: "object",
+            props: {
+                a: "string",
+                b: {
+                    type: "object",
+                    subtype: "array",
+                    elements: "boolean"
                 }
+            },
+            requiredKeys: {
+                a: true,
+                b: true
             }
         })
     })
@@ -28,19 +26,17 @@ describe("struct", () => {
         const o = type({ "a?": "string", b: "boolean[]" })
         attest(o.infer).typed as { a?: string; b: boolean[] }
         attest(o.root).snap({
-            object: {
-                props: {
-                    a: { string: true },
-                    b: {
-                        object: {
-                            subtype: "array",
-                            elements: { boolean: true }
-                        }
-                    }
-                },
-                requiredKeys: {
-                    b: true
+            type: "object",
+            props: {
+                a: "string",
+                b: {
+                    type: "object",
+                    subtype: "array",
+                    elements: "boolean"
                 }
+            },
+            requiredKeys: {
+                b: true
             }
         })
     })

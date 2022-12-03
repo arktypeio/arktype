@@ -10,25 +10,22 @@ describe("union/parse", () => {
     test("binary", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
-        attest(binary.root).snap({ number: true, string: true })
+        attest(binary.root).snap(["number", "string"])
     })
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        attest(nary.root).snap({
-            boolean: { literal: false },
-            string: { literal: "" },
-            number: { literal: 0 },
-            null: true,
-            undefined: true
-        })
+        attest(nary.root).snap([
+            { type: "number", literal: 0 },
+            { type: "string", literal: "" },
+            { type: "boolean", literal: false },
+            "null",
+            "undefined"
+        ])
     })
     test("union of true and false reduces to boolean", () => {
         attest(type("true|false").root).equals("boolean")
-        attest(type("true|false|number").root).equals({
-            boolean: true,
-            number: true
-        })
+        attest(type("true|false|number").root).equals(["boolean", "number"])
     })
     describe("errors", () => {
         test("bad reference", () => {
