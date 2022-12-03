@@ -1,10 +1,8 @@
-import type { ScopeRoot } from "../../scope.js"
 import type { defined, mutable, subtype, xor } from "../../utils/generics.js"
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
 import { getRegex } from "../../utils/regexCache.js"
 import type { TypeName } from "../../utils/typeOf.js"
 import { hasType } from "../../utils/typeOf.js"
-import type { Node } from "../node.js"
 import type { Bounds } from "./bounds.js"
 import { boundsIntersection } from "./bounds.js"
 
@@ -15,6 +13,17 @@ export type BasePrimitiveAttributes = {
     readonly divisor?: number
     readonly regex?: RegexAttribute
 }
+
+export type PrimitiveAttributes = subtype<
+    BasePrimitiveAttributes,
+    | BigintAttributes
+    | BooleanAttributes
+    | NullAttributes
+    | NumberAttributes
+    | StringAttributes
+    | SymbolAttributes
+    | UndefinedAttributes
+>
 
 export type PrimitiveAttributeName = keyof BasePrimitiveAttributes
 
@@ -97,7 +106,10 @@ export const checkRegex = (data: string, regex: RegexAttribute) =>
 const checkRegexExpression = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection: KeyIntersection<RegexAttribute> = (l, r) => {
+export const regexIntersection: PrimitiveKeyIntersection<RegexAttribute> = (
+    l,
+    r
+) => {
     if (hasType(l, "string")) {
         if (hasType(r, "string")) {
             return l === r ? l : [l, r]
@@ -132,7 +144,7 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export type KeyIntersection<t> = (l: t, r: t, scope: ScopeRoot) => t | null
+export type PrimitiveKeyIntersection<t> = (l: t, r: t) => t | null
 
 type IntersectedPrimitiveKey = Exclude<
     keyof BasePrimitiveAttributes,
@@ -140,7 +152,9 @@ type IntersectedPrimitiveKey = Exclude<
 >
 
 const primitiveIntersections: {
-    [k in IntersectedPrimitiveKey]: KeyIntersection<PrimitiveAttributeType<k>>
+    [k in IntersectedPrimitiveKey]: PrimitiveKeyIntersection<
+        PrimitiveAttributeType<k>
+    >
 } = {
     bounds: boundsIntersection,
     divisor: divisorIntersection,
@@ -153,22 +167,24 @@ export const checkPrimitive = (
     attributes: BasePrimitiveAttributes
 ) => true
 
-export const attributesIntersection = (
+export const primitiveIntersection = (
     l: BasePrimitiveAttributes,
-    r: BasePrimitiveAttributes,
-    scope: ScopeRoot
-): BasePrimitiveAttributes | "never" => {
-    if (l.type !== r.type) {
-        return "never"
-    }
+    r: BasePrimitiveAttributes
+): PrimitiveAttributes | "never" => {
     if (l.literal !== undefined) {
         if (r.literal !== undefined) {
-            return l.literal === r.literal ? l : "never"
+            return l.literal === r.literal
+                ? (l as PrimitiveAttributes)
+                : "never"
         }
-        return checkPrimitive(l.literal, r) ? l : "never"
+        return checkPrimitive(l.literal, r)
+            ? (l as PrimitiveAttributes)
+            : "never"
     }
     if (r.literal !== undefined) {
-        return checkPrimitive(r.literal, l) ? r : "never"
+        return checkPrimitive(r.literal, l)
+            ? (r as PrimitiveAttributes)
+            : "never"
     }
     const { type, literal, ...attributes } = { ...l, ...r }
     const result: mutable<BasePrimitiveAttributes> = { type }
@@ -176,13 +192,13 @@ export const attributesIntersection = (
     for (k in attributes) {
         if (l[k] && r[k]) {
             const keyResult = (
-                primitiveIntersections[k] as KeyIntersection<any>
-            )(l[k], r[k], scope)
+                primitiveIntersections[k] as PrimitiveKeyIntersection<any>
+            )(l[k], r[k])
             if (keyResult === null) {
                 return "never"
             }
             result[k] = keyResult
         }
     }
-    return result
+    return result as PrimitiveAttributes
 }
