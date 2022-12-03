@@ -1,6 +1,5 @@
 import type { ScopeRoot } from "../../scope.js"
 import { hasType } from "../../utils/typeOf.js"
-import type { BaseAttributes } from "../attributes.js"
 import type { BaseObjectAttributes, ObjectAttributes } from "./attributes.js"
 
 export const checkObject = (
@@ -15,7 +14,7 @@ export const checkObject = (
 
 export const objectIntersection = (
     l: BaseObjectAttributes,
-    r: BaseAttributes,
+    r: BaseObjectAttributes,
     scope: ScopeRoot
 ): ObjectAttributes | "never" => {
     if (r.type !== "object") {
