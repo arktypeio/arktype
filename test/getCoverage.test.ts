@@ -11,11 +11,11 @@ describe("number", () => {
         attest(type("number%2&number%3").root).snap({ number: { divisor: 6 } })
     })
 })
-describe("obj", () => {
-    //alias in a scope
-    test("literals same literal intersection", () => {
-        type a = { a: string }
-        type b = { b: string }
-        attest("a&b").snap()
-    })
-})
+// describe("obj", () => {
+//     //alias in a scope
+//     test("literals same literal intersection", () => {
+//         type a = { a: string }
+//         type b = { b: string }
+//         attest("a&b").snap("a&b")
+//     })
+// })

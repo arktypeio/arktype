@@ -8,7 +8,6 @@ import {
 } from "../src/parse/reduce/shared.js"
 import { singleEqualsMessage } from "../src/parse/shift/operator/bounds.js"
 
-//TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
@@ -78,9 +77,6 @@ describe("bound", () => {
                     }
                 })
             })
-        })
-        test("whitespace following comparator", () => {
-            attest(type("number > 3").infer).typed as number
         })
         describe("Compare Strictness", () => {
             test("l.limit === r.limit with right non exclusive", () => {
@@ -161,7 +157,7 @@ describe("bound", () => {
                     )
                 })
                 test("empty range error DAVID HELP", () => {
-                    attest(type("number>3&number<2").root).snap()
+                    attest(type("number>3&number<2").root).snap("number")
                 })
             })
         })
