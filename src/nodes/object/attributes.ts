@@ -1,7 +1,7 @@
-import type { keySet, subtype } from "../../utils/generics.js"
+import type { evaluate, keySet, subtype } from "../../utils/generics.js"
 import type { dict, ObjectSubtypeName } from "../../utils/typeOf.js"
-import type { Bounds } from "../shared/bounds.js"
 import type { Node } from "../node.js"
+import type { Bounds } from "../shared/bounds.js"
 
 export type ObjectAttributes<scope extends dict = dict> =
     UniversalObjectAttributes<scope> &
@@ -9,6 +9,8 @@ export type ObjectAttributes<scope extends dict = dict> =
 
 export type BaseObjectAttributes<scope extends dict = dict> =
     UniversalObjectAttributes<scope> & BaseSubtypeAttributes<scope>
+
+export type ObjectAttributeName = evaluate<keyof BaseObjectAttributes>
 
 type UniversalObjectAttributes<scope extends dict> = {
     readonly type: "object"

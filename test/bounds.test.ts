@@ -176,11 +176,8 @@ describe("bound", () => {
                     buildMultipleLeftBoundsMessage(3, "<", 5, "<")
                 )
             })
-            test("empty range error DAVID HELP", () => {
-                attest(type("number>3&number<2").root).snap({
-                    type: "number",
-                    bounds: { never: "the range bounded by <3 and >2 is empty" }
-                })
+            test("empty range", () => {
+                attest(type("number>3&number<2").root).snap("never")
             })
         })
     })

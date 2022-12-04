@@ -1,4 +1,3 @@
-import type { mutable } from "../../utils/generics.js"
 import { boundsIntersection } from "../shared/bounds.js"
 import type {
     BasePrimitiveAttributes,

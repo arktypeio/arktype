@@ -8,7 +8,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection = (l: Bounds, r: Bounds) => {
+export const boundsIntersection = (l: Bounds, r: Bounds): Bounds | null => {
     const min =
         r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
             ? r.min
@@ -20,9 +20,7 @@ export const boundsIntersection = (l: Bounds, r: Bounds) => {
     return min
         ? max
             ? compareStrictness(min, max, "min") === "l"
-                ? {
-                      never: buildEmptyRangeMessage("min", min, max)
-                  }
+                ? null
                 : { min, max }
             : { min }
         : { max: max! }
