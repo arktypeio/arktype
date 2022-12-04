@@ -13,9 +13,9 @@ import type {
     Attributes,
     BaseAttributes,
     BaseAttributeType,
-    Branches,
     Node
 } from "./node.js"
+import type { Branches } from "./union.js"
 import { union } from "./union.js"
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {

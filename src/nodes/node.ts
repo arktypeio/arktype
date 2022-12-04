@@ -5,20 +5,19 @@ import type {
     xor
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import type { array, ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
+import type { ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./attributes/bounds.js"
 import type { ChildrenAttribute } from "./attributes/children.js"
 import type { LiteralValue } from "./attributes/literal.js"
 import type { RegexAttribute } from "./attributes/regex.js"
 import type { Keyword } from "./names.js"
+import type { Branches } from "./union.js"
 
 export type Node = NameNode | ResolutionNode
 
 export type NameNode = autocompleteString<Keyword>
 
 export type ResolutionNode = Attributes | Branches
-
-export type Branches = array<NameNode | Attributes>
 
 export type BaseAttributes = {
     readonly type: TypeName
