@@ -1,3 +1,6 @@
+export const checkDivisor = (data: number, divisor: number) =>
+    data % divisor === 0
+
 export const divisorIntersection = (l: number, r: number) =>
     Math.abs((l * r) / greatestCommonDivisor(l, r))
 

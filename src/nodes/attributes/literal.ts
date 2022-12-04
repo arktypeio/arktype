@@ -24,3 +24,8 @@ export const intersectionIfLiteral = (
             : "never"
     }
 }
+
+export const checkLiteral = (
+    data: number | string | boolean | bigint,
+    attribute: LiteralValue
+) => attribute === (typeof data === "bigint" ? `${data}` : data)
