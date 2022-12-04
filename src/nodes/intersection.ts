@@ -1,6 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { mutable } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import { hasType } from "../utils/typeOf.js"
 import { resolveIfName } from "./names.js"
@@ -9,6 +8,7 @@ import type { ObjectAttributes } from "./object/attributes.js"
 import { objectIntersection } from "./object/intersection.js"
 import type { PrimitiveAttributes } from "./primitive/attributes.js"
 import { primitiveIntersection } from "./primitive/intersection.js"
+import { union } from "./union.js"
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
     const lResolution = resolveIfName(l, scope)
@@ -18,13 +18,12 @@ export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
         : hasType(rResolution, "object", "array")
         ? branchesIntersection([lResolution], rResolution, scope)
         : attributesIntersection(lResolution, rResolution, scope)
-    // If the intersection included a name and its result is identical to the
-    // original resolution of that name, return the name instead of its expanded
-    // form as the result
-    if (typeof l === "string" && deepEquals(result, lResolution)) {
+    // If the intersection result is identical to one of its operands,
+    // return the original operand either as a name or resolution
+    if (deepEquals(result, lResolution)) {
         return l
     }
-    if (typeof r === "string" && deepEquals(result, rResolution)) {
+    if (deepEquals(result, rResolution)) {
         return r
     }
     return result
@@ -35,23 +34,16 @@ const branchesIntersection = (
     r: BranchesNode,
     scope: ScopeRoot
 ) => {
-    const result: mutable<BranchesNode> = []
+    let result: Node = "never"
     for (const lBranch of l) {
         for (const rBranch of r) {
             const branchResult = intersection(lBranch, rBranch, scope)
-            for (const branch of listFrom(branchResult)) {
-                if (branch !== "never") {
-                    // TODO: Avoid pushing subtypes
-                    result.push(branch)
-                }
+            if (branchResult !== "never") {
+                result = union(result, listFrom(branchResult), scope)
             }
         }
     }
-    return result.length === 0
-        ? "never"
-        : result.length === 1
-        ? result[0]
-        : result
+    return result
 }
 
 const attributesIntersection = (
