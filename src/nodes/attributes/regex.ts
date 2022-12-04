@@ -1,6 +1,6 @@
 import { getRegex } from "../../utils/regexCache.js"
 import { hasType } from "../../utils/typeOf.js"
-import type { KeyIntersection } from "./intersection.js"
+import type { KeyIntersection } from "../intersection.js"
 
 export type RegexAttribute = string | readonly string[]
 

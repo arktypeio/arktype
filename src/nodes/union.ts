@@ -1,5 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { listFrom } from "../utils/generics.js"
+import { dict } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
 import type { Node } from "./node.js"
 

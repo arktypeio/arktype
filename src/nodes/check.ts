@@ -1,8 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
-import { hasObjectSubtype } from "../utils/typeOf.js"
-import { checkAttributes } from "./attributes/check.js"
+import { hasObjectSubtype, hasType } from "../utils/typeOf.js"
 import { resolveIfName } from "./names.js"
-import type { Node } from "./node.js"
+import type { BaseAttributes, Node } from "./node.js"
 
 export const checkNode = (
     data: unknown,
@@ -13,4 +12,15 @@ export const checkNode = (
     return hasObjectSubtype(resolution, "array")
         ? resolution.some((branch) => checkNode(data, branch, scope))
         : checkAttributes(data, resolution, scope)
+}
+
+export const checkAttributes = (
+    data: unknown,
+    attributes: BaseAttributes,
+    scope: ScopeRoot
+) => {
+    if (!hasType(data, attributes.type)) {
+        return false
+    }
+    return true
 }

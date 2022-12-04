@@ -1,7 +1,7 @@
 import type { keySet } from "../../utils/generics.js"
 import type { dict } from "../../utils/typeOf.js"
+import type { KeyIntersection } from "../intersection.js"
 import type { Node } from "../node.js"
-import type { KeyIntersection } from "./intersection.js"
 
 export type ChildrenAttribute<scope extends dict> = {
     props?: dict<Node<scope>>

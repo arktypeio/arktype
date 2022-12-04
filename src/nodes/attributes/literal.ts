@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { Attributes, BaseAttributes } from "./attributes.js"
-import { checkAttributes } from "./check.js"
+import { checkAttributes } from "../check.js"
+import type { Attributes, BaseAttributes } from "../node.js"
 
 export type LiteralValue = string | number | boolean
 
