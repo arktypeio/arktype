@@ -18,6 +18,9 @@ describe("intersection", () => {
             attest(t.infer).typed as false
             attest(t.root).snap({ type: "boolean", literal: false })
         })
+        test("literals same literal intersection", () => {
+            attest(type("2&2").root).snap({ type: "number", literal: 2 })
+        })
         describe("errors", () => {
             test("bad reference", () => {
                 // @ts-expect-error

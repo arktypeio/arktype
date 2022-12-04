@@ -17,6 +17,9 @@ describe("divisibility", () => {
             test("whitespace after modulo", () => {
                 attest(type("number % 5").infer).typed as number
             })
+            test("number gcd", () => {
+                attest(type("number%2&number%3").root).snap("number")
+            })
         })
         describe("invalid", () => {
             test("non-integer divisor", () => {

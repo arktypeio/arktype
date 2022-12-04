@@ -82,35 +82,35 @@ describe("bound", () => {
         test("whitespace following comparator", () => {
             const t = type("number > 3")
             attest(t.infer).typed as number
-            attest(t.root).snap()
+            attest(t.root).snap("number")
         })
         describe("intersection", () => {
             test("l.limit === r.limit with right non exclusive", () => {
-                attest(type("number<2&number<=2").root).snap()
+                attest(type("number<2&number<=2").root).snap("number")
             })
             test("l.limit === r.limit with right non exclusive", () => {
-                attest(type("number<2&number<=2").root).snap()
+                attest(type("number<2&number<=2").root).snap("number")
             })
             test("l.limit === r.limit with right exclusive", () => {
-                attest(type("number<2&number<2").root).snap()
+                attest(type("number<2&number<2").root).snap("number")
             })
             test("l.limit === r.limit with left non exclusive right exclusive", () => {
-                attest(type("number<=2&number<2").root).snap()
+                attest(type("number<=2&number<2").root).snap("number")
             })
             test("l.limit === r.limit with left non exclusive right non exclusive", () => {
-                attest(type("number<=2&number<=2").root).snap()
+                attest(type("number<=2&number<=2").root).snap("number")
             })
             test("l.limit !== kind==min r.limit with l < r", () => {
-                attest(type("number>5&number>7").root).snap()
+                attest(type("number>5&number>7").root).snap("number")
             })
             test("l.limit !== kind==min r.limit with l > r", () => {
-                attest(type("number>9&number>7").root).snap()
+                attest(type("number>9&number>7").root).snap("number")
             })
             test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<9&number<7").root).snap()
+                attest(type("number<9&number<7").root).snap("number")
             })
             test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<7&number<9").root).snap()
+                attest(type("number<7&number<9").root).snap("number")
             })
         })
 
@@ -146,7 +146,7 @@ describe("bound", () => {
                 )
             })
             test("empty range error", () => {
-                attest(type("number>3&number<2").root).snap()
+                attest(type("number>3&number<2").root).snap("number")
             })
         })
     })
