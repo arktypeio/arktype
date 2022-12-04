@@ -77,6 +77,10 @@ describe("scope", () => {
             b: string[][]
             d: boolean
         }
-        attest(s.$.attributes).snap()
+        attest(s.$.attributes).snap({
+            a: { type: "object", subtype: "array", elements: "string" },
+            b: { type: "object", subtype: "array", elements: "a" },
+            d: { type: "boolean" }
+        })
     })
 })
