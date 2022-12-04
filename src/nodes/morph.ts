@@ -1,5 +1,5 @@
-import { dict } from "../utils/typeOf.js"
-import { Node } from "./node.js"
+import type { dict } from "../utils/typeOf.js"
+import type { Node } from "./node.js"
 
 export const morph = (name: MorphName, node: Node) => morphs[name](node)
 

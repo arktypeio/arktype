@@ -3,13 +3,13 @@ import type { dict } from "../../utils/typeOf.js"
 import type { KeyIntersection } from "../intersection.js"
 import type { Node } from "../node.js"
 
-export type ChildrenAttribute<scope extends dict> = {
-    props?: dict<Node<scope>>
-    mapped?: dict<Node<scope>>
+export type ChildrenAttribute = {
+    props?: dict<Node>
+    mapped?: dict<Node>
     requiredKeys?: keySet
 }
 
-export const childrenIntersection: KeyIntersection<ChildrenAttribute<dict>> = (
+export const childrenIntersection: KeyIntersection<ChildrenAttribute> = (
     l,
     r,
     scope

@@ -16,7 +16,7 @@ const always = [
     "string",
     "symbol",
     "undefined"
-]
+] as const
 
 export const keywords = defineKeywords({
     // TS keywords

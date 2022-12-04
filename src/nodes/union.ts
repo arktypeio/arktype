@@ -1,10 +1,9 @@
 import type { ScopeRoot } from "../scope.js"
 import { listFrom } from "../utils/generics.js"
-import { dict } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
 import type { Node } from "./node.js"
 
-export const union = (lNode: Node, rNode: Node, scope: ScopeRoot) => {
+export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
     const lBranches = listFrom(lNode)
     const rBranches = [...listFrom(rNode)]
     const result = lBranches
