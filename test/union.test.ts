@@ -16,11 +16,11 @@ describe("union/parse", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.root).snap([
-            { type: "number", literal: 0 },
-            { type: "string", literal: "" },
-            { type: "boolean", literal: false },
+            "false",
             "null",
-            "undefined"
+            "undefined",
+            { type: "number", literal: 0 },
+            { type: "string", literal: "" }
         ])
     })
     test("union of true and false reduces to boolean", () => {

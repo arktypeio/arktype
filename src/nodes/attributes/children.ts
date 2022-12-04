@@ -37,7 +37,7 @@ export const childrenIntersection: KeyIntersection<ChildrenAttribute> = (
             }
         }
     }
-    return l
+    return result
 }
 
 const propsIntersection = <props extends dict<Node>>(
