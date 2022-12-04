@@ -1,6 +1,7 @@
 export class InternalArktypeError extends Error {}
 
 export const throwInternalError = (message: string) => {
+    /* c8 ignore next */
     throw new InternalArktypeError(message)
 }
 
