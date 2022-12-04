@@ -25,15 +25,14 @@ export const checkNode = (
         : checkAttributes(data, resolution, scope)
 }
 
-type CheckedKey = Exclude<AttributeName, "type">
+type ShallowCheckedKey = Exclude<AttributeName, "type" | "children">
 
-export type AttributeChecker<k extends CheckedKey> = (
+export type AttributeChecker<k extends ShallowCheckedKey> = (
     data: any,
-    attribute: BaseAttributeType<k>,
-    scope: ScopeRoot
+    attribute: BaseAttributeType<k>
 ) => boolean
 
-type AttributeCheckers = { [k in CheckedKey]: AttributeChecker<k> }
+type AttributeCheckers = { [k in ShallowCheckedKey]: AttributeChecker<k> }
 
 const checkSubtype = (data: object, subtype: ObjectSubtypeName) =>
     hasObjectSubtype(data, subtype)
@@ -43,31 +42,27 @@ const checkers: AttributeCheckers = {
     regex: checkRegex,
     divisor: checkDivisor,
     bounds: checkBounds,
-    subtype: checkSubtype,
-    children: checkChildren
+    subtype: checkSubtype
 }
 
 export const checkAttributes = (
     data: unknown,
-    attributes: BaseAttributes,
+    { type, children, ...shallowAttributes }: BaseAttributes,
     scope: ScopeRoot
 ) => {
-    if (!hasType(data, attributes.type)) {
+    if (!hasType(data, type)) {
         return false
     }
-    let k: AttributeName
-    for (k in attributes) {
-        if (k !== "type") {
-            if (
-                !(checkers[k] as AttributeChecker<any>)(
-                    data,
-                    attributes[k],
-                    scope
-                )
-            ) {
-                return false
-            }
+    let k: ShallowCheckedKey
+    for (k in shallowAttributes) {
+        if (
+            !(checkers[k] as AttributeChecker<any>)(data, shallowAttributes[k])
+        ) {
+            return false
         }
+    }
+    if (children) {
+        return checkChildren(data as object, children, scope)
     }
     return true
 }

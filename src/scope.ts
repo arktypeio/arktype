@@ -8,7 +8,7 @@ import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
-import type { evaluate, mutable } from "./utils/generics.js"
+import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import { isKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -83,7 +83,7 @@ export class ScopeRoot<inferred extends dict = dict> {
             : false
     }
 
-    resolve(name: NameNode<inferred>, seen: string[] = []): ResolutionNode {
+    resolve(name: NameNode, seen: string[] = []): ResolutionNode {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }
@@ -110,7 +110,7 @@ export class ScopeRoot<inferred extends dict = dict> {
             seen.push(name)
             root = this.resolve(root, seen)
         }
-        this.attributes[name] = deepFreeze(root)
+        this.attributes[name as stringKeyOf<inferred>] = deepFreeze(root)
         return root
     }
 

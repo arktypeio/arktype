@@ -27,8 +27,10 @@ export const parseDict = (def: dict, scope: ScopeRoot): Node => {
     }
     return {
         type: "object",
-        props,
-        requiredKeys
+        children: {
+            props,
+            requiredKeys
+        }
     }
 }
 
@@ -52,16 +54,22 @@ export type inferRecord<
     }
 >
 
-export const parseTuple = (def: array, scope: ScopeRoot): Node =>
-    isTupleExpression(def)
-        ? parseTupleExpression(def, scope)
-        : {
-              type: "object",
-              subtype: "array",
-              elements: def.map((elementDef) =>
-                  parseDefinition(elementDef, scope)
-              )
-          }
+export const parseTuple = (def: array, scope: ScopeRoot): Node => {
+    if (isTupleExpression(def)) {
+        return parseTupleExpression(def, scope)
+    }
+    const props: Record<number, Node> = {}
+    for (let i = 0; i < def.length; i++) {
+        props[i] = parseDefinition(def[i], scope)
+    }
+    return {
+        type: "object",
+        subtype: "array",
+        children: {
+            props
+        }
+    }
+}
 
 export type inferTuple<
     def,
