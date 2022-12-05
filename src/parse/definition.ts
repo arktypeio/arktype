@@ -3,7 +3,7 @@ import type { ScopeRoot } from "../scope.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isAny, isTopType } from "../utils/generics.js"
 import type { array, dict, TypeName } from "../utils/typeOf.js"
-import { objectSubtypeOf, typeOf } from "../utils/typeOf.js"
+import { rawObjectSubtypeOf, typeOf } from "../utils/typeOf.js"
 import type {
     inferRecord,
     inferTuple,
