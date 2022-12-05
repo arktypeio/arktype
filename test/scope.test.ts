@@ -32,8 +32,7 @@ describe("scope", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
         attest(s.a.root).snap({
             type: "object",
-            props: { b: "b" },
-            requiredKeys: { b: true }
+            children: { props: { b: "b" }, requiredKeys: { b: true } }
         })
         // Type hint displays as any on hitting cycle
         attest(s.$.infer.a).typed as {
@@ -78,8 +77,16 @@ describe("scope", () => {
             d: boolean
         }
         attest(s.$.attributes).snap({
-            a: { type: "object", subtype: "array", elements: "string" },
-            b: { type: "object", subtype: "array", elements: "a" },
+            a: {
+                type: "object",
+                subtype: "array",
+                children: { propTypes: { number: "string" } }
+            },
+            b: {
+                type: "object",
+                subtype: "array",
+                children: { propTypes: { number: "a" } }
+            },
             d: { type: "boolean" }
         })
     })

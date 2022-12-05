@@ -1,5 +1,5 @@
 import type { array, dict } from "./typeOf.js"
-import { hasType, objectSubtypeOf } from "./typeOf.js"
+import { hasType, rawObjectSubtypeOf } from "./typeOf.js"
 
 /**
  * Simple check for deep strict equality. Recurses into dictionaries and arrays,

@@ -20,8 +20,10 @@ describe("tuple expression", () => {
         }
         attest(t.root).snap({
             type: "object",
-            props: { b: "number", a: "string" },
-            requiredKeys: { b: true, a: true }
+            children: {
+                props: { b: "number", a: "string" },
+                requiredKeys: { b: true, a: true }
+            }
         })
     })
     test("list", () => {
@@ -30,7 +32,11 @@ describe("tuple expression", () => {
         attest(t.root).snap({
             type: "object",
             subtype: "array",
-            elements: "string"
+            children: {
+                propTypes: {
+                    number: "string"
+                }
+            }
         })
     })
     test("nested union", () => {

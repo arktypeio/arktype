@@ -1,4 +1,3 @@
-import type { array } from "./typeOf.js"
 import { hasType } from "./typeOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
@@ -60,6 +59,13 @@ export const isKeyOf = <k extends string | number, obj extends object>(
     k: k,
     obj: obj
 ): k is Extract<keyof obj, k> => k in obj
+
+export type classOf<instanceType> = new (
+    ...constructorArgs: any[]
+) => instanceType
+
+export type instanceOf<classType extends classOf<any>> =
+    classType extends classOf<infer Instance> ? Instance : never
 
 export type entryOf<o> = { [k in keyof o]: [k, o[k]] }[o extends unknown[]
     ? keyof o & number
@@ -147,3 +153,7 @@ export const listFrom = <t>(data: t) =>
 export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
+
+export type array<of = unknown> = readonly of[]
+
+export type dict<of = unknown> = { readonly [k in string]: of }

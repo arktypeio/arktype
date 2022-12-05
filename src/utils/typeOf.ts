@@ -1,4 +1,19 @@
-import type { evaluate, isTopType } from "./generics.js"
+import { prototype } from "mocha"
+import type { SingleQuotedStringLiteral } from "../parse/shift/operand/enclosed.js"
+import type {
+    array,
+    classOf,
+    dict,
+    evaluate,
+    isTopType,
+    subtype
+} from "./generics.js"
+import { isKeyOf } from "./generics.js"
+import type {
+    BigintLiteral,
+    IntegerLiteral,
+    NumberLiteral
+} from "./numericLiterals.js"
 
 export type Types = {
     bigint: bigint
@@ -11,13 +26,40 @@ export type Types = {
     null: null
 }
 
-export type ObjectSubtypes = {
-    array: array
-    function: Function
-    dict: dict
-}
-
 export type TypeName = evaluate<keyof Types>
+
+export type Subtypes = subtype<
+    {
+        [k in TypeName]: dict
+    },
+    {
+        bigint: {
+            [k in BigintLiteral]: k extends BigintLiteral<infer value>
+                ? value
+                : never
+        }
+        boolean: {
+            true: true
+            false: false
+        }
+        number: {
+            [k in NumberLiteral]: k extends NumberLiteral<infer value>
+                ? value
+                : never
+        }
+        object: ObjectSubtypes
+        string: {
+            [k in SingleQuotedStringLiteral]: k extends SingleQuotedStringLiteral<
+                infer value
+            >
+                ? value
+                : never
+        }
+        symbol: never
+        undefined: never
+        null: never
+    }
+>
 
 export type typeOf<data> = isTopType<data> extends true
     ? TypeName
@@ -52,46 +94,92 @@ export const typeOf = <data>(data: data) => {
     ) as typeOf<data>
 }
 
+export const subtypeOf = <data>(data: data) =>
+    hasType(data, "object") ? objectSubtypeOf(data) : {}
+
 export const hasType = <
     typeName extends TypeName,
-    subtypeName extends typeName extends "object"
-        ? ObjectSubtypeName
-        : undefined
+    subtype extends Subtypes[typeName]
 >(
     data: unknown,
     name: typeName,
-    subtype?: subtypeName
-): data is subtypeName extends ObjectSubtypeName
-    ? ObjectSubtypes[subtypeName]
-    : Types[typeName] =>
+    subtype?: subtype
+): data is inferType<typeName, subtype> =>
     typeOf(data) === name &&
-    (!subtype || objectSubtypeOf(data as object) === subtype)
+    (!subtype || rawObjectSubtypeOf(data as object) === subtype)
 
-export const hasTypeIn = <name extends TypeName>(
-    data: unknown,
-    names: Record<name, unknown>
-): data is Types[name] => typeOf(data) in names
+type inferType<
+    typeName extends TypeName,
+    subtype
+> = subtype extends Subtypes[typeName] ? subtype : Types[typeName]
 
-export type array<of = unknown> = readonly of[]
+// Built-in objects that can be returned from
+// Object.prototype.toString.call(<value>). Based on a subset of:
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
+export type ObjectSubtypes = {
+    Array: array
+    Date: Date
+    Error: Error
+    Function: Function
+    Map: Map<unknown, unknown>
+    Object: dict
+    RegExp: RegExp
+    Set: Set<unknown>
+}
 
-export type dict<of = unknown> = { readonly [k in string]: of }
+type ObjectSubtypeName = keyof ObjectSubtypes
 
-export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
+const objectSubtypes = {
+    Array,
+    Date,
+    Error,
+    Function,
+    Map,
+    Object: Object as unknown as classOf<dict>,
+    RegExp,
+    Set
+} satisfies {
+    [k in ObjectSubtypeName]: classOf<ObjectSubtypes[k]>
+}
 
 export type objectSubtypeOf<data extends object> = data extends array
-    ? "array"
+    ? "Array"
+    : data extends Date
+    ? "Date"
+    : data extends Error
+    ? "Error"
     : data extends Function
-    ? "function"
-    : "dict"
+    ? "Function"
+    : data extends Map<unknown, unknown>
+    ? "Map"
+    : data extends RegExp
+    ? "RegExp"
+    : data extends Set<unknown>
+    ? "Set"
+    : "Object"
 
-export const objectSubtypeOf = (data: object): ObjectSubtypeName =>
-    Array.isArray(data)
-        ? "array"
-        : typeof data === "function"
-        ? "function"
-        : "dict"
+export const objectSubtypeOf = <data extends object>(data: data) =>
+    rawObjectSubtypeOf(data) as objectSubtypeOf<data>
 
-export const hasObjectSubtype = <name extends ObjectSubtypeName>(
+const rawObjectSubtypeOf = (data: object): ObjectSubtypeName => {
+    if (Array.isArray(data)) {
+        return "Array"
+    }
+    // The raw result will be something like [object Date]
+    const prototypeName = Object.prototype.toString.call(data).slice(8, -1)
+    if (isKeyOf(prototypeName, objectSubtypes)) {
+        return data instanceof objectSubtypes[prototypeName]
+            ? prototypeName
+            : // If the prototype has the same name as one of the builtin types but isn't an instance of it, fall back to Object
+              "Object"
+    }
+    if (prototypeName.endsWith("Error")) {
+        return data instanceof Error ? "Error" : "Object"
+    }
+    return "Object"
+}
+
+export const hasObjectSubtype = <subtype extends ObjectSubtypeName>(
     data: object,
-    name: name
-): data is ObjectSubtypes[name] => objectSubtypeOf(data) === name
+    subtype: subtype
+): data is ObjectSubtypes[subtype] => rawObjectSubtypeOf(data) === subtype
