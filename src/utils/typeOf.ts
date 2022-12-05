@@ -16,14 +16,30 @@ export type TypeName = evaluate<keyof Types>
 
 export type Subtypes = subtype<
     {
-        [k in TypeName]?: string
+        [k in TypeName]: dict
     },
     {
-        bigint: IntegerLiteral
-        boolean: "true" | "false"
-        number: NumberLiteral
-        object: ObjectSubtypeName
-        string: string
+        bigint: {
+            [k in IntegerLiteral]: k extends IntegerLiteral<infer value>
+                ? value
+                : never
+        }
+        boolean: {
+            true: true
+            false: false
+        }
+        number: {
+            [k in NumberLiteral]: k extends NumberLiteral<infer value>
+                ? value
+                : never
+        }
+        object: ObjectSubtypes
+        string: {
+            [k in string]: k
+        }
+        symbol: never
+        undefined: never
+        null: never
     }
 >
 
@@ -62,6 +78,29 @@ export type typeOf<data> = isTopType<data> extends true
     ? "symbol"
     : never
 
+export type subtypeOf<
+    typeName extends TypeName,
+    data
+> = isTopType<data> extends true
+    ? string
+    : typeName extends "object"
+    ? "object"
+    : data extends string
+    ? "string"
+    : data extends number
+    ? "number"
+    : data extends boolean
+    ? "boolean"
+    : data extends undefined
+    ? "undefined"
+    : data extends null
+    ? "null"
+    : data extends bigint
+    ? "bigint"
+    : data extends symbol
+    ? "symbol"
+    : never
+
 export const typeOf = <data>(data: data) => {
     const builtinType = typeof data
     return (
@@ -77,15 +116,13 @@ export const typeOf = <data>(data: data) => {
 
 export const hasType = <
     typeName extends TypeName,
-    subtypeName extends typeName extends "object"
-        ? ObjectSubtypeName
-        : undefined
+    subtypeName extends Subtypes[typeName]
 >(
     data: unknown,
     name: typeName,
     subtype?: subtypeName
-): data is subtypeName extends ObjectSubtypeName
-    ? ObjectSubtypes[subtypeName]
+): data is subtypeName extends Subtypes[typeName]
+    ? Subtypes
     : Types[typeName] =>
     typeOf(data) === name &&
     (!subtype || objectSubtypeOf(data as object) === subtype)
