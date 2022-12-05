@@ -1,7 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
+import type { mutable } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import { pathToSegments } from "../utils/paths.js"
-import type { array, dict } from "../utils/typeOf.js"
+import type { array, dict, TypeName } from "../utils/typeOf.js"
 import { hasType } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
 import type { Attributes, NameNode, Node } from "./node.js"
@@ -10,14 +11,13 @@ export type Branches = UndiscriminatedBranches
 
 export type UndiscriminatedBranches = array<NameNode | Attributes>
 
-type DiscriminantKey = "type" | "literal" | "subtype"
-
-export type DiscriminantPath<k extends DiscriminantKey> = k | `${string}.${k}`
-
-export type DiscriminatedBranches<k extends DiscriminantKey> = [
-    "?",
-    DiscriminantPath<k>
+export type DiscriminatedBranches = [
+    token: "?",
+    path: string,
+    cases: DiscriminatedCases
 ]
+
+export type DiscriminatedCases = { [k in TypeName]?: Node }
 
 export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
     const lBranches = listFrom(lNode)
@@ -93,53 +93,19 @@ export const queryPath = (attributes: Node, path: string) => {
     return currentAttributes[key]
 }
 
-export type DiscriminatedKey = "type" | "value"
-
-export type DiscriminatedPath = AttributePath<DiscriminatedKey>
-
 type Discriminant = {
-    path: DiscriminatedPath
+    path: DiscriminantPath
     score: number
 }
 
-export const discriminate = (base: Type, scope: ScopeRoot): Type =>
-    base.branches
-        ? {
-              ...base,
-              branches: [
-                  base.branches[0],
-                  base.branches[0] === "|"
-                      ? discriminateBranches(base.branches[1], scope)
-                      : base.branches[0] === "&"
-                      ? base.branches[1].map((intersectedUnion) =>
-                            intersectedUnion[0] === "|"
-                                ? discriminateBranches(
-                                      intersectedUnion[1],
-                                      scope
-                                  )
-                                : throwInternalError(
-                                      unexpectedRediscriminationMessage
-                                  )
-                        )
-                      : throwInternalError(unexpectedRediscriminationMessage)
-              ] as Branches
-          }
-        : base
-
-const unexpectedRediscriminationMessage =
-    "Unexpected attempt to rediscriminated branches"
-
-const discriminateBranches = (
-    branches: Branches,
-    scope: ScopeRoot
-): Branches => {
+const discriminateBranches = (branches: Node[], scope: ScopeRoot): Branches => {
     const discriminant = greedyDiscriminant("", branches)
     if (!discriminant) {
-        return ["|", branches]
+        return branches
     }
     const branchesByValue: dict<Branches> = {}
     for (let i = 0; i < branches.length; i++) {
-        const value = queryAttribute(branches[i], discriminant.path)
+        const value = queryPath(branches[i], discriminant.path)
         const caseKey = value ?? "default"
         branchesByValue[caseKey] ??= []
         branchesByValue[caseKey].push(
@@ -147,6 +113,7 @@ const discriminateBranches = (
                 ? excludeDiscriminant(
                       branches[i],
                       discriminant.path,
+
                       value,
                       scope
                   )
@@ -155,7 +122,6 @@ const discriminateBranches = (
     }
     const cases: record<Type> = {}
     for (const value in branchesByValue) {
-        const base: Type = compress(branchesByValue[value], scope)
         cases[value] = discriminate(base, scope)
     }
     return ["?", discriminant.path, cases]
@@ -163,14 +129,14 @@ const discriminateBranches = (
 
 const greedyDiscriminant = (
     path: string,
-    branches: Branches
+    branches: Node[]
 ): Discriminant | undefined =>
     greedyShallowDiscriminant(path, branches) ??
     greedyPropsDiscriminant(path, branches)
 
 const greedyShallowDiscriminant = (
     path: string,
-    branches: Branches
+    branches: Node[]
 ): Discriminant | undefined => {
     const typeScore = disjointScore(branches, "type")
     const valueScore = disjointScore(branches, "value")
@@ -184,7 +150,7 @@ const greedyShallowDiscriminant = (
     }
 }
 
-const greedyPropsDiscriminant = (path: string, branches: Type[]) => {
+const greedyPropsDiscriminant = (path: string, branches: Node[]) => {
     let bestDiscriminant: Discriminant | undefined
     const sortedPropFrequencies = sortPropsByFrequency(branches)
     for (const [propKey, branchAppearances] of sortedPropFrequencies) {
@@ -211,8 +177,8 @@ const maxEdges = (vertexCount: number) => (vertexCount * (vertexCount - 1)) / 2
 
 type PropFrequencyEntry = [propKey: string, appearances: number]
 
-const sortPropsByFrequency = (branches: Type[]): PropFrequencyEntry[] => {
-    const appearancesByProp: record<number> = {}
+const sortPropsByFrequency = (branches: Node[]): PropFrequencyEntry[] => {
+    const appearancesByProp: mutable<dict<number>> = {}
     for (let i = 0; i < branches.length; i++) {
         if (!branches[i].props) {
             continue
@@ -226,7 +192,7 @@ const sortPropsByFrequency = (branches: Type[]): PropFrequencyEntry[] => {
     return Object.entries(appearancesByProp).sort((a, b) => b[1] - a[1])
 }
 
-const disjointScore = (branches: Type[], key: DiscriminatedKey) => {
+const disjointScore = (branches: Node[], key: DiscriminatedKey) => {
     let score = 0
     for (let i = 0; i < branches.length; i++) {
         for (let j = i + 1; j < branches.length; j++) {

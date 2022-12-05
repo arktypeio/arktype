@@ -22,13 +22,12 @@ export type ResolutionNode = Attributes | Branches
 export type BaseAttributes = {
     readonly type: TypeName
     // primitive attributes
-    readonly literal?: LiteralValue
     readonly divisor?: number
     readonly regex?: RegexAttribute
     // object attributes
-    readonly subtype?: ObjectSubtypeName
     readonly children?: ChildrenAttribute
     // shared attributes
+    readonly subtype?: ObjectSubtypeName | LiteralValue
     readonly bounds?: Bounds
 }
 

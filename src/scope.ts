@@ -111,6 +111,7 @@ export class ScopeRoot<inferred extends dict = dict> {
             root = this.resolve(root, seen)
         }
         this.attributes[name as stringKeyOf<inferred>] = deepFreeze(root)
+        this.cache[name] = root
         return root
     }
 
