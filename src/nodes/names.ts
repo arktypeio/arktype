@@ -36,7 +36,7 @@ export const keywords = defineKeywords({
     unknown: always,
     void: { type: "undefined" },
     // JS Object types
-    Function: { type: "object", subtype: "function" },
+    Function: { type: "object", subtype: "Function" },
     // Regex
     email: { type: "string", regex: "^(.+)@(.+)\\.(.+)$" },
     alphanumeric: { type: "string", regex: "^[dA-Za-z]+$" },
