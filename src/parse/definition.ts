@@ -1,9 +1,15 @@
 import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwParseError } from "../utils/errors.js"
-import type { evaluate, isAny, isTopType } from "../utils/generics.js"
-import type { array, dict, TypeName } from "../utils/typeOf.js"
-import { rawObjectSubtypeOf, typeOf } from "../utils/typeOf.js"
+import type {
+    array,
+    dict,
+    evaluate,
+    isAny,
+    isTopType
+} from "../utils/generics.js"
+import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
+import { typeOf, typeOfObject } from "../utils/typeOf.js"
 import type {
     inferRecord,
     inferTuple,
@@ -20,13 +26,13 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): Node => {
         return parseString(def as string, scope)
     }
     if (defType === "object") {
-        const subtype = objectSubtypeOf(def as object)
-        if (subtype === "array") {
-            return parseTuple(def as array, scope)
-        } else if (subtype === "dict") {
+        const subtype = typeOfObject(def as object)
+        if (subtype === "Object") {
             return parseDict(def as dict, scope)
+        } else if (subtype === "Array") {
+            return parseTuple(def as array, scope)
         }
-        return throwParseError(buildBadDefinitionTypeMessage("function"))
+        return throwParseError(buildBadDefinitionTypeMessage(subtype))
     }
     return throwParseError(buildBadDefinitionTypeMessage(defType))
 }
@@ -56,24 +62,15 @@ export type validateDefinition<
     ? def
     : def extends string
     ? validateString<def, scope>
-    : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<
-          def extends Function ? "function" : typeOf<def>
-      >
-    : def extends TupleExpression
-    ? validateTupleExpression<def, scope>
-    : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], scope>
-      }>
-
-type BadDefinitionType =
-    | undefined
-    | null
-    | boolean
-    | number
-    | bigint
-    | Function
-    | symbol
+    : def extends object
+    ? def extends TupleExpression
+        ? validateTupleExpression<def, scope>
+        : def extends dict | array
+        ? evaluate<{
+              [k in keyof def]: validateDefinition<def[k], scope>
+          }>
+        : buildBadDefinitionTypeMessage<typeOfObject<def>>
+    : buildBadDefinitionTypeMessage<typeOf<def>>
 
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"
@@ -81,12 +78,12 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends TypeName | "function"
+    actual extends TypeName | ObjectTypeName
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
 export type buildBadDefinitionTypeMessage<
-    actual extends TypeName | "function"
+    actual extends TypeName | ObjectTypeName
 > = `Type definitions must be strings or objects (was ${actual})`

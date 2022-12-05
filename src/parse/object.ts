@@ -4,9 +4,15 @@ import type { Node } from "../nodes/node.js"
 import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
-import type { error, evaluate, keySet, mutable } from "../utils/generics.js"
+import type {
+    array,
+    dict,
+    error,
+    evaluate,
+    keySet,
+    mutable
+} from "../utils/generics.js"
 import { isKeyOf } from "../utils/generics.js"
-import type { array, dict } from "../utils/typeOf.js"
 import { hasType } from "../utils/typeOf.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
@@ -151,6 +157,6 @@ type TupleExpressionToken = keyof typeof tupleExpressionTokens
 export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
 
 const isTupleExpression = (def: array): def is TupleExpression =>
-    hasType(def, "object", "array") &&
+    hasType(def, "object", "Array") &&
     hasType(def[1], "string") &&
     def[1] in tupleExpressionTokens

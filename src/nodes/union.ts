@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
+import type { array } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
-import type { array } from "../utils/typeOf.js"
 import { hasType } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
 import type { Attributes, NameNode, Node } from "./node.js"
@@ -53,7 +53,7 @@ const getPossibleBooleanLiteral = (node: Node): "true" | "false" | undefined =>
         ? "true"
         : node === "false"
         ? "false"
-        : hasType(node, "object", "dict") &&
+        : hasType(node, "object", "Object") &&
           node.type === "boolean" &&
           node.literal
         ? `${node.literal}`

@@ -8,11 +8,10 @@ import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
-import type { evaluate, mutable, stringKeyOf } from "./utils/generics.js"
+import type { dict, evaluate, mutable, stringKeyOf } from "./utils/generics.js"
 import { isKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import type { dict } from "./utils/typeOf.js"
 
 const rawScope = (aliases: dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)

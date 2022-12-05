@@ -1,4 +1,4 @@
-import type { dict } from "../utils/typeOf.js"
+import type { dict } from "../utils/generics.js"
 import type { Node } from "./node.js"
 
 export const morph = (name: MorphName, node: Node) => morphs[name](node)

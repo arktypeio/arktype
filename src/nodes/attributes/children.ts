@@ -1,9 +1,8 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { keySet, mutable } from "../../utils/generics.js"
+import type { dict, keySet, mutable } from "../../utils/generics.js"
 import { hasKeys } from "../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../utils/numericLiterals.js"
-import type { dict } from "../../utils/typeOf.js"
-import { hasObjectSubtype } from "../../utils/typeOf.js"
+import { hasObjectType } from "../../utils/typeOf.js"
 import { checkNode } from "../check.js"
 import type { KeyIntersection } from "../intersection.js"
 import { intersection } from "../intersection.js"
@@ -59,7 +58,7 @@ export const checkChildren = (
     children: ChildrenAttribute,
     scope: ScopeRoot
 ) => {
-    if (hasObjectSubtype(data, "array") && isSimpleArray(children)) {
+    if (hasObjectType(data, "Array") && isSimpleArray(children)) {
         return data.every((elementData) =>
             checkNode(elementData, children.propTypes.number, scope)
         )

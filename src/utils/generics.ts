@@ -8,7 +8,7 @@ type narrowRecurse<t> = {
 
 type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
 
-type Narrowable = string | boolean | number | bigint
+export type Narrowable = string | boolean | number | bigint
 
 /**
  * Note: Similarly to Narrow, trying to Evaluate 'unknown'

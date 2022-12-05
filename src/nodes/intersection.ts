@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
 import { listFrom } from "../utils/generics.js"
-import { hasType } from "../utils/typeOf.js"
+import { hasObjectType } from "../utils/typeOf.js"
 import { boundsIntersection } from "./attributes/bounds.js"
 import { childrenIntersection } from "./attributes/children.js"
 import { divisorIntersection } from "./attributes/divisor.js"
@@ -21,9 +21,9 @@ import { union } from "./union.js"
 export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
     const lResolution = resolveIfName(l, scope)
     const rResolution = resolveIfName(r, scope)
-    const result = hasType(lResolution, "object", "array")
+    const result = hasObjectType(lResolution, "Array")
         ? branchesIntersection(lResolution, listFrom(rResolution), scope)
-        : hasType(rResolution, "object", "array")
+        : hasObjectType(rResolution, "Array")
         ? branchesIntersection([lResolution], rResolution, scope)
         : attributesIntersection(lResolution, rResolution, scope)
     // If the intersection result is identical to one of its operands,

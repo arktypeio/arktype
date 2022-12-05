@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import { hasObjectSubtype, hasType } from "../utils/typeOf.js"
+import { hasObjectType, hasType } from "../utils/typeOf.js"
 import { checkChildren } from "./attributes/children.js"
 import { resolveIfName } from "./names.js"
 import type {
@@ -15,7 +15,7 @@ export const checkNode = (
     scope: ScopeRoot
 ): boolean => {
     const resolution = resolveIfName(attributes, scope)
-    return hasObjectSubtype(resolution, "array")
+    return hasObjectType(resolution, "Array")
         ? resolution.some((branch) => checkNode(data, branch, scope))
         : checkAttributes(data, resolution, scope)
 }
@@ -34,7 +34,7 @@ export const checkAttributes = (
         return false
     }
     if (attributes.children) {
-        return checkChildren(data as object, children, scope)
+        return checkChildren(data as object, attributes.children, scope)
     }
     return true
 }

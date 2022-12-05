@@ -5,7 +5,7 @@ import type {
     xor
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import type { ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
+import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./attributes/bounds.js"
 import type { ChildrenAttribute } from "./attributes/children.js"
 import type { RegexAttribute } from "./attributes/regex.js"
@@ -27,7 +27,7 @@ export type BaseAttributes = {
     // object attributes
     readonly children?: ChildrenAttribute
     // shared attributes
-    readonly subtype?: ObjectSubtypeName | LiteralValue
+    readonly subtype?: ObjectTypeName | LiteralValue
     readonly bounds?: Bounds
 }
 

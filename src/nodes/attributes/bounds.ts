@@ -1,4 +1,4 @@
-import type { array } from "../../utils/typeOf.js"
+import type { array } from "../../utils/generics.js"
 
 export type Bounds = {
     readonly min?: Bound
