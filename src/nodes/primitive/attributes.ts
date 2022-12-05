@@ -2,7 +2,7 @@ import type { defined, subtype, xor } from "../../utils/generics.js"
 import type { IntegerLiteral } from "../../utils/numericLiterals.js"
 import type { TypeName } from "../../utils/typeOf.js"
 import type { Bounds } from "../shared/bounds.js"
-import type { LiteralValue } from "./literal.js"
+import type { LiteralValue } from "./check.js"
 import type { RegexAttribute } from "./regex.js"
 
 export type BasePrimitiveAttributes = {

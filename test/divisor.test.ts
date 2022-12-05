@@ -18,7 +18,10 @@ describe("divisibility", () => {
                 attest(type("number % 5").infer).typed as number
             })
             test("number gcd", () => {
-                attest(type("number%2&number%3").root).snap("number")
+                attest(type("number%2&number%3").root).snap({
+                    type: "number",
+                    divisor: 6
+                })
             })
         })
         describe("invalid", () => {

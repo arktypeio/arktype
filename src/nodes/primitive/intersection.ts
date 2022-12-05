@@ -1,5 +1,4 @@
 import type { mutable } from "../../utils/generics.js"
-import type { BaseAttributes } from "../attributes.js"
 import { boundsIntersection } from "../shared/bounds.js"
 import type {
     BasePrimitiveAttributes,
@@ -7,8 +6,8 @@ import type {
     PrimitiveAttributes,
     PrimitiveAttributeType
 } from "./attributes.js"
+import { intersectionIfLiteral } from "./check.js"
 import { divisorIntersection } from "./divisor.js"
-import { literalableIntersection } from "./literal.js"
 import { regexIntersection } from "./regex.js"
 
 export type PrimitiveKeyIntersection<t> = (l: t, r: t) => t | null
@@ -30,20 +29,20 @@ const primitiveIntersections: {
 
 export const primitiveIntersection = (
     l: BasePrimitiveAttributes,
-    r: BaseAttributes
+    r: BasePrimitiveAttributes
 ): PrimitiveAttributes | "never" => {
     if (l.type !== r.type) {
         return "never"
     }
-    const literalResult = literalableIntersection(l, r)
+    const literalResult = intersectionIfLiteral(l, r)
     if (literalResult) {
         return literalResult
     }
-    const { type, literal, ...attributes } = { ...l, ...r }
-    const result: mutable<BasePrimitiveAttributes> = { type }
-    let k: IntersectedPrimitiveKey
-    for (k in attributes) {
-        if (l[k] && r[k]) {
+    const result = { ...l, ...r }
+    let k: PrimitiveAttributeName
+    for (k in result) {
+        // type and literal have already been handled, so skip those
+        if (k !== "type" && k !== "literal" && l[k] && r[k]) {
             const keyResult = (
                 primitiveIntersections[k] as PrimitiveKeyIntersection<any>
             )(l[k], r[k])

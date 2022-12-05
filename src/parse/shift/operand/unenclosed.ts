@@ -1,9 +1,6 @@
 import type { Keyword } from "../../../nodes/names.js"
-import { keywords } from "../../../nodes/names.js"
-import type { NameNode, Node } from "../../../nodes/node.js"
-import type { ScopeRoot } from "../../../scope.js"
+import type { Node } from "../../../nodes/node.js"
 import type { error } from "../../../utils/generics.js"
-import { isKeyOf } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
@@ -37,23 +34,14 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToAttributes = (s: DynamicState, token: string) =>
-    maybeParseIdentifier(token, s.scope) ??
-    maybeParseUnenclosedLiteral(token) ??
-    s.error(
-        token === ""
-            ? buildMissingOperandMessage(s)
-            : buildUnresolvableMessage(token)
-    )
-
-export const maybeParseIdentifier = (
-    token: string,
-    scope: ScopeRoot
-): NameNode | undefined =>
-    isKeyOf(token, keywords) ||
-    scope.aliases[token] ||
-    scope.config.scope?.$.aliases[token]
+    s.scope.isResolvable(token)
         ? token
-        : undefined
+        : maybeParseUnenclosedLiteral(token) ??
+          s.error(
+              token === ""
+                  ? buildMissingOperandMessage(s)
+                  : buildUnresolvableMessage(token)
+          )
 
 const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
