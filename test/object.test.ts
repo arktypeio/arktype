@@ -13,7 +13,7 @@ describe("struct", () => {
                     a: "string",
                     b: {
                         type: "object",
-                        subtype: "array",
+                        subtype: "Array",
                         children: {
                             propTypes: {
                                 number: "boolean"
@@ -38,7 +38,7 @@ describe("struct", () => {
                     a: "string",
                     b: {
                         type: "object",
-                        subtype: "array",
+                        subtype: "Array",
                         children: {
                             propTypes: {
                                 number: "boolean"

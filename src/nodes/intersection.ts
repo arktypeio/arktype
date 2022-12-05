@@ -6,7 +6,6 @@ import { boundsIntersection } from "./attributes/bounds.js"
 import { childrenIntersection } from "./attributes/children.js"
 import { divisorIntersection } from "./attributes/divisor.js"
 import { regexIntersection } from "./attributes/regex.js"
-import { intersectionIfLiteral } from "./attributes/type.js"
 import { resolveIfName } from "./names.js"
 import type {
     AttributeName,

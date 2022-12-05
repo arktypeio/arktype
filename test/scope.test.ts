@@ -79,12 +79,12 @@ describe("scope", () => {
         attest(s.$.attributes).snap({
             a: {
                 type: "object",
-                subtype: "array",
+                subtype: "Array",
                 children: { propTypes: { number: "string" } }
             },
             b: {
                 type: "object",
-                subtype: "array",
+                subtype: "Array",
                 children: { propTypes: { number: "a" } }
             },
             d: { type: "boolean" }

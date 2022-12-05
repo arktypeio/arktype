@@ -77,7 +77,7 @@ export const parseRightBound = (
     s.intersect([
         { type: "number", bounds },
         { type: "string", bounds },
-        { type: "object", subtype: "array", bounds }
+        { type: "object", subtype: "Array", bounds }
     ])
 }
 
