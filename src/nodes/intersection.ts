@@ -5,8 +5,8 @@ import { hasType } from "../utils/typeOf.js"
 import { boundsIntersection } from "./attributes/bounds.js"
 import { childrenIntersection } from "./attributes/children.js"
 import { divisorIntersection } from "./attributes/divisor.js"
-import { intersectionIfLiteral } from "./attributes/literal.js"
 import { regexIntersection } from "./attributes/regex.js"
+import { intersectionIfLiteral } from "./attributes/type.js"
 import { resolveIfName } from "./names.js"
 import type {
     AttributeName,
@@ -28,6 +28,8 @@ export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
         : attributesIntersection(lResolution, rResolution, scope)
     // If the intersection result is identical to one of its operands,
     // return the original operand either as a name or resolution
+    // TODO: Avoid the deep equals check by not returning a different
+    // object if there is a subtype
     if (deepEquals(result, lResolution)) {
         return l
     }
@@ -82,7 +84,7 @@ export const attributesIntersection = (
     let k: AttributeName
     for (k in result) {
         // type and literal have already been handled, so skip those
-        if (k !== "type" && k !== "literal" && l[k] && r[k]) {
+        if (k !== "type" && k !== "subtype" && l[k] && r[k]) {
             const keyResult = (keyIntersections[k] as UnknownIntersection)(
                 l[k],
                 r[k],

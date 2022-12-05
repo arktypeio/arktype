@@ -27,6 +27,17 @@ describe("union/parse", () => {
         attest(type("true|false").root).equals("boolean")
         attest(type("true|false|number").root).equals(["boolean", "number"])
     })
+    test("subtype pruning", () => {
+        const t = type([
+            [{ a: "boolean" }, "|", { a: "true" }],
+            "|",
+            { a: "false" }
+        ])
+        attest(t.root).snap({
+            type: "object",
+            children: { props: { a: "boolean" }, requiredKeys: { a: true } }
+        })
+    })
     describe("errors", () => {
         test("bad reference", () => {
             // @ts-expect-error
