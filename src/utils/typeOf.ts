@@ -1,4 +1,5 @@
-import type { evaluate, isTopType } from "./generics.js"
+import type { evaluate, isTopType, subtype } from "./generics.js"
+import type { IntegerLiteral, NumberLiteral } from "./numericLiterals.js"
 
 export type Types = {
     bigint: bigint
@@ -11,13 +12,35 @@ export type Types = {
     null: null
 }
 
-export type ObjectSubtypes = {
-    array: array
-    function: Function
-    dict: dict
-}
-
 export type TypeName = evaluate<keyof Types>
+
+export type Subtypes = subtype<
+    {
+        [k in TypeName]?: string
+    },
+    {
+        bigint: IntegerLiteral
+        boolean: "true" | "false"
+        number: NumberLiteral
+        object: ObjectSubtypeName
+        string: string
+    }
+>
+
+// Built-in objects that can be returned from
+// Object.prototype.toString.call(<value>). Based on a subset of:
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
+export type ObjectSubtypes = {
+    Array: array
+    Date: Date
+    Error: Error
+    Function: Function
+    Map: Map<unknown, unknown>
+    Object: dict
+    RegExp: RegExp
+    Set: Set<unknown>
+}
+export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
 
 export type typeOf<data> = isTopType<data> extends true
     ? TypeName
@@ -75,8 +98,6 @@ export const hasTypeIn = <name extends TypeName>(
 export type array<of = unknown> = readonly of[]
 
 export type dict<of = unknown> = { readonly [k in string]: of }
-
-export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
 
 export type objectSubtypeOf<data extends object> = data extends array
     ? "array"
