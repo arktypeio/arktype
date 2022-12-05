@@ -1,5 +1,10 @@
-import type { evaluate, isTopType, subtype } from "./generics.js"
-import type { IntegerLiteral, NumberLiteral } from "./numericLiterals.js"
+import type { SingleQuotedStringLiteral } from "../parse/shift/operand/enclosed.js"
+import type { evaluate, isTopType, propwiseUnion, subtype } from "./generics.js"
+import type {
+    BigintLiteral,
+    IntegerLiteral,
+    NumberLiteral
+} from "./numericLiterals.js"
 
 export type Types = {
     bigint: bigint
@@ -20,7 +25,7 @@ export type Subtypes = subtype<
     },
     {
         bigint: {
-            [k in IntegerLiteral]: k extends IntegerLiteral<infer value>
+            [k in BigintLiteral]: k extends BigintLiteral<infer value>
                 ? value
                 : never
         }
@@ -35,13 +40,28 @@ export type Subtypes = subtype<
         }
         object: ObjectSubtypes
         string: {
-            [k in string]: k
+            [k in SingleQuotedStringLiteral]: k extends SingleQuotedStringLiteral<
+                infer value
+            >
+                ? value
+                : never
         }
         symbol: never
         undefined: never
         null: never
     }
 >
+
+export type SubtypeOf<typeName extends TypeName> = evaluate<
+    keyof Subtypes[typeName]
+>
+
+export type SubtypeName =
+    | SubtypeOf<"bigint">
+    | SubtypeOf<"boolean">
+    | SubtypeOf<"number">
+    | SubtypeOf<"object">
+    | SubtypeOf<"string">
 
 // Built-in objects that can be returned from
 // Object.prototype.toString.call(<value>). Based on a subset of:
@@ -56,34 +76,10 @@ export type ObjectSubtypes = {
     RegExp: RegExp
     Set: Set<unknown>
 }
-export type ObjectSubtypeName = evaluate<keyof ObjectSubtypes>
 
-export type typeOf<data> = isTopType<data> extends true
+export type typeOf<data, narrows extends 0 | 1> = isTopType<data> extends true
     ? TypeName
     : data extends object
-    ? "object"
-    : data extends string
-    ? "string"
-    : data extends number
-    ? "number"
-    : data extends boolean
-    ? "boolean"
-    : data extends undefined
-    ? "undefined"
-    : data extends null
-    ? "null"
-    : data extends bigint
-    ? "bigint"
-    : data extends symbol
-    ? "symbol"
-    : never
-
-export type subtypeOf<
-    typeName extends TypeName,
-    data
-> = isTopType<data> extends true
-    ? string
-    : typeName extends "object"
     ? "object"
     : data extends string
     ? "string"
