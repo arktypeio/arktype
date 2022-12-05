@@ -8,8 +8,18 @@ import {
 } from "../src/parse/reduce/shared.js"
 import { singleEqualsMessage } from "../src/parse/shift/operator/bounds.js"
 
+//TODO: Add tests for mid definitions/multiple bounds
+
 describe("bound", () => {
     describe("parse", () => {
+        test("whitespace following comparator", () => {
+            const t = type("number > 3")
+            attest(t.infer).typed as number
+            attest(t.root).snap({
+                type: "number",
+                bounds: { min: { limit: 3, exclusive: true } }
+            })
+        })
         describe("single", () => {
             test(">", () => {
                 const t = type("number>0")
@@ -79,61 +89,55 @@ describe("bound", () => {
                 })
             })
         })
-        test("whitespace following comparator", () => {
-            const t = type("number > 3")
-            attest(t.infer).typed as number
-            attest(t.root).snap({
-                type: "number",
-                bounds: { min: { limit: 3, exclusive: true } }
-            })
-        })
         describe("intersection", () => {
-            test("l.limit === r.limit with right non exclusive", () => {
+            test("<x & <=x", () => {
                 attest(type("number<2&number<=2").root).snap({
                     type: "number",
                     bounds: { max: { limit: 2, exclusive: true } }
                 })
             })
-            test("l.limit === r.limit with right exclusive", () => {
+            test("<x & <x", () => {
                 attest(type("number<2&number<2").root).snap({
                     type: "number",
                     bounds: { max: { limit: 2, exclusive: true } }
                 })
             })
-            test("l.limit === r.limit with left non exclusive right exclusive", () => {
+            test("<=x & <x", () => {
                 attest(type("number<=2&number<2").root).snap({
                     type: "number",
                     bounds: { max: { limit: 2, exclusive: true } }
                 })
             })
-            test("l.limit === r.limit with left non exclusive right non exclusive", () => {
+            test("<=x & <=x", () => {
                 attest(type("number<=2&number<=2").root).snap({
                     type: "number",
                     bounds: { max: { limit: 2 } }
                 })
             })
-            test("l.limit !== kind==min r.limit with l < r", () => {
-                attest(type("number>5&number>7").root).snap({
-                    type: "number",
-                    bounds: { min: { limit: 7, exclusive: true } }
+            describe("intersection strictness", () => {
+                test("min limit x<y", () => {
+                    attest(type("number>5&number>7").root).snap({
+                        type: "number",
+                        bounds: { min: { limit: 7, exclusive: true } }
+                    })
                 })
-            })
-            test("l.limit !== kind==min r.limit with l > r", () => {
-                attest(type("number>9&number>7").root).snap({
-                    type: "number",
-                    bounds: { min: { limit: 9, exclusive: true } }
+                test("min limit x>y", () => {
+                    attest(type("number>9&number>7").root).snap({
+                        type: "number",
+                        bounds: { min: { limit: 9, exclusive: true } }
+                    })
                 })
-            })
-            test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<9&number<7").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 7, exclusive: true } }
+                test("max limit x>y", () => {
+                    attest(type("number<9&number<7").root).snap({
+                        type: "number",
+                        bounds: { max: { limit: 7, exclusive: true } }
+                    })
                 })
-            })
-            test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<7&number<9").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 7, exclusive: true } }
+                test("max limit x<y", () => {
+                    attest(type("number<7&number<9").root).snap({
+                        type: "number",
+                        bounds: { max: { limit: 7, exclusive: true } }
+                    })
                 })
             })
         })
@@ -169,11 +173,8 @@ describe("bound", () => {
                     buildMultipleLeftBoundsMessage(3, "<", 5, "<")
                 )
             })
-            test("empty range error", () => {
-                attest(type("number>3&number<2").root).snap({
-                    type: "number",
-                    bounds: { never: "the range bounded by <3 and >2 is empty" }
-                })
+            test("empty range", () => {
+                attest(type("number>3&number<2").root).snap("never")
             })
         })
     })
