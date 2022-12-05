@@ -21,7 +21,7 @@ export const hasType = <
 ): data is inferType<typeName, subtype> =>
     subtype === undefined
         ? typeOf(data) === type
-        : subtypeOf(data) === `${type}/${subtype}`
+        : subtypeOf(data as any) === `${type}/${subtype}`
 
 export type Types = {
     bigint: bigint
@@ -109,11 +109,7 @@ export type subtypeOf<data> = isTopType<data> extends true
           ? typeOfObject<data>
           : data & Narrowable}`
 
-type shallowNarrow<t> = isTopType<t> extends true
-    ? t
-    : t extends object
-    ? t
-    : narrow<t>
+type shallowNarrow<t> = t extends object ? t : narrow<t>
 
 export const subtypeOf = <data>(data: shallowNarrow<data>) => {
     const baseTypeName = typeOf(data)

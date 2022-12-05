@@ -55,6 +55,6 @@ const getPossibleBooleanLiteral = (node: Node): "true" | "false" | undefined =>
         ? "false"
         : hasType(node, "object", "Object") &&
           node.type === "boolean" &&
-          node.literal
-        ? `${node.literal}`
+          node.subtype !== undefined
+        ? `${node.subtype}`
         : undefined

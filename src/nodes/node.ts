@@ -53,16 +53,17 @@ export type AttributesByTypeName = subtype<
     }
 >
 
+// TODO: Add exact type
 type typeAttributes<attributes extends BaseAttributes> = attributes
 
 export type BigintAttributes = typeAttributes<{
     readonly type: "bigint"
-    readonly literal?: IntegerLiteral
+    readonly subtype?: IntegerLiteral
 }>
 
 export type BooleanAttributes = typeAttributes<{
     readonly type: "boolean"
-    readonly literal?: boolean
+    readonly subtype?: boolean
 }>
 
 export type NullAttributes = typeAttributes<{
@@ -73,7 +74,7 @@ export type NumberAttributes = typeAttributes<
     {
         readonly type: "number"
     } & xor<
-        { readonly literal?: number },
+        { readonly subtype?: number },
         {
             readonly bounds?: Bounds
             readonly divisor?: number
@@ -85,7 +86,7 @@ export type StringAttributes = typeAttributes<
     {
         readonly type: "string"
     } & xor<
-        { readonly literal?: string },
+        { readonly subtype?: string },
         {
             readonly bounds?: Bounds
             readonly regex?: RegexAttribute
@@ -106,8 +107,8 @@ export type ObjectAttributes = typeAttributes<
         readonly type: "object"
         readonly children?: ChildrenAttribute
     } & (
-        | { readonly subtype: "array"; readonly bounds?: Bounds }
-        | { readonly subtype: "function" }
+        | { readonly subtype: "Array"; readonly bounds?: Bounds }
+        | { readonly subtype: ObjectTypeName }
         | {}
     )
 >

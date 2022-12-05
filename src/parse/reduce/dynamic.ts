@@ -45,9 +45,9 @@ export class DynamicState {
         if (
             hasType(this.root, "object", "Object") &&
             this.root.type === "number" &&
-            this.root.literal !== undefined
+            this.root.subtype !== undefined
         ) {
-            const limit = this.root.literal
+            const limit = this.root.subtype
             this.root = undefined
             return limit
         }

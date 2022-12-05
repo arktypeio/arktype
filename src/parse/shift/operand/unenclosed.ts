@@ -46,13 +46,13 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
 const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { type: "number", literal: maybeNumber }
+        return { type: "number", subtype: maybeNumber }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
         return {
             type: "bigint",
-            literal: token.slice(0, -1) as IntegerLiteral
+            subtype: token.slice(0, -1) as IntegerLiteral
         }
     }
 }
