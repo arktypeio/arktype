@@ -5,6 +5,21 @@ import { buildInvalidDivisorMessage } from "../src/parse/shift/operator/divisor.
 
 describe("divisibility", () => {
     describe("parse", () => {
+        describe("intersection", () => {
+            test("number type & divisor", () => {
+                attest(type("number%3&8").root).snap({
+                    type: "number",
+                    literal: 8
+                })
+            })
+            test("bound & divisor", () => {
+                attest(type("number<3&number%8").root).snap({
+                    type: "number",
+                    bounds: { max: { limit: 3, exclusive: true } },
+                    divisor: 8
+                })
+            })
+        })
         describe("valid", () => {
             test("integerLiteralDefinition", () => {
                 const divisibleByTwo = type("number%2")
