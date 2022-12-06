@@ -19,7 +19,7 @@ describe("intersection", () => {
             attest(t.root).snap("false")
         })
         test("literals same literal intersection", () => {
-            attest(type("2&2").root).snap({ type: "number", literal: 2 })
+            attest(type("2&2").root).snap({ type: "number", subtype: 2 })
         })
         describe("errors", () => {
             test("bad reference", () => {
