@@ -1,4 +1,5 @@
 import type { array } from "../../utils/generics.js"
+import type { KeyIntersection } from "../intersection.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -10,22 +11,28 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection = (l: Bounds, r: Bounds): Bounds | null => {
-    const min =
-        r.min && (!l.min || compareStrictness(l.min, r.min, "min") === "r")
-            ? r.min
-            : l.min
-    const max =
-        r.max && (!l.max || compareStrictness(l.max, r.max, "max") === "r")
-            ? r.max
-            : l.max
-    return min
-        ? max
-            ? compareStrictness(min, max, "min") === "l"
-                ? null
-                : { min, max }
-            : { min }
-        : { max: max! }
+export const boundsIntersection: KeyIntersection<Bounds> = (l, r) => {
+    const minComparison = compareStrictness(l.min, r.min, "min")
+    const maxComparison = compareStrictness(l.max, r.max, "max")
+    if (minComparison === "l") {
+        if (maxComparison === "r") {
+            return {
+                min: l.min!,
+                max: r.max!
+            }
+        }
+        return l
+    }
+    if (minComparison === "r") {
+        if (maxComparison === "l") {
+            return {
+                min: r.min!,
+                max: l.max!
+            }
+        }
+        return r
+    }
+    return maxComparison === "l" ? l : maxComparison === "r" ? r : true
 }
 
 type BoundableData = number | string | array
@@ -67,8 +74,18 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const compareStrictness = (l: Bound, r: Bound, kind: BoundKind) =>
-    l.limit === r.limit
+const compareStrictness = (
+    l: Bound | undefined,
+    r: Bound | undefined,
+    kind: BoundKind
+) =>
+    !l
+        ? !r
+            ? "="
+            : "r"
+        : !r
+        ? "l"
+        : l.limit === r.limit
         ? l.exclusive
             ? r.exclusive
                 ? "="

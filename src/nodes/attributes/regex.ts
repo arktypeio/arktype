@@ -1,5 +1,4 @@
 import { getRegex } from "../../utils/regexCache.js"
-import { hasType } from "../../utils/typeOf.js"
 import type { KeyIntersection } from "../intersection.js"
 
 export type RegexAttribute = string | readonly string[]
@@ -13,13 +12,13 @@ const checkRegexExpression = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
 export const regexIntersection: KeyIntersection<RegexAttribute> = (l, r) => {
-    if (hasType(l, "string")) {
-        if (hasType(r, "string")) {
-            return l === r ? l : [l, r]
+    if (typeof l === "string") {
+        if (typeof r === "string") {
+            return l === r ? true : [l, r]
         }
         return r.includes(l) ? r : [...r, l]
     }
-    if (hasType(r, "string")) {
+    if (typeof r === "string") {
         return l.includes(r) ? l : [...l, r]
     }
     const result = [...l]
@@ -28,5 +27,11 @@ export const regexIntersection: KeyIntersection<RegexAttribute> = (l, r) => {
             result.push(expression)
         }
     }
-    return result
+    return result.length === l.length
+        ? result.length === r.length
+            ? true
+            : l
+        : result.length === r.length
+        ? r
+        : result
 }

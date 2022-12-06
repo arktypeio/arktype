@@ -2,7 +2,7 @@ export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0
 
 export const divisorIntersection = (l: number, r: number) =>
-    Math.abs((l * r) / greatestCommonDivisor(l, r))
+    l === r ? true : Math.abs((l * r) / greatestCommonDivisor(l, r))
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

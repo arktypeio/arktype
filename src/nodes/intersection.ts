@@ -1,28 +1,28 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { mutable } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
-import type { TypeName } from "../utils/typeOf.js"
-import { hasObjectType, ObjectTypeName } from "../utils/typeOf.js"
+import type { defined, mutable } from "../utils/generics.js"
+import { hasKey, listFrom } from "../utils/generics.js"
+import { hasObjectType } from "../utils/typeOf.js"
 import { boundsIntersection } from "./attributes/bounds.js"
-import { childrenIntersection } from "./attributes/children.js"
 import { divisorIntersection } from "./attributes/divisor.js"
+import { propsIntersection } from "./attributes/props.js"
 import { regexIntersection } from "./attributes/regex.js"
-import { checkAttributes } from "./check.js"
 import { resolveIfName } from "./names.js"
 import type {
     AttributeName,
-    AttributesOf,
     BaseAttributes,
     BaseAttributeType,
     Node,
-    ResolutionNode,
     TypeNameWithAttributes
 } from "./node.js"
 import { attributeKeysByType } from "./node.js"
 import { union } from "./union.js"
 
-export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
+export const intersection = (
+    l: Node,
+    r: Node,
+    scope: ScopeRoot
+): Node | true => {
     const lResolution = resolveIfName(l, scope)
     const rResolution = resolveIfName(r, scope)
     const result = hasObjectType(lResolution, "Array")
@@ -40,7 +40,7 @@ export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
     if (deepEquals(result, rResolution)) {
         return r
     }
-    return result
+    return result as Node
 }
 
 const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
@@ -59,20 +59,18 @@ const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
 export type KeyIntersection<t> = (
     l: t,
     r: t,
+    context: mutable<BaseAttributes>,
     scope: ScopeRoot
-) => {
-    intersection: t
-    subtypes: SubtypesResult
-} | null
+) => t | true | null
 
-type SubtypesResult = "" | "l" | "r" | "lr"
-
-type UnknownIntersection = KeyIntersection<any>
+type UnknownKeyIntersection = KeyIntersection<
+    defined<BaseAttributes[AttributeName]>
+>
 
 const subtypeIntersection: KeyIntersection<BaseAttributeType<"subtype">> = (
     l,
     r
-) => (l === r ? { intersection: l, subtypes: "lr" } : null)
+) => (l === r ? true : null)
 
 const keyIntersections: {
     [k in AttributeName]: KeyIntersection<BaseAttributeType<k>>
@@ -80,7 +78,8 @@ const keyIntersections: {
     bounds: boundsIntersection,
     divisor: divisorIntersection,
     regex: regexIntersection,
-    children: childrenIntersection,
+    props: propsIntersection,
+    propTypes: propsIntersection,
     subtype: subtypeIntersection
 }
 
@@ -89,28 +88,34 @@ export const attributesIntersection = (
     l: BaseAttributes,
     r: BaseAttributes,
     scope: ScopeRoot
-): BaseAttributes | "never" => {
-    let lIsSubtype = true
-    let rIsSubtype = true
+): BaseAttributes | true | "never" => {
+    let lImpliesR = true
+    let rImpliesL = true
     const result: mutable<BaseAttributes> = {}
     for (const k of attributeKeysByType[typeName]) {
-        if (l[k]) {
-            if (r[k]) {
-                const keyResult = (keyIntersections[k] as UnknownIntersection)(
-                    l[k],
-                    r[k],
-                    scope
-                )
+        if (hasKey(l, k)) {
+            if (hasKey(r, k)) {
+                const keyResult = (
+                    keyIntersections[k] as UnknownKeyIntersection
+                )(l[k], r[k], result, scope)
                 if (keyResult === null) {
                     return "never"
                 }
-                result[k] = keyResult.intersection
-                lIsSubtype &&=
-                    keyResult.subtypes === "l" || keyResult.subtypes === "lr"
-                rIsSubtype &&=
-                    keyResult.subtypes === "r" || keyResult.subtypes === "lr"
+                if (keyResult === true) {
+                    result[k] = l[k] as any
+                } else {
+                    result[k] = keyResult as any
+                    lImpliesR &&= keyResult === l
+                    rImpliesL &&= keyResult === r
+                }
+            } else {
+                result[k] = l[k] as any
+                rImpliesL = false
             }
+        } else if (hasKey(r, k)) {
+            result[k] = r[k] as any
+            lImpliesR = false
         }
     }
-    return lIsSubtype ? r : rIsSubtype ? l : result
+    return lImpliesR ? (rImpliesL ? true : l) : rImpliesL ? r : result
 }

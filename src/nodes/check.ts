@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { hasObjectType, hasType } from "../utils/typeOf.js"
-import { checkChildren } from "./attributes/children.js"
+import { checkChildren } from "./attributes/props.js"
 import { resolveIfName } from "./names.js"
 import type {
     AttributeName,

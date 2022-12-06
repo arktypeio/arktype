@@ -1,6 +1,8 @@
 import type {
     autocompleteString,
     defined,
+    dict,
+    keySet,
     listable,
     PartialDictionary,
     subtype
@@ -8,7 +10,7 @@ import type {
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./attributes/bounds.js"
-import type { ChildrenAttribute } from "./attributes/children.js"
+import type { PropTypes } from "./attributes/props.js"
 import type { RegexAttribute } from "./attributes/regex.js"
 import type { LiteralValue } from "./attributes/type.js"
 import type { Keyword } from "./names.js"
@@ -46,7 +48,9 @@ export type BaseAttributes = {
     readonly divisor?: number
     readonly regex?: RegexAttribute
     // object attributes
-    readonly children?: ChildrenAttribute
+    readonly props?: dict<Node>
+    readonly propTypes?: PropTypes
+    readonly requiredKeys?: keySet
     readonly subtype?: ObjectTypeName
     // shared attributes
     readonly bounds?: Bounds
@@ -61,7 +65,7 @@ export type BaseAttributeType<k extends AttributeName> = defined<
 type literal<t extends LiteralValue> = { readonly value: t }
 
 export const attributeKeysByType = {
-    object: ["subtype", "bounds", "children"],
+    object: ["subtype", "bounds", "requiredKeys", "props", "propTypes"],
     string: ["regex", "bounds"],
     number: ["divisor", "bounds"]
 } as const satisfies PartialDictionary<TypeName, readonly AttributeName[]>
