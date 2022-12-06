@@ -20,25 +20,25 @@ describe("intersection", () => {
         })
         describe("number & literals", () => {
             test("same literal", () => {
-                attest(type("2&2").root).snap({ type: "number", literal: 2 })
+                attest(type("2&2").root).snap({ type: "number", subtype: 2 })
             })
             test("literal&number type", () => {
                 attest(type("number&22").root).snap({
                     type: "number",
-                    literal: 22
+                    subtype: 22
                 })
             })
             test("float&number type", () => {
                 attest(type("number&22.22").root).snap({
                     type: "number",
-                    literal: 22.22
+                    subtype: 22.22
                 })
             })
         })
         describe("string & literal", () => {
             attest(type("string&'a'").root).snap({
                 type: "string",
-                literal: "a"
+                subtype: "a"
             })
         })
 

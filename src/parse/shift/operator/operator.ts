@@ -25,7 +25,8 @@ export const parseOperator = (s: DynamicState): void => {
         ? parseDivisor(s)
         : lookahead === " "
         ? parseOperator(s)
-        : throwInternalError(buildUnexpectedCharacterMessage(lookahead))
+        : /* c8 ignore next */
+          throwInternalError(buildUnexpectedCharacterMessage(lookahead))
 }
 
 export type parseOperator<s extends StaticState> =

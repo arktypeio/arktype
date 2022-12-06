@@ -46,16 +46,20 @@ describe("bad definition types", () => {
             buildBadDefinitionTypeMessage("bigint")
         )
     })
-    test("function", () => {
-        // @ts-expect-error
-        attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("function")
-        )
-    })
     test("symbol", () => {
         // @ts-expect-error
         attest(() => type({ bad: Symbol() })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("symbol")
+        )
+    })
+    test("objects", () => {
+        // @ts-expect-error
+        attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
+            buildBadDefinitionTypeMessage("Function")
+        )
+        // @ts-expect-error
+        attest(() => type(new Error("whoops"))).throwsAndHasTypeError(
+            buildBadDefinitionTypeMessage("Error")
         )
     })
 })

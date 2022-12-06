@@ -1,10 +1,12 @@
 import type { Keyword, Keywords } from "../nodes/names.js"
-import type { error, evaluate, isAny, RegexLiteral } from "../utils/generics.js"
 import type {
-    SerializablePrimitive,
-    serializePrimitive
-} from "../utils/primitiveSerialization.js"
-import type { dict } from "../utils/typeOf.js"
+    dict,
+    error,
+    evaluate,
+    isAny,
+    Narrowable,
+    RegexLiteral
+} from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 import type { StringLiteral } from "./shift/operand/enclosed.js"
@@ -106,8 +108,8 @@ export type astToString<ast, result extends string = ""> = ast extends [
     ...infer tail
 ]
     ? astToString<tail, `${result}${astToString<head>}`>
-    : ast extends SerializablePrimitive
-    ? `${result}${serializePrimitive<ast>}`
+    : ast extends Narrowable
+    ? `${result}${ast extends bigint ? `${ast}n` : ast}`
     : "..."
 
 export const buildIndivisibleMessage = <root extends string>(

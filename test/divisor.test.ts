@@ -32,7 +32,7 @@ describe("divisibility", () => {
             test("whitespace after modulo", () => {
                 attest(type("number % 5").infer).typed as number
             })
-            test("number gcd", () => {
+            test("GCD", () => {
                 attest(type("number%2&number%3").root).snap({
                     type: "number",
                     divisor: 6

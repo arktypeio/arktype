@@ -8,7 +8,7 @@ type narrowRecurse<t> = {
 
 type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
 
-type Narrowable = string | boolean | number | bigint
+export type Narrowable = string | boolean | number | bigint
 
 /**
  * Note: Similarly to Narrow, trying to Evaluate 'unknown'
@@ -115,11 +115,7 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
-export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
-    ? [...MaybeArray, T]
-    : T
-
-export type partialRecord<k extends string, v> = { [_ in k]?: v }
+export type PartialDictionary<k extends string, v> = { [_ in k]?: v }
 
 export type error<message extends string = string> = `!${message}`
 

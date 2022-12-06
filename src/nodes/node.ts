@@ -1,11 +1,6 @@
-import type {
-    autocompleteString,
-    defined,
-    subtype,
-    xor
-} from "../utils/generics.js"
+import type { autocompleteString, defined, xor } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import type { ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
+import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./attributes/bounds.js"
 import type { ChildrenAttribute } from "./attributes/children.js"
 import type { RegexAttribute } from "./attributes/regex.js"
@@ -27,7 +22,7 @@ export type BaseAttributes = {
     // object attributes
     readonly children?: ChildrenAttribute
     // shared attributes
-    readonly subtype?: ObjectSubtypeName | LiteralValue
+    readonly subtype?: LiteralValue
     readonly bounds?: Bounds
 }
 
@@ -37,77 +32,62 @@ export type BaseAttributeType<k extends AttributeName> = defined<
     BaseAttributes[k]
 >
 
-export type Attributes = AttributesByTypeName[TypeName]
+export type Attributes =
+    | BigintAttributes
+    | BooleanAttributes
+    | NullAttributes
+    | NumberAttributes
+    | ObjectAttributes
+    | StringAttributes
+    | SymbolAttributes
+    | UndefinedAttributes
 
-export type AttributesByTypeName = subtype<
-    { [k in TypeName]: BaseAttributes },
+export type BigintAttributes = {
+    readonly type: "bigint"
+    readonly subtype?: IntegerLiteral
+}
+
+export type BooleanAttributes = {
+    readonly type: "boolean"
+    readonly subtype?: boolean
+}
+
+export type NullAttributes = {
+    readonly type: "null"
+}
+
+export type NumberAttributes = {
+    readonly type: "number"
+} & xor<
+    { readonly subtype?: number },
     {
-        bigint: BigintAttributes
-        boolean: BooleanAttributes
-        null: NullAttributes
-        number: NumberAttributes
-        object: ObjectAttributes
-        string: StringAttributes
-        symbol: SymbolAttributes
-        undefined: UndefinedAttributes
+        readonly bounds?: Bounds
+        readonly divisor?: number
     }
 >
 
-type typeAttributes<attributes extends BaseAttributes> = attributes
-
-export type BigintAttributes = typeAttributes<{
-    readonly type: "bigint"
-    readonly literal?: IntegerLiteral
-}>
-
-export type BooleanAttributes = typeAttributes<{
-    readonly type: "boolean"
-    readonly literal?: boolean
-}>
-
-export type NullAttributes = typeAttributes<{
-    readonly type: "null"
-}>
-
-export type NumberAttributes = typeAttributes<
+export type StringAttributes = {
+    readonly type: "string"
+} & xor<
+    { readonly subtype?: string },
     {
-        readonly type: "number"
-    } & xor<
-        { readonly literal?: number },
-        {
-            readonly bounds?: Bounds
-            readonly divisor?: number
-        }
-    >
+        readonly bounds?: Bounds
+        readonly regex?: RegexAttribute
+    }
 >
 
-export type StringAttributes = typeAttributes<
-    {
-        readonly type: "string"
-    } & xor<
-        { readonly literal?: string },
-        {
-            readonly bounds?: Bounds
-            readonly regex?: RegexAttribute
-        }
-    >
->
-
-export type SymbolAttributes = typeAttributes<{
+export type SymbolAttributes = {
     readonly type: "symbol"
-}>
+}
 
-export type UndefinedAttributes = typeAttributes<{
+export type UndefinedAttributes = {
     readonly type: "undefined"
-}>
+}
 
-export type ObjectAttributes = typeAttributes<
-    {
-        readonly type: "object"
-        readonly children?: ChildrenAttribute
-    } & (
-        | { readonly subtype: "array"; readonly bounds?: Bounds }
-        | { readonly subtype: "function" }
-        | {}
-    )
->
+export type ObjectAttributes = {
+    readonly type: "object"
+    readonly children?: ChildrenAttribute
+} & (
+    | { readonly subtype: "Array"; readonly bounds?: Bounds }
+    | { readonly subtype?: ObjectTypeName }
+)

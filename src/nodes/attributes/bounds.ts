@@ -1,4 +1,4 @@
-import type { array } from "../../utils/typeOf.js"
+import type { array } from "../../utils/generics.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -51,15 +51,11 @@ export const checkBounds = (data: BoundableData, bounds: Bounds) => {
     return true
 }
 
-export const buildEmptyRangeMessage = (
-    kind: BoundKind,
-    bound: Bound,
-    opposing: Bound
-) =>
-    `the range bounded by ${stringifyBound(
-        "min",
-        kind === "min" ? bound : opposing
-    )} and ${stringifyBound("max", kind === "max" ? bound : opposing)} is empty`
+export const buildEmptyRangeMessage = (min: Bound, max: Bound) =>
+    `the range bounded by ${stringifyBound("min", min)} and ${stringifyBound(
+        "max",
+        max
+    )} is empty`
 
 const stringifyBound = (kind: BoundKind, bound: Bound) =>
     `${kind === "min" ? "<" : ">"}${bound.exclusive ? "" : "="}${bound.limit}`

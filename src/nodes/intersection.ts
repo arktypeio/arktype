@@ -1,12 +1,12 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
 import { listFrom } from "../utils/generics.js"
-import { hasType } from "../utils/typeOf.js"
+import { hasObjectType } from "../utils/typeOf.js"
 import { boundsIntersection } from "./attributes/bounds.js"
 import { childrenIntersection } from "./attributes/children.js"
 import { divisorIntersection } from "./attributes/divisor.js"
 import { regexIntersection } from "./attributes/regex.js"
-import { intersectionIfLiteral } from "./attributes/type.js"
+import { checkAttributes } from "./check.js"
 import { resolveIfName } from "./names.js"
 import type {
     AttributeName,
@@ -21,9 +21,9 @@ import { union } from "./union.js"
 export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
     const lResolution = resolveIfName(l, scope)
     const rResolution = resolveIfName(r, scope)
-    const result = hasType(lResolution, "object", "array")
+    const result = hasObjectType(lResolution, "Array")
         ? branchesIntersection(lResolution, listFrom(rResolution), scope)
-        : hasType(rResolution, "object", "array")
+        : hasObjectType(rResolution, "Array")
         ? branchesIntersection([lResolution], rResolution, scope)
         : attributesIntersection(lResolution, rResolution, scope)
     // If the intersection result is identical to one of its operands,
@@ -45,7 +45,7 @@ const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
         for (const rBranch of r) {
             const branchResult = intersection(lBranch, rBranch, scope)
             if (branchResult !== "never") {
-                result = union(result, listFrom(branchResult), scope)
+                result = union(result, branchResult, scope)
             }
         }
     }
@@ -56,7 +56,7 @@ export type KeyIntersection<t> = (l: t, r: t, scope: ScopeRoot) => t | null
 
 type UnknownIntersection = KeyIntersection<any>
 
-type IntersectedKey = Exclude<AttributeName, "type" | "literal">
+type IntersectedKey = Exclude<AttributeName, "type" | "subtype">
 
 const keyIntersections: {
     [k in IntersectedKey]: KeyIntersection<BaseAttributeType<k>>
@@ -64,7 +64,6 @@ const keyIntersections: {
     bounds: boundsIntersection,
     divisor: divisorIntersection,
     regex: regexIntersection,
-    subtype: (l, r) => (l === r ? l : null),
     children: childrenIntersection
 }
 
@@ -76,14 +75,17 @@ export const attributesIntersection = (
     if (l.type !== r.type) {
         return "never"
     }
-    const literalResult = intersectionIfLiteral(l, r, scope)
-    if (literalResult) {
-        return literalResult
+    if (l.subtype !== r.subtype) {
+        return !l.subtype && checkAttributes(r.subtype, l, scope)
+            ? (r as Attributes)
+            : !r.subtype && checkAttributes(l.subtype, r, scope)
+            ? (l as Attributes)
+            : "never"
     }
     const result = { ...l, ...r }
     let k: AttributeName
     for (k in result) {
-        // type and literal have already been handled, so skip those
+        // type and subtype have already been handled, so skip those
         if (k !== "type" && k !== "subtype" && l[k] && r[k]) {
             const keyResult = (keyIntersections[k] as UnknownIntersection)(
                 l[k],

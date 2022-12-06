@@ -31,7 +31,7 @@ describe("tuple expression", () => {
         attest(t.infer).typed as string[]
         attest(t.root).snap({
             type: "object",
-            subtype: "array",
+            subtype: "Array",
             children: {
                 propTypes: {
                     number: "string"

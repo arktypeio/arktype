@@ -19,8 +19,8 @@ describe("union/parse", () => {
             "false",
             "null",
             "undefined",
-            { type: "number", literal: 0 },
-            { type: "string", literal: "" }
+            { type: "number", subtype: 0 },
+            { type: "string", subtype: "" }
         ])
     })
     test("union of true and false reduces to boolean", () => {
