@@ -1,3 +1,5 @@
+import type { array } from "../../utils/generics.js"
+
 export type Bounds = {
     readonly min?: Bound
     readonly max?: Bound
@@ -26,19 +28,22 @@ export const boundsIntersection = (l: Bounds, r: Bounds): Bounds | null => {
         : { max: max! }
 }
 
-export const checkBounds = (data: number, bounds: Bounds) => {
+type BoundableData = number | string | array
+
+export const checkBounds = (data: BoundableData, bounds: Bounds) => {
+    const size = typeof data === "number" ? data : data.length
     if (bounds.min) {
         if (
-            data < bounds.min.limit ||
-            (data === bounds.min.limit && bounds.min.exclusive)
+            size < bounds.min.limit ||
+            (size === bounds.min.limit && bounds.min.exclusive)
         ) {
             return false
         }
     }
     if (bounds.max) {
         if (
-            data > bounds.max.limit ||
-            (data === bounds.max.limit && bounds.max.exclusive)
+            size > bounds.max.limit ||
+            (size === bounds.max.limit && bounds.max.exclusive)
         ) {
             return false
         }

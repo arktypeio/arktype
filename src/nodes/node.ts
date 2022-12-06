@@ -1,34 +1,114 @@
-import type { autocompleteString, stringKeyOf } from "../utils/generics.js"
-import type { array, dict } from "../utils/typeOf.js"
+import type {
+    autocompleteString,
+    defined,
+    subtype,
+    xor
+} from "../utils/generics.js"
+import type { IntegerLiteral } from "../utils/numericLiterals.js"
+import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
+import type { Bounds } from "./attributes/bounds.js"
+import type { ChildrenAttribute } from "./attributes/children.js"
+import type { RegexAttribute } from "./attributes/regex.js"
+import type { LiteralValue } from "./attributes/type.js"
 import type { Keyword } from "./names.js"
-import type {
-    BaseObjectAttributes,
-    ObjectAttributes
-} from "./object/attributes.js"
-import type {
-    BasePrimitiveAttributes,
-    PrimitiveAttributes
-} from "./primitive/attributes.js"
+import type { Branches } from "./union.js"
 
-export type Node<scope extends dict = dict> = NameNode<scope> | ResolutionNode
+export type Node = NameNode | ResolutionNode
 
-export type NameNode<scope extends dict = dict> =
-    string extends stringKeyOf<scope>
-        ? autocompleteString<Keyword>
-        : Keyword | stringKeyOf<scope>
+export type NameNode = autocompleteString<Keyword>
 
-export type ResolutionNode<scope extends dict = dict> =
-    | AttributesNode<scope>
-    | BranchesNode<scope>
+export type ResolutionNode = Attributes | Branches
 
-export type BranchesNode<scope extends dict = dict> = array<
-    NameNode<scope> | AttributesNode<scope>
+export type BaseAttributes = {
+    readonly type: TypeName
+    // primitive attributes
+    readonly divisor?: number
+    readonly regex?: RegexAttribute
+    // object attributes
+    readonly children?: ChildrenAttribute
+    // shared attributes
+    readonly subtype?: ObjectTypeName | LiteralValue
+    readonly bounds?: Bounds
+}
+
+export type AttributeName = keyof BaseAttributes
+
+export type BaseAttributeType<k extends AttributeName> = defined<
+    BaseAttributes[k]
 >
 
-export type AttributesNode<scope extends dict = dict> =
-    | PrimitiveAttributes
-    | ObjectAttributes<scope>
+export type Attributes = AttributesByTypeName[TypeName]
 
-export type BaseAttributes<scope extends dict = dict> =
-    | BasePrimitiveAttributes
-    | BaseObjectAttributes<scope>
+export type AttributesByTypeName = subtype<
+    { [k in TypeName]: BaseAttributes },
+    {
+        bigint: BigintAttributes
+        boolean: BooleanAttributes
+        null: NullAttributes
+        number: NumberAttributes
+        object: ObjectAttributes
+        string: StringAttributes
+        symbol: SymbolAttributes
+        undefined: UndefinedAttributes
+    }
+>
+
+// TODO: Add exact type
+type typeAttributes<attributes extends BaseAttributes> = attributes
+
+export type BigintAttributes = typeAttributes<{
+    readonly type: "bigint"
+    readonly subtype?: IntegerLiteral
+}>
+
+export type BooleanAttributes = typeAttributes<{
+    readonly type: "boolean"
+    readonly subtype?: boolean
+}>
+
+export type NullAttributes = typeAttributes<{
+    readonly type: "null"
+}>
+
+export type NumberAttributes = typeAttributes<
+    {
+        readonly type: "number"
+    } & xor<
+        { readonly subtype?: number },
+        {
+            readonly bounds?: Bounds
+            readonly divisor?: number
+        }
+    >
+>
+
+export type StringAttributes = typeAttributes<
+    {
+        readonly type: "string"
+    } & xor<
+        { readonly subtype?: string },
+        {
+            readonly bounds?: Bounds
+            readonly regex?: RegexAttribute
+        }
+    >
+>
+
+export type SymbolAttributes = typeAttributes<{
+    readonly type: "symbol"
+}>
+
+export type UndefinedAttributes = typeAttributes<{
+    readonly type: "undefined"
+}>
+
+export type ObjectAttributes = typeAttributes<
+    {
+        readonly type: "object"
+        readonly children?: ChildrenAttribute
+    } & (
+        | { readonly subtype: "Array"; readonly bounds?: Bounds }
+        | { readonly subtype: ObjectTypeName }
+        | {}
+    )
+>

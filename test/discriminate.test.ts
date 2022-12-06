@@ -2,7 +2,7 @@ import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import { scope, type } from "../exports.js"
 
-describe("union/discriminate", () => {
+describe("compile", () => {
     const places = scope.lazy({
         ocean: { wet: "true", blue: "true", isOcean: "true" },
         sky: { wet: "false", blue: "true", isSky: "true" },
@@ -24,14 +24,6 @@ describe("union/discriminate", () => {
     test("discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert", { scope: places }).root
-        ).snap("ocean")
-    })
-    // TODO: Don't unnecessarily expand aliases in final type just because
-    // they're used for pruning/discrimination
-    test("subtype pruning", () => {
-        attest(
-            type("ocean|sky|rainforest|desert|anywhereWet", { scope: places })
-                .root
         ).snap("ocean")
     })
 })

@@ -16,16 +16,27 @@ describe("union/parse", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.root).snap([
-            { type: "number", literal: 0 },
-            { type: "string", literal: "" },
-            { type: "boolean", literal: false },
+            "false",
             "null",
-            "undefined"
+            "undefined",
+            { type: "number", subtype: 0 },
+            { type: "string", subtype: "" }
         ])
     })
     test("union of true and false reduces to boolean", () => {
         attest(type("true|false").root).equals("boolean")
         attest(type("true|false|number").root).equals(["boolean", "number"])
+    })
+    test("subtype pruning", () => {
+        const t = type([
+            [{ a: "boolean" }, "|", { a: "true" }],
+            "|",
+            { a: "false" }
+        ])
+        attest(t.root).snap({
+            type: "object",
+            children: { props: { a: "boolean" }, requiredKeys: { a: true } }
+        })
     })
     describe("errors", () => {
         test("bad reference", () => {

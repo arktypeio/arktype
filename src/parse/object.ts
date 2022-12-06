@@ -4,9 +4,15 @@ import type { Node } from "../nodes/node.js"
 import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
-import type { error, evaluate, keySet, mutable } from "../utils/generics.js"
+import type {
+    array,
+    dict,
+    error,
+    evaluate,
+    keySet,
+    mutable
+} from "../utils/generics.js"
 import { isKeyOf } from "../utils/generics.js"
-import type { array, dict } from "../utils/typeOf.js"
 import { hasType } from "../utils/typeOf.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
@@ -27,8 +33,10 @@ export const parseDict = (def: dict, scope: ScopeRoot): Node => {
     }
     return {
         type: "object",
-        props,
-        requiredKeys
+        children: {
+            props,
+            requiredKeys
+        }
     }
 }
 
@@ -52,16 +60,22 @@ export type inferRecord<
     }
 >
 
-export const parseTuple = (def: array, scope: ScopeRoot): Node =>
-    isTupleExpression(def)
-        ? parseTupleExpression(def, scope)
-        : {
-              type: "object",
-              subtype: "array",
-              elements: def.map((elementDef) =>
-                  parseDefinition(elementDef, scope)
-              )
-          }
+export const parseTuple = (def: array, scope: ScopeRoot): Node => {
+    if (isTupleExpression(def)) {
+        return parseTupleExpression(def, scope)
+    }
+    const props: Record<number, Node> = {}
+    for (let i = 0; i < def.length; i++) {
+        props[i] = parseDefinition(def[i], scope)
+    }
+    return {
+        type: "object",
+        subtype: "Array",
+        children: {
+            props
+        }
+    }
+}
 
 export type inferTuple<
     def,
@@ -143,6 +157,6 @@ type TupleExpressionToken = keyof typeof tupleExpressionTokens
 export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
 
 const isTupleExpression = (def: array): def is TupleExpression =>
-    hasType(def, "object", "array") &&
+    hasType(def, "object", "Array") &&
     hasType(def[1], "string") &&
     def[1] in tupleExpressionTokens

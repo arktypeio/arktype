@@ -4,10 +4,9 @@ import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { isTopType } from "./utils/generics.js"
+import type { dict, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import type { dict } from "./utils/typeOf.js"
 
 const rawTypeFn: DynamicTypeFn = (
     definition,

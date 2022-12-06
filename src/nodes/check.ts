@@ -1,9 +1,13 @@
 import type { ScopeRoot } from "../scope.js"
-import { hasObjectSubtype } from "../utils/typeOf.js"
+import { hasObjectType, hasType } from "../utils/typeOf.js"
+import { checkChildren } from "./attributes/children.js"
 import { resolveIfName } from "./names.js"
-import type { Node } from "./node.js"
-import { checkObject } from "./object/intersection.js"
-import { checkPrimitive } from "./primitive/check.js"
+import type {
+    AttributeName,
+    BaseAttributes,
+    BaseAttributeType,
+    Node
+} from "./node.js"
 
 export const checkNode = (
     data: unknown,
@@ -11,9 +15,26 @@ export const checkNode = (
     scope: ScopeRoot
 ): boolean => {
     const resolution = resolveIfName(attributes, scope)
-    return hasObjectSubtype(resolution, "array")
+    return hasObjectType(resolution, "Array")
         ? resolution.some((branch) => checkNode(data, branch, scope))
-        : resolution.type === "object"
-        ? checkObject(data, resolution, scope)
-        : checkPrimitive(data, resolution)
+        : checkAttributes(data, resolution, scope)
+}
+
+export type AttributeChecker<data, k extends AttributeName> = (
+    data: data,
+    attribute: BaseAttributeType<k>
+) => boolean
+
+export const checkAttributes = (
+    data: unknown,
+    attributes: BaseAttributes,
+    scope: ScopeRoot
+) => {
+    if (!hasType(data, attributes.type)) {
+        return false
+    }
+    if (attributes.children) {
+        return checkChildren(data as object, attributes.children, scope)
+    }
+    return true
 }

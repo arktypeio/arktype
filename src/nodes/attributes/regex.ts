@@ -1,6 +1,6 @@
 import { getRegex } from "../../utils/regexCache.js"
 import { hasType } from "../../utils/typeOf.js"
-import type { PrimitiveKeyIntersection } from "./intersection.js"
+import type { KeyIntersection } from "../intersection.js"
 
 export type RegexAttribute = string | readonly string[]
 
@@ -12,10 +12,7 @@ export const checkRegex = (data: string, regex: RegexAttribute) =>
 const checkRegexExpression = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection: PrimitiveKeyIntersection<RegexAttribute> = (
-    l,
-    r
-) => {
+export const regexIntersection: KeyIntersection<RegexAttribute> = (l, r) => {
     if (hasType(l, "string")) {
         if (hasType(r, "string")) {
             return l === r ? l : [l, r]

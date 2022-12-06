@@ -16,26 +16,27 @@ const always = [
     "string",
     "symbol",
     "undefined"
-]
+] as const
 
 export const keywords = defineKeywords({
     // TS keywords
     any: always,
     bigint: { type: "bigint" },
     boolean: { type: "boolean" },
-    false: { type: "boolean", literal: false },
+    // TODO: make sure errors on bad property
+    false: { type: "boolean", subtype: false },
     never: [],
     null: { type: "null" },
     number: { type: "number" },
     object: { type: "object" },
     string: { type: "string" },
     symbol: { type: "symbol" },
-    true: { type: "boolean", literal: true },
+    true: { type: "boolean", subtype: true },
     undefined: { type: "undefined" },
     unknown: always,
     void: { type: "undefined" },
     // JS Object types
-    Function: { type: "object", subtype: "function" },
+    Function: { type: "object", subtype: "Function" },
     // Regex
     email: { type: "string", regex: "^(.+)@(.+)\\.(.+)$" },
     alphanumeric: { type: "string", regex: "^[dA-Za-z]+$" },

@@ -1,4 +1,3 @@
-import type { array } from "./typeOf.js"
 import { hasType } from "./typeOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
@@ -9,7 +8,7 @@ type narrowRecurse<t> = {
 
 type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
 
-type Narrowable = string | boolean | number | bigint
+export type Narrowable = string | boolean | number | bigint
 
 /**
  * Note: Similarly to Narrow, trying to Evaluate 'unknown'
@@ -61,6 +60,13 @@ export const isKeyOf = <k extends string | number, obj extends object>(
     obj: obj
 ): k is Extract<keyof obj, k> => k in obj
 
+export type classOf<instanceType> = new (
+    ...constructorArgs: any[]
+) => instanceType
+
+export type instanceOf<classType extends classOf<any>> =
+    classType extends classOf<infer Instance> ? Instance : never
+
 export type entryOf<o> = { [k in keyof o]: [k, o[k]] }[o extends unknown[]
     ? keyof o & number
     : keyof o]
@@ -109,11 +115,7 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
-export type maybePush<MaybeArray, T> = MaybeArray extends unknown[]
-    ? [...MaybeArray, T]
-    : T
-
-export type partialRecord<k extends string, v> = { [_ in k]?: v }
+export type PartialDictionary<k extends string, v> = { [_ in k]?: v }
 
 export type error<message extends string = string> = `!${message}`
 
@@ -147,3 +149,7 @@ export const listFrom = <t>(data: t) =>
 export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
+
+export type array<of = unknown> = readonly of[]
+
+export type dict<of = unknown> = { readonly [k in string]: of }
