@@ -55,6 +55,9 @@ describe("intersection", () => {
                     buildMissingRightOperandMessage("&", "&true")
                 )
             })
+            test("never", () => {
+                attest(type("string&number").root).snap("never")
+            })
         })
     })
 })

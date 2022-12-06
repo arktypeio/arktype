@@ -17,7 +17,6 @@ describe("parse array", () => {
             }
         })
     })
-
     describe("errors", () => {
         test("incomplete token", () => {
             // @ts-expect-error

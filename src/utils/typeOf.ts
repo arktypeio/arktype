@@ -1,14 +1,7 @@
 import { prototype } from "mocha"
 import type { SingleQuotedStringLiteral } from "../parse/shift/operand/enclosed.js"
-import type {
-    array,
-    classOf,
-    dict,
-    evaluate,
-    isTopType,
-    subtype
-} from "./generics.js"
-import { isKeyOf } from "./generics.js"
+import type { array, dict, evaluate, isTopType, subtype } from "./generics.js"
+import { classOf, isKeyOf } from "./generics.js"
 import type {
     BigintLiteral,
     IntegerLiteral,

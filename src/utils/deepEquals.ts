@@ -1,5 +1,5 @@
 import type { array, dict } from "./typeOf.js"
-import { hasType, rawObjectSubtypeOf } from "./typeOf.js"
+import { hasType, rawObjectSubtypeOf, subtypeOf } from "./typeOf.js"
 
 /**
  * Simple check for deep strict equality. Recurses into dictionaries and arrays,
@@ -12,8 +12,8 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (!hasType(a, "object") || !hasType(b, "object")) {
         return false
     }
-    const aSubtype = objectSubtypeOf(a)
-    const bSubtype = objectSubtypeOf(b)
+    const aSubtype = subtypeOf(a)
+    const bSubtype = subtypeOf(b)
     if (aSubtype !== bSubtype) {
         return false
     }
