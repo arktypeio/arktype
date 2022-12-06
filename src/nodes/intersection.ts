@@ -1,7 +1,9 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
+import type { mutable } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
-import { hasObjectType } from "../utils/typeOf.js"
+import type { TypeName } from "../utils/typeOf.js"
+import { hasObjectType, ObjectTypeName } from "../utils/typeOf.js"
 import { boundsIntersection } from "./attributes/bounds.js"
 import { childrenIntersection } from "./attributes/children.js"
 import { divisorIntersection } from "./attributes/divisor.js"
@@ -10,12 +12,14 @@ import { checkAttributes } from "./check.js"
 import { resolveIfName } from "./names.js"
 import type {
     AttributeName,
-    Attributes,
+    AttributesOf,
     BaseAttributes,
     BaseAttributeType,
-    Node
+    Node,
+    ResolutionNode,
+    TypeNameWithAttributes
 } from "./node.js"
-import type { Branches } from "./union.js"
+import { attributeKeysByType } from "./node.js"
 import { union } from "./union.js"
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
@@ -52,51 +56,61 @@ const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
     return result
 }
 
-export type KeyIntersection<t> = (l: t, r: t, scope: ScopeRoot) => t | null
+export type KeyIntersection<t> = (
+    l: t,
+    r: t,
+    scope: ScopeRoot
+) => {
+    intersection: t
+    subtypes: SubtypesResult
+} | null
+
+type SubtypesResult = "" | "l" | "r" | "lr"
 
 type UnknownIntersection = KeyIntersection<any>
 
-type IntersectedKey = Exclude<AttributeName, "type" | "subtype">
+const subtypeIntersection: KeyIntersection<BaseAttributeType<"subtype">> = (
+    l,
+    r
+) => (l === r ? { intersection: l, subtypes: "lr" } : null)
 
 const keyIntersections: {
-    [k in IntersectedKey]: KeyIntersection<BaseAttributeType<k>>
+    [k in AttributeName]: KeyIntersection<BaseAttributeType<k>>
 } = {
     bounds: boundsIntersection,
     divisor: divisorIntersection,
     regex: regexIntersection,
-    children: childrenIntersection
+    children: childrenIntersection,
+    subtype: subtypeIntersection
 }
 
 export const attributesIntersection = (
+    typeName: TypeNameWithAttributes,
     l: BaseAttributes,
     r: BaseAttributes,
     scope: ScopeRoot
-): Attributes | "never" => {
-    if (l.type !== r.type) {
-        return "never"
-    }
-    if (l.subtype !== r.subtype) {
-        return !l.subtype && checkAttributes(r.subtype, l, scope)
-            ? (r as Attributes)
-            : !r.subtype && checkAttributes(l.subtype, r, scope)
-            ? (l as Attributes)
-            : "never"
-    }
-    const result = { ...l, ...r }
-    let k: AttributeName
-    for (k in result) {
-        // type and subtype have already been handled, so skip those
-        if (k !== "type" && k !== "subtype" && l[k] && r[k]) {
-            const keyResult = (keyIntersections[k] as UnknownIntersection)(
-                l[k],
-                r[k],
-                scope
-            )
-            if (keyResult === null) {
-                return "never"
+): BaseAttributes | "never" => {
+    let lIsSubtype = true
+    let rIsSubtype = true
+    const result: mutable<BaseAttributes> = {}
+    for (const k of attributeKeysByType[typeName]) {
+        if (l[k]) {
+            if (r[k]) {
+                const keyResult = (keyIntersections[k] as UnknownIntersection)(
+                    l[k],
+                    r[k],
+                    scope
+                )
+                if (keyResult === null) {
+                    return "never"
+                }
+                result[k] = keyResult.intersection
+                lIsSubtype &&=
+                    keyResult.subtypes === "l" || keyResult.subtypes === "lr"
+                rIsSubtype &&=
+                    keyResult.subtypes === "r" || keyResult.subtypes === "lr"
             }
-            result[k] = keyResult
         }
     }
-    return result as Attributes
+    return lIsSubtype ? r : rIsSubtype ? l : result
 }

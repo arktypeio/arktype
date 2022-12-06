@@ -1,11 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
-import type { array } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import { hasType } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
-import type { Attributes, NameNode, Node } from "./node.js"
-
-export type Branches = array<NameNode | Attributes>
+import type { Node } from "./node.js"
 
 export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
     const lBranches = listFrom(lNode)

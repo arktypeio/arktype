@@ -1,8 +1,8 @@
 import type {
     autocompleteString,
     defined,
-    evaluate,
     listable,
+    PartialDictionary,
     subtype
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
@@ -12,13 +12,34 @@ import type { ChildrenAttribute } from "./attributes/children.js"
 import type { RegexAttribute } from "./attributes/regex.js"
 import type { LiteralValue } from "./attributes/type.js"
 import type { Keyword } from "./names.js"
-import type { Branches } from "./union.js"
 
 export type Node = NameNode | ResolutionNode
 
 export type NameNode = autocompleteString<Keyword>
 
-export type ResolutionNode = Attributes | Branches
+export type BaseTypeResolution =
+    | true
+    | listable<string | literal<LiteralValue> | BaseAttributes>
+
+export type ResolutionNode = subtype<
+    {
+        readonly [k in TypeName]?: BaseTypeResolution
+    },
+    {
+        readonly object?: true | listable<string | AttributesByType["object"]>
+        readonly string?:
+            | true
+            | listable<string | literal<string> | AttributesByType["string"]>
+        readonly number?:
+            | true
+            | listable<string | literal<number> | AttributesByType["number"]>
+        readonly bigint?: true | listable<string | literal<IntegerLiteral>>
+        readonly boolean?: true | literal<boolean>
+        readonly symbol?: true
+        readonly null?: true
+        readonly undefined?: true
+    }
+>
 
 export type BaseAttributes = {
     // primitive attributes
@@ -39,43 +60,22 @@ export type BaseAttributeType<k extends AttributeName> = defined<
 
 type literal<t extends LiteralValue> = { readonly value: t }
 
-export type Attributes = subtype<
-    {
-        readonly [k in TypeName]?:
-            | true
-            | listable<string | literal<LiteralValue> | BaseAttributes>
-    },
-    {
-        readonly object?: true | listable<string | ObjectAttributes>
-        readonly string?:
-            | true
-            | listable<string | literal<string> | StringAttributes>
-        readonly number?:
-            | true
-            | listable<string | literal<number> | NumberAttributes>
-        readonly bigint?: true | listable<string | literal<IntegerLiteral>>
-        readonly boolean?: true | literal<boolean>
-        readonly symbol?: true
-        readonly null?: true
-        readonly undefined?: true
-    }
->
+export const attributeKeysByType = {
+    object: ["subtype", "bounds", "children"],
+    string: ["regex", "bounds"],
+    number: ["divisor", "bounds"]
+} as const satisfies PartialDictionary<TypeName, readonly AttributeName[]>
 
-export type ObjectAttributes = evaluate<
-    {
-        readonly children?: ChildrenAttribute
-    } & (
-        | { readonly subtype: "Array"; readonly bounds?: Bounds }
-        | { readonly subtype?: ObjectTypeName }
-    )
->
+type AttributeKeysByType = typeof attributeKeysByType
 
-export type StringAttributes = {
-    readonly bounds?: Bounds
-    readonly regex?: RegexAttribute
+export type TypeNameWithAttributes = keyof AttributeKeysByType
+
+export type AttributesByType = {
+    [k in TypeName]: k extends TypeNameWithAttributes
+        ? {
+              [attributeKey in AttributeKeysByType[k][number]]?: BaseAttributeType<attributeKey>
+          }
+        : {}
 }
 
-export type NumberAttributes = {
-    readonly bounds?: Bounds
-    readonly divisor?: number
-}
+export type AttributesOf<typeName extends TypeName> = AttributesByType[typeName]
