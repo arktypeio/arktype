@@ -27,7 +27,6 @@ describe("parse unenclosed", () => {
             test("whole", () => {
                 const four = type("4")
                 attest(four.infer).typed as 4
-                // TODO: Don't allow object subtypes
                 attest(four.root).snap({ type: "number", subtype: 4 })
             })
             test("decimal", () => {

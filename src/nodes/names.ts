@@ -23,7 +23,6 @@ export const keywords = defineKeywords({
     any: always,
     bigint: { type: "bigint" },
     boolean: { type: "boolean" },
-    // TODO: make sure errors on bad property
     false: { type: "boolean", subtype: false },
     never: [],
     null: { type: "null" },
@@ -65,6 +64,7 @@ export type Keywords = {
     undefined: undefined
     unknown: unknown
     void: void
+    // TODO: Add remaining JS object types
     // JS Object types
     Function: Function
     // Regex
