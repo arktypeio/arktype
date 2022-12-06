@@ -1,4 +1,10 @@
-import type { autocompleteString, defined, xor } from "../utils/generics.js"
+import type {
+    autocompleteString,
+    defined,
+    evaluate,
+    listable,
+    subtype
+} from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./attributes/bounds.js"
@@ -15,14 +21,13 @@ export type NameNode = autocompleteString<Keyword>
 export type ResolutionNode = Attributes | Branches
 
 export type BaseAttributes = {
-    readonly type: TypeName
     // primitive attributes
     readonly divisor?: number
     readonly regex?: RegexAttribute
     // object attributes
     readonly children?: ChildrenAttribute
+    readonly subtype?: ObjectTypeName
     // shared attributes
-    readonly subtype?: LiteralValue
     readonly bounds?: Bounds
 }
 
@@ -32,62 +37,45 @@ export type BaseAttributeType<k extends AttributeName> = defined<
     BaseAttributes[k]
 >
 
-export type Attributes =
-    | BigintAttributes
-    | BooleanAttributes
-    | NullAttributes
-    | NumberAttributes
-    | ObjectAttributes
-    | StringAttributes
-    | SymbolAttributes
-    | UndefinedAttributes
+type literal<t extends LiteralValue> = { readonly value: t }
 
-export type BigintAttributes = {
-    readonly type: "bigint"
-    readonly subtype?: IntegerLiteral
-}
-
-export type BooleanAttributes = {
-    readonly type: "boolean"
-    readonly subtype?: boolean
-}
-
-export type NullAttributes = {
-    readonly type: "null"
-}
-
-export type NumberAttributes = {
-    readonly type: "number"
-} & xor<
-    { readonly subtype?: number },
+export type Attributes = subtype<
     {
-        readonly bounds?: Bounds
-        readonly divisor?: number
+        readonly [k in TypeName]?:
+            | true
+            | listable<string | literal<LiteralValue> | BaseAttributes>
+    },
+    {
+        readonly object?: true | listable<string | ObjectAttributes>
+        readonly string?:
+            | true
+            | listable<string | literal<string> | StringAttributes>
+        readonly number?:
+            | true
+            | listable<string | literal<number> | NumberAttributes>
+        readonly bigint?: true | listable<string | literal<IntegerLiteral>>
+        readonly boolean?: true | literal<boolean>
+        readonly symbol?: true
+        readonly null?: true
+        readonly undefined?: true
     }
+>
+
+export type ObjectAttributes = evaluate<
+    {
+        readonly children?: ChildrenAttribute
+    } & (
+        | { readonly subtype: "Array"; readonly bounds?: Bounds }
+        | { readonly subtype?: ObjectTypeName }
+    )
 >
 
 export type StringAttributes = {
-    readonly type: "string"
-} & xor<
-    { readonly subtype?: string },
-    {
-        readonly bounds?: Bounds
-        readonly regex?: RegexAttribute
-    }
->
-
-export type SymbolAttributes = {
-    readonly type: "symbol"
+    readonly bounds?: Bounds
+    readonly regex?: RegexAttribute
 }
 
-export type UndefinedAttributes = {
-    readonly type: "undefined"
+export type NumberAttributes = {
+    readonly bounds?: Bounds
+    readonly divisor?: number
 }
-
-export type ObjectAttributes = {
-    readonly type: "object"
-    readonly children?: ChildrenAttribute
-} & (
-    | { readonly subtype: "Array"; readonly bounds?: Bounds }
-    | { readonly subtype?: ObjectTypeName }
-)

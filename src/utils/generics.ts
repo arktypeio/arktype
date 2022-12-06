@@ -152,4 +152,6 @@ export type autocompleteString<suggestions extends string> =
 
 export type array<of = unknown> = readonly of[]
 
+export type listable<t> = t | readonly t[]
+
 export type dict<of = unknown> = { readonly [k in string]: of }
