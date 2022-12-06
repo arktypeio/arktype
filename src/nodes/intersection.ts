@@ -6,6 +6,7 @@ import { boundsIntersection } from "./attributes/bounds.js"
 import { childrenIntersection } from "./attributes/children.js"
 import { divisorIntersection } from "./attributes/divisor.js"
 import { regexIntersection } from "./attributes/regex.js"
+import { checkAttributes } from "./check.js"
 import { resolveIfName } from "./names.js"
 import type {
     AttributeName,
@@ -44,7 +45,7 @@ const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
         for (const rBranch of r) {
             const branchResult = intersection(lBranch, rBranch, scope)
             if (branchResult !== "never") {
-                result = union(result, listFrom(branchResult), scope)
+                result = union(result, branchResult, scope)
             }
         }
     }
@@ -74,12 +75,12 @@ export const attributesIntersection = (
     if (l.type !== r.type) {
         return "never"
     }
-    if (
-        l.subtype !== undefined &&
-        r.subtype !== undefined &&
-        l.subtype !== r.subtype
-    ) {
-        return "never"
+    if (l.subtype !== r.subtype) {
+        return !l.subtype && checkAttributes(r.subtype, l, scope)
+            ? (r as Attributes)
+            : !r.subtype && checkAttributes(l.subtype, r, scope)
+            ? (l as Attributes)
+            : "never"
     }
     const result = { ...l, ...r }
     let k: AttributeName
