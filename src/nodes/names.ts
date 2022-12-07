@@ -7,24 +7,13 @@ const defineKeywords = <definitions extends { [keyword in Keyword]: Node }>(
     definitions: narrow<definitions>
 ) => deepFreeze(definitions)
 
-const always = [
-    "bigint",
-    "boolean",
-    "null",
-    "number",
-    "object",
-    "string",
-    "symbol",
-    "undefined"
-] as const
-
 export const keywords = defineKeywords({
     // TS keywords
-    any: always,
+    any: true,
     bigint: { type: "bigint" },
     boolean: { type: "boolean" },
     false: { value: false },
-    never: [],
+    never: {},
     null: { type: "null" },
     number: { type: "number" },
     object: { type: "object" },
@@ -32,7 +21,7 @@ export const keywords = defineKeywords({
     symbol: { type: "symbol" },
     true: { value: true },
     undefined: { type: "undefined" },
-    unknown: always,
+    unknown: true,
     void: { type: "undefined" },
     // JS Object types
     Function: { type: "object", subtype: "Function" },

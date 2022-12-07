@@ -3,6 +3,7 @@ import type {
     Dictionary,
     evaluate,
     keySet,
+    List,
     listable,
     PartialDictionary,
     subtype
@@ -12,38 +13,35 @@ import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./names.js"
 import type { RegexAttribute } from "./regex.js"
 
-export type Node = NameNode | TypeNode | BranchNode
-
-export type NameNode = autocompleteString<Keyword>
-
-export type TypeNode = TypeNodes[TypeName]
-
-export type BranchNode = {
-    readonly [typeName in TypeName]?: listable<string | TypeNodes[typeName]>
+export type Node = {
+    readonly [typeName in TypeName]?: TypeResolution<typeName>
 }
 
-export type TypeNodes = {
-    [typeName in TypeName]: evaluate<
-        AttributeNodes[typeName] | LiteralNodes[typeName]
-    >
-}
+export type NarrowableTypeName = Exclude<
+    TypeName,
+    "symbol" | "undefined" | "null"
+>
 
-type AttributeNodes = evaluate<{
-    [typeName in TypeName]: {
-        readonly type: typeName
-    } & (typeName extends keyof AttributeKeysByType
+export type TypeResolution<typeName extends TypeName> = evaluate<
+    typeName extends NarrowableTypeName
+        ? true | listable<BranchOf<typeName>>
+        : true
+>
+
+export type BranchOf<typeName extends NarrowableTypeName> = evaluate<
+    string | AttributesOf<typeName> | LiteralOf<typeName>
+>
+
+type AttributesOf<typeName extends TypeName> =
+    typeName extends keyof AttributeKeysByType
         ? Pick<BaseAttributes, AttributeKeysByType[typeName]>
-        : {})
-}>
-
-type LiteralNodes = evaluate<{
-    [typeName in TypeName]: Types[typeName] extends LiteralValue
-        ? PrimitiveLiteralNode<Types[typeName]>
         : never
-}>
+
+type LiteralOf<typeName extends TypeName> = Types[typeName] extends LiteralValue
+    ? PrimitiveLiteralNode<Types[typeName]>
+    : never
 
 export type BaseAttributes = {
-    readonly type: TypeName
     // primitive attributes
     readonly regex?: RegexAttribute
     readonly divisor?: number
