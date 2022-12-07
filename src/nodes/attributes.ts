@@ -12,19 +12,6 @@ import { composeKeyedIntersection, intersection } from "./intersection.js"
 import type { Node } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 
-type PropTypesAttribute = {
-    readonly number?: Node
-    readonly string?: Node
-}
-
-export type BaseAttributes = {
-    readonly props?: Dictionary<Node>
-    readonly requiredKeys?: keySet
-    readonly propTypes?: PropTypesAttribute
-    readonly subtype?: ObjectTypeName
-    readonly bounds?: Bounds
-}
-
 const rawObjectIntersection = composeKeyedIntersection<BaseAttributes>({
     subtype: (l, r) => (l === r ? undefined : null),
     props: propsIntersection,
