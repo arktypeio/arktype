@@ -1,8 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
+import type { Dictionary } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
-import { hasType } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
-import type { Node } from "./node.js"
+import type { Node, PrimitiveLiteralNode } from "./node.js"
 
 export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
     const lBranches = listFrom(lNode)
@@ -50,8 +50,13 @@ const getPossibleBooleanLiteral = (node: Node): "true" | "false" | undefined =>
         ? "true"
         : node === "false"
         ? "false"
-        : hasType(node, "object", "Object") &&
-          node.type === "boolean" &&
-          node.subtype !== undefined
-        ? `${node.subtype}`
+        : isPrimitiveLiteral(node)
+        ? node.value === true
+            ? "true"
+            : node.value === false
+            ? "false"
+            : undefined
         : undefined
+
+const isPrimitiveLiteral = (node: Node): node is PrimitiveLiteralNode =>
+    (node as Dictionary).value !== undefined

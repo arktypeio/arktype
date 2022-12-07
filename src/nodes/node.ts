@@ -3,21 +3,23 @@ import type {
     Dictionary,
     evaluate,
     keySet,
-    listable
+    List
 } from "../utils/generics.js"
-import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
+import type { ObjectTypeName, TypeName, Types } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./names.js"
 import type { RegexAttribute } from "./regex.js"
 
-export type Node = NameNode | ResolutionNode
+export type Node = BranchableNode | BranchNode
 
 export type NameNode = autocompleteString<Keyword>
 
-export type ResolutionNode = ResolvedNode
+export type BranchableNode = NameNode | ResolutionNode
+
+export type BranchNode = List<BranchableNode>
 
 export type BaseAttributes = {
+    readonly type: TypeName
     // primitive attributes
     readonly regex?: RegexAttribute
     readonly divisor?: number
@@ -30,23 +32,49 @@ export type BaseAttributes = {
     readonly bounds?: Bounds
 }
 
-export type ResolvedNode = ObjectNode | StringNode | NumberNode
+export type ResolutionNode =
+    | ObjectNode
+    | StringNode
+    | NumberNode
+    | BigintNode
+    | BooleanNode
+    | SymbolNode
+    | NullNode
+    | UndefinedNode
 
 export type ObjectNode = DefineAttributeNode<
     "object",
     "subtype" | "props" | "requiredKeys" | "propTypes" | "bounds"
 >
 
+export type LiteralValue = string | number | boolean | bigint
+
+export type PrimitiveLiteralNode<value extends LiteralValue = LiteralValue> = {
+    readonly value: value
+}
+
 export type StringNode = DefineAttributeNode<"string", "regex" | "bounds">
 
 export type NumberNode = DefineAttributeNode<"number", "divisor" | "bounds">
 
-export type BigintNode = {}
+export type BigintNode = DefineAttributeNode<"bigint">
+
+export type BooleanNode = DefineAttributeNode<"boolean">
+
+export type SymbolNode = DefineAttributeNode<"symbol">
+
+export type UndefinedNode = DefineAttributeNode<"undefined">
+
+export type NullNode = DefineAttributeNode<"null">
 
 type DefineAttributeNode<
     typeName extends TypeName,
-    key extends keyof BaseAttributes
-> = evaluate<{ readonly type: typeName } & Pick<BaseAttributes, key>>
+    key extends keyof BaseAttributes = never
+> =
+    | evaluate<{ readonly type: typeName } & Pick<BaseAttributes, key>>
+    | (Types[typeName] extends LiteralValue
+          ? PrimitiveLiteralNode<Types[typeName]>
+          : never)
 
 type PropTypesAttribute = {
     readonly number?: Node

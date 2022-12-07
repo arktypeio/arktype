@@ -5,7 +5,6 @@ import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
 import type { ObjectTypeName } from "../utils/typeOf.js"
 import { hasObjectType } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
-import { boundsIntersection } from "./bounds.js"
 import { checkNode } from "./check.js"
 import type { IntersectionReducer } from "./intersection.js"
 import { composeKeyedIntersection, intersection } from "./intersection.js"
@@ -25,23 +24,7 @@ export type ObjectAttributes = {
     readonly bounds?: Bounds
 }
 
-export const objectIntersection: IntersectionReducer<ObjectAttributes> = (
-    l,
-    r,
-    scope
-) => {
-    const result = rawObjectIntersection(l, r, scope)
-    if (result?.requiredKeys) {
-        for (const k in result.requiredKeys) {
-            // TODO: Check never propagation
-            if (result.props?.[k] === "never") {
-                return null
-            }
-        }
-    }
-    return result
-}
-
+// TODO: Never propagation
 export const propsIntersection =
     composeKeyedIntersection<Dictionary<Node>>(intersection)
 
@@ -56,14 +39,6 @@ export const requiredKeysIntersection: IntersectionReducer<keySet> = (l, r) => {
         ? r
         : result
 }
-
-const rawObjectIntersection = composeKeyedIntersection<ObjectAttributes>({
-    subtype: (l, r) => (l === r ? undefined : null),
-    props: propsIntersection,
-    propTypes: propsIntersection,
-    bounds: boundsIntersection,
-    requiredKeys: requiredKeysIntersection
-})
 
 export const checkObject = (
     data: object,
@@ -105,8 +80,8 @@ export const checkObject = (
 }
 
 const isSimpleArray = (
-    children: ObjectAttributes
-): children is { propTypes: { number: Node } } =>
-    !children.props &&
-    children.propTypes?.number !== undefined &&
-    Object.keys(children.propTypes).length === 1
+    attributes: ObjectAttributes
+): attributes is { type: "object"; propTypes: { number: Node } } =>
+    !attributes.props &&
+    attributes.propTypes?.number !== undefined &&
+    Object.keys(attributes.propTypes).length === 1

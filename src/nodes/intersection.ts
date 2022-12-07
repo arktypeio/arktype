@@ -1,34 +1,25 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { Dictionary, mutable, NonNullish } from "../utils/generics.js"
+import type {
+    Dictionary,
+    mutable,
+    NonNullish,
+    PartialDictionary
+} from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
-import { hasObjectType, hasType, Primitive } from "../utils/typeOf.js"
+import { hasObjectType, hasType } from "../utils/typeOf.js"
+import { boundsIntersection } from "./bounds.js"
+import { divisorIntersection } from "./divisor.js"
 import { resolveIfName } from "./names.js"
-import type { BaseResolutionBranch, Node } from "./node.js"
-import { ResolutionNode } from "./node.js"
+import type { BaseAttributes, BranchNode, Node } from "./node.js"
+import { propsIntersection, requiredKeysIntersection } from "./props.js"
+import { regexIntersection } from "./regex.js"
 import { union } from "./union.js"
 
 export const intersection: IntersectionReducer<Node> = (l, r, scope) => {
     const lResolution = resolveIfName(l, scope)
     const rResolution = resolveIfName(r, scope)
-    const resolution = {
-        ...lResolution,
-        ...rResolution
-    }
-    let lImpliesR = true
-    let rImpliesL = true
-    let k: TypeName
-    for (k in resolution) {
-        if (k in lResolution) {
-            if (k in rResolution) {
-                if (lResolution[k] === true) {
-                    return r
-                }
-                resolution[typeName] = {}
-            }
-        }
-    }
     const result = hasObjectType(lResolution, "Array")
         ? branchesIntersection(lResolution, listFrom(rResolution), scope)
         : hasObjectType(rResolution, "Array")
@@ -47,36 +38,49 @@ export const intersection: IntersectionReducer<Node> = (l, r, scope) => {
     return result as Node
 }
 
-const resolutionBranchIntersection: IntersectionReducer<
-    BaseResolutionBranch,
-    { typeName: TypeName; scope: ScopeRoot }
-> = (l, r, context) => {
-    if (l === true) {
-        return r === true ? undefined : r
-    }
-    if (r === true) {
-        return l
-    }
+const branchesIntersection = (
+    l: BranchNode,
+    r: BranchNode,
+    scope: ScopeRoot
+) => {
     let result: Node = "never"
-    for (const lBranch of listFrom(l)) {
-        for (const rBranch of listFrom(r)) {
-            const lResolution =
-                typeof lBranch === "string"
-                    ? // TODO: error on empty
-                      context.scope.resolve(lBranch)[context.typeName]
-                    : lBranch
-            const rResolution =
-                typeof rBranch === "string"
-                    ? context.scope.resolve(rBranch)[context.typeName]
-                    : rBranch
-            const branchResult = context.typeName === "object"
-            if (branchResult !== "never") {
-                result = union(result, branchResult, scope)
+    let lImpliesR = true
+    let rImpliesL = true
+    for (const lBranch of l) {
+        for (const rBranch of r) {
+            const branchResult = intersection(lBranch, rBranch, scope)
+            if (branchResult === null) {
+                lImpliesR = false
+                rImpliesL = false
+            } else if (branchResult === undefined) {
+                result = union(result, lBranch, scope)
+            }
+            if (branchResult !== null) {
+                if (branchResult === undefined) {
+                } else {
+                    result = union(result, branchResult, scope)
+                }
             }
         }
     }
     return result
 }
+
+const mapToTypes = (
+    node: Node,
+    scope: ScopeRoot,
+    result: PartialDictionary<TypeName, BranchNode> = {}
+) => {
+    const resolution = resolveIfName(node, scope)
+    if (hasType(resolution, "object", "Array")) {
+        for (const branch of resolution) {
+            mapToTypes(branch, scope, result)
+        }
+    }
+}
+
+export const disjointIntersection = (l: string, r: string) =>
+    l === r ? undefined : null
 
 export type IntersectionReducer<t extends NonNullish, context = ScopeRoot> = (
     l: t,
@@ -97,14 +101,9 @@ export type RootIntersectionReducer<root extends IntersectableRoot, context> =
 
 export type IntersectableRoot = Dictionary<NonNullish>
 
-export type ComposeKeyIntersectionOptions = {
-    branching?: true
-}
-
 export const composeKeyedIntersection =
     <root extends IntersectableRoot, context = ScopeRoot>(
-        reducer: RootIntersectionReducer<root, context>,
-        options?: ComposeKeyIntersectionOptions
+        reducer: RootIntersectionReducer<root, context>
     ): IntersectionReducer<root, context> =>
     (l, r, context) => {
         const result: mutable<root> = { ...l, ...r }
@@ -127,14 +126,10 @@ export const composeKeyedIntersection =
                         lImpliesR &&= keyResult === l[k]
                         rImpliesL &&= keyResult === r[k]
                     }
-                } else if (options?.branching) {
-                    lImpliesR = false
                 } else {
                     result[k] = l[k]
                     rImpliesL = false
                 }
-            } else if (options?.branching) {
-                rImpliesL = false
             } else {
                 result[k] = r[k]
                 lImpliesR = false
@@ -142,3 +137,14 @@ export const composeKeyedIntersection =
         }
         return lImpliesR ? (rImpliesL ? undefined : l) : rImpliesL ? r : result
     }
+
+const attributesIntersection = composeKeyedIntersection<BaseAttributes>({
+    type: disjointIntersection,
+    subtype: disjointIntersection,
+    divisor: divisorIntersection,
+    regex: regexIntersection,
+    props: propsIntersection,
+    requiredKeys: requiredKeysIntersection,
+    propTypes: propsIntersection,
+    bounds: boundsIntersection
+})
