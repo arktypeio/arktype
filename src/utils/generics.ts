@@ -144,14 +144,14 @@ export type propwiseUnion<objectUnion extends object> = evaluate<{
 }>
 
 export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends array ? t : [t]
+    (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
 
 export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
 
-export type array<of = unknown> = readonly of[]
+export type listable<t> = t | List<t>
 
-export type listable<t> = t | readonly t[]
+export type List<of = unknown> = readonly of[]
 
-export type dict<of = unknown> = { readonly [k in string]: of }
+export type Dictionary<of = unknown> = { readonly [k in string]: of }

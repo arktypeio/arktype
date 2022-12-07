@@ -1,8 +1,8 @@
-import type { Bound, Bounds } from "../../../nodes/attributes/bounds.js"
+import type { Bound, Bounds } from "../../../nodes/bounds.js"
 import {
     boundsIntersection,
     buildEmptyRangeMessage
-} from "../../../nodes/attributes/bounds.js"
+} from "../../../nodes/bounds.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"

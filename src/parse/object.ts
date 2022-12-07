@@ -5,8 +5,8 @@ import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
-    array,
-    dict,
+    List,
+    Dictionary,
     error,
     evaluate,
     keySet,
@@ -19,8 +19,8 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
-export const parseDict = (def: dict, scope: ScopeRoot): Node => {
-    const props: mutable<dict<Node>> = {}
+export const parseDict = (def: Dictionary, scope: ScopeRoot): Node => {
+    const props: mutable<Dictionary<Node>> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
@@ -41,8 +41,8 @@ export const parseDict = (def: dict, scope: ScopeRoot): Node => {
 }
 
 export type inferRecord<
-    def extends dict,
-    scope extends dict,
+    def extends Dictionary,
+    scope extends Dictionary,
     aliases
 > = evaluate<
     {
@@ -60,7 +60,7 @@ export type inferRecord<
     }
 >
 
-export const parseTuple = (def: array, scope: ScopeRoot): Node => {
+export const parseTuple = (def: List, scope: ScopeRoot): Node => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
@@ -79,7 +79,7 @@ export const parseTuple = (def: array, scope: ScopeRoot): Node => {
 
 export type inferTuple<
     def,
-    scope extends dict,
+    scope extends Dictionary,
     aliases
 > = def extends TupleExpression
     ? inferTupleExpression<def, scope, aliases>
@@ -99,7 +99,7 @@ type requiredKeyOf<def> = {
 
 export type validateTupleExpression<
     def extends TupleExpression,
-    scope extends dict
+    scope extends Dictionary
 > = def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? error<buildMissingRightOperandMessage<def[1], "">>
@@ -114,7 +114,7 @@ export type validateTupleExpression<
 
 type inferTupleExpression<
     def extends TupleExpression,
-    scope extends dict,
+    scope extends Dictionary,
     aliases
 > = def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
@@ -156,7 +156,7 @@ type TupleExpressionToken = keyof typeof tupleExpressionTokens
 
 export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
 
-const isTupleExpression = (def: array): def is TupleExpression =>
+const isTupleExpression = (def: List): def is TupleExpression =>
     hasType(def, "object", "Array") &&
     hasType(def[1], "string") &&
     def[1] in tupleExpressionTokens

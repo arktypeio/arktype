@@ -1,21 +1,16 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { defined, mutable } from "../utils/generics.js"
-import { hasKey, listFrom } from "../utils/generics.js"
-import { hasObjectType } from "../utils/typeOf.js"
-import { boundsIntersection } from "./attributes/bounds.js"
-import { divisorIntersection } from "./attributes/divisor.js"
-import { propsIntersection } from "./attributes/props.js"
-import { regexIntersection } from "./attributes/regex.js"
-import { resolveIfName } from "./names.js"
 import type {
-    AttributeName,
-    BaseAttributes,
-    BaseAttributeType,
-    Node,
-    TypeNameWithAttributes
-} from "./node.js"
-import { attributeKeysByType } from "./node.js"
+    defined,
+    Dictionary,
+    List,
+    mutable,
+    stringKeyOf
+} from "../utils/generics.js"
+import { listFrom } from "../utils/generics.js"
+import type { Primitive } from "../utils/typeOf.js"
+import { hasObjectType } from "../utils/typeOf.js"
+import { resolveIfName } from "./names.js"
 import { union } from "./union.js"
 
 export const intersection = (
@@ -56,66 +51,64 @@ const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
     return result
 }
 
-export type KeyIntersection<t> = (
+type IntersectableKeyValue = Exclude<Primitive, boolean | undefined> | object
+
+export type IntersectionReducer<t extends IntersectableKeyValue> = (
     l: t,
     r: t,
-    context: mutable<BaseAttributes>,
     scope: ScopeRoot
-) => t | true | null
+) => t | boolean
 
-type UnknownKeyIntersection = KeyIntersection<
-    defined<BaseAttributes[AttributeName]>
->
+export type KeyIntersectionReducer<key, t extends IntersectableKeyValue> = (
+    key: key,
+    l: t,
+    r: t,
+    scope: ScopeRoot
+) => t | boolean
 
-const subtypeIntersection: KeyIntersection<BaseAttributeType<"subtype">> = (
-    l,
-    r
-) => (l === r ? true : null)
-
-const keyIntersections: {
-    [k in AttributeName]: KeyIntersection<BaseAttributeType<k>>
-} = {
-    bounds: boundsIntersection,
-    divisor: divisorIntersection,
-    regex: regexIntersection,
-    props: propsIntersection,
-    propTypes: propsIntersection,
-    subtype: subtypeIntersection
+export type KeyIntersectionReducerMap<root extends IntersectableRoot> = {
+    [k in keyof root]-?: IntersectionReducer<root[k]>
 }
 
-export const attributesIntersection = (
-    typeName: TypeNameWithAttributes,
-    l: BaseAttributes,
-    r: BaseAttributes,
-    scope: ScopeRoot
-): BaseAttributes | true | "never" => {
-    let lImpliesR = true
-    let rImpliesL = true
-    const result: mutable<BaseAttributes> = {}
-    for (const k of attributeKeysByType[typeName]) {
-        if (hasKey(l, k)) {
-            if (hasKey(r, k)) {
-                const keyResult = (
-                    keyIntersections[k] as UnknownKeyIntersection
-                )(l[k], r[k], result, scope)
-                if (keyResult === null) {
-                    return "never"
-                }
-                if (keyResult === true) {
-                    result[k] = l[k] as any
+export type RootIntersectionReducer<root extends IntersectableRoot> =
+    | KeyIntersectionReducerMap<Required<root>>
+    | KeyIntersectionReducer<keyof root, root[keyof root]>
+
+export type IntersectableRoot = Dictionary<IntersectableKeyValue>
+
+export const composeKeyedIntersection =
+    <root extends IntersectableRoot>(
+        reducer: RootIntersectionReducer<root>
+    ): IntersectionReducer<root> =>
+    (l, r, scope) => {
+        const result: mutable<root> = { ...l, ...r }
+        let lImpliesR = true
+        let rImpliesL = true
+        let k: keyof root
+        for (k in result) {
+            if (k in l) {
+                if (k in r) {
+                    const keyResult =
+                        typeof reducer === "function"
+                            ? reducer(k, l[k], r[k], scope)
+                            : reducer[k](l[k], r[k], scope)
+                    if (keyResult === true) {
+                        result[k] = l[k]
+                    } else if (keyResult === false) {
+                        return false
+                    } else {
+                        result[k] = keyResult
+                        lImpliesR &&= keyResult === l[k]
+                        rImpliesL &&= keyResult === r[k]
+                    }
                 } else {
-                    result[k] = keyResult as any
-                    lImpliesR &&= keyResult === l
-                    rImpliesL &&= keyResult === r
+                    result[k] = l[k]
+                    rImpliesL = false
                 }
             } else {
-                result[k] = l[k] as any
-                rImpliesL = false
+                result[k] = r[k]
+                lImpliesR = false
             }
-        } else if (hasKey(r, k)) {
-            result[k] = r[k] as any
-            lImpliesR = false
         }
+        return lImpliesR ? (rImpliesL ? true : l) : rImpliesL ? r : result
     }
-    return lImpliesR ? (rImpliesL ? true : l) : rImpliesL ? r : result
-}

@@ -1,4 +1,4 @@
-import type { dict } from "../utils/generics.js"
+import type { Dictionary } from "../utils/generics.js"
 import type { Node } from "./node.js"
 
 export const morph = (name: MorphName, node: Node) => morphs[name](node)
@@ -9,11 +9,9 @@ const morphs = {
     array: (node): Node => ({
         object: {
             subtype: "Array",
-            children: {
-                propTypes: {
-                    number: node
-                }
+            propTypes: {
+                number: node
             }
         }
     })
-} satisfies dict<(input: Node) => Node>
+} satisfies Dictionary<(input: Node) => Node>

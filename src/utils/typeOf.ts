@@ -1,9 +1,9 @@
 import type {
-    array,
     classOf,
-    dict,
+    Dictionary,
     evaluate,
     isTopType,
+    List,
     narrow,
     Narrowable,
     subtype
@@ -141,12 +141,12 @@ type inferType<
 // Object.prototype.toString.call(<value>). Based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 export type ObjectTypes = {
-    Array: array
+    Array: readonly unknown[]
     Date: Date
     Error: Error
     Function: Function
     Map: Map<unknown, unknown>
-    Object: dict
+    Object: Dictionary
     RegExp: RegExp
     Set: Set<unknown>
 }
@@ -159,7 +159,7 @@ const objectTypes = {
     Error,
     Function,
     Map,
-    Object: Object as unknown as classOf<dict>,
+    Object: Object as unknown as classOf<Dictionary>,
     RegExp,
     Set
 } satisfies {
@@ -168,7 +168,7 @@ const objectTypes = {
 
 export type typeOfObject<data extends object> = object extends data
     ? ObjectTypeName
-    : data extends array
+    : data extends List
     ? "Array"
     : data extends Date
     ? "Date"

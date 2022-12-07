@@ -1,4 +1,4 @@
-import type { array, dict } from "./generics.js"
+import type { List, Dictionary } from "./generics.js"
 import { hasType, typeOfObject } from "./typeOf.js"
 
 /**
@@ -18,11 +18,11 @@ export const deepEquals = (a: unknown, b: unknown) => {
         return false
     }
     return aSubtype === "Array"
-        ? deepEqualsArray(a as array, b as array)
-        : deepEqualsDict(a as dict, b as dict)
+        ? deepEqualsArray(a as List, b as List)
+        : deepEqualsDict(a as Dictionary, b as Dictionary)
 }
 
-const deepEqualsDict = (a: dict, b: dict) => {
+const deepEqualsDict = (a: Dictionary, b: Dictionary) => {
     const unseenBKeys = { ...b }
     for (const k in a) {
         if (k in b && deepEquals(a[k], b[k])) {
@@ -37,7 +37,7 @@ const deepEqualsDict = (a: dict, b: dict) => {
     return true
 }
 
-const deepEqualsArray = (a: array, b: array) => {
+const deepEqualsArray = (a: List, b: List) => {
     if (a.length !== b.length) {
         return false
     }

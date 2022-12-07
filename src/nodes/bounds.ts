@@ -1,5 +1,5 @@
-import type { array } from "../../utils/generics.js"
-import type { KeyIntersection } from "../intersection.js"
+import type { List } from "../utils/generics.js"
+import type { IntersectionReducer } from "./intersection.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,7 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection: KeyIntersection<Bounds> = (l, r) => {
+export const boundsIntersection: IntersectionReducer<Bounds> = (l, r) => {
     const minComparison = compareStrictness(l.min, r.min, "min")
     const maxComparison = compareStrictness(l.max, r.max, "max")
     if (minComparison === "l") {
@@ -35,7 +35,7 @@ export const boundsIntersection: KeyIntersection<Bounds> = (l, r) => {
     return maxComparison === "l" ? l : maxComparison === "r" ? r : true
 }
 
-type BoundableData = number | string | array
+type BoundableData = number | string | List
 
 export const checkBounds = (data: BoundableData, bounds: Bounds) => {
     const size = typeof data === "number" ? data : data.length

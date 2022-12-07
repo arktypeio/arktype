@@ -4,7 +4,7 @@ import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { dict, isTopType } from "./utils/generics.js"
+import type { Dictionary, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -17,7 +17,7 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type InferredTypeFn = <definition, scope extends dict = {}>(
+export type InferredTypeFn = <definition, scope extends Dictionary = {}>(
     definition: validateDefinition<definition, scope>,
     options?: Config<scope>
 ) => isTopType<definition> extends true
@@ -26,7 +26,7 @@ export type InferredTypeFn = <definition, scope extends dict = {}>(
     ? Type<inferDefinition<definition, scope, {}>>
     : never
 
-type DynamicTypeFn = (definition: unknown, options?: Config<dict>) => Type
+type DynamicTypeFn = (definition: unknown, options?: Config<Dictionary>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
@@ -59,6 +59,6 @@ export class Type<inferred = unknown> {
     }
 }
 
-export type Config<scope extends dict = {}> = {
+export type Config<scope extends Dictionary = {}> = {
     scope?: Scope<scope>
 }

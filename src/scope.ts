@@ -8,14 +8,19 @@ import type { Config } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
-import type { dict, evaluate, mutable, stringKeyOf } from "./utils/generics.js"
+import type {
+    Dictionary,
+    evaluate,
+    mutable,
+    stringKeyOf
+} from "./utils/generics.js"
 import { isKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
-const rawScope = (aliases: dict, config: Config = {}) => {
+const rawScope = (aliases: Dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const types: Scope<dict> = { $: root as any }
+    const types: Scope<Dictionary> = { $: root as any }
     for (const name in aliases) {
         types[name] = new Type(root.resolve(name), config, types)
     }
@@ -36,7 +41,7 @@ export const getRootScope = () => {
     return rootScope!
 }
 
-type InferredScopeFn = <aliases, inferredParent extends dict = {}>(
+type InferredScopeFn = <aliases, inferredParent extends Dictionary = {}>(
     aliases: validateAliases<
         aliases,
         inferScopeContext<aliases, inferredParent>
@@ -44,30 +49,30 @@ type InferredScopeFn = <aliases, inferredParent extends dict = {}>(
     config?: Config<inferredParent>
 ) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <aliases extends dict>(
+type DynamicScopeFn = <aliases extends Dictionary>(
     aliases: aliases,
     config?: Config
 ) => Scope<{ [name in keyof aliases]: unknown }>
 
-export type Scope<inferred extends dict> = {
+export type Scope<inferred extends Dictionary> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
 
-export type DynamicScope = Scope<dict>
+export type DynamicScope = Scope<Dictionary>
 
 type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Type<inferred[name]>
 }
 
-export class ScopeRoot<inferred extends dict = dict> {
+export class ScopeRoot<inferred extends Dictionary = Dictionary> {
     // TODO: Add inferred as resolution generic in type only
     attributes = {} as { [k in keyof inferred]: ResolutionNode }
     // TODO: Add intersection cache
-    private cache: mutable<dict<Node>> = {}
+    private cache: mutable<Dictionary<Node>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
-        public config: Config<dict>
+        public config: Config<Dictionary>
     ) {}
 
     get infer(): inferred {
@@ -124,15 +129,15 @@ export class ScopeRoot<inferred extends dict = dict> {
     }
 }
 
-type validateAliases<aliases, scope extends dict> = evaluate<{
+type validateAliases<aliases, scope extends Dictionary> = evaluate<{
     [name in keyof aliases]: validateDefinition<aliases[name], scope>
 }>
 
-type inferAliases<aliases, scope extends dict> = evaluate<{
+type inferAliases<aliases, scope extends Dictionary> = evaluate<{
     [name in keyof aliases]: inferDefinition<aliases[name], scope, aliases>
 }>
 
-type inferScopeContext<aliases, scope extends dict> = inferAliases<
+type inferScopeContext<aliases, scope extends Dictionary> = inferAliases<
     aliases,
     scope
 > &
