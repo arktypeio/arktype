@@ -176,6 +176,9 @@ describe("bound", () => {
             test("empty range", () => {
                 attest(type("number>3&number<2").root).snap("never")
             })
+            test("empty range2", () => {
+                attest(type("number>3&number<-55").root).snap("never")
+            })
         })
     })
 })

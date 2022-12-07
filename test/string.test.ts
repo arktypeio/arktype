@@ -9,10 +9,28 @@ import {
 
 describe("string", () => {
     describe("regex", () => {
-        test("intersection", () => {
-            attest(type("'bob'&/bob/").root).snap({
+        test("same regex", () => {
+            attest(type("/hello/&/hello/").root).snap({
                 type: "string",
-                subtype: "bob"
+                regex: "hello"
+            })
+        })
+        test("multiple regex", () => {
+            attest(type("/hello/&/notHello/&/goodbye/").root).snap({
+                type: "string",
+                regex: ["hello", "notHello", "goodbye"]
+            })
+        })
+        test("tuple expression regex", () => {
+            attest(type(["/regex/", "&", "/string/"]).root).snap({
+                type: "string",
+                regex: ["regex", "string"]
+            })
+        })
+        test("two lists of regex", () => {
+            attest(type(["/def/&/abc/", "&", "/xyz/&/def/"]).root).snap({
+                type: "string",
+                regex: ["def", "abc", "xyz"]
             })
         })
     })
