@@ -77,6 +77,3 @@ export type Keywords = {
     // Numeric
     integer: number
 }
-
-export const resolveIfName = (node: Node, scope: ScopeRoot) =>
-    typeof node === "string" ? scope.resolve(node) : node

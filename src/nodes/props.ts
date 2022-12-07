@@ -1,20 +1,15 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Dictionary } from "../utils/generics.js"
+import type { Dictionary, keySet, mutable } from "../utils/generics.js"
+import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
 import type { ObjectTypeName } from "../utils/typeOf.js"
 import { hasObjectType } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import { boundsIntersection } from "./bounds.js"
 import { checkNode } from "./check.js"
+import type { IntersectionReducer } from "./intersection.js"
 import { composeKeyedIntersection, intersection } from "./intersection.js"
 import type { Node } from "./node.js"
-
-type OptionalProp = ["?", Node]
-
-type Prop = Node | OptionalProp
-
-const isOptional = (prop: Prop): prop is OptionalProp =>
-    (prop as Dictionary)[0] === "?"
 
 type PropTypesAttribute = {
     readonly number?: Node
@@ -22,30 +17,52 @@ type PropTypesAttribute = {
 }
 
 export type ObjectAttributes = {
-    readonly props?: Dictionary<Prop>
+    readonly type: "object"
+    readonly props?: Dictionary<Node>
+    readonly requiredKeys?: keySet
     readonly propTypes?: PropTypesAttribute
     readonly subtype?: ObjectTypeName
     readonly bounds?: Bounds
 }
 
-const propsIntersection = composeKeyedIntersection<Dictionary<Prop>>(
-    (k, l, r, scope) =>
-        isOptional(l)
-            ? isOptional(r)
-                ? ["?", intersection(l[1], r[1], scope)]
-                : intersection(l[1], r, scope)
-            : intersection(l, isOptional(r) ? r[1] : r, scope)
-)
+export const objectIntersection: IntersectionReducer<ObjectAttributes> = (
+    l,
+    r,
+    scope
+) => {
+    const result = rawObjectIntersection(l, r, scope)
+    if (result?.requiredKeys) {
+        for (const k in result.requiredKeys) {
+            // TODO: Check never propagation
+            if (result.props?.[k] === "never") {
+                return null
+            }
+        }
+    }
+    return result
+}
 
-const propTypesIntersection = composeKeyedIntersection<PropTypesAttribute>(
-    (k, l, r, scope) => intersection(l, r, scope)
-)
+export const propsIntersection =
+    composeKeyedIntersection<Dictionary<Node>>(intersection)
 
-export const objectIntersection = composeKeyedIntersection<ObjectAttributes>({
-    subtype: (l, r) => l === r,
+export const requiredKeysIntersection: IntersectionReducer<keySet> = (l, r) => {
+    const result = { ...l, ...r }
+    const resultSize = keyCount(result)
+    return resultSize === keyCount(l)
+        ? resultSize === keyCount(r)
+            ? undefined
+            : l
+        : resultSize === keyCount(r)
+        ? r
+        : result
+}
+
+const rawObjectIntersection = composeKeyedIntersection<ObjectAttributes>({
+    subtype: (l, r) => (l === r ? undefined : null),
     props: propsIntersection,
-    propTypes: propTypesIntersection,
-    bounds: boundsIntersection
+    propTypes: propsIntersection,
+    bounds: boundsIntersection,
+    requiredKeys: requiredKeysIntersection
 })
 
 export const checkObject = (
@@ -58,17 +75,14 @@ export const checkObject = (
             checkNode(elementData, attributes.propTypes.number, scope)
         )
     }
-    const unseenProps = { ...attributes.props }
+    const missingKeys: mutable<keySet> = { ...attributes.requiredKeys }
     for (const k in data) {
         const propValue = (data as Dictionary)[k]
-        const propAttributes = attributes.props?.[k]
-        if (propAttributes) {
-            const propNode = isOptional(propAttributes)
-                ? propAttributes[1]
-                : propAttributes
-            if (!checkNode(propValue, propNode, scope)) {
-                return false
-            }
+        if (
+            attributes.props?.[k] &&
+            !checkNode(propValue, attributes.props[k], scope)
+        ) {
+            return false
         }
         if (attributes.propTypes) {
             const keyIsNumber = tryParseWellFormedNumber(k) !== undefined
@@ -85,14 +99,9 @@ export const checkObject = (
                 return false
             }
         }
-        delete unseenProps[k]
+        delete missingKeys[k]
     }
-    for (const k in unseenProps) {
-        if (!isOptional(attributes.props![k]!)) {
-            return false
-        }
-    }
-    return true
+    return hasKeys(missingKeys) ? false : true
 }
 
 const isSimpleArray = (

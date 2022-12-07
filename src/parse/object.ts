@@ -5,11 +5,11 @@ import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
-    List,
     Dictionary,
     error,
     evaluate,
     keySet,
+    List,
     mutable
 } from "../utils/generics.js"
 import { isKeyOf } from "../utils/generics.js"
@@ -32,8 +32,7 @@ export const parseDict = (def: Dictionary, scope: ScopeRoot): Node => {
         props[keyName] = parseDefinition(def[definitionKey], scope)
     }
     return {
-        type: "object",
-        children: {
+        object: {
             props,
             requiredKeys
         }
@@ -69,9 +68,8 @@ export const parseTuple = (def: List, scope: ScopeRoot): Node => {
         props[i] = parseDefinition(def[i], scope)
     }
     return {
-        type: "object",
-        subtype: "Array",
-        children: {
+        object: {
+            subtype: "Array",
             props
         }
     }

@@ -2,11 +2,11 @@ import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
-    List,
     Dictionary,
     evaluate,
     isAny,
-    isTopType
+    isTopType,
+    List
 } from "../utils/generics.js"
 import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import { typeOf, typeOfObject } from "../utils/typeOf.js"

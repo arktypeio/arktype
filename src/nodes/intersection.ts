@@ -1,25 +1,34 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type {
-    defined,
-    Dictionary,
-    List,
-    mutable,
-    stringKeyOf
-} from "../utils/generics.js"
+import type { Dictionary, mutable, NonNullish } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
-import type { Primitive } from "../utils/typeOf.js"
-import { hasObjectType } from "../utils/typeOf.js"
+import type { TypeName } from "../utils/typeOf.js"
+import { hasObjectType, hasType, Primitive } from "../utils/typeOf.js"
 import { resolveIfName } from "./names.js"
+import type { BaseResolutionBranch, Node } from "./node.js"
+import { ResolutionNode } from "./node.js"
 import { union } from "./union.js"
 
-export const intersection = (
-    l: Node,
-    r: Node,
-    scope: ScopeRoot
-): Node | true => {
+export const intersection: IntersectionReducer<Node> = (l, r, scope) => {
     const lResolution = resolveIfName(l, scope)
     const rResolution = resolveIfName(r, scope)
+    const resolution = {
+        ...lResolution,
+        ...rResolution
+    }
+    let lImpliesR = true
+    let rImpliesL = true
+    let k: TypeName
+    for (k in resolution) {
+        if (k in lResolution) {
+            if (k in rResolution) {
+                if (lResolution[k] === true) {
+                    return r
+                }
+                resolution[typeName] = {}
+            }
+        }
+    }
     const result = hasObjectType(lResolution, "Array")
         ? branchesIntersection(lResolution, listFrom(rResolution), scope)
         : hasObjectType(rResolution, "Array")
@@ -38,11 +47,29 @@ export const intersection = (
     return result as Node
 }
 
-const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
+const resolutionBranchIntersection: IntersectionReducer<
+    BaseResolutionBranch,
+    { typeName: TypeName; scope: ScopeRoot }
+> = (l, r, context) => {
+    if (l === true) {
+        return r === true ? undefined : r
+    }
+    if (r === true) {
+        return l
+    }
     let result: Node = "never"
-    for (const lBranch of l) {
-        for (const rBranch of r) {
-            const branchResult = intersection(lBranch, rBranch, scope)
+    for (const lBranch of listFrom(l)) {
+        for (const rBranch of listFrom(r)) {
+            const lResolution =
+                typeof lBranch === "string"
+                    ? // TODO: error on empty
+                      context.scope.resolve(lBranch)[context.typeName]
+                    : lBranch
+            const rResolution =
+                typeof rBranch === "string"
+                    ? context.scope.resolve(rBranch)[context.typeName]
+                    : rBranch
+            const branchResult = context.typeName === "object"
             if (branchResult !== "never") {
                 result = union(result, branchResult, scope)
             }
@@ -51,36 +78,35 @@ const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
     return result
 }
 
-type IntersectableKeyValue = Exclude<Primitive, boolean | undefined> | object
-
-export type IntersectionReducer<t extends IntersectableKeyValue> = (
+export type IntersectionReducer<t extends NonNullish, context = ScopeRoot> = (
     l: t,
     r: t,
-    scope: ScopeRoot
-) => t | boolean
+    context: context
+) => t | null | undefined
 
-export type KeyIntersectionReducer<key, t extends IntersectableKeyValue> = (
-    key: key,
-    l: t,
-    r: t,
-    scope: ScopeRoot
-) => t | boolean
-
-export type KeyIntersectionReducerMap<root extends IntersectableRoot> = {
-    [k in keyof root]-?: IntersectionReducer<root[k]>
+export type KeyIntersectionReducerMap<
+    root extends IntersectableRoot,
+    context
+> = {
+    [k in keyof root]-?: IntersectionReducer<root[k], context>
 }
 
-export type RootIntersectionReducer<root extends IntersectableRoot> =
-    | KeyIntersectionReducerMap<Required<root>>
-    | KeyIntersectionReducer<keyof root, root[keyof root]>
+export type RootIntersectionReducer<root extends IntersectableRoot, context> =
+    | KeyIntersectionReducerMap<Required<root>, context>
+    | IntersectionReducer<root[keyof root], context>
 
-export type IntersectableRoot = Dictionary<IntersectableKeyValue>
+export type IntersectableRoot = Dictionary<NonNullish>
+
+export type ComposeKeyIntersectionOptions = {
+    branching?: true
+}
 
 export const composeKeyedIntersection =
-    <root extends IntersectableRoot>(
-        reducer: RootIntersectionReducer<root>
-    ): IntersectionReducer<root> =>
-    (l, r, scope) => {
+    <root extends IntersectableRoot, context = ScopeRoot>(
+        reducer: RootIntersectionReducer<root, context>,
+        options?: ComposeKeyIntersectionOptions
+    ): IntersectionReducer<root, context> =>
+    (l, r, context) => {
         const result: mutable<root> = { ...l, ...r }
         let lImpliesR = true
         let rImpliesL = true
@@ -90,25 +116,29 @@ export const composeKeyedIntersection =
                 if (k in r) {
                     const keyResult =
                         typeof reducer === "function"
-                            ? reducer(k, l[k], r[k], scope)
-                            : reducer[k](l[k], r[k], scope)
-                    if (keyResult === true) {
+                            ? reducer(l[k], r[k], context)
+                            : reducer[k](l[k], r[k], context)
+                    if (keyResult === undefined) {
                         result[k] = l[k]
-                    } else if (keyResult === false) {
-                        return false
+                    } else if (keyResult === null) {
+                        return null
                     } else {
                         result[k] = keyResult
                         lImpliesR &&= keyResult === l[k]
                         rImpliesL &&= keyResult === r[k]
                     }
+                } else if (options?.branching) {
+                    lImpliesR = false
                 } else {
                     result[k] = l[k]
                     rImpliesL = false
                 }
+            } else if (options?.branching) {
+                rImpliesL = false
             } else {
                 result[k] = r[k]
                 lImpliesR = false
             }
         }
-        return lImpliesR ? (rImpliesL ? true : l) : rImpliesL ? r : result
+        return lImpliesR ? (rImpliesL ? undefined : l) : rImpliesL ? r : result
     }

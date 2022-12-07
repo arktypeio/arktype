@@ -88,6 +88,8 @@ export const hasKey = <o, k extends string>(
     return valueAtKey !== undefined && valueAtKey !== null
 }
 
+export const keyCount = (o: object) => Object.keys(o).length
+
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export const hasKeys = (value: unknown) =>
@@ -155,3 +157,5 @@ export type listable<t> = t | List<t>
 export type List<of = unknown> = readonly of[]
 
 export type Dictionary<of = unknown> = { readonly [k in string]: of }
+
+export type NonNullish = {}
