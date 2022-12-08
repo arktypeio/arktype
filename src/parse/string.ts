@@ -1,4 +1,5 @@
 import { morph } from "../nodes/morph.js"
+import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Dictionary, error, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
@@ -55,15 +56,18 @@ type maybeNaiveParse<
     ? def
     : fullStringParse<def, alias>
 
-export const maybeNaiveParse = (def: string, scope: ScopeRoot) => {
+export const maybeNaiveParse = (
+    def: string,
+    scope: ScopeRoot
+): Node | undefined => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (scope.isResolvable(elementDef)) {
-            return morph("array", elementDef)
+            return morph("array", scope.resolve(elementDef))
         }
     }
     if (scope.isResolvable(def)) {
-        return def
+        return scope.resolve(def)
     }
 }
 

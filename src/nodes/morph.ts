@@ -7,10 +7,11 @@ export type MorphName = keyof typeof morphs
 
 const morphs = {
     array: (node): Node => ({
-        type: "object",
-        subtype: "Array",
-        propTypes: {
-            number: node
+        object: {
+            subtype: "Array",
+            propTypes: {
+                number: node
+            }
         }
     })
 } satisfies Dictionary<(input: Node) => Node>

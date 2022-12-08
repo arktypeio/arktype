@@ -12,15 +12,16 @@ import { isKeyOf } from "./generics.js"
 import type { IntegerLiteral } from "./numericLiterals.js"
 
 export const hasType = <
+    data,
     typeName extends TypeName,
     subtype extends Subtypes[typeName]
 >(
-    data: unknown,
+    data: data,
     type: typeName,
     subtype?: subtype
-): data is inferType<typeName, subtype> =>
+): data is Extract<data, inferType<typeName, subtype>> =>
     subtype === undefined
-        ? typeOf(data) === type
+        ? typeOf(data as any) === type
         : subtypeOf(data as any) === `${type}/${subtype}`
 
 export type Types = {

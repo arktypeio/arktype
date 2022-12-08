@@ -1,5 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
+import { throwInternalError } from "../utils/errors.js"
 import type {
     Dictionary,
     evaluate,
@@ -8,7 +9,6 @@ import type {
     NonNullish
 } from "../utils/generics.js"
 import { hasKey, listFrom, PartialDictionary } from "../utils/generics.js"
-import type { TypeName } from "../utils/typeOf.js"
 import { hasObjectType, hasType } from "../utils/typeOf.js"
 import { boundsIntersection } from "./bounds.js"
 import { checkAttributes, checkNode } from "./check.js"
@@ -18,7 +18,8 @@ import type {
     BaseAttributes,
     BranchOf,
     NarrowableTypeName,
-    Node
+    Node,
+    ResolvedBranchOf
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
@@ -182,3 +183,46 @@ const typeIntersection = composeKeyedIntersection<Node>((l, r, scope) => {
     // }
     // return attributesIntersection(lBranch, rBranch, scope)
 })
+
+const resolveBranches = <typeName extends NarrowableTypeName>(
+    branches: List<BranchOf<typeName>>,
+    typeName: typeName,
+    scope: ScopeRoot
+): true | ResolvedBranchOf<typeName>[] => {
+    const [unresolved, resolved] = filterSplit(
+        branches,
+        (branch): branch is string => typeof branch === "string"
+    )
+    while (unresolved.length) {
+        const typeResolution = scope.resolveToType(unresolved.pop()!, typeName)
+        if (typeResolution === true) {
+            return true
+        }
+        for (const resolutionBranch of listFrom(typeResolution)) {
+            if (typeof resolutionBranch === "string") {
+                unresolved.push(resolutionBranch)
+            } else {
+                resolved.push(resolutionBranch)
+            }
+        }
+    }
+    return resolved
+}
+
+const filterSplit = <item, condition extends item>(
+    list: List<item>,
+    by: (item: item) => item is condition
+) => {
+    const result: [
+        included: condition[],
+        excluded: Exclude<item, condition>[]
+    ] = [[], []]
+    for (const item of list) {
+        if (by(item)) {
+            result[0].push(item)
+        } else {
+            result[1].push(item as any)
+        }
+    }
+    return result
+}

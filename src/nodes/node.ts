@@ -14,7 +14,7 @@ import type { Keyword } from "./names.js"
 import type { RegexAttribute } from "./regex.js"
 
 export type Node = {
-    readonly [typeName in TypeName]?: TypeResolution<typeName>
+    readonly [typeName in TypeName]?: ConstraintsOf<typeName>
 }
 
 export type NarrowableTypeName = Exclude<
@@ -22,15 +22,29 @@ export type NarrowableTypeName = Exclude<
     "symbol" | "undefined" | "null"
 >
 
-export type TypeResolution<typeName extends TypeName> = evaluate<
-    typeName extends NarrowableTypeName
-        ? true | listable<BranchOf<typeName>>
-        : true
->
+export type AliasResolutionKind = "none" | "shallow" | "deep"
 
-export type BranchOf<typeName extends NarrowableTypeName> = evaluate<
-    string | AttributesOf<typeName> | LiteralOf<typeName>
->
+export type ConstraintsOf<
+    typeName extends TypeName,
+    resolutionKind extends AliasResolutionKind = "none"
+> = typeName extends NarrowableTypeName
+    ?
+          | true
+          | (resolutionKind extends "none"
+                ? BranchOf<typeName>
+                : ResolvedBranchOf<typeName>)
+          | (resolutionKind extends "deep"
+                ? List<ResolvedBranchOf<typeName>>
+                : List<BranchOf<typeName>>)
+    : true
+
+export type BranchOf<typeName extends NarrowableTypeName> =
+    | string
+    | ResolvedBranchOf<typeName>
+
+export type ResolvedBranchOf<typeName extends NarrowableTypeName> =
+    | AttributesOf<typeName>
+    | LiteralOf<typeName>
 
 type AttributesOf<typeName extends TypeName> =
     typeName extends keyof AttributeKeysByType

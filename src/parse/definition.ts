@@ -8,7 +8,7 @@ import type {
     isTopType,
     List
 } from "../utils/generics.js"
-import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
+import type { ObjectTypeName, typeName } from "../utils/typeOf.js"
 import { typeOf, typeOfObject } from "../utils/typeOf.js"
 import type {
     inferRecord,
@@ -78,12 +78,12 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends TypeName | ObjectTypeName
+    actual extends typeName | ObjectTypeName
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
 export type buildBadDefinitionTypeMessage<
-    actual extends TypeName | ObjectTypeName
+    actual extends typeName | ObjectTypeName
 > = `Type definitions must be strings or objects (was ${actual})`
