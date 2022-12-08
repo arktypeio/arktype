@@ -9,5 +9,5 @@ undefined
 ## text
 
 ```ts
-export type Node = xor<NodeTypes, DegenerateNode>
+export type Node = NameNode | ResolutionNode
 ```

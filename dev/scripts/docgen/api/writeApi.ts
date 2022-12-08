@@ -1,11 +1,18 @@
-import { rmSync } from "node:fs"
-import { join } from "node:path"
-import { ensureDir, shell, writeFile } from "../../../runtime/exports.js"
+import { readdirSync, rmSync } from "node:fs"
+import { join, relative } from "node:path"
+import {
+    ensureDir,
+    fromHere,
+    fromPackageRoot,
+    shell,
+    writeFile
+} from "../../../runtime/exports.js"
 import type { DocGenApiConfig } from "../main.js"
 import type {
     ApiEntryPoint,
     ExportData,
-    PackageExtractionData
+    PackageExtractionData,
+    TsDocData
 } from "./extractApi.js"
 
 export const writeApi = (
@@ -30,10 +37,47 @@ const writeEntryPoint = (
 ) => {
     for (const exported of entryPoint.exports) {
         const mdFilePath = join(entryPointOutDir, `${exported.name}.md`)
+        transform(mdFilePath, exported.tsDocs)
         writeFile(mdFilePath, generateMarkdownForExport(exported))
     }
 }
 
+// {@link name in API folder | If you want to "rename" it}
+
+const root = fromPackageRoot()
+const apiDir = relative(
+    root,
+    fromHere("..", "..", "..", "arktype.io", "docs", "api")
+)
+const apiFiles = readdirSync(apiDir)
+
+const transform = (path: string, dataArr: TsDocData[] | undefined) => {
+    const matcher = /{@link.+}/
+    console.log("dataArr")
+    if (!dataArr) {
+        return dataArr
+    }
+    for (const data of dataArr) {
+        const match = data.text.match(matcher)
+        let name
+        if (match) {
+            if (match[0].includes("|")) {
+                name = match[0]
+                    .split("|")[1]
+                    .trim()
+                    .slice(0, match.length - 1)
+            } else {
+                name = match[0].split(" ")[1].trim()
+            }
+            if (apiFiles.includes(`${name}.md`)) {
+                data.text = data.text.replace(
+                    match[0],
+                    `[${name}](${apiDir}${name}.md)`
+                )
+            }
+        }
+    }
+}
 const generateMarkdownForExport = (exported: ExportData) => {
     const md = new MarkdownSection(exported.name)
     md.section("tags").tsBlock(JSON.stringify(exported.tsDocs, null, 4))
