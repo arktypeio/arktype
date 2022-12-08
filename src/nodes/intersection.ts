@@ -1,6 +1,12 @@
 import type { ScopeRoot } from "../scope.js"
 import { deepEquals } from "../utils/deepEquals.js"
-import type { Dictionary, mutable, NonNullish } from "../utils/generics.js"
+import type {
+    Dictionary,
+    evaluate,
+    List,
+    mutable,
+    NonNullish
+} from "../utils/generics.js"
 import { hasKey, listFrom, PartialDictionary } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
 import { hasObjectType, hasType } from "../utils/typeOf.js"
@@ -119,19 +125,60 @@ const typeIntersection = composeKeyedIntersection<Node>((l, r, scope) => {
     if (r === true) {
         return l
     }
-    const result: BranchOf<NarrowableTypeName>[] = []
-    for (const lBranch of listFrom(l)) {
-        for (const rBranch of listFrom(r)) {
-            if (hasKey(lBranch, "value")) {
-                if (hasKey(rBranch, "value")) {
-                    return lBranch === rBranch ? undefined : null
+
+    // TODO: Fix types
+    const lBranches = listFrom(l) as List<Dictionary>
+    const rBranches = listFrom(r) as List<Dictionary>
+    const result: Dictionary[] = []
+    const intersections: { [rIndex: number]: undefined | null | Dictionary[] } =
+        {}
+    for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
+        let distinctBranches: Record<number, Dictionary> = {}
+        for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
+            if (intersections[rIndex] === null) {
+                continue
+            }
+            const branch = intersection(
+                lBranches[lIndex],
+                rBranches[rIndex],
+                scope
+            )
+            if (branch === null) {
+                continue
+            }
+            if (branch === undefined || branch === lBranches[lIndex]) {
+                result.push(lBranches[lIndex])
+                distinctBranches = {}
+                if (branch === undefined) {
+                    intersections[rIndex] = null
                 }
-                return checkAttributes(lBranch.value, rBranch, scope) ? l : null
+                break
             }
-            if (hasKey(rBranch, "value")) {
-                return checkAttributes(rBranch.value, lBranch, scope) ? r : null
+            if (branch === rBranches[rIndex]) {
+                intersections[rIndex] = null
+            } else {
+                distinctBranches[rIndex] = branch
             }
-            return attributesIntersection(lBranch, rBranch, scope)
+        }
+        for (const i in distinctBranches) {
+            intersections[i] ??= []
+            intersections[i]!.push(distinctBranches[i])
         }
     }
+    for (const rIndex in intersections) {
+        if (intersections[rIndex]) {
+            result.push(...intersections[rIndex]!)
+        }
+    }
+    return result
+    // if (hasKey(lBranch, "value")) {
+    //     if (hasKey(rBranch, "value")) {
+    //         return lBranch === rBranch ? undefined : null
+    //     }
+    //     return checkAttributes(lBranch.value, rBranch, scope) ? l : null
+    // }
+    // if (hasKey(rBranch, "value")) {
+    //     return checkAttributes(rBranch.value, lBranch, scope) ? r : null
+    // }
+    // return attributesIntersection(lBranch, rBranch, scope)
 })

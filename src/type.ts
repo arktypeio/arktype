@@ -13,6 +13,9 @@ const rawTypeFn: DynamicTypeFn = (
     { scope = getRootScope(), ...config } = {}
 ) => new Type(parseDefinition(definition, scope.$), config, scope as any)
 
+/**
+ * This is a type function. It creates a new type, optionally within a @Scope
+ */
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
