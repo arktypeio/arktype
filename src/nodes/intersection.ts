@@ -1,20 +1,16 @@
 import type { ScopeRoot } from "../scope.js"
 import { filterSplit } from "../utils/filterSplit.js"
-import type {
-    Dictionary,
-    List,
-    mutable,
-    NonNullish
-} from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
+import type { Dictionary, mutable } from "../utils/generics.js"
+import { hasKey, listFrom } from "../utils/generics.js"
+import type { TypeName } from "../utils/typeOf.js"
 import { boundsIntersection } from "./bounds.js"
+import { checkAttributes } from "./check.js"
 import { divisorIntersection } from "./divisor.js"
 import type {
     BaseAttributes,
-    BranchOf,
-    NarrowableTypeName,
-    Node,
-    ResolvedBranchOf
+    BaseConstraints,
+    BaseKeyedConstraint,
+    Node
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
@@ -106,47 +102,68 @@ const attributesIntersection = composeKeyedIntersection<BaseAttributes>({
     bounds: boundsIntersection
 })
 
-export const intersection = composeKeyedIntersection<Node>(
-    (l, r, scope) => {
-        if (l === true) {
-            return r === true ? equivalence : r
+export const intersection = composeKeyedIntersection<
+    Node,
+    { typeName: TypeName; scope: ScopeRoot }
+>(
+    (lConstraints, rConstraints, context) => {
+        const lResolution = resolveConstraints(
+            lConstraints,
+            context.typeName,
+            context.scope
+        )
+        const rResolution = resolveConstraints(
+            rConstraints,
+            context.typeName,
+            context.scope
+        )
+        if (lResolution === true) {
+            return rResolution === true ? equivalence : rResolution
         }
-        if (r === true) {
-            return l
+        if (rResolution === true) {
+            return lResolution
         }
-        // TODO: Fix types
-        const lBranches = listFrom(l) as List<Dictionary>
-        const rBranches = listFrom(r) as List<Dictionary>
         const distinctBranches: Dictionary[] = []
         const intersections: { [rIndex: number]: Dictionary[] } = {}
-        for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
+        for (let rIndex = 0; rIndex < rResolution.length; rIndex++) {
             intersections[rIndex] = []
         }
-        for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
+        // TODO- ensure l or r is returned for subtype
+        for (let lIndex = 0; lIndex < lResolution.length; lIndex++) {
+            const l = lResolution[lIndex]
             let lIntersectionsByRIndex: Record<number, Dictionary> = {}
-            for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
+            for (let rIndex = 0; rIndex < rResolution.length; rIndex++) {
                 if (!intersections[rIndex]) {
                     // if r is a subtype of a branch of l, its index is deleted from
                     // intersections so we can skip it
                     continue
                 }
-                const result = intersection(
-                    lBranches[lIndex],
-                    rBranches[rIndex],
-                    scope
-                )
+                const r = rResolution[rIndex]
+                const result = hasKey(l, "value")
+                    ? hasKey(r, "value")
+                        ? l.value === r.value
+                            ? equivalence
+                            : empty
+                        : checkAttributes(l.value, r, context.scope)
+                        ? l
+                        : empty
+                    : hasKey(r, "value")
+                    ? checkAttributes(r.value, l, context.scope)
+                        ? r
+                        : empty
+                    : attributesIntersection(l, r, context.scope)
                 if (result === empty) {
                     continue
                 }
-                if (result === equivalence || result === lBranches[lIndex]) {
-                    distinctBranches.push(lBranches[lIndex])
+                if (result === equivalence || result === l) {
+                    distinctBranches.push(lResolution[lIndex])
                     lIntersectionsByRIndex = {}
                     if (result === equivalence) {
                         delete intersections[rIndex]
                     }
                     break
                 }
-                if (result === rBranches[rIndex]) {
+                if (result === rResolution[rIndex]) {
                     delete intersections[rIndex]
                 } else {
                     lIntersectionsByRIndex[rIndex] = result
@@ -161,33 +178,21 @@ export const intersection = composeKeyedIntersection<Node>(
             distinctBranches.push(...intersections[rIndex])
         }
         return distinctBranches
-        // if (hasKey(lBranch, "value")) {
-        //     if (hasKey(rBranch, "value")) {
-        //         return lBranch === rBranch ? undefined : null
-        //     }
-        //     return checkAttributes(lBranch.value, rBranch, scope) ? l : null
-        // }
-        // if (hasKey(rBranch, "value")) {
-        //     return checkAttributes(rBranch.value, lBranch, scope) ? r : null
-        // }
-        // return attributesIntersection(lBranch, rBranch, scope)
     },
     { branching: true }
 )
 
-const resolveBranches = <typeName extends NarrowableTypeName>(
-    branches: List<BranchOf<typeName>>,
-    typeName: typeName,
+const resolveConstraints = (
+    typeConstraints: BaseConstraints,
+    typeName: TypeName,
     scope: ScopeRoot
-): true | ResolvedBranchOf<typeName>[] => {
-    const [resolved, unresolved] = filterSplit<
-        BranchOf<typeName>,
-        ResolvedBranchOf<typeName>,
-        string
-    >(
-        branches,
-        (branch): branch is ResolvedBranchOf<typeName> =>
-            typeof branch === "object"
+): true | BaseKeyedConstraint[] => {
+    if (typeConstraints === true) {
+        return true
+    }
+    const [unresolved, resolved] = filterSplit(
+        listFrom(typeConstraints),
+        (branch): branch is string => typeof branch === "string"
     )
     while (unresolved.length) {
         const typeResolution = scope.resolveToType(unresolved.pop()!, typeName)
@@ -198,7 +203,7 @@ const resolveBranches = <typeName extends NarrowableTypeName>(
             if (typeof resolutionBranch === "string") {
                 unresolved.push(resolutionBranch)
             } else {
-                resolved.push(resolutionBranch as any)
+                resolved.push(resolutionBranch)
             }
         }
     }

@@ -1,41 +1,37 @@
 import type {
+    defined,
     Dictionary,
     keySet,
     listable,
-    PartialDictionary,
     subtype
 } from "../utils/generics.js"
-import type { ObjectTypeName, TypeName, Types } from "../utils/typeOf.js"
+import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import type { RegexAttribute } from "./regex.js"
 
-export type Node = {
-    readonly [typeName in TypeName]?: typeName extends NarrowableTypeName
-        ? true | listable<BranchOf<typeName>>
-        : true
-}
-
-export type NarrowableTypeName = Exclude<
-    TypeName,
-    "symbol" | "undefined" | "null"
+export type Node = subtype<
+    { readonly [k in TypeName]?: BaseConstraints },
+    {
+        readonly bigint?: true | listable<PrimitiveLiteral<bigint>>
+        readonly boolean?: true | PrimitiveLiteral<boolean>
+        readonly null?: true
+        readonly number?:
+            | true
+            | listable<PrimitiveLiteral<number> | NumberAttributes>
+        readonly object?: true | listable<ObjectAttributes>
+        readonly string?:
+            | true
+            | listable<PrimitiveLiteral<string> | StringAttributes>
+        readonly symbol?: true
+        readonly undefined?: true
+    }
 >
 
-export type BranchOf<typeName extends NarrowableTypeName> =
-    | string
-    | ResolvedBranchOf<typeName>
+export type ConstraintsOf<typeName extends TypeName> = defined<Node[typeName]>
 
-export type ResolvedBranchOf<typeName extends NarrowableTypeName> =
-    | AttributesOf<typeName>
-    | LiteralOf<typeName>
+export type BaseConstraints = true | listable<string | BaseKeyedConstraint>
 
-type AttributesOf<typeName extends TypeName> =
-    typeName extends keyof AttributeKeysByType
-        ? Pick<BaseAttributes, AttributeKeysByType[typeName]>
-        : never
-
-type LiteralOf<typeName extends TypeName> = Types[typeName] extends LiteralValue
-    ? PrimitiveLiteralNode<Types[typeName]>
-    : never
+export type BaseKeyedConstraint = BaseAttributes | PrimitiveLiteral
 
 export type BaseAttributes = {
     // primitive attributes
@@ -50,18 +46,9 @@ export type BaseAttributes = {
     readonly bounds?: Bounds
 }
 
-type AttributeKeysByType = subtype<
-    PartialDictionary<TypeName, keyof BaseAttributes>,
-    {
-        object: "subtype" | "props" | "requiredKeys" | "propTypes" | "bounds"
-        string: "regex" | "bounds"
-        number: "divisor" | "bounds"
-    }
->
-
 export type LiteralValue = string | number | boolean | bigint
 
-export type PrimitiveLiteralNode<value extends LiteralValue = LiteralValue> = {
+export type PrimitiveLiteral<value extends LiteralValue = LiteralValue> = {
     readonly value: value
 }
 
@@ -69,3 +56,12 @@ type PropTypesAttribute = {
     readonly number?: Node
     readonly string?: Node
 }
+
+export type NumberAttributes = Pick<BaseAttributes, "divisor" | "bounds">
+
+export type StringAttributes = Pick<BaseAttributes, "regex" | "bounds">
+
+export type ObjectAttributes = Pick<
+    BaseAttributes,
+    "subtype" | "props" | "requiredKeys" | "propTypes" | "bounds"
+>

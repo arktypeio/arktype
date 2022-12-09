@@ -113,7 +113,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         typeName: typeName,
         seen: string[] = []
     ) {
-        let resolution = this.resolve(name)[typeName] as ConstraintsOf<typeName>
+        let resolution = this.resolve(name)[typeName] as Node[typeName]
         if (resolution === undefined) {
             return throwInternalError(
                 `Expected '${name}' to have a definition including '${typeName}'`
@@ -130,7 +130,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             seen.push(resolution)
             resolution = this.resolveToType(resolution, typeName, seen)
         }
-        return resolution as ConstraintsOf<typeName, "shallow">
+        return resolution as ConstraintsOf<typeName>
     }
 
     memoizedParse(def: string): Node {

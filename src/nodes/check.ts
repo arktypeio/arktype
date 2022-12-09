@@ -1,28 +1,10 @@
 import type { ScopeRoot } from "../scope.js"
 import { hasObjectType, hasType } from "../utils/typeOf.js"
-import { checkChildren } from "./attributes/props.js"
-import { resolveIfName } from "./names.js"
-import type {
-    AttributeName,
-    BaseAttributes,
-    BaseAttributeType,
-    Node
-} from "./node.js"
+import type { BaseAttributes } from "./node.js"
 
-export const checkNode = (
-    data: unknown,
-    attributes: Node,
-    scope: ScopeRoot
-): boolean => {
-    const resolution = resolveIfName(attributes, scope)
-    return hasObjectType(resolution, "Array")
-        ? resolution.some((branch) => checkNode(data, branch, scope))
-        : checkAttributes(data, resolution, scope)
-}
-
-export type AttributeChecker<data, k extends AttributeName> = (
+export type AttributeChecker<data, k extends keyof BaseAttributes> = (
     data: data,
-    attribute: BaseAttributeType<k>
+    attribute: BaseAttributes[k]
 ) => boolean
 
 export const checkAttributes = (

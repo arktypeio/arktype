@@ -1,14 +1,11 @@
 import type { List } from "./generics.js"
 
-export const filterSplit = <
-    item,
-    included extends item,
-    excluded extends item = Exclude<item, included>
->(
+export const filterSplit = <item, included extends item>(
     list: List<item>,
     by: (item: item) => item is included
 ) => {
-    const result: [included: included[], excluded: excluded[]] = [[], []]
+    const result: [included: included[], excluded: Exclude<item, included>[]] =
+        [[], []]
     for (const item of list) {
         if (by(item)) {
             result[0].push(item)

@@ -2,7 +2,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { Dictionary } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import { intersection } from "./intersection.js"
-import type { Node, PrimitiveLiteralNode } from "./node.js"
+import type { Node, PrimitiveLiteral } from "./node.js"
 
 export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
     const lBranches = listFrom(lNode)
@@ -55,5 +55,5 @@ export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
 //             : undefined
 //         : undefined
 
-const isPrimitiveLiteral = (node: Node): node is PrimitiveLiteralNode =>
+const isPrimitiveLiteral = (node: Node): node is PrimitiveLiteral =>
     (node as Dictionary).value !== undefined
