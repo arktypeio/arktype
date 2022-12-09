@@ -123,61 +123,79 @@ export const intersection = composeKeyedIntersection<
         if (rResolution === true) {
             return lResolution
         }
-        const distinctBranches: Dictionary[] = []
-        const intersections: { [rIndex: number]: Dictionary[] } = {}
-        for (let rIndex = 0; rIndex < rResolution.length; rIndex++) {
-            intersections[rIndex] = []
-        }
+        const mutualSubtypes: BaseKeyedConstraint[] = []
+        const lSubtypes: BaseKeyedConstraint[] = []
+        const rSubtypes: BaseKeyedConstraint[] = []
+        const pairData = rResolution.map((constraint) => ({
+            constraint,
+            pairs: [] as BaseKeyedConstraint[] | null
+        }))
         // TODO- ensure l or r is returned for subtype
-        for (let lIndex = 0; lIndex < lResolution.length; lIndex++) {
-            const l = lResolution[lIndex]
-            let lIntersectionsByRIndex: Record<number, Dictionary> = {}
-            for (let rIndex = 0; rIndex < rResolution.length; rIndex++) {
-                if (!intersections[rIndex]) {
-                    // if r is a subtype of a branch of l, its index is deleted from
-                    // intersections so we can skip it
-                    continue
-                }
-                const r = rResolution[rIndex]
-                const result = hasKey(l, "value")
-                    ? hasKey(r, "value")
-                        ? l.value === r.value
-                            ? equivalence
-                            : empty
-                        : checkAttributes(l.value, r, context.scope)
-                        ? l
-                        : empty
-                    : hasKey(r, "value")
-                    ? checkAttributes(r.value, l, context.scope)
-                        ? r
-                        : empty
-                    : attributesIntersection(l, r, context.scope)
-                if (result === empty) {
-                    continue
-                }
-                if (result === equivalence || result === l) {
-                    distinctBranches.push(lResolution[lIndex])
-                    lIntersectionsByRIndex = {}
-                    if (result === equivalence) {
-                        delete intersections[rIndex]
+        lResolution.forEach((l) => {
+            let lImpliesR = false
+            const distinctPairs = pairData.map(
+                (rData): BaseKeyedConstraint | null => {
+                    if (lImpliesR || !rData.pairs) {
+                        return null
                     }
-                    break
+                    const r = rData.constraint
+                    const result = hasKey(l, "value")
+                        ? hasKey(r, "value")
+                            ? l.value === r.value
+                                ? equivalence
+                                : empty
+                            : checkAttributes(l.value, r, context.scope)
+                            ? l
+                            : empty
+                        : hasKey(r, "value")
+                        ? checkAttributes(r.value, l, context.scope)
+                            ? r
+                            : empty
+                        : attributesIntersection(l, r, context.scope)
+                    switch (result) {
+                        case empty:
+                            // doesn't tell us about any redundancies or add a distinct pair
+                            return null
+                        case l:
+                            lSubtypes.push(l)
+                            // If l is a subtype of the current r branch, intersections
+                            // with the remaining branches of r won't lead to distinct
+                            // branches, so we set a flag indicating we can skip them.
+                            lImpliesR = true
+                            return null
+                        case r:
+                            rSubtypes.push(r)
+                            // If r is a subtype of the current l branch, it is removed
+                            // from pairsByR because future intersections won't lead to
+                            // distinct branches.
+                            rData.pairs = null
+                            return null
+                        case equivalence:
+                            // Combination of l and r subtype cases.
+                            mutualSubtypes.push(l)
+                            lImpliesR = true
+                            rData.pairs = null
+                            return null
+                        default:
+                            // Neither branch is a subtype of the other, return
+                            // the result of the intersection as a candidate
+                            // branch for the final union
+                            return result
+                    }
                 }
-                if (result === rResolution[rIndex]) {
-                    delete intersections[rIndex]
-                } else {
-                    lIntersectionsByRIndex[rIndex] = result
+            )
+            if (!lImpliesR) {
+                for (let i = 0; i < pairData.length; i++) {
+                    if (distinctPairs[i]) {
+                        pairData[i].pairs?.push(distinctPairs[i]!)
+                    }
                 }
             }
-            for (const i in lIntersectionsByRIndex) {
-                intersections[i] ??= []
-                intersections[i]!.push(lIntersectionsByRIndex[i])
-            }
+        })
+        for (const rIndex in pairData) {
+            rSubtypes.push(...pairData[rIndex])
         }
-        for (const rIndex in intersections) {
-            distinctBranches.push(...intersections[rIndex])
-        }
-        return distinctBranches
+        return rSubtypes
     },
     { branching: true }
 )
