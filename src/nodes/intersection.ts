@@ -37,14 +37,10 @@ export type RootIntersectionReducer<root extends Dictionary, context> =
     | KeyIntersectionReducerMap<Required<root>, context>
     | IntersectionReducer<Required<root>[keyof root], context>
 
-export type ComposeKeyIntersectionOptions = {
-    branching?: true
-}
-
-export const composeKeyedIntersection =
+export const composeKeyedOperation =
     <root extends Dictionary, context = ScopeRoot>(
-        reducer: RootIntersectionReducer<root, context>,
-        options?: ComposeKeyIntersectionOptions
+        operator: "&" | "|",
+        reducer: RootIntersectionReducer<root, context>
     ): IntersectionReducer<root, context> =>
     (l, r, context) => {
         const result: mutable<root> = { ...l, ...r }
@@ -52,32 +48,40 @@ export const composeKeyedIntersection =
         let rImpliesL = true
         let k: keyof root
         for (k in result) {
-            if (k in l) {
-                if (k in r) {
-                    const keyResult =
-                        typeof reducer === "function"
-                            ? reducer(l[k], r[k], context)
-                            : reducer[k](l[k], r[k], context)
-                    if (keyResult === equivalence) {
-                        result[k] = l[k]
-                    } else if (keyResult === empty) {
-                        return empty
-                    } else {
-                        result[k] = keyResult
-                        lImpliesR &&= keyResult === l[k]
-                        rImpliesL &&= keyResult === r[k]
-                    }
-                } else if (options?.branching) {
+            if (l[k] === undefined) {
+                if (operator === "|") {
+                    rImpliesL = false
+                } else {
+                    result[k] = r[k]
+                    lImpliesR = false
+                }
+            }
+            if (r[k] === undefined) {
+                if (operator === "|") {
                     lImpliesR = false
                 } else {
                     result[k] = l[k]
                     rImpliesL = false
                 }
-            } else if (options?.branching) {
+            }
+            const keyResult =
+                typeof reducer === "function"
+                    ? reducer(l[k], r[k], context)
+                    : reducer[k](l[k], r[k], context)
+            if (keyResult === equivalence) {
+                result[k] = l[k]
+            } else if (keyResult === empty) {
+                if (operator === "&") {
+                    // TODO : Case for optional props
+                    return empty
+                }
+                delete result[k]
+                lImpliesR = false
                 rImpliesL = false
             } else {
-                result[k] = r[k]
-                lImpliesR = false
+                result[k] = keyResult
+                lImpliesR &&= keyResult === l[k]
+                rImpliesL &&= keyResult === r[k]
             }
         }
         return lImpliesR
@@ -92,7 +96,7 @@ export const composeKeyedIntersection =
 export const disjointIntersection = (l: string, r: string) =>
     l === r ? equivalence : empty
 
-const attributesIntersection = composeKeyedIntersection<BaseAttributes>({
+const attributesIntersection = composeKeyedOperation<BaseAttributes>("&", {
     subtype: disjointIntersection,
     divisor: divisorIntersection,
     regex: regexIntersection,
@@ -102,13 +106,14 @@ const attributesIntersection = composeKeyedIntersection<BaseAttributes>({
     bounds: boundsIntersection
 })
 
-export const intersection = composeKeyedIntersection<
+export const intersection = composeKeyedOperation<
     BaseNode,
     {
         typeName: TypeName
         scope: ScopeRoot
     }
 >(
+    "&",
     (lConstraints, rConstraints, context) => {
         const lTypes = resolveConstraints(
             lConstraints,

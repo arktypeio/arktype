@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import type { Dictionary } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
+import { hasKey, listFrom } from "../utils/generics.js"
 import { intersection } from "./intersection.js"
 import type { Node, PrimitiveLiteral } from "./node.js"
 
@@ -9,6 +9,19 @@ export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
     const rBranches = [...listFrom(rNode)]
     const result = lBranches
         .filter((l) => {
+            const booleanLiteral = getPossibleBooleanLiteral(l)
+            if (booleanLiteral !== undefined) {
+                for (let i = 0; i < rBranches.length; i++) {
+                    if (
+                        getPossibleBooleanLiteral(rBranches[i]) ===
+                        oppositeLiteral
+                    ) {
+                        rBranches[i] = "boolean"
+                        return false
+                    }
+                }
+                return true
+            }
             return rBranches.every((r, i) => {
                 const intersectionResult = intersection(l, r, scope)
                 if (intersectionResult === l) {
@@ -30,30 +43,5 @@ export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
         : result
 }
 
-// const booleanLiteral = getPossibleBooleanLiteral(l)
-// if (booleanLiteral) {
-//     const oppositeLiteral = booleanLiteral === "true" ? "false" : "true"
-//     for (let i = 0; i < rBranches.length; i++) {
-//         if (getPossibleBooleanLiteral(rBranches[i]) === oppositeLiteral) {
-//             rBranches[i] = "boolean"
-//             return false
-//         }
-//     }
-//     return true
-// }
-
-// const getPossibleBooleanLiteral = (node: Node): "true" | "false" | undefined =>
-//     node === "true"
-//         ? "true"
-//         : node === "false"
-//         ? "false"
-//         : isPrimitiveLiteral(node)
-//         ? node.value === true
-//             ? "true"
-//             : node.value === false
-//             ? "false"
-//             : undefined
-//         : undefined
-
-const isPrimitiveLiteral = (node: Node): node is PrimitiveLiteral =>
-    (node as Dictionary).value !== undefined
+const getPossibleBooleanLiteral = (node: Node) =>
+    hasKey(node.boolean, "value") ? node.boolean.value : undefined

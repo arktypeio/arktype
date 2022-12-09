@@ -8,7 +8,7 @@ import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
 import type { IntersectionReducer } from "./intersection.js"
 import {
-    composeKeyedIntersection,
+    composeKeyedOperation,
     equivalence,
     intersection
 } from "./intersection.js"
@@ -30,7 +30,7 @@ export type ObjectAttributes = {
 
 // TODO: Never propagation
 export const propsIntersection =
-    composeKeyedIntersection<Dictionary<Node>>(intersection)
+    composeKeyedOperation<Dictionary<Node>>(intersection)
 
 export const requiredKeysIntersection: IntersectionReducer<keySet> = (l, r) => {
     const result = { ...l, ...r }
