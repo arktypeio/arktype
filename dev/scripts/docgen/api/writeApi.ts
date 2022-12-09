@@ -1,18 +1,11 @@
-import { readdirSync, rmSync } from "node:fs"
-import { join, relative } from "node:path"
-import {
-    ensureDir,
-    fromHere,
-    fromPackageRoot,
-    shell,
-    writeFile
-} from "../../../runtime/exports.js"
+import { rmSync } from "node:fs"
+import { join } from "node:path"
+import { ensureDir, shell, writeFile } from "../../../runtime/exports.js"
 import type { DocGenApiConfig } from "../main.js"
 import type {
     ApiEntryPoint,
     ExportData,
-    PackageExtractionData,
-    TsDocData
+    PackageExtractionData
 } from "./extractApi.js"
 
 export const writeApi = (
@@ -21,63 +14,29 @@ export const writeApi = (
 ) => {
     rmSync(apiConfig.outDir, { recursive: true, force: true })
     for (const entryPoint of extractedData.api) {
+        const entryNames = entryPoint.exports.map((entry) => entry.name)
         const entryPointOutDir =
             entryPoint.subpath === "."
                 ? apiConfig.outDir
                 : join(apiConfig.outDir, entryPoint.subpath)
         ensureDir(entryPointOutDir)
-        writeEntryPoint(entryPoint, entryPointOutDir)
+        writeEntryPoint(entryPoint, entryPointOutDir, entryNames)
     }
     shell(`prettier --write ${apiConfig.outDir}`)
 }
 
 const writeEntryPoint = (
     entryPoint: ApiEntryPoint,
-    entryPointOutDir: string
+    entryPointOutDir: string,
+    entryNames: string[]
 ) => {
     for (const exported of entryPoint.exports) {
         const mdFilePath = join(entryPointOutDir, `${exported.name}.md`)
-        transform(mdFilePath, exported.tsDocs)
+        transformLinkTagToURL(mdFilePath, exported, entryNames)
         writeFile(mdFilePath, generateMarkdownForExport(exported))
     }
 }
 
-// {@link name in API folder | If you want to "rename" it}
-
-const root = fromPackageRoot()
-const apiDir = relative(
-    root,
-    fromHere("..", "..", "..", "arktype.io", "docs", "api")
-)
-const apiFiles = readdirSync(apiDir)
-
-const transform = (path: string, dataArr: TsDocData[] | undefined) => {
-    const matcher = /{@link.+}/
-    console.log("dataArr")
-    if (!dataArr) {
-        return dataArr
-    }
-    for (const data of dataArr) {
-        const match = data.text.match(matcher)
-        let name
-        if (match) {
-            if (match[0].includes("|")) {
-                name = match[0]
-                    .split("|")[1]
-                    .trim()
-                    .slice(0, match.length - 1)
-            } else {
-                name = match[0].split(" ")[1].trim()
-            }
-            if (apiFiles.includes(`${name}.md`)) {
-                data.text = data.text.replace(
-                    match[0],
-                    `[${name}](${apiDir}${name}.md)`
-                )
-            }
-        }
-    }
-}
 const generateMarkdownForExport = (exported: ExportData) => {
     const md = new MarkdownSection(exported.name)
     md.section("tags").tsBlock(JSON.stringify(exported.tsDocs, null, 4))
@@ -116,5 +75,45 @@ class MarkdownSection {
             (result: string, section) => result + section.toString(),
             ""
         )
+    }
+}
+
+type LinkDetails = [name: string, alias?: string]
+
+const trimWhitespace = (text: string) => text.trim()
+
+const extractLinkDetails = (regexMatch: RegExpMatchArray): LinkDetails => {
+    const BASE_NAME = 1
+    const ALIAS = 2
+    const BASE_NAME_NO_ALIAS = 3
+    return regexMatch[BASE_NAME_NO_ALIAS]
+        ? [trimWhitespace(regexMatch[BASE_NAME_NO_ALIAS])]
+        : [
+              trimWhitespace(regexMatch[BASE_NAME]),
+              trimWhitespace(regexMatch[ALIAS])
+          ]
+}
+
+const transformLinkTagToURL = (
+    path: string,
+    exportData: ExportData,
+    entryNames: string[]
+) => {
+    const extractApiNameRegex = /{@link(.+)\|(.+)?}|{@link(.+)}/
+    for (const data of exportData.tsDocs ?? []) {
+        const match = data.text.match(extractApiNameRegex)
+        if (match) {
+            const [basename, alias]: LinkDetails = extractLinkDetails(match)
+            if (entryNames.includes(basename)) {
+                data.text = data.text.replace(
+                    match[0],
+                    `[${alias ?? basename}](./${basename}.md)`
+                )
+            } else {
+                throw new Error(
+                    `${basename} doesn't appear to be part of the API`
+                )
+            }
+        }
     }
 }

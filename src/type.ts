@@ -14,9 +14,8 @@ const rawTypeFn: DynamicTypeFn = (
 ) => new Type(parseDefinition(definition, scope.$), config, scope as any)
 
 /**
- * @exports idk
- * @remarks this is part of ${@link type | ARKTYPE}
- * @param x poop
+ * @exports this is part of {@link type}
+ * @remarks this is part of {@link type | ARKTYPE}
  */
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
