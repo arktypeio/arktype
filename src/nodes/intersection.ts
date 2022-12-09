@@ -10,7 +10,7 @@ import type {
     BaseAttributes,
     BaseConstraints,
     BaseKeyedConstraint,
-    Node
+    BaseNode
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
@@ -103,35 +103,37 @@ const attributesIntersection = composeKeyedIntersection<BaseAttributes>({
 })
 
 export const intersection = composeKeyedIntersection<
-    Node,
-    { typeName: TypeName; scope: ScopeRoot }
+    BaseNode,
+    {
+        typeName: TypeName
+        scope: ScopeRoot
+    }
 >(
     (lConstraints, rConstraints, context) => {
-        const lResolution = resolveConstraints(
+        const lTypes = resolveConstraints(
             lConstraints,
             context.typeName,
             context.scope
         )
-        const rResolution = resolveConstraints(
+        const rTypes = resolveConstraints(
             rConstraints,
             context.typeName,
             context.scope
         )
-        if (lResolution === true) {
-            return rResolution === true ? equivalence : rResolution
+        if (lTypes === true) {
+            return rTypes === true ? equivalence : rTypes
         }
-        if (rResolution === true) {
-            return lResolution
+        if (rTypes === true) {
+            return lTypes
         }
-        const mutualSubtypes: BaseKeyedConstraint[] = []
-        const lSubtypes: BaseKeyedConstraint[] = []
-        const rSubtypes: BaseKeyedConstraint[] = []
-        const pairData = rResolution.map((constraint) => ({
+        const equivalentTypes: BaseKeyedConstraint[] = []
+        const lStrictSubtypes: BaseKeyedConstraint[] = []
+        const rStrictSubtypes: BaseKeyedConstraint[] = []
+        const pairData = rTypes.map((constraint) => ({
             constraint,
             pairs: [] as BaseKeyedConstraint[] | null
         }))
-        // TODO- ensure l or r is returned for subtype
-        lResolution.forEach((l) => {
+        lTypes.forEach((l) => {
             let lImpliesR = false
             const distinctPairs = pairData.map(
                 (rData): BaseKeyedConstraint | null => {
@@ -157,14 +159,14 @@ export const intersection = composeKeyedIntersection<
                             // doesn't tell us about any redundancies or add a distinct pair
                             return null
                         case l:
-                            lSubtypes.push(l)
+                            lStrictSubtypes.push(l)
                             // If l is a subtype of the current r branch, intersections
                             // with the remaining branches of r won't lead to distinct
                             // branches, so we set a flag indicating we can skip them.
                             lImpliesR = true
                             return null
                         case r:
-                            rSubtypes.push(r)
+                            rStrictSubtypes.push(r)
                             // If r is a subtype of the current l branch, it is removed
                             // from pairsByR because future intersections won't lead to
                             // distinct branches.
@@ -172,7 +174,7 @@ export const intersection = composeKeyedIntersection<
                             return null
                         case equivalence:
                             // Combination of l and r subtype cases.
-                            mutualSubtypes.push(l)
+                            equivalentTypes.push(l)
                             lImpliesR = true
                             rData.pairs = null
                             return null
@@ -192,10 +194,28 @@ export const intersection = composeKeyedIntersection<
                 }
             }
         })
-        for (const rIndex in pairData) {
-            rSubtypes.push(...pairData[rIndex])
+        if (
+            equivalentTypes.length === lTypes.length &&
+            equivalentTypes.length === rTypes.length
+        ) {
+            return equivalence
         }
-        return rSubtypes
+        if (lStrictSubtypes.length + equivalentTypes.length === lTypes.length) {
+            return lConstraints
+        }
+        if (rStrictSubtypes.length + equivalentTypes.length === rTypes.length) {
+            return rConstraints
+        }
+        const finalBranches = [
+            ...pairData.flatMap((rData) => rData.pairs ?? []),
+            ...equivalentTypes,
+            ...lStrictSubtypes,
+            ...rStrictSubtypes
+        ]
+        if (finalBranches.length === 0) {
+            return empty
+        }
+        return finalBranches.length === 1 ? finalBranches[0] : finalBranches
     },
     { branching: true }
 )

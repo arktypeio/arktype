@@ -9,8 +9,10 @@ import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import type { RegexAttribute } from "./regex.js"
 
+export type BaseNode = { readonly [k in TypeName]?: BaseConstraints }
+
 export type Node = subtype<
-    { readonly [k in TypeName]?: BaseConstraints },
+    BaseNode,
     {
         readonly bigint?: true | listable<PrimitiveLiteral<bigint>>
         readonly boolean?: true | PrimitiveLiteral<boolean>
