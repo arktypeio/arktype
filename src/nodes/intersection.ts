@@ -131,12 +131,16 @@ const typeIntersection = composeKeyedIntersection<Node>((l, r, scope) => {
     const lBranches = listFrom(l) as List<Dictionary>
     const rBranches = listFrom(r) as List<Dictionary>
     const result: Dictionary[] = []
-    const intersections: { [rIndex: number]: undefined | null | Dictionary[] } =
-        {}
+    const intersections: { [rIndex: number]: Dictionary[] } = {}
+    for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
+        intersections[rIndex] = []
+    }
     for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
-        let distinctBranches: Record<number, Dictionary> = {}
+        let lIntersectionsByRIndex: Record<number, Dictionary> = {}
         for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
-            if (intersections[rIndex] === null) {
+            if (!intersections[rIndex]) {
+                // if r is a subtype of a branch of l, its index is deleted from
+                // intersections so we can skip it
                 continue
             }
             const branch = intersection(
@@ -149,27 +153,25 @@ const typeIntersection = composeKeyedIntersection<Node>((l, r, scope) => {
             }
             if (branch === undefined || branch === lBranches[lIndex]) {
                 result.push(lBranches[lIndex])
-                distinctBranches = {}
+                lIntersectionsByRIndex = {}
                 if (branch === undefined) {
-                    intersections[rIndex] = null
+                    delete intersections[rIndex]
                 }
                 break
             }
             if (branch === rBranches[rIndex]) {
-                intersections[rIndex] = null
+                delete intersections[rIndex]
             } else {
-                distinctBranches[rIndex] = branch
+                lIntersectionsByRIndex[rIndex] = branch
             }
         }
-        for (const i in distinctBranches) {
+        for (const i in lIntersectionsByRIndex) {
             intersections[i] ??= []
-            intersections[i]!.push(distinctBranches[i])
+            intersections[i]!.push(lIntersectionsByRIndex[i])
         }
     }
     for (const rIndex in intersections) {
-        if (intersections[rIndex]) {
-            result.push(...intersections[rIndex]!)
-        }
+        result.push(...intersections[rIndex])
     }
     return result
     // if (hasKey(lBranch, "value")) {
