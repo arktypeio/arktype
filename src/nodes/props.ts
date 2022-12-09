@@ -7,7 +7,11 @@ import { hasObjectType } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
 import type { IntersectionReducer } from "./intersection.js"
-import { composeKeyedIntersection, intersection } from "./intersection.js"
+import {
+    composeKeyedIntersection,
+    equivalence,
+    intersection
+} from "./intersection.js"
 import type { Node } from "./node.js"
 
 type PropTypesAttribute = {
@@ -33,7 +37,7 @@ export const requiredKeysIntersection: IntersectionReducer<keySet> = (l, r) => {
     const resultSize = keyCount(result)
     return resultSize === keyCount(l)
         ? resultSize === keyCount(r)
-            ? undefined
+            ? equivalence
             : l
         : resultSize === keyCount(r)
         ? r

@@ -1,4 +1,5 @@
 import type { IntersectionReducer } from "./intersection.js"
+import { equivalence } from "./intersection.js"
 
 export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0
@@ -6,7 +7,7 @@ export const checkDivisor = (data: number, divisor: number) =>
 export const divisorIntersection: IntersectionReducer<number> = (
     l: number,
     r: number
-) => (l === r ? undefined : Math.abs((l * r) / greatestCommonDivisor(l, r)))
+) => (l === r ? equivalence : Math.abs((l * r) / greatestCommonDivisor(l, r)))
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

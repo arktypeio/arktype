@@ -1,5 +1,6 @@
 import type { List } from "../utils/generics.js"
 import type { IntersectionReducer } from "./intersection.js"
+import { equivalence } from "./intersection.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -32,7 +33,7 @@ export const boundsIntersection: IntersectionReducer<Bounds> = (l, r) => {
         }
         return r
     }
-    return maxComparison === "l" ? l : maxComparison === "r" ? r : true
+    return maxComparison === "l" ? l : maxComparison === "r" ? r : equivalence
 }
 
 type BoundableData = number | string | List

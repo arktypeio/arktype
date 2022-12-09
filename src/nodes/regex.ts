@@ -1,5 +1,6 @@
 import { getRegex } from "../utils/regexCache.js"
 import type { IntersectionReducer } from "./intersection.js"
+import { equivalence } from "./intersection.js"
 
 export type RegexAttribute = string | readonly string[]
 
@@ -17,7 +18,7 @@ export const regexIntersection: IntersectionReducer<RegexAttribute> = (
 ) => {
     if (typeof l === "string") {
         if (typeof r === "string") {
-            return l === r ? undefined : [l, r]
+            return l === r ? equivalence : [l, r]
         }
         return r.includes(l) ? r : [...r, l]
     }
@@ -32,7 +33,7 @@ export const regexIntersection: IntersectionReducer<RegexAttribute> = (
     }
     return result.length === l.length
         ? result.length === r.length
-            ? undefined
+            ? equivalence
             : l
         : result.length === r.length
         ? r
