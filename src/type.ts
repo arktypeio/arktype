@@ -16,6 +16,14 @@ const rawTypeFn: DynamicTypeFn = (
 /**
  * @exports this is part of {@link type}
  * @remarks this is part of {@link type | ARKTYPE}
+ * @param x blahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah
+ * blahblahblahblahblahblahblah
+ * @description ok so I have this super long description thing that I would like everyone to read
+ * but it's just so dang long and all I can think about is lahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah
+ * lahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahlahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah
+ * lahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah lahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah
+ * lahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah
+ * @param y this does something
  */
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn

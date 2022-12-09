@@ -7,6 +7,12 @@ import type {
     ExportData,
     PackageExtractionData
 } from "./extractApi.js"
+import type { TsTagData } from "./tsDocTransforms.js"
+import {
+    formatTagData,
+    packTsDocTags,
+    transformLinkTagToURL
+} from "./tsDocTransforms.js"
 
 export const writeApi = (
     apiConfig: DocGenApiConfig,
@@ -33,13 +39,19 @@ const writeEntryPoint = (
     for (const exported of entryPoint.exports) {
         const mdFilePath = join(entryPointOutDir, `${exported.name}.md`)
         transformLinkTagToURL(mdFilePath, exported, entryNames)
-        writeFile(mdFilePath, generateMarkdownForExport(exported))
+        const data = packTsDocTags(exported.tsDocs ?? [])
+        writeFile(mdFilePath, generateMarkdownForExport(exported, data))
     }
 }
 
-const generateMarkdownForExport = (exported: ExportData) => {
+const generateMarkdownForExport = (
+    exported: ExportData,
+    tagData: TsTagData
+) => {
     const md = new MarkdownSection(exported.name)
-    md.section("tags").tsBlock(JSON.stringify(exported.tsDocs, null, 4))
+    for (const [tag, arrayOfTagData] of Object.entries(tagData)) {
+        md.section(tag).text(formatTagData(arrayOfTagData, tag))
+    }
     md.section("text").tsBlock(exported.text)
     return md.toString()
 }
@@ -75,45 +87,5 @@ class MarkdownSection {
             (result: string, section) => result + section.toString(),
             ""
         )
-    }
-}
-
-type LinkDetails = [name: string, alias?: string]
-
-const trimWhitespace = (text: string) => text.trim()
-
-const extractLinkDetails = (regexMatch: RegExpMatchArray): LinkDetails => {
-    const BASE_NAME = 1
-    const ALIAS = 2
-    const BASE_NAME_NO_ALIAS = 3
-    return regexMatch[BASE_NAME_NO_ALIAS]
-        ? [trimWhitespace(regexMatch[BASE_NAME_NO_ALIAS])]
-        : [
-              trimWhitespace(regexMatch[BASE_NAME]),
-              trimWhitespace(regexMatch[ALIAS])
-          ]
-}
-
-const transformLinkTagToURL = (
-    path: string,
-    exportData: ExportData,
-    entryNames: string[]
-) => {
-    const extractApiNameRegex = /{@link(.+)\|(.+)?}|{@link(.+)}/
-    for (const data of exportData.tsDocs ?? []) {
-        const match = data.text.match(extractApiNameRegex)
-        if (match) {
-            const [basename, alias]: LinkDetails = extractLinkDetails(match)
-            if (entryNames.includes(basename)) {
-                data.text = data.text.replace(
-                    match[0],
-                    `[${alias ?? basename}](./${basename}.md)`
-                )
-            } else {
-                throw new Error(
-                    `${basename} doesn't appear to be part of the API`
-                )
-            }
-        }
     }
 }

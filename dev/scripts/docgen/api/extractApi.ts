@@ -142,21 +142,3 @@ const extractTsDocData = (
         }))
     }
 }
-
-type TsDocs = Record<string, string[]>
-const tsDocDataExtractor = (
-    declaration: ExportedDeclarations
-): TsDocs[] | undefined => {
-    const associatedTsDocTags = findAssociatedDocs(declaration)?.flatMap(
-        (tsDocs) => tsDocs.getTags()
-    )
-    const tsDocs: TsDocs = {}
-    const arrOfTagsToText
-    if (associatedTsDocTags) {
-        for (const docTag of associatedTsDocTags) {
-        }
-        return associatedTsDocTags.forEach((tagNode) =>
-            tsDocs[tagNode.getTagName()].push(tagNode.getText())
-        )
-    }
-}

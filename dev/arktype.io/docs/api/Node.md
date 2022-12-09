@@ -1,11 +1,5 @@
 # Node
 
-## tags
-
-```ts
-undefined
-```
-
 ## text
 
 ```ts

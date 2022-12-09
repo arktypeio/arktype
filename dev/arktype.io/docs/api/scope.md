@@ -1,11 +1,5 @@
 # scope
 
-## tags
-
-```ts
-;[]
-```
-
 ## text
 
 ```ts
