@@ -1,5 +1,5 @@
 import type { Dictionary } from "../utils/generics.js"
-import type { Resolution, Node } from "./node.js"
+import type { Node, Resolution } from "./node.js"
 
 export const morph = (name: MorphName, type: Node) => morphs[name](type)
 

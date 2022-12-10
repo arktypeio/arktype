@@ -3,8 +3,8 @@ import type { ConstraintsOf, Resolution } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
-import { ArkType } from "./type.js"
 import type { Config } from "./type.js"
+import { ArkType } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
@@ -12,7 +12,6 @@ import type {
     Dictionary,
     evaluate,
     mutable,
-    PartialDictionary,
     stringKeyOf
 } from "./utils/generics.js"
 import { isKeyOf } from "./utils/generics.js"

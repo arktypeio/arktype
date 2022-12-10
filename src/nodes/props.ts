@@ -2,8 +2,8 @@ import type { ScopeRoot } from "../scope.js"
 import type { Dictionary, keySet, mutable } from "../utils/generics.js"
 import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
-import type { ObjectTypeName } from "../utils/typeOf.js"
-import { hasObjectType } from "../utils/typeOf.js"
+import type { ObjectSubtypeName } from "../utils/typeOf.js"
+import { hasObjectSubtype } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
 import type { ConstraintContext, SetOperation } from "./intersection.js"
@@ -24,7 +24,7 @@ export type ObjectAttributes = {
     readonly props?: Dictionary<Resolution>
     readonly requiredKeys?: keySet
     readonly propTypes?: PropTypesAttribute
-    readonly subtype?: ObjectTypeName
+    readonly subtype?: ObjectSubtypeName
     readonly bounds?: Bounds
 }
 
@@ -51,7 +51,7 @@ export const checkObject = (
     attributes: ObjectAttributes,
     scope: ScopeRoot
 ) => {
-    if (hasObjectType(data, "Array") && isSimpleArray(attributes)) {
+    if (hasObjectSubtype(data, "Array") && isSimpleArray(attributes)) {
         return data.every((elementData) =>
             checkNode(elementData, attributes.propTypes.number, scope)
         )

@@ -3,26 +3,14 @@ import type {
     Dictionary,
     evaluate,
     isTopType,
-    List,
-    narrow,
-    Narrowable,
-    subtype
+    List
 } from "./generics.js"
 import { isKeyOf } from "./generics.js"
-import type { IntegerLiteral } from "./numericLiterals.js"
 
-export const hasType = <
-    data,
-    typeName extends TypeName,
-    subtype extends Subtypes[typeName]
->(
+export const hasType = <data, typeName extends TypeName>(
     data: data,
-    type: typeName,
-    subtype?: subtype
-): data is Extract<data, inferType<typeName, subtype>> =>
-    subtype === undefined
-        ? typeOf(data as any) === type
-        : subtypeOf(data as any) === `${type}/${subtype}`
+    type: typeName
+): data is Extract<data, Types[typeName]> => typeOf(data as any) === type
 
 export type Types = {
     bigint: bigint
@@ -41,37 +29,9 @@ export type PrimitiveTypeName = Exclude<TypeName, "object">
 
 export type Primitive = Types[PrimitiveTypeName]
 
-type BasePrimitiveSubtype = string | number | boolean
-
-export type Subtypes = subtype<
-    {
-        [k in TypeName]: BasePrimitiveSubtype
-    },
-    {
-        bigint: IntegerLiteral
-        boolean: boolean
-        number: number
-        object: ObjectTypeName
-        string: string
-        symbol: never
-        undefined: never
-        null: never
-    }
->
-
-const nonNarrowablePrimitives = {
-    undefined: true,
-    null: true,
-    symbol: true
-}
-
-type NonNarrowablePrimitive = Types[keyof typeof nonNarrowablePrimitives]
-
 export type typeOf<data> = isTopType<data> extends true
     ? TypeName
-    : baseTypeOf<data>
-
-type baseTypeOf<data> = data extends object
+    : data extends object
     ? "object"
     : data extends string
     ? "string"
@@ -102,46 +62,10 @@ export const typeOf = <data>(data: data) => {
     ) as typeOf<data>
 }
 
-export type subtypeOf<data> = isTopType<data> extends true
-    ? `${TypeName}/${string}`
-    : data extends NonNarrowablePrimitive
-    ? baseTypeOf<data>
-    : `${baseTypeOf<data>}/${data extends object
-          ? typeOfObject<data>
-          : data & Narrowable}`
-
-type shallowNarrow<t> = t extends object ? t : narrow<t>
-
-export const subtypeOf = <data>(data: shallowNarrow<data>) => {
-    const baseTypeName = typeOf(data)
-    return (
-        isKeyOf(baseTypeName, nonNarrowablePrimitives)
-            ? baseTypeName
-            : `${baseTypeName}/${
-                  baseTypeName === "object"
-                      ? typeOfObject(data as object)
-                      : `${data}`
-              }`
-    ) as subtypeOf<data>
-}
-
-type inferType<
-    typeName extends TypeName,
-    subtype extends Subtypes[typeName]
-> = Subtypes[typeName] extends subtype
-    ? Types[typeName]
-    : typeName extends "object"
-    ? ObjectTypes[subtype & ObjectTypeName]
-    : typeName extends "bigint"
-    ? subtype extends IntegerLiteral<infer value>
-        ? value
-        : never
-    : subtype
-
 // Built-in objects that can be returned from
 // Object.prototype.toString.call(<value>). Based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export type ObjectTypes = {
+export type ObjectSubtypes = {
     Array: readonly unknown[]
     Date: Date
     Error: Error
@@ -152,9 +76,9 @@ export type ObjectTypes = {
     Set: Set<unknown>
 }
 
-export type ObjectTypeName = keyof ObjectTypes
+export type ObjectSubtypeName = keyof ObjectSubtypes
 
-const objectTypes = {
+const objectSubtypes = {
     Array,
     Date,
     Error,
@@ -164,11 +88,11 @@ const objectTypes = {
     RegExp,
     Set
 } satisfies {
-    [k in ObjectTypeName]: classOf<ObjectTypes[k]>
+    [k in ObjectSubtypeName]: classOf<ObjectSubtypes[k]>
 }
 
 export type typeOfObject<data extends object> = object extends data
-    ? ObjectTypeName
+    ? ObjectSubtypeName
     : data extends List
     ? "Array"
     : data extends Date
@@ -188,14 +112,14 @@ export type typeOfObject<data extends object> = object extends data
 export const typeOfObject = <data extends object>(data: data) =>
     rawObjectTypeOf(data) as typeOfObject<data>
 
-const rawObjectTypeOf = (data: object): ObjectTypeName => {
+const rawObjectTypeOf = (data: object): ObjectSubtypeName => {
     if (Array.isArray(data)) {
         return "Array"
     }
     // The raw result will be something like [object Date]
     const prototypeName = Object.prototype.toString.call(data).slice(8, -1)
-    if (isKeyOf(prototypeName, objectTypes)) {
-        return data instanceof objectTypes[prototypeName]
+    if (isKeyOf(prototypeName, objectSubtypes)) {
+        return data instanceof objectSubtypes[prototypeName]
             ? prototypeName
             : // If the prototype has the same name as one of the builtin types but isn't an instance of it, fall back to Object
               "Object"
@@ -206,7 +130,8 @@ const rawObjectTypeOf = (data: object): ObjectTypeName => {
     return "Object"
 }
 
-export const hasObjectType = <subtype extends ObjectTypeName>(
-    data: object,
+export const hasObjectSubtype = <subtype extends ObjectSubtypeName>(
+    data: unknown,
     subtype: subtype
-): data is ObjectTypes[subtype] => rawObjectTypeOf(data) === subtype
+): data is ObjectSubtypes[subtype] =>
+    hasType(data, "object") && rawObjectTypeOf(data) === subtype

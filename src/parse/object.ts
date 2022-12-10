@@ -1,7 +1,11 @@
-import { resolutionIntersection } from "../nodes/intersection.js"
+import {
+    intersection,
+    nodeIntersection,
+    resolutionIntersection
+} from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
-import type { Resolution } from "../nodes/node.js"
-import { nodeUnion } from "../nodes/union.js"
+import type { Node, Resolution } from "../nodes/node.js"
+import { nodeUnion, union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
@@ -129,16 +133,17 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases>[]
     : never
 
-const parseTupleExpression = (def: TupleExpression, scope: ScopeRoot) => {
+const parseTupleExpression = (
+    def: TupleExpression,
+    scope: ScopeRoot
+): Resolution => {
     if (isKeyOf(def[1], Scanner.branchTokens)) {
         if (def[2] === undefined) {
             return throwParseError(buildMissingRightOperandMessage(def[1], ""))
         }
         const l = parseDefinition(def[0], scope)
         const r = parseDefinition(def[2], scope)
-        return def[1] === "&"
-            ? resolutionIntersection(l, r, scope)
-            : nodeUnion(l, r, scope)
+        return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
     }
     if (def[1] === "[]") {
         return morph("array", parseDefinition(def[0], scope))
