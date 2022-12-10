@@ -14,12 +14,20 @@ import type {
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
+import { coalesceBranches } from "./union.js"
 
-export type IntersectionReducer<t, context = ScopeRoot> = (
+export type SetOperation<t> = (
     l: t,
     r: t,
-    context: context
-) => t | empty | equivalence
+    context: SetOperationContext
+) => SetOperationResult<t>
+
+export type SetOperationContext = {
+    typeName: TypeName
+    scope: ScopeRoot
+}
+
+export type SetOperationResult<t> = t | empty | equivalence
 
 export const empty = Symbol("empty")
 
@@ -29,19 +37,19 @@ export const equivalence = Symbol("equivalent")
 
 export type equivalence = typeof equivalence
 
-export type KeyIntersectionReducerMap<root extends Dictionary, context> = {
-    [k in keyof root]-?: IntersectionReducer<root[k], context>
+export type KeyIntersectionReducerMap<root extends Dictionary> = {
+    [k in keyof root]-?: SetOperation<root[k]>
 }
 
-export type RootIntersectionReducer<root extends Dictionary, context> =
-    | KeyIntersectionReducerMap<Required<root>, context>
-    | IntersectionReducer<Required<root>[keyof root], context>
+export type RootIntersectionReducer<root extends Dictionary> =
+    | KeyIntersectionReducerMap<Required<root>>
+    | SetOperation<Required<root>[keyof root]>
 
 export const composeKeyedOperation =
-    <root extends Dictionary, context = ScopeRoot>(
+    <root extends Dictionary>(
         operator: "&" | "|",
-        reducer: RootIntersectionReducer<root, context>
-    ): IntersectionReducer<root, context> =>
+        reducer: RootIntersectionReducer<root>
+    ): SetOperation<root> =>
     (l, r, context) => {
         const result: mutable<root> = { ...l, ...r }
         let lImpliesR = true
@@ -50,17 +58,17 @@ export const composeKeyedOperation =
         for (k in result) {
             if (l[k] === undefined) {
                 if (operator === "|") {
+                    result[k] = r[k]
                     rImpliesL = false
                 } else {
-                    result[k] = r[k]
                     lImpliesR = false
                 }
             }
             if (r[k] === undefined) {
                 if (operator === "|") {
+                    result[k] = l[k]
                     lImpliesR = false
                 } else {
-                    result[k] = l[k]
                     rImpliesL = false
                 }
             }
@@ -106,49 +114,83 @@ const attributesIntersection = composeKeyedOperation<BaseAttributes>("&", {
     bounds: boundsIntersection
 })
 
-type IntersectionContext = {
-    typeName: TypeName
-    scope: ScopeRoot
-}
-
-const compareConstraints = (
+export const compareConstraints = (
     l: BaseConstraints,
     r: BaseConstraints,
-    context: IntersectionContext
-) => {
-    const lTypes = resolveConstraintBranches(l, context.typeName, context.scope)
-    const rTypes = resolveConstraintBranches(r, context.typeName, context.scope)
-    if (lTypes === true) {
-        return rTypes === true ? equivalence : rTypes
+    context: SetOperationContext
+): ConstraintComparison => {
+    const lBranches = resolveConstraintBranches(
+        l,
+        context.typeName,
+        context.scope
+    )
+    const rBranches = resolveConstraintBranches(
+        r,
+        context.typeName,
+        context.scope
+    )
+    if (lBranches === true) {
+        return rBranches === true ? equivalence : r
     }
-    if (rTypes === true) {
-        return lTypes
+    if (rBranches === true) {
+        return l
     }
-    return compareBranches(lTypes, rTypes, context)
+    const branchComparison = compareBranches(lBranches, rBranches, context)
+    if (
+        branchComparison.equivalentTypes.length === lBranches.length &&
+        branchComparison.equivalentTypes.length === rBranches.length
+    ) {
+        return equivalence
+    }
+    if (
+        branchComparison.lStrictSubtypes.length +
+            branchComparison.equivalentTypes.length ===
+        lBranches.length
+    ) {
+        return r
+    }
+    if (
+        branchComparison.rStrictSubtypes.length +
+            branchComparison.equivalentTypes.length ===
+        rBranches.length
+    ) {
+        return l
+    }
+    return branchComparison
 }
+
+type ConstraintComparison =
+    | SetOperationResult<BaseConstraints>
+    | BranchComparison
+
+export const isSubtypeComparison = (
+    comparison: ConstraintComparison
+): comparison is SetOperationResult<BaseConstraints> =>
+    (comparison as BranchComparison).lBranches === undefined
 
 type BranchComparison = {
-    subtypes: SubtypeMap
-    intersections: BaseKeyedConstraint[]
+    lBranches: BaseKeyedConstraint[]
+    rBranches: BaseKeyedConstraint[]
+    lStrictSubtypes: number[]
+    rStrictSubtypes: number[]
+    equivalentTypes: EquivalentIndexPair[]
+    distinctIntersections: BaseKeyedConstraint[]
 }
 
-type SubtypeMap = {
-    l: SubtypeEntry[]
-    r: SubtypeEntry[]
-    mutual: SubtypeEntry[]
-}
-
-type SubtypeEntry = [lIndex: number, rIndex: number]
+type EquivalentIndexPair = [lIndex: number, rIndex: number]
 
 const compareBranches = (
-    lBranches: BaseKeyedConstraint[],
     rBranches: BaseKeyedConstraint[],
-    context: IntersectionContext
+    lBranches: BaseKeyedConstraint[],
+    context: SetOperationContext
 ): BranchComparison => {
-    const subtypes: SubtypeMap = {
-        l: [],
-        r: [],
-        mutual: []
+    const comparison: BranchComparison = {
+        lBranches,
+        rBranches,
+        lStrictSubtypes: [],
+        rStrictSubtypes: [],
+        equivalentTypes: [],
+        distinctIntersections: []
     }
     const pairsByR = rBranches.map((constraint) => ({
         constraint,
@@ -162,24 +204,20 @@ const compareBranches = (
                     return null
                 }
                 const r = rData.constraint
-                const keyResult = keyedConstraintsIntersection(
-                    l,
-                    r,
-                    context.scope
-                )
+                const keyResult = keyedConstraintsIntersection(l, r, context)
                 switch (keyResult) {
                     case empty:
                         // doesn't tell us about any redundancies or add a distinct pair
                         return null
                     case l:
-                        subtypes.l.push([lIndex, rIndex])
+                        comparison.lStrictSubtypes.push(lIndex)
                         // If l is a subtype of the current r branch, intersections
                         // with the remaining branches of r won't lead to distinct
                         // branches, so we set a flag indicating we can skip them.
                         lImpliesR = true
                         return null
                     case r:
-                        subtypes.r.push([lIndex, rIndex])
+                        comparison.rStrictSubtypes.push(rIndex)
                         // If r is a subtype of the current l branch, it is removed
                         // from pairsByR because future intersections won't lead to
                         // distinct branches.
@@ -187,7 +225,7 @@ const compareBranches = (
                         return null
                     case equivalence:
                         // Combination of l and r subtype cases.
-                        subtypes.mutual.push([lIndex, rIndex])
+                        comparison.equivalentTypes.push([lIndex, rIndex])
                         lImpliesR = true
                         rData.distinct = null
                         return null
@@ -207,72 +245,53 @@ const compareBranches = (
             }
         }
     })
-    return {
-        subtypes,
-        intersections: pairsByR.flatMap((pairs) => pairs.distinct ?? [])
-    }
+    comparison.distinctIntersections = pairsByR.flatMap(
+        (pairs) => pairs.distinct ?? []
+    )
+    return comparison
 }
 
-const comparisonToIntersection = (
-    lBranches: BaseKeyedConstraint[],
-    rBranches: BaseKeyedConstraint[],
-    comparison: BranchComparison
-) => {
-    if (
-        comparison.subtypes.mutual.length === lBranches.length &&
-        comparison.subtypes.mutual.length === rBranches.length
-    ) {
-        return equivalence
+export const intersection = composeKeyedOperation<BaseNode>(
+    "&",
+    (l, r, context) => {
+        const comparison = compareConstraints(l, r, context)
+        if (isSubtypeComparison(comparison)) {
+            return comparison
+        }
+        const finalBranches = [
+            ...comparison.distinctIntersections,
+            ...comparison.equivalentTypes.map(
+                (indices) => comparison.lBranches[indices[0]]
+            ),
+            ...comparison.lStrictSubtypes.map(
+                (lIndex) => comparison.lBranches[lIndex]
+            ),
+            ...comparison.rStrictSubtypes.map(
+                (rIndex) => comparison.rBranches[rIndex]
+            )
+        ]
+        return coalesceBranches(context.typeName, finalBranches)
     }
-    if (
-        comparison.subtypes.l.length + comparison.subtypes.mutual.length ===
-        lBranches.length
-    ) {
-        return rBranches
-    }
-    if (
-        comparison.subtypes.r.length + comparison.subtypes.mutual.length ===
-        rBranches.length
-    ) {
-        return lBranches
-    }
-    const finalBranches = [
-        ...comparison.intersections,
-        ...comparison.subtypes.mutual.map((indices) => lBranches[indices[0]]),
-        ...comparison.subtypes.l.map((indices) => lBranches[indices[0]]),
-        ...comparison.subtypes.r.map((indices) => rBranches[indices[1]])
-    ]
-    if (finalBranches.length === 0) {
-        return empty
-    }
-    return finalBranches.length === 1 ? finalBranches[0] : finalBranches
-}
-
-export const intersection = composeKeyedOperation<
-    BaseNode,
-    IntersectionContext
->("&", (l, r, context) =>
-    comparisonToIntersection(l, r, compareConstraints(l, r, context))
 )
 
-const keyedConstraintsIntersection: IntersectionReducer<BaseKeyedConstraint> = (
+const keyedConstraintsIntersection: SetOperation<BaseKeyedConstraint> = (
     l,
     r,
-    scope
+    context
 ) =>
     hasKey(l, "value")
         ? hasKey(r, "value")
             ? l.value === r.value
                 ? equivalence
                 : empty
-            : checkAttributes(l.value, r, scope)
+            : checkAttributes(l.value, r, context)
             ? l
             : empty
         : hasKey(r, "value")
-        ? checkAttributes(r.value, l, scope)
+        ? checkAttributes(r.value, l, context)
             ? r
             : empty
-        : attributesIntersection(l, r, scope)
+        : attributesIntersection(l, r, context)
 
 const resolveConstraintBranches = (
     typeConstraints: BaseConstraints,

@@ -42,7 +42,7 @@ export type BaseAttributes = {
     readonly regex?: RegexAttribute
     readonly divisor?: number
     // object attributes
-    readonly props?: Dictionary<Node>
+    readonly props?: Dictionary<BaseNode>
     readonly requiredKeys?: keySet
     readonly propTypes?: PropTypesAttribute
     readonly subtype?: ObjectTypeName

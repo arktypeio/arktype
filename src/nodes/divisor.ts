@@ -1,10 +1,10 @@
-import type { IntersectionReducer } from "./intersection.js"
+import type { SetOperation } from "./intersection.js"
 import { equivalence } from "./intersection.js"
 
 export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0
 
-export const divisorIntersection: IntersectionReducer<number> = (
+export const divisorIntersection: SetOperation<number> = (
     l: number,
     r: number
 ) => (l === r ? equivalence : Math.abs((l * r) / greatestCommonDivisor(l, r)))

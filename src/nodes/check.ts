@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
-import { hasObjectType, hasType } from "../utils/typeOf.js"
-import type { BaseAttributes } from "./node.js"
+import type { SetOperationContext } from "./intersection.js"
+import type { BaseAttributes, Node } from "./node.js"
 
 export type AttributeChecker<data, k extends keyof BaseAttributes> = (
     data: data,
@@ -10,13 +10,11 @@ export type AttributeChecker<data, k extends keyof BaseAttributes> = (
 export const checkAttributes = (
     data: unknown,
     attributes: BaseAttributes,
-    scope: ScopeRoot
+    context: SetOperationContext
 ) => {
-    if (!hasType(data, attributes.type)) {
-        return false
-    }
-    if (attributes.children) {
-        return checkChildren(data as object, attributes.children, scope)
-    }
+    return true
+}
+
+export const checkNode = (data: unknown, node: Node, scope: ScopeRoot) => {
     return true
 }

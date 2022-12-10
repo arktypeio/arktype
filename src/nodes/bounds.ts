@@ -1,5 +1,5 @@
 import type { List } from "../utils/generics.js"
-import type { IntersectionReducer } from "./intersection.js"
+import type { SetOperation } from "./intersection.js"
 import { equivalence } from "./intersection.js"
 
 export type Bounds = {
@@ -12,7 +12,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection: IntersectionReducer<Bounds> = (l, r) => {
+export const boundsIntersection: SetOperation<Bounds> = (l, r) => {
     const minComparison = compareStrictness(l.min, r.min, "min")
     const maxComparison = compareStrictness(l.max, r.max, "max")
     if (minComparison === "l") {

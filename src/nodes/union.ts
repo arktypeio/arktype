@@ -1,42 +1,53 @@
-import { hasKey, listFrom } from "../utils/generics.js"
-import { composeKeyedOperation, intersection } from "./intersection.js"
-import type { Node } from "./node.js"
+import type { TypeName } from "../utils/typeOf.js"
+import {
+    compareConstraints,
+    composeKeyedOperation,
+    isSubtypeComparison
+} from "./intersection.js"
+import type { BaseConstraints, BaseKeyedConstraint, BaseNode } from "./node.js"
 
-export const union = composeKeyedOperation("|", (lNode, rNode, scope): Node => {
-    const lBranches = listFrom(lNode)
-    const rBranches = [...listFrom(rNode)]
-    const result = lBranches
-        .filter((l) => {
-            const booleanLiteral = getPossibleBooleanLiteral(l)
-            if (booleanLiteral !== undefined) {
-                for (let i = 0; i < rBranches.length; i++) {
-                    if (getPossibleBooleanLiteral(rBranches[i]) === {}) {
-                        rBranches[i] = "boolean"
-                        return false
-                    }
-                }
-                return true
-            }
-            return rBranches.every((r, i) => {
-                const intersectionResult = intersection(l, r, scope)
-                if (intersectionResult === l) {
-                    // l is a subtype of r (don't include it)
-                    return false
-                }
-                if (intersectionResult === r) {
-                    // r is a subtype of l (don't include it)
-                    rBranches.splice(i, 1)
-                }
-                return true
-            })
-        })
-        .concat(rBranches)
-    return result.length === 0
-        ? "never"
-        : result.length === 1
-        ? result[0]
-        : result
+export const union = composeKeyedOperation<BaseNode>("|", (l, r, context) => {
+    const comparison = compareConstraints(l, r, context)
+    if (isSubtypeComparison(comparison)) {
+        return comparison === l ? r : l
+    }
+    const finalBranches = [
+        ...comparison.lBranches.filter(
+            (_, lIndex) =>
+                !comparison.lStrictSubtypes.includes(lIndex) &&
+                !comparison.equivalentTypes.some(
+                    (indexPair) => indexPair[0] === lIndex
+                )
+        ),
+        ...comparison.rBranches.filter(
+            (_, rIndex) =>
+                !comparison.rStrictSubtypes.includes(rIndex) &&
+                !comparison.equivalentTypes.some(
+                    (indexPair) => indexPair[1] === rIndex
+                )
+        )
+    ]
+    return coalesceBranches(context.typeName, finalBranches)
 })
 
-const getPossibleBooleanLiteral = (node: Node) =>
-    hasKey(node.boolean, "value") ? node.boolean.value : undefined
+// TODO: Add aliases back if no subtype indices
+export const coalesceBranches = (
+    typeName: TypeName,
+    branches: BaseKeyedConstraint[]
+): BaseConstraints => {
+    switch (branches.length) {
+        case 0:
+            // TODO: type is never, anything else that can be done?
+            return []
+        case 1:
+            return branches[0]
+        default:
+            if (typeName === "boolean") {
+                // If a boolean has multiple branches, neither of which is a
+                // subtype of the other, it consists of two opposite literals
+                // and can be simplified to a non-literal boolean.
+                return true
+            }
+            return branches
+    }
+}

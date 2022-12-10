@@ -1,5 +1,5 @@
 import { getRegex } from "../utils/regexCache.js"
-import type { IntersectionReducer } from "./intersection.js"
+import type { SetOperation } from "./intersection.js"
 import { equivalence } from "./intersection.js"
 
 export type RegexAttribute = string | readonly string[]
@@ -12,10 +12,7 @@ export const checkRegex = (data: string, regex: RegexAttribute) =>
 const checkRegexExpression = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection: IntersectionReducer<RegexAttribute> = (
-    l,
-    r
-) => {
+export const regexIntersection: SetOperation<RegexAttribute> = (l, r) => {
     if (typeof l === "string") {
         if (typeof r === "string") {
             return l === r ? equivalence : [l, r]

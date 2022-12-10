@@ -6,13 +6,13 @@ import type { ObjectTypeName } from "../utils/typeOf.js"
 import { hasObjectType } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
-import type { IntersectionReducer } from "./intersection.js"
+import type { SetOperation } from "./intersection.js"
 import {
     composeKeyedOperation,
     equivalence,
     intersection
 } from "./intersection.js"
-import type { Node } from "./node.js"
+import type { BaseNode, Node } from "./node.js"
 
 type PropTypesAttribute = {
     readonly number?: Node
@@ -29,10 +29,12 @@ export type ObjectAttributes = {
 }
 
 // TODO: Never propagation
-export const propsIntersection =
-    composeKeyedOperation<Dictionary<Node>>(intersection)
+export const propsIntersection = composeKeyedOperation<Dictionary<BaseNode>>(
+    "&",
+    intersection
+)
 
-export const requiredKeysIntersection: IntersectionReducer<keySet> = (l, r) => {
+export const requiredKeysIntersection: SetOperation<keySet> = (l, r) => {
     const result = { ...l, ...r }
     const resultSize = keyCount(result)
     return resultSize === keyCount(l)
