@@ -1,11 +1,6 @@
-import {
-    intersection,
-    nodeIntersection,
-    resolutionIntersection
-} from "../nodes/intersection.js"
+import { resolutionRootOperation } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
-import type { Node, Resolution } from "../nodes/node.js"
-import { nodeUnion, union } from "../nodes/union.js"
+import type { Resolution } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
@@ -143,7 +138,7 @@ const parseTupleExpression = (
         }
         const l = parseDefinition(def[0], scope)
         const r = parseDefinition(def[2], scope)
-        return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
+        return resolutionRootOperation(def[1], l, r, scope)
     }
     if (def[1] === "[]") {
         return morph("array", parseDefinition(def[0], scope))
@@ -162,6 +157,4 @@ type TupleExpressionToken = keyof typeof tupleExpressionTokens
 export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
 
 const isTupleExpression = (def: List): def is TupleExpression =>
-    hasType(def, "object", "Array") &&
-    hasType(def[1], "string") &&
-    def[1] in tupleExpressionTokens
+    hasType(def[1], "string") && def[1] in tupleExpressionTokens

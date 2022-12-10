@@ -1,13 +1,9 @@
 import type {
     autocompleteString,
-    defined,
     Dictionary,
     evaluate,
-    isNarrowed,
     keySet,
-    listable,
-    stringKeyOf,
-    subtype
+    listable
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
@@ -21,43 +17,40 @@ export type Node<alias extends string = string> =
 
 export type BaseNode = Identifier | BaseResolution
 
-export type Identifier<alias extends string = string> =
-    isNarrowed<alias> extends true
-        ? Keyword | alias
-        : autocompleteString<Keyword>
+export type Identifier<alias extends string = string> = string extends alias
+    ? Keyword | alias
+    : autocompleteString<Keyword>
 
 export type BaseResolution = { readonly [k in TypeName]?: BaseConstraints }
 
-export type Resolution<alias extends string = string> = subtype<
-    BaseResolution,
-    {
-        readonly bigint?:
-            | true
-            | listable<Identifier<alias> | PrimitiveLiteral<IntegerLiteral>>
-        readonly boolean?: true | PrimitiveLiteral<boolean>
-        readonly null?: true
-        readonly number?:
-            | true
-            | listable<
-                  | Identifier<alias>
-                  | PrimitiveLiteral<number>
-                  | NumberAttributes
-              >
-        readonly object?: true | listable<Identifier<alias> | ObjectAttributes>
-        readonly string?:
-            | true
-            | listable<
-                  | Identifier<alias>
-                  | PrimitiveLiteral<string>
-                  | StringAttributes
-              >
-        readonly symbol?: true
-        readonly undefined?: true
-    }
+export type Resolution<alias extends string = string> = {
+    readonly bigint?:
+        | true
+        | listable<Identifier<alias> | PrimitiveLiteral<IntegerLiteral>>
+    readonly boolean?: true | PrimitiveLiteral<boolean>
+    readonly null?: true
+    readonly number?:
+        | true
+        | listable<
+              Identifier<alias> | PrimitiveLiteral<number> | NumberAttributes
+          >
+    readonly object?: true | listable<Identifier<alias> | ObjectAttributes>
+    readonly string?:
+        | true
+        | listable<
+              Identifier<alias> | PrimitiveLiteral<string> | StringAttributes
+          >
+    readonly symbol?: true
+    readonly undefined?: true
+}
+
+export type ConstraintsOf<typeName extends TypeName> = NonNullable<
+    Resolution[typeName]
 >
 
-export type ConstraintsOf<typeName extends TypeName> = defined<
-    Resolution[typeName]
+export type ResolvedConstraintsOf<typeName extends TypeName> = Exclude<
+    ConstraintsOf<typeName>,
+    listable<string>
 >
 
 export type BaseConstraints = true | listable<Identifier | BaseKeyedConstraint>

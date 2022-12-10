@@ -1,4 +1,3 @@
-import type { typeOf, Types } from "./typeOf.js"
 import { hasType } from "./typeOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
@@ -10,10 +9,6 @@ type narrowRecurse<t> = {
 type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
 
 export type Narrowable = string | boolean | number | bigint
-
-export type isNarrowed<t extends Narrowable> = Types[typeOf<t>] extends t
-    ? false
-    : true
 
 /**
  * Note: Similarly to Narrow, trying to Evaluate 'unknown'

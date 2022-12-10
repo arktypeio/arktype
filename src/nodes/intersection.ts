@@ -315,6 +315,18 @@ export const finalizeNodeOperation = (
 ): Node =>
     result === empty ? keywords.never : result === equivalence ? l : result
 
+export const resolutionRootOperation = (
+    operator: "&" | "|",
+    l: Resolution,
+    r: Resolution,
+    scope: ScopeRoot
+) =>
+    // since l and r are typed as Resolution, the result can be safely cast from
+    // BaseResolution to Resolution for external consumption
+    (operator === "&"
+        ? resolutionIntersection(l, r, scope)
+        : resolutionUnion(l, r, scope)) as Resolution
+
 const keyedConstraintsIntersection: ContextualSetOperation<
     BaseKeyedConstraint,
     ConstraintContext
@@ -346,7 +358,10 @@ const resolveConstraintBranches = (
         (branch): branch is string => typeof branch === "string"
     )
     while (unresolved.length) {
-        const typeResolution = scope.resolveToType(unresolved.pop()!, typeName)
+        const typeResolution = scope.resolveConstraints(
+            unresolved.pop()!,
+            typeName
+        )
         if (typeResolution === true) {
             return true
         }

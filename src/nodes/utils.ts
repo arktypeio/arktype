@@ -1,16 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
-import type { listable } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
-import { typeOf } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
-import type {
-    BaseNode,
-    BaseResolution,
-    ConstraintsOf,
-    Node,
-    Resolution
-} from "./node.js"
+import type { BaseNode, BaseResolution, ConstraintsOf, Node } from "./node.js"
 
 export const resolveIfIdentifier = (
     node: BaseNode,
