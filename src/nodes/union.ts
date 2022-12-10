@@ -10,10 +10,7 @@ export const union = composeKeyedOperation("|", (lNode, rNode, scope): Node => {
             const booleanLiteral = getPossibleBooleanLiteral(l)
             if (booleanLiteral !== undefined) {
                 for (let i = 0; i < rBranches.length; i++) {
-                    if (
-                        getPossibleBooleanLiteral(rBranches[i]) ===
-                        
-                    ) {
+                    if (getPossibleBooleanLiteral(rBranches[i]) === {}) {
                         rBranches[i] = "boolean"
                         return false
                     }
