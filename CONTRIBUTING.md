@@ -34,8 +34,8 @@ npm i -g pnpm
 then:
 
 ```sh
-pnpm i # install package.json dependencies across all packages
-pnpm build # builds all packages
+pnpm i # install package.json dependencies
+pnpm build # builds the package
 ```
 
 5. Create a new topic branch:
@@ -50,14 +50,10 @@ git checkout -b my-topic-branch
 pnpm prChecks
 ```
 
-You can also run any of the commands individually:
+You can also run any of these commands individually:
 
-```sh
-pnpm install
-pnpm build
-pnpm lint
-pnpm test
-pnpm buildDocs
+```sh @lineFrom:package.json:scripts/prChecks =>{?}
+"pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm buildDocs"
 ```
 
 All of these command will run as part of our CI process and must succeed in order for us to accept your Pull Request.
@@ -71,10 +67,6 @@ git push -u
 8. Go to [the repository](https://github.com/arktypeio/arktype) and make a Pull Request.
 
 The core team is monitoring for Pull Requests. We will review your Pull Request and either merge it, request changes to it, or close it with an explanation.
-
-## Packages
-
-We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages.
 
 ## Project
 
