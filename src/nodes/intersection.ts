@@ -106,126 +106,170 @@ const attributesIntersection = composeKeyedOperation<BaseAttributes>("&", {
     bounds: boundsIntersection
 })
 
-export const intersection = composeKeyedOperation<
-    BaseNode,
-    {
-        typeName: TypeName
-        scope: ScopeRoot
+type IntersectionContext = {
+    typeName: TypeName
+    scope: ScopeRoot
+}
+
+const constraintsIntersection = (
+    l: BaseConstraints,
+    r: BaseConstraints,
+    context: IntersectionContext
+) => {
+    const lTypes = resolveConstraintBranches(l, context.typeName, context.scope)
+    const rTypes = resolveConstraintBranches(r, context.typeName, context.scope)
+    if (lTypes === true) {
+        return rTypes === true ? equivalence : rTypes
     }
->(
-    "&",
-    (lConstraints, rConstraints, context) => {
-        const lTypes = resolveConstraints(
-            lConstraints,
-            context.typeName,
-            context.scope
-        )
-        const rTypes = resolveConstraints(
-            rConstraints,
-            context.typeName,
-            context.scope
-        )
-        if (lTypes === true) {
-            return rTypes === true ? equivalence : rTypes
-        }
-        if (rTypes === true) {
-            return lTypes
-        }
-        const equivalentTypes: BaseKeyedConstraint[] = []
-        const lStrictSubtypes: BaseKeyedConstraint[] = []
-        const rStrictSubtypes: BaseKeyedConstraint[] = []
-        const pairData = rTypes.map((constraint) => ({
-            constraint,
-            pairs: [] as BaseKeyedConstraint[] | null
-        }))
-        lTypes.forEach((l) => {
-            let lImpliesR = false
-            const distinctPairs = pairData.map(
-                (rData): BaseKeyedConstraint | null => {
-                    if (lImpliesR || !rData.pairs) {
-                        return null
-                    }
-                    const r = rData.constraint
-                    const result = hasKey(l, "value")
-                        ? hasKey(r, "value")
-                            ? l.value === r.value
-                                ? equivalence
-                                : empty
-                            : checkAttributes(l.value, r, context.scope)
-                            ? l
-                            : empty
-                        : hasKey(r, "value")
-                        ? checkAttributes(r.value, l, context.scope)
-                            ? r
-                            : empty
-                        : attributesIntersection(l, r, context.scope)
-                    switch (result) {
-                        case empty:
-                            // doesn't tell us about any redundancies or add a distinct pair
-                            return null
-                        case l:
-                            lStrictSubtypes.push(l)
-                            // If l is a subtype of the current r branch, intersections
-                            // with the remaining branches of r won't lead to distinct
-                            // branches, so we set a flag indicating we can skip them.
-                            lImpliesR = true
-                            return null
-                        case r:
-                            rStrictSubtypes.push(r)
-                            // If r is a subtype of the current l branch, it is removed
-                            // from pairsByR because future intersections won't lead to
-                            // distinct branches.
-                            rData.pairs = null
-                            return null
-                        case equivalence:
-                            // Combination of l and r subtype cases.
-                            equivalentTypes.push(l)
-                            lImpliesR = true
-                            rData.pairs = null
-                            return null
-                        default:
-                            // Neither branch is a subtype of the other, return
-                            // the result of the intersection as a candidate
-                            // branch for the final union
-                            return result
-                    }
+    if (rTypes === true) {
+        return lTypes
+    }
+    return compareBranches(lTypes, rTypes, context)
+}
+
+const compareBranches = (
+    lBranches: BaseKeyedConstraint[],
+    rBranches: BaseKeyedConstraint[],
+    context: IntersectionContext
+) => {
+    const result = initializeBranchesIntersectionState(rBranches)
+    lBranches.forEach((l) => {
+        let lImpliesR = false
+        const distinct = result.pairs.map(
+            (rData): BaseKeyedConstraint | null => {
+                if (lImpliesR || !rData.distinct) {
+                    return null
                 }
-            )
-            if (!lImpliesR) {
-                for (let i = 0; i < pairData.length; i++) {
-                    if (distinctPairs[i]) {
-                        pairData[i].pairs?.push(distinctPairs[i]!)
-                    }
+                const r = rData.constraint
+                const keyResult = keyedConstraintsIntersection(
+                    l,
+                    r,
+                    context.scope
+                )
+                switch (keyResult) {
+                    case empty:
+                        // doesn't tell us about any redundancies or add a distinct pair
+                        return null
+                    case l:
+                        result.lStrictSubtypes.push(l)
+                        // If l is a subtype of the current r branch, intersections
+                        // with the remaining branches of r won't lead to distinct
+                        // branches, so we set a flag indicating we can skip them.
+                        lImpliesR = true
+                        return null
+                    case r:
+                        result.rStrictSubtypes.push(r)
+                        // If r is a subtype of the current l branch, it is removed
+                        // from pairsByR because future intersections won't lead to
+                        // distinct branches.
+                        rData.distinct = null
+                        return null
+                    case equivalence:
+                        // Combination of l and r subtype cases.
+                        result.equivalentTypes.push(l)
+                        lImpliesR = true
+                        rData.distinct = null
+                        return null
+                    default:
+                        // Neither branch is a subtype of the other, return
+                        // the result of the intersection as a candidate
+                        // branch for the final union
+                        return keyResult
                 }
             }
-        })
-        if (
-            equivalentTypes.length === lTypes.length &&
-            equivalentTypes.length === rTypes.length
-        ) {
-            return equivalence
+        )
+        if (!lImpliesR) {
+            for (let i = 0; i < result.pairs.length; i++) {
+                if (distinct[i]) {
+                    result.pairs[i].distinct?.push(distinct[i]!)
+                }
+            }
         }
-        if (lStrictSubtypes.length + equivalentTypes.length === lTypes.length) {
-            return lConstraints
-        }
-        if (rStrictSubtypes.length + equivalentTypes.length === rTypes.length) {
-            return rConstraints
-        }
-        const finalBranches = [
-            ...pairData.flatMap((rData) => rData.pairs ?? []),
-            ...equivalentTypes,
-            ...lStrictSubtypes,
-            ...rStrictSubtypes
-        ]
-        if (finalBranches.length === 0) {
-            return empty
-        }
-        return finalBranches.length === 1 ? finalBranches[0] : finalBranches
-    },
-    { branching: true }
-)
+    })
+    return compileIntersectedBranches(lBranches, rBranches, result)
+}
 
-const resolveConstraints = (
+type BranchComparison = {
+    equivalentTypes: BaseKeyedConstraint[]
+    lStrictSubtypes: BaseKeyedConstraint[]
+    rStrictSubtypes: BaseKeyedConstraint[]
+    pairs: {
+        constraint: BaseKeyedConstraint
+        distinct: BaseKeyedConstraint[] | null
+    }[]
+}
+
+const initializeBranchesIntersectionState = (
+    rBranches: BaseKeyedConstraint[]
+): BranchComparison => ({
+    equivalentTypes: [],
+    lStrictSubtypes: [],
+    rStrictSubtypes: [],
+    pairs: rBranches.map((constraint) => ({
+        constraint,
+        distinct: []
+    }))
+})
+
+const compileIntersectedBranches = (
+    lBranches: BaseKeyedConstraint[],
+    rBranches: BaseKeyedConstraint[],
+    {
+        equivalentTypes,
+        lStrictSubtypes,
+        rStrictSubtypes,
+        pairs: pairData
+    }: BranchComparison
+) => {
+    if (
+        equivalentTypes.length === lBranches.length &&
+        equivalentTypes.length === rBranches.length
+    ) {
+        return equivalence
+    }
+    if (lStrictSubtypes.length + equivalentTypes.length === lBranches.length) {
+        return rBranches
+    }
+    if (rStrictSubtypes.length + equivalentTypes.length === rBranches.length) {
+        return lBranches
+    }
+    const finalBranches = [
+        ...pairData.flatMap((rData) => rData.distinct ?? []),
+        ...equivalentTypes,
+        ...lStrictSubtypes,
+        ...rStrictSubtypes
+    ]
+    if (finalBranches.length === 0) {
+        return empty
+    }
+    return finalBranches.length === 1 ? finalBranches[0] : finalBranches
+}
+
+export const intersection = composeKeyedOperation<
+    BaseNode,
+    IntersectionContext
+>("&", constraintsIntersection)
+
+const keyedConstraintsIntersection: IntersectionReducer<BaseKeyedConstraint> = (
+    l,
+    r,
+    scope
+) =>
+    hasKey(l, "value")
+        ? hasKey(r, "value")
+            ? l.value === r.value
+                ? equivalence
+                : empty
+            : checkAttributes(l.value, r, scope)
+            ? l
+            : empty
+        : hasKey(r, "value")
+        ? checkAttributes(r.value, l, scope)
+            ? r
+            : empty
+        : attributesIntersection(l, r, scope)
+
+const resolveConstraintBranches = (
     typeConstraints: BaseConstraints,
     typeName: TypeName,
     scope: ScopeRoot

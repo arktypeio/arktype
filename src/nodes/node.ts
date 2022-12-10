@@ -33,6 +33,8 @@ export type ConstraintsOf<typeName extends TypeName> = defined<Node[typeName]>
 
 export type BaseConstraints = true | listable<string | BaseKeyedConstraint>
 
+export type ResolvedBaseConstraints = true | listable<BaseKeyedConstraint>
+
 export type BaseKeyedConstraint = BaseAttributes | PrimitiveLiteral
 
 export type BaseAttributes = {
