@@ -6,11 +6,11 @@ import type { ObjectTypeName } from "../utils/typeOf.js"
 import { hasObjectType } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
-import type { SetOperation } from "./intersection.js"
+import type { ConstraintContext, SetOperation } from "./intersection.js"
 import {
     composeKeyedOperation,
     equivalence,
-    intersection
+    nodeIntersection
 } from "./intersection.js"
 import type { BaseNode, Node } from "./node.js"
 
@@ -29,10 +29,10 @@ export type ObjectAttributes = {
 }
 
 // TODO: Never propagation
-export const propsIntersection = composeKeyedOperation<Dictionary<BaseNode>>(
-    "&",
-    intersection
-)
+export const propsIntersection = composeKeyedOperation<
+    Dictionary<BaseNode>,
+    ConstraintContext
+>("&", (propKey, l, r, context) => nodeIntersection(l, r, context.scope))
 
 export const requiredKeysIntersection: SetOperation<keySet> = (l, r) => {
     const result = { ...l, ...r }

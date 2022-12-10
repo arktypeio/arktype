@@ -1,7 +1,7 @@
-import { intersection } from "../nodes/intersection.js"
+import { nodeIntersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
 import type { Node } from "../nodes/node.js"
-import { union } from "../nodes/union.js"
+import { nodeUnion } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
@@ -136,7 +136,9 @@ const parseTupleExpression = (def: TupleExpression, scope: ScopeRoot) => {
         }
         const l = parseDefinition(def[0], scope)
         const r = parseDefinition(def[2], scope)
-        return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
+        return def[1] === "&"
+            ? nodeIntersection(l, r, scope)
+            : nodeUnion(l, r, scope)
     }
     if (def[1] === "[]") {
         return morph("array", parseDefinition(def[0], scope))

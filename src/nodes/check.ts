@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { SetOperationContext } from "./intersection.js"
+import type { ConstraintContext } from "./intersection.js"
 import type { BaseAttributes, Node } from "./node.js"
 
 export type AttributeChecker<data, k extends keyof BaseAttributes> = (
@@ -10,7 +10,7 @@ export type AttributeChecker<data, k extends keyof BaseAttributes> = (
 export const checkAttributes = (
     data: unknown,
     attributes: BaseAttributes,
-    context: SetOperationContext
+    context: ConstraintContext
 ) => {
     return true
 }

@@ -6,26 +6,25 @@ import type { TypeName } from "../utils/typeOf.js"
 import { boundsIntersection } from "./bounds.js"
 import { checkAttributes } from "./check.js"
 import { divisorIntersection } from "./divisor.js"
+import { keywords } from "./names.js"
 import type {
     BaseAttributes,
     BaseConstraints,
     BaseKeyedConstraint,
-    BaseNode
+    BaseNode,
+    Node
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
 import { coalesceBranches } from "./union.js"
 
-export type SetOperation<t> = (
+export type SetOperation<t> = (l: t, r: t) => SetOperationResult<t>
+
+export type ContextualSetOperation<t, context> = (
     l: t,
     r: t,
-    context: SetOperationContext
+    context: context
 ) => SetOperationResult<t>
-
-export type SetOperationContext = {
-    typeName: TypeName
-    scope: ScopeRoot
-}
 
 export type SetOperationResult<t> = t | empty | equivalence
 
@@ -37,19 +36,28 @@ export const equivalence = Symbol("equivalent")
 
 export type equivalence = typeof equivalence
 
-export type KeyIntersectionReducerMap<root extends Dictionary> = {
-    [k in keyof root]-?: SetOperation<root[k]>
+export type KeyIntersectionReducerMap<root extends Dictionary, context> = {
+    [k in keyof root]-?: ContextualSetOperation<root[k], context>
 }
 
-export type RootIntersectionReducer<root extends Dictionary> =
-    | KeyIntersectionReducerMap<Required<root>>
-    | SetOperation<Required<root>[keyof root]>
+type definedPropOf<root extends Dictionary> = Required<root>[keyof root]
+
+export type KeyedContextualSetOperation<root extends Dictionary, context> = (
+    key: keyof root,
+    l: definedPropOf<root>,
+    r: definedPropOf<root>,
+    context: context
+) => SetOperationResult<definedPropOf<root>>
+
+export type RootIntersectionReducer<root extends Dictionary, context> =
+    | KeyIntersectionReducerMap<Required<root>, context>
+    | KeyedContextualSetOperation<root, context>
 
 export const composeKeyedOperation =
-    <root extends Dictionary>(
+    <root extends Dictionary, context>(
         operator: "&" | "|",
-        reducer: RootIntersectionReducer<root>
-    ): SetOperation<root> =>
+        reducer: RootIntersectionReducer<root, context>
+    ): ContextualSetOperation<root, context> =>
     (l, r, context) => {
         const result: mutable<root> = { ...l, ...r }
         let lImpliesR = true
@@ -74,7 +82,7 @@ export const composeKeyedOperation =
             }
             const keyResult =
                 typeof reducer === "function"
-                    ? reducer(l[k], r[k], context)
+                    ? reducer(k, l[k], r[k], context)
                     : reducer[k](l[k], r[k], context)
             if (keyResult === equivalence) {
                 result[k] = l[k]
@@ -104,7 +112,10 @@ export const composeKeyedOperation =
 export const disjointIntersection = (l: string, r: string) =>
     l === r ? equivalence : empty
 
-const attributesIntersection = composeKeyedOperation<BaseAttributes>("&", {
+const attributesIntersection = composeKeyedOperation<
+    BaseAttributes,
+    ConstraintContext
+>("&", {
     subtype: disjointIntersection,
     divisor: divisorIntersection,
     regex: regexIntersection,
@@ -114,10 +125,15 @@ const attributesIntersection = composeKeyedOperation<BaseAttributes>("&", {
     bounds: boundsIntersection
 })
 
+export type ConstraintContext = {
+    typeName: TypeName
+    scope: ScopeRoot
+}
+
 export const compareConstraints = (
     l: BaseConstraints,
     r: BaseConstraints,
-    context: SetOperationContext
+    context: ConstraintContext
 ): ConstraintComparison => {
     const lBranches = resolveConstraintBranches(
         l,
@@ -180,9 +196,9 @@ type BranchComparison = {
 type EquivalentIndexPair = [lIndex: number, rIndex: number]
 
 const compareBranches = (
-    rBranches: BaseKeyedConstraint[],
     lBranches: BaseKeyedConstraint[],
-    context: SetOperationContext
+    rBranches: BaseKeyedConstraint[],
+    context: ConstraintContext
 ): BranchComparison => {
     const comparison: BranchComparison = {
         lBranches,
@@ -251,10 +267,10 @@ const compareBranches = (
     return comparison
 }
 
-export const intersection = composeKeyedOperation<BaseNode>(
+export const nodeIntersection = composeKeyedOperation<BaseNode, ScopeRoot>(
     "&",
-    (l, r, context) => {
-        const comparison = compareConstraints(l, r, context)
+    (typeName, l, r, scope) => {
+        const comparison = compareConstraints(l, r, { typeName, scope })
         if (isSubtypeComparison(comparison)) {
             return comparison
         }
@@ -270,15 +286,23 @@ export const intersection = composeKeyedOperation<BaseNode>(
                 (rIndex) => comparison.rBranches[rIndex]
             )
         ]
-        return coalesceBranches(context.typeName, finalBranches)
+        return coalesceBranches(typeName, finalBranches)
     }
 )
 
-const keyedConstraintsIntersection: SetOperation<BaseKeyedConstraint> = (
-    l,
-    r,
-    context
-) =>
+export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node =>
+    finalizeNodeOperation(l, nodeIntersection(l, r, scope))
+
+export const finalizeNodeOperation = (
+    l: Node,
+    result: SetOperationResult<BaseNode>
+): Node =>
+    result === empty ? keywords.never : result === equivalence ? l : result
+
+const keyedConstraintsIntersection: ContextualSetOperation<
+    BaseKeyedConstraint,
+    ConstraintContext
+> = (l, r, context) =>
     hasKey(l, "value")
         ? hasKey(r, "value")
             ? l.value === r.value

@@ -1,8 +1,8 @@
-import { intersection } from "../../nodes/intersection.js"
+import { nodeIntersection } from "../../nodes/intersection.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { Node } from "../../nodes/node.js"
-import { union } from "../../nodes/union.js"
+import { nodeUnion } from "../../nodes/union.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
@@ -83,7 +83,7 @@ export class DynamicState {
     }
 
     intersect(node: Node) {
-        this.root = intersection(this.ejectRoot(), node, this.scope)
+        this.root = nodeIntersection(this.ejectRoot(), node, this.scope)
     }
 
     private ejectRoot() {
@@ -132,7 +132,11 @@ export class DynamicState {
             this.setRoot(this.branches["|"])
         } else if (this.branches["&"]) {
             this.setRoot(
-                intersection(this.branches["&"], this.ejectRoot(), this.scope)
+                nodeIntersection(
+                    this.branches["&"],
+                    this.ejectRoot(),
+                    this.scope
+                )
             )
         }
     }
@@ -151,11 +155,11 @@ export class DynamicState {
     pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
         this.branches["&"] = this.branches["&"]
-            ? intersection(this.branches["&"], this.ejectRoot(), this.scope)
+            ? nodeIntersection(this.branches["&"], this.ejectRoot(), this.scope)
             : this.ejectRoot()
         if (token === "|") {
             this.branches["|"] = this.branches["|"]
-                ? union(this.branches["|"], this.branches["&"], this.scope)
+                ? nodeUnion(this.branches["|"], this.branches["&"], this.scope)
                 : this.branches["&"]
             delete this.branches["&"]
         }

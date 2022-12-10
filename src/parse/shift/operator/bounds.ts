@@ -81,11 +81,11 @@ export const parseRightBound = (
     } else {
         bounds = deserializeBound(comparator, limit)
     }
-    s.intersect([
-        { type: "number", bounds },
-        { type: "string", bounds },
-        { type: "object", subtype: "Array", bounds }
-    ])
+    s.intersect({
+        number: { bounds },
+        string: { bounds },
+        object: { subtype: "Array", bounds }
+    })
 }
 
 export type parseRightBound<
