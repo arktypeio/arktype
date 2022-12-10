@@ -1,5 +1,5 @@
 import { keywords } from "./nodes/names.js"
-import type { ConstraintsOf, Node } from "./nodes/node.js"
+import type { ConstraintsOf, Resolution } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -12,6 +12,7 @@ import type {
     Dictionary,
     evaluate,
     mutable,
+    PartialDictionary,
     stringKeyOf
 } from "./utils/generics.js"
 import { isKeyOf } from "./utils/generics.js"
@@ -66,9 +67,9 @@ type inferredScopeToArktypes<inferred> = {
 }
 
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
-    attributes = {} as { [k in keyof inferred]: Node }
+    attributes = {} as { [k in keyof inferred]: Resolution }
     // TODO: Add intersection cache
-    private cache: mutable<Dictionary<Node>> = {}
+    private cache: mutable<Dictionary<Resolution>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -87,7 +88,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             : false
     }
 
-    resolve(name: string): Node {
+    resolve(name: string): Resolution {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }
@@ -113,7 +114,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         typeName: typeName,
         seen: string[] = []
     ) {
-        let resolution = this.resolve(name)[typeName] as Node[typeName]
+        let resolution = this.resolve(name)[typeName] as Resolution[typeName]
         if (resolution === undefined) {
             return throwInternalError(
                 `Expected '${name}' to have a definition including '${typeName}'`
@@ -133,7 +134,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return resolution as ConstraintsOf<typeName>
     }
 
-    memoizedParse(def: string): Node {
+    memoizedParse(def: string): Resolution {
         if (def in this.cache) {
             return this.cache[def]
         }

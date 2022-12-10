@@ -12,16 +12,16 @@ import {
     equivalence,
     nodeIntersection
 } from "./intersection.js"
-import type { BaseNode, Node } from "./node.js"
+import type { BaseNode, Resolution } from "./node.js"
 
 type PropTypesAttribute = {
-    readonly number?: Node
-    readonly string?: Node
+    readonly number?: Resolution
+    readonly string?: Resolution
 }
 
 export type ObjectAttributes = {
     readonly type: "object"
-    readonly props?: Dictionary<Node>
+    readonly props?: Dictionary<Resolution>
     readonly requiredKeys?: keySet
     readonly propTypes?: PropTypesAttribute
     readonly subtype?: ObjectTypeName
@@ -87,7 +87,7 @@ export const checkObject = (
 
 const isSimpleArray = (
     attributes: ObjectAttributes
-): attributes is { type: "object"; propTypes: { number: Node } } =>
+): attributes is { type: "object"; propTypes: { number: Resolution } } =>
     !attributes.props &&
     attributes.propTypes?.number !== undefined &&
     Object.keys(attributes.propTypes).length === 1

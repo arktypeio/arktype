@@ -1,12 +1,12 @@
-import { intersection, nodeIntersection } from "../../nodes/intersection.js"
+import { intersection } from "../../nodes/intersection.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import type { Type } from "../../nodes/node.js"
-import { nodeUnion } from "../../nodes/union.js"
+import type { Node } from "../../nodes/node.js"
+import { union } from "../../nodes/union.js"
+import { nodeHasOnlyType } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
-import { isKeyOf } from "../../utils/generics.js"
-import { hasType } from "../../utils/typeOf.js"
+import { hasKey, isKeyOf } from "../../utils/generics.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -19,13 +19,13 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    and?: Type
-    or?: Type
+    intersection?: Node
+    union?: Node
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: Type | undefined
+    private root: Node | undefined
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
@@ -43,11 +43,10 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         if (
-            hasType(this.root, "object", "Object") &&
-            this.root.type === "number" &&
-            this.root.subtype !== undefined
+            nodeHasOnlyType(this.root!, "number", this.scope) &&
+            hasKey(this.root.number, "value")
         ) {
-            const limit = this.root.subtype
+            const limit = this.root.number.value
             this.root = undefined
             return limit
         }
@@ -73,7 +72,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(node: Type) {
+    setRoot(node: Node) {
         this.assertUnsetRoot()
         this.root = node
     }
@@ -82,7 +81,7 @@ export class DynamicState {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersect(node: Type) {
+    intersect(node: Node) {
         this.root = intersection(this.ejectRoot(), node, this.scope)
     }
 
@@ -127,12 +126,16 @@ export class DynamicState {
 
     finalizeBranches() {
         this.assertRangeUnset()
-        if (this.branches.or) {
+        if (this.branches.union) {
             this.pushRootToBranch("|")
-            this.setRoot(this.branches.or)
-        } else if (this.branches.and) {
+            this.setRoot(this.branches.union)
+        } else if (this.branches.intersection) {
             this.setRoot(
-                intersection(this.branches.and, this.ejectRoot(), this.scope)
+                intersection(
+                    this.branches.intersection,
+                    this.ejectRoot(),
+                    this.scope
+                )
             )
         }
     }
@@ -150,14 +153,22 @@ export class DynamicState {
 
     pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
-        this.branches.and = this.branches.and
-            ? nodeIntersection(this.branches.and, this.ejectRoot(), this.scope)
+        this.branches.intersection = this.branches.intersection
+            ? intersection(
+                  this.branches.intersection,
+                  this.ejectRoot(),
+                  this.scope
+              )
             : this.ejectRoot()
         if (token === "|") {
-            this.branches.or = this.branches.or
-                ? nodeUnion(this.branches.or, this.branches.and, this.scope)
-                : this.branches.and
-            delete this.branches.and
+            this.branches.union = this.branches.union
+                ? union(
+                      this.branches.union,
+                      this.branches.intersection,
+                      this.scope
+                  )
+                : this.branches.intersection
+            delete this.branches.intersection
         }
     }
 
@@ -178,9 +189,9 @@ export class DynamicState {
     }
 
     previousOperator() {
-        return this.branches.range?.[1] ?? this.branches.and
+        return this.branches.range?.[1] ?? this.branches.intersection
             ? "&"
-            : this.branches.or
+            : this.branches.union
             ? "|"
             : undefined
     }

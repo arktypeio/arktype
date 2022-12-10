@@ -1,12 +1,12 @@
 import type { Dictionary } from "../utils/generics.js"
-import type { Node, Type } from "./node.js"
+import type { Resolution, Node } from "./node.js"
 
-export const morph = (name: MorphName, type: Type) => morphs[name](type)
+export const morph = (name: MorphName, type: Node) => morphs[name](type)
 
 export type MorphName = keyof typeof morphs
 
 const morphs = {
-    array: (type): Node => ({
+    array: (type): Resolution => ({
         object: {
             subtype: "Array",
             propTypes: {
@@ -14,4 +14,4 @@ const morphs = {
             }
         }
     })
-} satisfies Dictionary<(input: Type) => Type>
+} satisfies Dictionary<(input: Node) => Node>

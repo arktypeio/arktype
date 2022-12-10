@@ -1,6 +1,6 @@
 import { deepFreeze } from "../utils/freeze.js"
 import type { TypeName } from "../utils/typeOf.js"
-import type { Node } from "./node.js"
+import type { Resolution } from "./node.js"
 
 const always: Record<TypeName, true> = {
     bigint: true,
@@ -39,7 +39,7 @@ export const keywords = deepFreeze({
     uppercase: { string: { regex: "^[A-Z]*$" } },
     // Numeric
     integer: { number: { divisor: 1 } }
-} as const satisfies Record<Keyword, Node>)
+} as const satisfies Record<Keyword, Resolution>)
 
 export type Keyword = keyof Keywords
 

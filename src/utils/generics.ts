@@ -1,3 +1,4 @@
+import type { typeOf, Types } from "./typeOf.js"
 import { hasType } from "./typeOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
@@ -9,6 +10,10 @@ type narrowRecurse<t> = {
 type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
 
 export type Narrowable = string | boolean | number | bigint
+
+export type isNarrowed<t extends Narrowable> = Types[typeOf<t>] extends t
+    ? false
+    : true
 
 /**
  * Note: Similarly to Narrow, trying to Evaluate 'unknown'
@@ -117,6 +122,7 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
+// TODO: All dictionaries are records?
 export type PartialDictionary<k extends string, v> = { [_ in k]?: v }
 
 export type error<message extends string = string> = `!${message}`
@@ -133,17 +139,6 @@ export type RegexLiteral<expression extends string = string> = `/${expression}/`
 export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: never }>
     | evaluate<b & { [k in keyof a]?: never }>
-
-/**
- * xoring objects can result in a type that can be assigned a value directly but
- * never satisfied as an input to a function due to the way TS handles parameter
- * contravariance. Applying this to an object union will allow all values that
- * are valid in any of the xor'ed branches, loosening the type enough for it to
- * be used as function input.
- */
-export type propwiseUnion<objectUnion extends object> = evaluate<{
-    [k in stringKeyOf<objectUnion>]: objectUnion[k]
-}>
 
 export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]

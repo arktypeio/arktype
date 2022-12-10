@@ -2,8 +2,10 @@ import type {
     autocompleteString,
     defined,
     Dictionary,
+    isNarrowed,
     keySet,
     listable,
+    stringKeyOf,
     subtype
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
@@ -12,38 +14,53 @@ import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./names.js"
 import type { RegexAttribute } from "./regex.js"
 
-export type Type<scope extends Dictionary = Dictionary> =
+export type Node<scope extends Dictionary = Dictionary> =
     | Identifier<scope>
-    | Node
+    | Resolution
 
-export type Identifier<scope extends Dictionary = Dictionary> =
-    string extends keyof scope
-        ? autocompleteString<Keyword>
-        : Keyword | keyof scope
+export type BaseNode = Identifier | BaseResolution
 
-export type BaseNode = { readonly [k in TypeName]?: BaseConstraints }
+export type Identifier<scope extends Dictionary = Dictionary> = isNarrowed<
+    stringKeyOf<scope>
+> extends true
+    ? Keyword | stringKeyOf<scope>
+    : autocompleteString<Keyword>
 
-export type Node = subtype<
-    BaseNode,
+export type BaseResolution = { readonly [k in TypeName]?: BaseConstraints }
+
+export type Resolution<scope extends Dictionary = Dictionary> = subtype<
+    BaseResolution,
     {
-        readonly bigint?: true | listable<PrimitiveLiteral<IntegerLiteral>>
+        readonly bigint?:
+            | true
+            | listable<Identifier<scope> | PrimitiveLiteral<IntegerLiteral>>
         readonly boolean?: true | PrimitiveLiteral<boolean>
         readonly null?: true
         readonly number?:
             | true
-            | listable<PrimitiveLiteral<number> | NumberAttributes>
-        readonly object?: true | listable<ObjectAttributes>
+            | listable<
+                  | Identifier<scope>
+                  | PrimitiveLiteral<number>
+                  | NumberAttributes
+              >
+        readonly object?: true | listable<Identifier<scope> | ObjectAttributes>
         readonly string?:
             | true
-            | listable<PrimitiveLiteral<string> | StringAttributes>
+            | listable<
+                  | Identifier<scope>
+                  | PrimitiveLiteral<string>
+                  | StringAttributes
+              >
         readonly symbol?: true
         readonly undefined?: true
     }
 >
 
-export type ConstraintsOf<typeName extends TypeName> = defined<Node[typeName]>
+export type ConstraintsOf<typeName extends TypeName> = defined<
+    Resolution[typeName]
+>
 
-export type BaseConstraints = true | listable<string | BaseKeyedConstraint>
+export type BaseConstraints = true | listable<Identifier | BaseKeyedConstraint>
 
 export type ResolvedBaseConstraints = true | listable<BaseKeyedConstraint>
 
@@ -56,7 +73,7 @@ export type BaseAttributes = {
     // object attributes
     readonly props?: Dictionary<BaseNode>
     readonly requiredKeys?: keySet
-    readonly propTypes?: PropTypesAttribute
+    readonly propTypes?: BasePropTypesAttribute
     readonly subtype?: ObjectTypeName
     // shared attributes
     readonly bounds?: Bounds
@@ -69,8 +86,13 @@ export type PrimitiveLiteral<value extends LiteralValue = LiteralValue> = {
 }
 
 type PropTypesAttribute = {
-    readonly number?: Type
-    readonly string?: Type
+    readonly number?: Node
+    readonly string?: Node
+}
+
+type BasePropTypesAttribute = {
+    readonly number?: BaseNode
+    readonly string?: BaseNode
 }
 
 export type NumberAttributes = Pick<BaseAttributes, "divisor" | "bounds">

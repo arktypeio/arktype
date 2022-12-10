@@ -3,20 +3,21 @@ import type { TypeName } from "../utils/typeOf.js"
 import {
     compareConstraints,
     composeKeyedOperation,
+    composeNodeOperation,
     finalizeNodeOperation,
     isSubtypeComparison
 } from "./intersection.js"
 import type {
     BaseConstraints,
     BaseKeyedConstraint,
-    BaseNode,
+    BaseResolution,
     Node
 } from "./node.js"
 
 export const union = (l: Node, r: Node, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const nodeUnion = composeKeyedOperation<BaseNode, ScopeRoot>(
+export const resolutionUnion = composeKeyedOperation<BaseResolution, ScopeRoot>(
     "|",
     (typeName, l, r, scope) => {
         const comparison = compareConstraints(l, r, { typeName, scope })
@@ -42,6 +43,8 @@ export const nodeUnion = composeKeyedOperation<BaseNode, ScopeRoot>(
         return coalesceBranches(typeName, finalBranches)
     }
 )
+
+export const nodeUnion = composeNodeOperation(resolutionUnion)
 
 // TODO: Add aliases back if no subtype indices
 export const coalesceBranches = (

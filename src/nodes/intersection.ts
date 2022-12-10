@@ -12,11 +12,14 @@ import type {
     BaseConstraints,
     BaseKeyedConstraint,
     BaseNode,
-    Node
+    BaseResolution,
+    Node,
+    Resolution
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
-import { coalesceBranches } from "./union.js"
+import { coalesceBranches, resolutionUnion } from "./union.js"
+import { resolveIfIdentifier } from "./utils.js"
 
 export type SetOperation<t> = (l: t, r: t) => SetOperationResult<t>
 
@@ -267,34 +270,47 @@ const compareBranches = (
     return comparison
 }
 
-export const nodeIntersection = composeKeyedOperation<BaseNode, ScopeRoot>(
-    "&",
-    (typeName, l, r, scope) => {
-        const comparison = compareConstraints(l, r, { typeName, scope })
-        if (isSubtypeComparison(comparison)) {
-            return comparison
-        }
-        const finalBranches = [
-            ...comparison.distinctIntersections,
-            ...comparison.equivalentTypes.map(
-                (indices) => comparison.lBranches[indices[0]]
-            ),
-            ...comparison.lStrictSubtypes.map(
-                (lIndex) => comparison.lBranches[lIndex]
-            ),
-            ...comparison.rStrictSubtypes.map(
-                (rIndex) => comparison.rBranches[rIndex]
-            )
-        ]
-        return coalesceBranches(typeName, finalBranches)
+export const resolutionIntersection = composeKeyedOperation<
+    BaseResolution,
+    ScopeRoot
+>("&", (typeName, l, r, scope) => {
+    const comparison = compareConstraints(l, r, { typeName, scope })
+    if (isSubtypeComparison(comparison)) {
+        return comparison
     }
-)
+    const finalBranches = [
+        ...comparison.distinctIntersections,
+        ...comparison.equivalentTypes.map(
+            (indices) => comparison.lBranches[indices[0]]
+        ),
+        ...comparison.lStrictSubtypes.map(
+            (lIndex) => comparison.lBranches[lIndex]
+        ),
+        ...comparison.rStrictSubtypes.map(
+            (rIndex) => comparison.rBranches[rIndex]
+        )
+    ]
+    return coalesceBranches(typeName, finalBranches)
+})
+
+export const composeNodeOperation =
+    (
+        resolutionOperation: ContextualSetOperation<BaseResolution, ScopeRoot>
+    ): ContextualSetOperation<BaseNode, ScopeRoot> =>
+    (l, r, scope) => {
+        const lResolution = resolveIfIdentifier(l, scope)
+        const rResolution = resolveIfIdentifier(r, scope)
+        const result = resolutionOperation(lResolution, rResolution, scope)
+        return result === lResolution ? l : result === rResolution ? r : result
+    }
+
+export const nodeIntersection = composeNodeOperation(resolutionIntersection)
 
 export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node =>
     finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
 export const finalizeNodeOperation = (
-    l: Node,
+    l: BaseNode,
     result: SetOperationResult<BaseNode>
 ): Node =>
     result === empty ? keywords.never : result === equivalence ? l : result

@@ -1,4 +1,4 @@
-import type { Node } from "../nodes/node.js"
+import type { Resolution } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
@@ -20,7 +20,7 @@ import { parseDict, parseTuple } from "./object.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
 
-export const parseDefinition = (def: unknown, scope: ScopeRoot): Node => {
+export const parseDefinition = (def: unknown, scope: ScopeRoot): Resolution => {
     const defType = typeOf(def)
     if (defType === "string") {
         return parseString(def as string, scope)

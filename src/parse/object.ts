@@ -1,6 +1,6 @@
-import { nodeIntersection } from "../nodes/intersection.js"
+import { resolutionIntersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
-import type { Node } from "../nodes/node.js"
+import type { Resolution } from "../nodes/node.js"
 import { nodeUnion } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
@@ -19,8 +19,8 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
-export const parseDict = (def: Dictionary, scope: ScopeRoot): Node => {
-    const props: mutable<Dictionary<Node>> = {}
+export const parseDict = (def: Dictionary, scope: ScopeRoot): Resolution => {
+    const props: mutable<Dictionary<Resolution>> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
@@ -59,11 +59,11 @@ export type inferRecord<
     }
 >
 
-export const parseTuple = (def: List, scope: ScopeRoot): Node => {
+export const parseTuple = (def: List, scope: ScopeRoot): Resolution => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: Record<number, Node> = {}
+    const props: Record<number, Resolution> = {}
     for (let i = 0; i < def.length; i++) {
         props[i] = parseDefinition(def[i], scope)
     }
@@ -137,7 +137,7 @@ const parseTupleExpression = (def: TupleExpression, scope: ScopeRoot) => {
         const l = parseDefinition(def[0], scope)
         const r = parseDefinition(def[2], scope)
         return def[1] === "&"
-            ? nodeIntersection(l, r, scope)
+            ? resolutionIntersection(l, r, scope)
             : nodeUnion(l, r, scope)
     }
     if (def[1] === "[]") {
