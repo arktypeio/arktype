@@ -1,20 +1,32 @@
 import type {
+    autocompleteString,
     defined,
     Dictionary,
     keySet,
     listable,
     subtype
 } from "../utils/generics.js"
+import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
+import type { Keyword } from "./names.js"
 import type { RegexAttribute } from "./regex.js"
+
+export type Type<scope extends Dictionary = Dictionary> =
+    | Identifier<scope>
+    | Node
+
+export type Identifier<scope extends Dictionary = Dictionary> =
+    string extends keyof scope
+        ? autocompleteString<Keyword>
+        : Keyword | keyof scope
 
 export type BaseNode = { readonly [k in TypeName]?: BaseConstraints }
 
 export type Node = subtype<
     BaseNode,
     {
-        readonly bigint?: true | listable<PrimitiveLiteral<bigint>>
+        readonly bigint?: true | listable<PrimitiveLiteral<IntegerLiteral>>
         readonly boolean?: true | PrimitiveLiteral<boolean>
         readonly null?: true
         readonly number?:
@@ -50,15 +62,15 @@ export type BaseAttributes = {
     readonly bounds?: Bounds
 }
 
-export type LiteralValue = string | number | boolean | bigint
+export type LiteralValue = string | number | boolean
 
 export type PrimitiveLiteral<value extends LiteralValue = LiteralValue> = {
     readonly value: value
 }
 
 type PropTypesAttribute = {
-    readonly number?: Node
-    readonly string?: Node
+    readonly number?: Type
+    readonly string?: Type
 }
 
 export type NumberAttributes = Pick<BaseAttributes, "divisor" | "bounds">

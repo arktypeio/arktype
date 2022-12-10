@@ -23,9 +23,9 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     if (s.scanner.shift() === "/") {
         // Cache the regex instance to throw right way if its invalid
         getRegex(token)
-        s.setRoot({ type: "string", regex: token })
+        s.setRoot({ string: { regex: token } })
     } else {
-        s.setRoot({ type: "string", subtype: token })
+        s.setRoot({ string: { value: token } })
     }
 }
 

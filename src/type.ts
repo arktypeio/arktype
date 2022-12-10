@@ -11,7 +11,7 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = getRootScope(), ...config } = {}
-) => new Type(parseDefinition(definition, scope.$), config, scope as any)
+) => new ArkType(parseDefinition(definition, scope.$), config, scope as any)
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
@@ -23,14 +23,17 @@ export type InferredTypeFn = <definition, scope extends Dictionary = {}>(
 ) => isTopType<definition> extends true
     ? never
     : definition extends validateDefinition<definition, scope>
-    ? Type<inferDefinition<definition, scope, {}>>
+    ? ArkType<inferDefinition<definition, scope, {}>>
     : never
 
-type DynamicTypeFn = (definition: unknown, options?: Config<Dictionary>) => Type
+type DynamicTypeFn = (
+    definition: unknown,
+    options?: Config<Dictionary>
+) => ArkType
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export class Type<inferred = unknown> {
+export class ArkType<inferred = unknown> {
     constructor(
         public root: Node,
         public config: Config,
