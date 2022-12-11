@@ -1,6 +1,7 @@
 import { morph } from "../nodes/morph.js"
+import type { Node } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { dict, error, stringKeyOf } from "../utils/generics.js"
+import type { Dictionary, error, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { Scanner } from "./reduce/scanner.js"
@@ -19,7 +20,7 @@ export type parseString<
 
 export type inferString<
     def extends string,
-    scope extends dict,
+    scope extends Dictionary,
     aliases
 > = inferAst<
     parseString<def, stringKeyOf<aliases> | stringKeyOf<scope>>,
@@ -29,7 +30,7 @@ export type inferString<
 
 export type validateString<
     def extends string,
-    scope extends dict
+    scope extends Dictionary
 > = parseString<def, stringKeyOf<scope>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
@@ -55,15 +56,18 @@ type maybeNaiveParse<
     ? def
     : fullStringParse<def, alias>
 
-export const maybeNaiveParse = (def: string, scope: ScopeRoot) => {
+export const maybeNaiveParse = (
+    def: string,
+    scope: ScopeRoot
+): Node | undefined => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (scope.isResolvable(elementDef)) {
-            return morph("array", elementDef)
+            return morph("array", scope.resolve(elementDef))
         }
     }
     if (scope.isResolvable(def)) {
-        return def
+        return scope.resolve(def)
     }
 }
 

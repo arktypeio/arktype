@@ -8,9 +8,8 @@ describe("parse array", () => {
         const stringArray = type("string[]")
         attest(stringArray.infer).typed as string[]
         attest(stringArray.root).snap({
-            type: "object",
-            subtype: "Array",
-            children: {
+            object: {
+                subtype: "Array",
                 propTypes: {
                     number: "string"
                 }

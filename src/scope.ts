@@ -1,23 +1,24 @@
 import { keywords } from "./nodes/names.js"
-import type { NameNode, Node, ResolutionNode } from "./nodes/node.js"
+import type { Resolution, ResolvedConstraintsOf } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
-import { Type } from "./type.js"
 import type { Config } from "./type.js"
+import { ArkType } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
-import type { dict, evaluate, mutable, stringKeyOf } from "./utils/generics.js"
+import type { Dictionary, evaluate, mutable } from "./utils/generics.js"
 import { isKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import type { TypeName } from "./utils/typeOf.js"
 
-const rawScope = (aliases: dict, config: Config = {}) => {
+const rawScope = (aliases: Dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const types: Scope<dict> = { $: root as any }
+    const types: Scope<Dictionary> = { $: root as any }
     for (const name in aliases) {
-        types[name] = new Type(root.resolve(name), config, types)
+        types[name] = new ArkType(root.resolve(name), config, types)
     }
     return types
 }
@@ -36,7 +37,7 @@ export const getRootScope = () => {
     return rootScope!
 }
 
-type InferredScopeFn = <aliases, inferredParent extends dict = {}>(
+type InferredScopeFn = <aliases, inferredParent extends Dictionary = {}>(
     aliases: validateAliases<
         aliases,
         inferScopeContext<aliases, inferredParent>
@@ -44,30 +45,31 @@ type InferredScopeFn = <aliases, inferredParent extends dict = {}>(
     config?: Config<inferredParent>
 ) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <aliases extends dict>(
+type DynamicScopeFn = <aliases extends Dictionary>(
     aliases: aliases,
     config?: Config
 ) => Scope<{ [name in keyof aliases]: unknown }>
 
-export type Scope<inferred extends dict> = {
+export type Scope<inferred extends Dictionary> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
 
-export type DynamicScope = Scope<dict>
+export type DynamicScope = Scope<Dictionary>
 
 type inferredScopeToArktypes<inferred> = {
-    [name in keyof inferred]: Type<inferred[name]>
+    [name in keyof inferred]: ArkType<inferred[name]>
 }
 
-export class ScopeRoot<inferred extends dict = dict> {
-    // TODO: Add inferred as resolution generic in type only
-    attributes = {} as { [k in keyof inferred]: ResolutionNode }
+// TODO: decide if parsing primarily managed through scope or only resolution/caching
+
+export class ScopeRoot<inferred extends Dictionary = Dictionary> {
+    attributes = {} as { [k in keyof inferred]: Resolution }
     // TODO: Add intersection cache
-    private cache: mutable<dict<Node>> = {}
+    private cache: mutable<Dictionary<Resolution>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
-        public config: Config<dict>
+        public config: Config<Dictionary>
     ) {}
 
     get infer(): inferred {
@@ -82,7 +84,11 @@ export class ScopeRoot<inferred extends dict = dict> {
             : false
     }
 
-    resolve(name: NameNode, seen: string[] = []): ResolutionNode {
+    resolve(name: string) {
+        return this.resolveRecurse(name, [])
+    }
+
+    private resolveRecurse(name: string, seen: string[]): Resolution {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }
@@ -97,43 +103,75 @@ export class ScopeRoot<inferred extends dict = dict> {
                 )
             )
         }
-        if (seen.includes(name)) {
-            return throwParseError(
-                `Alias '${name}' has a shallow resolution cycle: ${seen.join(
-                    "=>"
-                )}`
-            )
+        const root = parseDefinition(this.aliases[name], this)
+        if (typeof root === "object") {
+            return root
         }
-        let root = parseDefinition(this.aliases[name], this)
-        if (typeof root === "string") {
-            seen.push(name)
-            root = this.resolve(root, seen)
+        if (seen.includes(root)) {
+            return throwParseError(buildShallowCycleErrorMessage(name, seen))
         }
-        this.attributes[name as stringKeyOf<inferred>] = deepFreeze(root)
-        this.cache[name] = root
-        return root
+        seen.push(root)
+        return this.resolveRecurse(root, seen)
     }
 
-    memoizedParse(def: string): Node {
+    resolveConstraints<typeName extends TypeName>(
+        name: string,
+        typeName: typeName
+    ) {
+        return this.resolveConstraintsRecurse(name, typeName, [])
+    }
+
+    private resolveConstraintsRecurse<typeName extends TypeName>(
+        name: string,
+        typeName: typeName,
+        seen: string[]
+    ): ResolvedConstraintsOf<typeName> {
+        const resolution = this.resolve(name)[typeName]
+        if (resolution === undefined) {
+            return throwInternalError(
+                `Expected '${name}' to have a definition including '${typeName}'`
+            )
+        }
+        if (typeof resolution !== "string") {
+            return resolution as ResolvedConstraintsOf<typeName>
+        }
+        if (seen.includes(resolution)) {
+            return throwParseError(
+                buildShallowCycleErrorMessage(resolution, seen)
+            )
+        }
+        seen.push(resolution)
+        return this.resolveConstraintsRecurse(resolution, typeName, seen)
+    }
+
+    memoizedParse(def: string): Resolution {
         if (def in this.cache) {
             return this.cache[def]
         }
         const root = maybeNaiveParse(def, this) ?? fullStringParse(def, this)
-        this.cache[def] = deepFreeze(root)
-        return root
+        // if we finish parsing and end up with another identifier, cache its resolution
+        const resolution =
+            typeof root === "string" ? this.resolve(root) : deepFreeze(root)
+        this.cache[def] = resolution
+        return resolution
     }
 }
 
-type validateAliases<aliases, scope extends dict> = evaluate<{
+type validateAliases<aliases, scope extends Dictionary> = evaluate<{
     [name in keyof aliases]: validateDefinition<aliases[name], scope>
 }>
 
-type inferAliases<aliases, scope extends dict> = evaluate<{
+type inferAliases<aliases, scope extends Dictionary> = evaluate<{
     [name in keyof aliases]: inferDefinition<aliases[name], scope, aliases>
 }>
 
-type inferScopeContext<aliases, scope extends dict> = inferAliases<
+type inferScopeContext<aliases, scope extends Dictionary> = inferAliases<
     aliases,
     scope
 > &
     scope
+
+export const buildShallowCycleErrorMessage = (name: string, seen: string[]) =>
+    `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
+        "=>"
+    )}`

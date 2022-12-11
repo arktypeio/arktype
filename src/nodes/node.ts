@@ -1,93 +1,105 @@
-import type { autocompleteString, defined, xor } from "../utils/generics.js"
+import type {
+    autocompleteString,
+    Dictionary,
+    evaluate,
+    keySet,
+    listable
+} from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import type { ObjectTypeName, TypeName } from "../utils/typeOf.js"
-import type { Bounds } from "./attributes/bounds.js"
-import type { ChildrenAttribute } from "./attributes/children.js"
-import type { RegexAttribute } from "./attributes/regex.js"
-import type { LiteralValue } from "./attributes/type.js"
+import type { ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
+import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./names.js"
-import type { Branches } from "./union.js"
+import type { RegexAttribute } from "./regex.js"
 
-export type Node = NameNode | ResolutionNode
+export type Node<alias extends string = string> =
+    | Identifier<alias>
+    | Resolution<alias>
 
-export type NameNode = autocompleteString<Keyword>
+export type BaseNode = Identifier | BaseResolution
 
-export type ResolutionNode = Attributes | Branches
+export type Identifier<alias extends string = string> = string extends alias
+    ? Keyword | alias
+    : autocompleteString<Keyword>
+
+export type BaseResolution = { readonly [k in TypeName]?: BaseConstraints }
+
+export type Resolution<alias extends string = string> = {
+    readonly bigint?:
+        | true
+        | listable<Identifier<alias> | PrimitiveLiteral<IntegerLiteral>>
+    readonly boolean?: true | PrimitiveLiteral<boolean>
+    readonly null?: true
+    readonly number?:
+        | true
+        | listable<
+              Identifier<alias> | PrimitiveLiteral<number> | NumberAttributes
+          >
+    readonly object?: true | listable<Identifier<alias> | ObjectAttributes>
+    readonly string?:
+        | true
+        | listable<
+              Identifier<alias> | PrimitiveLiteral<string> | StringAttributes
+          >
+    readonly symbol?: true
+    readonly undefined?: true
+}
+
+export type ConstraintsOf<typeName extends TypeName> = NonNullable<
+    Resolution[typeName]
+>
+
+export type ResolvedConstraintsOf<typeName extends TypeName> = Exclude<
+    ConstraintsOf<typeName>,
+    listable<string>
+>
+
+export type BaseConstraints = true | listable<Identifier | BaseKeyedConstraint>
+
+export type ResolvedBaseConstraints = true | listable<BaseKeyedConstraint>
+
+export type BaseKeyedConstraint = BaseAttributes | PrimitiveLiteral
 
 export type BaseAttributes = {
-    readonly type: TypeName
     // primitive attributes
-    readonly divisor?: number
     readonly regex?: RegexAttribute
+    readonly divisor?: number
     // object attributes
-    readonly children?: ChildrenAttribute
+    readonly props?: Dictionary<BaseNode>
+    readonly requiredKeys?: keySet
+    readonly propTypes?: BasePropTypesAttribute
+    readonly subtype?: ObjectSubtypeName
     // shared attributes
-    readonly subtype?: LiteralValue
     readonly bounds?: Bounds
 }
 
-export type AttributeName = keyof BaseAttributes
-
-export type BaseAttributeType<k extends AttributeName> = defined<
-    BaseAttributes[k]
->
-
-export type Attributes =
-    | BigintAttributes
-    | BooleanAttributes
-    | NullAttributes
-    | NumberAttributes
-    | ObjectAttributes
-    | StringAttributes
-    | SymbolAttributes
-    | UndefinedAttributes
-
-export type BigintAttributes = {
-    readonly type: "bigint"
-    readonly subtype?: IntegerLiteral
-}
-
-export type BooleanAttributes = {
-    readonly type: "boolean"
-    readonly subtype?: boolean
-}
-
-export type NullAttributes = {
-    readonly type: "null"
-}
-
-export type NumberAttributes = {
-    readonly type: "number"
-} & xor<
-    { readonly subtype?: number },
-    {
-        readonly bounds?: Bounds
-        readonly divisor?: number
+export type Attributes = evaluate<
+    BaseAttributes & {
+        props?: Dictionary<Node>
+        propTypes?: PropTypesAttribute
     }
 >
 
-export type StringAttributes = {
-    readonly type: "string"
-} & xor<
-    { readonly subtype?: string },
-    {
-        readonly bounds?: Bounds
-        readonly regex?: RegexAttribute
-    }
+export type LiteralValue = string | number | boolean
+
+export type PrimitiveLiteral<value extends LiteralValue = LiteralValue> = {
+    readonly value: value
+}
+
+type PropTypesAttribute = {
+    readonly number?: Node
+    readonly string?: Node
+}
+
+type BasePropTypesAttribute = {
+    readonly number?: BaseNode
+    readonly string?: BaseNode
+}
+
+export type NumberAttributes = Pick<Attributes, "divisor" | "bounds">
+
+export type StringAttributes = Pick<Attributes, "regex" | "bounds">
+
+export type ObjectAttributes = Pick<
+    Attributes,
+    "subtype" | "props" | "requiredKeys" | "propTypes" | "bounds"
 >
-
-export type SymbolAttributes = {
-    readonly type: "symbol"
-}
-
-export type UndefinedAttributes = {
-    readonly type: "undefined"
-}
-
-export type ObjectAttributes = {
-    readonly type: "object"
-    readonly children?: ChildrenAttribute
-} & (
-    | { readonly subtype: "Array"; readonly bounds?: Bounds }
-    | { readonly subtype?: ObjectTypeName }
-)

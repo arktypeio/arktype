@@ -20,8 +20,10 @@
     },
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
-    "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
-    "typescript.preferences.useAliasesForRenames": false,
+    "typescript.preferences.autoImportFileExcludePatterns": [
+        "dist",
+        "node_modules"
+    ],
     "deno.config": "./dev/configs/deno.jsonc",
     "deno.enablePaths": ["./dist/exports.deno.ts", "./dist/deno"]
 }

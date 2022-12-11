@@ -1,38 +1,41 @@
-import type { Node } from "./nodes/node.js"
+import type { Resolution } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { dict, isTopType } from "./utils/generics.js"
+import type { Dictionary, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = getRootScope(), ...config } = {}
-) => new Type(parseDefinition(definition, scope.$), config, scope as any)
+) => new ArkType(parseDefinition(definition, scope.$), config, scope as any)
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type InferredTypeFn = <definition, scope extends dict = {}>(
+export type InferredTypeFn = <definition, scope extends Dictionary = {}>(
     definition: validateDefinition<definition, scope>,
     options?: Config<scope>
 ) => isTopType<definition> extends true
     ? never
     : definition extends validateDefinition<definition, scope>
-    ? Type<inferDefinition<definition, scope, {}>>
+    ? ArkType<inferDefinition<definition, scope, {}>>
     : never
 
-type DynamicTypeFn = (definition: unknown, options?: Config<dict>) => Type
+type DynamicTypeFn = (
+    definition: unknown,
+    options?: Config<Dictionary>
+) => ArkType
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export class Type<inferred = unknown> {
+export class ArkType<inferred = unknown> {
     constructor(
-        public root: Node,
+        public root: Resolution,
         public config: Config,
         public scope: DynamicScope
     ) {
@@ -59,6 +62,6 @@ export class Type<inferred = unknown> {
     }
 }
 
-export type Config<scope extends dict = {}> = {
+export type Config<scope extends Dictionary = {}> = {
     scope?: Scope<scope>
 }

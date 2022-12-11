@@ -13,17 +13,63 @@ describe("compile", () => {
     test("discriminate simple", () => {
         attest(type("ocean|sky", { scope: places }).root).snap({
             object: [
-                "wet/boolean/literal",
                 {
-                    true: [{ props: { someProp: "boolean" } }, "ocean"],
-                    false: "sky"
+                    props: {
+                        wet: { boolean: { value: true } },
+                        blue: { boolean: { value: true } },
+                        isOcean: { boolean: { value: true } }
+                    },
+                    requiredKeys: { wet: true, blue: true, isOcean: true }
+                },
+                {
+                    props: {
+                        wet: { boolean: { value: false } },
+                        blue: { boolean: { value: true } },
+                        isSky: { boolean: { value: true } }
+                    },
+                    requiredKeys: { wet: true, blue: true, isSky: true }
                 }
             ]
-        } as any)
+        })
     })
     test("discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert", { scope: places }).root
-        ).snap("ocean")
+        ).snap({
+            object: [
+                {
+                    props: {
+                        wet: { boolean: { value: true } },
+                        blue: { boolean: { value: true } },
+                        isOcean: { boolean: { value: true } }
+                    },
+                    requiredKeys: { wet: true, blue: true, isOcean: true }
+                },
+                {
+                    props: {
+                        wet: { boolean: { value: false } },
+                        blue: { boolean: { value: true } },
+                        isSky: { boolean: { value: true } }
+                    },
+                    requiredKeys: { wet: true, blue: true, isSky: true }
+                },
+                {
+                    props: {
+                        wet: { boolean: { value: true } },
+                        blue: { boolean: { value: false } },
+                        isRainforest: { boolean: { value: true } }
+                    },
+                    requiredKeys: { wet: true, blue: true, isRainforest: true }
+                },
+                {
+                    props: {
+                        wet: { boolean: { value: false } },
+                        blue: { boolean: { value: false } },
+                        isDesert: { boolean: { value: true } }
+                    },
+                    requiredKeys: { wet: true, blue: true, isDesert: true }
+                }
+            ]
+        })
     })
 })

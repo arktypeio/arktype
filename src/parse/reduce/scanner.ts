@@ -1,4 +1,4 @@
-import type { dict } from "../../utils/generics.js"
+import type { Dictionary } from "../../utils/generics.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -40,7 +40,7 @@ export class Scanner<Lookahead extends string = string> {
         return this.lookahead === char
     }
 
-    lookaheadIsIn<Tokens extends dict>(
+    lookaheadIsIn<Tokens extends Dictionary>(
         tokens: Tokens
     ): this is Scanner<Extract<keyof Tokens, string>> {
         return this.lookahead in tokens

@@ -1,4 +1,4 @@
-import type { deepImmutable, dict, mutable } from "./generics.js"
+import type { deepImmutable, Dictionary, mutable } from "./generics.js"
 
 export const deepFreeze = <value>(value: value): deepImmutable<value> =>
     (Object.isFrozen(value)
@@ -6,10 +6,10 @@ export const deepFreeze = <value>(value: value): deepImmutable<value> =>
         : Array.isArray(value)
         ? Object.freeze(value.map(deepFreeze))
         : // Object.isFrozen will always be true for non-objects, so we can safely cast to dict
-          deepFreezeDict(value as dict)) as deepImmutable<value>
+          deepFreezeDict(value as Dictionary)) as deepImmutable<value>
 
-const deepFreezeDict = (value: dict) => {
-    const result: mutable<dict> = {}
+const deepFreezeDict = (value: Dictionary) => {
+    const result: mutable<Dictionary> = {}
     for (const k in value) {
         result[k] = deepFreeze(value[k] as any)
     }

@@ -11,35 +11,37 @@ describe("intersection", () => {
         test("two types", () => {
             const t = type("boolean&true")
             attest(t.infer).typed as true
-            attest(t.root).snap("true")
+            attest(t.root).snap({ boolean: { value: true } })
         })
         test("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false
-            attest(t.root).snap("false")
+            attest(t.root).snap({
+                bigint: true,
+                boolean: { value: false },
+                null: true,
+                number: true,
+                object: true,
+                string: true,
+                symbol: true,
+                undefined: true
+            })
         })
         describe("number & literals", () => {
             test("same literal", () => {
-                attest(type("2&2").root).snap({ type: "number", subtype: 2 })
+                attest(type("2&2").root).snap({ number: { value: 2 } })
             })
             test("literal&number type", () => {
-                attest(type("number&22").root).snap({
-                    type: "number",
-                    subtype: 22
-                })
+                attest(type("number&22").root).snap({ number: { value: 22 } })
             })
             test("float&number type", () => {
                 attest(type("number&22.22").root).snap({
-                    type: "number",
-                    subtype: 22.22
+                    number: { value: 22.22 }
                 })
             })
         })
         describe("string & literal", () => {
-            attest(type("string&'a'").root).snap({
-                type: "string",
-                subtype: "a"
-            })
+            attest(type("string&'a'").root).snap({ string: { value: "a" } })
         })
 
         describe("errors", () => {
@@ -56,7 +58,10 @@ describe("intersection", () => {
                 )
             })
             test("never", () => {
-                attest(type("string&number").root).snap("never")
+                attest(type("string&number").root).snap({
+                    string: true,
+                    number: true
+                })
             })
         })
     })

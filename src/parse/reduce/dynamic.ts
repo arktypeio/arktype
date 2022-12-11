@@ -3,10 +3,10 @@ import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { Node } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
+import { nodeHasOnlyType } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
-import { isKeyOf } from "../../utils/generics.js"
-import { hasType } from "../../utils/typeOf.js"
+import { hasKey, isKeyOf } from "../../utils/generics.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -19,8 +19,8 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    "&"?: Node
-    "|"?: Node
+    intersection?: Node
+    union?: Node
 }
 
 export class DynamicState {
@@ -43,11 +43,10 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         if (
-            hasType(this.root, "object", "Object") &&
-            this.root.type === "number" &&
-            this.root.subtype !== undefined
+            nodeHasOnlyType(this.root!, "number", this.scope) &&
+            hasKey(this.root.number, "value")
         ) {
-            const limit = this.root.subtype
+            const limit = this.root.number.value
             this.root = undefined
             return limit
         }
@@ -127,12 +126,16 @@ export class DynamicState {
 
     finalizeBranches() {
         this.assertRangeUnset()
-        if (this.branches["|"]) {
+        if (this.branches.union) {
             this.pushRootToBranch("|")
-            this.setRoot(this.branches["|"])
-        } else if (this.branches["&"]) {
+            this.setRoot(this.branches.union)
+        } else if (this.branches.intersection) {
             this.setRoot(
-                intersection(this.branches["&"], this.ejectRoot(), this.scope)
+                intersection(
+                    this.branches.intersection,
+                    this.ejectRoot(),
+                    this.scope
+                )
             )
         }
     }
@@ -150,14 +153,22 @@ export class DynamicState {
 
     pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
-        this.branches["&"] = this.branches["&"]
-            ? intersection(this.branches["&"], this.ejectRoot(), this.scope)
+        this.branches.intersection = this.branches.intersection
+            ? intersection(
+                  this.branches.intersection,
+                  this.ejectRoot(),
+                  this.scope
+              )
             : this.ejectRoot()
         if (token === "|") {
-            this.branches["|"] = this.branches["|"]
-                ? union(this.branches["|"], this.branches["&"], this.scope)
-                : this.branches["&"]
-            delete this.branches["&"]
+            this.branches.union = this.branches.union
+                ? union(
+                      this.branches.union,
+                      this.branches.intersection,
+                      this.scope
+                  )
+                : this.branches.intersection
+            delete this.branches.intersection
         }
     }
 
@@ -178,9 +189,9 @@ export class DynamicState {
     }
 
     previousOperator() {
-        return this.branches.range?.[1] ?? this.branches["&"]
+        return this.branches.range?.[1] ?? this.branches.intersection
             ? "&"
-            : this.branches["|"]
+            : this.branches.union
             ? "|"
             : undefined
     }

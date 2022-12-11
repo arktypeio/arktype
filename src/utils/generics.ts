@@ -83,10 +83,12 @@ export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 export const hasKey = <o, k extends string>(
     o: o,
     k: k
-): o is o & { [_ in k]: {} } => {
+): o is Extract<o, { [_ in k]: {} }> => {
     const valueAtKey = (o as any)?.[k]
     return valueAtKey !== undefined && valueAtKey !== null
 }
+
+export const keyCount = (o: object) => Object.keys(o).length
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
@@ -115,6 +117,7 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
+// TODO: All dictionaries are records?
 export type PartialDictionary<k extends string, v> = { [_ in k]?: v }
 
 export type error<message extends string = string> = `!${message}`
@@ -132,24 +135,15 @@ export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: never }>
     | evaluate<b & { [k in keyof a]?: never }>
 
-/**
- * xoring objects can result in a type that can be assigned a value directly but
- * never satisfied as an input to a function due to the way TS handles parameter
- * contravariance. Applying this to an object union will allow all values that
- * are valid in any of the xor'ed branches, loosening the type enough for it to
- * be used as function input.
- */
-export type propwiseUnion<objectUnion extends object> = evaluate<{
-    [k in stringKeyOf<objectUnion>]: objectUnion[k]
-}>
-
 export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends array ? t : [t]
+    (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
 
 export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
 
-export type array<of = unknown> = readonly of[]
+export type listable<t> = t | List<t>
 
-export type dict<of = unknown> = { readonly [k in string]: of }
+export type List<of = unknown> = readonly of[]
+
+export type Dictionary<of = unknown> = { readonly [k in string]: of }

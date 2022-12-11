@@ -1,61 +1,47 @@
 import type { ScopeRoot } from "../scope.js"
-import type { array } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
-import { hasType } from "../utils/typeOf.js"
-import { intersection } from "./intersection.js"
-import type { Attributes, NameNode, Node } from "./node.js"
+import { compareConstraints, isSubtypeComparison } from "./compare.js"
+import type { BaseResolution, Node, Resolution } from "./node.js"
+import {
+    coalesceBranches,
+    composeKeyedOperation,
+    composeNodeOperation,
+    finalizeNodeOperation
+} from "./operation.js"
 
-export type Branches = array<NameNode | Attributes>
+export const union = (l: Node, r: Node, scope: ScopeRoot) =>
+    finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const union = (lNode: Node, rNode: Node, scope: ScopeRoot): Node => {
-    const lBranches = listFrom(lNode)
-    const rBranches = [...listFrom(rNode)]
-    const result = lBranches
-        .filter((l) => {
-            const booleanLiteral = getPossibleBooleanLiteral(l)
-            if (booleanLiteral) {
-                const oppositeLiteral =
-                    booleanLiteral === "true" ? "false" : "true"
-                for (let i = 0; i < rBranches.length; i++) {
-                    if (
-                        getPossibleBooleanLiteral(rBranches[i]) ===
-                        oppositeLiteral
-                    ) {
-                        rBranches[i] = "boolean"
-                        return false
-                    }
-                }
-                return true
-            }
-            return rBranches.every((r, i) => {
-                const intersectionResult = intersection(l, r, scope)
-                if (intersectionResult === l) {
-                    // l is a subtype of r (don't include it)
-                    return false
-                }
-                if (intersectionResult === r) {
-                    // r is a subtype of l (don't include it)
-                    rBranches.splice(i, 1)
-                }
-                return true
-            })
-        })
-        .concat(rBranches)
-    return result.length === 0
-        ? /* c8 ignore next */
-          "never"
-        : result.length === 1
-        ? result[0]
-        : result
-}
+export const resolutionUnion = composeKeyedOperation<BaseResolution, ScopeRoot>(
+    "|",
+    (typeName, l, r, scope) => {
+        const comparison = compareConstraints(l, r, { typeName, scope })
+        if (isSubtypeComparison(comparison)) {
+            return comparison === l ? r : l
+        }
+        const finalBranches = [
+            ...comparison.lBranches.filter(
+                (_, lIndex) =>
+                    !comparison.lStrictSubtypes.includes(lIndex) &&
+                    !comparison.equivalentTypes.some(
+                        (indexPair) => indexPair[0] === lIndex
+                    )
+            ),
+            ...comparison.rBranches.filter(
+                (_, rIndex) =>
+                    !comparison.rStrictSubtypes.includes(rIndex) &&
+                    !comparison.equivalentTypes.some(
+                        (indexPair) => indexPair[1] === rIndex
+                    )
+            )
+        ]
+        return coalesceBranches(typeName, finalBranches)
+    }
+)
 
-const getPossibleBooleanLiteral = (node: Node): "true" | "false" | undefined =>
-    node === "true"
-        ? "true"
-        : node === "false"
-        ? "false"
-        : hasType(node, "object", "Object") &&
-          node.type === "boolean" &&
-          node.subtype !== undefined
-        ? `${node.subtype}`
-        : undefined
+export const nodeUnion = composeNodeOperation(resolutionUnion)
+
+export const rootResolutionUnion = (
+    l: Resolution,
+    r: Resolution,
+    scope: ScopeRoot
+) => finalizeNodeOperation(l, resolutionUnion(l, r, scope)) as Resolution

@@ -1,6 +1,6 @@
 import type { Keyword, Keywords } from "../nodes/names.js"
 import type {
-    dict,
+    Dictionary,
     error,
     evaluate,
     isAny,
@@ -13,7 +13,7 @@ import type { StringLiteral } from "./shift/operand/enclosed.js"
 
 export type inferAst<
     ast,
-    scope extends dict,
+    scope extends Dictionary,
     aliases
 > = ast extends readonly unknown[]
     ? ast[1] extends "[]"
@@ -37,7 +37,10 @@ export type inferAst<
           }>
     : inferTerminal<ast, scope, aliases>
 
-export type validateAstSemantics<ast, scope extends dict> = ast extends string
+export type validateAstSemantics<
+    ast,
+    scope extends Dictionary
+> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
     ? validateAstSemantics<child, scope>
@@ -89,7 +92,11 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<token, scope extends dict, aliases> = token extends Keyword
+type inferTerminal<
+    token,
+    scope extends Dictionary,
+    aliases
+> = token extends Keyword
     ? Keywords[token]
     : token extends keyof scope
     ? scope[token]

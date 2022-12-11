@@ -24,8 +24,9 @@ describe("divisibility", () => {
             test("integerLiteralDefinition", () => {
                 const divisibleByTwo = type("number%2")
                 attest(divisibleByTwo.root).equals({
-                    type: "number",
-                    divisor: 2
+                    number: {
+                        divisor: 2
+                    }
                 })
                 attest(divisibleByTwo.infer).typed as number
             })

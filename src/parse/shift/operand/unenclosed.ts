@@ -1,10 +1,9 @@
 import type { Keyword } from "../../../nodes/names.js"
-import type { Node } from "../../../nodes/node.js"
+import type { Resolution } from "../../../nodes/node.js"
 import type { error } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
-    IntegerLiteral,
     NumberLiteral
 } from "../../../utils/numericLiterals.js"
 import {
@@ -17,7 +16,7 @@ import type { state, StaticState } from "../../reduce/static.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
-    s.setRoot(unenclosedToAttributes(s, token))
+    s.setRoot(unenclosedToNode(s, token))
 }
 
 export type parseUnenclosed<
@@ -33,7 +32,7 @@ export type parseUnenclosed<
         : never
     : never
 
-const unenclosedToAttributes = (s: DynamicState, token: string) =>
+const unenclosedToNode = (s: DynamicState, token: string) =>
     s.scope.isResolvable(token)
         ? token
         : maybeParseUnenclosedLiteral(token) ??
@@ -43,16 +42,17 @@ const unenclosedToAttributes = (s: DynamicState, token: string) =>
                   : buildUnresolvableMessage(token)
           )
 
-const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
+const maybeParseUnenclosedLiteral = (token: string): Resolution | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { type: "number", subtype: maybeNumber }
+        return { number: { value: maybeNumber } }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
         return {
-            type: "bigint",
-            subtype: token.slice(0, -1) as IntegerLiteral
+            bigint: {
+                value: `${maybeBigint}`
+            }
         }
     }
 }

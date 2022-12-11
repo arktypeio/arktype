@@ -1,102 +1,93 @@
 import type { ScopeRoot } from "../scope.js"
-import { deepEquals } from "../utils/deepEquals.js"
-import { listFrom } from "../utils/generics.js"
-import { hasObjectType } from "../utils/typeOf.js"
-import { boundsIntersection } from "./attributes/bounds.js"
-import { childrenIntersection } from "./attributes/children.js"
-import { divisorIntersection } from "./attributes/divisor.js"
-import { regexIntersection } from "./attributes/regex.js"
+import { hasKey } from "../utils/generics.js"
+import { boundsIntersection } from "./bounds.js"
 import { checkAttributes } from "./check.js"
-import { resolveIfName } from "./names.js"
+import type { ConstraintContext } from "./compare.js"
+import { compareConstraints, isSubtypeComparison } from "./compare.js"
+import { divisorIntersection } from "./divisor.js"
 import type {
-    AttributeName,
-    Attributes,
     BaseAttributes,
-    BaseAttributeType,
-    Node
+    BaseKeyedConstraint,
+    BaseResolution,
+    Node,
+    Resolution
 } from "./node.js"
-import type { Branches } from "./union.js"
-import { union } from "./union.js"
+import type { ContextualSetOperation } from "./operation.js"
+import {
+    coalesceBranches,
+    composeKeyedOperation,
+    composeNodeOperation,
+    empty,
+    equivalence,
+    finalizeNodeOperation
+} from "./operation.js"
+import { propsIntersection, requiredKeysIntersection } from "./props.js"
+import { regexIntersection } from "./regex.js"
 
-export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node => {
-    const lResolution = resolveIfName(l, scope)
-    const rResolution = resolveIfName(r, scope)
-    const result = hasObjectType(lResolution, "Array")
-        ? branchesIntersection(lResolution, listFrom(rResolution), scope)
-        : hasObjectType(rResolution, "Array")
-        ? branchesIntersection([lResolution], rResolution, scope)
-        : attributesIntersection(lResolution, rResolution, scope)
-    // If the intersection result is identical to one of its operands,
-    // return the original operand either as a name or resolution
-    // TODO: Avoid the deep equals check by not returning a different
-    // object if there is a subtype
-    if (deepEquals(result, lResolution)) {
-        return l
-    }
-    if (deepEquals(result, rResolution)) {
-        return r
-    }
-    return result
-}
+export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node =>
+    finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const branchesIntersection = (l: Branches, r: Branches, scope: ScopeRoot) => {
-    let result: Node = "never"
-    for (const lBranch of l) {
-        for (const rBranch of r) {
-            const branchResult = intersection(lBranch, rBranch, scope)
-            if (branchResult !== "never") {
-                result = union(result, branchResult, scope)
-            }
+const resolutionIntersection = composeKeyedOperation<BaseResolution, ScopeRoot>(
+    "&",
+    (typeName, l, r, scope) => {
+        const comparison = compareConstraints(l, r, { typeName, scope })
+        if (isSubtypeComparison(comparison)) {
+            return comparison
         }
+        const finalBranches = [
+            ...comparison.distinctIntersections,
+            ...comparison.equivalentTypes.map(
+                (indices) => comparison.lBranches[indices[0]]
+            ),
+            ...comparison.lStrictSubtypes.map(
+                (lIndex) => comparison.lBranches[lIndex]
+            ),
+            ...comparison.rStrictSubtypes.map(
+                (rIndex) => comparison.rBranches[rIndex]
+            )
+        ]
+        return coalesceBranches(typeName, finalBranches)
     }
-    return result
-}
+)
 
-export type KeyIntersection<t> = (l: t, r: t, scope: ScopeRoot) => t | null
+export const rootResolutionIntersection = (
+    l: Resolution,
+    r: Resolution,
+    scope: ScopeRoot
+) => finalizeNodeOperation(l, resolutionIntersection(l, r, scope)) as Resolution
 
-type UnknownIntersection = KeyIntersection<any>
+export const nodeIntersection = composeNodeOperation(resolutionIntersection)
 
-type IntersectedKey = Exclude<AttributeName, "type" | "subtype">
+export const keyedConstraintsIntersection: ContextualSetOperation<
+    BaseKeyedConstraint,
+    ConstraintContext
+> = (l, r, context) =>
+    hasKey(l, "value")
+        ? hasKey(r, "value")
+            ? l.value === r.value
+                ? equivalence
+                : empty
+            : checkAttributes(l.value, r, context)
+            ? l
+            : empty
+        : hasKey(r, "value")
+        ? checkAttributes(r.value, l, context)
+            ? r
+            : empty
+        : attributesIntersection(l, r, context)
 
-const keyIntersections: {
-    [k in IntersectedKey]: KeyIntersection<BaseAttributeType<k>>
-} = {
-    bounds: boundsIntersection,
+export const disjointIntersection = (l: string, r: string) =>
+    l === r ? equivalence : empty
+
+const attributesIntersection = composeKeyedOperation<
+    BaseAttributes,
+    ConstraintContext
+>("&", {
+    subtype: disjointIntersection,
     divisor: divisorIntersection,
     regex: regexIntersection,
-    children: childrenIntersection
-}
-
-export const attributesIntersection = (
-    l: BaseAttributes,
-    r: BaseAttributes,
-    scope: ScopeRoot
-): Attributes | "never" => {
-    if (l.type !== r.type) {
-        return "never"
-    }
-    if (l.subtype !== r.subtype) {
-        return !l.subtype && checkAttributes(r.subtype, l, scope)
-            ? (r as Attributes)
-            : !r.subtype && checkAttributes(l.subtype, r, scope)
-            ? (l as Attributes)
-            : "never"
-    }
-    const result = { ...l, ...r }
-    let k: AttributeName
-    for (k in result) {
-        // type and subtype have already been handled, so skip those
-        if (k !== "type" && k !== "subtype" && l[k] && r[k]) {
-            const keyResult = (keyIntersections[k] as UnknownIntersection)(
-                l[k],
-                r[k],
-                scope
-            )
-            if (keyResult === null) {
-                return "never"
-            }
-            result[k] = keyResult
-        }
-    }
-    return result as Attributes
-}
+    props: propsIntersection,
+    requiredKeys: requiredKeysIntersection,
+    propTypes: propsIntersection,
+    bounds: boundsIntersection
+})
