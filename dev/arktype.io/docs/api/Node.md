@@ -3,5 +3,7 @@
 ## text
 
 ```ts
-export type Node = NameNode | ResolutionNode
+export type Node<alias extends string = string> =
+    | Identifier<alias>
+    | Resolution<alias>
 ```
