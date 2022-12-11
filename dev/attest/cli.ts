@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { basename, join } from "node:path"
+import { basename } from "node:path"
 import { version, versions } from "node:process"
 import {
     fileName,

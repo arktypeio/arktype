@@ -1,6 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import type { Dictionary, mutable } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
+import type { ConstraintContext } from "./compare.js"
 import { keywords } from "./names.js"
 import type {
     BaseConstraints,
@@ -46,10 +47,12 @@ export type RootIntersectionReducer<root extends Dictionary, context> =
     | KeyOperationReducerMap<Required<root>, context>
     | KeyedContextualSetOperation<root, context>
 
-export const composeKeyedOperation =
-    <root extends Dictionary, context>(
-        // TODO: clarify "operator" in this context
-        operator: "&" | "|",
+const composeKeyedOperation =
+    <kindRoot extends Dictionary, kindContext>(keyRelation: "|" | "&") =>
+    <
+        root extends kindRoot = kindRoot,
+        context extends kindContext = kindContext
+    >(
         reducer: RootIntersectionReducer<root, context>
     ): ContextualSetOperation<root, context> =>
     (l, r, context) => {
@@ -59,7 +62,7 @@ export const composeKeyedOperation =
         let k: keyof root
         for (k in result) {
             if (l[k] === undefined) {
-                if (operator === "|") {
+                if (keyRelation === "|") {
                     lImpliesR = false
                 } else {
                     delete result[k]
@@ -68,7 +71,7 @@ export const composeKeyedOperation =
                 continue
             }
             if (r[k] === undefined) {
-                if (operator === "|") {
+                if (keyRelation === "|") {
                     lImpliesR = false
                 } else {
                     delete result[k]
@@ -83,7 +86,7 @@ export const composeKeyedOperation =
             if (keyResult === equivalence) {
                 result[k] = l[k]
             } else if (keyResult === empty) {
-                if (operator === "&") {
+                if (keyRelation === "&") {
                     // TODO : Case for optional props
                     return empty
                 }
@@ -104,6 +107,16 @@ export const composeKeyedOperation =
             ? r
             : result
     }
+
+export const composeResolutionOperation = composeKeyedOperation<
+    BaseResolution,
+    ScopeRoot
+>("|")
+
+export const composeConstraintOperation = composeKeyedOperation<
+    Dictionary,
+    ConstraintContext
+>("&")
 
 export const composeNodeOperation =
     (

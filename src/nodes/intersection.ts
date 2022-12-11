@@ -8,15 +8,15 @@ import { divisorIntersection } from "./divisor.js"
 import type {
     BaseAttributes,
     BaseKeyedConstraint,
-    BaseResolution,
     Node,
     Resolution
 } from "./node.js"
 import type { ContextualSetOperation } from "./operation.js"
 import {
     coalesceBranches,
-    composeKeyedOperation,
+    composeConstraintOperation,
     composeNodeOperation,
+    composeResolutionOperation,
     empty,
     equivalence,
     finalizeNodeOperation
@@ -27,8 +27,7 @@ import { regexIntersection } from "./regex.js"
 export const intersection = (l: Node, r: Node, scope: ScopeRoot): Node =>
     finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const resolutionIntersection = composeKeyedOperation<BaseResolution, ScopeRoot>(
-    "&",
+const resolutionIntersection = composeResolutionOperation(
     (typeName, l, r, scope) => {
         const comparison = compareConstraints(l, r, { typeName, scope })
         if (isSubtypeComparison(comparison)) {
@@ -79,10 +78,7 @@ export const keyedConstraintsIntersection: ContextualSetOperation<
 export const disjointIntersection = (l: string, r: string) =>
     l === r ? equivalence : empty
 
-const attributesIntersection = composeKeyedOperation<
-    BaseAttributes,
-    ConstraintContext
->("&", {
+const attributesIntersection = composeConstraintOperation<BaseAttributes>({
     subtype: disjointIntersection,
     divisor: divisorIntersection,
     regex: regexIntersection,

@@ -10,7 +10,7 @@ import type { ConstraintContext } from "./compare.js"
 import { nodeIntersection } from "./intersection.js"
 import type { BaseNode, Resolution } from "./node.js"
 import type { SetOperation } from "./operation.js"
-import { composeKeyedOperation, equivalence } from "./operation.js"
+import { composeConstraintOperation, equivalence } from "./operation.js"
 
 type PropTypesAttribute = {
     readonly number?: Resolution
@@ -27,10 +27,9 @@ export type ObjectAttributes = {
 }
 
 // TODO: Never propagation
-export const propsIntersection = composeKeyedOperation<
-    Dictionary<BaseNode>,
-    ConstraintContext
->("&", (propKey, l, r, context) => nodeIntersection(l, r, context.scope))
+export const propsIntersection = composeConstraintOperation<
+    Dictionary<BaseNode>
+>((propKey, l, r, context) => nodeIntersection(l, r, context.scope))
 
 export const requiredKeysIntersection: SetOperation<keySet> = (l, r) => {
     const result = { ...l, ...r }
