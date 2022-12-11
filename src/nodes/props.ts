@@ -13,30 +13,30 @@ import {
     equivalence
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { BaseNode, Node, Resolution } from "./node.js"
+import type { UnknownNode, TypeNode, Resolution } from "./node.js"
 
 type PropTypesAttribute = {
-    readonly number?: Node
-    readonly string?: Node
+    readonly number?: TypeNode
+    readonly string?: TypeNode
 }
 
 export type ObjectAttributes = {
     readonly type: "object"
-    readonly props?: Dictionary<Node>
+    readonly props?: Dictionary<TypeNode>
     readonly requiredKeys?: keySet
     readonly propTypes?: PropTypesAttribute
     readonly subtype?: ObjectSubtypeName
     readonly bounds?: Bounds
 }
 
-type BaseProps = Dictionary<BaseNode>
+type BaseProps = Dictionary<UnknownNode>
 
 // TODO: Never propagation
 export const propsIntersection = composeConstraintIntersection<
     BaseProps,
     ConstraintContext
 >(
-    composeKeyedOperation<Dictionary<BaseNode>, ConstraintContext>(
+    composeKeyedOperation<Dictionary<UnknownNode>, ConstraintContext>(
         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
         { propagateEmpty: true }
     )

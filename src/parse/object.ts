@@ -1,6 +1,6 @@
 import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
-import type { Node } from "../nodes/node.js"
+import type { TypeNode } from "../nodes/node.js"
 import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
@@ -19,8 +19,8 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
-export const parseDict = (def: Dictionary, scope: ScopeRoot): Node => {
-    const props: mutable<Dictionary<Node>> = {}
+export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
+    const props: mutable<Dictionary<TypeNode>> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
@@ -59,11 +59,11 @@ export type inferRecord<
     }
 >
 
-export const parseTuple = (def: List, scope: ScopeRoot): Node => {
+export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: Record<number, Node> = {}
+    const props: Record<number, TypeNode> = {}
     for (let i = 0; i < def.length; i++) {
         props[i] = parseDefinition(def[i], scope)
     }
@@ -129,7 +129,10 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases>[]
     : never
 
-const parseTupleExpression = (def: TupleExpression, scope: ScopeRoot): Node => {
+const parseTupleExpression = (
+    def: TupleExpression,
+    scope: ScopeRoot
+): TypeNode => {
     if (isKeyOf(def[1], Scanner.branchTokens)) {
         if (def[2] === undefined) {
             return throwParseError(buildMissingRightOperandMessage(def[1], ""))

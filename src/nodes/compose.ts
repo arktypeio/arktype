@@ -4,11 +4,11 @@ import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
 import { keywords } from "./names.js"
 import type {
-    BaseConstraints,
-    BaseKeyedConstraint,
-    BaseNode,
-    BaseResolution,
-    Node
+    TypeNode,
+    UnknownConstraints,
+    UnknownKeyedConstraint,
+    UnknownNode,
+    UnknownResolution
 } from "./node.js"
 import { resolveIfIdentifier } from "./utils.js"
 
@@ -152,9 +152,9 @@ export const composeKeyedOperation =
     }
 
 export const composeNodeOperation = (
-    resolutionOperation: SetOperation<BaseResolution, ScopeRoot>
+    resolutionOperation: SetOperation<UnknownResolution, ScopeRoot>
 ) =>
-    composeConstraintIntersection<BaseNode, ScopeRoot>((l, r, scope) => {
+    composeConstraintIntersection<UnknownNode, ScopeRoot>((l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)
         const rResolution = resolveIfIdentifier(r, scope)
         const result = resolutionOperation(lResolution, rResolution, scope)
@@ -162,16 +162,16 @@ export const composeNodeOperation = (
     })
 
 export const finalizeNodeOperation = (
-    l: BaseNode,
-    result: SetOperationResult<BaseNode>
-): Node =>
+    l: UnknownNode,
+    result: SetOperationResult<UnknownNode>
+): TypeNode =>
     result === empty ? keywords.never : result === equivalence ? l : result
 
 // TODO: Add aliases back if no subtype indices
 export const coalesceBranches = (
     typeName: TypeName,
-    branches: BaseKeyedConstraint[]
-): BaseConstraints => {
+    branches: UnknownKeyedConstraint[]
+): UnknownConstraints => {
     switch (branches.length) {
         case 0:
             // TODO: type is never, anything else that can be done?

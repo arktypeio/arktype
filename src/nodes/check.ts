@@ -1,20 +1,20 @@
 import type { ScopeRoot } from "../scope.js"
 import type { ConstraintContext } from "./compare.js"
-import type { BaseAttributes, Node } from "./node.js"
+import type { TypeNode, UnknownAttributes } from "./node.js"
 
-export type AttributeChecker<data, k extends keyof BaseAttributes> = (
+export type AttributeChecker<data, k extends keyof UnknownAttributes> = (
     data: data,
-    attribute: BaseAttributes[k]
+    attribute: UnknownAttributes[k]
 ) => boolean
 
 export const checkAttributes = (
     data: unknown,
-    attributes: BaseAttributes,
+    attributes: UnknownAttributes,
     context: ConstraintContext
 ) => {
     return true
 }
 
-export const checkNode = (data: unknown, node: Node, scope: ScopeRoot) => {
+export const checkNode = (data: unknown, node: TypeNode, scope: ScopeRoot) => {
     return true
 }

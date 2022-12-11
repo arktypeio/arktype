@@ -3,7 +3,7 @@ import type { TypeName } from "../utils/typeOf.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equivalence } from "./compose.js"
 import { keyedConstraintsIntersection } from "./intersection.js"
-import type { BaseConstraints, BaseKeyedConstraint } from "./node.js"
+import type { UnknownConstraints, UnknownKeyedConstraint } from "./node.js"
 import { resolveConstraintBranches } from "./utils.js"
 
 export type ConstraintContext = {
@@ -12,8 +12,8 @@ export type ConstraintContext = {
 }
 
 export const compareConstraints = (
-    l: BaseConstraints,
-    r: BaseConstraints,
+    l: UnknownConstraints,
+    r: UnknownConstraints,
     context: ConstraintContext
 ): ConstraintComparison => {
     const lBranches = resolveConstraintBranches(
@@ -57,28 +57,28 @@ export const compareConstraints = (
 }
 
 type ConstraintComparison =
-    | SetOperationResult<BaseConstraints>
+    | SetOperationResult<UnknownConstraints>
     | BranchComparison
 
 export const isSubtypeComparison = (
     comparison: ConstraintComparison
-): comparison is SetOperationResult<BaseConstraints> =>
+): comparison is SetOperationResult<UnknownConstraints> =>
     (comparison as BranchComparison)?.lBranches === undefined
 
 type BranchComparison = {
-    lBranches: BaseKeyedConstraint[]
-    rBranches: BaseKeyedConstraint[]
+    lBranches: UnknownKeyedConstraint[]
+    rBranches: UnknownKeyedConstraint[]
     lStrictSubtypes: number[]
     rStrictSubtypes: number[]
     equivalentTypes: EquivalentIndexPair[]
-    distinctIntersections: BaseKeyedConstraint[]
+    distinctIntersections: UnknownKeyedConstraint[]
 }
 
 type EquivalentIndexPair = [lIndex: number, rIndex: number]
 
 const compareBranches = (
-    lBranches: BaseKeyedConstraint[],
-    rBranches: BaseKeyedConstraint[],
+    lBranches: UnknownKeyedConstraint[],
+    rBranches: UnknownKeyedConstraint[],
     context: ConstraintContext
 ): BranchComparison => {
     const comparison: BranchComparison = {
@@ -91,12 +91,12 @@ const compareBranches = (
     }
     const pairsByR = rBranches.map((constraint) => ({
         constraint,
-        distinct: [] as BaseKeyedConstraint[] | null
+        distinct: [] as UnknownKeyedConstraint[] | null
     }))
     lBranches.forEach((l, lIndex) => {
         let lImpliesR = false
         const distinct = pairsByR.map(
-            (rData, rIndex): BaseKeyedConstraint | null => {
+            (rData, rIndex): UnknownKeyedConstraint | null => {
                 if (lImpliesR || !rData.distinct) {
                     return null
                 }

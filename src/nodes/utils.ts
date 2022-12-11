@@ -4,24 +4,24 @@ import { keysOf, listFrom } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
 import type {
-    BaseConstraints,
-    BaseKeyedConstraint,
-    BaseNode,
-    BaseResolution,
+    UnknownConstraints,
+    UnknownKeyedConstraint,
+    UnknownNode,
+    UnknownResolution,
     ConstraintsOf,
-    Node
+    TypeNode
 } from "./node.js"
 
 export const resolveIfIdentifier = (
-    node: BaseNode,
+    node: UnknownNode,
     scope: ScopeRoot
-): BaseResolution => (typeof node === "string" ? scope.resolve(node) : node)
+): UnknownResolution => (typeof node === "string" ? scope.resolve(node) : node)
 
-export const nodeExtends = (node: Node, base: Node, scope: ScopeRoot) =>
+export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
 
 export const typeOfNode = (
-    node: Node,
+    node: TypeNode,
     scope: ScopeRoot
 ): TypeName | TypeName[] => {
     const typeNames = keysOf(resolveIfIdentifier(node, scope))
@@ -34,16 +34,16 @@ export type MonotypeNode<typeName extends TypeName> = {
 }
 
 export const nodeHasOnlyType = <typeName extends TypeName>(
-    node: Node,
+    node: TypeNode,
     typeName: typeName,
     scope: ScopeRoot
 ): node is MonotypeNode<typeName> => typeOfNode(node, scope) === typeName
 
 export const resolveConstraintBranches = (
-    typeConstraints: BaseConstraints,
+    typeConstraints: UnknownConstraints,
     typeName: TypeName,
     scope: ScopeRoot
-): true | BaseKeyedConstraint[] => {
+): true | UnknownKeyedConstraint[] => {
     if (typeConstraints === true) {
         return true
     }

@@ -1,5 +1,9 @@
 import { keywords } from "./nodes/names.js"
-import type { Node, Resolution, ResolvedConstraintsOf } from "./nodes/node.js"
+import type {
+    TypeNode,
+    Resolution,
+    ResolvedConstraintsOf
+} from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -65,7 +69,7 @@ type inferredScopeToArktypes<inferred> = {
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
     attributes = {} as { [k in keyof inferred]: Resolution }
     // TODO: Add intersection cache
-    private cache: mutable<Dictionary<Node>> = {}
+    private cache: mutable<Dictionary<TypeNode>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -147,7 +151,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return this.resolveConstraintsRecurse(resolution, typeName, seen)
     }
 
-    memoizedParse(def: string): Node {
+    memoizedParse(def: string): TypeNode {
         if (def in this.cache) {
             return this.cache[def]
         }

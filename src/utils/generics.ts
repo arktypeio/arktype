@@ -29,6 +29,14 @@ export type merge<base, merged> = evaluate<
         extractMergeable<merged>
 >
 
+/** Replace existing keys of o without altering readonly or optional modifiers  */
+export type replaceKeys<
+    o,
+    replacements extends { -readonly [k in keyof o]?: unknown }
+> = evaluate<{
+    [k in keyof o]: k extends keyof replacements ? replacements[k] : o[k]
+}>
+
 type extractMergeable<t> = t extends {} ? t : {}
 
 export type isTopType<t> = (any extends t ? true : false) extends true
@@ -110,6 +118,9 @@ export type deepImmutable<o> = [o] extends [object]
     : o
 
 export type subtype<t, u extends t> = u
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type supertype<t extends u, u> = u
 
 export type defined<t> = Exclude<t, undefined>
 

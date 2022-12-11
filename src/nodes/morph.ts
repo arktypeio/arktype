@@ -1,7 +1,7 @@
 import type { Dictionary } from "../utils/generics.js"
-import type { Node, Resolution } from "./node.js"
+import type { TypeNode, Resolution } from "./node.js"
 
-export const morph = (name: MorphName, type: Node) => morphs[name](type)
+export const morph = (name: MorphName, type: TypeNode) => morphs[name](type)
 
 export type MorphName = keyof typeof morphs
 
@@ -14,4 +14,4 @@ const morphs = {
             }
         }
     })
-} satisfies Dictionary<(input: Node) => Node>
+} satisfies Dictionary<(input: TypeNode) => TypeNode>
