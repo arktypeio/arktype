@@ -1,8 +1,10 @@
 import type { Bound, Bounds } from "../../../nodes/bounds.js"
 import {
     boundsIntersection,
-    buildEmptyRangeMessage
+    buildEmptyRangeMessage,
+    compareStrictness
 } from "../../../nodes/bounds.js"
+import { empty } from "../../../nodes/operation.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
@@ -75,7 +77,7 @@ export const parseRightBound = (
             return s.error(buildUnpairableComparatorMessage(comparator))
         }
         bounds = deserializeRange(openRange[0], openRange[1], comparator, limit)
-        if (boundsIntersection({}, bounds) === null) {
+        if (compareStrictness(bounds.min, bounds.max, "min") === "l") {
             return s.error(buildEmptyRangeMessage(bounds.min!, bounds.max!))
         }
     } else {

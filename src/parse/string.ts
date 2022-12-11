@@ -63,7 +63,7 @@ export const maybeNaiveParse = (
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (scope.isResolvable(elementDef)) {
-            return morph("array", scope.resolve(elementDef))
+            return morph("array", elementDef)
         }
     }
     if (scope.isResolvable(def)) {

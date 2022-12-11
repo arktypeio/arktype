@@ -1,6 +1,6 @@
 import type { List } from "../utils/generics.js"
 import type { SetOperation } from "./operation.js"
-import { equivalence } from "./operation.js"
+import { empty, equivalence } from "./operation.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -17,19 +17,23 @@ export const boundsIntersection: SetOperation<Bounds> = (l, r) => {
     const maxComparison = compareStrictness(l.max, r.max, "max")
     if (minComparison === "l") {
         if (maxComparison === "r") {
-            return {
-                min: l.min!,
-                max: r.max!
-            }
+            return compareStrictness(l.min!, r.max!, "min") === "l"
+                ? empty
+                : {
+                      min: l.min!,
+                      max: r.max!
+                  }
         }
         return l
     }
     if (minComparison === "r") {
         if (maxComparison === "l") {
-            return {
-                min: r.min!,
-                max: l.max!
-            }
+            return compareStrictness(l.max!, r.min!, "max") === "l"
+                ? empty
+                : {
+                      min: r.min!,
+                      max: l.max!
+                  }
         }
         return r
     }
@@ -66,7 +70,7 @@ export const buildEmptyRangeMessage = (min: Bound, max: Bound) =>
     )} is empty`
 
 const stringifyBound = (kind: BoundKind, bound: Bound) =>
-    `${kind === "min" ? "<" : ">"}${bound.exclusive ? "" : "="}${bound.limit}`
+    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}${bound.limit}`
 
 const invertedKinds = {
     min: "max",
@@ -75,7 +79,7 @@ const invertedKinds = {
 
 type BoundKind = keyof typeof invertedKinds
 
-const compareStrictness = (
+export const compareStrictness = (
     l: Bound | undefined,
     r: Bound | undefined,
     kind: BoundKind

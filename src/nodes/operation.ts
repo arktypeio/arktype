@@ -48,6 +48,7 @@ export type RootIntersectionReducer<root extends Dictionary, context> =
 
 export const composeKeyedOperation =
     <root extends Dictionary, context>(
+        // TODO: clarify "operator" in this context
         operator: "&" | "|",
         reducer: RootIntersectionReducer<root, context>
     ): ContextualSetOperation<root, context> =>
@@ -59,18 +60,18 @@ export const composeKeyedOperation =
         for (k in result) {
             if (l[k] === undefined) {
                 if (operator === "|") {
-                    result[k] = r[k]
-                    rImpliesL = false
-                } else {
                     lImpliesR = false
+                } else {
+                    delete result[k]
+                    rImpliesL = false
                 }
                 continue
             }
             if (r[k] === undefined) {
                 if (operator === "|") {
-                    result[k] = l[k]
                     lImpliesR = false
                 } else {
+                    delete result[k]
                     rImpliesL = false
                 }
                 continue

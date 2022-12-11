@@ -1,5 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
+import type { Node } from "../exports.js"
 import { type } from "../exports.js"
 import {
     buildMultipleLeftBoundsMessage,
@@ -8,7 +9,6 @@ import {
 } from "../src/parse/reduce/shared.js"
 import { singleEqualsMessage } from "../src/parse/shift/operator/bounds.js"
 
-//TODO: Add tests for mid definitions/multiple bounds
 describe("bound", () => {
     describe("parse", () => {
         describe("single", () => {
@@ -86,71 +86,62 @@ describe("bound", () => {
             })
         })
         describe("intersection", () => {
-            test("l.limit === r.limit with right non exclusive", () => {
-                attest(type("number<2&number<=2").root).snap({
+            test("overlapping", () => {
+                const expected: Node = {
                     number: {
-                        bounds: { max: { limit: 2, exclusive: true } }
+                        bounds: {
+                            min: { limit: 2 },
+                            max: { limit: 3, exclusive: true }
+                        }
+                    }
+                }
+                attest(type("2<=number<3").root).equals(expected)
+                attest(type("number>=2&number<3").root).equals(expected)
+                attest(type("2<=number<4&1<=number<3").root).equals(expected)
+            })
+            test("single value overlap", () => {
+                attest(type("0<number<=1&1<=number<2").root).equals({
+                    number: {
+                        bounds: {
+                            min: {
+                                limit: 1
+                            },
+                            max: {
+                                limit: 1
+                            }
+                        }
                     }
                 })
             })
-            test("l.limit === r.limit with right non exclusive", () => {
-                attest(type("number<2&number<=2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2, exclusive: true } }
-                    }
-                })
+            test("non-overlapping", () => {
+                const expected: Node = {
+                    number: []
+                }
+                attest(type("number>3&number<=3").root).equals(expected)
+                attest(type("-2<number<-1&1<number<2").root).equals(expected)
             })
-            test("l.limit === r.limit with right exclusive", () => {
-                attest(type("number<2&number<2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2, exclusive: true } }
-                    }
-                })
+            test("greater min is stricter", () => {
+                const expected: Node = {
+                    number: { bounds: { min: { limit: 3 } } }
+                }
+                attest(type("number>=3&number>2").root).equals(expected)
+                attest(type("number>2&number>=3").root).equals(expected)
             })
-            test("l.limit === r.limit with left non exclusive right exclusive", () => {
-                attest(type("number<=2&number<2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2, exclusive: true } }
-                    }
-                })
+            test("lesser max is stricter", () => {
+                const expected: Node = {
+                    number: { bounds: { max: { limit: 3 } } }
+                }
+                attest(type("number<=3&number<4").root).equals(expected)
+                attest(type("number<4&number<=3").root).equals(expected)
             })
-            test("l.limit === r.limit with left non exclusive right non exclusive", () => {
-                attest(type("number<=2&number<=2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2 } }
-                    }
-                })
-            })
-            test("l.limit !== kind==min r.limit with l < r", () => {
-                attest(type("number>5&number>7").root).snap({
-                    number: {
-                        bounds: { min: { limit: 7, exclusive: true } }
-                    }
-                })
-            })
-            test("l.limit !== kind==min r.limit with l > r", () => {
-                attest(type("number>9&number>7").root).snap({
-                    number: {
-                        bounds: { min: { limit: 9, exclusive: true } }
-                    }
-                })
-            })
-            test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<9&number<7").root).snap({
-                    number: {
-                        bounds: { max: { limit: 7, exclusive: true } }
-                    }
-                })
-            })
-            test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<7&number<9").root).snap({
-                    number: {
-                        bounds: { max: { limit: 7, exclusive: true } }
-                    }
-                })
+            test("exclusive included if limits equal", () => {
+                const expected: Node = {
+                    number: { bounds: { max: { limit: 3, exclusive: true } } }
+                }
+                attest(type("number<3&number<=3").root).equals(expected)
+                attest(type("number<=3&number<3").root).equals(expected)
             })
         })
-
         describe("errors", () => {
             test("single equals", () => {
                 // @ts-expect-error
@@ -183,7 +174,9 @@ describe("bound", () => {
                 )
             })
             test("empty range", () => {
-                attest(type("number>3&number<2").root).snap({})
+                attest(() => type("3<=number<2").root).throws.snap(
+                    "Error: the range bounded by >=3 and <2 is empty"
+                )
             })
         })
     })

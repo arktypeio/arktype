@@ -44,14 +44,14 @@ export const compareConstraints = (
             branchComparison.equivalentTypes.length ===
         lBranches.length
     ) {
-        return r
+        return l
     }
     if (
         branchComparison.rStrictSubtypes.length +
             branchComparison.equivalentTypes.length ===
         rBranches.length
     ) {
-        return l
+        return r
     }
     return branchComparison
 }
