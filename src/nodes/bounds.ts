@@ -1,6 +1,5 @@
 import type { List } from "../utils/generics.js"
-import type { SetOperation } from "./operation.js"
-import { empty, equivalence } from "./operation.js"
+import { composeConstraintIntersection, empty, equivalence } from "./compose.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -12,33 +11,39 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection: SetOperation<Bounds> = (l, r) => {
-    const minComparison = compareStrictness(l.min, r.min, "min")
-    const maxComparison = compareStrictness(l.max, r.max, "max")
-    if (minComparison === "l") {
-        if (maxComparison === "r") {
-            return compareStrictness(l.min!, r.max!, "min") === "l"
-                ? empty
-                : {
-                      min: l.min!,
-                      max: r.max!
-                  }
+export const boundsIntersection = composeConstraintIntersection<Bounds>(
+    (l, r) => {
+        const minComparison = compareStrictness(l.min, r.min, "min")
+        const maxComparison = compareStrictness(l.max, r.max, "max")
+        if (minComparison === "l") {
+            if (maxComparison === "r") {
+                return compareStrictness(l.min!, r.max!, "min") === "l"
+                    ? empty
+                    : {
+                          min: l.min!,
+                          max: r.max!
+                      }
+            }
+            return l
         }
-        return l
-    }
-    if (minComparison === "r") {
-        if (maxComparison === "l") {
-            return compareStrictness(l.max!, r.min!, "max") === "l"
-                ? empty
-                : {
-                      min: r.min!,
-                      max: l.max!
-                  }
+        if (minComparison === "r") {
+            if (maxComparison === "l") {
+                return compareStrictness(l.max!, r.min!, "max") === "l"
+                    ? empty
+                    : {
+                          min: r.min!,
+                          max: l.max!
+                      }
+            }
+            return r
         }
-        return r
+        return maxComparison === "l"
+            ? l
+            : maxComparison === "r"
+            ? r
+            : equivalence
     }
-    return maxComparison === "l" ? l : maxComparison === "r" ? r : equivalence
-}
+)
 
 type BoundableData = number | string | List
 

@@ -7,41 +7,54 @@ import { hasObjectSubtype } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
 import type { ConstraintContext } from "./compare.js"
+import {
+    composeConstraintIntersection,
+    composeKeyedOperation,
+    equivalence
+} from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { BaseNode, Resolution } from "./node.js"
-import type { SetOperation } from "./operation.js"
-import { composeConstraintOperation, equivalence } from "./operation.js"
+import type { BaseNode, Node, Resolution } from "./node.js"
 
 type PropTypesAttribute = {
-    readonly number?: Resolution
-    readonly string?: Resolution
+    readonly number?: Node
+    readonly string?: Node
 }
 
 export type ObjectAttributes = {
     readonly type: "object"
-    readonly props?: Dictionary<Resolution>
+    readonly props?: Dictionary<Node>
     readonly requiredKeys?: keySet
     readonly propTypes?: PropTypesAttribute
     readonly subtype?: ObjectSubtypeName
     readonly bounds?: Bounds
 }
 
-// TODO: Never propagation
-export const propsIntersection = composeConstraintOperation<
-    Dictionary<BaseNode>
->((propKey, l, r, context) => nodeIntersection(l, r, context.scope))
+type BaseProps = Dictionary<BaseNode>
 
-export const requiredKeysIntersection: SetOperation<keySet> = (l, r) => {
-    const result = { ...l, ...r }
-    const resultSize = keyCount(result)
-    return resultSize === keyCount(l)
-        ? resultSize === keyCount(r)
-            ? equivalence
-            : l
-        : resultSize === keyCount(r)
-        ? r
-        : result
-}
+// TODO: Never propagation
+export const propsIntersection = composeConstraintIntersection<
+    BaseProps,
+    ConstraintContext
+>(
+    composeKeyedOperation<Dictionary<BaseNode>, ConstraintContext>(
+        (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
+        { propagateEmpty: true }
+    )
+)
+
+export const requiredKeysIntersection = composeConstraintIntersection<keySet>(
+    (l, r) => {
+        const result = { ...l, ...r }
+        const resultSize = keyCount(result)
+        return resultSize === keyCount(l)
+            ? resultSize === keyCount(r)
+                ? equivalence
+                : l
+            : resultSize === keyCount(r)
+            ? r
+            : result
+    }
+)
 
 export const checkObject = (
     data: object,

@@ -1,7 +1,7 @@
-import { rootResolutionIntersection } from "../nodes/intersection.js"
+import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
-import type { Resolution } from "../nodes/node.js"
-import { rootResolutionUnion } from "../nodes/union.js"
+import type { Node } from "../nodes/node.js"
+import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
@@ -19,8 +19,8 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
-export const parseDict = (def: Dictionary, scope: ScopeRoot): Resolution => {
-    const props: mutable<Dictionary<Resolution>> = {}
+export const parseDict = (def: Dictionary, scope: ScopeRoot): Node => {
+    const props: mutable<Dictionary<Node>> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
@@ -59,11 +59,11 @@ export type inferRecord<
     }
 >
 
-export const parseTuple = (def: List, scope: ScopeRoot): Resolution => {
+export const parseTuple = (def: List, scope: ScopeRoot): Node => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: Record<number, Resolution> = {}
+    const props: Record<number, Node> = {}
     for (let i = 0; i < def.length; i++) {
         props[i] = parseDefinition(def[i], scope)
     }
@@ -129,19 +129,14 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases>[]
     : never
 
-const parseTupleExpression = (
-    def: TupleExpression,
-    scope: ScopeRoot
-): Resolution => {
+const parseTupleExpression = (def: TupleExpression, scope: ScopeRoot): Node => {
     if (isKeyOf(def[1], Scanner.branchTokens)) {
         if (def[2] === undefined) {
             return throwParseError(buildMissingRightOperandMessage(def[1], ""))
         }
         const l = parseDefinition(def[0], scope)
         const r = parseDefinition(def[2], scope)
-        return def[1] === "&"
-            ? rootResolutionIntersection(l, r, scope)
-            : rootResolutionUnion(l, r, scope)
+        return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
     }
     if (def[1] === "[]") {
         return morph("array", parseDefinition(def[0], scope))

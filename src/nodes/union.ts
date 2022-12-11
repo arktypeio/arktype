@@ -1,18 +1,25 @@
 import type { ScopeRoot } from "../scope.js"
 import { compareConstraints, isSubtypeComparison } from "./compare.js"
-import type { Node, Resolution } from "./node.js"
 import {
     coalesceBranches,
+    composeKeyedOperation,
     composeNodeOperation,
-    composeResolutionOperation,
+    equivalence,
     finalizeNodeOperation
-} from "./operation.js"
+} from "./compose.js"
+import type { BaseResolution, Node, Resolution } from "./node.js"
 
 export const union = (l: Node, r: Node, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const resolutionUnion = composeResolutionOperation(
+export const resolutionUnion = composeKeyedOperation<BaseResolution, ScopeRoot>(
     (typeName, l, r, scope) => {
+        if (l === undefined) {
+            return r === undefined ? equivalence : r
+        }
+        if (r === undefined) {
+            return l
+        }
         const comparison = compareConstraints(l, r, { typeName, scope })
         if (isSubtypeComparison(comparison)) {
             return comparison === l ? r : l
@@ -38,9 +45,3 @@ export const resolutionUnion = composeResolutionOperation(
 )
 
 export const nodeUnion = composeNodeOperation(resolutionUnion)
-
-export const rootResolutionUnion = (
-    l: Resolution,
-    r: Resolution,
-    scope: ScopeRoot
-) => finalizeNodeOperation(l, resolutionUnion(l, r, scope)) as Resolution

@@ -1,5 +1,5 @@
 import { keywords } from "./nodes/names.js"
-import type { Resolution, ResolvedConstraintsOf } from "./nodes/node.js"
+import type { Node, Resolution, ResolvedConstraintsOf } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -65,7 +65,7 @@ type inferredScopeToArktypes<inferred> = {
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
     attributes = {} as { [k in keyof inferred]: Resolution }
     // TODO: Add intersection cache
-    private cache: mutable<Dictionary<Resolution>> = {}
+    private cache: mutable<Dictionary<Node>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -103,15 +103,18 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
                 )
             )
         }
-        const root = parseDefinition(this.aliases[name], this)
-        if (typeof root === "object") {
-            return root
+        let root = parseDefinition(this.aliases[name], this)
+        if (typeof root === "string") {
+            if (seen.includes(root)) {
+                return throwParseError(
+                    buildShallowCycleErrorMessage(name, seen)
+                )
+            }
+            seen.push(root)
+            root = this.resolveRecurse(root, seen)
         }
-        if (seen.includes(root)) {
-            return throwParseError(buildShallowCycleErrorMessage(name, seen))
-        }
-        seen.push(root)
-        return this.resolveRecurse(root, seen)
+        this.attributes[name as keyof inferred] = root
+        return root
     }
 
     resolveConstraints<typeName extends TypeName>(
@@ -144,16 +147,13 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return this.resolveConstraintsRecurse(resolution, typeName, seen)
     }
 
-    memoizedParse(def: string): Resolution {
+    memoizedParse(def: string): Node {
         if (def in this.cache) {
             return this.cache[def]
         }
         const root = maybeNaiveParse(def, this) ?? fullStringParse(def, this)
-        // if we finish parsing and end up with another identifier, cache its resolution
-        const resolution =
-            typeof root === "string" ? this.resolve(root) : deepFreeze(root)
-        this.cache[def] = resolution
-        return resolution
+        this.cache[def] = deepFreeze(root)
+        return root
     }
 }
 

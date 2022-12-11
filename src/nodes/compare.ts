@@ -1,9 +1,9 @@
 import type { ScopeRoot } from "../scope.js"
 import type { TypeName } from "../utils/typeOf.js"
+import type { SetOperationResult } from "./compose.js"
+import { empty, equivalence } from "./compose.js"
 import { keyedConstraintsIntersection } from "./intersection.js"
 import type { BaseConstraints, BaseKeyedConstraint } from "./node.js"
-import type { SetOperationResult } from "./operation.js"
-import { empty, equivalence } from "./operation.js"
 import { resolveConstraintBranches } from "./utils.js"
 
 export type ConstraintContext = {

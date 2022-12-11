@@ -4,7 +4,7 @@ import {
     buildEmptyRangeMessage,
     compareStrictness
 } from "../../../nodes/bounds.js"
-import { empty } from "../../../nodes/operation.js"
+import { empty } from "../../../nodes/compose.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"

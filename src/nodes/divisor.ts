@@ -1,13 +1,12 @@
-import type { SetOperation } from "./operation.js"
-import { equivalence } from "./operation.js"
+import { composeConstraintIntersection, equivalence } from "./compose.js"
 
 export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0
 
-export const divisorIntersection: SetOperation<number> = (
-    l: number,
-    r: number
-) => (l === r ? equivalence : Math.abs((l * r) / greatestCommonDivisor(l, r)))
+export const divisorIntersection = composeConstraintIntersection<number>(
+    (l: number, r: number) =>
+        l === r ? equivalence : Math.abs((l * r) / greatestCommonDivisor(l, r))
+)
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

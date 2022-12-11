@@ -9,7 +9,7 @@ describe("dynamic", () => {
     test("uninferred types", () => {
         const dynamicStringArray = type.dynamic("str" + "ing")
         attest(dynamicStringArray.infer).typed as unknown
-        attest(dynamicStringArray.root).equals({ string: true })
+        attest(dynamicStringArray.root).equals("string")
     })
     test("uninferred aliases", () => {
         const s = scope.dynamic({

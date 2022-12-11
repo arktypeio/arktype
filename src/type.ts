@@ -1,4 +1,4 @@
-import type { Resolution } from "./nodes/node.js"
+import type { Node, Resolution } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
@@ -35,12 +35,10 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class ArkType<inferred = unknown> {
     constructor(
-        public root: Resolution,
+        public root: Node,
         public config: Config,
         public scope: DynamicScope
-    ) {
-        // TODO: Integrate config
-    }
+    ) {}
 
     get infer(): inferred {
         return chainableNoOpProxy

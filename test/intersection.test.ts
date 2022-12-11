@@ -11,21 +11,12 @@ describe("intersection", () => {
         test("two types", () => {
             const t = type("boolean&true")
             attest(t.infer).typed as true
-            attest(t.root).snap({ boolean: { value: true } })
+            attest(t.root).snap("true")
         })
         test("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false
-            attest(t.root).snap({
-                bigint: true,
-                boolean: { value: false },
-                null: true,
-                number: true,
-                object: true,
-                string: true,
-                symbol: true,
-                undefined: true
-            })
+            attest(t.root).snap("false")
         })
         describe("number & literals", () => {
             test("same literal", () => {
@@ -58,10 +49,8 @@ describe("intersection", () => {
                 )
             })
             test("never", () => {
-                attest(type("string&number").root).snap({
-                    string: true,
-                    number: true
-                })
+                // TODO: Top-level never?
+                attest(type("string&number").root).snap({})
             })
         })
     })

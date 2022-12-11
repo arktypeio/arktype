@@ -67,7 +67,7 @@ export const maybeNaiveParse = (
         }
     }
     if (scope.isResolvable(def)) {
-        return scope.resolve(def)
+        return def
     }
 }
 
