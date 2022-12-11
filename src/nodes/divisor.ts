@@ -1,5 +1,5 @@
-import type { SetOperation } from "./intersection.js"
-import { equivalence } from "./intersection.js"
+import type { SetOperation } from "./operation.js"
+import { equivalence } from "./operation.js"
 
 export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0

@@ -6,13 +6,11 @@ import type { ObjectSubtypeName } from "../utils/typeOf.js"
 import { hasObjectSubtype } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
-import type { ConstraintContext, SetOperation } from "./intersection.js"
-import {
-    composeKeyedOperation,
-    equivalence,
-    nodeIntersection
-} from "./intersection.js"
+import type { ConstraintContext } from "./compare.js"
+import { nodeIntersection } from "./intersection.js"
 import type { BaseNode, Resolution } from "./node.js"
+import type { SetOperation } from "./operation.js"
+import { composeKeyedOperation, equivalence } from "./operation.js"
 
 type PropTypesAttribute = {
     readonly number?: Resolution

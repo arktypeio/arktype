@@ -1,18 +1,12 @@
 import type { ScopeRoot } from "../scope.js"
-import type { TypeName } from "../utils/typeOf.js"
+import { compareConstraints, isSubtypeComparison } from "./compare.js"
+import type { BaseResolution, Node, Resolution } from "./node.js"
 import {
-    compareConstraints,
+    coalesceBranches,
     composeKeyedOperation,
     composeNodeOperation,
-    finalizeNodeOperation,
-    isSubtypeComparison
-} from "./intersection.js"
-import type {
-    BaseConstraints,
-    BaseKeyedConstraint,
-    BaseResolution,
-    Node
-} from "./node.js"
+    finalizeNodeOperation
+} from "./operation.js"
 
 export const union = (l: Node, r: Node, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
@@ -46,24 +40,8 @@ export const resolutionUnion = composeKeyedOperation<BaseResolution, ScopeRoot>(
 
 export const nodeUnion = composeNodeOperation(resolutionUnion)
 
-// TODO: Add aliases back if no subtype indices
-export const coalesceBranches = (
-    typeName: TypeName,
-    branches: BaseKeyedConstraint[]
-): BaseConstraints => {
-    switch (branches.length) {
-        case 0:
-            // TODO: type is never, anything else that can be done?
-            return []
-        case 1:
-            return branches[0]
-        default:
-            if (typeName === "boolean") {
-                // If a boolean has multiple branches, neither of which is a
-                // subtype of the other, it consists of two opposite literals
-                // and can be simplified to a non-literal boolean.
-                return true
-            }
-            return branches
-    }
-}
+export const rootResolutionUnion = (
+    l: Resolution,
+    r: Resolution,
+    scope: ScopeRoot
+) => finalizeNodeOperation(l, resolutionUnion(l, r, scope)) as Resolution

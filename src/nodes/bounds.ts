@@ -1,6 +1,6 @@
 import type { List } from "../utils/generics.js"
-import type { SetOperation } from "./intersection.js"
-import { equivalence } from "./intersection.js"
+import type { SetOperation } from "./operation.js"
+import { equivalence } from "./operation.js"
 
 export type Bounds = {
     readonly min?: Bound

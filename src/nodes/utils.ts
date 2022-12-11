@@ -1,8 +1,16 @@
 import type { ScopeRoot } from "../scope.js"
-import { keysOf } from "../utils/generics.js"
+import { filterSplit } from "../utils/filterSplit.js"
+import { keysOf, listFrom } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
-import type { BaseNode, BaseResolution, ConstraintsOf, Node } from "./node.js"
+import type {
+    BaseConstraints,
+    BaseKeyedConstraint,
+    BaseNode,
+    BaseResolution,
+    ConstraintsOf,
+    Node
+} from "./node.js"
 
 export const resolveIfIdentifier = (
     node: BaseNode,
@@ -30,3 +38,34 @@ export const nodeHasOnlyType = <typeName extends TypeName>(
     typeName: typeName,
     scope: ScopeRoot
 ): node is MonotypeNode<typeName> => typeOfNode(node, scope) === typeName
+
+export const resolveConstraintBranches = (
+    typeConstraints: BaseConstraints,
+    typeName: TypeName,
+    scope: ScopeRoot
+): true | BaseKeyedConstraint[] => {
+    if (typeConstraints === true) {
+        return true
+    }
+    const [unresolved, resolved] = filterSplit(
+        listFrom(typeConstraints),
+        (branch): branch is string => typeof branch === "string"
+    )
+    while (unresolved.length) {
+        const typeResolution = scope.resolveConstraints(
+            unresolved.pop()!,
+            typeName
+        )
+        if (typeResolution === true) {
+            return true
+        }
+        for (const resolutionBranch of listFrom(typeResolution)) {
+            if (typeof resolutionBranch === "string") {
+                unresolved.push(resolutionBranch)
+            } else {
+                resolved.push(resolutionBranch)
+            }
+        }
+    }
+    return resolved
+}

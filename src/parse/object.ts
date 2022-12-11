@@ -1,6 +1,7 @@
-import { resolutionRootOperation } from "../nodes/intersection.js"
+import { rootResolutionIntersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
 import type { Resolution } from "../nodes/node.js"
+import { rootResolutionUnion } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
@@ -138,7 +139,9 @@ const parseTupleExpression = (
         }
         const l = parseDefinition(def[0], scope)
         const r = parseDefinition(def[2], scope)
-        return resolutionRootOperation(def[1], l, r, scope)
+        return def[1] === "&"
+            ? rootResolutionIntersection(l, r, scope)
+            : rootResolutionUnion(l, r, scope)
     }
     if (def[1] === "[]") {
         return morph("array", parseDefinition(def[0], scope))
