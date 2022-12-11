@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import type { ConstraintContext } from "./compare.js"
-import type { BaseAttributes, Node, Resolution } from "./node.js"
+import type { BaseAttributes, Node } from "./node.js"
 
 export type AttributeChecker<data, k extends keyof BaseAttributes> = (
     data: data,

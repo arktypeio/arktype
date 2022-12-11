@@ -7,7 +7,7 @@ import {
     equivalence,
     finalizeNodeOperation
 } from "./compose.js"
-import type { BaseResolution, Node, Resolution } from "./node.js"
+import type { BaseResolution, Node } from "./node.js"
 
 export const union = (l: Node, r: Node, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))

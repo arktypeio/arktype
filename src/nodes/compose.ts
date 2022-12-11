@@ -1,7 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
-import { listIntersection } from "../utils/generics.js"
 import type { TypeName } from "../utils/typeOf.js"
 import { keywords } from "./names.js"
 import type {

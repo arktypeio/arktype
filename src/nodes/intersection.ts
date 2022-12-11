@@ -20,8 +20,7 @@ import type {
     BaseAttributes,
     BaseKeyedConstraint,
     BaseResolution,
-    Node,
-    Resolution
+    Node
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
