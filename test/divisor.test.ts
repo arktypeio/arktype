@@ -5,21 +5,6 @@ import { buildInvalidDivisorMessage } from "../src/parse/shift/operator/divisor.
 
 describe("divisibility", () => {
     describe("parse", () => {
-        describe("intersection", () => {
-            test("number type & divisor", () => {
-                attest(type("number%3&8").root).snap({
-                    type: "number",
-                    literal: 8
-                })
-            })
-            test("bound & divisor", () => {
-                attest(type("number<3&number%8").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 3, exclusive: true } },
-                    divisor: 8
-                })
-            })
-        })
         describe("valid", () => {
             test("integerLiteralDefinition", () => {
                 const divisibleByTwo = type("number%2")
@@ -33,10 +18,12 @@ describe("divisibility", () => {
             test("whitespace after modulo", () => {
                 attest(type("number % 5").infer).typed as number
             })
-            test("GCD", () => {
-                attest(type("number%2&number%3").root).snap({
-                    type: "number",
-                    divisor: 6
+            test("with bound", () => {
+                attest(type("number<3&number%8").root).snap({
+                    number: {
+                        bounds: { max: { limit: 3, exclusive: true } },
+                        divisor: 8
+                    }
                 })
             })
         })
@@ -59,6 +46,34 @@ describe("divisibility", () => {
                     buildInvalidDivisorMessage(0)
                 )
             })
+        })
+    })
+    describe("intersection", () => {
+        test("identical", () => {
+            attest(type("number%2&number%2").root).snap({
+                number: { divisor: 2 }
+            })
+        })
+        test("purely divisible", () => {
+            attest(type("number%4&number%2").root).snap({
+                number: { divisor: 4 }
+            })
+        })
+        test("common divisor", () => {
+            attest(type("number%6&number%4").root).snap({
+                number: { divisor: 12 }
+            })
+        })
+        test("relatively prime", () => {
+            attest(type("number%2&number%3").root).snap({
+                number: { divisor: 6 }
+            })
+        })
+        test("valid literal", () => {
+            attest(type("number%5&0").root).snap({ number: { value: 0 } })
+        })
+        test("invalid literal", () => {
+            attest(type("number%3&8").root).snap({ number: [] })
         })
     })
 })

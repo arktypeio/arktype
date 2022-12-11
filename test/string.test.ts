@@ -1,5 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
+import type { Node } from "../exports.js"
 import { type } from "../exports.js"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
 import {
@@ -8,32 +9,6 @@ import {
 } from "../src/parse/shift/operand/unenclosed.js"
 
 describe("string", () => {
-    describe("regex", () => {
-        test("same regex", () => {
-            attest(type("/hello/&/hello/").root).snap({
-                type: "string",
-                regex: "hello"
-            })
-        })
-        test("multiple regex", () => {
-            attest(type("/hello/&/notHello/&/goodbye/").root).snap({
-                type: "string",
-                regex: ["hello", "notHello", "goodbye"]
-            })
-        })
-        test("tuple expression regex", () => {
-            attest(type(["/regex/", "&", "/string/"]).root).snap({
-                type: "string",
-                regex: ["regex", "string"]
-            })
-        })
-        test("two lists of regex", () => {
-            attest(type(["/def/&/abc/", "&", "/xyz/&/def/"]).root).snap({
-                type: "string",
-                regex: ["def", "abc", "xyz"]
-            })
-        })
-    })
     test("errors on empty string", () => {
         // @ts-expect-error
         attest(() => type("")).throwsAndHasTypeError(
@@ -55,5 +30,61 @@ describe("string", () => {
         attest(() => type("'bob")).throwsAndHasTypeError(
             buildUnterminatedEnclosedMessage("bob", "'")
         )
+    })
+})
+
+describe("regex intersections", () => {
+    test("distinct strings", () => {
+        attest(type("/a/&/b/").root).snap({
+            string: {
+                regex: ["a", "b"]
+            }
+        })
+    })
+    test("identical strings", () => {
+        attest(type("/a/&/a/").root).snap({
+            string: {
+                regex: "a"
+            }
+        })
+    })
+    // TODO: Use set comparisons https://github.com/arktypeio/arktype/issues/557
+    test("string and list", () => {
+        attest(type(["/a/", "&", "/b/&/c/"]).root).snap({
+            string: { regex: ["b", "c", "a"] }
+        })
+        attest(type(["/a/&/b/", "&", "/c/"]).root).snap({
+            string: { regex: ["a", "b", "c"] }
+        })
+    })
+    test("redundant string and list", () => {
+        const expected: Node = {
+            string: {
+                regex: ["a", "b", "c"]
+            }
+        }
+        attest(type(["/a/", "&", "/a/&/b/&/c/"]).root).equals(expected)
+        attest(type(["/a/&/b/&/c/", "&", "/c/"]).root).equals(expected)
+    })
+    test("distinct lists", () => {
+        attest(type(["/a/&/b/", "&", "/c/&/d/"]).root).snap({
+            string: {
+                regex: ["a", "b", "c", "d"]
+            }
+        })
+    })
+    test("overlapping lists", () => {
+        attest(type(["/a/&/b/", "&", "/c/&/b/"]).root).snap({
+            string: {
+                regex: ["a", "b", "c"]
+            }
+        })
+    })
+    test("identical lists", () => {
+        attest(type(["/a/&/b/", "&", "/b/&/a/"]).root).snap({
+            string: {
+                regex: ["a", "b"]
+            }
+        })
     })
 })
