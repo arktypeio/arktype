@@ -56,7 +56,7 @@ You can also run any of these commands individually:
 "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm buildDocs"
 ```
 
-All of these command will run as part of our CI process and must succeed in order for us to accept your Pull Request.
+All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.
 
 7. Once everything is passing, commit your changes and ensure your fork is up to date:
 
