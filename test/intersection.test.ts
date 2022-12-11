@@ -16,8 +16,34 @@ describe("intersection", () => {
         test("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false
-            attest(t.root).snap({ boolean: { value: false } })
+            attest(t.root).snap({
+                bigint: true,
+                boolean: { value: false },
+                null: true,
+                number: true,
+                object: true,
+                string: true,
+                symbol: true,
+                undefined: true
+            })
         })
+        describe("number & literals", () => {
+            test("same literal", () => {
+                attest(type("2&2").root).snap({ number: { value: 2 } })
+            })
+            test("literal&number type", () => {
+                attest(type("number&22").root).snap({ number: { value: 22 } })
+            })
+            test("float&number type", () => {
+                attest(type("number&22.22").root).snap({
+                    number: { value: 22.22 }
+                })
+            })
+        })
+        describe("string & literal", () => {
+            attest(type("string&'a'").root).snap({ string: { value: "a" } })
+        })
+
         describe("errors", () => {
             test("bad reference", () => {
                 // @ts-expect-error
@@ -30,6 +56,12 @@ describe("intersection", () => {
                 attest(() => type("boolean&&true")).throwsAndHasTypeError(
                     buildMissingRightOperandMessage("&", "&true")
                 )
+            })
+            test("never", () => {
+                attest(type("string&number").root).snap({
+                    string: true,
+                    number: true
+                })
             })
         })
     })

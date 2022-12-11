@@ -9,21 +9,42 @@ import {
 import { singleEqualsMessage } from "../src/parse/shift/operator/bounds.js"
 
 //TODO: Add tests for mid definitions/multiple bounds
+
 describe("bound", () => {
     describe("parse", () => {
+        test("whitespace following comparator", () => {
+            const t = type("number > 3")
+            attest(t.infer).typed as number
+            attest(t.root).snap({
+                number: { bounds: { min: { limit: 3, exclusive: true } } },
+                string: { bounds: { min: { limit: 3, exclusive: true } } },
+                object: {
+                    subtype: "Array",
+                    bounds: { min: { limit: 3, exclusive: true } }
+                }
+            })
+        })
         describe("single", () => {
             test(">", () => {
                 const t = type("number>0")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    number: { bounds: { min: { limit: 0, exclusive: true } } }
+                    number: { bounds: { min: { limit: 0, exclusive: true } } },
+                    string: { bounds: { min: { limit: 0, exclusive: true } } },
+                    object: {
+                        subtype: "Array",
+                        bounds: { min: { limit: 0, exclusive: true } }
+                    }
                 })
             })
             test("<", () => {
                 const t = type("number<10")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    number: {
+                    number: { bounds: { max: { limit: 10, exclusive: true } } },
+                    string: { bounds: { max: { limit: 10, exclusive: true } } },
+                    object: {
+                        subtype: "Array",
                         bounds: { max: { limit: 10, exclusive: true } }
                     }
                 })
@@ -32,7 +53,10 @@ describe("bound", () => {
                 const t = type("number<=-49")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    number: {
+                    number: { bounds: { max: { limit: -49 } } },
+                    string: { bounds: { max: { limit: -49 } } },
+                    object: {
+                        subtype: "Array",
                         bounds: { max: { limit: -49 } }
                     }
                 })
@@ -42,6 +66,19 @@ describe("bound", () => {
                 attest(t.infer).typed as number
                 attest(t.root).snap({
                     number: {
+                        bounds: {
+                            min: { limit: 3211993 },
+                            max: { limit: 3211993 }
+                        }
+                    },
+                    string: {
+                        bounds: {
+                            min: { limit: 3211993 },
+                            max: { limit: 3211993 }
+                        }
+                    },
+                    object: {
+                        subtype: "Array",
                         bounds: {
                             min: { limit: 3211993 },
                             max: { limit: 3211993 }
@@ -60,6 +97,19 @@ describe("bound", () => {
                             min: { limit: -5, exclusive: true },
                             max: { limit: 5 }
                         }
+                    },
+                    string: {
+                        bounds: {
+                            min: { limit: -5, exclusive: true },
+                            max: { limit: 5 }
+                        }
+                    },
+                    object: {
+                        subtype: "Array",
+                        bounds: {
+                            min: { limit: -5, exclusive: true },
+                            max: { limit: 5 }
+                        }
                     }
                 })
             })
@@ -72,6 +122,19 @@ describe("bound", () => {
                             min: { limit: -3.23 },
                             max: { limit: 4.654, exclusive: true }
                         }
+                    },
+                    string: {
+                        bounds: {
+                            min: { limit: -3.23 },
+                            max: { limit: 4.654, exclusive: true }
+                        }
+                    },
+                    object: {
+                        subtype: "Array",
+                        bounds: {
+                            min: { limit: -3.23 },
+                            max: { limit: 4.654, exclusive: true }
+                        }
                     }
                 })
             })
@@ -80,73 +143,102 @@ describe("bound", () => {
             const t = type("number > 3")
             attest(t.infer).typed as number
             attest(t.root).snap({
-                number: {
+                number: { bounds: { min: { limit: 3, exclusive: true } } },
+                string: { bounds: { min: { limit: 3, exclusive: true } } },
+                object: {
+                    subtype: "Array",
                     bounds: { min: { limit: 3, exclusive: true } }
                 }
             })
         })
         describe("intersection", () => {
-            test("l.limit === r.limit with right non exclusive", () => {
+            test("<x & <=x", () => {
                 attest(type("number<2&number<=2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2, exclusive: true } }
-                    }
+                    number: { bounds: { max: { limit: 2 } } },
+                    string: { bounds: { max: { limit: 2 } } },
+                    object: { subtype: "Array", bounds: { max: { limit: 2 } } }
                 })
             })
-            test("l.limit === r.limit with right non exclusive", () => {
-                attest(type("number<2&number<=2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2, exclusive: true } }
-                    }
-                })
-            })
-            test("l.limit === r.limit with right exclusive", () => {
+            test("<x & <x", () => {
                 attest(type("number<2&number<2").root).snap({
-                    number: {
+                    number: { bounds: { max: { limit: 2, exclusive: true } } },
+                    string: { bounds: { max: { limit: 2, exclusive: true } } },
+                    object: {
+                        subtype: "Array",
                         bounds: { max: { limit: 2, exclusive: true } }
                     }
                 })
             })
-            test("l.limit === r.limit with left non exclusive right exclusive", () => {
+            test("<=x & <x", () => {
                 attest(type("number<=2&number<2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2, exclusive: true } }
-                    }
+                    number: { bounds: { max: { limit: 2 } } },
+                    string: { bounds: { max: { limit: 2 } } },
+                    object: { subtype: "Array", bounds: { max: { limit: 2 } } }
                 })
             })
-            test("l.limit === r.limit with left non exclusive right non exclusive", () => {
+            test("<=x & <=x", () => {
                 attest(type("number<=2&number<=2").root).snap({
-                    number: {
-                        bounds: { max: { limit: 2 } }
-                    }
+                    number: { bounds: { max: { limit: 2 } } },
+                    string: { bounds: { max: { limit: 2 } } },
+                    object: { subtype: "Array", bounds: { max: { limit: 2 } } }
                 })
             })
-            test("l.limit !== kind==min r.limit with l < r", () => {
-                attest(type("number>5&number>7").root).snap({
-                    number: {
-                        bounds: { min: { limit: 7, exclusive: true } }
-                    }
+            describe("intersection strictness", () => {
+                test("min limit x<y", () => {
+                    attest(type("number>5&number>7").root).snap({
+                        number: {
+                            bounds: { min: { limit: 5, exclusive: true } }
+                        },
+                        string: {
+                            bounds: { min: { limit: 5, exclusive: true } }
+                        },
+                        object: {
+                            subtype: "Array",
+                            bounds: { min: { limit: 5, exclusive: true } }
+                        }
+                    })
                 })
-            })
-            test("l.limit !== kind==min r.limit with l > r", () => {
-                attest(type("number>9&number>7").root).snap({
-                    number: {
-                        bounds: { min: { limit: 9, exclusive: true } }
-                    }
+                test("min limit x>y", () => {
+                    attest(type("number>9&number>7").root).snap({
+                        number: {
+                            bounds: { min: { limit: 7, exclusive: true } }
+                        },
+                        string: {
+                            bounds: { min: { limit: 7, exclusive: true } }
+                        },
+                        object: {
+                            subtype: "Array",
+                            bounds: { min: { limit: 7, exclusive: true } }
+                        }
+                    })
                 })
-            })
-            test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<9&number<7").root).snap({
-                    number: {
-                        bounds: { max: { limit: 7, exclusive: true } }
-                    }
+                test("max limit x>y", () => {
+                    attest(type("number<9&number<7").root).snap({
+                        number: {
+                            bounds: { max: { limit: 9, exclusive: true } }
+                        },
+                        string: {
+                            bounds: { max: { limit: 9, exclusive: true } }
+                        },
+                        object: {
+                            subtype: "Array",
+                            bounds: { max: { limit: 9, exclusive: true } }
+                        }
+                    })
                 })
-            })
-            test("l.limit !== kind==max r.limit with l > r", () => {
-                attest(type("number<7&number<9").root).snap({
-                    number: {
-                        bounds: { max: { limit: 7, exclusive: true } }
-                    }
+                test("max limit x<y", () => {
+                    attest(type("number<7&number<9").root).snap({
+                        number: {
+                            bounds: { max: { limit: 9, exclusive: true } }
+                        },
+                        string: {
+                            bounds: { max: { limit: 9, exclusive: true } }
+                        },
+                        object: {
+                            subtype: "Array",
+                            bounds: { max: { limit: 9, exclusive: true } }
+                        }
+                    })
                 })
             })
         })
@@ -182,8 +274,29 @@ describe("bound", () => {
                     buildMultipleLeftBoundsMessage(3, "<", 5, "<")
                 )
             })
+            // TODO this should be never?
             test("empty range", () => {
-                attest(type("number>3&number<2").root).snap({})
+                attest(type("number>3&number<2").root).snap({
+                    number: {
+                        bounds: {
+                            min: { limit: 3, exclusive: true },
+                            max: { limit: 2, exclusive: true }
+                        }
+                    },
+                    string: {
+                        bounds: {
+                            min: { limit: 3, exclusive: true },
+                            max: { limit: 2, exclusive: true }
+                        }
+                    },
+                    object: {
+                        subtype: "Array",
+                        bounds: {
+                            min: { limit: 3, exclusive: true },
+                            max: { limit: 2, exclusive: true }
+                        }
+                    }
+                })
             })
         })
     })

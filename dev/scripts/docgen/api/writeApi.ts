@@ -7,6 +7,12 @@ import type {
     ExportData,
     PackageExtractionData
 } from "./extractApi.js"
+import type { TsTagData } from "./tsDocTransforms.js"
+import {
+    formatTagData,
+    packTsDocTags,
+    transformLinkTagToURL
+} from "./tsDocTransforms.js"
 
 export const writeApi = (
     apiConfig: DocGenApiConfig,
@@ -14,29 +20,38 @@ export const writeApi = (
 ) => {
     rmSync(apiConfig.outDir, { recursive: true, force: true })
     for (const entryPoint of extractedData.api) {
+        const entryNames = entryPoint.exports.map((entry) => entry.name)
         const entryPointOutDir =
             entryPoint.subpath === "."
                 ? apiConfig.outDir
                 : join(apiConfig.outDir, entryPoint.subpath)
         ensureDir(entryPointOutDir)
-        writeEntryPoint(entryPoint, entryPointOutDir)
+        writeEntryPoint(entryPoint, entryPointOutDir, entryNames)
     }
     shell(`prettier --write ${apiConfig.outDir}`)
 }
 
 const writeEntryPoint = (
     entryPoint: ApiEntryPoint,
-    entryPointOutDir: string
+    entryPointOutDir: string,
+    entryNames: string[]
 ) => {
     for (const exported of entryPoint.exports) {
         const mdFilePath = join(entryPointOutDir, `${exported.name}.md`)
-        writeFile(mdFilePath, generateMarkdownForExport(exported))
+        transformLinkTagToURL(mdFilePath, exported, entryNames)
+        const data = packTsDocTags(exported.tsDocs ?? [])
+        writeFile(mdFilePath, generateMarkdownForExport(exported, data))
     }
 }
 
-const generateMarkdownForExport = (exported: ExportData) => {
+const generateMarkdownForExport = (
+    exported: ExportData,
+    tagData: TsTagData
+) => {
     const md = new MarkdownSection(exported.name)
-    md.section("tags").tsBlock(JSON.stringify(exported.tsDocs, null, 4))
+    for (const [tag, arrayOfTagData] of Object.entries(tagData)) {
+        md.section(tag).text(formatTagData(arrayOfTagData, tag))
+    }
     md.section("text").tsBlock(exported.text)
     return md.toString()
 }
