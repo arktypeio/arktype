@@ -16,42 +16,36 @@ describe("bound", () => {
                 const t = type("number>0")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    type: "number",
-                    bounds: { min: { limit: 0, exclusive: true } }
+                    number: { bounds: { min: { limit: 0, exclusive: true } } }
                 })
             })
             test("<", () => {
                 const t = type("number<10")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 10, exclusive: true } }
-                })
-            })
-            test(">=", () => {
-                const t = type("number>=3.14159")
-                attest(t.infer).typed as number
-                attest(t.root).snap({
-                    type: "number",
-                    bounds: { min: { limit: 3.14159 } }
+                    number: {
+                        bounds: { max: { limit: 10, exclusive: true } }
+                    }
                 })
             })
             test("<=", () => {
                 const t = type("number<=-49")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    type: "number",
-                    bounds: { max: { limit: -49 } }
+                    number: {
+                        bounds: { max: { limit: -49 } }
+                    }
                 })
             })
             test("==", () => {
                 const t = type("number==3211993")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    type: "number",
-                    bounds: {
-                        min: { limit: 3211993 },
-                        max: { limit: 3211993 }
+                    number: {
+                        bounds: {
+                            min: { limit: 3211993 },
+                            max: { limit: 3211993 }
+                        }
                     }
                 })
             })
@@ -61,10 +55,11 @@ describe("bound", () => {
                 const t = type("-5<number<=5")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    type: "number",
-                    bounds: {
-                        min: { limit: -5, exclusive: true },
-                        max: { limit: 5 }
+                    number: {
+                        bounds: {
+                            min: { limit: -5, exclusive: true },
+                            max: { limit: 5 }
+                        }
                     }
                 })
             })
@@ -72,10 +67,11 @@ describe("bound", () => {
                 const t = type("-3.23<=number<4.654")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    type: "number",
-                    bounds: {
-                        min: { limit: -3.23 },
-                        max: { limit: 4.654, exclusive: true }
+                    number: {
+                        bounds: {
+                            min: { limit: -3.23 },
+                            max: { limit: 4.654, exclusive: true }
+                        }
                     }
                 })
             })
@@ -84,63 +80,73 @@ describe("bound", () => {
             const t = type("number > 3")
             attest(t.infer).typed as number
             attest(t.root).snap({
-                type: "number",
-                bounds: { min: { limit: 3, exclusive: true } }
+                number: {
+                    bounds: { min: { limit: 3, exclusive: true } }
+                }
             })
         })
         describe("intersection", () => {
             test("l.limit === r.limit with right non exclusive", () => {
                 attest(type("number<2&number<=2").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 2, exclusive: true } }
+                    number: {
+                        bounds: { max: { limit: 2, exclusive: true } }
+                    }
                 })
             })
             test("l.limit === r.limit with right non exclusive", () => {
                 attest(type("number<2&number<=2").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 2, exclusive: true } }
+                    number: {
+                        bounds: { max: { limit: 2, exclusive: true } }
+                    }
                 })
             })
             test("l.limit === r.limit with right exclusive", () => {
                 attest(type("number<2&number<2").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 2, exclusive: true } }
+                    number: {
+                        bounds: { max: { limit: 2, exclusive: true } }
+                    }
                 })
             })
             test("l.limit === r.limit with left non exclusive right exclusive", () => {
                 attest(type("number<=2&number<2").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 2, exclusive: true } }
+                    number: {
+                        bounds: { max: { limit: 2, exclusive: true } }
+                    }
                 })
             })
             test("l.limit === r.limit with left non exclusive right non exclusive", () => {
                 attest(type("number<=2&number<=2").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 2 } }
+                    number: {
+                        bounds: { max: { limit: 2 } }
+                    }
                 })
             })
             test("l.limit !== kind==min r.limit with l < r", () => {
                 attest(type("number>5&number>7").root).snap({
-                    type: "number",
-                    bounds: { min: { limit: 7, exclusive: true } }
+                    number: {
+                        bounds: { min: { limit: 7, exclusive: true } }
+                    }
                 })
             })
             test("l.limit !== kind==min r.limit with l > r", () => {
                 attest(type("number>9&number>7").root).snap({
-                    type: "number",
-                    bounds: { min: { limit: 9, exclusive: true } }
+                    number: {
+                        bounds: { min: { limit: 9, exclusive: true } }
+                    }
                 })
             })
             test("l.limit !== kind==max r.limit with l > r", () => {
                 attest(type("number<9&number<7").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 7, exclusive: true } }
+                    number: {
+                        bounds: { max: { limit: 7, exclusive: true } }
+                    }
                 })
             })
             test("l.limit !== kind==max r.limit with l > r", () => {
                 attest(type("number<7&number<9").root).snap({
-                    type: "number",
-                    bounds: { max: { limit: 7, exclusive: true } }
+                    number: {
+                        bounds: { max: { limit: 7, exclusive: true } }
+                    }
                 })
             })
         })
@@ -177,7 +183,7 @@ describe("bound", () => {
                 )
             })
             test("empty range", () => {
-                attest(type("number>3&number<2").root).snap("never")
+                attest(type("number>3&number<2").root).snap({})
             })
         })
     })

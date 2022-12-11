@@ -60,6 +60,8 @@ type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: ArkType<inferred[name]>
 }
 
+// TODO: decide if parsing primarily managed through scope or only resolution/caching
+
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
     attributes = {} as { [k in keyof inferred]: Resolution }
     // TODO: Add intersection cache

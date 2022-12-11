@@ -10,22 +10,31 @@ describe("union/parse", () => {
     test("binary", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
-        attest(binary.root).snap(["number", "string"])
+        attest(binary.root).snap({ number: true, string: true })
     })
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        attest(nary.root).snap([
-            "false",
-            "null",
-            "undefined",
-            { type: "number", subtype: 0 },
-            { type: "string", subtype: "" }
-        ])
+        attest(nary.root).snap({
+            boolean: {
+                value: false
+            },
+            null: true,
+            undefined: true,
+            number: {
+                value: 0
+            },
+            string: {
+                value: ""
+            }
+        })
     })
     test("union of true and false reduces to boolean", () => {
-        attest(type("true|false").root).equals("boolean")
-        attest(type("true|false|number").root).equals(["boolean", "number"])
+        attest(type("true|false").root).equals({ boolean: true })
+        attest(type("true|false|number").root).equals({
+            boolean: true,
+            number: true
+        })
     })
     test("subtype pruning", () => {
         const t = type([
@@ -34,8 +43,7 @@ describe("union/parse", () => {
             { a: "false" }
         ])
         attest(t.root).snap({
-            type: "object",
-            children: { props: { a: "boolean" }, requiredKeys: { a: true } }
+            object: { props: { a: "boolean" }, requiredKeys: { a: true } }
         })
     })
     describe("errors", () => {

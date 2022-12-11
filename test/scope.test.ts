@@ -17,22 +17,22 @@ describe("scope", () => {
         const s = scope({ a: "string>5", b: "email<=10", c: "a&b" })
         attest(s.c.infer).typed as string
         attest(s.c.root).equals({
-            type: "string",
-            regex: "^(.+)@(.+)\\.(.+)$",
-            bounds: {
-                min: {
-                    limit: 5,
-                    exclusive: true
-                },
-                max: { limit: 10 }
+            string: {
+                regex: "^(.+)@(.+)\\.(.+)$",
+                bounds: {
+                    min: {
+                        limit: 5,
+                        exclusive: true
+                    },
+                    max: { limit: 10 }
+                }
             }
         })
     })
     test("cyclic", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
         attest(s.a.root).snap({
-            type: "object",
-            children: { props: { b: "b" }, requiredKeys: { b: true } }
+            object: { props: { b: "b" }, requiredKeys: { b: true } }
         })
         // Type hint displays as any on hitting cycle
         attest(s.$.infer.a).typed as {
@@ -78,16 +78,18 @@ describe("scope", () => {
         }
         attest(s.$.attributes).snap({
             a: {
-                type: "object",
-                subtype: "Array",
-                children: { propTypes: { number: "string" } }
+                object: {
+                    subtype: "Array",
+                    propTypes: { number: "string" }
+                }
             },
             b: {
-                type: "object",
-                subtype: "Array",
-                children: { propTypes: { number: "a" } }
+                object: {
+                    subtype: "Array",
+                    propTypes: { number: "a" }
+                }
             },
-            d: { type: "boolean" }
+            d: { boolean: true }
         })
     })
 })

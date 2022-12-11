@@ -11,19 +11,11 @@ describe("compile", () => {
         anywhereWet: { wet: "true" }
     })
     test("discriminate simple", () => {
-        attest(type("ocean|sky", { scope: places }).root).snap({
-            object: [
-                "wet/boolean/literal",
-                {
-                    true: [{ props: { someProp: "boolean" } }, "ocean"],
-                    false: "sky"
-                }
-            ]
-        } as any)
+        attest(type("ocean|sky", { scope: places }).root).snap()
     })
     test("discriminate", () => {
         attest(
             type("ocean|sky|rainforest|desert", { scope: places }).root
-        ).snap("ocean")
+        ).snap()
     })
 })
