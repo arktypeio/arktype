@@ -63,7 +63,7 @@ type ConstraintComparison =
 export const isSubtypeComparison = (
     comparison: ConstraintComparison
 ): comparison is SetOperationResult<BaseConstraints> =>
-    (comparison as BranchComparison).lBranches === undefined
+    (comparison as BranchComparison)?.lBranches === undefined
 
 type BranchComparison = {
     lBranches: BaseKeyedConstraint[]

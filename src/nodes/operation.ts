@@ -64,6 +64,7 @@ export const composeKeyedOperation =
                 } else {
                     lImpliesR = false
                 }
+                continue
             }
             if (r[k] === undefined) {
                 if (operator === "|") {
@@ -72,6 +73,7 @@ export const composeKeyedOperation =
                 } else {
                     rImpliesL = false
                 }
+                continue
             }
             const keyResult =
                 typeof reducer === "function"
