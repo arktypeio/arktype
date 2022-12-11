@@ -1,11 +1,5 @@
 # type
 
-## tags
-
-```ts
-;[]
-```
-
 ## text
 
 ```ts

@@ -1,13 +1,9 @@
 # Node
 
-## tags
-
-```ts
-undefined
-```
-
 ## text
 
 ```ts
-export type Node = xor<NodeTypes, DegenerateNode>
+export type Node<alias extends string = string> =
+    | Identifier<alias>
+    | Resolution<alias>
 ```

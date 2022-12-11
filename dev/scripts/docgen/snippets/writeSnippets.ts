@@ -23,7 +23,6 @@ export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
 
 const TEMPLATE_REPLACE_TOKEN = "{?}"
 
-// eslint-disable-next-line max-lines-per-function, max-statements
 const updateSnippetReferencesIfNeeded = (
     path: string,
     snippetsByPath: SnippetsByPath
@@ -79,7 +78,6 @@ const updateSnippetReferencesIfNeeded = (
     return false
 }
 
-// eslint-disable-next-line max-lines-per-function, max-statements
 const getUpdatedLines = (
     line: string,
     token: string,
