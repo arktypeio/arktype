@@ -7,7 +7,7 @@ import type {
 } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 
-export const inDomain = <data, domain extends Domain>(
+export const inDomain = <data, domain extends DomainName>(
     data: data,
     domain: domain
 ): data is Extract<data, DomainTypes[domain]> =>
@@ -24,14 +24,14 @@ export type DomainTypes = {
     null: null
 }
 
-export type Domain = evaluate<keyof DomainTypes>
+export type DomainName = evaluate<keyof DomainTypes>
 
-export type PrimitiveDomain = Exclude<Domain, "object">
+export type PrimitiveDomain = Exclude<DomainName, "object">
 
 export type Primitive = DomainTypes[PrimitiveDomain]
 
 export type domainOf<data> = isTopType<data> extends true
-    ? Domain
+    ? DomainName
     : data extends object
     ? "object"
     : data extends string

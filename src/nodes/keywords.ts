@@ -1,8 +1,8 @@
-import type { Domain } from "../utils/domainOf.js"
+import type { DomainName } from "../utils/domainOf.js"
 import { deepFreeze } from "../utils/freeze.js"
-import type { Domains } from "./node.js"
+import type { Domain } from "./node.js"
 
-const always: Record<Domain, true> = {
+const always: Record<DomainName, true> = {
     bigint: true,
     boolean: true,
     null: true,
@@ -39,7 +39,7 @@ export const keywords = deepFreeze({
     uppercase: { string: { regex: "^[A-Z]*$" } },
     // Numeric
     integer: { number: { divisor: 1 } }
-} as const satisfies Record<Keyword, Domains>)
+} as const satisfies Record<Keyword, Domain>)
 
 export type Keyword = keyof Keywords
 

@@ -1,13 +1,13 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domainOf.js"
+import type { DomainName } from "../utils/domainOf.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
-import { keywords } from "./names.js"
+import { keywords } from "./keywords.js"
 import type {
     resolved,
     TypeNode,
     UnknownBranch,
-    UnknownDomains,
+    UnknownDomain,
     UnknownPredicate,
     UnknownTypeNode
 } from "./node.js"
@@ -129,7 +129,7 @@ export const composeKeyedOperation =
     }
 
 export const composeNodeOperation = (
-    resolutionOperation: SetOperation<UnknownDomains, ScopeRoot>
+    resolutionOperation: SetOperation<UnknownDomain, ScopeRoot>
 ) =>
     composePredicateIntersection<UnknownTypeNode, ScopeRoot>((l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)
@@ -146,7 +146,7 @@ export const finalizeNodeOperation = (
 
 // TODO: Add aliases back if no subtype indices
 export const coalesceBranches = (
-    domain: Domain,
+    domain: DomainName,
     branches: resolved<UnknownBranch>[]
 ): UnknownPredicate => {
     switch (branches.length) {

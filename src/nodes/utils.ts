@@ -1,13 +1,13 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domainOf.js"
+import type { DomainName } from "../utils/domainOf.js"
 import { filterSplit } from "../utils/filterSplit.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
 import { intersection } from "./intersection.js"
 import type {
-    Domains,
+    Domain,
     TypeNode,
-    UnknownDomains,
+    UnknownDomain,
     UnknownPredicate,
     UnknownRule,
     UnknownTypeNode
@@ -16,7 +16,7 @@ import type {
 export const resolveIfIdentifier = (
     node: UnknownTypeNode,
     scope: ScopeRoot
-): UnknownDomains => (typeof node === "string" ? scope.resolve(node) : node)
+): UnknownDomain => (typeof node === "string" ? scope.resolve(node) : node)
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
@@ -24,24 +24,24 @@ export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
 export const domainOfNode = (
     node: TypeNode,
     scope: ScopeRoot
-): Domain | Domain[] => {
+): DomainName | DomainName[] => {
     const domains = keysOf(resolveIfIdentifier(node, scope))
     // TODO: Handle never here
     return domains.length === 1 ? domains[0] : domains
 }
 
-export type MonotypeNode<domain extends Domain> = {
-    readonly [k in domain]: defined<Domains[domain]>
+export type DomainSubtypeNode<domain extends DomainName> = {
+    readonly [k in domain]: defined<Domain[domain]>
 }
 
-export const nodeExtendsDomain = <domain extends Domain>(
+export const nodeExtendsDomain = <domain extends DomainName>(
     node: TypeNode,
     domain: domain,
     scope: ScopeRoot
-): node is MonotypeNode<domain> => domainOfNode(node, scope) === domain
+): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain
 
 export const resolvePredicate = (
-    domain: Domain,
+    domain: DomainName,
     predicate: UnknownPredicate,
     scope: ScopeRoot
 ): true | UnknownRule[] => {

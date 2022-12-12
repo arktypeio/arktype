@@ -2,7 +2,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { ObjectSubdomain } from "../utils/domainOf.js"
 import { hasKey } from "../utils/generics.js"
 import { boundsIntersection } from "./bounds.js"
-import { checkAttributes } from "./check.js"
+import { checkConstraints } from "./check.js"
 import type { PredicateContext } from "./compare.js"
 import { comparePredicates, isBranchesComparison } from "./compare.js"
 import type { SetOperation } from "./compose.js"
@@ -21,7 +21,7 @@ import type {
     TypeNode,
     UnknownBranch,
     UnknownConstraints,
-    UnknownDomains
+    UnknownDomain
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { collapsibleKeysetIntersection } from "./regex.js"
@@ -32,7 +32,7 @@ export const intersection = (
     scope: ScopeRoot
 ): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const domainsIntersection = composeKeyedOperation<UnknownDomains, ScopeRoot>(
+const domainsIntersection = composeKeyedOperation<UnknownDomain, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
@@ -74,11 +74,11 @@ export const branchResolutionIntersection: SetOperation<
             ? l.value === r.value
                 ? equal
                 : empty
-            : checkAttributes(l.value, r, context)
+            : checkConstraints(l.value, r, context)
             ? l
             : empty
         : hasKey(r, "value")
-        ? checkAttributes(r.value, l, context)
+        ? checkConstraints(r.value, l, context)
             ? r
             : empty
         : attributesIntersection(l, r, context)

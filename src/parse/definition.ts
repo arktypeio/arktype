@@ -1,6 +1,6 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Domain, ObjectSubdomain } from "../utils/domainOf.js"
+import type { DomainName, ObjectSubdomain } from "../utils/domainOf.js"
 import { domainOf, objectSubdomainOf } from "../utils/domainOf.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
@@ -78,12 +78,12 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends Domain | ObjectSubdomain
+    actual extends DomainName | ObjectSubdomain
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
 export type buildBadDefinitionTypeMessage<
-    actual extends Domain | ObjectSubdomain
+    actual extends DomainName | ObjectSubdomain
 > = `Type definitions must be strings or objects (was ${actual})`

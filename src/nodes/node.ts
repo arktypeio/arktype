@@ -1,4 +1,4 @@
-import type { Domain, ObjectSubdomain } from "../utils/domainOf.js"
+import type { DomainName, ObjectSubdomain } from "../utils/domainOf.js"
 import type {
     autocompleteString,
     Dictionary,
@@ -10,19 +10,19 @@ import type {
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { Bounds } from "./bounds.js"
-import type { Keyword } from "./names.js"
+import type { Keyword } from "./keywords.js"
 import type { CollapsibleKeyset } from "./regex.js"
 
 export type TypeNode<scope extends Dictionary = Dictionary> =
     | Identifier<scope>
-    | Domains<scope>
+    | Domain<scope>
 
 export type Identifier<scope extends Dictionary = Dictionary> =
     Dictionary extends scope
         ? autocompleteString<Keyword>
         : Keyword | stringKeyOf<scope>
 
-export type Domains<scope extends Dictionary = Dictionary> = {
+export type Domain<scope extends Dictionary = Dictionary> = {
     readonly bigint?: true | listable<Identifier<scope> | Unit<IntegerLiteral>>
     readonly boolean?: true | Unit<boolean>
     readonly null?: true
@@ -36,9 +36,9 @@ export type Domains<scope extends Dictionary = Dictionary> = {
 export type resolved<t> = Exclude<t, Identifier>
 
 export type Predicate<
-    domain extends Domain,
+    domain extends DomainName,
     scope extends Dictionary = Dictionary
-> = NonNullable<Domains<scope>[domain]>
+> = NonNullable<Domain<scope>[domain]>
 
 type NarrowableConstraints = {
     // primitive constraints
@@ -80,10 +80,10 @@ export type UnitValue = string | number | boolean
 
 /** Supertype of TypeNode used for internal operations that can handle all
  * possible TypeNodes */
-export type UnknownTypeNode = subsume<TypeNode, Identifier | UnknownDomains>
+export type UnknownTypeNode = subsume<TypeNode, Identifier | UnknownDomain>
 
-export type UnknownDomains = {
-    readonly [k in Domain]?: UnknownPredicate
+export type UnknownDomain = {
+    readonly [k in DomainName]?: UnknownPredicate
 }
 
 export type UnknownPredicate = true | listable<UnknownBranch>
