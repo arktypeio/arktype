@@ -34,7 +34,7 @@ export const keywords = deepFreeze({
     // Regex
     email: { string: { regex: "^(.+)@(.+)\\.(.+)$" } },
     alphanumeric: { string: { regex: "^[dA-Za-z]+$" } },
-    alphaonly: { string: { regex: "^[A-Za-z]+$" } },
+    alpha: { string: { regex: "^[A-Za-z]+$" } },
     lowercase: { string: { regex: "^[a-z]*$" } },
     uppercase: { string: { regex: "^[A-Z]*$" } },
     // Numeric
@@ -65,7 +65,7 @@ export type Keywords = {
     // Regex
     email: string
     alphanumeric: string
-    alphaonly: string
+    alpha: string
     lowercase: string
     uppercase: string
     // Numeric

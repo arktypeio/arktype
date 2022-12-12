@@ -1,5 +1,5 @@
+import { getRegex } from "../../../nodes/regex.js"
 import type { error } from "../../../utils/generics.js"
-import { getRegex } from "../../../utils/regexCache.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"

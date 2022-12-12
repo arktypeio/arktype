@@ -75,7 +75,7 @@ export type classOf<instanceType> = new (
 export type instanceOf<classType extends classOf<any>> =
     classType extends classOf<infer Instance> ? Instance : never
 
-export type entryOf<o> = { [k in keyof o]: [k, o[k]] }[o extends unknown[]
+export type entryOf<o> = { [k in keyof o]: [k, o[k]] }[o extends List
     ? keyof o & number
     : keyof o]
 

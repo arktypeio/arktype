@@ -1,4 +1,4 @@
-import type { List } from "./generics.js"
+import type { Dictionary, List, mutable } from "./generics.js"
 
 export const filterSplit = <item, included extends item>(
     list: List<item>,
@@ -14,4 +14,14 @@ export const filterSplit = <item, included extends item>(
         }
     }
     return result
+}
+
+export const mutateValues = <o extends mutable<Dictionary>>(
+    o: o,
+    mapper: (value: o[keyof o]) => o[keyof o]
+) => {
+    for (const k in o) {
+        o[k] = mapper(o[k]) as any
+    }
+    return o
 }

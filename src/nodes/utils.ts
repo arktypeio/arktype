@@ -1,8 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
 import type { DomainName } from "../utils/domainOf.js"
-import { filterSplit } from "../utils/filterSplit.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
+import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
 import type {
     Domain,

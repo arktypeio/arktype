@@ -14,7 +14,7 @@ Isomorphic type syntax for TS/JS
 
 (feel free to substitute `yarn`, `pnpm`, et al.)
 
-If you're using TypeScript, you'll need at least `4.6`.
+If you're using TypeScript, you'll need at least `4.8`.
 
 ### Your first type (⏱️30s)
 
