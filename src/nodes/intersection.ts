@@ -12,7 +12,7 @@ import {
     composeNodeOperation,
     composePredicateIntersection,
     empty,
-    equivalence,
+    equal,
     finalizeNodeOperation
 } from "./compose.js"
 import { divisorIntersection } from "./divisor.js"
@@ -24,7 +24,7 @@ import type {
     UnknownDomains
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
-import { regexIntersection } from "./regex.js"
+import { collapsibleKeysetIntersection } from "./regex.js"
 
 export const intersection = (
     l: TypeNode,
@@ -35,7 +35,7 @@ export const intersection = (
 const domainsIntersection = composeKeyedOperation<UnknownDomains, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
-            return r === undefined ? equivalence : undefined
+            return r === undefined ? equal : undefined
         }
         if (r === undefined) {
             return undefined
@@ -49,7 +49,7 @@ const domainsIntersection = composeKeyedOperation<UnknownDomains, ScopeRoot>(
         }
         const finalBranches = [
             ...comparison.intersections,
-            ...comparison.equivalences.map(
+            ...comparison.equalities.map(
                 (indices) => comparison.lRules[indices[0]]
             ),
             ...comparison.lSubrulesOfR.map(
@@ -72,7 +72,7 @@ export const branchResolutionIntersection: SetOperation<
     hasKey(l, "value")
         ? hasKey(r, "value")
             ? l.value === r.value
-                ? equivalence
+                ? equal
                 : empty
             : checkAttributes(l.value, r, context)
             ? l
@@ -85,7 +85,7 @@ export const branchResolutionIntersection: SetOperation<
 
 export const subtypeIntersection =
     composePredicateIntersection<ObjectSubdomain>((l, r) =>
-        l === r ? equivalence : empty
+        l === r ? equal : empty
     )
 
 const attributesIntersection = composeKeyedOperation<
@@ -95,7 +95,7 @@ const attributesIntersection = composeKeyedOperation<
     {
         kind: subtypeIntersection,
         divisor: divisorIntersection,
-        regex: regexIntersection,
+        regex: collapsibleKeysetIntersection,
         props: propsIntersection,
         requiredKeys: requiredKeysIntersection,
         propTypes: propsIntersection,

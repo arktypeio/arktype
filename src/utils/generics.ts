@@ -158,13 +158,3 @@ export type listable<t> = t | List<t>
 export type List<of = unknown> = readonly of[]
 
 export type Dictionary<of = unknown> = { readonly [k in string]: of }
-
-export const listIntersection = <t extends List>(l: t, r: t) => {
-    const result = [...l] as mutable<t>
-    for (const expression of r) {
-        if (!l.includes(expression)) {
-            result.push(expression)
-        }
-    }
-    return result
-}

@@ -37,7 +37,7 @@ describe("regex intersections", () => {
     test("distinct strings", () => {
         attest(type("/a/&/b/").root).snap({
             string: {
-                regex: ["a", "b"]
+                regex: { a: true, b: true }
             }
         })
     })
@@ -48,19 +48,19 @@ describe("regex intersections", () => {
             }
         })
     })
-    // TODO: Use set comparisons https://github.com/arktypeio/arktype/issues/557
     test("string and list", () => {
+        const expected = { a: true, b: true, c: true } as const
         attest(type(["/a/", "&", "/b/&/c/"]).root).snap({
-            string: { regex: ["b", "c", "a"] }
+            string: { regex: expected }
         })
         attest(type(["/a/&/b/", "&", "/c/"]).root).snap({
-            string: { regex: ["a", "b", "c"] }
+            string: { regex: expected }
         })
     })
     test("redundant string and list", () => {
         const expected: Node = {
             string: {
-                regex: ["a", "b", "c"]
+                regex: { a: true, b: true, c: true }
             }
         }
         attest(type(["/a/", "&", "/a/&/b/&/c/"]).root).equals(expected)
@@ -69,21 +69,21 @@ describe("regex intersections", () => {
     test("distinct lists", () => {
         attest(type(["/a/&/b/", "&", "/c/&/d/"]).root).snap({
             string: {
-                regex: ["a", "b", "c", "d"]
+                regex: { a: true, b: true, c: true, d: true }
             }
         })
     })
     test("overlapping lists", () => {
         attest(type(["/a/&/b/", "&", "/c/&/b/"]).root).snap({
             string: {
-                regex: ["a", "b", "c"]
+                regex: { a: true, b: true, c: true }
             }
         })
     })
     test("identical lists", () => {
         attest(type(["/a/&/b/", "&", "/b/&/a/"]).root).snap({
             string: {
-                regex: ["a", "b"]
+                regex: { a: true, b: true }
             }
         })
     })

@@ -1,5 +1,5 @@
 import type { List } from "../utils/generics.js"
-import { composePredicateIntersection, empty, equivalence } from "./compose.js"
+import { composePredicateIntersection, empty, equal } from "./compose.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -37,11 +37,7 @@ export const boundsIntersection = composePredicateIntersection<Bounds>(
             }
             return r
         }
-        return maxComparison === "l"
-            ? l
-            : maxComparison === "r"
-            ? r
-            : equivalence
+        return maxComparison === "l" ? l : maxComparison === "r" ? r : equal
     }
 )
 

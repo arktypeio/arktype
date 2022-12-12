@@ -59,15 +59,15 @@ export const composePredicateIntersection = <
             ? l
             : reducer(l, r, context)) as allowUndefinedOperands<reducer>
 
-export type SetOperationResult<t> = t | empty | equivalence
+export type SetOperationResult<t> = t | empty | equal
 
 export const empty = Symbol("empty")
 
 export type empty = typeof empty
 
-export const equivalence = Symbol("equivalent")
+export const equal = Symbol("equal")
 
-export type equivalence = typeof equivalence
+export type equal = typeof equal
 
 export type KeyReducerMap<root extends Dictionary, context> = {
     [k in keyof root]-?: SetOperation<root[k], context>
@@ -105,7 +105,7 @@ export const composeKeyedOperation =
                 typeof reducer === "function"
                     ? reducer(k, l[k], r[k], context)
                     : reducer[k](l[k], r[k], context)
-            if (keyResult === equivalence) {
+            if (keyResult === equal) {
                 if (l[k] !== undefined) {
                     result[k] = l[k]
                 }
@@ -125,13 +125,7 @@ export const composeKeyedOperation =
                 rImpliesL &&= keyResult === r[k]
             }
         }
-        return lImpliesR
-            ? rImpliesL
-                ? equivalence
-                : l
-            : rImpliesL
-            ? r
-            : result
+        return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
     }
 
 export const composeNodeOperation = (
@@ -148,7 +142,7 @@ export const finalizeNodeOperation = (
     l: UnknownTypeNode,
     result: SetOperationResult<UnknownTypeNode>
 ): TypeNode =>
-    result === empty ? keywords.never : result === equivalence ? l : result
+    result === empty ? keywords.never : result === equal ? l : result
 
 // TODO: Add aliases back if no subtype indices
 export const coalesceBranches = (

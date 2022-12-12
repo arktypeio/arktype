@@ -11,7 +11,7 @@ import type {
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./names.js"
-import type { RegexAttribute } from "./regex.js"
+import type { CollapsibleKeyset } from "./regex.js"
 
 export type TypeNode<scope extends Dictionary = Dictionary> =
     | Identifier<scope>
@@ -28,9 +28,7 @@ export type Domains<scope extends Dictionary = Dictionary> = {
     readonly null?: true
     readonly number?: true | listable<Identifier<scope> | NumberRule>
     readonly object?: true | listable<Identifier<scope> | ObjectConstraints>
-    readonly string?:
-        | true
-        | listable<Identifier<scope> | Unit<string> | StringRule>
+    readonly string?: true | listable<Identifier<scope> | StringRule>
     readonly symbol?: true
     readonly undefined?: true
 }
@@ -44,7 +42,7 @@ export type Predicate<
 
 type NarrowableConstraints = {
     // primitive constraints
-    readonly regex?: RegexAttribute
+    readonly regex?: CollapsibleKeyset
     readonly divisor?: number
     // object constraints
     readonly requiredKeys?: keySet

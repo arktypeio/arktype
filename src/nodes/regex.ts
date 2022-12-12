@@ -1,35 +1,27 @@
-import { listIntersection } from "../utils/generics.js"
-import { getRegex } from "../utils/regexCache.js"
-import { composePredicateIntersection, equivalence } from "./compose.js"
+import type { keySet } from "../utils/generics.js"
+import { composePredicateIntersection, equal } from "./compose.js"
 
-export type RegexAttribute = string | readonly string[]
+// import { getRegex } from "../utils/regexCache.js"
+// export const checkRegex = (data: string, regex: RegexAttribute) =>
+//     typeof regex === "string"
+//         ? checkRegexExpression(data, regex)
+//         : regex.every((regexSource) => checkRegexExpression(data, regexSource))
 
-export const checkRegex = (data: string, regex: RegexAttribute) =>
-    typeof regex === "string"
-        ? checkRegexExpression(data, regex)
-        : regex.every((regexSource) => checkRegexExpression(data, regexSource))
+// export const checkRegexExpression = (data: string, regexSource: string) =>
+//     getRegex(regexSource).test(data)
 
-const checkRegexExpression = (data: string, regexSource: string) =>
-    getRegex(regexSource).test(data)
+export type CollapsibleKeyset = string | keySet
 
-export const regexIntersection = composePredicateIntersection<RegexAttribute>(
-    (l, r) => {
+export const collapsibleKeysetIntersection =
+    composePredicateIntersection<CollapsibleKeyset>((l, r) => {
         if (typeof l === "string") {
             if (typeof r === "string") {
-                return l === r ? equivalence : [l, r]
+                return l === r ? equal : { [l]: true, [r]: true }
             }
-            return r.includes(l) ? r : [...r, l]
+            return r[l] ? r : { ...r, [l]: true }
         }
         if (typeof r === "string") {
-            return l.includes(r) ? l : [...l, r]
+            return l[r] ? l : { ...l, [r]: true }
         }
-        const result = listIntersection(l, r)
-        return result.length === l.length
-            ? result.length === r.length
-                ? equivalence
-                : l
-            : result.length === r.length
-            ? r
-            : result
-    }
-)
+        return { ...l, ...r }
+    })

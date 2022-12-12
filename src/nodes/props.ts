@@ -8,7 +8,7 @@ import type { PredicateContext } from "./compare.js"
 import {
     composeKeyedOperation,
     composePredicateIntersection,
-    equivalence
+    equal
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
 import type { Domains, ObjectConstraints, UnknownTypeNode } from "./node.js"
@@ -32,7 +32,7 @@ export const requiredKeysIntersection = composePredicateIntersection<keySet>(
         const resultSize = keyCount(result)
         return resultSize === keyCount(l)
             ? resultSize === keyCount(r)
-                ? equivalence
+                ? equal
                 : l
             : resultSize === keyCount(r)
             ? r

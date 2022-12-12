@@ -4,7 +4,7 @@ import {
     coalesceBranches,
     composeKeyedOperation,
     composeNodeOperation,
-    equivalence,
+    equal,
     finalizeNodeOperation
 } from "./compose.js"
 import type { TypeNode, UnknownDomains } from "./node.js"
@@ -15,7 +15,7 @@ export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
 export const domainsUnion = composeKeyedOperation<UnknownDomains, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
-            return r === undefined ? equivalence : r
+            return r === undefined ? equal : r
         }
         if (r === undefined) {
             return l
@@ -31,14 +31,14 @@ export const domainsUnion = composeKeyedOperation<UnknownDomains, ScopeRoot>(
             ...comparison.lRules.filter(
                 (_, lIndex) =>
                     !comparison.lSubrulesOfR.includes(lIndex) &&
-                    !comparison.equivalences.some(
+                    !comparison.equalities.some(
                         (indexPair) => indexPair[0] === lIndex
                     )
             ),
             ...comparison.rRules.filter(
                 (_, rIndex) =>
                     !comparison.rSubrulesOfL.includes(rIndex) &&
-                    !comparison.equivalences.some(
+                    !comparison.equalities.some(
                         (indexPair) => indexPair[1] === rIndex
                     )
             )

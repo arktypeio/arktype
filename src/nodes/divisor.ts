@@ -1,11 +1,11 @@
-import { composePredicateIntersection, equivalence } from "./compose.js"
+import { composePredicateIntersection, equal } from "./compose.js"
 
 export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0
 
 export const divisorIntersection = composePredicateIntersection<number>(
     (l: number, r: number) =>
-        l === r ? equivalence : Math.abs((l * r) / greatestCommonDivisor(l, r))
+        l === r ? equal : Math.abs((l * r) / greatestCommonDivisor(l, r))
 )
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

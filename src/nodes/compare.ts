@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domainOf.js"
 import type { SetOperationResult } from "./compose.js"
-import { empty, equivalence } from "./compose.js"
+import { empty, equal } from "./compose.js"
 import { branchResolutionIntersection } from "./intersection.js"
 import type { UnknownPredicate, UnknownRule } from "./node.js"
 import { resolvePredicate } from "./utils.js"
@@ -19,28 +19,28 @@ export const comparePredicates = (
     const lBranches = resolvePredicate(context.domain, l, context.scope)
     const rBranches = resolvePredicate(context.domain, r, context.scope)
     if (lBranches === true) {
-        return rBranches === true ? equivalence : r
+        return rBranches === true ? equal : r
     }
     if (rBranches === true) {
         return l
     }
     const branchComparison = compareRules(lBranches, rBranches, context)
     if (
-        branchComparison.equivalences.length === lBranches.length &&
-        branchComparison.equivalences.length === rBranches.length
+        branchComparison.equalities.length === lBranches.length &&
+        branchComparison.equalities.length === rBranches.length
     ) {
-        return equivalence
+        return equal
     }
     if (
         branchComparison.lSubrulesOfR.length +
-            branchComparison.equivalences.length ===
+            branchComparison.equalities.length ===
         lBranches.length
     ) {
         return l
     }
     if (
         branchComparison.rSubrulesOfL.length +
-            branchComparison.equivalences.length ===
+            branchComparison.equalities.length ===
         rBranches.length
     ) {
         return r
@@ -62,11 +62,11 @@ type BranchesComparison = {
     rRules: UnknownRule[]
     lSubrulesOfR: number[]
     rSubrulesOfL: number[]
-    equivalences: EquivalentIndexPair[]
+    equalities: EqualIndexPair[]
     intersections: UnknownRule[]
 }
 
-type EquivalentIndexPair = [lIndex: number, rIndex: number]
+type EqualIndexPair = [lIndex: number, rIndex: number]
 
 const compareRules = (
     lRules: UnknownRule[],
@@ -78,7 +78,7 @@ const compareRules = (
         rRules,
         lSubrulesOfR: [],
         rSubrulesOfL: [],
-        equivalences: [],
+        equalities: [],
         intersections: []
     }
     const pairsByR = rRules.map((constraint) => ({
@@ -111,9 +111,9 @@ const compareRules = (
                     // distinct branches.
                     rData.distinct = null
                     return null
-                case equivalence:
+                case equal:
                     // Combination of l and r subtype cases.
-                    comparison.equivalences.push([lIndex, rIndex])
+                    comparison.equalities.push([lIndex, rIndex])
                     lImpliesR = true
                     rData.distinct = null
                     return null
