@@ -1,113 +1,107 @@
+import type { Domain, ObjectSubdomain } from "../utils/domainOf.js"
 import type {
     autocompleteString,
     Dictionary,
     keySet,
     listable,
     replaceKeys,
-    supertype
+    stringKeyOf,
+    subsume
 } from "../utils/generics.js"
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
-import type { ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
 import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./names.js"
 import type { RegexAttribute } from "./regex.js"
 
-export type TypeNode<alias extends string = string> =
-    | Identifier<alias>
-    | Resolution<alias>
+export type TypeNode<scope extends Dictionary = Dictionary> =
+    | Identifier<scope>
+    | Domains<scope>
 
-export type Identifier<alias extends string = string> = string extends alias
-    ? Keyword | alias
-    : autocompleteString<Keyword>
+export type Identifier<scope extends Dictionary = Dictionary> =
+    Dictionary extends scope
+        ? autocompleteString<Keyword>
+        : Keyword | stringKeyOf<scope>
 
-export type Resolution<alias extends string = string> = {
-    readonly bigint?:
-        | true
-        | listable<Identifier<alias> | PrimitiveLiteral<IntegerLiteral>>
-    readonly boolean?: true | PrimitiveLiteral<boolean>
+export type Domains<scope extends Dictionary = Dictionary> = {
+    readonly bigint?: true | listable<Identifier<scope> | Unit<IntegerLiteral>>
+    readonly boolean?: true | Unit<boolean>
     readonly null?: true
-    readonly number?:
-        | true
-        | listable<
-              Identifier<alias> | PrimitiveLiteral<number> | NumberAttributes
-          >
-    readonly object?: true | listable<Identifier<alias> | ObjectAttributes>
+    readonly number?: true | listable<Identifier<scope> | NumberRule>
+    readonly object?: true | listable<Identifier<scope> | ObjectConstraints>
     readonly string?:
         | true
-        | listable<
-              Identifier<alias> | PrimitiveLiteral<string> | StringAttributes
-          >
+        | listable<Identifier<scope> | Unit<string> | StringRule>
     readonly symbol?: true
     readonly undefined?: true
 }
 
-export type ConstraintsOf<typeName extends TypeName> = NonNullable<
-    Resolution[typeName]
->
+export type resolved<t> = Exclude<t, Identifier>
 
-export type ResolvedConstraintsOf<typeName extends TypeName> = Exclude<
-    ConstraintsOf<typeName>,
-    listable<string>
->
+export type Predicate<
+    domain extends Domain,
+    scope extends Dictionary = Dictionary
+> = NonNullable<Domains<scope>[domain]>
 
-export type Attributes = {
-    // primitive attributes
+type NarrowableConstraints = {
+    // primitive constraints
     readonly regex?: RegexAttribute
     readonly divisor?: number
-    // object attributes
-    readonly props?: Dictionary<TypeNode>
+    // object constraints
     readonly requiredKeys?: keySet
-    readonly propTypes?: PropTypesAttribute
-    readonly subtype?: ObjectSubtypeName
-    // shared attributes
+    readonly props?: Dictionary<TypeNode>
+    readonly propTypes?: {
+        readonly number?: TypeNode
+        readonly string?: TypeNode
+    }
+    readonly subtype?: ObjectSubdomain
+    // shared constraints
     readonly bounds?: Bounds
 }
 
-type PropTypesAttribute = {
-    readonly number?: TypeNode
-    readonly string?: TypeNode
-}
-
-export type ObjectAttributes = Pick<
-    Attributes,
+export type ObjectConstraints = Pick<
+    NarrowableConstraints,
     "subtype" | "props" | "requiredKeys" | "propTypes" | "bounds"
 >
 
-export type StringAttributes = Pick<Attributes, "regex" | "bounds">
+export type StringConstraints = Pick<NarrowableConstraints, "regex" | "bounds">
 
-export type NumberAttributes = Pick<Attributes, "divisor" | "bounds">
+export type StringRule = StringConstraints | Unit<string>
 
-export type LiteralValue = string | number | boolean
+export type NumberConstraints = Pick<
+    NarrowableConstraints,
+    "divisor" | "bounds"
+>
 
-export type PrimitiveLiteral<value extends LiteralValue = LiteralValue> = {
+export type NumberRule = NumberConstraints | Unit<number>
+
+export type Unit<value extends UnitValue = UnitValue> = {
     readonly value: value
 }
 
+export type UnitValue = string | number | boolean
+
 /** Supertype of TypeNode used for internal operations that can handle all
  * possible TypeNodes */
-export type UnknownNode = supertype<TypeNode, Identifier | UnknownResolution>
+export type UnknownTypeNode = subsume<TypeNode, Identifier | UnknownDomains>
 
-export type UnknownResolution = {
-    readonly [k in TypeName]?: UnknownConstraints
+export type UnknownDomains = {
+    readonly [k in Domain]?: UnknownPredicate
 }
 
-export type UnknownConstraints =
-    | true
-    | listable<Identifier | UnknownKeyedConstraint>
+export type UnknownPredicate = true | listable<UnknownBranch>
 
-export type UnknownResolvedConstraints = true | listable<UnknownKeyedConstraint>
+export type UnknownBranch = Identifier | UnknownRule
 
-export type UnknownKeyedConstraint = UnknownAttributes | PrimitiveLiteral
+export type UnknownRule = UnknownConstraints | Unit
 
-export type UnknownAttributes = replaceKeys<
-    Attributes,
+export type UnknownConstraints = replaceKeys<
+    NarrowableConstraints,
     {
-        props: Dictionary<UnknownNode>
-        propTypes: UnknownPropTypesAttribute
+        props: Dictionary<UnknownTypeNode>
+        propTypes: {
+            [k in keyof NonNullable<
+                NarrowableConstraints["propTypes"]
+            >]: UnknownTypeNode
+        }
     }
 >
-
-type UnknownPropTypesAttribute = {
-    readonly number?: UnknownNode
-    readonly string?: UnknownNode
-}

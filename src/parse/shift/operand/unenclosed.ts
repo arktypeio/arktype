@@ -1,5 +1,5 @@
 import type { Keyword } from "../../../nodes/names.js"
-import type { Resolution } from "../../../nodes/node.js"
+import type { Domains } from "../../../nodes/node.js"
 import type { error } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
@@ -42,7 +42,7 @@ const unenclosedToNode = (s: DynamicState, token: string) =>
                   : buildUnresolvableMessage(token)
           )
 
-const maybeParseUnenclosedLiteral = (token: string): Resolution | undefined => {
+const maybeParseUnenclosedLiteral = (token: string): Domains | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { number: { value: maybeNumber } }

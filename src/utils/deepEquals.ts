@@ -1,5 +1,5 @@
-import type { List, Dictionary } from "./generics.js"
-import { hasType, typeOfObject } from "./typeOf.js"
+import { inDomain, objectSubdomainOf } from "./domainOf.js"
+import type { Dictionary, List } from "./generics.js"
 
 /**
  * Simple check for deep strict equality. Recurses into dictionaries and arrays,
@@ -9,11 +9,11 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (a === b) {
         return true
     }
-    if (!hasType(a, "object") || !hasType(b, "object")) {
+    if (!inDomain(a, "object") || !inDomain(b, "object")) {
         return false
     }
-    const aSubtype = typeOfObject(a)
-    const bSubtype = typeOfObject(b)
+    const aSubtype = objectSubdomainOf(a)
+    const bSubtype = objectSubdomainOf(b)
     if (aSubtype !== bSubtype) {
         return false
     }

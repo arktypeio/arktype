@@ -1,14 +1,15 @@
 import type { ScopeRoot } from "../scope.js"
+import type { Domain } from "../utils/domainOf.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
-import type { TypeName } from "../utils/typeOf.js"
 import { keywords } from "./names.js"
 import type {
+    resolved,
     TypeNode,
-    UnknownConstraints,
-    UnknownKeyedConstraint,
-    UnknownNode,
-    UnknownResolution
+    UnknownBranch,
+    UnknownDomains,
+    UnknownPredicate,
+    UnknownTypeNode
 } from "./node.js"
 import { resolveIfIdentifier } from "./utils.js"
 
@@ -31,34 +32,16 @@ export type SetOperation<
     ? ContextFreeSetOperation<t, result>
     : ContextualSetOperation<t, context, result>
 
-type allowUndefinedOperation<
-    f extends SetOperation<any, any>,
-    requireResult extends boolean = false
-> = f extends SetOperation<infer operand, infer context>
-    ? SetOperation<
-          operand | undefined,
-          unknown extends context ? undefined : context,
-          requireResult extends true ? operand : operand | undefined
-      >
-    : never
+type allowUndefinedOperands<f extends SetOperation<any, any>> =
+    f extends SetOperation<infer operand, infer context>
+        ? SetOperation<
+              operand | undefined,
+              unknown extends context ? undefined : context,
+              operand
+          >
+        : never
 
-export const composeBranchIntersection = <
-    t,
-    context = undefined,
-    reducer extends SetOperation<t, context> = SetOperation<t, context>
->(
-    reducer: reducer
-) =>
-    ((l, r, context) =>
-        l === undefined
-            ? r === undefined
-                ? equivalence
-                : undefined
-            : r === undefined
-            ? undefined
-            : reducer(l, r, context)) as allowUndefinedOperation<reducer>
-
-export const composeConstraintIntersection = <
+export const composePredicateIntersection = <
     t,
     context = undefined,
     reducer extends SetOperation<t, context> = SetOperation<t, context>
@@ -69,12 +52,12 @@ export const composeConstraintIntersection = <
         l === undefined
             ? r === undefined
                 ? throwInternalError(
-                      `Unexpected intersection of two undefined constraints`
+                      `Unexpected intersection of two undefined predicates`
                   )
                 : r
             : r === undefined
             ? l
-            : reducer(l, r, context)) as allowUndefinedOperation<reducer, true>
+            : reducer(l, r, context)) as allowUndefinedOperands<reducer>
 
 export type SetOperationResult<t> = t | empty | equivalence
 
@@ -152,9 +135,9 @@ export const composeKeyedOperation =
     }
 
 export const composeNodeOperation = (
-    resolutionOperation: SetOperation<UnknownResolution, ScopeRoot>
+    resolutionOperation: SetOperation<UnknownDomains, ScopeRoot>
 ) =>
-    composeConstraintIntersection<UnknownNode, ScopeRoot>((l, r, scope) => {
+    composePredicateIntersection<UnknownTypeNode, ScopeRoot>((l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)
         const rResolution = resolveIfIdentifier(r, scope)
         const result = resolutionOperation(lResolution, rResolution, scope)
@@ -162,16 +145,16 @@ export const composeNodeOperation = (
     })
 
 export const finalizeNodeOperation = (
-    l: UnknownNode,
-    result: SetOperationResult<UnknownNode>
+    l: UnknownTypeNode,
+    result: SetOperationResult<UnknownTypeNode>
 ): TypeNode =>
     result === empty ? keywords.never : result === equivalence ? l : result
 
 // TODO: Add aliases back if no subtype indices
 export const coalesceBranches = (
-    typeName: TypeName,
-    branches: UnknownKeyedConstraint[]
-): UnknownConstraints => {
+    domain: Domain,
+    branches: resolved<UnknownBranch>[]
+): UnknownPredicate => {
     switch (branches.length) {
         case 0:
             // TODO: type is never, anything else that can be done?
@@ -179,7 +162,7 @@ export const coalesceBranches = (
         case 1:
             return branches[0]
         default:
-            if (typeName === "boolean") {
+            if (domain === "boolean") {
                 // If a boolean has multiple branches, neither of which is a
                 // subtype of the other, it consists of two opposite literals
                 // and can be simplified to a non-literal boolean.

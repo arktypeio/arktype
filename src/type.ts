@@ -1,4 +1,4 @@
-import type { TypeNode, Resolution } from "./nodes/node.js"
+import type { TypeNode } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"

@@ -1,60 +1,61 @@
 import type { ScopeRoot } from "../scope.js"
+import type { Domain } from "../utils/domainOf.js"
 import { filterSplit } from "../utils/filterSplit.js"
+import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
-import type { TypeName } from "../utils/typeOf.js"
 import { intersection } from "./intersection.js"
 import type {
-    UnknownConstraints,
-    UnknownKeyedConstraint,
-    UnknownNode,
-    UnknownResolution,
-    ConstraintsOf,
-    TypeNode
+    Domains,
+    TypeNode,
+    UnknownDomains,
+    UnknownPredicate,
+    UnknownRule,
+    UnknownTypeNode
 } from "./node.js"
 
 export const resolveIfIdentifier = (
-    node: UnknownNode,
+    node: UnknownTypeNode,
     scope: ScopeRoot
-): UnknownResolution => (typeof node === "string" ? scope.resolve(node) : node)
+): UnknownDomains => (typeof node === "string" ? scope.resolve(node) : node)
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
 
-export const typeOfNode = (
+export const domainOfNode = (
     node: TypeNode,
     scope: ScopeRoot
-): TypeName | TypeName[] => {
-    const typeNames = keysOf(resolveIfIdentifier(node, scope))
+): Domain | Domain[] => {
+    const domains = keysOf(resolveIfIdentifier(node, scope))
     // TODO: Handle never here
-    return typeNames.length === 1 ? typeNames[0] : typeNames
+    return domains.length === 1 ? domains[0] : domains
 }
 
-export type MonotypeNode<typeName extends TypeName> = {
-    readonly [k in typeName]: ConstraintsOf<typeName>
+export type MonotypeNode<domain extends Domain> = {
+    readonly [k in domain]: defined<Domains[domain]>
 }
 
-export const nodeHasOnlyType = <typeName extends TypeName>(
+export const nodeExtendsDomain = <domain extends Domain>(
     node: TypeNode,
-    typeName: typeName,
+    domain: domain,
     scope: ScopeRoot
-): node is MonotypeNode<typeName> => typeOfNode(node, scope) === typeName
+): node is MonotypeNode<domain> => domainOfNode(node, scope) === domain
 
-export const resolveConstraintBranches = (
-    typeConstraints: UnknownConstraints,
-    typeName: TypeName,
+export const resolvePredicate = (
+    domain: Domain,
+    predicate: UnknownPredicate,
     scope: ScopeRoot
-): true | UnknownKeyedConstraint[] => {
-    if (typeConstraints === true) {
+): true | UnknownRule[] => {
+    if (predicate === true) {
         return true
     }
     const [unresolved, resolved] = filterSplit(
-        listFrom(typeConstraints),
+        listFrom(predicate),
         (branch): branch is string => typeof branch === "string"
     )
     while (unresolved.length) {
         const typeResolution = scope.resolveConstraints(
             unresolved.pop()!,
-            typeName
+            domain
         )
         if (typeResolution === true) {
             return true

@@ -23,7 +23,9 @@ describe("intersection", () => {
                 attest(type("2&2").root).snap({ number: { value: 2 } })
             })
             test("literal&number type", () => {
-                attest(type("number&22").root).snap({ number: { value: 22 } })
+                attest(type("number&22").root).snap({
+                    number: { value: 22 }
+                })
             })
             test("float&number type", () => {
                 attest(type("number&22.22").root).snap({

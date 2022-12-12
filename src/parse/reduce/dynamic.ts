@@ -3,7 +3,7 @@ import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
-import { nodeHasOnlyType } from "../../nodes/utils.js"
+import { nodeExtendsDomain } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { hasKey, isKeyOf } from "../../utils/generics.js"
@@ -43,7 +43,7 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         if (
-            nodeHasOnlyType(this.root!, "number", this.scope) &&
+            nodeExtendsDomain(this.root!, "number", this.scope) &&
             hasKey(this.root.number, "value")
         ) {
             const limit = this.root.number.value

@@ -1,5 +1,7 @@
-import type { TypeNode, Resolution } from "../nodes/node.js"
+import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
+import type { Domain, ObjectSubdomain } from "../utils/domainOf.js"
+import { domainOf, objectSubdomainOf } from "../utils/domainOf.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
@@ -8,8 +10,6 @@ import type {
     isTopType,
     List
 } from "../utils/generics.js"
-import type { ObjectSubtypeName, TypeName } from "../utils/typeOf.js"
-import { typeOf, typeOfObject } from "../utils/typeOf.js"
 import type {
     inferRecord,
     inferTuple,
@@ -21,12 +21,12 @@ import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
-    const defType = typeOf(def)
+    const defType = domainOf(def)
     if (defType === "string") {
         return parseString(def as string, scope)
     }
     if (defType === "object") {
-        const subtype = typeOfObject(def as object)
+        const subtype = objectSubdomainOf(def as object)
         if (subtype === "Object") {
             return parseDict(def as Dictionary, scope)
         } else if (subtype === "Array") {
@@ -69,8 +69,8 @@ export type validateDefinition<
         ? evaluate<{
               [k in keyof def]: validateDefinition<def[k], scope>
           }>
-        : buildBadDefinitionTypeMessage<typeOfObject<def>>
-    : buildBadDefinitionTypeMessage<typeOf<def>>
+        : buildBadDefinitionTypeMessage<objectSubdomainOf<def>>
+    : buildBadDefinitionTypeMessage<domainOf<def>>
 
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"
@@ -78,12 +78,12 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends TypeName | ObjectSubtypeName
+    actual extends Domain | ObjectSubdomain
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
 export type buildBadDefinitionTypeMessage<
-    actual extends TypeName | ObjectSubtypeName
+    actual extends Domain | ObjectSubdomain
 > = `Type definitions must be strings or objects (was ${actual})`

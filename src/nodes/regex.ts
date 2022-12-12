@@ -1,6 +1,6 @@
 import { listIntersection } from "../utils/generics.js"
 import { getRegex } from "../utils/regexCache.js"
-import { composeConstraintIntersection, equivalence } from "./compose.js"
+import { composePredicateIntersection, equivalence } from "./compose.js"
 
 export type RegexAttribute = string | readonly string[]
 
@@ -12,7 +12,7 @@ export const checkRegex = (data: string, regex: RegexAttribute) =>
 const checkRegexExpression = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection = composeConstraintIntersection<RegexAttribute>(
+export const regexIntersection = composePredicateIntersection<RegexAttribute>(
     (l, r) => {
         if (typeof l === "string") {
             if (typeof r === "string") {

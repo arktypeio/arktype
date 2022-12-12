@@ -1,4 +1,4 @@
-import { hasType } from "./typeOf.js"
+import { inDomain } from "./domainOf.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
 
@@ -101,7 +101,7 @@ export const keyCount = (o: object) => Object.keys(o).length
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export const hasKeys = (value: unknown) =>
-    hasType(value, "object") ? Object.keys(value).length !== 0 : false
+    inDomain(value, "object") ? Object.keys(value).length !== 0 : false
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
@@ -117,10 +117,10 @@ export type deepImmutable<o> = [o] extends [object]
       }
     : o
 
-export type subtype<t, u extends t> = u
+export type extend<t, u extends t> = u
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type supertype<t extends u, u> = u
+export type subsume<t extends u, u> = u
 
 export type defined<t> = Exclude<t, undefined>
 

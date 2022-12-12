@@ -1,4 +1,4 @@
-import { typeOf } from "../utils/typeOf.js"
+import { domainOf } from "../utils/domainOf.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean
@@ -44,7 +44,7 @@ export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
     get typeOf() {
-        return typeOf(this.raw)
+        return domainOf(this.raw)
     }
 
     // TODO: Fix

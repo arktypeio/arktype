@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import { compareConstraints, isSubtypeComparison } from "./compare.js"
+import { comparePredicates, isBranchesComparison } from "./compare.js"
 import {
     coalesceBranches,
     composeKeyedOperation,
@@ -7,42 +7,44 @@ import {
     equivalence,
     finalizeNodeOperation
 } from "./compose.js"
-import type { TypeNode, UnknownResolution } from "./node.js"
+import type { TypeNode, UnknownDomains } from "./node.js"
 
 export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const resolutionUnion = composeKeyedOperation<
-    UnknownResolution,
-    ScopeRoot
->((typeName, l, r, scope) => {
-    if (l === undefined) {
-        return r === undefined ? equivalence : r
+export const domainsUnion = composeKeyedOperation<UnknownDomains, ScopeRoot>(
+    (domain, l, r, scope) => {
+        if (l === undefined) {
+            return r === undefined ? equivalence : r
+        }
+        if (r === undefined) {
+            return l
+        }
+        const comparison = comparePredicates(l, r, {
+            domain,
+            scope
+        })
+        if (!isBranchesComparison(comparison)) {
+            return comparison === l ? r : l
+        }
+        const finalBranches = [
+            ...comparison.lRules.filter(
+                (_, lIndex) =>
+                    !comparison.lSubrulesOfR.includes(lIndex) &&
+                    !comparison.equivalences.some(
+                        (indexPair) => indexPair[0] === lIndex
+                    )
+            ),
+            ...comparison.rRules.filter(
+                (_, rIndex) =>
+                    !comparison.rSubrulesOfL.includes(rIndex) &&
+                    !comparison.equivalences.some(
+                        (indexPair) => indexPair[1] === rIndex
+                    )
+            )
+        ]
+        return coalesceBranches(domain, finalBranches)
     }
-    if (r === undefined) {
-        return l
-    }
-    const comparison = compareConstraints(l, r, { typeName, scope })
-    if (isSubtypeComparison(comparison)) {
-        return comparison === l ? r : l
-    }
-    const finalBranches = [
-        ...comparison.lBranches.filter(
-            (_, lIndex) =>
-                !comparison.lStrictSubtypes.includes(lIndex) &&
-                !comparison.equivalentTypes.some(
-                    (indexPair) => indexPair[0] === lIndex
-                )
-        ),
-        ...comparison.rBranches.filter(
-            (_, rIndex) =>
-                !comparison.rStrictSubtypes.includes(rIndex) &&
-                !comparison.equivalentTypes.some(
-                    (indexPair) => indexPair[1] === rIndex
-                )
-        )
-    ]
-    return coalesceBranches(typeName, finalBranches)
-})
+)
 
-export const nodeUnion = composeNodeOperation(resolutionUnion)
+export const nodeUnion = composeNodeOperation(domainsUnion)

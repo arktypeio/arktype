@@ -1,48 +1,32 @@
 import type { ScopeRoot } from "../scope.js"
+import { inObjectSubdomain } from "../utils/domainOf.js"
 import type { Dictionary, keySet, mutable } from "../utils/generics.js"
 import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
-import type { ObjectSubtypeName } from "../utils/typeOf.js"
-import { hasObjectSubtype } from "../utils/typeOf.js"
-import type { Bounds } from "./bounds.js"
 import { checkNode } from "./check.js"
-import type { ConstraintContext } from "./compare.js"
+import type { PredicateContext } from "./compare.js"
 import {
-    composeConstraintIntersection,
     composeKeyedOperation,
+    composePredicateIntersection,
     equivalence
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { UnknownNode, TypeNode, Resolution } from "./node.js"
+import type { Domains, ObjectConstraints, UnknownTypeNode } from "./node.js"
 
-type PropTypesAttribute = {
-    readonly number?: TypeNode
-    readonly string?: TypeNode
-}
-
-export type ObjectAttributes = {
-    readonly type: "object"
-    readonly props?: Dictionary<TypeNode>
-    readonly requiredKeys?: keySet
-    readonly propTypes?: PropTypesAttribute
-    readonly subtype?: ObjectSubtypeName
-    readonly bounds?: Bounds
-}
-
-type BaseProps = Dictionary<UnknownNode>
+type UnknownProps = Dictionary<UnknownTypeNode>
 
 // TODO: Never propagation
-export const propsIntersection = composeConstraintIntersection<
-    BaseProps,
-    ConstraintContext
+export const propsIntersection = composePredicateIntersection<
+    UnknownProps,
+    PredicateContext
 >(
-    composeKeyedOperation<Dictionary<UnknownNode>, ConstraintContext>(
+    composeKeyedOperation<UnknownProps, PredicateContext>(
         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
         { propagateEmpty: true }
     )
 )
 
-export const requiredKeysIntersection = composeConstraintIntersection<keySet>(
+export const requiredKeysIntersection = composePredicateIntersection<keySet>(
     (l, r) => {
         const result = { ...l, ...r }
         const resultSize = keyCount(result)
@@ -58,34 +42,34 @@ export const requiredKeysIntersection = composeConstraintIntersection<keySet>(
 
 export const checkObject = (
     data: object,
-    attributes: ObjectAttributes,
+    constraints: ObjectConstraints,
     scope: ScopeRoot
 ) => {
-    if (hasObjectSubtype(data, "Array") && isSimpleArray(attributes)) {
+    if (inObjectSubdomain(data, "Array") && isSimpleArray(constraints)) {
         return data.every((elementData) =>
-            checkNode(elementData, attributes.propTypes.number, scope)
+            checkNode(elementData, constraints.propTypes.number, scope)
         )
     }
-    const missingKeys: mutable<keySet> = { ...attributes.requiredKeys }
+    const missingKeys: mutable<keySet> = { ...constraints.requiredKeys }
     for (const k in data) {
         const propValue = (data as Dictionary)[k]
         if (
-            attributes.props?.[k] &&
-            !checkNode(propValue, attributes.props[k], scope)
+            constraints.props?.[k] &&
+            !checkNode(propValue, constraints.props[k], scope)
         ) {
             return false
         }
-        if (attributes.propTypes) {
+        if (constraints.propTypes) {
             const keyIsNumber = tryParseWellFormedNumber(k) !== undefined
             if (
                 keyIsNumber &&
-                attributes.propTypes.number &&
-                !checkNode(propValue, attributes.propTypes.number, scope)
+                constraints.propTypes.number &&
+                !checkNode(propValue, constraints.propTypes.number, scope)
             ) {
                 return false
             } else if (
-                attributes.propTypes.string &&
-                !checkNode(propValue, attributes.propTypes.string, scope)
+                constraints.propTypes.string &&
+                !checkNode(propValue, constraints.propTypes.string, scope)
             ) {
                 return false
             }
@@ -96,8 +80,8 @@ export const checkObject = (
 }
 
 const isSimpleArray = (
-    attributes: ObjectAttributes
-): attributes is { type: "object"; propTypes: { number: Resolution } } =>
-    !attributes.props &&
-    attributes.propTypes?.number !== undefined &&
-    Object.keys(attributes.propTypes).length === 1
+    constraints: ObjectConstraints
+): constraints is { type: "object"; propTypes: { number: Domains } } =>
+    !constraints.props &&
+    constraints.propTypes?.number !== undefined &&
+    Object.keys(constraints.propTypes).length === 1

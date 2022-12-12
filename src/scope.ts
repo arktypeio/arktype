@@ -1,22 +1,18 @@
 import { keywords } from "./nodes/names.js"
-import type {
-    TypeNode,
-    Resolution,
-    ResolvedConstraintsOf
-} from "./nodes/node.js"
+import type { Domains, Predicate, TypeNode } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import type { Config } from "./type.js"
 import { ArkType } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { Domain } from "./utils/domainOf.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
 import type { Dictionary, evaluate, mutable } from "./utils/generics.js"
 import { isKeyOf } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import type { TypeName } from "./utils/typeOf.js"
 
 const rawScope = (aliases: Dictionary, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
@@ -67,7 +63,7 @@ type inferredScopeToArktypes<inferred> = {
 // TODO: decide if parsing primarily managed through scope or only resolution/caching
 
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
-    attributes = {} as { [k in keyof inferred]: Resolution }
+    attributes = {} as { [k in keyof inferred]: Domains }
     // TODO: Add intersection cache
     private cache: mutable<Dictionary<TypeNode>> = {}
 
@@ -92,7 +88,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return this.resolveRecurse(name, [])
     }
 
-    private resolveRecurse(name: string, seen: string[]): Resolution {
+    private resolveRecurse(name: string, seen: string[]): Domains {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }
@@ -121,26 +117,23 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return root
     }
 
-    resolveConstraints<typeName extends TypeName>(
-        name: string,
-        typeName: typeName
-    ) {
-        return this.resolveConstraintsRecurse(name, typeName, [])
+    resolveConstraints<domain extends Domain>(name: string, domain: domain) {
+        return this.resolveConstraintsRecurse(name, domain, [])
     }
 
-    private resolveConstraintsRecurse<typeName extends TypeName>(
+    private resolveConstraintsRecurse<domain extends Domain>(
         name: string,
-        typeName: typeName,
+        domain: domain,
         seen: string[]
-    ): ResolvedConstraintsOf<typeName> {
-        const resolution = this.resolve(name)[typeName]
+    ): Predicate<domain> {
+        const resolution = this.resolve(name)[domain]
         if (resolution === undefined) {
             return throwInternalError(
-                `Expected '${name}' to have a definition including '${typeName}'`
+                `Expected '${name}' to have a definition including '${domain}'`
             )
         }
         if (typeof resolution !== "string") {
-            return resolution as ResolvedConstraintsOf<typeName>
+            return resolution as Predicate<domain>
         }
         if (seen.includes(resolution)) {
             return throwParseError(
@@ -148,7 +141,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             )
         }
         seen.push(resolution)
-        return this.resolveConstraintsRecurse(resolution, typeName, seen)
+        return this.resolveConstraintsRecurse(resolution, domain, seen)
     }
 
     memoizedParse(def: string): TypeNode {

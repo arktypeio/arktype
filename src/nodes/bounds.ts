@@ -1,5 +1,5 @@
 import type { List } from "../utils/generics.js"
-import { composeConstraintIntersection, empty, equivalence } from "./compose.js"
+import { composePredicateIntersection, empty, equivalence } from "./compose.js"
 
 export type Bounds = {
     readonly min?: Bound
@@ -11,7 +11,7 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const boundsIntersection = composeConstraintIntersection<Bounds>(
+export const boundsIntersection = composePredicateIntersection<Bounds>(
     (l, r) => {
         const minComparison = compareStrictness(l.min, r.min, "min")
         const maxComparison = compareStrictness(l.max, r.max, "max")

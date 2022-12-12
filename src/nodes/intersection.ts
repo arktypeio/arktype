@@ -1,26 +1,27 @@
 import type { ScopeRoot } from "../scope.js"
+import type { ObjectSubdomain } from "../utils/domainOf.js"
 import { hasKey } from "../utils/generics.js"
-import type { ObjectSubtypeName } from "../utils/typeOf.js"
 import { boundsIntersection } from "./bounds.js"
 import { checkAttributes } from "./check.js"
-import type { ConstraintContext } from "./compare.js"
-import { compareConstraints, isSubtypeComparison } from "./compare.js"
+import type { PredicateContext } from "./compare.js"
+import { comparePredicates, isBranchesComparison } from "./compare.js"
 import type { SetOperation } from "./compose.js"
 import {
     coalesceBranches,
-    composeConstraintIntersection,
     composeKeyedOperation,
     composeNodeOperation,
+    composePredicateIntersection,
     empty,
     equivalence,
     finalizeNodeOperation
 } from "./compose.js"
 import { divisorIntersection } from "./divisor.js"
 import type {
+    resolved,
     TypeNode,
-    UnknownAttributes,
-    UnknownKeyedConstraint,
-    UnknownResolution
+    UnknownBranch,
+    UnknownConstraints,
+    UnknownDomains
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
@@ -31,40 +32,42 @@ export const intersection = (
     scope: ScopeRoot
 ): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const resolutionIntersection = composeKeyedOperation<
-    UnknownResolution,
-    ScopeRoot
->((typeName, l, r, scope) => {
-    if (l === undefined) {
-        return r === undefined ? equivalence : undefined
+const domainsIntersection = composeKeyedOperation<UnknownDomains, ScopeRoot>(
+    (domain, l, r, scope) => {
+        if (l === undefined) {
+            return r === undefined ? equivalence : undefined
+        }
+        if (r === undefined) {
+            return undefined
+        }
+        const comparison = comparePredicates(l, r, {
+            domain,
+            scope
+        })
+        if (!isBranchesComparison(comparison)) {
+            return comparison
+        }
+        const finalBranches = [
+            ...comparison.intersections,
+            ...comparison.equivalences.map(
+                (indices) => comparison.lRules[indices[0]]
+            ),
+            ...comparison.lSubrulesOfR.map(
+                (lIndex) => comparison.lRules[lIndex]
+            ),
+            ...comparison.rSubrulesOfL.map(
+                (rIndex) => comparison.rRules[rIndex]
+            )
+        ]
+        return coalesceBranches(domain, finalBranches)
     }
-    if (r === undefined) {
-        return undefined
-    }
-    const comparison = compareConstraints(l, r, { typeName, scope })
-    if (isSubtypeComparison(comparison)) {
-        return comparison
-    }
-    const finalBranches = [
-        ...comparison.distinctIntersections,
-        ...comparison.equivalentTypes.map(
-            (indices) => comparison.lBranches[indices[0]]
-        ),
-        ...comparison.lStrictSubtypes.map(
-            (lIndex) => comparison.lBranches[lIndex]
-        ),
-        ...comparison.rStrictSubtypes.map(
-            (rIndex) => comparison.rBranches[rIndex]
-        )
-    ]
-    return coalesceBranches(typeName, finalBranches)
-})
+)
 
-export const nodeIntersection = composeNodeOperation(resolutionIntersection)
+export const nodeIntersection = composeNodeOperation(domainsIntersection)
 
-export const keyedConstraintsIntersection: SetOperation<
-    UnknownKeyedConstraint,
-    ConstraintContext
+export const branchResolutionIntersection: SetOperation<
+    resolved<UnknownBranch>,
+    PredicateContext
 > = (l, r, context) =>
     hasKey(l, "value")
         ? hasKey(r, "value")
@@ -81,13 +84,13 @@ export const keyedConstraintsIntersection: SetOperation<
         : attributesIntersection(l, r, context)
 
 export const subtypeIntersection =
-    composeConstraintIntersection<ObjectSubtypeName>((l, r) =>
+    composePredicateIntersection<ObjectSubdomain>((l, r) =>
         l === r ? equivalence : empty
     )
 
 const attributesIntersection = composeKeyedOperation<
-    UnknownAttributes,
-    ConstraintContext
+    UnknownConstraints,
+    PredicateContext
 >(
     {
         subtype: subtypeIntersection,
