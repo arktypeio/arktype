@@ -59,4 +59,5 @@ describe("parse enclosed", () => {
             | "yes|no"
             | "true|false"
     })
+    describe("escape characters", () => {})
 })

@@ -24,6 +24,7 @@ export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
+        // TODOSHAWN: Optional: Add escape check here
         if (definitionKey.endsWith("?")) {
             keyName = definitionKey.slice(0, -1)
         } else {
@@ -88,6 +89,7 @@ export type inferTuple<
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
 type optionalKeyOf<def> = {
+    // TODOSHAWN: Optional: Add escape check here
     [k in keyof def]: k extends optionalKeyWithName<infer name> ? name : never
 }[keyof def]
 
