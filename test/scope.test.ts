@@ -79,13 +79,13 @@ describe("scope", () => {
         attest(s.$.attributes).snap({
             a: {
                 object: {
-                    subtype: "Array",
+                    kind: "Array",
                     propTypes: { number: "string" }
                 }
             },
             b: {
                 object: {
-                    subtype: "Array",
+                    kind: "Array",
                     propTypes: { number: "a" }
                 }
             },

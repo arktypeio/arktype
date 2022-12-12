@@ -1,10 +1,8 @@
 import type { Bound, Bounds } from "../../../nodes/bounds.js"
 import {
-    boundsIntersection,
     buildEmptyRangeMessage,
     compareStrictness
 } from "../../../nodes/bounds.js"
-import { empty } from "../../../nodes/compose.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
@@ -86,7 +84,7 @@ export const parseRightBound = (
     s.intersect({
         number: { bounds },
         string: { bounds },
-        object: { subtype: "Array", bounds }
+        object: { kind: "Array", bounds }
     })
 }
 

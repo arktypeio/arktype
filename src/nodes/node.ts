@@ -53,14 +53,14 @@ type NarrowableConstraints = {
         readonly number?: TypeNode
         readonly string?: TypeNode
     }
-    readonly subtype?: ObjectSubdomain
+    readonly kind?: ObjectSubdomain
     // shared constraints
     readonly bounds?: Bounds
 }
 
 export type ObjectConstraints = Pick<
     NarrowableConstraints,
-    "subtype" | "props" | "requiredKeys" | "propTypes" | "bounds"
+    "kind" | "props" | "requiredKeys" | "propTypes" | "bounds"
 >
 
 export type StringConstraints = Pick<NarrowableConstraints, "regex" | "bounds">

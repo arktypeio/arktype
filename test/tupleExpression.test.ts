@@ -30,7 +30,7 @@ describe("tuple expression", () => {
         attest(t.infer).typed as string[]
         attest(t.root).snap({
             object: {
-                subtype: "Array",
+                kind: "Array",
                 propTypes: {
                     number: "string"
                 }

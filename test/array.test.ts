@@ -9,7 +9,7 @@ describe("parse array", () => {
         attest(stringArray.infer).typed as string[]
         attest(stringArray.root).snap({
             object: {
-                subtype: "Array",
+                kind: "Array",
                 propTypes: {
                     number: "string"
                 }

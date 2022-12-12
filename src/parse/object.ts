@@ -69,7 +69,7 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     }
     return {
         object: {
-            subtype: "Array",
+            kind: "Array",
             props
         }
     }

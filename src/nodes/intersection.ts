@@ -93,7 +93,7 @@ const attributesIntersection = composeKeyedOperation<
     PredicateContext
 >(
     {
-        subtype: subtypeIntersection,
+        kind: subtypeIntersection,
         divisor: divisorIntersection,
         regex: regexIntersection,
         props: propsIntersection,
