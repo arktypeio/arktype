@@ -4,8 +4,11 @@ import { composePredicateIntersection, equal } from "./compose.js"
 
 const regexCache: Record<string, RegExp> = {}
 
-const joinOneOrMore = (baseSource: string, delimiterSource: string) =>
-    `(${baseSource}(?:${delimiterSource}${baseSource})*)`
+const delimitRepititions = (
+    baseSource: string,
+    delimiterSource: string,
+    quanitifer = "*"
+) => `(${baseSource}(?:${delimiterSource}${baseSource})${quanitifer})`
 
 const maxLength = (baseSource: string, allowedCharacters: number) =>
     `(?!.{${allowedCharacters + 1}})${baseSource}`
@@ -23,22 +26,24 @@ const alphanumeric = `[${alphanumericCharSet}]*`
 // a portion of an email username when split by "."
 const emailUserSegment = `[${alphanumericCharSet}!#$%&'*+\\-/=?^_\`{|}~]+`
 
-const emailUser = joinOneOrMore(emailUserSegment, "\\.")
+const emailUser = delimitRepititions(emailUserSegment, "\\.")
 
 const fqdnSegment = maxLength(
-    `(?=^[${alphanumericCharSet}_\u00a1-\uffff-]*$)(?![\uff01-\uff5e])^(?!^-|-$)(?!_)`,
+    `(?!-)[${alphanumericCharSet}-\\u00a1-\\uffff]+`,
     63
 )
 
-const fqdn = joinOneOrMore(fqdnSegment, "\\.")
+const fqdn = delimitRepititions(fqdnSegment, "\\.", "{1,}")
+
+console.log(fqdn)
 
 const email = maxLength(`${emailUser}@${fqdn}`, 254)
 
 const creditCard =
     "(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\\d{3})\\d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))"
 
-// Unless otherwise noted, expression are based on validator.js
-// (https://github.com/validatorjs/validator.js) with default options.
+// Unless otherwise noted, expressions are simplified versions of validator.js
+// (https://github.com/validatorjs/validator.js) equivalents with default options.
 export const sources = mutateValues(
     {
         // alpha and alphanumeric were adjusted to match an empty string, which
