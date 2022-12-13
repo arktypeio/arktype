@@ -39,6 +39,7 @@ export type Predicate<
     domain extends Domain,
     scope extends Dictionary = Dictionary
 > = NonNullable<TypeTree<scope>[domain]>
+
 type NarrowableConstraints = {
     // primitive constraints
     readonly regex?: RegexAttribute
