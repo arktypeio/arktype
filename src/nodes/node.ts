@@ -11,7 +11,7 @@ import type {
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./keywords.js"
-import type { CollapsibleKeyset } from "./regex.js"
+import type { RegexAttribute } from "./regex.js"
 
 export type TypeNode<scope extends Dictionary = Dictionary> =
     | Identifier<scope>
@@ -42,7 +42,7 @@ export type Predicate<
 
 type NarrowableConstraints = {
     // primitive constraints
-    readonly regex?: CollapsibleKeyset
+    readonly regex?: RegexAttribute
     readonly divisor?: number
     // object constraints
     readonly requiredKeys?: keySet

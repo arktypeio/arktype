@@ -24,7 +24,7 @@ import type {
     UnknownDomain
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
-import { collapsibleKeysetIntersection } from "./regex.js"
+import { regexIntersection } from "./regex.js"
 
 export const intersection = (
     l: TypeNode,
@@ -95,7 +95,7 @@ const attributesIntersection = composeKeyedOperation<
     {
         kind: subtypeIntersection,
         divisor: divisorIntersection,
-        regex: collapsibleKeysetIntersection,
+        regex: regexIntersection,
         props: propsIntersection,
         requiredKeys: requiredKeysIntersection,
         propTypes: propsIntersection,
