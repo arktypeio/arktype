@@ -17,8 +17,6 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-const z = type(["string", (foo: unknown) => foo === "foo"])
-
 export type InferredTypeFn = <definition, scope extends Dictionary = {}>(
     definition: validateDefinition<definition, scope>,
     options?: Config<scope>

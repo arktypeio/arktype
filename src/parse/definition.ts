@@ -14,6 +14,7 @@ import type {
     inferRecord,
     inferTuple,
     TupleExpression,
+    validateTuple,
     validateTupleExpression
 } from "./object.js"
 import { parseDict, parseTuple } from "./object.js"
@@ -63,13 +64,13 @@ export type validateDefinition<
     : def extends string
     ? validateString<def, scope>
     : def extends object
-    ? def extends TupleExpression
-        ? validateTupleExpression<def, scope>
-        : def extends Dictionary | List
-        ? evaluate<{
+    ? def extends List
+        ? validateTuple<def, scope>
+        : def extends Function
+        ? buildBadDefinitionTypeMessage<"Function">
+        : evaluate<{
               [k in keyof def]: validateDefinition<def[k], scope>
           }>
-        : buildBadDefinitionTypeMessage<classifyObject<def>>
     : buildBadDefinitionTypeMessage<classify<def>>
 
 export type buildUninferableDefinitionMessage<

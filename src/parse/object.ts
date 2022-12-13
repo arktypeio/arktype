@@ -80,7 +80,7 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 }
 
 export type inferTuple<
-    def,
+    def extends List,
     scope extends Dictionary,
     aliases
 > = def extends TokenedTupleExpression
@@ -89,6 +89,17 @@ export type inferTuple<
     ? inferFunctionalTupleExpression<def, scope, aliases>
     : {
           [i in keyof def]: inferDefinition<def[i], scope, aliases>
+      }
+
+export type validateTuple<
+    def extends List,
+    scope extends Dictionary
+> = def extends TokenedTupleExpression
+    ? validateTokenedTupleExpression<def, scope>
+    : def extends FunctionalTupleExpression
+    ? validateFunctionalTupleExpression<def, scope>
+    : {
+          [i in keyof def]: validateDefinition<def[i], scope>
       }
 
 export type validateTupleExpression<
@@ -150,11 +161,6 @@ type inferFunctionalTupleExpression<
 > = def extends ConstraintTupleExpression
     ? inferDefinition<def[0], scope, aliases>
     : never
-
-type validateFunctionalTupleExpression2<
-    def extends FunctionalTupleExpression,
-    scope extends Dictionary
-> = [validateDefinition<def[0], scope>, (data: string) => boolean]
 
 type validateFunctionalTupleExpression<
     def extends FunctionalTupleExpression,
