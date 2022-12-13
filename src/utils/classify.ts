@@ -7,7 +7,7 @@ import type {
 } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 
-export const classified = <data, domain extends Domain>(
+export const hasDomain = <data, domain extends Domain>(
     data: data,
     domain: domain
 ): data is Extract<data, Domains[domain]> => classify(data as any) === domain
@@ -127,8 +127,8 @@ export const classifyObject = <data extends object>(data: data) => {
     return "Object"
 }
 
-export const objectClassified = <subtype extends ObjectDomain>(
+export const hasObjectDomain = <domain extends ObjectDomain>(
     data: unknown,
-    subtype: subtype
-): data is ObjectDomains[subtype] =>
-    classified(data, "object") && classifyObject(data) === subtype
+    domain: domain
+): data is ObjectDomains[domain] =>
+    hasDomain(data, "object") && classifyObject(data) === domain

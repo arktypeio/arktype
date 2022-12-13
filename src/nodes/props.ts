@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import { objectClassified } from "../utils/classify.js"
+import { hasObjectDomain } from "../utils/classify.js"
 import type { Dictionary, keySet, mutable } from "../utils/generics.js"
 import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
@@ -45,7 +45,7 @@ export const checkObject = (
     constraints: ObjectConstraints,
     scope: ScopeRoot
 ) => {
-    if (objectClassified(data, "Array") && isSimpleArray(constraints)) {
+    if (hasObjectDomain(data, "Array") && isSimpleArray(constraints)) {
         return data.every((elementData) =>
             checkNode(elementData, constraints.propTypes.number, scope)
         )

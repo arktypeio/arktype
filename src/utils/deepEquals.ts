@@ -1,4 +1,4 @@
-import { classified, classifyObject } from "./classify.js"
+import { classifyObject, hasDomain } from "./classify.js"
 import type { Dictionary, List } from "./generics.js"
 
 /**
@@ -9,7 +9,7 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (a === b) {
         return true
     }
-    if (!classified(a, "object") || !classified(b, "object")) {
+    if (!hasDomain(a, "object") || !hasDomain(b, "object")) {
         return false
     }
     const aObjectDomain = classifyObject(a)
