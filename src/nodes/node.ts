@@ -1,4 +1,4 @@
-import type { DomainName, ObjectSubdomain } from "../utils/domainOf.js"
+import type { Domain, ObjectSubdomain } from "../utils/domainOf.js"
 import type {
     autocompleteString,
     Dictionary,
@@ -15,14 +15,14 @@ import type { RegexAttribute } from "./regex.js"
 
 export type TypeNode<scope extends Dictionary = Dictionary> =
     | Identifier<scope>
-    | Domain<scope>
+    | TypeTree<scope>
 
 export type Identifier<scope extends Dictionary = Dictionary> =
     Dictionary extends scope
         ? autocompleteString<Keyword>
         : Keyword | stringKeyOf<scope>
 
-export type Domain<scope extends Dictionary = Dictionary> = {
+export type TypeTree<scope extends Dictionary = Dictionary> = {
     readonly bigint?: true | listable<Identifier<scope> | Unit<IntegerLiteral>>
     readonly boolean?: true | Unit<boolean>
     readonly null?: true
@@ -36,9 +36,9 @@ export type Domain<scope extends Dictionary = Dictionary> = {
 export type resolved<t> = Exclude<t, Identifier>
 
 export type Predicate<
-    domain extends DomainName,
+    domain extends Domain,
     scope extends Dictionary = Dictionary
-> = NonNullable<Domain<scope>[domain]>
+> = NonNullable<TypeTree<scope>[domain]>
 
 type NarrowableConstraints = {
     // primitive constraints
@@ -83,7 +83,7 @@ export type UnitValue = string | number | boolean
 export type UnknownTypeNode = subsume<TypeNode, Identifier | UnknownDomain>
 
 export type UnknownDomain = {
-    readonly [k in DomainName]?: UnknownPredicate
+    readonly [k in Domain]?: UnknownPredicate
 }
 
 export type UnknownPredicate = true | listable<UnknownBranch>

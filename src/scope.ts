@@ -1,12 +1,12 @@
 import { keywords } from "./nodes/keywords.js"
-import type { Domain, Predicate, TypeNode } from "./nodes/node.js"
+import type { Predicate, TypeNode, TypeTree } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import type { Config } from "./type.js"
 import { ArkType } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { DomainName } from "./utils/domainOf.js"
+import type { Domain } from "./utils/domainOf.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
 import type { Dictionary, evaluate, mutable } from "./utils/generics.js"
@@ -63,7 +63,7 @@ type inferredScopeToArktypes<inferred> = {
 // TODO: decide if parsing primarily managed through scope or only resolution/caching
 
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
-    attributes = {} as { [k in keyof inferred]: Domain }
+    attributes = {} as { [k in keyof inferred]: TypeTree }
     // TODO: Add intersection cache
     private cache: mutable<Dictionary<TypeNode>> = {}
 
@@ -88,7 +88,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return this.resolveRecurse(name, [])
     }
 
-    private resolveRecurse(name: string, seen: string[]): Domain {
+    private resolveRecurse(name: string, seen: string[]): TypeTree {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }
@@ -117,14 +117,11 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return root
     }
 
-    resolveConstraints<domain extends DomainName>(
-        name: string,
-        domain: domain
-    ) {
+    resolveConstraints<domain extends Domain>(name: string, domain: domain) {
         return this.resolveConstraintsRecurse(name, domain, [])
     }
 
-    private resolveConstraintsRecurse<domain extends DomainName>(
+    private resolveConstraintsRecurse<domain extends Domain>(
         name: string,
         domain: domain,
         seen: string[]

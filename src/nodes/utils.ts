@@ -1,12 +1,12 @@
 import type { ScopeRoot } from "../scope.js"
-import type { DomainName } from "../utils/domainOf.js"
+import type { Domain } from "../utils/domainOf.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
 import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
 import type {
-    Domain,
     TypeNode,
+    TypeTree,
     UnknownDomain,
     UnknownPredicate,
     UnknownRule,
@@ -24,24 +24,24 @@ export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
 export const domainOfNode = (
     node: TypeNode,
     scope: ScopeRoot
-): DomainName | DomainName[] => {
+): Domain | Domain[] => {
     const domains = keysOf(resolveIfIdentifier(node, scope))
     // TODO: Handle never here
     return domains.length === 1 ? domains[0] : domains
 }
 
-export type DomainSubtypeNode<domain extends DomainName> = {
-    readonly [k in domain]: defined<Domain[domain]>
+export type DomainSubtypeNode<domain extends Domain> = {
+    readonly [k in domain]: defined<TypeTree[domain]>
 }
 
-export const nodeExtendsDomain = <domain extends DomainName>(
+export const nodeExtendsDomain = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
     scope: ScopeRoot
 ): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain
 
 export const resolvePredicate = (
-    domain: DomainName,
+    domain: Domain,
     predicate: UnknownPredicate,
     scope: ScopeRoot
 ): true | UnknownRule[] => {

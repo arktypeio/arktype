@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import { inObjectSubdomain } from "../utils/domainOf.js"
+import { hasSubdomain } from "../utils/domainOf.js"
 import type { Dictionary, keySet, mutable } from "../utils/generics.js"
 import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
@@ -11,7 +11,7 @@ import {
     equal
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { Domain, ObjectConstraints, UnknownTypeNode } from "./node.js"
+import type { ObjectConstraints, TypeTree, UnknownTypeNode } from "./node.js"
 
 type UnknownProps = Dictionary<UnknownTypeNode>
 
@@ -45,7 +45,7 @@ export const checkObject = (
     constraints: ObjectConstraints,
     scope: ScopeRoot
 ) => {
-    if (inObjectSubdomain(data, "Array") && isSimpleArray(constraints)) {
+    if (hasSubdomain(data, "Array") && isSimpleArray(constraints)) {
         return data.every((elementData) =>
             checkNode(elementData, constraints.propTypes.number, scope)
         )
@@ -81,7 +81,7 @@ export const checkObject = (
 
 const isSimpleArray = (
     constraints: ObjectConstraints
-): constraints is { type: "object"; propTypes: { number: Domain } } =>
+): constraints is { type: "object"; propTypes: { number: TypeTree } } =>
     !constraints.props &&
     constraints.propTypes?.number !== undefined &&
     Object.keys(constraints.propTypes).length === 1

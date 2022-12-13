@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { DomainName } from "../utils/domainOf.js"
+import type { Domain } from "../utils/domainOf.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import { branchResolutionIntersection } from "./intersection.js"
@@ -7,7 +7,7 @@ import type { UnknownPredicate, UnknownRule } from "./node.js"
 import { resolvePredicate } from "./utils.js"
 
 export type PredicateContext = {
-    domain: DomainName
+    domain: Domain
     scope: ScopeRoot
 }
 

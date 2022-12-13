@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { DomainName } from "../utils/domainOf.js"
+import type { Domain } from "../utils/domainOf.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
@@ -146,7 +146,7 @@ export const finalizeNodeOperation = (
 
 // TODO: Add aliases back if no subtype indices
 export const coalesceBranches = (
-    domain: DomainName,
+    domain: Domain,
     branches: resolved<UnknownBranch>[]
 ): UnknownPredicate => {
     switch (branches.length) {

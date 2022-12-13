@@ -7,13 +7,12 @@ import type {
 } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 
-export const inDomain = <data, domain extends DomainName>(
+export const hasDomain = <data, domain extends Domain>(
     data: data,
     domain: domain
-): data is Extract<data, DomainTypes[domain]> =>
-    domainOf(data as any) === domain
+): data is Extract<data, Domains[domain]> => domainOf(data as any) === domain
 
-export type DomainTypes = {
+export type Domains = {
     bigint: bigint
     boolean: boolean
     number: number
@@ -24,14 +23,14 @@ export type DomainTypes = {
     null: null
 }
 
-export type DomainName = evaluate<keyof DomainTypes>
+export type Domain = evaluate<keyof Domains>
 
-export type PrimitiveDomain = Exclude<DomainName, "object">
+export type PrimitiveDomain = Exclude<Domain, "object">
 
-export type Primitive = DomainTypes[PrimitiveDomain]
+export type Primitive = Domains[PrimitiveDomain]
 
 export type domainOf<data> = isTopType<data> extends true
-    ? DomainName
+    ? Domain
     : data extends object
     ? "object"
     : data extends string
@@ -128,8 +127,8 @@ export const objectSubdomainOf = <data extends object>(data: data) => {
     return "Object"
 }
 
-export const inObjectSubdomain = <subtype extends ObjectSubdomain>(
+export const hasSubdomain = <subtype extends ObjectSubdomain>(
     data: unknown,
     subtype: subtype
 ): data is ObjectSubdomains[subtype] =>
-    inDomain(data, "object") && objectSubdomainOf(data) === subtype
+    hasDomain(data, "object") && objectSubdomainOf(data) === subtype

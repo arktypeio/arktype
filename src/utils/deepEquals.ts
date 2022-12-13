@@ -1,4 +1,4 @@
-import { inDomain, objectSubdomainOf } from "./domainOf.js"
+import { hasDomain, objectSubdomainOf } from "./domainOf.js"
 import type { Dictionary, List } from "./generics.js"
 
 /**
@@ -9,7 +9,7 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (a === b) {
         return true
     }
-    if (!inDomain(a, "object") || !inDomain(b, "object")) {
+    if (!hasDomain(a, "object") || !hasDomain(b, "object")) {
         return false
     }
     const aSubtype = objectSubdomainOf(a)
