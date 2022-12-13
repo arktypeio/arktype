@@ -48,7 +48,7 @@ describe("tuple expression", () => {
         })
     })
     test("contraint", () => {
-        const t = type(["=>", "string", (s) => s === "foo"])
+        const t = type(["string", ":", (s) => s === "foo"])
         attest(t.infer).typed as string
     })
     describe("errors", () => {

@@ -58,22 +58,14 @@ export type validateDefinition<
     : def extends string
     ? validateString<def, scope>
     : def extends List
-    ? def[0] extends "=>"
-        ? ConstraintTuple<inferDefinition<def[1], scope, scope>>
-        : validateTuple<def, scope>
+    ? validateTuple<def, scope>
     : def extends Primitive
     ? buildBadDefinitionTypeMessage<classify<def>>
+    : def extends Function
+    ? buildBadDefinitionTypeMessage<"Function">
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], scope>
       }>
-
-type ConstraintTuple<t> = ["=>", t, (data: t) => boolean]
-
-// validateTuple<def, scope>
-//: buildBadDefinitionTypeMessage<classify<def>>
-// def extends Function
-// ? buildBadDefinitionTypeMessage<"Function">
-// :
 
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"

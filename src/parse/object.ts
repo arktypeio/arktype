@@ -59,11 +59,8 @@ export type inferRecord<
 >
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
-    if (isTokenedTupleExpression(def)) {
-        return parseTokenedTupleExpression(def, scope)
-    }
-    if (isFunctionalTupleExpression(def)) {
-        return parseFunctionalTupleExpression(def, scope)
+    if (isTupleExpression(def)) {
+        return parseTupleExpression(def, scope)
     }
     const props: Record<number, TypeNode> = {}
     for (let i = 0; i < def.length; i++) {
@@ -81,10 +78,8 @@ export type inferTuple<
     def extends List,
     scope extends Dictionary,
     aliases
-> = def extends TokenedTupleExpression
-    ? inferTokenedTupleExpression<def, scope, aliases>
-    : def extends FunctionalTupleExpression
-    ? inferFunctionalTupleExpression<def, scope, aliases>
+> = def extends TupleExpression
+    ? inferTupleExpression<def, scope, aliases>
     : {
           [i in keyof def]: inferDefinition<def[i], scope, aliases>
       }
@@ -92,10 +87,8 @@ export type inferTuple<
 export type validateTuple<
     def extends List,
     scope extends Dictionary
-> = def extends TokenedTupleExpression
-    ? validateTokenedTupleExpression<def, scope>
-    : def extends FunctionalTupleExpression
-    ? validateFunctionalTupleExpression<def, scope>
+> = def extends TupleExpression
+    ? validateTupleExpression<def, scope>
     : {
           [i in keyof def]: validateDefinition<def[i], scope>
       }
@@ -110,10 +103,12 @@ type requiredKeyOf<def> = {
     [k in keyof def]: k extends optionalKeyWithName ? never : k
 }[keyof def]
 
-export type validateTokenedTupleExpression<
-    def extends TokenedTupleExpression,
+type validateTupleExpression<
+    def extends TupleExpression,
     scope extends Dictionary
-> = def[1] extends Scanner.BranchToken
+> = def[1] extends ":"
+    ? ConstraintTuple<def[0], scope>
+    : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? error<buildMissingRightOperandMessage<def[1], "">>
         : [
@@ -125,11 +120,13 @@ export type validateTokenedTupleExpression<
     ? [validateDefinition<def[0], scope>, "[]"]
     : never
 
-type inferTokenedTupleExpression<
-    def extends TokenedTupleExpression,
+type inferTupleExpression<
+    def extends TupleExpression,
     scope extends Dictionary,
     aliases
-> = def[1] extends Scanner.BranchToken
+> = def[1] extends ":"
+    ? inferDefinition<def[0], scope, aliases>
+    : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
         : def[1] extends "&"
@@ -144,29 +141,8 @@ type inferTokenedTupleExpression<
     ? inferDefinition<def[0], scope, aliases>[]
     : never
 
-type inferFunctionalTupleExpression<
-    def extends FunctionalTupleExpression,
-    scope extends Dictionary,
-    aliases
-> = def extends ConstraintTupleExpression
-    ? inferDefinition<def[0], scope, aliases>
-    : never
-
-type validateFunctionalTupleExpression<
-    def extends FunctionalTupleExpression,
-    scope extends Dictionary
-> = def extends ConstraintTupleExpression
-    ? inferDefinition<def[0], scope, scope> extends infer constrained
-        ? [validateDefinition<def[0], scope>, (data: constrained) => boolean]
-        : never
-    : never
-
-const isFunctionalTupleExpression = (
-    def: List
-): def is FunctionalTupleExpression => typeof def[1] === "function"
-
-const parseTokenedTupleExpression = (
-    def: TokenedTupleExpression,
+const parseTupleExpression = (
+    def: TupleExpression,
     scope: ScopeRoot
 ): TypeNode => {
     if (isKeyOf(def[1], Scanner.branchTokens)) {
@@ -183,39 +159,22 @@ const parseTokenedTupleExpression = (
     return throwInternalError(`Unexpected tuple expression token '${def[1]}'`)
 }
 
-const parseFunctionalTupleExpression = (
-    def: FunctionalTupleExpression,
-    scope: ScopeRoot
-): TypeNode => {
-    if (def.length === 2) {
-        const constrained = parseDefinition(def[0], scope)
-        // TODO: Add constraint
-        return constrained
-    }
-    return throwInternalError(
-        `Unexpected functional tuple expression token '${def[1]}'`
-    )
-}
-
-const isTokenedTupleExpression = (def: List): def is TokenedTupleExpression =>
+const isTupleExpression = (def: List): def is TupleExpression =>
     typeof def[1] === "string" && def[1] in tupleExpressionTokens
-
-export type TupleExpression = TokenedTupleExpression | FunctionalTupleExpression
 
 const tupleExpressionTokens = {
     "|": true,
     "&": true,
-    "[]": true
+    "[]": true,
+    ":": true
 } as const
 
 type TupleExpressionToken = keyof typeof tupleExpressionTokens
 
-export type TokenedTupleExpression = [
-    unknown,
-    TupleExpressionToken,
-    ...unknown[]
+export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
+
+type ConstraintTuple<def, scope extends Dictionary> = [
+    validateDefinition<def, scope>,
+    ":",
+    (data: inferDefinition<def, scope, scope>) => boolean
 ]
-
-export type FunctionalTupleExpression = [unknown, Function, ...unknown[]]
-
-export type ConstraintTupleExpression = [unknown, Function]
