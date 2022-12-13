@@ -3,7 +3,6 @@ import { morph } from "../nodes/morph.js"
 import type { TypeNode } from "../nodes/node.js"
 import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
-import { type } from "../type.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
