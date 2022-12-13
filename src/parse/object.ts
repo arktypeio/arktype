@@ -4,7 +4,6 @@ import type { TypeNode } from "../nodes/node.js"
 import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
 import { type } from "../type.js"
-import { hasDomain } from "../utils/classify.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
@@ -101,14 +100,6 @@ export type validateTuple<
     : {
           [i in keyof def]: validateDefinition<def[i], scope>
       }
-
-export type validateTupleExpression<
-    def extends TupleExpression,
-    scope extends Dictionary
-> = def extends TokenedTupleExpression
-    ? validateTokenedTupleExpression<def, scope>
-    : // @ts-expect-error
-      validateFunctionalTupleExpression<def, scope>
 
 type optionalKeyWithName<name extends string = string> = `${name}?`
 

@@ -10,13 +10,7 @@ import type {
     isTopType,
     List
 } from "../utils/generics.js"
-import type {
-    inferRecord,
-    inferTuple,
-    TupleExpression,
-    validateTuple,
-    validateTupleExpression
-} from "./object.js"
+import type { inferRecord, inferTuple, validateTuple } from "./object.js"
 import { parseDict, parseTuple } from "./object.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
