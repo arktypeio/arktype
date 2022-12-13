@@ -1,3 +1,4 @@
+import type { ConstraintFunction } from "../parse/object.js"
 import type { Domain, ObjectDomain } from "../utils/classify.js"
 import type {
     autocompleteString,
@@ -22,6 +23,7 @@ export type Identifier<scope extends Dictionary = Dictionary> =
         ? autocompleteString<Keyword>
         : Keyword | stringKeyOf<scope>
 
+// TODO: Add constrain
 export type TypeTree<scope extends Dictionary = Dictionary> = {
     readonly bigint?: true | listable<Identifier<scope> | Unit<IntegerLiteral>>
     readonly boolean?: true | Unit<boolean>
@@ -40,7 +42,8 @@ export type Predicate<
     scope extends Dictionary = Dictionary
 > = NonNullable<TypeTree<scope>[domain]>
 
-type NarrowableConstraints = {
+// TODO: identity
+type BaseConstraints = {
     // primitive constraints
     readonly regex?: RegexAttribute
     readonly divisor?: number
@@ -54,21 +57,20 @@ type NarrowableConstraints = {
     readonly kind?: ObjectDomain
     // shared constraints
     readonly bounds?: Bounds
+    // TODO: rename
+    readonly constrain?: listable<ConstraintFunction>
 }
 
 export type ObjectConstraints = Pick<
-    NarrowableConstraints,
+    BaseConstraints,
     "kind" | "props" | "requiredKeys" | "propTypes" | "bounds"
 >
 
-export type StringConstraints = Pick<NarrowableConstraints, "regex" | "bounds">
+export type StringConstraints = Pick<BaseConstraints, "regex" | "bounds">
 
 export type StringRule = StringConstraints | Unit<string>
 
-export type NumberConstraints = Pick<
-    NarrowableConstraints,
-    "divisor" | "bounds"
->
+export type NumberConstraints = Pick<BaseConstraints, "divisor" | "bounds">
 
 export type NumberRule = NumberConstraints | Unit<number>
 
@@ -93,12 +95,12 @@ export type UnknownBranch = Identifier | UnknownRule
 export type UnknownRule = UnknownConstraints | Unit
 
 export type UnknownConstraints = replaceKeys<
-    NarrowableConstraints,
+    BaseConstraints,
     {
         props: Dictionary<UnknownTypeNode>
         propTypes: {
             [k in keyof NonNullable<
-                NarrowableConstraints["propTypes"]
+                BaseConstraints["propTypes"]
             >]: UnknownTypeNode
         }
     }

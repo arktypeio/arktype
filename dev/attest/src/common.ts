@@ -103,7 +103,7 @@ const serializePrimitive = (value: unknown, stringify?: boolean) => {
         case "symbol":
             return `<symbol ${value.description ?? "(anonymous)"}>`
         case "function":
-            return `<function ${value.name ?? "(anonymous)"}>`
+            return `<function${value.name ?? " (anonymous)"}>`
         case "undefined":
             return "<undefined>"
         case "bigint":

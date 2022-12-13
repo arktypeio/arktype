@@ -23,6 +23,9 @@ export const assertEquals = (
     actual: unknown,
     ctx: AssertionContext
 ) => {
+    if (expected === actual) {
+        return
+    }
     if (isRecursible(expected) && isRecursible(actual)) {
         try {
             strict.deepStrictEqual(actual, expected)
@@ -30,7 +33,8 @@ export const assertEquals = (
             e.stack = ctx.assertionStack
             throw e
         }
-    } else if (actual !== expected) {
+    } else {
+        // some nonsense to get a good stack trace
         try {
             strict.strictEqual(actual, expected)
         } catch (e: any) {

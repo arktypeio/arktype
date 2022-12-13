@@ -1,4 +1,7 @@
-import type { List } from "../utils/generics.js"
+import { hasObjectDomain } from "../utils/classify.js"
+import type { List, listable } from "../utils/generics.js"
+import { collapsibleListedSetUnion } from "./collapsibleSets.js"
+import type { SetOperation } from "./compose.js"
 import { composePredicateIntersection, equal } from "./compose.js"
 
 const regexCache: Record<string, RegExp> = {}
@@ -28,6 +31,8 @@ export const getRegex = (source: string) => {
 
 export type RegexAttribute = string | readonly string[]
 
+export type CollapsibleListedSet<t> = t | readonly t[]
+
 export const checkRegex = (data: string, regex: RegexAttribute) =>
     typeof regex === "string"
         ? checkRegexExpression(data, regex)
@@ -37,36 +42,8 @@ const checkRegexExpression = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
 export const regexIntersection = composePredicateIntersection<RegexAttribute>(
-    (l, r) => {
-        if (typeof l === "string") {
-            if (typeof r === "string") {
-                return l === r ? equal : [l, r]
-            }
-            return r.includes(l) ? r : [...r, l]
-        }
-        if (typeof r === "string") {
-            return l.includes(r) ? l : [...l, r]
-        }
-        const result = listIntersection(l, r)
-        return result.length === l.length
-            ? result.length === r.length
-                ? equal
-                : l
-            : result.length === r.length
-            ? r
-            : result
-    }
+    collapsibleListedSetUnion<string>
 )
-
-export const listIntersection = <t extends List>(l: t, r: t) => {
-    const result = [...l]
-    for (const expression of r) {
-        if (!l.includes(expression)) {
-            result.push(expression)
-        }
-    }
-    return result
-}
 
 // https://github.com/validatorjs/validator.js
 export const isLuhnValid = (creditCardInput: string) => {

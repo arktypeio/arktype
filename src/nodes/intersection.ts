@@ -1,8 +1,11 @@
+import type { ConstraintFunction } from "../parse/object.js"
 import type { ScopeRoot } from "../scope.js"
 import type { ObjectDomain } from "../utils/classify.js"
+import type { listable } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import { boundsIntersection } from "./bounds.js"
 import { checkConstraints } from "./check.js"
+import { collapsibleListedSetUnion } from "./collapsibleSets.js"
 import type { PredicateContext } from "./compare.js"
 import { comparePredicates, isBranchesComparison } from "./compare.js"
 import type { SetOperation } from "./compose.js"
@@ -87,6 +90,10 @@ export const subtypeIntersection = composePredicateIntersection<ObjectDomain>(
     (l, r) => (l === r ? equal : empty)
 )
 
+const constrainIntersection = composePredicateIntersection<
+    listable<ConstraintFunction>
+>(collapsibleListedSetUnion)
+
 const attributesIntersection = composeKeyedOperation<
     UnknownConstraints,
     PredicateContext
@@ -98,7 +105,8 @@ const attributesIntersection = composeKeyedOperation<
         props: propsIntersection,
         requiredKeys: requiredKeysIntersection,
         propTypes: propsIntersection,
-        bounds: boundsIntersection
+        bounds: boundsIntersection,
+        constrain: constrainIntersection
     },
     { propagateEmpty: true }
 )

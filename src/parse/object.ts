@@ -1,9 +1,17 @@
 import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
-import type { TypeNode } from "../nodes/node.js"
+import type {
+    TypeNode,
+    TypeTree,
+    UnknownDomain,
+    UnknownRule
+} from "../nodes/node.js"
 import { union } from "../nodes/union.js"
+import { resolveIfIdentifier } from "../nodes/utils.js"
 import type { ScopeRoot } from "../scope.js"
-import { throwInternalError, throwParseError } from "../utils/errors.js"
+import type { Domain } from "../utils/classify.js"
+import { hasObjectDomain, subclassify } from "../utils/classify.js"
+import { throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
     error,
@@ -12,10 +20,9 @@ import type {
     List,
     mutable
 } from "../utils/generics.js"
-import { isKeyOf } from "../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
-import { Scanner } from "./reduce/scanner.js"
+import type { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
 export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
@@ -78,7 +85,7 @@ export type inferTuple<
     def extends List,
     scope extends Dictionary,
     aliases
-> = def extends TupleExpression
+> = def extends UnknownTupleExpression
     ? inferTupleExpression<def, scope, aliases>
     : {
           [i in keyof def]: inferDefinition<def[i], scope, aliases>
@@ -87,7 +94,7 @@ export type inferTuple<
 export type validateTuple<
     def extends List,
     scope extends Dictionary
-> = def extends TupleExpression
+> = def extends UnknownTupleExpression
     ? validateTupleExpression<def, scope>
     : {
           [i in keyof def]: validateDefinition<def[i], scope>
@@ -104,10 +111,10 @@ type requiredKeyOf<def> = {
 }[keyof def]
 
 type validateTupleExpression<
-    def extends TupleExpression,
+    def extends UnknownTupleExpression,
     scope extends Dictionary
 > = def[1] extends ":"
-    ? ConstraintTuple<def[0], scope>
+    ? validateConstraintTuple<def[0], scope>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? error<buildMissingRightOperandMessage<def[1], "">>
@@ -120,8 +127,14 @@ type validateTupleExpression<
     ? [validateDefinition<def[0], scope>, "[]"]
     : never
 
+type validateConstraintTuple<def, scope extends Dictionary> = [
+    validateDefinition<def, scope>,
+    ":",
+    ConstraintFunction<inferDefinition<def, scope, scope>>
+]
+
 type inferTupleExpression<
-    def extends TupleExpression,
+    def extends UnknownTupleExpression,
     scope extends Dictionary,
     aliases
 > = def[1] extends ":"
@@ -141,40 +154,65 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases>[]
     : never
 
-const parseTupleExpression = (
-    def: TupleExpression,
+export type TupleExpressionToken = "&" | "|" | "[]" | ":"
+
+type TupleExpressionParser<token extends TupleExpressionToken> = (
+    def: UnknownTupleExpression<token>,
     scope: ScopeRoot
-): TypeNode => {
-    if (isKeyOf(def[1], Scanner.branchTokens)) {
-        if (def[2] === undefined) {
-            return throwParseError(buildMissingRightOperandMessage(def[1], ""))
-        }
-        const l = parseDefinition(def[0], scope)
-        const r = parseDefinition(def[2], scope)
-        return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
+) => TypeNode
+
+const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
+    if (def[2] === undefined) {
+        return throwParseError(buildMissingRightOperandMessage(def[1], ""))
     }
-    if (def[1] === "[]") {
-        return morph("array", parseDefinition(def[0], scope))
-    }
-    return throwInternalError(`Unexpected tuple expression token '${def[1]}'`)
+    const l = parseDefinition(def[0], scope)
+    const r = parseDefinition(def[2], scope)
+    return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
 }
 
-const isTupleExpression = (def: List): def is TupleExpression =>
-    typeof def[1] === "string" && def[1] in tupleExpressionTokens
+const buildMalformedConstraintMessage = (constraint: unknown) =>
+    `Constraint tuple must include a functional right operand (got ${subclassify(
+        constraint
+    )})`
 
-const tupleExpressionTokens = {
-    "|": true,
-    "&": true,
-    "[]": true,
-    ":": true
-} as const
+const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
+    if (!hasObjectDomain(def[2], "Function")) {
+        return throwParseError(buildMalformedConstraintMessage(":"))
+    }
+    const constrained = parseDefinition(def[0], scope)
+    const constraintPredicate = {
+        constrain: def[2] as ConstraintFunction
+    } satisfies UnknownRule
+    const distributedConstraint: mutable<UnknownDomain> = {}
+    let domain: Domain
+    for (domain in resolveIfIdentifier(constrained, scope)) {
+        distributedConstraint[domain] = constraintPredicate
+    }
+    return intersection(constrained, distributedConstraint as TypeTree, scope)
+}
 
-type TupleExpressionToken = keyof typeof tupleExpressionTokens
+const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>
+    morph("array", parseDefinition(def[0], scope))
 
-export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
+const tupleExpressionParsers: {
+    [token in TupleExpressionToken]: TupleExpressionParser<token>
+} = {
+    "|": parseBranchTuple,
+    "&": parseBranchTuple,
+    "[]": parseArrayTuple,
+    ":": parseConstraintTuple
+}
 
-type ConstraintTuple<def, scope extends Dictionary> = [
-    validateDefinition<def, scope>,
-    ":",
-    (data: inferDefinition<def, scope, scope>) => boolean
-]
+const parseTupleExpression = (
+    def: UnknownTupleExpression,
+    scope: ScopeRoot
+): TypeNode => tupleExpressionParsers[def[1]](def as any, scope)
+
+const isTupleExpression = (def: List): def is UnknownTupleExpression =>
+    typeof def[1] === "string" && def[1] in tupleExpressionParsers
+
+export type UnknownTupleExpression<
+    token extends TupleExpressionToken = TupleExpressionToken
+> = [unknown, token, ...unknown[]]
+
+export type ConstraintFunction<data = unknown> = (data: data) => boolean

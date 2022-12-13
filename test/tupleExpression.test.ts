@@ -47,9 +47,11 @@ describe("tuple expression", () => {
             bigint: true
         })
     })
-    test("contraint", () => {
-        const t = type(["string", ":", (s) => s === "foo"])
+    test("contrain", () => {
+        const isOdd = (n: number) => n % 2 === 1
+        const t = type(["number", ":", isOdd])
         attest(t.infer).typed as string
+        attest(t.root).equals({ number: { constrain: isOdd } })
     })
     describe("errors", () => {
         test("missing right operand", () => {

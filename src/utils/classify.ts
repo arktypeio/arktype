@@ -132,3 +132,8 @@ export const hasObjectDomain = <domain extends ObjectDomain>(
     domain: domain
 ): data is ObjectDomains[domain] =>
     hasDomain(data, "object") && classifyObject(data) === domain
+
+export const subclassify = (data: unknown) => {
+    const domain = classify(data)
+    return domain === "object" ? classifyObject(data as object) : domain
+}
