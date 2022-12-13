@@ -3,7 +3,7 @@ import { morph } from "../nodes/morph.js"
 import type { TypeNode } from "../nodes/node.js"
 import { union } from "../nodes/union.js"
 import type { ScopeRoot } from "../scope.js"
-import { hasDomain } from "../utils/domainOf.js"
+import { classified } from "../utils/classify.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
@@ -158,4 +158,4 @@ type TupleExpressionToken = keyof typeof tupleExpressionTokens
 export type TupleExpression = [unknown, TupleExpressionToken, ...unknown[]]
 
 const isTupleExpression = (def: List): def is TupleExpression =>
-    hasDomain(def[1], "string") && def[1] in tupleExpressionTokens
+    classified(def[1], "string") && def[1] in tupleExpressionTokens

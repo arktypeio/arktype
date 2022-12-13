@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { ObjectSubdomain } from "../utils/domainOf.js"
+import type { ObjectDomain } from "../utils/classify.js"
 import { hasKey } from "../utils/generics.js"
 import { boundsIntersection } from "./bounds.js"
 import { checkConstraints } from "./check.js"
@@ -83,10 +83,9 @@ export const branchResolutionIntersection: SetOperation<
             : empty
         : attributesIntersection(l, r, context)
 
-export const subtypeIntersection =
-    composePredicateIntersection<ObjectSubdomain>((l, r) =>
-        l === r ? equal : empty
-    )
+export const subtypeIntersection = composePredicateIntersection<ObjectDomain>(
+    (l, r) => (l === r ? equal : empty)
+)
 
 const attributesIntersection = composeKeyedOperation<
     UnknownConstraints,

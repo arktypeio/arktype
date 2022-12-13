@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domainOf.js"
+import type { Domain } from "../utils/classify.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"

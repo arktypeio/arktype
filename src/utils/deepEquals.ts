@@ -1,4 +1,4 @@
-import { hasDomain, objectSubdomainOf } from "./domainOf.js"
+import { classified, classifyObject } from "./classify.js"
 import type { Dictionary, List } from "./generics.js"
 
 /**
@@ -9,15 +9,15 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (a === b) {
         return true
     }
-    if (!hasDomain(a, "object") || !hasDomain(b, "object")) {
+    if (!classified(a, "object") || !classified(b, "object")) {
         return false
     }
-    const aSubtype = objectSubdomainOf(a)
-    const bSubtype = objectSubdomainOf(b)
-    if (aSubtype !== bSubtype) {
+    const aObjectDomain = classifyObject(a)
+    const bObjectDomain = classifyObject(b)
+    if (aObjectDomain !== bObjectDomain) {
         return false
     }
-    return aSubtype === "Array"
+    return aObjectDomain === "Array"
         ? deepEqualsArray(a as List, b as List)
         : deepEqualsDict(a as Dictionary, b as Dictionary)
 }

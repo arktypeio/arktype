@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domainOf.js"
+import type { Domain } from "../utils/classify.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
 import { filterSplit } from "../utils/objectUtils.js"

@@ -1,4 +1,4 @@
-import { hasDomain } from "./domainOf.js"
+import { classified } from "./classify.js"
 
 export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
 
@@ -101,7 +101,7 @@ export const keyCount = (o: object) => Object.keys(o).length
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export const hasKeys = (value: unknown) =>
-    hasDomain(value, "object") ? Object.keys(value).length !== 0 : false
+    classified(value, "object") ? Object.keys(value).length !== 0 : false
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]

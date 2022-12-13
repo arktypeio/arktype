@@ -1,4 +1,4 @@
-import type { Domain, ObjectSubdomain } from "../utils/domainOf.js"
+import type { Domain, ObjectDomain } from "../utils/classify.js"
 import type {
     autocompleteString,
     Dictionary,
@@ -39,7 +39,6 @@ export type Predicate<
     domain extends Domain,
     scope extends Dictionary = Dictionary
 > = NonNullable<TypeTree<scope>[domain]>
-
 type NarrowableConstraints = {
     // primitive constraints
     readonly regex?: RegexAttribute
@@ -51,7 +50,7 @@ type NarrowableConstraints = {
         readonly number?: TypeNode
         readonly string?: TypeNode
     }
-    readonly kind?: ObjectSubdomain
+    readonly kind?: ObjectDomain
     // shared constraints
     readonly bounds?: Bounds
 }

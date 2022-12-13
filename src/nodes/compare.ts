@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domainOf.js"
+import type { Domain } from "../utils/classify.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import { branchResolutionIntersection } from "./intersection.js"

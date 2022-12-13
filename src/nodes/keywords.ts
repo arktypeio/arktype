@@ -1,4 +1,4 @@
-import type { Domain } from "../utils/domainOf.js"
+import type { Domain } from "../utils/classify.js"
 import { deepFreeze } from "../utils/freeze.js"
 import type { TypeTree } from "./node.js"
 
