@@ -1,6 +1,6 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Domain, ObjectDomain } from "../utils/classify.js"
+import type { Domain, ObjectDomain, Primitive } from "../utils/classify.js"
 import { classify, classifyObject } from "../utils/classify.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
@@ -57,15 +57,23 @@ export type validateDefinition<
     ? def
     : def extends string
     ? validateString<def, scope>
-    : def extends object
-    ? def extends List
-        ? validateTuple<def, scope>
-        : def extends Function
-        ? buildBadDefinitionTypeMessage<"Function">
-        : evaluate<{
-              [k in keyof def]: validateDefinition<def[k], scope>
-          }>
-    : buildBadDefinitionTypeMessage<classify<def>>
+    : def extends List
+    ? def[0] extends "=>"
+        ? ConstraintTuple<inferDefinition<def[1], scope, scope>>
+        : validateTuple<def, scope>
+    : def extends Primitive
+    ? buildBadDefinitionTypeMessage<classify<def>>
+    : evaluate<{
+          [k in keyof def]: validateDefinition<def[k], scope>
+      }>
+
+type ConstraintTuple<t> = ["=>", t, (data: t) => boolean]
+
+// validateTuple<def, scope>
+//: buildBadDefinitionTypeMessage<classify<def>>
+// def extends Function
+// ? buildBadDefinitionTypeMessage<"Function">
+// :
 
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"

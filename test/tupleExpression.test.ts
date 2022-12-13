@@ -47,6 +47,10 @@ describe("tuple expression", () => {
             bigint: true
         })
     })
+    test("contraint", () => {
+        const t = type(["=>", "string", (s) => s === "foo"])
+        attest(t.infer).typed as string
+    })
     describe("errors", () => {
         test("missing right operand", () => {
             // @ts-expect-error
