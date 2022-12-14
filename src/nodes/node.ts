@@ -1,18 +1,15 @@
 import type {
     classify,
     Domain,
-    Domains,
-    NullishDomain,
+    inferDomain,
     ObjectDomain
 } from "../utils/classify.js"
 import type {
     autocompleteString,
     Dictionary,
-    evaluate,
     extend,
     keySet,
     listable,
-    PartialDictionary,
     stringKeyOf
 } from "../utils/generics.js"
 import type { Bounds } from "./bounds.js"
@@ -28,16 +25,22 @@ export type IdentifierNode<scope extends Dictionary = Dictionary> =
         : Keyword | stringKeyOf<scope>
 
 export type DomainNode<scope extends Dictionary = Dictionary> = {
-    readonly [domain in Domain]?: Predicate<domain>
+    readonly [domain in Domain]?: Predicate<domain, scope>
 }
 export type resolved<t> = Exclude<t, IdentifierNode>
 
 export type Predicate<
     domain extends Domain,
     scope extends Dictionary = Dictionary
-> = true | listable<IdentifierNode | ConstraintsOf<domain> | IdentityIn<domain>>
+> =
+    | true
+    | listable<
+          | IdentifierNode<scope>
+          | DomainConstraints[domain]
+          | DomainValue<domain>
+      >
 
-type Constraints<domain extends Domain = Domain> = {
+type BaseConstraints<domain extends Domain = Domain> = {
     // primitive constraints
     readonly regex?: listable<string>
     readonly divisor?: number
@@ -52,42 +55,50 @@ type Constraints<domain extends Domain = Domain> = {
     // shared constraints
     readonly bounds?: Bounds
     // TODO: make sure checked last
-    readonly narrow?: listable<PredicateNarrow<Domains[domain]>>
+    readonly narrow?: listable<Narrow<inferDomain<domain>>>
 }
 
-export type Narrow<data = unknown> = PredicateNarrow<data> | DomainNarrow<data>
+export type NarrowConstraint<data = unknown> =
+    | Narrow<data>
+    | NarrowDomains<data>
 
-export type PredicateNarrow<data = unknown> = (data: data) => boolean
+export type Narrow<data = unknown> = (data: data) => boolean
 
-export type DomainNarrow<data = unknown> = {
-    [domain in classify<data>]?: PredicateNarrow<Extract<data, Domains[domain]>>
+export type NarrowDomains<data = unknown> = {
+    [domain in classify<data>]?: Narrow<Extract<data, inferDomain<domain>>>
 }
 
-type UniqueConstraintKeyMap = extend<
-    PartialDictionary<Domain, keyof Constraints>,
+export type ObjectConstraints = Pick<
+    BaseConstraints,
+    "kind" | "props" | "requiredKeys" | "propTypes" | "bounds" | "narrow"
+>
+
+export type StringConstraints = Pick<
+    BaseConstraints,
+    "regex" | "bounds" | "narrow"
+>
+
+export type NumberConstraints = Pick<
+    BaseConstraints,
+    "divisor" | "bounds" | "narrow"
+>
+
+export type NarrowOnlyConstraints = Pick<BaseConstraints, "narrow">
+
+export type DomainConstraints = extend<
+    Record<Domain, BaseConstraints>,
     {
-        object: "kind" | "props" | "requiredKeys" | "propTypes" | "bounds"
-        string: "regex" | "bounds"
-        number: "divisor" | "bounds"
+        bigint: NarrowOnlyConstraints
+        boolean: NarrowOnlyConstraints
+        null: NarrowOnlyConstraints
+        number: NumberConstraints
+        object: ObjectConstraints
+        string: StringConstraints
+        symbol: NarrowOnlyConstraints
+        undefined: NarrowOnlyConstraints
     }
 >
 
-export type ConstraintsOf<domain extends Domain> = domain extends NullishDomain
-    ? never
-    : evaluate<
-          Pick<
-              Constraints,
-              | "narrow"
-              | (domain extends keyof UniqueConstraintKeyMap
-                    ? UniqueConstraintKeyMap[domain]
-                    : never)
-          >
-      >
-
-export type IdentityIn<domain extends Domain> = domain extends NullishDomain
-    ? never
-    : Identity<Domains[domain]>
-
 export type Identity<referenceValue = unknown> = {
-    readonly is: referenceValue
+    readonly value: referenceValue
 }

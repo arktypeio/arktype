@@ -19,7 +19,7 @@ import {
 } from "./compose.js"
 import { divisorIntersection } from "./divisor.js"
 import type {
-    PredicateNarrow,
+    Narrow,
     resolved,
     TypeNode,
     UnknownBranch,
@@ -90,9 +90,9 @@ export const subtypeIntersection = composePredicateIntersection<ObjectDomain>(
     (l, r) => (l === r ? equal : empty)
 )
 
-const constrainIntersection = composePredicateIntersection<
-    listable<PredicateNarrow>
->(collapsibleListedSetUnion)
+const constrainIntersection = composePredicateIntersection<listable<Narrow>>(
+    collapsibleListedSetUnion
+)
 
 const attributesIntersection = composeKeyedOperation<
     UnknownConstraints,

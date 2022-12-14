@@ -10,9 +10,10 @@ import { isKeyOf } from "./generics.js"
 export const hasDomain = <data, domain extends Domain>(
     data: data,
     domain: domain
-): data is Extract<data, Domains[domain]> => classify(data as any) === domain
+): data is Extract<data, inferDomain<domain>> =>
+    classify(data as any) === domain
 
-export type Domains = {
+type DomainTypes = {
     bigint: bigint
     boolean: boolean
     number: number
@@ -23,7 +24,11 @@ export type Domains = {
     null: null
 }
 
-export type Domain = evaluate<keyof Domains>
+export type inferDomain<domain extends Domain> = Domain extends domain
+    ? unknown
+    : DomainTypes[domain]
+
+export type Domain = evaluate<keyof DomainTypes>
 
 export type NullishDomain = "undefined" | "null"
 
@@ -31,7 +36,7 @@ export type NonNullishDomain = Exclude<Domain, NullishDomain>
 
 export type PrimitiveDomain = Exclude<Domain, "object">
 
-export type Primitive = Domains[PrimitiveDomain]
+export type Primitive = inferDomain<PrimitiveDomain>
 
 export type classify<data> = isTopType<data> extends true
     ? Domain

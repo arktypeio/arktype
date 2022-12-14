@@ -25,7 +25,7 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
         getRegex(token)
         s.setRoot({ string: { regex: token } })
     } else {
-        s.setRoot({ string: { is: token } })
+        s.setRoot({ string: { value: token } })
     }
 }
 

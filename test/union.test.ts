@@ -17,15 +17,15 @@ describe("union/parse", () => {
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.root).snap({
             boolean: {
-                is: false
+                value: false
             },
             null: true,
             undefined: true,
             number: {
-                is: 0
+                value: 0
             },
             string: {
-                is: ""
+                value: ""
             }
         })
     })
