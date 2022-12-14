@@ -1,4 +1,4 @@
-import type { ConstraintFunction } from "../parse/object.js"
+import type { ConstraintFunction } from "../parse/tuple.js"
 import type { ScopeRoot } from "../scope.js"
 import type { ObjectDomain } from "../utils/classify.js"
 import type { listable } from "../utils/generics.js"
@@ -24,7 +24,7 @@ import type {
     TypeNode,
     UnknownBranch,
     UnknownConstraints,
-    UnknownDomain
+    UnknownDomainNode
 } from "./node.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { regexIntersection } from "./regex.js"
@@ -35,7 +35,7 @@ export const intersection = (
     scope: ScopeRoot
 ): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const domainsIntersection = composeKeyedOperation<UnknownDomain, ScopeRoot>(
+const domainsIntersection = composeKeyedOperation<UnknownDomainNode, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined

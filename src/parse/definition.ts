@@ -10,10 +10,12 @@ import type {
     isTopType,
     List
 } from "../utils/generics.js"
-import type { inferRecord, inferTuple, validateTuple } from "./object.js"
-import { parseDict, parseTuple } from "./object.js"
+import type { inferRecord } from "./record.js"
+import { parseRecord } from "./record.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
+import type { inferTuple, validateTuple } from "./tuple.js"
+import { parseTuple } from "./tuple.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     const domain = classify(def)
@@ -23,7 +25,7 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     if (domain === "object") {
         const objectDomain = classifyObject(def as object)
         if (objectDomain === "Object") {
-            return parseDict(def as Dictionary, scope)
+            return parseRecord(def as Dictionary, scope)
         } else if (objectDomain === "Array") {
             return parseTuple(def as List, scope)
         }

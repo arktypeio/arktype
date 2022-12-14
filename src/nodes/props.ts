@@ -11,7 +11,7 @@ import {
     equal
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { ObjectConstraints, TypeTree, UnknownTypeNode } from "./node.js"
+import type { ObjectConstraints, DomainNode, UnknownTypeNode } from "./node.js"
 
 type UnknownProps = Dictionary<UnknownTypeNode>
 
@@ -81,7 +81,7 @@ export const checkObject = (
 
 const isSimpleArray = (
     constraints: ObjectConstraints
-): constraints is { type: "object"; propTypes: { number: TypeTree } } =>
+): constraints is { type: "object"; propTypes: { number: DomainNode } } =>
     !constraints.props &&
     constraints.propTypes?.number !== undefined &&
     Object.keys(constraints.propTypes).length === 1

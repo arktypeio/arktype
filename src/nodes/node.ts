@@ -1,4 +1,4 @@
-import type { ConstraintFunction } from "../parse/object.js"
+import type { ConstraintFunction } from "../parse/tuple.js"
 import type { Domain, ObjectDomain } from "../utils/classify.js"
 import type {
     autocompleteString,
@@ -12,40 +12,41 @@ import type {
 import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./keywords.js"
-import type { RegexAttribute } from "./regex.js"
 
 export type TypeNode<scope extends Dictionary = Dictionary> =
-    | Identifier<scope>
-    | TypeTree<scope>
+    | IdentifierNode<scope>
+    | DomainNode<scope>
 
-export type Identifier<scope extends Dictionary = Dictionary> =
+export type IdentifierNode<scope extends Dictionary = Dictionary> =
     Dictionary extends scope
         ? autocompleteString<Keyword>
         : Keyword | stringKeyOf<scope>
 
 // TODO: Add constrain
-export type TypeTree<scope extends Dictionary = Dictionary> = {
-    readonly bigint?: true | listable<Identifier<scope> | Unit<IntegerLiteral>>
+export type DomainNode<scope extends Dictionary = Dictionary> = {
+    readonly bigint?:
+        | true
+        | listable<IdentifierNode<scope> | Unit<IntegerLiteral>>
     readonly boolean?: true | Unit<boolean>
     readonly null?: true
-    readonly number?: true | listable<Identifier<scope> | NumberRule>
-    readonly object?: true | listable<Identifier<scope> | ObjectConstraints>
-    readonly string?: true | listable<Identifier<scope> | StringRule>
+    readonly number?: true | listable<IdentifierNode<scope> | NumberRule>
+    readonly object?: true | listable<IdentifierNode<scope> | ObjectConstraints>
+    readonly string?: true | listable<IdentifierNode<scope> | StringRule>
     readonly symbol?: true
     readonly undefined?: true
 }
 
-export type resolved<t> = Exclude<t, Identifier>
+export type resolved<t> = Exclude<t, IdentifierNode>
 
 export type Predicate<
     domain extends Domain,
     scope extends Dictionary = Dictionary
-> = NonNullable<TypeTree<scope>[domain]>
+> = NonNullable<DomainNode<scope>[domain]>
 
 // TODO: identity
-type BaseConstraints = {
+type Constraints = {
     // primitive constraints
-    readonly regex?: RegexAttribute
+    readonly regex?: listable<string>
     readonly divisor?: number
     // object constraints
     readonly requiredKeys?: keySet
@@ -62,15 +63,15 @@ type BaseConstraints = {
 }
 
 export type ObjectConstraints = Pick<
-    BaseConstraints,
+    Constraints,
     "kind" | "props" | "requiredKeys" | "propTypes" | "bounds"
 >
 
-export type StringConstraints = Pick<BaseConstraints, "regex" | "bounds">
+export type StringConstraints = Pick<Constraints, "regex" | "bounds">
 
 export type StringRule = StringConstraints | Unit<string>
 
-export type NumberConstraints = Pick<BaseConstraints, "divisor" | "bounds">
+export type NumberConstraints = Pick<Constraints, "divisor" | "bounds">
 
 export type NumberRule = NumberConstraints | Unit<number>
 
@@ -82,26 +83,27 @@ export type UnitValue = string | number | boolean
 
 /** Supertype of TypeNode used for internal operations that can handle all
  * possible TypeNodes */
-export type UnknownTypeNode = subsume<TypeNode, Identifier | UnknownDomain>
+export type UnknownTypeNode = subsume<
+    TypeNode,
+    IdentifierNode | UnknownDomainNode
+>
 
-export type UnknownDomain = {
+export type UnknownDomainNode = {
     readonly [k in Domain]?: UnknownPredicate
 }
 
 export type UnknownPredicate = true | listable<UnknownBranch>
 
-export type UnknownBranch = Identifier | UnknownRule
+export type UnknownBranch = IdentifierNode | UnknownRule
 
 export type UnknownRule = UnknownConstraints | Unit
 
 export type UnknownConstraints = replaceKeys<
-    BaseConstraints,
+    Constraints,
     {
         props: Dictionary<UnknownTypeNode>
         propTypes: {
-            [k in keyof NonNullable<
-                BaseConstraints["propTypes"]
-            >]: UnknownTypeNode
+            [k in keyof NonNullable<Constraints["propTypes"]>]: UnknownTypeNode
         }
     }
 >

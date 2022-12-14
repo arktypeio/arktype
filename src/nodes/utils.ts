@@ -6,8 +6,8 @@ import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
 import type {
     TypeNode,
-    TypeTree,
-    UnknownDomain,
+    DomainNode,
+    UnknownDomainNode,
     UnknownPredicate,
     UnknownRule,
     UnknownTypeNode
@@ -16,7 +16,7 @@ import type {
 export const resolveIfIdentifier = (
     node: UnknownTypeNode,
     scope: ScopeRoot
-): UnknownDomain => (typeof node === "string" ? scope.resolve(node) : node)
+): UnknownDomainNode => (typeof node === "string" ? scope.resolve(node) : node)
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
@@ -31,7 +31,7 @@ export const domainOfNode = (
 }
 
 export type DomainSubtypeNode<domain extends Domain> = {
-    readonly [k in domain]: defined<TypeTree[domain]>
+    readonly [k in domain]: defined<DomainNode[domain]>
 }
 
 export const nodeExtendsDomain = <domain extends Domain>(

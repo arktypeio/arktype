@@ -1,10 +1,10 @@
 import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
 import type {
+    DomainNode,
     TypeNode,
-    TypeTree,
-    UnknownDomain,
-    UnknownRule
+    UnknownDomainNode,
+    UnknownPredicate
 } from "../nodes/node.js"
 import { union } from "../nodes/union.js"
 import { resolveIfIdentifier } from "../nodes/utils.js"
@@ -16,7 +16,6 @@ import type {
     Dictionary,
     error,
     evaluate,
-    keySet,
     List,
     mutable
 } from "../utils/generics.js"
@@ -24,46 +23,6 @@ import type { inferDefinition, validateDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
-
-export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
-    const props: mutable<Dictionary<TypeNode>> = {}
-    const requiredKeys: mutable<keySet> = {}
-    for (const definitionKey in def) {
-        let keyName = definitionKey
-        if (definitionKey.endsWith("?")) {
-            keyName = definitionKey.slice(0, -1)
-        } else {
-            requiredKeys[definitionKey] = true
-        }
-        props[keyName] = parseDefinition(def[definitionKey], scope)
-    }
-    return {
-        object: {
-            props,
-            requiredKeys
-        }
-    }
-}
-
-export type inferRecord<
-    def extends Dictionary,
-    scope extends Dictionary,
-    aliases
-> = evaluate<
-    {
-        [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
-            def[requiredKeyName],
-            scope,
-            aliases
-        >
-    } & {
-        [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
-            def[`${optionalKeyName}?`],
-            scope,
-            aliases
-        >
-    }
->
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
@@ -100,16 +59,6 @@ export type validateTuple<
           [i in keyof def]: validateDefinition<def[i], scope>
       }
 
-type optionalKeyWithName<name extends string = string> = `${name}?`
-
-type optionalKeyOf<def> = {
-    [k in keyof def]: k extends optionalKeyWithName<infer name> ? name : never
-}[keyof def]
-
-type requiredKeyOf<def> = {
-    [k in keyof def]: k extends optionalKeyWithName ? never : k
-}[keyof def]
-
 type validateTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dictionary
@@ -127,10 +76,10 @@ type validateTupleExpression<
     ? [validateDefinition<def[0], scope>, "[]"]
     : never
 
-type validateConstraintTuple<def, scope extends Dictionary> = [
-    validateDefinition<def, scope>,
+type validateConstraintTuple<constrainedDef, scope extends Dictionary> = [
+    validateDefinition<constrainedDef, scope>,
     ":",
-    ConstraintFunction<inferDefinition<def, scope, scope>>
+    ConstraintFunction<inferDefinition<constrainedDef, scope, scope>>
 ]
 
 type inferTupleExpression<
@@ -182,13 +131,13 @@ const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
     const constrained = parseDefinition(def[0], scope)
     const constraintPredicate = {
         constrain: def[2] as ConstraintFunction
-    } satisfies UnknownRule
-    const distributedConstraint: mutable<UnknownDomain> = {}
+    } satisfies UnknownPredicate
+    const distributedConstraint: mutable<UnknownDomainNode> = {}
     let domain: Domain
     for (domain in resolveIfIdentifier(constrained, scope)) {
         distributedConstraint[domain] = constraintPredicate
     }
-    return intersection(constrained, distributedConstraint as TypeTree, scope)
+    return intersection(constrained, distributedConstraint as DomainNode, scope)
 }
 
 const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>

@@ -7,12 +7,12 @@ import {
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { TypeNode, UnknownDomain } from "./node.js"
+import type { TypeNode, UnknownDomainNode } from "./node.js"
 
 export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const domainsUnion = composeKeyedOperation<UnknownDomain, ScopeRoot>(
+export const domainsUnion = composeKeyedOperation<UnknownDomainNode, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r

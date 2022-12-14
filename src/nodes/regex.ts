@@ -1,8 +1,6 @@
-import { hasObjectDomain } from "../utils/classify.js"
-import type { List, listable } from "../utils/generics.js"
+import type { listable } from "../utils/generics.js"
 import { collapsibleListedSetUnion } from "./collapsibleSets.js"
-import type { SetOperation } from "./compose.js"
-import { composePredicateIntersection, equal } from "./compose.js"
+import { composePredicateIntersection } from "./compose.js"
 
 const regexCache: Record<string, RegExp> = {}
 
@@ -29,11 +27,7 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export type RegexAttribute = string | readonly string[]
-
-export type CollapsibleListedSet<t> = t | readonly t[]
-
-export const checkRegex = (data: string, regex: RegexAttribute) =>
+export const checkRegex = (data: string, regex: listable<string>) =>
     typeof regex === "string"
         ? checkRegexExpression(data, regex)
         : regex.every((regexSource) => checkRegexExpression(data, regexSource))
@@ -41,7 +35,7 @@ export const checkRegex = (data: string, regex: RegexAttribute) =>
 const checkRegexExpression = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection = composePredicateIntersection<RegexAttribute>(
+export const regexIntersection = composePredicateIntersection<listable<string>>(
     collapsibleListedSetUnion<string>
 )
 

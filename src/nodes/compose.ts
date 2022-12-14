@@ -7,7 +7,7 @@ import type {
     resolved,
     TypeNode,
     UnknownBranch,
-    UnknownDomain,
+    UnknownDomainNode,
     UnknownPredicate,
     UnknownTypeNode
 } from "./node.js"
@@ -129,7 +129,7 @@ export const composeKeyedOperation =
     }
 
 export const composeNodeOperation = (
-    resolutionOperation: SetOperation<UnknownDomain, ScopeRoot>
+    resolutionOperation: SetOperation<UnknownDomainNode, ScopeRoot>
 ) =>
     composePredicateIntersection<UnknownTypeNode, ScopeRoot>((l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)

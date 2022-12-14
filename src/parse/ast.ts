@@ -31,10 +31,7 @@ export type inferAst<
             : inferAst<ast[0], scope, aliases>
         : ast[1] extends "%"
         ? inferAst<ast[0], scope, aliases>
-        : // If the value at index 1 was none of the above, it's a normal tuple definition
-          evaluate<{
-              [i in keyof ast]: inferAst<ast[i], scope, aliases>
-          }>
+        : never
     : inferTerminal<ast, scope, aliases>
 
 export type validateAstSemantics<
