@@ -1,10 +1,16 @@
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/classify.js"
+import type { CollapsibleList, Dictionary } from "../utils/generics.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import { branchResolutionIntersection } from "./intersection.js"
-import type { UnknownPredicate, UnknownRule } from "./node.js"
+import type { Condition } from "./rules/rules.js"
 import { resolvePredicate } from "./utils.js"
+
+export type Predicate<
+    domain extends Domain = Domain,
+    scope extends Dictionary = Dictionary
+> = true | CollapsibleList<Condition<domain, scope>>
 
 export type PredicateContext = {
     domain: Domain
@@ -12,8 +18,8 @@ export type PredicateContext = {
 }
 
 export const comparePredicates = (
-    l: UnknownPredicate,
-    r: UnknownPredicate,
+    l: Predicate,
+    r: Predicate,
     context: PredicateContext
 ): PredicateComparison => {
     const lBranches = resolvePredicate(context.domain, l, context.scope)
@@ -48,9 +54,7 @@ export const comparePredicates = (
     return branchComparison
 }
 
-type PredicateComparison =
-    | SetOperationResult<UnknownPredicate>
-    | BranchesComparison
+type PredicateComparison = SetOperationResult<Predicate> | BranchesComparison
 
 export const isBranchesComparison = (
     comparison: PredicateComparison
@@ -58,19 +62,19 @@ export const isBranchesComparison = (
     (comparison as BranchesComparison)?.lRules !== undefined
 
 type BranchesComparison = {
-    lRules: UnknownRule[]
-    rRules: UnknownRule[]
+    lRules: Condition[]
+    rRules: Condition[]
     lSubrulesOfR: number[]
     rSubrulesOfL: number[]
     equalities: EqualIndexPair[]
-    intersections: UnknownRule[]
+    intersections: Condition[]
 }
 
 type EqualIndexPair = [lIndex: number, rIndex: number]
 
 const compareRules = (
-    lRules: UnknownRule[],
-    rRules: UnknownRule[],
+    lRules: Condition[],
+    rRules: Condition[],
     context: PredicateContext
 ): BranchesComparison => {
     const comparison: BranchesComparison = {
@@ -83,11 +87,11 @@ const compareRules = (
     }
     const pairsByR = rRules.map((constraint) => ({
         constraint,
-        distinct: [] as UnknownRule[] | null
+        distinct: [] as Condition[] | null
     }))
     lRules.forEach((l, lIndex) => {
         let lImpliesR = false
-        const distinct = pairsByR.map((rData, rIndex): UnknownRule | null => {
+        const distinct = pairsByR.map((rData, rIndex): Condition | null => {
             if (lImpliesR || !rData.distinct) {
                 return null
             }

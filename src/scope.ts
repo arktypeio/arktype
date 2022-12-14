@@ -1,5 +1,5 @@
 import { keywords } from "./nodes/keywords.js"
-import type { Predicate, TypeNode, DomainNode } from "./nodes/node.js"
+import type { Predicate, TypeNode, TypeSet } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -63,7 +63,7 @@ type inferredScopeToArktypes<inferred> = {
 // TODO: decide if parsing primarily managed through scope or only resolution/caching
 
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
-    attributes = {} as { [k in keyof inferred]: DomainNode }
+    attributes = {} as { [k in keyof inferred]: TypeSet }
     // TODO: Add intersection cache
     private cache: mutable<Dictionary<TypeNode>> = {}
 
@@ -88,7 +88,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return this.resolveRecurse(name, [])
     }
 
-    private resolveRecurse(name: string, seen: string[]): DomainNode {
+    private resolveRecurse(name: string, seen: string[]): TypeSet {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }

@@ -1,33 +1,26 @@
 import type { ScopeRoot } from "../scope.js"
+import { checkConstraints } from "../traverse/check.js"
 import type { ObjectDomain } from "../utils/classify.js"
-import type { listable } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
-import { boundsIntersection } from "./bounds.js"
-import { checkConstraints } from "./check.js"
-import { collapsibleListedSetUnion } from "./collapsibleSets.js"
-import type { PredicateContext } from "./compare.js"
-import { comparePredicates, isBranchesComparison } from "./compare.js"
 import type { SetOperation } from "./compose.js"
 import {
     coalesceBranches,
     composeKeyedOperation,
     composeNodeOperation,
-    composePredicateIntersection,
+    composePredicateIntersection as composeRuleIntersection,
     empty,
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import { divisorIntersection } from "./divisor.js"
-import type {
-    Narrow,
-    resolved,
-    TypeNode,
-    UnknownBranch,
-    UnknownConstraints,
-    UnknownDomainNode
-} from "./node.js"
+import type { RawTypeSet, TypeNode } from "./node.js"
+import type { PredicateContext } from "./predicate.js"
+import { comparePredicates, isBranchesComparison } from "./predicate.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
-import { regexIntersection } from "./regex.js"
+import { collapsibleListUnion } from "./rules/collapsibleSet.js"
+import { divisorIntersection } from "./rules/divisor.js"
+import { rangeIntersection } from "./rules/range.js"
+import { regexIntersection } from "./rules/regex.js"
+import type { Condition, RuleSet, Validator } from "./rules/rules.js"
 
 export const intersection = (
     l: TypeNode,
@@ -35,7 +28,7 @@ export const intersection = (
     scope: ScopeRoot
 ): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const domainsIntersection = composeKeyedOperation<UnknownDomainNode, ScopeRoot>(
+const typeSetIntersection = composeKeyedOperation<RawTypeSet, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
@@ -66,47 +59,43 @@ const domainsIntersection = composeKeyedOperation<UnknownDomainNode, ScopeRoot>(
     }
 )
 
-export const nodeIntersection = composeNodeOperation(domainsIntersection)
+export const nodeIntersection = composeNodeOperation(typeSetIntersection)
 
 export const branchResolutionIntersection: SetOperation<
-    resolved<UnknownBranch>,
+    Condition,
     PredicateContext
 > = (l, r, context) =>
     hasKey(l, "value")
         ? hasKey(r, "value")
-            ? l.is === r.is
+            ? l.value === r.value
                 ? equal
                 : empty
-            : checkConstraints(l.is, r, context)
+            : checkConstraints(l.value, r, context)
             ? l
             : empty
         : hasKey(r, "value")
-        ? checkConstraints(r.is, l, context)
+        ? checkConstraints(r.value, l, context)
             ? r
             : empty
         : attributesIntersection(l, r, context)
 
-export const subtypeIntersection = composePredicateIntersection<ObjectDomain>(
+export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
     (l, r) => (l === r ? equal : empty)
 )
 
-const constrainIntersection = composePredicateIntersection<listable<Narrow>>(
-    collapsibleListedSetUnion
-)
+const validatorIntersection =
+    composeRuleIntersection<Validator>(collapsibleListUnion)
 
-const attributesIntersection = composeKeyedOperation<
-    UnknownConstraints,
-    PredicateContext
->(
+const attributesIntersection = composeKeyedOperation<RuleSet, PredicateContext>(
     {
-        kind: subtypeIntersection,
+        kind: objectKindIntersection,
         divisor: divisorIntersection,
         regex: regexIntersection,
         props: propsIntersection,
         requiredKeys: requiredKeysIntersection,
         propTypes: propsIntersection,
-        bounds: boundsIntersection,
-        narrow: constrainIntersection
+        range: rangeIntersection,
+        validator: validatorIntersection
     },
     { propagateEmpty: true }
 )

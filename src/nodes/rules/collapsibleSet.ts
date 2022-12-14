@@ -1,14 +1,14 @@
-import { hasObjectDomain } from "../utils/classify.js"
-import type { List, listable } from "../utils/generics.js"
-import { equal } from "./compose.js"
+import { hasObjectDomain } from "../../utils/classify.js"
+import type { CollapsibleList, List } from "../../utils/generics.js"
+import { equal } from "../compose.js"
 
-export const collapsibleListedSetUnion = <t>(
-    l: listable<t>,
-    r: listable<t>
-): listable<t> | equal => {
+export const collapsibleListUnion = <t>(
+    l: CollapsibleList<t>,
+    r: CollapsibleList<t>
+): CollapsibleList<t> | equal => {
     if (hasObjectDomain(l, "Array")) {
         if (hasObjectDomain(r, "Array")) {
-            const result = listedSetUnion(l, r)
+            const result = listUnion(l, r)
             return result.length === l.length
                 ? result.length === r.length
                     ? equal
@@ -25,7 +25,7 @@ export const collapsibleListedSetUnion = <t>(
     return l === r ? equal : [l, r]
 }
 
-export const listedSetUnion = <t extends List>(l: t, r: t) => {
+export const listUnion = <t extends List>(l: t, r: t) => {
     const result = [...l]
     for (const expression of r) {
         if (!l.includes(expression)) {

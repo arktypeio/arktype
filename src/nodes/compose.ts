@@ -3,14 +3,9 @@ import type { Domain } from "../utils/classify.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
-import type {
-    resolved,
-    TypeNode,
-    UnknownBranch,
-    UnknownDomainNode,
-    UnknownPredicate,
-    UnknownTypeNode
-} from "./node.js"
+import type { RawTypeNode, RawTypeSet, TypeNode, TypeSet } from "./node.js"
+import type { Predicate } from "./predicate.js"
+import type { Condition } from "./rules/rules.js"
 import { resolveIfIdentifier } from "./utils.js"
 
 type ContextFreeSetOperation<t, result extends t> = (
@@ -129,9 +124,9 @@ export const composeKeyedOperation =
     }
 
 export const composeNodeOperation = (
-    resolutionOperation: SetOperation<UnknownDomainNode, ScopeRoot>
+    resolutionOperation: SetOperation<RawTypeSet, ScopeRoot>
 ) =>
-    composePredicateIntersection<UnknownTypeNode, ScopeRoot>((l, r, scope) => {
+    composePredicateIntersection<RawTypeNode, ScopeRoot>((l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)
         const rResolution = resolveIfIdentifier(r, scope)
         const result = resolutionOperation(lResolution, rResolution, scope)
@@ -139,16 +134,16 @@ export const composeNodeOperation = (
     })
 
 export const finalizeNodeOperation = (
-    l: UnknownTypeNode,
-    result: SetOperationResult<UnknownTypeNode>
+    l: TypeNode,
+    result: SetOperationResult<TypeNode>
 ): TypeNode =>
     result === empty ? keywords.never : result === equal ? l : result
 
 // TODO: Add aliases back if no subtype indices
 export const coalesceBranches = (
     domain: Domain,
-    branches: resolved<UnknownBranch>[]
-): UnknownPredicate => {
+    branches: Condition[]
+): Predicate => {
     switch (branches.length) {
         case 0:
             // TODO: type is never, anything else that can be done?

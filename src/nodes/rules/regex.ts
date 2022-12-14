@@ -1,6 +1,8 @@
-import type { listable } from "../utils/generics.js"
-import { collapsibleListedSetUnion } from "./collapsibleSets.js"
-import { composePredicateIntersection } from "./compose.js"
+import type { CollapsibleList } from "../../utils/generics.js"
+import { composePredicateIntersection } from "../compose.js"
+import { collapsibleListUnion } from "./collapsibleSet.js"
+
+export type RegexRule = CollapsibleList<string>
 
 const regexCache: Record<string, RegExp> = {}
 
@@ -27,16 +29,16 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegex = (data: string, regex: listable<string>) =>
-    typeof regex === "string"
-        ? checkRegexExpression(data, regex)
-        : regex.every((regexSource) => checkRegexExpression(data, regexSource))
+export const checkRegexRule = (data: string, rule: RegexRule) =>
+    typeof rule === "string"
+        ? checkRegex(data, rule)
+        : rule.every((regexSource) => checkRegex(data, regexSource))
 
-const checkRegexExpression = (data: string, regexSource: string) =>
+const checkRegex = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection = composePredicateIntersection<listable<string>>(
-    collapsibleListedSetUnion<string>
+export const regexIntersection = composePredicateIntersection<RegexRule>(
+    collapsibleListUnion<string>
 )
 
 // https://github.com/validatorjs/validator.js

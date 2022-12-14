@@ -1,5 +1,4 @@
 import type { ScopeRoot } from "../scope.js"
-import { comparePredicates, isBranchesComparison } from "./compare.js"
 import {
     coalesceBranches,
     composeKeyedOperation,
@@ -7,12 +6,13 @@ import {
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { TypeNode, UnknownDomainNode } from "./node.js"
+import type { RawTypeSet, TypeNode } from "./node.js"
+import { comparePredicates, isBranchesComparison } from "./predicate.js"
 
 export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const domainsUnion = composeKeyedOperation<UnknownDomainNode, ScopeRoot>(
+export const typeSetUnion = composeKeyedOperation<RawTypeSet, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r
@@ -47,4 +47,4 @@ export const domainsUnion = composeKeyedOperation<UnknownDomainNode, ScopeRoot>(
     }
 )
 
-export const nodeUnion = composeNodeOperation(domainsUnion)
+export const nodeUnion = composeNodeOperation(typeSetUnion)

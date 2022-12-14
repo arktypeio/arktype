@@ -1,10 +1,10 @@
 import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
 import type {
-    DomainNode,
-    NarrowConstraint,
-    Narrow,
+    SatisfiesRule,
+    Satisfunction,
     TypeNode,
+    TypeSet,
     UnknownDomainNode,
     UnknownPredicate
 } from "../nodes/node.js"
@@ -81,7 +81,7 @@ type validateTupleExpression<
 type validateNarrowTuple<constrainedDef, scope extends Dictionary> = [
     validateDefinition<constrainedDef, scope>,
     ":",
-    NarrowConstraint<inferDefinition<constrainedDef, scope, scope>>
+    SatisfiesRule<inferDefinition<constrainedDef, scope, scope>>
 ]
 
 type inferTupleExpression<
@@ -132,14 +132,14 @@ const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
     }
     const constrained = parseDefinition(def[0], scope)
     const constraintPredicate = {
-        narrow: def[2] as Narrow
+        narrow: def[2] as Satisfunction
     } satisfies UnknownPredicate
     const distributedConstraint: mutable<UnknownDomainNode> = {}
     let domain: Domain
     for (domain in resolveIfIdentifier(constrained, scope)) {
         distributedConstraint[domain] = constraintPredicate
     }
-    return intersection(constrained, distributedConstraint as DomainNode, scope)
+    return intersection(constrained, distributedConstraint as TypeSet, scope)
 }
 
 const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>

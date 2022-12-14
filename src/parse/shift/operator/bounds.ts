@@ -1,8 +1,8 @@
-import type { Bound, Bounds } from "../../../nodes/bounds.js"
+import type { Bound, Range } from "../../../nodes/rules/range.js"
 import {
     buildEmptyRangeMessage,
     compareStrictness
-} from "../../../nodes/bounds.js"
+} from "../../../nodes/rules/range.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
@@ -134,7 +134,7 @@ export type buildInvalidLimitMessage<
 const deserializeBound = (
     comparator: Scanner.Comparator,
     limit: number
-): Bounds => {
+): Range => {
     const bound: Bound =
         comparator.length === 1
             ? {
@@ -160,7 +160,7 @@ const deserializeRange = (
     minComparator: Scanner.PairableComparator,
     maxComparator: Scanner.PairableComparator,
     maxLimit: number
-): Bounds => {
+): Range => {
     const min: Bound =
         minComparator === "<"
             ? {

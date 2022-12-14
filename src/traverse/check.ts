@@ -1,10 +1,10 @@
+import type { TypeNode } from "../nodes/node.js"
+import type { PredicateContext } from "../nodes/predicate.js"
 import type { ScopeRoot } from "../scope.js"
-import type { PredicateContext } from "./compare.js"
-import type { TypeNode, UnknownConstraints } from "./node.js"
 
 export const checkConstraints = (
     data: unknown,
-    attributes: UnknownConstraints,
+    attributes: unknown,
     context: PredicateContext
 ) => {
     return true

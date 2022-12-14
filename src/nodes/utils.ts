@@ -4,19 +4,14 @@ import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
 import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
-import type {
-    TypeNode,
-    DomainNode,
-    UnknownDomainNode,
-    UnknownPredicate,
-    UnknownRule,
-    UnknownTypeNode
-} from "./node.js"
+import type { TypeNode, TypeSet } from "./node.js"
+import type { Predicate } from "./predicate.js"
+import type { Condition } from "./rules/rules.js"
 
 export const resolveIfIdentifier = (
-    node: UnknownTypeNode,
+    node: TypeNode,
     scope: ScopeRoot
-): UnknownDomainNode => (typeof node === "string" ? scope.resolve(node) : node)
+): TypeSet => (typeof node === "string" ? scope.resolve(node) : node)
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
@@ -31,7 +26,7 @@ export const domainOfNode = (
 }
 
 export type DomainSubtypeNode<domain extends Domain> = {
-    readonly [k in domain]: defined<DomainNode[domain]>
+    readonly [k in domain]: defined<TypeSet[domain]>
 }
 
 export const nodeExtendsDomain = <domain extends Domain>(
@@ -40,11 +35,12 @@ export const nodeExtendsDomain = <domain extends Domain>(
     scope: ScopeRoot
 ): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain
 
+// TODO: string?
 export const resolvePredicate = (
     domain: Domain,
-    predicate: UnknownPredicate,
+    predicate: Predicate,
     scope: ScopeRoot
-): true | UnknownRule[] => {
+): true | Condition[] => {
     if (predicate === true) {
         return true
     }

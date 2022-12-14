@@ -152,8 +152,8 @@ export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
 
-export type listable<t> = t | List<t>
-
 export type List<of = unknown> = readonly of[]
 
 export type Dictionary<of = unknown> = { readonly [k in string]: of }
+
+export type CollapsibleList<t> = t | List<t>
