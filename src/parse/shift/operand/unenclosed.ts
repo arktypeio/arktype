@@ -45,13 +45,13 @@ const unenclosedToNode = (s: DynamicState, token: string) =>
 const maybeParseUnenclosedLiteral = (token: string): DomainNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { number: { value: maybeNumber } }
+        return { number: { is: maybeNumber } }
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
         return {
             bigint: {
-                value: `${maybeBigint}`
+                is: `${maybeBigint}`
             }
         }
     }

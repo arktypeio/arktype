@@ -1,4 +1,3 @@
-import type { ConstraintFunction } from "../parse/tuple.js"
 import type { ScopeRoot } from "../scope.js"
 import type { ObjectDomain } from "../utils/classify.js"
 import type { listable } from "../utils/generics.js"
@@ -20,6 +19,7 @@ import {
 } from "./compose.js"
 import { divisorIntersection } from "./divisor.js"
 import type {
+    PredicateNarrow,
     resolved,
     TypeNode,
     UnknownBranch,
@@ -74,14 +74,14 @@ export const branchResolutionIntersection: SetOperation<
 > = (l, r, context) =>
     hasKey(l, "value")
         ? hasKey(r, "value")
-            ? l.value === r.value
+            ? l.is === r.is
                 ? equal
                 : empty
-            : checkConstraints(l.value, r, context)
+            : checkConstraints(l.is, r, context)
             ? l
             : empty
         : hasKey(r, "value")
-        ? checkConstraints(r.value, l, context)
+        ? checkConstraints(r.is, l, context)
             ? r
             : empty
         : attributesIntersection(l, r, context)
@@ -91,7 +91,7 @@ export const subtypeIntersection = composePredicateIntersection<ObjectDomain>(
 )
 
 const constrainIntersection = composePredicateIntersection<
-    listable<ConstraintFunction>
+    listable<PredicateNarrow>
 >(collapsibleListedSetUnion)
 
 const attributesIntersection = composeKeyedOperation<
@@ -106,7 +106,7 @@ const attributesIntersection = composeKeyedOperation<
         requiredKeys: requiredKeysIntersection,
         propTypes: propsIntersection,
         bounds: boundsIntersection,
-        constrain: constrainIntersection
+        narrow: constrainIntersection
     },
     { propagateEmpty: true }
 )

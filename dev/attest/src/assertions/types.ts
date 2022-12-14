@@ -1,4 +1,4 @@
-import type { narrow } from "../../../../src/utils/generics.js"
+import type { downcast } from "../../../../src/utils/generics.js"
 import type { Serialized } from "../common.js"
 
 export type RootAssertions<
@@ -69,7 +69,9 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
         "unknown"
     >
     typedValue: (expected: T) => undefined
-    narrowedValue: <Expected extends T>(expected: narrow<Expected>) => undefined
+    narrowedValue: <Expected extends T>(
+        expected: downcast<Expected>
+    ) => undefined
 }
 
 export type ExternalSnapshotArgs = {

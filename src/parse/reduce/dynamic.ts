@@ -46,7 +46,7 @@ export class DynamicState {
             nodeExtendsDomain(this.root!, "number", this.scope) &&
             hasKey(this.root.number, "value")
         ) {
-            const limit = this.root.number.value
+            const limit = this.root.number.is
             this.root = undefined
             return limit
         }

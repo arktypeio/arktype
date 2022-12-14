@@ -2,6 +2,8 @@ import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
 import type {
     DomainNode,
+    Narrow,
+    PredicateNarrow,
     TypeNode,
     UnknownDomainNode,
     UnknownPredicate
@@ -63,7 +65,7 @@ type validateTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dictionary
 > = def[1] extends ":"
-    ? validateConstraintTuple<def[0], scope>
+    ? validateNarrowTuple<def[0], scope>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? error<buildMissingRightOperandMessage<def[1], "">>
@@ -76,10 +78,10 @@ type validateTupleExpression<
     ? [validateDefinition<def[0], scope>, "[]"]
     : never
 
-type validateConstraintTuple<constrainedDef, scope extends Dictionary> = [
+type validateNarrowTuple<constrainedDef, scope extends Dictionary> = [
     validateDefinition<constrainedDef, scope>,
     ":",
-    ConstraintFunction<inferDefinition<constrainedDef, scope, scope>>
+    Narrow<inferDefinition<constrainedDef, scope, scope>>
 ]
 
 type inferTupleExpression<
@@ -130,7 +132,7 @@ const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
     }
     const constrained = parseDefinition(def[0], scope)
     const constraintPredicate = {
-        constrain: def[2] as ConstraintFunction
+        narrow: def[2] as PredicateNarrow
     } satisfies UnknownPredicate
     const distributedConstraint: mutable<UnknownDomainNode> = {}
     let domain: Domain
@@ -163,5 +165,3 @@ const isTupleExpression = (def: List): def is UnknownTupleExpression =>
 export type UnknownTupleExpression<
     token extends TupleExpressionToken = TupleExpressionToken
 > = [unknown, token, ...unknown[]]
-
-export type ConstraintFunction<data = unknown> = (data: data) => boolean

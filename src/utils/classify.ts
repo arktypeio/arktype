@@ -25,6 +25,10 @@ export type Domains = {
 
 export type Domain = evaluate<keyof Domains>
 
+export type NullishDomain = "undefined" | "null"
+
+export type NonNullishDomain = Exclude<Domain, NullishDomain>
+
 export type PrimitiveDomain = Exclude<Domain, "object">
 
 export type Primitive = Domains[PrimitiveDomain]

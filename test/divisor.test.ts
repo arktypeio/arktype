@@ -70,7 +70,7 @@ describe("divisibility", () => {
             })
         })
         test("valid literal", () => {
-            attest(type("number%5&0").root).snap({ number: { value: 0 } })
+            attest(type("number%5&0").root).snap({ number: { is: 0 } })
         })
         test("invalid literal", () => {
             attest(type("number%3&8").root).snap({ number: [] })

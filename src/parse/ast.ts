@@ -1,10 +1,10 @@
 import type { Keyword, Keywords } from "../nodes/keywords.js"
 import type {
     Dictionary,
+    Downcastable,
     error,
     evaluate,
     isAny,
-    Narrowable,
     RegexLiteral
 } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
@@ -112,7 +112,7 @@ export type astToString<ast, result extends string = ""> = ast extends [
     ...infer tail
 ]
     ? astToString<tail, `${result}${astToString<head>}`>
-    : ast extends Narrowable
+    : ast extends Downcastable
     ? `${result}${ast extends bigint ? `${ast}n` : ast}`
     : "..."
 

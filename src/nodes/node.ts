@@ -1,15 +1,20 @@
-import type { ConstraintFunction } from "../parse/tuple.js"
-import type { Domain, ObjectDomain } from "../utils/classify.js"
+import type {
+    classify,
+    Domain,
+    Domains,
+    NullishDomain,
+    ObjectDomain
+} from "../utils/classify.js"
 import type {
     autocompleteString,
     Dictionary,
+    evaluate,
+    extend,
     keySet,
     listable,
-    replaceKeys,
-    stringKeyOf,
-    subsume
+    PartialDictionary,
+    stringKeyOf
 } from "../utils/generics.js"
-import type { IntegerLiteral } from "../utils/numericLiterals.js"
 import type { Bounds } from "./bounds.js"
 import type { Keyword } from "./keywords.js"
 
@@ -22,29 +27,17 @@ export type IdentifierNode<scope extends Dictionary = Dictionary> =
         ? autocompleteString<Keyword>
         : Keyword | stringKeyOf<scope>
 
-// TODO: Add constrain
 export type DomainNode<scope extends Dictionary = Dictionary> = {
-    readonly bigint?:
-        | true
-        | listable<IdentifierNode<scope> | Unit<IntegerLiteral>>
-    readonly boolean?: true | Unit<boolean>
-    readonly null?: true
-    readonly number?: true | listable<IdentifierNode<scope> | NumberRule>
-    readonly object?: true | listable<IdentifierNode<scope> | ObjectConstraints>
-    readonly string?: true | listable<IdentifierNode<scope> | StringRule>
-    readonly symbol?: true
-    readonly undefined?: true
+    readonly [domain in Domain]?: Predicate<domain>
 }
-
 export type resolved<t> = Exclude<t, IdentifierNode>
 
 export type Predicate<
     domain extends Domain,
     scope extends Dictionary = Dictionary
-> = NonNullable<DomainNode<scope>[domain]>
+> = true | listable<IdentifierNode | ConstraintsOf<domain> | IdentityIn<domain>>
 
-// TODO: identity
-type Constraints = {
+type Constraints<domain extends Domain = Domain> = {
     // primitive constraints
     readonly regex?: listable<string>
     readonly divisor?: number
@@ -58,52 +51,43 @@ type Constraints = {
     readonly kind?: ObjectDomain
     // shared constraints
     readonly bounds?: Bounds
-    // TODO: rename
-    readonly constrain?: listable<ConstraintFunction>
+    // TODO: make sure checked last
+    readonly narrow?: listable<PredicateNarrow<Domains[domain]>>
 }
 
-export type ObjectConstraints = Pick<
-    Constraints,
-    "kind" | "props" | "requiredKeys" | "propTypes" | "bounds"
->
+export type Narrow<data = unknown> = PredicateNarrow<data> | DomainNarrow<data>
 
-export type StringConstraints = Pick<Constraints, "regex" | "bounds">
+export type PredicateNarrow<data = unknown> = (data: data) => boolean
 
-export type StringRule = StringConstraints | Unit<string>
-
-export type NumberConstraints = Pick<Constraints, "divisor" | "bounds">
-
-export type NumberRule = NumberConstraints | Unit<number>
-
-export type Unit<value extends UnitValue = UnitValue> = {
-    readonly value: value
+export type DomainNarrow<data = unknown> = {
+    [domain in classify<data>]?: PredicateNarrow<Extract<data, Domains[domain]>>
 }
 
-export type UnitValue = string | number | boolean
-
-/** Supertype of TypeNode used for internal operations that can handle all
- * possible TypeNodes */
-export type UnknownTypeNode = subsume<
-    TypeNode,
-    IdentifierNode | UnknownDomainNode
->
-
-export type UnknownDomainNode = {
-    readonly [k in Domain]?: UnknownPredicate
-}
-
-export type UnknownPredicate = true | listable<UnknownBranch>
-
-export type UnknownBranch = IdentifierNode | UnknownRule
-
-export type UnknownRule = UnknownConstraints | Unit
-
-export type UnknownConstraints = replaceKeys<
-    Constraints,
+type UniqueConstraintKeyMap = extend<
+    PartialDictionary<Domain, keyof Constraints>,
     {
-        props: Dictionary<UnknownTypeNode>
-        propTypes: {
-            [k in keyof NonNullable<Constraints["propTypes"]>]: UnknownTypeNode
-        }
+        object: "kind" | "props" | "requiredKeys" | "propTypes" | "bounds"
+        string: "regex" | "bounds"
+        number: "divisor" | "bounds"
     }
 >
+
+export type ConstraintsOf<domain extends Domain> = domain extends NullishDomain
+    ? never
+    : evaluate<
+          Pick<
+              Constraints,
+              | "narrow"
+              | (domain extends keyof UniqueConstraintKeyMap
+                    ? UniqueConstraintKeyMap[domain]
+                    : never)
+          >
+      >
+
+export type IdentityIn<domain extends Domain> = domain extends NullishDomain
+    ? never
+    : Identity<Domains[domain]>
+
+export type Identity<referenceValue = unknown> = {
+    readonly is: referenceValue
+}
