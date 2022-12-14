@@ -11,7 +11,7 @@ import {
     equal
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { ObjectConstraints, DomainNode, UnknownTypeNode } from "./node.js"
+import type { DomainNode, ObjectConstraints, UnknownTypeNode } from "./node.js"
 
 type UnknownProps = Dictionary<UnknownTypeNode>
 

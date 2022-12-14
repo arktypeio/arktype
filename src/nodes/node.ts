@@ -7,6 +7,7 @@ import type {
 import type {
     autocompleteString,
     Dictionary,
+    evaluate,
     extend,
     keySet,
     listable,
@@ -64,9 +65,9 @@ export type NarrowConstraint<data = unknown> =
 
 export type Narrow<data = unknown> = (data: data) => boolean
 
-export type NarrowDomains<data = unknown> = {
+export type NarrowDomains<data = unknown> = evaluate<{
     [domain in classify<data>]?: Narrow<Extract<data, inferDomain<domain>>>
-}
+}>
 
 export type ObjectConstraints = Pick<
     BaseConstraints,
