@@ -86,6 +86,17 @@ export type inferTuple<
           [i in keyof def]: inferDefinition<def[i], scope, aliases>
       }
 
+type KeyParseResult<name extends string, isOptional extends boolean> = [
+    name: name,
+    isOptional: isOptional
+]
+
+type parseKey<k> = k extends optionalKeyWithName<infer name>
+    ? name extends `${infer baseName}~`
+        ? [`${baseName}?`, false]
+        : [name, true]
+    : [k, false]
+
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
 type optionalKeyOf<def> = {
