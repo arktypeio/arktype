@@ -19,11 +19,13 @@ export class Scanner<Lookahead extends string = string> {
         return (this.chars[this.i] ?? "") as Lookahead
     }
 
-    // TODOSHAWN: When shifting, if we encounter an escape character, don't
-    // check DoneShifting and instead skip to the next iteration of shiftUntil
     shiftUntil(condition: Scanner.UntilCondition): string {
         let shifted = ""
         while (!condition(this, shifted) && this.lookahead) {
+            if (this.lookahead === "~") {
+                this.shift()
+                continue
+            }
             shifted += this.shift()
         }
         return shifted
@@ -149,8 +151,6 @@ export namespace Scanner {
 
     export type tailOf<S> = S extends `${string}${infer Tail}` ? Tail : ""
 
-    // TODOSHAWN: When shifting, if we encounter an escape character, don't
-    // check DoneShifting and instead skip to the next iteration of shiftUntil
     export type shiftUntil<
         Unscanned extends string,
         Terminator extends string,
@@ -167,7 +167,7 @@ export namespace Scanner {
                   NextUnscanned,
                   Terminator,
                   InvertTerminatorComparison,
-                  `${Scanned}${Lookahead}`
+                  `${Scanned}${Lookahead extends "~" ? "" : Lookahead}`
               >
         : [Scanned, ""]
 

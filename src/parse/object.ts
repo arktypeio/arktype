@@ -24,8 +24,10 @@ export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
-        // TODOSHAWN: Optional: Add escape check here
-        if (definitionKey.endsWith("?")) {
+        if (definitionKey.endsWith("~?")) {
+            keyName = `${definitionKey.slice(0, -2)}?`
+            requiredKeys[keyName] = true
+        } else if (definitionKey.endsWith("?")) {
             keyName = definitionKey.slice(0, -1)
         } else {
             requiredKeys[definitionKey] = true
@@ -100,12 +102,20 @@ type parseKey<k> = k extends optionalKeyWithName<infer name>
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
 type optionalKeyOf<def> = {
-    // TODOSHAWN: Optional: Add escape check here
-    [k in keyof def]: k extends optionalKeyWithName<infer name> ? name : never
+    [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, true>
+        ? name
+        : never
 }[keyof def]
 
 type requiredKeyOf<def> = {
-    [k in keyof def]: k extends optionalKeyWithName ? never : k
+    [k in keyof def]: parseKey<k> extends KeyParseResult<
+        infer name,
+        infer optional
+    >
+        ? optional extends false
+            ? name
+            : never
+        : never
 }[keyof def]
 
 export type validateTupleExpression<

@@ -1,5 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
+import { stringSerialize } from "../dev/attest/src/common.js"
 import { type } from "../exports.js"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
 
@@ -59,5 +60,33 @@ describe("parse enclosed", () => {
             | "yes|no"
             | "true|false"
     })
-    describe("escape characters", () => {})
+    describe("escape characters", () => {
+        test("skips over escape character", () => {
+            attest(type("'http:~/~/abc.com'").root).snap({
+                string: { value: "http://abc.com" }
+            })
+        })
+        test("multiple escape chars in a row", () => {
+            attest(type("'ab~~~cd'").root).snap({ string: { value: "abcd" } })
+        })
+        test("tuple", () => {
+            attest(type(["number", "|", "'~abc~'"]).root).snap({
+                number: true,
+                string: { value: "abc" }
+            })
+        })
+        test("escape optional key", () => {
+            attest(
+                type([{ "a~?": "'a~b~c'" }, "|", { "b?": "string" }]).root
+            ).snap({
+                object: [
+                    {
+                        props: { "a?": { string: { value: "abc" } } },
+                        requiredKeys: { "a?": true }
+                    },
+                    { props: { b: "string" }, requiredKeys: {} }
+                ]
+            })
+        })
+    })
 })
