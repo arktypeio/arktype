@@ -12,7 +12,7 @@ import {
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { RawTypeSet, TypeNode } from "./node.js"
+import type { DomainOperand, TypeOperand } from "./node.js"
 import type { PredicateContext } from "./predicate.js"
 import { comparePredicates, isBranchesComparison } from "./predicate.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
@@ -23,12 +23,12 @@ import { regexIntersection } from "./rules/regex.js"
 import type { Condition, RuleSet, Validator } from "./rules/rules.js"
 
 export const intersection = (
-    l: TypeNode,
-    r: TypeNode,
+    l: TypeOperand,
+    r: TypeOperand,
     scope: ScopeRoot
-): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
+): TypeOperand => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const typeSetIntersection = composeKeyedOperation<RawTypeSet, ScopeRoot>(
+const typeSetIntersection = composeKeyedOperation<DomainOperand, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined

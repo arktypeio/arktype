@@ -1,12 +1,12 @@
 import type { Dictionary } from "../utils/generics.js"
-import type { TypeNode, TypeSet } from "./node.js"
+import type { DomainNode, TypeOperand } from "./node.js"
 
-export const morph = (name: MorphName, type: TypeNode) => morphs[name](type)
+export const morph = (name: MorphName, type: TypeOperand) => morphs[name](type)
 
 export type MorphName = keyof typeof morphs
 
 const morphs = {
-    array: (node): TypeSet => ({
+    array: (node): DomainNode => ({
         object: {
             kind: "Array",
             propTypes: {
@@ -14,4 +14,4 @@ const morphs = {
             }
         }
     })
-} satisfies Dictionary<(input: TypeNode) => TypeNode>
+} satisfies Dictionary<(input: TypeOperand) => TypeOperand>

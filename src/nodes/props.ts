@@ -10,16 +10,16 @@ import {
     equal
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { TypeNode, TypeSet } from "./node.js"
+import type { DomainNode, TypeOperand } from "./node.js"
 import type { PredicateContext } from "./predicate.js"
 import type { RuleSet } from "./rules/rules.js"
 
 // TODO: Never propagation
 export const propsIntersection = composePredicateIntersection<
-    Dictionary<TypeNode>,
+    Dictionary<TypeOperand>,
     PredicateContext
 >(
-    composeKeyedOperation<Dictionary<TypeNode>, PredicateContext>(
+    composeKeyedOperation<Dictionary<TypeOperand>, PredicateContext>(
         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
         { propagateEmpty: true }
     )
@@ -77,7 +77,7 @@ export const checkObject = (
 
 const isSimpleArray = (
     rules: RuleSet<"object">
-): rules is { type: "object"; propTypes: { number: TypeSet } } =>
+): rules is { type: "object"; propTypes: { number: DomainNode } } =>
     !rules.props &&
     rules.propTypes?.number !== undefined &&
     Object.keys(rules.propTypes).length === 1

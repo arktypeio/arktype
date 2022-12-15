@@ -10,13 +10,13 @@ import type {
     evaluate,
     keySet
 } from "../../utils/generics.js"
-import type { IdentifierNode, TypeNode, TypeRoot } from "../node.js"
+import type { Identifier, TypeNode, TypeOperand } from "../node.js"
 import type { Range } from "./range.js"
 
 export type Condition<
     domain extends Domain = Domain,
     scope extends Dictionary = Dictionary
-> = RuleSet<domain, scope> | ExactValue<domain> | IdentifierNode<scope>
+> = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
 export type RuleSet<
     domain extends Domain = Domain,
@@ -51,10 +51,10 @@ type Rules<
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
     readonly requiredKeys?: keySet
-    readonly props?: Dictionary<TypeRoot<scope>>
+    readonly props?: Dictionary<TypeNode<scope>>
     readonly propTypes?: {
-        readonly number?: TypeRoot<scope>
-        readonly string?: TypeRoot<scope>
+        readonly number?: TypeNode<scope>
+        readonly string?: TypeNode<scope>
     }
     readonly kind?: ObjectDomain
     readonly range?: Range

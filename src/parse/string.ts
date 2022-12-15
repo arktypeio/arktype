@@ -1,5 +1,5 @@
 import { morph } from "../nodes/morph.js"
-import type { TypeNode } from "../nodes/node.js"
+import type { TypeOperand } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Dictionary, error, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
@@ -59,7 +59,7 @@ type maybeNaiveParse<
 export const maybeNaiveParse = (
     def: string,
     scope: ScopeRoot
-): TypeNode | undefined => {
+): TypeOperand | undefined => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (scope.isResolvable(elementDef)) {

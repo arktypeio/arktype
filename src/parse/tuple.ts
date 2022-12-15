@@ -1,10 +1,10 @@
 import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
 import type {
+    DomainNode,
+    TypeOperand,
     SatisfiesRule,
     Satisfunction,
-    TypeNode,
-    TypeSet,
     UnknownDomainNode,
     UnknownPredicate
 } from "../nodes/node.js"
@@ -26,11 +26,11 @@ import { parseDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
-export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
+export const parseTuple = (def: List, scope: ScopeRoot): TypeOperand => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: Record<number, TypeNode> = {}
+    const props: Record<number, TypeOperand> = {}
     for (let i = 0; i < def.length; i++) {
         props[i] = parseDefinition(def[i], scope)
     }
@@ -110,7 +110,7 @@ export type TupleExpressionToken = "&" | "|" | "[]" | ":"
 type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: UnknownTupleExpression<token>,
     scope: ScopeRoot
-) => TypeNode
+) => TypeOperand
 
 const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
     if (def[2] === undefined) {
@@ -139,7 +139,7 @@ const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
     for (domain in resolveIfIdentifier(constrained, scope)) {
         distributedConstraint[domain] = constraintPredicate
     }
-    return intersection(constrained, distributedConstraint as TypeSet, scope)
+    return intersection(constrained, distributedConstraint as DomainNode, scope)
 }
 
 const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>
@@ -157,7 +157,7 @@ const tupleExpressionParsers: {
 const parseTupleExpression = (
     def: UnknownTupleExpression,
     scope: ScopeRoot
-): TypeNode => tupleExpressionParsers[def[1]](def as any, scope)
+): TypeOperand => tupleExpressionParsers[def[1]](def as any, scope)
 
 const isTupleExpression = (def: List): def is UnknownTupleExpression =>
     typeof def[1] === "string" && def[1] in tupleExpressionParsers
