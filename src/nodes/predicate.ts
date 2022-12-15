@@ -6,7 +6,6 @@ import { empty, equal } from "./compose.js"
 import { branchResolutionIntersection } from "./intersection.js"
 import type { Identifier } from "./node.js"
 import type { RuleSet } from "./rules/rules.js"
-import { resolvePredicate } from "./utils.js"
 
 export type Predicate<
     domain extends Domain = Domain,
@@ -32,30 +31,28 @@ export const comparePredicates = (
     r: Predicate,
     context: PredicateContext
 ): PredicateComparison => {
-    const lConditions = resolvePredicate(context.domain, l, context.scope)
-    const rConditions = resolvePredicate(context.domain, r, context.scope)
-    if (lConditions === true) {
-        return rConditions === true ? equal : r
+    if (l === true) {
+        return r === true ? equal : r
     }
-    if (rConditions === true) {
+    if (r === true) {
         return l
     }
-    const comparison = compareConditions(lConditions, rConditions, context)
+    const comparison = compareConditions(l, r, context)
     if (
-        comparison.equal.length === lConditions.length &&
-        comparison.equal.length === rConditions.length
+        comparison.equal.length === l.length &&
+        comparison.equal.length === r.length
     ) {
         return equal
     }
     if (
         comparison.lSubconditionsOfR.length + comparison.equal.length ===
-        lConditions.length
+        l.length
     ) {
         return l
     }
     if (
         comparison.rSubconditionsOfL.length + comparison.equal.length ===
-        rConditions.length
+        r.length
     ) {
         return r
     }
@@ -67,11 +64,9 @@ type PredicateComparison = SetOperationResult<Predicate> | ConditionsComparison
 export const isConditionsComparison = (
     comparison: PredicateComparison
 ): comparison is ConditionsComparison =>
-    (comparison as ConditionsComparison)?.lConditions !== undefined
+    (comparison as ConditionsComparison)?.intersections !== undefined
 
 type ConditionsComparison = {
-    lConditions: Condition[]
-    rConditions: Condition[]
     lSubconditionsOfR: number[]
     rSubconditionsOfL: number[]
     equal: [lIndex: number, rIndex: number][]
@@ -84,24 +79,22 @@ const compareConditions = (
     context: PredicateContext
 ): ConditionsComparison => {
     const result: ConditionsComparison = {
-        lConditions,
-        rConditions,
+        intersections: [],
         lSubconditionsOfR: [],
         rSubconditionsOfL: [],
-        equal: [],
-        intersections: []
+        equal: []
     }
     const pairs = rConditions.map((condition) => ({
-        constraint: condition,
+        condition,
         distinct: [] as Condition[] | null
     }))
     lConditions.forEach((l, lIndex) => {
         let lImpliesR = false
-        const distinct = pairs.map((rData, rIndex): Condition | null => {
-            if (lImpliesR || !rData.distinct) {
+        const distinct = pairs.map((rPairs, rIndex): Condition | null => {
+            if (lImpliesR || !rPairs.distinct) {
                 return null
             }
-            const r = rData.constraint
+            const r = rPairs.condition
             const keyResult = branchResolutionIntersection(l, r, context)
             switch (keyResult) {
                 case empty:
@@ -119,13 +112,13 @@ const compareConditions = (
                     // If r is a subtype of the current l branch, it is removed
                     // from pairsByR because future intersections won't lead to
                     // distinct branches.
-                    rData.distinct = null
+                    rPairs.distinct = null
                     return null
                 case equal:
                     // Combination of l and r subtype cases.
                     result.equal.push([lIndex, rIndex])
                     lImpliesR = true
-                    rData.distinct = null
+                    rPairs.distinct = null
                     return null
                 default:
                     // Neither branch is a subtype of the other, return

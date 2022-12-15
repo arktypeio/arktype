@@ -49,8 +49,12 @@ type Rules<
     }
     readonly kind?: ObjectDomain
     readonly range?: Range
-    readonly validator?: CollapsibleList<Validator<domain>>
+    readonly validator?: ValidatorRule<domain>
 }
+
+export type ValidatorRule<domain extends Domain = Domain> = CollapsibleList<
+    Validator<inferDomain<domain>>
+>
 
 export type Validator<data = unknown> = (data: data) => boolean
 
