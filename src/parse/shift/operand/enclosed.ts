@@ -1,4 +1,4 @@
-import { getRegex } from "../../../nodes/regex.js"
+import { getRegex } from "../../../nodes/rules/regex.js"
 import type { error } from "../../../utils/generics.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { Scanner } from "../../reduce/scanner.js"

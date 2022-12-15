@@ -1,7 +1,7 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { DomainName, ObjectSubdomain } from "../utils/domainOf.js"
-import { domainOf, objectSubdomainOf } from "../utils/domainOf.js"
+import type { Domain, ObjectDomain, Primitive } from "../utils/classify.js"
+import { classify, classifyObject } from "../utils/classify.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
@@ -10,31 +10,28 @@ import type {
     isTopType,
     List
 } from "../utils/generics.js"
-import type {
-    inferRecord,
-    inferTuple,
-    TupleExpression,
-    validateTupleExpression
-} from "./object.js"
-import { parseDict, parseTuple } from "./object.js"
+import type { inferRecord } from "./record.js"
+import { parseRecord } from "./record.js"
 import type { inferString, validateString } from "./string.js"
 import { parseString } from "./string.js"
+import type { inferTuple, validateTuple } from "./tuple.js"
+import { parseTuple } from "./tuple.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
-    const defType = domainOf(def)
-    if (defType === "string") {
+    const domain = classify(def)
+    if (domain === "string") {
         return parseString(def as string, scope)
     }
-    if (defType === "object") {
-        const subtype = objectSubdomainOf(def as object)
-        if (subtype === "Object") {
-            return parseDict(def as Dictionary, scope)
-        } else if (subtype === "Array") {
+    if (domain === "object") {
+        const objectDomain = classifyObject(def as object)
+        if (objectDomain === "Object") {
+            return parseRecord(def as Dictionary, scope)
+        } else if (objectDomain === "Array") {
             return parseTuple(def as List, scope)
         }
-        return throwParseError(buildBadDefinitionTypeMessage(subtype))
+        return throwParseError(buildBadDefinitionTypeMessage(objectDomain))
     }
-    return throwParseError(buildBadDefinitionTypeMessage(defType))
+    return throwParseError(buildBadDefinitionTypeMessage(domain))
 }
 
 export type inferDefinition<
@@ -62,15 +59,21 @@ export type validateDefinition<
     ? def
     : def extends string
     ? validateString<def, scope>
-    : def extends object
-    ? def extends TupleExpression
-        ? validateTupleExpression<def, scope>
-        : def extends Dictionary | List
-        ? evaluate<{
-              [k in keyof def]: validateDefinition<def[k], scope>
-          }>
-        : buildBadDefinitionTypeMessage<objectSubdomainOf<def>>
-    : buildBadDefinitionTypeMessage<domainOf<def>>
+    : def extends List
+    ? validateTuple<def, scope>
+    : def extends Primitive
+    ? buildBadDefinitionTypeMessage<classify<def>>
+    : // At runtime we implicitly check for other invalid object domains, so that,
+    // for example, if an Error or Map were passed as a definition, we would not
+    // try and parse it. However, that seems too niche a case to incur the type
+    // performance penalty for checking against all non Dictionary/List object
+    // domains, especially given that there would be a type error in these
+    // situations anyways (albeit a convaluted one).
+    def extends Function
+    ? buildBadDefinitionTypeMessage<"Function">
+    : evaluate<{
+          [k in keyof def]: validateDefinition<def[k], scope>
+      }>
 
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"
@@ -78,12 +81,12 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends DomainName | ObjectSubdomain
+    actual extends Domain | ObjectDomain
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
 export type buildBadDefinitionTypeMessage<
-    actual extends DomainName | ObjectSubdomain
+    actual extends Domain | ObjectDomain
 > = `Type definitions must be strings or objects (was ${actual})`

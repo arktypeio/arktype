@@ -3,10 +3,10 @@ import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
 import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
-import { nodeExtendsDomain } from "../../nodes/utils.js"
+import { isExactValue } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
-import { hasKey, isKeyOf } from "../../utils/generics.js"
+import { isKeyOf } from "../../utils/generics.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -42,10 +42,8 @@ export class DynamicState {
     }
 
     ejectRootIfLimit() {
-        if (
-            nodeExtendsDomain(this.root!, "number", this.scope) &&
-            hasKey(this.root.number, "value")
-        ) {
+        this.assertHasRoot()
+        if (isExactValue(this.root!, "number", this.scope)) {
             const limit = this.root.number.value
             this.root = undefined
             return limit

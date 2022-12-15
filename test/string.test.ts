@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
-import type { Node } from "../exports.js"
+import type { TypeNode } from "../exports.js"
 import { type } from "../exports.js"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
 import {
@@ -37,7 +37,7 @@ describe("regex intersections", () => {
     test("distinct strings", () => {
         attest(type("/a/&/b/").root).snap({
             string: {
-                regex: { a: true, b: true }
+                regex: ["a", "b"]
             }
         })
     })
@@ -48,19 +48,19 @@ describe("regex intersections", () => {
             }
         })
     })
+    // TODO: Use set comparisons https://github.com/arktypeio/arktype/issues/557
     test("string and list", () => {
-        const expected = { a: true, b: true, c: true } as const
         attest(type(["/a/", "&", "/b/&/c/"]).root).snap({
-            string: { regex: expected }
+            string: { regex: ["b", "c", "a"] }
         })
         attest(type(["/a/&/b/", "&", "/c/"]).root).snap({
-            string: { regex: expected }
+            string: { regex: ["a", "b", "c"] }
         })
     })
     test("redundant string and list", () => {
-        const expected: Node = {
+        const expected: TypeNode = {
             string: {
-                regex: { a: true, b: true, c: true }
+                regex: ["a", "b", "c"]
             }
         }
         attest(type(["/a/", "&", "/a/&/b/&/c/"]).root).equals(expected)
@@ -69,21 +69,21 @@ describe("regex intersections", () => {
     test("distinct lists", () => {
         attest(type(["/a/&/b/", "&", "/c/&/d/"]).root).snap({
             string: {
-                regex: { a: true, b: true, c: true, d: true }
+                regex: ["a", "b", "c", "d"]
             }
         })
     })
     test("overlapping lists", () => {
         attest(type(["/a/&/b/", "&", "/c/&/b/"]).root).snap({
             string: {
-                regex: { a: true, b: true, c: true }
+                regex: ["a", "b", "c"]
             }
         })
     })
     test("identical lists", () => {
         attest(type(["/a/&/b/", "&", "/b/&/a/"]).root).snap({
             string: {
-                regex: { a: true, b: true }
+                regex: ["a", "b"]
             }
         })
     })

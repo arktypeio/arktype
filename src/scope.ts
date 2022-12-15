@@ -1,12 +1,13 @@
 import { keywords } from "./nodes/keywords.js"
-import type { Domain, Predicate, TypeNode } from "./nodes/node.js"
+import type { TypeNode, TypeSet } from "./nodes/node.js"
+import type { Predicate } from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import type { Config } from "./type.js"
 import { ArkType } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { DomainName } from "./utils/domainOf.js"
+import type { Domain } from "./utils/classify.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
 import type { Dictionary, evaluate, mutable } from "./utils/generics.js"
@@ -63,7 +64,7 @@ type inferredScopeToArktypes<inferred> = {
 // TODO: decide if parsing primarily managed through scope or only resolution/caching
 
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
-    attributes = {} as { [k in keyof inferred]: Domain }
+    attributes = {} as { [k in keyof inferred]: TypeSet<inferred> }
     // TODO: Add intersection cache
     private cache: mutable<Dictionary<TypeNode>> = {}
 
@@ -88,12 +89,12 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return this.resolveRecurse(name, [])
     }
 
-    private resolveRecurse(name: string, seen: string[]): Domain {
+    private resolveRecurse(name: string, seen: string[]): TypeSet {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }
         if (isKeyOf(name, this.attributes)) {
-            return this.attributes[name]
+            return this.attributes[name] as TypeSet
         }
         if (!this.aliases[name]) {
             return (
@@ -103,7 +104,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
                 )
             )
         }
-        let root = parseDefinition(this.aliases[name], this)
+        let root = parseDefinition(this.aliases[name], this as ScopeRoot)
         if (typeof root === "string") {
             if (seen.includes(root)) {
                 return throwParseError(
@@ -113,22 +114,19 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             seen.push(root)
             root = this.resolveRecurse(root, seen)
         }
-        this.attributes[name as keyof inferred] = root
+        this.attributes[name as keyof inferred] = root as TypeSet<inferred>
         return root
     }
 
-    resolveConstraints<domain extends DomainName>(
-        name: string,
-        domain: domain
-    ) {
-        return this.resolveConstraintsRecurse(name, domain, [])
+    resolveToDomain<domain extends Domain>(name: string, domain: domain) {
+        return this.resolveToDomainRecurse(name, domain, [])
     }
 
-    private resolveConstraintsRecurse<domain extends DomainName>(
+    private resolveToDomainRecurse<domain extends Domain>(
         name: string,
         domain: domain,
         seen: string[]
-    ): Predicate<domain> {
+    ): Exclude<Predicate<domain>, string> {
         const resolution = this.resolve(name)[domain]
         if (resolution === undefined) {
             return throwInternalError(
@@ -136,7 +134,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             )
         }
         if (typeof resolution !== "string") {
-            return resolution as Predicate<domain>
+            return resolution as any
         }
         if (seen.includes(resolution)) {
             return throwParseError(
@@ -144,14 +142,16 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             )
         }
         seen.push(resolution)
-        return this.resolveConstraintsRecurse(resolution, domain, seen)
+        return this.resolveToDomainRecurse(resolution, domain, seen)
     }
 
     memoizedParse(def: string): TypeNode {
         if (def in this.cache) {
             return this.cache[def]
         }
-        const root = maybeNaiveParse(def, this) ?? fullStringParse(def, this)
+        const root =
+            maybeNaiveParse(def, this as ScopeRoot) ??
+            fullStringParse(def, this as ScopeRoot)
         this.cache[def] = deepFreeze(root)
         return root
     }

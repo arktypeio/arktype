@@ -38,10 +38,12 @@ pnpm i # install package.json dependencies
 pnpm build # builds the package
 ```
 
+Make sure you are using our repo's pinned version of TypeScript and not one that comes bundled with your editor. In VSCode, you should be automatically prompted to allow this when you open the repo, but otherwise take a look at this explanation for how it can be done [from the VSCode docs](https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript).
+
 5. Create a new topic branch:
 
 ```sh
-git checkout -b my-topic-branch
+git checkout -b amazing-feature
 ```
 
 6. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:

@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
-import type { Node } from "../exports.js"
+import type { TypeNode } from "../exports.js"
 import { type } from "../exports.js"
 import {
     buildMultipleLeftBoundsMessage,
@@ -16,7 +16,7 @@ describe("bound", () => {
                 const t = type("number>0")
                 attest(t.infer).typed as number
                 attest(t.root).snap({
-                    number: { bounds: { min: { limit: 0, exclusive: true } } }
+                    number: { range: { min: { limit: 0, exclusive: true } } }
                 })
             })
             test("<", () => {
@@ -24,7 +24,7 @@ describe("bound", () => {
                 attest(t.infer).typed as number
                 attest(t.root).snap({
                     number: {
-                        bounds: { max: { limit: 10, exclusive: true } }
+                        range: { max: { limit: 10, exclusive: true } }
                     }
                 })
             })
@@ -33,7 +33,7 @@ describe("bound", () => {
                 attest(t.infer).typed as number
                 attest(t.root).snap({
                     number: {
-                        bounds: { max: { limit: -49 } }
+                        range: { max: { limit: -49 } }
                     }
                 })
             })
@@ -42,7 +42,7 @@ describe("bound", () => {
                 attest(t.infer).typed as number
                 attest(t.root).snap({
                     number: {
-                        bounds: {
+                        range: {
                             min: { limit: 3211993 },
                             max: { limit: 3211993 }
                         }
@@ -56,7 +56,7 @@ describe("bound", () => {
                 attest(t.infer).typed as number
                 attest(t.root).snap({
                     number: {
-                        bounds: {
+                        range: {
                             min: { limit: -5, exclusive: true },
                             max: { limit: 5 }
                         }
@@ -68,7 +68,7 @@ describe("bound", () => {
                 attest(t.infer).typed as number
                 attest(t.root).snap({
                     number: {
-                        bounds: {
+                        range: {
                             min: { limit: -3.23 },
                             max: { limit: 4.654, exclusive: true }
                         }
@@ -81,15 +81,15 @@ describe("bound", () => {
             attest(t.infer).typed as number
             attest(t.root).snap({
                 number: {
-                    bounds: { min: { limit: 3, exclusive: true } }
+                    range: { min: { limit: 3, exclusive: true } }
                 }
             })
         })
         describe("intersection", () => {
             test("overlapping", () => {
-                const expected: Node = {
+                const expected: TypeNode = {
                     number: {
-                        bounds: {
+                        range: {
                             min: { limit: 2 },
                             max: { limit: 3, exclusive: true }
                         }
@@ -102,7 +102,7 @@ describe("bound", () => {
             test("single value overlap", () => {
                 attest(type("0<number<=1&1<=number<2").root).equals({
                     number: {
-                        bounds: {
+                        range: {
                             min: {
                                 limit: 1
                             },
@@ -114,29 +114,29 @@ describe("bound", () => {
                 })
             })
             test("non-overlapping", () => {
-                const expected: Node = {
+                const expected: TypeNode = {
                     number: []
                 }
                 attest(type("number>3&number<=3").root).equals(expected)
                 attest(type("-2<number<-1&1<number<2").root).equals(expected)
             })
             test("greater min is stricter", () => {
-                const expected: Node = {
-                    number: { bounds: { min: { limit: 3 } } }
+                const expected: TypeNode = {
+                    number: { range: { min: { limit: 3 } } }
                 }
                 attest(type("number>=3&number>2").root).equals(expected)
                 attest(type("number>2&number>=3").root).equals(expected)
             })
             test("lesser max is stricter", () => {
-                const expected: Node = {
-                    number: { bounds: { max: { limit: 3 } } }
+                const expected: TypeNode = {
+                    number: { range: { max: { limit: 3 } } }
                 }
                 attest(type("number<=3&number<4").root).equals(expected)
                 attest(type("number<4&number<=3").root).equals(expected)
             })
             test("exclusive included if limits equal", () => {
-                const expected: Node = {
-                    number: { bounds: { max: { limit: 3, exclusive: true } } }
+                const expected: TypeNode = {
+                    number: { range: { max: { limit: 3, exclusive: true } } }
                 }
                 attest(type("number<3&number<=3").root).equals(expected)
                 attest(type("number<=3&number<3").root).equals(expected)

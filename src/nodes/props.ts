@@ -1,32 +1,31 @@
 import type { ScopeRoot } from "../scope.js"
-import { inObjectSubdomain } from "../utils/domainOf.js"
+import { checkNode } from "../traverse/check.js"
+import { hasObjectDomain } from "../utils/classify.js"
 import type { Dictionary, keySet, mutable } from "../utils/generics.js"
 import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
-import { checkNode } from "./check.js"
-import type { PredicateContext } from "./compare.js"
 import {
     composeKeyedOperation,
-    composePredicateIntersection,
+    composeRuleIntersection,
     equal
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { Domain, ObjectConstraints, UnknownTypeNode } from "./node.js"
-
-type UnknownProps = Dictionary<UnknownTypeNode>
+import type { TypeNode } from "./node.js"
+import type { DynamicDomainContext } from "./predicate.js"
+import type { RuleSet } from "./rules/rules.js"
 
 // TODO: Never propagation
-export const propsIntersection = composePredicateIntersection<
-    UnknownProps,
-    PredicateContext
+export const propsIntersection = composeRuleIntersection<
+    Dictionary<TypeNode>,
+    DynamicDomainContext
 >(
-    composeKeyedOperation<UnknownProps, PredicateContext>(
+    composeKeyedOperation<Dictionary<TypeNode>, DynamicDomainContext>(
         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
         { propagateEmpty: true }
     )
 )
 
-export const requiredKeysIntersection = composePredicateIntersection<keySet>(
+export const requiredKeysIntersection = composeRuleIntersection<keySet>(
     (l, r) => {
         const result = { ...l, ...r }
         const resultSize = keyCount(result)
@@ -42,34 +41,31 @@ export const requiredKeysIntersection = composePredicateIntersection<keySet>(
 
 export const checkObject = (
     data: object,
-    constraints: ObjectConstraints,
+    rules: RuleSet<"object", Dictionary>,
     scope: ScopeRoot
 ) => {
-    if (inObjectSubdomain(data, "Array") && isSimpleArray(constraints)) {
+    if (hasObjectDomain(data, "Array") && isSimpleArray(rules)) {
         return data.every((elementData) =>
-            checkNode(elementData, constraints.propTypes.number, scope)
+            checkNode(elementData, rules.propTypes.number, scope)
         )
     }
-    const missingKeys: mutable<keySet> = { ...constraints.requiredKeys }
+    const missingKeys: mutable<keySet> = { ...rules.requiredKeys }
     for (const k in data) {
         const propValue = (data as Dictionary)[k]
-        if (
-            constraints.props?.[k] &&
-            !checkNode(propValue, constraints.props[k], scope)
-        ) {
+        if (rules.props?.[k] && !checkNode(propValue, rules.props[k], scope)) {
             return false
         }
-        if (constraints.propTypes) {
+        if (rules.propTypes) {
             const keyIsNumber = tryParseWellFormedNumber(k) !== undefined
             if (
                 keyIsNumber &&
-                constraints.propTypes.number &&
-                !checkNode(propValue, constraints.propTypes.number, scope)
+                rules.propTypes.number &&
+                !checkNode(propValue, rules.propTypes.number, scope)
             ) {
                 return false
             } else if (
-                constraints.propTypes.string &&
-                !checkNode(propValue, constraints.propTypes.string, scope)
+                rules.propTypes.string &&
+                !checkNode(propValue, rules.propTypes.string, scope)
             ) {
                 return false
             }
@@ -80,8 +76,8 @@ export const checkObject = (
 }
 
 const isSimpleArray = (
-    constraints: ObjectConstraints
-): constraints is { type: "object"; propTypes: { number: Domain } } =>
-    !constraints.props &&
-    constraints.propTypes?.number !== undefined &&
-    Object.keys(constraints.propTypes).length === 1
+    rules: RuleSet<"object", Dictionary>
+): rules is { type: "object"; propTypes: { number: TypeNode } } =>
+    !rules.props &&
+    rules.propTypes?.number !== undefined &&
+    Object.keys(rules.propTypes).length === 1

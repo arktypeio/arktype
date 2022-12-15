@@ -1,5 +1,4 @@
 import type { ScopeRoot } from "../scope.js"
-import { comparePredicates, isBranchesComparison } from "./compare.js"
 import {
     coalesceBranches,
     composeKeyedOperation,
@@ -7,12 +6,13 @@ import {
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { TypeNode, UnknownDomain } from "./node.js"
+import type { TypeNode, TypeSet } from "./node.js"
+import { comparePredicates, isConditionsComparison } from "./predicate.js"
 
 export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const domainsUnion = composeKeyedOperation<UnknownDomain, ScopeRoot>(
+export const typeSetUnion = composeKeyedOperation<TypeSet, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r
@@ -24,21 +24,21 @@ export const domainsUnion = composeKeyedOperation<UnknownDomain, ScopeRoot>(
             domain,
             scope
         })
-        if (!isBranchesComparison(comparison)) {
+        if (!isConditionsComparison(comparison)) {
             return comparison === l ? r : l
         }
         const finalBranches = [
-            ...comparison.lRules.filter(
+            ...comparison.lConditions.filter(
                 (_, lIndex) =>
-                    !comparison.lSubrulesOfR.includes(lIndex) &&
-                    !comparison.equalities.some(
+                    !comparison.lSubconditionsOfR.includes(lIndex) &&
+                    !comparison.equal.some(
                         (indexPair) => indexPair[0] === lIndex
                     )
             ),
-            ...comparison.rRules.filter(
+            ...comparison.rConditions.filter(
                 (_, rIndex) =>
-                    !comparison.rSubrulesOfL.includes(rIndex) &&
-                    !comparison.equalities.some(
+                    !comparison.rSubconditionsOfL.includes(rIndex) &&
+                    !comparison.equal.some(
                         (indexPair) => indexPair[1] === rIndex
                     )
             )
@@ -47,4 +47,4 @@ export const domainsUnion = composeKeyedOperation<UnknownDomain, ScopeRoot>(
     }
 )
 
-export const nodeUnion = composeNodeOperation(domainsUnion)
+export const nodeUnion = composeNodeOperation(typeSetUnion)

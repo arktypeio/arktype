@@ -1,20 +1,21 @@
-import { inDomain } from "./domainOf.js"
+import { hasDomain } from "./classify.js"
 
-export type narrow<t> = castWithExclusion<t, narrowRecurse<t>, []>
+export type downcast<t> = castWithExclusion<t, downcastRecurse<t>, []>
 
-type narrowRecurse<t> = {
-    [k in keyof t]: t[k] extends Narrowable | [] ? t[k] : narrowRecurse<t[k]>
+type downcastRecurse<t> = {
+    [k in keyof t]: t[k] extends Downcastable | []
+        ? t[k]
+        : downcastRecurse<t[k]>
 }
 
 type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
 
-export type Narrowable = string | boolean | number | bigint
+export type Downcastable = string | boolean | number | bigint
 
 /**
- * Note: Similarly to Narrow, trying to Evaluate 'unknown'
+ * Note: Similarly to downcast, trying to evaluate 'unknown'
  * directly (i.e. not nested in an object) leads to the type '{}',
  * but I'm unsure how to fix this without breaking the types that rely on it.
- *
  */
 export type evaluate<t> = {
     [k in keyof t]: t[k]
@@ -25,8 +26,8 @@ export type evaluate<t> = {
 // This feels too niche to fix at the cost of performance and complexity, but that could change.
 // It also overrides values with undefined, unlike the associated function. We'll have to see if this is problematic.
 export type merge<base, merged> = evaluate<
-    Omit<extractMergeable<base>, Extract<keyof base, keyof merged>> &
-        extractMergeable<merged>
+    Omit<conform<base, {}>, Extract<keyof base, keyof merged>> &
+        conform<merged, {}>
 >
 
 /** Replace existing keys of o without altering readonly or optional modifiers  */
@@ -36,8 +37,6 @@ export type replaceKeys<
 > = evaluate<{
     [k in keyof o]: k extends keyof replacements ? replacements[k] : o[k]
 }>
-
-type extractMergeable<t> = t extends {} ? t : {}
 
 export type isTopType<t> = (any extends t ? true : false) extends true
     ? true
@@ -101,7 +100,7 @@ export const keyCount = (o: object) => Object.keys(o).length
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export const hasKeys = (value: unknown) =>
-    inDomain(value, "object") ? Object.keys(value).length !== 0 : false
+    hasDomain(value, "object") ? Object.keys(value).length !== 0 : false
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
@@ -153,8 +152,8 @@ export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
 
-export type listable<t> = t | List<t>
-
 export type List<of = unknown> = readonly of[]
 
 export type Dictionary<of = unknown> = { readonly [k in string]: of }
+
+export type CollapsibleList<t> = t | List<t>

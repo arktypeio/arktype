@@ -47,6 +47,22 @@ describe("tuple expression", () => {
             bigint: true
         })
     })
+    test("contrain", () => {
+        const isOdd = (n: number) => n % 2 === 1
+        const t = type(["number", ":", isOdd])
+        attest(t.infer).typed as number
+        attest(t.root).equals({ number: { constrain: isOdd } })
+    })
+    test("contraint parameter inference", () => {
+        type Expected = number | string[]
+        const constraintNumberOrStringArray = (data: Expected) => !!data
+        const t = type(["number|string[]", ":", constraintNumberOrStringArray])
+        attest(t.infer).typed as Expected
+        attest(() => {
+            // @ts-expect-error
+            type(["number|boolean[]", ":", constraintNumberOrStringArray])
+        }).type.errors("Type 'boolean' is not assignable to type 'string'.")
+    })
     describe("errors", () => {
         test("missing right operand", () => {
             // @ts-expect-error

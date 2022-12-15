@@ -1,50 +1,54 @@
 import type { ScopeRoot } from "../scope.js"
-import type { DomainName } from "../utils/domainOf.js"
+import type { Domain, inferDomain } from "../utils/classify.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
 import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
-import type {
-    Domain,
-    TypeNode,
-    UnknownDomain,
-    UnknownPredicate,
-    UnknownRule,
-    UnknownTypeNode
-} from "./node.js"
+import type { TypeNode, TypeSet } from "./node.js"
+import type { Condition, ExactValue, Predicate } from "./predicate.js"
 
 export const resolveIfIdentifier = (
-    node: UnknownTypeNode,
+    node: TypeNode,
     scope: ScopeRoot
-): UnknownDomain => (typeof node === "string" ? scope.resolve(node) : node)
+): TypeSet =>
+    typeof node === "string" ? (scope.resolve(node) as TypeSet) : node
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
 
+export const isExactValue = (
+    node: TypeNode,
+    domain: Domain,
+    scope: ScopeRoot
+): node is { [domain in Domain]: { value: inferDomain<domain> } } =>
+    nodeExtendsDomain(node, domain, scope) &&
+    (node[domain] as ExactValue).value !== undefined
+
 export const domainOfNode = (
     node: TypeNode,
     scope: ScopeRoot
-): DomainName | DomainName[] => {
+): Domain | Domain[] => {
     const domains = keysOf(resolveIfIdentifier(node, scope))
     // TODO: Handle never here
     return domains.length === 1 ? domains[0] : domains
 }
 
-export type DomainSubtypeNode<domain extends DomainName> = {
-    readonly [k in domain]: defined<Domain[domain]>
+export type DomainSubtypeNode<domain extends Domain> = {
+    readonly [k in domain]: defined<TypeSet[domain]>
 }
 
-export const nodeExtendsDomain = <domain extends DomainName>(
+export const nodeExtendsDomain = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
     scope: ScopeRoot
 ): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain
 
+// TODO: string?
 export const resolvePredicate = (
-    domain: DomainName,
-    predicate: UnknownPredicate,
+    domain: Domain,
+    predicate: Predicate,
     scope: ScopeRoot
-): true | UnknownRule[] => {
+): true | Condition[] => {
     if (predicate === true) {
         return true
     }
@@ -53,10 +57,7 @@ export const resolvePredicate = (
         (branch): branch is string => typeof branch === "string"
     )
     while (unresolved.length) {
-        const typeResolution = scope.resolveConstraints(
-            unresolved.pop()!,
-            domain
-        )
+        const typeResolution = scope.resolveToDomain(unresolved.pop()!, domain)
         if (typeResolution === true) {
             return true
         }

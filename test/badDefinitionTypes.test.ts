@@ -57,9 +57,5 @@ describe("bad definition types", () => {
         attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("Function")
         )
-        // @ts-expect-error
-        attest(() => type(new Error("whoops"))).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("Error")
-        )
     })
 })

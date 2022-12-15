@@ -1,8 +1,8 @@
-import type { Bound, Bounds } from "../../../nodes/bounds.js"
+import type { Bound, Range } from "../../../nodes/rules/range.js"
 import {
     buildEmptyRangeMessage,
     compareStrictness
-} from "../../../nodes/bounds.js"
+} from "../../../nodes/rules/range.js"
 import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
@@ -69,22 +69,22 @@ export const parseRightBound = (
         buildInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     const openRange = s.ejectRangeIfOpen()
-    let bounds
+    let range
     if (openRange) {
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return s.error(buildUnpairableComparatorMessage(comparator))
         }
-        bounds = deserializeRange(openRange[0], openRange[1], comparator, limit)
-        if (compareStrictness(bounds.min, bounds.max, "min") === "l") {
-            return s.error(buildEmptyRangeMessage(bounds.min!, bounds.max!))
+        range = deserializeRange(openRange[0], openRange[1], comparator, limit)
+        if (compareStrictness(range.min, range.max, "min") === "l") {
+            return s.error(buildEmptyRangeMessage(range.min!, range.max!))
         }
     } else {
-        bounds = deserializeBound(comparator, limit)
+        range = deserializeBound(comparator, limit)
     }
     s.intersect({
-        number: { bounds },
-        string: { bounds },
-        object: { kind: "Array", bounds }
+        number: { range },
+        string: { range },
+        object: { kind: "Array", range }
     })
 }
 
@@ -134,7 +134,7 @@ export type buildInvalidLimitMessage<
 const deserializeBound = (
     comparator: Scanner.Comparator,
     limit: number
-): Bounds => {
+): Range => {
     const bound: Bound =
         comparator.length === 1
             ? {
@@ -160,7 +160,7 @@ const deserializeRange = (
     minComparator: Scanner.PairableComparator,
     maxComparator: Scanner.PairableComparator,
     maxLimit: number
-): Bounds => {
+): Range => {
     const min: Bound =
         minComparator === "<"
             ? {
