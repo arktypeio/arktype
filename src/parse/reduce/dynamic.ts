@@ -1,7 +1,7 @@
 import { intersection } from "../../nodes/intersection.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import type { TypeOperand } from "../../nodes/node.js"
+import type { RawTypeRoot } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
 import { nodeExtendsDomain } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
@@ -19,13 +19,13 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    intersection?: TypeOperand
-    union?: TypeOperand
+    intersection?: RawTypeRoot
+    union?: RawTypeRoot
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: TypeOperand | undefined
+    private root: RawTypeRoot | undefined
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
@@ -72,7 +72,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(node: TypeOperand) {
+    setRoot(node: RawTypeRoot) {
         this.assertUnsetRoot()
         this.root = node
     }
@@ -81,7 +81,7 @@ export class DynamicState {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersect(node: TypeOperand) {
+    intersect(node: RawTypeRoot) {
         this.root = intersection(this.ejectRoot(), node, this.scope)
     }
 

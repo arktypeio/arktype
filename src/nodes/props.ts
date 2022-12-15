@@ -6,26 +6,26 @@ import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
 import {
     composeKeyedOperation,
-    composePredicateIntersection,
+    composeRuleIntersection,
     equal
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
-import type { DomainNode, TypeOperand } from "./node.js"
+import type { RawTypeRoot, TypeSet } from "./node.js"
 import type { PredicateContext } from "./predicate.js"
 import type { RuleSet } from "./rules/rules.js"
 
 // TODO: Never propagation
-export const propsIntersection = composePredicateIntersection<
-    Dictionary<TypeOperand>,
+export const propsIntersection = composeRuleIntersection<
+    Dictionary<RawTypeRoot>,
     PredicateContext
 >(
-    composeKeyedOperation<Dictionary<TypeOperand>, PredicateContext>(
+    composeKeyedOperation<Dictionary<RawTypeRoot>, PredicateContext>(
         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
         { propagateEmpty: true }
     )
 )
 
-export const requiredKeysIntersection = composePredicateIntersection<keySet>(
+export const requiredKeysIntersection = composeRuleIntersection<keySet>(
     (l, r) => {
         const result = { ...l, ...r }
         const resultSize = keyCount(result)
@@ -77,7 +77,7 @@ export const checkObject = (
 
 const isSimpleArray = (
     rules: RuleSet<"object">
-): rules is { type: "object"; propTypes: { number: DomainNode } } =>
+): rules is { type: "object"; propTypes: { number: TypeSet } } =>
     !rules.props &&
     rules.propTypes?.number !== undefined &&
     Object.keys(rules.propTypes).length === 1

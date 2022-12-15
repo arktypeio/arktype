@@ -4,23 +4,23 @@ import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
 import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
-import type { DomainNode, TypeOperand } from "./node.js"
-import type { Predicate } from "./predicate.js"
-import type { Condition } from "./rules/rules.js"
+import type { RawTypeRoot, RawTypeSet, TypeSet } from "./node.js"
+import type { Condition, Predicate } from "./predicate.js"
 
 export const resolveIfIdentifier = (
-    node: TypeOperand,
+    node: RawTypeRoot,
     scope: ScopeRoot
-): DomainNode => (typeof node === "string" ? scope.resolve(node) : node)
+): RawTypeSet =>
+    typeof node === "string" ? (scope.resolve(node) as RawTypeSet) : node
 
 export const nodeExtends = (
-    node: TypeOperand,
-    base: TypeOperand,
+    node: RawTypeRoot,
+    base: RawTypeRoot,
     scope: ScopeRoot
 ) => intersection(node, base, scope) === node
 
 export const domainOfNode = (
-    node: TypeOperand,
+    node: RawTypeRoot,
     scope: ScopeRoot
 ): Domain | Domain[] => {
     const domains = keysOf(resolveIfIdentifier(node, scope))
@@ -29,11 +29,11 @@ export const domainOfNode = (
 }
 
 export type DomainSubtypeNode<domain extends Domain> = {
-    readonly [k in domain]: defined<DomainNode[domain]>
+    readonly [k in domain]: defined<TypeSet[domain]>
 }
 
 export const nodeExtendsDomain = <domain extends Domain>(
-    node: TypeOperand,
+    node: RawTypeRoot,
     domain: domain,
     scope: ScopeRoot
 ): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain

@@ -6,13 +6,13 @@ import {
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { DomainOperand, TypeOperand } from "./node.js"
-import { comparePredicates, isBranchesComparison } from "./predicate.js"
+import type { RawTypeRoot, RawTypeSet } from "./node.js"
+import { comparePredicates, isConditionsComparison } from "./predicate.js"
 
-export const union = (l: TypeOperand, r: TypeOperand, scope: ScopeRoot) =>
+export const union = (l: RawTypeRoot, r: RawTypeRoot, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const typeSetUnion = composeKeyedOperation<DomainOperand, ScopeRoot>(
+export const typeSetUnion = composeKeyedOperation<RawTypeSet, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r
@@ -24,21 +24,21 @@ export const typeSetUnion = composeKeyedOperation<DomainOperand, ScopeRoot>(
             domain,
             scope
         })
-        if (!isBranchesComparison(comparison)) {
+        if (!isConditionsComparison(comparison)) {
             return comparison === l ? r : l
         }
         const finalBranches = [
-            ...comparison.lRules.filter(
+            ...comparison.lConditions.filter(
                 (_, lIndex) =>
-                    !comparison.lSubrulesOfR.includes(lIndex) &&
-                    !comparison.equalities.some(
+                    !comparison.lSubconditionsOfR.includes(lIndex) &&
+                    !comparison.equal.some(
                         (indexPair) => indexPair[0] === lIndex
                     )
             ),
-            ...comparison.rRules.filter(
+            ...comparison.rConditions.filter(
                 (_, rIndex) =>
-                    !comparison.rSubrulesOfL.includes(rIndex) &&
-                    !comparison.equalities.some(
+                    !comparison.rSubconditionsOfL.includes(rIndex) &&
+                    !comparison.equal.some(
                         (indexPair) => indexPair[1] === rIndex
                     )
             )

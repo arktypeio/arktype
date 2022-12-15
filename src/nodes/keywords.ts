@@ -1,6 +1,6 @@
 import type { Domain } from "../utils/classify.js"
 import { deepFreeze } from "../utils/freeze.js"
-import type { DomainNode } from "./node.js"
+import type { TypeSet } from "./node.js"
 
 const always: Record<Domain, true> = {
     bigint: true,
@@ -39,7 +39,7 @@ export const keywords = deepFreeze({
     uppercase: { string: { regex: "^[A-Z]*$" } },
     // Numeric
     integer: { number: { divisor: 1 } }
-} as const satisfies Record<Keyword, DomainNode>)
+} as const satisfies Record<Keyword, TypeSet>)
 
 export type Keyword = keyof Keywords
 

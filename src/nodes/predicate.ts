@@ -1,16 +1,26 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/classify.js"
+import type { Domain, inferDomain } from "../utils/classify.js"
 import type { CollapsibleList, Dictionary } from "../utils/generics.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import { branchResolutionIntersection } from "./intersection.js"
-import type { Condition } from "./rules/rules.js"
+import type { Identifier } from "./node.js"
+import type { RuleSet } from "./rules/rules.js"
 import { resolvePredicate } from "./utils.js"
 
 export type Predicate<
     domain extends Domain = Domain,
     scope extends Dictionary = Dictionary
 > = true | CollapsibleList<Condition<domain, scope>>
+
+export type Condition<
+    domain extends Domain = Domain,
+    scope extends Dictionary = Dictionary
+> = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
+
+export type ExactValue<domain extends Domain> = {
+    readonly value: inferDomain<domain>
+}
 
 export type PredicateContext = {
     domain: Domain
@@ -22,76 +32,72 @@ export const comparePredicates = (
     r: Predicate,
     context: PredicateContext
 ): PredicateComparison => {
-    const lBranches = resolvePredicate(context.domain, l, context.scope)
-    const rBranches = resolvePredicate(context.domain, r, context.scope)
-    if (lBranches === true) {
-        return rBranches === true ? equal : r
+    const lConditions = resolvePredicate(context.domain, l, context.scope)
+    const rConditions = resolvePredicate(context.domain, r, context.scope)
+    if (lConditions === true) {
+        return rConditions === true ? equal : r
     }
-    if (rBranches === true) {
+    if (rConditions === true) {
         return l
     }
-    const branchComparison = compareRules(lBranches, rBranches, context)
+    const comparison = compareConditions(lConditions, rConditions, context)
     if (
-        branchComparison.equalities.length === lBranches.length &&
-        branchComparison.equalities.length === rBranches.length
+        comparison.equal.length === lConditions.length &&
+        comparison.equal.length === rConditions.length
     ) {
         return equal
     }
     if (
-        branchComparison.lSubrulesOfR.length +
-            branchComparison.equalities.length ===
-        lBranches.length
+        comparison.lSubconditionsOfR.length + comparison.equal.length ===
+        lConditions.length
     ) {
         return l
     }
     if (
-        branchComparison.rSubrulesOfL.length +
-            branchComparison.equalities.length ===
-        rBranches.length
+        comparison.rSubconditionsOfL.length + comparison.equal.length ===
+        rConditions.length
     ) {
         return r
     }
-    return branchComparison
+    return comparison
 }
 
-type PredicateComparison = SetOperationResult<Predicate> | BranchesComparison
+type PredicateComparison = SetOperationResult<Predicate> | ConditionsComparison
 
-export const isBranchesComparison = (
+export const isConditionsComparison = (
     comparison: PredicateComparison
-): comparison is BranchesComparison =>
-    (comparison as BranchesComparison)?.lRules !== undefined
+): comparison is ConditionsComparison =>
+    (comparison as ConditionsComparison)?.lConditions !== undefined
 
-type BranchesComparison = {
-    lRules: Condition[]
-    rRules: Condition[]
-    lSubrulesOfR: number[]
-    rSubrulesOfL: number[]
-    equalities: EqualIndexPair[]
+type ConditionsComparison = {
+    lConditions: Condition[]
+    rConditions: Condition[]
+    lSubconditionsOfR: number[]
+    rSubconditionsOfL: number[]
+    equal: [lIndex: number, rIndex: number][]
     intersections: Condition[]
 }
 
-type EqualIndexPair = [lIndex: number, rIndex: number]
-
-const compareRules = (
-    lRules: Condition[],
-    rRules: Condition[],
+const compareConditions = (
+    lConditions: Condition[],
+    rConditions: Condition[],
     context: PredicateContext
-): BranchesComparison => {
-    const comparison: BranchesComparison = {
-        lRules,
-        rRules,
-        lSubrulesOfR: [],
-        rSubrulesOfL: [],
-        equalities: [],
+): ConditionsComparison => {
+    const result: ConditionsComparison = {
+        lConditions,
+        rConditions,
+        lSubconditionsOfR: [],
+        rSubconditionsOfL: [],
+        equal: [],
         intersections: []
     }
-    const pairsByR = rRules.map((constraint) => ({
-        constraint,
+    const pairs = rConditions.map((condition) => ({
+        constraint: condition,
         distinct: [] as Condition[] | null
     }))
-    lRules.forEach((l, lIndex) => {
+    lConditions.forEach((l, lIndex) => {
         let lImpliesR = false
-        const distinct = pairsByR.map((rData, rIndex): Condition | null => {
+        const distinct = pairs.map((rData, rIndex): Condition | null => {
             if (lImpliesR || !rData.distinct) {
                 return null
             }
@@ -102,14 +108,14 @@ const compareRules = (
                     // doesn't tell us about any redundancies or add a distinct pair
                     return null
                 case l:
-                    comparison.lSubrulesOfR.push(lIndex)
+                    result.lSubconditionsOfR.push(lIndex)
                     // If l is a subtype of the current r branch, intersections
                     // with the remaining branches of r won't lead to distinct
                     // branches, so we set a flag indicating we can skip them.
                     lImpliesR = true
                     return null
                 case r:
-                    comparison.rSubrulesOfL.push(rIndex)
+                    result.rSubconditionsOfL.push(rIndex)
                     // If r is a subtype of the current l branch, it is removed
                     // from pairsByR because future intersections won't lead to
                     // distinct branches.
@@ -117,7 +123,7 @@ const compareRules = (
                     return null
                 case equal:
                     // Combination of l and r subtype cases.
-                    comparison.equalities.push([lIndex, rIndex])
+                    result.equal.push([lIndex, rIndex])
                     lImpliesR = true
                     rData.distinct = null
                     return null
@@ -129,13 +135,13 @@ const compareRules = (
             }
         })
         if (!lImpliesR) {
-            for (let i = 0; i < pairsByR.length; i++) {
+            for (let i = 0; i < pairs.length; i++) {
                 if (distinct[i]) {
-                    pairsByR[i].distinct?.push(distinct[i]!)
+                    pairs[i].distinct?.push(distinct[i]!)
                 }
             }
         }
     })
-    comparison.intersections = pairsByR.flatMap((pairs) => pairs.distinct ?? [])
-    return comparison
+    result.intersections = pairs.flatMap((pairs) => pairs.distinct ?? [])
+    return result
 }

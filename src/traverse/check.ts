@@ -1,4 +1,4 @@
-import type { TypeOperand } from "../nodes/node.js"
+import type { RawTypeRoot } from "../nodes/node.js"
 import type { PredicateContext } from "../nodes/predicate.js"
 import type { ScopeRoot } from "../scope.js"
 
@@ -12,7 +12,7 @@ export const checkConstraints = (
 
 export const checkNode = (
     data: unknown,
-    node: TypeOperand,
+    node: RawTypeRoot,
     scope: ScopeRoot
 ) => {
     return true

@@ -1,34 +1,35 @@
 import type { ScopeRoot } from "../scope.js"
 import { checkConstraints } from "../traverse/check.js"
 import type { ObjectDomain } from "../utils/classify.js"
+import type { CollapsibleList } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
 import type { SetOperation } from "./compose.js"
 import {
     coalesceBranches,
     composeKeyedOperation,
     composeNodeOperation,
-    composePredicateIntersection as composeRuleIntersection,
+    composeRuleIntersection,
     empty,
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { DomainOperand, TypeOperand } from "./node.js"
+import type { RawTypeRoot, RawTypeSet } from "./node.js"
 import type { PredicateContext } from "./predicate.js"
-import { comparePredicates, isBranchesComparison } from "./predicate.js"
+import { comparePredicates, isConditionsComparison } from "./predicate.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { collapsibleListUnion } from "./rules/collapsibleSet.js"
 import { divisorIntersection } from "./rules/divisor.js"
 import { rangeIntersection } from "./rules/range.js"
 import { regexIntersection } from "./rules/regex.js"
-import type { Condition, RuleSet, Validator } from "./rules/rules.js"
+import type { RuleSet, Validator } from "./rules/rules.js"
 
 export const intersection = (
-    l: TypeOperand,
-    r: TypeOperand,
+    l: RawTypeRoot,
+    r: RawTypeRoot,
     scope: ScopeRoot
-): TypeOperand => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
+): RawTypeRoot => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const typeSetIntersection = composeKeyedOperation<DomainOperand, ScopeRoot>(
+const typeSetIntersection = composeKeyedOperation<RawTypeSet, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
@@ -40,19 +41,19 @@ const typeSetIntersection = composeKeyedOperation<DomainOperand, ScopeRoot>(
             domain,
             scope
         })
-        if (!isBranchesComparison(comparison)) {
+        if (!isConditionsComparison(comparison)) {
             return comparison
         }
         const finalBranches = [
             ...comparison.intersections,
-            ...comparison.equalities.map(
-                (indices) => comparison.lRules[indices[0]]
+            ...comparison.equal.map(
+                (indices) => comparison.lConditions[indices[0]]
             ),
-            ...comparison.lSubrulesOfR.map(
-                (lIndex) => comparison.lRules[lIndex]
+            ...comparison.lSubconditionsOfR.map(
+                (lIndex) => comparison.lConditions[lIndex]
             ),
-            ...comparison.rSubrulesOfL.map(
-                (rIndex) => comparison.rRules[rIndex]
+            ...comparison.rSubconditionsOfL.map(
+                (rIndex) => comparison.rConditions[rIndex]
             )
         ]
         return coalesceBranches(domain, finalBranches)
@@ -84,7 +85,7 @@ export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
 )
 
 const validatorIntersection =
-    composeRuleIntersection<Validator>(collapsibleListUnion)
+    composeRuleIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
 
 const attributesIntersection = composeKeyedOperation<RuleSet, PredicateContext>(
     {

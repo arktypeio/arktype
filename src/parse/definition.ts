@@ -1,4 +1,4 @@
-import type { TypeOperand } from "../nodes/node.js"
+import type { RawTypeRoot } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Domain, ObjectDomain, Primitive } from "../utils/classify.js"
 import { classify, classifyObject } from "../utils/classify.js"
@@ -20,7 +20,7 @@ import { parseTuple } from "./tuple.js"
 export const parseDefinition = (
     def: unknown,
     scope: ScopeRoot
-): TypeOperand => {
+): RawTypeRoot => {
     const domain = classify(def)
     if (domain === "string") {
         return parseString(def as string, scope)

@@ -3,9 +3,8 @@ import type { Domain } from "../utils/classify.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
-import type { DomainOperand, TypeOperand } from "./node.js"
+import type { RawTypeRoot, RawTypeSet } from "./node.js"
 import type { Predicate } from "./predicate.js"
-import type { Condition } from "./rules/rules.js"
 import { resolveIfIdentifier } from "./utils.js"
 
 type ContextFreeSetOperation<t, result extends t> = (
@@ -36,7 +35,7 @@ type allowUndefinedOperands<f extends SetOperation<any, any>> =
           >
         : never
 
-export const composePredicateIntersection = <
+export const composeRuleIntersection = <
     t,
     context = undefined,
     reducer extends SetOperation<t, context> = SetOperation<t, context>
@@ -124,19 +123,19 @@ export const composeKeyedOperation =
     }
 
 export const composeNodeOperation = (
-    resolutionOperation: SetOperation<DomainOperand, ScopeRoot>
+    domainSetOperation: SetOperation<RawTypeSet, ScopeRoot>
 ) =>
-    composePredicateIntersection<TypeOperand, ScopeRoot>((l, r, scope) => {
-        const lResolution = resolveIfIdentifier(l, scope)
-        const rResolution = resolveIfIdentifier(r, scope)
-        const result = resolutionOperation(lResolution, rResolution, scope)
-        return result === lResolution ? l : result === rResolution ? r : result
+    composeRuleIntersection<RawTypeRoot, ScopeRoot>((l, r, scope) => {
+        const lDomains = resolveIfIdentifier(l, scope)
+        const rDomains = resolveIfIdentifier(r, scope)
+        const result = domainSetOperation(lDomains, rDomains, scope)
+        return result === lDomains ? l : result === rDomains ? r : result
     })
 
 export const finalizeNodeOperation = (
-    l: TypeOperand,
-    result: SetOperationResult<TypeOperand>
-): TypeOperand =>
+    l: RawTypeRoot,
+    result: SetOperationResult<RawTypeRoot>
+): RawTypeRoot =>
     result === empty ? keywords.never : result === equal ? l : result
 
 // TODO: Add aliases back if no subtype indices
