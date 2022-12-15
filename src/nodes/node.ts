@@ -1,9 +1,5 @@
 import type { Domain } from "../utils/classify.js"
-import type {
-    autocompleteString,
-    Dictionary,
-    stringKeyOf
-} from "../utils/generics.js"
+import type { Dictionary, stringKeyOf } from "../utils/generics.js"
 import type { Keyword } from "./keywords.js"
 import type { Predicate } from "./predicate.js"
 
@@ -14,9 +10,8 @@ export type TypeRoot<scope extends Dictionary = Dictionary> =
 export type RawTypeRoot = Identifier | RawTypeSet
 
 export type Identifier<scope extends Dictionary = Dictionary> =
-    Dictionary extends scope
-        ? autocompleteString<Keyword>
-        : Keyword | stringKeyOf<scope>
+    | Keyword
+    | stringKeyOf<scope>
 
 export type TypeSet<scope extends Dictionary = Dictionary> = {
     readonly [domain in Domain]?: Predicate<domain, scope>

@@ -14,7 +14,7 @@ import {
     finalizeNodeOperation
 } from "./compose.js"
 import type { RawTypeRoot, RawTypeSet } from "./node.js"
-import type { Condition, PredicateContext } from "./predicate.js"
+import type { Condition, DomainContext } from "./predicate.js"
 import { comparePredicates, isConditionsComparison } from "./predicate.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { collapsibleListUnion } from "./rules/collapsibleSet.js"
@@ -62,11 +62,14 @@ const typeSetIntersection = composeKeyedOperation<RawTypeSet, ScopeRoot>(
 
 export const nodeIntersection = composeNodeOperation(typeSetIntersection)
 
-export const branchResolutionIntersection: SetOperation<
-    Condition,
-    PredicateContext
-> = (l, r, context) =>
-    hasKey(l, "value")
+export const conditionIntersection: SetOperation<Condition, DomainContext> = (
+    l,
+    r,
+    context
+) =>
+    typeof l === "string" || typeof r === "string"
+        ? l
+        : hasKey(l, "value")
         ? hasKey(r, "value")
             ? l.value === r.value
                 ? equal
@@ -87,7 +90,7 @@ export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
 const validatorIntersection =
     composeRuleIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
 
-const attributesIntersection = composeKeyedOperation<RuleSet, PredicateContext>(
+const attributesIntersection = composeKeyedOperation<RuleSet, DomainContext>(
     {
         kind: objectKindIntersection,
         divisor: divisorIntersection,
