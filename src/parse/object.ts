@@ -24,7 +24,7 @@ export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
-        if (definitionKey.endsWith("~?")) {
+        if (definitionKey.endsWith(`${Scanner.escapeToken}?`)) {
             keyName = `${definitionKey.slice(0, -2)}?`
             requiredKeys[keyName] = true
         } else if (definitionKey.endsWith("?")) {
@@ -42,7 +42,9 @@ export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     }
 }
 
-type withEscapeCharacter<k> = k extends `${infer name}?` ? `${name}~?` : k
+type withEscapeCharacter<k> = k extends `${infer name}?`
+    ? `${name}${Scanner.EscapeToken}?`
+    : k
 
 export type inferRecord<
     def extends Dictionary,
@@ -96,7 +98,7 @@ type KeyParseResult<name extends string, isOptional extends boolean> = [
 ]
 
 type parseKey<k> = k extends optionalKeyWithName<infer name>
-    ? name extends `${infer baseName}~`
+    ? name extends `${infer baseName}${Scanner.EscapeToken}`
         ? [`${baseName}?`, false]
         : [name, true]
     : [k, false]

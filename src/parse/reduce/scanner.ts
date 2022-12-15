@@ -3,7 +3,6 @@ import type { Dictionary } from "../../utils/generics.js"
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
-    private escapeToken = "~"
     finalized = false
 
     constructor(def: string) {
@@ -19,13 +18,14 @@ export class Scanner<Lookahead extends string = string> {
     get lookahead() {
         return (this.chars[this.i] ?? "") as Lookahead
     }
-    //shawn fix
+
     shiftUntil(condition: Scanner.UntilCondition): string {
         let shifted = ""
-        while (!condition(this, shifted) && this.lookahead) {
-            if (this.lookahead === this.escapeToken) {
-                this.shift()
-                continue
+        while (this.lookahead) {
+            if (this.lookahead === Scanner.escapeToken) {
+                this.i++
+            } else if (condition(this, shifted)) {
+                break
             }
             shifted += this.shift()
         }
@@ -66,7 +66,7 @@ export namespace Scanner {
 
     export const lookaheadIsNotWhitespace: UntilCondition = (
         scanner: Scanner
-    ) => scanner.lookahead !== " "
+    ) => scanner.lookahead !== whiteSpaceToken
 
     export const comparatorStartChars = {
         "<": true,
@@ -143,7 +143,13 @@ export namespace Scanner {
 
     export type OperatorToken = InfixToken | PostfixToken
 
-    export type EscapeToken = "~"
+    export const escapeToken = "\\"
+
+    export type EscapeToken = typeof escapeToken
+
+    export const whiteSpaceToken = " "
+
+    export type WhiteSpaceToken = typeof whiteSpaceToken
 
     export type finalized = "{done}"
 
@@ -154,18 +160,20 @@ export namespace Scanner {
 
     export type tailOf<S> = S extends `${string}${infer Tail}` ? Tail : ""
 
+    export type headOf<S> = S extends `${infer Head}${string}` ? Head : ""
+
     export type shiftUntil<
         Unscanned extends string,
         Terminator extends string,
         InvertTerminatorComparison extends boolean = false,
         Scanned extends string = ""
     > = Unscanned extends Scanner.shift<infer Lookahead, infer NextUnscanned>
-        ? Scanned extends `${infer preEscape}${EscapeToken}`
+        ? Lookahead extends EscapeToken
             ? shiftUntil<
-                  NextUnscanned,
+                  tailOf<NextUnscanned>,
                   Terminator,
                   InvertTerminatorComparison,
-                  `${preEscape}${Lookahead}`
+                  `${Scanned}${headOf<NextUnscanned>}`
               >
             : DoneShifting<
                   Lookahead,
@@ -200,7 +208,7 @@ export namespace Scanner {
 
     export type skipWhitespace<Unscanned extends string> = shiftUntil<
         Unscanned,
-        " ",
+        WhiteSpaceToken,
         true
     >[1]
 

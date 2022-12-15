@@ -61,13 +61,34 @@ describe("parse enclosed", () => {
             | "true|false"
     })
     describe("escape characters", () => {
-        test("skips over escape character", () => {
-            attest(type("'12~'abc~~.com'").infer).snap()
+        test("enclosed", () => {
+            const t = type("'don\\'t'")
+            attest(t.infer).typed as "don't"
+            attest(type("'don\\'t'").root).equals({
+                string: { value: "don't" }
+            })
+        })
+        test("escape", () => {
+            const t = type("'C:\\\\Shawn'")
+            attest(t.infer).typed as "C:\\Shawn"
+            attest(t.root).equals({
+                string: { value: "C:\\Shawn" }
+            })
+        })
+        test("space", () => {
+            const t = type("\\ boolean")
+            attest(t.infer).typed as boolean
+            attest(t.root).equals("boolean")
         })
         test("escape optional key", () => {
-            attest(
-                type([{ "a~?": "'a~'b'" }, "|", { "b?": "string" }]).root
-            ).snap()
+            const t = type({ "a\\?": "string" })
+            attest(t.infer).typed as { "a?": string }
+            attest(t.root).equals({
+                object: {
+                    props: { "a?": "string" },
+                    requiredKeys: { "a?": true }
+                }
+            })
         })
     })
 })
