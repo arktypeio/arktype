@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
-import type { Node } from "../exports.js"
+import type { TypeNode } from "../exports.js"
 import { type } from "../exports.js"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
 import {
@@ -58,7 +58,7 @@ describe("regex intersections", () => {
         })
     })
     test("redundant string and list", () => {
-        const expected: Node = {
+        const expected: TypeNode = {
             string: {
                 regex: ["a", "b", "c"]
             }

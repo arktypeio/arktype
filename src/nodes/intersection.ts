@@ -13,24 +13,23 @@ import {
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { RawTypeRoot, RawTypeSet } from "./node.js"
-import type { Condition, DomainContext } from "./predicate.js"
+import type { TypeNode, TypeSet } from "./node.js"
+import type { Condition, DynamicDomainContext } from "./predicate.js"
 import { comparePredicates, isConditionsComparison } from "./predicate.js"
 import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { collapsibleListUnion } from "./rules/collapsibleSet.js"
 import { divisorIntersection } from "./rules/divisor.js"
 import { rangeIntersection } from "./rules/range.js"
 import { regexIntersection } from "./rules/regex.js"
-import type { RuleSet, Validator } from "./rules/rules.js"
-import { resolveIfIdentifier } from "./utils.js"
+import type { Rules, Validator } from "./rules/rules.js"
 
 export const intersection = (
-    l: RawTypeRoot,
-    r: RawTypeRoot,
+    l: TypeNode,
+    r: TypeNode,
     scope: ScopeRoot
-): RawTypeRoot => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
+): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-const typeSetIntersection = composeKeyedOperation<RawTypeSet, ScopeRoot>(
+const typeSetIntersection = composeKeyedOperation<TypeSet, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
@@ -63,11 +62,10 @@ const typeSetIntersection = composeKeyedOperation<RawTypeSet, ScopeRoot>(
 
 export const nodeIntersection = composeNodeOperation(typeSetIntersection)
 
-export const conditionIntersection: SetOperation<Condition, DomainContext> = (
-    l,
-    r,
-    context
-) => {
+export const conditionIntersection: SetOperation<
+    Condition,
+    DynamicDomainContext
+> = (l, r, context) => {
     const lResolution =
         typeof l === "string"
             ? context.scope.resolveToDomain(l, context.domain)
@@ -98,7 +96,7 @@ export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
 const validatorIntersection =
     composeRuleIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
 
-const rulesIntersection = composeKeyedOperation<RuleSet, DomainContext>(
+const rulesIntersection = composeKeyedOperation<Rules, DynamicDomainContext>(
     {
         kind: objectKindIntersection,
         divisor: divisorIntersection,

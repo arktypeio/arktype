@@ -1,13 +1,8 @@
 import { intersection } from "../nodes/intersection.js"
 import { morph } from "../nodes/morph.js"
-import type {
-    RawTypeRoot,
-    SatisfiesRule,
-    Satisfunction,
-    TypeSet,
-    UnknownDomainNode,
-    UnknownPredicate
-} from "../nodes/node.js"
+import type { TypeNode, TypeSet } from "../nodes/node.js"
+import type { Predicate } from "../nodes/predicate.js"
+import type { Validator } from "../nodes/rules/rules.js"
 import { union } from "../nodes/union.js"
 import { resolveIfIdentifier } from "../nodes/utils.js"
 import type { ScopeRoot } from "../scope.js"
@@ -26,11 +21,11 @@ import { parseDefinition } from "./definition.js"
 import type { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
 
-export const parseTuple = (def: List, scope: ScopeRoot): RawTypeRoot => {
+export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
-    const props: Record<number, RawTypeRoot> = {}
+    const props: Record<number, TypeNode> = {}
     for (let i = 0; i < def.length; i++) {
         props[i] = parseDefinition(def[i], scope)
     }
@@ -81,7 +76,7 @@ type validateTupleExpression<
 type validateNarrowTuple<constrainedDef, scope extends Dictionary> = [
     validateDefinition<constrainedDef, scope>,
     ":",
-    SatisfiesRule<inferDefinition<constrainedDef, scope, scope>>
+    Validator<inferDefinition<constrainedDef, scope, scope>>
 ]
 
 type inferTupleExpression<
@@ -110,7 +105,7 @@ export type TupleExpressionToken = "&" | "|" | "[]" | ":"
 type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: UnknownTupleExpression<token>,
     scope: ScopeRoot
-) => RawTypeRoot
+) => TypeNode
 
 const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
     if (def[2] === undefined) {
@@ -132,14 +127,14 @@ const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
     }
     const constrained = parseDefinition(def[0], scope)
     const constraintPredicate = {
-        narrow: def[2] as Satisfunction
-    } satisfies UnknownPredicate
-    const distributedConstraint: mutable<UnknownDomainNode> = {}
+        validator: def[2] as Validator
+    } satisfies Predicate
+    const distributedValidator: mutable<TypeSet> = {}
     let domain: Domain
     for (domain in resolveIfIdentifier(constrained, scope)) {
-        distributedConstraint[domain] = constraintPredicate
+        distributedValidator[domain] = constraintPredicate
     }
-    return intersection(constrained, distributedConstraint as TypeSet, scope)
+    return intersection(constrained, distributedValidator, scope)
 }
 
 const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>
@@ -157,7 +152,7 @@ const tupleExpressionParsers: {
 const parseTupleExpression = (
     def: UnknownTupleExpression,
     scope: ScopeRoot
-): RawTypeRoot => tupleExpressionParsers[def[1]](def as any, scope)
+): TypeNode => tupleExpressionParsers[def[1]](def as any, scope)
 
 const isTupleExpression = (def: List): def is UnknownTupleExpression =>
     typeof def[1] === "string" && def[1] in tupleExpressionParsers

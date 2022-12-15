@@ -1,8 +1,4 @@
-import type { Condition, ExactValue } from "../nodes/predicate.js"
-import type { RuleSet } from "../nodes/rules/rules.js"
-import type { Domain } from "./classify.js"
 import { hasDomain } from "./classify.js"
-import type { unionToTuple } from "./unionToTuple.js"
 
 export type downcast<t> = castWithExclusion<t, downcastRecurse<t>, []>
 
@@ -94,23 +90,10 @@ export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
 export const hasKey = <o, k extends string>(
     o: o,
     k: k
-): o is discriminateKey<o, k> => {
+): o is Extract<o, { [_ in k]: {} }> => {
     const valueAtKey = (o as any)?.[k]
     return valueAtKey !== undefined && valueAtKey !== null
 }
-
-export type discriminateKey<
-    o,
-    key extends string
-> = unionToTuple<o> extends infer branches
-    ? evaluate<
-          {
-              [i in keyof branches]: key extends keyof branches[i]
-                  ? requireKeys<branches[i], key>
-                  : never
-          }[keyof branches & number]
-      >
-    : never
 
 export const keyCount = (o: object) => Object.keys(o).length
 

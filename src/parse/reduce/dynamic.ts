@@ -1,12 +1,12 @@
 import { intersection } from "../../nodes/intersection.js"
 import type { MorphName } from "../../nodes/morph.js"
 import { morph } from "../../nodes/morph.js"
-import type { RawTypeRoot } from "../../nodes/node.js"
+import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
-import { nodeExtendsDomain } from "../../nodes/utils.js"
+import { isExactValue } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
-import { hasKey, isKeyOf } from "../../utils/generics.js"
+import { isKeyOf } from "../../utils/generics.js"
 import { Scanner } from "./scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
@@ -19,13 +19,13 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    intersection?: RawTypeRoot
-    union?: RawTypeRoot
+    intersection?: TypeNode
+    union?: TypeNode
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: RawTypeRoot | undefined
+    private root: TypeNode | undefined
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
@@ -42,11 +42,9 @@ export class DynamicState {
     }
 
     ejectRootIfLimit() {
-        if (
-            nodeExtendsDomain(this.root!, "number", this.scope) &&
-            hasKey(this.root.number, "value")
-        ) {
-            const limit = this.root.number.is
+        this.assertHasRoot()
+        if (isExactValue(this.root!, "number", this.scope)) {
+            const limit = this.root.number.value
             this.root = undefined
             return limit
         }
@@ -72,7 +70,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(node: RawTypeRoot) {
+    setRoot(node: TypeNode) {
         this.assertUnsetRoot()
         this.root = node
     }
@@ -81,7 +79,7 @@ export class DynamicState {
         this.root = morph(name, this.ejectRoot())
     }
 
-    intersect(node: RawTypeRoot) {
+    intersect(node: TypeNode) {
         this.root = intersection(this.ejectRoot(), node, this.scope)
     }
 

@@ -1,4 +1,4 @@
-import type { RawTypeRoot } from "../nodes/node.js"
+import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Domain, ObjectDomain, Primitive } from "../utils/classify.js"
 import { classify, classifyObject } from "../utils/classify.js"
@@ -17,10 +17,7 @@ import { parseString } from "./string.js"
 import type { inferTuple, validateTuple } from "./tuple.js"
 import { parseTuple } from "./tuple.js"
 
-export const parseDefinition = (
-    def: unknown,
-    scope: ScopeRoot
-): RawTypeRoot => {
+export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     const domain = classify(def)
     if (domain === "string") {
         return parseString(def as string, scope)

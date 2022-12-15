@@ -1,26 +1,31 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/classify.js"
+import type { Domain, inferDomain } from "../utils/classify.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf, listFrom } from "../utils/generics.js"
 import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
-import type { RawTypeRoot, RawTypeSet, TypeSet } from "./node.js"
-import type { Condition, Predicate } from "./predicate.js"
+import type { TypeNode, TypeSet } from "./node.js"
+import type { Condition, ExactValue, Predicate } from "./predicate.js"
 
 export const resolveIfIdentifier = (
-    node: RawTypeRoot,
+    node: TypeNode,
     scope: ScopeRoot
-): RawTypeSet =>
-    typeof node === "string" ? (scope.resolve(node) as RawTypeSet) : node
+): TypeSet =>
+    typeof node === "string" ? (scope.resolve(node) as TypeSet) : node
 
-export const nodeExtends = (
-    node: RawTypeRoot,
-    base: RawTypeRoot,
+export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
+    intersection(node, base, scope) === node
+
+export const isExactValue = (
+    node: TypeNode,
+    domain: Domain,
     scope: ScopeRoot
-) => intersection(node, base, scope) === node
+): node is { [domain in Domain]: { value: inferDomain<domain> } } =>
+    nodeExtendsDomain(node, domain, scope) &&
+    (node[domain] as ExactValue).value !== undefined
 
 export const domainOfNode = (
-    node: RawTypeRoot,
+    node: TypeNode,
     scope: ScopeRoot
 ): Domain | Domain[] => {
     const domains = keysOf(resolveIfIdentifier(node, scope))
@@ -33,7 +38,7 @@ export type DomainSubtypeNode<domain extends Domain> = {
 }
 
 export const nodeExtendsDomain = <domain extends Domain>(
-    node: RawTypeRoot,
+    node: TypeNode,
     domain: domain,
     scope: ScopeRoot
 ): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain

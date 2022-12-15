@@ -6,13 +6,13 @@ import {
     equal,
     finalizeNodeOperation
 } from "./compose.js"
-import type { RawTypeRoot, RawTypeSet } from "./node.js"
+import type { TypeNode, TypeSet } from "./node.js"
 import { comparePredicates, isConditionsComparison } from "./predicate.js"
 
-export const union = (l: RawTypeRoot, r: RawTypeRoot, scope: ScopeRoot) =>
+export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const typeSetUnion = composeKeyedOperation<RawTypeSet, ScopeRoot>(
+export const typeSetUnion = composeKeyedOperation<TypeSet, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r

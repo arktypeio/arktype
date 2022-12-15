@@ -69,22 +69,22 @@ export const parseRightBound = (
         buildInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     const openRange = s.ejectRangeIfOpen()
-    let bounds
+    let range
     if (openRange) {
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
             return s.error(buildUnpairableComparatorMessage(comparator))
         }
-        bounds = deserializeRange(openRange[0], openRange[1], comparator, limit)
-        if (compareStrictness(bounds.min, bounds.max, "min") === "l") {
-            return s.error(buildEmptyRangeMessage(bounds.min!, bounds.max!))
+        range = deserializeRange(openRange[0], openRange[1], comparator, limit)
+        if (compareStrictness(range.min, range.max, "min") === "l") {
+            return s.error(buildEmptyRangeMessage(range.min!, range.max!))
         }
     } else {
-        bounds = deserializeBound(comparator, limit)
+        range = deserializeBound(comparator, limit)
     }
     s.intersect({
-        number: { bounds },
-        string: { bounds },
-        object: { kind: "Array", bounds }
+        number: { range },
+        string: { range },
+        object: { kind: "Array", range }
     })
 }
 

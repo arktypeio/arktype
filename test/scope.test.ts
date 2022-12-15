@@ -19,7 +19,7 @@ describe("scope", () => {
         attest(s.c.root).equals({
             string: {
                 regex: "^(.+)@(.+)\\.(.+)$",
-                bounds: {
+                range: {
                     min: {
                         limit: 5,
                         exclusive: true

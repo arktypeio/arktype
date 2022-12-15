@@ -1,5 +1,5 @@
 import type { Keyword } from "../../../nodes/keywords.js"
-import type { TypeSet } from "../../../nodes/node.js"
+import type { TypeNode } from "../../../nodes/node.js"
 import type { error } from "../../../utils/generics.js"
 import type {
     BigintLiteral,
@@ -42,7 +42,7 @@ const unenclosedToNode = (s: DynamicState, token: string) =>
                   : buildUnresolvableMessage(token)
           )
 
-const maybeParseUnenclosedLiteral = (token: string): TypeSet | undefined => {
+const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { number: { value: maybeNumber } }

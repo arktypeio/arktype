@@ -1,5 +1,5 @@
 import { keywords } from "./nodes/keywords.js"
-import type { RawTypeRoot, TypeSet } from "./nodes/node.js"
+import type { TypeNode, TypeSet } from "./nodes/node.js"
 import type { Predicate } from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
@@ -64,9 +64,9 @@ type inferredScopeToArktypes<inferred> = {
 // TODO: decide if parsing primarily managed through scope or only resolution/caching
 
 export class ScopeRoot<inferred extends Dictionary = Dictionary> {
-    attributes = {} as { [k in keyof inferred]: TypeSet }
+    attributes = {} as { [k in keyof inferred]: TypeSet<inferred> }
     // TODO: Add intersection cache
-    private cache: mutable<Dictionary<RawTypeRoot>> = {}
+    private cache: mutable<Dictionary<TypeNode>> = {}
 
     constructor(
         public aliases: Record<keyof inferred, unknown>,
@@ -94,7 +94,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             return keywords[name] as any
         }
         if (isKeyOf(name, this.attributes)) {
-            return this.attributes[name]
+            return this.attributes[name] as TypeSet
         }
         if (!this.aliases[name]) {
             return (
@@ -104,7 +104,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
                 )
             )
         }
-        let root = parseDefinition(this.aliases[name], this)
+        let root = parseDefinition(this.aliases[name], this as ScopeRoot)
         if (typeof root === "string") {
             if (seen.includes(root)) {
                 return throwParseError(
@@ -114,7 +114,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             seen.push(root)
             root = this.resolveRecurse(root, seen)
         }
-        this.attributes[name as keyof inferred] = root
+        this.attributes[name as keyof inferred] = root as TypeSet<inferred>
         return root
     }
 
@@ -145,11 +145,13 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return this.resolveToDomainRecurse(resolution, domain, seen)
     }
 
-    memoizedParse(def: string): RawTypeRoot {
+    memoizedParse(def: string): TypeNode {
         if (def in this.cache) {
             return this.cache[def]
         }
-        const root = maybeNaiveParse(def, this) ?? fullStringParse(def, this)
+        const root =
+            maybeNaiveParse(def, this as ScopeRoot) ??
+            fullStringParse(def, this as ScopeRoot)
         this.cache[def] = deepFreeze(root)
         return root
     }

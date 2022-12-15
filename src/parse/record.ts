@@ -1,4 +1,4 @@
-import type { RawTypeRoot } from "../nodes/node.js"
+import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import type {
     Dictionary,
@@ -9,8 +9,8 @@ import type {
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 
-export const parseRecord = (def: Dictionary, scope: ScopeRoot): RawTypeRoot => {
-    const props: mutable<Dictionary<RawTypeRoot>> = {}
+export const parseRecord = (def: Dictionary, scope: ScopeRoot): TypeNode => {
+    const props: mutable<Dictionary<TypeNode>> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey

@@ -10,12 +10,39 @@ import type {
     evaluate,
     keySet
 } from "../../utils/generics.js"
-import type { TypeRoot } from "../node.js"
+import type { TypeNode } from "../node.js"
 import type { Range } from "./range.js"
 
-export type RuleSet<
+export type Rules<
     domain extends Domain = Domain,
     scope extends Dictionary = Dictionary
+> = {
+    readonly regex?: CollapsibleList<string>
+    readonly divisor?: number
+    readonly requiredKeys?: keySet
+    readonly props?: Dictionary<TypeNode<scope>>
+    readonly propTypes?: {
+        readonly number?: TypeNode<scope>
+        readonly string?: TypeNode<scope>
+    }
+    readonly kind?: ObjectDomain
+    readonly range?: Range
+    readonly validator?: ValidatorRule<domain>
+}
+
+export type ValidatorRule<domain extends Domain = Domain> = CollapsibleList<
+    Validator<inferDomain<domain>>
+>
+
+export type Validator<data = unknown> = (data: data) => boolean
+
+export type DistributedValidator<data = unknown> = evaluate<{
+    [domain in classify<data>]?: Validator<Extract<data, inferDomain<domain>>>
+}>
+
+export type RuleSet<
+    domain extends Domain,
+    scope extends Dictionary
 > = Domain extends domain
     ? Rules
     : domain extends "object"
@@ -34,33 +61,6 @@ export type RuleSet<
     : domain extends number
     ? defineRuleSet<"number", "divisor" | "range" | "validator", scope>
     : defineRuleSet<domain, "validator", scope>
-
-type Rules<
-    domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
-> = {
-    readonly regex?: CollapsibleList<string>
-    readonly divisor?: number
-    readonly requiredKeys?: keySet
-    readonly props?: Dictionary<TypeRoot<scope>>
-    readonly propTypes?: {
-        readonly number?: TypeRoot<scope>
-        readonly string?: TypeRoot<scope>
-    }
-    readonly kind?: ObjectDomain
-    readonly range?: Range
-    readonly validator?: ValidatorRule<domain>
-}
-
-export type ValidatorRule<domain extends Domain = Domain> = CollapsibleList<
-    Validator<inferDomain<domain>>
->
-
-export type Validator<data = unknown> = (data: data) => boolean
-
-export type DistributedValidator<data = unknown> = evaluate<{
-    [domain in classify<data>]?: Validator<Extract<data, inferDomain<domain>>>
-}>
 
 type defineRuleSet<
     domain extends Domain,

@@ -3,8 +3,8 @@ import type { Domain } from "../utils/classify.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
-import type { RawTypeRoot, RawTypeSet } from "./node.js"
-import type { Predicate } from "./predicate.js"
+import type { TypeNode, TypeSet } from "./node.js"
+import type { Condition, Predicate } from "./predicate.js"
 import { resolveIfIdentifier } from "./utils.js"
 
 type ContextFreeSetOperation<t, result extends t> = (
@@ -123,9 +123,9 @@ export const composeKeyedOperation =
     }
 
 export const composeNodeOperation = (
-    domainSetOperation: SetOperation<RawTypeSet, ScopeRoot>
+    domainSetOperation: SetOperation<TypeSet, ScopeRoot>
 ) =>
-    composeRuleIntersection<RawTypeRoot, ScopeRoot>((l, r, scope) => {
+    composeRuleIntersection<TypeNode, ScopeRoot>((l, r, scope) => {
         const lDomains = resolveIfIdentifier(l, scope)
         const rDomains = resolveIfIdentifier(r, scope)
         const result = domainSetOperation(lDomains, rDomains, scope)
@@ -133,9 +133,9 @@ export const composeNodeOperation = (
     })
 
 export const finalizeNodeOperation = (
-    l: RawTypeRoot,
-    result: SetOperationResult<RawTypeRoot>
-): RawTypeRoot =>
+    l: TypeNode,
+    result: SetOperationResult<TypeNode>
+): TypeNode =>
     result === empty ? keywords.never : result === equal ? l : result
 
 // TODO: Add aliases back if no subtype indices
