@@ -8,7 +8,7 @@ import type {
 } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
-import { Scanner } from "./reduce/scanner.js"
+import { Scanner } from "./shift/scanner.js"
 
 export const parseRecord = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     const props: mutable<Dictionary<TypeNode>> = {}

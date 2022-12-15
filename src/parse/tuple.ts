@@ -18,8 +18,8 @@ import type {
 } from "../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
-import type { Scanner } from "./reduce/scanner.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
+import type { Scanner } from "./shift/scanner.js"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {

@@ -1,6 +1,6 @@
 import type { defined, error } from "../../utils/generics.js"
 import type { astToString } from "../ast.js"
-import type { Scanner } from "./scanner.js"
+import type { Scanner } from "../shift/scanner.js"
 import type {
     buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,

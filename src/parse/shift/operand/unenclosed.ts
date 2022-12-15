@@ -11,7 +11,7 @@ import {
     tryParseWellFormedNumber
 } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { Scanner } from "../../reduce/scanner.js"
+import type { Scanner } from "../scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
 
 export const parseUnenclosed = (s: DynamicState) => {

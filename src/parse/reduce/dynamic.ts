@@ -7,7 +7,7 @@ import { isExactValue } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/generics.js"
-import { Scanner } from "./scanner.js"
+import { Scanner } from "../shift/scanner.js"
 import type { OpenRange } from "./shared.js"
 import {
     buildMultipleLeftBoundsMessage,

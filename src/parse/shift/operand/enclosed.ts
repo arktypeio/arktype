@@ -1,7 +1,7 @@
 import { getRegex } from "../../../nodes/rules/regex.js"
 import type { error } from "../../../utils/generics.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { Scanner } from "../../reduce/scanner.js"
+import type { Scanner } from "../scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
 
 export type StringLiteral<Text extends string = string> =
