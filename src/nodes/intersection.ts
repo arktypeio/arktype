@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import { checkConstraints } from "../traverse/check.js"
+import { checkRules } from "../traverse/check.js"
 import type { ObjectDomain } from "../utils/classify.js"
 import type { CollapsibleList } from "../utils/generics.js"
 import { hasKey } from "../utils/generics.js"
@@ -22,6 +22,7 @@ import { divisorIntersection } from "./rules/divisor.js"
 import { rangeIntersection } from "./rules/range.js"
 import { regexIntersection } from "./rules/regex.js"
 import type { RuleSet, Validator } from "./rules/rules.js"
+import { resolveIfIdentifier } from "./utils.js"
 
 export const intersection = (
     l: RawTypeRoot,
@@ -66,22 +67,29 @@ export const conditionIntersection: SetOperation<Condition, DomainContext> = (
     l,
     r,
     context
-) =>
-    typeof l === "string" || typeof r === "string"
-        ? l
-        : hasKey(l, "value")
-        ? hasKey(r, "value")
-            ? l.value === r.value
+) => {
+    const lResolution =
+        typeof l === "string"
+            ? context.scope.resolveToDomain(l, context.domain)
+            : l
+    const rResolution =
+        typeof r === "string"
+            ? context.scope.resolveToDomain(r, context.domain)
+            : r
+    return hasKey(lResolution, "value")
+        ? hasKey(rResolution, "value")
+            ? lResolution.value === rResolution.value
                 ? equal
                 : empty
-            : checkConstraints(l.value, r, context)
+            : checkRules(lResolution.value, rResolution, context)
             ? l
             : empty
         : hasKey(r, "value")
-        ? checkConstraints(r.value, l, context)
+        ? checkRules(r.value, lResolution, context)
             ? r
             : empty
-        : attributesIntersection(l, r, context)
+        : rulesIntersection(lResolution, rResolution, context)
+}
 
 export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
     (l, r) => (l === r ? equal : empty)
@@ -90,7 +98,7 @@ export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
 const validatorIntersection =
     composeRuleIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
 
-const attributesIntersection = composeKeyedOperation<RuleSet, DomainContext>(
+const rulesIntersection = composeKeyedOperation<RuleSet, DomainContext>(
     {
         kind: objectKindIntersection,
         divisor: divisorIntersection,

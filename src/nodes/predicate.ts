@@ -17,7 +17,7 @@ export type Condition<
     scope extends Dictionary = Dictionary
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
-export type ExactValue<domain extends Domain> = {
+export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
 }
 

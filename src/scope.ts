@@ -1,5 +1,6 @@
 import { keywords } from "./nodes/keywords.js"
-import type { Predicate, RawTypeRoot, TypeSet } from "./nodes/node.js"
+import type { RawTypeRoot, TypeSet } from "./nodes/node.js"
+import type { Predicate } from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -117,15 +118,15 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         return root
     }
 
-    resolveConstraints<domain extends Domain>(name: string, domain: domain) {
-        return this.resolveConstraintsRecurse(name, domain, [])
+    resolveToDomain<domain extends Domain>(name: string, domain: domain) {
+        return this.resolveToDomainRecurse(name, domain, [])
     }
 
-    private resolveConstraintsRecurse<domain extends Domain>(
+    private resolveToDomainRecurse<domain extends Domain>(
         name: string,
         domain: domain,
         seen: string[]
-    ): Predicate<domain> {
+    ): Exclude<Predicate<domain>, string> {
         const resolution = this.resolve(name)[domain]
         if (resolution === undefined) {
             return throwInternalError(
@@ -133,7 +134,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             )
         }
         if (typeof resolution !== "string") {
-            return resolution as Predicate<domain>
+            return resolution as any
         }
         if (seen.includes(resolution)) {
             return throwParseError(
@@ -141,7 +142,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             )
         }
         seen.push(resolution)
-        return this.resolveConstraintsRecurse(resolution, domain, seen)
+        return this.resolveToDomainRecurse(resolution, domain, seen)
     }
 
     memoizedParse(def: string): RawTypeRoot {

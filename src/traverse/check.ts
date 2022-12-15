@@ -2,7 +2,7 @@ import type { RawTypeRoot } from "../nodes/node.js"
 import type { DomainContext } from "../nodes/predicate.js"
 import type { ScopeRoot } from "../scope.js"
 
-export const checkConstraints = (
+export const checkRules = (
     data: unknown,
     attributes: unknown,
     context: DomainContext

@@ -52,10 +52,7 @@ export const resolvePredicate = (
         (branch): branch is string => typeof branch === "string"
     )
     while (unresolved.length) {
-        const typeResolution = scope.resolveConstraints(
-            unresolved.pop()!,
-            domain
-        )
+        const typeResolution = scope.resolveToDomain(unresolved.pop()!, domain)
         if (typeResolution === true) {
             return true
         }
